@@ -59,15 +59,14 @@ public class FiveSongPlayabilityTests
     }
 
     [TestCaseSource(nameof(Charts))]
-    public void ColorsUseBothSidesAndNotesCanStackVertically(string song,string difficulty)
+    public void ConventionalLayoutsRemainTheMainStructure(string song,string difficulty)
     {
-        var notes=ChartLoader.LoadFromStreamingAssets(song,difficulty).notes;
-        Assert.IsTrue(notes.Any(n=>n.color=="blue" && n.x>.1f),"青も画面の右へ置く");
-        Assert.IsTrue(notes.Any(n=>n.color=="red" && n.x<-.1f),"赤も画面の左へ置く");
-        // 縦並びは同時打ちにも交互打ちにも使う。音型にない同時打ちを増やす条件にはしない。
-        Assert.IsTrue(notes.Any(a=>notes.Any(b=>b!=a && b.color!=a.color &&
-            b.time>=a.time && b.time-a.time<=1000 && Math.Abs(a.x-b.x)<.2f &&
-            Math.Abs(a.y-b.y)>1.5f)),"上下の同時打ち、または上下への短い受け渡し");
+        var chart=ChartLoader.LoadFromStreamingAssets(song,difficulty);
+        var plan=LoadPlan(song,difficulty);
+        // 横配置が主軸であることだけを保証する。特殊配置の最低数は設けない。
+        int ordinary=chart.notes.Where((n,i)=>
+            Math.Abs(n.y)<=.6f && (HandFor(n,plan.notes[i])==SaberHand.Left?n.x<-.5f:n.x>.5f)).Count();
+        Assert.Greater(ordinary,chart.notes.Count/2,"通常配置より技のほうが多くなっている");
     }
 
     static int LongestFlickRun(IEnumerable<NoteData> notes)

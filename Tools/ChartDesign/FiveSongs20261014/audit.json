@@ -239,8 +239,9 @@
         "dream-normal-1"
       ],
       "spatialLayout": {
-        "version": 1,
+        "version": 2,
         "scale": 0.8,
+        "policy": "通常配置を主軸に、短い技を選択",
         "flicksConvertedToTaps": []
       }
     },
@@ -486,8 +487,9 @@
         "unlimited-hard-2"
       ],
       "spatialLayout": {
-        "version": 1,
+        "version": 2,
         "scale": 0.8,
+        "policy": "通常配置を主軸に、短い技を選択",
         "flicksConvertedToTaps": []
       }
     },
@@ -733,11 +735,10 @@
         "unlimited-hard-4"
       ],
       "spatialLayout": {
-        "version": 1,
+        "version": 2,
         "scale": 0.8,
-        "flicksConvertedToTaps": [
-          260
-        ]
+        "policy": "通常配置を主軸に、短い技を選択",
+        "flicksConvertedToTaps": []
       }
     }
   },
@@ -934,8 +935,9 @@
         "escape-normal-2"
       ],
       "spatialLayout": {
-        "version": 1,
+        "version": 2,
         "scale": 0.8,
+        "policy": "通常配置を主軸に、短い技を選択",
         "flicksConvertedToTaps": []
       }
     },
@@ -1133,8 +1135,9 @@
         "unlimited-hard-1"
       ],
       "spatialLayout": {
-        "version": 1,
+        "version": 2,
         "scale": 0.8,
+        "policy": "通常配置を主軸に、短い技を選択",
         "flicksConvertedToTaps": []
       }
     },
@@ -1332,8 +1335,9 @@
         "unlimited-hard-3"
       ],
       "spatialLayout": {
-        "version": 1,
+        "version": 2,
         "scale": 0.8,
+        "policy": "通常配置を主軸に、短い技を選択",
         "flicksConvertedToTaps": []
       }
     }
@@ -1611,8 +1615,9 @@
         "there-normal-3"
       ],
       "spatialLayout": {
-        "version": 1,
+        "version": 2,
         "scale": 0.8,
+        "policy": "通常配置を主軸に、短い技を選択",
         "flicksConvertedToTaps": []
       }
     },
@@ -1891,8 +1896,9 @@
         "elixia-hard-1"
       ],
       "spatialLayout": {
-        "version": 1,
+        "version": 2,
         "scale": 0.8,
+        "policy": "通常配置を主軸に、短い技を選択",
         "flicksConvertedToTaps": []
       }
     },
@@ -2171,8 +2177,9 @@
         "elixia-hard-3"
       ],
       "spatialLayout": {
-        "version": 1,
+        "version": 2,
         "scale": 0.8,
+        "policy": "通常配置を主軸に、短い技を選択",
         "flicksConvertedToTaps": []
       }
     }
@@ -2386,8 +2393,9 @@
         "escape-normal-1"
       ],
       "spatialLayout": {
-        "version": 1,
+        "version": 2,
         "scale": 0.8,
+        "policy": "通常配置を主軸に、短い技を選択",
         "flicksConvertedToTaps": []
       }
     },
@@ -2602,8 +2610,9 @@
         "beat-hard-2"
       ],
       "spatialLayout": {
-        "version": 1,
+        "version": 2,
         "scale": 0.8,
+        "policy": "通常配置を主軸に、短い技を選択",
         "flicksConvertedToTaps": []
       }
     },
@@ -2818,8 +2827,9 @@
         "beat-hard-3"
       ],
       "spatialLayout": {
-        "version": 1,
+        "version": 2,
         "scale": 0.8,
+        "policy": "通常配置を主軸に、短い技を選択",
         "flicksConvertedToTaps": []
       }
     }
@@ -3010,8 +3020,9 @@
         "escape-normal-3"
       ],
       "spatialLayout": {
-        "version": 1,
+        "version": 2,
         "scale": 0.8,
+        "policy": "通常配置を主軸に、短い技を選択",
         "flicksConvertedToTaps": []
       }
     },
@@ -3203,8 +3214,9 @@
         "beat-hard-1"
       ],
       "spatialLayout": {
-        "version": 1,
+        "version": 2,
         "scale": 0.8,
+        "policy": "通常配置を主軸に、短い技を選択",
         "flicksConvertedToTaps": []
       }
     },
@@ -3394,8 +3406,9 @@
         "burning-hard-4"
       ],
       "spatialLayout": {
-        "version": 1,
+        "version": 2,
         "scale": 0.8,
+        "policy": "通常配置を主軸に、短い技を選択",
         "flicksConvertedToTaps": []
       }
     }

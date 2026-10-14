@@ -204,7 +204,7 @@ def build(m,diff,metadata):
     for i,n in enumerate(notes):
         if n['_arrow']:n['direction']=plan[i]['directions'][0];n['type']='direction'
     result=copy.deepcopy(metadata)
-    result['spatialLayoutVersion']=1
+    result['spatialLayoutVersion']=2
     result['_comment']='Beat Saber参照・フレーズ単位の反復と応答。フリックは句末に限定し、全体/各手の連続数を検証。'
     result['notes']=[{k:v for k,v in n.items() if not k.startswith('_')} for n in notes]
     result['editorMarkers']=[dict(timeMs=round(m.t(a)*1000,4),name=label) for a,b,k,motion,label in FORM[m.spec['id']]]

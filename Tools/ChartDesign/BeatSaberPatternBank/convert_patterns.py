@@ -6,31 +6,64 @@ sys.path.insert(0,str(HERE.parent/'FiveSongs20261014'))
 from build_pack import path_for,save
 from spatial_layout import rotate
 
-# 色の担当は保持し、各素材の画面上の軸は独立して設計する。
+# 通常配置を主体にし、短い特徴的なフレーズだけ縦・反転・斜めを使う。
 LAYOUT={
- 'dream-normal-1':90,'dream-normal-2':90,'dream-normal-3':180,'dream-normal-4':-90,
- 'dream-hard-1':45,'dream-hard-2':-90,'dream-hard-3':180,'dream-hard-4':-45,
- 'burning-hard-1':90,'burning-hard-2':-90,'burning-hard-3':180,'burning-hard-4':45,
- 'unlimited-hard-1':-90,'unlimited-hard-2':180,'unlimited-hard-3':45,'unlimited-hard-4':90,
- 'lvl-expert-1':180,'lvl-expert-2':90,'lvl-expert-3':-45,'lvl-expert-4':-90,
- 'bring-it-on-1':90,'bring-it-on-2':-90,'bring-it-on-3':180,'bring-it-on-4':45,
- 'shut-up-dance-1':90,'shut-up-dance-2':-90,'shut-up-dance-3':180,'shut-up-dance-4':-45,
- 'avoid-hand-clap':90,'avoid-central-wall':180,'avoid-face-punch':-90,
- 'avoid-vision-block':90,'avoid-hammer':180,'avoid-double-direction':45,
- 'elixia-hard-1':90,'elixia-hard-2':180,'elixia-hard-3':-90,
- 'there-normal-1':90,'there-normal-2':-90,'there-normal-3':180,
- 'escape-normal-1':0,'escape-normal-2':0,'escape-normal-3':0,
- 'beat-hard-1':0,'beat-hard-2':0,'beat-hard-3':0,
+ 'dream-normal-1': 0,
+ 'dream-normal-2': 90,
+ 'dream-normal-3': 0,
+ 'dream-normal-4': 0,
+ 'dream-hard-1': 0,
+ 'dream-hard-2': -90,
+ 'dream-hard-3': 180,
+ 'dream-hard-4': 0,
+ 'burning-hard-1': 0,
+ 'burning-hard-2': 0,
+ 'burning-hard-3': 0,
+ 'burning-hard-4': 45,
+ 'unlimited-hard-1': 0,
+ 'unlimited-hard-2': 0,
+ 'unlimited-hard-3': 0,
+ 'unlimited-hard-4': 0,
+ 'lvl-expert-1': 0,
+ 'lvl-expert-2': 0,
+ 'lvl-expert-3': 0,
+ 'lvl-expert-4': 0,
+ 'bring-it-on-1': 0,
+ 'bring-it-on-2': 0,
+ 'bring-it-on-3': 180,
+ 'bring-it-on-4': 0,
+ 'shut-up-dance-1': 0,
+ 'shut-up-dance-2': -90,
+ 'shut-up-dance-3': 0,
+ 'shut-up-dance-4': 0,
+ 'avoid-hand-clap': 0,
+ 'avoid-central-wall': 0,
+ 'avoid-face-punch': 0,
+ 'avoid-vision-block': 0,
+ 'avoid-hammer': 0,
+ 'avoid-double-direction': 0,
+ 'elixia-hard-1': 0,
+ 'elixia-hard-2': 0,
+ 'elixia-hard-3': 0,
+ 'there-normal-1': 0,
+ 'there-normal-2': -90,
+ 'there-normal-3': 0,
+ 'escape-normal-1': 0,
+ 'escape-normal-2': 0,
+ 'escape-normal-3': 0,
+ 'beat-hard-1': 0,
+ 'beat-hard-2': 0,
+ 'beat-hard-3': 0
 }
 
 # 20時台追加分。映像の単発・休符・担当手の順を個別に翻案する。
 # 座標は本作用に設計済み。原作の色（左=赤）を本作の担当色（左=青）へ変換する。
 EXPLICIT={
- 'escape-normal-1':('easy','中央下の単発と余白',[(0,'left',.25,-1.05)]),
+ 'escape-normal-1':('easy','単発タップと余白',[(0,'left',-1.2,-.25)]),
  'escape-normal-2':('easy','左右反転した交互',[(0,'left',1.0,.5),(2,'right',-1.0,-.5)]),
  'escape-normal-3':('easy','同じ側の上下を間隔を空けて渡す',[(0,'left',.65,.85),(3,'right',.65,-.85)]),
- 'beat-hard-1':('normal','縦の交互を中央へ寄せる',[(0,'right',-.35,1.05),(1,'left',-.35,-1.05),(2,'right',.10,.95),(3,'left',.10,-.95)]),
- 'beat-hard-2':('normal','斜めの両手から単発へ',[(0,'left',-1.05,.65),(0,'right',1.05,-.65),(3,'left',-.55,-.5)]),
+ 'beat-hard-1':('normal','左右の交互と小さな上下動',[(0,'right',1.2,.25),(1,'left',-1.2,-.25),(2,'right',1.1,-.25),(3,'left',-1.1,.25)]),
+ 'beat-hard-2':('normal','横の両手アクセントから単発へ',[(0,'left',-1.2,.25),(0,'right',1.2,.25),(3,'left',-1.1,-.25)]),
  'beat-hard-3':('hard','片手の2打を斜めで折り返す',[(0,'left',-.9,.45),(1,'right',.2,-.9),(2,'right',.9,.45),(3,'left',-.2,.9)]),
 }
 
@@ -119,7 +152,7 @@ def convert(item):
  if item['category']=='avoid':fidelity='問題点を取り除いた修正版。解説映像そのものを再現する譜面ではない。'
  angle=LAYOUT[identifier]
  for e in events:e['x'],e['y']=rotate(e['x'],e['y'],angle)
- layout=EXPLICIT[identifier][1] if identifier in EXPLICIT else '左右反転' if angle==180 else '縦並び' if abs(angle)==90 else '斜めの受け渡し'
+ layout=EXPLICIT[identifier][1] if identifier in EXPLICIT else '左右反転' if angle==180 else '縦並び' if abs(angle)==90 else '通常の左右配置' if angle==0 else '斜めの受け渡し'
  bpm=item['bpm'] or 140;clock=Clock(bpm);notes=[]
  for e in events:
   h=1 if e['hand']=='left' else 0
@@ -140,7 +173,7 @@ def convert(item):
   'timeSignatures':[{'beat':0,'numerator':4,'denominator':4}],'editorTempoMap':[],
   'notes':[{k:v for k,v in n.items() if not k.startswith('_')} for n in notes]}
  return {'id':identifier,'title':item['title'],'category':item['category'],'minimumDifficulty':diff,'referenceBpm':bpm,'sourceUrl':item['sourceUrl'],
-  'adaptation':item['adaptation']+' 画面配置は'+layout+'を使用。色は担当手を示し、画面の左右を固定しない。',
+  'adaptation':item['adaptation']+' 画面配置は'+layout+'を使用。色は担当手を示し、画面の左右に絶対固定せず、特殊配置は短い技として選ぶ。',
   'layout':layout,'orientationDegrees':angle,'fidelity':fidelity,'sourceTiming':item['timing'],'chartFile':'patterns/'+identifier+'.json','beats':4,
   'noteCount':len(notes),'flickCount':sum(n['_arrow'] for n in notes),'chart':chart}
 

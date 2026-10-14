@@ -17,8 +17,8 @@
     {
       "beat": 0.0,
       "time": 0.0,
-      "x": -0.163,
-      "y": -1.12,
+      "x": 1.12,
+      "y": -0.163,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -28,8 +28,8 @@
     {
       "beat": 1.0,
       "time": 303.0303,
-      "x": -0.163,
-      "y": 1.12,
+      "x": -1.12,
+      "y": -0.163,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -39,8 +39,8 @@
     {
       "beat": 2.0,
       "time": 606.0606,
-      "x": 0.163,
-      "y": -1.12,
+      "x": 1.12,
+      "y": 0.163,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -50,8 +50,8 @@
     {
       "beat": 3.0,
       "time": 909.0909,
-      "x": 0.163,
-      "y": 1.12,
+      "x": -1.12,
+      "y": 0.163,
       "type": "tap",
       "color": "blue",
       "direction": "none",

@@ -54,8 +54,8 @@
         {
           "beat": 288,
           "time": 128153.0,
-          "x": 0.192,
-          "y": 0.84,
+          "x": 0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -65,8 +65,8 @@
         {
           "beat": 288,
           "time": 128153.0,
-          "x": 0.192,
-          "y": -0.84,
+          "x": -0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -76,8 +76,8 @@
         {
           "beat": 288.5,
           "time": 128403.0,
-          "x": 0.192,
-          "y": 0.84,
+          "x": 0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -87,8 +87,8 @@
         {
           "beat": 288.5,
           "time": 128403.0,
-          "x": 0.192,
-          "y": -0.84,
+          "x": -0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -98,8 +98,8 @@
         {
           "beat": 289,
           "time": 128653.0,
-          "x": 0.192,
-          "y": 0.84,
+          "x": 0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -109,8 +109,8 @@
         {
           "beat": 289,
           "time": 128653.0,
-          "x": 0.192,
-          "y": -1.08,
+          "x": -1.08,
+          "y": -0.192,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -120,8 +120,8 @@
         {
           "beat": 289.5,
           "time": 128903.0,
-          "x": 0.0,
-          "y": 1.08,
+          "x": 1.08,
+          "y": -0.0,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -131,8 +131,8 @@
         {
           "beat": 289.5,
           "time": 128903.0,
-          "x": 0.0,
-          "y": -0.84,
+          "x": -0.84,
+          "y": 0.0,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -142,8 +142,8 @@
         {
           "beat": 290,
           "time": 129153.0,
-          "x": 0.0,
-          "y": 0.84,
+          "x": 0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -153,8 +153,8 @@
         {
           "beat": 290,
           "time": 129153.0,
-          "x": 0.0,
-          "y": -1.08,
+          "x": -1.08,
+          "y": 0.192,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -164,8 +164,8 @@
         {
           "beat": 291,
           "time": 129653.0,
-          "x": 0.0,
-          "y": 1.08,
+          "x": 1.08,
+          "y": 0.192,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -175,8 +175,8 @@
         {
           "beat": 291,
           "time": 129653.0,
-          "x": 0.0,
-          "y": -0.84,
+          "x": -0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -186,8 +186,8 @@
         {
           "beat": 292,
           "time": 130153.0,
-          "x": 0.192,
-          "y": 0.84,
+          "x": 0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -197,8 +197,8 @@
         {
           "beat": 292,
           "time": 130153.0,
-          "x": 0.192,
-          "y": -0.84,
+          "x": -0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -208,8 +208,8 @@
         {
           "beat": 292.5,
           "time": 130403.0,
-          "x": 0.192,
-          "y": 0.84,
+          "x": 0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -219,8 +219,8 @@
         {
           "beat": 292.5,
           "time": 130403.0,
-          "x": 0.192,
-          "y": -0.84,
+          "x": -0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -230,8 +230,8 @@
         {
           "beat": 293,
           "time": 130653.0,
-          "x": 0.192,
-          "y": 1.08,
+          "x": 1.08,
+          "y": -0.192,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -241,8 +241,8 @@
         {
           "beat": 293,
           "time": 130653.0,
-          "x": 0.192,
-          "y": -0.84,
+          "x": -0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -252,8 +252,8 @@
         {
           "beat": 293.5,
           "time": 130903.0,
-          "x": 0.0,
-          "y": 0.84,
+          "x": 0.84,
+          "y": 0.0,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -263,8 +263,8 @@
         {
           "beat": 293.5,
           "time": 130903.0,
-          "x": 0.0,
-          "y": -1.08,
+          "x": -1.08,
+          "y": -0.0,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -274,8 +274,8 @@
         {
           "beat": 294,
           "time": 131153.0,
-          "x": 0.0,
-          "y": 1.08,
+          "x": 1.08,
+          "y": 0.192,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -285,8 +285,8 @@
         {
           "beat": 294,
           "time": 131153.0,
-          "x": 0.0,
-          "y": -0.84,
+          "x": -0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -296,8 +296,8 @@
         {
           "beat": 295,
           "time": 131653.0,
-          "x": 0.0,
-          "y": 0.84,
+          "x": 0.84,
+          "y": -0.192,
           "type": "direction",
           "color": "red",
           "direction": "downleft",
@@ -307,8 +307,8 @@
         {
           "beat": 295,
           "time": 131653.0,
-          "x": 0.0,
-          "y": -1.08,
+          "x": -1.08,
+          "y": 0.192,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -316,8 +316,10 @@
           "lengthMs": 0
         }
       ],
-      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
-      "templateOrientationDegrees": -90
+      "spatialLayout": "通常の左右配置",
+      "templateOrientationDegrees": -90,
+      "layoutAdaptation": "素材の拍・担当手・休符は保持。特殊配置はこの適用先の境界で移動条件を満たさないため、横配置に調整。",
+      "layoutScale": 0.8
     },
     {
       "patternId": "shut-up-dance-3",
@@ -368,8 +370,8 @@
         {
           "beat": 192,
           "time": 82285.7143,
-          "x": 1.08,
-          "y": 0.192,
+          "x": -1.08,
+          "y": -0.192,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -379,8 +381,8 @@
         {
           "beat": 192.5,
           "time": 82500.0,
-          "x": -0.84,
-          "y": 0.192,
+          "x": 0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -390,8 +392,8 @@
         {
           "beat": 192.75,
           "time": 82607.1429,
-          "x": 0.84,
-          "y": 0.192,
+          "x": -0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -401,8 +403,8 @@
         {
           "beat": 193,
           "time": 82714.2857,
-          "x": -0.84,
-          "y": 0.192,
+          "x": 0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -412,8 +414,8 @@
         {
           "beat": 193.25,
           "time": 82821.4286,
-          "x": 0.84,
-          "y": 0.192,
+          "x": -0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -423,8 +425,8 @@
         {
           "beat": 193.5,
           "time": 82928.5714,
-          "x": -0.84,
-          "y": 0.192,
+          "x": 0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -434,8 +436,8 @@
         {
           "beat": 193.75,
           "time": 83035.7143,
-          "x": 0.84,
-          "y": 0.192,
+          "x": -0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -445,7 +447,7 @@
         {
           "beat": 194,
           "time": 83142.8571,
-          "x": -1.08,
+          "x": 1.08,
           "y": 0.0,
           "type": "tap",
           "color": "red",
@@ -456,8 +458,8 @@
         {
           "beat": 194,
           "time": 83142.8571,
-          "x": 0.84,
-          "y": 0.192,
+          "x": -0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -467,8 +469,8 @@
         {
           "beat": 195,
           "time": 83571.4286,
-          "x": -0.84,
-          "y": 0.192,
+          "x": 0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -478,8 +480,8 @@
         {
           "beat": 195,
           "time": 83571.4286,
-          "x": 1.08,
-          "y": -0.0,
+          "x": -1.08,
+          "y": 0.0,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -489,8 +491,8 @@
         {
           "beat": 196,
           "time": 84000.0,
-          "x": -1.08,
-          "y": 0.192,
+          "x": 1.08,
+          "y": -0.192,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -500,8 +502,8 @@
         {
           "beat": 196.5,
           "time": 84214.2857,
-          "x": 0.84,
-          "y": 0.192,
+          "x": -0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -511,8 +513,8 @@
         {
           "beat": 196.75,
           "time": 84321.4286,
-          "x": -0.84,
-          "y": 0.192,
+          "x": 0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -522,8 +524,8 @@
         {
           "beat": 197,
           "time": 84428.5714,
-          "x": 0.84,
-          "y": 0.192,
+          "x": -0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -533,8 +535,8 @@
         {
           "beat": 197.25,
           "time": 84535.7143,
-          "x": -0.84,
-          "y": 0.192,
+          "x": 0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -544,8 +546,8 @@
         {
           "beat": 197.5,
           "time": 84642.8571,
-          "x": 0.84,
-          "y": 0.192,
+          "x": -0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -555,8 +557,8 @@
         {
           "beat": 197.75,
           "time": 84750.0,
-          "x": -0.84,
-          "y": 0.192,
+          "x": 0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -566,8 +568,8 @@
         {
           "beat": 198,
           "time": 84857.1429,
-          "x": -0.84,
-          "y": 0.192,
+          "x": 0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -577,8 +579,8 @@
         {
           "beat": 198,
           "time": 84857.1429,
-          "x": 1.08,
-          "y": -0.0,
+          "x": -1.08,
+          "y": 0.0,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -588,19 +590,19 @@
         {
           "beat": 199,
           "time": 85285.7143,
-          "x": -1.08,
+          "x": 1.08,
           "y": 0.0,
           "type": "direction",
           "color": "red",
-          "direction": "left",
+          "direction": "right",
           "count": 1,
           "lengthMs": 0
         },
         {
           "beat": 199,
           "time": 85285.7143,
-          "x": 0.84,
-          "y": 0.192,
+          "x": -0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -608,8 +610,9 @@
           "lengthMs": 0
         }
       ],
-      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
-      "templateOrientationDegrees": 180
+      "spatialLayout": "通常の左右配置",
+      "templateOrientationDegrees": 180,
+      "layoutScale": 0.8
     },
     {
       "patternId": "bring-it-on-4",
@@ -852,8 +855,9 @@
           "lengthMs": 0
         }
       ],
-      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
-      "templateOrientationDegrees": 45
+      "spatialLayout": "通常の左右配置",
+      "templateOrientationDegrees": 45,
+      "layoutScale": 0.8
     },
     {
       "patternId": "shut-up-dance-1",
@@ -1072,8 +1076,9 @@
           "lengthMs": 0
         }
       ],
-      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
-      "templateOrientationDegrees": 90
+      "spatialLayout": "通常の左右配置",
+      "templateOrientationDegrees": 90,
+      "layoutScale": 0.8
     },
     {
       "patternId": "lvl-expert-4",
@@ -1116,8 +1121,8 @@
         {
           "beat": 336.0,
           "time": 113166.6667,
-          "x": 1.064,
-          "y": -0.0,
+          "x": -1.064,
+          "y": 0.0,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1127,8 +1132,8 @@
         {
           "beat": 337.0,
           "time": 113500.0,
-          "x": -1.0638,
-          "y": -0.0188,
+          "x": 1.064,
+          "y": 0.0,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -1138,8 +1143,8 @@
         {
           "beat": 337.5,
           "time": 113666.6667,
-          "x": 0.8234,
-          "y": 0.032,
+          "x": -0.824,
+          "y": 0.0,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1149,8 +1154,8 @@
         {
           "beat": 338.0,
           "time": 113833.3333,
-          "x": -0.8221,
-          "y": -0.0556,
+          "x": 0.824,
+          "y": 0.0,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -1160,8 +1165,8 @@
         {
           "beat": 338.5,
           "time": 114000.0,
-          "x": 1.0584,
-          "y": 0.1095,
+          "x": -1.064,
+          "y": 0.0,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1171,8 +1176,8 @@
         {
           "beat": 339.0,
           "time": 114166.6667,
-          "x": -1.0528,
-          "y": -0.1537,
+          "x": 1.064,
+          "y": 0.0,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -1182,8 +1187,8 @@
         {
           "beat": 339.5,
           "time": 114333.3333,
-          "x": 0.8088,
-          "y": 0.1577,
+          "x": -0.824,
+          "y": 0.0,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1193,8 +1198,8 @@
         {
           "beat": 340.0,
           "time": 114500.0,
-          "x": -1.0321,
-          "y": -0.2585,
+          "x": 1.064,
+          "y": 0.0,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -1204,8 +1209,8 @@
         {
           "beat": 341.0,
           "time": 114833.3333,
-          "x": 0.9942,
-          "y": 0.3791,
+          "x": -1.064,
+          "y": 0.0,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1215,8 +1220,8 @@
         {
           "beat": 341.5,
           "time": 115000.0,
-          "x": -0.7493,
-          "y": -0.3429,
+          "x": 0.824,
+          "y": 0.0,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -1226,8 +1231,8 @@
         {
           "beat": 342.0,
           "time": 115166.6667,
-          "x": 0.7243,
-          "y": 0.3929,
+          "x": -0.824,
+          "y": 0.0,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1237,8 +1242,8 @@
         {
           "beat": 342.5,
           "time": 115333.3333,
-          "x": -0.8974,
-          "y": -0.5716,
+          "x": 1.064,
+          "y": 0.0,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -1248,8 +1253,8 @@
         {
           "beat": 343.0,
           "time": 115500.0,
-          "x": 0.8541,
-          "y": 0.6345,
+          "x": -1.064,
+          "y": 0.0,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1259,17 +1264,18 @@
         {
           "beat": 343.5,
           "time": 115666.6667,
-          "x": -0.6239,
-          "y": -0.5383,
+          "x": 0.824,
+          "y": 0.0,
           "type": "direction",
           "color": "red",
-          "direction": "upright",
+          "direction": "downleft",
           "count": 1,
           "lengthMs": 0
         }
       ],
-      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
-      "templateOrientationDegrees": -90
+      "spatialLayout": "通常の左右配置",
+      "templateOrientationDegrees": -90,
+      "layoutScale": 0.8
     },
     {
       "patternId": "shut-up-dance-4",
@@ -1464,8 +1470,9 @@
           "lengthMs": 0
         }
       ],
-      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
-      "templateOrientationDegrees": -45
+      "spatialLayout": "通常の左右配置",
+      "templateOrientationDegrees": -45,
+      "layoutScale": 0.8
     },
     {
       "patternId": "avoid-double-direction",
@@ -1506,8 +1513,8 @@
         {
           "beat": 224.0,
           "time": 70756.8421,
-          "x": -0.2,
-          "y": 0.944,
+          "x": -0.944,
+          "y": -0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1517,8 +1524,8 @@
         {
           "beat": 224.5,
           "time": 70914.7368,
-          "x": -0.2,
-          "y": -0.944,
+          "x": 0.944,
+          "y": -0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -1528,8 +1535,8 @@
         {
           "beat": 225.0,
           "time": 71072.6316,
-          "x": 0.2,
-          "y": 0.944,
+          "x": -0.944,
+          "y": 0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1539,8 +1546,8 @@
         {
           "beat": 226.0,
           "time": 71388.4211,
-          "x": 0.2,
-          "y": -0.944,
+          "x": 0.944,
+          "y": 0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -1550,8 +1557,8 @@
         {
           "beat": 226.5,
           "time": 71546.3158,
-          "x": -0.2,
-          "y": 0.944,
+          "x": -0.944,
+          "y": -0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1561,8 +1568,8 @@
         {
           "beat": 227.0,
           "time": 71704.2105,
-          "x": -0.2,
-          "y": -0.944,
+          "x": 0.944,
+          "y": -0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -1572,8 +1579,8 @@
         {
           "beat": 228.0,
           "time": 72020.0,
-          "x": -0.2,
-          "y": -0.944,
+          "x": 0.944,
+          "y": -0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -1583,8 +1590,8 @@
         {
           "beat": 228.5,
           "time": 72177.8947,
-          "x": -0.2,
-          "y": 0.944,
+          "x": -0.944,
+          "y": -0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1594,8 +1601,8 @@
         {
           "beat": 229.0,
           "time": 72335.7895,
-          "x": 0.2,
-          "y": -0.944,
+          "x": 0.944,
+          "y": 0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -1605,8 +1612,8 @@
         {
           "beat": 230.0,
           "time": 72651.5789,
-          "x": 0.2,
-          "y": 0.944,
+          "x": -0.944,
+          "y": 0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1616,8 +1623,8 @@
         {
           "beat": 230.5,
           "time": 72809.4737,
-          "x": -0.2,
-          "y": -0.944,
+          "x": 0.944,
+          "y": -0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -1627,8 +1634,8 @@
         {
           "beat": 231.0,
           "time": 72967.3684,
-          "x": -0.2,
-          "y": 0.944,
+          "x": -0.944,
+          "y": -0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1636,8 +1643,9 @@
           "lengthMs": 0
         }
       ],
-      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
-      "templateOrientationDegrees": 45
+      "spatialLayout": "通常の左右配置",
+      "templateOrientationDegrees": 45,
+      "layoutScale": 0.8
     },
     {
       "patternId": "bring-it-on-3",
@@ -1678,8 +1686,8 @@
         {
           "beat": 224,
           "time": 91674.0,
-          "x": -0.096,
-          "y": -0.84,
+          "x": 0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -1689,8 +1697,8 @@
         {
           "beat": 224,
           "time": 91674.0,
-          "x": -0.096,
-          "y": 1.08,
+          "x": -1.08,
+          "y": -0.0,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1700,8 +1708,8 @@
         {
           "beat": 225,
           "time": 92049.0,
-          "x": -0.192,
-          "y": -0.84,
+          "x": 0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -1711,8 +1719,8 @@
         {
           "beat": 226,
           "time": 92424.0,
-          "x": -0.192,
-          "y": -1.08,
+          "x": 1.08,
+          "y": -0.192,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -1722,8 +1730,8 @@
         {
           "beat": 227,
           "time": 92799.0,
-          "x": -0.192,
-          "y": 0.84,
+          "x": -0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1733,8 +1741,8 @@
         {
           "beat": 227.5,
           "time": 92986.5,
-          "x": -0.192,
-          "y": 0.84,
+          "x": -0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1744,8 +1752,8 @@
         {
           "beat": 228,
           "time": 93174.0,
-          "x": -0.096,
-          "y": -1.08,
+          "x": 1.08,
+          "y": -0.0,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -1755,8 +1763,8 @@
         {
           "beat": 228,
           "time": 93174.0,
-          "x": -0.096,
-          "y": 0.84,
+          "x": -0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1766,8 +1774,8 @@
         {
           "beat": 229,
           "time": 93549.0,
-          "x": -0.192,
-          "y": 0.84,
+          "x": -0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1777,8 +1785,8 @@
         {
           "beat": 230,
           "time": 93924.0,
-          "x": -0.192,
-          "y": 1.08,
+          "x": -1.08,
+          "y": -0.192,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1788,8 +1796,8 @@
         {
           "beat": 231,
           "time": 94299.0,
-          "x": -0.192,
-          "y": -0.84,
+          "x": 0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -1799,8 +1807,8 @@
         {
           "beat": 231.5,
           "time": 94486.5,
-          "x": -0.192,
-          "y": -0.84,
+          "x": 0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -1808,8 +1816,10 @@
           "lengthMs": 0
         }
       ],
-      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
-      "templateOrientationDegrees": 180
+      "spatialLayout": "通常の左右配置",
+      "templateOrientationDegrees": 180,
+      "layoutAdaptation": "素材の拍・担当手・休符は保持。特殊配置はこの適用先の境界で移動条件を満たさないため、横配置に調整。",
+      "layoutScale": 0.8
     },
     {
       "patternId": "burning-hard-2",
@@ -1850,8 +1860,8 @@
         {
           "beat": 32.0,
           "time": 10666.6667,
-          "x": 0.2,
-          "y": 0.944,
+          "x": 0.944,
+          "y": -0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -1861,8 +1871,8 @@
         {
           "beat": 32.5,
           "time": 10833.3333,
-          "x": -0.2,
-          "y": 0.944,
+          "x": 0.944,
+          "y": 0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -1872,8 +1882,8 @@
         {
           "beat": 33.0,
           "time": 11000.0,
-          "x": 0.2,
-          "y": -0.944,
+          "x": -0.944,
+          "y": -0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1883,8 +1893,8 @@
         {
           "beat": 34.0,
           "time": 11333.3333,
-          "x": 0.2,
-          "y": 0.944,
+          "x": 0.944,
+          "y": -0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -1894,8 +1904,8 @@
         {
           "beat": 34.5,
           "time": 11500.0,
-          "x": -0.2,
-          "y": 0.944,
+          "x": 0.944,
+          "y": 0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -1905,8 +1915,8 @@
         {
           "beat": 35.0,
           "time": 11666.6667,
-          "x": -0.2,
-          "y": -0.944,
+          "x": -0.944,
+          "y": 0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1916,8 +1926,8 @@
         {
           "beat": 36.0,
           "time": 12000.0,
-          "x": 0.2,
-          "y": -0.944,
+          "x": -0.944,
+          "y": -0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1927,8 +1937,8 @@
         {
           "beat": 36.5,
           "time": 12166.6667,
-          "x": -0.2,
-          "y": -0.944,
+          "x": -0.944,
+          "y": 0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1938,8 +1948,8 @@
         {
           "beat": 37.0,
           "time": 12333.3333,
-          "x": 0.2,
-          "y": 0.944,
+          "x": 0.944,
+          "y": -0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -1949,8 +1959,8 @@
         {
           "beat": 38.0,
           "time": 12666.6667,
-          "x": 0.2,
-          "y": -0.944,
+          "x": -0.944,
+          "y": -0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1960,8 +1970,8 @@
         {
           "beat": 38.5,
           "time": 12833.3333,
-          "x": -0.2,
-          "y": -0.944,
+          "x": -0.944,
+          "y": 0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1971,17 +1981,18 @@
         {
           "beat": 39.0,
           "time": 13000.0,
-          "x": -0.2,
-          "y": 0.944,
+          "x": 0.944,
+          "y": 0.2,
           "type": "direction",
           "color": "red",
-          "direction": "upleft",
+          "direction": "upright",
           "count": 1,
           "lengthMs": 0
         }
       ],
-      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
-      "templateOrientationDegrees": -90
+      "spatialLayout": "通常の左右配置",
+      "templateOrientationDegrees": -90,
+      "layoutScale": 0.8
     },
     {
       "patternId": "burning-hard-4",
@@ -2022,8 +2033,8 @@
         {
           "beat": 128.0,
           "time": 54857.1429,
-          "x": 0.848,
-          "y": -0.2,
+          "x": 0.741,
+          "y": 0.4582,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2033,8 +2044,8 @@
         {
           "beat": 128.5,
           "time": 55071.4286,
-          "x": 0.976,
-          "y": 0.2,
+          "x": 0.5487,
+          "y": 0.8315,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2044,8 +2055,8 @@
         {
           "beat": 129.0,
           "time": 55285.7143,
-          "x": -0.848,
-          "y": -0.2,
+          "x": -0.4582,
+          "y": -0.741,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2055,8 +2066,8 @@
         {
           "beat": 130.0,
           "time": 55714.2857,
-          "x": 1.04,
-          "y": -0.2,
+          "x": 0.8768,
+          "y": 0.594,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2066,8 +2077,8 @@
         {
           "beat": 131.0,
           "time": 56142.8571,
-          "x": 0.976,
-          "y": 0.2,
+          "x": 0.5487,
+          "y": 0.8315,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2077,8 +2088,8 @@
         {
           "beat": 131.0,
           "time": 56142.8571,
-          "x": -0.976,
-          "y": 0.2,
+          "x": -0.8315,
+          "y": -0.5487,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2088,8 +2099,8 @@
         {
           "beat": 132.0,
           "time": 56571.4286,
-          "x": -0.848,
-          "y": -0.2,
+          "x": -0.741,
+          "y": 0.4582,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2099,8 +2110,8 @@
         {
           "beat": 132.5,
           "time": 56785.7143,
-          "x": -0.976,
-          "y": 0.2,
+          "x": -0.5487,
+          "y": 0.8315,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2110,8 +2121,8 @@
         {
           "beat": 133.0,
           "time": 57000.0,
-          "x": 0.848,
-          "y": -0.2,
+          "x": 0.4582,
+          "y": -0.741,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2121,8 +2132,8 @@
         {
           "beat": 134.0,
           "time": 57428.5714,
-          "x": -1.04,
-          "y": -0.2,
+          "x": -0.8768,
+          "y": 0.594,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2132,19 +2143,19 @@
         {
           "beat": 135.0,
           "time": 57857.1429,
-          "x": 0.976,
-          "y": 0.2,
+          "x": 0.8315,
+          "y": -0.5487,
           "type": "direction",
           "color": "red",
-          "direction": "up",
+          "direction": "upright",
           "count": 1,
           "lengthMs": 0
         },
         {
           "beat": 135.0,
           "time": 57857.1429,
-          "x": -0.976,
-          "y": 0.2,
+          "x": -0.5487,
+          "y": 0.8315,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2152,8 +2163,10 @@
           "lengthMs": 0
         }
       ],
-      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
-      "templateOrientationDegrees": 45
+      "spatialLayout": "斜めの受け渡し",
+      "templateOrientationDegrees": 45,
+      "layoutAdaptation": "通常配置の中で、この2小節だけ技を使う。前後を含む担当手の経路が成立。",
+      "layoutScale": 0.8
     },
     {
       "patternId": "dream-hard-3",
@@ -2194,8 +2207,8 @@
         {
           "beat": 288.0,
           "time": 90967.3684,
-          "x": -0.2,
-          "y": -0.944,
+          "x": 0.944,
+          "y": -0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2205,8 +2218,8 @@
         {
           "beat": 288.0,
           "time": 90967.3684,
-          "x": -0.2,
-          "y": 0.944,
+          "x": -0.944,
+          "y": -0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2216,8 +2229,8 @@
         {
           "beat": 289.0,
           "time": 91283.1579,
-          "x": 0.2,
-          "y": 0.944,
+          "x": -0.944,
+          "y": 0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2227,8 +2240,8 @@
         {
           "beat": 289.5,
           "time": 91441.0526,
-          "x": 0.2,
-          "y": -0.944,
+          "x": 0.944,
+          "y": 0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2238,8 +2251,8 @@
         {
           "beat": 290.0,
           "time": 91598.9474,
-          "x": -0.2,
-          "y": 0.944,
+          "x": -0.944,
+          "y": -0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2249,8 +2262,8 @@
         {
           "beat": 291.0,
           "time": 91914.7368,
-          "x": -0.2,
-          "y": -0.944,
+          "x": 0.944,
+          "y": -0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2260,8 +2273,8 @@
         {
           "beat": 292.0,
           "time": 92230.5263,
-          "x": -0.2,
-          "y": -0.944,
+          "x": 0.944,
+          "y": -0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2271,8 +2284,8 @@
         {
           "beat": 292.0,
           "time": 92230.5263,
-          "x": -0.2,
-          "y": 0.944,
+          "x": -0.944,
+          "y": -0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2282,8 +2295,8 @@
         {
           "beat": 293.0,
           "time": 92546.3158,
-          "x": 0.2,
-          "y": -0.944,
+          "x": 0.944,
+          "y": 0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2293,8 +2306,8 @@
         {
           "beat": 293.5,
           "time": 92704.2105,
-          "x": 0.2,
-          "y": 0.944,
+          "x": -0.944,
+          "y": 0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2304,8 +2317,8 @@
         {
           "beat": 294.0,
           "time": 92862.1053,
-          "x": -0.2,
-          "y": -0.944,
+          "x": 0.944,
+          "y": -0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2315,17 +2328,19 @@
         {
           "beat": 295.0,
           "time": 93177.8947,
-          "x": -0.2,
-          "y": 0.944,
+          "x": -0.944,
+          "y": -0.2,
           "type": "direction",
           "color": "blue",
-          "direction": "upleft",
+          "direction": "downleft",
           "count": 1,
           "lengthMs": 0
         }
       ],
-      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
-      "templateOrientationDegrees": 180
+      "spatialLayout": "通常の左右配置",
+      "templateOrientationDegrees": 180,
+      "layoutAdaptation": "素材の拍・担当手・休符は保持。特殊配置はこの適用先の境界で移動条件を満たさないため、横配置に調整。",
+      "layoutScale": 0.8
     },
     {
       "patternId": "lvl-expert-2",
@@ -2367,7 +2382,7 @@
           "beat": 144.0,
           "time": 61674.0,
           "x": -1.064,
-          "y": -0.0,
+          "y": 0.0,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2378,7 +2393,7 @@
           "beat": 144.5,
           "time": 61861.5,
           "x": 1.064,
-          "y": 0.0048,
+          "y": 0.0,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2388,8 +2403,8 @@
         {
           "beat": 145.0,
           "time": 62049.0,
-          "x": -0.8239,
-          "y": -0.0145,
+          "x": -0.824,
+          "y": 0.0,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2399,8 +2414,8 @@
         {
           "beat": 146.0,
           "time": 62424.0,
-          "x": 0.8221,
-          "y": 0.0556,
+          "x": 0.824,
+          "y": 0.0,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2410,8 +2425,8 @@
         {
           "beat": 146.5,
           "time": 62611.5,
-          "x": -1.0584,
-          "y": -0.1095,
+          "x": -1.064,
+          "y": 0.0,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2421,8 +2436,8 @@
         {
           "beat": 147.0,
           "time": 62799.0,
-          "x": 1.0528,
-          "y": 0.1537,
+          "x": 1.064,
+          "y": 0.0,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2432,8 +2447,8 @@
         {
           "beat": 148.0,
           "time": 63174.0,
-          "x": 1.0321,
-          "y": 0.2585,
+          "x": 1.064,
+          "y": 0.0,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2443,8 +2458,8 @@
         {
           "beat": 148.5,
           "time": 63361.5,
-          "x": -1.0156,
-          "y": -0.3173,
+          "x": -1.064,
+          "y": 0.0,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2454,8 +2469,8 @@
         {
           "beat": 149.0,
           "time": 63549.0,
-          "x": 0.7699,
-          "y": 0.2936,
+          "x": 0.824,
+          "y": 0.0,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2465,8 +2480,8 @@
         {
           "beat": 150.0,
           "time": 63924.0,
-          "x": -0.7243,
-          "y": -0.3929,
+          "x": -0.824,
+          "y": 0.0,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2476,8 +2491,8 @@
         {
           "beat": 150.5,
           "time": 64111.5,
-          "x": 0.8974,
-          "y": 0.5716,
+          "x": 1.064,
+          "y": 0.0,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2487,17 +2502,18 @@
         {
           "beat": 151.0,
           "time": 64299.0,
-          "x": -0.8541,
-          "y": -0.6345,
+          "x": -1.064,
+          "y": 0.0,
           "type": "direction",
           "color": "blue",
-          "direction": "down",
+          "direction": "downleft",
           "count": 1,
           "lengthMs": 0
         }
       ],
-      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
-      "templateOrientationDegrees": 90
+      "spatialLayout": "通常の左右配置",
+      "templateOrientationDegrees": 90,
+      "layoutScale": 0.8
     },
     {
       "patternId": "unlimited-hard-3",
@@ -2536,8 +2552,8 @@
         {
           "beat": 212.0,
           "time": 66967.3684,
-          "x": 0.8671,
-          "y": 0.4234,
+          "x": -0.944,
+          "y": -0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2547,8 +2563,8 @@
         {
           "beat": 212.5,
           "time": 67125.2632,
-          "x": -0.9607,
-          "y": -0.0907,
+          "x": 0.944,
+          "y": -0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2558,8 +2574,8 @@
         {
           "beat": 213.0,
           "time": 67283.1579,
-          "x": 0.9533,
-          "y": 0.1495,
+          "x": -0.944,
+          "y": 0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2569,8 +2585,8 @@
         {
           "beat": 214.0,
           "time": 67598.9474,
-          "x": 0.7344,
-          "y": 0.6259,
+          "x": -0.944,
+          "y": -0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2580,8 +2596,8 @@
         {
           "beat": 215.0,
           "time": 67914.7368,
-          "x": -0.6385,
-          "y": -0.7235,
+          "x": 0.944,
+          "y": 0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2591,8 +2607,8 @@
         {
           "beat": 216.0,
           "time": 68230.5263,
-          "x": -0.8089,
-          "y": -0.5261,
+          "x": 0.944,
+          "y": -0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2602,8 +2618,8 @@
         {
           "beat": 216.5,
           "time": 68388.4211,
-          "x": 0.4652,
-          "y": 0.8454,
+          "x": -0.944,
+          "y": -0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2613,8 +2629,8 @@
         {
           "beat": 217.0,
           "time": 68546.3158,
-          "x": -0.4024,
-          "y": -0.8771,
+          "x": 0.944,
+          "y": 0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2624,8 +2640,8 @@
         {
           "beat": 218.0,
           "time": 68862.1053,
-          "x": -0.6259,
-          "y": -0.7344,
+          "x": 0.944,
+          "y": -0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2635,8 +2651,8 @@
         {
           "beat": 219.0,
           "time": 69177.8947,
-          "x": 0.5232,
-          "y": 0.8108,
+          "x": -0.944,
+          "y": 0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2644,8 +2660,9 @@
           "lengthMs": 0
         }
       ],
-      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
-      "templateOrientationDegrees": 45
+      "spatialLayout": "通常の左右配置",
+      "templateOrientationDegrees": 45,
+      "layoutScale": 0.8
     },
     {
       "patternId": "unlimited-hard-4",
@@ -2684,8 +2701,8 @@
         {
           "beat": 20.0,
           "time": 6666.6667,
-          "x": 0.9008,
-          "y": 0.0912,
+          "x": 0.896,
+          "y": -0.1304,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2695,8 +2712,8 @@
         {
           "beat": 21.0,
           "time": 7000.0,
-          "x": -0.7907,
-          "y": -0.4411,
+          "x": -0.896,
+          "y": -0.1304,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2706,8 +2723,8 @@
         {
           "beat": 22.0,
           "time": 7333.3333,
-          "x": 0.7254,
-          "y": 0.5418,
+          "x": 0.896,
+          "y": 0.1304,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2717,8 +2734,8 @@
         {
           "beat": 23.0,
           "time": 7666.6667,
-          "x": 0.797,
-          "y": 0.4296,
+          "x": 0.896,
+          "y": -0.1304,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2728,8 +2745,8 @@
         {
           "beat": 23.0,
           "time": 7666.6667,
-          "x": -0.797,
-          "y": -0.4296,
+          "x": -0.896,
+          "y": 0.1304,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2739,8 +2756,8 @@
         {
           "beat": 24.0,
           "time": 8000.0,
-          "x": -0.5414,
-          "y": -0.7258,
+          "x": -0.896,
+          "y": -0.1304,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2750,8 +2767,8 @@
         {
           "beat": 25.0,
           "time": 8333.3333,
-          "x": 0.639,
-          "y": 0.6415,
+          "x": 0.896,
+          "y": -0.1304,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2761,8 +2778,8 @@
         {
           "beat": 26.0,
           "time": 8666.6667,
-          "x": -0.5418,
-          "y": -0.7254,
+          "x": -0.896,
+          "y": 0.1304,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2772,8 +2789,8 @@
         {
           "beat": 27.0,
           "time": 9000.0,
-          "x": 0.1974,
-          "y": 0.8837,
+          "x": 0.896,
+          "y": 0.1304,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2783,17 +2800,18 @@
         {
           "beat": 27.0,
           "time": 9000.0,
-          "x": -0.1974,
-          "y": -0.8837,
+          "x": -0.896,
+          "y": -0.1304,
           "type": "direction",
           "color": "blue",
-          "direction": "right",
+          "direction": "downright",
           "count": 1,
           "lengthMs": 0
         }
       ],
-      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
-      "templateOrientationDegrees": 90
+      "spatialLayout": "通常の左右配置",
+      "templateOrientationDegrees": 90,
+      "layoutScale": 0.8
     },
     {
       "patternId": "dream-hard-2",
@@ -2832,8 +2850,8 @@
         {
           "beat": 336.0,
           "time": 113166.6667,
-          "x": -0.944,
-          "y": 0.2,
+          "x": 0.944,
+          "y": -0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2843,8 +2861,8 @@
         {
           "beat": 336.0,
           "time": 113166.6667,
-          "x": 0.944,
-          "y": 0.2,
+          "x": -0.944,
+          "y": -0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2854,8 +2872,8 @@
         {
           "beat": 337.0,
           "time": 113500.0,
-          "x": 0.9474,
-          "y": -0.1833,
+          "x": -0.944,
+          "y": 0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2865,8 +2883,8 @@
         {
           "beat": 338.0,
           "time": 113833.3333,
-          "x": -0.9284,
-          "y": -0.2632,
+          "x": 0.944,
+          "y": 0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2876,8 +2894,8 @@
         {
           "beat": 339.0,
           "time": 114166.6667,
-          "x": 0.9052,
-          "y": 0.3343,
+          "x": -0.944,
+          "y": -0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2887,8 +2905,8 @@
         {
           "beat": 340.0,
           "time": 114500.0,
-          "x": -0.9643,
-          "y": -0.0354,
+          "x": 0.944,
+          "y": -0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2898,8 +2916,8 @@
         {
           "beat": 340.0,
           "time": 114500.0,
-          "x": 0.8671,
-          "y": 0.4234,
+          "x": -0.944,
+          "y": -0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2909,8 +2927,8 @@
         {
           "beat": 341.0,
           "time": 114833.3333,
-          "x": -0.8108,
-          "y": -0.5232,
+          "x": 0.944,
+          "y": 0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2920,8 +2938,8 @@
         {
           "beat": 342.0,
           "time": 115166.6667,
-          "x": 0.9251,
-          "y": 0.2743,
+          "x": -0.944,
+          "y": 0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2931,17 +2949,19 @@
         {
           "beat": 343.0,
           "time": 115500.0,
-          "x": -0.8771,
-          "y": -0.4024,
+          "x": 0.944,
+          "y": -0.2,
           "type": "direction",
           "color": "red",
-          "direction": "up",
+          "direction": "down",
           "count": 1,
           "lengthMs": 0
         }
       ],
-      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
-      "templateOrientationDegrees": -90
+      "spatialLayout": "通常の左右配置",
+      "templateOrientationDegrees": -90,
+      "layoutAdaptation": "素材の拍・担当手・休符は保持。特殊配置はこの適用先の境界で移動条件を満たさないため、横配置に調整。",
+      "layoutScale": 0.8
     },
     {
       "patternId": "avoid-face-punch",
@@ -2978,8 +2998,8 @@
         {
           "beat": 244.0,
           "time": 104571.4286,
-          "x": -0.3769,
-          "y": 0.9777,
+          "x": -1.04,
+          "y": -0.128,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2989,8 +3009,8 @@
         {
           "beat": 245.0,
           "time": 105000.0,
-          "x": 0.251,
-          "y": -1.0173,
+          "x": 1.04,
+          "y": -0.128,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -3000,8 +3020,8 @@
         {
           "beat": 246.0,
           "time": 105428.5714,
-          "x": -0.3834,
-          "y": 0.9752,
+          "x": -1.04,
+          "y": 0.128,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -3011,8 +3031,8 @@
         {
           "beat": 247.0,
           "time": 105857.1429,
-          "x": 0.7229,
-          "y": -0.7585,
+          "x": 1.04,
+          "y": 0.128,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -3022,8 +3042,8 @@
         {
           "beat": 248.0,
           "time": 106285.7143,
-          "x": 0.6449,
-          "y": -0.8259,
+          "x": 1.04,
+          "y": -0.128,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -3033,8 +3053,8 @@
         {
           "beat": 249.0,
           "time": 106714.2857,
-          "x": -0.9112,
-          "y": 0.5174,
+          "x": -1.04,
+          "y": -0.128,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -3044,8 +3064,8 @@
         {
           "beat": 250.0,
           "time": 107142.8571,
-          "x": 0.9752,
-          "y": -0.3834,
+          "x": 1.04,
+          "y": 0.128,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -3055,8 +3075,8 @@
         {
           "beat": 251.0,
           "time": 107571.4286,
-          "x": -0.9261,
-          "y": 0.4902,
+          "x": -1.04,
+          "y": 0.128,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -3064,8 +3084,9 @@
           "lengthMs": 0
         }
       ],
-      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
-      "templateOrientationDegrees": -90
+      "spatialLayout": "通常の左右配置",
+      "templateOrientationDegrees": -90,
+      "layoutScale": 0.8
     },
     {
       "patternId": "avoid-hammer",
@@ -3113,8 +3134,8 @@
         {
           "beat": 145.0,
           "time": 62049.0,
-          "x": 0.9474,
-          "y": -0.1833,
+          "x": 0.944,
+          "y": -0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -3124,8 +3145,8 @@
         {
           "beat": 146.0,
           "time": 62424.0,
-          "x": -0.9553,
-          "y": 0.1359,
+          "x": -0.944,
+          "y": 0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -3135,8 +3156,8 @@
         {
           "beat": 147.0,
           "time": 62799.0,
-          "x": 0.9052,
-          "y": 0.3343,
+          "x": 0.944,
+          "y": 0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -3146,8 +3167,8 @@
         {
           "beat": 148.0,
           "time": 63174.0,
-          "x": 0.9643,
-          "y": 0.0354,
+          "x": 0.944,
+          "y": -0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -3157,8 +3178,8 @@
         {
           "beat": 149.0,
           "time": 63549.0,
-          "x": -0.8108,
-          "y": -0.5232,
+          "x": -0.944,
+          "y": -0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -3168,8 +3189,8 @@
         {
           "beat": 150.0,
           "time": 63924.0,
-          "x": 0.7344,
-          "y": 0.6259,
+          "x": 0.944,
+          "y": 0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -3179,8 +3200,8 @@
         {
           "beat": 151.0,
           "time": 64299.0,
-          "x": -0.8771,
-          "y": -0.4024,
+          "x": -0.944,
+          "y": 0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -3188,8 +3209,9 @@
           "lengthMs": 0
         }
       ],
-      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
-      "templateOrientationDegrees": 180
+      "spatialLayout": "通常の左右配置",
+      "templateOrientationDegrees": 180,
+      "layoutScale": 0.8
     },
     {
       "patternId": "avoid-hand-clap",
@@ -3226,8 +3248,8 @@
         {
           "beat": 116.0,
           "time": 43528.0,
-          "x": 0.3769,
-          "y": 0.9777,
+          "x": 1.04,
+          "y": -0.128,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -3237,8 +3259,8 @@
         {
           "beat": 116.0,
           "time": 43528.0,
-          "x": -0.1285,
-          "y": -1.0399,
+          "x": -1.04,
+          "y": -0.128,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -3248,8 +3270,8 @@
         {
           "beat": 118.0,
           "time": 44278.0,
-          "x": -0.6084,
-          "y": -0.8531,
+          "x": -1.04,
+          "y": 0.128,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -3259,8 +3281,8 @@
         {
           "beat": 119.0,
           "time": 44653.0,
-          "x": 0.5174,
-          "y": 0.9112,
+          "x": 1.04,
+          "y": 0.128,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -3270,8 +3292,8 @@
         {
           "beat": 120.0,
           "time": 45028.0,
-          "x": 0.8259,
-          "y": 0.6449,
+          "x": 1.04,
+          "y": -0.128,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -3281,8 +3303,8 @@
         {
           "beat": 120.0,
           "time": 45028.0,
-          "x": -0.6449,
-          "y": -0.8259,
+          "x": -1.04,
+          "y": -0.128,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -3292,8 +3314,8 @@
         {
           "beat": 122.0,
           "time": 45778.0,
-          "x": 0.8531,
-          "y": 0.6084,
+          "x": 1.04,
+          "y": 0.128,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -3303,8 +3325,8 @@
         {
           "beat": 123.0,
           "time": 46153.0,
-          "x": -1.0173,
-          "y": -0.251,
+          "x": -1.04,
+          "y": 0.128,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -3312,8 +3334,9 @@
           "lengthMs": 0
         }
       ],
-      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
-      "templateOrientationDegrees": 90
+      "spatialLayout": "通常の左右配置",
+      "templateOrientationDegrees": 90,
+      "layoutScale": 0.8
     },
     {
       "patternId": "avoid-vision-block",
@@ -3350,8 +3373,8 @@
         {
           "beat": 228.0,
           "time": 97714.2857,
-          "x": -0.2,
-          "y": 1.12,
+          "x": -1.12,
+          "y": -0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -3361,8 +3384,8 @@
         {
           "beat": 229.0,
           "time": 98142.8571,
-          "x": -0.2,
-          "y": -1.12,
+          "x": 1.12,
+          "y": -0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -3372,8 +3395,8 @@
         {
           "beat": 230.0,
           "time": 98571.4286,
-          "x": 0.2,
-          "y": 1.12,
+          "x": -1.12,
+          "y": 0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -3383,8 +3406,8 @@
         {
           "beat": 231.0,
           "time": 99000.0,
-          "x": 0.2,
-          "y": -1.12,
+          "x": 1.12,
+          "y": 0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -3394,8 +3417,8 @@
         {
           "beat": 232.0,
           "time": 99428.5714,
-          "x": -0.2,
-          "y": -1.12,
+          "x": 1.12,
+          "y": -0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -3405,8 +3428,8 @@
         {
           "beat": 233.0,
           "time": 99857.1429,
-          "x": -0.2,
-          "y": 1.12,
+          "x": -1.12,
+          "y": -0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -3416,8 +3439,8 @@
         {
           "beat": 234.0,
           "time": 100285.7143,
-          "x": 0.2,
-          "y": -1.12,
+          "x": 1.12,
+          "y": 0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -3427,8 +3450,8 @@
         {
           "beat": 235.0,
           "time": 100714.2857,
-          "x": 0.2,
-          "y": 1.12,
+          "x": -1.12,
+          "y": 0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -3436,8 +3459,9 @@
           "lengthMs": 0
         }
       ],
-      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
-      "templateOrientationDegrees": 90
+      "spatialLayout": "通常の左右配置",
+      "templateOrientationDegrees": 90,
+      "layoutScale": 0.8
     },
     {
       "patternId": "burning-hard-1",
@@ -3474,8 +3498,8 @@
         {
           "beat": 216.0,
           "time": 68230.5263,
-          "x": -0.8768,
-          "y": -0.594,
+          "x": 1.04,
+          "y": -0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -3485,8 +3509,8 @@
         {
           "beat": 217.0,
           "time": 68546.3158,
-          "x": 0.4596,
-          "y": 0.9541,
+          "x": -1.04,
+          "y": -0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -3496,8 +3520,8 @@
         {
           "beat": 218.0,
           "time": 68862.1053,
-          "x": -0.2285,
-          "y": -0.8408,
+          "x": 0.848,
+          "y": 0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -3507,8 +3531,8 @@
         {
           "beat": 219.0,
           "time": 69177.8947,
-          "x": 0.489,
-          "y": 0.7211,
+          "x": -0.848,
+          "y": 0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -3518,8 +3542,8 @@
         {
           "beat": 220.0,
           "time": 69493.6842,
-          "x": 0.0587,
-          "y": 1.0574,
+          "x": -1.04,
+          "y": -0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -3529,8 +3553,8 @@
         {
           "beat": 221.0,
           "time": 69809.4737,
-          "x": -0.3481,
-          "y": -1.0002,
+          "x": 1.04,
+          "y": -0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -3540,8 +3564,8 @@
         {
           "beat": 222.0,
           "time": 70125.2632,
-          "x": 0.2567,
-          "y": 0.8326,
+          "x": -0.848,
+          "y": 0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -3551,8 +3575,8 @@
         {
           "beat": 223.0,
           "time": 70441.0526,
-          "x": 0.185,
-          "y": -0.8514,
+          "x": 0.848,
+          "y": 0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -3560,8 +3584,9 @@
           "lengthMs": 0
         }
       ],
-      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
-      "templateOrientationDegrees": 90
+      "spatialLayout": "通常の左右配置",
+      "templateOrientationDegrees": 90,
+      "layoutScale": 0.8
     },
     {
       "patternId": "burning-hard-3",
@@ -3684,8 +3709,9 @@
           "lengthMs": 0
         }
       ],
-      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
-      "templateOrientationDegrees": 180
+      "spatialLayout": "通常の左右配置",
+      "templateOrientationDegrees": 180,
+      "layoutScale": 0.8
     },
     {
       "patternId": "dream-hard-1",
@@ -3722,8 +3748,8 @@
         {
           "beat": 324.0,
           "time": 109166.6667,
-          "x": 1.04,
-          "y": 0.2,
+          "x": -1.04,
+          "y": -0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -3733,8 +3759,8 @@
         {
           "beat": 325.0,
           "time": 109500.0,
-          "x": -1.04,
-          "y": 0.2,
+          "x": 1.04,
+          "y": -0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -3744,8 +3770,8 @@
         {
           "beat": 326.0,
           "time": 109833.3333,
-          "x": 0.848,
-          "y": -0.2,
+          "x": -0.848,
+          "y": 0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -3755,8 +3781,8 @@
         {
           "beat": 327.0,
           "time": 110166.6667,
-          "x": -0.848,
-          "y": -0.2,
+          "x": 0.848,
+          "y": 0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -3766,8 +3792,8 @@
         {
           "beat": 328.0,
           "time": 110500.0,
-          "x": -1.04,
-          "y": 0.2,
+          "x": 1.04,
+          "y": -0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -3777,8 +3803,8 @@
         {
           "beat": 329.0,
           "time": 110833.3333,
-          "x": 1.04,
-          "y": 0.2,
+          "x": -1.04,
+          "y": -0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -3788,8 +3814,8 @@
         {
           "beat": 330.0,
           "time": 111166.6667,
-          "x": -0.848,
-          "y": -0.2,
+          "x": 0.848,
+          "y": 0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -3799,8 +3825,8 @@
         {
           "beat": 331.0,
           "time": 111500.0,
-          "x": 0.848,
-          "y": -0.2,
+          "x": -0.848,
+          "y": 0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -3808,8 +3834,9 @@
           "lengthMs": 0
         }
       ],
-      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
-      "templateOrientationDegrees": 45
+      "spatialLayout": "通常の左右配置",
+      "templateOrientationDegrees": 45,
+      "layoutScale": 0.8
     },
     {
       "patternId": "dream-hard-4",
@@ -3932,8 +3959,9 @@
           "lengthMs": 0
         }
       ],
-      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
-      "templateOrientationDegrees": -45
+      "spatialLayout": "通常の左右配置",
+      "templateOrientationDegrees": -45,
+      "layoutScale": 0.8
     },
     {
       "patternId": "dream-normal-2",
@@ -4014,8 +4042,8 @@
         {
           "beat": 36.0,
           "time": 13528.0,
-          "x": 0.2,
-          "y": 0.944,
+          "x": -0.2,
+          "y": -0.944,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -4025,8 +4053,8 @@
         {
           "beat": 36.0,
           "time": 13528.0,
-          "x": 0.2,
-          "y": -0.944,
+          "x": -0.2,
+          "y": 0.944,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -4036,8 +4064,8 @@
         {
           "beat": 38.0,
           "time": 14278.0,
-          "x": -0.2,
-          "y": -0.944,
+          "x": 0.2,
+          "y": 0.944,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -4047,17 +4075,19 @@
         {
           "beat": 39.0,
           "time": 14653.0,
-          "x": -0.2,
-          "y": 0.944,
+          "x": 0.2,
+          "y": -0.944,
           "type": "direction",
           "color": "red",
-          "direction": "upleft",
+          "direction": "upright",
           "count": 1,
           "lengthMs": 0
         }
       ],
-      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
-      "templateOrientationDegrees": 90
+      "spatialLayout": "縦並び",
+      "templateOrientationDegrees": 90,
+      "layoutAdaptation": "通常配置の中で、この2小節だけ技を使う。前後を含む担当手の経路が成立。",
+      "layoutScale": 0.8
     },
     {
       "patternId": "lvl-expert-1",
@@ -4094,8 +4124,8 @@
         {
           "beat": 224.0,
           "time": 91674.0,
-          "x": -0.2,
-          "y": 1.04,
+          "x": -1.04,
+          "y": -0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -4105,8 +4135,8 @@
         {
           "beat": 225.0,
           "time": 92049.0,
-          "x": -0.2,
-          "y": -1.04,
+          "x": 1.04,
+          "y": -0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -4116,8 +4146,8 @@
         {
           "beat": 226.0,
           "time": 92424.0,
-          "x": 0.2,
-          "y": 0.848,
+          "x": -0.848,
+          "y": 0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -4127,8 +4157,8 @@
         {
           "beat": 227.0,
           "time": 92799.0,
-          "x": 0.2,
-          "y": -0.848,
+          "x": 0.848,
+          "y": 0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -4138,8 +4168,8 @@
         {
           "beat": 228.0,
           "time": 93174.0,
-          "x": -0.2,
-          "y": -1.04,
+          "x": 1.04,
+          "y": -0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -4149,8 +4179,8 @@
         {
           "beat": 229.0,
           "time": 93549.0,
-          "x": -0.2,
-          "y": 1.04,
+          "x": -1.04,
+          "y": -0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -4160,8 +4190,8 @@
         {
           "beat": 230.0,
           "time": 93924.0,
-          "x": 0.2,
-          "y": -0.848,
+          "x": 0.848,
+          "y": 0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -4171,8 +4201,8 @@
         {
           "beat": 231.0,
           "time": 94299.0,
-          "x": 0.2,
-          "y": 0.848,
+          "x": -0.848,
+          "y": 0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -4180,8 +4210,9 @@
           "lengthMs": 0
         }
       ],
-      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
-      "templateOrientationDegrees": 180
+      "spatialLayout": "通常の左右配置",
+      "templateOrientationDegrees": 180,
+      "layoutScale": 0.8
     },
     {
       "patternId": "lvl-expert-3",
@@ -4218,8 +4249,8 @@
         {
           "beat": 64.0,
           "time": 24028.0,
-          "x": 1.12,
-          "y": 0.2,
+          "x": -1.12,
+          "y": -0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -4229,8 +4260,8 @@
         {
           "beat": 65.0,
           "time": 24403.0,
-          "x": -1.12,
-          "y": 0.2,
+          "x": 1.12,
+          "y": -0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -4240,8 +4271,8 @@
         {
           "beat": 66.0,
           "time": 24778.0,
-          "x": 1.12,
-          "y": -0.2,
+          "x": -1.12,
+          "y": 0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -4251,8 +4282,8 @@
         {
           "beat": 67.0,
           "time": 25153.0,
-          "x": -1.12,
-          "y": -0.2,
+          "x": 1.12,
+          "y": 0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -4262,8 +4293,8 @@
         {
           "beat": 68.0,
           "time": 25528.0,
-          "x": -1.12,
-          "y": 0.2,
+          "x": 1.12,
+          "y": -0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -4273,8 +4304,8 @@
         {
           "beat": 69.0,
           "time": 25903.0,
-          "x": 1.12,
-          "y": 0.2,
+          "x": -1.12,
+          "y": -0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -4284,8 +4315,8 @@
         {
           "beat": 70.0,
           "time": 26278.0,
-          "x": -1.12,
-          "y": -0.2,
+          "x": 1.12,
+          "y": 0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -4295,8 +4326,8 @@
         {
           "beat": 71.0,
           "time": 26653.0,
-          "x": 1.12,
-          "y": -0.2,
+          "x": -1.12,
+          "y": 0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -4304,8 +4335,9 @@
           "lengthMs": 0
         }
       ],
-      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
-      "templateOrientationDegrees": -45
+      "spatialLayout": "通常の左右配置",
+      "templateOrientationDegrees": -45,
+      "layoutScale": 0.8
     },
     {
       "patternId": "unlimited-hard-1",
@@ -4342,8 +4374,8 @@
         {
           "beat": 96.0,
           "time": 30335.7895,
-          "x": -0.1304,
-          "y": -0.896,
+          "x": 0.896,
+          "y": -0.1304,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -4353,8 +4385,8 @@
         {
           "beat": 97.0,
           "time": 30651.5789,
-          "x": -0.1304,
-          "y": 0.896,
+          "x": -0.896,
+          "y": -0.1304,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -4364,8 +4396,8 @@
         {
           "beat": 98.0,
           "time": 30967.3684,
-          "x": 0.1304,
-          "y": -0.896,
+          "x": 0.896,
+          "y": 0.1304,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -4375,8 +4407,8 @@
         {
           "beat": 99.0,
           "time": 31283.1579,
-          "x": 0.1304,
-          "y": 0.896,
+          "x": -0.896,
+          "y": 0.1304,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -4386,8 +4418,8 @@
         {
           "beat": 100.0,
           "time": 31598.9474,
-          "x": -0.1304,
-          "y": 0.896,
+          "x": -0.896,
+          "y": -0.1304,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -4397,8 +4429,8 @@
         {
           "beat": 101.0,
           "time": 31914.7368,
-          "x": -0.1304,
-          "y": -0.896,
+          "x": 0.896,
+          "y": -0.1304,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -4408,8 +4440,8 @@
         {
           "beat": 102.0,
           "time": 32230.5263,
-          "x": 0.1304,
-          "y": 0.896,
+          "x": -0.896,
+          "y": 0.1304,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -4419,8 +4451,8 @@
         {
           "beat": 103.0,
           "time": 32546.3158,
-          "x": 0.1304,
-          "y": -0.896,
+          "x": 0.896,
+          "y": 0.1304,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -4428,8 +4460,9 @@
           "lengthMs": 0
         }
       ],
-      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
-      "templateOrientationDegrees": -90
+      "spatialLayout": "通常の左右配置",
+      "templateOrientationDegrees": -90,
+      "layoutScale": 0.8
     },
     {
       "patternId": "unlimited-hard-2",
@@ -4466,8 +4499,8 @@
         {
           "beat": 32.0,
           "time": 10666.6667,
-          "x": 0.1304,
-          "y": -0.896,
+          "x": -0.896,
+          "y": -0.1304,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -4477,8 +4510,8 @@
         {
           "beat": 33.0,
           "time": 11000.0,
-          "x": 0.1304,
-          "y": 0.896,
+          "x": 0.896,
+          "y": -0.1304,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -4488,8 +4521,8 @@
         {
           "beat": 34.0,
           "time": 11333.3333,
-          "x": -0.1304,
-          "y": 0.896,
+          "x": 0.896,
+          "y": 0.1304,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -4499,8 +4532,8 @@
         {
           "beat": 35.0,
           "time": 11666.6667,
-          "x": -0.1304,
-          "y": -0.896,
+          "x": -0.896,
+          "y": 0.1304,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -4510,8 +4543,8 @@
         {
           "beat": 36.0,
           "time": 12000.0,
-          "x": 0.1304,
-          "y": 0.896,
+          "x": 0.896,
+          "y": -0.1304,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -4521,8 +4554,8 @@
         {
           "beat": 37.0,
           "time": 12333.3333,
-          "x": 0.1304,
-          "y": -0.896,
+          "x": -0.896,
+          "y": -0.1304,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -4532,8 +4565,8 @@
         {
           "beat": 38.0,
           "time": 12666.6667,
-          "x": -0.1304,
-          "y": -0.896,
+          "x": -0.896,
+          "y": 0.1304,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -4543,8 +4576,8 @@
         {
           "beat": 39.0,
           "time": 13000.0,
-          "x": -0.1304,
-          "y": 0.896,
+          "x": 0.896,
+          "y": 0.1304,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -4552,8 +4585,9 @@
           "lengthMs": 0
         }
       ],
-      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
-      "templateOrientationDegrees": 180
+      "spatialLayout": "通常の左右配置",
+      "templateOrientationDegrees": 180,
+      "layoutScale": 0.8
     },
     {
       "patternId": "bring-it-on-2",
@@ -4588,8 +4622,8 @@
         {
           "beat": 308,
           "time": 132000.0,
-          "x": 0.3903,
-          "y": -0.7682,
+          "x": -0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -4599,8 +4633,8 @@
         {
           "beat": 309,
           "time": 132428.5714,
-          "x": 0.5642,
-          "y": -0.9407,
+          "x": -1.08,
+          "y": -0.192,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -4610,8 +4644,8 @@
         {
           "beat": 310.5,
           "time": 133071.4286,
-          "x": -0.5802,
-          "y": 0.9109,
+          "x": 1.08,
+          "y": 0.0,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -4621,8 +4655,8 @@
         {
           "beat": 312,
           "time": 133714.2857,
-          "x": -0.4582,
-          "y": 0.7297,
+          "x": 0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -4632,8 +4666,8 @@
         {
           "beat": 313,
           "time": 134142.8571,
-          "x": -0.7525,
-          "y": 0.7981,
+          "x": 1.08,
+          "y": -0.192,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -4643,8 +4677,8 @@
         {
           "beat": 314.5,
           "time": 134785.7143,
-          "x": 0.982,
-          "y": -0.4495,
+          "x": -1.08,
+          "y": 0.0,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -4652,8 +4686,9 @@
           "lengthMs": 0
         }
       ],
-      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
-      "templateOrientationDegrees": -90
+      "spatialLayout": "通常の左右配置",
+      "templateOrientationDegrees": -90,
+      "layoutScale": 0.8
     },
     {
       "patternId": "avoid-central-wall",
@@ -4686,8 +4721,8 @@
         {
           "beat": 304.0,
           "time": 130285.7143,
-          "x": 0.1304,
-          "y": -0.896,
+          "x": -0.896,
+          "y": -0.1304,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -4697,8 +4732,8 @@
         {
           "beat": 306.0,
           "time": 131142.8571,
-          "x": 0.0697,
-          "y": 0.9028,
+          "x": 0.896,
+          "y": -0.1304,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -4708,8 +4743,8 @@
         {
           "beat": 308.0,
           "time": 132000.0,
-          "x": -0.0912,
-          "y": 0.9008,
+          "x": 0.896,
+          "y": -0.1304,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -4719,8 +4754,8 @@
         {
           "beat": 310.0,
           "time": 132857.1429,
-          "x": 0.5418,
-          "y": -0.7254,
+          "x": -0.896,
+          "y": -0.1304,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -4728,8 +4763,9 @@
           "lengthMs": 0
         }
       ],
-      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
-      "templateOrientationDegrees": 180
+      "spatialLayout": "通常の左右配置",
+      "templateOrientationDegrees": 180,
+      "layoutScale": 0.8
     },
     {
       "patternId": "bring-it-on-1",
@@ -4762,8 +4798,8 @@
         {
           "beat": 21,
           "time": 7903.0,
-          "x": -0.9407,
-          "y": -0.5642,
+          "x": -1.08,
+          "y": -0.192,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -4773,8 +4809,8 @@
         {
           "beat": 23,
           "time": 8653.0,
-          "x": -0.5598,
-          "y": -0.655,
+          "x": -0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -4784,8 +4820,8 @@
         {
           "beat": 25,
           "time": 9403.0,
-          "x": 0.7981,
-          "y": 0.7525,
+          "x": 1.08,
+          "y": -0.192,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -4795,8 +4831,8 @@
         {
           "beat": 27,
           "time": 10153.0,
-          "x": 0.4787,
-          "y": 0.7165,
+          "x": 0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -4804,8 +4840,9 @@
           "lengthMs": 0
         }
       ],
-      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
-      "templateOrientationDegrees": 90
+      "spatialLayout": "通常の左右配置",
+      "templateOrientationDegrees": 90,
+      "layoutScale": 0.8
     },
     {
       "patternId": "dream-normal-1",
@@ -4838,8 +4875,8 @@
         {
           "beat": 160.0,
           "time": 53333.3333,
-          "x": -0.2,
-          "y": -0.944,
+          "x": 0.944,
+          "y": -0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -4849,8 +4886,8 @@
         {
           "beat": 162.0,
           "time": 54000.0,
-          "x": -0.2,
-          "y": 0.944,
+          "x": -0.944,
+          "y": -0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -4860,8 +4897,8 @@
         {
           "beat": 164.0,
           "time": 54666.6667,
-          "x": -0.2,
-          "y": 0.944,
+          "x": -0.944,
+          "y": -0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -4871,8 +4908,8 @@
         {
           "beat": 166.0,
           "time": 55333.3333,
-          "x": -0.2,
-          "y": -0.944,
+          "x": 0.944,
+          "y": -0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -4880,8 +4917,9 @@
           "lengthMs": 0
         }
       ],
-      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
-      "templateOrientationDegrees": 90
+      "spatialLayout": "通常の左右配置",
+      "templateOrientationDegrees": 90,
+      "layoutScale": 0.8
     },
     {
       "patternId": "dream-normal-3",
@@ -4914,8 +4952,8 @@
         {
           "beat": 320.0,
           "time": 101072.6316,
-          "x": 0.848,
-          "y": 0.2,
+          "x": -0.848,
+          "y": -0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -4925,8 +4963,8 @@
         {
           "beat": 322.0,
           "time": 101704.2105,
-          "x": 0.976,
-          "y": -0.2,
+          "x": -0.976,
+          "y": 0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -4936,8 +4974,8 @@
         {
           "beat": 324.0,
           "time": 102335.7895,
-          "x": -0.848,
-          "y": 0.2,
+          "x": 0.848,
+          "y": -0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -4947,8 +4985,8 @@
         {
           "beat": 326.0,
           "time": 102967.3684,
-          "x": -0.976,
-          "y": -0.2,
+          "x": 0.976,
+          "y": 0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -4956,8 +4994,9 @@
           "lengthMs": 0
         }
       ],
-      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
-      "templateOrientationDegrees": 180
+      "spatialLayout": "通常の左右配置",
+      "templateOrientationDegrees": 180,
+      "layoutScale": 0.8
     },
     {
       "patternId": "dream-normal-4",
@@ -4990,8 +5029,8 @@
         {
           "beat": 200.0,
           "time": 82674.0,
-          "x": -0.944,
-          "y": 0.144,
+          "x": 0.944,
+          "y": -0.144,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -5001,8 +5040,8 @@
         {
           "beat": 200.0,
           "time": 82674.0,
-          "x": 0.944,
-          "y": 0.144,
+          "x": -0.944,
+          "y": -0.144,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -5012,8 +5051,8 @@
         {
           "beat": 204.0,
           "time": 84174.0,
-          "x": -0.944,
-          "y": 0.144,
+          "x": 0.944,
+          "y": -0.144,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -5023,8 +5062,8 @@
         {
           "beat": 204.0,
           "time": 84174.0,
-          "x": 0.944,
-          "y": 0.144,
+          "x": -0.944,
+          "y": -0.144,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -5032,8 +5071,9 @@
           "lengthMs": 0
         }
       ],
-      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
-      "templateOrientationDegrees": -90
+      "spatialLayout": "通常の左右配置",
+      "templateOrientationDegrees": -90,
+      "layoutScale": 0.8
     },
     {
       "patternId": "elixia-hard-2",
@@ -5072,8 +5112,8 @@
         {
           "beat": 160.0,
           "time": 62403.0,
-          "x": 0.096,
-          "y": 1.04,
+          "x": -1.04,
+          "y": 0.096,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -5083,8 +5123,8 @@
         {
           "beat": 161.0,
           "time": 62903.0,
-          "x": -0.224,
-          "y": -0.84,
+          "x": 0.84,
+          "y": -0.224,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -5094,8 +5134,8 @@
         {
           "beat": 162.0,
           "time": 63403.0,
-          "x": -0.224,
-          "y": 0.84,
+          "x": -0.84,
+          "y": -0.224,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -5105,8 +5145,8 @@
         {
           "beat": 163.0,
           "time": 63903.0,
-          "x": 0.096,
-          "y": -1.08,
+          "x": 1.08,
+          "y": 0.096,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -5116,8 +5156,8 @@
         {
           "beat": 163.5,
           "time": 64153.0,
-          "x": 0.096,
-          "y": 1.04,
+          "x": -1.04,
+          "y": 0.096,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -5127,8 +5167,8 @@
         {
           "beat": 164.0,
           "time": 64403.0,
-          "x": 0.096,
-          "y": -1.04,
+          "x": 1.04,
+          "y": 0.096,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -5138,8 +5178,8 @@
         {
           "beat": 165.0,
           "time": 64903.0,
-          "x": -0.224,
-          "y": 0.84,
+          "x": -0.84,
+          "y": -0.224,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -5149,8 +5189,8 @@
         {
           "beat": 166.0,
           "time": 65403.0,
-          "x": -0.224,
-          "y": -0.84,
+          "x": 0.84,
+          "y": -0.224,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -5160,8 +5200,8 @@
         {
           "beat": 167.0,
           "time": 65903.0,
-          "x": 0.096,
-          "y": 1.08,
+          "x": -1.08,
+          "y": 0.096,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -5171,17 +5211,18 @@
         {
           "beat": 167.5,
           "time": 66153.0,
-          "x": 0.096,
-          "y": -1.04,
+          "x": 1.04,
+          "y": 0.096,
           "type": "direction",
           "color": "red",
-          "direction": "downright",
+          "direction": "upright",
           "count": 1,
           "lengthMs": 0
         }
       ],
-      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
-      "templateOrientationDegrees": 180
+      "spatialLayout": "通常の左右配置",
+      "templateOrientationDegrees": 180,
+      "layoutScale": 0.8
     },
     {
       "patternId": "elixia-hard-3",
@@ -5231,8 +5272,8 @@
         {
           "beat": 144.5,
           "time": 54653.0,
-          "x": 1.0804,
-          "y": 0.0911,
+          "x": 1.08,
+          "y": 0.096,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -5242,8 +5283,8 @@
         {
           "beat": 145.5,
           "time": 55153.0,
-          "x": -1.0355,
-          "y": 0.1363,
+          "x": -1.04,
+          "y": 0.096,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -5253,8 +5294,8 @@
         {
           "beat": 146.5,
           "time": 55653.0,
-          "x": 0.8125,
-          "y": -0.3092,
+          "x": 0.84,
+          "y": -0.224,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -5264,8 +5305,8 @@
         {
           "beat": 147.5,
           "time": 56153.0,
-          "x": -0.8673,
-          "y": -0.0591,
+          "x": -0.84,
+          "y": -0.224,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -5275,8 +5316,8 @@
         {
           "beat": 148.0,
           "time": 56403.0,
-          "x": -0.8693,
-          "y": -0.0132,
+          "x": -0.84,
+          "y": -0.224,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -5286,8 +5327,8 @@
         {
           "beat": 148.5,
           "time": 56653.0,
-          "x": -1.0022,
-          "y": 0.4137,
+          "x": -1.08,
+          "y": 0.096,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -5297,8 +5338,8 @@
         {
           "beat": 149.5,
           "time": 57153.0,
-          "x": 0.9856,
-          "y": -0.3455,
+          "x": 1.04,
+          "y": 0.096,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -5308,8 +5349,8 @@
         {
           "beat": 150.5,
           "time": 57653.0,
-          "x": -0.8288,
-          "y": 0.2623,
+          "x": -0.84,
+          "y": -0.224,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -5319,8 +5360,8 @@
         {
           "beat": 151.5,
           "time": 58153.0,
-          "x": 0.4897,
-          "y": -0.7183,
+          "x": 0.84,
+          "y": -0.224,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -5328,8 +5369,9 @@
           "lengthMs": 0
         }
       ],
-      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
-      "templateOrientationDegrees": -90
+      "spatialLayout": "通常の左右配置",
+      "templateOrientationDegrees": -90,
+      "layoutScale": 0.8
     },
     {
       "patternId": "elixia-hard-1",
@@ -5366,8 +5408,8 @@
         {
           "beat": 160.0,
           "time": 62403.0,
-          "x": -0.224,
-          "y": -0.84,
+          "x": 0.84,
+          "y": -0.224,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -5377,8 +5419,8 @@
         {
           "beat": 161.0,
           "time": 62903.0,
-          "x": 0.096,
-          "y": 1.04,
+          "x": -1.04,
+          "y": 0.096,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -5388,8 +5430,8 @@
         {
           "beat": 162.0,
           "time": 63403.0,
-          "x": 0.096,
-          "y": -1.08,
+          "x": 1.08,
+          "y": 0.096,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -5399,8 +5441,8 @@
         {
           "beat": 163.0,
           "time": 63903.0,
-          "x": -0.224,
-          "y": 0.84,
+          "x": -0.84,
+          "y": -0.224,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -5410,8 +5452,8 @@
         {
           "beat": 164.0,
           "time": 64403.0,
-          "x": -0.224,
-          "y": 0.84,
+          "x": -0.84,
+          "y": -0.224,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -5421,8 +5463,8 @@
         {
           "beat": 165.0,
           "time": 64903.0,
-          "x": 0.096,
-          "y": -1.04,
+          "x": 1.04,
+          "y": 0.096,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -5432,8 +5474,8 @@
         {
           "beat": 166.0,
           "time": 65403.0,
-          "x": 0.096,
-          "y": 1.08,
+          "x": -1.08,
+          "y": 0.096,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -5443,8 +5485,8 @@
         {
           "beat": 167.0,
           "time": 65903.0,
-          "x": -0.224,
-          "y": -0.84,
+          "x": 0.84,
+          "y": -0.224,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -5452,8 +5494,9 @@
           "lengthMs": 0
         }
       ],
-      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
-      "templateOrientationDegrees": 90
+      "spatialLayout": "通常の左右配置",
+      "templateOrientationDegrees": 90,
+      "layoutScale": 0.8
     },
     {
       "patternId": "there-normal-2",
@@ -5534,8 +5577,8 @@
         {
           "beat": 100.0,
           "time": 42857.1429,
-          "x": -0.128,
-          "y": -1.04,
+          "x": 0.128,
+          "y": 1.04,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -5545,8 +5588,8 @@
         {
           "beat": 100.0,
           "time": 42857.1429,
-          "x": -0.128,
-          "y": 1.04,
+          "x": 0.128,
+          "y": -1.04,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -5556,8 +5599,8 @@
         {
           "beat": 102.0,
           "time": 43714.2857,
-          "x": 0.128,
-          "y": -1.04,
+          "x": -0.128,
+          "y": 1.04,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -5567,8 +5610,8 @@
         {
           "beat": 102.0,
           "time": 43714.2857,
-          "x": 0.128,
-          "y": 1.04,
+          "x": -0.128,
+          "y": -1.04,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -5576,8 +5619,10 @@
           "lengthMs": 0
         }
       ],
-      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
-      "templateOrientationDegrees": -90
+      "spatialLayout": "縦並び",
+      "templateOrientationDegrees": -90,
+      "layoutAdaptation": "通常配置の中で、この2小節だけ技を使う。前後を含む担当手の経路が成立。",
+      "layoutScale": 0.8
     },
     {
       "patternId": "there-normal-3",
@@ -5652,8 +5697,9 @@
           "lengthMs": 0
         }
       ],
-      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
-      "templateOrientationDegrees": 180
+      "spatialLayout": "通常の左右配置",
+      "templateOrientationDegrees": 180,
+      "layoutScale": 0.8
     },
     {
       "patternId": "there-normal-1",
@@ -5684,8 +5730,8 @@
         {
           "beat": 242.0,
           "time": 103714.2857,
-          "x": -0.2073,
-          "y": 0.9321,
+          "x": -0.944,
+          "y": -0.144,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -5695,8 +5741,8 @@
         {
           "beat": 246.0,
           "time": 105428.5714,
-          "x": 0.3235,
-          "y": -0.8984,
+          "x": 0.944,
+          "y": -0.144,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -5704,8 +5750,9 @@
           "lengthMs": 0
         }
       ],
-      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
-      "templateOrientationDegrees": 90
+      "spatialLayout": "通常の左右配置",
+      "templateOrientationDegrees": 90,
+      "layoutScale": 0.8
     },
     {
       "patternId": "beat-hard-3",
@@ -5742,8 +5789,8 @@
         {
           "beat": 64,
           "time": 24024.0,
-          "x": 0.9,
-          "y": 0.45,
+          "x": 0.72,
+          "y": 0.36,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -5753,8 +5800,8 @@
         {
           "beat": 65,
           "time": 24399.0,
-          "x": -0.2,
-          "y": -0.9,
+          "x": -0.16,
+          "y": -0.72,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -5764,8 +5811,8 @@
         {
           "beat": 66,
           "time": 24774.0,
-          "x": -0.9,
-          "y": 0.45,
+          "x": -0.72,
+          "y": 0.36,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -5775,8 +5822,8 @@
         {
           "beat": 67,
           "time": 25149.0,
-          "x": 0.2,
-          "y": 0.9,
+          "x": 0.16,
+          "y": 0.72,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -5786,8 +5833,8 @@
         {
           "beat": 68,
           "time": 25524.0,
-          "x": -0.9,
-          "y": 0.45,
+          "x": -0.72,
+          "y": 0.36,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -5797,8 +5844,8 @@
         {
           "beat": 69,
           "time": 25899.0,
-          "x": 0.2,
-          "y": -0.9,
+          "x": 0.16,
+          "y": -0.72,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -5808,8 +5855,8 @@
         {
           "beat": 70,
           "time": 26274.0,
-          "x": 0.9,
-          "y": 0.45,
+          "x": 0.72,
+          "y": 0.36,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -5819,15 +5866,18 @@
         {
           "beat": 71,
           "time": 26649.0,
-          "x": -0.2,
-          "y": 0.9,
+          "x": -0.16,
+          "y": 0.72,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
           "lengthMs": 0
         }
-      ]
+      ],
+      "spatialLayout": "片手の2打を斜めで折り返す",
+      "layoutAdaptation": "通常配置の中で、この2小節だけ技を使う。前後を含む担当手の経路が成立。",
+      "layoutScale": 0.8
     },
     {
       "patternId": "beat-hard-1",
@@ -5864,8 +5914,8 @@
         {
           "beat": 68,
           "time": 29142.8571,
-          "x": -0.35,
-          "y": 1.05,
+          "x": 0.96,
+          "y": 0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -5875,8 +5925,8 @@
         {
           "beat": 69,
           "time": 29571.4286,
-          "x": -0.35,
-          "y": -1.05,
+          "x": -0.96,
+          "y": -0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -5886,8 +5936,8 @@
         {
           "beat": 70,
           "time": 30000.0,
-          "x": 0.1,
-          "y": 0.95,
+          "x": 0.88,
+          "y": -0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -5897,8 +5947,8 @@
         {
           "beat": 71,
           "time": 30428.5714,
-          "x": 0.1,
-          "y": -0.95,
+          "x": -0.88,
+          "y": 0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -5908,8 +5958,8 @@
         {
           "beat": 72,
           "time": 30857.1429,
-          "x": 0.35,
-          "y": 1.05,
+          "x": -0.96,
+          "y": 0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -5919,8 +5969,8 @@
         {
           "beat": 73,
           "time": 31285.7143,
-          "x": 0.35,
-          "y": -1.05,
+          "x": 0.96,
+          "y": -0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -5930,8 +5980,8 @@
         {
           "beat": 74,
           "time": 31714.2857,
-          "x": -0.1,
-          "y": 0.95,
+          "x": -0.88,
+          "y": -0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -5941,15 +5991,17 @@
         {
           "beat": 75,
           "time": 32142.8571,
-          "x": -0.1,
-          "y": -0.95,
+          "x": 0.88,
+          "y": 0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
           "count": 1,
           "lengthMs": 0
         }
-      ]
+      ],
+      "spatialLayout": "左右の交互と小さな上下動",
+      "layoutScale": 0.8
     },
     {
       "patternId": "beat-hard-2",
@@ -5984,8 +6036,8 @@
         {
           "beat": 56,
           "time": 21024.0,
-          "x": 1.05,
-          "y": -0.65,
+          "x": 0.96,
+          "y": 0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -5995,8 +6047,8 @@
         {
           "beat": 56,
           "time": 21024.0,
-          "x": -1.05,
-          "y": 0.65,
+          "x": -0.96,
+          "y": 0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -6006,8 +6058,8 @@
         {
           "beat": 59,
           "time": 22149.0,
-          "x": -0.55,
-          "y": -0.5,
+          "x": -0.88,
+          "y": -0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -6017,8 +6069,8 @@
         {
           "beat": 60,
           "time": 22524.0,
-          "x": 1.05,
-          "y": 0.65,
+          "x": 0.96,
+          "y": 0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -6028,8 +6080,8 @@
         {
           "beat": 60,
           "time": 22524.0,
-          "x": -1.05,
-          "y": -0.65,
+          "x": -0.96,
+          "y": 0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -6039,15 +6091,17 @@
         {
           "beat": 63,
           "time": 23649.0,
-          "x": 0.55,
-          "y": -0.5,
+          "x": 0.88,
+          "y": -0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
           "count": 1,
           "lengthMs": 0
         }
-      ]
+      ],
+      "spatialLayout": "横の両手アクセントから単発へ",
+      "layoutScale": 0.8
     },
     {
       "patternId": "escape-normal-2",
@@ -6080,8 +6134,8 @@
         {
           "beat": 304,
           "time": 96020.0,
-          "x": 1.0,
-          "y": 0.5,
+          "x": 0.8,
+          "y": 0.4,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -6091,8 +6145,8 @@
         {
           "beat": 306,
           "time": 96651.5789,
-          "x": -1.0,
-          "y": -0.5,
+          "x": -0.8,
+          "y": -0.4,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -6102,8 +6156,8 @@
         {
           "beat": 308,
           "time": 97283.1579,
-          "x": -1.0,
-          "y": 0.5,
+          "x": -0.8,
+          "y": 0.4,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -6113,15 +6167,18 @@
         {
           "beat": 310,
           "time": 97914.7368,
-          "x": 1.0,
-          "y": -0.5,
+          "x": 0.8,
+          "y": -0.4,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
           "lengthMs": 0
         }
-      ]
+      ],
+      "spatialLayout": "左右反転した交互",
+      "layoutAdaptation": "通常配置の中で、この2小節だけ技を使う。前後を含む担当手の経路が成立。",
+      "layoutScale": 0.8
     },
     {
       "patternId": "escape-normal-3",
@@ -6154,8 +6211,8 @@
         {
           "beat": 80,
           "time": 34285.7143,
-          "x": 0.65,
-          "y": 0.85,
+          "x": 0.52,
+          "y": 0.68,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -6165,8 +6222,8 @@
         {
           "beat": 83,
           "time": 35571.4286,
-          "x": 0.65,
-          "y": -0.85,
+          "x": 0.52,
+          "y": -0.68,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -6176,8 +6233,8 @@
         {
           "beat": 84,
           "time": 36000.0,
-          "x": -0.65,
-          "y": 0.85,
+          "x": -0.52,
+          "y": 0.68,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -6187,15 +6244,18 @@
         {
           "beat": 87,
           "time": 37285.7143,
-          "x": -0.65,
-          "y": -0.85,
+          "x": -0.52,
+          "y": -0.68,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
           "lengthMs": 0
         }
-      ]
+      ],
+      "spatialLayout": "同じ側の上下を間隔を空けて渡す",
+      "layoutAdaptation": "通常配置の中で、この2小節だけ技を使う。前後を含む担当手の経路が成立。",
+      "layoutScale": 0.8
     },
     {
       "patternId": "escape-normal-1",
@@ -6226,8 +6286,8 @@
         {
           "beat": 184,
           "time": 76674.0,
-          "x": 0.25,
-          "y": -1.05,
+          "x": -0.96,
+          "y": -0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -6237,33 +6297,40 @@
         {
           "beat": 188,
           "time": 78174.0,
-          "x": -0.25,
-          "y": -1.05,
+          "x": 0.96,
+          "y": -0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
           "count": 1,
           "lengthMs": 0
         }
-      ]
+      ],
+      "spatialLayout": "単発タップと余白",
+      "layoutScale": 0.8
     }
   ],
   "inputChartHashes": {
-    "Assets/StreamingAssets/Songs/ManicSonic/chart_easy.json": "6f92741208c530d5ce7c09918847f2e50dfada10aa7df1a1d3a25c989c59d272",
-    "Assets/StreamingAssets/Songs/ManicSonic/chart_normal.json": "972632378108a05424a722b50bcf4d1bbeec4fe2255442e729d0133130f29556",
-    "Assets/StreamingAssets/Songs/ManicSonic/chart_hard.json": "2fb0f63d015fd32bd6e3a371b9e8606d0d952191c21776e46bf7e5d64303cb3b",
-    "Assets/StreamingAssets/Songs/escapade/chart_easy.json": "f365bc5cdf37af87b9749bb742d94de20cc656257c0495b759103d7cab0a23ad",
-    "Assets/StreamingAssets/Songs/escapade/chart_normal.json": "df8104b62588e12a2039ee981a1c5302f5f4f0e81ba2137973d3f3e9a9a676fa",
-    "Assets/StreamingAssets/Songs/escapade/chart_hard.json": "088bf1a344d17934e4dc716dcd633e4a8b8f479d15f08f4258134c25bfb9b6eb",
-    "Assets/StreamingAssets/Songs/logic/chart_easy.json": "709633ce37c7102c0cd5ff21b1a964c99015799afd8bc8e1e88675195b19bc76",
-    "Assets/StreamingAssets/Songs/logic/chart_normal.json": "3b402289c07de404db4d256f26d76dfe955ce593b4faacad5fb7eabc2a18764b",
-    "Assets/StreamingAssets/Songs/logic/chart_hard.json": "8c68a1db7ced452514a36f60a44e849184960ae20a3652ed55c00e7a535c9efe",
-    "Assets/StreamingAssets/Songs/BenkyouRemaster/chart_easy.json": "38557664033a566857f9af43832a652d81fb70dc980609e66c46337ddd0eeab1",
-    "Assets/StreamingAssets/Songs/BenkyouRemaster/chart_normal.json": "d743b6efa4d02b0b12e546b758accc53e9c0fee7183117ed977d1c55da56562b",
-    "Assets/StreamingAssets/Songs/BenkyouRemaster/chart_hard.json": "94c263b50b9091ad18d8803dd1273fc525b377ce7ddd19fbf7deac0c1d79f5a9",
-    "Assets/StreamingAssets/Songs/Aobasou/chart_easy.json": "9c32ba1a2dd85ed4c2f84a24dacf843cab41cc719288414b8c920a58604aec45",
-    "Assets/StreamingAssets/Songs/Aobasou/chart_normal.json": "f21908596da5c5151605410a5bcaa05655db83bd8e36f83cc81853727456d699",
-    "Assets/StreamingAssets/Songs/Aobasou/chart_hard.json": "1b402b268c7ae7750a635f3c6ccc4baf4ee8318f280730aa1122430abad6e406"
+    "Assets/StreamingAssets/Songs/ManicSonic/chart_easy.json": "8fc1ea4a6278721dfe474295e9126dd890b3289eb5c2e77e7cf2ff5f2dfc8570",
+    "Assets/StreamingAssets/Songs/ManicSonic/chart_normal.json": "f22f055c8fe8c81be8107ee754a50e6464a7b02b9802cca2fee1da3664e6476b",
+    "Assets/StreamingAssets/Songs/ManicSonic/chart.json": "f22f055c8fe8c81be8107ee754a50e6464a7b02b9802cca2fee1da3664e6476b",
+    "Assets/StreamingAssets/Songs/ManicSonic/chart_hard.json": "bdda2431e8d0f152f11f256693fc2b108460e0cd806a3d7f2ffe162a2c5dd781",
+    "Assets/StreamingAssets/Songs/escapade/chart_easy.json": "67dde34566e0e1755ffd20c5ceb2af08793842bc3bc19e311cf23b5d629e2d20",
+    "Assets/StreamingAssets/Songs/escapade/chart_normal.json": "83f2c776baffe870ae5fd4317583c6656a1fd61a46dbf2b5e6567cf24babb022",
+    "Assets/StreamingAssets/Songs/escapade/chart.json": "83f2c776baffe870ae5fd4317583c6656a1fd61a46dbf2b5e6567cf24babb022",
+    "Assets/StreamingAssets/Songs/escapade/chart_hard.json": "ae464dc9b97a1ae96d128d813b3e24c506b4f1a278fb492ae47a2ac6c99b57e2",
+    "Assets/StreamingAssets/Songs/logic/chart_easy.json": "fd362bff5ae9fe4dfbe8ff7e5d30116abea1cf58d3a3dcc1aa890a0f1bc91275",
+    "Assets/StreamingAssets/Songs/logic/chart_normal.json": "ca79a42216241e2225ed4f9787cecbbb9a92f738b12555f37a7a41d266f47dfb",
+    "Assets/StreamingAssets/Songs/logic/chart.json": "ca79a42216241e2225ed4f9787cecbbb9a92f738b12555f37a7a41d266f47dfb",
+    "Assets/StreamingAssets/Songs/logic/chart_hard.json": "0997f1bf9ff4d7437ca38c703aafa68bf3bee603ebcf1d9c62136fb54c894832",
+    "Assets/StreamingAssets/Songs/BenkyouRemaster/chart_easy.json": "bbc0cb47a0782e0e08874f6dc1359f1fcf8c78b2b5f86c0cc11f9191a0145639",
+    "Assets/StreamingAssets/Songs/BenkyouRemaster/chart_normal.json": "7e6ef2b6225fe5eda8f89b336d36ffd99aa35c6a6444c38dc9f08422bc901faf",
+    "Assets/StreamingAssets/Songs/BenkyouRemaster/chart.json": "7e6ef2b6225fe5eda8f89b336d36ffd99aa35c6a6444c38dc9f08422bc901faf",
+    "Assets/StreamingAssets/Songs/BenkyouRemaster/chart_hard.json": "5da89f06b9014cf97d68e99825c1569fec4a601a66855f90ed7e30394dc0d02d",
+    "Assets/StreamingAssets/Songs/Aobasou/chart_easy.json": "1125f1988b1f4fa02248cc19e262f6c5a8c0f307a24fa37db69e7569a42caa20",
+    "Assets/StreamingAssets/Songs/Aobasou/chart_normal.json": "33a6145de0bc22f981636513b7726a58a29b08c36a2f2eef72c18bb9a1c108a3",
+    "Assets/StreamingAssets/Songs/Aobasou/chart.json": "33a6145de0bc22f981636513b7726a58a29b08c36a2f2eef72c18bb9a1c108a3",
+    "Assets/StreamingAssets/Songs/Aobasou/chart_hard.json": "988352f39ca38e2f6b34ebf7dc1bdc6b493f0d4090ca92b2907e862b12c0e6f2"
   },
-  "spatialLayoutVersion": 1
+  "spatialLayoutVersion": 2
 }

@@ -1,0 +1,331 @@
+{
+  "ManicSonic": {
+    "easy": {
+      "before": {
+        "notes": 190,
+        "ordinary": 57,
+        "ordinaryPercent": 30.0
+      },
+      "after": {
+        "notes": 190,
+        "ordinary": 190,
+        "ordinaryPercent": 100.0
+      },
+      "scale": 0.8,
+      "flicksConvertedToTaps": [],
+      "rhythmColorLongsPreserved": true,
+      "techniques": []
+    },
+    "normal": {
+      "before": {
+        "notes": 343,
+        "ordinary": 97,
+        "ordinaryPercent": 28.28
+      },
+      "after": {
+        "notes": 343,
+        "ordinary": 343,
+        "ordinaryPercent": 100.0
+      },
+      "scale": 0.8,
+      "flicksConvertedToTaps": [],
+      "rhythmColorLongsPreserved": true,
+      "techniques": [
+        {
+          "patternId": "dream-hard-2",
+          "techniqueApplied": false,
+          "boundaryFailure": [
+            286,
+            148,
+            1,
+            114500.0
+          ]
+        }
+      ]
+    },
+    "hard": {
+      "before": {
+        "notes": 524,
+        "ordinary": 145,
+        "ordinaryPercent": 27.67
+      },
+      "after": {
+        "notes": 524,
+        "ordinary": 524,
+        "ordinaryPercent": 100.0
+      },
+      "scale": 0.8,
+      "flicksConvertedToTaps": [],
+      "rhythmColorLongsPreserved": true,
+      "techniques": []
+    }
+  },
+  "escapade": {
+    "easy": {
+      "before": {
+        "notes": 154,
+        "ordinary": 27,
+        "ordinaryPercent": 17.53
+      },
+      "after": {
+        "notes": 154,
+        "ordinary": 150,
+        "ordinaryPercent": 97.4
+      },
+      "scale": 0.8,
+      "flicksConvertedToTaps": [],
+      "rhythmColorLongsPreserved": true,
+      "techniques": [
+        {
+          "patternId": "escape-normal-2",
+          "techniqueApplied": true,
+          "boundaryFailure": null
+        }
+      ]
+    },
+    "normal": {
+      "before": {
+        "notes": 282,
+        "ordinary": 52,
+        "ordinaryPercent": 18.44
+      },
+      "after": {
+        "notes": 282,
+        "ordinary": 282,
+        "ordinaryPercent": 100.0
+      },
+      "scale": 0.8,
+      "flicksConvertedToTaps": [],
+      "rhythmColorLongsPreserved": true,
+      "techniques": []
+    },
+    "hard": {
+      "before": {
+        "notes": 406,
+        "ordinary": 80,
+        "ordinaryPercent": 19.7
+      },
+      "after": {
+        "notes": 406,
+        "ordinary": 406,
+        "ordinaryPercent": 100.0
+      },
+      "scale": 0.8,
+      "flicksConvertedToTaps": [],
+      "rhythmColorLongsPreserved": true,
+      "techniques": [
+        {
+          "patternId": "dream-hard-3",
+          "techniqueApplied": false,
+          "boundaryFailure": [
+            353,
+            178,
+            1,
+            93493.6842
+          ]
+        }
+      ]
+    }
+  },
+  "logic": {
+    "easy": {
+      "before": {
+        "notes": 211,
+        "ordinary": 47,
+        "ordinaryPercent": 22.27
+      },
+      "after": {
+        "notes": 211,
+        "ordinary": 211,
+        "ordinaryPercent": 100.0
+      },
+      "scale": 0.8,
+      "flicksConvertedToTaps": [],
+      "rhythmColorLongsPreserved": true,
+      "techniques": []
+    },
+    "normal": {
+      "before": {
+        "notes": 389,
+        "ordinary": 85,
+        "ordinaryPercent": 21.85
+      },
+      "after": {
+        "notes": 389,
+        "ordinary": 381,
+        "ordinaryPercent": 97.94
+      },
+      "scale": 0.8,
+      "flicksConvertedToTaps": [],
+      "rhythmColorLongsPreserved": true,
+      "techniques": [
+        {
+          "patternId": "dream-normal-2",
+          "techniqueApplied": true,
+          "boundaryFailure": null
+        }
+      ]
+    },
+    "hard": {
+      "before": {
+        "notes": 617,
+        "ordinary": 136,
+        "ordinaryPercent": 22.04
+      },
+      "after": {
+        "notes": 617,
+        "ordinary": 617,
+        "ordinaryPercent": 100.0
+      },
+      "scale": 0.8,
+      "flicksConvertedToTaps": [],
+      "rhythmColorLongsPreserved": true,
+      "techniques": [
+        {
+          "patternId": "shut-up-dance-2",
+          "techniqueApplied": false,
+          "boundaryFailure": [
+            378,
+            193,
+            0,
+            128153.0
+          ]
+        }
+      ]
+    }
+  },
+  "BenkyouRemaster": {
+    "easy": {
+      "before": {
+        "notes": 149,
+        "ordinary": 41,
+        "ordinaryPercent": 27.52
+      },
+      "after": {
+        "notes": 149,
+        "ordinary": 149,
+        "ordinaryPercent": 100.0
+      },
+      "scale": 0.8,
+      "flicksConvertedToTaps": [],
+      "rhythmColorLongsPreserved": true,
+      "techniques": []
+    },
+    "normal": {
+      "before": {
+        "notes": 270,
+        "ordinary": 79,
+        "ordinaryPercent": 29.26
+      },
+      "after": {
+        "notes": 270,
+        "ordinary": 270,
+        "ordinaryPercent": 100.0
+      },
+      "scale": 0.8,
+      "flicksConvertedToTaps": [],
+      "rhythmColorLongsPreserved": true,
+      "techniques": []
+    },
+    "hard": {
+      "before": {
+        "notes": 406,
+        "ordinary": 117,
+        "ordinaryPercent": 28.82
+      },
+      "after": {
+        "notes": 406,
+        "ordinary": 402,
+        "ordinaryPercent": 99.01
+      },
+      "scale": 0.8,
+      "flicksConvertedToTaps": [],
+      "rhythmColorLongsPreserved": true,
+      "techniques": [
+        {
+          "patternId": "bring-it-on-3",
+          "techniqueApplied": false,
+          "boundaryFailure": [
+            293,
+            151,
+            0,
+            94861.5
+          ]
+        },
+        {
+          "patternId": "beat-hard-3",
+          "techniqueApplied": true,
+          "boundaryFailure": null
+        }
+      ]
+    }
+  },
+  "Aobasou": {
+    "easy": {
+      "before": {
+        "notes": 168,
+        "ordinary": 44,
+        "ordinaryPercent": 26.19
+      },
+      "after": {
+        "notes": 168,
+        "ordinary": 164,
+        "ordinaryPercent": 97.62
+      },
+      "scale": 0.8,
+      "flicksConvertedToTaps": [],
+      "rhythmColorLongsPreserved": true,
+      "techniques": [
+        {
+          "patternId": "escape-normal-3",
+          "techniqueApplied": true,
+          "boundaryFailure": null
+        }
+      ]
+    },
+    "normal": {
+      "before": {
+        "notes": 311,
+        "ordinary": 83,
+        "ordinaryPercent": 26.69
+      },
+      "after": {
+        "notes": 311,
+        "ordinary": 303,
+        "ordinaryPercent": 97.43
+      },
+      "scale": 0.8,
+      "flicksConvertedToTaps": [],
+      "rhythmColorLongsPreserved": true,
+      "techniques": [
+        {
+          "patternId": "there-normal-2",
+          "techniqueApplied": true,
+          "boundaryFailure": null
+        }
+      ]
+    },
+    "hard": {
+      "before": {
+        "notes": 452,
+        "ordinary": 115,
+        "ordinaryPercent": 25.44
+      },
+      "after": {
+        "notes": 452,
+        "ordinary": 446,
+        "ordinaryPercent": 98.67
+      },
+      "scale": 0.8,
+      "flicksConvertedToTaps": [],
+      "rhythmColorLongsPreserved": true,
+      "techniques": [
+        {
+          "patternId": "burning-hard-4",
+          "techniqueApplied": true,
+          "boundaryFailure": null
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "date": "2026-10-14",
+  "change": "通常配置を主体に戻し、縦・交差・反転は短い技に限定。全曲回転と全難易度への義務付けを廃止。",
+  "collectedNew": 0,
+  "materialsRetained": 46,
+  "converted": 46,
+  "applied": 46,
+  "changedCharts": 15,
+  "templateOrdinary": 36,
+  "templateTechniques": 10,
+  "techniqueApplications": 6,
+  "boundaryAdjustedApplications": 4,
+  "rhythmColorCountsLongsFlickCountsPreserved": true,
+  "flickRunMaxGlobal": 3,
+  "flickRunMaxPerHand": 3,
+  "tests": {
+    "editMode": 58,
+    "playMode": 1
+  },
+  "browser": {
+    "patternViews": 92,
+    "fullCharts": 15,
+    "matchingChartFiles": 15,
+    "inspectedHandLabels": 621,
+    "oppositeSideLabels": 40,
+    "mobileViewport": "390x844",
+    "desktopViewport": "1440x1000",
+    "errors": [],
+    "passed": true
+  },
+  "protectedRepositoryCharts": 37,
+  "protectedHostedCharts": 28,
+  "automaticCollectionPolicyUpdated": true,
+  "physicalPhoneAndControllerTested": false,
+  "patternSite": "https://beat-saber-pattern-bank.metuji48.chatgpt.site/patterns.html",
+  "chartSite": "https://saber-chart-library.metuji48.chatgpt.site",
+  "workspaceEvidence": "C:\\Users\\shike\\OneDrive\\ドキュメント\\GitHub\\3D-Saber\\Tools\\PatternBalance20261014"
+}

@@ -149,7 +149,7 @@
         6399.0
       ],
       "directions": [
-        "down"
+        "up"
       ]
     },
     {
@@ -159,7 +159,7 @@
         6774.0
       ],
       "directions": [
-        "right"
+        "down"
       ]
     },
     {
@@ -169,7 +169,7 @@
         7149.0
       ],
       "directions": [
-        "right"
+        "down"
       ]
     },
     {
@@ -189,7 +189,7 @@
         7899.0
       ],
       "directions": [
-        "left"
+        "up"
       ]
     },
     {
@@ -209,7 +209,7 @@
         8649.0
       ],
       "directions": [
-        "right"
+        "down"
       ]
     },
     {
@@ -229,7 +229,7 @@
         9399.0
       ],
       "directions": [
-        "left"
+        "up"
       ]
     },
     {
@@ -239,7 +239,7 @@
         9774.0
       ],
       "directions": [
-        "down"
+        "up"
       ]
     },
     {
@@ -249,7 +249,7 @@
         10149.0
       ],
       "directions": [
-        "right"
+        "down"
       ]
     },
     {
@@ -259,7 +259,7 @@
         10524.0
       ],
       "directions": [
-        "left"
+        "down"
       ]
     },
     {
@@ -269,7 +269,7 @@
         10899.0
       ],
       "directions": [
-        "upright"
+        "up"
       ]
     },
     {
@@ -279,7 +279,7 @@
         11274.0
       ],
       "directions": [
-        "up"
+        "left"
       ]
     },
     {
@@ -289,7 +289,7 @@
         11649.0
       ],
       "directions": [
-        "down"
+        "right"
       ]
     },
     {
@@ -299,7 +299,7 @@
         12024.0
       ],
       "directions": [
-        "down"
+        "right"
       ]
     },
     {
@@ -309,7 +309,7 @@
         12024.0
       ],
       "directions": [
-        "up"
+        "left"
       ]
     },
     {
@@ -319,7 +319,7 @@
         12774.0
       ],
       "directions": [
-        "down"
+        "right"
       ]
     },
     {
@@ -329,7 +329,7 @@
         13149.0
       ],
       "directions": [
-        "up"
+        "left"
       ]
     },
     {
@@ -339,7 +339,7 @@
         13524.0
       ],
       "directions": [
-        "up"
+        "left"
       ]
     },
     {
@@ -349,7 +349,7 @@
         13899.0
       ],
       "directions": [
-        "down"
+        "right"
       ]
     },
     {
@@ -359,7 +359,7 @@
         14274.0
       ],
       "directions": [
-        "right"
+        "up"
       ]
     },
     {
@@ -369,7 +369,7 @@
         14649.0
       ],
       "directions": [
-        "right"
+        "up"
       ]
     },
     {
@@ -379,7 +379,7 @@
         15024.0
       ],
       "directions": [
-        "right"
+        "up"
       ]
     },
     {
@@ -389,7 +389,7 @@
         15399.0
       ],
       "directions": [
-        "right"
+        "up"
       ]
     },
     {
@@ -399,7 +399,7 @@
         15774.0
       ],
       "directions": [
-        "right"
+        "up"
       ]
     },
     {
@@ -409,7 +409,7 @@
         16149.0
       ],
       "directions": [
-        "left"
+        "down"
       ]
     },
     {
@@ -419,7 +419,7 @@
         16524.0
       ],
       "directions": [
-        "right"
+        "up"
       ]
     },
     {
@@ -430,8 +430,8 @@
         17649.0
       ],
       "directions": [
-        "left",
-        "right"
+        "down",
+        "up"
       ]
     },
     {
@@ -441,7 +441,7 @@
         17274.0
       ],
       "directions": [
-        "left"
+        "down"
       ]
     },
     {
@@ -451,7 +451,7 @@
         18024.0
       ],
       "directions": [
-        "right"
+        "up"
       ]
     },
     {
@@ -461,7 +461,7 @@
         18399.0
       ],
       "directions": [
-        "up"
+        "left"
       ]
     },
     {
@@ -471,7 +471,7 @@
         18774.0
       ],
       "directions": [
-        "down"
+        "right"
       ]
     },
     {
@@ -481,7 +481,7 @@
         19149.0
       ],
       "directions": [
-        "down"
+        "up"
       ]
     },
     {
@@ -491,7 +491,7 @@
         19524.0
       ],
       "directions": [
-        "up"
+        "left"
       ]
     },
     {
@@ -511,7 +511,7 @@
         20274.0
       ],
       "directions": [
-        "left"
+        "down"
       ]
     },
     {
@@ -521,7 +521,7 @@
         20649.0
       ],
       "directions": [
-        "downright"
+        "down"
       ]
     },
     {
@@ -531,7 +531,7 @@
         21024.0
       ],
       "directions": [
-        "upright"
+        "up"
       ]
     },
     {
@@ -541,7 +541,7 @@
         21024.0
       ],
       "directions": [
-        "down"
+        "up"
       ]
     },
     {
@@ -561,7 +561,7 @@
         22524.0
       ],
       "directions": [
-        "left"
+        "down"
       ]
     },
     {
@@ -571,7 +571,7 @@
         22524.0
       ],
       "directions": [
-        "right"
+        "up"
       ]
     },
     {
@@ -581,7 +581,7 @@
         23649.0
       ],
       "directions": [
-        "downleft"
+        "up"
       ]
     },
     {
@@ -591,7 +591,7 @@
         24024.0
       ],
       "directions": [
-        "upleft"
+        "down"
       ]
     },
     {
@@ -601,7 +601,7 @@
         24024.0
       ],
       "directions": [
-        "upright"
+        "down"
       ]
     },
     {
@@ -611,7 +611,7 @@
         24399.0
       ],
       "directions": [
-        "right"
+        "left"
       ]
     },
     {
@@ -621,7 +621,7 @@
         24774.0
       ],
       "directions": [
-        "left"
+        "right"
       ]
     },
     {
@@ -631,7 +631,7 @@
         25149.0
       ],
       "directions": [
-        "left"
+        "right"
       ]
     },
     {
@@ -641,7 +641,7 @@
         25524.0
       ],
       "directions": [
-        "right"
+        "left"
       ]
     },
     {
@@ -651,7 +651,7 @@
         25899.0
       ],
       "directions": [
-        "down"
+        "up"
       ]
     },
     {
@@ -661,7 +661,7 @@
         26274.0
       ],
       "directions": [
-        "down"
+        "up"
       ]
     },
     {
@@ -671,7 +671,7 @@
         26649.0
       ],
       "directions": [
-        "down"
+        "up"
       ]
     },
     {
@@ -681,7 +681,7 @@
         27024.0
       ],
       "directions": [
-        "down"
+        "up"
       ]
     },
     {
@@ -691,7 +691,7 @@
         27399.0
       ],
       "directions": [
-        "left"
+        "right"
       ]
     },
     {
@@ -701,7 +701,7 @@
         27774.0
       ],
       "directions": [
-        "down"
+        "up"
       ]
     },
     {
@@ -711,7 +711,7 @@
         28149.0
       ],
       "directions": [
-        "right"
+        "left"
       ]
     },
     {
@@ -721,7 +721,7 @@
         28524.0
       ],
       "directions": [
-        "down"
+        "up"
       ]
     },
     {
@@ -732,8 +732,8 @@
         29649.0
       ],
       "directions": [
-        "left",
-        "right"
+        "right",
+        "left"
       ]
     },
     {
@@ -763,7 +763,7 @@
         30624.0
       ],
       "directions": [
-        "down"
+        "up"
       ]
     },
     {
@@ -773,7 +773,7 @@
         31224.0
       ],
       "directions": [
-        "left"
+        "down"
       ]
     },
     {
@@ -783,7 +783,7 @@
         31824.0
       ],
       "directions": [
-        "left"
+        "down"
       ]
     },
     {
@@ -793,7 +793,7 @@
         32424.0
       ],
       "directions": [
-        "right"
+        "up"
       ]
     },
     {
@@ -813,7 +813,7 @@
         33624.0
       ],
       "directions": [
-        "left"
+        "down"
       ]
     },
     {
@@ -833,7 +833,7 @@
         34824.0
       ],
       "directions": [
-        "right"
+        "up"
       ]
     },
     {
@@ -853,7 +853,7 @@
         36024.0
       ],
       "directions": [
-        "left"
+        "up"
       ]
     },
     {
@@ -894,8 +894,8 @@
         39024.0
       ],
       "directions": [
-        "right",
-        "left"
+        "left",
+        "right"
       ]
     },
     {
@@ -945,7 +945,7 @@
         40824.0
       ],
       "directions": [
-        "left"
+        "downright"
       ]
     },
     {
@@ -965,7 +965,7 @@
         42024.0
       ],
       "directions": [
-        "right"
+        "down"
       ]
     },
     {
@@ -985,7 +985,7 @@
         43224.0
       ],
       "directions": [
-        "left"
+        "up"
       ]
     },
     {
@@ -1005,7 +1005,7 @@
         44424.0
       ],
       "directions": [
-        "right"
+        "down"
       ]
     },
     {
@@ -1025,7 +1025,7 @@
         45624.0
       ],
       "directions": [
-        "left"
+        "up"
       ]
     },
     {
@@ -1045,7 +1045,7 @@
         46824.0
       ],
       "directions": [
-        "right"
+        "down"
       ]
     },
     {
@@ -1066,8 +1066,8 @@
         48624.0
       ],
       "directions": [
-        "down",
-        "up"
+        "left",
+        "right"
       ]
     },
     {
@@ -1097,7 +1097,7 @@
         49824.0
       ],
       "directions": [
-        "down"
+        "right"
       ]
     },
     {
@@ -1117,7 +1117,7 @@
         50799.0
       ],
       "directions": [
-        "up"
+        "left"
       ]
     },
     {
@@ -1127,7 +1127,7 @@
         51174.0
       ],
       "directions": [
-        "down"
+        "up"
       ]
     },
     {
@@ -1137,7 +1137,7 @@
         51549.0
       ],
       "directions": [
-        "down"
+        "right"
       ]
     },
     {
@@ -1157,7 +1157,7 @@
         52299.0
       ],
       "directions": [
-        "up"
+        "left"
       ]
     },
     {
@@ -1167,7 +1167,7 @@
         52674.0
       ],
       "directions": [
-        "left"
+        "up"
       ]
     },
     {
@@ -1177,7 +1177,7 @@
         53049.0
       ],
       "directions": [
-        "down"
+        "right"
       ]
     },
     {
@@ -1187,7 +1187,7 @@
         53424.0
       ],
       "directions": [
-        "right"
+        "up"
       ]
     },
     {
@@ -1197,7 +1197,7 @@
         53799.0
       ],
       "directions": [
-        "right"
+        "left"
       ]
     },
     {
@@ -1207,7 +1207,7 @@
         54174.0
       ],
       "directions": [
-        "left"
+        "up"
       ]
     },
     {
@@ -1217,7 +1217,7 @@
         54549.0
       ],
       "directions": [
-        "left"
+        "right"
       ]
     },
     {
@@ -1227,7 +1227,7 @@
         54924.0
       ],
       "directions": [
-        "downright"
+        "down"
       ]
     },
     {
@@ -1238,8 +1238,8 @@
         56049.0
       ],
       "directions": [
-        "right",
-        "left"
+        "down",
+        "up"
       ]
     },
     {
@@ -1249,7 +1249,7 @@
         55674.0
       ],
       "directions": [
-        "down"
+        "up"
       ]
     },
     {
@@ -1259,7 +1259,7 @@
         56424.0
       ],
       "directions": [
-        "up"
+        "left"
       ]
     },
     {
@@ -1279,7 +1279,7 @@
         56799.0
       ],
       "directions": [
-        "down"
+        "right"
       ]
     },
     {
@@ -1299,7 +1299,7 @@
         57549.0
       ],
       "directions": [
-        "up"
+        "left"
       ]
     },
     {
@@ -1319,7 +1319,7 @@
         58299.0
       ],
       "directions": [
-        "up"
+        "right"
       ]
     },
     {
@@ -1339,7 +1339,7 @@
         59049.0
       ],
       "directions": [
-        "up"
+        "left"
       ]
     },
     {
@@ -1359,7 +1359,7 @@
         59799.0
       ],
       "directions": [
-        "up"
+        "right"
       ]
     },
     {
@@ -1379,7 +1379,7 @@
         60549.0
       ],
       "directions": [
-        "up"
+        "left"
       ]
     },
     {
@@ -1399,7 +1399,7 @@
         61299.0
       ],
       "directions": [
-        "up"
+        "right"
       ]
     },
     {
@@ -1459,7 +1459,7 @@
         63549.0
       ],
       "directions": [
-        "right"
+        "upright"
       ]
     },
     {
@@ -1479,7 +1479,7 @@
         64299.0
       ],
       "directions": [
-        "left"
+        "upleft"
       ]
     },
     {
@@ -1489,7 +1489,7 @@
         64674.0
       ],
       "directions": [
-        "downright"
+        "down"
       ]
     },
     {
@@ -1499,7 +1499,7 @@
         65049.0
       ],
       "directions": [
-        "left"
+        "up"
       ]
     },
     {
@@ -1509,7 +1509,7 @@
         65424.0
       ],
       "directions": [
-        "left"
+        "up"
       ]
     },
     {
@@ -1529,7 +1529,7 @@
         66174.0
       ],
       "directions": [
-        "right"
+        "up"
       ]
     },
     {
@@ -1551,7 +1551,7 @@
         66924.0
       ],
       "directions": [
-        "right"
+        "down"
       ]
     },
     {
@@ -1561,7 +1561,7 @@
         67674.0
       ],
       "directions": [
-        "left"
+        "up"
       ]
     },
     {
@@ -1571,7 +1571,7 @@
         68049.0
       ],
       "directions": [
-        "downleft"
+        "up"
       ]
     },
     {
@@ -1581,7 +1581,7 @@
         68799.0
       ],
       "directions": [
-        "down"
+        "left"
       ]
     },
     {
@@ -1601,7 +1601,7 @@
         70299.0
       ],
       "directions": [
-        "up"
+        "right"
       ]
     },
     {
@@ -1611,7 +1611,7 @@
         70674.0
       ],
       "directions": [
-        "down"
+        "up"
       ]
     },
     {
@@ -1621,7 +1621,7 @@
         71424.0
       ],
       "directions": [
-        "down"
+        "left"
       ]
     },
     {
@@ -1641,7 +1641,7 @@
         73674.0
       ],
       "directions": [
-        "up"
+        "right"
       ]
     },
     {
@@ -1663,7 +1663,7 @@
         76674.0
       ],
       "directions": [
-        "right"
+        "left"
       ]
     },
     {
@@ -1673,7 +1673,7 @@
         78174.0
       ],
       "directions": [
-        "down"
+        "up"
       ]
     },
     {
@@ -1683,7 +1683,7 @@
         78924.0
       ],
       "directions": [
-        "upleft"
+        "right"
       ]
     },
     {
@@ -1703,7 +1703,7 @@
         80424.0
       ],
       "directions": [
-        "right"
+        "left"
       ]
     },
     {
@@ -1714,8 +1714,8 @@
         81924.0
       ],
       "directions": [
-        "left",
-        "right"
+        "right",
+        "left"
       ]
     },
     {
@@ -1725,7 +1725,7 @@
         81924.0
       ],
       "directions": [
-        "left"
+        "right"
       ]
     },
     {
@@ -1735,7 +1735,7 @@
         82674.0
       ],
       "directions": [
-        "down"
+        "up"
       ]
     },
     {
@@ -1745,7 +1745,7 @@
         84174.0
       ],
       "directions": [
-        "right"
+        "left"
       ]
     },
     {
@@ -1755,7 +1755,7 @@
         86424.0
       ],
       "directions": [
-        "up"
+        "down"
       ]
     },
     {
@@ -1765,7 +1765,7 @@
         86799.0
       ],
       "directions": [
-        "left"
+        "right"
       ]
     },
     {
@@ -1775,7 +1775,7 @@
         87174.0
       ],
       "directions": [
-        "right"
+        "up"
       ]
     },
     {
@@ -1785,7 +1785,7 @@
         87549.0
       ],
       "directions": [
-        "up"
+        "down"
       ]
     },
     {
@@ -1795,7 +1795,7 @@
         87924.0
       ],
       "directions": [
-        "left"
+        "down"
       ]
     },
     {
@@ -1805,7 +1805,7 @@
         88299.0
       ],
       "directions": [
-        "down"
+        "up"
       ]
     },
     {
@@ -1815,7 +1815,7 @@
         88674.0
       ],
       "directions": [
-        "right"
+        "up"
       ]
     },
     {
@@ -1825,7 +1825,7 @@
         89049.0
       ],
       "directions": [
-        "up"
+        "down"
       ]
     },
     {
@@ -1845,7 +1845,7 @@
         89799.0
       ],
       "directions": [
-        "left"
+        "up"
       ]
     },
     {
@@ -1855,7 +1855,7 @@
         90174.0
       ],
       "directions": [
-        "up"
+        "downleft"
       ]
     },
     {
@@ -1865,7 +1865,7 @@
         90549.0
       ],
       "directions": [
-        "right"
+        "up"
       ]
     },
     {
@@ -1875,7 +1875,7 @@
         90924.0
       ],
       "directions": [
-        "down"
+        "right"
       ]
     },
     {
@@ -1885,7 +1885,7 @@
         91299.0
       ],
       "directions": [
-        "up"
+        "left"
       ]
     },
     {
@@ -1895,7 +1895,7 @@
         91674.0
       ],
       "directions": [
-        "down"
+        "right"
       ]
     },
     {
@@ -1905,7 +1905,7 @@
         92049.0
       ],
       "directions": [
-        "up"
+        "left"
       ]
     },
     {
@@ -1925,7 +1925,7 @@
         92799.0
       ],
       "directions": [
-        "left"
+        "down"
       ]
     },
     {
@@ -1935,7 +1935,7 @@
         93174.0
       ],
       "directions": [
-        "down"
+        "up"
       ]
     },
     {
@@ -1955,7 +1955,7 @@
         93924.0
       ],
       "directions": [
-        "up"
+        "left"
       ]
     },
     {
@@ -1965,7 +1965,7 @@
         94299.0
       ],
       "directions": [
-        "right"
+        "up"
       ]
     },
     {
@@ -1975,7 +1975,7 @@
         94674.0
       ],
       "directions": [
-        "down"
+        "right"
       ]
     },
     {
@@ -1985,7 +1985,7 @@
         95049.0
       ],
       "directions": [
-        "left"
+        "down"
       ]
     },
     {
@@ -2005,7 +2005,7 @@
         95799.0
       ],
       "directions": [
-        "left"
+        "down"
       ]
     },
     {
@@ -2015,7 +2015,7 @@
         96174.0
       ],
       "directions": [
-        "left"
+        "down"
       ]
     },
     {
@@ -2026,8 +2026,8 @@
         97299.0
       ],
       "directions": [
-        "up",
-        "down"
+        "left",
+        "right"
       ]
     },
     {
@@ -2057,7 +2057,7 @@
         98049.0
       ],
       "directions": [
-        "right"
+        "down"
       ]
     },
     {
@@ -2067,7 +2067,7 @@
         98799.0
       ],
       "directions": [
-        "down"
+        "up"
       ]
     },
     {
@@ -2097,7 +2097,7 @@
         99924.0
       ],
       "directions": [
-        "down"
+        "up"
       ]
     },
     {
@@ -2107,7 +2107,7 @@
         100299.0
       ],
       "directions": [
-        "down"
+        "up"
       ]
     },
     {
@@ -2117,7 +2117,7 @@
         100674.0
       ],
       "directions": [
-        "left"
+        "up"
       ]
     },
     {
@@ -2137,7 +2137,7 @@
         101424.0
       ],
       "directions": [
-        "right"
+        "up"
       ]
     },
     {
@@ -2147,7 +2147,7 @@
         101799.0
       ],
       "directions": [
-        "down"
+        "up"
       ]
     },
     {
@@ -2157,7 +2157,7 @@
         102174.0
       ],
       "directions": [
-        "left"
+        "up"
       ]
     },
     {
@@ -2177,7 +2177,7 @@
         102924.0
       ],
       "directions": [
-        "right"
+        "up"
       ]
     },
     {
@@ -2197,7 +2197,7 @@
         103674.0
       ],
       "directions": [
-        "downleft"
+        "down"
       ]
     },
     {
@@ -2217,7 +2217,7 @@
         104424.0
       ],
       "directions": [
-        "upright"
+        "up"
       ]
     },
     {
@@ -2317,7 +2317,7 @@
         108174.0
       ],
       "directions": [
-        "downright"
+        "down"
       ]
     },
     {
@@ -2339,7 +2339,7 @@
         108924.0
       ],
       "directions": [
-        "left"
+        "up"
       ]
     },
     {
@@ -2349,7 +2349,7 @@
         109674.0
       ],
       "directions": [
-        "right"
+        "left"
       ]
     },
     {
@@ -2359,7 +2359,7 @@
         110049.0
       ],
       "directions": [
-        "left"
+        "down"
       ]
     },
     {
@@ -2369,7 +2369,7 @@
         110424.0
       ],
       "directions": [
-        "left"
+        "right"
       ]
     },
     {
@@ -2379,7 +2379,7 @@
         110799.0
       ],
       "directions": [
-        "downright"
+        "up"
       ]
     },
     {
@@ -2389,7 +2389,7 @@
         111549.0
       ],
       "directions": [
-        "right"
+        "left"
       ]
     },
     {
@@ -2399,7 +2399,7 @@
         112674.0
       ],
       "directions": [
-        "left"
+        "up"
       ]
     },
     {
@@ -2409,7 +2409,7 @@
         113531.1429
       ],
       "directions": [
-        "up"
+        "right"
       ]
     },
     {
@@ -2419,7 +2419,7 @@
         114388.2857
       ],
       "directions": [
-        "down"
+        "left"
       ]
     },
     {
@@ -2429,7 +2429,7 @@
         116102.5714
       ],
       "directions": [
-        "down"
+        "left"
       ]
     },
     {
@@ -2439,7 +2439,7 @@
         116959.7143
       ],
       "directions": [
-        "up"
+        "right"
       ]
     },
     {
@@ -2449,7 +2449,7 @@
         117816.8571
       ],
       "directions": [
-        "up"
+        "right"
       ]
     },
     {
@@ -2499,7 +2499,7 @@
         122102.5714
       ],
       "directions": [
-        "down"
+        "right"
       ]
     },
     {
@@ -2519,7 +2519,7 @@
         123816.8571
       ],
       "directions": [
-        "up"
+        "left"
       ]
     },
     {
@@ -2530,8 +2530,8 @@
         125531.1429
       ],
       "directions": [
-        "up",
-        "down"
+        "down",
+        "up"
       ]
     },
     {
@@ -2541,7 +2541,7 @@
         125531.1429
       ],
       "directions": [
-        "down"
+        "up"
       ]
     },
     {
@@ -2551,7 +2551,7 @@
         126388.2857
       ],
       "directions": [
-        "up"
+        "down"
       ]
     },
     {
@@ -2561,7 +2561,7 @@
         126388.2857
       ],
       "directions": [
-        "up"
+        "down"
       ]
     },
     {
@@ -2571,7 +2571,7 @@
         127245.4286
       ],
       "directions": [
-        "right"
+        "left"
       ]
     },
     {
@@ -2581,7 +2581,7 @@
         128102.5714
       ],
       "directions": [
-        "down"
+        "up"
       ]
     },
     {
@@ -2591,7 +2591,7 @@
         128959.7143
       ],
       "directions": [
-        "left"
+        "right"
       ]
     },
     {
@@ -2601,7 +2601,7 @@
         129816.8571
       ],
       "directions": [
-        "up"
+        "down"
       ]
     },
     {
@@ -2611,7 +2611,7 @@
         130674.0
       ],
       "directions": [
-        "down"
+        "up"
       ]
     },
     {
@@ -2621,7 +2621,7 @@
         131531.1429
       ],
       "directions": [
-        "down"
+        "up"
       ]
     },
     {
@@ -2631,7 +2631,7 @@
         133245.4286
       ],
       "directions": [
-        "up"
+        "down"
       ]
     },
     {
@@ -2641,7 +2641,7 @@
         133578.7619
       ],
       "directions": [
-        "up"
+        "down"
       ]
     },
     {
@@ -2651,7 +2651,7 @@
         133912.0952
       ],
       "directions": [
-        "down"
+        "up"
       ]
     },
     {
@@ -2661,7 +2661,7 @@
         134245.4286
       ],
       "directions": [
-        "down"
+        "up"
       ]
     },
     {
@@ -2681,7 +2681,7 @@
         134912.0952
       ],
       "directions": [
-        "right"
+        "up"
       ]
     },
     {
@@ -2691,7 +2691,7 @@
         135245.4286
       ],
       "directions": [
-        "left"
+        "up"
       ]
     },
     {
@@ -2701,7 +2701,7 @@
         135578.7619
       ],
       "directions": [
-        "left"
+        "up"
       ]
     },
     {
@@ -2711,7 +2711,7 @@
         135912.0952
       ],
       "directions": [
-        "downright"
+        "up"
       ]
     },
     {
@@ -2721,7 +2721,7 @@
         136245.4286
       ],
       "directions": [
-        "down"
+        "up"
       ]
     }
   ]
