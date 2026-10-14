@@ -370,11 +370,11 @@ public class GamePlayManager : MonoBehaviour
         while (ScreenTransition.IsBusy) yield return null;
         if (enableStartCountdown)
         {
-            // START の演出・効果音・楽曲の先頭を同じ DSP 時刻へ予約する。
-            // 最初のノーツの時刻も渡し、START の文字をノーツがゲートに着く前に消す。
+            // START の演出が消えてから先頭ノーツを流す。移動時間と補正込みの到着時刻から
+            // 楽曲開始を予約し、冒頭のノーツが文字や光に隠れたままゲートへ着くのを防ぐ。
             var countdown = GameStartCountdown.Ensure();
             double firstNoteSeconds = chart.notes.Count > 0 ? noteSpawner.EffectiveTime(chart.notes[0]) : double.NaN;
-            double startDspTime = countdown.Begin(chart.bpm, GameSession.SelectedDifficulty, startCountdownVolume, leadInSeconds, firstNoteSeconds);
+            double startDspTime = countdown.Begin(chart.bpm, GameSession.SelectedDifficulty, startCountdownVolume, noteSpawner.approachTime, firstNoteSeconds);
             songPlayer.PlayScheduled(startDspTime);
         }
         else

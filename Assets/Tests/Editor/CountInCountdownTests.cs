@@ -52,13 +52,28 @@ public class CountInCountdownTests
             Assert.GreaterOrEqual(GameStartCountdown.CountSeconds(bpm), GameStartCountdown.MinCountSeconds - 1e-9, bpm + " BPM");
     }
 
-    [TestCase(.524, .224)]
-    [TestCase(2.4, .42)]
-    [TestCase(.3, .22)]
-    [TestCase(double.NaN, .42)]
-    public void StartWordLeavesBeforeTheFirstNoteReachesTheGate(double firstNote, double expected)
+    [TestCase(0, .5)]
+    [TestCase(0, 1)]
+    [TestCase(0, 4)]
+    [TestCase(-.3, .5)]
+    [TestCase(1.296, 4)]
+    [TestCase(2.4, 1)]
+    [TestCase(6.03, 4)]
+    public void FirstNoteEntersAfterAllStartEffectsWithFullTravelTime(double firstNote, double approach)
     {
-        Assert.AreEqual(expected, GameStartCountdown.StartHoldSeconds(firstNote), 1e-6);
+        var countdown = NewCountdown();
+        double songStart = countdown.Begin(120, "hard", 0, approach, firstNote);
+        double cue = countdown.StartCueDspTime;
+        Assert.That(cue - countdown.FirstBeatDspTime, Is.EqualTo(1.5).Within(1e-6));
+        Assert.That(countdown.EndDspTime - cue, Is.EqualTo(.9).Within(1e-6), "文字だけでなくゲートの復帰まで待つ");
+        Assert.GreaterOrEqual(songStart + firstNote - approach, countdown.EndDspTime + .15 - 1e-6,
+            "最初のノーツの出現は開始演出が完全に消えた後");
+        Assert.That(songStart - cue, Is.EqualTo(System.Math.Max(0, 1.05 + approach - firstNote)).Within(1e-6),
+            "前奏が十分長い曲には余分な待ち時間を足さない");
+        countdown.Apply(cue + .05);
+        Assert.IsTrue(countdown.StartWord.Root.gameObject.activeSelf, "楽曲を遅らせてもSTARTは3拍目の直後に出る");
+        countdown.Apply(cue + .85);
+        Assert.IsFalse(countdown.StartWord.Root.gameObject.activeSelf, "文字の破片もノーツ出現前に消える");
     }
 
     [Test]
@@ -105,11 +120,11 @@ public class CountInCountdownTests
         Assert.IsTrue(countdown.NumberAt(1).Root.gameObject.activeSelf, "同じ拍で「2」が出る");
         Assert.Greater(countdown.ActiveSparkCount, 0, "斬った所から火花が散る");
         Assert.AreEqual(4, countdown.NumberAt(2).PieceCount, "「1」は青と赤の X で4つに割れる");
-        countdown.Apply(countdown.SongStartDspTime + .05);
+        countdown.Apply(countdown.StartCueDspTime + .05);
         Assert.IsTrue(countdown.NumberAt(2).ShowingPieces, "START の瞬間に「1」が割れる");
         Assert.IsTrue(countdown.StartWord.Root.gameObject.activeSelf, "START が出る");
         Assert.Greater(countdown.StartWord.Whole.preferredWidth, countdown.NumberAt(0).Whole.preferredWidth * 1.5f, "START は数字より大きい");
-        countdown.Apply(countdown.SongStartDspTime + countdown.StartHold + .1);
+        countdown.Apply(countdown.StartCueDspTime + countdown.StartHold + .1);
         Assert.IsTrue(countdown.StartWord.ShowingPieces, "START も最初のノーツの前に斬られて消える");
     }
 

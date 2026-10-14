@@ -1,9 +1,12 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 using Object = UnityEngine.Object;
@@ -35,6 +38,7 @@ public class SongLeadInPlayTests
         GameSession.SelectedSongId = "Epilogue";
         GameSession.SelectedDifficulty = "Normal";
         GameSession.IsCalibrationMode = false;
+        GameSession.TutorialPending = false;
         SceneManager.sceneLoaded += ConfigureGame;
     }
 
@@ -63,6 +67,7 @@ public class SongLeadInPlayTests
         PlayerPrefs.Save();
         foreach (var entry in sessionValues) entry.Key.SetValue(null, entry.Value);
         sessionValues.Clear();
+        DisplaySettings.ResetReducedEffectsCacheForTest();
     }
 
     IEnumerator OpenGame(bool useCountdown)
@@ -79,6 +84,21 @@ public class SongLeadInPlayTests
     IEnumerator VerifyFirstNoteTravel(bool useCountdown)
     {
         yield return OpenGame(useCountdown);
+        var countdown = Object.FindFirstObjectByType<GameStartCountdown>();
+        double countdownEnd = useCountdown ? countdown.EndDspTime : 0;
+        if (useCountdown)
+        {
+            double scheduled = (double)typeof(SongPlayer).GetField("startDspTime", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(manager.songPlayer);
+            Assert.That(scheduled, Is.EqualTo(countdown.SongStartDspTime).Within(.00001), "音と曲時計は同じ開始予約を使う");
+            Assert.That(countdown.StartCueDspTime - countdown.FirstBeatDspTime,
+                Is.EqualTo(3 * GameStartCountdown.CountSeconds(92)).Within(.00001), "3→2→1→STARTの拍間隔を維持する");
+            while (AudioSettings.dspTime < countdownEnd)
+            {
+                Assert.IsNull(firstNote, "カウント中とSTART演出中にノーツを出さない");
+                Assert.Zero(manager.scoreManager.MissCount);
+                yield return null;
+            }
+        }
         double deadline = Time.realtimeSinceStartupAsDouble + 5;
         while (firstNote == null && Time.realtimeSinceStartupAsDouble < deadline) yield return null;
         Assert.NotNull(firstNote);
@@ -90,14 +110,8 @@ public class SongLeadInPlayTests
         Assert.AreEqual(0, manager.scoreManager.MissCount);
         if (useCountdown)
         {
-            var countdown = Object.FindFirstObjectByType<GameStartCountdown>();
-            Assert.NotNull(countdown);
-            double scheduled = (double)typeof(SongPlayer).GetField("startDspTime", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(manager.songPlayer);
-            Assert.That(scheduled, Is.EqualTo(countdown.SongStartDspTime).Within(.00001), "STARTと音の開始は同じDSP時計");
-            double firstBeat = (double)typeof(GameStartCountdown).GetField("firstBeatDspTime", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(countdown);
-            Assert.That(scheduled - firstBeat, Is.EqualTo(3 * GameStartCountdown.CountSeconds(92)).Within(.00001), "待ち時間を足しても拍間隔を引き伸ばさない");
-            Assert.Less(AudioSettings.dspTime, firstBeat, "冒頭ノーツはカウント前から助走する");
-            Assert.AreEqual(0f, countdown.GetComponent<CanvasGroup>().alpha, "3の表示だけがクリック音より先行しない");
+            Assert.IsTrue(countdown == null, "最初のノーツが入る前にSTARTは消える");
+            Assert.GreaterOrEqual(AudioSettings.dspTime, countdownEnd + GameStartCountdown.NoteEntryGapSeconds);
         }
         // 停止後にSongTime=0へ戻っても、先読みしたノーツを先へ進めない。
         manager.songPlayer.Stop();
@@ -110,7 +124,7 @@ public class SongLeadInPlayTests
     }
 
     [UnityTest]
-    public IEnumerator SlowNotesEnterDuringCountInWithTheirFullTravelTime()
+    public IEnumerator SlowNotesEnterAfterCountInWithTheirFullTravelTime()
     {
         yield return VerifyFirstNoteTravel(true);
     }
@@ -125,9 +139,11 @@ public class SongLeadInPlayTests
     public IEnumerator LaterOpeningKeepsTheOriginalThreeBeatCountIn()
     {
         GameSession.SelectedSongId = "Morning";
+        GameSession.NoteApproachTime = 1f;
         yield return OpenGame(true);
         var countdown = Object.FindFirstObjectByType<GameStartCountdown>();
         Assert.NotNull(countdown);
+        Assert.AreEqual(countdown.StartCueDspTime, countdown.SongStartDspTime, "長い前奏ならSTARTと楽曲を同時に始める");
         double remaining = countdown.SongStartDspTime - AudioSettings.dspTime;
         Assert.LessOrEqual(remaining, .12 + 3 * GameStartCountdown.CountSeconds(118) + .02);
         Assert.Greater(remaining, .5);
@@ -135,6 +151,77 @@ public class SongLeadInPlayTests
         manager.songPlayer.Stop();
         yield return null;
         Assert.IsNull(firstNote);
+    }
+
+    [UnityTest]
+    public IEnumerator OpeningAtZeroIsReadableAfterStart() => VerifyOpeningAtZero(false);
+
+    [UnityTest]
+    public IEnumerator OpeningAtZeroIsReadableWithReducedEffects() => VerifyOpeningAtZero(true);
+
+    IEnumerator VerifyOpeningAtZero(bool reduced)
+    {
+        DisplaySettings.SetReducedEffectsForTest(reduced);
+        GameSession.SelectedSongId = "Aobasou";
+        GameSession.NoteApproachTime = 1f;
+        GameSession.JudgmentOffsetMs = -100;
+        yield return OpenGame(true);
+        var countdown = Object.FindFirstObjectByType<GameStartCountdown>();
+        double cue = countdown.StartCueDspTime, end = countdown.EndDspTime;
+        while (AudioSettings.dspTime < cue + .1) yield return null;
+        Assert.IsTrue(countdown.StartWord.Root.gameObject.activeSelf);
+        Assert.IsNull(firstNote, "0秒のノーツもSTART表示中は出現しない");
+        Capture(reduced, "start");
+        while (AudioSettings.dspTime < end + .05) yield return null;
+        Assert.IsTrue(countdown == null);
+        Assert.IsNull(firstNote, "演出後に短い間を空ける");
+        double deadline = Time.realtimeSinceStartupAsDouble + 5;
+        while (firstNote == null && Time.realtimeSinceStartupAsDouble < deadline) yield return null;
+        Assert.NotNull(firstNote);
+        Assert.That(firstNote.HitTime, Is.EqualTo(-.1 + manager.extraOffsetSeconds).Within(.001), "判定補正と譜面時刻を維持する");
+        Assert.That(firstNote.HitTime - firstSpawnTime, Is.EqualTo(1).Within(.15));
+        Assert.Zero(manager.scoreManager.MissCount);
+        while (manager.songPlayer.SongTime < firstNote.HitTime - .25 && Time.realtimeSinceStartupAsDouble < deadline) yield return null;
+        Assert.IsNull(Object.FindFirstObjectByType<GameStartCountdown>(), "接近中の視界にSTARTを残さない");
+        Capture(reduced, "approach");
+        var source = manager.songPlayer.GetComponent<AudioSource>();
+        while (source.timeSamples < 4800 && Time.realtimeSinceStartupAsDouble < deadline) yield return null;
+        Assert.Greater(source.timeSamples, 0, "演出を消した後も予約した音源は再生される");
+        AudioSettings.GetDSPBufferSize(out int frames, out _);
+        Assert.That(manager.songPlayer.SongTime, Is.EqualTo(source.timeSamples / (double)source.clip.frequency)
+            .Within(frames / (double)AudioSettings.outputSampleRate + .01), "音声とノーツの曲時計が同期する");
+    }
+
+    // 指定時のみ実Gameの通常/LOW画像を保存して、文字とノーツの重なりを目視確認する。
+    static void Capture(bool reduced, string phase)
+    {
+        string output = System.Environment.GetEnvironmentVariable("SABER_START_VISIBILITY_CAPTURES");
+        if (string.IsNullOrEmpty(output)) return;
+        Directory.CreateDirectory(output);
+        var camera = Camera.main;
+        var target = new RenderTexture(1280, 720, 24, RenderTextureFormat.ARGB32);
+        var pixels = new Texture2D(1280, 720, TextureFormat.RGB24, false);
+        var oldTarget = camera.targetTexture; var oldActive = RenderTexture.active;
+        float oldAspect = camera.aspect;
+        var canvases = Object.FindObjectsByType<Canvas>(FindObjectsSortMode.None)
+            .Where(c => c.isRootCanvas && c.renderMode == RenderMode.ScreenSpaceOverlay)
+            .Select(c => (canvas: c, camera: c.worldCamera, distance: c.planeDistance)).ToArray();
+        try
+        {
+            target.Create(); camera.targetTexture = target; camera.aspect = 16f / 9;
+            foreach (var item in canvases) { item.canvas.renderMode = RenderMode.ScreenSpaceCamera; item.canvas.worldCamera = camera; item.canvas.planeDistance = 1; }
+            Canvas.ForceUpdateCanvases();
+            RenderPipeline.SubmitRenderRequest(camera, new UniversalRenderPipeline.SingleCameraRequest { destination = target });
+            RenderTexture.active = target;
+            pixels.ReadPixels(new Rect(0, 0, 1280, 720), 0, 0); pixels.Apply();
+            File.WriteAllBytes(Path.Combine(output, $"{(reduced ? "low" : "normal")}-{phase}.png"), pixels.EncodeToPNG());
+        }
+        finally
+        {
+            foreach (var item in canvases) { item.canvas.renderMode = RenderMode.ScreenSpaceOverlay; item.canvas.worldCamera = item.camera; item.canvas.planeDistance = item.distance; }
+            camera.targetTexture = oldTarget; camera.aspect = oldAspect; RenderTexture.active = oldActive;
+            target.Release(); Object.Destroy(target); Object.Destroy(pixels);
+        }
     }
 
     // 2026-10-05 の新しい 3・2・1: 拍ごとにゲートの辺が点き、数字は次の拍で斬られ、START の後は元の見た目に戻る。

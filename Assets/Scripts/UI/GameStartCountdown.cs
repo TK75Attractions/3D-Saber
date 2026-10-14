@@ -4,13 +4,13 @@ using UnityEngine;
 using UnityEngine.UI;
 
 // 楽曲開始前の 3 拍カウントイン。
-// 表示・クリック音・楽曲開始をすべて AudioSettings.dspTime に揃え、フレーム落ちによる同期ずれを防ぐ。
+// 表示・クリック音・楽曲の予約を AudioSettings.dspTime で管理し、開始演出の後にノーツの移動時間を確保する。
 // 見た目は 2026-10-05 の Web 試作(カウントイン試作)の案A「斬る数字」に、案B の「拍ごとに点くゲートの辺」を足したもの。
 //   3: 大きな「3」(画面の高さの約37%)。ゲートの左の辺と床の左半分が青く点く。
 //   2: 青い斬撃が「3」を斬って2つに割る。「2」が出て、右の辺と床の右半分が赤く点く。
 //   1: 赤い斬撃が「2」を斬る。「1」が出て、上下の辺と四隅が白く点く。
 //   START: 青と赤の X で「1」が4つに割れ、両端からの斬撃が中央で出会って「START」。ゲート全体が難易度の色に光り、
-//          ゲートからリング、奥から光の帯。最初のノーツがゲートに着く約0.3秒前までに START も横に斬られて消える。
+//          ゲートからリング、奥から光の帯。START も横に斬られて消え、ゲートが元に戻ってから最初のノーツが入る。
 // 全画面の暗幕・ひし形の枠・英語の小さな文字は使わない。1カウントは曲の拍(0.45秒より短い曲は2拍)。
 public class GameStartCountdown : MonoBehaviour
 {
@@ -18,6 +18,9 @@ public class GameStartCountdown : MonoBehaviour
     private const double ScheduleLeadSeconds = 0.12;
     // 1カウントの最短。光る回数を1秒2.2回までに抑える(点滅の目安は1秒3回)。
     public const double MinCountSeconds = 0.45;
+    public const double NoteEntryGapSeconds = 0.15;
+    private const double StartHoldSeconds = 0.42;
+    private const double StartExitSeconds = 0.4;
     // 1920×1080 基準の大きさ
     private const float NumberSize = 400f;
     private const float StartSize = 320f;
@@ -52,18 +55,19 @@ public class GameStartCountdown : MonoBehaviour
     private float power = .8f;
     private bool reduced;
     private double firstBeatDspTime;
+    private double startCueDspTime;
     private double songStartDspTime;
     private double countSeconds;
-    private double startHold;
     private double endDspTime;
     private bool running;
     private bool built;
 
     public bool IsRunning => running;
+    public double StartCueDspTime => startCueDspTime;
     public double SongStartDspTime => songStartDspTime;
     public double FirstBeatDspTime => firstBeatDspTime;
     public double CountLength => countSeconds;
-    public double StartHold => startHold;
+    public double StartHold => StartHoldSeconds;
     public double EndDspTime => endDspTime;
     public CountInGateCue GateCue => gateCue;
     public CountInCutText NumberAt(int index) => numbers[Mathf.Clamp(index, 0, numbers.Length - 1)];
@@ -81,9 +85,9 @@ public class GameStartCountdown : MonoBehaviour
         return countdown;
     }
 
-    // カウントを開始し、START と一致する楽曲開始用 DSP 時刻を返す。
-    // firstNoteSeconds は最初のノーツが判定ゲートに着く曲時刻(START の文字をそれより前に消すため)。
-    public double Begin(float bpm, string difficulty, float volume = 0.55f, double minimumLeadSeconds = 0.0,
+    // カウントを開始し、演出後のノーツの助走を確保した楽曲開始用 DSP 時刻を返す。
+    // firstNoteSeconds は補正込みの到着曲時刻。譜面を動かさず、音と曲時計の開始予約を一緒に遅らせる。
+    public double Begin(float bpm, string difficulty, float volume = 0.55f, double approachSeconds = 1.0,
         double firstNoteSeconds = double.NaN)
     {
         Build();
@@ -92,13 +96,18 @@ public class GameStartCountdown : MonoBehaviour
         string d = string.IsNullOrEmpty(difficulty) ? "" : difficulty.ToLowerInvariant();
         power = d == "easy" ? .55f : d == "hard" ? 1f : .8f;
         reduced = DisplaySettings.ReducedEffects;
-        startHold = StartHoldSeconds(firstNoteSeconds);
-        // 低速ノーツの先読みが3カウントより長ければ、カウントの前に待ち時間を足す。
-        // 3→2→1→STARTの間隔と、STARTと楽曲の同期は維持する。
-        firstBeatDspTime = AudioSettings.dspTime + ScheduleLeadSeconds
-            + System.Math.Max(0.0, minimumLeadSeconds - countSeconds * 3.0);
-        songStartDspTime = firstBeatDspTime + countSeconds * 3.0;
-        endDspTime = songStartDspTime + System.Math.Max(startHold + .4, CountInGateCue.RestoreFrom + CountInGateCue.RestoreSeconds);
+        firstBeatDspTime = AudioSettings.dspTime + ScheduleLeadSeconds;
+        startCueDspTime = firstBeatDspTime + countSeconds * 3.0;
+        endDspTime = startCueDspTime + System.Math.Max(StartHoldSeconds + StartExitSeconds,
+            CountInGateCue.RestoreFrom + CountInGateCue.RestoreSeconds);
+        songStartDspTime = startCueDspTime;
+        if (!double.IsNaN(firstNoteSeconds) && !double.IsInfinity(firstNoteSeconds))
+        {
+            // 文字の破片・光・ゲートの復帰がすべて終わってから、ノーツを通常の速度で流す。
+            // 前奏が十分長い曲は追加で待たせない。負の判定補正も到着時刻に含めて扱う。
+            songStartDspTime = System.Math.Max(startCueDspTime,
+                endDspTime + NoteEntryGapSeconds + approachSeconds - firstNoteSeconds);
+        }
         running = true;
         canvasGroup.alpha = 0f;
         canvasGroup.blocksRaycasts = false;
@@ -125,13 +134,6 @@ public class GameStartCountdown : MonoBehaviour
         double count = BeatSeconds(bpm);
         while (count < MinCountSeconds) count *= 2.0;
         return count;
-    }
-
-    // START の文字を残す秒数。最初のノーツがゲートに着く0.3秒前までに斬って消す(0.22〜0.42秒)。
-    public static double StartHoldSeconds(double firstNoteSeconds)
-    {
-        if (double.IsNaN(firstNoteSeconds) || double.IsInfinity(firstNoteSeconds)) return .42;
-        return System.Math.Min(.42, System.Math.Max(.22, firstNoteSeconds - .3));
     }
 
     public static int StepAt(double dspTime, double firstBeatTime, double secondsPerBeat)
@@ -283,11 +285,11 @@ public class GameStartCountdown : MonoBehaviour
     public void Apply(double now)
     {
         if (!running) return;
-        // 追加した助走中に「3」だけ先に表示せず、最初のクリック音と一緒に出す。
+        // 「3」は最初のクリック音と一緒に出す。
         if (now < firstBeatDspTime) { canvasGroup.alpha = 0f; return; }
         canvasGroup.alpha = 1f;
         PlaceAtGate();
-        double since = now - firstBeatDspTime, startAge = now - songStartDspTime;
+        double since = now - firstBeatDspTime, startAge = now - startCueDspTime;
         int step = StepAt(now, firstBeatDspTime, countSeconds);
         HideFx();
         UpdateNumbers(since);
@@ -380,9 +382,9 @@ public class GameStartCountdown : MonoBehaviour
             slashes[slashCursor++].Show(new Vector2(left, 0f), new Vector2(Mathf.Lerp(left, 0f, sweep), 0f), UISkinPalette.LogoBlue, fade, 14f, 46f);
             slashes[slashCursor++].Show(new Vector2(right, 0f), new Vector2(Mathf.Lerp(right, 0f, sweep), 0f), UISkinPalette.LogoRed, fade, 14f, 46f);
         }
-        float hold = (float)startHold;
+        float hold = (float)StartHoldSeconds;
         if (age < hold) startWord.ShowWhole(1f, age < .14f ? Mathf.LerpUnclamped(1.45f, 1f, EaseOutBack(age / .14f)) : 1f);
-        else if (age < hold + .4f)
+        else if (age < hold + StartExitSeconds)
         {
             startWord.ShowPieces((age - hold) / .34f, 68f, 0f);
             if (slashCursor < slashes.Count)
@@ -513,9 +515,9 @@ public class GameStartCountdown : MonoBehaviour
         for (int i = 0; i < 3; i++) Schedule(tickClip, firstBeatDspTime + countSeconds * i, volume * .68f);
         // 前の数字を斬る音(2 と 1 の拍)と、START の X・両端からの斬撃、START を斬って消す音
         for (int i = 1; i < 3; i++) Schedule(swishClip, firstBeatDspTime + countSeconds * i, volume * .5f);
-        Schedule(swishClip, songStartDspTime, volume * .55f);
-        Schedule(startClip, songStartDspTime, volume * .9f);
-        Schedule(swishClip, songStartDspTime + startHold, volume * .35f);
+        Schedule(swishClip, startCueDspTime, volume * .55f);
+        Schedule(startClip, startCueDspTime, volume * .9f);
+        Schedule(swishClip, startCueDspTime + StartHoldSeconds, volume * .35f);
     }
 
     private void Schedule(AudioClip clip, double dspTime, float volume)
