@@ -43,7 +43,7 @@ public static class PhoneSaberTriageReceiverLauncher
 
     public static bool EnsureStarted(string dataPath)
     {
-#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+#if UNITY_EDITOR_OSX || (UNITY_STANDALONE_OSX && !UNITY_EDITOR)
         if (!PhoneSaberP2PBridgeProcess.AutoStartEnabled) return false;
         if (IsDisabled(Environment.GetEnvironmentVariable(DisableEnvironmentVariable))) return false;
         if ((DateTime.UtcNow - lastLaunchUtc).TotalSeconds < MinimumIntervalSeconds) return false;

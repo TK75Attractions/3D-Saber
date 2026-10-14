@@ -1,0 +1,100 @@
+// Unity native API は代替。実 Socket / 探索実装は代替せず、GUI・外部 process は起動しない。
+using System;
+using System.Diagnostics;
+using System.Net;
+using System.Net.Sockets;
+using System.Reflection;
+using System.Text;
+using System.Threading;
+using NUnit.Framework;
+
+namespace UnityEngine
+{
+    public static class Debug { public static void Log(object x) {} public static void LogWarning(object x) {} }
+    public static class PlayerPrefs
+    {
+        public static string GetString(string k, string d) => d;
+        public static void SetString(string k, string v) {} public static void Save() {}
+    }
+}
+public static class PhoneSaberP2PBridgeProcess { public static bool AutoStartEnabled = true; }
+public static class SwingMonotonicClock
+{
+    public static long Timestamp => Stopwatch.GetTimestamp();
+    public static double ToSeconds(long ticks) => ticks / (double)Stopwatch.Frequency;
+}
+
+class WindowsStationTests
+{
+    [Test]
+    public void DiscoveryDoesNotShareItsWindowsPort()
+    {
+        using (var responder = new PhoneSaberDiscoveryResponder())
+        using (var socket = new UdpClient(AddressFamily.InterNetwork))
+        {
+            var start = typeof(PhoneSaberDiscoveryResponder).GetMethod("Start", BindingFlags.Instance | BindingFlags.NonPublic);
+            object[] args = { 5005, 5006, (Func<UdpClient>)(() => socket), "A", 0 };
+            // 旧版とのbefore/afterだけは旧signature(固定5007)も使う。通常検証は一時portで完結する。
+            if (start.GetParameters().Length == 4) Array.Resize(ref args, 4);
+            Assert.IsTrue((bool)start.Invoke(responder, args));
+            Assert.IsTrue(socket.ExclusiveAddressUse, "Windows の探索 port は他の受信機と共有しない");
+            using (var competitor = new UdpClient(AddressFamily.InterNetwork))
+            {
+                competitor.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+                int port = ((IPEndPoint)socket.Client.LocalEndPoint).Port;
+                Assert.Throws<SocketException>(() => competitor.Client.Bind(new IPEndPoint(IPAddress.Any, port)));
+            }
+        }
+    }
+
+    [Test]
+    public void OversizedDiscoveryDatagramsDoNotStopRequestsOrMetrics()
+    {
+        using (var responder = new PhoneSaberDiscoveryResponder())
+        using (var socket = new UdpClient(new IPEndPoint(IPAddress.Loopback, 0)))
+        using (var sender = new UdpClient(0))
+        {
+            socket.Client.ReceiveTimeout = 200;
+            sender.Client.ReceiveTimeout = 2000;
+            var flags = BindingFlags.Instance | BindingFlags.NonPublic;
+            typeof(PhoneSaberDiscoveryResponder).GetField("running", flags).SetValue(responder, true);
+            byte[] reply = Encoding.ASCII.GetBytes(PhoneSaberDiscoveryResponder.BuildReply(5005, 5006, "PC", "A"));
+            var loop = typeof(PhoneSaberDiscoveryResponder).GetMethod("Loop", flags);
+            var thread = new Thread(() => loop.Invoke(responder, new object[] { socket, reply })) { IsBackground = true };
+            thread.Start();
+            try
+            {
+                var target = (IPEndPoint)socket.Client.LocalEndPoint;
+                // Windows ReceiveFrom は WSAEMSGSIZE、Mac は切り詰めて返す。同じ後続要求で生存を確認。
+                foreach (int length in new[] { 401, 4096, 8192 })
+                {
+                    byte[] noise = new byte[length];
+                    sender.Send(noise, noise.Length, target);
+                    byte[] request = Encoding.ASCII.GetBytes(PhoneSaberDiscoveryResponder.Request);
+                    sender.Send(request, request.Length, target);
+                    var remote = new IPEndPoint(IPAddress.Any, 0);
+                    CollectionAssert.AreEqual(reply, sender.Receive(ref remote));
+                }
+                string line = System.IO.File.ReadAllLines("PhoneSaber/tools/fixtures/protocol_metrics.tsv")[1].Split('\t')[1];
+                byte[] metrics = Encoding.ASCII.GetBytes(line);
+                sender.Send(metrics, metrics.Length, target);
+                Assert.IsTrue(SpinWait.SpinUntil(() => responder.Metrics.Read("127.0.0.1",
+                    SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp)) != null, 2000));
+            }
+            finally { responder.Stop(); socket.Close(); Assert.IsTrue(thread.Join(2000)); }
+        }
+    }
+
+    static int Main()
+    {
+        int passed = 0, failed = 0;
+        foreach (var method in typeof(WindowsStationTests).GetMethods())
+        {
+            if (!method.IsDefined(typeof(TestAttribute), false)) continue;
+            try { method.Invoke(new WindowsStationTests(), null); passed++; }
+            catch (Exception e) { Console.WriteLine("FAIL " + method.Name + ": " + (e.InnerException ?? e).Message); failed++; }
+        }
+        Console.WriteLine("Windows socket policy host: " + passed + " PASS / " + failed + " FAIL (kernel=" + Environment.OSVersion.Platform + ")");
+        return failed == 0 ? 0 : 1;
+    }
+}

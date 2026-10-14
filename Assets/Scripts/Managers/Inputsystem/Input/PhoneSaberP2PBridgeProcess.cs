@@ -54,7 +54,7 @@ public sealed class PhoneSaberP2PBridgeProcess : IDisposable
     {
         get
         {
-#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+#if UNITY_EDITOR_OSX || (UNITY_STANDALONE_OSX && !UNITY_EDITOR)
             return true;
 #else
             return false;
@@ -156,7 +156,7 @@ public sealed class PhoneSaberP2PBridgeProcess : IDisposable
     // (SaberTests.Editor へは SaberGameAssemblyInfo.cs の InternalsVisibleTo で公開)。
     internal bool Start(int redPort, int bluePort, string dataPath, Func<string, string> environment, string station = "")
     {
-#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+#if UNITY_EDITOR_OSX || (UNITY_STANDALONE_OSX && !UNITY_EDITOR)
         if (!AutoStartEnabled || environment == null) return false;
         lock (Gate)
         {

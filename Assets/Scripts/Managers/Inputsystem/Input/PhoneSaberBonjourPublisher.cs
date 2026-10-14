@@ -19,7 +19,7 @@ public sealed class PhoneSaberBonjourPublisher : IDisposable
     {
         get
         {
-#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+#if UNITY_EDITOR_OSX || (UNITY_STANDALONE_OSX && !UNITY_EDITOR)
             return true;
 #else
             return false;
@@ -51,7 +51,7 @@ public sealed class PhoneSaberBonjourPublisher : IDisposable
 
     public bool Start(int port, string station = "")
     {
-#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+#if UNITY_EDITOR_OSX || (UNITY_STANDALONE_OSX && !UNITY_EDITOR)
         lock (Gate)
         {
             if (disposed) return false;

@@ -1,0 +1,32 @@
+# windows-1015 完了監査（2026-10-15）
+- 対象: HEAD=860fe40、main=cbeae75。git log --oneline -5 / git diff main...HEADを確認。開始時clean、commit/pushなし。
+- 前回専用の短いメモは存在せず、review-windows-kit.mdとpc-latency-20261013.mdを参照。
+- 未完了だった点: First-Runの実行分岐未テスト、計測成功判定の穴、Windows native未実行、引き継ぎメモ欠落。
+- 中・tools/player_probe.py:75: Androidから受信0件、描画0件、CSV欠落でも追従計測がexit 0だった。件数と実ファイルを検査してexit 1に修正。
+- 低・tools/latency_matrix.py:50/80: inf件数やinf/nan中央値のブロックが完了数に入り、不正な計測を成功扱いできた。非有限値と中央値欠損を除外。
+- 上記回帰2テストはHEAD実装で7 subtest FAILを再現、修正後PASS。正常記録の成功も検証。
+- tools/test_windows_station.py:146: 実First-Runの成功/各段階失敗/CSV用build欠落/遅延計測の1回再試行を10ケース追加。Station B、8 blocks、66秒の引数も検査。
+- First-Run試験は外部py/Unity/Firewall/入力を代替。実build・Firewall・カメラ成功を主張しない。watchdogテストの説明も実態に修正。
+- 新規host C#をwindows_station_tests.cs.txt fixtureへ移動。内容不変、実cscへの入力を更新して2/2 PASS。新規.cs/Swift/Kotlinなし、project登録/.meta追加不要。
+- main比の意図した既存変更: Windows探索5007の排他bind、Windows EditorでMac target選択時のMac専用サービス抑止、明示実行のWindows計測CLI/First-Run。
+- 通常watchdogはProbe=None、探索portは5007のまま。今回追加した挙動差は不正/空の計測の失敗判定だけ。新機能・TODO・到達不能optionなし。
+- recognition/ranking/eligibility/scoring/PCA/threshold、UDP x1,y1,x2,y2、formal corpus、scene/prefab/.meta/ProjectSettingsは変更なし。
+- 環境: Python 3.12.1（PATH=/Users/satoshi/.pyenv/versions/3.12.1/bin:$PATH）。PowerShell 7.4.6を/tmp/phonesaber-finish-pwshへ展開しPATHへ追加。GUI起動なし。
+- 初回の既定python3は3.9: tools 248件 error 6（numpy不足）、iOS tools 439件 failure 1（整数桁数制限の版差）/error 1（下記容量）。3.12で再実行。
+- PASS: PhoneSaber/toolsで `python3 -B -m unittest discover -v` — 289件、skip 9、既存expected failure 1、エラー0。
+- FAIL（差分外の環境）: ios/PhoneSaberSender/Toolsで同command — 438件、error 1、skip 1。test_phone_saber_tracking_e2e.setUpClassで容量API=0、必要1040187392 bytes。容量ゲート未変更。
+- PASS: toolsで `python3 -B -m unittest -v test_windows_station` — 13/13（PS構文、First-Run代替実行、実C# socket 2/2を含む）。最後のfixture移動/試験隔離後も再実行。
+- PASS: toolsで `python3 -B -m unittest -v test_ops_watchdog` — Mac実プロセス6/6、Windows source 2/2、Windows native 9 skip。
+- PASS: `python3 PhoneSaber/tools/check_pc_latency.py` — Unity実API6構成compile、Windows build method/PInvoke宣言compile、NUnit host 35/35。BuildPipeline実行ではない。
+- PASS: `python3 PhoneSaber/tools/check_auto_latency.py` — C# 5/5、Swift XCTest 3/3、実Swift→C# UDP loopback。
+- PASS: `make -C PhoneSaber/android/core test parity` — C++ build/unit、Python 4件、325 PNG/541遷移/27合成で差分0、formal 40/40。
+- PASS: `bash PhoneSaber/ios/PhoneSaberSender/run-static-tests.sh` — Swift最適化build、static BGRA、DeviceHealth XCTest 13/13。
+- 旧版再現: `check_pc_latency.py --platform-before-ref main` はcross-target Windows Editorでexit 1、`check_windows_station.py --before-ref main` は排他検査1 FAIL/復帰検査1 PASS（期待どおり）。現行は上記PASS。
+- PASS: git diff --check / git diff main...HEAD --check。生成されたPowerShell startup profileは削除し、試験cwdを一時領域へ隔離。
+- 未実行: 公式verify、Unity Editor/Player/実Windows build、Windows kernel/PowerShell 5.1、xcodebuild/Simulator/device。Android差分なしのためGradleは追加実行せず。
+- operator最小1（通常環境・repo root）: `PATH=/Users/satoshi/.pyenv/versions/3.12.1/bin:$PATH PhoneSaber/tools/verify_phone_saber.sh`。上記E2E、iOS XCTest/Releaseもここで再確認。iOS差分なしのため別xcodebuild不要。
+- operator最小2: `PhoneSaber/tools/unity_copy.sh sync` 後 `PhoneSaber/tools/unity_copy.sh editmode '^(PhoneSaberDiscoveryResponderTests|PhoneSaberP2PBridgeProcessTests)'`。公式verifyのfilter外の2クラスのみ追加。
+- operator最小3（Windows管理者PS・repo root、Android準備）: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File PhoneSaber/windows/First-Run.ps1 -Station A`。native9件→実Windows build→遅延8 blocks→追従66秒→CSV解析。
+- 実機残り: Android探索で台Aが見えること、通常bat二重起動拒否/異常終了再起動/正常Quitを一度確認。Mac EditorはWindows target時にもMacサービス、Windows EditorはMac target時にもMacサービス非起動を確認。
+- 未認証: Windows SO_EXCLUSIVEADDRUSE/巨大datagram復帰のkernel差、実光学結果、長時間監視。host PASSを実機性能の証拠にしない。認識/画面挙動を変える追加提案の実装なし。
+- ログ: /tmp/phonesaber-finish-{tools-final,ios-tools-final,pc,auto,core,swift,windows-final,watchdog,regression-before,platform-before,socket-before}.log。

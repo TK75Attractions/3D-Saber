@@ -21,8 +21,8 @@ from pathlib import Path
 import sys
 
 import numpy as np
+from player_probe import data_folder
 
-FOLDER = Path.home() / "Library/Application Support/DefaultCompany/ServTechSlash/PhoneSaber"
 SEGMENT = 8.0
 FREQUENCIES = (0.5, 1.0, 0.0, 1.5, 2.0, 0.75, 0.0, 2.5)
 LEADS = (0, 20, 40, 60, 80, 100, 120, 140, 160)
@@ -368,7 +368,7 @@ def main():
         parser.error("--render-hz は有限の正数")
     if args.check_targets and (not args.actual_csharp or args.lead_ms is None or args.before_ref):
         parser.error("--check-targets は --actual-csharp --lead-ms が必要（旧版再生は不可）")
-    path = Path(args.csv) if args.csv else max(FOLDER.glob("tracking-*.csv"), key=lambda p: p.stat().st_mtime, default=None)
+    path = Path(args.csv) if args.csv else max(data_folder().glob("tracking-*.csv"), key=lambda p: p.stat().st_mtime, default=None)
     if path is None or not path.exists():
         print("tracking-*.csv がありません。-phonesaberTrackingProbe で計測してください。")
         return 2

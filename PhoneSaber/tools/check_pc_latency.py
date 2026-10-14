@@ -24,6 +24,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--before-ref', help='旧PerfLogで窓境界の回帰3件がFAILすることも確認')
     parser.add_argument('--compensation-before-ref', help='旧自動補正/画面推定で2件の回帰FAILを確認')
+    parser.add_argument('--platform-before-ref', help='旧macOS専用サービスのWindows Editor判定FAILを確認')
     args = parser.parse_args()
     editor = Path(os.environ.get('PHONESABER_UNITY_CONTENTS', '/Applications/Unity/Hub/Editor/6000.3.9f1/Unity.app/Contents'))
     mono = editor / 'Resources/Scripting/MonoBleedingEdge'
@@ -57,11 +58,46 @@ public static class ProjectorMode { public const float BladeWidthScale=1,BladeOu
         refs = ['/r:' + str(p) for p in (editor / 'Resources/Scripting/Managed/UnityEngine').glob('*.dll')]
         refs += ['/r:' + str(template / 'Unity.InputSystem.dll'), '/r:' + str(mono / 'lib/mono/4.5/Facades/netstandard.dll')]
         sources = sorted(INPUT.glob('PhoneSaber*.cs')) + [INPUT / 'InputPoint.cs', INPUT / 'SwingEventStream.cs', ROOT / 'Assets/Scripts/Saber/SaberInputBridge.cs', ROOT / 'Assets/Scripts/Saber/MouseSaberInput.cs', ROOT / 'Assets/Scripts/Saber/CameraSaberHistory.cs', stubs]
-        for platform in ('UNITY_EDITOR,UNITY_EDITOR_OSX', 'UNITY_EDITOR,UNITY_EDITOR_WIN', 'UNITY_STANDALONE_OSX', 'UNITY_STANDALONE_WIN'):
-            code = run(compiler + ['/target:library', '/define:' + platform, '/out:' + str(build / (platform.replace(',', '-') + '.dll'))] + refs + list(map(str, sources)))
+        if args.platform_before_ref:
+            for name in ('PhoneSaberBonjourPublisher.cs', 'PhoneSaberP2PBridgeProcess.cs', 'PhoneSaberTriageReceiverLauncher.cs'):
+                before = build / name
+                before.write_bytes(subprocess.check_output(['git', 'show', args.platform_before_ref +
+                                   ':Assets/Scripts/Managers/Inputsystem/Input/' + name], cwd=ROOT))
+                sources[sources.index(INPUT / name)] = before
+        check = build / 'PlatformCheck.cs'
+        check.write_text('''using System;
+class Check { static int Main(string[] args) {
+ bool expected = bool.Parse(args[0]);
+ if (PhoneSaberBonjourPublisher.IsSupported != expected || PhoneSaberP2PBridgeProcess.IsSupported != expected) {
+  Console.WriteLine("FAIL: macOS services support does not match Editor host / Player OS"); return 1;
+ }
+ if (!expected) {
+  bool accessedEnvironment = false;
+  using (var bridge = new PhoneSaberP2PBridgeProcess()) {
+   var start = typeof(PhoneSaberP2PBridgeProcess).GetMethod("Start", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+   Func<string,string> environment = key => { accessedEnvironment = true; return "0"; };
+   if ((bool)start.Invoke(bridge, new object[] { 5005, 5006, null, environment, "A" }) || accessedEnvironment) return 1;
+  }
+  if (PhoneSaberTriageReceiverLauncher.EnsureStarted(null)) return 1;
+ }
+ Console.WriteLine("macOS service platform policy PASS: supported=" + expected); return 0;
+}}
+''')
+        for platform in ('UNITY_EDITOR,UNITY_EDITOR_OSX', 'UNITY_EDITOR,UNITY_EDITOR_WIN', 'UNITY_STANDALONE_OSX', 'UNITY_STANDALONE_WIN',
+                         'UNITY_EDITOR,UNITY_EDITOR_WIN,UNITY_STANDALONE_OSX',
+                         'UNITY_EDITOR,UNITY_EDITOR_OSX,UNITY_STANDALONE_WIN'):
+            assembly = build / (platform.replace(',', '-') + '.dll')
+            code = run(compiler + ['/target:library', '/define:' + platform, '/out:' + str(assembly)] + refs + list(map(str, sources)))
             if code:
                 return code
             print('Unity 6000.3.9f1 API compile PASS: ' + platform)
+            binary = build / 'platform.exe'
+            if run(compiler + ['/out:' + str(binary), '/r:' + str(assembly), str(check)] + refs):
+                return 1
+            supported = 'UNITY_EDITOR_OSX' in platform or ('UNITY_EDITOR' not in platform and 'UNITY_STANDALONE_OSX' in platform)
+            runtime = dict(os.environ, MONO_PATH=os.pathsep.join(map(str, (build, editor / 'Resources/Scripting/Managed/UnityEngine', template))))
+            if run([str(mono / 'bin/mono'), str(binary), str(supported)], env=runtime):
+                return 1
             if platform.startswith('UNITY_EDITOR'):
                 tests = [ROOT / 'Assets/Tests/Editor/PhoneSaberLatencyCompensationTests.cs',
                          ROOT / 'Assets/Tests/Editor/PhoneSaberLatencyProbeTests.cs',
@@ -70,6 +106,11 @@ public static class ProjectorMode { public const float BladeWidthScale=1,BladeOu
                                    '/out:' + str(build / (platform.replace(',', '-') + '-tests.dll'))] + refs + list(map(str, sources + tests))):
                     return 1
                 print('Compensation EditMode test assembly API compile PASS: ' + platform)
+        if run(compiler + ['/target:library', '/define:UNITY_EDITOR,UNITY_EDITOR_WIN',
+                           '/out:' + str(build / 'PlayerBuild.dll')] + refs +
+               [str(ROOT / 'Assets/Editor/PhoneSaberPlayerBuild.cs')]):
+            return 1
+        print('Windows Player build method Unity API compile PASS (BuildPipeline not executed)')
         # 実Windows launcherのP/Invoke構造体もcompile（OS APIの呼び出しはしない）。
         ps = (ROOT / 'PhoneSaber/windows/saber-watchdog.ps1').read_text(encoding='utf-8-sig')
         native = build / 'DisplayRead.cs'

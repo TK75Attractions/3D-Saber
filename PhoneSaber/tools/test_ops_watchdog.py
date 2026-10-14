@@ -1,4 +1,4 @@
-"""Mac は偽 open と実プロセスで検証。Windows はソース契約のみ（実行検証ではない）。"""
+"""Mac は偽 open と実プロセスで検証。Windows の実行統合テストは Windows 上でのみ行う。"""
 import os
 from pathlib import Path
 import signal
@@ -181,7 +181,7 @@ class WindowsSourceContractTests(unittest.TestCase):
 @unittest.skipUnless(os.name == 'nt', 'cmd.exe / PowerShell 5.1 は Windows 実機でのみ実行')
 class WindowsWatchdogIntegrationTests(unittest.TestCase):
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory(prefix='縁日 テスト (1) ! ')
+        self.temp = tempfile.TemporaryDirectory(prefix="縁日 テスト (1) ! %PATH% & [1] ' ")
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         self.kit = self.root / 'PhoneSaber/windows'
@@ -211,6 +211,8 @@ class Fake {
         File.WriteAllText(Environment.GetEnvironmentVariable("PID_PATH"),
             System.Diagnostics.Process.GetCurrentProcess().Id.ToString());
         string mode = Environment.GetEnvironmentVariable("MODE");
+        File.WriteAllLines(Environment.GetEnvironmentVariable("COUNT_PATH")+".args", args);
+        File.WriteAllText(Environment.GetEnvironmentVariable("COUNT_PATH")+".cwd", Environment.CurrentDirectory);
         int index = Array.IndexOf(args,"-phonesaberHeartbeat");
         if ((mode=="hang" && n==1) || mode=="disabled" || (mode=="empty" && n==1)) {
             if (index>=0) {
@@ -270,6 +272,51 @@ class Fake {
         self.assertIn('hang detected', log)
         self.assertIn('exit-code=1', log)
         self.assertIn('exit-code=0', log)
+
+    def test_probes_use_the_shared_lock_and_forward_quoted_paths(self):
+        for probe, count, flag in (('Latency', '8', '-phonesaberLatencyProbe'),
+                                   ('Tracking', '66', '-phonesaberTrackingProbe')):
+            with self.subTest(probe=probe):
+                log = self.root / '計測 log [1].txt'
+                env = dict(self.env, MODE='old', PHONESABER_STATION='B', RESTART_COUNT='0',
+                           GAME_EXE=str(self.root / 'Builds/Windows/3D-Saber.exe'),
+                           LOG_FILE=str(self.kit / 'Start-Saber-B.log'),
+                           STOP_FILE=str(self.kit / 'Start-Saber-B.STOP'), PHONESABER_PROBE_LOG=str(log))
+                result = subprocess.run(['powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Bypass',
+                                         '-File', str(self.kit / 'saber-watchdog.ps1'), '-Mode', 'Lock',
+                                         '-Probe', probe, '-ProbeCount', count], env=env,
+                                        input='\n', capture_output=True, text=True, timeout=15)
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                args = (self.root / 'count.args').read_text(encoding='utf-8-sig').splitlines()
+                self.assertEqual(args[args.index(flag) + 1], count)
+                self.assertEqual(args[args.index('-logFile') + 1], str(log))
+                self.assertEqual(args[args.index('-phonesaberStation') + 1], 'B')
+                self.assertEqual((self.root / 'count.cwd').read_text(encoding='utf-8-sig'), str(self.root / 'Builds/Windows'))
+
+    def test_probe_cannot_bypass_another_station_watchdog(self):
+        self.launch('A', 'hold')
+        self.wait_for_count(1)
+        env = dict(self.env, PHONESABER_STATION='B', RESTART_COUNT='0',
+                   LOG_FILE=str(self.kit / 'Start-Saber-B.log'))
+        result = subprocess.run(['powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File',
+                                 str(self.kit / 'saber-watchdog.ps1'), '-Mode', 'Lock', '-Probe', 'Latency'],
+                                env=env, input='\n', capture_output=True, text=True, timeout=10)
+        self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual((self.root / 'count').read_text(), '1')
+
+    def test_probe_honours_stop_before_starting(self):
+        for stop in ('Start-Saber-B.STOP', 'STOP'):
+            path = self.kit / stop
+            path.touch()
+            env = dict(self.env, PHONESABER_STATION='B', RESTART_COUNT='0',
+                       LOG_FILE=str(self.kit / 'Start-Saber-B.log'),
+                       STOP_FILE=str(self.kit / 'Start-Saber-B.STOP'))
+            result = subprocess.run(['powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File',
+                                     str(self.kit / 'saber-watchdog.ps1'), '-Mode', 'Lock', '-Probe', 'Latency'],
+                                    env=env, input='\n', capture_output=True, text=True, timeout=10)
+            path.unlink()
+            self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertFalse((self.root / 'count').exists())
 
     def test_second_station_cannot_start_player(self):
         self.launch('A', 'hold')

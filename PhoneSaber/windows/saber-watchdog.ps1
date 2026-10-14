@@ -1,5 +1,12 @@
-﻿param([ValidateSet('Lock', 'Run')][string]$Mode)
+﻿param(
+    [ValidateSet('Lock', 'Run')][string]$Mode,
+    [ValidateSet('None', 'Latency', 'Tracking')][string]$Probe = 'None',
+    [ValidateRange(1, 600)][int]$ProbeCount = 8
+)
 $ErrorActionPreference = 'Stop'
+if (($Probe -eq 'Latency' -and $ProbeCount -gt 8) -or ($Probe -eq 'Tracking' -and $ProbeCount -lt 10)) {
+    throw 'ProbeCount が範囲外です。Latency: 1..8 / Tracking: 10..600'
+}
 
 # bat から渡すパスを PowerShell / cmd のコード文字列に埋め込まない。
 function Write-WatchdogLog([string]$Message) {
@@ -39,7 +46,18 @@ if ($Mode -eq 'Lock') {
         $info = New-Object Diagnostics.ProcessStartInfo
         $info.FileName = $env:ComSpec
         $info.UseShellExecute = $false
-        $info.Arguments = '/d /s /c ""%PHONESABER_BATCH%" --locked"'
+        if ($Probe -ne 'None') {
+            $commonStop = Join-Path ([IO.Path]::GetDirectoryName($env:STOP_FILE)) 'STOP'
+            if ((Test-Path -LiteralPath $env:STOP_FILE) -or (Test-Path -LiteralPath $commonStop)) {
+                Write-WatchdogLog 'not-started STOP-file'
+                exit 1
+            }
+            # 計測も通常起動と同じ lock を保持。スマホは手動で送信開始した状態を使う。
+            $info.FileName = (Get-Process -Id $PID).Path
+            $info.Arguments = '-NoProfile -ExecutionPolicy Bypass -File "' + $PSCommandPath + '" -Mode Run -Probe ' + $Probe + ' -ProbeCount ' + $ProbeCount
+        } else {
+            $info.Arguments = '/d /s /c ""%PHONESABER_BATCH%" --locked"'
+        }
         $batch = [Diagnostics.Process]::Start($info)
         $batch.WaitForExit()
         $code = $batch.ExitCode
@@ -133,6 +151,11 @@ try {
     $info.UseShellExecute = $false
     $info.CreateNoWindow = $true
     $info.Arguments = '-phonesaberStation ' + $env:PHONESABER_STATION + ' -phonesaberHeartbeat "' + $heartbeat + '"'
+    if ($Probe -ne 'None') {
+        $argument = if ($Probe -eq 'Latency') { '-phonesaberLatencyProbe' } else { '-phonesaberTrackingProbe' }
+        $info.Arguments += ' ' + $argument + ' ' + $ProbeCount
+        if ($env:PHONESABER_PROBE_LOG) { $info.Arguments += ' -logFile "' + $env:PHONESABER_PROBE_LOG + '"' }
+    }
     # Start が返す実際の Player の handle で監視する。名前で他の process を kill しない。
     $game = [Diagnostics.Process]::Start($info)
     $commonStop = Join-Path ([IO.Path]::GetDirectoryName($env:STOP_FILE)) 'STOP'

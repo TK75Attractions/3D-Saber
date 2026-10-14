@@ -46,7 +46,7 @@ public sealed class PhoneSaberDiscoveryResponder : IDisposable
         => Start(redPort, bluePort, () => new UdpClient(AddressFamily.InterNetwork), station);
 
     // テストでは既に bind 済みの socket を渡し、5007 を占有せず起動失敗を再現する。
-    internal bool Start(int redPort, int bluePort, Func<UdpClient> createClient, string station = "")
+    internal bool Start(int redPort, int bluePort, Func<UdpClient> createClient, string station = "", int listenPort = Port)
     {
         // テスト中は他の自動起動と同じく何も開かない(port 5007 を占有しない)。
         if (!PhoneSaberP2PBridgeProcess.AutoStartEnabled) return false;
@@ -59,14 +59,19 @@ public sealed class PhoneSaberDiscoveryResponder : IDisposable
                 var client = createClient();
                 // bind より前に所有し、設定・bind の失敗でも catch で確実に閉じる。
                 socket = client;
+#if UNITY_EDITOR_WIN || (UNITY_STANDALONE_WIN && !UNITY_EDITOR)
+                // Windows の SO_REUSEADDR は他の受信機との共有を許すため、探索も排他で bind する。
+                client.ExclusiveAddressUse = true;
+#else
                 client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-                client.Client.Bind(new IPEndPoint(IPAddress.Any, Port));
+#endif
+                client.Client.Bind(new IPEndPoint(IPAddress.Any, listenPort));
                 client.Client.ReceiveTimeout = 500;
                 running = true;
                 byte[] reply = Encoding.ASCII.GetBytes(BuildReply(redPort, bluePort, Environment.MachineName, station));
                 thread = new Thread(() => Loop(client, reply)) { IsBackground = true, Name = "PhoneSaberDiscovery" };
                 thread.Start();
-                UnityEngine.Debug.Log($"[PhoneSaber] Android discovery responder on UDP {Port} station={station}");
+                UnityEngine.Debug.Log($"[PhoneSaber] Android discovery responder on UDP {listenPort} station={station}");
                 return true;
             }
             catch (Exception exception)
