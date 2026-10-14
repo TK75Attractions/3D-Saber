@@ -9,6 +9,7 @@ from real_motion_extract import write_rows
 
 STUBS = r'''
 namespace UnityEngine {
+    public static class Debug { public static void Log(object message) {} }
     public class MonoBehaviour { protected static void DontDestroyOnLoad(object obj) {} }
     public class GameObject { public GameObject(string name) {} public T AddComponent<T>() where T:new() => new T(); }
     public enum RuntimeInitializeLoadType { BeforeSceneLoad }

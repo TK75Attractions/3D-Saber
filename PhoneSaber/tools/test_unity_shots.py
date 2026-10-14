@@ -5,9 +5,11 @@ import subprocess
 import tempfile
 import unittest
 
+SCENES = ('Title', 'SongSelect', 'Game', 'Result', 'Calibration', 'CalibrationReturn', 'TitleReturn')
+SUCCESS = 'done exceptions=0 errors=0 input=ok cuts=3 flow=ok'
 
 class UnityShotsTests(unittest.TestCase):
-    def run_shots(self, scenes="Title SongSelect Game", completion="done exceptions=0 input=ok", empty="",
+    def run_shots(self, scenes=" ".join(SCENES), completion=SUCCESS, empty="",
                   stale=False, launch_failure=False, cleanup_failure=False):
         source = Path(__file__).with_name("unity_copy.sh").read_text()
         function = "shots_player() {" + source.split("shots_player() {", 1)[1].split("\n}\n", 1)[0] + "\n}\n"
@@ -49,18 +51,25 @@ if [[ "$MOCK_CLEANUP_FAILURE" == 1 ]]; then rm() { return 1; }; fi
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_missing_scene_fails(self):
-        for missing in ("Title", "SongSelect", "Game"):
+        for missing in SCENES:
             with self.subTest(missing=missing):
-                scenes = " ".join(s for s in ("Title", "SongSelect", "Game") if s != missing)
+                scenes = " ".join(s for s in SCENES if s != missing)
                 self.assertNotEqual(self.run_shots(scenes=scenes).returncode, 0)
 
     def test_empty_image_fails(self):
         self.assertNotEqual(self.run_shots(empty="Game").returncode, 0)
 
     def test_missing_or_failed_completion_fails(self):
-        for completion in ("shot Title saved", "done exceptions=1 input=ok", "done exceptions=0 input=FAILED"):
+        for completion in ("shot Title saved", "done exceptions=0 input=ok",
+                           SUCCESS.replace('exceptions=0', 'exceptions=1'),
+                           SUCCESS.replace('errors=0', 'errors=1'),
+                           SUCCESS.replace('input=ok', 'input=FAILED'),
+                           SUCCESS.replace('cuts=3', 'cuts=0'), SUCCESS.replace('flow=ok', 'flow=FAILED')):
             with self.subTest(completion=completion):
                 self.assertNotEqual(self.run_shots(completion=completion).returncode, 0)
+
+    def test_duplicate_completion_is_failure(self):
+        self.assertNotEqual(self.run_shots(completion=SUCCESS + '\n[PhoneSaberSmoke] ' + SUCCESS).returncode, 0)
 
     def test_old_success_is_not_reused_when_launch_fails(self):
         self.assertNotEqual(self.run_shots(stale=True, launch_failure=True).returncode, 0)

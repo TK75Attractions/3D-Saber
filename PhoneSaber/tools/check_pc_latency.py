@@ -35,8 +35,20 @@ def main():
         stubs = build / 'GameDependencies.cs'
         stubs.write_text('''using UnityEngine;
 public static class UdpImuBridge { public static bool TryGetLatest(out Vector3 a,out Vector3 g,out bool c){a=g=default;c=false;return false;} }
-public static class GameSession {public static string SelectedSongId,SelectedDifficulty;public static bool IsCalibrationMode,TutorialPending;}
-public class SaberBladeVisual : MonoBehaviour { public void Clear(){} public void NotifyCut(){} public void Show(Vector3 a,Vector3 b,float w,Color c,float t){} }
+public static class GameSession {public static string SelectedSongId,SelectedSongTitle,SelectedDifficulty;public static bool IsCalibrationMode,TutorialPending; public static int FinalScore,FinalHit,FinalMiss,FinalMaxCombo,FinalComboBonus,FinalPerfect,FinalGreat,FinalGood,FinalBad;}
+public static class HighScoreStore { public static string Key(string s,string d) => s+d; }
+public static class SongAchievementStore { public static string Key(string s,string d) => s+d; }
+public static class DailyRankingStore { public static string Key(string s,string d) => s+d; }
+public static class ScreenTransition { public static bool IsBusy; }
+public class ScoreManager : MonoBehaviour { public int Score,HitCount,MissCount,MaxCombo,ComboBonus,PerfectCount,GreatCount,GoodCount,BadCount; }
+public class ResultController : MonoBehaviour { public void OnBackButton(){} }
+public class CalibrationController : MonoBehaviour { public bool IsLive; public void DiscardAndExit(){} }
+public class SongSelectController : MonoBehaviour {
+ public string[] difficultyNames; public int SongCount; public bool IsLocked(int i)=>false;
+ public string SongIdAt(int i)=>""; public static bool HasPlayableChart(string s,string[] d)=>false;
+ public void Select(int i){} public void SetDifficulty(int i){} public void StartGame(){} public void ReturnToTitle(){}
+}
+public class SaberBladeVisual : MonoBehaviour { public int VertexCount; public void Clear(){} public void NotifyCut(){} public void Show(Vector3 a,Vector3 b,float w,Color c,float t){} }
 public static class DisplaySettings { public static bool ProjectorMode; }
 public static class SaberCutJudge { public static float DistPointToSegment(Vector2 p,Vector2 a,Vector2 b,out Vector2 q){q=a;return 0;} }
 public enum CameraSaberColor { Red, Blue }

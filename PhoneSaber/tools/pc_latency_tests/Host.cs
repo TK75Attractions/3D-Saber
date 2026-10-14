@@ -18,6 +18,7 @@ namespace UnityEngine
         public static void DeleteKey(string k) => values.Remove(k);
         public static void Save() { }
     }
+    public static class Debug { public static void Log(object message) {} }
     public static class Time { public static double realtimeSinceStartupAsDouble; public static int frameCount; }
     public static class Application { public static event Action onBeforeRender; public static int targetFrameRate = -1; public static string platform = "host"; public static void Render() => onBeforeRender?.Invoke(); }
     public struct Rate { public double value; }

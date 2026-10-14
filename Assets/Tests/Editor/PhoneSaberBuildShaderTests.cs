@@ -65,6 +65,25 @@ public class PhoneSaberBuildShaderTests
         Assert.AreEqual(PhoneSaberPlayerSmoke.DefaultSeconds, PhoneSaberPlayerSmoke.ResolveSeconds(new[] { "app", "-phonesaberSmoke", "-batchmode" }));
     }
 
+    [TestCase(LogType.Error)]
+    [TestCase(LogType.Assert)]
+    [TestCase(LogType.Exception)]
+    public void SmokeCountsFailureLogs(LogType type)
+    {
+        var go = new GameObject("Smoke log regression");
+        try
+        {
+            var smoke = go.AddComponent<PhoneSaberPlayerSmoke>();
+            var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+            typeof(PhoneSaberPlayerSmoke).GetMethod("OnLog", flags).Invoke(smoke, new object[] { "failure", "", type });
+            int count = 0;
+            foreach (string name in new[] { "exceptions", "errors" })
+                count += (int)(typeof(PhoneSaberPlayerSmoke).GetField(name, flags)?.GetValue(smoke) ?? 0);
+            Assert.AreEqual(1, count);
+        }
+        finally { Object.DestroyImmediate(go); }
+    }
+
     [Test]
     public void PerfWindowCountsFramesAndHitches()
     {

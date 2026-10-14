@@ -5,7 +5,8 @@
 #   PhoneSaber/tools/unity_copy.sh editmode [filter]    EditMode テスト（filter は -testFilter の正規表現）
 #   PhoneSaber/tools/unity_copy.sh build-mac            macOS Player をビルドし、起動して確かめてから Builds/Mac/3D-Saber.app を差し替える
 #   PhoneSaber/tools/unity_copy.sh shots [app]          ビルド済み Player を隠して起動し、各 scene の画面を _out/shots/*.png に残す
-#   PhoneSaber/tools/unity_copy.sh smoke [app]          ビルド済み Player を窓なしで起動し、例外が出ないか確かめる
+#   PhoneSaber/tools/unity_copy.sh smoke [app]          ビルド済み Player を窓なしで起動し、入力・切断・画面遷移を確認
+#   PhoneSaber/tools/unity_copy.sh smoke-window [app]   窓を開く（前面へは出さない）。実描画 fps を perf 行で確認
 #
 # 複製の場所: $PHONESABER_UNITY_COPY（既定 ~/Library/Caches/PhoneSaber/unity-copy）。Library を含むので数 GB。
 # 消えても sync で作り直せる（初回の import に数分かかる）。PlayMode 全件は unity_playmode_batches.py を使う。
@@ -40,15 +41,22 @@ run_hidden() {   # run_hidden <実行ファイル> [引数...]
     fi
 }
 
-# ビルド済み Player を窓なしで起動し、Title → SongSelect → Game を順に開いて例外を数える。
+# Title → SongSelect → Game → Result → 判定調整 → SongSelect → Title。Error も失敗にする。
 # (PhoneSaberPlayerSmoke.cs。UDP 5005-5007 を数十秒使うので、ゲームが起動中のときは呼ばない)
 smoke_player() {
-    local app="$1" exe log="$OUT/smoke.log" pid waited=0 limit="${PHONESABER_SMOKE_LIMIT:-150}"
+    local app="$1" mode="${2:-batch}" exe log="$OUT/smoke.log" pid waited=0 limit="${PHONESABER_SMOKE_LIMIT:-75}"
+    local args=(-phonesaberSmoke "${PHONESABER_SMOKE_SECONDS:-5}" -logFile "$log")
+    mkdir -p "$OUT" || return 1
     exe="$(find "$app/Contents/MacOS" -maxdepth 1 -type f | head -1)"
     [[ -x "$exe" ]] || { echo "smoke: 実行ファイルが見つかりません: $app"; return 1; }
     # 古い成功ログを削除できない場合は、今回の結果として再利用しない。
     rm -f "$log" || { echo "smoke: ログを初期化できません ($log)"; return 1; }
-    run_hidden "$exe" -batchmode -phonesaberSmoke "${PHONESABER_SMOKE_SECONDS:-8}" -logFile "$log" >/dev/null 2>&1 &
+    if [[ "$mode" == window ]]; then
+        echo "smoke-window: Player の窓を開きます（実描画 fps 用、batchmode ではありません）"
+        /usr/bin/open -g -n -W "$app" --args "${args[@]}" -screen-fullscreen 0 -screen-width 1280 -screen-height 720 >/dev/null 2>&1 &
+    else
+        run_hidden "$exe" -batchmode "${args[@]}" >/dev/null 2>&1 &
+    fi
     pid=$!
     while kill -0 "$pid" 2>/dev/null; do
         if (( waited >= limit )); then
@@ -65,13 +73,24 @@ smoke_player() {
     if ! grep -q "\[PhoneSaberSmoke\] done" "$log" 2>/dev/null; then
         echo "smoke: 最後まで進みませんでした (exit=$code, $log)"; grep -nE '^[A-Za-z.]*Exception' -A3 "$log" 2>/dev/null | head -12; return 1
     fi
+    # 成功行を1つ含むだけでは、重複起動や別の失敗した完了を隠せる。
+    if [[ "$(grep -cF '[PhoneSaberSmoke] done' "$log")" -ne 1 ]]; then
+        echo "smoke: 完了行が複数あります ($log)"; return 1
+    fi
     if [[ "$code" -ne 0 || "$count" -ne 0 ]]; then
         echo "smoke: 例外 $count 件 (exit=$code, $log)"; grep -nE '^[A-Za-z.]*Exception' -A4 "$log" | head -30; return 1
     fi
-    if ! grep -q "\[PhoneSaberSmoke\] done exceptions=0 input=ok" "$log"; then
-        echo "smoke: 座標の受信か剣の部品が確認できません ($log)"; grep -n "PhoneSaberSmoke" "$log" | tail -4; return 1
+    if ! grep -qE '^[[]PhoneSaberSmoke[]] done exceptions=0 errors=0 input=ok cuts=[1-9][0-9]* flow=ok$' "$log"; then
+        echo "smoke: Error / 入力 / 切断 / 画面遷移の確認に失敗 ($log)"; grep -n "PhoneSaberSmoke" "$log" | tail -4; return 1
     fi
-    echo "smoke: Title / SongSelect / Game を例外なしで通過、座標の受信と剣の部品も確認 (${waited} 秒)"
+    # batchmode の fps は実際の窓描画の値として扱わない。
+    echo "smoke: perf mode=${mode}（batch は実描画 fps の判定に使わない）"
+    local scene
+    for scene in Title SongSelect Game Result; do
+        grep -qF "[PhoneSaberSmoke] perf scene=$scene " "$log" || { echo "smoke: $scene の perf 行がありません ($log)"; return 1; }
+    done
+    grep -F '[PhoneSaberSmoke] perf ' "$log"
+    echo "smoke: Title / SongSelect / Game / Result / 判定調整 / Title 通過、Error なし・実カット確認 (${waited} 秒)"
 }
 
 # ビルド済み Player を隠したまま起動し、各 scene の画面を PNG に残す（見た目の確認用。窓は出さない）。
@@ -98,20 +117,59 @@ shots_player() {
         sleep 0.5; waited=$((waited + 1))
     done
     grep "PhoneSaberSmoke\] \(shot\|done\)" "$log" 2>/dev/null
-    # 途中終了で1枚だけ残っても成功にしない。open の終了コードでは Player の成否は分からない。
+    # 途中終了やResult/調整の撮影失敗も成功にしない。openの終了コードではPlayerの成否は分からない。
     local scene
-    for scene in Title SongSelect Game; do
+    for scene in Title SongSelect Game Result Calibration CalibrationReturn TitleReturn; do
         [[ -s "$dir/$scene.png" ]] || { echo "shots: $scene の画像がありません、または空です ($log)"; return 1; }
     done
-    grep -qE '^\[PhoneSaberSmoke\] done exceptions=0 input=ok$' "$log" || {
+    [[ "$(grep -cF '[PhoneSaberSmoke] done' "$log")" -eq 1 ]] || {
+        echo "shots: 完了行が無い、または複数あります ($log)"; return 1;
+    }
+    grep -qE '^[[]PhoneSaberSmoke[]] done exceptions=0 errors=0 input=ok cuts=[1-9][0-9]* flow=ok$' "$log" || {
         echo "shots: Player の正常完了を確認できません ($log)"; return 1;
     }
     echo "shots: $dir"
 }
 
+# 長時間試験も常に隠して起動。openの終了コードではなく今回の完了ログで判定する。
+soak_player() {
+    local minutes="$1" app="$2" log pid waited=0 limit
+    limit="$(python3 -c 'import math,sys; v=float(sys.argv[1]); g=float(sys.argv[2]); assert math.isfinite(v) and .1 <= v <= 1440 and math.isfinite(g) and 8 <= g <= 600; print(math.ceil(v*60+g)+90)' "$minutes" "${PHONESABER_SOAK_GAME_SECONDS:-40}")" || {
+        echo "soak: 分数は0.1〜1440、Game秒数は8〜600の有限数を指定してください"; return 2;
+    }
+    [[ -d "$app/Contents/MacOS" ]] || { echo "soak: appがありません: $app"; return 1; }
+    mkdir -p "$OUT" || return 1
+    log="$(cd "$OUT" && pwd -P)/soak-$$.log" || return 1
+    rm -f "$log" || { echo "soak: ログを初期化できません ($log)"; return 1; }
+    local args=(-batchmode -phonesaberSoak "$minutes" -logFile "$log")
+    [[ -n "${PHONESABER_SOAK_GAME_SECONDS:-}" ]] && args+=(-phonesaberSoakGameSeconds "$PHONESABER_SOAK_GAME_SECONDS")
+    /usr/bin/open -g -j -n -W "$app" --args "${args[@]}" >/dev/null 2>&1 &
+    pid=$!
+    while kill -0 "$pid" 2>/dev/null; do
+        if (( waited >= limit )); then
+            # 別の試験・通常ゲームを巻き込まないよう、今回だけの絶対logFileで特定する。
+            python3 "$ROOT/PhoneSaber/tools/unity_soak_stop.py" "$log"
+            kill -TERM "$pid" 2>/dev/null
+            wait "$pid" 2>/dev/null
+            echo "soak: 判定=FAILED（${limit}秒で中止、${log}）"; return 1
+        fi
+        sleep 1; waited=$((waited + 1))
+    done
+    wait "$pid"; local code=$?
+    python3 "$ROOT/PhoneSaber/tools/unity_soak_summary.py" "$log"; local verdict=$?
+    echo "soak: ログ=${log}（${waited}秒）"
+    [[ "$code" -eq 0 && "$verdict" -eq 0 ]]
+}
+
 case "${1:-}" in
+soak)
+    soak_player "${2:-60}" "${3:-$ROOT/Builds/Mac/3D-Saber.app}"
+    ;;
 smoke)
     smoke_player "${2:-$ROOT/Builds/Mac/3D-Saber.app}"
+    ;;
+smoke-window)
+    smoke_player "${2:-$ROOT/Builds/Mac/3D-Saber.app}" window
     ;;
 shots)
     shots_player "${2:-$ROOT/Builds/Mac/3D-Saber.app}"

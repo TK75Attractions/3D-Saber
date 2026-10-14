@@ -141,6 +141,8 @@ public sealed class PhoneSaberPerfLog : MonoBehaviour
             input.RedCoordinateTiming.ClearWindow(); input.BlueCoordinateTiming.ClearWindow();
         }
         PhoneSaberEventLog.Record(PhoneSaberStation.Read(), "SYSTEM", "perf", detail);
+        // 今回の perf 行だけ Player ログにも出し、過去の events.log を smoke 成功の根拠にしない。
+        if (windowSeconds < WindowSeconds) Debug.Log("[PhoneSaberSmoke] perf " + detail);
         window.Start(now);
         gpuMs = 0;
         gpuSum = 0; gpuCount = 0;
