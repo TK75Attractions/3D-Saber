@@ -100,8 +100,9 @@ public partial class FloorRenderer : MonoBehaviour
     {
         if (built) return;
         Build(Application.isPlaying && useSongThemeOnPlay
-            ? GameSession.IsCalibrationMode || GameSession.TutorialPending
-                ? StageTheme.ObsidianRelay : StageThemeCatalog.ForSong(GameSession.SelectedSongId)
+            ? GameSession.IsCalibrationMode ? StageTheme.ObsidianRelay
+                : GameSession.TutorialPending ? StageTheme.PracticeCourtyard
+                : StageThemeCatalog.ForSong(GameSession.SelectedSongId)
             : theme);
     }
 

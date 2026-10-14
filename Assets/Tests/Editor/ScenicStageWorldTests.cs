@@ -12,7 +12,8 @@ public class ScenicStageWorldTests
     private FloorRenderer stage;
     private ScenicStageWorld world;
     private static readonly StageTheme[] Themes = { StageTheme.AbyssalRuins,StageTheme.SkySanctuary,StageTheme.MoonlitGarden,
-        StageTheme.CrystalGrotto,StageTheme.AstralOrbit,StageTheme.DesertSanctum, StageTheme.MidnightHarbor,StageTheme.VerdantAtrium,StageTheme.ClockworkLibrary };
+        StageTheme.CrystalGrotto,StageTheme.AstralOrbit,StageTheme.DesertSanctum, StageTheme.MidnightHarbor,StageTheme.VerdantAtrium,StageTheme.ClockworkLibrary,
+        StageTheme.PracticeCourtyard };
     private void Build(StageTheme theme)
     {
         root = new GameObject("WorldTest"); stage = root.AddComponent<FloorRenderer>(); stage.Build(theme);

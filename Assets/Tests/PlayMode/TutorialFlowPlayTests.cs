@@ -34,6 +34,13 @@ public class TutorialFlowPlayTests
         var m = Object.FindFirstObjectByType<GamePlayManager>(); var t = m.Tutorial;
         Assert.NotNull(t, "GamePlayManager がチュートリアルを始める");
         Assert.IsFalse(GameSession.TutorialPending, "フラグは読んだら消す");
+        var floor = Object.FindFirstObjectByType<FloorRenderer>();
+        Assert.NotNull(floor);
+        Assert.AreEqual(StageTheme.PracticeCourtyard,floor.ActiveTheme,"選曲状態に関係なく練習専用の中庭");
+        var world = floor.GetComponentInChildren<ScenicStageWorld>();
+        Assert.NotNull(world);
+        floor.Build();
+        Assert.AreEqual(StageTheme.PracticeCourtyard,floor.ActiveTheme,"入場フラグを消した後も背景を保持する");
         Assert.NotNull(t.Overlay); Assert.NotNull(t.Overlay.Controls); Assert.NotNull(t.Overlay.SkipButton);
         var pointer = Object.FindFirstObjectByType<SaberUIPointer>();
         Assert.NotNull(pointer); Assert.IsTrue(pointer.BottomControlsOnly, "的は画面下の帯だけ");
@@ -55,6 +62,12 @@ public class TutorialFlowPlayTests
         yield return new WaitForSecondsRealtime(4.1f);
         Assert.Greater(m.songPlayer.SongTime, beforeLoop + 4, "音源が一周しても譜面時計は戻らない");
         Assert.AreSame(Resources.Load<AudioClip>(TutorialController.MusicResourcePath), m.songPlayer.Clip);
+        Assert.Greater(world.LastTickSeconds,4,"ループ音源と同じ時計で中庭の風鈴が動く");
+        Assert.That(world.LastTickSeconds,Is.EqualTo(m.songPlayer.SongTime).Within(.15));
+        m.songPlayer.Stop();
+        double stopped = world.LastTickSeconds;
+        yield return new WaitForSecondsRealtime(.1f);
+        Assert.AreEqual(stopped,world.LastTickSeconds,"音を止めると背景も止まる");
     }
 
     [UnityTest] public IEnumerator HandsStepTimesOutIntoPracticeAndSpawnsRedNotesOnTheRight()

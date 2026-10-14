@@ -20,6 +20,7 @@ public class SongStageAssignmentTests
             Assert.IsFalse(string.IsNullOrEmpty(data.stageTheme), song+" の背景指定がありません");
             Assert.IsTrue(Enum.TryParse(data.stageTheme,out StageTheme theme) && StageThemeCatalog.IsDefined(theme),song);
             Assert.IsFalse(assigned.ContainsKey(theme), song+" の背景が他曲と重複しています: "+theme);
+            Assert.AreNotEqual(StageTheme.PracticeCourtyard,theme,"練習の中庭はチュートリアル専用: "+song);
             assigned.Add(theme,song);
             Assert.AreEqual(theme,StageThemeCatalog.ForSong(song));
         }
@@ -61,8 +62,8 @@ public class SongStageAssignmentTests
     {
         Assert.AreEqual(StageTheme.ObsidianRelay,StageThemeCatalog.ForSong("__MissingSong__"));
         CollectionAssert.AreEquivalent(Enum.GetValues(typeof(StageTheme)),StageThemeCatalog.All);
-        Assert.AreEqual(14,StageThemeCatalog.Count);
-        foreach (int removed in new[]{-1,11,12,13,17}) Assert.IsFalse(StageThemeCatalog.IsDefined((StageTheme)removed));
+        Assert.AreEqual(15,StageThemeCatalog.Count);
+        foreach (int removed in new[]{-1,11,12,13,18}) Assert.IsFalse(StageThemeCatalog.IsDefined((StageTheme)removed));
         foreach (StageTheme theme in StageThemeCatalog.All)
             Assert.IsFalse(string.IsNullOrEmpty(StageThemeCatalog.DisplayName(theme)));
     }

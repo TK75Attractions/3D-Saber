@@ -18,7 +18,8 @@ public enum StageTheme
     // 削除済みの写真背景ID 11〜13は再利用しない。既存背景の保存値を維持する。
     MidnightHarbor = 14,
     VerdantAtrium = 15,
-    ClockworkLibrary = 16
+    ClockworkLibrary = 16,
+    PracticeCourtyard = 17
 }
 
 // 曲フォルダの stage.json で固定する。難易度・再プレイ・選曲順で背景を変えない。
@@ -54,13 +55,15 @@ public static class StageThemeCatalog
             case StageTheme.MidnightHarbor: return "Midnight Harbor";
             case StageTheme.VerdantAtrium: return "Verdant Atrium";
             case StageTheme.ClockworkLibrary: return "Clockwork Library";
+            case StageTheme.PracticeCourtyard: return "Practice Courtyard";
             default: return "Obsidian Relay";
         }
     }
 
     public static bool IsScenic(StageTheme theme) =>
         (theme >= StageTheme.AbyssalRuins && theme <= StageTheme.DesertSanctum) ||
-        theme == StageTheme.MidnightHarbor || theme == StageTheme.VerdantAtrium || theme == StageTheme.ClockworkLibrary;
+        theme == StageTheme.MidnightHarbor || theme == StageTheme.VerdantAtrium || theme == StageTheme.ClockworkLibrary ||
+        theme == StageTheme.PracticeCourtyard;
 
     // 彩度は端の埋め込み灯に限定。赤/青ノーツと混同しない低輝度の環境色。
     public static Color Accent(StageTheme theme)
