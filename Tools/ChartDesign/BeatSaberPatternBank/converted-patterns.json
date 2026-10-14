@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "count": 82,
+  "count": 88,
   "patterns": [
     {
       "id": "dream-normal-1",
@@ -6912,6 +6912,527 @@
             "y": -0.6,
             "type": "tap",
             "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "onehope-normal-1",
+      "title": "右の一打を挟み、左の上下へ戻す",
+      "category": "good",
+      "minimumDifficulty": "normal",
+      "referenceBpm": 145.0,
+      "sourceUrl": "https://www.youtube.com/watch?v=eHYboM5p9Ho&t=18",
+      "preferredSongs": [
+        "Aobasou"
+      ],
+      "maximumBpmDifferencePercent": 10,
+      "applicationMode": "hierarchy-reference",
+      "adaptation": "原作の赤=左、青=右を本作の担当色へ置換。左の外下から内下・内上への応答を残し、右の低い一打を挟む。矢印を省いた4打の構造翻案。 画面配置は右を挟む左の内外・上下応答を使用。色は担当手を示し、画面の左右に絶対固定せず、特殊配置は短い技として選ぶ。",
+      "layout": "右を挟む左の内外・上下応答",
+      "orientationDegrees": 0,
+      "fidelity": "映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。",
+      "sourceTiming": "estimated",
+      "chartFile": "patterns/onehope-normal-1.json",
+      "beats": 4,
+      "noteCount": 4,
+      "flickCount": 0,
+      "chart": {
+        "_comment": "映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。",
+        "bpm": 145.0,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 5,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 0,
+            "time": 0.0,
+            "x": -1.9,
+            "y": -0.6,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1,
+            "time": 413.7931,
+            "x": 0.6,
+            "y": -0.6,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2,
+            "time": 827.5862,
+            "x": -0.6,
+            "y": -0.6,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3,
+            "time": 1241.3793,
+            "x": -0.6,
+            "y": 0.3,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "onehope-normal-2",
+      "title": "横へ開いて戻る右手と左の応答",
+      "category": "good",
+      "minimumDifficulty": "normal",
+      "referenceBpm": 145.0,
+      "sourceUrl": "https://www.youtube.com/watch?v=eHYboM5p9Ho&t=73",
+      "preferredSongs": [
+        "Aobasou"
+      ],
+      "maximumBpmDifferencePercent": 10,
+      "applicationMode": "hierarchy-reference",
+      "adaptation": "右を外上から内下へ戻し、左は内側の低・高で応答する。左右の振り幅を変えた4打にまとめる。交差を追加せず、歌の短い応答に使う。 画面配置は右の外から内への戻りと左の応答を使用。色は担当手を示し、画面の左右に絶対固定せず、特殊配置は短い技として選ぶ。",
+      "layout": "右の外から内への戻りと左の応答",
+      "orientationDegrees": 0,
+      "fidelity": "映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。",
+      "sourceTiming": "estimated",
+      "chartFile": "patterns/onehope-normal-2.json",
+      "beats": 4,
+      "noteCount": 4,
+      "flickCount": 0,
+      "chart": {
+        "_comment": "映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。",
+        "bpm": 145.0,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 5,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 0,
+            "time": 0.0,
+            "x": -0.6,
+            "y": -0.6,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1,
+            "time": 413.7931,
+            "x": 1.9,
+            "y": 0.3,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2,
+            "time": 827.5862,
+            "x": -0.6,
+            "y": 0.3,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3,
+            "time": 1241.3793,
+            "x": 0.6,
+            "y": -0.6,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "immortal-normal-1",
+      "title": "両手の着地を右・左の単発へほどく",
+      "category": "good",
+      "minimumDifficulty": "hard",
+      "referenceBpm": 150.0,
+      "sourceUrl": "https://www.youtube.com/watch?v=kCn00ojVg9o&t=25",
+      "preferredSongs": [
+        "ManicSonic",
+        "logic",
+        "BenkyouRemaster",
+        "Aobasou"
+      ],
+      "maximumBpmDifferencePercent": 10,
+      "applicationMode": "hierarchy-reference",
+      "adaptation": "映像の黄色をゲームの金ノーツとは扱わない。両手を外下に離して着地し、右内上、左内下の順にほどいて最後を休む。通常タップのみ。 画面配置は両手から右・左へほどき最後を休むを使用。色は担当手を示し、画面の左右に絶対固定せず、特殊配置は短い技として選ぶ。",
+      "layout": "両手から右・左へほどき最後を休む",
+      "orientationDegrees": 0,
+      "fidelity": "映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。",
+      "sourceTiming": "estimated",
+      "chartFile": "patterns/immortal-normal-1.json",
+      "beats": 4,
+      "noteCount": 4,
+      "flickCount": 0,
+      "chart": {
+        "_comment": "映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。",
+        "bpm": 150.0,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 7,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 0,
+            "time": 0.0,
+            "x": 1.9,
+            "y": -0.6,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 0,
+            "time": 0.0,
+            "x": -1.9,
+            "y": -0.6,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1,
+            "time": 400.0,
+            "x": 0.6,
+            "y": 0.3,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2,
+            "time": 800.0,
+            "x": -0.6,
+            "y": -0.6,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "immortal-normal-2",
+      "title": "左の三打を上下・横へつないで両手へ",
+      "category": "conditional",
+      "minimumDifficulty": "hard",
+      "referenceBpm": 150.0,
+      "sourceUrl": "https://www.youtube.com/watch?v=kCn00ojVg9o&t=81",
+      "preferredSongs": [
+        "ManicSonic",
+        "logic",
+        "BenkyouRemaster",
+        "Aobasou"
+      ],
+      "maximumBpmDifferencePercent": 10,
+      "applicationMode": "hierarchy-reference",
+      "adaptation": "左内下・内上・外上から外下の両手へ整理。同じ手が続くため、十分な間隔と両手着地後の戻りを検証して使う。速い区間へそのまま移さない。 画面配置は左の上下・横から両手着地を使用。色は担当手を示し、画面の左右に絶対固定せず、特殊配置は短い技として選ぶ。",
+      "layout": "左の上下・横から両手着地",
+      "orientationDegrees": 0,
+      "fidelity": "映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。",
+      "sourceTiming": "estimated",
+      "chartFile": "patterns/immortal-normal-2.json",
+      "beats": 4,
+      "noteCount": 5,
+      "flickCount": 0,
+      "chart": {
+        "_comment": "映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。",
+        "bpm": 150.0,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 7,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 0,
+            "time": 0.0,
+            "x": -0.6,
+            "y": -0.6,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1,
+            "time": 400.0,
+            "x": -0.6,
+            "y": 0.3,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2,
+            "time": 800.0,
+            "x": -1.9,
+            "y": 0.3,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3,
+            "time": 1200.0,
+            "x": 1.9,
+            "y": -0.6,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3,
+            "time": 1200.0,
+            "x": -1.9,
+            "y": -0.6,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "firestarter-easy-1",
+      "title": "左右の上向きから左の下・横へ返す",
+      "category": "good",
+      "minimumDifficulty": "hard",
+      "referenceBpm": 135.0,
+      "sourceUrl": "https://www.youtube.com/watch?v=vntRRMSbWb0&t=26",
+      "preferredSongs": [
+        "Aobasou"
+      ],
+      "maximumBpmDifferencePercent": 10,
+      "applicationMode": "hierarchy-reference",
+      "adaptation": "左内上・右内上の受け渡しから、左内下・外下へ返す。元のEasyの矢印を全てタップにし、左の横移動は難易度別の待ち時間がある所だけで使う。 画面配置は上の受け渡しから左の下・外へを使用。色は担当手を示し、画面の左右に絶対固定せず、特殊配置は短い技として選ぶ。",
+      "layout": "上の受け渡しから左の下・外へ",
+      "orientationDegrees": 0,
+      "fidelity": "映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。",
+      "sourceTiming": "estimated",
+      "chartFile": "patterns/firestarter-easy-1.json",
+      "beats": 4,
+      "noteCount": 4,
+      "flickCount": 0,
+      "chart": {
+        "_comment": "映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。",
+        "bpm": 135.0,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 7,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 0,
+            "time": 0.0,
+            "x": -0.6,
+            "y": 0.3,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1,
+            "time": 444.4444,
+            "x": 0.6,
+            "y": 0.3,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2,
+            "time": 888.8889,
+            "x": -0.6,
+            "y": -0.6,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3,
+            "time": 1333.3333,
+            "x": -1.9,
+            "y": -0.6,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "firestarter-easy-2",
+      "title": "片手ずつの上向きから両手へ着地",
+      "category": "conditional",
+      "minimumDifficulty": "hard",
+      "referenceBpm": 135.0,
+      "sourceUrl": "https://www.youtube.com/watch?v=vntRRMSbWb0&t=138",
+      "preferredSongs": [
+        "Aobasou"
+      ],
+      "maximumBpmDifferencePercent": 10,
+      "applicationMode": "hierarchy-reference",
+      "adaptation": "壁を除き、右内上と左内上の単発から外下の両手へ広げる。空白を埋めず、片手応答と強い両手アクセントが実音にそろう所で使う。 画面配置は間を残した片手応答から両手へを使用。色は担当手を示し、画面の左右に絶対固定せず、特殊配置は短い技として選ぶ。",
+      "layout": "間を残した片手応答から両手へ",
+      "orientationDegrees": 0,
+      "fidelity": "映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。",
+      "sourceTiming": "estimated",
+      "chartFile": "patterns/firestarter-easy-2.json",
+      "beats": 4,
+      "noteCount": 4,
+      "flickCount": 0,
+      "chart": {
+        "_comment": "映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。",
+        "bpm": 135.0,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 7,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 0,
+            "time": 0.0,
+            "x": 0.6,
+            "y": 0.3,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2,
+            "time": 888.8889,
+            "x": -0.6,
+            "y": 0.3,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3,
+            "time": 1333.3333,
+            "x": 1.9,
+            "y": -0.6,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3,
+            "time": 1333.3333,
+            "x": -1.9,
+            "y": -0.6,
+            "type": "tap",
+            "color": "blue",
             "direction": "none",
             "count": 1,
             "lengthMs": 0

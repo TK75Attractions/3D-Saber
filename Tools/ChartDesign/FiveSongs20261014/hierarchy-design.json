@@ -4851,9 +4851,9 @@
           "notes": 582,
           "pairs": 39,
           "pairNotePercent": 13.4,
-          "movementOver1_2Within1s": 64.37,
+          "movementOver1_2Within1s": 63.32,
           "movementWithin1sDenominator": 567,
-          "movementOver1_2AllGaps": 64.14,
+          "movementOver1_2AllGaps": 63.1,
           "fastSameHandUnder250ms": 76,
           "sameHandSingleTransitionPercent": 14.91,
           "identicalBarRepeatPercent": 0.0,
@@ -4861,28 +4861,28 @@
           "sharedAccents": 2
         },
         "normal": {
-          "notes": 274,
+          "notes": 275,
           "pairs": 14,
-          "pairNotePercent": 10.22,
-          "movementOver1_2Within1s": 44.03,
-          "movementWithin1sDenominator": 159,
-          "movementOver1_2AllGaps": 43.75,
+          "pairNotePercent": 10.18,
+          "movementOver1_2Within1s": 45.34,
+          "movementWithin1sDenominator": 161,
+          "movementOver1_2AllGaps": 43.59,
           "fastSameHandUnder250ms": 0,
-          "sameHandSingleTransitionPercent": 12.65,
+          "sameHandSingleTransitionPercent": 12.2,
           "identicalBarRepeatPercent": 0.0,
           "inheritedTimeHandPositionPercent": 100,
           "sharedAccents": 2
         },
         "easy": {
-          "notes": 168,
+          "notes": 166,
           "pairs": 6,
-          "pairNotePercent": 7.14,
-          "movementOver1_2Within1s": 21.43,
-          "movementWithin1sDenominator": 14,
-          "movementOver1_2AllGaps": 46.39,
+          "pairNotePercent": 7.23,
+          "movementOver1_2Within1s": 23.08,
+          "movementWithin1sDenominator": 13,
+          "movementOver1_2AllGaps": 46.95,
           "fastSameHandUnder250ms": 0,
-          "sameHandSingleTransitionPercent": 18.71,
-          "identicalBarRepeatPercent": 2.56,
+          "sameHandSingleTransitionPercent": 18.95,
+          "identicalBarRepeatPercent": 3.85,
           "inheritedTimeHandPositionPercent": 100,
           "sharedAccents": 2
         }
@@ -4891,11 +4891,10 @@
   },
   "materialUpdate": {
     "added": [
-      "angel-hard-1",
-      "angel-hard-2",
-      "exit-hard-1",
-      "exit-hard-2",
-      "liftoff-hard-1"
+      "onehope-normal-1",
+      "immortal-normal-1",
+      "immortal-normal-2",
+      "firestarter-easy-1"
     ],
     "pending": [
       {
@@ -4927,9 +4926,21 @@
         "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
         "candidateCount": 0,
         "rejections": {}
+      },
+      {
+        "patternId": "onehope-normal-2",
+        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+        "candidateCount": 0,
+        "rejections": {}
+      },
+      {
+        "patternId": "firestarter-easy-2",
+        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+        "candidateCount": 0,
+        "rejections": {}
       }
     ],
-    "batch": "hourly-20261015-0341"
+    "batch": "hourly-20261015-0705"
   },
   "validation": {
     "pack": "15譜面合格",

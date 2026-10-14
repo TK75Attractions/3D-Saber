@@ -1,12 +1,12 @@
 {
-  "batch": "hourly-20261015-0341",
+  "batch": "hourly-20261015-0705",
   "materialAdded": 6,
-  "materialTotal": 82,
+  "materialTotal": 88,
   "convertedAdded": 6,
-  "convertedTotal": 82,
-  "newMaterialApplied": 3,
-  "priorPendingApplied": 2,
-  "totalAppliedMaterials": 77,
+  "convertedTotal": 88,
+  "newMaterialApplied": 4,
+  "priorPendingApplied": 0,
+  "totalAppliedMaterials": 81,
   "pending": [
     {
       "patternId": "light-normal-1",
@@ -37,10 +37,22 @@
       "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
       "candidateCount": 0,
       "rejections": {}
+    },
+    {
+      "patternId": "onehope-normal-2",
+      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+      "candidateCount": 0,
+      "rejections": {}
+    },
+    {
+      "patternId": "firestarter-easy-2",
+      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+      "candidateCount": 0,
+      "rejections": {}
     }
   ],
-  "newAppliedBars": 10,
-  "changedCharts": 6,
+  "newAppliedBars": 8,
+  "changedCharts": 3,
   "diff": {
     "charts": [
       {
@@ -94,162 +106,163 @@
       {
         "songId": "logic",
         "difficulty": "easy",
-        "changed": true,
-        "notesBefore": 257,
+        "changed": false,
+        "notesBefore": 256,
         "notesAfter": 256,
+        "sameIndexPositionChanges": 0
+      },
+      {
+        "songId": "logic",
+        "difficulty": "normal",
+        "changed": false,
+        "notesBefore": 367,
+        "notesAfter": 367,
+        "sameIndexPositionChanges": 0
+      },
+      {
+        "songId": "logic",
+        "difficulty": "hard",
+        "changed": false,
+        "notesBefore": 623,
+        "notesAfter": 623,
+        "sameIndexPositionChanges": 0
+      },
+      {
+        "songId": "BenkyouRemaster",
+        "difficulty": "easy",
+        "changed": false,
+        "notesBefore": 180,
+        "notesAfter": 180,
+        "sameIndexPositionChanges": 0
+      },
+      {
+        "songId": "BenkyouRemaster",
+        "difficulty": "normal",
+        "changed": false,
+        "notesBefore": 264,
+        "notesAfter": 264,
+        "sameIndexPositionChanges": 0
+      },
+      {
+        "songId": "BenkyouRemaster",
+        "difficulty": "hard",
+        "changed": false,
+        "notesBefore": 489,
+        "notesAfter": 489,
+        "sameIndexPositionChanges": 0
+      },
+      {
+        "songId": "Aobasou",
+        "difficulty": "easy",
+        "changed": true,
+        "notesBefore": 168,
+        "notesAfter": 166,
         "sameIndexPositionChanges": null
       },
       {
-        "songId": "logic",
-        "difficulty": "normal",
-        "changed": true,
-        "notesBefore": 367,
-        "notesAfter": 367,
-        "sameIndexPositionChanges": 3
-      },
-      {
-        "songId": "logic",
-        "difficulty": "hard",
-        "changed": true,
-        "notesBefore": 623,
-        "notesAfter": 623,
-        "sameIndexPositionChanges": 10
-      },
-      {
-        "songId": "BenkyouRemaster",
-        "difficulty": "easy",
-        "changed": true,
-        "notesBefore": 180,
-        "notesAfter": 180,
-        "sameIndexPositionChanges": 8
-      },
-      {
-        "songId": "BenkyouRemaster",
-        "difficulty": "normal",
-        "changed": true,
-        "notesBefore": 264,
-        "notesAfter": 264,
-        "sameIndexPositionChanges": 9
-      },
-      {
-        "songId": "BenkyouRemaster",
-        "difficulty": "hard",
-        "changed": true,
-        "notesBefore": 489,
-        "notesAfter": 489,
-        "sameIndexPositionChanges": 11
-      },
-      {
-        "songId": "Aobasou",
-        "difficulty": "easy",
-        "changed": false,
-        "notesBefore": 168,
-        "notesAfter": 168,
-        "sameIndexPositionChanges": 0
-      },
-      {
         "songId": "Aobasou",
         "difficulty": "normal",
-        "changed": false,
+        "changed": true,
         "notesBefore": 274,
-        "notesAfter": 274,
-        "sameIndexPositionChanges": 0
+        "notesAfter": 275,
+        "sameIndexPositionChanges": null
       },
       {
         "songId": "Aobasou",
         "difficulty": "hard",
-        "changed": false,
+        "changed": true,
         "notesBefore": 582,
         "notesAfter": 582,
-        "sameIndexPositionChanges": 0
+        "sameIndexPositionChanges": 18
       }
     ],
     "hardTimingHandsAndLongsPreserved": true,
     "applied": [
       {
-        "patternId": "angel-hard-1",
-        "songId": "BenkyouRemaster",
-        "startBeat": 16,
-        "startSeconds": 6.024,
-        "endSeconds": 9.024,
-        "referenceBpm": 166.0,
-        "targetBpm": 160,
-        "bpmDifferencePercent": -3.614,
-        "positionChangedNotes": 4
-      },
-      {
-        "patternId": "angel-hard-2",
-        "songId": "BenkyouRemaster",
-        "startBeat": 136,
-        "startSeconds": 58.674,
-        "endSeconds": 61.674,
-        "referenceBpm": 166.0,
-        "targetBpm": 160,
-        "bpmDifferencePercent": -3.614,
+        "patternId": "onehope-normal-1",
+        "songId": "Aobasou",
+        "startBeat": 156,
+        "startSeconds": 66.8571,
+        "endSeconds": 70.2857,
+        "referenceBpm": 145.0,
+        "targetBpm": 140,
+        "bpmDifferencePercent": -3.448,
         "positionChangedNotes": 5
       },
       {
-        "patternId": "exit-hard-1",
-        "songId": "logic",
-        "startBeat": 60,
-        "startSeconds": 22.528,
-        "endSeconds": 25.528,
-        "referenceBpm": 170.0,
-        "targetBpm": 160,
-        "bpmDifferencePercent": -5.882,
-        "positionChangedNotes": 7
+        "patternId": "immortal-normal-1",
+        "songId": "Aobasou",
+        "startBeat": 224,
+        "startSeconds": 96.0,
+        "endSeconds": 99.4286,
+        "referenceBpm": 150.0,
+        "targetBpm": 140,
+        "bpmDifferencePercent": -6.667,
+        "positionChangedNotes": 5
       },
       {
-        "patternId": "exit-hard-2",
-        "songId": "BenkyouRemaster",
-        "startBeat": 248,
-        "startSeconds": 100.674,
-        "endSeconds": 103.674,
-        "referenceBpm": 170.0,
-        "targetBpm": 160,
-        "bpmDifferencePercent": -5.882,
-        "positionChangedNotes": 2
+        "patternId": "immortal-normal-2",
+        "songId": "Aobasou",
+        "startBeat": 80,
+        "startSeconds": 34.2857,
+        "endSeconds": 37.7143,
+        "referenceBpm": 150.0,
+        "targetBpm": 140,
+        "bpmDifferencePercent": -6.667,
+        "positionChangedNotes": 4
       },
       {
-        "patternId": "liftoff-hard-1",
-        "songId": "logic",
-        "startBeat": 348,
-        "startSeconds": 158.153,
-        "endSeconds": 162.153,
-        "referenceBpm": 120.0,
-        "targetBpm": 120,
-        "bpmDifferencePercent": 0.0,
-        "positionChangedNotes": 3
+        "patternId": "firestarter-easy-1",
+        "songId": "Aobasou",
+        "startBeat": 48,
+        "startSeconds": 20.5714,
+        "endSeconds": 24.0,
+        "referenceBpm": 135.0,
+        "targetBpm": 140,
+        "bpmDifferencePercent": 3.704,
+        "positionChangedNotes": 4
       }
     ],
     "pending": [
       {
         "patternId": "light-normal-1",
-        "reason": "近いBPMの打点・休符・4置き場の前後経路・下位包含を同時に満たす未使用区間が今回見つからない。小節素材は保存済み。",
+        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
         "candidateCount": 0,
         "rejections": {}
       },
       {
         "patternId": "light-normal-2",
-        "reason": "近いBPMの打点・休符・4置き場の前後経路・下位包含を同時に満たす未使用区間が今回見つからない。小節素材は保存済み。",
+        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
         "candidateCount": 0,
         "rejections": {}
       },
       {
         "patternId": "liftoff-hard-2",
-        "reason": "近いBPMの打点・休符・4置き場の前後経路・下位包含を同時に満たす未使用区間が今回見つからない。小節素材は保存済み。",
+        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
         "candidateCount": 0,
         "rejections": {}
       },
       {
         "patternId": "cathedral-hard-1",
-        "reason": "近いBPMの打点・休符・4置き場の前後経路・下位包含を同時に満たす未使用区間が今回見つからない。小節素材は保存済み。",
+        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
         "candidateCount": 0,
         "rejections": {}
       },
       {
         "patternId": "cathedral-hard-2",
-        "reason": "近いBPMの打点・休符・4置き場の前後経路・下位包含を同時に満たす未使用区間が今回見つからない。小節素材は保存済み。",
+        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+        "candidateCount": 0,
+        "rejections": {}
+      },
+      {
+        "patternId": "onehope-normal-2",
+        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+        "candidateCount": 0,
+        "rejections": {}
+      },
+      {
+        "patternId": "firestarter-easy-2",
+        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
         "candidateCount": 0,
         "rejections": {}
       }
@@ -357,22 +370,22 @@
           "pairNotePercent": 11.44,
           "movementOver1_2Within1s": 42.51,
           "movementWithin1sDenominator": 207,
-          "movementOver1_2AllGaps": 47.67,
+          "movementOver1_2AllGaps": 48.77,
           "fastSameHandUnder250ms": 0,
           "sameHandSingleTransitionPercent": 10.8,
-          "identicalBarRepeatPercent": 1.8,
+          "identicalBarRepeatPercent": 0.9,
           "inheritedTimeHandPositionPercent": 100,
           "sharedAccents": 6
         },
         "easy": {
-          "notes": 257,
+          "notes": 256,
           "pairs": 7,
-          "pairNotePercent": 5.45,
-          "movementOver1_2Within1s": 25.49,
-          "movementWithin1sDenominator": 51,
-          "movementOver1_2AllGaps": 49.41,
+          "pairNotePercent": 5.47,
+          "movementOver1_2Within1s": 24.49,
+          "movementWithin1sDenominator": 49,
+          "movementOver1_2AllGaps": 48.82,
           "fastSameHandUnder250ms": 0,
-          "sameHandSingleTransitionPercent": 15.29,
+          "sameHandSingleTransitionPercent": 15.77,
           "identicalBarRepeatPercent": 7.41,
           "inheritedTimeHandPositionPercent": 100,
           "sharedAccents": 6
@@ -383,9 +396,9 @@
           "notes": 489,
           "pairs": 33,
           "pairNotePercent": 13.5,
-          "movementOver1_2Within1s": 64.11,
+          "movementOver1_2Within1s": 62.98,
           "movementWithin1sDenominator": 443,
-          "movementOver1_2AllGaps": 64.68,
+          "movementOver1_2AllGaps": 63.04,
           "fastSameHandUnder250ms": 40,
           "sameHandSingleTransitionPercent": 19.91,
           "identicalBarRepeatPercent": 2.47,
@@ -396,9 +409,9 @@
           "notes": 264,
           "pairs": 17,
           "pairNotePercent": 12.88,
-          "movementOver1_2Within1s": 47.24,
+          "movementOver1_2Within1s": 46.01,
           "movementWithin1sDenominator": 163,
-          "movementOver1_2AllGaps": 49.62,
+          "movementOver1_2AllGaps": 48.85,
           "fastSameHandUnder250ms": 0,
           "sameHandSingleTransitionPercent": 10.92,
           "identicalBarRepeatPercent": 2.47,
@@ -414,7 +427,7 @@
           "movementOver1_2AllGaps": 44.94,
           "fastSameHandUnder250ms": 0,
           "sameHandSingleTransitionPercent": 11.04,
-          "identicalBarRepeatPercent": 6.25,
+          "identicalBarRepeatPercent": 5.0,
           "inheritedTimeHandPositionPercent": 100,
           "sharedAccents": 3
         }
@@ -631,9 +644,9 @@
           "notes": 582,
           "pairs": 39,
           "pairNotePercent": 13.4,
-          "movementOver1_2Within1s": 64.37,
+          "movementOver1_2Within1s": 63.32,
           "movementWithin1sDenominator": 567,
-          "movementOver1_2AllGaps": 64.14,
+          "movementOver1_2AllGaps": 63.1,
           "fastSameHandUnder250ms": 76,
           "sameHandSingleTransitionPercent": 14.91,
           "identicalBarRepeatPercent": 0.0,
@@ -641,28 +654,28 @@
           "sharedAccents": 2
         },
         "normal": {
-          "notes": 274,
+          "notes": 275,
           "pairs": 14,
-          "pairNotePercent": 10.22,
-          "movementOver1_2Within1s": 44.03,
-          "movementWithin1sDenominator": 159,
-          "movementOver1_2AllGaps": 43.75,
+          "pairNotePercent": 10.18,
+          "movementOver1_2Within1s": 45.34,
+          "movementWithin1sDenominator": 161,
+          "movementOver1_2AllGaps": 43.59,
           "fastSameHandUnder250ms": 0,
-          "sameHandSingleTransitionPercent": 12.65,
+          "sameHandSingleTransitionPercent": 12.2,
           "identicalBarRepeatPercent": 0.0,
           "inheritedTimeHandPositionPercent": 100,
           "sharedAccents": 2
         },
         "easy": {
-          "notes": 168,
+          "notes": 166,
           "pairs": 6,
-          "pairNotePercent": 7.14,
-          "movementOver1_2Within1s": 21.43,
-          "movementWithin1sDenominator": 14,
-          "movementOver1_2AllGaps": 46.39,
+          "pairNotePercent": 7.23,
+          "movementOver1_2Within1s": 23.08,
+          "movementWithin1sDenominator": 13,
+          "movementOver1_2AllGaps": 46.95,
           "fastSameHandUnder250ms": 0,
-          "sameHandSingleTransitionPercent": 18.71,
-          "identicalBarRepeatPercent": 2.56,
+          "sameHandSingleTransitionPercent": 18.95,
+          "identicalBarRepeatPercent": 3.85,
           "inheritedTimeHandPositionPercent": 100,
           "sharedAccents": 2
         }
@@ -860,8 +873,8 @@
     },
     "Aobasou": {
       "easy": {
-        "notes": 168,
-        "cuts": 174,
+        "notes": 166,
+        "cuts": 172,
         "maxSwingSpeed": 2.428,
         "minimumSameHandGapMs": 857.143,
         "repeatedOneTwoFourBarBlocks": 4,
@@ -869,14 +882,14 @@
         "maxConsecutiveFlicks": 0,
         "maxConsecutiveFlicksPerHand": 0,
         "maxConsecutiveFlicksByGroup": 0,
-        "notesPerSecond": 1.21,
+        "notesPerSecond": 1.195,
         "blueOnRight": 0,
         "redOnLeft": 0,
         "verticalPairs": 1
       },
       "normal": {
-        "notes": 274,
-        "cuts": 280,
+        "notes": 275,
+        "cuts": 281,
         "maxSwingSpeed": 3.5145,
         "minimumSameHandGapMs": 428.571,
         "repeatedOneTwoFourBarBlocks": 3,
@@ -884,7 +897,7 @@
         "maxConsecutiveFlicks": 1,
         "maxConsecutiveFlicksPerHand": 1,
         "maxConsecutiveFlicksByGroup": 1,
-        "notesPerSecond": 1.973,
+        "notesPerSecond": 1.98,
         "blueOnRight": 0,
         "redOnLeft": 0,
         "verticalPairs": 1
@@ -895,7 +908,7 @@
         "maxSwingSpeed": 5.4116,
         "minimumSameHandGapMs": 107.143,
         "repeatedOneTwoFourBarBlocks": 0,
-        "flickPercent": 3.09,
+        "flickPercent": 2.92,
         "maxConsecutiveFlicks": 1,
         "maxConsecutiveFlicksPerHand": 1,
         "maxConsecutiveFlicksByGroup": 1,
@@ -1076,9 +1089,9 @@
         "notes": 582,
         "pairs": 39,
         "pairNotePercent": 13.4,
-        "movementOver1_2Within1s": 64.37,
+        "movementOver1_2Within1s": 63.32,
         "movementWithin1sDenominator": 567,
-        "movementOver1_2AllGaps": 64.14,
+        "movementOver1_2AllGaps": 63.1,
         "fastSameHandUnder250ms": 76,
         "sameHandSingleTransitionPercent": 14.91,
         "identicalBarRepeatPercent": 0.0,
@@ -1086,28 +1099,28 @@
         "sharedAccents": 2
       },
       "normal": {
-        "notes": 274,
+        "notes": 275,
         "pairs": 14,
-        "pairNotePercent": 10.22,
-        "movementOver1_2Within1s": 44.03,
-        "movementWithin1sDenominator": 159,
-        "movementOver1_2AllGaps": 43.75,
+        "pairNotePercent": 10.18,
+        "movementOver1_2Within1s": 45.34,
+        "movementWithin1sDenominator": 161,
+        "movementOver1_2AllGaps": 43.59,
         "fastSameHandUnder250ms": 0,
-        "sameHandSingleTransitionPercent": 12.65,
+        "sameHandSingleTransitionPercent": 12.2,
         "identicalBarRepeatPercent": 0.0,
         "inheritedTimeHandPositionPercent": 100,
         "sharedAccents": 2
       },
       "easy": {
-        "notes": 168,
+        "notes": 166,
         "pairs": 6,
-        "pairNotePercent": 7.14,
-        "movementOver1_2Within1s": 21.43,
-        "movementWithin1sDenominator": 14,
-        "movementOver1_2AllGaps": 46.39,
+        "pairNotePercent": 7.23,
+        "movementOver1_2Within1s": 23.08,
+        "movementWithin1sDenominator": 13,
+        "movementOver1_2AllGaps": 46.95,
         "fastSameHandUnder250ms": 0,
-        "sameHandSingleTransitionPercent": 18.71,
-        "identicalBarRepeatPercent": 2.56,
+        "sameHandSingleTransitionPercent": 18.95,
+        "identicalBarRepeatPercent": 3.85,
         "inheritedTimeHandPositionPercent": 100,
         "sharedAccents": 2
       }
@@ -1133,7 +1146,7 @@
         ],
         "difficulty": "easy",
         "signature": "rhythm",
-        "before": 0.298701,
+        "before": 0.328947,
         "after": 0.328947
       },
       {
@@ -1154,7 +1167,7 @@
         "difficulty": "easy",
         "signature": "rhythm",
         "before": 0.442623,
-        "after": 0.442623
+        "after": 0.47541
       },
       {
         "songs": [
@@ -1163,7 +1176,7 @@
         ],
         "difficulty": "easy",
         "signature": "rhythm",
-        "before": 0.291667,
+        "before": 0.323944,
         "after": 0.323944
       },
       {
@@ -1184,7 +1197,7 @@
         "difficulty": "easy",
         "signature": "rhythm",
         "before": 0.421053,
-        "after": 0.421053
+        "after": 0.482143
       },
       {
         "songs": [
@@ -1193,7 +1206,7 @@
         ],
         "difficulty": "easy",
         "signature": "rhythm",
-        "before": 0.333333,
+        "before": 0.3625,
         "after": 0.3625
       },
       {
@@ -1203,8 +1216,8 @@
         ],
         "difficulty": "easy",
         "signature": "rhythm",
-        "before": 0.298701,
-        "after": 0.328947
+        "before": 0.328947,
+        "after": 0.320513
       },
       {
         "songs": [
@@ -1214,7 +1227,7 @@
         "difficulty": "easy",
         "signature": "rhythm",
         "before": 0.315068,
-        "after": 0.315068
+        "after": 0.342466
       },
       {
         "songs": [
@@ -1233,7 +1246,7 @@
         ],
         "difficulty": "easy",
         "signature": "hands",
-        "before": 0.229358,
+        "before": 0.252336,
         "after": 0.252336
       },
       {
@@ -1254,7 +1267,7 @@
         "difficulty": "easy",
         "signature": "hands",
         "before": 0.269663,
-        "after": 0.269663
+        "after": 0.298851
       },
       {
         "songs": [
@@ -1263,7 +1276,7 @@
         ],
         "difficulty": "easy",
         "signature": "hands",
-        "before": 0.205882,
+        "before": 0.217822,
         "after": 0.217822
       },
       {
@@ -1284,7 +1297,7 @@
         "difficulty": "easy",
         "signature": "hands",
         "before": 0.186047,
-        "after": 0.186047
+        "after": 0.214286
       },
       {
         "songs": [
@@ -1303,8 +1316,8 @@
         ],
         "difficulty": "easy",
         "signature": "hands",
-        "before": 0.136364,
-        "after": 0.157407
+        "before": 0.157407,
+        "after": 0.136364
       },
       {
         "songs": [
@@ -1314,7 +1327,7 @@
         "difficulty": "easy",
         "signature": "hands",
         "before": 0.191489,
-        "after": 0.191489
+        "after": 0.204301
       },
       {
         "songs": [
@@ -1333,7 +1346,7 @@
         ],
         "difficulty": "easy",
         "signature": "position",
-        "before": 0.05618,
+        "before": 0.062147,
         "after": 0.062147
       },
       {
@@ -1343,7 +1356,7 @@
         ],
         "difficulty": "easy",
         "signature": "position",
-        "before": 0.09396,
+        "before": 0.093333,
         "after": 0.093333
       },
       {
@@ -1354,7 +1367,7 @@
         "difficulty": "easy",
         "signature": "position",
         "before": 0.037975,
-        "after": 0.037975
+        "after": 0.044586
       },
       {
         "songs": [
@@ -1373,7 +1386,7 @@
         ],
         "difficulty": "easy",
         "signature": "position",
-        "before": 0.070312,
+        "before": 0.069767,
         "after": 0.069767
       },
       {
@@ -1384,7 +1397,7 @@
         "difficulty": "easy",
         "signature": "position",
         "before": 0.022222,
-        "after": 0.022222
+        "after": 0.029851
       },
       {
         "songs": [
@@ -1393,7 +1406,7 @@
         ],
         "difficulty": "easy",
         "signature": "position",
-        "before": 0.029762,
+        "before": 0.029586,
         "after": 0.029586
       },
       {
@@ -1404,7 +1417,7 @@
         "difficulty": "easy",
         "signature": "position",
         "before": 0.029586,
-        "after": 0.029586
+        "after": 0.023529
       },
       {
         "songs": [
@@ -1413,8 +1426,8 @@
         ],
         "difficulty": "easy",
         "signature": "position",
-        "before": 0.034722,
-        "after": 0.027397
+        "before": 0.027397,
+        "after": 0.034483
       },
       {
         "songs": [
@@ -1504,7 +1517,7 @@
         "difficulty": "normal",
         "signature": "rhythm",
         "before": 0.145455,
-        "after": 0.145455
+        "after": 0.135135
       },
       {
         "songs": [
@@ -1514,7 +1527,7 @@
         "difficulty": "normal",
         "signature": "rhythm",
         "before": 0.186047,
-        "after": 0.186047
+        "after": 0.2
       },
       {
         "songs": [
@@ -1554,7 +1567,7 @@
         "difficulty": "normal",
         "signature": "hands",
         "before": 0.104839,
-        "after": 0.104839
+        "after": 0.097561
       },
       {
         "songs": [
@@ -1584,7 +1597,7 @@
         "difficulty": "normal",
         "signature": "hands",
         "before": 0.101852,
-        "after": 0.101852
+        "after": 0.093458
       },
       {
         "songs": [
@@ -1604,7 +1617,7 @@
         "difficulty": "normal",
         "signature": "hands",
         "before": 0.086331,
-        "after": 0.086331
+        "after": 0.071942
       },
       {
         "songs": [
@@ -1614,7 +1627,7 @@
         "difficulty": "normal",
         "signature": "hands",
         "before": 0.117117,
-        "after": 0.117117
+        "after": 0.119266
       },
       {
         "songs": [
@@ -1633,7 +1646,7 @@
         ],
         "difficulty": "normal",
         "signature": "position",
-        "before": 0.014563,
+        "before": 0.014493,
         "after": 0.014493
       },
       {
@@ -1663,7 +1676,7 @@
         ],
         "difficulty": "normal",
         "signature": "position",
-        "before": 0.005435,
+        "before": 0.005405,
         "after": 0.005405
       },
       {
@@ -1693,7 +1706,7 @@
         ],
         "difficulty": "normal",
         "signature": "position",
-        "before": 0.022099,
+        "before": 0.021978,
         "after": 0.021978
       },
       {
@@ -1703,7 +1716,7 @@
         ],
         "difficulty": "normal",
         "signature": "position",
-        "before": 0.010753,
+        "before": 0.010695,
         "after": 0.010695
       },
       {
@@ -1943,7 +1956,7 @@
         ],
         "difficulty": "hard",
         "signature": "position",
-        "before": 0.011364,
+        "before": 0.00565,
         "after": 0.00565
       },
       {
@@ -2132,123 +2145,123 @@
           "downloadMatched": true
         }
       ],
-      "sourceAndAppliedViews": 9,
-      "videoLinks": 164,
+      "sourceAndAppliedViews": 10,
+      "videoLinks": 176,
       "protectedCharts": 28,
       "errors": []
     },
     "media-browser-validation": {
       "videos": 12,
-      "totalMaterials": 82,
+      "totalMaterials": 88,
       "errors": [],
       "results": [
         {
-          "id": "exit-hard-1",
+          "id": "onehope-normal-1",
           "mode": "bar",
-          "time": 0.1,
+          "time": 0.070072,
           "width": 854,
           "height": 480,
-          "duration": 1.433008,
-          "src": "http://127.0.0.1:8898/clips/exit-hard-1-bar.mp4"
+          "duration": 1.666667,
+          "src": "http://127.0.0.1:8898/clips/onehope-normal-1-bar.mp4"
         },
         {
-          "id": "exit-hard-1",
+          "id": "onehope-normal-1",
           "mode": "context",
-          "time": 0.24,
+          "time": 0.071762,
           "width": 854,
           "height": 480,
-          "duration": 4.235,
-          "src": "http://127.0.0.1:8898/clips/exit-hard-1-context.mp4"
+          "duration": 4.966341,
+          "src": "http://127.0.0.1:8898/clips/onehope-normal-1-context.mp4"
         },
         {
-          "id": "exit-hard-2",
+          "id": "onehope-normal-2",
           "mode": "bar",
-          "time": 0.640375,
+          "time": 0.068507,
           "width": 854,
           "height": 480,
-          "duration": 1.412,
-          "src": "http://127.0.0.1:8898/clips/exit-hard-2-bar.mp4"
+          "duration": 1.666341,
+          "src": "http://127.0.0.1:8898/clips/onehope-normal-2-bar.mp4"
         },
         {
-          "id": "exit-hard-2",
+          "id": "onehope-normal-2",
           "mode": "context",
-          "time": 0.225592,
+          "time": 0.061,
           "width": 854,
           "height": 480,
-          "duration": 4.235,
-          "src": "http://127.0.0.1:8898/clips/exit-hard-2-context.mp4"
+          "duration": 4.966667,
+          "src": "http://127.0.0.1:8898/clips/onehope-normal-2-context.mp4"
         },
         {
-          "id": "liftoff-hard-1",
+          "id": "immortal-normal-1",
           "mode": "bar",
-          "time": 0.38,
+          "time": 0.069908,
           "width": 854,
           "height": 480,
-          "duration": 2,
-          "src": "http://127.0.0.1:8898/clips/liftoff-hard-1-bar.mp4"
+          "duration": 1.6,
+          "src": "http://127.0.0.1:8898/clips/immortal-normal-1-bar.mp4"
         },
         {
-          "id": "liftoff-hard-1",
+          "id": "immortal-normal-1",
           "mode": "context",
-          "time": 0.297239,
+          "time": 0.058268,
           "width": 854,
           "height": 480,
-          "duration": 6,
-          "src": "http://127.0.0.1:8898/clips/liftoff-hard-1-context.mp4"
+          "duration": 4.8,
+          "src": "http://127.0.0.1:8898/clips/immortal-normal-1-context.mp4"
         },
         {
-          "id": "liftoff-hard-2",
+          "id": "immortal-normal-2",
           "mode": "bar",
-          "time": 0.214292,
+          "time": 0.058697,
           "width": 854,
           "height": 480,
-          "duration": 2,
-          "src": "http://127.0.0.1:8898/clips/liftoff-hard-2-bar.mp4"
+          "duration": 1.6,
+          "src": "http://127.0.0.1:8898/clips/immortal-normal-2-bar.mp4"
         },
         {
-          "id": "liftoff-hard-2",
+          "id": "immortal-normal-2",
           "mode": "context",
-          "time": 0.078774,
+          "time": 0.073814,
           "width": 854,
           "height": 480,
-          "duration": 6,
-          "src": "http://127.0.0.1:8898/clips/liftoff-hard-2-context.mp4"
+          "duration": 4.8,
+          "src": "http://127.0.0.1:8898/clips/immortal-normal-2-context.mp4"
         },
         {
-          "id": "cathedral-hard-1",
+          "id": "firestarter-easy-1",
           "mode": "bar",
-          "time": 0.146233,
+          "time": 0.057735,
           "width": 854,
           "height": 480,
-          "duration": 1.933008,
-          "src": "http://127.0.0.1:8898/clips/cathedral-hard-1-bar.mp4"
+          "duration": 1.778,
+          "src": "http://127.0.0.1:8898/clips/firestarter-easy-1-bar.mp4"
         },
         {
-          "id": "cathedral-hard-1",
+          "id": "firestarter-easy-1",
           "mode": "context",
-          "time": 0.082712,
+          "time": 0.065541,
           "width": 854,
           "height": 480,
-          "duration": 5.766667,
-          "src": "http://127.0.0.1:8898/clips/cathedral-hard-1-context.mp4"
+          "duration": 5.333008,
+          "src": "http://127.0.0.1:8898/clips/firestarter-easy-1-context.mp4"
         },
         {
-          "id": "cathedral-hard-2",
+          "id": "firestarter-easy-2",
           "mode": "bar",
-          "time": 0.36,
+          "time": 0.070306,
           "width": 854,
           "height": 480,
-          "duration": 1.933333,
-          "src": "http://127.0.0.1:8898/clips/cathedral-hard-2-bar.mp4"
+          "duration": 1.778,
+          "src": "http://127.0.0.1:8898/clips/firestarter-easy-2-bar.mp4"
         },
         {
-          "id": "cathedral-hard-2",
+          "id": "firestarter-easy-2",
           "mode": "context",
-          "time": 0.081173,
+          "time": 0.068058,
           "width": 854,
           "height": 480,
-          "duration": 5.766341,
-          "src": "http://127.0.0.1:8898/clips/cathedral-hard-2-context.mp4"
+          "duration": 5.333008,
+          "src": "http://127.0.0.1:8898/clips/firestarter-easy-2-context.mp4"
         }
       ],
       "passed": true
@@ -2257,82 +2270,82 @@
       "passed": true,
       "videos": [
         {
-          "id": "exit-hard-1",
+          "id": "onehope-normal-1",
           "mode": "bar",
-          "duration": 1.433008,
+          "duration": 1.666667,
           "decoded": true
         },
         {
-          "id": "exit-hard-1",
+          "id": "onehope-normal-1",
           "mode": "context",
-          "duration": 4.235,
+          "duration": 4.966341,
           "decoded": true
         },
         {
-          "id": "exit-hard-2",
+          "id": "onehope-normal-2",
           "mode": "bar",
-          "duration": 1.412,
+          "duration": 1.666341,
           "decoded": true
         },
         {
-          "id": "exit-hard-2",
+          "id": "onehope-normal-2",
           "mode": "context",
-          "duration": 4.235,
+          "duration": 4.966667,
           "decoded": true
         },
         {
-          "id": "liftoff-hard-1",
+          "id": "immortal-normal-1",
           "mode": "bar",
-          "duration": 2.0,
+          "duration": 1.6,
           "decoded": true
         },
         {
-          "id": "liftoff-hard-1",
+          "id": "immortal-normal-1",
           "mode": "context",
-          "duration": 6.0,
+          "duration": 4.8,
           "decoded": true
         },
         {
-          "id": "liftoff-hard-2",
+          "id": "immortal-normal-2",
           "mode": "bar",
-          "duration": 2.0,
+          "duration": 1.6,
           "decoded": true
         },
         {
-          "id": "liftoff-hard-2",
+          "id": "immortal-normal-2",
           "mode": "context",
-          "duration": 6.0,
+          "duration": 4.8,
           "decoded": true
         },
         {
-          "id": "cathedral-hard-1",
+          "id": "firestarter-easy-1",
           "mode": "bar",
-          "duration": 1.933008,
+          "duration": 1.778,
           "decoded": true
         },
         {
-          "id": "cathedral-hard-1",
+          "id": "firestarter-easy-1",
           "mode": "context",
-          "duration": 5.766667,
+          "duration": 5.333008,
           "decoded": true
         },
         {
-          "id": "cathedral-hard-2",
+          "id": "firestarter-easy-2",
           "mode": "bar",
-          "duration": 1.933333,
+          "duration": 1.778,
           "decoded": true
         },
         {
-          "id": "cathedral-hard-2",
+          "id": "firestarter-easy-2",
           "mode": "context",
-          "duration": 5.766341,
+          "duration": 5.333008,
           "decoded": true
         }
       ]
     },
     "browser-final-validation": {
       "passed": true,
-      "priorPendingAppliedViews": 2,
+      "existingAppliedViews": 2,
       "loopWrapped": true,
       "halfSpeed": true,
       "pendingReasonVisible": true,
@@ -2343,67 +2356,67 @@
   "sourceReview": "6区間について各8フレームと前後24フレームを実見。小節頭・版は未確定の4拍相当。原作の正確な採譜ではない。",
   "references": [
     {
-      "id": "exit-hard-1",
-      "url": "https://www.youtube.com/watch?v=UVtfg7BtxpY&t=34",
+      "id": "onehope-normal-1",
+      "url": "https://www.youtube.com/watch?v=eHYboM5p9Ho&t=18",
+      "mapper": "Freeek",
+      "reason": "赤の横から下への動きの間に青の単発が入り、終わりの赤は上向きへ返る。片手の連続も前後に間があり、反対の手のノーツで視界を塞がない。",
+      "adaptation": "原作の赤=左、青=右を本作の担当色へ置換。左の外下から内下・内上への応答を残し、右の低い一打を挟む。矢印を省いた4打の構造翻案。"
+    },
+    {
+      "id": "onehope-normal-2",
+      "url": "https://www.youtube.com/watch?v=eHYboM5p9Ho&t=73",
+      "mapper": "Freeek",
+      "reason": "青の外向きの横振りの後、赤の応答を挟んで青が内向きに戻る。前後は単発の受け渡しが続き、左右で同じ軌跡を同時に繰り返さない。",
+      "adaptation": "右を外上から内下へ戻し、左は内側の低・高で応答する。左右の振り幅を変えた4打にまとめる。交差を追加せず、歌の短い応答に使う。"
+    },
+    {
+      "id": "immortal-normal-1",
+      "url": "https://www.youtube.com/watch?v=kCn00ojVg9o&t=25",
       "mapper": "GreatYazer",
-      "reason": "赤と青の単発が交互に続く。青の下向きから上向き、赤の低い上向きから横向きへつながり、同じ場所を連打し続けない。前後も交互の流れで、視野を塞ぐ同時ノーツはない。",
-      "adaptation": "原作の赤=左、青=右を本作の担当色へ置換。速い交互の間は内側を使い、最後だけ外側へ開く。矢印は省き、高低の戻りを位置で表す。"
+      "reason": "映像の左手は黄色、右手は桃色。両手の低い着地から右の横振り、左の下向きへ続き、終わりには次の打点まで間がある。密集した同時ノーツの後も担当手が読み取れる。",
+      "adaptation": "映像の黄色をゲームの金ノーツとは扱わない。両手を外下に離して着地し、右内上、左内下の順にほどいて最後を休む。通常タップのみ。"
     },
     {
-      "id": "exit-hard-2",
-      "url": "https://www.youtube.com/watch?v=UVtfg7BtxpY&t=121",
+      "id": "immortal-normal-2",
+      "url": "https://www.youtube.com/watch?v=kCn00ojVg9o&t=81",
       "mapper": "GreatYazer",
-      "reason": "赤は外側から内寄りへ横に戻り、青は低い下向きの後に外側の横向きへ移る。両手を鏡写しにせず、それぞれの振り終わりから次の打点が見える。前後には両手着地がある。",
-      "adaptation": "左を外下から内上へ、右を内下から外上へ渡す4打に整理。元映像の正確な採譜ではなく、非対称な内外移動を残す。"
+      "reason": "黄色の左手が下向き・上向き・横向きと続き、その後に黄色と桃色の両手が来る。連続する同じ手の振り直しを、単なる片手連打にしない移動が見える。",
+      "adaptation": "左内下・内上・外上から外下の両手へ整理。同じ手が続くため、十分な間隔と両手着地後の戻りを検証して使う。速い区間へそのまま移さない。"
     },
     {
-      "id": "liftoff-hard-1",
-      "url": "https://www.youtube.com/watch?v=l40NJhXxXUU&t=25",
-      "mapper": "Zakka",
-      "reason": "赤の下向き、青の下向き、続く青の横向きが見える。途中の赤青の近い打点と壁による身体移動が重なるため、ノーツだけ抜くと原作の運動量は再現できない。",
-      "adaptation": "壁を除去し、左低→右低→右高→左高の4打へ整理。右の二打は1拍以上空け、片手の高速連打にしない。"
+      "id": "firestarter-easy-1",
+      "url": "https://www.youtube.com/watch?v=vntRRMSbWb0&t=26",
+      "mapper": "ETAN",
+      "reason": "赤の上向き、青の上向き、赤の下向きと左向きが順に来る。低密度でも左の一連の動きで変化があり、前後の打点も十分離れて見える。",
+      "adaptation": "左内上・右内上の受け渡しから、左内下・外下へ返す。元のEasyの矢印を全てタップにし、左の横移動は難易度別の待ち時間がある所だけで使う。"
     },
     {
-      "id": "liftoff-hard-2",
-      "url": "https://www.youtube.com/watch?v=l40NJhXxXUU&t=57",
-      "mapper": "Zakka",
-      "reason": "青のチェーンが斜めの向きを替えて続き、左側の壁を抜けた後に赤の通常ノーツへ戻る。小片は独立した毎回の振り直しではない。チェーン数をそのままフリック数にする移植は不適切。",
-      "adaptation": "チェーンの入口と出口だけを右の上・下のタップにまとめ、左の単発で開始と終わりを受け持つ。壁と小片を省略した翻案で、原作の切断数を再現しない。"
-    },
-    {
-      "id": "cathedral-hard-1",
-      "url": "https://www.youtube.com/watch?v=Om2PCLgaOVk&t=18",
-      "mapper": "Zakka",
-      "reason": "近い赤青を同時に切ったあと、青の単発、赤の戻しを挟んで再び両手になる。前後にも同色が縦に近づく箇所があるが、この区間では両手と単発の役割が読み取れる。",
-      "adaptation": "両手を十分に離した低い着地にし、右上・左上の応答を経て低い両手へ戻す。前後の同色縦積みは同時入力として移さない。"
-    },
-    {
-      "id": "cathedral-hard-2",
-      "url": "https://www.youtube.com/watch?v=Om2PCLgaOVk&t=89",
-      "mapper": "Zakka",
-      "reason": "赤青のアークが大きく回り、両色の着地点が続く。周囲に爆弾があり、弧の途中までを平面入力のノーツにすると音のない打点が増える。悪配置ではなく原作の表現方法の違いとして扱う。",
-      "adaptation": "アークの途中はノーツにせず、両手の低い着地と高い戻り、最後の右の低い一打へ簡略化。強い音のある両手アクセントだけを本曲で選ぶ。"
+      "id": "firestarter-easy-2",
+      "url": "https://www.youtube.com/watch?v=vntRRMSbWb0&t=138",
+      "mapper": "ETAN",
+      "reason": "前の壁区間を抜け、青の上向きから間を置いて赤の上向きへ渡り、続く赤青の同時打ちで着地する。前後の壁による身体移動はノーツだけでは再現できない。",
+      "adaptation": "壁を除き、右内上と左内上の単発から外下の両手へ広げる。空白を埋めず、片手応答と強い両手アクセントが実音にそろう所で使う。"
     }
   ],
   "limitations": [
     "物理的な到達・カメラ追跡は未確認。",
     "中心間距離1.2超は判定領域の非重複を保証しない。",
-    "新規6素材のうち3素材は未適用。既存保留2素材と合わせ5素材を理由付き保留。"
+    "新規6素材のうち2素材は未適用。既存保留5素材と合わせ7素材を理由付き保留。"
   ],
-  "fix": "ロング表示の終了時刻ではなくcut-planの最終カットを移動時間の基準にした。無関係な既存ロングの表示余白で全候補を棄却していた不一致を修正。",
+  "movementGate": "cut-planの最終カットを基準とする現行仕様を保持。3件の回帰テストを再確認。",
   "publication": {
     "pattern": {
       "source": {
         "project_id": "appgprj_6acf41e8dc0c8191b5a040cbed34bdc2",
-        "checkout_path": "C:/Users/shike/OneDrive/ドキュメント/GitHub/3D-Saber/Outputs/beat-saber-pattern-bank-20261014",
-        "commit_sha": "9b031e952e0ec7a08cc872183488dea7469e78f1",
-        "archive": "C:/Users/shike/OneDrive/ドキュメント/GitHub/3D-Saber/Tools/BeatSaberPatternBank20261014/Hourly20261015-0341/pattern.tar"
+        "checkout_path": "C:\\Users\\shike\\OneDrive\\ドキュメント\\GitHub\\3D-Saber\\Outputs\\beat-saber-pattern-bank-20261014",
+        "commit_sha": "4a884bd5d0189bf544a2e8f4ed540ed0a522ff25",
+        "archive": "C:/Users/shike/OneDrive/ドキュメント/GitHub/3D-Saber/Tools/BeatSaberPatternBank20261014/Hourly20261015-0705/pattern.tar"
       },
       "deployment": {
-        "id": "appgdep_6acfd281ee3881919ef8156916989fa8",
+        "id": "appgdep_6ad01277ed508191be298762790ad045",
         "project_id": "appgprj_6acf41e8dc0c8191b5a040cbed34bdc2",
         "title": "Beat Saber 配置素材ノート",
-        "version_id": "appgprj_6acf41e8dc0c8191b5a040cbed34bdc2~appgver_1f0a595921988191adfc8d76f6dd435c",
+        "version_id": "appgprj_6acf41e8dc0c8191b5a040cbed34bdc2~appgver_0634535359bc8191b6e3ddddde452c47",
         "type": "publish",
         "status": "succeeded",
         "url": "https://beat-saber-pattern-bank.metuji48.chatgpt.site",
@@ -2412,21 +2425,21 @@
         "provider_deployment_id": "site---6acf41e8dc0c8191b5a040cbed34bdc2",
         "failure_message": null,
         "env_set_revision": 0,
-        "updated_at": "2026-10-14T19:06:35.565439+00:00"
+        "updated_at": "2026-10-14T23:39:33.472716+00:00"
       }
     },
     "charts": {
       "source": {
         "project_id": "appgprj_6acf32845a308191985cae6f72e92c2d",
         "checkout_path": "C:\\Users\\shike\\OneDrive\\ドキュメント\\GitHub\\3D-Saber\\Outputs\\saber-chart-library-20261014",
-        "commit_sha": "407032d53210de98233937423248d9087e1f5563",
-        "archive": "C:/Users/shike/OneDrive/ドキュメント/GitHub/3D-Saber/Tools/BeatSaberPatternBank20261014/Hourly20261015-0341/charts.tar"
+        "commit_sha": "d959bab00626131560582ed8110fac00f4e2f085",
+        "archive": "C:/Users/shike/OneDrive/ドキュメント/GitHub/3D-Saber/Tools/BeatSaberPatternBank20261014/Hourly20261015-0705/charts.tar"
       },
       "deployment": {
-        "id": "appgdep_6acfd2caab0c8191af704039d55f60f9",
+        "id": "appgdep_6ad01227dc50819198a8ee5c17b7340e",
         "project_id": "appgprj_6acf32845a308191985cae6f72e92c2d",
         "title": "3D Saber 譜面ライブラリ",
-        "version_id": "appgprj_6acf32845a308191985cae6f72e92c2d~appgver_93d7b51627548191b2f75f5f323ab07d",
+        "version_id": "appgprj_6acf32845a308191985cae6f72e92c2d~appgver_3817de2c360c8191807c0e62f38aab40",
         "type": "publish",
         "status": "succeeded",
         "url": "https://saber-chart-library.metuji48.chatgpt.site",
@@ -2435,7 +2448,7 @@
         "provider_deployment_id": "site---6acf32845a308191985cae6f72e92c2d",
         "failure_message": null,
         "env_set_revision": 0,
-        "updated_at": "2026-10-14T19:07:07.350268+00:00"
+        "updated_at": "2026-10-14T23:37:28.092135+00:00"
       }
     }
   }
