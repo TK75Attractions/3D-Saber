@@ -311,6 +311,91 @@ class PhoneSaberReceiverLauncherTests(unittest.TestCase):
             self.assertIn("stderr marker", saved)
             self.assertLessEqual(len(list(log_dir.glob("triage-*.log"))), 50)
 
+    def test_full_log_disk_does_not_leave_receiver_processes_or_lock_behind(self) -> None:
+        for operation in ("write", "flush"):
+            with self.subTest(operation=operation), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                repo = root / "repo"
+                repo.mkdir()
+                log_dir = root / "logs"
+                child_ready = root / "child-ready"
+                stopped = root / "stopped"
+                receiver = root / "receiver.py"
+                child_code = (
+                    "import pathlib, signal, sys, time; "
+                    "signal.signal(signal.SIGINT, lambda *_: sys.exit(0)); "
+                    f"pathlib.Path({str(child_ready)!r}).touch(); time.sleep(60)"
+                )
+                receiver.write_text(
+                    "import pathlib, subprocess, sys, time\n"
+                    f"child = subprocess.Popen([sys.executable, '-c', {child_code!r}])\n"
+                    "try:\n"
+                    f"    while not pathlib.Path({str(child_ready)!r}).exists(): time.sleep(0.01)\n"
+                    "    print('disk-full-ready', flush=True)\n"
+                    "    time.sleep(60)\n"
+                    "except KeyboardInterrupt:\n"
+                    "    child.wait(timeout=5)\n"
+                    f"    pathlib.Path({str(stopped)!r}).touch()\n",
+                    encoding="utf-8",
+                )
+                log = mock.MagicMock()
+                log.__enter__.return_value = log
+                full = False
+
+                def write(value):
+                    nonlocal full
+                    if "disk-full-ready" in value:
+                        full = True
+                    if full and operation == "write":
+                        raise OSError(errno.ENOSPC, "No space left on device")
+
+                def flush():
+                    if full:
+                        raise OSError(errno.ENOSPC, "No space left on device")
+
+                log.write.side_effect = write
+                log.flush.side_effect = flush
+                original_open, original_popen = Path.open, subprocess.Popen
+                processes = []
+
+                def open_file(path, *args, **kwargs):
+                    if path.parent == log_dir and path.suffix == ".log":
+                        return log
+                    return original_open(path, *args, **kwargs)
+
+                def start(*args, **kwargs):
+                    process = original_popen(*args, **kwargs)
+                    processes.append(process)
+                    return process
+
+                output = io.StringIO()
+                try:
+                    with mock.patch.object(Path, "open", open_file), \
+                            mock.patch.object(launcher.subprocess, "Popen", side_effect=start), \
+                            contextlib.redirect_stdout(output):
+                        code = launcher.run_receiver(
+                            repo, snapshot_for(repo), log_dir,
+                            receiver_command=[sys.executable, str(receiver)],
+                            listener_finder=lambda _port: None,
+                        )
+                    self.assertTrue(full, "the log disk filled after the receiver started")
+                    self.assertEqual(code, 1, output.getvalue())
+                    self.assertTrue(stopped.exists(), "receiver and child must finish shutdown")
+                    self.assertIsNotNone(processes[0].poll())
+                    with self.assertRaises(ProcessLookupError):
+                        os.killpg(processes[0].pid, 0)
+                    lock, _ = launcher._acquire_single_instance_lock(log_dir)
+                    self.assertIsNotNone(lock, "a fresh launcher must be able to take the lock")
+                    if lock is not None:
+                        lock.close()
+                finally:
+                    for process in processes:
+                        try:
+                            os.killpg(process.pid, signal.SIGKILL)
+                        except ProcessLookupError:
+                            pass
+                        process.wait(timeout=5)
+
     def test_managed_duplicate_does_not_start_a_second_receiver(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

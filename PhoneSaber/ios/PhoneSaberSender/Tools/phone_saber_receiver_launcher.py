@@ -166,8 +166,12 @@ def _emit(message: str, log_file: IO[str] | None = None, *, stamp: bool = True) 
     """Terminal gets the plain line; the saved log gets a timestamp so events can be dated."""
     print(message, flush=True)
     if log_file is not None:
-        log_file.write((_stamp() if stamp else "") + message + "\n")
-        log_file.flush()
+        try:
+            log_file.write((_stamp() if stamp else "") + message + "\n")
+            log_file.flush()
+        except OSError as exc:
+            # A full log disk must not prevent signaling and reaping the receiver group.
+            print(f"[PHONE_SABER][ERROR] launcher log could not be saved: {exc}", flush=True)
 
 
 def _emit_banner(
