@@ -871,7 +871,7 @@
         70674.0
       ],
       "directions": [
-        "upleft"
+        "up"
       ]
     },
     {
@@ -891,7 +891,7 @@
         73674.0
       ],
       "directions": [
-        "right"
+        "downright"
       ]
     },
     {
@@ -913,7 +913,7 @@
         76674.0
       ],
       "directions": [
-        "upright"
+        "up"
       ]
     },
     {
@@ -923,7 +923,7 @@
         78174.0
       ],
       "directions": [
-        "downleft"
+        "left"
       ]
     },
     {
@@ -944,8 +944,8 @@
         81924.0
       ],
       "directions": [
-        "left",
-        "right"
+        "up",
+        "down"
       ]
     },
     {
@@ -955,7 +955,7 @@
         82674.0
       ],
       "directions": [
-        "down"
+        "right"
       ]
     },
     {
@@ -975,7 +975,7 @@
         84174.0
       ],
       "directions": [
-        "up"
+        "left"
       ]
     },
     {
@@ -1005,7 +1005,7 @@
         87174.0
       ],
       "directions": [
-        "down"
+        "downright"
       ]
     },
     {

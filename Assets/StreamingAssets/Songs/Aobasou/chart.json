@@ -1,5 +1,5 @@
 {
-  "_comment": "色と画面位置を分離。横・縦・斜め・左右反転をフレーズで展開し、色ごとのカット経路を検証。",
+  "_comment": "収集したBeat Saber素材を本作向けに翻案。素材ごとの適用箇所はTools/ChartDesign/BeatSaberPatternBank/applications.json。",
   "bpm": 140,
   "coordScale": 1,
   "offsetMs": 0,
@@ -34,6 +34,10 @@
     {
       "timeMs": 27428.5714,
       "name": "主拍の主題"
+    },
+    {
+      "timeMs": 29142.8571,
+      "name": "素材: beat-hard-1"
     },
     {
       "timeMs": 41142.8571,
@@ -837,10 +841,10 @@
       "lengthMs": 0
     },
     {
-      "beat": 68.0,
+      "beat": 68,
       "time": 29142.8571,
-      "x": -0.992,
-      "y": 0.272,
+      "x": -0.35,
+      "y": 1.05,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -848,10 +852,10 @@
       "lengthMs": 0
     },
     {
-      "beat": 69.0,
+      "beat": 69,
       "time": 29571.4286,
-      "x": 1.12,
-      "y": -0.272,
+      "x": -0.35,
+      "y": -1.05,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -859,10 +863,10 @@
       "lengthMs": 0
     },
     {
-      "beat": 70.0,
+      "beat": 70,
       "time": 30000.0,
-      "x": -0.992,
-      "y": -0.272,
+      "x": 0.1,
+      "y": 0.95,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -870,10 +874,10 @@
       "lengthMs": 0
     },
     {
-      "beat": 71.0,
+      "beat": 71,
       "time": 30428.5714,
-      "x": 0.992,
-      "y": 0.272,
+      "x": 0.1,
+      "y": -0.95,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -881,32 +885,21 @@
       "lengthMs": 0
     },
     {
-      "beat": 72.0,
+      "beat": 72,
       "time": 30857.1429,
-      "x": -1.12,
-      "y": 0.272,
+      "x": 0.35,
+      "y": 1.05,
       "type": "tap",
-      "color": "red",
+      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
     },
     {
-      "beat": 73.0,
+      "beat": 73,
       "time": 31285.7143,
-      "x": 0.992,
-      "y": -0.272,
-      "type": "tap",
-      "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 74.0,
-      "time": 31714.2857,
-      "x": -1.12,
-      "y": -0.272,
+      "x": 0.35,
+      "y": -1.05,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -914,12 +907,23 @@
       "lengthMs": 0
     },
     {
-      "beat": 75.0,
-      "time": 32142.8571,
-      "x": 0.832,
-      "y": 0.272,
+      "beat": 74,
+      "time": 31714.2857,
+      "x": -0.1,
+      "y": 0.95,
       "type": "tap",
       "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 75,
+      "time": 32142.8571,
+      "x": -0.1,
+      "y": -0.95,
+      "type": "tap",
+      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0

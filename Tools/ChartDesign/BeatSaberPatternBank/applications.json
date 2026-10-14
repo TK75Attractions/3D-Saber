@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "convertedCount": 40,
-  "appliedCount": 40,
+  "convertedCount": 46,
+  "appliedCount": 46,
   "applications": [
     {
       "patternId": "shut-up-dance-2",
@@ -633,6 +633,9 @@
       "sourceUrl": "https://www.youtube.com/watch?v=16oSzYCTD3A&t=88",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=BenkyouRemaster&difficulty=hard&t=102.17",
       "noteIndices": [
+        321,
+        322,
+        323,
         324,
         325,
         326,
@@ -647,10 +650,7 @@
         335,
         336,
         337,
-        338,
-        339,
-        340,
-        341
+        338
       ],
       "appliedNotes": [
         {
@@ -1661,6 +1661,9 @@
       "sourceUrl": "https://www.youtube.com/watch?v=16oSzYCTD3A&t=58",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=BenkyouRemaster&difficulty=hard&t=90.17",
       "noteIndices": [
+        280,
+        281,
+        282,
         283,
         284,
         285,
@@ -1669,10 +1672,7 @@
         288,
         289,
         290,
-        291,
-        292,
-        293,
-        294
+        291
       ],
       "appliedNotes": [
         {
@@ -2349,6 +2349,9 @@
       "sourceUrl": "https://www.youtube.com/watch?v=am22mbvgyD8&t=36",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=BenkyouRemaster&difficulty=hard&t=60.17",
       "noteIndices": [
+        209,
+        210,
+        211,
         212,
         213,
         214,
@@ -2357,10 +2360,7 @@
         217,
         218,
         219,
-        220,
-        221,
-        222,
-        223
+        220
       ],
       "appliedNotes": [
         {
@@ -3089,14 +3089,14 @@
       "sourceUrl": "https://www.youtube.com/watch?v=mgGaqZ20Scw&t=259",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=BenkyouRemaster&difficulty=normal&t=60.17",
       "noteIndices": [
+        139,
+        140,
         141,
         142,
         143,
         144,
         145,
-        146,
-        147,
-        148
+        146
       ],
       "appliedNotes": [
         {
@@ -3585,14 +3585,14 @@
       "sourceUrl": "https://www.youtube.com/watch?v=QcaBh6KS7_E&t=90",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=BenkyouRemaster&difficulty=normal&t=102.17",
       "noteIndices": [
+        217,
+        218,
         219,
         220,
         221,
         222,
         223,
-        224,
-        225,
-        226
+        224
       ],
       "appliedNotes": [
         {
@@ -4081,14 +4081,14 @@
       "sourceUrl": "https://www.youtube.com/watch?v=am22mbvgyD8&t=15",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=BenkyouRemaster&difficulty=normal&t=90.17",
       "noteIndices": [
+        187,
+        188,
         189,
         190,
         191,
         192,
         193,
-        194,
-        195,
-        196
+        194
       ],
       "appliedNotes": [
         {
@@ -5706,24 +5706,564 @@
       ],
       "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
       "templateOrientationDegrees": 90
+    },
+    {
+      "patternId": "beat-hard-3",
+      "songId": "BenkyouRemaster",
+      "songTitle": "勉強（Remaster）",
+      "difficulty": "hard",
+      "startBeat": 64,
+      "endBeat": 72,
+      "startBar": 17,
+      "barCount": 2,
+      "startSeconds": 24.024,
+      "endSeconds": 27.024,
+      "targetBpm": 160,
+      "mirrorFirstBar": true,
+      "secondBar": "担当手を入れ替えた応答。画面の出現位置は色から独立。",
+      "section": "主題A",
+      "removedNotes": 11,
+      "addedNotes": 8,
+      "sourceCategory": "conditional",
+      "fidelity": "映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。",
+      "sourceUrl": "https://www.youtube.com/watch?v=KQoUHhbs6rA&t=85",
+      "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=BenkyouRemaster&difficulty=hard&t=22.52",
+      "noteIndices": [
+        88,
+        89,
+        90,
+        91,
+        92,
+        93,
+        94,
+        95
+      ],
+      "appliedNotes": [
+        {
+          "beat": 64,
+          "time": 24024.0,
+          "x": 0.9,
+          "y": 0.45,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 65,
+          "time": 24399.0,
+          "x": -0.2,
+          "y": -0.9,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 66,
+          "time": 24774.0,
+          "x": -0.9,
+          "y": 0.45,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 67,
+          "time": 25149.0,
+          "x": 0.2,
+          "y": 0.9,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 68,
+          "time": 25524.0,
+          "x": -0.9,
+          "y": 0.45,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 69,
+          "time": 25899.0,
+          "x": 0.2,
+          "y": -0.9,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 70,
+          "time": 26274.0,
+          "x": 0.9,
+          "y": 0.45,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 71,
+          "time": 26649.0,
+          "x": -0.2,
+          "y": 0.9,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ]
+    },
+    {
+      "patternId": "beat-hard-1",
+      "songId": "Aobasou",
+      "songTitle": "青葉騒 feat.初音ミク",
+      "difficulty": "normal",
+      "startBeat": 68,
+      "endBeat": 76,
+      "startBar": 18,
+      "barCount": 2,
+      "startSeconds": 29.1429,
+      "endSeconds": 32.5714,
+      "targetBpm": 140,
+      "mirrorFirstBar": false,
+      "secondBar": "担当手を入れ替えた応答。画面の出現位置は色から独立。",
+      "section": "主拍の主題",
+      "removedNotes": 8,
+      "addedNotes": 8,
+      "sourceCategory": "conditional",
+      "fidelity": "映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。",
+      "sourceUrl": "https://www.youtube.com/watch?v=KQoUHhbs6rA&t=23",
+      "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=normal&t=27.64",
+      "noteIndices": [
+        69,
+        70,
+        71,
+        72,
+        73,
+        74,
+        75,
+        76
+      ],
+      "appliedNotes": [
+        {
+          "beat": 68,
+          "time": 29142.8571,
+          "x": -0.35,
+          "y": 1.05,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 69,
+          "time": 29571.4286,
+          "x": -0.35,
+          "y": -1.05,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 70,
+          "time": 30000.0,
+          "x": 0.1,
+          "y": 0.95,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 71,
+          "time": 30428.5714,
+          "x": 0.1,
+          "y": -0.95,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 72,
+          "time": 30857.1429,
+          "x": 0.35,
+          "y": 1.05,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 73,
+          "time": 31285.7143,
+          "x": 0.35,
+          "y": -1.05,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 74,
+          "time": 31714.2857,
+          "x": -0.1,
+          "y": 0.95,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 75,
+          "time": 32142.8571,
+          "x": -0.1,
+          "y": -0.95,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ]
+    },
+    {
+      "patternId": "beat-hard-2",
+      "songId": "BenkyouRemaster",
+      "songTitle": "勉強（Remaster）",
+      "difficulty": "normal",
+      "startBeat": 56,
+      "endBeat": 64,
+      "startBar": 15,
+      "barCount": 2,
+      "startSeconds": 21.024,
+      "endSeconds": 24.024,
+      "targetBpm": 160,
+      "mirrorFirstBar": false,
+      "secondBar": "担当手を入れ替えた応答。画面の出現位置は色から独立。",
+      "section": "主題A",
+      "removedNotes": 8,
+      "addedNotes": 6,
+      "sourceCategory": "good",
+      "fidelity": "映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。",
+      "sourceUrl": "https://www.youtube.com/watch?v=KQoUHhbs6rA&t=55",
+      "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=BenkyouRemaster&difficulty=normal&t=19.52",
+      "noteIndices": [
+        52,
+        53,
+        54,
+        55,
+        56,
+        57
+      ],
+      "appliedNotes": [
+        {
+          "beat": 56,
+          "time": 21024.0,
+          "x": 1.05,
+          "y": -0.65,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 56,
+          "time": 21024.0,
+          "x": -1.05,
+          "y": 0.65,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 59,
+          "time": 22149.0,
+          "x": -0.55,
+          "y": -0.5,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 60,
+          "time": 22524.0,
+          "x": 1.05,
+          "y": 0.65,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 60,
+          "time": 22524.0,
+          "x": -1.05,
+          "y": -0.65,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 63,
+          "time": 23649.0,
+          "x": 0.55,
+          "y": -0.5,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ]
+    },
+    {
+      "patternId": "escape-normal-2",
+      "songId": "escapade",
+      "songTitle": "escapade",
+      "difficulty": "easy",
+      "startBeat": 304,
+      "endBeat": 312,
+      "startBar": 77,
+      "barCount": 2,
+      "startSeconds": 96.02,
+      "endSeconds": 98.5463,
+      "targetBpm": 190,
+      "mirrorFirstBar": false,
+      "secondBar": "担当手を入れ替えた応答。画面の出現位置は色から独立。",
+      "section": "余韻",
+      "removedNotes": 4,
+      "addedNotes": 4,
+      "sourceCategory": "good",
+      "fidelity": "映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。",
+      "sourceUrl": "https://www.youtube.com/watch?v=WAgUzLuNO64&t=57",
+      "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=escapade&difficulty=easy&t=94.52",
+      "noteIndices": [
+        139,
+        140,
+        141,
+        142
+      ],
+      "appliedNotes": [
+        {
+          "beat": 304,
+          "time": 96020.0,
+          "x": 1.0,
+          "y": 0.5,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 306,
+          "time": 96651.5789,
+          "x": -1.0,
+          "y": -0.5,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 308,
+          "time": 97283.1579,
+          "x": -1.0,
+          "y": 0.5,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 310,
+          "time": 97914.7368,
+          "x": 1.0,
+          "y": -0.5,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ]
+    },
+    {
+      "patternId": "escape-normal-3",
+      "songId": "Aobasou",
+      "songTitle": "青葉騒 feat.初音ミク",
+      "difficulty": "easy",
+      "startBeat": 80,
+      "endBeat": 88,
+      "startBar": 21,
+      "barCount": 2,
+      "startSeconds": 34.2857,
+      "endSeconds": 37.7143,
+      "targetBpm": 140,
+      "mirrorFirstBar": false,
+      "secondBar": "担当手を入れ替えた応答。画面の出現位置は色から独立。",
+      "section": "主拍の主題",
+      "removedNotes": 4,
+      "addedNotes": 4,
+      "sourceCategory": "good",
+      "fidelity": "映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。",
+      "sourceUrl": "https://www.youtube.com/watch?v=WAgUzLuNO64&t=108",
+      "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=easy&t=32.79",
+      "noteIndices": [
+        43,
+        44,
+        45,
+        46
+      ],
+      "appliedNotes": [
+        {
+          "beat": 80,
+          "time": 34285.7143,
+          "x": 0.65,
+          "y": 0.85,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 83,
+          "time": 35571.4286,
+          "x": 0.65,
+          "y": -0.85,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 84,
+          "time": 36000.0,
+          "x": -0.65,
+          "y": 0.85,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 87,
+          "time": 37285.7143,
+          "x": -0.65,
+          "y": -0.85,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ]
+    },
+    {
+      "patternId": "escape-normal-1",
+      "songId": "BenkyouRemaster",
+      "songTitle": "勉強（Remaster）",
+      "difficulty": "easy",
+      "startBeat": 184,
+      "endBeat": 192,
+      "startBar": 47,
+      "barCount": 2,
+      "startSeconds": 76.674,
+      "endSeconds": 79.674,
+      "targetBpm": 160,
+      "mirrorFirstBar": false,
+      "secondBar": "担当手を入れ替えた応答。画面の出現位置は色から独立。",
+      "section": "小節頭と余韻",
+      "removedNotes": 2,
+      "addedNotes": 2,
+      "sourceCategory": "good",
+      "fidelity": "映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。",
+      "sourceUrl": "https://www.youtube.com/watch?v=WAgUzLuNO64&t=23",
+      "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=BenkyouRemaster&difficulty=easy&t=75.17",
+      "noteIndices": [
+        89,
+        90
+      ],
+      "appliedNotes": [
+        {
+          "beat": 184,
+          "time": 76674.0,
+          "x": 0.25,
+          "y": -1.05,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 188,
+          "time": 78174.0,
+          "x": -0.25,
+          "y": -1.05,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ]
     }
   ],
   "inputChartHashes": {
-    "Assets/StreamingAssets/Songs/ManicSonic/chart_easy.json": "dad0d363a0de87755a9940aec2a8baf8dea3a38733731f3d08cf45d364be1832",
+    "Assets/StreamingAssets/Songs/ManicSonic/chart_easy.json": "6f92741208c530d5ce7c09918847f2e50dfada10aa7df1a1d3a25c989c59d272",
     "Assets/StreamingAssets/Songs/ManicSonic/chart_normal.json": "972632378108a05424a722b50bcf4d1bbeec4fe2255442e729d0133130f29556",
-    "Assets/StreamingAssets/Songs/ManicSonic/chart_hard.json": "b5aadfc6d2d856e22dbce4bd66e42db89e0c2e9a4f70159c38474c5b645edead",
-    "Assets/StreamingAssets/Songs/escapade/chart_easy.json": "831d2d26e37632a69d6bdc47584fbce7039b65ef9b36c1fa3e7cc78893353715",
+    "Assets/StreamingAssets/Songs/ManicSonic/chart_hard.json": "2fb0f63d015fd32bd6e3a371b9e8606d0d952191c21776e46bf7e5d64303cb3b",
+    "Assets/StreamingAssets/Songs/escapade/chart_easy.json": "f365bc5cdf37af87b9749bb742d94de20cc656257c0495b759103d7cab0a23ad",
     "Assets/StreamingAssets/Songs/escapade/chart_normal.json": "df8104b62588e12a2039ee981a1c5302f5f4f0e81ba2137973d3f3e9a9a676fa",
-    "Assets/StreamingAssets/Songs/escapade/chart_hard.json": "183277c18f3f0d236fad71fa2c7174a8556e1a599f9c59a671d6d1b03948669f",
-    "Assets/StreamingAssets/Songs/logic/chart_easy.json": "f7aa7240d8734e2144e650c6cc59730103a539e6ad7c9b720284a7015b0fb501",
+    "Assets/StreamingAssets/Songs/escapade/chart_hard.json": "088bf1a344d17934e4dc716dcd633e4a8b8f479d15f08f4258134c25bfb9b6eb",
+    "Assets/StreamingAssets/Songs/logic/chart_easy.json": "709633ce37c7102c0cd5ff21b1a964c99015799afd8bc8e1e88675195b19bc76",
     "Assets/StreamingAssets/Songs/logic/chart_normal.json": "3b402289c07de404db4d256f26d76dfe955ce593b4faacad5fb7eabc2a18764b",
-    "Assets/StreamingAssets/Songs/logic/chart_hard.json": "361d3d91b0fb314903958b91311f501f1117b38dc9d004059d165da12b8ad4e3",
-    "Assets/StreamingAssets/Songs/BenkyouRemaster/chart_easy.json": "77bd196118c5f4c64e20f7711dee641410dc9f6df8a121a7f059d208faaba933",
+    "Assets/StreamingAssets/Songs/logic/chart_hard.json": "8c68a1db7ced452514a36f60a44e849184960ae20a3652ed55c00e7a535c9efe",
+    "Assets/StreamingAssets/Songs/BenkyouRemaster/chart_easy.json": "38557664033a566857f9af43832a652d81fb70dc980609e66c46337ddd0eeab1",
     "Assets/StreamingAssets/Songs/BenkyouRemaster/chart_normal.json": "d743b6efa4d02b0b12e546b758accc53e9c0fee7183117ed977d1c55da56562b",
-    "Assets/StreamingAssets/Songs/BenkyouRemaster/chart_hard.json": "c69f86bd8739d1de4d5d585f3ba096f4679c5f9c2b80bf1c1ccbfce078b3e1e1",
+    "Assets/StreamingAssets/Songs/BenkyouRemaster/chart_hard.json": "94c263b50b9091ad18d8803dd1273fc525b377ce7ddd19fbf7deac0c1d79f5a9",
     "Assets/StreamingAssets/Songs/Aobasou/chart_easy.json": "9c32ba1a2dd85ed4c2f84a24dacf843cab41cc719288414b8c920a58604aec45",
-    "Assets/StreamingAssets/Songs/Aobasou/chart_normal.json": "c7f20be38619646bf8d0cba15ac67864c239f8b6f4f43b052fe0bc2837c64e0a",
-    "Assets/StreamingAssets/Songs/Aobasou/chart_hard.json": "48a809c62a2577a4c1e52159f4b68c7f2b798b3b522fc00a4d456b73b0cccfef"
+    "Assets/StreamingAssets/Songs/Aobasou/chart_normal.json": "f21908596da5c5151605410a5bcaa05655db83bd8e36f83cc81853727456d699",
+    "Assets/StreamingAssets/Songs/Aobasou/chart_hard.json": "1b402b268c7ae7750a635f3c6ccc4baf4ee8318f280730aa1122430abad6e406"
   },
   "spatialLayoutVersion": 1
 }

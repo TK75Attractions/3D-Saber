@@ -35,7 +35,11 @@ def make_phrase(pattern,base,m,mirror,diff):
 
 def plan_notes(notes,m,diff):
  notes=copy.deepcopy(sorted(notes,key=lambda n:(n['time'],n['_hand'])))
+ # 密度を落とした結果、既存のフリック同士が直近16ノーツに集まる候補は採用しない。
+ # 追加範囲外の方向指定を黙って解除せず、別の挿入位置を探す。
+ existing_arrows=[n for n in notes if n['_arrow'] and n['_material'] is None]
  limit_flicks(notes,diff)
+ if any(not n['_arrow'] for n in existing_arrows):return None
  plan,failure=path_for(notes,m)
  # 素材の句末フリックは、前後の動きが成立しなければタップへ戻す。
  if failure and notes[failure[0]]['_material'] and notes[failure[0]]['_arrow']:
@@ -47,13 +51,13 @@ def plan_notes(notes,m,diff):
  return notes,plan
 
 def main():
- p=argparse.ArgumentParser();p.add_argument('--repo',type=Path,required=True);p.add_argument('--output',type=Path,required=True);args=p.parse_args()
+ p=argparse.ArgumentParser();p.add_argument('--repo',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--features',type=Path);args=p.parse_args()
  repo=args.repo;design=repo/'Tools/ChartDesign/FiveSongs20261014';bank=repo/'Tools/ChartDesign/BeatSaberPatternBank';output=args.output
  patterns=read(bank/'converted-patterns.json')['patterns'];prior=read(bank/'applications.json') if (bank/'applications.json').exists() else {'applications':[]}
  done={a['patternId'] for a in prior['applications']};pending=[x for x in patterns if x['id'] not in done]
  states={};musics={};original_hashes={};occupancy=collections.defaultdict(list);applications=list(prior['applications'])
  for a in applications:occupancy[(a['songId'],a['difficulty'])].append((a['startBeat'],a['endBeat']))
- features=output/'Features'
+ features=args.features or output/'Features'
  for spec in read(design/'songs.json'):
   sid=spec['id'];folder=repo/'Assets/StreamingAssets/Songs'/sid;audio=next(p for p in folder.glob('audio.*') if p.suffix!='.meta')
   if not (features/sid/'features.npz').exists():analyze(spec,audio,features/sid)

@@ -1,5 +1,5 @@
 {
-  "_comment": "色と画面位置を分離。横・縦・斜め・左右反転をフレーズで展開し、色ごとのカット経路を検証。",
+  "_comment": "収集したBeat Saber素材を本作向けに翻案。素材ごとの適用箇所はTools/ChartDesign/BeatSaberPatternBank/applications.json。",
   "bpm": 140,
   "coordScale": 1,
   "offsetMs": 0,

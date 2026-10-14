@@ -19,6 +19,19 @@ LAYOUT={
  'avoid-vision-block':90,'avoid-hammer':180,'avoid-double-direction':45,
  'elixia-hard-1':90,'elixia-hard-2':180,'elixia-hard-3':-90,
  'there-normal-1':90,'there-normal-2':-90,'there-normal-3':180,
+ 'escape-normal-1':0,'escape-normal-2':0,'escape-normal-3':0,
+ 'beat-hard-1':0,'beat-hard-2':0,'beat-hard-3':0,
+}
+
+# 20時台追加分。映像の単発・休符・担当手の順を個別に翻案する。
+# 座標は本作用に設計済み。原作の色（左=赤）を本作の担当色（左=青）へ変換する。
+EXPLICIT={
+ 'escape-normal-1':('easy','中央下の単発と余白',[(0,'left',.25,-1.05)]),
+ 'escape-normal-2':('easy','左右反転した交互',[(0,'left',1.0,.5),(2,'right',-1.0,-.5)]),
+ 'escape-normal-3':('easy','同じ側の上下を間隔を空けて渡す',[(0,'left',.65,.85),(3,'right',.65,-.85)]),
+ 'beat-hard-1':('normal','縦の交互を中央へ寄せる',[(0,'right',-.35,1.05),(1,'left',-.35,-1.05),(2,'right',.10,.95),(3,'left',.10,-.95)]),
+ 'beat-hard-2':('normal','斜めの両手から単発へ',[(0,'left',-1.05,.65),(0,'right',1.05,-.65),(3,'left',-.55,-.5)]),
+ 'beat-hard-3':('hard','片手の2打を斜めで折り返す',[(0,'left',-.9,.45),(1,'right',.2,-.9),(2,'right',.9,.45),(3,'left',-.2,.9)]),
 }
 
 # 動画で確認した手の受け渡し・密度差を記述する。位置は本作の可動域へ縮める。
@@ -96,13 +109,17 @@ def convert(item):
    x=-(outer if n['column']==0 else inner) if left else (outer if n['column']==3 else inner)
    events.append({'beat':n['beat'],'hand':n['hand'],'x':x,'y':[-.24,0,.24][n['row']]})
   fidelity='譜面データの拍と担当手を保持。位置は簡略化し、縦・斜め・左右反転を含む本作向けの配置へ翻案。'
+ elif identifier in EXPLICIT:
+  diff,_,positions=EXPLICIT[identifier]
+  events=[dict(beat=b,hand=h,x=x,y=y) for b,h,x,y in positions]
+  fidelity='映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。'
  else:
   diff,tokens,motion=MANUAL[identifier];events=manual_events(tokens,motion)
   fidelity='映像の配置要素から設計した簡略化・翻案。原作の全ノーツの正確な採譜ではない。'
  if item['category']=='avoid':fidelity='問題点を取り除いた修正版。解説映像そのものを再現する譜面ではない。'
  angle=LAYOUT[identifier]
  for e in events:e['x'],e['y']=rotate(e['x'],e['y'],angle)
- layout='左右反転' if angle==180 else '縦並び' if abs(angle)==90 else '斜めの受け渡し'
+ layout=EXPLICIT[identifier][1] if identifier in EXPLICIT else '左右反転' if angle==180 else '縦並び' if abs(angle)==90 else '斜めの受け渡し'
  bpm=item['bpm'] or 140;clock=Clock(bpm);notes=[]
  for e in events:
   h=1 if e['hand']=='left' else 0

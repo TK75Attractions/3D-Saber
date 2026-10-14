@@ -1,5 +1,5 @@
 {
-  "_comment": "色と画面位置を分離。横・縦・斜め・左右反転をフレーズで展開し、色ごとのカット経路を検証。",
+  "_comment": "収集したBeat Saber素材を本作向けに翻案。素材ごとの適用箇所はTools/ChartDesign/BeatSaberPatternBank/applications.json。",
   "bpm": 140,
   "coordScale": 1,
   "offsetMs": 0,
@@ -34,6 +34,10 @@
     {
       "timeMs": 27428.5714,
       "name": "主拍の主題"
+    },
+    {
+      "timeMs": 34285.7143,
+      "name": "素材: escape-normal-3"
     },
     {
       "timeMs": 54857.1429,
@@ -543,21 +547,10 @@
       "lengthMs": 0
     },
     {
-      "beat": 80.0,
+      "beat": 80,
       "time": 34285.7143,
-      "x": -0.992,
-      "y": -0.2,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 82.0,
-      "time": 35142.8571,
-      "x": 1.0032,
-      "y": -0.1326,
+      "x": 0.65,
+      "y": 0.85,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -565,10 +558,10 @@
       "lengthMs": 0
     },
     {
-      "beat": 84.0,
-      "time": 36000.0,
-      "x": -0.8557,
-      "y": -0.0082,
+      "beat": 83,
+      "time": 35571.4286,
+      "x": 0.65,
+      "y": -0.85,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -576,10 +569,21 @@
       "lengthMs": 0
     },
     {
-      "beat": 86.0,
-      "time": 36857.1429,
-      "x": 0.636,
-      "y": 0.5725,
+      "beat": 84,
+      "time": 36000.0,
+      "x": -0.65,
+      "y": 0.85,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 87,
+      "time": 37285.7143,
+      "x": -0.65,
+      "y": -0.85,
       "type": "tap",
       "color": "blue",
       "direction": "none",

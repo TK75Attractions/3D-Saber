@@ -891,20 +891,20 @@
   },
   {
     "index": 89,
-    "beat": 184.0,
+    "beat": 184,
     "hand": "blue",
-    "role": "小節頭と余韻",
-    "phrase": 13,
+    "role": "素材: 片手の横返しを余白で区切る",
+    "phrase": -1,
     "peakSeconds": 76.675737,
     "distanceMs": 1.737,
     "strength": 1.3826
   },
   {
     "index": 90,
-    "beat": 188.0,
+    "beat": 188,
     "hand": "red",
-    "role": "小節頭と余韻",
-    "phrase": 13,
+    "role": "素材: 片手の横返しを余白で区切る",
+    "phrase": -1,
     "peakSeconds": 78.172336,
     "distanceMs": -1.664,
     "strength": 1.3427

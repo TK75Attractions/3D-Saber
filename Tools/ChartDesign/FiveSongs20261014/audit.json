@@ -930,7 +930,8 @@
       "recoveryAdjustments": [],
       "flowPassed": true,
       "materialPatterns": [
-        "dream-normal-3"
+        "dream-normal-3",
+        "escape-normal-2"
       ],
       "spatialLayout": {
         "version": 1,
@@ -2381,7 +2382,8 @@
       "recoveryAdjustments": [],
       "flowPassed": true,
       "materialPatterns": [
-        "dream-normal-4"
+        "dream-normal-4",
+        "escape-normal-1"
       ],
       "spatialLayout": {
         "version": 1,
@@ -2390,10 +2392,10 @@
       }
     },
     "normal": {
-      "notes": 272,
-      "cuts": 284,
+      "notes": 270,
+      "cuts": 282,
       "types": {
-        "tap": 250,
+        "tap": 248,
         "direction": 10,
         "long": 12
       },
@@ -2596,7 +2598,8 @@
       "materialPatterns": [
         "avoid-hammer",
         "burning-hard-3",
-        "lvl-expert-1"
+        "lvl-expert-1",
+        "beat-hard-2"
       ],
       "spatialLayout": {
         "version": 1,
@@ -2605,10 +2608,10 @@
       }
     },
     "hard": {
-      "notes": 409,
-      "cuts": 421,
+      "notes": 406,
+      "cuts": 418,
       "types": {
-        "tap": 363,
+        "tap": 360,
         "direction": 34,
         "long": 12
       },
@@ -2811,7 +2814,8 @@
       "materialPatterns": [
         "bring-it-on-4",
         "bring-it-on-3",
-        "lvl-expert-2"
+        "lvl-expert-2",
+        "beat-hard-3"
       ],
       "spatialLayout": {
         "version": 1,
@@ -3002,7 +3006,8 @@
       "flowPassed": true,
       "materialPatterns": [
         "avoid-central-wall",
-        "there-normal-1"
+        "there-normal-1",
+        "escape-normal-3"
       ],
       "spatialLayout": {
         "version": 1,
@@ -3194,7 +3199,8 @@
         "avoid-face-punch",
         "avoid-vision-block",
         "bring-it-on-2",
-        "there-normal-2"
+        "there-normal-2",
+        "beat-hard-1"
       ],
       "spatialLayout": {
         "version": 1,

@@ -431,43 +431,43 @@
   },
   {
     "index": 43,
-    "beat": 80.0,
-    "hand": "red",
-    "role": "主拍の主題",
-    "phrase": 5,
+    "beat": 80,
+    "hand": "blue",
+    "role": "素材: 横向き単発の後を長めに空ける",
+    "phrase": -1,
     "peakSeconds": 34.277098,
     "distanceMs": -8.617,
     "strength": 1.3613
   },
   {
     "index": 44,
-    "beat": 82.0,
-    "hand": "blue",
-    "role": "主拍の主題",
-    "phrase": 5,
-    "peakSeconds": 35.135147,
-    "distanceMs": -7.71,
-    "strength": 0.9266
+    "beat": 83,
+    "hand": "red",
+    "role": "素材: 横向き単発の後を長めに空ける",
+    "phrase": -1,
+    "peakSeconds": 35.564172,
+    "distanceMs": -7.256,
+    "strength": 1.2377
   },
   {
     "index": 45,
-    "beat": 84.0,
+    "beat": 84,
     "hand": "red",
-    "role": "主拍の主題",
-    "phrase": 5,
+    "role": "素材: 横向き単発の後を長めに空ける",
+    "phrase": -1,
     "peakSeconds": 35.993197,
     "distanceMs": -6.803,
     "strength": 1.0734
   },
   {
     "index": 46,
-    "beat": 86.0,
+    "beat": 87,
     "hand": "blue",
-    "role": "主拍の主題",
-    "phrase": 5,
-    "peakSeconds": 36.851247,
-    "distanceMs": -5.896,
-    "strength": 1.3221
+    "role": "素材: 横向き単発の後を長めに空ける",
+    "phrase": -1,
+    "peakSeconds": 37.275283,
+    "distanceMs": -10.431,
+    "strength": 1.5267
   },
   {
     "index": 47,
