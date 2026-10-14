@@ -1,1052 +1,2744 @@
 [
   {
     "index": 0,
-    "timeMs": 94.78,
-    "peakSeconds": 0.09478,
-    "strength": 1.079,
-    "role": "single"
+    "timeMs": 93.4921,
+    "sourceBeat": 3.5,
+    "sourceNotes": [
+      {
+        "index": 0,
+        "hand": "R",
+        "column": 2,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "red",
+    "role": "single",
+    "pattern": "0:14R",
+    "onset": 20.36
   },
   {
     "index": 1,
-    "timeMs": 4095.69,
-    "peakSeconds": 4.09569,
-    "strength": 1.059,
-    "role": "single"
+    "timeMs": 4093.4921,
+    "sourceBeat": 11.5,
+    "sourceNotes": [
+      {
+        "index": 1,
+        "hand": "R",
+        "column": 2,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "red",
+    "role": "single",
+    "pattern": "2:14R",
+    "onset": 32.75
   },
   {
     "index": 2,
-    "timeMs": 5806.8,
-    "peakSeconds": 5.8068,
-    "strength": 1.072,
-    "role": "single"
+    "timeMs": 5812.2421,
+    "sourceBeat": 14.9375,
+    "sourceNotes": [
+      {
+        "index": 2,
+        "hand": "R",
+        "column": 2,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "red",
+    "role": "single",
+    "pattern": "3:11.75R",
+    "onset": 16.54
   },
   {
     "index": 3,
-    "timeMs": 7113.83,
-    "peakSeconds": 7.11383,
-    "strength": 1.077,
-    "role": "single"
+    "timeMs": 7124.7421,
+    "sourceBeat": 17.5625,
+    "sourceNotes": [
+      {
+        "index": 3,
+        "hand": "R",
+        "column": 2,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "red",
+    "role": "single",
+    "pattern": "4:6.25R",
+    "onset": 16.79
   },
   {
     "index": 4,
-    "timeMs": 8176.42,
-    "peakSeconds": 8.17642,
-    "strength": 1.012,
-    "role": "single"
+    "timeMs": 8187.2421,
+    "sourceBeat": 19.6875,
+    "sourceNotes": [
+      {
+        "index": 5,
+        "hand": "R",
+        "column": 2,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "red",
+    "role": "single",
+    "pattern": "4:14.75R",
+    "onset": 9.53
   },
   {
     "index": 5,
-    "timeMs": 9074.38,
-    "peakSeconds": 9.07438,
-    "strength": 0.93,
-    "role": "single"
+    "timeMs": 9062.2421,
+    "sourceBeat": 21.4375,
+    "sourceNotes": [
+      {
+        "index": 8,
+        "hand": "R",
+        "column": 2,
+        "row": 0,
+        "direction": "up"
+      }
+    ],
+    "hand": "blue",
+    "role": "single",
+    "pattern": "5:5.75L",
+    "onset": 7.09
   },
   {
     "index": 6,
-    "timeMs": 10521.09,
-    "peakSeconds": 10.521090000000001,
-    "strength": 0.885,
-    "role": "single"
+    "timeMs": 10374.7421,
+    "sourceBeat": 24.0625,
+    "sourceNotes": [
+      {
+        "index": 15,
+        "hand": "R",
+        "column": 2,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "red",
+    "role": "long-gold",
+    "pattern": "6:0.25W4/14",
+    "onset": 5.54
   },
   {
     "index": 7,
-    "timeMs": 11693.42,
-    "peakSeconds": 11.69342,
-    "strength": 1.362,
-    "role": "single"
+    "timeMs": 13530.9921,
+    "sourceBeat": 30.375,
+    "sourceNotes": [
+      {
+        "index": 45,
+        "hand": "L",
+        "column": 1,
+        "row": 0,
+        "direction": "down"
+      },
+      {
+        "index": 46,
+        "hand": "R",
+        "column": 2,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "blue",
+    "role": "gold-double",
+    "pattern": "7:9.50G",
+    "onset": 5.34
   },
   {
     "index": 8,
-    "timeMs": 12591.38,
-    "peakSeconds": 12.59138,
-    "strength": 1.174,
-    "role": "single"
+    "timeMs": 13530.9921,
+    "sourceBeat": 30.375,
+    "sourceNotes": [
+      {
+        "index": 45,
+        "hand": "L",
+        "column": 1,
+        "row": 0,
+        "direction": "down"
+      },
+      {
+        "index": 46,
+        "hand": "R",
+        "column": 2,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "red",
+    "role": "gold-double",
+    "pattern": "7:9.50G",
+    "onset": 5.34
   },
   {
     "index": 9,
-    "timeMs": 13529.25,
-    "peakSeconds": 13.52925,
-    "strength": 1.079,
-    "role": "long"
+    "timeMs": 15187.2421,
+    "sourceBeat": 33.6875,
+    "sourceNotes": [
+      {
+        "index": 49,
+        "hand": "L",
+        "column": 3,
+        "row": 0,
+        "direction": "right"
+      },
+      {
+        "index": 50,
+        "hand": "R",
+        "column": 3,
+        "row": 1,
+        "direction": "right"
+      }
+    ],
+    "hand": "red",
+    "role": "single",
+    "pattern": "8:6.75R",
+    "onset": 11.67
   },
   {
     "index": 10,
-    "timeMs": 15190.48,
-    "peakSeconds": 15.190479999999999,
-    "strength": 1.619,
-    "role": "single"
+    "timeMs": 16749.7421,
+    "sourceBeat": 36.8125,
+    "sourceNotes": [
+      {
+        "index": 55,
+        "hand": "L",
+        "column": 2,
+        "row": 0,
+        "direction": "downright"
+      },
+      {
+        "index": 56,
+        "hand": "R",
+        "column": 3,
+        "row": 1,
+        "direction": "downright"
+      }
+    ],
+    "hand": "red",
+    "role": "single",
+    "pattern": "9:3.25R",
+    "onset": 5.71
   },
   {
     "index": 11,
-    "timeMs": 16756.92,
-    "peakSeconds": 16.756919999999997,
-    "strength": 0.79,
-    "role": "single"
+    "timeMs": 18218.4921,
+    "sourceBeat": 39.75,
+    "sourceNotes": [
+      {
+        "index": 58,
+        "hand": "L",
+        "column": 0,
+        "row": 1,
+        "direction": "upright"
+      },
+      {
+        "index": 59,
+        "hand": "R",
+        "column": 1,
+        "row": 0,
+        "direction": "downleft"
+      }
+    ],
+    "hand": "blue",
+    "role": "single",
+    "pattern": "9:15.00L",
+    "onset": 10.54
   },
   {
     "index": 12,
-    "timeMs": 17525.17,
-    "peakSeconds": 17.52517,
-    "strength": 1.241,
-    "role": "single"
+    "timeMs": 19530.9921,
+    "sourceBeat": 42.375,
+    "sourceNotes": [
+      {
+        "index": 62,
+        "hand": "L",
+        "column": 2,
+        "row": 0,
+        "direction": "downright"
+      }
+    ],
+    "hand": "blue",
+    "role": "single",
+    "pattern": "10:9.50L",
+    "onset": 6.58
   },
   {
     "index": 13,
-    "timeMs": 18897.05,
-    "peakSeconds": 18.89705,
-    "strength": 1.637,
-    "role": "pair"
+    "timeMs": 20718.4921,
+    "sourceBeat": 44.75,
+    "sourceNotes": [
+      {
+        "index": 66,
+        "hand": "L",
+        "column": 0,
+        "row": 0,
+        "direction": "downleft"
+      }
+    ],
+    "hand": "blue",
+    "role": "single",
+    "pattern": "11:3.00L",
+    "onset": 7.07
   },
   {
     "index": 14,
-    "timeMs": 18897.05,
-    "peakSeconds": 18.89705,
-    "strength": 1.637,
-    "role": "pair"
+    "timeMs": 21905.9921,
+    "sourceBeat": 47.125,
+    "sourceNotes": [
+      {
+        "index": 70,
+        "hand": "L",
+        "column": 0,
+        "row": 1,
+        "direction": "left"
+      }
+    ],
+    "hand": "blue",
+    "role": "single",
+    "pattern": "11:12.50L",
+    "onset": 7.34
   },
   {
     "index": 15,
-    "timeMs": 20119.27,
-    "peakSeconds": 20.11927,
-    "strength": 1.377,
-    "role": "single"
+    "timeMs": 22999.7421,
+    "sourceBeat": 49.3125,
+    "sourceNotes": [
+      {
+        "index": 74,
+        "hand": "L",
+        "column": 1,
+        "row": 0,
+        "direction": "up"
+      }
+    ],
+    "hand": "blue",
+    "role": "single",
+    "pattern": "12:5.25L",
+    "onset": 7.17
   },
   {
     "index": 16,
-    "timeMs": 21306.58,
-    "peakSeconds": 21.30658,
-    "strength": 1.588,
-    "role": "single"
+    "timeMs": 24530.9921,
+    "sourceBeat": 52.375,
+    "sourceNotes": [
+      {
+        "index": 80,
+        "hand": "L",
+        "column": 1,
+        "row": 0,
+        "direction": "down"
+      },
+      {
+        "index": 81,
+        "hand": "R",
+        "column": 3,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "blue",
+    "role": "double",
+    "pattern": "13:1.50D",
+    "onset": 8.39
   },
   {
     "index": 17,
-    "timeMs": 22453.97,
-    "peakSeconds": 22.45397,
-    "strength": 1.395,
-    "role": "single"
+    "timeMs": 24530.9921,
+    "sourceBeat": 52.375,
+    "sourceNotes": [
+      {
+        "index": 80,
+        "hand": "L",
+        "column": 1,
+        "row": 0,
+        "direction": "down"
+      },
+      {
+        "index": 81,
+        "hand": "R",
+        "column": 3,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "red",
+    "role": "double",
+    "pattern": "13:1.50D",
+    "onset": 8.39
   },
   {
     "index": 18,
-    "timeMs": 23516.55,
-    "peakSeconds": 23.51655,
-    "strength": 1.488,
-    "role": "single"
+    "timeMs": 25468.4921,
+    "sourceBeat": 54.25,
+    "sourceNotes": [
+      {
+        "index": 85,
+        "hand": "R",
+        "column": 2,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "red",
+    "role": "single",
+    "pattern": "13:9.00R",
+    "onset": 5.93
   },
   {
     "index": 19,
-    "timeMs": 24519.27,
-    "peakSeconds": 24.51927,
-    "strength": 1.526,
-    "role": "single"
+    "timeMs": 26405.9921,
+    "sourceBeat": 56.125,
+    "sourceNotes": [
+      {
+        "index": 87,
+        "hand": "R",
+        "column": 0,
+        "row": 1,
+        "direction": "left"
+      }
+    ],
+    "hand": "red",
+    "role": "single",
+    "pattern": "14:0.50R",
+    "onset": 7.68
   },
   {
     "index": 20,
-    "timeMs": 25467.12,
-    "peakSeconds": 25.467119999999998,
-    "strength": 1.326,
-    "role": "single"
+    "timeMs": 27249.7421,
+    "sourceBeat": 57.8125,
+    "sourceNotes": [
+      {
+        "index": 89,
+        "hand": "R",
+        "column": 3,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "blue",
+    "role": "single",
+    "pattern": "14:7.25L",
+    "onset": 8.94
   },
   {
     "index": 21,
-    "timeMs": 26395.01,
-    "peakSeconds": 26.39501,
-    "strength": 1.414,
-    "role": "single"
+    "timeMs": 28062.2421,
+    "sourceBeat": 59.4375,
+    "sourceNotes": [
+      {
+        "index": 93,
+        "hand": "R",
+        "column": 1,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "red",
+    "role": "single",
+    "pattern": "14:13.75R",
+    "onset": 7.75
   },
   {
     "index": 22,
-    "timeMs": 27662.13,
-    "peakSeconds": 27.66213,
-    "strength": 1.556,
-    "role": "single"
+    "timeMs": 28874.7421,
+    "sourceBeat": 61.0625,
+    "sourceNotes": [
+      {
+        "index": 97,
+        "hand": "R",
+        "column": 2,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "blue",
+    "role": "single",
+    "pattern": "15:4.25L",
+    "onset": 5.82
   },
   {
     "index": 23,
-    "timeMs": 28465.31,
-    "peakSeconds": 28.465310000000002,
-    "strength": 1.543,
-    "role": "single"
+    "timeMs": 29624.7421,
+    "sourceBeat": 62.5625,
+    "sourceNotes": [
+      {
+        "index": 101,
+        "hand": "R",
+        "column": 2,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "red",
+    "role": "single",
+    "pattern": "15:10.25R",
+    "onset": 6.21
   },
   {
     "index": 24,
-    "timeMs": 29253.51,
-    "peakSeconds": 29.25351,
-    "strength": 1.318,
-    "role": "single"
+    "timeMs": 31124.7421,
+    "sourceBeat": 65.5625,
+    "sourceNotes": [
+      {
+        "index": 109,
+        "hand": "L",
+        "column": 0,
+        "row": 1,
+        "direction": "left"
+      },
+      {
+        "index": 110,
+        "hand": "R",
+        "column": 0,
+        "row": 0,
+        "direction": "left"
+      }
+    ],
+    "hand": "blue",
+    "role": "single",
+    "pattern": "16:6.25L",
+    "onset": 5.74
   },
   {
     "index": 25,
-    "timeMs": 30016.78,
-    "peakSeconds": 30.016779999999997,
-    "strength": 1.432,
-    "role": "single"
+    "timeMs": 32530.9921,
+    "sourceBeat": 68.375,
+    "sourceNotes": [
+      {
+        "index": 115,
+        "hand": "L",
+        "column": 1,
+        "row": 2,
+        "direction": "up"
+      },
+      {
+        "index": 116,
+        "hand": "R",
+        "column": 2,
+        "row": 2,
+        "direction": "up"
+      }
+    ],
+    "hand": "blue",
+    "role": "double",
+    "pattern": "17:1.50D",
+    "onset": 9.24
   },
   {
     "index": 26,
-    "timeMs": 30765.08,
-    "peakSeconds": 30.76508,
-    "strength": 1.448,
-    "role": "single"
+    "timeMs": 32530.9921,
+    "sourceBeat": 68.375,
+    "sourceNotes": [
+      {
+        "index": 115,
+        "hand": "L",
+        "column": 1,
+        "row": 2,
+        "direction": "up"
+      },
+      {
+        "index": 116,
+        "hand": "R",
+        "column": 2,
+        "row": 2,
+        "direction": "up"
+      }
+    ],
+    "hand": "red",
+    "role": "double",
+    "pattern": "17:1.50D",
+    "onset": 9.24
   },
   {
     "index": 27,
-    "timeMs": 31822.68,
-    "peakSeconds": 31.822680000000002,
-    "strength": 1.599,
-    "role": "single"
+    "timeMs": 33562.2421,
+    "sourceBeat": 70.4375,
+    "sourceNotes": [
+      {
+        "index": 122,
+        "hand": "L",
+        "column": 0,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "red",
+    "role": "long-gold",
+    "pattern": "17:9.75W3/16",
+    "onset": 3.45
   },
   {
     "index": 28,
-    "timeMs": 32521.09,
-    "peakSeconds": 32.52109,
-    "strength": 1.685,
-    "role": "long"
+    "timeMs": 36343.4921,
+    "sourceBeat": 76,
+    "sourceNotes": [
+      {
+        "index": 140,
+        "hand": "R",
+        "column": 2,
+        "row": 0,
+        "direction": "downright"
+      }
+    ],
+    "hand": "red",
+    "role": "single",
+    "pattern": "19:0.00R",
+    "onset": 4.3
   },
   {
     "index": 29,
-    "timeMs": 34237.19,
-    "peakSeconds": 34.237190000000005,
-    "strength": 1.37,
-    "role": "pair"
+    "timeMs": 37437.2421,
+    "sourceBeat": 78.1875,
+    "sourceNotes": [
+      {
+        "index": 147,
+        "hand": "L",
+        "column": 1,
+        "row": 0,
+        "direction": "down"
+      },
+      {
+        "index": 148,
+        "hand": "R",
+        "column": 2,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "blue",
+    "role": "single",
+    "pattern": "19:8.75L",
+    "onset": 5.61
   },
   {
     "index": 30,
-    "timeMs": 34237.19,
-    "peakSeconds": 34.237190000000005,
-    "strength": 1.37,
-    "role": "pair"
+    "timeMs": 38718.4921,
+    "sourceBeat": 80.75,
+    "sourceNotes": [
+      {
+        "index": 157,
+        "hand": "R",
+        "column": 1,
+        "row": 0,
+        "direction": "up"
+      }
+    ],
+    "hand": "red",
+    "role": "single",
+    "pattern": "20:3.00R",
+    "onset": 4.37
   },
   {
     "index": 31,
-    "timeMs": 35165.08,
-    "peakSeconds": 35.16508,
-    "strength": 1.34,
-    "role": "single"
+    "timeMs": 39405.9921,
+    "sourceBeat": 82.125,
+    "sourceNotes": [
+      {
+        "index": 163,
+        "hand": "R",
+        "column": 3,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "blue",
+    "role": "single",
+    "pattern": "20:8.50L",
+    "onset": 3.56
   },
   {
     "index": 32,
-    "timeMs": 36362.36,
-    "peakSeconds": 36.36236,
-    "strength": 1.002,
-    "role": "single"
+    "timeMs": 40062.2421,
+    "sourceBeat": 83.4375,
+    "sourceNotes": [
+      {
+        "index": 169,
+        "hand": "R",
+        "column": 1,
+        "row": 0,
+        "direction": "up"
+      }
+    ],
+    "hand": "red",
+    "role": "single",
+    "pattern": "20:13.75R",
+    "onset": 3.82
   },
   {
     "index": 33,
-    "timeMs": 37175.51,
-    "peakSeconds": 37.17551,
-    "strength": 0.693,
-    "role": "single"
+    "timeMs": 41187.2421,
+    "sourceBeat": 85.6875,
+    "sourceNotes": [
+      {
+        "index": 177,
+        "hand": "L",
+        "column": 0,
+        "row": 1,
+        "direction": "left"
+      },
+      {
+        "index": 178,
+        "hand": "R",
+        "column": 3,
+        "row": 1,
+        "direction": "right"
+      }
+    ],
+    "hand": "blue",
+    "role": "double",
+    "pattern": "21:6.75D",
+    "onset": 4.61
   },
   {
     "index": 34,
-    "timeMs": 37963.72,
-    "peakSeconds": 37.96372,
-    "strength": 1.133,
-    "role": "single"
+    "timeMs": 41187.2421,
+    "sourceBeat": 85.6875,
+    "sourceNotes": [
+      {
+        "index": 177,
+        "hand": "L",
+        "column": 0,
+        "row": 1,
+        "direction": "left"
+      },
+      {
+        "index": 178,
+        "hand": "R",
+        "column": 3,
+        "row": 1,
+        "direction": "right"
+      }
+    ],
+    "hand": "red",
+    "role": "double",
+    "pattern": "21:6.75D",
+    "onset": 4.61
   },
   {
     "index": 35,
-    "timeMs": 39165.99,
-    "peakSeconds": 39.16599,
-    "strength": 1.489,
-    "role": "single"
+    "timeMs": 42374.7421,
+    "sourceBeat": 88.0625,
+    "sourceNotes": [
+      {
+        "index": 187,
+        "hand": "R",
+        "column": 2,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "red",
+    "role": "single",
+    "pattern": "22:0.25R",
+    "onset": 5.33
   },
   {
     "index": 36,
-    "timeMs": 40058.96,
-    "peakSeconds": 40.05896,
-    "strength": 1.168,
-    "role": "single"
+    "timeMs": 43155.9921,
+    "sourceBeat": 89.625,
+    "sourceNotes": [
+      {
+        "index": 195,
+        "hand": "R",
+        "column": 3,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "blue",
+    "role": "single",
+    "pattern": "22:6.50L",
+    "onset": 6.02
   },
   {
     "index": 37,
-    "timeMs": 41176.42,
-    "peakSeconds": 41.17642,
-    "strength": 1.118,
-    "role": "single"
+    "timeMs": 43937.2421,
+    "sourceBeat": 91.1875,
+    "sourceNotes": [
+      {
+        "index": 203,
+        "hand": "L",
+        "column": 0,
+        "row": 0,
+        "direction": "down"
+      },
+      {
+        "index": 204,
+        "hand": "R",
+        "column": 3,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "red",
+    "role": "single",
+    "pattern": "22:12.75R",
+    "onset": 3.7
   },
   {
     "index": 38,
-    "timeMs": 42004.54,
-    "peakSeconds": 42.00454,
-    "strength": 1.127,
-    "role": "single"
+    "timeMs": 44718.4921,
+    "sourceBeat": 92.75,
+    "sourceNotes": [
+      {
+        "index": 209,
+        "hand": "R",
+        "column": 3,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "blue",
+    "role": "single",
+    "pattern": "23:3.00L",
+    "onset": 5.93
   },
   {
     "index": 39,
-    "timeMs": 42772.79,
-    "peakSeconds": 42.77279,
-    "strength": 1.222,
-    "role": "single"
+    "timeMs": 45499.7421,
+    "sourceBeat": 94.3125,
+    "sourceNotes": [
+      {
+        "index": 217,
+        "hand": "R",
+        "column": 3,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "red",
+    "role": "single",
+    "pattern": "23:9.25R",
+    "onset": 4.32
   },
   {
     "index": 40,
-    "timeMs": 43551.02,
-    "peakSeconds": 43.551019999999994,
-    "strength": 1.269,
-    "role": "single"
+    "timeMs": 46062.2421,
+    "sourceBeat": 95.4375,
+    "sourceNotes": [
+      {
+        "index": 223,
+        "hand": "R",
+        "column": 1,
+        "row": 0,
+        "direction": "up"
+      }
+    ],
+    "hand": "blue",
+    "role": "single",
+    "pattern": "23:13.75L",
+    "onset": 4.67
   },
   {
     "index": 41,
-    "timeMs": 44902.95,
-    "peakSeconds": 44.90295,
-    "strength": 1.405,
-    "role": "single"
+    "timeMs": 47030.9921,
+    "sourceBeat": 97.375,
+    "sourceNotes": [
+      {
+        "index": 233,
+        "hand": "L",
+        "column": 1,
+        "row": 2,
+        "direction": "upright"
+      },
+      {
+        "index": 234,
+        "hand": "R",
+        "column": 2,
+        "row": 2,
+        "direction": "upleft"
+      }
+    ],
+    "hand": "blue",
+    "role": "double",
+    "pattern": "24:5.50D",
+    "onset": 6.73
   },
   {
     "index": 42,
-    "timeMs": 45676.19,
-    "peakSeconds": 45.676190000000005,
-    "strength": 1.229,
-    "role": "single"
+    "timeMs": 47030.9921,
+    "sourceBeat": 97.375,
+    "sourceNotes": [
+      {
+        "index": 233,
+        "hand": "L",
+        "column": 1,
+        "row": 2,
+        "direction": "upright"
+      },
+      {
+        "index": 234,
+        "hand": "R",
+        "column": 2,
+        "row": 2,
+        "direction": "upleft"
+      }
+    ],
+    "hand": "red",
+    "role": "double",
+    "pattern": "24:5.50D",
+    "onset": 6.73
   },
   {
     "index": 43,
-    "timeMs": 47028.12,
-    "peakSeconds": 47.02812,
-    "strength": 1.677,
-    "role": "single"
+    "timeMs": 48177.8579,
+    "sourceBeat": 99.668732,
+    "sourceNotes": [
+      {
+        "index": 241,
+        "hand": "R",
+        "column": 1,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "red",
+    "role": "single",
+    "pattern": "24:14.67R",
+    "onset": 3.74
   },
   {
     "index": 44,
-    "timeMs": 47816.33,
-    "peakSeconds": 47.81633,
-    "strength": 0.75,
-    "role": "single"
+    "timeMs": 48959.1079,
+    "sourceBeat": 101.231232,
+    "sourceNotes": [
+      {
+        "index": 249,
+        "hand": "R",
+        "column": 3,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "blue",
+    "role": "single",
+    "pattern": "25:4.92L",
+    "onset": 4.87
   },
   {
     "index": 45,
-    "timeMs": 48584.58,
-    "peakSeconds": 48.58458,
-    "strength": 1.209,
-    "role": "single"
+    "timeMs": 50530.9921,
+    "sourceBeat": 104.375,
+    "sourceNotes": [
+      {
+        "index": 265,
+        "hand": "L",
+        "column": 1,
+        "row": 2,
+        "direction": "up"
+      },
+      {
+        "index": 266,
+        "hand": "R",
+        "column": 2,
+        "row": 2,
+        "direction": "up"
+      }
+    ],
+    "hand": "red",
+    "role": "single",
+    "pattern": "26:1.50R",
+    "onset": 4.79
   },
   {
     "index": 46,
-    "timeMs": 49357.82,
-    "peakSeconds": 49.35782,
-    "strength": 1.246,
-    "role": "single"
+    "timeMs": 51687.2421,
+    "sourceBeat": 106.6875,
+    "sourceNotes": [
+      {
+        "index": 277,
+        "hand": "R",
+        "column": 1,
+        "row": 0,
+        "direction": "up"
+      }
+    ],
+    "hand": "blue",
+    "role": "single",
+    "pattern": "26:10.75L",
+    "onset": 4.05
   },
   {
     "index": 47,
-    "timeMs": 50520.18,
-    "peakSeconds": 50.52018,
-    "strength": 1.149,
-    "role": "single"
+    "timeMs": 52468.4921,
+    "sourceBeat": 108.25,
+    "sourceNotes": [
+      {
+        "index": 285,
+        "hand": "L",
+        "column": 1,
+        "row": 0,
+        "direction": "up"
+      },
+      {
+        "index": 286,
+        "hand": "R",
+        "column": 2,
+        "row": 0,
+        "direction": "up"
+      }
+    ],
+    "hand": "red",
+    "role": "single",
+    "pattern": "27:1.00R",
+    "onset": 4.54
   },
   {
     "index": 48,
-    "timeMs": 51867.12,
-    "peakSeconds": 51.86712,
-    "strength": 1.353,
-    "role": "pair"
+    "timeMs": 53593.4921,
+    "sourceBeat": 110.5,
+    "sourceNotes": [
+      {
+        "index": 295,
+        "hand": "L",
+        "column": 0,
+        "row": 1,
+        "direction": "left"
+      },
+      {
+        "index": 296,
+        "hand": "R",
+        "column": 3,
+        "row": 1,
+        "direction": "right"
+      }
+    ],
+    "hand": "blue",
+    "role": "single",
+    "pattern": "27:10.00L",
+    "onset": 3.94
   },
   {
     "index": 49,
-    "timeMs": 51867.12,
-    "peakSeconds": 51.86712,
-    "strength": 1.353,
-    "role": "pair"
+    "timeMs": 54593.4921,
+    "sourceBeat": 112.5,
+    "sourceNotes": [
+      {
+        "index": 303,
+        "hand": "R",
+        "column": 1,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "red",
+    "role": "single",
+    "pattern": "28:2.00R",
+    "onset": 4.06
   },
   {
     "index": 50,
-    "timeMs": 52650.34,
-    "peakSeconds": 52.65034,
-    "strength": 1.286,
-    "role": "single"
+    "timeMs": 55343.4921,
+    "sourceBeat": 114,
+    "sourceNotes": [
+      {
+        "index": 307,
+        "hand": "R",
+        "column": 2,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "blue",
+    "role": "single",
+    "pattern": "28:8.00L",
+    "onset": 6.17
   },
   {
     "index": 51,
-    "timeMs": 53613.15,
-    "peakSeconds": 53.613150000000005,
-    "strength": 1.207,
-    "role": "long"
+    "timeMs": 56312.2421,
+    "sourceBeat": 115.9375,
+    "sourceNotes": [
+      {
+        "index": 312,
+        "hand": "R",
+        "column": 2,
+        "row": 2,
+        "direction": "up"
+      }
+    ],
+    "hand": "red",
+    "role": "single",
+    "pattern": "28:15.75R",
+    "onset": 9.56
   },
   {
     "index": 52,
-    "timeMs": 55164.63,
-    "peakSeconds": 55.164629999999995,
-    "strength": 0.924,
-    "role": "single"
+    "timeMs": 57687.2421,
+    "sourceBeat": 118.6875,
+    "sourceNotes": [
+      {
+        "index": 320,
+        "hand": "L",
+        "column": 0,
+        "row": 1,
+        "direction": "upleft"
+      }
+    ],
+    "hand": "blue",
+    "role": "single",
+    "pattern": "29:10.75L",
+    "onset": 4.32
   },
   {
     "index": 53,
-    "timeMs": 56132.43,
-    "peakSeconds": 56.13243,
-    "strength": 0.993,
-    "role": "single"
+    "timeMs": 58655.9921,
+    "sourceBeat": 120.625,
+    "sourceNotes": [
+      {
+        "index": 325,
+        "hand": "L",
+        "column": 2,
+        "row": 0,
+        "direction": "downright"
+      },
+      {
+        "index": 326,
+        "hand": "R",
+        "column": 3,
+        "row": 1,
+        "direction": "downright"
+      }
+    ],
+    "hand": "red",
+    "role": "single",
+    "pattern": "30:2.50R",
+    "onset": 6.97
   },
   {
     "index": 54,
-    "timeMs": 56905.67,
-    "peakSeconds": 56.90567,
-    "strength": 0.966,
-    "role": "single"
+    "timeMs": 59812.2421,
+    "sourceBeat": 122.9375,
+    "sourceNotes": [
+      {
+        "index": 336,
+        "hand": "R",
+        "column": 3,
+        "row": 1,
+        "direction": "upleft"
+      }
+    ],
+    "hand": "blue",
+    "role": "single",
+    "pattern": "30:11.75L",
+    "onset": 5.02
   },
   {
     "index": 55,
-    "timeMs": 57678.91,
-    "peakSeconds": 57.67891,
-    "strength": 1.126,
-    "role": "single"
+    "timeMs": 60437.2421,
+    "sourceBeat": 124.1875,
+    "sourceNotes": [
+      {
+        "index": 339,
+        "hand": "L",
+        "column": 1,
+        "row": 0,
+        "direction": "up"
+      }
+    ],
+    "hand": "red",
+    "role": "single",
+    "pattern": "31:0.75R",
+    "onset": 1.21
   },
   {
     "index": 56,
-    "timeMs": 58651.7,
-    "peakSeconds": 58.6517,
-    "strength": 1.192,
-    "role": "single"
+    "timeMs": 61155.9921,
+    "sourceBeat": 125.625,
+    "sourceNotes": [
+      {
+        "index": 343,
+        "hand": "R",
+        "column": 1,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "blue",
+    "role": "single",
+    "pattern": "31:6.50L",
+    "onset": 5.71
   },
   {
     "index": 57,
-    "timeMs": 59809.07,
-    "peakSeconds": 59.80907,
-    "strength": 1.286,
-    "role": "single"
+    "timeMs": 61749.7421,
+    "sourceBeat": 126.8125,
+    "sourceNotes": [
+      {
+        "index": 346,
+        "hand": "R",
+        "column": 1,
+        "row": 0,
+        "direction": "up"
+      }
+    ],
+    "hand": "red",
+    "role": "single",
+    "pattern": "31:11.25R",
+    "onset": 6.67
   },
   {
     "index": 58,
-    "timeMs": 60582.31,
-    "peakSeconds": 60.58231,
-    "strength": 0.681,
-    "role": "single"
+    "timeMs": 62530.9921,
+    "sourceBeat": 128.375,
+    "sourceNotes": [
+      {
+        "index": 350,
+        "hand": "R",
+        "column": 2,
+        "row": 0,
+        "direction": "up"
+      }
+    ],
+    "hand": "blue",
+    "role": "single",
+    "pattern": "32:1.50L",
+    "onset": 4.84
   },
   {
     "index": 59,
-    "timeMs": 61355.56,
-    "peakSeconds": 61.35556,
-    "strength": 1.028,
-    "role": "single"
+    "timeMs": 63499.7421,
+    "sourceBeat": 130.3125,
+    "sourceNotes": [
+      {
+        "index": 355,
+        "hand": "L",
+        "column": 1,
+        "row": 0,
+        "direction": "down"
+      },
+      {
+        "index": 356,
+        "hand": "R",
+        "column": 2,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "blue",
+    "role": "double",
+    "pattern": "32:9.25D",
+    "onset": 9.55
   },
   {
     "index": 60,
-    "timeMs": 62133.79,
-    "peakSeconds": 62.13379,
-    "strength": 1.046,
-    "role": "single"
+    "timeMs": 63499.7421,
+    "sourceBeat": 130.3125,
+    "sourceNotes": [
+      {
+        "index": 355,
+        "hand": "L",
+        "column": 1,
+        "row": 0,
+        "direction": "down"
+      },
+      {
+        "index": 356,
+        "hand": "R",
+        "column": 2,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "red",
+    "role": "double",
+    "pattern": "32:9.25D",
+    "onset": 9.55
   },
   {
     "index": 61,
-    "timeMs": 62907.03,
-    "peakSeconds": 62.90703,
-    "strength": 1.049,
-    "role": "single"
+    "timeMs": 65437.2421,
+    "sourceBeat": 134.1875,
+    "sourceNotes": [
+      {
+        "index": 369,
+        "hand": "L",
+        "column": 0,
+        "row": 1,
+        "direction": "left"
+      },
+      {
+        "index": 370,
+        "hand": "R",
+        "column": 3,
+        "row": 1,
+        "direction": "right"
+      }
+    ],
+    "hand": "blue",
+    "role": "gold-double",
+    "pattern": "33:8.75G",
+    "onset": 12.44
   },
   {
     "index": 62,
-    "timeMs": 64059.41,
-    "peakSeconds": 64.05941,
-    "strength": 1.816,
-    "role": "single"
+    "timeMs": 65437.2421,
+    "sourceBeat": 134.1875,
+    "sourceNotes": [
+      {
+        "index": 369,
+        "hand": "L",
+        "column": 0,
+        "row": 1,
+        "direction": "left"
+      },
+      {
+        "index": 370,
+        "hand": "R",
+        "column": 3,
+        "row": 1,
+        "direction": "right"
+      }
+    ],
+    "hand": "red",
+    "role": "gold-double",
+    "pattern": "33:8.75G",
+    "onset": 12.44
   },
   {
     "index": 63,
-    "timeMs": 64842.63,
-    "peakSeconds": 64.84263,
-    "strength": 1.132,
-    "role": "single"
+    "timeMs": 66749.7421,
+    "sourceBeat": 136.8125,
+    "sourceNotes": [
+      {
+        "index": 379,
+        "hand": "R",
+        "column": 3,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "red",
+    "role": "single",
+    "pattern": "34:3.25R",
+    "onset": 4.02
   },
   {
     "index": 64,
-    "timeMs": 65416.33,
-    "peakSeconds": 65.41633,
-    "strength": 2.027,
-    "role": "long"
+    "timeMs": 67499.7421,
+    "sourceBeat": 138.3125,
+    "sourceNotes": [
+      {
+        "index": 387,
+        "hand": "R",
+        "column": 2,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "blue",
+    "role": "single",
+    "pattern": "34:9.25L",
+    "onset": 4.63
   },
   {
     "index": 65,
-    "timeMs": 67312.02,
-    "peakSeconds": 67.31202,
-    "strength": 1.297,
-    "role": "single"
+    "timeMs": 68999.7421,
+    "sourceBeat": 141.3125,
+    "sourceNotes": [
+      {
+        "index": 409,
+        "hand": "L",
+        "column": 1,
+        "row": 2,
+        "direction": "up"
+      },
+      {
+        "index": 410,
+        "hand": "R",
+        "column": 2,
+        "row": 2,
+        "direction": "up"
+      }
+    ],
+    "hand": "red",
+    "role": "single",
+    "pattern": "35:5.25R",
+    "onset": 5.51
   },
   {
     "index": 66,
-    "timeMs": 68239.91,
-    "peakSeconds": 68.23991000000001,
-    "strength": 1.51,
-    "role": "pair"
+    "timeMs": 69905.9921,
+    "sourceBeat": 143.125,
+    "sourceNotes": [
+      {
+        "index": 419,
+        "hand": "R",
+        "column": 1,
+        "row": 0,
+        "direction": "up"
+      }
+    ],
+    "hand": "blue",
+    "role": "single",
+    "pattern": "35:12.50L",
+    "onset": 3.89
   },
   {
     "index": 67,
-    "timeMs": 68239.91,
-    "peakSeconds": 68.23991000000001,
-    "strength": 1.51,
-    "role": "pair"
+    "timeMs": 70655.9921,
+    "sourceBeat": 144.625,
+    "sourceNotes": [
+      {
+        "index": 427,
+        "hand": "R",
+        "column": 1,
+        "row": 0,
+        "direction": "up"
+      }
+    ],
+    "hand": "red",
+    "role": "single",
+    "pattern": "36:2.50R",
+    "onset": 3.68
   },
   {
     "index": 68,
-    "timeMs": 69531.97,
-    "peakSeconds": 69.53197,
-    "strength": 1.674,
-    "role": "single"
+    "timeMs": 71562.2421,
+    "sourceBeat": 146.4375,
+    "sourceNotes": [
+      {
+        "index": 437,
+        "hand": "L",
+        "column": 1,
+        "row": 2,
+        "direction": "upright"
+      },
+      {
+        "index": 438,
+        "hand": "R",
+        "column": 2,
+        "row": 2,
+        "direction": "upleft"
+      }
+    ],
+    "hand": "blue",
+    "role": "single",
+    "pattern": "36:9.75L",
+    "onset": 6.48
   },
   {
     "index": 69,
-    "timeMs": 70275.28,
-    "peakSeconds": 70.27528,
-    "strength": 1.309,
-    "role": "single"
+    "timeMs": 72312.2421,
+    "sourceBeat": 147.9375,
+    "sourceNotes": [
+      {
+        "index": 441,
+        "hand": "R",
+        "column": 2,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "red",
+    "role": "long-gold",
+    "pattern": "36:15.75W3/11",
+    "onset": 3.5
   },
   {
     "index": 70,
-    "timeMs": 71203.17,
-    "peakSeconds": 71.20317,
-    "strength": 1.507,
-    "role": "single"
+    "timeMs": 74905.9921,
+    "sourceBeat": 153.125,
+    "sourceNotes": [
+      {
+        "index": 481,
+        "hand": "L",
+        "column": 0,
+        "row": 2,
+        "direction": "up"
+      },
+      {
+        "index": 482,
+        "hand": "R",
+        "column": 3,
+        "row": 2,
+        "direction": "up"
+      }
+    ],
+    "hand": "blue",
+    "role": "single",
+    "pattern": "38:4.50L",
+    "onset": 5.5
   },
   {
     "index": 71,
-    "timeMs": 71946.49,
-    "peakSeconds": 71.94649000000001,
-    "strength": 1.418,
-    "role": "single"
+    "timeMs": 76030.9921,
+    "sourceBeat": 155.375,
+    "sourceNotes": [
+      {
+        "index": 493,
+        "hand": "R",
+        "column": 3,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "red",
+    "role": "single",
+    "pattern": "38:13.50R",
+    "onset": 5.58
   },
   {
     "index": 72,
-    "timeMs": 73053.97,
-    "peakSeconds": 73.05397,
-    "strength": 1.126,
-    "role": "single"
+    "timeMs": 76749.7421,
+    "sourceBeat": 156.8125,
+    "sourceNotes": [
+      {
+        "index": 501,
+        "hand": "R",
+        "column": 3,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "blue",
+    "role": "single",
+    "pattern": "39:3.25L",
+    "onset": 5.53
   },
   {
     "index": 73,
-    "timeMs": 73797.28,
-    "peakSeconds": 73.79728,
-    "strength": 1.304,
-    "role": "single"
+    "timeMs": 77499.7421,
+    "sourceBeat": 158.3125,
+    "sourceNotes": [
+      {
+        "index": 509,
+        "hand": "L",
+        "column": 0,
+        "row": 0,
+        "direction": "down"
+      },
+      {
+        "index": 510,
+        "hand": "R",
+        "column": 3,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "red",
+    "role": "single",
+    "pattern": "39:9.25R",
+    "onset": 4.38
   },
   {
     "index": 74,
-    "timeMs": 74535.6,
-    "peakSeconds": 74.5356,
-    "strength": 1.208,
-    "role": "single"
+    "timeMs": 78312.2421,
+    "sourceBeat": 159.9375,
+    "sourceNotes": [
+      {
+        "index": 513,
+        "hand": "L",
+        "column": 1,
+        "row": 0,
+        "direction": "down"
+      },
+      {
+        "index": 514,
+        "hand": "R",
+        "column": 2,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "blue",
+    "role": "single",
+    "pattern": "39:15.75L",
+    "onset": 1.15
   },
   {
     "index": 75,
-    "timeMs": 75273.92,
-    "peakSeconds": 75.27392,
-    "strength": 1.669,
-    "role": "single"
+    "timeMs": 80655.9921,
+    "sourceBeat": 164.625,
+    "sourceNotes": [
+      {
+        "index": 523,
+        "hand": "L",
+        "column": 1,
+        "row": 0,
+        "direction": "up"
+      },
+      {
+        "index": 524,
+        "hand": "R",
+        "column": 2,
+        "row": 0,
+        "direction": "up"
+      }
+    ],
+    "hand": "blue",
+    "role": "double",
+    "pattern": "41:2.50D",
+    "onset": 8.44
   },
   {
     "index": 76,
-    "timeMs": 76022.22,
-    "peakSeconds": 76.02222,
-    "strength": 1.248,
-    "role": "single"
+    "timeMs": 80655.9921,
+    "sourceBeat": 164.625,
+    "sourceNotes": [
+      {
+        "index": 523,
+        "hand": "L",
+        "column": 1,
+        "row": 0,
+        "direction": "up"
+      },
+      {
+        "index": 524,
+        "hand": "R",
+        "column": 2,
+        "row": 0,
+        "direction": "up"
+      }
+    ],
+    "hand": "red",
+    "role": "double",
+    "pattern": "41:2.50D",
+    "onset": 8.44
   },
   {
     "index": 77,
-    "timeMs": 76755.56,
-    "peakSeconds": 76.75556,
-    "strength": 1.618,
-    "role": "single"
+    "timeMs": 82437.2421,
+    "sourceBeat": 168.1875,
+    "sourceNotes": [
+      {
+        "index": 541,
+        "hand": "L",
+        "column": 1,
+        "row": 0,
+        "direction": "down"
+      },
+      {
+        "index": 542,
+        "hand": "R",
+        "column": 2,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "blue",
+    "role": "single",
+    "pattern": "42:0.75L",
+    "onset": 5.86
   },
   {
     "index": 78,
-    "timeMs": 77498.87,
-    "peakSeconds": 77.49887,
-    "strength": 1.227,
-    "role": "single"
+    "timeMs": 83437.2421,
+    "sourceBeat": 170.1875,
+    "sourceNotes": [
+      {
+        "index": 553,
+        "hand": "L",
+        "column": 1,
+        "row": 0,
+        "direction": "down"
+      },
+      {
+        "index": 554,
+        "hand": "R",
+        "column": 2,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "red",
+    "role": "single",
+    "pattern": "42:8.75R",
+    "onset": 5.1
   },
   {
     "index": 79,
-    "timeMs": 78626.3,
-    "peakSeconds": 78.6263,
-    "strength": 0.812,
-    "role": "single"
+    "timeMs": 84687.2421,
+    "sourceBeat": 172.6875,
+    "sourceNotes": [
+      {
+        "index": 563,
+        "hand": "L",
+        "column": 1,
+        "row": 0,
+        "direction": "up"
+      },
+      {
+        "index": 564,
+        "hand": "R",
+        "column": 2,
+        "row": 0,
+        "direction": "up"
+      }
+    ],
+    "hand": "blue",
+    "role": "single",
+    "pattern": "43:2.75L",
+    "onset": 7.04
   },
   {
     "index": 80,
-    "timeMs": 79484.35,
-    "peakSeconds": 79.48435,
-    "strength": 0.907,
-    "role": "single"
+    "timeMs": 85874.7421,
+    "sourceBeat": 175.0625,
+    "sourceNotes": [
+      {
+        "index": 581,
+        "hand": "L",
+        "column": 1,
+        "row": 0,
+        "direction": "down"
+      },
+      {
+        "index": 582,
+        "hand": "R",
+        "column": 2,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "red",
+    "role": "single",
+    "pattern": "43:12.25R",
+    "onset": 2.75
   },
   {
     "index": 81,
-    "timeMs": 80666.67,
-    "peakSeconds": 80.66667,
-    "strength": 1.358,
-    "role": "long"
+    "timeMs": 86874.7421,
+    "sourceBeat": 177.0625,
+    "sourceNotes": [
+      {
+        "index": 591,
+        "hand": "L",
+        "column": 1,
+        "row": 0,
+        "direction": "up"
+      },
+      {
+        "index": 592,
+        "hand": "R",
+        "column": 2,
+        "row": 0,
+        "direction": "up"
+      }
+    ],
+    "hand": "blue",
+    "role": "single",
+    "pattern": "44:4.25L",
+    "onset": 3.36
   },
   {
     "index": 82,
-    "timeMs": 82093.42,
-    "peakSeconds": 82.09342,
-    "strength": 1.169,
-    "role": "single"
+    "timeMs": 87968.4921,
+    "sourceBeat": 179.25,
+    "sourceNotes": [
+      {
+        "index": 609,
+        "hand": "L",
+        "column": 1,
+        "row": 0,
+        "direction": "down"
+      },
+      {
+        "index": 610,
+        "hand": "R",
+        "column": 2,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "red",
+    "role": "single",
+    "pattern": "44:13.00R",
+    "onset": 2.59
   },
   {
     "index": 83,
-    "timeMs": 83096.15,
-    "peakSeconds": 83.09615,
-    "strength": 1.116,
-    "role": "single"
+    "timeMs": 89249.7421,
+    "sourceBeat": 181.8125,
+    "sourceNotes": [
+      {
+        "index": 629,
+        "hand": "R",
+        "column": 3,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "red",
+    "role": "single",
+    "pattern": "45:7.25R",
+    "onset": 3.95
   },
   {
     "index": 84,
-    "timeMs": 83879.37,
-    "peakSeconds": 83.87937,
-    "strength": 1.032,
-    "role": "single"
+    "timeMs": 90374.7421,
+    "sourceBeat": 184.0625,
+    "sourceNotes": [
+      {
+        "index": 646,
+        "hand": "L",
+        "column": 2,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "red",
+    "role": "long-gold",
+    "pattern": "46:0.25W3/14",
+    "onset": 3.18
   },
   {
     "index": 85,
-    "timeMs": 84692.52,
-    "peakSeconds": 84.69252,
-    "strength": 1.097,
-    "role": "single"
+    "timeMs": 92874.7421,
+    "sourceBeat": 189.0625,
+    "sourceNotes": [
+      {
+        "index": 675,
+        "hand": "L",
+        "column": 1,
+        "row": 0,
+        "direction": "down"
+      },
+      {
+        "index": 676,
+        "hand": "R",
+        "column": 2,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "blue",
+    "role": "double",
+    "pattern": "47:4.25D",
+    "onset": 3.47
   },
   {
     "index": 86,
-    "timeMs": 85500.68,
-    "peakSeconds": 85.50067999999999,
-    "strength": 0.883,
-    "role": "single"
+    "timeMs": 92874.7421,
+    "sourceBeat": 189.0625,
+    "sourceNotes": [
+      {
+        "index": 675,
+        "hand": "L",
+        "column": 1,
+        "row": 0,
+        "direction": "down"
+      },
+      {
+        "index": 676,
+        "hand": "R",
+        "column": 2,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "red",
+    "role": "double",
+    "pattern": "47:4.25D",
+    "onset": 3.47
   },
   {
     "index": 87,
-    "timeMs": 86224.04,
-    "peakSeconds": 86.22403999999999,
-    "strength": 1.049,
-    "role": "single"
+    "timeMs": 94155.9921,
+    "sourceBeat": 191.625,
+    "sourceNotes": [
+      {
+        "index": 690,
+        "hand": "L",
+        "column": 1,
+        "row": 0,
+        "direction": "up"
+      }
+    ],
+    "hand": "red",
+    "role": "single",
+    "pattern": "47:14.50R",
+    "onset": 2.75
   },
   {
     "index": 88,
-    "timeMs": 87456.24,
-    "peakSeconds": 87.45624000000001,
-    "strength": 1.66,
-    "role": "single"
+    "timeMs": 95187.2421,
+    "sourceBeat": 193.6875,
+    "sourceNotes": [
+      {
+        "index": 701,
+        "hand": "L",
+        "column": 0,
+        "row": 1,
+        "direction": "left"
+      },
+      {
+        "index": 702,
+        "hand": "R",
+        "column": 3,
+        "row": 1,
+        "direction": "right"
+      }
+    ],
+    "hand": "blue",
+    "role": "single",
+    "pattern": "48:6.75L",
+    "onset": 5.07
   },
   {
     "index": 89,
-    "timeMs": 87720.63,
-    "peakSeconds": 87.72063,
-    "strength": 0.856,
-    "role": "single"
+    "timeMs": 96280.9921,
+    "sourceBeat": 195.875,
+    "sourceNotes": [
+      {
+        "index": 709,
+        "hand": "R",
+        "column": 2,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "red",
+    "role": "single",
+    "pattern": "48:15.50R",
+    "onset": 3.01
   },
   {
     "index": 90,
-    "timeMs": 88853.06,
-    "peakSeconds": 88.85306,
-    "strength": 1.069,
-    "role": "single"
+    "timeMs": 97187.2421,
+    "sourceBeat": 197.6875,
+    "sourceNotes": [
+      {
+        "index": 719,
+        "hand": "R",
+        "column": 1,
+        "row": 0,
+        "direction": "up"
+      }
+    ],
+    "hand": "blue",
+    "role": "single",
+    "pattern": "49:6.75L",
+    "onset": 3.78
   },
   {
     "index": 91,
-    "timeMs": 89636.28,
-    "peakSeconds": 89.63628,
-    "strength": 1.185,
-    "role": "single"
+    "timeMs": 98437.2421,
+    "sourceBeat": 200.1875,
+    "sourceNotes": [
+      {
+        "index": 733,
+        "hand": "L",
+        "column": 1,
+        "row": 0,
+        "direction": "down"
+      },
+      {
+        "index": 734,
+        "hand": "R",
+        "column": 2,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "blue",
+    "role": "single",
+    "pattern": "50:0.75L",
+    "onset": 4.05
   },
   {
     "index": 92,
-    "timeMs": 90539.23,
-    "peakSeconds": 90.53922999999999,
-    "strength": 1.934,
-    "role": "pair"
+    "timeMs": 99530.9921,
+    "sourceBeat": 202.375,
+    "sourceNotes": [
+      {
+        "index": 745,
+        "hand": "R",
+        "column": 1,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "red",
+    "role": "single",
+    "pattern": "50:9.50R",
+    "onset": 3.67
   },
   {
     "index": 93,
-    "timeMs": 90539.23,
-    "peakSeconds": 90.53922999999999,
-    "strength": 1.934,
-    "role": "pair"
+    "timeMs": 100218.4921,
+    "sourceBeat": 203.75,
+    "sourceNotes": [
+      {
+        "index": 753,
+        "hand": "R",
+        "column": 2,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "blue",
+    "role": "single",
+    "pattern": "50:15.00L",
+    "onset": 4.14
   },
   {
     "index": 94,
-    "timeMs": 91257.6,
-    "peakSeconds": 91.25760000000001,
-    "strength": 1.913,
-    "role": "single"
+    "timeMs": 101312.2421,
+    "sourceBeat": 205.9375,
+    "sourceNotes": [
+      {
+        "index": 763,
+        "hand": "L",
+        "column": 0,
+        "row": 1,
+        "direction": "left"
+      },
+      {
+        "index": 764,
+        "hand": "R",
+        "column": 3,
+        "row": 1,
+        "direction": "right"
+      }
+    ],
+    "hand": "red",
+    "role": "single",
+    "pattern": "51:7.75R",
+    "onset": 2.84
   },
   {
     "index": 95,
-    "timeMs": 91970.98,
-    "peakSeconds": 91.97098,
-    "strength": 1.914,
-    "role": "single"
+    "timeMs": 102562.2421,
+    "sourceBeat": 208.4375,
+    "sourceNotes": [
+      {
+        "index": 774,
+        "hand": "L",
+        "column": 0,
+        "row": 0,
+        "direction": "left"
+      }
+    ],
+    "hand": "blue",
+    "role": "single",
+    "pattern": "52:1.75L",
+    "onset": 4.15
   },
   {
     "index": 96,
-    "timeMs": 92689.34,
-    "peakSeconds": 92.68934,
-    "strength": 2.048,
-    "role": "single"
+    "timeMs": 103280.9921,
+    "sourceBeat": 209.875,
+    "sourceNotes": [
+      {
+        "index": 781,
+        "hand": "R",
+        "column": 3,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "red",
+    "role": "single",
+    "pattern": "52:7.50R",
+    "onset": 1.67
   },
   {
     "index": 97,
-    "timeMs": 93407.71,
-    "peakSeconds": 93.40771000000001,
-    "strength": 1.709,
-    "role": "single"
+    "timeMs": 104343.4921,
+    "sourceBeat": 212,
+    "sourceNotes": [
+      {
+        "index": 791,
+        "hand": "R",
+        "column": 3,
+        "row": 1,
+        "direction": "upleft"
+      }
+    ],
+    "hand": "blue",
+    "role": "single",
+    "pattern": "53:0.00L",
+    "onset": 3.27
   },
   {
     "index": 98,
-    "timeMs": 94126.08,
-    "peakSeconds": 94.12608,
-    "strength": 1.673,
-    "role": "single"
+    "timeMs": 105062.2421,
+    "sourceBeat": 213.4375,
+    "sourceNotes": [
+      {
+        "index": 798,
+        "hand": "R",
+        "column": 3,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "red",
+    "role": "single",
+    "pattern": "53:5.75R",
+    "onset": 4.08
   },
   {
     "index": 99,
-    "timeMs": 94844.44,
-    "peakSeconds": 94.84444,
-    "strength": 1.493,
-    "role": "single"
+    "timeMs": 106687.2421,
+    "sourceBeat": 216.6875,
+    "sourceNotes": [
+      {
+        "index": 815,
+        "hand": "L",
+        "column": 0,
+        "row": 1,
+        "direction": "upleft"
+      },
+      {
+        "index": 816,
+        "hand": "R",
+        "column": 3,
+        "row": 1,
+        "direction": "upright"
+      }
+    ],
+    "hand": "blue",
+    "role": "double",
+    "pattern": "54:2.75D",
+    "onset": 8.61
   },
   {
     "index": 100,
-    "timeMs": 95562.81,
-    "peakSeconds": 95.56281,
-    "strength": 1.336,
-    "role": "single"
+    "timeMs": 106687.2421,
+    "sourceBeat": 216.6875,
+    "sourceNotes": [
+      {
+        "index": 815,
+        "hand": "L",
+        "column": 0,
+        "row": 1,
+        "direction": "upleft"
+      },
+      {
+        "index": 816,
+        "hand": "R",
+        "column": 3,
+        "row": 1,
+        "direction": "upright"
+      }
+    ],
+    "hand": "red",
+    "role": "double",
+    "pattern": "54:2.75D",
+    "onset": 8.61
   },
   {
     "index": 101,
-    "timeMs": 96276.19,
-    "peakSeconds": 96.27619,
-    "strength": 1.77,
-    "role": "single"
+    "timeMs": 107937.2421,
+    "sourceBeat": 219.1875,
+    "sourceNotes": [
+      {
+        "index": 827,
+        "hand": "L",
+        "column": 1,
+        "row": 0,
+        "direction": "up"
+      },
+      {
+        "index": 828,
+        "hand": "R",
+        "column": 2,
+        "row": 0,
+        "direction": "up"
+      }
+    ],
+    "hand": "blue",
+    "role": "single",
+    "pattern": "54:12.75L",
+    "onset": 2.91
   },
   {
     "index": 102,
-    "timeMs": 96989.57,
-    "peakSeconds": 96.98957,
-    "strength": 1.995,
-    "role": "single"
+    "timeMs": 109905.9921,
+    "sourceBeat": 223.125,
+    "sourceNotes": [
+      {
+        "index": 841,
+        "hand": "L",
+        "column": 1,
+        "row": 0,
+        "direction": "down"
+      },
+      {
+        "index": 842,
+        "hand": "R",
+        "column": 2,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "red",
+    "role": "single",
+    "pattern": "55:12.50R",
+    "onset": 6.05
   },
   {
     "index": 103,
-    "timeMs": 97707.94,
-    "peakSeconds": 97.70794000000001,
-    "strength": 1.662,
-    "role": "single"
+    "timeMs": 110968.4921,
+    "sourceBeat": 225.25,
+    "sourceNotes": [
+      {
+        "index": 849,
+        "hand": "L",
+        "column": 1,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "blue",
+    "role": "single",
+    "pattern": "56:5.00L",
+    "onset": 3.94
   },
   {
     "index": 104,
-    "timeMs": 98426.3,
-    "peakSeconds": 98.4263,
-    "strength": 2.003,
-    "role": "single"
+    "timeMs": 112218.4921,
+    "sourceBeat": 227.75,
+    "sourceNotes": [
+      {
+        "index": 854,
+        "hand": "L",
+        "column": 1,
+        "row": 0,
+        "direction": "down"
+      },
+      {
+        "index": 855,
+        "hand": "R",
+        "column": 2,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "blue",
+    "role": "gold-double",
+    "pattern": "56:15.00G",
+    "onset": 10.52
   },
   {
     "index": 105,
-    "timeMs": 99144.67,
-    "peakSeconds": 99.14467,
-    "strength": 1.729,
-    "role": "single"
+    "timeMs": 112218.4921,
+    "sourceBeat": 227.75,
+    "sourceNotes": [
+      {
+        "index": 854,
+        "hand": "L",
+        "column": 1,
+        "row": 0,
+        "direction": "down"
+      },
+      {
+        "index": 855,
+        "hand": "R",
+        "column": 2,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "red",
+    "role": "gold-double",
+    "pattern": "56:15.00G",
+    "onset": 10.52
   },
   {
     "index": 106,
-    "timeMs": 99858.05,
-    "peakSeconds": 99.85805,
-    "strength": 1.289,
-    "role": "single"
+    "timeMs": 113124.7421,
+    "sourceBeat": 229.5625,
+    "sourceNotes": [
+      {
+        "index": 866,
+        "hand": "R",
+        "column": 2,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "red",
+    "role": "long-gold",
+    "pattern": "57:6.25W3/15",
+    "onset": 5.21
   },
   {
     "index": 107,
-    "timeMs": 100581.41,
-    "peakSeconds": 100.58141,
-    "strength": 1.44,
-    "role": "single"
+    "timeMs": 115749.7421,
+    "sourceBeat": 234.8125,
+    "sourceNotes": [
+      {
+        "index": 896,
+        "hand": "L",
+        "column": 2,
+        "row": 0,
+        "direction": "upleft"
+      },
+      {
+        "index": 897,
+        "hand": "R",
+        "column": 3,
+        "row": 1,
+        "direction": "upleft"
+      }
+    ],
+    "hand": "red",
+    "role": "single",
+    "pattern": "58:11.25R",
+    "onset": 3.47
   },
   {
     "index": 108,
-    "timeMs": 101629.02,
-    "peakSeconds": 101.62902,
-    "strength": 0.912,
-    "role": "single"
+    "timeMs": 116968.4921,
+    "sourceBeat": 237.25,
+    "sourceNotes": [
+      {
+        "index": 910,
+        "hand": "R",
+        "column": 2,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "blue",
+    "role": "single",
+    "pattern": "59:5.00L",
+    "onset": 3.77
   },
   {
     "index": 109,
-    "timeMs": 102551.93,
-    "peakSeconds": 102.55193,
-    "strength": 1.338,
-    "role": "single"
+    "timeMs": 118405.9921,
+    "sourceBeat": 240.125,
+    "sourceNotes": [
+      {
+        "index": 924,
+        "hand": "L",
+        "column": 0,
+        "row": 2,
+        "direction": "up"
+      },
+      {
+        "index": 925,
+        "hand": "R",
+        "column": 3,
+        "row": 2,
+        "direction": "up"
+      }
+    ],
+    "hand": "red",
+    "role": "single",
+    "pattern": "60:0.50R",
+    "onset": 4.26
   },
   {
     "index": 110,
-    "timeMs": 103804.08,
-    "peakSeconds": 103.80408,
-    "strength": 1.094,
-    "role": "single"
+    "timeMs": 119780.9921,
+    "sourceBeat": 242.875,
+    "sourceNotes": [
+      {
+        "index": 938,
+        "hand": "R",
+        "column": 3,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "blue",
+    "role": "single",
+    "pattern": "60:11.50L",
+    "onset": 2.99
   },
   {
     "index": 111,
-    "timeMs": 104497.51,
-    "peakSeconds": 104.49750999999999,
-    "strength": 0.833,
-    "role": "single"
+    "timeMs": 120655.9921,
+    "sourceBeat": 244.625,
+    "sourceNotes": [
+      {
+        "index": 949,
+        "hand": "L",
+        "column": 0,
+        "row": 0,
+        "direction": "up"
+      }
+    ],
+    "hand": "red",
+    "role": "single",
+    "pattern": "61:2.50R",
+    "onset": 3.63
   },
   {
     "index": 112,
-    "timeMs": 105415.42,
-    "peakSeconds": 105.41542,
-    "strength": 0.98,
-    "role": "single"
+    "timeMs": 121343.4921,
+    "sourceBeat": 246,
+    "sourceNotes": [
+      {
+        "index": 956,
+        "hand": "L",
+        "column": 1,
+        "row": 0,
+        "direction": "up"
+      },
+      {
+        "index": 957,
+        "hand": "R",
+        "column": 2,
+        "row": 0,
+        "direction": "up"
+      }
+    ],
+    "hand": "blue",
+    "role": "single",
+    "pattern": "61:8.00L",
+    "onset": 3.47
   },
   {
     "index": 113,
-    "timeMs": 106667.57,
-    "peakSeconds": 106.66757000000001,
-    "strength": 2.217,
-    "role": "pair"
+    "timeMs": 122030.9921,
+    "sourceBeat": 247.375,
+    "sourceNotes": [
+      {
+        "index": 964,
+        "hand": "R",
+        "column": 1,
+        "row": 0,
+        "direction": "up"
+      }
+    ],
+    "hand": "red",
+    "role": "single",
+    "pattern": "61:13.50R",
+    "onset": 3.24
   },
   {
     "index": 114,
-    "timeMs": 106667.57,
-    "peakSeconds": 106.66757000000001,
-    "strength": 2.217,
-    "role": "pair"
+    "timeMs": 123437.2421,
+    "sourceBeat": 250.1875,
+    "sourceNotes": [
+      {
+        "index": 976,
+        "hand": "L",
+        "column": 1,
+        "row": 2,
+        "direction": "up"
+      },
+      {
+        "index": 977,
+        "hand": "R",
+        "column": 2,
+        "row": 2,
+        "direction": "up"
+      }
+    ],
+    "hand": "blue",
+    "role": "double",
+    "pattern": "62:8.75D",
+    "onset": 5.7
   },
   {
     "index": 115,
-    "timeMs": 107750.11,
-    "peakSeconds": 107.75011,
-    "strength": 0.996,
-    "role": "single"
+    "timeMs": 123437.2421,
+    "sourceBeat": 250.1875,
+    "sourceNotes": [
+      {
+        "index": 976,
+        "hand": "L",
+        "column": 1,
+        "row": 2,
+        "direction": "up"
+      },
+      {
+        "index": 977,
+        "hand": "R",
+        "column": 2,
+        "row": 2,
+        "direction": "up"
+      }
+    ],
+    "hand": "red",
+    "role": "double",
+    "pattern": "62:8.75D",
+    "onset": 5.7
   },
   {
     "index": 116,
-    "timeMs": 108463.49,
-    "peakSeconds": 108.46349000000001,
-    "strength": 1.3,
-    "role": "single"
+    "timeMs": 124468.4921,
+    "sourceBeat": 252.25,
+    "sourceNotes": [
+      {
+        "index": 984,
+        "hand": "R",
+        "column": 2,
+        "row": 0,
+        "direction": "up"
+      }
+    ],
+    "hand": "red",
+    "role": "single",
+    "pattern": "63:1.00R",
+    "onset": 2.41
   },
   {
     "index": 117,
-    "timeMs": 109186.85,
-    "peakSeconds": 109.18685,
-    "strength": 1.478,
-    "role": "single"
+    "timeMs": 125312.2421,
+    "sourceBeat": 253.9375,
+    "sourceNotes": [
+      {
+        "index": 994,
+        "hand": "R",
+        "column": 2,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "blue",
+    "role": "single",
+    "pattern": "63:7.75L",
+    "onset": 3.18
   },
   {
     "index": 118,
-    "timeMs": 109900.23,
-    "peakSeconds": 109.90023,
-    "strength": 1.999,
-    "role": "single"
+    "timeMs": 126124.7421,
+    "sourceBeat": 255.5625,
+    "sourceNotes": [
+      {
+        "index": 1004,
+        "hand": "R",
+        "column": 1,
+        "row": 0,
+        "direction": "up"
+      }
+    ],
+    "hand": "red",
+    "role": "single",
+    "pattern": "63:14.25R",
+    "onset": 2.18
   },
   {
     "index": 119,
-    "timeMs": 110618.59,
-    "peakSeconds": 110.61859,
-    "strength": 1.303,
-    "role": "single"
+    "timeMs": 127249.7421,
+    "sourceBeat": 257.8125,
+    "sourceNotes": [
+      {
+        "index": 1016,
+        "hand": "R",
+        "column": 3,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "blue",
+    "role": "single",
+    "pattern": "64:7.25L",
+    "onset": 3.74
   },
   {
     "index": 120,
-    "timeMs": 111696.15,
-    "peakSeconds": 111.69614999999999,
-    "strength": 1.317,
-    "role": "long"
+    "timeMs": 128218.4921,
+    "sourceBeat": 259.75,
+    "sourceNotes": [
+      {
+        "index": 1028,
+        "hand": "R",
+        "column": 3,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "red",
+    "role": "single",
+    "pattern": "64:15.00R",
+    "onset": 2.53
   },
   {
     "index": 121,
-    "timeMs": 113482.09,
-    "peakSeconds": 113.48209,
-    "strength": 1.405,
-    "role": "single"
+    "timeMs": 129030.9921,
+    "sourceBeat": 261.375,
+    "sourceNotes": [
+      {
+        "index": 1038,
+        "hand": "L",
+        "column": 0,
+        "row": 0,
+        "direction": "none"
+      },
+      {
+        "index": 1039,
+        "hand": "R",
+        "column": 3,
+        "row": 0,
+        "direction": "none"
+      }
+    ],
+    "hand": "red",
+    "role": "long-gold",
+    "pattern": "65:5.50W4/16",
+    "onset": 1.2
   },
   {
     "index": 122,
-    "timeMs": 114180.5,
-    "peakSeconds": 114.1805,
-    "strength": 1.394,
-    "role": "single"
+    "timeMs": 131905.9921,
+    "sourceBeat": 267.125,
+    "sourceNotes": [
+      {
+        "index": 1100,
+        "hand": "R",
+        "column": 3,
+        "row": 0,
+        "direction": "down"
+      }
+    ],
+    "hand": "red",
+    "role": "single",
+    "pattern": "66:12.50R",
+    "onset": 3.33
   },
   {
     "index": 123,
-    "timeMs": 114883.9,
-    "peakSeconds": 114.8839,
-    "strength": 1.442,
-    "role": "single"
+    "timeMs": 132437.2421,
+    "sourceBeat": 268.1875,
+    "sourceNotes": [
+      {
+        "index": 1107,
+        "hand": "L",
+        "column": 0,
+        "row": 0,
+        "direction": "up"
+      }
+    ],
+    "hand": "blue",
+    "role": "single",
+    "pattern": "67:0.75L",
+    "onset": 1.99
   },
   {
     "index": 124,
-    "timeMs": 115582.31,
-    "peakSeconds": 115.58230999999999,
-    "strength": 1.533,
-    "role": "single"
+    "timeMs": 133530.9921,
+    "sourceBeat": 270.375,
+    "sourceNotes": [
+      {
+        "index": 1122,
+        "hand": "L",
+        "column": 0,
+        "row": 0,
+        "direction": "up"
+      },
+      {
+        "index": 1123,
+        "hand": "R",
+        "column": 1,
+        "row": 0,
+        "direction": "up"
+      }
+    ],
+    "hand": "blue",
+    "role": "double",
+    "pattern": "67:9.50D",
+    "onset": 3.12
   },
   {
     "index": 125,
-    "timeMs": 116280.73,
-    "peakSeconds": 116.28072999999999,
-    "strength": 1.321,
-    "role": "single"
+    "timeMs": 133530.9921,
+    "sourceBeat": 270.375,
+    "sourceNotes": [
+      {
+        "index": 1122,
+        "hand": "L",
+        "column": 0,
+        "row": 0,
+        "direction": "up"
+      },
+      {
+        "index": 1123,
+        "hand": "R",
+        "column": 1,
+        "row": 0,
+        "direction": "up"
+      }
+    ],
+    "hand": "red",
+    "role": "double",
+    "pattern": "67:9.50D",
+    "onset": 3.12
   },
   {
     "index": 126,
-    "timeMs": 116979.14,
-    "peakSeconds": 116.97914,
-    "strength": 1.803,
-    "role": "single"
+    "timeMs": 134812.2421,
+    "sourceBeat": 272.9375,
+    "sourceNotes": [
+      {
+        "index": 1136,
+        "hand": "R",
+        "column": 3,
+        "row": 0,
+        "direction": "up"
+      }
+    ],
+    "hand": "blue",
+    "role": "single",
+    "pattern": "68:3.75L",
+    "onset": 3.6
   },
   {
     "index": 127,
-    "timeMs": 117677.55,
-    "peakSeconds": 117.67755,
-    "strength": 1.488,
-    "role": "single"
+    "timeMs": 135405.9921,
+    "sourceBeat": 274.125,
+    "sourceNotes": [
+      {
+        "index": 1144,
+        "hand": "L",
+        "column": 2,
+        "row": 0,
+        "direction": "up"
+      },
+      {
+        "index": 1145,
+        "hand": "R",
+        "column": 3,
+        "row": 0,
+        "direction": "up"
+      }
+    ],
+    "hand": "red",
+    "role": "single",
+    "pattern": "68:8.50R",
+    "onset": 7.26
   },
   {
     "index": 128,
-    "timeMs": 118375.96,
-    "peakSeconds": 118.37596,
-    "strength": 2.009,
-    "role": "single"
-  },
-  {
-    "index": 129,
-    "timeMs": 119074.38,
-    "peakSeconds": 119.07438,
-    "strength": 1.501,
-    "role": "single"
-  },
-  {
-    "index": 130,
-    "timeMs": 119772.79,
-    "peakSeconds": 119.77279,
-    "strength": 1.42,
-    "role": "pair"
-  },
-  {
-    "index": 131,
-    "timeMs": 119772.79,
-    "peakSeconds": 119.77279,
-    "strength": 1.42,
-    "role": "pair"
-  },
-  {
-    "index": 132,
-    "timeMs": 120471.2,
-    "peakSeconds": 120.4712,
-    "strength": 1.292,
-    "role": "single"
-  },
-  {
-    "index": 133,
-    "timeMs": 121164.63,
-    "peakSeconds": 121.16463,
-    "strength": 1.468,
-    "role": "single"
-  },
-  {
-    "index": 134,
-    "timeMs": 121858.05,
-    "peakSeconds": 121.85805,
-    "strength": 1.893,
-    "role": "single"
-  },
-  {
-    "index": 135,
-    "timeMs": 122556.46,
-    "peakSeconds": 122.55646,
-    "strength": 1.487,
-    "role": "single"
-  },
-  {
-    "index": 136,
-    "timeMs": 123938.32,
-    "peakSeconds": 123.93832,
-    "strength": 2.152,
-    "role": "single"
-  },
-  {
-    "index": 137,
-    "timeMs": 125125.62,
-    "peakSeconds": 125.12562,
-    "strength": 1.174,
-    "role": "single"
-  },
-  {
-    "index": 138,
-    "timeMs": 125948.75,
-    "peakSeconds": 125.94875,
-    "strength": 1.207,
-    "role": "single"
-  },
-  {
-    "index": 139,
-    "timeMs": 126597.28,
-    "peakSeconds": 126.59728,
-    "strength": 1.224,
-    "role": "single"
-  },
-  {
-    "index": 140,
-    "timeMs": 127245.8,
-    "peakSeconds": 127.2458,
-    "strength": 1.145,
-    "role": "single"
-  },
-  {
-    "index": 141,
-    "timeMs": 128358.28,
-    "peakSeconds": 128.35828,
-    "strength": 1.205,
-    "role": "single"
-  },
-  {
-    "index": 142,
-    "timeMs": 129066.67,
-    "peakSeconds": 129.06667,
-    "strength": 0.74,
-    "role": "single"
-  },
-  {
-    "index": 143,
-    "timeMs": 130069.39,
-    "peakSeconds": 130.06939,
-    "strength": 1.141,
-    "role": "single"
-  },
-  {
-    "index": 144,
-    "timeMs": 131446.26,
-    "peakSeconds": 131.44626,
-    "strength": 0.804,
-    "role": "single"
-  },
-  {
-    "index": 145,
-    "timeMs": 132194.56,
-    "peakSeconds": 132.19456,
-    "strength": 1.033,
-    "role": "single"
-  },
-  {
-    "index": 146,
-    "timeMs": 133521.54,
-    "peakSeconds": 133.52154000000002,
-    "strength": 1.375,
-    "role": "pair"
-  },
-  {
-    "index": 147,
-    "timeMs": 133521.54,
-    "peakSeconds": 133.52154000000002,
-    "strength": 1.375,
-    "role": "pair"
-  },
-  {
-    "index": 148,
-    "timeMs": 135127.89,
-    "peakSeconds": 135.12789,
-    "strength": 0.798,
-    "role": "single"
-  },
-  {
-    "index": 149,
-    "timeMs": 136280.27,
-    "peakSeconds": 136.28027,
-    "strength": 2.832,
-    "role": "long"
+    "timeMs": 136280.9921,
+    "sourceBeat": 275.875,
+    "sourceNotes": [
+      {
+        "index": 1154,
+        "hand": "L",
+        "column": 1,
+        "row": 0,
+        "direction": "down"
+      },
+      {
+        "index": 1155,
+        "hand": "L",
+        "column": 1,
+        "row": 1,
+        "direction": "down"
+      },
+      {
+        "index": 1156,
+        "hand": "R",
+        "column": 2,
+        "row": 0,
+        "direction": "down"
+      },
+      {
+        "index": 1157,
+        "hand": "R",
+        "column": 2,
+        "row": 1,
+        "direction": "down"
+      }
+    ],
+    "hand": "red",
+    "role": "long-gold",
+    "pattern": "68:15.50W3/12",
+    "onset": 5.77
   }
 ]

@@ -1,49 +1,70 @@
 {
-  "easy": {
-    "notes": 150,
-    "cuts": 157,
+  "hard": {
+    "notes": 388,
+    "cuts": 423,
     "types": {
-      "tap": 143,
-      "long": 7
+      "tap": 334,
+      "long": 10,
+      "direction": 44
     },
-    "simultaneousGroups": 8,
-    "goldNotes": 8,
-    "maxSwingSpeed": 1.044,
-    "minimumSameHandGapMs": 620.0,
-    "adjustments": [],
-    "firstNoteMs": 94.78,
-    "lastNoteEndMs": 137820.27
+    "simultaneousGroups": 66,
+    "parallelSweeps": 11,
+    "goldNotes": 24,
+    "longs": 10,
+    "arrows": 44,
+    "peakInstantsIn2s": 10,
+    "minimumSameHandGapMs": 312.5,
+    "sourceMapId": "1eb9",
+    "sourceInstantsUsed": 320,
+    "sourceInstantsTotal": 963,
+    "firstNoteMs": 93.4921,
+    "lastNoteEndMs": 137780.9921,
+    "displayLevel": 8,
+    "raterScore": 8.714
   },
   "normal": {
-    "notes": 263,
-    "cuts": 285,
+    "notes": 227,
+    "cuts": 254,
     "types": {
-      "direction": 49,
-      "tap": 203,
-      "long": 11
+      "tap": 193,
+      "long": 10,
+      "direction": 24
     },
-    "simultaneousGroups": 7,
-    "goldNotes": 8,
-    "maxSwingSpeed": 2.717,
-    "minimumSameHandGapMs": 400.0,
-    "adjustments": [],
-    "firstNoteMs": 94.78,
-    "lastNoteEndMs": 137820.27
+    "simultaneousGroups": 32,
+    "parallelSweeps": 8,
+    "goldNotes": 16,
+    "longs": 10,
+    "arrows": 24,
+    "peakInstantsIn2s": 6,
+    "minimumSameHandGapMs": 468.75,
+    "sourceMapId": "1eb9",
+    "sourceInstantsUsed": 193,
+    "sourceInstantsTotal": 963,
+    "firstNoteMs": 93.4921,
+    "lastNoteEndMs": 137780.9921,
+    "displayLevel": 6,
+    "raterScore": 5.916
   },
-  "hard": {
-    "notes": 330,
-    "cuts": 352,
+  "easy": {
+    "notes": 129,
+    "cuts": 145,
     "types": {
-      "direction": 92,
-      "tap": 227,
-      "long": 11
+      "tap": 122,
+      "long": 7
     },
-    "simultaneousGroups": 19,
-    "goldNotes": 20,
-    "maxSwingSpeed": 4.3969,
-    "minimumSameHandGapMs": 284.35,
-    "adjustments": [],
-    "firstNoteMs": 94.78,
-    "lastNoteEndMs": 137820.27
+    "simultaneousGroups": 13,
+    "parallelSweeps": 0,
+    "goldNotes": 13,
+    "longs": 7,
+    "arrows": 0,
+    "peakInstantsIn2s": 4,
+    "minimumSameHandGapMs": 937.5,
+    "sourceMapId": "1eb9",
+    "sourceInstantsUsed": 116,
+    "sourceInstantsTotal": 963,
+    "firstNoteMs": 93.4921,
+    "lastNoteEndMs": 137780.9921,
+    "displayLevel": 3,
+    "raterScore": 3.926
   }
 }
