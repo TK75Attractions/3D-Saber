@@ -423,6 +423,12 @@ final class UDPSender {
         case .failure(let error):
             sendErrors[port] = "UDP送信失敗 (\(configuredHost):\(port)): \(error.localizedDescription)"
             request.completion(.failure(error))
+            // UDP は送信失敗後も ready のままになる。失敗したポートだけ再接続し、
+            // 次の座標は最新スロットで待たせる。ASCII 変換エラーでは接続を作り直さない。
+            if error is NWError {
+                scheduleReconnect(port: port, reason: "send failed: \(error.localizedDescription)")
+                return
+            }
             publish()
         }
         if let latest = pendingByPort.removeValue(forKey: port) { start(latest, port: port) }

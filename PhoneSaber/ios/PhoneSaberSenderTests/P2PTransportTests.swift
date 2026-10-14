@@ -1855,6 +1855,116 @@ final class SendGapTests: XCTestCase {
         XCTAssertTrue(tail.hasSuffix("\n"))
     }
 
+    func testUDPSendErrorReconnectsOnlyTheFailedPortAndKeepsNewestCoordinate() {
+        let reconnecting = PipelineLockedValue(false)
+        let packets = PipelineLockedValue<[(String, Int)]>([])
+        let callback = PipelineLockedValue<((Result<TimeInterval, Error>) -> Void)?>(nil)
+        let failed = expectation(description: "送信エラーを通知する")
+        let redRecovered = expectation(description: "再接続後に最新の赤座標を送る")
+        let blueSent = expectation(description: "青の送信は止めない")
+        let timing = UDPSender.Timing(sendWatchdogTimeout: 5,
+                                      reconnectInitialDelay: 0.05, reconnectMaximumDelay: 0.05)
+        let sender = UDPSender(sendHandler: { text, port, complete in
+            packets.mutate { $0.append((text, port)) }
+            if text == "1,2,3,4" { callback.mutate { $0 = complete } }
+            else {
+                if port == 5005 { XCTAssertTrue(reconnecting.value, "失敗した接続で次の赤座標を送らない") }
+                complete(.success(1))
+            }
+        }, timing: timing)
+        defer { sender.stop() }
+        sender.configure(host: "127.0.0.1") { states, _, _ in
+            if states[5005] == "reconnecting" { reconnecting.mutate { $0 = true } }
+        }
+        let redGeneration = sender.connectionGenerationForTesting(port: 5005)
+        let blueGeneration = sender.connectionGenerationForTesting(port: 5006)
+        sender.send("1,2,3,4", to: 5005) { result in
+            if case .success = result { XCTFail("失敗した座標を成功にしない") }
+            failed.fulfill()
+        }
+        // 同期 getter をバリアにし、送信完了通知前に最新スロットを埋める。
+        XCTAssertEqual(sender.pendingCountForTesting, 0)
+        sender.send("5,6,7,8", to: 5005) { _ in XCTFail("置換済みの座標は送らない") }
+        sender.send("9,10,11,12", to: 5005) { _ in
+            redRecovered.fulfill()
+        }
+        XCTAssertEqual(sender.pendingCountForTesting, 1)
+        callback.value?(.failure(NWError.posix(.ENETDOWN)))
+        wait(for: [failed], timeout: 2)
+        sender.send("13,14,15,16", to: 5006) { _ in blueSent.fulfill() }
+        // 失敗時に接続状態の failed 通知が来なくても、次の赤座標には新しい接続を使う。
+        wait(for: [blueSent, redRecovered], timeout: 2)
+        XCTAssertGreaterThan(sender.connectionGenerationForTesting(port: 5005), redGeneration)
+        XCTAssertEqual(sender.reconnectCountForTesting(port: 5005), 1)
+        XCTAssertEqual(sender.connectionGenerationForTesting(port: 5006), blueGeneration)
+        XCTAssertEqual(sender.reconnectCountForTesting(port: 5006), 0)
+        XCTAssertEqual(packets.value.filter { $0.1 == 5005 }.map { $0.0 }, ["1,2,3,4", "9,10,11,12"])
+        callback.value?(.success(2))
+        XCTAssertEqual(sender.rejectedCompletionCountForTesting, 1, "旧接続の遅延通知を拒否する")
+    }
+
+    func testStopCancelsReconnectAfterUDPSendErrorAndStartUsesNewConnection() {
+        let failed = expectation(description: "旧送信のエラー")
+        let unexpectedSend = expectation(description: "停止後に再送しない")
+        unexpectedSend.isInverted = true
+        let oldCallback = PipelineLockedValue<((Result<TimeInterval, Error>) -> Void)?>(nil)
+        let timing = UDPSender.Timing(sendWatchdogTimeout: 5,
+                                      reconnectInitialDelay: 0.05, reconnectMaximumDelay: 0.05)
+        let sender = UDPSender(sendHandler: { text, _, complete in
+            if text == "1,2,3,4" {
+                oldCallback.mutate { $0 = complete }
+                complete(.failure(NWError.posix(.ECONNREFUSED)))
+            } else if text == "5,6,7,8" { unexpectedSend.fulfill() }
+            else { complete(.success(1)) }
+        }, timing: timing)
+        defer { sender.stop() }
+        sender.configure(host: "127.0.0.1", ports: [5005])
+        sender.send("1,2,3,4", to: 5005) { _ in failed.fulfill() }
+        wait(for: [failed], timeout: 2)
+        sender.send("5,6,7,8", to: 5005) { _ in XCTFail("停止で破棄する座標") }
+        XCTAssertEqual(sender.pendingCountForTesting, 1)
+        sender.stop()
+        wait(for: [unexpectedSend], timeout: 0.1)
+        XCTAssertEqual(sender.reconnectCountForTesting(port: 5005), 0)
+        XCTAssertEqual(sender.pendingCountForTesting, 0)
+        sender.configure(host: "127.0.0.1", ports: [5005])
+        let generation = sender.connectionGenerationForTesting(port: 5005)
+        oldCallback.value?(.failure(NWError.posix(.ENETDOWN)))
+        XCTAssertEqual(sender.rejectedCompletionCountForTesting, 1)
+        let restarted = expectation(description: "再開後の座標")
+        sender.send("9,10,11,12", to: 5005) { result in
+            if case .failure = result { XCTFail("再開後の送信が失敗した") }
+            restarted.fulfill()
+        }
+        wait(for: [restarted], timeout: 2)
+        XCTAssertEqual(sender.connectionGenerationForTesting(port: 5005), generation)
+    }
+
+    func testInvalidUDPPayloadDoesNotReconnectOrBlockNextCoordinate() {
+        let packets = PipelineLockedValue<[String]>([])
+        let sender = UDPSender { text, port, complete in
+            packets.mutate { $0.append(text) }
+            if text == "不正な座標" {
+                complete(.failure(UDPSender.SendError.invalidPayload(host: "127.0.0.1", port: port)))
+            } else { complete(.success(1)) }
+        }
+        defer { sender.stop() }
+        sender.configure(host: "127.0.0.1", ports: [5005])
+        let generation = sender.connectionGenerationForTesting(port: 5005)
+        let failed = expectation(description: "ASCII 変換エラー")
+        sender.send("不正な座標", to: 5005) { result in
+            if case .success = result { XCTFail("不正な座標は失敗する") }
+            failed.fulfill()
+        }
+        wait(for: [failed], timeout: 2)
+        let completed = expectation(description: "次の有効な座標")
+        sender.send("1,2,3,4", to: 5005) { _ in completed.fulfill() }
+        wait(for: [completed], timeout: 2)
+        XCTAssertEqual(packets.value, ["不正な座標", "1,2,3,4"])
+        XCTAssertEqual(sender.connectionGenerationForTesting(port: 5005), generation)
+        XCTAssertEqual(sender.reconnectCountForTesting(port: 5005), 0)
+    }
+
     func testIdenticalUDPConfigurationPreservesInFlightAndNewestPendingCoordinates() {
         let packets = PipelineLockedValue<[String]>([])
         let callback = PipelineLockedValue<((Result<TimeInterval, Error>) -> Void)?>(nil)
