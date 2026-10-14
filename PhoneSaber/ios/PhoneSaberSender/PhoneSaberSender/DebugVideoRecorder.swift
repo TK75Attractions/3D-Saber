@@ -2475,6 +2475,7 @@ final class DebugVideoRecorder {
                                 }
                             }
                         } catch {
+                            triageBundleURL = nil
                             triageErrorMessage = error.localizedDescription
                             print("[DebugTriage] bundle generation failed: \(error.localizedDescription)")
                         }
