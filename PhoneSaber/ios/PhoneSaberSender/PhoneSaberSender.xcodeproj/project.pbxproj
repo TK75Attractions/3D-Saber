@@ -40,6 +40,7 @@
 		A0000000000000000000A005 /* EventRecovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000A005 /* EventRecovery.swift */; };
 		A0000000000000000000A006 /* EventRecoveryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000A006 /* EventRecoveryTests.swift */; };
 		A0000000000000000000B015 /* protocol_metrics.tsv in Resources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000B015 /* protocol_metrics.tsv */; };
+		A0000000000000000000B017 /* HighSpeedCaptureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000B017 /* HighSpeedCaptureTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -88,6 +89,7 @@
 		B1000000000000000000A005 /* EventRecovery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventRecovery.swift; sourceTree = "<group>"; };
 		B1000000000000000000A006 /* EventRecoveryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventRecoveryTests.swift; sourceTree = "<group>"; };
 		B1000000000000000000B015 /* protocol_metrics.tsv */ = {isa = PBXFileReference; lastKnownFileType = text; path = ../../tools/fixtures/protocol_metrics.tsv; sourceTree = "<group>"; };
+		B1000000000000000000B017 /* HighSpeedCaptureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HighSpeedCaptureTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -144,6 +146,7 @@
 		D00000000000000000000002 /* ../PhoneSaberSenderTests */ = {
 			isa = PBXGroup;
 			children = (
+				B1000000000000000000B017 /* HighSpeedCaptureTests.swift */,
 				B10000000000000000000009 /* DetectionCoreTests.swift */,
 				B10000000000000000000015 /* DebugRecordingTriageTests.swift */,
 				B10000000000000000000019 /* P2PTransportTests.swift */,
@@ -310,6 +313,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A0000000000000000000B017 /* HighSpeedCaptureTests.swift in Sources */,
 				A00000000000000000000009 /* DetectionCoreTests.swift in Sources */,
 				A00000000000000000000015 /* DebugRecordingTriageTests.swift in Sources */,
 				A00000000000000000000019 /* P2PTransportTests.swift in Sources */,

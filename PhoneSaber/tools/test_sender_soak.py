@@ -1,4 +1,5 @@
 import sys
+import shutil
 import tempfile
 import unittest
 from pathlib import Path
@@ -9,6 +10,13 @@ import sender_soak  # noqa: E402
 
 
 class SenderSoakTests(unittest.TestCase):
+    @unittest.skipUnless(sys.platform == "darwin" and shutil.which("xcrun"), "macOS Swift が必要")
+    def test_pipeline_builds_without_starting_receivers(self):
+        with tempfile.TemporaryDirectory() as directory:
+            for debug in (False, True):
+                with self.subTest(debug=debug):
+                    self.assertTrue(sender_soak.build(Path(directory), debug).is_file())
+
     def test_slope_is_least_squares_per_minute(self):
         self.assertAlmostEqual(sender_soak.slope([0, 1, 2, 3], [10, 12, 14, 16]), 2.0)
         self.assertEqual(sender_soak.slope([1], [5]), 0.0)
