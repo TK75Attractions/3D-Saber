@@ -1,5 +1,5 @@
 {
-  "_comment": "譜面データの拍と左右を保持。交差と移動幅を縮め、方向指定を削減。",
+  "_comment": "譜面データの拍と担当手を保持。位置は簡略化し、縦・斜め・左右反転を含む本作向けの配置へ翻案。",
   "bpm": 128,
   "coordScale": 1,
   "offsetMs": 0,
@@ -17,8 +17,8 @@
     {
       "beat": 0,
       "time": 0.0,
-      "x": -1.35,
-      "y": -0.24,
+      "x": 1.35,
+      "y": 0.24,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -28,8 +28,8 @@
     {
       "beat": 0.5,
       "time": 234.375,
-      "x": 1.05,
-      "y": -0.24,
+      "x": -1.05,
+      "y": 0.24,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -39,8 +39,8 @@
     {
       "beat": 0.75,
       "time": 351.5625,
-      "x": -1.05,
-      "y": -0.24,
+      "x": 1.05,
+      "y": 0.24,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -50,8 +50,8 @@
     {
       "beat": 1,
       "time": 468.75,
-      "x": 1.05,
-      "y": -0.24,
+      "x": -1.05,
+      "y": 0.24,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -61,8 +61,8 @@
     {
       "beat": 1.25,
       "time": 585.9375,
-      "x": -1.05,
-      "y": -0.24,
+      "x": 1.05,
+      "y": 0.24,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -72,8 +72,8 @@
     {
       "beat": 1.5,
       "time": 703.125,
-      "x": 1.05,
-      "y": -0.24,
+      "x": -1.05,
+      "y": 0.24,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -83,41 +83,41 @@
     {
       "beat": 1.75,
       "time": 820.3125,
-      "x": -1.05,
-      "y": -0.24,
-      "type": "tap",
-      "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 2,
-      "time": 937.5,
-      "x": 1.35,
-      "y": 0,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 2,
-      "time": 937.5,
-      "x": -1.05,
-      "y": -0.24,
-      "type": "tap",
-      "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 3,
-      "time": 1406.25,
       "x": 1.05,
-      "y": -0.24,
+      "y": 0.24,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 2,
+      "time": 937.5,
+      "x": -1.35,
+      "y": 0.0,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 2,
+      "time": 937.5,
+      "x": 1.05,
+      "y": 0.24,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 3,
+      "time": 1406.25,
+      "x": -1.05,
+      "y": 0.24,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -127,11 +127,11 @@
     {
       "beat": 3,
       "time": 1406.25,
-      "x": -1.35,
-      "y": 0,
+      "x": 1.35,
+      "y": -0.0,
       "type": "direction",
       "color": "blue",
-      "direction": "left",
+      "direction": "right",
       "count": 1,
       "lengthMs": 0
     }

@@ -17,8 +17,8 @@
     {
       "beat": 0.0,
       "time": 0.0,
-      "x": -1.12,
-      "y": -0.163,
+      "x": 1.12,
+      "y": 0.163,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -28,8 +28,8 @@
     {
       "beat": 2.0,
       "time": 857.1429,
-      "x": 1.12,
-      "y": -0.163,
+      "x": -1.12,
+      "y": 0.163,
       "type": "tap",
       "color": "red",
       "direction": "none",

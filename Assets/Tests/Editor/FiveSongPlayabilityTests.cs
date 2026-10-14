@@ -8,7 +8,7 @@ using UnityEngine;
 // 保存した全15譜面を実際の生成・判定・採点へ通す。プレイヤーの成績には保存しない。
 public class FiveSongPlayabilityTests
 {
-    [Serializable] sealed class CutRow { public int index; public double[] timesMs; public string[] directions; }
+    [Serializable] sealed class CutRow { public int index; public string hand; public double[] timesMs; public string[] directions; }
     [Serializable] sealed class CutPlan { public CutRow[] notes; }
     static IEnumerable<TestCaseData> Charts
     {
@@ -24,13 +24,14 @@ public class FiveSongPlayabilityTests
     public void FlickAccentsStaySparseAndNeverReachTenConsecutiveNotes(string song,string difficulty)
     {
         var chart=ChartLoader.LoadFromStreamingAssets(song,difficulty);
-        var notes=chart.notes.OrderBy(n=>n.time).ThenByDescending(n=>n.x).ToArray();
+        var plan=LoadPlan(song,difficulty);
+        var notes=chart.notes.OrderBy(n=>n.time).ToArray();
         double limit=difficulty=="easy"?0:difficulty=="normal"?.12:.22;
         Assert.LessOrEqual(notes.Count(n=>n.IsDirection)/(double)notes.Length,limit);
         Assert.LessOrEqual(LongestFlickRun(notes),4,"全体の連続数");
-        foreach(bool right in new[]{false,true})
+        foreach(var required in new[]{SaberHand.Left,SaberHand.Right})
         {
-            var hand=notes.Where(n=>(n.x>0)==right).ToArray();
+            var hand=chart.notes.Where((n,i)=>HandFor(n,plan.notes[i])==required).OrderBy(n=>n.time).ToArray();
             Assert.LessOrEqual(LongestFlickRun(hand),3,"逆手のタップだけで片手の連続数をリセットしない");
             for(int i=0;i<hand.Length-1;i++)
                 if(hand[i].IsLong)
@@ -45,6 +46,28 @@ public class FiveSongPlayabilityTests
         }
         for(int i=0;i+16<=notes.Length;i++)
             Assert.LessOrEqual(notes.Skip(i).Take(16).Count(n=>n.IsDirection),(int)(16*limit),"局所的なフリック過多");
+    }
+
+    static CutPlan LoadPlan(string song,string difficulty) => JsonUtility.FromJson<CutPlan>(File.ReadAllText(
+        Path.Combine("Tools","ChartDesign","FiveSongs20261014",song,difficulty+"-cut-plan.json")));
+
+    static SaberHand HandFor(NoteData note,CutRow cut)
+    {
+        // 金は色指定がないので設計時の担当を使う。赤青は位置に関係なく色で決める。
+        var hand=SaberHandHelper.FromColor(note.color);
+        return hand==SaberHand.Any?SaberHandHelper.FromColor(cut.hand):hand;
+    }
+
+    [TestCaseSource(nameof(Charts))]
+    public void ColorsUseBothSidesAndNotesCanStackVertically(string song,string difficulty)
+    {
+        var notes=ChartLoader.LoadFromStreamingAssets(song,difficulty).notes;
+        Assert.IsTrue(notes.Any(n=>n.color=="blue" && n.x>.1f),"青も画面の右へ置く");
+        Assert.IsTrue(notes.Any(n=>n.color=="red" && n.x<-.1f),"赤も画面の左へ置く");
+        // 縦並びは同時打ちにも交互打ちにも使う。音型にない同時打ちを増やす条件にはしない。
+        Assert.IsTrue(notes.Any(a=>notes.Any(b=>b!=a && b.color!=a.color &&
+            b.time>=a.time && b.time-a.time<=1000 && Math.Abs(a.x-b.x)<.2f &&
+            Math.Abs(a.y-b.y)>1.5f)),"上下の同時打ち、または上下への短い受け渡し");
     }
 
     static int LongestFlickRun(IEnumerable<NoteData> notes)
@@ -77,7 +100,7 @@ public class FiveSongPlayabilityTests
                 if(n.countLabel!=null)n.countLabel.transform.SetParent(root.transform,true);
             };
             var chart=ChartLoader.LoadFromStreamingAssets(song,difficulty);
-            var plan=JsonUtility.FromJson<CutPlan>(File.ReadAllText(Path.Combine("Tools","ChartDesign","FiveSongs20261014",song,difficulty+"-cut-plan.json")));
+            var plan=LoadPlan(song,difficulty);
             Assert.AreEqual(chart.notes.Count,plan.notes.Length);
             var cuts=plan.notes.SelectMany(row=>row.timesMs.Select((time,k)=>(row.index,time,direction:row.directions[k]))).OrderBy(c=>c.time).ToArray();
             spawner.SetChart(chart);
@@ -87,7 +110,9 @@ public class FiveSongPlayabilityTests
                 spawner.Tick(seconds);
                 Assert.IsTrue(spawned.TryGetValue(cut.index,out var note),"生成漏れ / "+cut.index);
                 Assert.IsNotNull(note,"カット前に退場 / "+cut.index);
-                var hand=chart.notes[cut.index].x>0?SaberHand.Right:SaberHand.Left;
+                var hand=HandFor(chart.notes[cut.index],plan.notes[cut.index]);
+                Assert.AreEqual(SaberHandHelper.FromColor(chart.notes[cut.index].color),note.RequiredHand);
+                Assert.AreNotEqual(SaberHand.Any,hand,"カット計画には担当手を記録する");
                 var direction=CutDirectionHelper.ToVector(CutDirectionHelper.Parse(cut.direction)).normalized;
                 Assert.IsTrue(note.TryCutWithCameraTiming(note.transform.position,new Vector3(direction.x,direction.y,0)*12,
                     hand,seconds,.866f),song+" / "+difficulty+" / index="+cut.index+" at "+seconds);

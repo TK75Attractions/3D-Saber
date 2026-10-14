@@ -4,6 +4,22 @@ from pathlib import Path
 HERE=Path(__file__).resolve().parent
 sys.path.insert(0,str(HERE.parent/'FiveSongs20261014'))
 from build_pack import path_for,save
+from spatial_layout import rotate
+
+# 色の担当は保持し、各素材の画面上の軸は独立して設計する。
+LAYOUT={
+ 'dream-normal-1':90,'dream-normal-2':90,'dream-normal-3':180,'dream-normal-4':-90,
+ 'dream-hard-1':45,'dream-hard-2':-90,'dream-hard-3':180,'dream-hard-4':-45,
+ 'burning-hard-1':90,'burning-hard-2':-90,'burning-hard-3':180,'burning-hard-4':45,
+ 'unlimited-hard-1':-90,'unlimited-hard-2':180,'unlimited-hard-3':45,'unlimited-hard-4':90,
+ 'lvl-expert-1':180,'lvl-expert-2':90,'lvl-expert-3':-45,'lvl-expert-4':-90,
+ 'bring-it-on-1':90,'bring-it-on-2':-90,'bring-it-on-3':180,'bring-it-on-4':45,
+ 'shut-up-dance-1':90,'shut-up-dance-2':-90,'shut-up-dance-3':180,'shut-up-dance-4':-45,
+ 'avoid-hand-clap':90,'avoid-central-wall':180,'avoid-face-punch':-90,
+ 'avoid-vision-block':90,'avoid-hammer':180,'avoid-double-direction':45,
+ 'elixia-hard-1':90,'elixia-hard-2':180,'elixia-hard-3':-90,
+ 'there-normal-1':90,'there-normal-2':-90,'there-normal-3':180,
+}
 
 # 動画で確認した手の受け渡し・密度差を記述する。位置は本作の可動域へ縮める。
 # L/R=手、B=両手、末尾の数字=四分拍。原作の矢印はタップへ置き換える。
@@ -75,15 +91,18 @@ def convert(item):
   events=[]
   for n in source:
    left=n['hand']=='left'
-   # 交差は担当側へ収め、元の内外・高低の対比を残す。
+   # 内外・高低の基本形を作り、後段で素材ごとの画面の軸へ展開する。
    inner=1.05;outer=1.35
    x=-(outer if n['column']==0 else inner) if left else (outer if n['column']==3 else inner)
    events.append({'beat':n['beat'],'hand':n['hand'],'x':x,'y':[-.24,0,.24][n['row']]})
-  fidelity='譜面データの拍と左右を保持。交差と移動幅を縮め、方向指定を削減。'
+  fidelity='譜面データの拍と担当手を保持。位置は簡略化し、縦・斜め・左右反転を含む本作向けの配置へ翻案。'
  else:
   diff,tokens,motion=MANUAL[identifier];events=manual_events(tokens,motion)
   fidelity='映像の配置要素から設計した簡略化・翻案。原作の全ノーツの正確な採譜ではない。'
  if item['category']=='avoid':fidelity='問題点を取り除いた修正版。解説映像そのものを再現する譜面ではない。'
+ angle=LAYOUT[identifier]
+ for e in events:e['x'],e['y']=rotate(e['x'],e['y'],angle)
+ layout='左右反転' if angle==180 else '縦並び' if abs(angle)==90 else '斜めの受け渡し'
  bpm=item['bpm'] or 140;clock=Clock(bpm);notes=[]
  for e in events:
   h=1 if e['hand']=='left' else 0
@@ -104,7 +123,8 @@ def convert(item):
   'timeSignatures':[{'beat':0,'numerator':4,'denominator':4}],'editorTempoMap':[],
   'notes':[{k:v for k,v in n.items() if not k.startswith('_')} for n in notes]}
  return {'id':identifier,'title':item['title'],'category':item['category'],'minimumDifficulty':diff,'referenceBpm':bpm,'sourceUrl':item['sourceUrl'],
-  'adaptation':item['adaptation'],'fidelity':fidelity,'sourceTiming':item['timing'],'chartFile':'patterns/'+identifier+'.json','beats':4,
+  'adaptation':item['adaptation']+' 画面配置は'+layout+'を使用。色は担当手を示し、画面の左右を固定しない。',
+  'layout':layout,'orientationDegrees':angle,'fidelity':fidelity,'sourceTiming':item['timing'],'chartFile':'patterns/'+identifier+'.json','beats':4,
   'noteCount':len(notes),'flickCount':sum(n['_arrow'] for n in notes),'chart':chart}
 
 def main():

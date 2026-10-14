@@ -1,0 +1,54 @@
+{
+  "date": "2026-10-14",
+  "request": "青・赤の担当手と画面位置を分離し、Eのような縦並び・左右反転・斜めの受け渡しを増やす。",
+  "newCollected": 0,
+  "totalMaterials": 40,
+  "convertedUpdated": 40,
+  "appliedMaterialsUpdated": 40,
+  "affectedCharts": 15,
+  "verification": {
+    "unityEditModePassed": 58,
+    "unityPlayModePassed": 1,
+    "patternViews": 80,
+    "fullCharts": 15,
+    "maximumConsecutiveFlicks": 3,
+    "maximumConsecutiveFlicksPerHand": 3,
+    "physicalPlayTest": false
+  },
+  "deployments": [
+    {
+      "id": "appgdep_6acf64db2c148191878d0b09eab8b294",
+      "project_id": "appgprj_6acf41e8dc0c8191b5a040cbed34bdc2",
+      "title": "Beat Saber 配置素材ノート",
+      "version_id": "appgprj_6acf41e8dc0c8191b5a040cbed34bdc2~appgver_9baf835bc0e88191885ff24e819cf366",
+      "type": "publish",
+      "status": "succeeded",
+      "url": "https://beat-saber-pattern-bank.metuji48.chatgpt.site",
+      "has_mcp": false,
+      "screenshot_asset_pointer": null,
+      "provider_deployment_id": "site---6acf41e8dc0c8191b5a040cbed34bdc2",
+      "failure_message": null,
+      "env_set_revision": 0,
+      "updated_at": "2026-10-14T11:18:18.347437+00:00"
+    },
+    {
+      "id": "appgdep_6acf65155760819191c057fd02f87c80",
+      "project_id": "appgprj_6acf32845a308191985cae6f72e92c2d",
+      "title": "3D Saber 譜面ライブラリ",
+      "version_id": "appgprj_6acf32845a308191985cae6f72e92c2d~appgver_3331e4e9f31081919c89bcba8d208079",
+      "type": "publish",
+      "status": "succeeded",
+      "url": "https://saber-chart-library.metuji48.chatgpt.site",
+      "has_mcp": false,
+      "screenshot_asset_pointer": null,
+      "provider_deployment_id": "site---6acf32845a308191985cae6f72e92c2d",
+      "failure_message": null,
+      "env_set_revision": 0,
+      "updated_at": "2026-10-14T11:19:03.268661+00:00"
+    }
+  ],
+  "sourceCommits": {
+    "patternSite": "187d202b9c718e24ce703ae501b2166660d4d822",
+    "chartSite": "2162d1b9a20bdbb69f15eafaceb4a18602f365ac"
+  }
+}

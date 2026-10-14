@@ -10,12 +10,13 @@ def main():
  assert len(ids)==len(refs)==len(converted)==len(apps)
  for item in converted:
   chart=read(HERE/item['chartFile']);assert chart==item['chart']
-  assert chart['notes'] and chart['notes']==sorted(chart['notes'],key=lambda n:(n['time'],-n['x']))
+  assert chart['notes'] and chart['notes']==sorted(chart['notes'],key=lambda n:(n['time'],0 if n['color']=='red' else 1))
   assert sum(n['direction']!='none' for n in chart['notes'])<=1
   for n in chart['notes']:
    assert all(math.isfinite(n[k]) for k in ['beat','time','x','y'])
    assert 0<=n['beat']<4 and abs(n['time']-n['beat']*60000/chart['bpm'])<.001
-   assert n['color']==('red' if n['x']>0 else 'blue')
+   assert n['color'] in ('red','blue')
+   assert abs(n['x'])<=2.5 and abs(n['y'])<=1.5
  for a in apps:
   chart=read(REPO/'Assets/StreamingAssets/Songs'/a['songId']/f"chart_{a['difficulty']}.json")
   actual=[chart['notes'][i] for i in a['noteIndices']]

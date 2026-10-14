@@ -17,8 +17,8 @@
     {
       "beat": 0.0,
       "time": 0.0,
-      "x": -1.33,
-      "y": 0,
+      "x": -0.0,
+      "y": 1.33,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -28,8 +28,8 @@
     {
       "beat": 1.0,
       "time": 375.0,
-      "x": 1.33,
-      "y": 0,
+      "x": 0.0,
+      "y": -1.33,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -39,8 +39,8 @@
     {
       "beat": 1.5,
       "time": 562.5,
-      "x": -1.03,
-      "y": 0,
+      "x": -0.0,
+      "y": 1.03,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -50,8 +50,8 @@
     {
       "beat": 2.0,
       "time": 750.0,
-      "x": 1.03,
-      "y": 0,
+      "x": 0.0,
+      "y": -1.03,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -61,8 +61,8 @@
     {
       "beat": 2.5,
       "time": 937.5,
-      "x": -1.33,
-      "y": 0,
+      "x": -0.0,
+      "y": 1.33,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -72,8 +72,8 @@
     {
       "beat": 3.0,
       "time": 1125.0,
-      "x": 1.33,
-      "y": 0,
+      "x": 0.0,
+      "y": -1.33,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -83,11 +83,11 @@
     {
       "beat": 3.5,
       "time": 1312.5,
-      "x": -1.03,
-      "y": 0,
+      "x": -0.0,
+      "y": 1.03,
       "type": "direction",
       "color": "blue",
-      "direction": "right",
+      "direction": "down",
       "count": 1,
       "lengthMs": 0
     }

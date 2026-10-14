@@ -21,15 +21,18 @@ def verify(repo):
         for diff in ('easy','normal','hard'):
             chart=read(folder/f'chart_{diff}.json');ns=chart['notes'];plan=read(design/spec['id']/f'{diff}-cut-plan.json')['notes']
             assert len(ns)==len(plan)
+            evidence=read(design/spec['id']/f'{diff}-evidence.json')
+            hands=[n['color'] if n['color'] in ('red','blue') else e['hand'] for n,e in zip(ns,evidence)]
             cuts=[];maxspeed=0;mingap=999
             for i,(n,p) in enumerate(zip(ns,plan)):
                 assert len(p['timesMs'])==len(p['directions'])==n['count']
                 assert p['index']==i and abs(p['timesMs'][0]-n['time'])<.001
+                assert p.get('hand',hands[i])==hands[i] and evidence[i]['hand']==hands[i]
                 assert p['timesMs'][-1]<=n['time']+n['lengthMs']+.001
                 if n['direction']!='none':assert p['directions'][0]==n['direction']
                 for k,(t,d) in enumerate(zip(p['timesMs'],p['directions'])):
-                    cuts.append(dict(n,index=i,time=t/1000,arrow=n['direction']!='none' and k==0,swing=d,hand=n['x']>0))
-            for hand in (False,True):
+                    cuts.append(dict(n,index=i,time=t/1000,arrow=n['direction']!='none' and k==0,swing=d,hand=hands[i]))
+            for hand in ('red','blue'):
                 seq=sorted((n for n in cuts if n['hand']==hand),key=lambda n:n['time'])
                 for a,b in zip(seq,seq[1:]):
                     gap=b['time']-a['time'];assert gap>0
@@ -68,8 +71,8 @@ def verify(repo):
             limit={'easy':0,'normal':.12,'hard':.22}[diff]
             assert ratio<=limit,(spec['id'],diff,ratio)
             assert streak(ns)<=4,(spec['id'],diff,'全体フリック連続')
-            for hand in (False,True):
-                hand_notes=[n for n in ns if (n['x']>0)==hand]
+            for hand in ('red','blue'):
+                hand_notes=[n for n,h in zip(ns,hands) if h==hand]
                 assert streak(hand_notes)<=3,(spec['id'],diff,'片手フリック連続')
                 for i,n in enumerate(hand_notes[:-1]):
                     if n['type']=='long':assert hand_notes[i+1]['time']>n['time']+n['lengthMs']+.1
@@ -94,8 +97,11 @@ def verify(repo):
             report[spec['id']][diff]=dict(notes=len(ns),cuts=len(cuts),maxSwingSpeed=round(maxspeed,4),
                  minimumSameHandGapMs=round(mingap*1000,3),repeatedOneTwoFourBarBlocks=len(repeats),
                  flickPercent=round(ratio*100,2),maxConsecutiveFlicks=streak(ns),
-                 maxConsecutiveFlicksPerHand=max(streak([n for n in ns if (n['x']>0)==h]) for h in (False,True)),
-                 maxConsecutiveFlicksByGroup=grouped_max,notesPerSecond=round(len(ns)/duration,3))
+                 maxConsecutiveFlicksPerHand=max(streak([n for n,hand in zip(ns,hands) if hand==h]) for h in ('red','blue')),
+                 maxConsecutiveFlicksByGroup=grouped_max,notesPerSecond=round(len(ns)/duration,3),
+                 blueOnRight=sum(n['color']=='blue' and n['x']>.1 for n in ns),
+                 redOnLeft=sum(n['color']=='red' and n['x']<-.1 for n in ns),
+                 verticalPairs=sum(len(g)==2 and abs(g[0]['x']-g[1]['x'])<.1 and abs(g[0]['y']-g[1]['y'])>1.5 for g in groups.values()))
         counts=[report[spec['id']][d]['notes'] for d in ('easy','normal','hard')]
         assert counts[0]<counts[1]*.8 and counts[1]<counts[2]*.8
         assert (folder/'chart.json').read_bytes()==(folder/'chart_normal.json').read_bytes()

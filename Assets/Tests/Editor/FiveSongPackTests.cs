@@ -90,7 +90,7 @@ public class FiveSongPackTests
                 Assert.AreEqual(note.beat,clock.BeatAt(note.time),.001);
                 Assert.That(note.time,Is.GreaterThanOrEqualTo(0));
                 Assert.Less((note.time+note.lengthMs)/1000.0,Durations[index]);
-                Assert.That(Math.Abs(note.x),Is.InRange(.5,2.5));
+                Assert.That(Math.Abs(note.x),Is.LessThanOrEqualTo(2.5));
                 Assert.That(Math.Abs(note.y),Is.LessThanOrEqualTo(1.5));
             }
         }

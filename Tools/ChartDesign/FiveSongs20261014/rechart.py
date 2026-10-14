@@ -11,6 +11,7 @@ import numpy as np
 
 from analyze import analyze, anchors, time_at
 from build_pack import ORIGINS, path_for, save
+from spatial_layout import apply_layout
 
 # 小節単位のランダムな差替えをしない。音源の反復と変速区間に対応する設計。
 # (開始四分拍, 終了四分拍, リズム, 空間配置, 展開名)
@@ -187,7 +188,7 @@ def limit_flicks(notes,diff):
         recent.append(value)
 
 def build(m,diff,metadata):
-    events,phrases=rhythm(m,diff);notes=notes_for(m,events,phrases,diff)
+    events,phrases=rhythm(m,diff);notes=apply_layout(notes_for(m,events,phrases,diff),m.spec['id'],diff)
     limit_flicks(notes,diff)
     repairs=[]
     # 音の削除で都合を合わせず、成立しない方向指定だけを自由タップへ戻す。
@@ -203,6 +204,7 @@ def build(m,diff,metadata):
     for i,n in enumerate(notes):
         if n['_arrow']:n['direction']=plan[i]['directions'][0];n['type']='direction'
     result=copy.deepcopy(metadata)
+    result['spatialLayoutVersion']=1
     result['_comment']='Beat Saber参照・フレーズ単位の反復と応答。フリックは句末に限定し、全体/各手の連続数を検証。'
     result['notes']=[{k:v for k,v in n.items() if not k.startswith('_')} for n in notes]
     result['editorMarkers']=[dict(timeMs=round(m.t(a)*1000,4),name=label) for a,b,k,motion,label in FORM[m.spec['id']]]

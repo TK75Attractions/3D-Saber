@@ -16,12 +16,12 @@
       "endSeconds": 132.153,
       "targetBpm": 120,
       "mirrorFirstBar": false,
-      "secondBar": "左右を入れ替えた応答",
+      "secondBar": "担当手を入れ替えた応答。画面軸は曲の展開に従う。",
       "section": "裏拍の主題B",
       "removedNotes": 14,
       "addedNotes": 24,
       "sourceCategory": "conditional",
-      "fidelity": "譜面データの拍と左右を保持。交差と移動幅を縮め、方向指定を削減。",
+      "fidelity": "譜面データの拍と担当手を保持。位置は簡略化し、縦・斜め・左右反転を含む本作向けの配置へ翻案。",
       "sourceUrl": "https://www.youtube.com/watch?v=5aLDCKQ63P4&t=54",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=hard&t=126.65",
       "noteIndices": [
@@ -54,8 +54,8 @@
         {
           "beat": 288,
           "time": 128153.0,
-          "x": 1.05,
-          "y": -0.24,
+          "x": 0.192,
+          "y": 0.84,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -65,8 +65,8 @@
         {
           "beat": 288,
           "time": 128153.0,
-          "x": -1.05,
-          "y": -0.24,
+          "x": 0.192,
+          "y": -0.84,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -76,8 +76,8 @@
         {
           "beat": 288.5,
           "time": 128403.0,
-          "x": 1.05,
-          "y": -0.24,
+          "x": 0.192,
+          "y": 0.84,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -87,8 +87,8 @@
         {
           "beat": 288.5,
           "time": 128403.0,
-          "x": -1.05,
-          "y": -0.24,
+          "x": 0.192,
+          "y": -0.84,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -98,8 +98,8 @@
         {
           "beat": 289,
           "time": 128653.0,
-          "x": 1.05,
-          "y": -0.24,
+          "x": 0.192,
+          "y": 0.84,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -109,8 +109,8 @@
         {
           "beat": 289,
           "time": 128653.0,
-          "x": -1.35,
-          "y": -0.24,
+          "x": 0.192,
+          "y": -1.08,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -120,8 +120,8 @@
         {
           "beat": 289.5,
           "time": 128903.0,
-          "x": 1.35,
-          "y": 0,
+          "x": 0.0,
+          "y": 1.08,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -131,8 +131,8 @@
         {
           "beat": 289.5,
           "time": 128903.0,
-          "x": -1.05,
-          "y": 0,
+          "x": 0.0,
+          "y": -0.84,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -142,8 +142,8 @@
         {
           "beat": 290,
           "time": 129153.0,
-          "x": 1.05,
-          "y": -0.24,
+          "x": 0.0,
+          "y": 0.84,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -153,8 +153,8 @@
         {
           "beat": 290,
           "time": 129153.0,
-          "x": -1.35,
-          "y": 0.24,
+          "x": 0.0,
+          "y": -1.08,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -164,8 +164,8 @@
         {
           "beat": 291,
           "time": 129653.0,
-          "x": 1.35,
-          "y": 0.24,
+          "x": 0.0,
+          "y": 1.08,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -175,8 +175,8 @@
         {
           "beat": 291,
           "time": 129653.0,
-          "x": -1.05,
-          "y": -0.24,
+          "x": 0.0,
+          "y": -0.84,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -186,8 +186,8 @@
         {
           "beat": 292,
           "time": 130153.0,
-          "x": 1.05,
-          "y": -0.24,
+          "x": 0.192,
+          "y": 0.84,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -197,8 +197,8 @@
         {
           "beat": 292,
           "time": 130153.0,
-          "x": -1.05,
-          "y": -0.24,
+          "x": 0.192,
+          "y": -0.84,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -208,8 +208,8 @@
         {
           "beat": 292.5,
           "time": 130403.0,
-          "x": 1.05,
-          "y": -0.24,
+          "x": 0.192,
+          "y": 0.84,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -219,8 +219,8 @@
         {
           "beat": 292.5,
           "time": 130403.0,
-          "x": -1.05,
-          "y": -0.24,
+          "x": 0.192,
+          "y": -0.84,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -230,8 +230,8 @@
         {
           "beat": 293,
           "time": 130653.0,
-          "x": 1.35,
-          "y": -0.24,
+          "x": 0.192,
+          "y": 1.08,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -241,8 +241,8 @@
         {
           "beat": 293,
           "time": 130653.0,
-          "x": -1.05,
-          "y": -0.24,
+          "x": 0.192,
+          "y": -0.84,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -252,8 +252,8 @@
         {
           "beat": 293.5,
           "time": 130903.0,
-          "x": 1.05,
-          "y": 0,
+          "x": 0.0,
+          "y": 0.84,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -263,8 +263,8 @@
         {
           "beat": 293.5,
           "time": 130903.0,
-          "x": -1.35,
-          "y": 0,
+          "x": 0.0,
+          "y": -1.08,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -274,8 +274,8 @@
         {
           "beat": 294,
           "time": 131153.0,
-          "x": 1.35,
-          "y": 0.24,
+          "x": 0.0,
+          "y": 1.08,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -285,8 +285,8 @@
         {
           "beat": 294,
           "time": 131153.0,
-          "x": -1.05,
-          "y": -0.24,
+          "x": 0.0,
+          "y": -0.84,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -296,8 +296,8 @@
         {
           "beat": 295,
           "time": 131653.0,
-          "x": 1.05,
-          "y": -0.24,
+          "x": 0.0,
+          "y": 0.84,
           "type": "direction",
           "color": "red",
           "direction": "downleft",
@@ -307,15 +307,17 @@
         {
           "beat": 295,
           "time": 131653.0,
-          "x": -1.35,
-          "y": 0.24,
+          "x": 0.0,
+          "y": -1.08,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
           "lengthMs": 0
         }
-      ]
+      ],
+      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
+      "templateOrientationDegrees": -90
     },
     {
       "patternId": "shut-up-dance-3",
@@ -330,12 +332,12 @@
       "endSeconds": 85.7143,
       "targetBpm": 140,
       "mirrorFirstBar": false,
-      "secondBar": "左右を入れ替えた応答",
+      "secondBar": "担当手を入れ替えた応答。画面軸は曲の展開に従う。",
       "section": "歌の裏拍",
       "removedNotes": 13,
       "addedNotes": 22,
       "sourceCategory": "conditional",
-      "fidelity": "譜面データの拍と左右を保持。交差と移動幅を縮め、方向指定を削減。",
+      "fidelity": "譜面データの拍と担当手を保持。位置は簡略化し、縦・斜め・左右反転を含む本作向けの配置へ翻案。",
       "sourceUrl": "https://www.youtube.com/watch?v=5aLDCKQ63P4&t=92",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=hard&t=80.79",
       "noteIndices": [
@@ -366,8 +368,8 @@
         {
           "beat": 192,
           "time": 82285.7143,
-          "x": -1.35,
-          "y": -0.24,
+          "x": 1.08,
+          "y": 0.192,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -377,8 +379,8 @@
         {
           "beat": 192.5,
           "time": 82500.0,
-          "x": 1.05,
-          "y": -0.24,
+          "x": -0.84,
+          "y": 0.192,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -388,8 +390,8 @@
         {
           "beat": 192.75,
           "time": 82607.1429,
-          "x": -1.05,
-          "y": -0.24,
+          "x": 0.84,
+          "y": 0.192,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -399,8 +401,8 @@
         {
           "beat": 193,
           "time": 82714.2857,
-          "x": 1.05,
-          "y": -0.24,
+          "x": -0.84,
+          "y": 0.192,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -410,8 +412,8 @@
         {
           "beat": 193.25,
           "time": 82821.4286,
-          "x": -1.05,
-          "y": -0.24,
+          "x": 0.84,
+          "y": 0.192,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -421,8 +423,8 @@
         {
           "beat": 193.5,
           "time": 82928.5714,
-          "x": 1.05,
-          "y": -0.24,
+          "x": -0.84,
+          "y": 0.192,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -432,8 +434,8 @@
         {
           "beat": 193.75,
           "time": 83035.7143,
-          "x": -1.05,
-          "y": -0.24,
+          "x": 0.84,
+          "y": 0.192,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -443,8 +445,8 @@
         {
           "beat": 194,
           "time": 83142.8571,
-          "x": 1.35,
-          "y": 0,
+          "x": -1.08,
+          "y": 0.0,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -454,8 +456,8 @@
         {
           "beat": 194,
           "time": 83142.8571,
-          "x": -1.05,
-          "y": -0.24,
+          "x": 0.84,
+          "y": 0.192,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -465,8 +467,8 @@
         {
           "beat": 195,
           "time": 83571.4286,
-          "x": 1.05,
-          "y": -0.24,
+          "x": -0.84,
+          "y": 0.192,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -476,8 +478,8 @@
         {
           "beat": 195,
           "time": 83571.4286,
-          "x": -1.35,
-          "y": 0,
+          "x": 1.08,
+          "y": -0.0,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -487,8 +489,8 @@
         {
           "beat": 196,
           "time": 84000.0,
-          "x": 1.35,
-          "y": -0.24,
+          "x": -1.08,
+          "y": 0.192,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -498,8 +500,8 @@
         {
           "beat": 196.5,
           "time": 84214.2857,
-          "x": -1.05,
-          "y": -0.24,
+          "x": 0.84,
+          "y": 0.192,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -509,8 +511,8 @@
         {
           "beat": 196.75,
           "time": 84321.4286,
-          "x": 1.05,
-          "y": -0.24,
+          "x": -0.84,
+          "y": 0.192,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -520,8 +522,8 @@
         {
           "beat": 197,
           "time": 84428.5714,
-          "x": -1.05,
-          "y": -0.24,
+          "x": 0.84,
+          "y": 0.192,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -531,8 +533,8 @@
         {
           "beat": 197.25,
           "time": 84535.7143,
-          "x": 1.05,
-          "y": -0.24,
+          "x": -0.84,
+          "y": 0.192,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -542,8 +544,8 @@
         {
           "beat": 197.5,
           "time": 84642.8571,
-          "x": -1.05,
-          "y": -0.24,
+          "x": 0.84,
+          "y": 0.192,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -553,8 +555,8 @@
         {
           "beat": 197.75,
           "time": 84750.0,
-          "x": 1.05,
-          "y": -0.24,
+          "x": -0.84,
+          "y": 0.192,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -564,8 +566,8 @@
         {
           "beat": 198,
           "time": 84857.1429,
-          "x": 1.05,
-          "y": -0.24,
+          "x": -0.84,
+          "y": 0.192,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -575,8 +577,8 @@
         {
           "beat": 198,
           "time": 84857.1429,
-          "x": -1.35,
-          "y": 0,
+          "x": 1.08,
+          "y": -0.0,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -586,26 +588,28 @@
         {
           "beat": 199,
           "time": 85285.7143,
-          "x": 1.35,
-          "y": 0,
+          "x": -1.08,
+          "y": 0.0,
           "type": "direction",
           "color": "red",
-          "direction": "right",
+          "direction": "left",
           "count": 1,
           "lengthMs": 0
         },
         {
           "beat": 199,
           "time": 85285.7143,
-          "x": -1.05,
-          "y": -0.24,
+          "x": 0.84,
+          "y": 0.192,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
           "lengthMs": 0
         }
-      ]
+      ],
+      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
+      "templateOrientationDegrees": 180
     },
     {
       "patternId": "bring-it-on-4",
@@ -620,12 +624,12 @@
       "endSeconds": 106.674,
       "targetBpm": 160,
       "mirrorFirstBar": false,
-      "secondBar": "左右を入れ替えた応答",
+      "secondBar": "担当手を入れ替えた応答。画面軸は曲の展開に従う。",
       "section": "主題Aの発展",
       "removedNotes": 12,
       "addedNotes": 18,
       "sourceCategory": "conditional",
-      "fidelity": "譜面データの拍と左右を保持。交差と移動幅を縮め、方向指定を削減。",
+      "fidelity": "譜面データの拍と担当手を保持。位置は簡略化し、縦・斜め・左右反転を含む本作向けの配置へ翻案。",
       "sourceUrl": "https://www.youtube.com/watch?v=16oSzYCTD3A&t=88",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=BenkyouRemaster&difficulty=hard&t=102.17",
       "noteIndices": [
@@ -652,8 +656,8 @@
         {
           "beat": 256,
           "time": 103674.0,
-          "x": 1.05,
-          "y": -0.24,
+          "x": 0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -663,8 +667,8 @@
         {
           "beat": 256.25,
           "time": 103767.75,
-          "x": -1.05,
-          "y": -0.24,
+          "x": -0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -674,8 +678,8 @@
         {
           "beat": 256.5,
           "time": 103861.5,
-          "x": 1.35,
-          "y": -0.24,
+          "x": 1.08,
+          "y": -0.192,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -685,8 +689,8 @@
         {
           "beat": 257,
           "time": 104049.0,
-          "x": -1.35,
-          "y": -0.24,
+          "x": -1.08,
+          "y": -0.192,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -696,8 +700,8 @@
         {
           "beat": 257.5,
           "time": 104236.5,
-          "x": -1.05,
-          "y": -0.24,
+          "x": -0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -707,8 +711,8 @@
         {
           "beat": 258,
           "time": 104424.0,
-          "x": 1.05,
-          "y": -0.24,
+          "x": 0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -718,8 +722,8 @@
         {
           "beat": 258.5,
           "time": 104611.5,
-          "x": 1.05,
-          "y": -0.24,
+          "x": 0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -729,8 +733,8 @@
         {
           "beat": 259,
           "time": 104799.0,
-          "x": -1.35,
-          "y": -0.24,
+          "x": -1.08,
+          "y": -0.192,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -740,8 +744,8 @@
         {
           "beat": 259.5,
           "time": 104986.5,
-          "x": 1.35,
-          "y": 0,
+          "x": 1.08,
+          "y": 0.0,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -751,8 +755,8 @@
         {
           "beat": 260,
           "time": 105174.0,
-          "x": -1.05,
-          "y": -0.24,
+          "x": -0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -762,8 +766,8 @@
         {
           "beat": 260.25,
           "time": 105267.75,
-          "x": 1.05,
-          "y": -0.24,
+          "x": 0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -773,8 +777,8 @@
         {
           "beat": 260.5,
           "time": 105361.5,
-          "x": -1.35,
-          "y": -0.24,
+          "x": -1.08,
+          "y": -0.192,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -784,8 +788,8 @@
         {
           "beat": 261,
           "time": 105549.0,
-          "x": 1.35,
-          "y": -0.24,
+          "x": 1.08,
+          "y": -0.192,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -795,8 +799,8 @@
         {
           "beat": 261.5,
           "time": 105736.5,
-          "x": 1.05,
-          "y": -0.24,
+          "x": 0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -806,8 +810,8 @@
         {
           "beat": 262,
           "time": 105924.0,
-          "x": -1.05,
-          "y": -0.24,
+          "x": -0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -817,8 +821,8 @@
         {
           "beat": 262.5,
           "time": 106111.5,
-          "x": -1.05,
-          "y": -0.24,
+          "x": -0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -828,8 +832,8 @@
         {
           "beat": 263,
           "time": 106299.0,
-          "x": 1.35,
-          "y": -0.24,
+          "x": 1.08,
+          "y": -0.192,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -839,15 +843,17 @@
         {
           "beat": 263.5,
           "time": 106486.5,
-          "x": -1.35,
-          "y": 0,
+          "x": -1.08,
+          "y": 0.0,
           "type": "direction",
           "color": "blue",
           "direction": "upleft",
           "count": 1,
           "lengthMs": 0
         }
-      ]
+      ],
+      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
+      "templateOrientationDegrees": 45
     },
     {
       "patternId": "shut-up-dance-1",
@@ -862,12 +868,12 @@
       "endSeconds": 116.153,
       "targetBpm": 120,
       "mirrorFirstBar": false,
-      "secondBar": "左右を入れ替えた応答",
+      "secondBar": "担当手を入れ替えた応答。画面軸は曲の展開に従う。",
       "section": "裏拍の主題B",
       "removedNotes": 14,
       "addedNotes": 16,
       "sourceCategory": "good",
-      "fidelity": "譜面データの拍と左右を保持。交差と移動幅を縮め、方向指定を削減。",
+      "fidelity": "譜面データの拍と担当手を保持。位置は簡略化し、縦・斜め・左右反転を含む本作向けの配置へ翻案。",
       "sourceUrl": "https://www.youtube.com/watch?v=5aLDCKQ63P4&t=24",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=hard&t=110.65",
       "noteIndices": [
@@ -892,8 +898,8 @@
         {
           "beat": 256,
           "time": 112153.0,
-          "x": -1.05,
-          "y": -0.24,
+          "x": -0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -903,8 +909,8 @@
         {
           "beat": 256.5,
           "time": 112403.0,
-          "x": 1.05,
-          "y": -0.24,
+          "x": 0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -914,8 +920,8 @@
         {
           "beat": 257,
           "time": 112653.0,
-          "x": 1.35,
-          "y": 0,
+          "x": 1.08,
+          "y": 0.0,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -925,8 +931,8 @@
         {
           "beat": 257.5,
           "time": 112903.0,
-          "x": -1.35,
-          "y": 0,
+          "x": -1.08,
+          "y": 0.0,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -936,8 +942,8 @@
         {
           "beat": 258,
           "time": 113153.0,
-          "x": 1.05,
-          "y": -0.24,
+          "x": 0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -947,8 +953,8 @@
         {
           "beat": 258.5,
           "time": 113403.0,
-          "x": 1.05,
-          "y": -0.24,
+          "x": 0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -958,8 +964,8 @@
         {
           "beat": 259,
           "time": 113653.0,
-          "x": -1.35,
-          "y": 0,
+          "x": -1.08,
+          "y": 0.0,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -969,8 +975,8 @@
         {
           "beat": 259.5,
           "time": 113903.0,
-          "x": 1.35,
-          "y": 0,
+          "x": 1.08,
+          "y": 0.0,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -980,8 +986,8 @@
         {
           "beat": 260,
           "time": 114153.0,
-          "x": 1.05,
-          "y": -0.24,
+          "x": 0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -991,8 +997,8 @@
         {
           "beat": 260.5,
           "time": 114403.0,
-          "x": -1.05,
-          "y": -0.24,
+          "x": -0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1002,8 +1008,8 @@
         {
           "beat": 261,
           "time": 114653.0,
-          "x": -1.35,
-          "y": 0,
+          "x": -1.08,
+          "y": 0.0,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1013,8 +1019,8 @@
         {
           "beat": 261.5,
           "time": 114903.0,
-          "x": 1.35,
-          "y": 0,
+          "x": 1.08,
+          "y": 0.0,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -1024,8 +1030,8 @@
         {
           "beat": 262,
           "time": 115153.0,
-          "x": -1.05,
-          "y": -0.24,
+          "x": -0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1035,8 +1041,8 @@
         {
           "beat": 262.5,
           "time": 115403.0,
-          "x": -1.05,
-          "y": -0.24,
+          "x": -0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1046,8 +1052,8 @@
         {
           "beat": 263,
           "time": 115653.0,
-          "x": 1.35,
-          "y": 0,
+          "x": 1.08,
+          "y": 0.0,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -1057,15 +1063,17 @@
         {
           "beat": 263.5,
           "time": 115903.0,
-          "x": -1.35,
-          "y": 0,
+          "x": -1.08,
+          "y": 0.0,
           "type": "direction",
           "color": "blue",
           "direction": "left",
           "count": 1,
           "lengthMs": 0
         }
-      ]
+      ],
+      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
+      "templateOrientationDegrees": 90
     },
     {
       "patternId": "lvl-expert-4",
@@ -1080,7 +1088,7 @@
       "endSeconds": 115.8333,
       "targetBpm": 180,
       "mirrorFirstBar": false,
-      "secondBar": "左右を入れ替えた応答",
+      "secondBar": "担当手を入れ替えた応答。画面軸は曲の展開に従う。",
       "section": "主題の回帰",
       "removedNotes": 13,
       "addedNotes": 14,
@@ -1108,8 +1116,8 @@
         {
           "beat": 336.0,
           "time": 113166.6667,
-          "x": -1.33,
-          "y": 0,
+          "x": 1.064,
+          "y": -0.0,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1119,8 +1127,8 @@
         {
           "beat": 337.0,
           "time": 113500.0,
-          "x": 1.33,
-          "y": 0,
+          "x": -1.0638,
+          "y": -0.0188,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -1130,8 +1138,8 @@
         {
           "beat": 337.5,
           "time": 113666.6667,
-          "x": -1.03,
-          "y": 0,
+          "x": 0.8234,
+          "y": 0.032,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1141,8 +1149,8 @@
         {
           "beat": 338.0,
           "time": 113833.3333,
-          "x": 1.03,
-          "y": 0,
+          "x": -0.8221,
+          "y": -0.0556,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -1152,8 +1160,8 @@
         {
           "beat": 338.5,
           "time": 114000.0,
-          "x": -1.33,
-          "y": 0,
+          "x": 1.0584,
+          "y": 0.1095,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1163,8 +1171,8 @@
         {
           "beat": 339.0,
           "time": 114166.6667,
-          "x": 1.33,
-          "y": 0,
+          "x": -1.0528,
+          "y": -0.1537,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -1174,8 +1182,8 @@
         {
           "beat": 339.5,
           "time": 114333.3333,
-          "x": -1.03,
-          "y": 0,
+          "x": 0.8088,
+          "y": 0.1577,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1185,8 +1193,8 @@
         {
           "beat": 340.0,
           "time": 114500.0,
-          "x": 1.33,
-          "y": 0,
+          "x": -1.0321,
+          "y": -0.2585,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -1196,8 +1204,8 @@
         {
           "beat": 341.0,
           "time": 114833.3333,
-          "x": -1.33,
-          "y": 0,
+          "x": 0.9942,
+          "y": 0.3791,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1207,8 +1215,8 @@
         {
           "beat": 341.5,
           "time": 115000.0,
-          "x": 1.03,
-          "y": 0,
+          "x": -0.7493,
+          "y": -0.3429,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -1218,8 +1226,8 @@
         {
           "beat": 342.0,
           "time": 115166.6667,
-          "x": -1.03,
-          "y": 0,
+          "x": 0.7243,
+          "y": 0.3929,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1229,8 +1237,8 @@
         {
           "beat": 342.5,
           "time": 115333.3333,
-          "x": 1.33,
-          "y": 0,
+          "x": -0.8974,
+          "y": -0.5716,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -1240,8 +1248,8 @@
         {
           "beat": 343.0,
           "time": 115500.0,
-          "x": -1.33,
-          "y": 0,
+          "x": 0.8541,
+          "y": 0.6345,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1251,15 +1259,17 @@
         {
           "beat": 343.5,
           "time": 115666.6667,
-          "x": 1.03,
-          "y": 0,
+          "x": -0.6239,
+          "y": -0.5383,
           "type": "direction",
           "color": "red",
-          "direction": "downleft",
+          "direction": "upright",
           "count": 1,
           "lengthMs": 0
         }
-      ]
+      ],
+      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
+      "templateOrientationDegrees": -90
     },
     {
       "patternId": "shut-up-dance-4",
@@ -1274,12 +1284,12 @@
       "endSeconds": 113.1429,
       "targetBpm": 140,
       "mirrorFirstBar": false,
-      "secondBar": "左右を入れ替えた応答",
+      "secondBar": "担当手を入れ替えた応答。画面軸は曲の展開に従う。",
       "section": "歌の主題の発展",
       "removedNotes": 13,
       "addedNotes": 14,
       "sourceCategory": "conditional",
-      "fidelity": "譜面データの拍と左右を保持。交差と移動幅を縮め、方向指定を削減。",
+      "fidelity": "譜面データの拍と担当手を保持。位置は簡略化し、縦・斜め・左右反転を含む本作向けの配置へ翻案。",
       "sourceUrl": "https://www.youtube.com/watch?v=5aLDCKQ63P4&t=137",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=hard&t=108.21",
       "noteIndices": [
@@ -1302,8 +1312,8 @@
         {
           "beat": 256,
           "time": 109714.2857,
-          "x": 1.35,
-          "y": -0.24,
+          "x": 1.08,
+          "y": -0.192,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -1313,8 +1323,8 @@
         {
           "beat": 256.5,
           "time": 109928.5714,
-          "x": -1.35,
-          "y": 0.24,
+          "x": -1.08,
+          "y": 0.192,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1324,8 +1334,8 @@
         {
           "beat": 257,
           "time": 110142.8571,
-          "x": 1.05,
-          "y": 0.24,
+          "x": 0.84,
+          "y": 0.192,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -1335,8 +1345,8 @@
         {
           "beat": 257.5,
           "time": 110357.1429,
-          "x": -1.35,
-          "y": -0.24,
+          "x": -1.08,
+          "y": -0.192,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1346,8 +1356,8 @@
         {
           "beat": 258.5,
           "time": 110785.7143,
-          "x": 1.05,
-          "y": -0.24,
+          "x": 0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -1357,8 +1367,8 @@
         {
           "beat": 259,
           "time": 111000.0,
-          "x": -1.05,
-          "y": -0.24,
+          "x": -0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1368,8 +1378,8 @@
         {
           "beat": 259.5,
           "time": 111214.2857,
-          "x": 1.35,
-          "y": 0,
+          "x": 1.08,
+          "y": 0.0,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -1379,8 +1389,8 @@
         {
           "beat": 260,
           "time": 111428.5714,
-          "x": -1.35,
-          "y": -0.24,
+          "x": -1.08,
+          "y": -0.192,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1390,8 +1400,8 @@
         {
           "beat": 260.5,
           "time": 111642.8571,
-          "x": 1.35,
-          "y": 0.24,
+          "x": 1.08,
+          "y": 0.192,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -1401,8 +1411,8 @@
         {
           "beat": 261,
           "time": 111857.1429,
-          "x": -1.05,
-          "y": 0.24,
+          "x": -0.84,
+          "y": 0.192,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1412,8 +1422,8 @@
         {
           "beat": 261.5,
           "time": 112071.4286,
-          "x": 1.35,
-          "y": -0.24,
+          "x": 1.08,
+          "y": -0.192,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -1423,8 +1433,8 @@
         {
           "beat": 262.5,
           "time": 112500.0,
-          "x": -1.05,
-          "y": -0.24,
+          "x": -0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1434,8 +1444,8 @@
         {
           "beat": 263,
           "time": 112714.2857,
-          "x": 1.05,
-          "y": -0.24,
+          "x": 0.84,
+          "y": -0.192,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -1445,15 +1455,17 @@
         {
           "beat": 263.5,
           "time": 112928.5714,
-          "x": -1.35,
-          "y": 0,
+          "x": -1.08,
+          "y": 0.0,
           "type": "direction",
           "color": "blue",
           "direction": "upleft",
           "count": 1,
           "lengthMs": 0
         }
-      ]
+      ],
+      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
+      "templateOrientationDegrees": -45
     },
     {
       "patternId": "avoid-double-direction",
@@ -1468,7 +1480,7 @@
       "endSeconds": 73.2832,
       "targetBpm": 190,
       "mirrorFirstBar": false,
-      "secondBar": "左右を入れ替えた応答",
+      "secondBar": "担当手を入れ替えた応答。画面軸は曲の展開に従う。",
       "section": "シンコペーション",
       "removedNotes": 11,
       "addedNotes": 12,
@@ -1494,8 +1506,8 @@
         {
           "beat": 224.0,
           "time": 70756.8421,
-          "x": -1.18,
-          "y": -0.25,
+          "x": -0.2,
+          "y": 0.944,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1505,8 +1517,8 @@
         {
           "beat": 224.5,
           "time": 70914.7368,
-          "x": 1.18,
-          "y": -0.25,
+          "x": -0.2,
+          "y": -0.944,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -1516,8 +1528,8 @@
         {
           "beat": 225.0,
           "time": 71072.6316,
-          "x": -1.18,
-          "y": 0.25,
+          "x": 0.2,
+          "y": 0.944,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1527,8 +1539,8 @@
         {
           "beat": 226.0,
           "time": 71388.4211,
-          "x": 1.18,
-          "y": 0.25,
+          "x": 0.2,
+          "y": -0.944,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -1538,8 +1550,8 @@
         {
           "beat": 226.5,
           "time": 71546.3158,
-          "x": -1.18,
-          "y": -0.25,
+          "x": -0.2,
+          "y": 0.944,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1549,8 +1561,8 @@
         {
           "beat": 227.0,
           "time": 71704.2105,
-          "x": 1.18,
-          "y": -0.25,
+          "x": -0.2,
+          "y": -0.944,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -1560,8 +1572,8 @@
         {
           "beat": 228.0,
           "time": 72020.0,
-          "x": 1.18,
-          "y": -0.25,
+          "x": -0.2,
+          "y": -0.944,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -1571,8 +1583,8 @@
         {
           "beat": 228.5,
           "time": 72177.8947,
-          "x": -1.18,
-          "y": -0.25,
+          "x": -0.2,
+          "y": 0.944,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1582,8 +1594,8 @@
         {
           "beat": 229.0,
           "time": 72335.7895,
-          "x": 1.18,
-          "y": 0.25,
+          "x": 0.2,
+          "y": -0.944,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -1593,8 +1605,8 @@
         {
           "beat": 230.0,
           "time": 72651.5789,
-          "x": -1.18,
-          "y": 0.25,
+          "x": 0.2,
+          "y": 0.944,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1604,8 +1616,8 @@
         {
           "beat": 230.5,
           "time": 72809.4737,
-          "x": 1.18,
-          "y": -0.25,
+          "x": -0.2,
+          "y": -0.944,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -1615,15 +1627,17 @@
         {
           "beat": 231.0,
           "time": 72967.3684,
-          "x": -1.18,
-          "y": -0.25,
+          "x": -0.2,
+          "y": 0.944,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
           "lengthMs": 0
         }
-      ]
+      ],
+      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
+      "templateOrientationDegrees": 45
     },
     {
       "patternId": "bring-it-on-3",
@@ -1638,12 +1652,12 @@
       "endSeconds": 94.674,
       "targetBpm": 160,
       "mirrorFirstBar": false,
-      "secondBar": "左右を入れ替えた応答",
+      "secondBar": "担当手を入れ替えた応答。画面軸は曲の展開に従う。",
       "section": "主題Aの回帰",
       "removedNotes": 12,
       "addedNotes": 12,
       "sourceCategory": "conditional",
-      "fidelity": "譜面データの拍と左右を保持。交差と移動幅を縮め、方向指定を削減。",
+      "fidelity": "譜面データの拍と担当手を保持。位置は簡略化し、縦・斜め・左右反転を含む本作向けの配置へ翻案。",
       "sourceUrl": "https://www.youtube.com/watch?v=16oSzYCTD3A&t=58",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=BenkyouRemaster&difficulty=hard&t=90.17",
       "noteIndices": [
@@ -1664,8 +1678,8 @@
         {
           "beat": 224,
           "time": 91674.0,
-          "x": 1.05,
-          "y": -0.24,
+          "x": -0.096,
+          "y": -0.84,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -1675,8 +1689,8 @@
         {
           "beat": 224,
           "time": 91674.0,
-          "x": -1.35,
-          "y": 0,
+          "x": -0.096,
+          "y": 1.08,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1686,8 +1700,8 @@
         {
           "beat": 225,
           "time": 92049.0,
-          "x": 1.05,
-          "y": -0.24,
+          "x": -0.192,
+          "y": -0.84,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -1697,8 +1711,8 @@
         {
           "beat": 226,
           "time": 92424.0,
-          "x": 1.35,
-          "y": -0.24,
+          "x": -0.192,
+          "y": -1.08,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -1708,8 +1722,8 @@
         {
           "beat": 227,
           "time": 92799.0,
-          "x": -1.05,
-          "y": -0.24,
+          "x": -0.192,
+          "y": 0.84,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1719,8 +1733,8 @@
         {
           "beat": 227.5,
           "time": 92986.5,
-          "x": -1.05,
-          "y": -0.24,
+          "x": -0.192,
+          "y": 0.84,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1730,8 +1744,8 @@
         {
           "beat": 228,
           "time": 93174.0,
-          "x": 1.35,
-          "y": 0,
+          "x": -0.096,
+          "y": -1.08,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -1741,8 +1755,8 @@
         {
           "beat": 228,
           "time": 93174.0,
-          "x": -1.05,
-          "y": -0.24,
+          "x": -0.096,
+          "y": 0.84,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1752,8 +1766,8 @@
         {
           "beat": 229,
           "time": 93549.0,
-          "x": -1.05,
-          "y": -0.24,
+          "x": -0.192,
+          "y": 0.84,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1763,8 +1777,8 @@
         {
           "beat": 230,
           "time": 93924.0,
-          "x": -1.35,
-          "y": -0.24,
+          "x": -0.192,
+          "y": 1.08,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1774,8 +1788,8 @@
         {
           "beat": 231,
           "time": 94299.0,
-          "x": 1.05,
-          "y": -0.24,
+          "x": -0.192,
+          "y": -0.84,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -1785,15 +1799,17 @@
         {
           "beat": 231.5,
           "time": 94486.5,
-          "x": 1.05,
-          "y": -0.24,
+          "x": -0.192,
+          "y": -0.84,
           "type": "tap",
           "color": "red",
           "direction": "none",
           "count": 1,
           "lengthMs": 0
         }
-      ]
+      ],
+      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
+      "templateOrientationDegrees": 180
     },
     {
       "patternId": "burning-hard-2",
@@ -1808,7 +1824,7 @@
       "endSeconds": 13.3333,
       "targetBpm": 180,
       "mirrorFirstBar": false,
-      "secondBar": "左右を入れ替えた応答",
+      "secondBar": "担当手を入れ替えた応答。画面軸は曲の展開に従う。",
       "section": "主拍",
       "removedNotes": 12,
       "addedNotes": 12,
@@ -1834,8 +1850,8 @@
         {
           "beat": 32.0,
           "time": 10666.6667,
-          "x": 1.18,
-          "y": -0.25,
+          "x": 0.2,
+          "y": 0.944,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -1845,8 +1861,8 @@
         {
           "beat": 32.5,
           "time": 10833.3333,
-          "x": 1.18,
-          "y": 0.25,
+          "x": -0.2,
+          "y": 0.944,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -1856,8 +1872,8 @@
         {
           "beat": 33.0,
           "time": 11000.0,
-          "x": -1.18,
-          "y": -0.25,
+          "x": 0.2,
+          "y": -0.944,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1867,8 +1883,8 @@
         {
           "beat": 34.0,
           "time": 11333.3333,
-          "x": 1.18,
-          "y": -0.25,
+          "x": 0.2,
+          "y": 0.944,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -1878,8 +1894,8 @@
         {
           "beat": 34.5,
           "time": 11500.0,
-          "x": 1.18,
-          "y": 0.25,
+          "x": -0.2,
+          "y": 0.944,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -1889,8 +1905,8 @@
         {
           "beat": 35.0,
           "time": 11666.6667,
-          "x": -1.18,
-          "y": 0.25,
+          "x": -0.2,
+          "y": -0.944,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1900,8 +1916,8 @@
         {
           "beat": 36.0,
           "time": 12000.0,
-          "x": -1.18,
-          "y": -0.25,
+          "x": 0.2,
+          "y": -0.944,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1911,8 +1927,8 @@
         {
           "beat": 36.5,
           "time": 12166.6667,
-          "x": -1.18,
-          "y": 0.25,
+          "x": -0.2,
+          "y": -0.944,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1922,8 +1938,8 @@
         {
           "beat": 37.0,
           "time": 12333.3333,
-          "x": 1.18,
-          "y": -0.25,
+          "x": 0.2,
+          "y": 0.944,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -1933,8 +1949,8 @@
         {
           "beat": 38.0,
           "time": 12666.6667,
-          "x": -1.18,
-          "y": -0.25,
+          "x": 0.2,
+          "y": -0.944,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1944,8 +1960,8 @@
         {
           "beat": 38.5,
           "time": 12833.3333,
-          "x": -1.18,
-          "y": 0.25,
+          "x": -0.2,
+          "y": -0.944,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -1955,15 +1971,17 @@
         {
           "beat": 39.0,
           "time": 13000.0,
-          "x": 1.18,
-          "y": 0.25,
+          "x": -0.2,
+          "y": 0.944,
           "type": "direction",
           "color": "red",
-          "direction": "up",
+          "direction": "upleft",
           "count": 1,
           "lengthMs": 0
         }
-      ]
+      ],
+      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
+      "templateOrientationDegrees": -90
     },
     {
       "patternId": "burning-hard-4",
@@ -1978,7 +1996,7 @@
       "endSeconds": 58.2857,
       "targetBpm": 140,
       "mirrorFirstBar": false,
-      "secondBar": "左右を入れ替えた応答",
+      "secondBar": "担当手を入れ替えた応答。画面軸は曲の展開に従う。",
       "section": "展開",
       "removedNotes": 12,
       "addedNotes": 12,
@@ -2004,8 +2022,8 @@
         {
           "beat": 128.0,
           "time": 54857.1429,
-          "x": 1.06,
-          "y": -0.25,
+          "x": 0.848,
+          "y": -0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2015,8 +2033,8 @@
         {
           "beat": 128.5,
           "time": 55071.4286,
-          "x": 1.22,
-          "y": 0.25,
+          "x": 0.976,
+          "y": 0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2026,8 +2044,8 @@
         {
           "beat": 129.0,
           "time": 55285.7143,
-          "x": -1.06,
-          "y": -0.25,
+          "x": -0.848,
+          "y": -0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2037,8 +2055,8 @@
         {
           "beat": 130.0,
           "time": 55714.2857,
-          "x": 1.3,
-          "y": -0.25,
+          "x": 1.04,
+          "y": -0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2048,8 +2066,8 @@
         {
           "beat": 131.0,
           "time": 56142.8571,
-          "x": 1.22,
-          "y": 0.25,
+          "x": 0.976,
+          "y": 0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2059,8 +2077,8 @@
         {
           "beat": 131.0,
           "time": 56142.8571,
-          "x": -1.22,
-          "y": 0.25,
+          "x": -0.976,
+          "y": 0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2070,8 +2088,8 @@
         {
           "beat": 132.0,
           "time": 56571.4286,
-          "x": -1.06,
-          "y": -0.25,
+          "x": -0.848,
+          "y": -0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2081,8 +2099,8 @@
         {
           "beat": 132.5,
           "time": 56785.7143,
-          "x": -1.22,
-          "y": 0.25,
+          "x": -0.976,
+          "y": 0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2092,8 +2110,8 @@
         {
           "beat": 133.0,
           "time": 57000.0,
-          "x": 1.06,
-          "y": -0.25,
+          "x": 0.848,
+          "y": -0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2103,8 +2121,8 @@
         {
           "beat": 134.0,
           "time": 57428.5714,
-          "x": -1.3,
-          "y": -0.25,
+          "x": -1.04,
+          "y": -0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2114,8 +2132,8 @@
         {
           "beat": 135.0,
           "time": 57857.1429,
-          "x": 1.22,
-          "y": 0.25,
+          "x": 0.976,
+          "y": 0.2,
           "type": "direction",
           "color": "red",
           "direction": "up",
@@ -2125,15 +2143,17 @@
         {
           "beat": 135.0,
           "time": 57857.1429,
-          "x": -1.22,
-          "y": 0.25,
+          "x": -0.976,
+          "y": 0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
           "lengthMs": 0
         }
-      ]
+      ],
+      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
+      "templateOrientationDegrees": 45
     },
     {
       "patternId": "dream-hard-3",
@@ -2148,7 +2168,7 @@
       "endSeconds": 93.4937,
       "targetBpm": 190,
       "mirrorFirstBar": false,
-      "secondBar": "左右を入れ替えた応答",
+      "secondBar": "担当手を入れ替えた応答。画面軸は曲の展開に従う。",
       "section": "主題の回帰",
       "removedNotes": 12,
       "addedNotes": 12,
@@ -2174,8 +2194,8 @@
         {
           "beat": 288.0,
           "time": 90967.3684,
-          "x": 1.18,
-          "y": -0.25,
+          "x": -0.2,
+          "y": -0.944,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2185,8 +2205,8 @@
         {
           "beat": 288.0,
           "time": 90967.3684,
-          "x": -1.18,
-          "y": -0.25,
+          "x": -0.2,
+          "y": 0.944,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2196,8 +2216,8 @@
         {
           "beat": 289.0,
           "time": 91283.1579,
-          "x": -1.18,
-          "y": 0.25,
+          "x": 0.2,
+          "y": 0.944,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2207,8 +2227,8 @@
         {
           "beat": 289.5,
           "time": 91441.0526,
-          "x": 1.18,
-          "y": 0.25,
+          "x": 0.2,
+          "y": -0.944,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2218,8 +2238,8 @@
         {
           "beat": 290.0,
           "time": 91598.9474,
-          "x": -1.18,
-          "y": -0.25,
+          "x": -0.2,
+          "y": 0.944,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2229,8 +2249,8 @@
         {
           "beat": 291.0,
           "time": 91914.7368,
-          "x": 1.18,
-          "y": -0.25,
+          "x": -0.2,
+          "y": -0.944,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2240,8 +2260,8 @@
         {
           "beat": 292.0,
           "time": 92230.5263,
-          "x": 1.18,
-          "y": -0.25,
+          "x": -0.2,
+          "y": -0.944,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2251,8 +2271,8 @@
         {
           "beat": 292.0,
           "time": 92230.5263,
-          "x": -1.18,
-          "y": -0.25,
+          "x": -0.2,
+          "y": 0.944,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2262,8 +2282,8 @@
         {
           "beat": 293.0,
           "time": 92546.3158,
-          "x": 1.18,
-          "y": 0.25,
+          "x": 0.2,
+          "y": -0.944,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2273,8 +2293,8 @@
         {
           "beat": 293.5,
           "time": 92704.2105,
-          "x": -1.18,
-          "y": 0.25,
+          "x": 0.2,
+          "y": 0.944,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2284,8 +2304,8 @@
         {
           "beat": 294.0,
           "time": 92862.1053,
-          "x": 1.18,
-          "y": -0.25,
+          "x": -0.2,
+          "y": -0.944,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2295,15 +2315,17 @@
         {
           "beat": 295.0,
           "time": 93177.8947,
-          "x": -1.18,
-          "y": -0.25,
+          "x": -0.2,
+          "y": 0.944,
           "type": "direction",
           "color": "blue",
-          "direction": "downleft",
+          "direction": "upleft",
           "count": 1,
           "lengthMs": 0
         }
-      ]
+      ],
+      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
+      "templateOrientationDegrees": 180
     },
     {
       "patternId": "lvl-expert-2",
@@ -2318,7 +2340,7 @@
       "endSeconds": 64.674,
       "targetBpm": 160,
       "mirrorFirstBar": false,
-      "secondBar": "左右を入れ替えた応答",
+      "secondBar": "担当手を入れ替えた応答。画面軸は曲の展開に従う。",
       "section": "短い展開",
       "removedNotes": 12,
       "addedNotes": 12,
@@ -2344,8 +2366,8 @@
         {
           "beat": 144.0,
           "time": 61674.0,
-          "x": -1.33,
-          "y": 0,
+          "x": -1.064,
+          "y": -0.0,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2355,8 +2377,8 @@
         {
           "beat": 144.5,
           "time": 61861.5,
-          "x": 1.33,
-          "y": 0,
+          "x": 1.064,
+          "y": 0.0048,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2366,8 +2388,8 @@
         {
           "beat": 145.0,
           "time": 62049.0,
-          "x": -1.03,
-          "y": 0,
+          "x": -0.8239,
+          "y": -0.0145,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2377,8 +2399,8 @@
         {
           "beat": 146.0,
           "time": 62424.0,
-          "x": 1.03,
-          "y": 0,
+          "x": 0.8221,
+          "y": 0.0556,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2388,8 +2410,8 @@
         {
           "beat": 146.5,
           "time": 62611.5,
-          "x": -1.33,
-          "y": 0,
+          "x": -1.0584,
+          "y": -0.1095,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2399,8 +2421,8 @@
         {
           "beat": 147.0,
           "time": 62799.0,
-          "x": 1.33,
-          "y": 0,
+          "x": 1.0528,
+          "y": 0.1537,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2410,8 +2432,8 @@
         {
           "beat": 148.0,
           "time": 63174.0,
-          "x": 1.33,
-          "y": 0,
+          "x": 1.0321,
+          "y": 0.2585,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2421,8 +2443,8 @@
         {
           "beat": 148.5,
           "time": 63361.5,
-          "x": -1.33,
-          "y": 0,
+          "x": -1.0156,
+          "y": -0.3173,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2432,8 +2454,8 @@
         {
           "beat": 149.0,
           "time": 63549.0,
-          "x": 1.03,
-          "y": 0,
+          "x": 0.7699,
+          "y": 0.2936,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2443,8 +2465,8 @@
         {
           "beat": 150.0,
           "time": 63924.0,
-          "x": -1.03,
-          "y": 0,
+          "x": -0.7243,
+          "y": -0.3929,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2454,8 +2476,8 @@
         {
           "beat": 150.5,
           "time": 64111.5,
-          "x": 1.33,
-          "y": 0,
+          "x": 0.8974,
+          "y": 0.5716,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2465,15 +2487,17 @@
         {
           "beat": 151.0,
           "time": 64299.0,
-          "x": -1.33,
-          "y": 0,
+          "x": -0.8541,
+          "y": -0.6345,
           "type": "direction",
           "color": "blue",
-          "direction": "downleft",
+          "direction": "down",
           "count": 1,
           "lengthMs": 0
         }
-      ]
+      ],
+      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
+      "templateOrientationDegrees": 90
     },
     {
       "patternId": "unlimited-hard-3",
@@ -2488,7 +2512,7 @@
       "endSeconds": 69.4937,
       "targetBpm": 190,
       "mirrorFirstBar": false,
-      "secondBar": "左右を入れ替えた応答",
+      "secondBar": "担当手を入れ替えた応答。画面軸は曲の展開に従う。",
       "section": "シンコペーション",
       "removedNotes": 10,
       "addedNotes": 10,
@@ -2512,8 +2536,8 @@
         {
           "beat": 212.0,
           "time": 66967.3684,
-          "x": -1.18,
-          "y": -0.25,
+          "x": 0.8671,
+          "y": 0.4234,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2523,8 +2547,8 @@
         {
           "beat": 212.5,
           "time": 67125.2632,
-          "x": 1.18,
-          "y": -0.25,
+          "x": -0.9607,
+          "y": -0.0907,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2534,8 +2558,8 @@
         {
           "beat": 213.0,
           "time": 67283.1579,
-          "x": -1.18,
-          "y": 0.25,
+          "x": 0.9533,
+          "y": 0.1495,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2545,8 +2569,8 @@
         {
           "beat": 214.0,
           "time": 67598.9474,
-          "x": -1.18,
-          "y": -0.25,
+          "x": 0.7344,
+          "y": 0.6259,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2556,8 +2580,8 @@
         {
           "beat": 215.0,
           "time": 67914.7368,
-          "x": 1.18,
-          "y": 0.25,
+          "x": -0.6385,
+          "y": -0.7235,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2567,8 +2591,8 @@
         {
           "beat": 216.0,
           "time": 68230.5263,
-          "x": 1.18,
-          "y": -0.25,
+          "x": -0.8089,
+          "y": -0.5261,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2578,8 +2602,8 @@
         {
           "beat": 216.5,
           "time": 68388.4211,
-          "x": -1.18,
-          "y": -0.25,
+          "x": 0.4652,
+          "y": 0.8454,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2589,8 +2613,8 @@
         {
           "beat": 217.0,
           "time": 68546.3158,
-          "x": 1.18,
-          "y": 0.25,
+          "x": -0.4024,
+          "y": -0.8771,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2600,8 +2624,8 @@
         {
           "beat": 218.0,
           "time": 68862.1053,
-          "x": 1.18,
-          "y": -0.25,
+          "x": -0.6259,
+          "y": -0.7344,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2611,15 +2635,17 @@
         {
           "beat": 219.0,
           "time": 69177.8947,
-          "x": -1.18,
-          "y": 0.25,
+          "x": 0.5232,
+          "y": 0.8108,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
           "lengthMs": 0
         }
-      ]
+      ],
+      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
+      "templateOrientationDegrees": 45
     },
     {
       "patternId": "unlimited-hard-4",
@@ -2634,7 +2660,7 @@
       "endSeconds": 9.3333,
       "targetBpm": 180,
       "mirrorFirstBar": true,
-      "secondBar": "左右を入れ替えた応答",
+      "secondBar": "担当手を入れ替えた応答。画面軸は曲の展開に従う。",
       "section": "導入",
       "removedNotes": 10,
       "addedNotes": 10,
@@ -2658,8 +2684,8 @@
         {
           "beat": 20.0,
           "time": 6666.6667,
-          "x": 1.12,
-          "y": -0.163,
+          "x": 0.9008,
+          "y": 0.0912,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2669,8 +2695,8 @@
         {
           "beat": 21.0,
           "time": 7000.0,
-          "x": -1.12,
-          "y": -0.163,
+          "x": -0.7907,
+          "y": -0.4411,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2680,8 +2706,8 @@
         {
           "beat": 22.0,
           "time": 7333.3333,
-          "x": 1.12,
-          "y": 0.163,
+          "x": 0.7254,
+          "y": 0.5418,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2691,8 +2717,8 @@
         {
           "beat": 23.0,
           "time": 7666.6667,
-          "x": 1.12,
-          "y": -0.163,
+          "x": 0.797,
+          "y": 0.4296,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2702,8 +2728,8 @@
         {
           "beat": 23.0,
           "time": 7666.6667,
-          "x": -1.12,
-          "y": 0.163,
+          "x": -0.797,
+          "y": -0.4296,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2713,8 +2739,8 @@
         {
           "beat": 24.0,
           "time": 8000.0,
-          "x": -1.12,
-          "y": -0.163,
+          "x": -0.5414,
+          "y": -0.7258,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2724,8 +2750,8 @@
         {
           "beat": 25.0,
           "time": 8333.3333,
-          "x": 1.12,
-          "y": -0.163,
+          "x": 0.639,
+          "y": 0.6415,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2735,8 +2761,8 @@
         {
           "beat": 26.0,
           "time": 8666.6667,
-          "x": -1.12,
-          "y": 0.163,
+          "x": -0.5418,
+          "y": -0.7254,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2746,8 +2772,8 @@
         {
           "beat": 27.0,
           "time": 9000.0,
-          "x": 1.12,
-          "y": 0.163,
+          "x": 0.1974,
+          "y": 0.8837,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2757,15 +2783,17 @@
         {
           "beat": 27.0,
           "time": 9000.0,
-          "x": -1.12,
-          "y": -0.163,
+          "x": -0.1974,
+          "y": -0.8837,
           "type": "direction",
           "color": "blue",
-          "direction": "downleft",
+          "direction": "right",
           "count": 1,
           "lengthMs": 0
         }
-      ]
+      ],
+      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
+      "templateOrientationDegrees": 90
     },
     {
       "patternId": "dream-hard-2",
@@ -2780,7 +2808,7 @@
       "endSeconds": 115.8333,
       "targetBpm": 180,
       "mirrorFirstBar": false,
-      "secondBar": "左右を入れ替えた応答",
+      "secondBar": "担当手を入れ替えた応答。画面軸は曲の展開に従う。",
       "section": "主題の回帰",
       "removedNotes": 8,
       "addedNotes": 10,
@@ -2804,8 +2832,8 @@
         {
           "beat": 336.0,
           "time": 113166.6667,
-          "x": 1.18,
-          "y": -0.25,
+          "x": -0.944,
+          "y": 0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2815,8 +2843,8 @@
         {
           "beat": 336.0,
           "time": 113166.6667,
-          "x": -1.18,
-          "y": -0.25,
+          "x": 0.944,
+          "y": 0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2826,8 +2854,8 @@
         {
           "beat": 337.0,
           "time": 113500.0,
-          "x": -1.18,
-          "y": 0.25,
+          "x": 0.9474,
+          "y": -0.1833,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2837,8 +2865,8 @@
         {
           "beat": 338.0,
           "time": 113833.3333,
-          "x": 1.18,
-          "y": 0.25,
+          "x": -0.9284,
+          "y": -0.2632,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2848,8 +2876,8 @@
         {
           "beat": 339.0,
           "time": 114166.6667,
-          "x": -1.18,
-          "y": -0.25,
+          "x": 0.9052,
+          "y": 0.3343,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2859,8 +2887,8 @@
         {
           "beat": 340.0,
           "time": 114500.0,
-          "x": 1.18,
-          "y": -0.25,
+          "x": -0.9643,
+          "y": -0.0354,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2870,8 +2898,8 @@
         {
           "beat": 340.0,
           "time": 114500.0,
-          "x": -1.18,
-          "y": -0.25,
+          "x": 0.8671,
+          "y": 0.4234,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2881,8 +2909,8 @@
         {
           "beat": 341.0,
           "time": 114833.3333,
-          "x": 1.18,
-          "y": 0.25,
+          "x": -0.8108,
+          "y": -0.5232,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2892,8 +2920,8 @@
         {
           "beat": 342.0,
           "time": 115166.6667,
-          "x": -1.18,
-          "y": 0.25,
+          "x": 0.9251,
+          "y": 0.2743,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2903,15 +2931,17 @@
         {
           "beat": 343.0,
           "time": 115500.0,
-          "x": 1.18,
-          "y": -0.25,
+          "x": -0.8771,
+          "y": -0.4024,
           "type": "direction",
           "color": "red",
-          "direction": "down",
+          "direction": "up",
           "count": 1,
           "lengthMs": 0
         }
-      ]
+      ],
+      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
+      "templateOrientationDegrees": -90
     },
     {
       "patternId": "avoid-face-punch",
@@ -2926,7 +2956,7 @@
       "endSeconds": 108.0,
       "targetBpm": 140,
       "mirrorFirstBar": false,
-      "secondBar": "左右を入れ替えた応答",
+      "secondBar": "担当手を入れ替えた応答。画面軸は曲の展開に従う。",
       "section": "主拍への回帰",
       "removedNotes": 8,
       "addedNotes": 8,
@@ -2948,8 +2978,8 @@
         {
           "beat": 244.0,
           "time": 104571.4286,
-          "x": -1.3,
-          "y": -0.16,
+          "x": -0.3769,
+          "y": 0.9777,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2959,8 +2989,8 @@
         {
           "beat": 245.0,
           "time": 105000.0,
-          "x": 1.3,
-          "y": -0.16,
+          "x": 0.251,
+          "y": -1.0173,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2970,8 +3000,8 @@
         {
           "beat": 246.0,
           "time": 105428.5714,
-          "x": -1.3,
-          "y": 0.16,
+          "x": -0.3834,
+          "y": 0.9752,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -2981,8 +3011,8 @@
         {
           "beat": 247.0,
           "time": 105857.1429,
-          "x": 1.3,
-          "y": 0.16,
+          "x": 0.7229,
+          "y": -0.7585,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -2992,8 +3022,8 @@
         {
           "beat": 248.0,
           "time": 106285.7143,
-          "x": 1.3,
-          "y": -0.16,
+          "x": 0.6449,
+          "y": -0.8259,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -3003,8 +3033,8 @@
         {
           "beat": 249.0,
           "time": 106714.2857,
-          "x": -1.3,
-          "y": -0.16,
+          "x": -0.9112,
+          "y": 0.5174,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -3014,8 +3044,8 @@
         {
           "beat": 250.0,
           "time": 107142.8571,
-          "x": 1.3,
-          "y": 0.16,
+          "x": 0.9752,
+          "y": -0.3834,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -3025,15 +3055,17 @@
         {
           "beat": 251.0,
           "time": 107571.4286,
-          "x": -1.3,
-          "y": 0.16,
+          "x": -0.9261,
+          "y": 0.4902,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
           "lengthMs": 0
         }
-      ]
+      ],
+      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
+      "templateOrientationDegrees": -90
     },
     {
       "patternId": "avoid-hammer",
@@ -3048,7 +3080,7 @@
       "endSeconds": 64.674,
       "targetBpm": 160,
       "mirrorFirstBar": false,
-      "secondBar": "左右を入れ替えた応答",
+      "secondBar": "担当手を入れ替えた応答。画面軸は曲の展開に従う。",
       "section": "短い展開",
       "removedNotes": 8,
       "addedNotes": 8,
@@ -3070,8 +3102,8 @@
         {
           "beat": 144.0,
           "time": 61674.0,
-          "x": -1.18,
-          "y": -0.25,
+          "x": -0.944,
+          "y": -0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -3081,8 +3113,8 @@
         {
           "beat": 145.0,
           "time": 62049.0,
-          "x": 1.18,
-          "y": -0.25,
+          "x": 0.9474,
+          "y": -0.1833,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -3092,8 +3124,8 @@
         {
           "beat": 146.0,
           "time": 62424.0,
-          "x": -1.18,
-          "y": 0.25,
+          "x": -0.9553,
+          "y": 0.1359,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -3103,8 +3135,8 @@
         {
           "beat": 147.0,
           "time": 62799.0,
-          "x": 1.18,
-          "y": 0.25,
+          "x": 0.9052,
+          "y": 0.3343,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -3114,8 +3146,8 @@
         {
           "beat": 148.0,
           "time": 63174.0,
-          "x": 1.18,
-          "y": -0.25,
+          "x": 0.9643,
+          "y": 0.0354,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -3125,8 +3157,8 @@
         {
           "beat": 149.0,
           "time": 63549.0,
-          "x": -1.18,
-          "y": -0.25,
+          "x": -0.8108,
+          "y": -0.5232,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -3136,8 +3168,8 @@
         {
           "beat": 150.0,
           "time": 63924.0,
-          "x": 1.18,
-          "y": 0.25,
+          "x": 0.7344,
+          "y": 0.6259,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -3147,15 +3179,17 @@
         {
           "beat": 151.0,
           "time": 64299.0,
-          "x": -1.18,
-          "y": 0.25,
+          "x": -0.8771,
+          "y": -0.4024,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
           "lengthMs": 0
         }
-      ]
+      ],
+      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
+      "templateOrientationDegrees": 180
     },
     {
       "patternId": "avoid-hand-clap",
@@ -3170,7 +3204,7 @@
       "endSeconds": 46.528,
       "targetBpm": 160,
       "mirrorFirstBar": false,
-      "secondBar": "左右を入れ替えた応答",
+      "secondBar": "担当手を入れ替えた応答。画面軸は曲の展開に従う。",
       "section": "8分の裏拍",
       "removedNotes": 8,
       "addedNotes": 8,
@@ -3192,8 +3226,8 @@
         {
           "beat": 116.0,
           "time": 43528.0,
-          "x": 1.3,
-          "y": -0.16,
+          "x": 0.3769,
+          "y": 0.9777,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -3203,8 +3237,8 @@
         {
           "beat": 116.0,
           "time": 43528.0,
-          "x": -1.3,
-          "y": -0.16,
+          "x": -0.1285,
+          "y": -1.0399,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -3214,8 +3248,8 @@
         {
           "beat": 118.0,
           "time": 44278.0,
-          "x": -1.3,
-          "y": 0.16,
+          "x": -0.6084,
+          "y": -0.8531,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -3225,8 +3259,8 @@
         {
           "beat": 119.0,
           "time": 44653.0,
-          "x": 1.3,
-          "y": 0.16,
+          "x": 0.5174,
+          "y": 0.9112,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -3236,8 +3270,8 @@
         {
           "beat": 120.0,
           "time": 45028.0,
-          "x": 1.3,
-          "y": -0.16,
+          "x": 0.8259,
+          "y": 0.6449,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -3247,8 +3281,8 @@
         {
           "beat": 120.0,
           "time": 45028.0,
-          "x": -1.3,
-          "y": -0.16,
+          "x": -0.6449,
+          "y": -0.8259,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -3258,8 +3292,8 @@
         {
           "beat": 122.0,
           "time": 45778.0,
-          "x": 1.3,
-          "y": 0.16,
+          "x": 0.8531,
+          "y": 0.6084,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -3269,15 +3303,17 @@
         {
           "beat": 123.0,
           "time": 46153.0,
-          "x": -1.3,
-          "y": 0.16,
+          "x": -1.0173,
+          "y": -0.251,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
           "lengthMs": 0
         }
-      ]
+      ],
+      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
+      "templateOrientationDegrees": 90
     },
     {
       "patternId": "avoid-vision-block",
@@ -3292,7 +3328,7 @@
       "endSeconds": 101.1429,
       "targetBpm": 140,
       "mirrorFirstBar": false,
-      "secondBar": "左右を入れ替えた応答",
+      "secondBar": "担当手を入れ替えた応答。画面軸は曲の展開に従う。",
       "section": "主拍への回帰",
       "removedNotes": 8,
       "addedNotes": 8,
@@ -3314,8 +3350,8 @@
         {
           "beat": 228.0,
           "time": 97714.2857,
-          "x": -1.4,
-          "y": -0.25,
+          "x": -0.2,
+          "y": 1.12,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -3325,8 +3361,8 @@
         {
           "beat": 229.0,
           "time": 98142.8571,
-          "x": 1.4,
-          "y": -0.25,
+          "x": -0.2,
+          "y": -1.12,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -3336,8 +3372,8 @@
         {
           "beat": 230.0,
           "time": 98571.4286,
-          "x": -1.4,
-          "y": 0.25,
+          "x": 0.2,
+          "y": 1.12,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -3347,8 +3383,8 @@
         {
           "beat": 231.0,
           "time": 99000.0,
-          "x": 1.4,
-          "y": 0.25,
+          "x": 0.2,
+          "y": -1.12,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -3358,8 +3394,8 @@
         {
           "beat": 232.0,
           "time": 99428.5714,
-          "x": 1.4,
-          "y": -0.25,
+          "x": -0.2,
+          "y": -1.12,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -3369,8 +3405,8 @@
         {
           "beat": 233.0,
           "time": 99857.1429,
-          "x": -1.4,
-          "y": -0.25,
+          "x": -0.2,
+          "y": 1.12,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -3380,8 +3416,8 @@
         {
           "beat": 234.0,
           "time": 100285.7143,
-          "x": 1.4,
-          "y": 0.25,
+          "x": 0.2,
+          "y": -1.12,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -3391,15 +3427,17 @@
         {
           "beat": 235.0,
           "time": 100714.2857,
-          "x": -1.4,
-          "y": 0.25,
+          "x": 0.2,
+          "y": 1.12,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
           "lengthMs": 0
         }
-      ]
+      ],
+      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
+      "templateOrientationDegrees": 90
     },
     {
       "patternId": "burning-hard-1",
@@ -3414,7 +3452,7 @@
       "endSeconds": 70.7568,
       "targetBpm": 190,
       "mirrorFirstBar": false,
-      "secondBar": "左右を入れ替えた応答",
+      "secondBar": "担当手を入れ替えた応答。画面軸は曲の展開に従う。",
       "section": "シンコペーション",
       "removedNotes": 8,
       "addedNotes": 8,
@@ -3436,8 +3474,8 @@
         {
           "beat": 216.0,
           "time": 68230.5263,
-          "x": 1.3,
-          "y": -0.25,
+          "x": -0.8768,
+          "y": -0.594,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -3447,8 +3485,8 @@
         {
           "beat": 217.0,
           "time": 68546.3158,
-          "x": -1.3,
-          "y": -0.25,
+          "x": 0.4596,
+          "y": 0.9541,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -3458,8 +3496,8 @@
         {
           "beat": 218.0,
           "time": 68862.1053,
-          "x": 1.06,
-          "y": 0.25,
+          "x": -0.2285,
+          "y": -0.8408,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -3469,8 +3507,8 @@
         {
           "beat": 219.0,
           "time": 69177.8947,
-          "x": -1.06,
-          "y": 0.25,
+          "x": 0.489,
+          "y": 0.7211,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -3480,8 +3518,8 @@
         {
           "beat": 220.0,
           "time": 69493.6842,
-          "x": -1.3,
-          "y": -0.25,
+          "x": 0.0587,
+          "y": 1.0574,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -3491,8 +3529,8 @@
         {
           "beat": 221.0,
           "time": 69809.4737,
-          "x": 1.3,
-          "y": -0.25,
+          "x": -0.3481,
+          "y": -1.0002,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -3502,8 +3540,8 @@
         {
           "beat": 222.0,
           "time": 70125.2632,
-          "x": -1.06,
-          "y": 0.25,
+          "x": 0.2567,
+          "y": 0.8326,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -3513,15 +3551,17 @@
         {
           "beat": 223.0,
           "time": 70441.0526,
-          "x": 1.06,
-          "y": 0.25,
+          "x": 0.185,
+          "y": -0.8514,
           "type": "tap",
           "color": "red",
           "direction": "none",
           "count": 1,
           "lengthMs": 0
         }
-      ]
+      ],
+      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
+      "templateOrientationDegrees": 90
     },
     {
       "patternId": "burning-hard-3",
@@ -3536,7 +3576,7 @@
       "endSeconds": 106.674,
       "targetBpm": 160,
       "mirrorFirstBar": false,
-      "secondBar": "左右を入れ替えた応答",
+      "secondBar": "担当手を入れ替えた応答。画面軸は曲の展開に従う。",
       "section": "主題Aの発展",
       "removedNotes": 9,
       "addedNotes": 8,
@@ -3558,8 +3598,8 @@
         {
           "beat": 256.0,
           "time": 103674.0,
-          "x": -1.08,
-          "y": -0.25,
+          "x": -0.864,
+          "y": -0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -3569,8 +3609,8 @@
         {
           "beat": 257.0,
           "time": 104049.0,
-          "x": 1.08,
-          "y": 0.25,
+          "x": 0.864,
+          "y": 0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -3580,8 +3620,8 @@
         {
           "beat": 258.0,
           "time": 104424.0,
-          "x": -1.28,
-          "y": -0.25,
+          "x": -1.024,
+          "y": -0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -3591,8 +3631,8 @@
         {
           "beat": 259.0,
           "time": 104799.0,
-          "x": 1.28,
-          "y": 0.25,
+          "x": 1.024,
+          "y": 0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -3602,8 +3642,8 @@
         {
           "beat": 260.0,
           "time": 105174.0,
-          "x": 1.08,
-          "y": -0.25,
+          "x": 0.864,
+          "y": -0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -3613,8 +3653,8 @@
         {
           "beat": 261.0,
           "time": 105549.0,
-          "x": -1.08,
-          "y": 0.25,
+          "x": -0.864,
+          "y": 0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -3624,8 +3664,8 @@
         {
           "beat": 262.0,
           "time": 105924.0,
-          "x": 1.28,
-          "y": -0.25,
+          "x": 1.024,
+          "y": -0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -3635,15 +3675,17 @@
         {
           "beat": 263.0,
           "time": 106299.0,
-          "x": -1.28,
-          "y": 0.25,
+          "x": -1.024,
+          "y": 0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
           "lengthMs": 0
         }
-      ]
+      ],
+      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
+      "templateOrientationDegrees": 180
     },
     {
       "patternId": "dream-hard-1",
@@ -3658,7 +3700,7 @@
       "endSeconds": 111.8333,
       "targetBpm": 180,
       "mirrorFirstBar": false,
-      "secondBar": "左右を入れ替えた応答",
+      "secondBar": "担当手を入れ替えた応答。画面軸は曲の展開に従う。",
       "section": "主題の回帰",
       "removedNotes": 8,
       "addedNotes": 8,
@@ -3680,8 +3722,8 @@
         {
           "beat": 324.0,
           "time": 109166.6667,
-          "x": -1.3,
-          "y": -0.25,
+          "x": 1.04,
+          "y": 0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -3691,8 +3733,8 @@
         {
           "beat": 325.0,
           "time": 109500.0,
-          "x": 1.3,
-          "y": -0.25,
+          "x": -1.04,
+          "y": 0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -3702,8 +3744,8 @@
         {
           "beat": 326.0,
           "time": 109833.3333,
-          "x": -1.06,
-          "y": 0.25,
+          "x": 0.848,
+          "y": -0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -3713,8 +3755,8 @@
         {
           "beat": 327.0,
           "time": 110166.6667,
-          "x": 1.06,
-          "y": 0.25,
+          "x": -0.848,
+          "y": -0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -3724,8 +3766,8 @@
         {
           "beat": 328.0,
           "time": 110500.0,
-          "x": 1.3,
-          "y": -0.25,
+          "x": -1.04,
+          "y": 0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -3735,8 +3777,8 @@
         {
           "beat": 329.0,
           "time": 110833.3333,
-          "x": -1.3,
-          "y": -0.25,
+          "x": 1.04,
+          "y": 0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -3746,8 +3788,8 @@
         {
           "beat": 330.0,
           "time": 111166.6667,
-          "x": 1.06,
-          "y": 0.25,
+          "x": -0.848,
+          "y": -0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -3757,15 +3799,17 @@
         {
           "beat": 331.0,
           "time": 111500.0,
-          "x": -1.06,
-          "y": 0.25,
+          "x": 0.848,
+          "y": -0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
           "lengthMs": 0
         }
-      ]
+      ],
+      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
+      "templateOrientationDegrees": 45
     },
     {
       "patternId": "dream-hard-4",
@@ -3780,7 +3824,7 @@
       "endSeconds": 42.9674,
       "targetBpm": 190,
       "mirrorFirstBar": false,
-      "secondBar": "左右を入れ替えた応答",
+      "secondBar": "担当手を入れ替えた応答。画面軸は曲の展開に従う。",
       "section": "主題の応答",
       "removedNotes": 8,
       "addedNotes": 8,
@@ -3802,8 +3846,8 @@
         {
           "beat": 128.0,
           "time": 40441.0526,
-          "x": 1.06,
-          "y": -0.25,
+          "x": 0.848,
+          "y": -0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -3813,8 +3857,8 @@
         {
           "beat": 129.0,
           "time": 40756.8421,
-          "x": -1.06,
-          "y": -0.25,
+          "x": -0.848,
+          "y": -0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -3824,8 +3868,8 @@
         {
           "beat": 130.0,
           "time": 41072.6316,
-          "x": 1.22,
-          "y": 0.25,
+          "x": 0.976,
+          "y": 0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -3835,8 +3879,8 @@
         {
           "beat": 131.0,
           "time": 41388.4211,
-          "x": -1.22,
-          "y": 0.25,
+          "x": -0.976,
+          "y": 0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -3846,8 +3890,8 @@
         {
           "beat": 132.0,
           "time": 41704.2105,
-          "x": -1.06,
-          "y": -0.25,
+          "x": -0.848,
+          "y": -0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -3857,8 +3901,8 @@
         {
           "beat": 133.0,
           "time": 42020.0,
-          "x": 1.06,
-          "y": -0.25,
+          "x": 0.848,
+          "y": -0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -3868,8 +3912,8 @@
         {
           "beat": 134.0,
           "time": 42335.7895,
-          "x": -1.22,
-          "y": 0.25,
+          "x": -0.976,
+          "y": 0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -3879,15 +3923,17 @@
         {
           "beat": 135.0,
           "time": 42651.5789,
-          "x": 1.22,
-          "y": 0.25,
+          "x": 0.976,
+          "y": 0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
           "count": 1,
           "lengthMs": 0
         }
-      ]
+      ],
+      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
+      "templateOrientationDegrees": -45
     },
     {
       "patternId": "dream-normal-2",
@@ -3902,7 +3948,7 @@
       "endSeconds": 15.028,
       "targetBpm": 160,
       "mirrorFirstBar": false,
-      "secondBar": "左右を入れ替えた応答",
+      "secondBar": "担当手を入れ替えた応答。画面軸は曲の展開に従う。",
       "section": "応答",
       "removedNotes": 8,
       "addedNotes": 8,
@@ -3924,8 +3970,8 @@
         {
           "beat": 32.0,
           "time": 12028.0,
-          "x": 1.18,
-          "y": -0.25,
+          "x": 0.2,
+          "y": 0.944,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -3935,8 +3981,8 @@
         {
           "beat": 32.0,
           "time": 12028.0,
-          "x": -1.18,
-          "y": -0.25,
+          "x": 0.2,
+          "y": -0.944,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -3946,8 +3992,8 @@
         {
           "beat": 34.0,
           "time": 12778.0,
-          "x": 1.18,
-          "y": 0.25,
+          "x": -0.2,
+          "y": 0.944,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -3957,8 +4003,8 @@
         {
           "beat": 35.0,
           "time": 13153.0,
-          "x": -1.18,
-          "y": 0.25,
+          "x": -0.2,
+          "y": -0.944,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -3968,8 +4014,8 @@
         {
           "beat": 36.0,
           "time": 13528.0,
-          "x": 1.18,
-          "y": -0.25,
+          "x": 0.2,
+          "y": 0.944,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -3979,8 +4025,8 @@
         {
           "beat": 36.0,
           "time": 13528.0,
-          "x": -1.18,
-          "y": -0.25,
+          "x": 0.2,
+          "y": -0.944,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -3990,8 +4036,8 @@
         {
           "beat": 38.0,
           "time": 14278.0,
-          "x": -1.18,
-          "y": 0.25,
+          "x": -0.2,
+          "y": -0.944,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -4001,15 +4047,17 @@
         {
           "beat": 39.0,
           "time": 14653.0,
-          "x": 1.18,
-          "y": 0.25,
+          "x": -0.2,
+          "y": 0.944,
           "type": "direction",
           "color": "red",
-          "direction": "up",
+          "direction": "upleft",
           "count": 1,
           "lengthMs": 0
         }
-      ]
+      ],
+      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
+      "templateOrientationDegrees": 90
     },
     {
       "patternId": "lvl-expert-1",
@@ -4024,7 +4072,7 @@
       "endSeconds": 94.674,
       "targetBpm": 160,
       "mirrorFirstBar": false,
-      "secondBar": "左右を入れ替えた応答",
+      "secondBar": "担当手を入れ替えた応答。画面軸は曲の展開に従う。",
       "section": "主題Aの回帰",
       "removedNotes": 9,
       "addedNotes": 8,
@@ -4046,8 +4094,8 @@
         {
           "beat": 224.0,
           "time": 91674.0,
-          "x": -1.3,
-          "y": -0.25,
+          "x": -0.2,
+          "y": 1.04,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -4057,8 +4105,8 @@
         {
           "beat": 225.0,
           "time": 92049.0,
-          "x": 1.3,
-          "y": -0.25,
+          "x": -0.2,
+          "y": -1.04,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -4068,8 +4116,8 @@
         {
           "beat": 226.0,
           "time": 92424.0,
-          "x": -1.06,
-          "y": 0.25,
+          "x": 0.2,
+          "y": 0.848,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -4079,8 +4127,8 @@
         {
           "beat": 227.0,
           "time": 92799.0,
-          "x": 1.06,
-          "y": 0.25,
+          "x": 0.2,
+          "y": -0.848,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -4090,8 +4138,8 @@
         {
           "beat": 228.0,
           "time": 93174.0,
-          "x": 1.3,
-          "y": -0.25,
+          "x": -0.2,
+          "y": -1.04,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -4101,8 +4149,8 @@
         {
           "beat": 229.0,
           "time": 93549.0,
-          "x": -1.3,
-          "y": -0.25,
+          "x": -0.2,
+          "y": 1.04,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -4112,8 +4160,8 @@
         {
           "beat": 230.0,
           "time": 93924.0,
-          "x": 1.06,
-          "y": 0.25,
+          "x": 0.2,
+          "y": -0.848,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -4123,15 +4171,17 @@
         {
           "beat": 231.0,
           "time": 94299.0,
-          "x": -1.06,
-          "y": 0.25,
+          "x": 0.2,
+          "y": 0.848,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
           "lengthMs": 0
         }
-      ]
+      ],
+      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
+      "templateOrientationDegrees": 180
     },
     {
       "patternId": "lvl-expert-3",
@@ -4146,7 +4196,7 @@
       "endSeconds": 27.028,
       "targetBpm": 160,
       "mirrorFirstBar": false,
-      "secondBar": "左右を入れ替えた応答",
+      "secondBar": "担当手を入れ替えた応答。画面軸は曲の展開に従う。",
       "section": "応答",
       "removedNotes": 8,
       "addedNotes": 8,
@@ -4168,8 +4218,8 @@
         {
           "beat": 64.0,
           "time": 24028.0,
-          "x": -1.4,
-          "y": -0.25,
+          "x": 1.12,
+          "y": 0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -4179,8 +4229,8 @@
         {
           "beat": 65.0,
           "time": 24403.0,
-          "x": 1.4,
-          "y": -0.25,
+          "x": -1.12,
+          "y": 0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -4190,8 +4240,8 @@
         {
           "beat": 66.0,
           "time": 24778.0,
-          "x": -1.4,
-          "y": 0.25,
+          "x": 1.12,
+          "y": -0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -4201,8 +4251,8 @@
         {
           "beat": 67.0,
           "time": 25153.0,
-          "x": 1.4,
-          "y": 0.25,
+          "x": -1.12,
+          "y": -0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -4212,8 +4262,8 @@
         {
           "beat": 68.0,
           "time": 25528.0,
-          "x": 1.4,
-          "y": -0.25,
+          "x": -1.12,
+          "y": 0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -4223,8 +4273,8 @@
         {
           "beat": 69.0,
           "time": 25903.0,
-          "x": -1.4,
-          "y": -0.25,
+          "x": 1.12,
+          "y": 0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -4234,8 +4284,8 @@
         {
           "beat": 70.0,
           "time": 26278.0,
-          "x": 1.4,
-          "y": 0.25,
+          "x": -1.12,
+          "y": -0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -4245,15 +4295,17 @@
         {
           "beat": 71.0,
           "time": 26653.0,
-          "x": -1.4,
-          "y": 0.25,
+          "x": 1.12,
+          "y": -0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
           "lengthMs": 0
         }
-      ]
+      ],
+      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
+      "templateOrientationDegrees": -45
     },
     {
       "patternId": "unlimited-hard-1",
@@ -4268,7 +4320,7 @@
       "endSeconds": 32.8621,
       "targetBpm": 190,
       "mirrorFirstBar": false,
-      "secondBar": "左右を入れ替えた応答",
+      "secondBar": "担当手を入れ替えた応答。画面軸は曲の展開に従う。",
       "section": "主題の応答",
       "removedNotes": 8,
       "addedNotes": 8,
@@ -4290,8 +4342,8 @@
         {
           "beat": 96.0,
           "time": 30335.7895,
-          "x": 1.12,
-          "y": -0.163,
+          "x": -0.1304,
+          "y": -0.896,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -4301,8 +4353,8 @@
         {
           "beat": 97.0,
           "time": 30651.5789,
-          "x": -1.12,
-          "y": -0.163,
+          "x": -0.1304,
+          "y": 0.896,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -4312,8 +4364,8 @@
         {
           "beat": 98.0,
           "time": 30967.3684,
-          "x": 1.12,
-          "y": 0.163,
+          "x": 0.1304,
+          "y": -0.896,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -4323,8 +4375,8 @@
         {
           "beat": 99.0,
           "time": 31283.1579,
-          "x": -1.12,
-          "y": 0.163,
+          "x": 0.1304,
+          "y": 0.896,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -4334,8 +4386,8 @@
         {
           "beat": 100.0,
           "time": 31598.9474,
-          "x": -1.12,
-          "y": -0.163,
+          "x": -0.1304,
+          "y": 0.896,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -4345,8 +4397,8 @@
         {
           "beat": 101.0,
           "time": 31914.7368,
-          "x": 1.12,
-          "y": -0.163,
+          "x": -0.1304,
+          "y": -0.896,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -4356,8 +4408,8 @@
         {
           "beat": 102.0,
           "time": 32230.5263,
-          "x": -1.12,
-          "y": 0.163,
+          "x": 0.1304,
+          "y": 0.896,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -4367,15 +4419,17 @@
         {
           "beat": 103.0,
           "time": 32546.3158,
-          "x": 1.12,
-          "y": 0.163,
+          "x": 0.1304,
+          "y": -0.896,
           "type": "tap",
           "color": "red",
           "direction": "none",
           "count": 1,
           "lengthMs": 0
         }
-      ]
+      ],
+      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
+      "templateOrientationDegrees": -90
     },
     {
       "patternId": "unlimited-hard-2",
@@ -4390,7 +4444,7 @@
       "endSeconds": 13.3333,
       "targetBpm": 180,
       "mirrorFirstBar": false,
-      "secondBar": "左右を入れ替えた応答",
+      "secondBar": "担当手を入れ替えた応答。画面軸は曲の展開に従う。",
       "section": "主拍",
       "removedNotes": 8,
       "addedNotes": 8,
@@ -4412,8 +4466,8 @@
         {
           "beat": 32.0,
           "time": 10666.6667,
-          "x": -1.12,
-          "y": -0.163,
+          "x": 0.1304,
+          "y": -0.896,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -4423,8 +4477,8 @@
         {
           "beat": 33.0,
           "time": 11000.0,
-          "x": 1.12,
-          "y": -0.163,
+          "x": 0.1304,
+          "y": 0.896,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -4434,8 +4488,8 @@
         {
           "beat": 34.0,
           "time": 11333.3333,
-          "x": 1.12,
-          "y": 0.163,
+          "x": -0.1304,
+          "y": 0.896,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -4445,8 +4499,8 @@
         {
           "beat": 35.0,
           "time": 11666.6667,
-          "x": -1.12,
-          "y": 0.163,
+          "x": -0.1304,
+          "y": -0.896,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -4456,8 +4510,8 @@
         {
           "beat": 36.0,
           "time": 12000.0,
-          "x": 1.12,
-          "y": -0.163,
+          "x": 0.1304,
+          "y": 0.896,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -4467,8 +4521,8 @@
         {
           "beat": 37.0,
           "time": 12333.3333,
-          "x": -1.12,
-          "y": -0.163,
+          "x": 0.1304,
+          "y": -0.896,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -4478,8 +4532,8 @@
         {
           "beat": 38.0,
           "time": 12666.6667,
-          "x": -1.12,
-          "y": 0.163,
+          "x": -0.1304,
+          "y": -0.896,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -4489,15 +4543,17 @@
         {
           "beat": 39.0,
           "time": 13000.0,
-          "x": 1.12,
-          "y": 0.163,
+          "x": -0.1304,
+          "y": 0.896,
           "type": "tap",
           "color": "red",
           "direction": "none",
           "count": 1,
           "lengthMs": 0
         }
-      ]
+      ],
+      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
+      "templateOrientationDegrees": 180
     },
     {
       "patternId": "bring-it-on-2",
@@ -4512,12 +4568,12 @@
       "endSeconds": 135.4286,
       "targetBpm": 140,
       "mirrorFirstBar": false,
-      "secondBar": "左右を入れ替えた応答",
+      "secondBar": "担当手を入れ替えた応答。画面軸は曲の展開に従う。",
       "section": "終止",
       "removedNotes": 6,
       "addedNotes": 6,
       "sourceCategory": "good",
-      "fidelity": "譜面データの拍と左右を保持。交差と移動幅を縮め、方向指定を削減。",
+      "fidelity": "譜面データの拍と担当手を保持。位置は簡略化し、縦・斜め・左右反転を含む本作向けの配置へ翻案。",
       "sourceUrl": "https://www.youtube.com/watch?v=16oSzYCTD3A&t=46",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=normal&t=130.50",
       "noteIndices": [
@@ -4532,8 +4588,8 @@
         {
           "beat": 308,
           "time": 132000.0,
-          "x": -1.05,
-          "y": -0.24,
+          "x": 0.3903,
+          "y": -0.7682,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -4543,8 +4599,8 @@
         {
           "beat": 309,
           "time": 132428.5714,
-          "x": -1.35,
-          "y": -0.24,
+          "x": 0.5642,
+          "y": -0.9407,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -4554,8 +4610,8 @@
         {
           "beat": 310.5,
           "time": 133071.4286,
-          "x": 1.35,
-          "y": 0,
+          "x": -0.5802,
+          "y": 0.9109,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -4565,8 +4621,8 @@
         {
           "beat": 312,
           "time": 133714.2857,
-          "x": 1.05,
-          "y": -0.24,
+          "x": -0.4582,
+          "y": 0.7297,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -4576,8 +4632,8 @@
         {
           "beat": 313,
           "time": 134142.8571,
-          "x": 1.35,
-          "y": -0.24,
+          "x": -0.7525,
+          "y": 0.7981,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -4587,15 +4643,17 @@
         {
           "beat": 314.5,
           "time": 134785.7143,
-          "x": -1.35,
-          "y": 0,
+          "x": 0.982,
+          "y": -0.4495,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
           "lengthMs": 0
         }
-      ]
+      ],
+      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
+      "templateOrientationDegrees": -90
     },
     {
       "patternId": "avoid-central-wall",
@@ -4610,7 +4668,7 @@
       "endSeconds": 133.7143,
       "targetBpm": 140,
       "mirrorFirstBar": false,
-      "secondBar": "左右を入れ替えた応答",
+      "secondBar": "担当手を入れ替えた応答。画面軸は曲の展開に従う。",
       "section": "終止",
       "removedNotes": 4,
       "addedNotes": 4,
@@ -4628,8 +4686,8 @@
         {
           "beat": 304.0,
           "time": 130285.7143,
-          "x": -1.12,
-          "y": -0.163,
+          "x": 0.1304,
+          "y": -0.896,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -4639,8 +4697,8 @@
         {
           "beat": 306.0,
           "time": 131142.8571,
-          "x": 1.12,
-          "y": -0.163,
+          "x": 0.0697,
+          "y": 0.9028,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -4650,8 +4708,8 @@
         {
           "beat": 308.0,
           "time": 132000.0,
-          "x": 1.12,
-          "y": -0.163,
+          "x": -0.0912,
+          "y": 0.9008,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -4661,15 +4719,17 @@
         {
           "beat": 310.0,
           "time": 132857.1429,
-          "x": -1.12,
-          "y": -0.163,
+          "x": 0.5418,
+          "y": -0.7254,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
           "lengthMs": 0
         }
-      ]
+      ],
+      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
+      "templateOrientationDegrees": 180
     },
     {
       "patternId": "bring-it-on-1",
@@ -4684,12 +4744,12 @@
       "endSeconds": 10.528,
       "targetBpm": 160,
       "mirrorFirstBar": false,
-      "secondBar": "左右を入れ替えた応答",
+      "secondBar": "担当手を入れ替えた応答。画面軸は曲の展開に従う。",
       "section": "8/8の導入",
       "removedNotes": 1,
       "addedNotes": 4,
       "sourceCategory": "good",
-      "fidelity": "譜面データの拍と左右を保持。交差と移動幅を縮め、方向指定を削減。",
+      "fidelity": "譜面データの拍と担当手を保持。位置は簡略化し、縦・斜め・左右反転を含む本作向けの配置へ翻案。",
       "sourceUrl": "https://www.youtube.com/watch?v=16oSzYCTD3A&t=40",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=easy&t=6.03",
       "noteIndices": [
@@ -4702,8 +4762,8 @@
         {
           "beat": 21,
           "time": 7903.0,
-          "x": -1.35,
-          "y": -0.24,
+          "x": -0.9407,
+          "y": -0.5642,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -4713,8 +4773,8 @@
         {
           "beat": 23,
           "time": 8653.0,
-          "x": -1.05,
-          "y": -0.24,
+          "x": -0.5598,
+          "y": -0.655,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -4724,8 +4784,8 @@
         {
           "beat": 25,
           "time": 9403.0,
-          "x": 1.35,
-          "y": -0.24,
+          "x": 0.7981,
+          "y": 0.7525,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -4735,15 +4795,17 @@
         {
           "beat": 27,
           "time": 10153.0,
-          "x": 1.05,
-          "y": -0.24,
+          "x": 0.4787,
+          "y": 0.7165,
           "type": "tap",
           "color": "red",
           "direction": "none",
           "count": 1,
           "lengthMs": 0
         }
-      ]
+      ],
+      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
+      "templateOrientationDegrees": 90
     },
     {
       "patternId": "dream-normal-1",
@@ -4758,7 +4820,7 @@
       "endSeconds": 56.0,
       "targetBpm": 180,
       "mirrorFirstBar": false,
-      "secondBar": "左右を入れ替えた応答",
+      "secondBar": "担当手を入れ替えた応答。画面軸は曲の展開に従う。",
       "section": "減速と余韻",
       "removedNotes": 2,
       "addedNotes": 4,
@@ -4776,8 +4838,8 @@
         {
           "beat": 160.0,
           "time": 53333.3333,
-          "x": 1.18,
-          "y": -0.25,
+          "x": -0.2,
+          "y": -0.944,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -4787,8 +4849,8 @@
         {
           "beat": 162.0,
           "time": 54000.0,
-          "x": -1.18,
-          "y": -0.25,
+          "x": -0.2,
+          "y": 0.944,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -4798,8 +4860,8 @@
         {
           "beat": 164.0,
           "time": 54666.6667,
-          "x": -1.18,
-          "y": -0.25,
+          "x": -0.2,
+          "y": 0.944,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -4809,15 +4871,17 @@
         {
           "beat": 166.0,
           "time": 55333.3333,
-          "x": 1.18,
-          "y": -0.25,
+          "x": -0.2,
+          "y": -0.944,
           "type": "tap",
           "color": "red",
           "direction": "none",
           "count": 1,
           "lengthMs": 0
         }
-      ]
+      ],
+      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
+      "templateOrientationDegrees": 90
     },
     {
       "patternId": "dream-normal-3",
@@ -4832,7 +4896,7 @@
       "endSeconds": 103.5989,
       "targetBpm": 190,
       "mirrorFirstBar": false,
-      "secondBar": "左右を入れ替えた応答",
+      "secondBar": "担当手を入れ替えた応答。画面軸は曲の展開に従う。",
       "section": "余韻",
       "removedNotes": 4,
       "addedNotes": 4,
@@ -4850,8 +4914,8 @@
         {
           "beat": 320.0,
           "time": 101072.6316,
-          "x": -1.06,
-          "y": -0.25,
+          "x": 0.848,
+          "y": 0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -4861,8 +4925,8 @@
         {
           "beat": 322.0,
           "time": 101704.2105,
-          "x": -1.22,
-          "y": 0.25,
+          "x": 0.976,
+          "y": -0.2,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -4872,8 +4936,8 @@
         {
           "beat": 324.0,
           "time": 102335.7895,
-          "x": 1.06,
-          "y": -0.25,
+          "x": -0.848,
+          "y": 0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -4883,15 +4947,17 @@
         {
           "beat": 326.0,
           "time": 102967.3684,
-          "x": 1.22,
-          "y": 0.25,
+          "x": -0.976,
+          "y": -0.2,
           "type": "tap",
           "color": "red",
           "direction": "none",
           "count": 1,
           "lengthMs": 0
         }
-      ]
+      ],
+      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
+      "templateOrientationDegrees": 180
     },
     {
       "patternId": "dream-normal-4",
@@ -4906,7 +4972,7 @@
       "endSeconds": 85.674,
       "targetBpm": 160,
       "mirrorFirstBar": false,
-      "secondBar": "左右を入れ替えた応答",
+      "secondBar": "担当手を入れ替えた応答。画面軸は曲の展開に従う。",
       "section": "小節頭と余韻",
       "removedNotes": 2,
       "addedNotes": 4,
@@ -4924,8 +4990,8 @@
         {
           "beat": 200.0,
           "time": 82674.0,
-          "x": 1.18,
-          "y": -0.18,
+          "x": -0.944,
+          "y": 0.144,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -4935,8 +5001,8 @@
         {
           "beat": 200.0,
           "time": 82674.0,
-          "x": -1.18,
-          "y": -0.18,
+          "x": 0.944,
+          "y": 0.144,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -4946,8 +5012,8 @@
         {
           "beat": 204.0,
           "time": 84174.0,
-          "x": 1.18,
-          "y": -0.18,
+          "x": -0.944,
+          "y": 0.144,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -4957,15 +5023,17 @@
         {
           "beat": 204.0,
           "time": 84174.0,
-          "x": -1.18,
-          "y": -0.18,
+          "x": 0.944,
+          "y": 0.144,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
           "lengthMs": 0
         }
-      ]
+      ],
+      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
+      "templateOrientationDegrees": -90
     },
     {
       "patternId": "elixia-hard-2",
@@ -4980,7 +5048,7 @@
       "endSeconds": 66.403,
       "targetBpm": 120,
       "mirrorFirstBar": false,
-      "secondBar": "左右を入れ替えた応答",
+      "secondBar": "担当手を入れ替えた応答。画面軸は曲の展開に従う。",
       "section": "BPM120へ",
       "removedNotes": 10,
       "addedNotes": 10,
@@ -5004,8 +5072,8 @@
         {
           "beat": 160.0,
           "time": 62403.0,
-          "x": -1.3,
-          "y": 0.12,
+          "x": 0.096,
+          "y": 1.04,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -5015,8 +5083,8 @@
         {
           "beat": 161.0,
           "time": 62903.0,
-          "x": 1.05,
-          "y": -0.28,
+          "x": -0.224,
+          "y": -0.84,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -5026,8 +5094,8 @@
         {
           "beat": 162.0,
           "time": 63403.0,
-          "x": -1.05,
-          "y": -0.28,
+          "x": -0.224,
+          "y": 0.84,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -5037,8 +5105,8 @@
         {
           "beat": 163.0,
           "time": 63903.0,
-          "x": 1.35,
-          "y": 0.12,
+          "x": 0.096,
+          "y": -1.08,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -5048,8 +5116,8 @@
         {
           "beat": 163.5,
           "time": 64153.0,
-          "x": -1.3,
-          "y": 0.12,
+          "x": 0.096,
+          "y": 1.04,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -5059,8 +5127,8 @@
         {
           "beat": 164.0,
           "time": 64403.0,
-          "x": 1.3,
-          "y": 0.12,
+          "x": 0.096,
+          "y": -1.04,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -5070,8 +5138,8 @@
         {
           "beat": 165.0,
           "time": 64903.0,
-          "x": -1.05,
-          "y": -0.28,
+          "x": -0.224,
+          "y": 0.84,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -5081,8 +5149,8 @@
         {
           "beat": 166.0,
           "time": 65403.0,
-          "x": 1.05,
-          "y": -0.28,
+          "x": -0.224,
+          "y": -0.84,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -5092,8 +5160,8 @@
         {
           "beat": 167.0,
           "time": 65903.0,
-          "x": -1.35,
-          "y": 0.12,
+          "x": 0.096,
+          "y": 1.08,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -5103,15 +5171,17 @@
         {
           "beat": 167.5,
           "time": 66153.0,
-          "x": 1.3,
-          "y": 0.12,
+          "x": 0.096,
+          "y": -1.04,
           "type": "direction",
           "color": "red",
-          "direction": "upright",
+          "direction": "downright",
           "count": 1,
           "lengthMs": 0
         }
-      ]
+      ],
+      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
+      "templateOrientationDegrees": 180
     },
     {
       "patternId": "elixia-hard-3",
@@ -5126,7 +5196,7 @@
       "endSeconds": 58.403,
       "targetBpm": 120,
       "mirrorFirstBar": false,
-      "secondBar": "左右を入れ替えた応答",
+      "secondBar": "担当手を入れ替えた応答。画面軸は曲の展開に従う。",
       "section": "BPM120へ",
       "removedNotes": 10,
       "addedNotes": 10,
@@ -5150,8 +5220,8 @@
         {
           "beat": 144.0,
           "time": 54403.0,
-          "x": 1.05,
-          "y": -0.28,
+          "x": 0.84,
+          "y": -0.224,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -5161,8 +5231,8 @@
         {
           "beat": 144.5,
           "time": 54653.0,
-          "x": 1.35,
-          "y": 0.12,
+          "x": 1.0804,
+          "y": 0.0911,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -5172,8 +5242,8 @@
         {
           "beat": 145.5,
           "time": 55153.0,
-          "x": -1.3,
-          "y": 0.12,
+          "x": -1.0355,
+          "y": 0.1363,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -5183,8 +5253,8 @@
         {
           "beat": 146.5,
           "time": 55653.0,
-          "x": 1.05,
-          "y": -0.28,
+          "x": 0.8125,
+          "y": -0.3092,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -5194,8 +5264,8 @@
         {
           "beat": 147.5,
           "time": 56153.0,
-          "x": -1.05,
-          "y": -0.28,
+          "x": -0.8673,
+          "y": -0.0591,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -5205,8 +5275,8 @@
         {
           "beat": 148.0,
           "time": 56403.0,
-          "x": -1.05,
-          "y": -0.28,
+          "x": -0.8693,
+          "y": -0.0132,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -5216,8 +5286,8 @@
         {
           "beat": 148.5,
           "time": 56653.0,
-          "x": -1.35,
-          "y": 0.12,
+          "x": -1.0022,
+          "y": 0.4137,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -5227,8 +5297,8 @@
         {
           "beat": 149.5,
           "time": 57153.0,
-          "x": 1.3,
-          "y": 0.12,
+          "x": 0.9856,
+          "y": -0.3455,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -5238,8 +5308,8 @@
         {
           "beat": 150.5,
           "time": 57653.0,
-          "x": -1.05,
-          "y": -0.28,
+          "x": -0.8288,
+          "y": 0.2623,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -5249,15 +5319,17 @@
         {
           "beat": 151.5,
           "time": 58153.0,
-          "x": 1.05,
-          "y": -0.28,
+          "x": 0.4897,
+          "y": -0.7183,
           "type": "tap",
           "color": "red",
           "direction": "none",
           "count": 1,
           "lengthMs": 0
         }
-      ]
+      ],
+      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
+      "templateOrientationDegrees": -90
     },
     {
       "patternId": "elixia-hard-1",
@@ -5272,7 +5344,7 @@
       "endSeconds": 66.403,
       "targetBpm": 120,
       "mirrorFirstBar": false,
-      "secondBar": "左右を入れ替えた応答",
+      "secondBar": "担当手を入れ替えた応答。画面軸は曲の展開に従う。",
       "section": "BPM120へ",
       "removedNotes": 8,
       "addedNotes": 8,
@@ -5294,8 +5366,8 @@
         {
           "beat": 160.0,
           "time": 62403.0,
-          "x": 1.05,
-          "y": -0.28,
+          "x": -0.224,
+          "y": -0.84,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -5305,8 +5377,8 @@
         {
           "beat": 161.0,
           "time": 62903.0,
-          "x": -1.3,
-          "y": 0.12,
+          "x": 0.096,
+          "y": 1.04,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -5316,8 +5388,8 @@
         {
           "beat": 162.0,
           "time": 63403.0,
-          "x": 1.35,
-          "y": 0.12,
+          "x": 0.096,
+          "y": -1.08,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -5327,8 +5399,8 @@
         {
           "beat": 163.0,
           "time": 63903.0,
-          "x": -1.05,
-          "y": -0.28,
+          "x": -0.224,
+          "y": 0.84,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -5338,8 +5410,8 @@
         {
           "beat": 164.0,
           "time": 64403.0,
-          "x": -1.05,
-          "y": -0.28,
+          "x": -0.224,
+          "y": 0.84,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -5349,8 +5421,8 @@
         {
           "beat": 165.0,
           "time": 64903.0,
-          "x": 1.3,
-          "y": 0.12,
+          "x": 0.096,
+          "y": -1.04,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -5360,8 +5432,8 @@
         {
           "beat": 166.0,
           "time": 65403.0,
-          "x": -1.35,
-          "y": 0.12,
+          "x": 0.096,
+          "y": 1.08,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -5371,15 +5443,17 @@
         {
           "beat": 167.0,
           "time": 65903.0,
-          "x": 1.05,
-          "y": -0.28,
+          "x": -0.224,
+          "y": -0.84,
           "type": "tap",
           "color": "red",
           "direction": "none",
           "count": 1,
           "lengthMs": 0
         }
-      ]
+      ],
+      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
+      "templateOrientationDegrees": 90
     },
     {
       "patternId": "there-normal-2",
@@ -5394,7 +5468,7 @@
       "endSeconds": 44.5714,
       "targetBpm": 140,
       "mirrorFirstBar": false,
-      "secondBar": "左右を入れ替えた応答",
+      "secondBar": "担当手を入れ替えた応答。画面軸は曲の展開に従う。",
       "section": "主拍の主題",
       "removedNotes": 9,
       "addedNotes": 8,
@@ -5416,8 +5490,8 @@
         {
           "beat": 96.0,
           "time": 41142.8571,
-          "x": 1.3,
-          "y": -0.16,
+          "x": -0.128,
+          "y": -1.04,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -5427,8 +5501,8 @@
         {
           "beat": 96.0,
           "time": 41142.8571,
-          "x": -1.3,
-          "y": -0.16,
+          "x": -0.128,
+          "y": 1.04,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -5438,8 +5512,8 @@
         {
           "beat": 98.0,
           "time": 42000.0,
-          "x": 1.3,
-          "y": 0.16,
+          "x": 0.128,
+          "y": -1.04,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -5449,8 +5523,8 @@
         {
           "beat": 98.0,
           "time": 42000.0,
-          "x": -1.3,
-          "y": 0.16,
+          "x": 0.128,
+          "y": 1.04,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -5460,8 +5534,8 @@
         {
           "beat": 100.0,
           "time": 42857.1429,
-          "x": 1.3,
-          "y": -0.16,
+          "x": -0.128,
+          "y": -1.04,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -5471,8 +5545,8 @@
         {
           "beat": 100.0,
           "time": 42857.1429,
-          "x": -1.3,
-          "y": -0.16,
+          "x": -0.128,
+          "y": 1.04,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -5482,8 +5556,8 @@
         {
           "beat": 102.0,
           "time": 43714.2857,
-          "x": 1.3,
-          "y": 0.16,
+          "x": 0.128,
+          "y": -1.04,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -5493,15 +5567,17 @@
         {
           "beat": 102.0,
           "time": 43714.2857,
-          "x": -1.3,
-          "y": 0.16,
+          "x": 0.128,
+          "y": 1.04,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
           "lengthMs": 0
         }
-      ]
+      ],
+      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
+      "templateOrientationDegrees": -90
     },
     {
       "patternId": "there-normal-3",
@@ -5516,7 +5592,7 @@
       "endSeconds": 180.153,
       "targetBpm": 120,
       "mirrorFirstBar": false,
-      "secondBar": "左右を入れ替えた応答",
+      "secondBar": "担当手を入れ替えた応答。画面軸は曲の展開に従う。",
       "section": "つなぎ",
       "removedNotes": 2,
       "addedNotes": 4,
@@ -5534,8 +5610,8 @@
         {
           "beat": 384.0,
           "time": 176153.0,
-          "x": 1.12,
-          "y": -0.163,
+          "x": 0.896,
+          "y": -0.1304,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -5545,8 +5621,8 @@
         {
           "beat": 386.0,
           "time": 177153.0,
-          "x": 1.12,
-          "y": 0.163,
+          "x": 0.896,
+          "y": 0.1304,
           "type": "tap",
           "color": "red",
           "direction": "none",
@@ -5556,8 +5632,8 @@
         {
           "beat": 388.0,
           "time": 178153.0,
-          "x": -1.12,
-          "y": -0.163,
+          "x": -0.896,
+          "y": -0.1304,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -5567,15 +5643,17 @@
         {
           "beat": 390.0,
           "time": 179153.0,
-          "x": -1.12,
-          "y": 0.163,
+          "x": -0.896,
+          "y": 0.1304,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
           "lengthMs": 0
         }
-      ]
+      ],
+      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
+      "templateOrientationDegrees": 180
     },
     {
       "patternId": "there-normal-1",
@@ -5590,7 +5668,7 @@
       "endSeconds": 106.2857,
       "targetBpm": 140,
       "mirrorFirstBar": false,
-      "secondBar": "左右を入れ替えた応答",
+      "secondBar": "担当手を入れ替えた応答。画面軸は曲の展開に従う。",
       "section": "主拍への回帰",
       "removedNotes": 4,
       "addedNotes": 2,
@@ -5606,8 +5684,8 @@
         {
           "beat": 242.0,
           "time": 103714.2857,
-          "x": -1.18,
-          "y": -0.18,
+          "x": -0.2073,
+          "y": 0.9321,
           "type": "tap",
           "color": "blue",
           "direction": "none",
@@ -5617,32 +5695,35 @@
         {
           "beat": 246.0,
           "time": 105428.5714,
-          "x": 1.18,
-          "y": -0.18,
+          "x": 0.3235,
+          "y": -0.8984,
           "type": "tap",
           "color": "red",
           "direction": "none",
           "count": 1,
           "lengthMs": 0
         }
-      ]
+      ],
+      "spatialLayout": "色の担当を保ち、曲のフレーズに合わせて縦・斜め・左右反転へ展開",
+      "templateOrientationDegrees": 90
     }
   ],
   "inputChartHashes": {
-    "Assets/StreamingAssets/Songs/ManicSonic/chart_easy.json": "b2ab1f0dee965fedcda91d1b5d343478f9ba74ded440e4a57b08444894bbd68b",
-    "Assets/StreamingAssets/Songs/ManicSonic/chart_normal.json": "4478bf58f1a8019bc71a02634f7d961b04fca0f55813799e67277b3a33e49756",
-    "Assets/StreamingAssets/Songs/ManicSonic/chart_hard.json": "3049616948ed5d68328eb50a863ff0e63b2821c8e87a9d1ae33a1fefe2f95a22",
-    "Assets/StreamingAssets/Songs/escapade/chart_easy.json": "f876362ea66260b10af1cfa596f2ac174409cda414fe2f06df0b21d757e1f235",
-    "Assets/StreamingAssets/Songs/escapade/chart_normal.json": "2e39400a35a98942bc9010e4c139558a0a879c3d7d608f716aef0765ec60c900",
-    "Assets/StreamingAssets/Songs/escapade/chart_hard.json": "264e184a8b70b7f15cf5955beef033b799905ce2b43eb67883ee2ae79c6d2ce8",
-    "Assets/StreamingAssets/Songs/logic/chart_easy.json": "9836bfb47263cc635e293d01141592bfccb174192964ab836faec0380677e118",
-    "Assets/StreamingAssets/Songs/logic/chart_normal.json": "2e8b2e1e718acc49e23973f489d14d29c9d19176013c42c47d0534253ba228ed",
-    "Assets/StreamingAssets/Songs/logic/chart_hard.json": "96b7d87a26281ff863131cdca012bb7a7b80276d2234d294479647e13815c83f",
-    "Assets/StreamingAssets/Songs/BenkyouRemaster/chart_easy.json": "40d4afb2501b6ae14b6b25f9eed19ea171b9fbeafafde79329d62274edfef14a",
-    "Assets/StreamingAssets/Songs/BenkyouRemaster/chart_normal.json": "95761ea6d3419ff898bcc14f0c0e4751caa8b44399203c01dd41dc056e587941",
-    "Assets/StreamingAssets/Songs/BenkyouRemaster/chart_hard.json": "3ad51f82408bede0ffdf6aa412f2f8f26bdfe9e44f3ef9c9847536832e5848c4",
-    "Assets/StreamingAssets/Songs/Aobasou/chart_easy.json": "1c8d7aebba7b790769d67664cee574eca995621108db207829a52515a5137f31",
-    "Assets/StreamingAssets/Songs/Aobasou/chart_normal.json": "bf5f691bf2c39f5cf731a2175b225bd6a7d07ae46b5ea190464d8775eff9858a",
-    "Assets/StreamingAssets/Songs/Aobasou/chart_hard.json": "2841ee9598893a94d50f4e1a46800019672879ab588b985b99792f649ca1c034"
-  }
+    "Assets/StreamingAssets/Songs/ManicSonic/chart_easy.json": "dad0d363a0de87755a9940aec2a8baf8dea3a38733731f3d08cf45d364be1832",
+    "Assets/StreamingAssets/Songs/ManicSonic/chart_normal.json": "972632378108a05424a722b50bcf4d1bbeec4fe2255442e729d0133130f29556",
+    "Assets/StreamingAssets/Songs/ManicSonic/chart_hard.json": "b5aadfc6d2d856e22dbce4bd66e42db89e0c2e9a4f70159c38474c5b645edead",
+    "Assets/StreamingAssets/Songs/escapade/chart_easy.json": "831d2d26e37632a69d6bdc47584fbce7039b65ef9b36c1fa3e7cc78893353715",
+    "Assets/StreamingAssets/Songs/escapade/chart_normal.json": "df8104b62588e12a2039ee981a1c5302f5f4f0e81ba2137973d3f3e9a9a676fa",
+    "Assets/StreamingAssets/Songs/escapade/chart_hard.json": "183277c18f3f0d236fad71fa2c7174a8556e1a599f9c59a671d6d1b03948669f",
+    "Assets/StreamingAssets/Songs/logic/chart_easy.json": "f7aa7240d8734e2144e650c6cc59730103a539e6ad7c9b720284a7015b0fb501",
+    "Assets/StreamingAssets/Songs/logic/chart_normal.json": "3b402289c07de404db4d256f26d76dfe955ce593b4faacad5fb7eabc2a18764b",
+    "Assets/StreamingAssets/Songs/logic/chart_hard.json": "361d3d91b0fb314903958b91311f501f1117b38dc9d004059d165da12b8ad4e3",
+    "Assets/StreamingAssets/Songs/BenkyouRemaster/chart_easy.json": "77bd196118c5f4c64e20f7711dee641410dc9f6df8a121a7f059d208faaba933",
+    "Assets/StreamingAssets/Songs/BenkyouRemaster/chart_normal.json": "d743b6efa4d02b0b12e546b758accc53e9c0fee7183117ed977d1c55da56562b",
+    "Assets/StreamingAssets/Songs/BenkyouRemaster/chart_hard.json": "c69f86bd8739d1de4d5d585f3ba096f4679c5f9c2b80bf1c1ccbfce078b3e1e1",
+    "Assets/StreamingAssets/Songs/Aobasou/chart_easy.json": "9c32ba1a2dd85ed4c2f84a24dacf843cab41cc719288414b8c920a58604aec45",
+    "Assets/StreamingAssets/Songs/Aobasou/chart_normal.json": "c7f20be38619646bf8d0cba15ac67864c239f8b6f4f43b052fe0bc2837c64e0a",
+    "Assets/StreamingAssets/Songs/Aobasou/chart_hard.json": "48a809c62a2577a4c1e52159f4b68c7f2b798b3b522fc00a4d456b73b0cccfef"
+  },
+  "spatialLayoutVersion": 1
 }

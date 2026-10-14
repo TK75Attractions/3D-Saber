@@ -237,7 +237,12 @@
       "flowPassed": true,
       "materialPatterns": [
         "dream-normal-1"
-      ]
+      ],
+      "spatialLayout": {
+        "version": 1,
+        "scale": 0.8,
+        "flicksConvertedToTaps": []
+      }
     },
     "normal": {
       "notes": 343,
@@ -479,14 +484,19 @@
         "dream-hard-2",
         "dream-hard-1",
         "unlimited-hard-2"
-      ]
+      ],
+      "spatialLayout": {
+        "version": 1,
+        "scale": 0.8,
+        "flicksConvertedToTaps": []
+      }
     },
     "hard": {
       "notes": 524,
       "cuts": 537,
       "types": {
-        "tap": 453,
-        "direction": 58,
+        "tap": 454,
+        "direction": 57,
         "long": 13
       },
       "phrases": [
@@ -721,7 +731,14 @@
         "lvl-expert-4",
         "burning-hard-2",
         "unlimited-hard-4"
-      ]
+      ],
+      "spatialLayout": {
+        "version": 1,
+        "scale": 0.8,
+        "flicksConvertedToTaps": [
+          260
+        ]
+      }
     }
   },
   "escapade": {
@@ -914,7 +931,12 @@
       "flowPassed": true,
       "materialPatterns": [
         "dream-normal-3"
-      ]
+      ],
+      "spatialLayout": {
+        "version": 1,
+        "scale": 0.8,
+        "flicksConvertedToTaps": []
+      }
     },
     "normal": {
       "notes": 282,
@@ -1108,7 +1130,12 @@
         "burning-hard-1",
         "dream-hard-4",
         "unlimited-hard-1"
-      ]
+      ],
+      "spatialLayout": {
+        "version": 1,
+        "scale": 0.8,
+        "flicksConvertedToTaps": []
+      }
     },
     "hard": {
       "notes": 406,
@@ -1302,7 +1329,12 @@
         "avoid-double-direction",
         "dream-hard-3",
         "unlimited-hard-3"
-      ]
+      ],
+      "spatialLayout": {
+        "version": 1,
+        "scale": 0.8,
+        "flicksConvertedToTaps": []
+      }
     }
   },
   "logic": {
@@ -1576,7 +1608,12 @@
       "materialPatterns": [
         "bring-it-on-1",
         "there-normal-3"
-      ]
+      ],
+      "spatialLayout": {
+        "version": 1,
+        "scale": 0.8,
+        "flicksConvertedToTaps": []
+      }
     },
     "normal": {
       "notes": 389,
@@ -1851,7 +1888,12 @@
         "dream-normal-2",
         "lvl-expert-3",
         "elixia-hard-1"
-      ]
+      ],
+      "spatialLayout": {
+        "version": 1,
+        "scale": 0.8,
+        "flicksConvertedToTaps": []
+      }
     },
     "hard": {
       "notes": 617,
@@ -2126,7 +2168,12 @@
         "shut-up-dance-1",
         "elixia-hard-2",
         "elixia-hard-3"
-      ]
+      ],
+      "spatialLayout": {
+        "version": 1,
+        "scale": 0.8,
+        "flicksConvertedToTaps": []
+      }
     }
   },
   "BenkyouRemaster": {
@@ -2335,7 +2382,12 @@
       "flowPassed": true,
       "materialPatterns": [
         "dream-normal-4"
-      ]
+      ],
+      "spatialLayout": {
+        "version": 1,
+        "scale": 0.8,
+        "flicksConvertedToTaps": []
+      }
     },
     "normal": {
       "notes": 272,
@@ -2545,7 +2597,12 @@
         "avoid-hammer",
         "burning-hard-3",
         "lvl-expert-1"
-      ]
+      ],
+      "spatialLayout": {
+        "version": 1,
+        "scale": 0.8,
+        "flicksConvertedToTaps": []
+      }
     },
     "hard": {
       "notes": 409,
@@ -2755,7 +2812,12 @@
         "bring-it-on-4",
         "bring-it-on-3",
         "lvl-expert-2"
-      ]
+      ],
+      "spatialLayout": {
+        "version": 1,
+        "scale": 0.8,
+        "flicksConvertedToTaps": []
+      }
     }
   },
   "Aobasou": {
@@ -2941,7 +3003,12 @@
       "materialPatterns": [
         "avoid-central-wall",
         "there-normal-1"
-      ]
+      ],
+      "spatialLayout": {
+        "version": 1,
+        "scale": 0.8,
+        "flicksConvertedToTaps": []
+      }
     },
     "normal": {
       "notes": 311,
@@ -3128,7 +3195,12 @@
         "avoid-vision-block",
         "bring-it-on-2",
         "there-normal-2"
-      ]
+      ],
+      "spatialLayout": {
+        "version": 1,
+        "scale": 0.8,
+        "flicksConvertedToTaps": []
+      }
     },
     "hard": {
       "notes": 452,
@@ -3314,7 +3386,12 @@
         "shut-up-dance-3",
         "shut-up-dance-4",
         "burning-hard-4"
-      ]
+      ],
+      "spatialLayout": {
+        "version": 1,
+        "scale": 0.8,
+        "flicksConvertedToTaps": []
+      }
     }
   }
 }

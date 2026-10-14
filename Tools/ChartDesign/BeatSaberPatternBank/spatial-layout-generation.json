@@ -1,0 +1,87 @@
+{
+  "ManicSonic": {
+    "easy": {
+      "scale": 0.8,
+      "notes": 190,
+      "flicksConvertedToTaps": 0
+    },
+    "normal": {
+      "scale": 0.8,
+      "notes": 343,
+      "flicksConvertedToTaps": 0
+    },
+    "hard": {
+      "scale": 0.8,
+      "notes": 524,
+      "flicksConvertedToTaps": 1
+    }
+  },
+  "escapade": {
+    "easy": {
+      "scale": 0.8,
+      "notes": 154,
+      "flicksConvertedToTaps": 0
+    },
+    "normal": {
+      "scale": 0.8,
+      "notes": 282,
+      "flicksConvertedToTaps": 0
+    },
+    "hard": {
+      "scale": 0.8,
+      "notes": 406,
+      "flicksConvertedToTaps": 0
+    }
+  },
+  "logic": {
+    "easy": {
+      "scale": 0.8,
+      "notes": 211,
+      "flicksConvertedToTaps": 0
+    },
+    "normal": {
+      "scale": 0.8,
+      "notes": 389,
+      "flicksConvertedToTaps": 0
+    },
+    "hard": {
+      "scale": 0.8,
+      "notes": 617,
+      "flicksConvertedToTaps": 0
+    }
+  },
+  "BenkyouRemaster": {
+    "easy": {
+      "scale": 0.8,
+      "notes": 149,
+      "flicksConvertedToTaps": 0
+    },
+    "normal": {
+      "scale": 0.8,
+      "notes": 272,
+      "flicksConvertedToTaps": 0
+    },
+    "hard": {
+      "scale": 0.8,
+      "notes": 409,
+      "flicksConvertedToTaps": 0
+    }
+  },
+  "Aobasou": {
+    "easy": {
+      "scale": 0.8,
+      "notes": 168,
+      "flicksConvertedToTaps": 0
+    },
+    "normal": {
+      "scale": 0.8,
+      "notes": 311,
+      "flicksConvertedToTaps": 0
+    },
+    "hard": {
+      "scale": 0.8,
+      "notes": 452,
+      "flicksConvertedToTaps": 0
+    }
+  }
+}

@@ -23,7 +23,26 @@ Manic Sonic / escapade / logic!!! / 勉強（Remaster）/ 青葉騒へ、それ�
 音源の発音候補、既存ロング、前後の手の移動、変速、難易度を検査して配置先を選定した。
 現行15譜面のフリック連続数は全体・片手とも最大3。Easyは0。
 独立検証は `integration-validation.json`、ブラウザとUnityの検証概要は `conversion-verification.json` を参照。
-Unityの関連EditMode 43件とPlayMode 1件が成功。物理セイバーでの通しプレイは未実施。
+素材適用時はUnityの関連EditMode 43件とPlayMode 1件が成功。物理セイバーでの通しプレイは未実施。
+
+## 色と出現位置を分離した配置
+
+ユーザーの「Eのように縦並び・左右逆も使う」という方針を反映し、5曲15譜面の配置と40素材の座標を更新した。
+青は左手、赤は右手を表すが、画面の左右を固定する意味ではない。青が右、赤が左、上下の同時打ち、
+中央と斜めを通る受け渡しを使う。音型を保持する区間と、次の軸へ移る区間を分けて展開する。
+色の判定をx座標から分離し、金ノーツの設計上の担当はカット計画と発音根拠に保存した。
+スマホの配置一覧も色から担当手を表示する。
+
+今回の更新はノーツの時刻・拍・色・個数・ロング長を保持する。移動の変化に合わないフリック1個のみタップへ変更した。
+フリックの連続数は全体・片手とも最大3。新しい方向は前後の経路から選び直し、同時打ちの距離は1.5超を保つ。
+詳細は `spatial-layout-verification.json` と `integration-validation.json`。
+配置変更後はEditMode 58件とPlayMode 1件が成功。スマホ幅390pxとPC幅1440pxで、
+素材・適用先の80表示と全15曲譜面を確認した。色の担当表示573ノーツ中、249ノーツは従来の左右と逆の位置。
+
+基本譜面の生成は `FiveSongs20261014/spatial_layout.py`、小節素材の配置は `convert_patterns.py` の `LAYOUT` で定義する。
+既存15譜面の今回限りの変換には `reflow_positions.py` を用いた。二重に回転させないよう反映済み版では停止する。
+再試行する場合は `--baseline` に変換前のバックアップを指定する。通常の素材追加ではこの処理を再実行しない。
+高難度や交差だけを悪い例と分類せず、次の動作との接続・視認性・同時動作の間隔で評価する。
 
 ## 追加収集時の更新
 
@@ -37,7 +56,7 @@ python Tools/ChartDesign/FiveSongs20261014/verify_pack.py --repo . --output <検
 python Tools/ChartDesign/BeatSaberPatternBank/export_web.py --pattern-site <素材サイトのチェックアウト> --chart-site <全譜面サイトのチェックアウト>
 ```
 
-新素材は映像を確認し、`convert_patterns.py` の定義または原譜面データを追加してから変換する。
+新素材は映像を確認し、`convert_patterns.py` の定義または原譜面データと、`LAYOUT` の画面配置を追加してから変換する。
 `integrate_patterns.py` は `applications.json` で反映済みIDを除き、未反映素材だけの候補を生成する。
 候補の対象JSONを検証して本体へ反映し、以降の検証とUnityの関連3テスト群を実行する。
 適合する場所がない場合は無理に挿入せず、未適用理由を記録して配置を再検討する。

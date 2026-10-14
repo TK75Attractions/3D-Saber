@@ -15,7 +15,7 @@ def save(path, data):
 
 def path_for(notes,m):
     # 実際の振り抜きと次の入口を8方向で探索。自由タップも振った向きを保持する。
-    plan=[dict(index=i,timesMs=[],directions=[]) for i in range(len(notes))]
+    plan=[dict(index=i,hand='red' if n['_hand']==0 else 'blue',timesMs=[],directions=[]) for i,n in enumerate(notes)]
     for i,n in enumerate(notes):
         ts=[m.t(b)*1000 for b in n['_cutBeats']]
         plan[i]['timesMs']=[round(float(t),4) for t in ts]

@@ -13,7 +13,8 @@ def digest(p):return hashlib.sha256(p.read_bytes()).hexdigest()
 def internal(chart,plan,m,evidence):
  result=[]
  for i,old in enumerate(chart['notes']):
-  n=copy.deepcopy(old);n.update(_hand=0 if n['x']>0 else 1,_cutBeats=[m.beat(t/1000) for t in plan['notes'][i]['timesMs']],
+  n=copy.deepcopy(old);hand=n['color'] if n['color'] in ('red','blue') else evidence[i]['hand']
+  n.update(_hand=0 if hand=='red' else 1,_cutBeats=[m.beat(t/1000) for t in plan['notes'][i]['timesMs']],
    _arrow=n['direction']!='none',_forced=n['direction'] if n['direction']!='none' else None,_role=evidence[i]['role'],_phrase=evidence[i]['phrase'],_material=None)
   result.append(n)
  return result
@@ -24,11 +25,11 @@ def make_phrase(pattern,base,m,mirror,diff):
   for old in pattern['chart']['notes']:
    n=copy.deepcopy(old);n['beat']=base+repeat*4+old['beat'];n['time']=round(m.t(n['beat'])*1000,4)
    if mirror^bool(repeat):
-    n['x']=-n['x'];n['color']='red' if n['x']>0 else 'blue'
+    n['x']=-n['x'];n['color']='blue' if n['color']=='red' else 'red'
    n['type']='tap';n['direction']='none'
    # アクセントは2小節の最後の一つ。Easyは方向指定を作らない。
    arrow=diff!='easy' and repeat==1 and old is pattern['chart']['notes'][-1] and pattern['flickCount']>0
-   n.update(_hand=0 if n['x']>0 else 1,_cutBeats=[n['beat']],_arrow=arrow,_forced=None,_role='素材: '+pattern['title'],_phrase=-1,_material=pattern['id'])
+   n.update(_hand=0 if n['color']=='red' else 1,_cutBeats=[n['beat']],_arrow=arrow,_forced=None,_role='素材: '+pattern['title'],_phrase=-1,_material=pattern['id'])
    result.append(n)
  return result
 
@@ -102,7 +103,7 @@ def main():
   states[(sid,diff)]['notes']=notes;occupancy[(sid,diff)].append((base,base+8));m=musics[sid]
   application={'patternId':pattern['id'],'songId':sid,'songTitle':m.spec['title'],'difficulty':diff,'startBeat':base,'endBeat':base+8,
    'startBar':base//4+1,'barCount':2,'startSeconds':round(m.t(base),4),'endSeconds':round(m.t(base+8),4),'targetBpm':m.bpm(base),
-   'mirrorFirstBar':mirror,'secondBar':'左右を入れ替えた応答','section':label,'removedNotes':removed,'addedNotes':pattern['noteCount']*2,
+   'mirrorFirstBar':mirror,'secondBar':'担当手を入れ替えた応答。画面の出現位置は色から独立。','section':label,'removedNotes':removed,'addedNotes':pattern['noteCount']*2,
    'sourceCategory':pattern['category'],'fidelity':pattern['fidelity'],'sourceUrl':pattern['sourceUrl'],
    'viewerUrl':f'https://saber-chart-library.metuji48.chatgpt.site/?song={sid}&difficulty={diff}&t={max(0,m.t(base)-1.5):.2f}'}
   applications.append(application);print(pattern['id'],'->',sid,diff,'bar',base//4+1,flush=True)
@@ -125,6 +126,6 @@ def main():
   target=output/'Tools/ChartDesign/FiveSongs20261014'/sid;save(target/f'{diff}-cut-plan.json',{'notes':plan});save(target/f'{diff}-evidence.json',evidence)
   summaries[sid][diff].update(notes=len(ns),cuts=sum(n['count'] for n in ns),types=dict(collections.Counter(n['type'] for n in ns)),materialPatterns=[a['patternId'] for a in current],flowPassed=True)
  save(output/'Tools/ChartDesign/FiveSongs20261014/audit.json',summaries)
- save(output/'Tools/ChartDesign/BeatSaberPatternBank/applications.json',{'version':1,'convertedCount':len(patterns),'appliedCount':len(applications),'applications':applications,'inputChartHashes':original_hashes})
+ save(output/'Tools/ChartDesign/BeatSaberPatternBank/applications.json',{**prior,'version':1,'convertedCount':len(patterns),'appliedCount':len(applications),'applications':applications,'inputChartHashes':original_hashes})
  print(json.dumps({'converted':len(patterns),'applied':len(applications),'charts':{sid+':'+d:len(occupancy[(sid,d)]) for sid,d in states}},ensure_ascii=False))
 if __name__=='__main__':main()

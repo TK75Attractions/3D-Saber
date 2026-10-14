@@ -4,6 +4,8 @@
 以下の集計とプレビュー撮影結果は追加前の記録。現在のノーツ数・フリック数は
 `independent-audit.json`、各素材の挿入位置は `../BeatSaberPatternBank/applications.json` を参照。
 追加後も関連Unityテスト44件が成功し、連続フリックは全体・片手とも最大3。
+その後のユーザー指示で色と画面位置を分離。現行版は上下の同時打ちと左右反転も使う。
+新しい配置では関連Unityテスト59件が成功。`../BeatSaberPatternBank/spatial-layout-verification.json` を参照。
 
 Rush Eより前に追加した5曲のEasy / Normal / Hardを作り直した。
 小節ごとにレシピを入れ替え、同型反復を避けるためだけに打点を削る旧処理を廃止。
