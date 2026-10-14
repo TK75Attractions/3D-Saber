@@ -12,7 +12,7 @@
   python3 PhoneSaber/tools/tracking_report.py                 # 最新の tracking-*.csv
   python3 PhoneSaber/tools/tracking_report.py file.csv --json out.json
 
-ずれは「棒の移動幅(端から端)に対する %」で示す。認識や本番の予測コードは実行しない(方式の比較だけ)。
+ずれは「棒の移動幅(端から端)に対する %」で示す。--actual-csharp は実C#をworld XYで再生する。
 """
 import argparse
 import json
@@ -140,11 +140,89 @@ def evaluate(frames, times, values, scale, offset, kinds, leads):
     return results
 
 
+def evaluate_csharp(frames, packets, replay, leads=(20, 40, 60, 90, 120), render_hz=None):
+    from hit_feel_replay import world_packets
+    world = world_packets(packets)
+    middle = (world[:, 1:3] + world[:, 3:5]) / 2
+    centre = middle.mean(axis=0)
+    _, _, axes = np.linalg.svd(middle - centre, full_matrices=False)
+    axis = axes[0]
+    values = (middle - centre) @ axis
+    lag, correlation = best_lag(world[:, 0], values, frames[:, 0], frames[:, 1])
+    if lag is None or correlation < .5:
+        raise ValueError("world写像後の棒と指令位置が対応しません")
+    scale, offset = np.polyfit(np.interp(world[:, 0] - lag / 1000, frames[:, 0], frames[:, 1]), values, 1)
+    travel = abs(scale) * .6
+    times = frames[:, 0] if render_hz is None else np.arange(frames[0, 0], frames[-1, 0], 1 / render_hz)
+    command = np.interp(times, frames[:, 0], frames[:, 1])
+    target = command * scale + offset
+    index = np.searchsorted(world[:, 0], times, side="right") - 1
+    valid = (times >= max(times[0], world[2, 0] + .05)) & (index >= 2)
+    valid &= times - world[np.maximum(index, 0), 0] <= .25
+    frequency = np.array([segment_of(t) for t in times])
+    # 指令の折り返し±100msだけで、可動範囲を越えた外向き誤差を集計する。
+    direction = np.sign(np.diff(command))
+    turns = times[1:-1][direction[:-1] * direction[1:] < 0]
+    near_turn = np.zeros(len(times), dtype=bool)
+    for turn in turns:
+        near_turn |= abs(times - turn) <= .1
+    low, high = sorted((.2 * scale + offset, .8 * scale + offset))
+    results = []
+    for mode in replay.modes:
+        for lead in ((0,) if mode == "off" else leads):
+            output = replay.run(times, world, lead, mode)
+            blade = (output[:, 1:3] + output[:, 3:5]) / 2
+            shown = (blade - centre) @ axis
+            error = shown - target
+            by_frequency = {}
+            for hz in sorted(set(FREQUENCIES)):
+                mask = valid & (frequency == hz)
+                moving_error = error[mask]
+                if not len(moving_error):
+                    continue
+                turn_mask = mask & near_turn
+                excess = np.maximum(0, np.maximum(low - shown[turn_mask], shown[turn_mask] - high))
+                by_frequency[str(hz)] = dict(
+                    n=int(mask.sum()), rms_world=float(np.sqrt(np.mean(moving_error ** 2))),
+                    rms_percent=float(np.sqrt(np.mean(moving_error ** 2)) / travel * 100),
+                    p95_percent=float(np.percentile(abs(moving_error), 95) / travel * 100),
+                    jitter_percent=float(np.std(moving_error) / travel * 100) if hz == 0 else None,
+                    overshoot_max_percent=float(excess.max() / travel * 100) if len(excess) else None)
+            # 60Hzの表示にサンプルし、描画fpsの違いでjerkの単位を変えない。
+            display_times = np.arange(times[0], times[-1], 1 / 60)
+            display_index = np.maximum(0, np.searchsorted(times, display_times, side="right") - 1)
+            jerk = np.diff(blade[display_index], n=3, axis=0) * 60 ** 3
+            results.append(dict(kind=mode, lead_ms=lead, by_frequency=by_frequency,
+                                jerk_rms_world_s3=float(np.sqrt(np.mean(np.sum(jerk ** 2, axis=1))))))
+    return dict(lag_ms=lag, travel_world=travel, calibration="direct worldScale=5.5,3 sensitivity=2 calibration=off; affine fit",
+                render_hz=render_hz, excluded_frames=int((~valid).sum()), results=results)
+
+
+def print_csharp(report):
+    print(f"\n実C# / world移動幅 {report['travel_world']:.3f} / 除外 {report['excluded_frames']} frame")
+    for item in report["results"]:
+        print(f"{item['kind']:8} {item['lead_ms']:3}ms " + " / ".join(
+            f"{hz}Hz RMS/p95={v['rms_percent']:.1f}/{v['p95_percent']:.1f} turn-max={v['overshoot_max_percent']}"
+            if hz != "0.0" else f"静止jitter={v['jitter_percent']:.2f}%"
+            for hz, v in item["by_frequency"].items()) + f" jerk60={item['jerk_rms_world_s3']:.0f}")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("csv", nargs="?")
     parser.add_argument("--json")
+    parser.add_argument("--actual-csharp", action="store_true")
+    parser.add_argument("--before-ref", help="実C#の旧版で同じ表を再生")
+    parser.add_argument("--render-hz", type=float, help="実C#再生の描画Hz(省略時は実記録のF時刻)")
+    parser.add_argument("--candidate-maximum-ms", type=int, choices=(60, 90, 120), help="上限変更候補の一時C# build(本番の上限は変えない)")
     args = parser.parse_args()
+    if not args.actual_csharp and any(value is not None for value in
+                                     (args.before_ref, args.render_hz, args.candidate_maximum_ms)):
+        parser.error('--before-ref / --render-hz / --candidate-maximum-ms は --actual-csharp が必要')
+    if args.before_ref and args.candidate_maximum_ms is not None:
+        parser.error('--before-ref と --candidate-maximum-ms は併用できません')
+    if args.render_hz is not None and (not math.isfinite(args.render_hz) or args.render_hz <= 0):
+        parser.error("--render-hz は有限の正数")
     path = Path(args.csv) if args.csv else max(FOLDER.glob("tracking-*.csv"), key=lambda p: p.stat().st_mtime, default=None)
     if path is None or not path.exists():
         print("tracking-*.csv がありません。-phonesaberTrackingProbe で計測してください。")
@@ -164,6 +242,18 @@ def main():
     scale, offset = np.polyfit(reference, values, 1)
     residual = values - (reference * scale + offset)
     travel = abs(scale) * 0.6
+    if args.actual_csharp:
+        from hit_feel_replay import CSharpReplay
+        replay = CSharpReplay(args.before_ref, candidate_maximum_ms=args.candidate_maximum_ms)
+        try:
+            report = evaluate_csharp(frames, packets, replay, render_hz=args.render_hz)
+            report['candidate_maximum_ms'] = args.candidate_maximum_ms
+        finally:
+            replay.close()
+        print_csharp(report)
+        if args.json:
+            Path(args.json).write_text(json.dumps(report, indent=1), encoding="utf-8")
+        return 0
     print(f"{path.name}: {seconds:.0f} 秒 / 描画 {len(frames)} 回 ({len(frames) / seconds:.0f}/s) / 受信 {len(packets)} 件 "
           f"({len(packets) / seconds:.1f}/s、間隔の中央値 {np.median(gaps) * 1000:.0f} ms、100 ms 超の途切れ {int(np.sum(gaps > 0.1))} 回)")
     print(f"見た目の遅れ: {lag_ms} ms(相関 {correlation:.3f})。遅れを合わせた後の残り(認識の揺れ): "

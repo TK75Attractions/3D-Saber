@@ -52,7 +52,8 @@ public static class ProjectorMode { public const float BladeWidthScale=1,BladeOu
             print('Unity 6000.3.9f1 API compile PASS: ' + platform)
             if platform.startswith('UNITY_EDITOR'):
                 tests = [ROOT / 'Assets/Tests/Editor/PhoneSaberLatencyCompensationTests.cs',
-                         ROOT / 'Assets/Tests/Editor/PhoneSaberLatencyProbeTests.cs']
+                         ROOT / 'Assets/Tests/Editor/PhoneSaberLatencyProbeTests.cs',
+                         ROOT / 'Assets/Tests/Editor/PhoneSaberEndpointPredictorTests.cs']
                 if run(compiler + ['/target:library', '/r:' + str(nunit),
                                    '/out:' + str(build / (platform.replace(',', '-') + '-tests.dll'))] + refs + list(map(str, sources + tests))):
                     return 1

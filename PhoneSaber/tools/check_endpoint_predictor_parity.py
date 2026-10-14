@@ -16,6 +16,7 @@ from benchmark_unity_prediction import ROOT, PREDICTOR, VECTOR
 from endpoint_prediction_eval import Predictor, BaselinePredictor, float_bits
 
 VECTORS = Path(__file__).with_name("fixtures") / "endpoint_predictor_vectors.csv"
+ADAPTIVE_VECTORS = VECTORS.with_name("endpoint_adaptive_vectors.csv")
 
 
 def check_python(path=VECTORS, baseline=False):
@@ -116,6 +117,7 @@ def main():
     args = parser.parse_args()
     print(f"Python float32 bit parity: PASS ({check_python(args.vectors)} predictions)")
     print(check_csharp(args.vectors, args.dotnet))
+    print(check_csharp(ADAPTIVE_VECTORS, args.dotnet, program=PROGRAM.replace('predictor.Predict(', 'predictor.PredictAdaptive(')))
     if args.before_ref:
         print(f"Python baseline bit parity: PASS ({check_python(args.vectors, True)} predictions)")
         print(check_csharp(args.vectors, args.dotnet, args.before_ref))

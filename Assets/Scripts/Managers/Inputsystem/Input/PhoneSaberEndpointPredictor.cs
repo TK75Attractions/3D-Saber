@@ -15,6 +15,8 @@ public struct PhoneSaberEndpointPredictor
     Vector2 latestA, latestB, previousVelocityA, previousVelocityB, velocityA, velocityB;
     double latestTime;
     int sampleCount;
+    Vector2 oldestMid, olderMid, previousMid;
+    double oldestTime, olderTime, previousTime;
     public bool LastPredictionSuppressed { get; private set; }
 
     public PhoneSaberEndpointPredictor(float maximumDisplacement)
@@ -49,8 +51,11 @@ public struct PhoneSaberEndpointPredictor
             velocityB = sampleCount == 1 ? Vector2.zero : ConservativeVelocity(previousVelocityB, nextB);
             previousVelocityA = nextA;
             previousVelocityB = nextB;
-            sampleCount = sampleCount == 1 ? 2 : 3;
+            sampleCount = Math.Min(4, sampleCount + 1);
         }
+        oldestMid = olderMid; oldestTime = olderTime;
+        olderMid = previousMid; olderTime = previousTime;
+        previousMid = (latestA + latestB) * 0.5f; previousTime = latestTime;
         latestA = a; latestB = b; latestTime = receiveTimeSeconds;
     }
 
@@ -71,6 +76,57 @@ public struct PhoneSaberEndpointPredictor
         LastPredictionSuppressed = deltaA.x == 0 && deltaA.y == 0 && deltaB.x == 0 && deltaB.y == 0;
         a += deltaA;
         b += deltaB;
+    }
+
+    // F8「自動」専用。手動・OFF の既存ベクトルと受信時刻の観測値は変えない。
+    public void PredictAdaptive(double nowSeconds, int horizonMilliseconds, out Vector2 a, out Vector2 b)
+    {
+        a = latestA; b = latestB;
+        LastPredictionSuppressed = true;
+        if (horizonMilliseconds <= 0 || sampleCount < 4 ||
+            double.IsNaN(nowSeconds) || double.IsInfinity(nowSeconds)) return;
+        double age = Math.Max(0, nowSeconds - latestTime);
+        if (age >= MaximumGapSeconds) return;
+        // 1サンプルの欠測は最大1/30秒だけ進める。以後は減衰し、100msで必ず停止。
+        double seconds = Math.Min(horizonMilliseconds, MaximumHorizonMilliseconds) * .001 +
+            Math.Min(age, DecayStartSeconds);
+        double decay = age <= 2 * DecayStartSeconds ? 1 :
+            (MaximumGapSeconds - age) / DecayStartSeconds;
+        Vector2 mid = (latestA + latestB) * 0.5f;
+        Vector2 velocity = new Vector2(
+            AdaptiveAxis(oldestMid.x, olderMid.x, previousMid.x, mid.x, seconds),
+            AdaptiveAxis(oldestMid.y, olderMid.y, previousMid.y, mid.y, seconds));
+        // 共通の平行移動にし、端点雑音による伸縮・回転を先読みで増幅しない。
+        Vector2 delta = Displacement(velocity, (float)seconds) * (float)decay;
+        LastPredictionSuppressed = delta.x == 0 && delta.y == 0;
+        a += delta; b += delta;
+    }
+
+    float AdaptiveAxis(float oldest, float older, float previous, float latest, double horizon)
+    {
+        double span = latestTime - oldestTime;
+        if (span < .001 || span > .15) return 0;
+        // 不等間隔の直近4点を二次の最小二乗。時刻を[-1,0]にして桁落ちを抑える。
+        double t0 = -1, t1 = (olderTime - latestTime) / span, t2 = (previousTime - latestTime) / span;
+        double y0 = oldest - latest, y1 = older - latest, y2 = previous - latest;
+        double s1 = t0 + t1 + t2, s2 = t0*t0 + t1*t1 + t2*t2;
+        double s3 = t0*t0*t0 + t1*t1*t1 + t2*t2*t2;
+        double s4 = t0*t0*t0*t0 + t1*t1*t1*t1 + t2*t2*t2*t2;
+        double r0 = y0 + y1 + y2, r1 = t0*y0 + t1*y1 + t2*y2;
+        double r2 = t0*t0*y0 + t1*t1*y1 + t2*t2*y2;
+        double aa = s2 - s1*s1/4, ab = s3 - s1*s2/4, bb = s4 - s2*s2/4;
+        double av = r1 - s1*r0/4, bv = r2 - s2*r0/4;
+        double determinant = aa*bb - ab*ab;
+        if (determinant <= 1e-8) return 0;
+        double velocity = (av*bb - bv*ab) / determinant / span;
+        double acceleration = 2 * (bv*aa - av*ab) / determinant / (span*span);
+        // 静止雑音約0.08 worldから速度の不確かさを見積もり、静止中の延長を抑える。
+        double noiseSpeed = .08 / span;
+        double confidence = Math.Max(0, Math.Min(1, (Math.Abs(velocity) - noiseSpeed) / (3 * noiseSpeed)));
+        double delta = velocity*horizon + .5*acceleration*horizon*horizon;
+        // まだ受信していない折り返しを作らない。外向き延長は既存の移動量上限で制限。
+        if (delta * velocity <= 0 || double.IsNaN(delta) || double.IsInfinity(delta)) return 0;
+        return (float)(delta / horizon * confidence);
     }
 
     static bool Finite(float value) => !float.IsNaN(value) && !float.IsInfinity(value);

@@ -223,8 +223,10 @@ public class SaberInputBridge : MonoBehaviour
         double stamp = stickIndex == 2 ? input.LastReceivedMonotonicTime2 : input.LastReceivedMonotonicTime;
         if (double.IsNaN(stamp) || double.IsInfinity(stamp)) { ResetPrediction(); return; }
         endpointPredictor.AddSample(stamp, a, b);
-        endpointPredictor.Predict(SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp),
-            input.PredictionLead(stickIndex == 2), out a, out b);
+        double now = SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp);
+        int lead = input.PredictionLead(stickIndex == 2);
+        if (input.PredictionAutomatic) endpointPredictor.PredictAdaptive(now, lead, out a, out b);
+        else endpointPredictor.Predict(now, lead, out a, out b);
         input.RecordPrediction(endpointPredictor.LastPredictionSuppressed);
     }
 
