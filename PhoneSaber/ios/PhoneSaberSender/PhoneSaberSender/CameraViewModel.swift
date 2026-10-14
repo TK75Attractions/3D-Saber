@@ -303,7 +303,7 @@ struct CameraLifecycleStateMachine {
     }
 
     mutating func sessionStarted(at time: TimeInterval) {
-        guard isSending else { return }
+        guard isSending, state == .starting || state == .live else { return }
         if state == .live { return }
         state = .starting
         captureStartAt = time
@@ -1270,6 +1270,8 @@ final class CameraViewModel: NSObject, ObservableObject {
             sessionRunner.stop()
             return
         }
+        // 初回起動の遅い完了通知で、その後の中断・エラー・復旧状態を上書きしない。
+        guard isRecovery || cameraLifecycle.state == .starting || cameraLifecycle.state == .live else { return }
         let now = ProcessInfo.processInfo.systemUptime
         if isRecovery {
             guard recovery == cameraRecoveryGeneration else { return }

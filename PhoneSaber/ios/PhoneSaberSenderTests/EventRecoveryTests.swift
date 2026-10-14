@@ -100,6 +100,46 @@ final class EventRecoveryTests: XCTestCase {
         XCTAssertEqual(retry.nextDelay(at: 14), 1)
     }
 
+    func testLateInitialStartDoesNotOverwriteRecoveryOrHideItsFailure() {
+        var camera = CameraLifecycleStateMachine()
+        camera.requestStart(at: 0)
+        XCTAssertTrue(camera.evaluateStall(at: 2))
+        XCTAssertTrue(camera.beginRecovery(at: 2))
+        // 初回 startRunning の成功通知が、watchdog による復旧開始より遅れて届く。
+        camera.sessionStarted(at: 2.1)
+        XCTAssertEqual(camera.state, .recovering)
+        camera.restartFinished(succeeded: false, at: 3, error: "restart failed")
+        XCTAssertEqual(camera.state, .failed("restart failed"))
+        camera.receivedFrame(at: 3.1)
+        XCTAssertEqual(camera.state, .failed("restart failed"))
+        XCTAssertTrue(camera.state.canRetry)
+    }
+
+    func testLateInitialStartDoesNotOverwriteInterruption() {
+        var camera = CameraLifecycleStateMachine()
+        camera.requestStart(at: 0)
+        camera.interruptionBegan(reason: "camera in use")
+        camera.sessionStarted(at: 0.1)
+        XCTAssertEqual(camera.state, .interrupted("camera in use"))
+        camera.receivedFrame(at: 0.2)
+        XCTAssertEqual(camera.state, .interrupted("camera in use"))
+        XCTAssertTrue(camera.interruptionEnded(at: 1))
+        camera.restartFinished(succeeded: true, at: 1.1)
+        camera.receivedFrame(at: 1.2)
+        XCTAssertEqual(camera.state, .live)
+    }
+
+    func testLateInitialStartDoesNotOverwriteRuntimeError() {
+        var camera = CameraLifecycleStateMachine()
+        camera.requestStart(at: 0)
+        camera.runtimeError("media services reset")
+        camera.sessionStarted(at: 0.1)
+        XCTAssertEqual(camera.state, .failed("media services reset"))
+        camera.receivedFrame(at: 0.2)
+        XCTAssertEqual(camera.state, .failed("media services reset"))
+        XCTAssertTrue(camera.beginRecovery(at: 1))
+    }
+
     func testRecoveryStopCompletionDefersUntilForegroundAndSending() {
         XCTAssertTrue(CameraRecoveryCompletionPolicy.canConfigure(sending: true, foreground: true))
         XCTAssertFalse(CameraRecoveryCompletionPolicy.canConfigure(sending: true, foreground: false))
