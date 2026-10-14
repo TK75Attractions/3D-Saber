@@ -21,6 +21,43 @@ public class FiveSongPlayabilityTests
     }
 
     [TestCaseSource(nameof(Charts))]
+    public void FlickAccentsStaySparseAndNeverReachTenConsecutiveNotes(string song,string difficulty)
+    {
+        var chart=ChartLoader.LoadFromStreamingAssets(song,difficulty);
+        var notes=chart.notes.OrderBy(n=>n.time).ThenByDescending(n=>n.x).ToArray();
+        double limit=difficulty=="easy"?0:difficulty=="normal"?.12:.22;
+        Assert.LessOrEqual(notes.Count(n=>n.IsDirection)/(double)notes.Length,limit);
+        Assert.LessOrEqual(LongestFlickRun(notes),4,"全体の連続数");
+        foreach(bool right in new[]{false,true})
+        {
+            var hand=notes.Where(n=>(n.x>0)==right).ToArray();
+            Assert.LessOrEqual(LongestFlickRun(hand),3,"逆手のタップだけで片手の連続数をリセットしない");
+            for(int i=0;i<hand.Length-1;i++)
+                if(hand[i].IsLong)
+                    Assert.Greater(hand[i+1].time,hand[i].time+hand[i].lengthMs,"ロング占有中の同手ノーツ");
+        }
+        int run=0;
+        foreach(var group in notes.GroupBy(n=>n.time))
+        {
+            int arrows=group.Count(n=>n.IsDirection);
+            run=arrows>0?run+arrows:0;
+            Assert.Less(run,10,"同時打ちの並び順によらない連続数");
+        }
+        for(int i=0;i+16<=notes.Length;i++)
+            Assert.LessOrEqual(notes.Skip(i).Take(16).Count(n=>n.IsDirection),(int)(16*limit),"局所的なフリック過多");
+    }
+
+    static int LongestFlickRun(IEnumerable<NoteData> notes)
+    {
+        int run=0,max=0;
+        foreach(var note in notes)
+        {
+            run=note.IsDirection?run+1:0;max=Math.Max(max,run);
+        }
+        return max;
+    }
+
+    [TestCaseSource(nameof(Charts))]
     public void EveryPlannedCutCanCompleteWithCorrectHandAndDirection(string song,string difficulty)
     {
         var randomState=UnityEngine.Random.state;

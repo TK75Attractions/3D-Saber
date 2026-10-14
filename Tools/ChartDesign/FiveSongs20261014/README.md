@@ -1,5 +1,7 @@
 # 5曲追加 / 2026-10-14
 
+**現行版は同日の作り直し版。[Beat Saber参照・配置方針・検証結果](RECHART.md)を参照。**
+
 提供された音源をそのまま収録し、各曲に Easy / Normal / Hard を用意した。
 `chart.json` は Normal と同一。曲名・作曲者・拍子はユーザー添付の2枚の表が出典。
 「Manic Sonic ???」はユーザー確認により「Manic Sonic」とする。
@@ -39,21 +41,21 @@ SHA-256、デコード実測長、発音位置、音量区間を各曲の `analy
 ## 譜面の方針
 
 - 音源の発音候補を拍格子上で選別。機械的な三連符・スイングは加えない。
-- 片手2連・3連、水平・縦・斜めの反転フリック、両手の着地を組み合わせる。
-- Hardは高揚部に金同時を増やし、その前後に回復時間を確保する。
-- 句末の片手ロング・同時ロングを配置。別ノーツとの重なりや同じ手の重複を避ける。
-- 前半の片手反転の手順を、後半で反対の手の弧状タップを足した形に発展させる。
-  このゲームに独立したスライド判定はないため、弧は自由方向タップの連なりで表現する。
-- 同じ1／2／4小節ブロックの連続コピーを避ける。強拍の反復は、手順・種類・休符で変化させる。
+- 曲ごとに表拍・裏拍・休符の骨格を設計し、4小節の反復と応答を軸に展開する。
+- 同型反復を禁止していた旧処理を廃止。同じ音の反復を削って不規則にしない。
+- 左右の交互打ち、縦・斜めの折返し、弧状タップ、句頭の両手打ちを配置する。
+- 句末ロングは2回カット。ロング終了まで同じ手を空け、逆手の旋律を残す。
+- Easyはフリックなし。Normal / Hardは句末のアクセントに限定する。
+- フリックは全体・片手・同時打ち単位で検証し、10ノーツ以上の連続を禁止する。
 - BPM360の箇所は刻みを間引き、テンポの数字だけで過密にならないようにする。
 
 `*-evidence.json` はノーツの実音候補と距離、`*-cut-plan.json` は検証用の手の振り方とカット時刻。
 ロングの内部カット時刻をゲーム上で強制するものではなく、ゲームでは制限時間内の必要回数を判定する。
-`audit.json` は配置集計・前後半の対応小節、`independent-audit.json` は保存後の独立検証結果。
+`audit.json` は配置集計・フレーズ区間、`independent-audit.json` は保存後の独立検証結果。
 振りの監査は前後0.25 world単位を含む移動速度5.5以下、矢印への進入45度以内、急な矢印同士は120度以上の反転。
 これは幾何的な監査であり、端末を持った人のプレイ感の評価とは別。
 
-## 検証
+## 初版の検証履歴（作り直し版の結果は RECHART.md）
 
 - Unity 6000.3.9f1: 関連EditMode 163件、PlayMode 19件が成功。
 - 全15譜面を `NoteSpawner` → `CuttableNote` → `ScoreManager` に通し、全カットが完了し、全ノーツPerfect・Missなし。
@@ -71,11 +73,14 @@ Python 3、NumPy、SciPy、FFmpegを使用。FFmpegがPATHにない場合は `FF
 元ファイル名は `songs.json` を参照。以下はUnityプロジェクトルートから実行する。
 
 ```text
-python Tools/ChartDesign/FiveSongs20261014/analyze.py --sources <原本音源フォルダー> --output Tools/ChartDesign/FiveSongs20261014/Analysis
-python Tools/ChartDesign/FiveSongs20261014/build_pack.py --sources <原本音源フォルダー> --output <候補フォルダー>
-python Tools/ChartDesign/FiveSongs20261014/verify_pack.py --repo <候補フォルダー> --output <検証結果.json>
+python Tools/ChartDesign/FiveSongs20261014/rechart.py --repo . --output <候補フォルダー>
+python Tools/ChartDesign/FiveSongs20261014/verify_pack.py --repo . --output <検証結果.json>
 ```
 
-候補フォルダー内に `Assets/StreamingAssets/Songs` と設計データを生成する。本編へ自動上書きしない。
+収録済みの音源から解析キャッシュを `Library/FiveSongRechartAnalysis` に作る。
+候補フォルダー内に譜面20ファイルと設計データ31ファイルを生成する。本編へ自動上書きしない。
+候補を反映してから保存先のリポジトリを検証する。候補だけでは音源やstage.jsonがないので検証できない。
+既存の解析を使う場合は `--features <解析フォルダー>`。音源のSHA-256が一致することを確認して使用する。
+`build_pack.py` の旧生成入口も現行の `rechart.py` へ転送する。
 Unityの検証は `FiveSongPackTests` / `FiveSongPlayabilityTests` / `FiveSongLoadingPlayTests`。
 実選曲画面の確認はバッチで `SongSelectDesignPreview.Render -fiveSongPack -songSelectPreviewOutput <出力先>`。

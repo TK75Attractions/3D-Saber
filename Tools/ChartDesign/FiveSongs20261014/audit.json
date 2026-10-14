@@ -1,496 +1,3250 @@
 {
   "ManicSonic": {
     "easy": {
-      "notes": 212,
-      "cuts": 230,
+      "notes": 188,
+      "cuts": 201,
       "types": {
-        "tap": 194,
-        "long": 18
+        "tap": 175,
+        "long": 13
       },
-      "simultaneousBeats": 17,
-      "goldNotes": 20,
-      "developments": [],
-      "recoveryAdjustments": [
+      "phrases": [
         {
-          "bar": 82,
-          "action": "前小節と同一になる打点を休符へ"
+          "startBeat": 0.0,
+          "endBeat": 16.0,
+          "section": 0,
+          "label": "導入",
+          "rhythm": "pulse",
+          "motion": "vertical"
         },
         {
-          "bar": 86,
-          "action": "前小節と同一になる打点を休符へ"
+          "startBeat": 16.0,
+          "endBeat": 32.0,
+          "section": 0,
+          "label": "導入",
+          "rhythm": "pulse",
+          "motion": "vertical"
         },
         {
-          "bar": 88,
-          "action": "前小節と同一になる打点を休符へ"
+          "startBeat": 32.0,
+          "endBeat": 48.0,
+          "section": 1,
+          "label": "主拍",
+          "rhythm": "drive",
+          "motion": "diagonal"
         },
         {
-          "bar": 103,
-          "action": "前小節と同一になる打点を休符へ"
+          "startBeat": 48.0,
+          "endBeat": 64.0,
+          "section": 1,
+          "label": "主拍",
+          "rhythm": "drive",
+          "motion": "diagonal"
         },
         {
-          "bar": 104,
-          "action": "前小節と同一になる打点を休符へ"
+          "startBeat": 64.0,
+          "endBeat": 80.0,
+          "section": 2,
+          "label": "主題A",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 80.0,
+          "endBeat": 96.0,
+          "section": 2,
+          "label": "主題A",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 96.0,
+          "endBeat": 112.0,
+          "section": 2,
+          "label": "主題A",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 112.0,
+          "endBeat": 128.0,
+          "section": 2,
+          "label": "主題A",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 128.0,
+          "endBeat": 144.0,
+          "section": 3,
+          "label": "応答",
+          "rhythm": "answer",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 144.0,
+          "endBeat": 160.0,
+          "section": 3,
+          "label": "応答",
+          "rhythm": "answer",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 160.0,
+          "endBeat": 176.0,
+          "section": 4,
+          "label": "減速と余韻",
+          "rhythm": "sparse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 176.0,
+          "endBeat": 192.0,
+          "section": 4,
+          "label": "減速と余韻",
+          "rhythm": "sparse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 192.0,
+          "endBeat": 199.0,
+          "section": 4,
+          "label": "減速と余韻",
+          "rhythm": "sparse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 199.0,
+          "endBeat": 215.0,
+          "section": 5,
+          "label": "再導入",
+          "rhythm": "pulse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 215.0,
+          "endBeat": 224.0,
+          "section": 5,
+          "label": "再導入",
+          "rhythm": "pulse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 224.0,
+          "endBeat": 240.0,
+          "section": 6,
+          "label": "主題Aの発展",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 240.0,
+          "endBeat": 256.0,
+          "section": 6,
+          "label": "主題Aの発展",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 256.0,
+          "endBeat": 272.0,
+          "section": 6,
+          "label": "主題Aの発展",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 272.0,
+          "endBeat": 288.0,
+          "section": 6,
+          "label": "主題Aの発展",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 288.0,
+          "endBeat": 304.0,
+          "section": 6,
+          "label": "主題Aの発展",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 304.0,
+          "endBeat": 320.0,
+          "section": 6,
+          "label": "主題Aの発展",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 320.0,
+          "endBeat": 336.0,
+          "section": 7,
+          "label": "主題の回帰",
+          "rhythm": "answer",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 336.0,
+          "endBeat": 352.0,
+          "section": 7,
+          "label": "主題の回帰",
+          "rhythm": "answer",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 352.0,
+          "endBeat": 368.0,
+          "section": 7,
+          "label": "主題の回帰",
+          "rhythm": "answer",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 368.0,
+          "endBeat": 379.0,
+          "section": 8,
+          "label": "ブレイク",
+          "rhythm": "sparse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 379.0,
+          "endBeat": 395.0,
+          "section": 9,
+          "label": "BPM60",
+          "rhythm": "slow",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 395.0,
+          "endBeat": 403.0,
+          "section": 10,
+          "label": "再加速",
+          "rhythm": "pulse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 403.0,
+          "endBeat": 416.0,
+          "section": 11,
+          "label": "終止",
+          "rhythm": "finish",
+          "motion": "diagonal"
         }
       ],
-      "flowPassed": true,
-      "identicalAdjacentBars": []
+      "recoveryAdjustments": [],
+      "flowPassed": true
     },
     "normal": {
-      "notes": 415,
-      "cuts": 451,
+      "notes": 341,
+      "cuts": 354,
       "types": {
         "tap": 317,
-        "direction": 80,
-        "long": 18
+        "direction": 11,
+        "long": 13
       },
-      "simultaneousBeats": 21,
-      "goldNotes": 24,
-      "developments": [],
-      "recoveryAdjustments": [
+      "phrases": [
         {
-          "bar": 90,
-          "action": "前小節と同一になる打点を休符へ"
+          "startBeat": 0.0,
+          "endBeat": 16.0,
+          "section": 0,
+          "label": "導入",
+          "rhythm": "pulse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 16.0,
+          "endBeat": 32.0,
+          "section": 0,
+          "label": "導入",
+          "rhythm": "pulse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 32.0,
+          "endBeat": 48.0,
+          "section": 1,
+          "label": "主拍",
+          "rhythm": "drive",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 48.0,
+          "endBeat": 64.0,
+          "section": 1,
+          "label": "主拍",
+          "rhythm": "drive",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 64.0,
+          "endBeat": 80.0,
+          "section": 2,
+          "label": "主題A",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 80.0,
+          "endBeat": 96.0,
+          "section": 2,
+          "label": "主題A",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 96.0,
+          "endBeat": 112.0,
+          "section": 2,
+          "label": "主題A",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 112.0,
+          "endBeat": 128.0,
+          "section": 2,
+          "label": "主題A",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 128.0,
+          "endBeat": 144.0,
+          "section": 3,
+          "label": "応答",
+          "rhythm": "answer",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 144.0,
+          "endBeat": 160.0,
+          "section": 3,
+          "label": "応答",
+          "rhythm": "answer",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 160.0,
+          "endBeat": 176.0,
+          "section": 4,
+          "label": "減速と余韻",
+          "rhythm": "sparse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 176.0,
+          "endBeat": 192.0,
+          "section": 4,
+          "label": "減速と余韻",
+          "rhythm": "sparse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 192.0,
+          "endBeat": 199.0,
+          "section": 4,
+          "label": "減速と余韻",
+          "rhythm": "sparse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 199.0,
+          "endBeat": 215.0,
+          "section": 5,
+          "label": "再導入",
+          "rhythm": "pulse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 215.0,
+          "endBeat": 224.0,
+          "section": 5,
+          "label": "再導入",
+          "rhythm": "pulse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 224.0,
+          "endBeat": 240.0,
+          "section": 6,
+          "label": "主題Aの発展",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 240.0,
+          "endBeat": 256.0,
+          "section": 6,
+          "label": "主題Aの発展",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 256.0,
+          "endBeat": 272.0,
+          "section": 6,
+          "label": "主題Aの発展",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 272.0,
+          "endBeat": 288.0,
+          "section": 6,
+          "label": "主題Aの発展",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 288.0,
+          "endBeat": 304.0,
+          "section": 6,
+          "label": "主題Aの発展",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 304.0,
+          "endBeat": 320.0,
+          "section": 6,
+          "label": "主題Aの発展",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 320.0,
+          "endBeat": 336.0,
+          "section": 7,
+          "label": "主題の回帰",
+          "rhythm": "answer",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 336.0,
+          "endBeat": 352.0,
+          "section": 7,
+          "label": "主題の回帰",
+          "rhythm": "answer",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 352.0,
+          "endBeat": 368.0,
+          "section": 7,
+          "label": "主題の回帰",
+          "rhythm": "answer",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 368.0,
+          "endBeat": 379.0,
+          "section": 8,
+          "label": "ブレイク",
+          "rhythm": "sparse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 379.0,
+          "endBeat": 395.0,
+          "section": 9,
+          "label": "BPM60",
+          "rhythm": "slow",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 395.0,
+          "endBeat": 403.0,
+          "section": 10,
+          "label": "再加速",
+          "rhythm": "pulse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 403.0,
+          "endBeat": 416.0,
+          "section": 11,
+          "label": "終止",
+          "rhythm": "finish",
+          "motion": "diagonal"
         }
       ],
-      "flowPassed": true,
-      "identicalAdjacentBars": []
+      "recoveryAdjustments": [],
+      "flowPassed": true
     },
     "hard": {
-      "notes": 460,
-      "cuts": 516,
+      "notes": 523,
+      "cuts": 536,
       "types": {
-        "tap": 191,
-        "direction": 241,
-        "long": 28
+        "tap": 452,
+        "direction": 58,
+        "long": 13
       },
-      "simultaneousBeats": 82,
-      "goldNotes": 78,
-      "developments": [
+      "phrases": [
         {
-          "sourceBar": 5,
-          "developedBar": 61,
-          "offsets": [
-            1,
-            2,
-            3
-          ],
-          "leadHand": "red"
+          "startBeat": 0.0,
+          "endBeat": 16.0,
+          "section": 0,
+          "label": "導入",
+          "rhythm": "pulse",
+          "motion": "vertical"
         },
         {
-          "sourceBar": 7,
-          "developedBar": 69,
-          "offsets": [
-            0,
-            1,
-            2
-          ],
-          "leadHand": "blue"
+          "startBeat": 16.0,
+          "endBeat": 32.0,
+          "section": 0,
+          "label": "導入",
+          "rhythm": "pulse",
+          "motion": "vertical"
         },
         {
-          "sourceBar": 9,
-          "developedBar": 77,
-          "offsets": [
-            0,
-            1,
-            2
-          ],
-          "leadHand": "red"
-        }
-      ],
-      "recoveryAdjustments": [
+          "startBeat": 32.0,
+          "endBeat": 48.0,
+          "section": 1,
+          "label": "主拍",
+          "rhythm": "drive",
+          "motion": "diagonal"
+        },
         {
-          "beat": 17.0,
-          "action": "入口を自由タップへ"
+          "startBeat": 48.0,
+          "endBeat": 64.0,
+          "section": 1,
+          "label": "主拍",
+          "rhythm": "drive",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 64.0,
+          "endBeat": 80.0,
+          "section": 2,
+          "label": "主題A",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 80.0,
+          "endBeat": 96.0,
+          "section": 2,
+          "label": "主題A",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 96.0,
+          "endBeat": 112.0,
+          "section": 2,
+          "label": "主題A",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 112.0,
+          "endBeat": 128.0,
+          "section": 2,
+          "label": "主題A",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 128.0,
+          "endBeat": 144.0,
+          "section": 3,
+          "label": "応答",
+          "rhythm": "answer",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 144.0,
+          "endBeat": 160.0,
+          "section": 3,
+          "label": "応答",
+          "rhythm": "answer",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 160.0,
+          "endBeat": 176.0,
+          "section": 4,
+          "label": "減速と余韻",
+          "rhythm": "sparse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 176.0,
+          "endBeat": 192.0,
+          "section": 4,
+          "label": "減速と余韻",
+          "rhythm": "sparse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 192.0,
+          "endBeat": 199.0,
+          "section": 4,
+          "label": "減速と余韻",
+          "rhythm": "sparse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 199.0,
+          "endBeat": 215.0,
+          "section": 5,
+          "label": "再導入",
+          "rhythm": "pulse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 215.0,
+          "endBeat": 224.0,
+          "section": 5,
+          "label": "再導入",
+          "rhythm": "pulse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 224.0,
+          "endBeat": 240.0,
+          "section": 6,
+          "label": "主題Aの発展",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 240.0,
+          "endBeat": 256.0,
+          "section": 6,
+          "label": "主題Aの発展",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 256.0,
+          "endBeat": 272.0,
+          "section": 6,
+          "label": "主題Aの発展",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 272.0,
+          "endBeat": 288.0,
+          "section": 6,
+          "label": "主題Aの発展",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 288.0,
+          "endBeat": 304.0,
+          "section": 6,
+          "label": "主題Aの発展",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 304.0,
+          "endBeat": 320.0,
+          "section": 6,
+          "label": "主題Aの発展",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 320.0,
+          "endBeat": 336.0,
+          "section": 7,
+          "label": "主題の回帰",
+          "rhythm": "answer",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 336.0,
+          "endBeat": 352.0,
+          "section": 7,
+          "label": "主題の回帰",
+          "rhythm": "answer",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 352.0,
+          "endBeat": 368.0,
+          "section": 7,
+          "label": "主題の回帰",
+          "rhythm": "answer",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 368.0,
+          "endBeat": 379.0,
+          "section": 8,
+          "label": "ブレイク",
+          "rhythm": "sparse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 379.0,
+          "endBeat": 395.0,
+          "section": 9,
+          "label": "BPM60",
+          "rhythm": "slow",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 395.0,
+          "endBeat": 403.0,
+          "section": 10,
+          "label": "再加速",
+          "rhythm": "pulse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 403.0,
+          "endBeat": 416.0,
+          "section": 11,
+          "label": "終止",
+          "rhythm": "finish",
+          "motion": "diagonal"
         }
       ],
-      "flowPassed": true,
-      "identicalAdjacentBars": []
+      "recoveryAdjustments": [],
+      "flowPassed": true
     }
   },
   "escapade": {
     "easy": {
-      "notes": 177,
-      "cuts": 190,
+      "notes": 154,
+      "cuts": 165,
       "types": {
-        "long": 13,
-        "tap": 164
+        "tap": 143,
+        "long": 11
       },
-      "simultaneousBeats": 14,
-      "goldNotes": 6,
-      "developments": [],
-      "recoveryAdjustments": [
+      "phrases": [
         {
-          "bar": 48,
-          "action": "前小節と同一になる打点を休符へ"
+          "startBeat": 0.0,
+          "endBeat": 16.0,
+          "section": 0,
+          "label": "前奏無音",
+          "rhythm": "rest",
+          "motion": "vertical"
         },
         {
-          "bar": 55,
-          "action": "前小節と同一になる打点を休符へ"
+          "startBeat": 16.0,
+          "endBeat": 32.0,
+          "section": 1,
+          "label": "裏拍の主題",
+          "rhythm": "skip",
+          "motion": "diagonal"
         },
         {
-          "bar": 66,
-          "action": "前小節と同一になる打点を休符へ"
+          "startBeat": 32.0,
+          "endBeat": 48.0,
+          "section": 1,
+          "label": "裏拍の主題",
+          "rhythm": "skip",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 48.0,
+          "endBeat": 64.0,
+          "section": 1,
+          "label": "裏拍の主題",
+          "rhythm": "skip",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 64.0,
+          "endBeat": 80.0,
+          "section": 1,
+          "label": "裏拍の主題",
+          "rhythm": "skip",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 80.0,
+          "endBeat": 96.0,
+          "section": 2,
+          "label": "主題の応答",
+          "rhythm": "skip",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 96.0,
+          "endBeat": 112.0,
+          "section": 2,
+          "label": "主題の応答",
+          "rhythm": "skip",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 112.0,
+          "endBeat": 128.0,
+          "section": 2,
+          "label": "主題の応答",
+          "rhythm": "skip",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 128.0,
+          "endBeat": 144.0,
+          "section": 2,
+          "label": "主題の応答",
+          "rhythm": "skip",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 144.0,
+          "endBeat": 160.0,
+          "section": 3,
+          "label": "つなぎ",
+          "rhythm": "sparse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 160.0,
+          "endBeat": 176.0,
+          "section": 4,
+          "label": "表拍へ",
+          "rhythm": "pulse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 176.0,
+          "endBeat": 192.0,
+          "section": 4,
+          "label": "表拍へ",
+          "rhythm": "pulse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 192.0,
+          "endBeat": 208.0,
+          "section": 4,
+          "label": "表拍へ",
+          "rhythm": "pulse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 208.0,
+          "endBeat": 224.0,
+          "section": 5,
+          "label": "シンコペーション",
+          "rhythm": "sync",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 224.0,
+          "endBeat": 240.0,
+          "section": 5,
+          "label": "シンコペーション",
+          "rhythm": "sync",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 240.0,
+          "endBeat": 256.0,
+          "section": 6,
+          "label": "間奏",
+          "rhythm": "sparse",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 256.0,
+          "endBeat": 272.0,
+          "section": 6,
+          "label": "間奏",
+          "rhythm": "sparse",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 272.0,
+          "endBeat": 288.0,
+          "section": 7,
+          "label": "主題の回帰",
+          "rhythm": "skip",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 288.0,
+          "endBeat": 304.0,
+          "section": 7,
+          "label": "主題の回帰",
+          "rhythm": "skip",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 304.0,
+          "endBeat": 320.0,
+          "section": 8,
+          "label": "余韻",
+          "rhythm": "outro",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 320.0,
+          "endBeat": 336.0,
+          "section": 8,
+          "label": "余韻",
+          "rhythm": "outro",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 336.0,
+          "endBeat": 340.0,
+          "section": 8,
+          "label": "余韻",
+          "rhythm": "outro",
+          "motion": "vertical"
         }
       ],
-      "flowPassed": true,
-      "identicalAdjacentBars": []
+      "recoveryAdjustments": [],
+      "flowPassed": true
     },
     "normal": {
-      "notes": 351,
-      "cuts": 377,
+      "notes": 282,
+      "cuts": 291,
       "types": {
-        "long": 13,
-        "tap": 256,
-        "direction": 82
+        "tap": 259,
+        "direction": 14,
+        "long": 9
       },
-      "simultaneousBeats": 17,
-      "goldNotes": 16,
-      "developments": [],
+      "phrases": [
+        {
+          "startBeat": 0.0,
+          "endBeat": 16.0,
+          "section": 0,
+          "label": "前奏無音",
+          "rhythm": "rest",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 16.0,
+          "endBeat": 32.0,
+          "section": 1,
+          "label": "裏拍の主題",
+          "rhythm": "skip",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 32.0,
+          "endBeat": 48.0,
+          "section": 1,
+          "label": "裏拍の主題",
+          "rhythm": "skip",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 48.0,
+          "endBeat": 64.0,
+          "section": 1,
+          "label": "裏拍の主題",
+          "rhythm": "skip",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 64.0,
+          "endBeat": 80.0,
+          "section": 1,
+          "label": "裏拍の主題",
+          "rhythm": "skip",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 80.0,
+          "endBeat": 96.0,
+          "section": 2,
+          "label": "主題の応答",
+          "rhythm": "skip",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 96.0,
+          "endBeat": 112.0,
+          "section": 2,
+          "label": "主題の応答",
+          "rhythm": "skip",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 112.0,
+          "endBeat": 128.0,
+          "section": 2,
+          "label": "主題の応答",
+          "rhythm": "skip",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 128.0,
+          "endBeat": 144.0,
+          "section": 2,
+          "label": "主題の応答",
+          "rhythm": "skip",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 144.0,
+          "endBeat": 160.0,
+          "section": 3,
+          "label": "つなぎ",
+          "rhythm": "sparse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 160.0,
+          "endBeat": 176.0,
+          "section": 4,
+          "label": "表拍へ",
+          "rhythm": "pulse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 176.0,
+          "endBeat": 192.0,
+          "section": 4,
+          "label": "表拍へ",
+          "rhythm": "pulse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 192.0,
+          "endBeat": 208.0,
+          "section": 4,
+          "label": "表拍へ",
+          "rhythm": "pulse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 208.0,
+          "endBeat": 224.0,
+          "section": 5,
+          "label": "シンコペーション",
+          "rhythm": "sync",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 224.0,
+          "endBeat": 240.0,
+          "section": 5,
+          "label": "シンコペーション",
+          "rhythm": "sync",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 240.0,
+          "endBeat": 256.0,
+          "section": 6,
+          "label": "間奏",
+          "rhythm": "sparse",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 256.0,
+          "endBeat": 272.0,
+          "section": 6,
+          "label": "間奏",
+          "rhythm": "sparse",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 272.0,
+          "endBeat": 288.0,
+          "section": 7,
+          "label": "主題の回帰",
+          "rhythm": "skip",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 288.0,
+          "endBeat": 304.0,
+          "section": 7,
+          "label": "主題の回帰",
+          "rhythm": "skip",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 304.0,
+          "endBeat": 320.0,
+          "section": 8,
+          "label": "余韻",
+          "rhythm": "outro",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 320.0,
+          "endBeat": 336.0,
+          "section": 8,
+          "label": "余韻",
+          "rhythm": "outro",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 336.0,
+          "endBeat": 340.0,
+          "section": 8,
+          "label": "余韻",
+          "rhythm": "outro",
+          "motion": "vertical"
+        }
+      ],
       "recoveryAdjustments": [],
-      "flowPassed": true,
-      "identicalAdjacentBars": []
+      "flowPassed": true
     },
     "hard": {
       "notes": 405,
-      "cuts": 429,
+      "cuts": 416,
       "types": {
-        "direction": 205,
-        "tap": 188,
-        "long": 12
+        "tap": 361,
+        "direction": 33,
+        "long": 11
       },
-      "simultaneousBeats": 52,
-      "goldNotes": 68,
-      "developments": [
+      "phrases": [
         {
-          "sourceBar": 5,
-          "developedBar": 53,
-          "offsets": [
-            0,
-            1,
-            2
-          ],
-          "leadHand": "blue"
+          "startBeat": 0.0,
+          "endBeat": 16.0,
+          "section": 0,
+          "label": "前奏無音",
+          "rhythm": "rest",
+          "motion": "vertical"
         },
         {
-          "sourceBar": 7,
-          "developedBar": 69,
-          "offsets": [
-            0,
-            1,
-            2
-          ],
-          "leadHand": "red"
+          "startBeat": 16.0,
+          "endBeat": 32.0,
+          "section": 1,
+          "label": "裏拍の主題",
+          "rhythm": "skip",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 32.0,
+          "endBeat": 48.0,
+          "section": 1,
+          "label": "裏拍の主題",
+          "rhythm": "skip",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 48.0,
+          "endBeat": 64.0,
+          "section": 1,
+          "label": "裏拍の主題",
+          "rhythm": "skip",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 64.0,
+          "endBeat": 80.0,
+          "section": 1,
+          "label": "裏拍の主題",
+          "rhythm": "skip",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 80.0,
+          "endBeat": 96.0,
+          "section": 2,
+          "label": "主題の応答",
+          "rhythm": "skip",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 96.0,
+          "endBeat": 112.0,
+          "section": 2,
+          "label": "主題の応答",
+          "rhythm": "skip",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 112.0,
+          "endBeat": 128.0,
+          "section": 2,
+          "label": "主題の応答",
+          "rhythm": "skip",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 128.0,
+          "endBeat": 144.0,
+          "section": 2,
+          "label": "主題の応答",
+          "rhythm": "skip",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 144.0,
+          "endBeat": 160.0,
+          "section": 3,
+          "label": "つなぎ",
+          "rhythm": "sparse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 160.0,
+          "endBeat": 176.0,
+          "section": 4,
+          "label": "表拍へ",
+          "rhythm": "pulse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 176.0,
+          "endBeat": 192.0,
+          "section": 4,
+          "label": "表拍へ",
+          "rhythm": "pulse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 192.0,
+          "endBeat": 208.0,
+          "section": 4,
+          "label": "表拍へ",
+          "rhythm": "pulse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 208.0,
+          "endBeat": 224.0,
+          "section": 5,
+          "label": "シンコペーション",
+          "rhythm": "sync",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 224.0,
+          "endBeat": 240.0,
+          "section": 5,
+          "label": "シンコペーション",
+          "rhythm": "sync",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 240.0,
+          "endBeat": 256.0,
+          "section": 6,
+          "label": "間奏",
+          "rhythm": "sparse",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 256.0,
+          "endBeat": 272.0,
+          "section": 6,
+          "label": "間奏",
+          "rhythm": "sparse",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 272.0,
+          "endBeat": 288.0,
+          "section": 7,
+          "label": "主題の回帰",
+          "rhythm": "skip",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 288.0,
+          "endBeat": 304.0,
+          "section": 7,
+          "label": "主題の回帰",
+          "rhythm": "skip",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 304.0,
+          "endBeat": 320.0,
+          "section": 8,
+          "label": "余韻",
+          "rhythm": "outro",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 320.0,
+          "endBeat": 336.0,
+          "section": 8,
+          "label": "余韻",
+          "rhythm": "outro",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 336.0,
+          "endBeat": 340.0,
+          "section": 8,
+          "label": "余韻",
+          "rhythm": "outro",
+          "motion": "vertical"
         }
       ],
-      "recoveryAdjustments": [
-        {
-          "beat": 24.0,
-          "action": "入口を自由タップへ"
-        },
-        {
-          "beat": 68.5,
-          "action": "入口を自由タップへ"
-        },
-        {
-          "beat": 272.0,
-          "action": "入口を自由タップへ"
-        },
-        {
-          "beat": 208.0,
-          "action": "入口を自由タップへ"
-        },
-        {
-          "beat": 260.5,
-          "action": "入口を自由タップへ"
-        }
-      ],
-      "flowPassed": true,
-      "identicalAdjacentBars": []
+      "recoveryAdjustments": [],
+      "flowPassed": true
     }
   },
   "logic": {
     "easy": {
-      "notes": 243,
-      "cuts": 270,
+      "notes": 206,
+      "cuts": 220,
       "types": {
-        "tap": 226,
-        "long": 17
+        "tap": 192,
+        "long": 14
       },
-      "simultaneousBeats": 16,
-      "goldNotes": 16,
-      "developments": [],
+      "phrases": [
+        {
+          "startBeat": 0.0,
+          "endBeat": 16.0,
+          "section": 0,
+          "label": "8/8の導入",
+          "rhythm": "sparse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 16.0,
+          "endBeat": 32.0,
+          "section": 0,
+          "label": "8/8の導入",
+          "rhythm": "sparse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 32.0,
+          "endBeat": 48.0,
+          "section": 1,
+          "label": "応答",
+          "rhythm": "answer",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 48.0,
+          "endBeat": 64.0,
+          "section": 1,
+          "label": "応答",
+          "rhythm": "answer",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 64.0,
+          "endBeat": 80.0,
+          "section": 1,
+          "label": "応答",
+          "rhythm": "answer",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 80.0,
+          "endBeat": 96.0,
+          "section": 2,
+          "label": "8分の裏拍",
+          "rhythm": "logic",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 96.0,
+          "endBeat": 112.0,
+          "section": 2,
+          "label": "8分の裏拍",
+          "rhythm": "logic",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 112.0,
+          "endBeat": 128.0,
+          "section": 2,
+          "label": "8分の裏拍",
+          "rhythm": "logic",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 128.0,
+          "endBeat": 141.0,
+          "section": 2,
+          "label": "8分の裏拍",
+          "rhythm": "logic",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 141.0,
+          "endBeat": 157.0,
+          "section": 3,
+          "label": "BPM120へ",
+          "rhythm": "pulse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 157.0,
+          "endBeat": 173.0,
+          "section": 3,
+          "label": "BPM120へ",
+          "rhythm": "pulse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 173.0,
+          "endBeat": 176.0,
+          "section": 3,
+          "label": "BPM120へ",
+          "rhythm": "pulse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 176.0,
+          "endBeat": 192.0,
+          "section": 4,
+          "label": "中盤の展開",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 192.0,
+          "endBeat": 208.0,
+          "section": 4,
+          "label": "中盤の展開",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 208.0,
+          "endBeat": 224.0,
+          "section": 4,
+          "label": "中盤の展開",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 224.0,
+          "endBeat": 236.0,
+          "section": 5,
+          "label": "段階的減速",
+          "rhythm": "slow",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 236.0,
+          "endBeat": 252.0,
+          "section": 6,
+          "label": "裏拍の主題B",
+          "rhythm": "offbeat",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 252.0,
+          "endBeat": 268.0,
+          "section": 6,
+          "label": "裏拍の主題B",
+          "rhythm": "offbeat",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 268.0,
+          "endBeat": 284.0,
+          "section": 6,
+          "label": "裏拍の主題B",
+          "rhythm": "offbeat",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 284.0,
+          "endBeat": 300.0,
+          "section": 6,
+          "label": "裏拍の主題B",
+          "rhythm": "offbeat",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 300.0,
+          "endBeat": 316.0,
+          "section": 6,
+          "label": "裏拍の主題B",
+          "rhythm": "offbeat",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 316.0,
+          "endBeat": 320.0,
+          "section": 6,
+          "label": "裏拍の主題B",
+          "rhythm": "offbeat",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 320.0,
+          "endBeat": 336.0,
+          "section": 7,
+          "label": "主題Bの発展",
+          "rhythm": "offbeat",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 336.0,
+          "endBeat": 352.0,
+          "section": 7,
+          "label": "主題Bの発展",
+          "rhythm": "offbeat",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 352.0,
+          "endBeat": 368.0,
+          "section": 7,
+          "label": "主題Bの発展",
+          "rhythm": "offbeat",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 368.0,
+          "endBeat": 384.0,
+          "section": 7,
+          "label": "主題Bの発展",
+          "rhythm": "offbeat",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 384.0,
+          "endBeat": 400.0,
+          "section": 8,
+          "label": "つなぎ",
+          "rhythm": "sparse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 400.0,
+          "endBeat": 400.5,
+          "section": 8,
+          "label": "つなぎ",
+          "rhythm": "sparse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 400.5,
+          "endBeat": 416.5,
+          "section": 9,
+          "label": "BPM160へ回帰",
+          "rhythm": "answer",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 416.5,
+          "endBeat": 432.5,
+          "section": 9,
+          "label": "BPM160へ回帰",
+          "rhythm": "answer",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 432.5,
+          "endBeat": 440.0,
+          "section": 9,
+          "label": "BPM160へ回帰",
+          "rhythm": "answer",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 440.0,
+          "endBeat": 456.0,
+          "section": 10,
+          "label": "終止",
+          "rhythm": "outro",
+          "motion": "vertical"
+        }
+      ],
       "recoveryAdjustments": [],
-      "flowPassed": true,
-      "identicalAdjacentBars": []
+      "flowPassed": true
     },
     "normal": {
-      "notes": 461,
-      "cuts": 495,
+      "notes": 389,
+      "cuts": 403,
       "types": {
-        "tap": 336,
-        "direction": 108,
-        "long": 17
+        "tap": 367,
+        "direction": 8,
+        "long": 14
       },
-      "simultaneousBeats": 15,
-      "goldNotes": 18,
-      "developments": [],
+      "phrases": [
+        {
+          "startBeat": 0.0,
+          "endBeat": 16.0,
+          "section": 0,
+          "label": "8/8の導入",
+          "rhythm": "sparse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 16.0,
+          "endBeat": 32.0,
+          "section": 0,
+          "label": "8/8の導入",
+          "rhythm": "sparse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 32.0,
+          "endBeat": 48.0,
+          "section": 1,
+          "label": "応答",
+          "rhythm": "answer",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 48.0,
+          "endBeat": 64.0,
+          "section": 1,
+          "label": "応答",
+          "rhythm": "answer",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 64.0,
+          "endBeat": 80.0,
+          "section": 1,
+          "label": "応答",
+          "rhythm": "answer",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 80.0,
+          "endBeat": 96.0,
+          "section": 2,
+          "label": "8分の裏拍",
+          "rhythm": "logic",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 96.0,
+          "endBeat": 112.0,
+          "section": 2,
+          "label": "8分の裏拍",
+          "rhythm": "logic",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 112.0,
+          "endBeat": 128.0,
+          "section": 2,
+          "label": "8分の裏拍",
+          "rhythm": "logic",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 128.0,
+          "endBeat": 141.0,
+          "section": 2,
+          "label": "8分の裏拍",
+          "rhythm": "logic",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 141.0,
+          "endBeat": 157.0,
+          "section": 3,
+          "label": "BPM120へ",
+          "rhythm": "pulse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 157.0,
+          "endBeat": 173.0,
+          "section": 3,
+          "label": "BPM120へ",
+          "rhythm": "pulse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 173.0,
+          "endBeat": 176.0,
+          "section": 3,
+          "label": "BPM120へ",
+          "rhythm": "pulse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 176.0,
+          "endBeat": 192.0,
+          "section": 4,
+          "label": "中盤の展開",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 192.0,
+          "endBeat": 208.0,
+          "section": 4,
+          "label": "中盤の展開",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 208.0,
+          "endBeat": 224.0,
+          "section": 4,
+          "label": "中盤の展開",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 224.0,
+          "endBeat": 236.0,
+          "section": 5,
+          "label": "段階的減速",
+          "rhythm": "slow",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 236.0,
+          "endBeat": 252.0,
+          "section": 6,
+          "label": "裏拍の主題B",
+          "rhythm": "offbeat",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 252.0,
+          "endBeat": 268.0,
+          "section": 6,
+          "label": "裏拍の主題B",
+          "rhythm": "offbeat",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 268.0,
+          "endBeat": 284.0,
+          "section": 6,
+          "label": "裏拍の主題B",
+          "rhythm": "offbeat",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 284.0,
+          "endBeat": 300.0,
+          "section": 6,
+          "label": "裏拍の主題B",
+          "rhythm": "offbeat",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 300.0,
+          "endBeat": 316.0,
+          "section": 6,
+          "label": "裏拍の主題B",
+          "rhythm": "offbeat",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 316.0,
+          "endBeat": 320.0,
+          "section": 6,
+          "label": "裏拍の主題B",
+          "rhythm": "offbeat",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 320.0,
+          "endBeat": 336.0,
+          "section": 7,
+          "label": "主題Bの発展",
+          "rhythm": "offbeat",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 336.0,
+          "endBeat": 352.0,
+          "section": 7,
+          "label": "主題Bの発展",
+          "rhythm": "offbeat",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 352.0,
+          "endBeat": 368.0,
+          "section": 7,
+          "label": "主題Bの発展",
+          "rhythm": "offbeat",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 368.0,
+          "endBeat": 384.0,
+          "section": 7,
+          "label": "主題Bの発展",
+          "rhythm": "offbeat",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 384.0,
+          "endBeat": 400.0,
+          "section": 8,
+          "label": "つなぎ",
+          "rhythm": "sparse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 400.0,
+          "endBeat": 400.5,
+          "section": 8,
+          "label": "つなぎ",
+          "rhythm": "sparse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 400.5,
+          "endBeat": 416.5,
+          "section": 9,
+          "label": "BPM160へ回帰",
+          "rhythm": "answer",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 416.5,
+          "endBeat": 432.5,
+          "section": 9,
+          "label": "BPM160へ回帰",
+          "rhythm": "answer",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 432.5,
+          "endBeat": 440.0,
+          "section": 9,
+          "label": "BPM160へ回帰",
+          "rhythm": "answer",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 440.0,
+          "endBeat": 456.0,
+          "section": 10,
+          "label": "終止",
+          "rhythm": "outro",
+          "motion": "vertical"
+        }
+      ],
       "recoveryAdjustments": [],
-      "flowPassed": true,
-      "identicalAdjacentBars": []
+      "flowPassed": true
     },
     "hard": {
-      "notes": 513,
-      "cuts": 545,
+      "notes": 605,
+      "cuts": 619,
       "types": {
-        "direction": 292,
-        "tap": 205,
-        "long": 16
+        "tap": 536,
+        "direction": 55,
+        "long": 14
       },
-      "simultaneousBeats": 64,
-      "goldNotes": 68,
-      "developments": [
+      "phrases": [
         {
-          "sourceBar": 9,
-          "developedBar": 73,
-          "offsets": [
-            0,
-            1,
-            2
-          ],
-          "leadHand": "red"
+          "startBeat": 0.0,
+          "endBeat": 16.0,
+          "section": 0,
+          "label": "8/8の導入",
+          "rhythm": "sparse",
+          "motion": "vertical"
         },
         {
-          "sourceBar": 11,
-          "developedBar": 83,
-          "offsets": [
-            0,
-            1,
-            2
-          ],
-          "leadHand": "blue"
+          "startBeat": 16.0,
+          "endBeat": 32.0,
+          "section": 0,
+          "label": "8/8の導入",
+          "rhythm": "sparse",
+          "motion": "vertical"
         },
         {
-          "sourceBar": 14,
-          "developedBar": 91,
-          "offsets": [
-            0,
-            1,
-            2
-          ],
-          "leadHand": "red"
+          "startBeat": 32.0,
+          "endBeat": 48.0,
+          "section": 1,
+          "label": "応答",
+          "rhythm": "answer",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 48.0,
+          "endBeat": 64.0,
+          "section": 1,
+          "label": "応答",
+          "rhythm": "answer",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 64.0,
+          "endBeat": 80.0,
+          "section": 1,
+          "label": "応答",
+          "rhythm": "answer",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 80.0,
+          "endBeat": 96.0,
+          "section": 2,
+          "label": "8分の裏拍",
+          "rhythm": "logic",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 96.0,
+          "endBeat": 112.0,
+          "section": 2,
+          "label": "8分の裏拍",
+          "rhythm": "logic",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 112.0,
+          "endBeat": 128.0,
+          "section": 2,
+          "label": "8分の裏拍",
+          "rhythm": "logic",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 128.0,
+          "endBeat": 141.0,
+          "section": 2,
+          "label": "8分の裏拍",
+          "rhythm": "logic",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 141.0,
+          "endBeat": 157.0,
+          "section": 3,
+          "label": "BPM120へ",
+          "rhythm": "pulse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 157.0,
+          "endBeat": 173.0,
+          "section": 3,
+          "label": "BPM120へ",
+          "rhythm": "pulse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 173.0,
+          "endBeat": 176.0,
+          "section": 3,
+          "label": "BPM120へ",
+          "rhythm": "pulse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 176.0,
+          "endBeat": 192.0,
+          "section": 4,
+          "label": "中盤の展開",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 192.0,
+          "endBeat": 208.0,
+          "section": 4,
+          "label": "中盤の展開",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 208.0,
+          "endBeat": 224.0,
+          "section": 4,
+          "label": "中盤の展開",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 224.0,
+          "endBeat": 236.0,
+          "section": 5,
+          "label": "段階的減速",
+          "rhythm": "slow",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 236.0,
+          "endBeat": 252.0,
+          "section": 6,
+          "label": "裏拍の主題B",
+          "rhythm": "offbeat",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 252.0,
+          "endBeat": 268.0,
+          "section": 6,
+          "label": "裏拍の主題B",
+          "rhythm": "offbeat",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 268.0,
+          "endBeat": 284.0,
+          "section": 6,
+          "label": "裏拍の主題B",
+          "rhythm": "offbeat",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 284.0,
+          "endBeat": 300.0,
+          "section": 6,
+          "label": "裏拍の主題B",
+          "rhythm": "offbeat",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 300.0,
+          "endBeat": 316.0,
+          "section": 6,
+          "label": "裏拍の主題B",
+          "rhythm": "offbeat",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 316.0,
+          "endBeat": 320.0,
+          "section": 6,
+          "label": "裏拍の主題B",
+          "rhythm": "offbeat",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 320.0,
+          "endBeat": 336.0,
+          "section": 7,
+          "label": "主題Bの発展",
+          "rhythm": "offbeat",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 336.0,
+          "endBeat": 352.0,
+          "section": 7,
+          "label": "主題Bの発展",
+          "rhythm": "offbeat",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 352.0,
+          "endBeat": 368.0,
+          "section": 7,
+          "label": "主題Bの発展",
+          "rhythm": "offbeat",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 368.0,
+          "endBeat": 384.0,
+          "section": 7,
+          "label": "主題Bの発展",
+          "rhythm": "offbeat",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 384.0,
+          "endBeat": 400.0,
+          "section": 8,
+          "label": "つなぎ",
+          "rhythm": "sparse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 400.0,
+          "endBeat": 400.5,
+          "section": 8,
+          "label": "つなぎ",
+          "rhythm": "sparse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 400.5,
+          "endBeat": 416.5,
+          "section": 9,
+          "label": "BPM160へ回帰",
+          "rhythm": "answer",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 416.5,
+          "endBeat": 432.5,
+          "section": 9,
+          "label": "BPM160へ回帰",
+          "rhythm": "answer",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 432.5,
+          "endBeat": 440.0,
+          "section": 9,
+          "label": "BPM160へ回帰",
+          "rhythm": "answer",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 440.0,
+          "endBeat": 456.0,
+          "section": 10,
+          "label": "終止",
+          "rhythm": "outro",
+          "motion": "vertical"
         }
       ],
-      "recoveryAdjustments": [
-        {
-          "beat": 32.0,
-          "action": "入口を自由タップへ"
-        },
-        {
-          "beat": 52.0,
-          "action": "入口を自由タップへ"
-        },
-        {
-          "beat": 288.0,
-          "action": "入口を自由タップへ"
-        },
-        {
-          "beat": 360.0,
-          "action": "入口を自由タップへ"
-        },
-        {
-          "beat": 40.0,
-          "action": "入口を自由タップへ"
-        },
-        {
-          "beat": 328.0,
-          "action": "入口を自由タップへ"
-        }
-      ],
-      "flowPassed": true,
-      "identicalAdjacentBars": []
+      "recoveryAdjustments": [],
+      "flowPassed": true
     }
   },
   "BenkyouRemaster": {
     "easy": {
-      "notes": 169,
-      "cuts": 187,
+      "notes": 147,
+      "cuts": 159,
       "types": {
-        "tap": 155,
-        "long": 14
+        "tap": 135,
+        "long": 12
       },
-      "simultaneousBeats": 14,
-      "goldNotes": 18,
-      "developments": [],
-      "recoveryAdjustments": [
+      "phrases": [
         {
-          "bar": 43,
-          "action": "前小節と同一になる打点を休符へ"
+          "startBeat": 0.0,
+          "endBeat": 16.0,
+          "section": 0,
+          "label": "導入",
+          "rhythm": "answer",
+          "motion": "diagonal"
         },
         {
-          "bar": 47,
-          "action": "前小節と同一になる打点を休符へ"
+          "startBeat": 16.0,
+          "endBeat": 32.0,
+          "section": 0,
+          "label": "導入",
+          "rhythm": "answer",
+          "motion": "diagonal"
         },
         {
-          "bar": 80,
-          "action": "前小節と同一になる打点を休符へ"
+          "startBeat": 32.0,
+          "endBeat": 48.0,
+          "section": 1,
+          "label": "主題A",
+          "rhythm": "drive",
+          "motion": "arc"
         },
         {
-          "bar": 81,
-          "action": "前小節と同一になる打点を休符へ"
-        }
-      ],
-      "flowPassed": true,
-      "identicalAdjacentBars": []
-    },
-    "normal": {
-      "notes": 327,
-      "cuts": 363,
-      "types": {
-        "tap": 245,
-        "direction": 68,
-        "long": 14
-      },
-      "simultaneousBeats": 21,
-      "goldNotes": 22,
-      "developments": [],
-      "recoveryAdjustments": [
-        {
-          "bar": 31,
-          "action": "前小節と同一になる打点を休符へ"
-        }
-      ],
-      "flowPassed": true,
-      "identicalAdjacentBars": []
-    },
-    "hard": {
-      "notes": 372,
-      "cuts": 428,
-      "types": {
-        "direction": 199,
-        "tap": 151,
-        "long": 22
-      },
-      "simultaneousBeats": 60,
-      "goldNotes": 60,
-      "developments": [
-        {
-          "sourceBar": 5,
-          "developedBar": 57,
-          "offsets": [
-            0,
-            1,
-            2
-          ],
-          "leadHand": "blue"
+          "startBeat": 48.0,
+          "endBeat": 64.0,
+          "section": 1,
+          "label": "主題A",
+          "rhythm": "drive",
+          "motion": "arc"
         },
         {
-          "sourceBar": 7,
-          "developedBar": 73,
-          "offsets": [
-            0,
-            1,
-            2
-          ],
-          "leadHand": "red"
+          "startBeat": 64.0,
+          "endBeat": 80.0,
+          "section": 1,
+          "label": "主題A",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 80.0,
+          "endBeat": 96.0,
+          "section": 2,
+          "label": "BPM100",
+          "rhythm": "slow",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 96.0,
+          "endBeat": 112.0,
+          "section": 2,
+          "label": "BPM100",
+          "rhythm": "slow",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 112.0,
+          "endBeat": 114.0,
+          "section": 2,
+          "label": "BPM100",
+          "rhythm": "slow",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 114.0,
+          "endBeat": 130.0,
+          "section": 3,
+          "label": "主拍へ復帰",
+          "rhythm": "pulse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 130.0,
+          "endBeat": 144.0,
+          "section": 3,
+          "label": "主拍へ復帰",
+          "rhythm": "pulse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 144.0,
+          "endBeat": 160.0,
+          "section": 4,
+          "label": "短い展開",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 160.0,
+          "endBeat": 168.0,
+          "section": 4,
+          "label": "短い展開",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 168.0,
+          "endBeat": 184.0,
+          "section": 5,
+          "label": "小節頭と余韻",
+          "rhythm": "sparse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 184.0,
+          "endBeat": 200.0,
+          "section": 5,
+          "label": "小節頭と余韻",
+          "rhythm": "sparse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 200.0,
+          "endBeat": 208.0,
+          "section": 5,
+          "label": "小節頭と余韻",
+          "rhythm": "sparse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 208.0,
+          "endBeat": 224.0,
+          "section": 6,
+          "label": "主題Aの回帰",
+          "rhythm": "drive",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 224.0,
+          "endBeat": 240.0,
+          "section": 6,
+          "label": "主題Aの回帰",
+          "rhythm": "drive",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 240.0,
+          "endBeat": 256.0,
+          "section": 7,
+          "label": "主拍",
+          "rhythm": "pulse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 256.0,
+          "endBeat": 272.0,
+          "section": 8,
+          "label": "主題Aの発展",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 272.0,
+          "endBeat": 280.0,
+          "section": 8,
+          "label": "主題Aの発展",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 280.0,
+          "endBeat": 296.0,
+          "section": 9,
+          "label": "BPM70",
+          "rhythm": "slow",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 296.0,
+          "endBeat": 304.0,
+          "section": 9,
+          "label": "BPM70",
+          "rhythm": "slow",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 304.0,
+          "endBeat": 320.0,
+          "section": 10,
+          "label": "BPM360・実打は半速",
+          "rhythm": "doubletime",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 320.0,
+          "endBeat": 328.0,
+          "section": 10,
+          "label": "BPM360・実打は半速",
+          "rhythm": "doubletime",
+          "motion": "vertical"
         }
       ],
       "recoveryAdjustments": [],
-      "flowPassed": true,
-      "identicalAdjacentBars": []
+      "flowPassed": true
+    },
+    "normal": {
+      "notes": 274,
+      "cuts": 286,
+      "types": {
+        "tap": 252,
+        "direction": 10,
+        "long": 12
+      },
+      "phrases": [
+        {
+          "startBeat": 0.0,
+          "endBeat": 16.0,
+          "section": 0,
+          "label": "導入",
+          "rhythm": "answer",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 16.0,
+          "endBeat": 32.0,
+          "section": 0,
+          "label": "導入",
+          "rhythm": "answer",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 32.0,
+          "endBeat": 48.0,
+          "section": 1,
+          "label": "主題A",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 48.0,
+          "endBeat": 64.0,
+          "section": 1,
+          "label": "主題A",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 64.0,
+          "endBeat": 80.0,
+          "section": 1,
+          "label": "主題A",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 80.0,
+          "endBeat": 96.0,
+          "section": 2,
+          "label": "BPM100",
+          "rhythm": "slow",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 96.0,
+          "endBeat": 112.0,
+          "section": 2,
+          "label": "BPM100",
+          "rhythm": "slow",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 112.0,
+          "endBeat": 114.0,
+          "section": 2,
+          "label": "BPM100",
+          "rhythm": "slow",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 114.0,
+          "endBeat": 130.0,
+          "section": 3,
+          "label": "主拍へ復帰",
+          "rhythm": "pulse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 130.0,
+          "endBeat": 144.0,
+          "section": 3,
+          "label": "主拍へ復帰",
+          "rhythm": "pulse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 144.0,
+          "endBeat": 160.0,
+          "section": 4,
+          "label": "短い展開",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 160.0,
+          "endBeat": 168.0,
+          "section": 4,
+          "label": "短い展開",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 168.0,
+          "endBeat": 184.0,
+          "section": 5,
+          "label": "小節頭と余韻",
+          "rhythm": "sparse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 184.0,
+          "endBeat": 200.0,
+          "section": 5,
+          "label": "小節頭と余韻",
+          "rhythm": "sparse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 200.0,
+          "endBeat": 208.0,
+          "section": 5,
+          "label": "小節頭と余韻",
+          "rhythm": "sparse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 208.0,
+          "endBeat": 224.0,
+          "section": 6,
+          "label": "主題Aの回帰",
+          "rhythm": "drive",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 224.0,
+          "endBeat": 240.0,
+          "section": 6,
+          "label": "主題Aの回帰",
+          "rhythm": "drive",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 240.0,
+          "endBeat": 256.0,
+          "section": 7,
+          "label": "主拍",
+          "rhythm": "pulse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 256.0,
+          "endBeat": 272.0,
+          "section": 8,
+          "label": "主題Aの発展",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 272.0,
+          "endBeat": 280.0,
+          "section": 8,
+          "label": "主題Aの発展",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 280.0,
+          "endBeat": 296.0,
+          "section": 9,
+          "label": "BPM70",
+          "rhythm": "slow",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 296.0,
+          "endBeat": 304.0,
+          "section": 9,
+          "label": "BPM70",
+          "rhythm": "slow",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 304.0,
+          "endBeat": 320.0,
+          "section": 10,
+          "label": "BPM360・実打は半速",
+          "rhythm": "doubletime",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 320.0,
+          "endBeat": 328.0,
+          "section": 10,
+          "label": "BPM360・実打は半速",
+          "rhythm": "doubletime",
+          "motion": "vertical"
+        }
+      ],
+      "recoveryAdjustments": [],
+      "flowPassed": true
+    },
+    "hard": {
+      "notes": 403,
+      "cuts": 415,
+      "types": {
+        "tap": 357,
+        "direction": 34,
+        "long": 12
+      },
+      "phrases": [
+        {
+          "startBeat": 0.0,
+          "endBeat": 16.0,
+          "section": 0,
+          "label": "導入",
+          "rhythm": "answer",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 16.0,
+          "endBeat": 32.0,
+          "section": 0,
+          "label": "導入",
+          "rhythm": "answer",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 32.0,
+          "endBeat": 48.0,
+          "section": 1,
+          "label": "主題A",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 48.0,
+          "endBeat": 64.0,
+          "section": 1,
+          "label": "主題A",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 64.0,
+          "endBeat": 80.0,
+          "section": 1,
+          "label": "主題A",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 80.0,
+          "endBeat": 96.0,
+          "section": 2,
+          "label": "BPM100",
+          "rhythm": "slow",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 96.0,
+          "endBeat": 112.0,
+          "section": 2,
+          "label": "BPM100",
+          "rhythm": "slow",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 112.0,
+          "endBeat": 114.0,
+          "section": 2,
+          "label": "BPM100",
+          "rhythm": "slow",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 114.0,
+          "endBeat": 130.0,
+          "section": 3,
+          "label": "主拍へ復帰",
+          "rhythm": "pulse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 130.0,
+          "endBeat": 144.0,
+          "section": 3,
+          "label": "主拍へ復帰",
+          "rhythm": "pulse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 144.0,
+          "endBeat": 160.0,
+          "section": 4,
+          "label": "短い展開",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 160.0,
+          "endBeat": 168.0,
+          "section": 4,
+          "label": "短い展開",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 168.0,
+          "endBeat": 184.0,
+          "section": 5,
+          "label": "小節頭と余韻",
+          "rhythm": "sparse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 184.0,
+          "endBeat": 200.0,
+          "section": 5,
+          "label": "小節頭と余韻",
+          "rhythm": "sparse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 200.0,
+          "endBeat": 208.0,
+          "section": 5,
+          "label": "小節頭と余韻",
+          "rhythm": "sparse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 208.0,
+          "endBeat": 224.0,
+          "section": 6,
+          "label": "主題Aの回帰",
+          "rhythm": "drive",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 224.0,
+          "endBeat": 240.0,
+          "section": 6,
+          "label": "主題Aの回帰",
+          "rhythm": "drive",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 240.0,
+          "endBeat": 256.0,
+          "section": 7,
+          "label": "主拍",
+          "rhythm": "pulse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 256.0,
+          "endBeat": 272.0,
+          "section": 8,
+          "label": "主題Aの発展",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 272.0,
+          "endBeat": 280.0,
+          "section": 8,
+          "label": "主題Aの発展",
+          "rhythm": "drive",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 280.0,
+          "endBeat": 296.0,
+          "section": 9,
+          "label": "BPM70",
+          "rhythm": "slow",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 296.0,
+          "endBeat": 304.0,
+          "section": 9,
+          "label": "BPM70",
+          "rhythm": "slow",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 304.0,
+          "endBeat": 320.0,
+          "section": 10,
+          "label": "BPM360・実打は半速",
+          "rhythm": "doubletime",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 320.0,
+          "endBeat": 328.0,
+          "section": 10,
+          "label": "BPM360・実打は半速",
+          "rhythm": "doubletime",
+          "motion": "vertical"
+        }
+      ],
+      "recoveryAdjustments": [],
+      "flowPassed": true
     }
   },
   "Aobasou": {
     "easy": {
-      "notes": 172,
-      "cuts": 185,
+      "notes": 170,
+      "cuts": 181,
       "types": {
         "tap": 159,
-        "long": 13
-      },
-      "simultaneousBeats": 12,
-      "goldNotes": 2,
-      "developments": [],
-      "recoveryAdjustments": [
-        {
-          "bar": 24,
-          "action": "前小節と同一になる打点を休符へ"
-        },
-        {
-          "bar": 28,
-          "action": "前小節と同一になる打点を休符へ"
-        },
-        {
-          "bar": 34,
-          "action": "前小節と同一になる打点を休符へ"
-        },
-        {
-          "bar": 36,
-          "action": "前小節と同一になる打点を休符へ"
-        }
-      ],
-      "flowPassed": true,
-      "identicalAdjacentBars": []
-    },
-    "normal": {
-      "notes": 347,
-      "cuts": 373,
-      "types": {
-        "tap": 259,
-        "direction": 75,
-        "long": 13
-      },
-      "simultaneousBeats": 16,
-      "goldNotes": 10,
-      "developments": [],
-      "recoveryAdjustments": [],
-      "flowPassed": true,
-      "identicalAdjacentBars": []
-    },
-    "hard": {
-      "notes": 409,
-      "cuts": 431,
-      "types": {
-        "tap": 152,
-        "direction": 246,
         "long": 11
       },
-      "simultaneousBeats": 52,
-      "goldNotes": 58,
-      "developments": [
+      "phrases": [
         {
-          "sourceBar": 5,
-          "developedBar": 49,
-          "offsets": [
-            0,
-            1,
-            2
-          ],
-          "leadHand": "red"
+          "startBeat": 0.0,
+          "endBeat": 16.0,
+          "section": 0,
+          "label": "導入",
+          "rhythm": "pulse",
+          "motion": "vertical"
         },
         {
-          "sourceBar": 7,
-          "developedBar": 65,
-          "offsets": [
-            0,
-            1,
-            2
-          ],
-          "leadHand": "blue"
+          "startBeat": 16.0,
+          "endBeat": 32.0,
+          "section": 0,
+          "label": "導入",
+          "rhythm": "pulse",
+          "motion": "vertical"
         },
         {
-          "sourceBar": 9,
-          "developedBar": 73,
-          "offsets": [
-            0,
-            1,
-            2
-          ],
-          "leadHand": "red"
+          "startBeat": 32.0,
+          "endBeat": 48.0,
+          "section": 1,
+          "label": "歌の応答",
+          "rhythm": "answer",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 48.0,
+          "endBeat": 64.0,
+          "section": 1,
+          "label": "歌の応答",
+          "rhythm": "answer",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 64.0,
+          "endBeat": 80.0,
+          "section": 2,
+          "label": "主拍の主題",
+          "rhythm": "pulse",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 80.0,
+          "endBeat": 96.0,
+          "section": 2,
+          "label": "主拍の主題",
+          "rhythm": "pulse",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 96.0,
+          "endBeat": 112.0,
+          "section": 2,
+          "label": "主拍の主題",
+          "rhythm": "pulse",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 112.0,
+          "endBeat": 128.0,
+          "section": 2,
+          "label": "主拍の主題",
+          "rhythm": "pulse",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 128.0,
+          "endBeat": 144.0,
+          "section": 3,
+          "label": "展開",
+          "rhythm": "drive",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 144.0,
+          "endBeat": 160.0,
+          "section": 3,
+          "label": "展開",
+          "rhythm": "drive",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 160.0,
+          "endBeat": 176.0,
+          "section": 4,
+          "label": "つなぎ",
+          "rhythm": "answer",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 176.0,
+          "endBeat": 192.0,
+          "section": 5,
+          "label": "歌の裏拍",
+          "rhythm": "vocal",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 192.0,
+          "endBeat": 208.0,
+          "section": 5,
+          "label": "歌の裏拍",
+          "rhythm": "vocal",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 208.0,
+          "endBeat": 224.0,
+          "section": 5,
+          "label": "歌の裏拍",
+          "rhythm": "vocal",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 224.0,
+          "endBeat": 240.0,
+          "section": 6,
+          "label": "主拍への回帰",
+          "rhythm": "pulse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 240.0,
+          "endBeat": 256.0,
+          "section": 6,
+          "label": "主拍への回帰",
+          "rhythm": "pulse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 256.0,
+          "endBeat": 272.0,
+          "section": 7,
+          "label": "歌の主題の発展",
+          "rhythm": "vocal",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 272.0,
+          "endBeat": 288.0,
+          "section": 7,
+          "label": "歌の主題の発展",
+          "rhythm": "vocal",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 288.0,
+          "endBeat": 304.0,
+          "section": 7,
+          "label": "歌の主題の発展",
+          "rhythm": "vocal",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 304.0,
+          "endBeat": 320.0,
+          "section": 8,
+          "label": "終止",
+          "rhythm": "outro",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 320.0,
+          "endBeat": 324.0,
+          "section": 8,
+          "label": "終止",
+          "rhythm": "outro",
+          "motion": "arc"
         }
       ],
       "recoveryAdjustments": [],
-      "flowPassed": true,
-      "identicalAdjacentBars": []
+      "flowPassed": true
+    },
+    "normal": {
+      "notes": 312,
+      "cuts": 322,
+      "types": {
+        "tap": 284,
+        "direction": 18,
+        "long": 10
+      },
+      "phrases": [
+        {
+          "startBeat": 0.0,
+          "endBeat": 16.0,
+          "section": 0,
+          "label": "導入",
+          "rhythm": "pulse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 16.0,
+          "endBeat": 32.0,
+          "section": 0,
+          "label": "導入",
+          "rhythm": "pulse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 32.0,
+          "endBeat": 48.0,
+          "section": 1,
+          "label": "歌の応答",
+          "rhythm": "answer",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 48.0,
+          "endBeat": 64.0,
+          "section": 1,
+          "label": "歌の応答",
+          "rhythm": "answer",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 64.0,
+          "endBeat": 80.0,
+          "section": 2,
+          "label": "主拍の主題",
+          "rhythm": "pulse",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 80.0,
+          "endBeat": 96.0,
+          "section": 2,
+          "label": "主拍の主題",
+          "rhythm": "pulse",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 96.0,
+          "endBeat": 112.0,
+          "section": 2,
+          "label": "主拍の主題",
+          "rhythm": "pulse",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 112.0,
+          "endBeat": 128.0,
+          "section": 2,
+          "label": "主拍の主題",
+          "rhythm": "pulse",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 128.0,
+          "endBeat": 144.0,
+          "section": 3,
+          "label": "展開",
+          "rhythm": "drive",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 144.0,
+          "endBeat": 160.0,
+          "section": 3,
+          "label": "展開",
+          "rhythm": "drive",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 160.0,
+          "endBeat": 176.0,
+          "section": 4,
+          "label": "つなぎ",
+          "rhythm": "answer",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 176.0,
+          "endBeat": 192.0,
+          "section": 5,
+          "label": "歌の裏拍",
+          "rhythm": "vocal",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 192.0,
+          "endBeat": 208.0,
+          "section": 5,
+          "label": "歌の裏拍",
+          "rhythm": "vocal",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 208.0,
+          "endBeat": 224.0,
+          "section": 5,
+          "label": "歌の裏拍",
+          "rhythm": "vocal",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 224.0,
+          "endBeat": 240.0,
+          "section": 6,
+          "label": "主拍への回帰",
+          "rhythm": "pulse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 240.0,
+          "endBeat": 256.0,
+          "section": 6,
+          "label": "主拍への回帰",
+          "rhythm": "pulse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 256.0,
+          "endBeat": 272.0,
+          "section": 7,
+          "label": "歌の主題の発展",
+          "rhythm": "vocal",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 272.0,
+          "endBeat": 288.0,
+          "section": 7,
+          "label": "歌の主題の発展",
+          "rhythm": "vocal",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 288.0,
+          "endBeat": 304.0,
+          "section": 7,
+          "label": "歌の主題の発展",
+          "rhythm": "vocal",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 304.0,
+          "endBeat": 320.0,
+          "section": 8,
+          "label": "終止",
+          "rhythm": "outro",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 320.0,
+          "endBeat": 324.0,
+          "section": 8,
+          "label": "終止",
+          "rhythm": "outro",
+          "motion": "arc"
+        }
+      ],
+      "recoveryAdjustments": [],
+      "flowPassed": true
+    },
+    "hard": {
+      "notes": 442,
+      "cuts": 453,
+      "types": {
+        "tap": 374,
+        "direction": 57,
+        "long": 11
+      },
+      "phrases": [
+        {
+          "startBeat": 0.0,
+          "endBeat": 16.0,
+          "section": 0,
+          "label": "導入",
+          "rhythm": "pulse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 16.0,
+          "endBeat": 32.0,
+          "section": 0,
+          "label": "導入",
+          "rhythm": "pulse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 32.0,
+          "endBeat": 48.0,
+          "section": 1,
+          "label": "歌の応答",
+          "rhythm": "answer",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 48.0,
+          "endBeat": 64.0,
+          "section": 1,
+          "label": "歌の応答",
+          "rhythm": "answer",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 64.0,
+          "endBeat": 80.0,
+          "section": 2,
+          "label": "主拍の主題",
+          "rhythm": "pulse",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 80.0,
+          "endBeat": 96.0,
+          "section": 2,
+          "label": "主拍の主題",
+          "rhythm": "pulse",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 96.0,
+          "endBeat": 112.0,
+          "section": 2,
+          "label": "主拍の主題",
+          "rhythm": "pulse",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 112.0,
+          "endBeat": 128.0,
+          "section": 2,
+          "label": "主拍の主題",
+          "rhythm": "pulse",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 128.0,
+          "endBeat": 144.0,
+          "section": 3,
+          "label": "展開",
+          "rhythm": "drive",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 144.0,
+          "endBeat": 160.0,
+          "section": 3,
+          "label": "展開",
+          "rhythm": "drive",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 160.0,
+          "endBeat": 176.0,
+          "section": 4,
+          "label": "つなぎ",
+          "rhythm": "answer",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 176.0,
+          "endBeat": 192.0,
+          "section": 5,
+          "label": "歌の裏拍",
+          "rhythm": "vocal",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 192.0,
+          "endBeat": 208.0,
+          "section": 5,
+          "label": "歌の裏拍",
+          "rhythm": "vocal",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 208.0,
+          "endBeat": 224.0,
+          "section": 5,
+          "label": "歌の裏拍",
+          "rhythm": "vocal",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 224.0,
+          "endBeat": 240.0,
+          "section": 6,
+          "label": "主拍への回帰",
+          "rhythm": "pulse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 240.0,
+          "endBeat": 256.0,
+          "section": 6,
+          "label": "主拍への回帰",
+          "rhythm": "pulse",
+          "motion": "vertical"
+        },
+        {
+          "startBeat": 256.0,
+          "endBeat": 272.0,
+          "section": 7,
+          "label": "歌の主題の発展",
+          "rhythm": "vocal",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 272.0,
+          "endBeat": 288.0,
+          "section": 7,
+          "label": "歌の主題の発展",
+          "rhythm": "vocal",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 288.0,
+          "endBeat": 304.0,
+          "section": 7,
+          "label": "歌の主題の発展",
+          "rhythm": "vocal",
+          "motion": "diagonal"
+        },
+        {
+          "startBeat": 304.0,
+          "endBeat": 320.0,
+          "section": 8,
+          "label": "終止",
+          "rhythm": "outro",
+          "motion": "arc"
+        },
+        {
+          "startBeat": 320.0,
+          "endBeat": 324.0,
+          "section": 8,
+          "label": "終止",
+          "rhythm": "outro",
+          "motion": "arc"
+        }
+      ],
+      "recoveryAdjustments": [],
+      "flowPassed": true
     }
   }
 }

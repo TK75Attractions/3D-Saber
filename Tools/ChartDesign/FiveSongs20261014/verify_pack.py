@@ -57,22 +57,52 @@ def verify(repo):
             for length in (1,2,4):
                 for b in range(len(bars)-2*length+1):
                     if any(bars[b:b+length]) and bars[b:b+length]==bars[b+length:b+2*length]:repeats.append([b+1,length])
-            assert not repeats,(spec['id'],diff,repeats)
-            developments=read(design/'audit.json')[spec['id']][diff]['developments']
-            for item in developments:
-                source=(item['sourceBar']-1)*4;target=(item['developedBar']-1)*4;hand=item['leadHand']
-                for q in item['offsets']:
-                    a=next(n for n in ns if n['beat']==source+q and n['color']==hand)
-                    b=next(n for n in ns if n['beat']==target+q and n['color']==hand)
-                    assert a['x']==b['x'] and a['y']==b['y']
-                    assert len([n for n in ns if n['beat']==target+q])==2
-            if diff=='hard':assert len(developments)>=1
+            # 音楽の同型反復は許可する。反復を避けるためだけに音を欠落させない。
+            def streak(seq):
+                run=maximum=0
+                for n in seq:
+                    run=run+1 if n['direction']!='none' else 0
+                    maximum=max(maximum,run)
+                return maximum
+            ratio=sum(n['direction']!='none' for n in ns)/len(ns)
+            limit={'easy':0,'normal':.12,'hard':.22}[diff]
+            assert ratio<=limit,(spec['id'],diff,ratio)
+            assert streak(ns)<=4,(spec['id'],diff,'全体フリック連続')
+            for hand in (False,True):
+                hand_notes=[n for n in ns if (n['x']>0)==hand]
+                assert streak(hand_notes)<=3,(spec['id'],diff,'片手フリック連続')
+                for i,n in enumerate(hand_notes[:-1]):
+                    if n['type']=='long':assert hand_notes[i+1]['time']>n['time']+n['lengthMs']+.1
+                assert .35<=len(hand_notes)/len(ns)<=.65
+            for i in range(len(ns)-15):
+                assert sum(n['direction']!='none' for n in ns[i:i+16])<=int(16*limit)
+            # 同時ノーツの配列順で連続数をごまかさない。混在した拍も厳しく数える。
+            grouped_run=grouped_max=0
+            for group in groups.values():
+                if any(n['direction']!='none' for n in group):grouped_run+=sum(n['direction']!='none' for n in group)
+                else:grouped_run=0
+                grouped_max=max(grouped_max,grouped_run)
+            assert grouped_max<10
+            duration=read(design/spec['id']/'analysis.json')['duration']
+            for n in ns:
+                assert n['time']>=0 and n['time']+n['lengthMs']<duration*1000
+                assert (n['type']=='direction')==(n['direction']!='none')
+                assert n['count']==(2 if n['type']=='long' else 1)
+            evidence=read(design/spec['id']/f'{diff}-evidence.json')
+            assert len(evidence)==len(ns)
+            assert all(e['strength']>=.20 and abs(e['distanceMs'])<=45.01 for e in evidence)
             report[spec['id']][diff]=dict(notes=len(ns),cuts=len(cuts),maxSwingSpeed=round(maxspeed,4),
-                 minimumSameHandGapMs=round(mingap*1000,3),repeatedOneTwoFourBarBlocks=repeats,developedMotifs=len(developments))
+                 minimumSameHandGapMs=round(mingap*1000,3),repeatedOneTwoFourBarBlocks=len(repeats),
+                 flickPercent=round(ratio*100,2),maxConsecutiveFlicks=streak(ns),
+                 maxConsecutiveFlicksPerHand=max(streak([n for n in ns if (n['x']>0)==h]) for h in (False,True)),
+                 maxConsecutiveFlicksByGroup=grouped_max,notesPerSecond=round(len(ns)/duration,3))
+        counts=[report[spec['id']][d]['notes'] for d in ('easy','normal','hard')]
+        assert counts[0]<counts[1]*.8 and counts[1]<counts[2]*.8
+        assert (folder/'chart.json').read_bytes()==(folder/'chart_normal.json').read_bytes()
     return report
 
 if __name__=='__main__':
     p=argparse.ArgumentParser();p.add_argument('--repo',type=Path,required=True);p.add_argument('--output',type=Path,required=True);args=p.parse_args()
     report=verify(args.repo)
     args.output.write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n',encoding='utf8')
-    print('PASS: all 15 charts, timing plans, swing paths, simultaneous separation, 1/2/4-bar repetition and motif development.')
+    print('PASS: all 15 charts, timing plans, swing paths, long occupancy, simultaneous separation, audio evidence and flick limits (global / per-hand / simultaneous groups).')
