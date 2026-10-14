@@ -192,7 +192,8 @@ class PcDiscovery(context: Context,
         publish()
     }
 
-    private fun broadcastLoop(udp: DatagramSocket, addresses: Set<InetAddress>, token: Int) {
+    // 受信エラーや世代変更で終了しても、次の定期再探索までソケットを残さない。
+    private fun broadcastLoop(udp: DatagramSocket, addresses: Set<InetAddress>, token: Int) = udp.use {
         val request = DiscoveryProtocol.REQUEST.toByteArray(Charsets.US_ASCII)
         val bytes = ByteArray(1025)
         var nextRequest = 0L
