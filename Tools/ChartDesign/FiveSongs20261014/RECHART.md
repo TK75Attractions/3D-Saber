@@ -1,6 +1,6 @@
 # 5曲の譜面再設計 / 2026-10-14
 
-現行譜面には、この再設計後に[34素材の変換配置](../BeatSaberPatternBank/README.md)を追加した。
+現行譜面には、この再設計後に[40素材の変換配置](../BeatSaberPatternBank/README.md)を追加した。
 以下の集計とプレビュー撮影結果は追加前の記録。現在のノーツ数・フリック数は
 `independent-audit.json`、各素材の挿入位置は `../BeatSaberPatternBank/applications.json` を参照。
 追加後も関連Unityテスト44件が成功し、連続フリックは全体・片手とも最大3。

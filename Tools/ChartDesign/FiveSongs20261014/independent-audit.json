@@ -77,8 +77,8 @@
   },
   "logic": {
     "easy": {
-      "notes": 209,
-      "cuts": 223,
+      "notes": 211,
+      "cuts": 225,
       "maxSwingSpeed": 1.721,
       "minimumSameHandGapMs": 750.0,
       "repeatedOneTwoFourBarBlocks": 80,
@@ -86,14 +86,14 @@
       "maxConsecutiveFlicks": 0,
       "maxConsecutiveFlicksPerHand": 0,
       "maxConsecutiveFlicksByGroup": 0,
-      "notesPerSecond": 1.011
+      "notesPerSecond": 1.021
     },
     "normal": {
       "notes": 389,
       "cuts": 403,
       "maxSwingSpeed": 3.3851,
       "minimumSameHandGapMs": 375.0,
-      "repeatedOneTwoFourBarBlocks": 58,
+      "repeatedOneTwoFourBarBlocks": 57,
       "flickPercent": 2.06,
       "maxConsecutiveFlicks": 1,
       "maxConsecutiveFlicksPerHand": 1,
@@ -106,7 +106,7 @@
       "maxSwingSpeed": 4.4166,
       "minimumSameHandGapMs": 250.0,
       "repeatedOneTwoFourBarBlocks": 15,
-      "flickPercent": 8.91,
+      "flickPercent": 9.08,
       "maxConsecutiveFlicks": 2,
       "maxConsecutiveFlicksPerHand": 2,
       "maxConsecutiveFlicksByGroup": 2,
@@ -153,28 +153,28 @@
   },
   "Aobasou": {
     "easy": {
-      "notes": 170,
-      "cuts": 181,
+      "notes": 168,
+      "cuts": 179,
       "maxSwingSpeed": 1.7648,
       "minimumSameHandGapMs": 857.143,
-      "repeatedOneTwoFourBarBlocks": 47,
+      "repeatedOneTwoFourBarBlocks": 44,
       "flickPercent": 0.0,
       "maxConsecutiveFlicks": 0,
       "maxConsecutiveFlicksPerHand": 0,
       "maxConsecutiveFlicksByGroup": 0,
-      "notesPerSecond": 1.224
+      "notesPerSecond": 1.21
     },
     "normal": {
-      "notes": 312,
-      "cuts": 322,
+      "notes": 311,
+      "cuts": 321,
       "maxSwingSpeed": 2.8493,
       "minimumSameHandGapMs": 428.571,
       "repeatedOneTwoFourBarBlocks": 25,
-      "flickPercent": 5.77,
+      "flickPercent": 5.47,
       "maxConsecutiveFlicks": 1,
       "maxConsecutiveFlicksPerHand": 1,
       "maxConsecutiveFlicksByGroup": 1,
-      "notesPerSecond": 2.247
+      "notesPerSecond": 2.24
     },
     "hard": {
       "notes": 452,

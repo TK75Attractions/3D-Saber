@@ -1307,10 +1307,10 @@
   },
   "logic": {
     "easy": {
-      "notes": 209,
-      "cuts": 223,
+      "notes": 211,
+      "cuts": 225,
       "types": {
-        "tap": 195,
+        "tap": 197,
         "long": 14
       },
       "phrases": [
@@ -1574,7 +1574,8 @@
       "recoveryAdjustments": [],
       "flowPassed": true,
       "materialPatterns": [
-        "bring-it-on-1"
+        "bring-it-on-1",
+        "there-normal-3"
       ]
     },
     "normal": {
@@ -1848,15 +1849,16 @@
       "materialPatterns": [
         "avoid-hand-clap",
         "dream-normal-2",
-        "lvl-expert-3"
+        "lvl-expert-3",
+        "elixia-hard-1"
       ]
     },
     "hard": {
       "notes": 617,
       "cuts": 631,
       "types": {
-        "tap": 548,
-        "direction": 55,
+        "tap": 547,
+        "direction": 56,
         "long": 14
       },
       "phrases": [
@@ -2121,7 +2123,9 @@
       "flowPassed": true,
       "materialPatterns": [
         "shut-up-dance-2",
-        "shut-up-dance-1"
+        "shut-up-dance-1",
+        "elixia-hard-2",
+        "elixia-hard-3"
       ]
     }
   },
@@ -2756,10 +2760,10 @@
   },
   "Aobasou": {
     "easy": {
-      "notes": 170,
-      "cuts": 181,
+      "notes": 168,
+      "cuts": 179,
       "types": {
-        "tap": 159,
+        "tap": 157,
         "long": 11
       },
       "phrases": [
@@ -2935,15 +2939,16 @@
       "recoveryAdjustments": [],
       "flowPassed": true,
       "materialPatterns": [
-        "avoid-central-wall"
+        "avoid-central-wall",
+        "there-normal-1"
       ]
     },
     "normal": {
-      "notes": 312,
-      "cuts": 322,
+      "notes": 311,
+      "cuts": 321,
       "types": {
         "tap": 284,
-        "direction": 18,
+        "direction": 17,
         "long": 10
       },
       "phrases": [
@@ -3121,7 +3126,8 @@
       "materialPatterns": [
         "avoid-face-punch",
         "avoid-vision-block",
-        "bring-it-on-2"
+        "bring-it-on-2",
+        "there-normal-2"
       ]
     },
     "hard": {

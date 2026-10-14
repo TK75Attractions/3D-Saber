@@ -28,6 +28,12 @@ MANUAL={
  'lvl-expert-2':('hard','L0 R0.5 L1 R2 L2.5 R3','horizontal'),
  'lvl-expert-3':('normal','L0 R1 L2 R3','wide'),
  'lvl-expert-4':('hard','L0 R1 L1.5 R2 L2.5 R3 L3.5','horizontal'),
+ 'elixia-hard-1':('normal','R0 L1 R2 L3','elixia-turn'),
+ 'elixia-hard-2':('hard','L0 R1 L2 R3 L3.5','elixia-turn'),
+ 'elixia-hard-3':('hard','R0 R0.5 L1.5 R2.5 L3.5','elixia-turn'),
+ 'there-normal-1':('easy','L2','rest'),
+ 'there-normal-2':('normal','B0 B2','separated'),
+ 'there-normal-3':('easy','R0 R2','compact'),
  'avoid-hand-clap':('normal','B0 L2 R3','separated'),
  'avoid-central-wall':('easy','L0 R2','compact'),
  'avoid-face-punch':('normal','L0 R1 L2 R3','separated'),
@@ -55,6 +61,9 @@ def manual_events(tokens,motion):
    if motion=='wide':x=1.4
    if motion=='separated':x=1.3;y=(-.16,.16)[parity]
    if motion=='rest':y=-.18
+   if motion=='elixia-turn':
+    x=(1.05,1.35)[parity] if h=='R' else (1.30,1.05)[parity]
+    y=(-.28,.12)[parity] if h=='R' else (.12,-.28)[parity]
    events.append({'beat':beat,'hand':'left' if h=='L' else 'right','x':round(sign*x,3),'y':round(y,3)})
    phase[h]+=1
  return events
@@ -105,5 +114,5 @@ def main():
  assert len({p['id'] for p in patterns})==len(collection['items'])
  for item in patterns:save(args.output/item['chartFile'],item['chart'])
  save(args.output/'converted-patterns.json',{'schemaVersion':1,'count':len(patterns),'patterns':patterns})
- print(json.dumps({'converted':len(patterns),'sourceData':sum('sourceNotes' in c for c in collection['items']),'videoAdaptations':len(MANUAL)-6,'corrected':6}))
+ print(json.dumps({'converted':len(patterns),'sourceData':sum('sourceNotes' in c for c in collection['items']),'videoAdaptations':sum('sourceNotes' not in c and c['category']!='avoid' for c in collection['items']),'corrected':sum(c['category']=='avoid' for c in collection['items'])}))
 if __name__=='__main__':main()

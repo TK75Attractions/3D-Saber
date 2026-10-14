@@ -88,6 +88,10 @@
       "name": "つなぎ"
     },
     {
+      "timeMs": 176153.0,
+      "name": "素材: there-normal-3"
+    },
+    {
       "timeMs": 184403.0,
       "name": "BPM160へ回帰"
     },
@@ -2080,10 +2084,21 @@
     {
       "beat": 384.0,
       "time": 176153.0,
-      "x": -1.22,
-      "y": -0.25,
+      "x": 1.12,
+      "y": -0.163,
       "type": "tap",
-      "color": "blue",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 386.0,
+      "time": 177153.0,
+      "x": 1.12,
+      "y": 0.163,
+      "type": "tap",
+      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -2091,10 +2106,21 @@
     {
       "beat": 388.0,
       "time": 178153.0,
-      "x": 1.22,
-      "y": 0.25,
+      "x": -1.12,
+      "y": -0.163,
       "type": "tap",
-      "color": "red",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 390.0,
+      "time": 179153.0,
+      "x": -1.12,
+      "y": 0.163,
+      "type": "tap",
+      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0

@@ -1342,9 +1342,9 @@
   {
     "index": 134,
     "beat": 160.0,
-    "hand": "blue",
-    "role": "BPM120へ",
-    "phrase": 10,
+    "hand": "red",
+    "role": "素材: 上下と横向きを交互へつなぐ",
+    "phrase": -1,
     "peakSeconds": 62.408163,
     "distanceMs": 5.163,
     "strength": 0.8045
@@ -1352,9 +1352,9 @@
   {
     "index": 135,
     "beat": 161.0,
-    "hand": "red",
-    "role": "BPM120へ",
-    "phrase": 10,
+    "hand": "blue",
+    "role": "素材: 上下と横向きを交互へつなぐ",
+    "phrase": -1,
     "peakSeconds": 62.907029,
     "distanceMs": 4.029,
     "strength": 0.9959
@@ -1362,9 +1362,9 @@
   {
     "index": 136,
     "beat": 162.0,
-    "hand": "blue",
-    "role": "BPM120へ",
-    "phrase": 10,
+    "hand": "red",
+    "role": "素材: 上下と横向きを交互へつなぐ",
+    "phrase": -1,
     "peakSeconds": 63.360998,
     "distanceMs": -42.002,
     "strength": 0.4552
@@ -1372,9 +1372,9 @@
   {
     "index": 137,
     "beat": 163.0,
-    "hand": "red",
-    "role": "BPM120へ",
-    "phrase": 10,
+    "hand": "blue",
+    "role": "素材: 上下と横向きを交互へつなぐ",
+    "phrase": -1,
     "peakSeconds": 63.864853,
     "distanceMs": -38.147,
     "strength": 1.0454
@@ -1383,8 +1383,8 @@
     "index": 138,
     "beat": 164.0,
     "hand": "blue",
-    "role": "BPM120へ",
-    "phrase": 10,
+    "role": "素材: 上下と横向きを交互へつなぐ",
+    "phrase": -1,
     "peakSeconds": 64.373696,
     "distanceMs": -29.304,
     "strength": 0.9288
@@ -1393,8 +1393,8 @@
     "index": 139,
     "beat": 165.0,
     "hand": "red",
-    "role": "BPM120へ",
-    "phrase": 10,
+    "role": "素材: 上下と横向きを交互へつなぐ",
+    "phrase": -1,
     "peakSeconds": 64.907483,
     "distanceMs": 4.483,
     "strength": 1.6287
@@ -1403,8 +1403,8 @@
     "index": 140,
     "beat": 166.0,
     "hand": "blue",
-    "role": "BPM120へ",
-    "phrase": 10,
+    "role": "素材: 上下と横向きを交互へつなぐ",
+    "phrase": -1,
     "peakSeconds": 65.406349,
     "distanceMs": 3.349,
     "strength": 0.6011
@@ -1413,8 +1413,8 @@
     "index": 141,
     "beat": 167.0,
     "hand": "red",
-    "role": "BPM120へ",
-    "phrase": 10,
+    "role": "素材: 上下と横向きを交互へつなぐ",
+    "phrase": -1,
     "peakSeconds": 65.905215,
     "distanceMs": 2.215,
     "strength": 1.1706

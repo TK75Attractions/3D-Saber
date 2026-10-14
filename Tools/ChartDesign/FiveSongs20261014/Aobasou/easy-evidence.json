@@ -1281,46 +1281,26 @@
   },
   {
     "index": 128,
-    "beat": 240.0,
-    "hand": "red",
-    "role": "主拍への回帰",
-    "phrase": 15,
-    "peakSeconds": 102.846259,
-    "distanceMs": -10.884,
-    "strength": 1.5195
-  },
-  {
-    "index": 129,
     "beat": 242.0,
     "hand": "blue",
-    "role": "主拍への回帰",
-    "phrase": 15,
+    "role": "素材: 両手の後に休んで片手へ",
+    "phrase": -1,
     "peakSeconds": 103.709297,
     "distanceMs": -4.989,
     "strength": 1.5507
   },
   {
-    "index": 130,
-    "beat": 244.0,
-    "hand": "red",
-    "role": "主拍への回帰",
-    "phrase": 15,
-    "peakSeconds": 104.562358,
-    "distanceMs": -9.07,
-    "strength": 1.3263
-  },
-  {
-    "index": 131,
+    "index": 129,
     "beat": 246.0,
-    "hand": "blue",
-    "role": "主拍への回帰",
-    "phrase": 15,
+    "hand": "red",
+    "role": "素材: 両手の後に休んで片手へ",
+    "phrase": -1,
     "peakSeconds": 105.420408,
     "distanceMs": -8.163,
     "strength": 1.4107
   },
   {
-    "index": 132,
+    "index": 130,
     "beat": 248.0,
     "hand": "red",
     "role": "主拍への回帰",
@@ -1330,7 +1310,7 @@
     "strength": 1.3952
   },
   {
-    "index": 133,
+    "index": 131,
     "beat": 250.0,
     "hand": "blue",
     "role": "主拍への回帰",
@@ -1340,7 +1320,7 @@
     "strength": 1.3125
   },
   {
-    "index": 134,
+    "index": 132,
     "beat": 252.0,
     "hand": "red",
     "role": "主拍への回帰",
@@ -1350,7 +1330,7 @@
     "strength": 1.9895
   },
   {
-    "index": 135,
+    "index": 133,
     "beat": 254.0,
     "hand": "blue",
     "role": "主拍への回帰",
@@ -1360,7 +1340,7 @@
     "strength": 0.3542
   },
   {
-    "index": 136,
+    "index": 134,
     "beat": 256.0,
     "hand": "red",
     "role": "歌の主題の発展",
@@ -1370,7 +1350,7 @@
     "strength": 1.2185
   },
   {
-    "index": 137,
+    "index": 135,
     "beat": 256.0,
     "hand": "blue",
     "role": "歌の主題の発展",
@@ -1380,7 +1360,7 @@
     "strength": 1.2185
   },
   {
-    "index": 138,
+    "index": 136,
     "beat": 258.0,
     "hand": "blue",
     "role": "歌の主題の発展",
@@ -1390,7 +1370,7 @@
     "strength": 0.4623
   },
   {
-    "index": 139,
+    "index": 137,
     "beat": 260.0,
     "hand": "red",
     "role": "歌の主題の発展",
@@ -1400,7 +1380,7 @@
     "strength": 0.6095
   },
   {
-    "index": 140,
+    "index": 138,
     "beat": 262.0,
     "hand": "blue",
     "role": "歌の主題の発展",
@@ -1410,7 +1390,7 @@
     "strength": 0.7028
   },
   {
-    "index": 141,
+    "index": 139,
     "beat": 264.0,
     "hand": "red",
     "role": "歌の主題の発展",
@@ -1420,7 +1400,7 @@
     "strength": 0.7245
   },
   {
-    "index": 142,
+    "index": 140,
     "beat": 266.0,
     "hand": "blue",
     "role": "歌の主題の発展",
@@ -1430,7 +1410,7 @@
     "strength": 0.5903
   },
   {
-    "index": 143,
+    "index": 141,
     "beat": 268.0,
     "hand": "red",
     "role": "歌の主題の発展",
@@ -1440,7 +1420,7 @@
     "strength": 0.6993
   },
   {
-    "index": 144,
+    "index": 142,
     "beat": 270.0,
     "hand": "blue",
     "role": "歌の主題の発展",
@@ -1450,7 +1430,7 @@
     "strength": 0.6146
   },
   {
-    "index": 145,
+    "index": 143,
     "beat": 272.0,
     "hand": "red",
     "role": "歌の主題の発展",
@@ -1460,7 +1440,7 @@
     "strength": 0.6079
   },
   {
-    "index": 146,
+    "index": 144,
     "beat": 274.0,
     "hand": "blue",
     "role": "歌の主題の発展",
@@ -1470,7 +1450,7 @@
     "strength": 0.6317
   },
   {
-    "index": 147,
+    "index": 145,
     "beat": 276.0,
     "hand": "red",
     "role": "歌の主題の発展",
@@ -1480,7 +1460,7 @@
     "strength": 0.5408
   },
   {
-    "index": 148,
+    "index": 146,
     "beat": 278.0,
     "hand": "blue",
     "role": "歌の主題の発展",
@@ -1490,7 +1470,7 @@
     "strength": 0.6919
   },
   {
-    "index": 149,
+    "index": 147,
     "beat": 280.0,
     "hand": "red",
     "role": "歌の主題の発展",
@@ -1500,7 +1480,7 @@
     "strength": 0.8783
   },
   {
-    "index": 150,
+    "index": 148,
     "beat": 282.0,
     "hand": "blue",
     "role": "歌の主題の発展",
@@ -1510,7 +1490,7 @@
     "strength": 0.603
   },
   {
-    "index": 151,
+    "index": 149,
     "beat": 284.0,
     "hand": "red",
     "role": "歌の主題の発展",
@@ -1520,7 +1500,7 @@
     "strength": 0.7661
   },
   {
-    "index": 152,
+    "index": 150,
     "beat": 286.0,
     "hand": "blue",
     "role": "歌の主題の発展",
@@ -1530,7 +1510,7 @@
     "strength": 0.4622
   },
   {
-    "index": 153,
+    "index": 151,
     "beat": 288.0,
     "hand": "red",
     "role": "歌の主題の発展",
@@ -1540,7 +1520,7 @@
     "strength": 0.5755
   },
   {
-    "index": 154,
+    "index": 152,
     "beat": 288.0,
     "hand": "blue",
     "role": "歌の主題の発展",
@@ -1550,7 +1530,7 @@
     "strength": 0.5755
   },
   {
-    "index": 155,
+    "index": 153,
     "beat": 290.0,
     "hand": "blue",
     "role": "歌の主題の発展",
@@ -1560,7 +1540,7 @@
     "strength": 0.5762
   },
   {
-    "index": 156,
+    "index": 154,
     "beat": 292.0,
     "hand": "red",
     "role": "歌の主題の発展",
@@ -1570,7 +1550,7 @@
     "strength": 0.6005
   },
   {
-    "index": 157,
+    "index": 155,
     "beat": 294.0,
     "hand": "blue",
     "role": "歌の主題の発展",
@@ -1580,7 +1560,7 @@
     "strength": 0.5684
   },
   {
-    "index": 158,
+    "index": 156,
     "beat": 296.0,
     "hand": "red",
     "role": "歌の主題の発展",
@@ -1590,7 +1570,7 @@
     "strength": 0.873
   },
   {
-    "index": 159,
+    "index": 157,
     "beat": 298.0,
     "hand": "blue",
     "role": "歌の主題の発展",
@@ -1600,7 +1580,7 @@
     "strength": 0.5929
   },
   {
-    "index": 160,
+    "index": 158,
     "beat": 300.0,
     "hand": "red",
     "role": "歌の主題の発展",
@@ -1610,7 +1590,7 @@
     "strength": 0.8822
   },
   {
-    "index": 161,
+    "index": 159,
     "beat": 302.0,
     "hand": "blue",
     "role": "歌の主題の発展",
@@ -1620,7 +1600,7 @@
     "strength": 0.5544
   },
   {
-    "index": 162,
+    "index": 160,
     "beat": 304.0,
     "hand": "blue",
     "role": "素材: 中央をふさぐ壁",
@@ -1630,7 +1610,7 @@
     "strength": 0.9427
   },
   {
-    "index": 163,
+    "index": 161,
     "beat": 306.0,
     "hand": "red",
     "role": "素材: 中央をふさぐ壁",
@@ -1640,7 +1620,7 @@
     "strength": 0.5204
   },
   {
-    "index": 164,
+    "index": 162,
     "beat": 308.0,
     "hand": "red",
     "role": "素材: 中央をふさぐ壁",
@@ -1650,7 +1630,7 @@
     "strength": 0.5537
   },
   {
-    "index": 165,
+    "index": 163,
     "beat": 310.0,
     "hand": "blue",
     "role": "素材: 中央をふさぐ壁",
@@ -1660,7 +1640,7 @@
     "strength": 0.6385
   },
   {
-    "index": 166,
+    "index": 164,
     "beat": 312.0,
     "hand": "red",
     "role": "終止",
@@ -1670,7 +1650,7 @@
     "strength": 0.5992
   },
   {
-    "index": 167,
+    "index": 165,
     "beat": 314.0,
     "hand": "blue",
     "role": "終止",
@@ -1680,7 +1660,7 @@
     "strength": 0.7667
   },
   {
-    "index": 168,
+    "index": 166,
     "beat": 316.0,
     "hand": "red",
     "role": "終止",
@@ -1690,7 +1670,7 @@
     "strength": 0.7643
   },
   {
-    "index": 169,
+    "index": 167,
     "beat": 318.0,
     "hand": "blue",
     "role": "終止",

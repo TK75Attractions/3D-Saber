@@ -64,6 +64,14 @@
       "name": "BPM120へ"
     },
     {
+      "timeMs": 54403.0,
+      "name": "素材: elixia-hard-3"
+    },
+    {
+      "timeMs": 62403.0,
+      "name": "素材: elixia-hard-2"
+    },
+    {
       "timeMs": 70403.0,
       "name": "中盤の展開"
     },
@@ -2051,10 +2059,10 @@
     {
       "beat": 144.0,
       "time": 54403.0,
-      "x": -1.22,
-      "y": 0.34,
+      "x": 1.05,
+      "y": -0.28,
       "type": "tap",
-      "color": "blue",
+      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -2062,8 +2070,8 @@
     {
       "beat": 144.5,
       "time": 54653.0,
-      "x": 1.22,
-      "y": -0.34,
+      "x": 1.35,
+      "y": 0.12,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -2071,10 +2079,10 @@
       "lengthMs": 0
     },
     {
-      "beat": 145.0,
-      "time": 54903.0,
-      "x": -1.22,
-      "y": -0.34,
+      "beat": 145.5,
+      "time": 55153.0,
+      "x": -1.3,
+      "y": 0.12,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -2082,10 +2090,10 @@
       "lengthMs": 0
     },
     {
-      "beat": 146.0,
-      "time": 55403.0,
-      "x": 1.22,
-      "y": 0.34,
+      "beat": 146.5,
+      "time": 55653.0,
+      "x": 1.05,
+      "y": -0.28,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -2093,10 +2101,10 @@
       "lengthMs": 0
     },
     {
-      "beat": 147.0,
-      "time": 55903.0,
-      "x": -1.22,
-      "y": 0.34,
+      "beat": 147.5,
+      "time": 56153.0,
+      "x": -1.05,
+      "y": -0.28,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -2106,10 +2114,10 @@
     {
       "beat": 148.0,
       "time": 56403.0,
-      "x": 1.22,
-      "y": -0.34,
+      "x": -1.05,
+      "y": -0.28,
       "type": "tap",
-      "color": "red",
+      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -2117,8 +2125,8 @@
     {
       "beat": 148.5,
       "time": 56653.0,
-      "x": -1.22,
-      "y": -0.34,
+      "x": -1.35,
+      "y": 0.12,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -2126,10 +2134,10 @@
       "lengthMs": 0
     },
     {
-      "beat": 149.0,
-      "time": 56903.0,
-      "x": 1.22,
-      "y": 0.34,
+      "beat": 149.5,
+      "time": 57153.0,
+      "x": 1.3,
+      "y": 0.12,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -2137,10 +2145,10 @@
       "lengthMs": 0
     },
     {
-      "beat": 150.0,
-      "time": 57403.0,
-      "x": -1.22,
-      "y": 0.34,
+      "beat": 150.5,
+      "time": 57653.0,
+      "x": -1.05,
+      "y": -0.28,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -2148,10 +2156,10 @@
       "lengthMs": 0
     },
     {
-      "beat": 151.0,
-      "time": 57903.0,
-      "x": 1.22,
-      "y": -0.34,
+      "beat": 151.5,
+      "time": 58153.0,
+      "x": 1.05,
+      "y": -0.28,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -2282,19 +2290,8 @@
     {
       "beat": 160.0,
       "time": 62403.0,
-      "x": 1.22,
-      "y": -0.34,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 160.5,
-      "time": 62653.0,
-      "x": -1.22,
-      "y": -0.34,
+      "x": -1.3,
+      "y": 0.12,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -2304,8 +2301,8 @@
     {
       "beat": 161.0,
       "time": 62903.0,
-      "x": 1.22,
-      "y": 0.34,
+      "x": 1.05,
+      "y": -0.28,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -2315,8 +2312,8 @@
     {
       "beat": 162.0,
       "time": 63403.0,
-      "x": -1.22,
-      "y": 0.34,
+      "x": -1.05,
+      "y": -0.28,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -2326,8 +2323,8 @@
     {
       "beat": 163.0,
       "time": 63903.0,
-      "x": 1.22,
-      "y": -0.34,
+      "x": 1.35,
+      "y": 0.12,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -2335,10 +2332,10 @@
       "lengthMs": 0
     },
     {
-      "beat": 164.0,
-      "time": 64403.0,
-      "x": -1.22,
-      "y": -0.34,
+      "beat": 163.5,
+      "time": 64153.0,
+      "x": -1.3,
+      "y": 0.12,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -2346,10 +2343,10 @@
       "lengthMs": 0
     },
     {
-      "beat": 164.5,
-      "time": 64653.0,
-      "x": 1.22,
-      "y": 0.34,
+      "beat": 164.0,
+      "time": 64403.0,
+      "x": 1.3,
+      "y": 0.12,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -2359,8 +2356,8 @@
     {
       "beat": 165.0,
       "time": 64903.0,
-      "x": -1.22,
-      "y": 0.34,
+      "x": -1.05,
+      "y": -0.28,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -2370,8 +2367,8 @@
     {
       "beat": 166.0,
       "time": 65403.0,
-      "x": 1.22,
-      "y": -0.34,
+      "x": 1.05,
+      "y": -0.28,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -2381,11 +2378,22 @@
     {
       "beat": 167.0,
       "time": 65903.0,
-      "x": -1.22,
-      "y": -0.34,
+      "x": -1.35,
+      "y": 0.12,
       "type": "tap",
       "color": "blue",
       "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 167.5,
+      "time": 66153.0,
+      "x": 1.3,
+      "y": 0.12,
+      "type": "direction",
+      "color": "red",
+      "direction": "upright",
       "count": 1,
       "lengthMs": 0
     },

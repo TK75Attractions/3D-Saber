@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "convertedCount": 34,
-  "appliedCount": 34,
+  "convertedCount": 40,
+  "appliedCount": 40,
   "applications": [
     {
       "patternId": "shut-up-dance-2",
@@ -2935,14 +2935,14 @@
       "sourceUrl": "https://www.youtube.com/watch?v=mgGaqZ20Scw&t=163",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=normal&t=103.07",
       "noteIndices": [
+        241,
         242,
         243,
         244,
         245,
         246,
         247,
-        248,
-        249
+        248
       ],
       "appliedNotes": [
         {
@@ -3301,14 +3301,14 @@
       "sourceUrl": "https://www.youtube.com/watch?v=mgGaqZ20Scw&t=206",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=normal&t=96.21",
       "noteIndices": [
+        226,
         227,
         228,
         229,
         230,
         231,
         232,
-        233,
-        234
+        233
       ],
       "appliedNotes": [
         {
@@ -4521,12 +4521,12 @@
       "sourceUrl": "https://www.youtube.com/watch?v=16oSzYCTD3A&t=46",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=normal&t=130.50",
       "noteIndices": [
+        303,
         304,
         305,
         306,
         307,
-        308,
-        309
+        308
       ],
       "appliedNotes": [
         {
@@ -4619,10 +4619,10 @@
       "sourceUrl": "https://www.youtube.com/watch?v=mgGaqZ20Scw&t=97",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=easy&t=128.79",
       "noteIndices": [
+        160,
+        161,
         162,
-        163,
-        164,
-        165
+        163
       ],
       "appliedNotes": [
         {
@@ -4966,23 +4966,683 @@
           "lengthMs": 0
         }
       ]
+    },
+    {
+      "patternId": "elixia-hard-2",
+      "songId": "logic",
+      "songTitle": "logic!!!",
+      "difficulty": "hard",
+      "startBeat": 160,
+      "endBeat": 168,
+      "startBar": 41,
+      "barCount": 2,
+      "startSeconds": 62.403,
+      "endSeconds": 66.403,
+      "targetBpm": 120,
+      "mirrorFirstBar": false,
+      "secondBar": "左右を入れ替えた応答",
+      "section": "BPM120へ",
+      "removedNotes": 10,
+      "addedNotes": 10,
+      "sourceCategory": "conditional",
+      "fidelity": "映像の配置要素から設計した簡略化・翻案。原作の全ノーツの正確な採譜ではない。",
+      "sourceUrl": "https://www.youtube.com/watch?v=DMFXNLMHLJE&t=59",
+      "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=hard&t=60.90",
+      "noteIndices": [
+        198,
+        199,
+        200,
+        201,
+        202,
+        203,
+        204,
+        205,
+        206,
+        207
+      ],
+      "appliedNotes": [
+        {
+          "beat": 160.0,
+          "time": 62403.0,
+          "x": -1.3,
+          "y": 0.12,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 161.0,
+          "time": 62903.0,
+          "x": 1.05,
+          "y": -0.28,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 162.0,
+          "time": 63403.0,
+          "x": -1.05,
+          "y": -0.28,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 163.0,
+          "time": 63903.0,
+          "x": 1.35,
+          "y": 0.12,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 163.5,
+          "time": 64153.0,
+          "x": -1.3,
+          "y": 0.12,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 164.0,
+          "time": 64403.0,
+          "x": 1.3,
+          "y": 0.12,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 165.0,
+          "time": 64903.0,
+          "x": -1.05,
+          "y": -0.28,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 166.0,
+          "time": 65403.0,
+          "x": 1.05,
+          "y": -0.28,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 167.0,
+          "time": 65903.0,
+          "x": -1.35,
+          "y": 0.12,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 167.5,
+          "time": 66153.0,
+          "x": 1.3,
+          "y": 0.12,
+          "type": "direction",
+          "color": "red",
+          "direction": "upright",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ]
+    },
+    {
+      "patternId": "elixia-hard-3",
+      "songId": "logic",
+      "songTitle": "logic!!!",
+      "difficulty": "hard",
+      "startBeat": 144,
+      "endBeat": 152,
+      "startBar": 37,
+      "barCount": 2,
+      "startSeconds": 54.403,
+      "endSeconds": 58.403,
+      "targetBpm": 120,
+      "mirrorFirstBar": false,
+      "secondBar": "左右を入れ替えた応答",
+      "section": "BPM120へ",
+      "removedNotes": 10,
+      "addedNotes": 10,
+      "sourceCategory": "conditional",
+      "fidelity": "映像の配置要素から設計した簡略化・翻案。原作の全ノーツの正確な採譜ではない。",
+      "sourceUrl": "https://www.youtube.com/watch?v=DMFXNLMHLJE&t=106",
+      "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=hard&t=52.90",
+      "noteIndices": [
+        177,
+        178,
+        179,
+        180,
+        181,
+        182,
+        183,
+        184,
+        185,
+        186
+      ],
+      "appliedNotes": [
+        {
+          "beat": 144.0,
+          "time": 54403.0,
+          "x": 1.05,
+          "y": -0.28,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 144.5,
+          "time": 54653.0,
+          "x": 1.35,
+          "y": 0.12,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 145.5,
+          "time": 55153.0,
+          "x": -1.3,
+          "y": 0.12,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 146.5,
+          "time": 55653.0,
+          "x": 1.05,
+          "y": -0.28,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 147.5,
+          "time": 56153.0,
+          "x": -1.05,
+          "y": -0.28,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 148.0,
+          "time": 56403.0,
+          "x": -1.05,
+          "y": -0.28,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 148.5,
+          "time": 56653.0,
+          "x": -1.35,
+          "y": 0.12,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 149.5,
+          "time": 57153.0,
+          "x": 1.3,
+          "y": 0.12,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 150.5,
+          "time": 57653.0,
+          "x": -1.05,
+          "y": -0.28,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 151.5,
+          "time": 58153.0,
+          "x": 1.05,
+          "y": -0.28,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ]
+    },
+    {
+      "patternId": "elixia-hard-1",
+      "songId": "logic",
+      "songTitle": "logic!!!",
+      "difficulty": "normal",
+      "startBeat": 160,
+      "endBeat": 168,
+      "startBar": 41,
+      "barCount": 2,
+      "startSeconds": 62.403,
+      "endSeconds": 66.403,
+      "targetBpm": 120,
+      "mirrorFirstBar": false,
+      "secondBar": "左右を入れ替えた応答",
+      "section": "BPM120へ",
+      "removedNotes": 8,
+      "addedNotes": 8,
+      "sourceCategory": "good",
+      "fidelity": "映像の配置要素から設計した簡略化・翻案。原作の全ノーツの正確な採譜ではない。",
+      "sourceUrl": "https://www.youtube.com/watch?v=DMFXNLMHLJE&t=23",
+      "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=normal&t=60.90",
+      "noteIndices": [
+        134,
+        135,
+        136,
+        137,
+        138,
+        139,
+        140,
+        141
+      ],
+      "appliedNotes": [
+        {
+          "beat": 160.0,
+          "time": 62403.0,
+          "x": 1.05,
+          "y": -0.28,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 161.0,
+          "time": 62903.0,
+          "x": -1.3,
+          "y": 0.12,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 162.0,
+          "time": 63403.0,
+          "x": 1.35,
+          "y": 0.12,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 163.0,
+          "time": 63903.0,
+          "x": -1.05,
+          "y": -0.28,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 164.0,
+          "time": 64403.0,
+          "x": -1.05,
+          "y": -0.28,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 165.0,
+          "time": 64903.0,
+          "x": 1.3,
+          "y": 0.12,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 166.0,
+          "time": 65403.0,
+          "x": -1.35,
+          "y": 0.12,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 167.0,
+          "time": 65903.0,
+          "x": 1.05,
+          "y": -0.28,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ]
+    },
+    {
+      "patternId": "there-normal-2",
+      "songId": "Aobasou",
+      "songTitle": "青葉騒 feat.初音ミク",
+      "difficulty": "normal",
+      "startBeat": 96,
+      "endBeat": 104,
+      "startBar": 25,
+      "barCount": 2,
+      "startSeconds": 41.1429,
+      "endSeconds": 44.5714,
+      "targetBpm": 140,
+      "mirrorFirstBar": false,
+      "secondBar": "左右を入れ替えた応答",
+      "section": "主拍の主題",
+      "removedNotes": 9,
+      "addedNotes": 8,
+      "sourceCategory": "good",
+      "fidelity": "映像の配置要素から設計した簡略化・翻案。原作の全ノーツの正確な採譜ではない。",
+      "sourceUrl": "https://www.youtube.com/watch?v=WR5PG2IMFmg&t=58",
+      "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=normal&t=39.64",
+      "noteIndices": [
+        96,
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103
+      ],
+      "appliedNotes": [
+        {
+          "beat": 96.0,
+          "time": 41142.8571,
+          "x": 1.3,
+          "y": -0.16,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 96.0,
+          "time": 41142.8571,
+          "x": -1.3,
+          "y": -0.16,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 98.0,
+          "time": 42000.0,
+          "x": 1.3,
+          "y": 0.16,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 98.0,
+          "time": 42000.0,
+          "x": -1.3,
+          "y": 0.16,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 100.0,
+          "time": 42857.1429,
+          "x": 1.3,
+          "y": -0.16,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 100.0,
+          "time": 42857.1429,
+          "x": -1.3,
+          "y": -0.16,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 102.0,
+          "time": 43714.2857,
+          "x": 1.3,
+          "y": 0.16,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 102.0,
+          "time": 43714.2857,
+          "x": -1.3,
+          "y": 0.16,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ]
+    },
+    {
+      "patternId": "there-normal-3",
+      "songId": "logic",
+      "songTitle": "logic!!!",
+      "difficulty": "easy",
+      "startBeat": 384,
+      "endBeat": 392,
+      "startBar": 97,
+      "barCount": 2,
+      "startSeconds": 176.153,
+      "endSeconds": 180.153,
+      "targetBpm": 120,
+      "mirrorFirstBar": false,
+      "secondBar": "左右を入れ替えた応答",
+      "section": "つなぎ",
+      "removedNotes": 2,
+      "addedNotes": 4,
+      "sourceCategory": "conditional",
+      "fidelity": "映像の配置要素から設計した簡略化・翻案。原作の全ノーツの正確な採譜ではない。",
+      "sourceUrl": "https://www.youtube.com/watch?v=WR5PG2IMFmg&t=89",
+      "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=easy&t=174.65",
+      "noteIndices": [
+        180,
+        181,
+        182,
+        183
+      ],
+      "appliedNotes": [
+        {
+          "beat": 384.0,
+          "time": 176153.0,
+          "x": 1.12,
+          "y": -0.163,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 386.0,
+          "time": 177153.0,
+          "x": 1.12,
+          "y": 0.163,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 388.0,
+          "time": 178153.0,
+          "x": -1.12,
+          "y": -0.163,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 390.0,
+          "time": 179153.0,
+          "x": -1.12,
+          "y": 0.163,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ]
+    },
+    {
+      "patternId": "there-normal-1",
+      "songId": "Aobasou",
+      "songTitle": "青葉騒 feat.初音ミク",
+      "difficulty": "easy",
+      "startBeat": 240,
+      "endBeat": 248,
+      "startBar": 61,
+      "barCount": 2,
+      "startSeconds": 102.8571,
+      "endSeconds": 106.2857,
+      "targetBpm": 140,
+      "mirrorFirstBar": false,
+      "secondBar": "左右を入れ替えた応答",
+      "section": "主拍への回帰",
+      "removedNotes": 4,
+      "addedNotes": 2,
+      "sourceCategory": "good",
+      "fidelity": "映像の配置要素から設計した簡略化・翻案。原作の全ノーツの正確な採譜ではない。",
+      "sourceUrl": "https://www.youtube.com/watch?v=WR5PG2IMFmg&t=24",
+      "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=easy&t=101.36",
+      "noteIndices": [
+        128,
+        129
+      ],
+      "appliedNotes": [
+        {
+          "beat": 242.0,
+          "time": 103714.2857,
+          "x": -1.18,
+          "y": -0.18,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 246.0,
+          "time": 105428.5714,
+          "x": 1.18,
+          "y": -0.18,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ]
     }
   ],
   "inputChartHashes": {
-    "Assets/StreamingAssets/Songs/ManicSonic/chart_easy.json": "9bbcf17d962f25b97bb5f86d6a55c8db2b25961c2c37939a6652c6eb875814e3",
-    "Assets/StreamingAssets/Songs/ManicSonic/chart_normal.json": "29b820d7c684f9b298e20f97c2dc37a371e72b5894a8057ac4844164d1af4df0",
-    "Assets/StreamingAssets/Songs/ManicSonic/chart_hard.json": "0aaf3d5726af86c68572a653830c3acd2ebe8cce7e4fba56b49bb8ecd6ab6bd6",
-    "Assets/StreamingAssets/Songs/escapade/chart_easy.json": "e5e8d71d12e433e939436a5cadf8d57a2710cb6610f8a7349c60dc758fc19af6",
-    "Assets/StreamingAssets/Songs/escapade/chart_normal.json": "c7a455ae6e85394ce124144421580e18d3196f31f1fcc709619799ce9886b447",
-    "Assets/StreamingAssets/Songs/escapade/chart_hard.json": "27abaf8afc36659b49294063639b4fd39b29f9fe72d34c2f22f2c36ae67a7c84",
-    "Assets/StreamingAssets/Songs/logic/chart_easy.json": "676cb80d0dd661750a71b949a7f15b2e70872c17c999b02dbfc14b0767955505",
-    "Assets/StreamingAssets/Songs/logic/chart_normal.json": "7b6564fa0c6b05df59346bdb9a11ba070460aa83d84105ac0b64addf35387fb8",
-    "Assets/StreamingAssets/Songs/logic/chart_hard.json": "0f010988fee6ab3c75d0bbf3ff243ed04fa123bed1bb43f51dfab40e331cde3d",
-    "Assets/StreamingAssets/Songs/BenkyouRemaster/chart_easy.json": "ddaecaeccc341cd739b2cf35b8b33cead591e65b2ec179a18c3f4967057481f4",
-    "Assets/StreamingAssets/Songs/BenkyouRemaster/chart_normal.json": "84fe6c068353059d8cd30b1b3b470bdecd4db856889567d2018e43a05783e1c9",
-    "Assets/StreamingAssets/Songs/BenkyouRemaster/chart_hard.json": "f74de75a25a1cbbc64caa5376184d0a666ed3e60c1b08e953d10c0e1661d8e5b",
-    "Assets/StreamingAssets/Songs/Aobasou/chart_easy.json": "68cbb2d121f1b382755e1cbe1162ae7926df9ccd2ae46679415bcba2e168864c",
-    "Assets/StreamingAssets/Songs/Aobasou/chart_normal.json": "5414f856d74da333de34b99ab2afccec3e26a7087e73f0e05e0a2ab4a35293f2",
-    "Assets/StreamingAssets/Songs/Aobasou/chart_hard.json": "22861a5547622e2269736c1482e8ae86351392399a2e2855eebc02ff428bc268"
+    "Assets/StreamingAssets/Songs/ManicSonic/chart_easy.json": "b2ab1f0dee965fedcda91d1b5d343478f9ba74ded440e4a57b08444894bbd68b",
+    "Assets/StreamingAssets/Songs/ManicSonic/chart_normal.json": "4478bf58f1a8019bc71a02634f7d961b04fca0f55813799e67277b3a33e49756",
+    "Assets/StreamingAssets/Songs/ManicSonic/chart_hard.json": "3049616948ed5d68328eb50a863ff0e63b2821c8e87a9d1ae33a1fefe2f95a22",
+    "Assets/StreamingAssets/Songs/escapade/chart_easy.json": "f876362ea66260b10af1cfa596f2ac174409cda414fe2f06df0b21d757e1f235",
+    "Assets/StreamingAssets/Songs/escapade/chart_normal.json": "2e39400a35a98942bc9010e4c139558a0a879c3d7d608f716aef0765ec60c900",
+    "Assets/StreamingAssets/Songs/escapade/chart_hard.json": "264e184a8b70b7f15cf5955beef033b799905ce2b43eb67883ee2ae79c6d2ce8",
+    "Assets/StreamingAssets/Songs/logic/chart_easy.json": "9836bfb47263cc635e293d01141592bfccb174192964ab836faec0380677e118",
+    "Assets/StreamingAssets/Songs/logic/chart_normal.json": "2e8b2e1e718acc49e23973f489d14d29c9d19176013c42c47d0534253ba228ed",
+    "Assets/StreamingAssets/Songs/logic/chart_hard.json": "96b7d87a26281ff863131cdca012bb7a7b80276d2234d294479647e13815c83f",
+    "Assets/StreamingAssets/Songs/BenkyouRemaster/chart_easy.json": "40d4afb2501b6ae14b6b25f9eed19ea171b9fbeafafde79329d62274edfef14a",
+    "Assets/StreamingAssets/Songs/BenkyouRemaster/chart_normal.json": "95761ea6d3419ff898bcc14f0c0e4751caa8b44399203c01dd41dc056e587941",
+    "Assets/StreamingAssets/Songs/BenkyouRemaster/chart_hard.json": "3ad51f82408bede0ffdf6aa412f2f8f26bdfe9e44f3ef9c9847536832e5848c4",
+    "Assets/StreamingAssets/Songs/Aobasou/chart_easy.json": "1c8d7aebba7b790769d67664cee574eca995621108db207829a52515a5137f31",
+    "Assets/StreamingAssets/Songs/Aobasou/chart_normal.json": "bf5f691bf2c39f5cf731a2175b225bd6a7d07ae46b5ea190464d8775eff9858a",
+    "Assets/StreamingAssets/Songs/Aobasou/chart_hard.json": "2841ee9598893a94d50f4e1a46800019672879ab588b985b99792f649ca1c034"
   }
 }
