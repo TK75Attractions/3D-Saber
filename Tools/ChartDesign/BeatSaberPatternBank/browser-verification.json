@@ -1,0 +1,245 @@
+{
+  "checked": 34,
+  "errors": [],
+  "controls": "filters, search, saved persistence, context, speed, loop, downloads, mobile/desktop overflow passed",
+  "clips": [
+    {
+      "id": "dream-normal-1",
+      "time": 0.065159,
+      "width": 854,
+      "height": 480,
+      "duration": 1.311
+    },
+    {
+      "id": "dream-normal-2",
+      "time": 0.146912,
+      "width": 854,
+      "height": 480,
+      "duration": 1.311
+    },
+    {
+      "id": "dream-normal-3",
+      "time": 0.152531,
+      "width": 854,
+      "height": 480,
+      "duration": 1.333008
+    },
+    {
+      "id": "dream-normal-4",
+      "time": 0.158083,
+      "width": 854,
+      "height": 480,
+      "duration": 1.333008
+    },
+    {
+      "id": "dream-hard-1",
+      "time": 0.162661,
+      "width": 854,
+      "height": 480,
+      "duration": 1.310998
+    },
+    {
+      "id": "dream-hard-2",
+      "time": 0.163546,
+      "width": 854,
+      "height": 480,
+      "duration": 1.310998
+    },
+    {
+      "id": "dream-hard-3",
+      "time": 0.163016,
+      "width": 854,
+      "height": 480,
+      "duration": 1.310998
+    },
+    {
+      "id": "dream-hard-4",
+      "time": 0.163074,
+      "width": 854,
+      "height": 480,
+      "duration": 1.310998
+    },
+    {
+      "id": "burning-hard-1",
+      "time": 0.164007,
+      "width": 854,
+      "height": 480,
+      "duration": 1.7
+    },
+    {
+      "id": "burning-hard-2",
+      "time": 0.159103,
+      "width": 854,
+      "height": 480,
+      "duration": 1.7
+    },
+    {
+      "id": "burning-hard-3",
+      "time": 0.148863,
+      "width": 854,
+      "height": 480,
+      "duration": 1.7
+    },
+    {
+      "id": "burning-hard-4",
+      "time": 0.160142,
+      "width": 854,
+      "height": 480,
+      "duration": 1.7
+    },
+    {
+      "id": "unlimited-hard-1",
+      "time": 0.163836,
+      "width": 854,
+      "height": 480,
+      "duration": 1.211995
+    },
+    {
+      "id": "unlimited-hard-2",
+      "time": 0.155041,
+      "width": 854,
+      "height": 480,
+      "duration": 1.211995
+    },
+    {
+      "id": "unlimited-hard-3",
+      "time": 0.156705,
+      "width": 854,
+      "height": 480,
+      "duration": 1.211995
+    },
+    {
+      "id": "unlimited-hard-4",
+      "time": 0.153962,
+      "width": 854,
+      "height": 480,
+      "duration": 1.211995
+    },
+    {
+      "id": "lvl-expert-1",
+      "time": 0.156528,
+      "width": 854,
+      "height": 480,
+      "duration": 1.5
+    },
+    {
+      "id": "lvl-expert-2",
+      "time": 0.163417,
+      "width": 854,
+      "height": 480,
+      "duration": 1.5
+    },
+    {
+      "id": "lvl-expert-3",
+      "time": 0.160505,
+      "width": 854,
+      "height": 480,
+      "duration": 1.5
+    },
+    {
+      "id": "lvl-expert-4",
+      "time": 0.157134,
+      "width": 854,
+      "height": 480,
+      "duration": 1.5
+    },
+    {
+      "id": "bring-it-on-1",
+      "time": 0.158739,
+      "width": 854,
+      "height": 480,
+      "duration": 1.5
+    },
+    {
+      "id": "bring-it-on-2",
+      "time": 0.154469,
+      "width": 854,
+      "height": 480,
+      "duration": 1.5
+    },
+    {
+      "id": "bring-it-on-3",
+      "time": 0.158684,
+      "width": 854,
+      "height": 480,
+      "duration": 1.5
+    },
+    {
+      "id": "bring-it-on-4",
+      "time": 0.158747,
+      "width": 854,
+      "height": 480,
+      "duration": 1.5
+    },
+    {
+      "id": "shut-up-dance-1",
+      "time": 0.165074,
+      "width": 854,
+      "height": 485,
+      "duration": 1.875011
+    },
+    {
+      "id": "shut-up-dance-2",
+      "time": 0.167269,
+      "width": 854,
+      "height": 485,
+      "duration": 1.875011
+    },
+    {
+      "id": "shut-up-dance-3",
+      "time": 0.151573,
+      "width": 854,
+      "height": 485,
+      "duration": 1.875011
+    },
+    {
+      "id": "shut-up-dance-4",
+      "time": 0.159799,
+      "width": 854,
+      "height": 485,
+      "duration": 1.875011
+    },
+    {
+      "id": "avoid-hand-clap",
+      "time": 0.149516,
+      "width": 854,
+      "height": 480,
+      "duration": 4
+    },
+    {
+      "id": "avoid-central-wall",
+      "time": 0.156322,
+      "width": 854,
+      "height": 480,
+      "duration": 4
+    },
+    {
+      "id": "avoid-face-punch",
+      "time": 0.158026,
+      "width": 854,
+      "height": 480,
+      "duration": 4
+    },
+    {
+      "id": "avoid-vision-block",
+      "time": 0.166034,
+      "width": 854,
+      "height": 480,
+      "duration": 4
+    },
+    {
+      "id": "avoid-hammer",
+      "time": 0.169457,
+      "width": 854,
+      "height": 480,
+      "duration": 4
+    },
+    {
+      "id": "avoid-double-direction",
+      "time": 0.157887,
+      "width": 854,
+      "height": 480,
+      "duration": 4
+    }
+  ]
+}
