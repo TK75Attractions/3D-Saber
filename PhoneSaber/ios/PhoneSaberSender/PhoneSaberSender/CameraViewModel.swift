@@ -486,6 +486,12 @@ final class CameraUIPendingState: @unchecked Sendable {
         lifecycleGeneration = lifecycle
     }
 
+    // 通知元のキューで世代を固定し、停止・再開前の通知を新しい run に持ち込まない。
+    func cameraNotificationGeneration() -> Int? {
+        lock.lock(); defer { lock.unlock() }
+        return running ? lifecycleGeneration : nil
+    }
+
     func reset() {
         lock.lock(); defer { lock.unlock() }
         let noRoute = state.noRoute
@@ -1106,25 +1112,37 @@ final class CameraViewModel: NSObject, ObservableObject {
             object: session,
             queue: nil
         ) { [weak self] notification in
+            guard let generation = self?.uiPending.cameraNotificationGeneration() else { return }
             let reason = notification.userInfo?[AVCaptureSessionInterruptionReasonKey]
                 .map { String(describing: $0) } ?? "理由不明"
-            Task { @MainActor in self?.handleCameraInterruption(reason: reason) }
+            Task { @MainActor [weak self] in
+                guard let self, self.lifecycleGeneration == generation else { return }
+                self.handleCameraInterruption(reason: reason)
+            }
         })
         sessionObserverTokens.append(center.addObserver(
             forName: AVCaptureSession.interruptionEndedNotification,
             object: session,
             queue: nil
         ) { [weak self] _ in
-            Task { @MainActor in self?.handleCameraInterruptionEnded() }
+            guard let generation = self?.uiPending.cameraNotificationGeneration() else { return }
+            Task { @MainActor [weak self] in
+                guard let self, self.lifecycleGeneration == generation else { return }
+                self.handleCameraInterruptionEnded()
+            }
         })
         sessionObserverTokens.append(center.addObserver(
             forName: AVCaptureSession.runtimeErrorNotification,
             object: session,
             queue: nil
         ) { [weak self] notification in
+            guard let generation = self?.uiPending.cameraNotificationGeneration() else { return }
             let error = notification.userInfo?[AVCaptureSessionErrorKey] as? NSError
             let message = error?.localizedDescription ?? "AVCaptureSession runtime error"
-            Task { @MainActor in self?.handleCameraRuntimeError(message) }
+            Task { @MainActor [weak self] in
+                guard let self, self.lifecycleGeneration == generation else { return }
+                self.handleCameraRuntimeError(message)
+            }
         })
     }
 

@@ -433,6 +433,14 @@ def _signal_handler(signum: int, _frame: object) -> None:
     raise StopRequested(signum)
 
 
+def _emit_cleanup(message: str, log_file: IO[str]) -> None:
+    # A full disk or closed Terminal must not prevent stopping the process group.
+    try:
+        _emit(message, log_file)
+    except OSError:
+        pass
+
+
 def _cleanup_remaining_processes(process_group: int, log_file: IO[str]) -> None:
     # The receiver normally reaps its Bonjour and Codex children in its own
     # shutdown path. Terminate any process still in the isolated receiver
@@ -441,7 +449,7 @@ def _cleanup_remaining_processes(process_group: int, log_file: IO[str]) -> None:
         os.killpg(process_group, 0)
     except ProcessLookupError:
         return
-    _emit("[PHONE_SABER][STOP] cleaning up remaining receiver child processes", log_file)
+    _emit_cleanup("[PHONE_SABER][STOP] cleaning up remaining receiver child processes", log_file)
     try:
         os.killpg(process_group, signal.SIGTERM)
     except ProcessLookupError:
@@ -453,7 +461,7 @@ def _cleanup_remaining_processes(process_group: int, log_file: IO[str]) -> None:
         except ProcessLookupError:
             return
         time.sleep(0.05)
-    _emit("[PHONE_SABER][STOP] force-stopping remaining receiver child processes", log_file)
+    _emit_cleanup("[PHONE_SABER][STOP] force-stopping remaining receiver child processes", log_file)
     try:
         os.killpg(process_group, signal.SIGKILL)
     except ProcessLookupError:
@@ -464,7 +472,7 @@ def _stop_process_group(process: subprocess.Popen[str], log_file: IO[str]) -> No
     if process.poll() is not None:
         _cleanup_remaining_processes(process.pid, log_file)
         return
-    _emit("[PHONE_SABER][STOP] sending SIGINT to receiver and its child processes", log_file)
+    _emit_cleanup("[PHONE_SABER][STOP] sending SIGINT to receiver and its child processes", log_file)
     try:
         os.killpg(process.pid, signal.SIGINT)
     except ProcessLookupError:
@@ -472,7 +480,7 @@ def _stop_process_group(process: subprocess.Popen[str], log_file: IO[str]) -> No
     try:
         process.wait(timeout=10)
     except subprocess.TimeoutExpired:
-        _emit("[PHONE_SABER][STOP] receiver did not finish; sending SIGTERM", log_file)
+        _emit_cleanup("[PHONE_SABER][STOP] receiver did not finish; sending SIGTERM", log_file)
         try:
             os.killpg(process.pid, signal.SIGTERM)
         except ProcessLookupError:
@@ -480,7 +488,7 @@ def _stop_process_group(process: subprocess.Popen[str], log_file: IO[str]) -> No
         try:
             process.wait(timeout=3)
         except subprocess.TimeoutExpired:
-            _emit("[PHONE_SABER][STOP] receiver did not exit; sending SIGKILL", log_file)
+            _emit_cleanup("[PHONE_SABER][STOP] receiver did not exit; sending SIGKILL", log_file)
             try:
                 os.killpg(process.pid, signal.SIGKILL)
             except ProcessLookupError:
@@ -591,12 +599,12 @@ def run_receiver(
                 _emit(f"[PHONE_SABER][STOP] receiver exit={return_code}", log_file)
                 return return_code
             except StopRequested as exc:
-                _emit("[PHONE_SABER][STOP] requested from Terminal", log_file)
+                _emit_cleanup("[PHONE_SABER][STOP] requested from Terminal", log_file)
                 if process is not None:
                     _stop_process_group(process, log_file)
                 return 128 + exc.signum
             except OSError as exc:
-                _emit(f"[PHONE_SABER][ERROR] receiver could not start: {exc}", log_file)
+                _emit_cleanup(f"[PHONE_SABER][ERROR] receiver could not start: {exc}", log_file)
                 if process is not None:
                     _stop_process_group(process, log_file)
                 return 1

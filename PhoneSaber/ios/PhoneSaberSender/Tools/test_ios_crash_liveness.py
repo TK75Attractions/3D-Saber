@@ -54,6 +54,10 @@ import AVFoundation
 @MainActor final class CameraViewModel {
  let session = AVCaptureSession()
  var sessionObserverTokens: [NSObjectProtocol] = []
+ // 通知元のキューから読む世代（本体は CameraUIPendingState。停止中は nil）。
+ final class Pending: @unchecked Sendable { func cameraNotificationGeneration() -> Int? { 1 } }
+ nonisolated let uiPending = Pending()
+ var lifecycleGeneration = 1
  func handleCameraInterruption(reason: String) {}
  func handleCameraInterruptionEnded() {}
  func handleCameraRuntimeError(_ message: String) {}

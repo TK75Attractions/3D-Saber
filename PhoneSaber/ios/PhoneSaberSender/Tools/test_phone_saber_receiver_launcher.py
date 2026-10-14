@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+import errno
 import io
 import json
 import os
@@ -362,6 +363,86 @@ class PhoneSaberReceiverLauncherTests(unittest.TestCase):
         assert listener is not None
         self.assertTrue(listener.is_phone_saber_receiver)
         self.assertEqual(listener.pids, (731,))
+
+    def test_full_log_stops_receiver_before_releasing_the_lock(self) -> None:
+        for operation in ("write", "flush"):
+            with self.subTest(operation=operation), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                log_dir = root / "logs"
+                processes = []
+                original_popen = subprocess.Popen
+                original_open = Path.open
+
+                class FullLog(io.StringIO):
+                    full = False
+
+                    def write(self, text):
+                        if "DISK_FULL_MARKER" in text:
+                            self.full = True
+                        if self.full and operation == "write":
+                            raise OSError(errno.ENOSPC, "No space left on device")
+                        return super().write(text)
+
+                    def flush(self):
+                        if self.full:
+                            raise OSError(errno.ENOSPC, "No space left on device")
+                        return super().flush()
+
+                def open_file(path, *args, **kwargs):
+                    if path.name.startswith("triage-") and path.suffix == ".log":
+                        return FullLog()
+                    return original_open(path, *args, **kwargs)
+
+                def start(*args, **kwargs):
+                    process = original_popen(*args, **kwargs)
+                    processes.append(process)
+                    return process
+
+                command = [sys.executable, "-u", "-c",
+                           "import signal, sys, time; "
+                           "signal.signal(signal.SIGINT, lambda *_: sys.exit(0)); "
+                           "print('DISK_FULL_MARKER'); time.sleep(60)"]
+                try:
+                    with mock.patch.object(Path, "open", open_file), \
+                            mock.patch.object(launcher.subprocess, "Popen", side_effect=start), \
+                            contextlib.redirect_stdout(io.StringIO()):
+                        try:
+                            code = launcher.run_receiver(
+                                root, snapshot_for(root), log_dir, receiver_command=command,
+                                listener_finder=lambda _port: None)
+                        except OSError:
+                            code = None
+                    self.assertEqual(len(processes), 1)
+                    self.assertIsNotNone(processes[0].poll(), "receiver outlived its launcher lock")
+                    self.assertEqual(code, 1)
+                    lock, _ = launcher._acquire_single_instance_lock(log_dir)
+                    self.assertIsNotNone(lock, "launcher lock was not released")
+                    if lock is not None:
+                        lock.close()
+                finally:
+                    for process in processes:
+                        if process.poll() is None:
+                            os.killpg(process.pid, signal.SIGKILL)
+                        process.wait(timeout=3)
+                        if process.stdout is not None:
+                            process.stdout.close()
+
+    def test_full_log_does_not_interrupt_shutdown_escalation_or_child_cleanup(self) -> None:
+        log = mock.Mock()
+        log.write.side_effect = OSError(errno.ENOSPC, "No space left on device")
+        process = mock.Mock(pid=4242)
+        process.poll.return_value = None
+        process.wait.side_effect = [subprocess.TimeoutExpired("receiver", 10),
+                                    subprocess.TimeoutExpired("receiver", 3), 0]
+        with mock.patch.object(launcher.os, "killpg") as killpg, \
+                mock.patch.object(launcher.time, "monotonic", side_effect=[0, 3]), \
+                contextlib.redirect_stdout(io.StringIO()):
+            launcher._stop_process_group(process, log)
+        self.assertEqual(killpg.call_args_list, [
+            mock.call(4242, signal.SIGINT), mock.call(4242, signal.SIGTERM),
+            mock.call(4242, signal.SIGKILL), mock.call(4242, 0),
+            mock.call(4242, signal.SIGTERM), mock.call(4242, signal.SIGKILL)])
+        self.assertEqual(process.wait.call_count, 3)
 
     def test_ctrl_c_stops_receiver_process_group_and_waits_for_child(self) -> None:
         if not hasattr(signal, "SIGINT"):

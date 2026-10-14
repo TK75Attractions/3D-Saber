@@ -2,13 +2,15 @@ package jp.phonesaber.sender
 
 import android.net.Network
 import android.os.SystemClock
+import java.io.IOException
 import java.net.InetSocketAddress
 import java.nio.ByteBuffer
 import java.nio.channels.DatagramChannel
 import java.util.concurrent.atomic.AtomicInteger
 
 /** One pending frame, replaced on offer; nonblocking sends, no retries or FIFO. */
-class LatestUdpSender : AutoCloseable {
+class LatestUdpSender internal constructor(private val openChannel: () -> DatagramChannel) : AutoCloseable {
+    constructor() : this({ DatagramChannel.open() })
     private data class Frame(val packets: List<CoordinateDatagram>, val started: Long, val capturedNs: Long?)
     internal val healthMeter = DeviceHealthMeter()
     private val gate = Object()
@@ -21,12 +23,12 @@ class LatestUdpSender : AutoCloseable {
     val blueSent = AtomicInteger()
     @Volatile var error: String? = null
         private set
-    private val worker = Thread(::loop, "PhoneSaber-UDP").apply { isDaemon = true; start() }
+    internal val worker = Thread(::loop, "PhoneSaber-UDP").apply { isDaemon = true; start() }
 
     fun configure(target: Destination?, wifi: Network?) = synchronized(gate) {
         if (destination == target && network == wifi) return@synchronized
         pending = null
-        channel?.close()
+        channel?.closeQuietly()
         channel = null
         destination = target
         network = wifi
@@ -46,7 +48,7 @@ class LatestUdpSender : AutoCloseable {
     fun stop() = synchronized(gate) {
         pending = null
         destination = null
-        channel?.close()
+        channel?.closeQuietly()
         channel = null
         redSent.set(0); blueSent.set(0)
         error = null
@@ -64,13 +66,13 @@ class LatestUdpSender : AutoCloseable {
             var redSucceeded = false
             var blueSucceeded = false
             try {
-                val socket = channel ?: DatagramChannel.open().also {
+                val socket = channel ?: openChannel().also {
                     // Bind traffic to Wi-Fi even if mobile data is the default route.
                     try {
                         it.configureBlocking(false)
                         wifi.bindSocket(it.socket())
                         channel = it
-                    } catch (e: Exception) { it.close(); throw e }
+                    } catch (e: Exception) { it.closeQuietly(); throw e }
                 }
                 for (packet in frame.packets) {
                     if (System.nanoTime() - frame.started >= 180_000_000L) break
@@ -91,7 +93,7 @@ class LatestUdpSender : AutoCloseable {
                 }
             } catch (e: Exception) {
                 error = "UDP送信失敗: ${e.localizedMessage}"
-                channel?.close()
+                channel?.closeQuietly()
                 channel = null
             } finally {
                 // 両色成功でもフレーム1件。置換・期限切れ・socket満杯は計測しない。
@@ -108,8 +110,13 @@ class LatestUdpSender : AutoCloseable {
     override fun close() = synchronized(gate) {
         closed = true
         pending = null
-        channel?.close()
+        channel?.closeQuietly()
         channel = null
         gate.notifyAll()
+    }
+
+    private fun DatagramChannel.closeQuietly() {
+        // close失敗でも終了済み。停止・worker通知を続け、送信/bindの元の例外を保持する。
+        try { close() } catch (_: IOException) { }
     }
 }

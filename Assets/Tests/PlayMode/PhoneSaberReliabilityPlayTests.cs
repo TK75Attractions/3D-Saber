@@ -207,6 +207,68 @@ public class PhoneSaberReliabilityPlayTests
     }
 
     [UnityTest]
+    public IEnumerator Restart_DiscardsUnpublishedCoordinates()
+    {
+        Send(redPort, "-1,0,1,0");
+        Send(bluePort, "0,-1,0,1");
+        // main thread を進めず、両色とも受信済み・未公開の停止を再現する。
+        Assert.IsTrue(SpinWait.SpinUntil(() => input.ReceivedPacketCount == 1 &&
+                                              input.ReceivedPacketCount2 == 1, 1000));
+        Assert.IsFalse(input.HasValidStickEndpoints);
+        Assert.IsFalse(input.HasValidStickEndpoints2);
+
+        yield return RestartWithoutOldCoordinates();
+    }
+
+    [UnityTest]
+    public IEnumerator Restart_InvalidatesPublishedCoordinates()
+    {
+        Send(redPort, "-1,0,1,0");
+        Send(bluePort, "0,-1,0,1");
+        yield return WaitUntil(() => input.HasValidStickEndpoints && input.HasValidStickEndpoints2, 1.0);
+        Assert.IsTrue(input.HasValidStickEndpoints);
+        Assert.IsTrue(input.HasValidStickEndpoints2);
+        Assert.AreEqual(1, input.RedCoordinateTiming.Apply.Count);
+        Assert.AreEqual(1, input.BlueCoordinateTiming.Apply.Count);
+
+        yield return RestartWithoutOldCoordinates();
+    }
+
+    IEnumerator RestartWithoutOldCoordinates()
+    {
+        inputObject.SetActive(false);
+        inputObject.SetActive(true);
+        input.ResampleLatestInput();
+
+        Assert.IsFalse(input.IsRecentlyActive(), "再開時に旧RED入力を新着として扱わない");
+        Assert.IsFalse(input.IsRecentlyActive2(), "再開時に旧BLUE入力を新着として扱わない");
+        Assert.IsFalse(input.HasValidStickEndpoints);
+        Assert.IsFalse(input.HasValidStickEndpoints2);
+        Assert.AreEqual(double.NegativeInfinity, input.LastReceivedMonotonicTime);
+        Assert.AreEqual(double.NegativeInfinity, input.LastReceivedMonotonicTime2);
+        Assert.IsNull(input.RedCoordinateSender);
+        Assert.IsNull(input.BlueCoordinateSender);
+        Assert.AreEqual(0, input.RedCoordinateTiming.Apply.Count, "旧RED入力の遅延標本も破棄する");
+        Assert.AreEqual(0, input.BlueCoordinateTiming.Apply.Count, "旧BLUE入力の遅延標本も破棄する");
+        Assert.IsFalse(input.RedCoordinateTiming.NeedsFirstRead);
+        Assert.IsFalse(input.BlueCoordinateTiming.NeedsFirstRead);
+
+        yield return WaitUntil(() => input.ReceiverAlive && input.ReceiverAlive2, 2.0);
+        Assert.IsTrue(input.ReceiverAlive && input.ReceiverAlive2);
+        Send(redPort, ".25,0,.5,0");
+        Send(bluePort, "0,.25,0,.5");
+        yield return WaitUntil(() => input.HasValidStickEndpoints && input.HasValidStickEndpoints2, 1.0);
+        Assert.IsTrue(input.IsRecentlyActive() && input.HasValidStickEndpoints);
+        Assert.IsTrue(input.IsRecentlyActive2() && input.HasValidStickEndpoints2);
+        Assert.AreEqual(1, input.RedCoordinateTiming.Apply.Count);
+        Assert.AreEqual(1, input.BlueCoordinateTiming.Apply.Count);
+        Assert.That(input.LocalStickRawA.x, Is.EqualTo(.25f * 5.5f).Within(.001f));
+        Assert.That(input.LocalStickRawB.x, Is.EqualTo(.5f * 5.5f).Within(.001f));
+        Assert.That(input.LocalStickRawA2.y, Is.EqualTo(.25f * 3f).Within(.001f));
+        Assert.That(input.LocalStickRawB2.y, Is.EqualTo(.5f * 3f).Within(.001f));
+    }
+
+    [UnityTest]
     public IEnumerator PersistentReceiver_RemainsBoundAcrossSceneUnload()
     {
         var departureScene = SceneManager.CreateScene("PhoneSaberDepartureScene");

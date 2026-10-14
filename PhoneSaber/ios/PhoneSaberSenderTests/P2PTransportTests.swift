@@ -101,6 +101,47 @@ final class DebugBundleOutboxTests: XCTestCase {
         XCTAssertTrue(DebugBundleReceipt.accepts(status: 201, body: Data(#"{"accepted":true}"#.utf8), sessionID: "one"),
                       "old receivers still work")
     }
+
+    @MainActor
+    func testManualTransferResumesAfterRecordingInterruptsPackaging() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let bundle = directory.appendingPathComponent("phone_saber_triage_pause_test")
+        try FileManager.default.createDirectory(at: bundle, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        try Data(#"{"sessionID":"pause_test","selectedImageCount":0,"images":[],"recordedFrameCount":30}"#.utf8)
+            .write(to: bundle.appendingPathComponent("summary.json"))
+        try Data("test".utf8).write(to: bundle.appendingPathComponent("prompt.md"))
+        let transfer = DebugBundleTransfer(directoryForTesting: directory)
+        XCTAssertFalse(DebugBundleTransfer.automaticTransferEnabled, "XCTest must never upload to the venue receiver")
+        let firstPause = expectation(description: "first manual transfer paused by recording")
+        let secondPause = expectation(description: "manual transfer resumed and paused again")
+        var starts = 0
+        let observer = NotificationCenter.default.addObserver(
+            forName: DebugBundleTransfer.didChange, object: transfer, queue: .main
+        ) { _ in
+            // 録画開始を packaging の前に差し込み、実際の送信・Bonjour 探索を行わせない。
+            if transfer.outbox.latest?.state == .uploading {
+                starts += 1
+                transfer.setRecordingActive(true)
+            } else if transfer.outbox.latest?.state == .pending {
+                if starts == 1 { firstPause.fulfill() }
+                if starts == 2 { secondPause.fulfill() }
+            }
+        }
+        defer { NotificationCenter.default.removeObserver(observer) }
+
+        transfer.retryPending(immediately: true)
+        wait(for: [firstPause], timeout: 5)
+        XCTAssertEqual(transfer.outbox.latest?.attempts, 0)
+        XCTAssertEqual(transfer.outbox.pendingCount, 1)
+        transfer.setRecordingActive(false)
+        wait(for: [secondPause], timeout: 5)
+        XCTAssertEqual(starts, 2, "recording pause must retain the explicit send request")
+        XCTAssertEqual(transfer.outbox.latest?.state, .pending)
+        XCTAssertEqual(transfer.outbox.latest?.attempts, 0)
+        XCTAssertFalse(FileManager.default.fileExists(atPath:
+            directory.appendingPathComponent("pause_test_triage_transfer.psbt").path))
+    }
 }
 
 /// Wire format, duplicate filtering, liveness and LAN fallback of the optional
@@ -556,6 +597,59 @@ final class P2PTransportTests: XCTestCase {
         await fulfillment(of: [completed], timeout: 3)
         XCTAssertFalse(p2p.isUsable)
         XCTAssertEqual(delivery.currentRoute, .lanUnverified)
+    }
+
+    func testRecoveredP2PDiscardsCoordinatesQueuedByTheLANFallback() async throws {
+        for colorPort in [5005, 5006] {
+            let bridge = try FakeBridge()
+            defer { bridge.stop() }
+            let port = try await bridge.ready()
+            let failNext = LockedBox(true)
+            let p2p = P2PSender(timing: fastTiming(), endpointOverride: .hostPort(host: "127.0.0.1", port: port),
+                                coordinateSendHook: { _, complete in
+                                    let fail = failNext.value
+                                    failNext.mutate { $0 = false }
+                                    complete(fail ? POSIXError(.ENETDOWN) : nil)
+                                })
+            let lanPackets = LockedBox<[String]>([])
+            let lan = UDPSender { text, _, complete in
+                lanPackets.mutate { $0.append(text) }
+                complete(.success(1))
+            }
+            defer { p2p.stop(); lan.stop() }
+            p2p.start()
+            let usable = await waitFor { p2p.isUsable }
+            XCTAssertTrue(usable)
+            lan.configure(host: "127.0.0.1")
+            lan.simulateConnectionStateForTesting(port: colorPort, state: .waiting)
+            let delivery = CoordinateDelivery(sender: lan, p2pSender: p2p, lanProbe: LANLivenessProbe())
+            var config = CoordinateDelivery.Settings()
+            config.running = true; config.lanConfigured = true; config.p2pEnabled = true
+            delivery.update(config)
+            delivery.route("1,2,3,4", port: colorPort, settings: config, onSendStarted: nil,
+                           completion: { _ in XCTFail("古い座標を LAN の復帰後に送らない") },
+                           noRoute: { XCTFail("LAN exists") })
+            let queued = await waitFor { lan.pendingCountForTesting == 1 }
+            XCTAssertTrue(queued, "P2P の送信失敗で LAN の接続待ちへ退避する")
+            XCTAssertEqual(delivery.currentRoute, .lanUnverified)
+            let recovered = await waitFor { p2p.isUsable }
+            XCTAssertTrue(recovered)
+
+            let sent = expectation(description: "newer coordinate via recovered P2P")
+            delivery.route("5,6,7,8", port: colorPort, settings: config, onSendStarted: nil,
+                           completion: { result in
+                               if case .failure = result { XCTFail("P2P recovery failed") }
+                               sent.fulfill()
+                           }, noRoute: { XCTFail("P2P exists") })
+            await fulfillment(of: [sent], timeout: 3)
+            XCTAssertEqual(delivery.currentRoute, .p2p)
+            XCTAssertEqual(lan.pendingCountForTesting, 0)
+            XCTAssertEqual(lan.discardedForP2PCountForTesting, 1)
+            lan.simulateConnectionStateForTesting(port: colorPort, state: .ready)
+            // UDP キューの先行処理を完了させ、LAN 復帰時の実送信も検査する。
+            XCTAssertEqual(lan.pendingCountForTesting, 0)
+            XCTAssertTrue(lanPackets.value.isEmpty)
+        }
     }
 
     func testPendingP2PCoordinateFallsBackWhenPongsExpireBeforeCompletion() async throws {

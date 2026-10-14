@@ -166,7 +166,7 @@ final class DebugBundleTransfer: NSObject, NetServiceBrowserDelegate, NetService
     private let workQueue = DispatchQueue(label: "PhoneSaberSender.debug-bundle-transfer",
                                           qos: .utility)
     static let didChange = Notification.Name("PhoneSaberDebugBundleOutboxDidChange")
-    private let directory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+    private let directory: URL
     private var storeURL: URL { directory.appendingPathComponent("debug-bundle-outbox.json") }
     private(set) var outbox = DebugBundleOutbox()
     private var recordingActive = false
@@ -188,7 +188,19 @@ final class DebugBundleTransfer: NSObject, NetServiceBrowserDelegate, NetService
 
     private enum AttemptPhase { case idle, p2p, searching, resolving, uploading, finished }
 
-    private override init() {
+    private override convenience init() {
+        self.init(directory: FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!,
+                  monitorNetwork: true)
+    }
+
+#if DEBUG
+    convenience init(directoryForTesting: URL) {
+        self.init(directory: directoryForTesting, monitorNetwork: false)
+    }
+#endif
+
+    private init(directory: URL, monitorNetwork: Bool) {
+        self.directory = directory
         super.init()
         do { outbox = try DebugBundleOutbox.load(from: storeURL) }
         catch { print("[DebugTriageTransfer] outbox load failed: \(error.localizedDescription)") }
@@ -197,7 +209,9 @@ final class DebugBundleTransfer: NSObject, NetServiceBrowserDelegate, NetService
             guard path.status == .satisfied else { return }
             DispatchQueue.main.async { self?.retryPending() }
         }
-        pathMonitor.start(queue: DispatchQueue(label: "PhoneSaberSender.debug-outbox-path"))
+        if monitorNetwork {
+            pathMonitor.start(queue: DispatchQueue(label: "PhoneSaberSender.debug-outbox-path"))
+        }
     }
 
     private func persist() {
@@ -292,7 +306,6 @@ final class DebugBundleTransfer: NSObject, NetServiceBrowserDelegate, NetService
             }
             return
         }
-        manualIDs.remove(entry.sessionID)
         persist()
         isBusy = true
         generation += 1
@@ -496,6 +509,8 @@ final class DebugBundleTransfer: NSObject, NetServiceBrowserDelegate, NetService
 
     private func recordOutcome(reason: String?) {
         guard let id = activeSessionID else { return }
+        // 録画による一時停止では手動送信の要求を消費しない。
+        manualIDs.remove(id)
         outbox.finish(sessionID: id, now: Date(), reason: reason, attempts: max(1, attempt))
         persist()
     }

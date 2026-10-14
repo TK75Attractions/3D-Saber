@@ -13,6 +13,7 @@ import subprocess
 import shutil
 import sys
 import tempfile
+import zipfile
 
 # checkout 内の共通ビルドスイッチ。認識の既定値は両言語の core にも置く。
 import sys as _guard_sys
@@ -69,22 +70,32 @@ def main():
         tests = sorted((ANDROID / "app/src/test/java/jp/phonesaber/sender").glob("*Test.kt"))
         tests.append(ANDROID / "app/src/androidTest/java/jp/phonesaber/sender/NativeRotationTest.kt")
         sources = [JAVA / (name + ".kt") for name in ("RotationHelper", "NativeCore", "Protocol", "MirrorSettings",
-                   "DeviceHealth", "EventRecovery", "SendingNetworkPolicy")]
-        cp = os.pathsep.join(map(str, [stdlib, junit, hamcrest, annotations]))
+                   "DeviceHealth", "EventRecovery", "SendingNetworkPolicy", "CameraPolicy",
+                   "DiscoveryPolicy", "PcReplyWatch", "ThresholdSettings", "AnalysisExecutor",
+                   "LatencyLog", "MetricsDatagram")]
+        # CameraPolicy の定数は Gradle と同じ CameraX AAR から読む。
+        camera_aar = list((cache / "androidx.camera/camera-core/1.6.2").glob("*/camera-core-1.6.2.aar"))
+        if len(camera_aar) != 1:
+            raise RuntimeError("Need locally cached androidx.camera:camera-core:1.6.2")
+        camera_classes = work / "camera-core.jar"
+        with zipfile.ZipFile(camera_aar[0]) as archive:
+            camera_classes.write_bytes(archive.read("classes.jar"))
+        cp = os.pathsep.join(map(str, [stdlib, junit, hamcrest, annotations, camera_classes]))
         run([jbr / "bin/java", "-cp", os.pathsep.join(map(str, compiler)), "org.jetbrains.kotlin.cli.jvm.K2JVMCompiler",
              "-no-stdlib", "-no-reflect", "-jvm-target", "17", "-classpath", cp, "-d", work / "classes",
              *sources, *tests, CORE / "tools/rotation_benchmark.kt"])
         java = [jbr / "bin/java", "-Djava.library.path=" + str(work), "-cp", str(work / "classes") + os.pathsep + cp]
         run([*java, "org.junit.runner.JUnitCore", *("jp.phonesaber.sender." + t.stem for t in tests)])
         if args.benchmark:
-            run(["make", "-C", CORE, "all"])
+            core_build = work / "core-build"
+            run(["make", "-C", CORE, "all", "BUILD=" + str(core_build)])
             for png in args.benchmark:
                 # Raw lossless fixture as a 640x480 camera plane whose 90-degree result is the original.
                 # Use the existing decoder without color management. Padding and decoding are outside timing.
                 import struct
                 png = png.resolve()
                 width, height = struct.unpack(">II", png.read_bytes()[16:24])
-                bgra = subprocess.check_output(["/tmp/phonesaber-cpp-core/phonesaber-png", "--decode-bgra", str(png)])
+                bgra = subprocess.check_output([str(core_build / "phonesaber-png"), "--decode-bgra", str(png)])
                 camera_width, camera_height = height, width
                 stride = camera_width * 4 + 16
                 raw = bytearray(stride * camera_height)

@@ -116,6 +116,7 @@ final class DebugBundleTransfer {
     for name in ["testUnchangedBonjourAndPathRefreshPreserveBothLANConnections",
                  "testP2PConnectedNotificationPreservesPendingVerifiedLANCoordinates",
                  "testCoordinateSendFailureInvalidatesP2PAndFallsBackToLAN",
+                 "testRecoveredP2PDiscardsCoordinatesQueuedByTheLANFallback",
                  "testPendingP2PCoordinateFallsBackWhenPongsExpireBeforeCompletion"]:
         method = block(tests, "func " + name + "(")
         if "@MainActor\n    func " + name in tests:

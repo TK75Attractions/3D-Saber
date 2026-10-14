@@ -1,5 +1,6 @@
 import XCTest
 #if !EVENT_RECOVERY_STANDALONE
+import AVFoundation
 @testable import PhoneSaberSender
 #endif
 
@@ -137,6 +138,70 @@ final class EventRecoveryTests: XCTestCase {
     }
 
 #if !EVENT_RECOVERY_STANDALONE
+    @MainActor
+    func testQueuedCameraInterruptionCannotInterruptRestartedRun() async throws {
+        let model = CameraViewModel(sender: UDPSender { _, _, _ in }, p2pEnabled: false,
+                                    idleTimerUpdater: { _ in })
+        defer { model.stop() }
+        model.startForTesting()
+        model.sceneDidChange(isActive: false)
+        // MainActor を譲る前に停止・再開し、前回の通知だけを遅れて処理させる。
+        NotificationCenter.default.post(name: AVCaptureSession.wasInterruptedNotification,
+                                        object: model.session)
+        model.stop()
+        model.startForTesting()
+        try await Task.sleep(for: .milliseconds(20))
+        XCTAssertTrue(model.running)
+        XCTAssertEqual(model.cameraState, .starting)
+        XCTAssertNil(model.errorMessage)
+    }
+
+    @MainActor
+    func testQueuedCameraRuntimeErrorCannotFailRestartedRun() async throws {
+        let model = CameraViewModel(sender: UDPSender { _, _, _ in }, p2pEnabled: false,
+                                    idleTimerUpdater: { _ in })
+        defer { model.stop() }
+        model.startForTesting()
+        model.sceneDidChange(isActive: false)
+        NotificationCenter.default.post(
+            name: AVCaptureSession.runtimeErrorNotification, object: model.session,
+            userInfo: [AVCaptureSessionErrorKey: NSError(domain: "CameraLifecycleTests", code: 1,
+                userInfo: [NSLocalizedDescriptionKey: "old run failed"])])
+        model.stop()
+        model.startForTesting()
+        try await Task.sleep(for: .milliseconds(20))
+        XCTAssertTrue(model.running)
+        XCTAssertEqual(model.cameraState, .starting)
+        XCTAssertNil(model.errorMessage)
+    }
+
+    @MainActor
+    func testCurrentCameraSessionNotificationsStillApplyAfterRepeatedRestarts() async throws {
+        let model = CameraViewModel(sender: UDPSender { _, _, _ in }, p2pEnabled: false,
+                                    idleTimerUpdater: { _ in })
+        defer { model.stop() }
+        model.sceneDidChange(isActive: false)
+        for _ in 0..<10 {
+            model.startForTesting()
+            NotificationCenter.default.post(name: AVCaptureSession.wasInterruptedNotification,
+                                            object: model.session)
+            try await Task.sleep(for: .milliseconds(20))
+            XCTAssertEqual(model.cameraState, .interrupted("理由不明"))
+            NotificationCenter.default.post(name: AVCaptureSession.interruptionEndedNotification,
+                                            object: model.session)
+            try await Task.sleep(for: .milliseconds(20))
+            XCTAssertEqual(model.cameraState, .interrupted("理由不明"))
+            NotificationCenter.default.post(
+                name: AVCaptureSession.runtimeErrorNotification, object: model.session,
+                userInfo: [AVCaptureSessionErrorKey: NSError(domain: "CameraLifecycleTests", code: 2,
+                    userInfo: [NSLocalizedDescriptionKey: "current run failed"])])
+            try await Task.sleep(for: .milliseconds(20))
+            XCTAssertEqual(model.cameraState, .failed("current run failed"))
+            XCTAssertEqual(model.errorMessage, "current run failed")
+            model.stop()
+        }
+    }
+
     @MainActor
     func testFPSRestoreInBackgroundDefersCaptureRestart() {
         var permissionRequests = 0

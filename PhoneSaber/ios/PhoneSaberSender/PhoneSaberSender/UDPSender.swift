@@ -1097,6 +1097,8 @@ final class CoordinateDelivery: @unchecked Sendable {
                                guard let self else { return }
                                self.lock.lock(); defer { self.lock.unlock() }
                                guard self.matches(request) else { return }
+                               // 次に P2P へ戻るとき、LAN 退避中に溜まった古い座標も破棄する。
+                               self.routedViaP2P = false
                                if self.settings.lanConfigured {
                                    self.note(.lanUnverified)
                                    self.sender.send(text, to: port, onSendStarted: onSendStarted,

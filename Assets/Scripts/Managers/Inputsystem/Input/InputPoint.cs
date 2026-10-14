@@ -468,6 +468,16 @@ public class InputPoint : MonoBehaviour
                 (receiveThread2 != null && receiveThread2.IsAlive)) return;
             receiveThread1 = null;
             receiveThread2 = null;
+            // 旧thread終了後、新しい受信を始める前に前回の入力を無効化する。
+            // 未公開packetを再開後に取り込むと、古い座標の鮮度だけが新着へ戻ってしまう。
+            lock (lockObj) { hasNewData = hasStickData = false; rawSender = null; }
+            lock (lockObj2) { hasNewData2 = hasStickData2 = false; rawSender2 = null; }
+            HasValidStickEndpoints = HasValidStickEndpoints2 = false;
+            LastReceivedTime = LastReceivedTime2 = -1000.0;
+            LastReceivedMonotonicTime = LastReceivedMonotonicTime2 = double.NegativeInfinity;
+            RedCoordinateSender = BlueCoordinateSender = null;
+            RedCoordinateTiming.ResetSource();
+            BlueCoordinateTiming.ResetSource();
             receiverStopSignal1?.Dispose();
             receiverStopSignal2?.Dispose();
             bonjourPublisher?.Dispose();
