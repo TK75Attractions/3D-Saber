@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "displayName": "RUSH E",
+  "composer": "Andrew Wrangell",
+  "artist": "Sheet Music Boss",
+  "sourceUrl": "https://www.youtube.com/watch?v=Qskm9MTz2V4",
+  "requiredAudioFile": "audio.wav",
+  "listed": true,
+  "timeOrigin": "audio-file-start",
+  "audioSha256": "dd8fb71abaa1760ad0d989b3668974cb1c0ffff426a54139a3340c94329a0d65",
+  "previewStartSeconds": 88.395,
+  "hideBarLines": true,
+  "sections": [
+    {
+      "label": "主部",
+      "startSeconds": 40.05941,
+      "endSeconds": 64.05941,
+      "fadeInSeconds": 0.6,
+      "fadeOutSeconds": 1.1,
+      "intensity": 0.78
+    },
+    {
+      "label": "主題の再展開",
+      "startSeconds": 87.676,
+      "endSeconds": 111.7,
+      "fadeInSeconds": 0.6,
+      "fadeOutSeconds": 1.1,
+      "intensity": 0.9
+    },
+    {
+      "label": "最終加速",
+      "startSeconds": 112.22494,
+      "endSeconds": 136.28027,
+      "fadeInSeconds": 0.6,
+      "fadeOutSeconds": 1.1,
+      "intensity": 1.0
+    }
+  ]
+}

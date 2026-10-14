@@ -165,7 +165,12 @@ public class SongSelectController : MonoBehaviour
             if (!hasChart) continue;
             string songId = Path.GetFileName(dir);
             // 譜面エディターの曲情報で「選曲に出す」を外した曲(制作中・権利確認待ちなど)は並べない。
-            if (!SongDisplayInfo.Get(songId).Listed) continue;
+            var info = SongDisplayInfo.Get(songId);
+            if (!info.Listed) continue;
+            // 別途許可を得てローカルに用意する音源は、未導入の端末では選曲に出さない。
+            if (!string.IsNullOrEmpty(info.RequiredAudioFile)
+                && (!ChartLoader.ValidPathSegment(info.RequiredAudioFile)
+                    || !File.Exists(Path.Combine(dir, info.RequiredAudioFile)))) continue;
             if (playableOnly && !HasPlayableChart(songId, StandardDifficulties)) continue;
             result.Add(songId);
         }

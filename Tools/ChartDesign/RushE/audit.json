@@ -1,0 +1,49 @@
+{
+  "easy": {
+    "notes": 150,
+    "cuts": 157,
+    "types": {
+      "tap": 143,
+      "long": 7
+    },
+    "simultaneousGroups": 8,
+    "goldNotes": 8,
+    "maxSwingSpeed": 1.044,
+    "minimumSameHandGapMs": 620.0,
+    "adjustments": [],
+    "firstNoteMs": 94.78,
+    "lastNoteEndMs": 137820.27
+  },
+  "normal": {
+    "notes": 263,
+    "cuts": 285,
+    "types": {
+      "direction": 49,
+      "tap": 203,
+      "long": 11
+    },
+    "simultaneousGroups": 7,
+    "goldNotes": 8,
+    "maxSwingSpeed": 2.717,
+    "minimumSameHandGapMs": 400.0,
+    "adjustments": [],
+    "firstNoteMs": 94.78,
+    "lastNoteEndMs": 137820.27
+  },
+  "hard": {
+    "notes": 330,
+    "cuts": 352,
+    "types": {
+      "direction": 92,
+      "tap": 227,
+      "long": 11
+    },
+    "simultaneousGroups": 19,
+    "goldNotes": 20,
+    "maxSwingSpeed": 4.3969,
+    "minimumSameHandGapMs": 284.35,
+    "adjustments": [],
+    "firstNoteMs": 94.78,
+    "lastNoteEndMs": 137820.27
+  }
+}

@@ -15,6 +15,8 @@ public static class SongDisplayInfo
         public string displayReading;
         public string artist;
         public string composer;
+        public string sourceUrl;
+        public string requiredAudioFile;
         // 譜面エディターの「選曲に出す」を外すと false。項目が無い曲はこれまでどおり出す。
         public bool listed = true;
     }
@@ -25,15 +27,21 @@ public static class SongDisplayInfo
         public readonly string Reading;
         public readonly string Artist;
         public readonly string Composer;
+        public readonly string SourceUrl;
+        public readonly string RequiredAudioFile;
         public readonly bool Listed;
 
-        public Info(string displayName, string reading, string artist, bool listed, string composer = null)
+        public Info(string displayName, string reading, string artist, bool listed, string composer = null, string sourceUrl = null, string requiredAudioFile = null)
         {
             DisplayName = displayName;
             Reading = reading;
             Artist = artist;
             Composer = string.IsNullOrWhiteSpace(composer) ? "???" : composer.Trim();
             Listed = listed;
+            SourceUrl = Uri.TryCreate(sourceUrl?.Trim(), UriKind.Absolute, out var source)
+                && (source.Scheme == Uri.UriSchemeHttps || source.Scheme == Uri.UriSchemeHttp)
+                ? source.AbsoluteUri : string.Empty;
+            RequiredAudioFile = requiredAudioFile?.Trim() ?? string.Empty;
         }
     }
 
@@ -84,7 +92,7 @@ public static class SongDisplayInfo
                     string name = data.displayName?.Trim();
                     bool meaningful = !string.IsNullOrEmpty(name) && !string.Equals(name, folder, StringComparison.Ordinal);
                     info = new Info(meaningful ? name : fallback.DisplayName,
-                        data.displayReading?.Trim() ?? string.Empty, data.artist?.Trim() ?? string.Empty, data.listed, data.composer);
+                        data.displayReading?.Trim() ?? string.Empty, data.artist?.Trim() ?? string.Empty, data.listed, data.composer, data.sourceUrl, data.requiredAudioFile);
                 }
             }
             catch (Exception error) when (error is IOException || error is UnauthorizedAccessException || error is ArgumentException)

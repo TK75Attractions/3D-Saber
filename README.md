@@ -26,3 +26,7 @@ the debug receiver before entering Play Mode again.
 ## 日本語フォント
 
 日本語表示には、ゲーム素材として同梱した **マキナス 4 Square（もじワク研究）** を使用します。フォント本体は通常のGitで保存しているため、新しいPCでも最新版を取得すれば追加ダウンロード・OSへのインストールなしで同じ書体になります。作者・配布元・利用条件は [日本語書体](docs/JapaneseTypography.md) と [フォントの注意書き](Assets/Resources/Fonts/Makinas-NOTICE.txt) を参照してください。
+
+## RUSH E（文化祭用）
+
+許可を得た文化祭用の3難易度を収録しています。音源はGitに含めません。別のPCへの導入方法と出典は [RUSH Eの導入・譜面資料](Tools/ChartDesign/RushE/README.md) を参照してください。

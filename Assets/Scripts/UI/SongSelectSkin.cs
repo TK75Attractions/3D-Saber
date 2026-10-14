@@ -28,7 +28,7 @@ public class SongSelectSkin : MonoBehaviour
     readonly TextMeshProUGUI[] difficultyNumbers = new TextMeshProUGUI[3];
     readonly TextMeshProUGUI[] difficultyLabels = new TextMeshProUGUI[3];
     readonly SongSelectRubyText[] counts = new SongSelectRubyText[4];
-    TextMeshProUGUI composerName, timer, timerNotice, achievementDifficulty, libraryPosition, startHint, holdHint;
+    TextMeshProUGUI sourceCredit, composerName, timer, timerNotice, achievementDifficulty, libraryPosition, startHint, holdHint;
     AudioSource countdownSource; AudioClip countdownClip;
     int lastBeepSecond = -1;
     SongSelectRubyText songTitle;
@@ -235,6 +235,12 @@ public class SongSelectSkin : MonoBehaviour
         composerName.enableAutoSizing = true; composerName.fontSizeMin = 18; composerName.fontSizeMax = 26;
         composerName.overflowMode = TextOverflowModes.Ellipsis;
         composerName.richText = false; composerName.parseCtrlCharacters = false;
+        // 出典がある曲だけ、判定調整ボタンの下へ作者・元動画のURLを表示する。
+        sourceCredit = Label(layout, "SongSourceCredit", "", 17, Position(1630, 1052), new Vector2(470, 48));
+        sourceCredit.alignment = TextAlignmentOptions.MidlineLeft;
+        sourceCredit.enableAutoSizing = true; sourceCredit.fontSizeMin = 12; sourceCredit.fontSizeMax = 17;
+        sourceCredit.overflowMode = TextOverflowModes.Ellipsis;
+        sourceCredit.richText = false; sourceCredit.parseCtrlCharacters = false;
     }
 
     void BuildDifficulties()
@@ -325,6 +331,8 @@ public class SongSelectSkin : MonoBehaviour
         var info = SongDisplayInfo.Get(id);
         string reading = info.Reading;
         composerName.text = info.Composer;
+        sourceCredit.text = string.IsNullOrEmpty(info.SourceUrl) ? string.Empty
+            : (string.IsNullOrEmpty(info.Artist) ? string.Empty : info.Artist + "\n") + info.SourceUrl;
         bool japanese = !string.IsNullOrEmpty(reading);
         string markup = japanese ? $"<ruby={reading}>{title}</ruby>" : title;
         var titleText = songTitle.GetComponent<TextMeshProUGUI>();
