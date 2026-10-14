@@ -288,7 +288,7 @@ public class SongSelectSkin : MonoBehaviour
         var glow = Graphic(secretDifficulty, "Glow", Vector2.zero, new Vector2(192, 192), SongSelectDiscGraphic.Shape.Ring, new Color(.62f,.17f,1,.25f)); glow.Width = 20;
         var face = Graphic(secretDifficulty, "Face", Vector2.zero, new Vector2(158, 158), SongSelectDiscGraphic.Shape.Cover, new Color(.12f,.03f,.24f));
         var ring = Graphic(secretDifficulty, "Ring", Vector2.zero, new Vector2(164, 164), SongSelectDiscGraphic.Shape.Ring, RushESecretState.Purple); ring.Width = 6;
-        Label(secretDifficulty, "Letter", "E", 126, new Vector2(0, 2), new Vector2(140, 150), UISkinKit.LogoFontAsset(), RushESecretState.Purple);
+        Label(secretDifficulty, "Letter", "E", 112, new Vector2(0, 2), new Vector2(140, 150), UISkinKit.LogoFontAsset(), RushESecretState.Purple);
         secretDifficulty.gameObject.SetActive(false);
     }
     void BuildAchievements()
