@@ -27,9 +27,43 @@ public static class PhoneSaberDisplaySyncSettings
         Clamp(mode) == VSync && currentVSyncCount != 1 ? 1 : -1;
 }
 
+// vsync とは別の上限。既定では targetFrameRate にも書き込まない。
+public static class PhoneSaberFrameCapSettings
+{
+    public const int GameDefault = 0;
+    public const int FourTimes = 1;
+    public const int TwoTimes = 2;
+
+    public static string Key(string station) =>
+        "PhoneSaber.FrameCap." + PhoneSaberStation.Normalize(station) + ".v1";
+
+    public static int Clamp(int mode) => mode == FourTimes || mode == TwoTimes ? mode : GameDefault;
+    public static int Load(string station) => Clamp(PlayerPrefs.GetInt(Key(station), GameDefault));
+
+    public static void Save(string station, int mode)
+    {
+        PlayerPrefs.SetInt(Key(station), Clamp(mode));
+        PlayerPrefs.Save();
+    }
+
+    public static string Label(int mode) => Clamp(mode) == FourTimes ? "画面の4倍" :
+        Clamp(mode) == TwoTimes ? "画面の2倍" : "ゲームの設定のまま";
+
+    // 59.94 Hz は 240 / 120 fps へ丸める。Hz 不明・範囲外・変更不要なら -1。
+    public static int TargetFrameRateToApply(int mode, double refreshHz, int currentTarget)
+    {
+        mode = Clamp(mode);
+        if (mode == GameDefault || !(refreshHz > 0)) return -1;
+        double target = System.Math.Round(refreshHz * (mode == FourTimes ? 4 : 2));
+        if (!(target >= 1 && target <= int.MaxValue)) return -1;
+        return currentTarget == (int)target ? -1 : (int)target;
+    }
+}
+
 public sealed class PhoneSaberDisplaySync : MonoBehaviour
 {
     public static int Mode { get; private set; }
+    public static int FrameCapMode { get; private set; }
     // 注意の表示確認用(-phonesaberSmokeRefreshHz)。0 なら実際の画面の値を使う。
     public static double RefreshHzOverride;
 
@@ -38,6 +72,7 @@ public sealed class PhoneSaberDisplaySync : MonoBehaviour
     {
         if (!PhoneSaberP2PBridgeProcess.AutoStartEnabled) return; // テスト中は作らない
         Mode = PhoneSaberDisplaySyncSettings.Load(PhoneSaberStation.Read());
+        FrameCapMode = PhoneSaberFrameCapSettings.Load(PhoneSaberStation.Read());
         var go = new GameObject("PhoneSaber Display Sync");
         go.AddComponent<PhoneSaberDisplaySync>().notice = go.AddComponent<PhoneSaberDisplayNotice>();
         DontDestroyOnLoad(go);
@@ -58,11 +93,28 @@ public sealed class PhoneSaberDisplaySync : MonoBehaviour
             mode == PhoneSaberDisplaySyncSettings.VSync ? "mode=vsync" : "mode=game-default");
     }
 
+    // ゲーム既定へ戻すときは上書きを止めるだけ。次のシーンでゲーム自身の設定が入る。
+    public static void SetFrameCapMode(int mode)
+    {
+        mode = PhoneSaberFrameCapSettings.Clamp(mode);
+        if (mode == FrameCapMode) return;
+        FrameCapMode = mode;
+        string station = PhoneSaberStation.Read();
+        PhoneSaberFrameCapSettings.Save(station, mode);
+        PhoneSaberEventLog.Record(station, "SYSTEM", "frame-cap", "mode=" + mode);
+    }
+
     // UnlockFrameRate.Awake より後に効かせるため Update で見る（int の比較1回）。
     void Update()
     {
         int value = PhoneSaberDisplaySyncSettings.VSyncCountToApply(Mode, QualitySettings.vSyncCount);
         if (value >= 0) QualitySettings.vSyncCount = value;
+        if (FrameCapMode != PhoneSaberFrameCapSettings.GameDefault)
+        {
+            int target = PhoneSaberFrameCapSettings.TargetFrameRateToApply(FrameCapMode,
+                Screen.currentResolution.refreshRateRatio.value, Application.targetFrameRate);
+            if (target >= 0) Application.targetFrameRate = target;
+        }
         // 画面の更新が遅い（低電力モードなど）ときの知らせ。確認は秒1回、描画は必要なときだけ有効にする。
         double now = Time.realtimeSinceStartupAsDouble;
         if (notice == null || now < nextNoticeCheck) return;

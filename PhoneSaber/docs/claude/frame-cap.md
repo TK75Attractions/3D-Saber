@@ -1,0 +1,27 @@
+# frame-cap 再レビュー（2026-10-15）
+- 対象: df98917、merge-base cd001f0。git log -5 / git diff main...HEAD を確認。今回もcommit/pushなし。
+- 前回実装は維持: F8のスクロール内から既定/4倍/2倍を選択・台別保存。既定はtarget/vsyncに書かず、選択時は全scene（30fpsのメニューも含む）へ実Hz×4/×2を再適用。既定へ戻すと次の本編sceneでゲームが復元する。
+- 未確認だったUI操作/native PlayerPrefs/実描画/実負荷/PC遅延はhostでは証明できない。通常soakに上限assertはなく、前回メモの「上限再適用確認」は撤回。host nsから性能改善は主張しない。
+- 中・修正: tools/check_frame_cap.py:179 の旧版exit=1判定が、無関係なassert失敗やbenchmark crashも回帰再現として通した。失敗名2件・1 PASS/2 FAIL・stderr・終了コードを照合する。
+- 回帰: test_frame_cap.py の4テスト。HEAD版へ適用すると6ケースFAIL、修正後4/4 PASS（順序違いの正しい失敗は受理）。ゲーム側コードの追加修正なし。
+- 以下はrepo rootから実行。Python再実行はPATH=/Users/satoshi/.pyenv/versions/3.12.1/bin:$PATH（3.12.1、NumPy 2.2.1）。Swift/Clang module cacheはログディレクトリ内。
+- PASS: `python3 -B -m unittest discover -s PhoneSaber/tools -v` — Python 3.12、276件、skip 6（Windowsのみ）、既存expected failure 1（test_nonfinite_block_measurement_does_not_poison_report）。
+- FAIL（既存環境依存）: `python3 -B -m unittest discover -s PhoneSaber/ios/PhoneSaberSender/Tools -v` — Python 3.12、436件、error 1（tracking E2E setUpClass）、skip 1（private画像opt-in）。失敗assertなし。
+- tracking原因: DebugVideoRecorder.swift:308 が重要用途容量0を採用し、必要1040187392 bytesに対して録画開始を拒否。診断CLIで全保存先の重要用途容量0/通常空き約416GiBを確認。差分外の容量ゲートは変更していない。
+- 初回/usr/bin/python3（3.9）: tools 240件/error 5（NumPy未導入）、iOS Tools 437件/failure 1（巨大整数制限の版差）/error 1（上記容量）。その後3.12で全件再実行した。
+- PASS: `python3.12 -B PhoneSaber/tools/check_frame_cap.py --before-ref cd001f0` — 実旧版は期待する2件だけFAIL、現行host 15/15、全mode 0 B/frame。Unity native/UI/描画は代替、build-settingsテストはhost対象外。
+- PASS: `python3 -B PhoneSaber/tools/check_pc_latency.py` — Unity 6000.3.9f1 API 4構成compile、host 35/35。
+- PASS: `python3 -B PhoneSaber/tools/check_auto_latency.py` — C# 5/5、Swift XCTest 3/3、実Swift→C# UDP loopback。
+- PASS: `python3 -B PhoneSaber/tools/check_player_smoke.py` — runtime 216ファイル×4構成・Editor/test assembly compile、smoke 14/14、soak手順5/5（native/transport代替）。
+- PASS: `PhoneSaber/ios/PhoneSaberSender/run-static-tests.sh` — static BGRA、DeviceHealth XCTest 13/13。
+- PASS: `make -C PhoneSaber/android/core test parity PYTHON=python3` — C++ core、Python 4件、325 PNG/541遷移/27合成の差分0、formal 40/40。
+- FAIL（sandbox）: `xcodebuild -project PhoneSaber/ios/PhoneSaberSender/PhoneSaberSender.xcodeproj -scheme PhoneSaberSender -configuration Release -destination generic/platform=iOS -derivedDataPath /private/tmp/phonesaber-finish-frame-cap/iOS-Release-DerivedData CODE_SIGNING_ALLOWED=NO PHONESABER_CORELINE_GUARD=1 build` — exit 65、SwiftUI State macroのsandbox_apply Operation not permitted。
+- PASS: git diff --check（作業差分とmain...HEAD）。認識/ranking/eligibility/scoring/PCA/threshold/UDP/corpus/scene/prefab/meta/ProjectSettingsの変更なし。
+- 新規.cs/Swift/Kotlinなし。既存.csの.metaは追跡済み。Android変更なしのためGradle未実行。
+- 未実行: 公式verify、Unity EditMode/native Playerビルド・描画・入力、iOS Simulator XCTest、Windows Player、実機。macOS app/GUIは起動していない。
+- operator: `PATH=/Users/satoshi/.pyenv/versions/3.12.1/bin:$PATH PhoneSaber/tools/verify_phone_saber.sh`（iOS XCTest/Releaseと容量で停止したE2Eを含む。今回の環境失敗が残る場合は未承認のまま）。
+- operator: `PhoneSaber/tools/unity_copy.sh editmode PhoneSaberDisplaySyncTests`（12件。公式verifyのfilterにこのクラスは含まれない）。
+- operator: `PhoneSaber/tools/unity_copy.sh build-mac`（隠してビルド＋実Player smoke）。
+- 実機最小確認: 同一台/60Hz/vsync=0/同曲・入力でF8の既定→4倍→2倍を操作。各10秒後のGame perfでtarget-fps=-1/240/120、既存入力が通ることを確認。2倍で再起動して保存を確認し、既定へ戻して次の曲で-1へ復元。vsync ONで1が維持されることも確認する。
+- 実負荷・遅延は未認証: 同条件のCPU使用量、gpu-ms-mean×fps、receive-shown-n/median-ms/p95-msを比較するまで節約・遅延改善とは判定しない。
+- 全ログ: /private/tmp/phonesaber-finish-frame-cap/（python-{tools,ios}[-312].log、gate-{before-all,after}.log、frame-cap-final.log、csharp.log、swift.log、core.log、ios-release.log）。

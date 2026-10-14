@@ -4,6 +4,54 @@ using UnityEngine;
 public class PhoneSaberDisplaySyncTests
 {
     [Test]
+    public void FrameCapDefaultAndInvalidValuesNeverWriteTheGameTarget()
+    {
+        foreach (int mode in new[] { PhoneSaberFrameCapSettings.GameDefault, -1, 7 })
+            foreach (int current in new[] { -1, 30, 120, 240 })
+                Assert.AreEqual(-1, PhoneSaberFrameCapSettings.TargetFrameRateToApply(mode, 60, current));
+        foreach (double hz in new[] { 0, -60, double.NaN, double.PositiveInfinity, double.MaxValue, .01 })
+            Assert.AreEqual(-1, PhoneSaberFrameCapSettings.TargetFrameRateToApply(PhoneSaberFrameCapSettings.FourTimes, hz, -1));
+    }
+
+    [TestCase(60, 240, 120)]
+    [TestCase(59.94, 240, 120)]
+    [TestCase(30, 120, 60)]
+    [TestCase(120, 480, 240)]
+    [TestCase(144, 576, 288)]
+    public void FrameCapUsesTheDisplayRateAndReappliesAfterGameWrites(double hz, int four, int two)
+    {
+        foreach (var pair in new[] { new[] { PhoneSaberFrameCapSettings.FourTimes, four },
+            new[] { PhoneSaberFrameCapSettings.TwoTimes, two } })
+        {
+            Assert.AreEqual(pair[1], PhoneSaberFrameCapSettings.TargetFrameRateToApply(pair[0], hz, -1));
+            Assert.AreEqual(-1, PhoneSaberFrameCapSettings.TargetFrameRateToApply(pair[0], hz, pair[1]));
+            Assert.AreEqual(pair[1], PhoneSaberFrameCapSettings.TargetFrameRateToApply(pair[0], hz, 30));
+        }
+    }
+
+    [Test]
+    public void FrameCapPersistsSeparatelyFromDisplaySyncAndOtherStations()
+    {
+        string a = PhoneSaberFrameCapSettings.Key("fcap-a"), b = PhoneSaberFrameCapSettings.Key("fcap-b");
+        string sync = PhoneSaberDisplaySyncSettings.Key("fcap-a");
+        PlayerPrefs.DeleteKey(a); PlayerPrefs.DeleteKey(b); PlayerPrefs.DeleteKey(sync);
+        try
+        {
+            Assert.AreEqual(PhoneSaberFrameCapSettings.GameDefault, PhoneSaberFrameCapSettings.Load("fcap-a"));
+            PhoneSaberDisplaySyncSettings.Save("fcap-a", PhoneSaberDisplaySyncSettings.VSync);
+            PhoneSaberFrameCapSettings.Save("fcap-a", PhoneSaberFrameCapSettings.TwoTimes);
+            Assert.AreEqual(PhoneSaberFrameCapSettings.TwoTimes, PhoneSaberFrameCapSettings.Load("fcap-a"));
+            Assert.AreEqual(PhoneSaberFrameCapSettings.GameDefault, PhoneSaberFrameCapSettings.Load("fcap-b"));
+            Assert.AreEqual(PhoneSaberDisplaySyncSettings.VSync, PhoneSaberDisplaySyncSettings.Load("fcap-a"));
+            PlayerPrefs.SetInt(a, 7);
+            Assert.AreEqual(PhoneSaberFrameCapSettings.GameDefault, PhoneSaberFrameCapSettings.Load("fcap-a"));
+            PhoneSaberFrameCapSettings.Save("fcap-a", -1);
+            Assert.AreEqual(PhoneSaberFrameCapSettings.GameDefault, PlayerPrefs.GetInt(a, -1));
+        }
+        finally { PlayerPrefs.DeleteKey(a); PlayerPrefs.DeleteKey(b); PlayerPrefs.DeleteKey(sync); }
+    }
+
+    [Test]
     public void DefaultLeavesTheGameSettingAlone()
     {
         string key = PhoneSaberDisplaySyncSettings.Key("dsync-new");

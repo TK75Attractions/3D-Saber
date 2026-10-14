@@ -42,7 +42,7 @@ def main():
             print('Unity API compile PASS: ' + platform + ' runtime files=' + str(len(sources)))
             if platform.startswith('UNITY_EDITOR'):
                 tests = [ROOT / 'Assets/Tests/Editor' / name for name in
-                         ('PhoneSaberBuildShaderTests.cs', 'PhoneSaberSoakTests.cs')]
+                         ('PhoneSaberBuildShaderTests.cs', 'PhoneSaberSoakTests.cs', 'PhoneSaberDisplaySyncTests.cs')]
                 if run(compiler + ['/target:library', '/out:' + str(build / 'SaberTests.Editor.dll'), '/r:' + str(nunit), '/r:' + str(assembly)] + reference_args + tests):
                     return 1
                 # Editor用PhoneSaber build/検証コードも実APIを参照する。

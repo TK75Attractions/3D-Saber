@@ -275,6 +275,15 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         GUILayout.EndHorizontal();
         GUILayout.Label("本編はゲームの設定だと画面の更新を待たずに描きます（60 Hz の画面に数百 fps）。\n" +
             "絵が横にずれて見える・動きがガタつくときは ON と比べてください。元へ戻すと次の曲から反映されます。", textStyle);
+        int cap = PhoneSaberDisplaySync.FrameCapMode;
+        GUILayout.Label($"フレーム上限: {PhoneSaberFrameCapSettings.Label(cap)}（この台に保存）", textStyle);
+        GUILayout.BeginHorizontal();
+        for (int mode = PhoneSaberFrameCapSettings.GameDefault; mode <= PhoneSaberFrameCapSettings.TwoTimes; mode++)
+            if (GUILayout.Button((cap == mode ? "● " : "") + PhoneSaberFrameCapSettings.Label(mode), buttonStyle) && cap != mode)
+                PhoneSaberDisplaySync.SetFrameCapMode(mode);
+        GUILayout.EndHorizontal();
+        GUILayout.Label("画面同期の設定はそのまま。同期ONでは上限が効かない場合があります。\n" +
+            "ゲームの設定のままへ戻すと次の曲から反映されます。", textStyle);
     }
 
     void DrawFilter()
