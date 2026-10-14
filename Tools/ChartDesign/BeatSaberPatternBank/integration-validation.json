@@ -31,19 +31,19 @@
       "verticalPairs": 0
     },
     "hard": {
-      "notes": 515,
-      "cuts": 528,
-      "maxSwingSpeed": 5.4,
-      "minimumSameHandGapMs": 166.667,
+      "notes": 620,
+      "cuts": 633,
+      "maxSwingSpeed": 5.4869,
+      "minimumSameHandGapMs": 150.0,
       "repeatedOneTwoFourBarBlocks": 1,
-      "flickPercent": 5.44,
+      "flickPercent": 4.52,
       "maxConsecutiveFlicks": 2,
       "maxConsecutiveFlicksPerHand": 3,
       "maxConsecutiveFlicksByGroup": 2,
-      "notesPerSecond": 3.446,
-      "blueOnRight": 1,
-      "redOnLeft": 1,
-      "verticalPairs": 2
+      "notesPerSecond": 4.148,
+      "blueOnRight": 4,
+      "redOnLeft": 4,
+      "verticalPairs": 0
     }
   },
   "escapade": {
@@ -78,18 +78,18 @@
       "verticalPairs": 0
     },
     "hard": {
-      "notes": 393,
-      "cuts": 404,
-      "maxSwingSpeed": 5.3565,
+      "notes": 519,
+      "cuts": 530,
+      "maxSwingSpeed": 5.4988,
       "minimumSameHandGapMs": 157.895,
       "repeatedOneTwoFourBarBlocks": 0,
-      "flickPercent": 5.34,
+      "flickPercent": 4.05,
       "maxConsecutiveFlicks": 2,
       "maxConsecutiveFlicksPerHand": 2,
       "maxConsecutiveFlicksByGroup": 2,
-      "notesPerSecond": 3.575,
-      "blueOnRight": 0,
-      "redOnLeft": 0,
+      "notesPerSecond": 4.721,
+      "blueOnRight": 7,
+      "redOnLeft": 4,
       "verticalPairs": 0
     }
   },
@@ -125,18 +125,18 @@
       "verticalPairs": 2
     },
     "hard": {
-      "notes": 553,
-      "cuts": 567,
-      "maxSwingSpeed": 5.4691,
+      "notes": 597,
+      "cuts": 611,
+      "maxSwingSpeed": 5.4195,
       "minimumSameHandGapMs": 187.5,
       "repeatedOneTwoFourBarBlocks": 0,
-      "flickPercent": 5.24,
+      "flickPercent": 4.86,
       "maxConsecutiveFlicks": 2,
       "maxConsecutiveFlicksPerHand": 2,
       "maxConsecutiveFlicksByGroup": 2,
-      "notesPerSecond": 2.675,
-      "blueOnRight": 0,
-      "redOnLeft": 0,
+      "notesPerSecond": 2.887,
+      "blueOnRight": 12,
+      "redOnLeft": 8,
       "verticalPairs": 0
     }
   },
@@ -172,18 +172,18 @@
       "verticalPairs": 0
     },
     "hard": {
-      "notes": 397,
-      "cuts": 409,
-      "maxSwingSpeed": 4.8637,
+      "notes": 489,
+      "cuts": 501,
+      "maxSwingSpeed": 5.4679,
       "minimumSameHandGapMs": 187.5,
       "repeatedOneTwoFourBarBlocks": 6,
-      "flickPercent": 5.79,
-      "maxConsecutiveFlicks": 2,
+      "flickPercent": 4.7,
+      "maxConsecutiveFlicks": 1,
       "maxConsecutiveFlicksPerHand": 3,
-      "maxConsecutiveFlicksByGroup": 2,
-      "notesPerSecond": 2.861,
-      "blueOnRight": 0,
-      "redOnLeft": 0,
+      "maxConsecutiveFlicksByGroup": 1,
+      "notesPerSecond": 3.524,
+      "blueOnRight": 7,
+      "redOnLeft": 6,
       "verticalPairs": 0
     }
   },
@@ -219,17 +219,17 @@
       "verticalPairs": 4
     },
     "hard": {
-      "notes": 439,
-      "cuts": 450,
-      "maxSwingSpeed": 5.412,
+      "notes": 556,
+      "cuts": 567,
+      "maxSwingSpeed": 5.4805,
       "minimumSameHandGapMs": 107.143,
-      "repeatedOneTwoFourBarBlocks": 0,
-      "flickPercent": 10.25,
+      "repeatedOneTwoFourBarBlocks": 1,
+      "flickPercent": 8.09,
       "maxConsecutiveFlicks": 2,
       "maxConsecutiveFlicksPerHand": 3,
       "maxConsecutiveFlicksByGroup": 2,
-      "notesPerSecond": 3.162,
-      "blueOnRight": 0,
+      "notesPerSecond": 4.004,
+      "blueOnRight": 1,
       "redOnLeft": 0,
       "verticalPairs": 0
     }

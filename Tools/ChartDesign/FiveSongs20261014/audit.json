@@ -500,10 +500,10 @@
       "identityPhrases": 54
     },
     "hard": {
-      "notes": 515,
-      "cuts": 528,
+      "notes": 620,
+      "cuts": 633,
       "types": {
-        "tap": 474,
+        "tap": 579,
         "direction": 28,
         "long": 13
       },
@@ -748,7 +748,8 @@
         "policy": "通常配置を主軸に、短い技を選択",
         "flicksConvertedToTaps": []
       },
-      "identityPhrases": 45
+      "identityPhrases": 45,
+      "hardRhythmDesignVersion": 1
     }
   },
   "escapade": {
@@ -1154,10 +1155,10 @@
       "identityPhrases": 48
     },
     "hard": {
-      "notes": 393,
-      "cuts": 404,
+      "notes": 519,
+      "cuts": 530,
       "types": {
-        "tap": 361,
+        "tap": 487,
         "direction": 21,
         "long": 11
       },
@@ -1354,7 +1355,8 @@
         "policy": "通常配置を主軸に、短い技を選択",
         "flicksConvertedToTaps": []
       },
-      "identityPhrases": 43
+      "identityPhrases": 43,
+      "hardRhythmDesignVersion": 1
     }
   },
   "logic": {
@@ -1923,10 +1925,10 @@
       "identityPhrases": 57
     },
     "hard": {
-      "notes": 553,
-      "cuts": 567,
+      "notes": 597,
+      "cuts": 611,
       "types": {
-        "tap": 510,
+        "tap": 554,
         "direction": 29,
         "long": 14
       },
@@ -2202,7 +2204,8 @@
         "policy": "通常配置を主軸に、短い技を選択",
         "flicksConvertedToTaps": []
       },
-      "identityPhrases": 57
+      "identityPhrases": 57,
+      "hardRhythmDesignVersion": 1
     }
   },
   "BenkyouRemaster": {
@@ -2642,10 +2645,10 @@
       "identityPhrases": 29
     },
     "hard": {
-      "notes": 397,
-      "cuts": 409,
+      "notes": 489,
+      "cuts": 501,
       "types": {
-        "tap": 362,
+        "tap": 454,
         "direction": 23,
         "long": 12
       },
@@ -2857,7 +2860,8 @@
         "policy": "通常配置を主軸に、短い技を選択",
         "flicksConvertedToTaps": []
       },
-      "identityPhrases": 25
+      "identityPhrases": 25,
+      "hardRhythmDesignVersion": 1
     }
   },
   "Aobasou": {
@@ -3251,10 +3255,10 @@
       "identityPhrases": 26
     },
     "hard": {
-      "notes": 439,
-      "cuts": 450,
+      "notes": 556,
+      "cuts": 567,
       "types": {
-        "tap": 383,
+        "tap": 500,
         "direction": 45,
         "long": 11
       },
@@ -3443,7 +3447,8 @@
         "policy": "通常配置を主軸に、短い技を選択",
         "flicksConvertedToTaps": []
       },
-      "identityPhrases": 29
+      "identityPhrases": 29,
+      "hardRhythmDesignVersion": 1
     }
   }
 }

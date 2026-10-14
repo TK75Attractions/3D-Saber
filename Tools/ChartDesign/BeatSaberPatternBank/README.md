@@ -45,3 +45,12 @@ Manic Sonicは主拍と両手の着地、escapadeは短い連打と休符、logi
 `applications.json` は素材と実際の曲・難易度・小節・時刻・ノーツを相互に結ぶ。
 既存の検証履歴は `batches/`。最新のテスト結果は `conversion-verification.json` を参照。
 物理セイバーでの通しプレイは未実施。
+
+## Hardの音はめ・可動域改修（2026-10-15）
+
+今回の変更は5曲のHardのみ。Easy・Normalと対象外の全曲は保持。
+`FiveSongs20261014/hard-rhythm-design.json` に打点の追加・削除・発音の位置と強さ・候補を不採用にした理由・短い技の区間を保存した。
+556打点を追加し72打点を整理。強い半拍候補はBPM90〜205、発音強度0.60以上、拍との差28ms以内という解析基準であり、音楽全体の正確な採譜率を示すものではない。
+横幅は約±2.1、縦は約±1.1まで使用。高速部分は経路を詰め、広い高低差を通常の運動として許可する。縦・交差・同側は短い区間へ組み込む。
+23件のHard素材適用を音源に合わせて再構成し、`applications.json` の `appliedNotes` と `noteIndices` を更新。元の適用は `referenceAppliedNotes` として保持。`identity-design.json` のHard統計はこの改修前の履歴であり、現在値は `hard-rhythm-design.json` を参照。
+実機で人がプレイした検証ではない。更新時は現在のHardを共通定型リズムから再生成しない。

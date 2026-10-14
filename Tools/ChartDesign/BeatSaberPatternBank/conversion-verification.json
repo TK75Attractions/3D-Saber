@@ -1,124 +1,362 @@
 {
-  "batch": "identity-20261014",
-  "newCollected": 6,
-  "newConverted": 6,
-  "newApplied": 6,
-  "newAppliedBars": 12,
+  "batch": "hard-rhythm-20261015",
+  "changedCharts": 5,
+  "difficulty": "hard",
+  "newCollected": 0,
+  "newConverted": 0,
+  "newApplied": 0,
+  "adaptedApplications": 23,
   "totalCollected": 64,
   "totalConverted": 64,
   "totalApplied": 64,
-  "redesignedCharts": 15,
-  "redesignedRegularBars": 650,
-  "retainedPreviousApplications": 58,
-  "protectedRepoCharts": 37,
-  "protectedHostedCharts": 28,
-  "scopePolicy": "scope-policy.json",
-  "automationUpdated": true,
-  "identityDesign": "../FiveSongs20261014/identity-design.json",
-  "similarity": {
-    "easy": {
-      "before": {
-        "rhythm": 0.6086,
-        "hands": 0.3716,
-        "positions": 0.2125
-      },
-      "after": {
-        "rhythm": 0.5355,
-        "hands": 0.3014,
-        "positions": 0.079
-      }
+  "addedNotes": 556,
+  "removedNotes": 72,
+  "protectedRepoCharts": 52,
+  "protectedHostedCharts": 38,
+  "tests": {
+    "edit": {
+      "passed": 58,
+      "failed": 0
     },
-    "normal": {
-      "before": {
-        "rhythm": 0.4166,
-        "hands": 0.3087,
-        "positions": 0.0834
-      },
-      "after": {
-        "rhythm": 0.3532,
-        "hands": 0.2386,
-        "positions": 0.0346
-      }
-    },
-    "hard": {
-      "before": {
-        "rhythm": 0.2528,
-        "hands": 0.1936,
-        "positions": 0.0436
-      },
-      "after": {
-        "rhythm": 0.2412,
-        "hands": 0.1215,
-        "positions": 0.0113
-      }
+    "play": {
+      "passed": 1,
+      "failed": 0
     }
   },
-  "unity": {
-    "tests-merged": {
-      "result": "Passed",
-      "total": "58",
-      "passed": "58",
-      "failed": "0",
-      "start-time": "2026-10-14 14:37:28Z",
-      "end-time": "2026-10-14 14:37:44Z"
-    },
-    "tests-playmode": {
-      "result": "Passed",
-      "total": "1",
-      "passed": "1",
-      "failed": "0",
-      "start-time": "2026-10-14 14:38:49Z",
-      "end-time": "2026-10-14 14:39:00Z"
-    }
-  },
-  "unityValidationProject": "独立コピー UvIdentity。対象20個のchart JSONが実際の本体と同一であることを検証。ユーザーのUnityは終了させていない。",
+  "isolatedChartsMatch": true,
   "browser": {
-    "patternViews": 128,
-    "fullCharts": 15,
-    "matchingChartFiles": 15,
-    "inspectedHandLabels": 861,
-    "oppositeSideLabels": 43,
+    "passed": true,
     "mobileViewport": "390x844",
-    "desktopViewport": "1440x1000",
-    "errors": [],
-    "passed": true
-  },
-  "finalBrowser": {
-    "bookmarkPersistsAfterReload": true,
-    "packageLinks": 5,
-    "oldVideoLinks": 58,
-    "newApplicationDeepLinks": 6,
-    "mobileOverflow": false,
-    "errors": [],
-    "passed": true
-  },
-  "scopeTests": {
-    "deniedSongs": [
-      "Zero",
-      "Phobia",
-      "RushE",
-      "unexpected"
+    "hardPlayback": [
+      {
+        "songId": "ManicSonic",
+        "title": "Manic Sonic",
+        "startBeat": 336,
+        "startSeconds": 113.1667,
+        "kind": "cross",
+        "url": "https://saber-chart-library.metuji48.chatgpt.site/?song=ManicSonic&difficulty=hard&t=112.67",
+        "time": 113.58838,
+        "rate": 0.5,
+        "paused": true,
+        "error": null,
+        "notes": 620,
+        "downloadMatched": true
+      },
+      {
+        "songId": "escapade",
+        "title": "escapade",
+        "startBeat": 40,
+        "startSeconds": 12.6516,
+        "kind": "cross",
+        "url": "https://saber-chart-library.metuji48.chatgpt.site/?song=escapade&difficulty=hard&t=12.15",
+        "time": 13.068779,
+        "rate": 0.5,
+        "paused": true,
+        "error": null,
+        "notes": 519,
+        "downloadMatched": true
+      },
+      {
+        "songId": "logic",
+        "title": "logic!!!",
+        "startBeat": 120,
+        "startSeconds": 45.028,
+        "kind": "cross",
+        "url": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=hard&t=44.53",
+        "time": 45.440076,
+        "rate": 0.5,
+        "paused": true,
+        "error": null,
+        "notes": 597,
+        "downloadMatched": true
+      },
+      {
+        "songId": "BenkyouRemaster",
+        "title": "勉強（Remaster）",
+        "startBeat": 224,
+        "startSeconds": 91.674,
+        "kind": "cross",
+        "url": "https://saber-chart-library.metuji48.chatgpt.site/?song=BenkyouRemaster&difficulty=hard&t=91.17",
+        "time": 92.085293,
+        "rate": 0.5,
+        "paused": true,
+        "error": null,
+        "notes": 489,
+        "downloadMatched": true
+      },
+      {
+        "songId": "Aobasou",
+        "title": "青葉騒 feat.初音ミク",
+        "startBeat": 40,
+        "startSeconds": 17.1429,
+        "kind": "same-side",
+        "url": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=hard&t=16.64",
+        "time": 17.554173,
+        "rate": 0.5,
+        "paused": true,
+        "error": null,
+        "notes": 556,
+        "downloadMatched": true
+      }
     ],
-    "allowedCharts": 15,
-    "deniedDifficulty": "expert",
-    "preservedApplications": 58,
-    "protectedRepoCharts": 37,
-    "protectedWebCharts": 28
+    "updatedApplicationViews": 23,
+    "protectedCharts": 38,
+    "protectedEntries": [
+      "songs/s-620eb5b792/chart_easy.json",
+      "songs/s-620eb5b792/chart_normal.json",
+      "songs/s-7554e33fd4/chart_easy.json",
+      "songs/s-7554e33fd4/chart_normal.json",
+      "songs/s-08e4e1c34e/chart_easy.json",
+      "songs/s-08e4e1c34e/chart_normal.json",
+      "songs/s-8cf4cc290a/chart_easy.json",
+      "songs/s-8cf4cc290a/chart_normal.json",
+      "songs/s-2a3f1f3134/chart_easy.json",
+      "songs/s-2a3f1f3134/chart_normal.json",
+      "songs/s-d9dd086588/chart_easy.json",
+      "songs/s-d9dd086588/chart_normal.json",
+      "songs/s-d9dd086588/chart_hard.json",
+      "songs/s-642d5e9b77/chart_easy.json",
+      "songs/s-642d5e9b77/chart_normal.json",
+      "songs/s-642d5e9b77/chart_hard.json",
+      "songs/s-09cc07835a/chart_easy.json",
+      "songs/s-09cc07835a/chart_normal.json",
+      "songs/s-09cc07835a/chart_hard.json",
+      "songs/s-64186d3a47/chart_easy.json",
+      "songs/s-64186d3a47/chart_normal.json",
+      "songs/s-64186d3a47/chart_hard.json",
+      "songs/s-e9376a281a/chart_easy.json",
+      "songs/s-e9376a281a/chart_normal.json",
+      "songs/s-e9376a281a/chart_hard.json",
+      "songs/s-bd0623a421/chart_easy.json",
+      "songs/s-bd0623a421/chart_normal.json",
+      "songs/s-bd0623a421/chart_hard.json",
+      "songs/s-d2f1f87682/chart_easy.json",
+      "songs/s-d2f1f87682/chart_normal.json",
+      "songs/s-d2f1f87682/chart_hard.json",
+      "songs/s-d2f1f87682/chart_e.json",
+      "songs/s-32d8275186/chart_easy.json",
+      "songs/s-32d8275186/chart_normal.json",
+      "songs/s-32d8275186/chart_hard.json",
+      "songs/s-be9f46268e/chart_easy.json",
+      "songs/s-be9f46268e/chart_normal.json",
+      "songs/s-be9f46268e/chart_hard.json"
+    ],
+    "errors": []
   },
   "maxFlickRun": 2,
   "maxPerHandFlickRun": 3,
   "physicalPlayTest": false,
   "phoneHardwareTest": false,
-  "sourceLimitations": "MISA MISA!は作者の曲区間と190 BPMを確認。動画の難易度はExpert+相当の推定。譜面ZIPは403で照合できず、版と小節頭は未確定。すべて正確な採譜ではなく配置構造の翻案。",
-  "positionPolicy": "通常配置が主軸。全曲を周期回転させず、縦・交差等は既存の短い技だけ保持。色で担当手を判定する。",
+  "automationUpdated": true,
+  "intent": "Hardの実音の強い打点を補い、広い高低差と短い縦・交差・同側の技を曲別に設計。Easy・Normalと対象外の全曲を保持。",
+  "evidence": "../FiveSongs20261014/hard-rhythm-design.json",
+  "sourceLimitations": "発音検出と拍の照合は採譜の補助。検出基準に一致する発音の網羅率を、楽曲全体の音はめの正解率と見なさない。",
+  "previousBatch": "identity-20261014.json",
+  "charts": {
+    "ManicSonic": {
+      "before": {
+        "notes": 515,
+        "strongHalfBeats": 437,
+        "strongHalfBeatsCovered": 323,
+        "meanOnsetDistanceMs": 9.522,
+        "xRange": [
+          -1.32,
+          1.32
+        ],
+        "yRange": [
+          -0.9,
+          0.9
+        ],
+        "outerNotes": 0,
+        "highLowNotes": 4,
+        "oppositeSideNotes": 2,
+        "rhythmSignatures": 30
+      },
+      "after": {
+        "notes": 620,
+        "strongHalfBeats": 437,
+        "strongHalfBeatsCovered": 437,
+        "meanOnsetDistanceMs": 8.35,
+        "xRange": [
+          -2.06,
+          2.13
+        ],
+        "yRange": [
+          -1.12,
+          1.12
+        ],
+        "outerNotes": 266,
+        "highLowNotes": 98,
+        "oppositeSideNotes": 8,
+        "rhythmSignatures": 35
+      },
+      "sha256": "6d3013ca216ec157ec4171b1b093ccec38a0c0964f8515f5fff80fa918ed81c7"
+    },
+    "escapade": {
+      "before": {
+        "notes": 393,
+        "strongHalfBeats": 341,
+        "strongHalfBeatsCovered": 210,
+        "meanOnsetDistanceMs": 7.073,
+        "xRange": [
+          -1.25,
+          1.25
+        ],
+        "yRange": [
+          -0.336,
+          0.28
+        ],
+        "outerNotes": 0,
+        "highLowNotes": 0,
+        "oppositeSideNotes": 0,
+        "rhythmSignatures": 22
+      },
+      "after": {
+        "notes": 519,
+        "strongHalfBeats": 341,
+        "strongHalfBeatsCovered": 341,
+        "meanOnsetDistanceMs": 5.337,
+        "xRange": [
+          -2.06,
+          2.06
+        ],
+        "yRange": [
+          -1.0446,
+          1.024
+        ],
+        "outerNotes": 183,
+        "highLowNotes": 65,
+        "oppositeSideNotes": 11,
+        "rhythmSignatures": 35
+      },
+      "sha256": "7bb337c0fefd8bb22782d68c3e3e5b5f8ca0d470b460720fa4ecf70f8320af0c"
+    },
+    "logic": {
+      "before": {
+        "notes": 553,
+        "strongHalfBeats": 271,
+        "strongHalfBeatsCovered": 193,
+        "meanOnsetDistanceMs": 16.967,
+        "xRange": [
+          -1.24,
+          1.24
+        ],
+        "yRange": [
+          -0.336,
+          0.272
+        ],
+        "outerNotes": 0,
+        "highLowNotes": 0,
+        "oppositeSideNotes": 0,
+        "rhythmSignatures": 50
+      },
+      "after": {
+        "notes": 597,
+        "strongHalfBeats": 271,
+        "strongHalfBeatsCovered": 271,
+        "meanOnsetDistanceMs": 14.556,
+        "xRange": [
+          -2.0689,
+          2.13
+        ],
+        "yRange": [
+          -1.12,
+          1.12
+        ],
+        "outerNotes": 197,
+        "highLowNotes": 140,
+        "oppositeSideNotes": 20,
+        "rhythmSignatures": 66
+      },
+      "sha256": "fa47eb6144bcb3a650b85cd90a3f422489d77f38c8298bb429398f79ddd51191"
+    },
+    "BenkyouRemaster": {
+      "before": {
+        "notes": 397,
+        "strongHalfBeats": 330,
+        "strongHalfBeatsCovered": 243,
+        "meanOnsetDistanceMs": 9.391,
+        "xRange": [
+          -1.28,
+          1.28
+        ],
+        "yRange": [
+          -0.72,
+          0.72
+        ],
+        "outerNotes": 0,
+        "highLowNotes": 4,
+        "oppositeSideNotes": 0,
+        "rhythmSignatures": 31
+      },
+      "after": {
+        "notes": 489,
+        "strongHalfBeats": 330,
+        "strongHalfBeatsCovered": 330,
+        "meanOnsetDistanceMs": 8.735,
+        "xRange": [
+          -2.13,
+          2.13
+        ],
+        "yRange": [
+          -1.12,
+          1.12
+        ],
+        "outerNotes": 255,
+        "highLowNotes": 88,
+        "oppositeSideNotes": 13,
+        "rhythmSignatures": 31
+      },
+      "sha256": "b118fd0ba75ba73aefdbddb043a16d1f1e3e61ab276e4626cbdb2054e802886f"
+    },
+    "Aobasou": {
+      "before": {
+        "notes": 439,
+        "strongHalfBeats": 378,
+        "strongHalfBeatsCovered": 272,
+        "meanOnsetDistanceMs": 10.491,
+        "xRange": [
+          -1.45,
+          1.45
+        ],
+        "yRange": [
+          -0.741,
+          0.8315
+        ],
+        "outerNotes": 0,
+        "highLowNotes": 6,
+        "oppositeSideNotes": 0,
+        "rhythmSignatures": 26
+      },
+      "after": {
+        "notes": 556,
+        "strongHalfBeats": 378,
+        "strongHalfBeatsCovered": 378,
+        "meanOnsetDistanceMs": 9.658,
+        "xRange": [
+          -2.1017,
+          2.0463
+        ],
+        "yRange": [
+          -1.0278,
+          1.08
+        ],
+        "outerNotes": 204,
+        "highLowNotes": 59,
+        "oppositeSideNotes": 1,
+        "rhythmSignatures": 30
+      },
+      "sha256": "2578cde0dba1413af23b8dbd0a1df97dec3e69004fdd80480acade521bfcb23b"
+    }
+  },
   "publication": {
     "pattern": {
-      "commit": "e6ca2321c858cf7cfc235e64d805a151be0009cb",
+      "commit": "812a9eedb5ea4cce555a2160f251cbd7100d5283",
       "deployment": {
-        "id": "appgdep_6acf95175c30819185f137c507a358a2",
+        "id": "appgdep_6acf9c83e2f88191b0b68fde08b4540e",
         "project_id": "appgprj_6acf41e8dc0c8191b5a040cbed34bdc2",
         "title": "Beat Saber 配置素材ノート",
-        "version_id": "appgprj_6acf41e8dc0c8191b5a040cbed34bdc2~appgver_49d1a147f38c81918b514e0cc7383012",
+        "version_id": "appgprj_6acf41e8dc0c8191b5a040cbed34bdc2~appgver_ad39c653e6b48191aa28c17d5d023a9d",
         "type": "publish",
         "status": "succeeded",
         "url": "https://beat-saber-pattern-bank.metuji48.chatgpt.site",
@@ -127,16 +365,16 @@
         "provider_deployment_id": "site---6acf41e8dc0c8191b5a040cbed34bdc2",
         "failure_message": null,
         "env_set_revision": 0,
-        "updated_at": "2026-10-14T14:44:21.715922+00:00"
+        "updated_at": "2026-10-14T15:15:57.496667+00:00"
       }
     },
     "charts": {
-      "commit": "daa60c13036e0ff346f5c147d2476724384688d3",
+      "commit": "cbd3789d847a0c86446df22cd51df0fefc4f7f9e",
       "deployment": {
-        "id": "appgdep_6acf955ce6cc819188516520e25c0908",
+        "id": "appgdep_6acf9cc170588191806f3746b1474c93",
         "project_id": "appgprj_6acf32845a308191985cae6f72e92c2d",
         "title": "3D Saber 譜面ライブラリ",
-        "version_id": "appgprj_6acf32845a308191985cae6f72e92c2d~appgver_b01404b462608191a2a090da8ea8f5d1",
+        "version_id": "appgprj_6acf32845a308191985cae6f72e92c2d~appgver_336109735da88191a00943ec1f49231e",
         "type": "publish",
         "status": "succeeded",
         "url": "https://saber-chart-library.metuji48.chatgpt.site",
@@ -145,7 +383,7 @@
         "provider_deployment_id": "site---6acf32845a308191985cae6f72e92c2d",
         "failure_message": null,
         "env_set_revision": 0,
-        "updated_at": "2026-10-14T14:45:10.175588+00:00"
+        "updated_at": "2026-10-14T15:16:38.267040+00:00"
       }
     }
   }

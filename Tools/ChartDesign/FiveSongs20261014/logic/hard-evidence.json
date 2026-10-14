@@ -11,6 +11,16 @@
   },
   {
     "index": 1,
+    "beat": 4.0,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 0,
+    "peakSeconds": 1.551474,
+    "distanceMs": 23.474,
+    "strength": 0.8602
+  },
+  {
+    "index": 2,
     "beat": 4.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -20,7 +30,7 @@
     "strength": 0.4048
   },
   {
-    "index": 2,
+    "index": 3,
     "beat": 5.0,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -30,7 +40,7 @@
     "strength": 1.4709
   },
   {
-    "index": 3,
+    "index": 4,
     "beat": 6.0,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -40,7 +50,17 @@
     "strength": 1.3037
   },
   {
-    "index": 4,
+    "index": 5,
+    "beat": 6.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 0,
+    "peakSeconds": 2.474376,
+    "distanceMs": 8.876,
+    "strength": 0.8663
+  },
+  {
+    "index": 6,
     "beat": 7.0,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -50,7 +70,7 @@
     "strength": 0.8978
   },
   {
-    "index": 5,
+    "index": 7,
     "beat": 8.0,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -60,7 +80,7 @@
     "strength": 1.0982
   },
   {
-    "index": 6,
+    "index": 8,
     "beat": 8.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -70,7 +90,17 @@
     "strength": 0.6268
   },
   {
-    "index": 7,
+    "index": 9,
+    "beat": 9.0,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 0,
+    "peakSeconds": 3.407256,
+    "distanceMs": 4.256,
+    "strength": 0.6697
+  },
+  {
+    "index": 10,
     "beat": 9.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -80,7 +110,7 @@
     "strength": 0.9095
   },
   {
-    "index": 8,
+    "index": 11,
     "beat": 10.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -90,7 +120,7 @@
     "strength": 0.6685
   },
   {
-    "index": 9,
+    "index": 12,
     "beat": 11.0,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -100,7 +130,17 @@
     "strength": 0.6312
   },
   {
-    "index": 10,
+    "index": 13,
+    "beat": 11.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 0,
+    "peakSeconds": 4.345125,
+    "distanceMs": 4.625,
+    "strength": 0.6538
+  },
+  {
+    "index": 14,
     "beat": 12.0,
     "hand": "blue",
     "role": "8/8の導入",
@@ -110,7 +150,7 @@
     "strength": 0.9022
   },
   {
-    "index": 11,
+    "index": 15,
     "beat": 16.0,
     "hand": "red",
     "role": "8/8の導入",
@@ -120,7 +160,7 @@
     "strength": 0.6147
   },
   {
-    "index": 12,
+    "index": 16,
     "beat": 18.0,
     "hand": "blue",
     "role": "8/8の導入",
@@ -130,7 +170,7 @@
     "strength": 0.2339
   },
   {
-    "index": 13,
+    "index": 17,
     "beat": 19.0,
     "hand": "red",
     "role": "8/8の導入",
@@ -140,17 +180,7 @@
     "strength": 0.2035
   },
   {
-    "index": 14,
-    "beat": 20.5,
-    "hand": "blue",
-    "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
-    "phrase": 1,
-    "peakSeconds": 7.672562,
-    "distanceMs": -42.938,
-    "strength": 0.2718
-  },
-  {
-    "index": 15,
+    "index": 18,
     "beat": 21.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -160,7 +190,7 @@
     "strength": 0.2899
   },
   {
-    "index": 16,
+    "index": 19,
     "beat": 22.0,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -170,7 +200,7 @@
     "strength": 0.2303
   },
   {
-    "index": 17,
+    "index": 20,
     "beat": 23.0,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -180,7 +210,7 @@
     "strength": 0.2023
   },
   {
-    "index": 18,
+    "index": 21,
     "beat": 23.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -190,17 +220,7 @@
     "strength": 0.2526
   },
   {
-    "index": 19,
-    "beat": 24.0,
-    "hand": "blue",
-    "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
-    "phrase": 1,
-    "peakSeconds": 9.064399,
-    "distanceMs": 36.399,
-    "strength": 0.3098
-  },
-  {
-    "index": 20,
+    "index": 22,
     "beat": 24.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -210,17 +230,7 @@
     "strength": 0.2187
   },
   {
-    "index": 21,
-    "beat": 25.5,
-    "hand": "blue",
-    "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
-    "phrase": 1,
-    "peakSeconds": 9.548299,
-    "distanceMs": -42.201,
-    "strength": 0.2399
-  },
-  {
-    "index": 22,
+    "index": 23,
     "beat": 26.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -228,16 +238,6 @@
     "peakSeconds": 9.972336,
     "distanceMs": 6.836,
     "strength": 0.2061
-  },
-  {
-    "index": 23,
-    "beat": 28.0,
-    "hand": "red",
-    "role": "8/8の導入",
-    "phrase": 1,
-    "peakSeconds": 10.491156,
-    "distanceMs": -36.844,
-    "strength": 0.2665
   },
   {
     "index": 24,
@@ -371,6 +371,16 @@
   },
   {
     "index": 37,
+    "beat": 41.5,
+    "hand": "blue",
+    "role": "Hard実音: 半拍",
+    "phrase": 2,
+    "peakSeconds": 15.589569,
+    "distanceMs": -0.931,
+    "strength": 0.6716
+  },
+  {
+    "index": 38,
     "beat": 42.0,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -380,7 +390,7 @@
     "strength": 0.6624
   },
   {
-    "index": 38,
+    "index": 39,
     "beat": 42.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -390,7 +400,7 @@
     "strength": 0.3916
   },
   {
-    "index": 39,
+    "index": 40,
     "beat": 43.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -400,7 +410,7 @@
     "strength": 0.4308
   },
   {
-    "index": 40,
+    "index": 41,
     "beat": 44.0,
     "hand": "red",
     "role": "応答",
@@ -410,7 +420,7 @@
     "strength": 1.0589
   },
   {
-    "index": 41,
+    "index": 42,
     "beat": 45.0,
     "hand": "blue",
     "role": "応答",
@@ -420,7 +430,7 @@
     "strength": 0.407
   },
   {
-    "index": 42,
+    "index": 43,
     "beat": 45.5,
     "hand": "red",
     "role": "応答",
@@ -430,7 +440,7 @@
     "strength": 0.4547
   },
   {
-    "index": 43,
+    "index": 44,
     "beat": 46.0,
     "hand": "blue",
     "role": "応答",
@@ -440,7 +450,17 @@
     "strength": 0.4781
   },
   {
-    "index": 44,
+    "index": 45,
+    "beat": 46.5,
+    "hand": "blue",
+    "role": "Hard実音: 半拍",
+    "phrase": 2,
+    "peakSeconds": 17.470295,
+    "distanceMs": 4.795,
+    "strength": 1.1673
+  },
+  {
+    "index": 46,
     "beat": 47.0,
     "hand": "blue",
     "role": "応答",
@@ -450,7 +470,7 @@
     "strength": 0.4776
   },
   {
-    "index": 45,
+    "index": 47,
     "beat": 48.0,
     "hand": "blue",
     "role": "応答",
@@ -460,7 +480,7 @@
     "strength": 0.3866
   },
   {
-    "index": 46,
+    "index": 48,
     "beat": 49.0,
     "hand": "red",
     "role": "応答",
@@ -470,7 +490,7 @@
     "strength": 1.0316
   },
   {
-    "index": 47,
+    "index": 49,
     "beat": 49.5,
     "hand": "blue",
     "role": "応答",
@@ -480,7 +500,7 @@
     "strength": 0.4701
   },
   {
-    "index": 48,
+    "index": 50,
     "beat": 50.0,
     "hand": "red",
     "role": "応答",
@@ -490,7 +510,7 @@
     "strength": 0.2448
   },
   {
-    "index": 49,
+    "index": 51,
     "beat": 51.0,
     "hand": "blue",
     "role": "応答",
@@ -500,7 +520,7 @@
     "strength": 0.4308
   },
   {
-    "index": 50,
+    "index": 52,
     "beat": 51.5,
     "hand": "red",
     "role": "応答",
@@ -510,7 +530,7 @@
     "strength": 0.5221
   },
   {
-    "index": 51,
+    "index": 53,
     "beat": 52.0,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -520,7 +540,7 @@
     "strength": 1.414
   },
   {
-    "index": 52,
+    "index": 54,
     "beat": 53.0,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -530,7 +550,7 @@
     "strength": 0.3507
   },
   {
-    "index": 53,
+    "index": 55,
     "beat": 53.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -540,7 +560,7 @@
     "strength": 0.3698
   },
   {
-    "index": 54,
+    "index": 56,
     "beat": 54.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -550,7 +570,7 @@
     "strength": 1.0393
   },
   {
-    "index": 55,
+    "index": 57,
     "beat": 55.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -560,7 +580,7 @@
     "strength": 0.4318
   },
   {
-    "index": 56,
+    "index": 58,
     "beat": 56.0,
     "hand": "blue",
     "role": "応答",
@@ -570,7 +590,7 @@
     "strength": 0.3916
   },
   {
-    "index": 57,
+    "index": 59,
     "beat": 57.0,
     "hand": "red",
     "role": "応答",
@@ -580,7 +600,7 @@
     "strength": 0.7095
   },
   {
-    "index": 58,
+    "index": 60,
     "beat": 57.5,
     "hand": "blue",
     "role": "応答",
@@ -590,7 +610,7 @@
     "strength": 0.379
   },
   {
-    "index": 59,
+    "index": 61,
     "beat": 58.0,
     "hand": "red",
     "role": "応答",
@@ -600,7 +620,7 @@
     "strength": 0.3808
   },
   {
-    "index": 60,
+    "index": 62,
     "beat": 59.0,
     "hand": "blue",
     "role": "応答",
@@ -610,7 +630,7 @@
     "strength": 0.5326
   },
   {
-    "index": 61,
+    "index": 63,
     "beat": 59.5,
     "hand": "red",
     "role": "応答",
@@ -620,7 +640,7 @@
     "strength": 0.9262
   },
   {
-    "index": 62,
+    "index": 64,
     "beat": 60.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -630,7 +650,7 @@
     "strength": 0.3528
   },
   {
-    "index": 63,
+    "index": 65,
     "beat": 61.0,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -640,7 +660,17 @@
     "strength": 0.5096
   },
   {
-    "index": 64,
+    "index": 66,
+    "beat": 61.5,
+    "hand": "blue",
+    "role": "Hard実音: 半拍",
+    "phrase": 3,
+    "peakSeconds": 23.092517,
+    "distanceMs": 2.017,
+    "strength": 0.6739
+  },
+  {
+    "index": 67,
     "beat": 62.0,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -650,7 +680,17 @@
     "strength": 0.6137
   },
   {
-    "index": 65,
+    "index": 68,
+    "beat": 62.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 3,
+    "peakSeconds": 23.476644,
+    "distanceMs": 11.144,
+    "strength": 0.9551
+  },
+  {
+    "index": 69,
     "beat": 63.0,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -660,7 +700,7 @@
     "strength": 0.4115
   },
   {
-    "index": 66,
+    "index": 70,
     "beat": 63.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -670,7 +710,7 @@
     "strength": 0.3752
   },
   {
-    "index": 67,
+    "index": 71,
     "beat": 64.0,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -680,7 +720,7 @@
     "strength": 0.3947
   },
   {
-    "index": 68,
+    "index": 72,
     "beat": 64.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -690,7 +730,17 @@
     "strength": 0.469
   },
   {
-    "index": 69,
+    "index": 73,
+    "beat": 65.0,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 4,
+    "peakSeconds": 24.429478,
+    "distanceMs": 26.478,
+    "strength": 0.7683
+  },
+  {
+    "index": 74,
     "beat": 65.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -700,7 +750,7 @@
     "strength": 0.4336
   },
   {
-    "index": 70,
+    "index": 75,
     "beat": 66.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -710,7 +760,7 @@
     "strength": 0.3876
   },
   {
-    "index": 71,
+    "index": 76,
     "beat": 67.0,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -720,7 +770,17 @@
     "strength": 0.5028
   },
   {
-    "index": 72,
+    "index": 77,
+    "beat": 67.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 4,
+    "peakSeconds": 25.342404,
+    "distanceMs": 1.904,
+    "strength": 0.8547
+  },
+  {
+    "index": 78,
     "beat": 68.0,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -730,7 +790,7 @@
     "strength": 0.5438
   },
   {
-    "index": 73,
+    "index": 79,
     "beat": 68.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -740,7 +800,7 @@
     "strength": 0.4684
   },
   {
-    "index": 74,
+    "index": 80,
     "beat": 69.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -750,17 +810,17 @@
     "strength": 0.5376
   },
   {
-    "index": 75,
-    "beat": 70.5,
+    "index": 81,
+    "beat": 70.0,
     "hand": "red",
-    "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
+    "role": "Hard実音: 半拍",
     "phrase": 4,
-    "peakSeconds": 26.439909,
-    "distanceMs": -25.591,
-    "strength": 0.3558
+    "peakSeconds": 26.280272,
+    "distanceMs": 2.272,
+    "strength": 0.912
   },
   {
-    "index": 76,
+    "index": 82,
     "beat": 71.0,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -770,7 +830,17 @@
     "strength": 0.3651
   },
   {
-    "index": 77,
+    "index": 83,
+    "beat": 71.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 4,
+    "peakSeconds": 26.84898,
+    "distanceMs": 8.48,
+    "strength": 0.6915
+  },
+  {
+    "index": 84,
     "beat": 72.0,
     "hand": "red",
     "role": "応答",
@@ -780,7 +850,7 @@
     "strength": 0.4458
   },
   {
-    "index": 78,
+    "index": 85,
     "beat": 73.0,
     "hand": "blue",
     "role": "応答",
@@ -790,7 +860,7 @@
     "strength": 0.3819
   },
   {
-    "index": 79,
+    "index": 86,
     "beat": 74.0,
     "hand": "red",
     "role": "応答",
@@ -800,7 +870,7 @@
     "strength": 0.2332
   },
   {
-    "index": 80,
+    "index": 87,
     "beat": 75.0,
     "hand": "blue",
     "role": "応答",
@@ -810,7 +880,7 @@
     "strength": 0.2481
   },
   {
-    "index": 81,
+    "index": 88,
     "beat": 76.0,
     "hand": "red",
     "role": "応答",
@@ -820,7 +890,7 @@
     "strength": 0.2502
   },
   {
-    "index": 82,
+    "index": 89,
     "beat": 77.0,
     "hand": "blue",
     "role": "応答",
@@ -830,7 +900,7 @@
     "strength": 0.6519
   },
   {
-    "index": 83,
+    "index": 90,
     "beat": 78.0,
     "hand": "red",
     "role": "応答",
@@ -840,7 +910,7 @@
     "strength": 0.2758
   },
   {
-    "index": 84,
+    "index": 91,
     "beat": 80.0,
     "hand": "red",
     "role": "8分の裏拍",
@@ -850,7 +920,7 @@
     "strength": 0.2874
   },
   {
-    "index": 85,
+    "index": 92,
     "beat": 81.5,
     "hand": "blue",
     "role": "8分の裏拍",
@@ -860,7 +930,7 @@
     "strength": 1.5033
   },
   {
-    "index": 86,
+    "index": 93,
     "beat": 82.0,
     "hand": "red",
     "role": "8分の裏拍",
@@ -870,7 +940,7 @@
     "strength": 0.6121
   },
   {
-    "index": 87,
+    "index": 94,
     "beat": 82.5,
     "hand": "blue",
     "role": "8分の裏拍",
@@ -880,7 +950,7 @@
     "strength": 1.3122
   },
   {
-    "index": 88,
+    "index": 95,
     "beat": 83.0,
     "hand": "red",
     "role": "8分の裏拍",
@@ -890,7 +960,17 @@
     "strength": 1.7953
   },
   {
-    "index": 89,
+    "index": 96,
+    "beat": 83.75,
+    "hand": "red",
+    "role": "Hard実音: 短い16分フィル",
+    "phrase": 5,
+    "peakSeconds": 31.43356,
+    "distanceMs": -0.69,
+    "strength": 1.6265
+  },
+  {
+    "index": 97,
     "beat": 84.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -900,7 +980,7 @@
     "strength": 1.585
   },
   {
-    "index": 90,
+    "index": 98,
     "beat": 85.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -910,7 +990,7 @@
     "strength": 1.9063
   },
   {
-    "index": 91,
+    "index": 99,
     "beat": 86.0,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -920,7 +1000,17 @@
     "strength": 0.3628
   },
   {
-    "index": 92,
+    "index": 100,
+    "beat": 86.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 5,
+    "peakSeconds": 32.47619,
+    "distanceMs": 10.69,
+    "strength": 1.0938
+  },
+  {
+    "index": 101,
     "beat": 87.0,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -930,17 +1020,17 @@
     "strength": 1.4468
   },
   {
-    "index": 93,
-    "beat": 87.5,
-    "hand": "blue",
-    "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
+    "index": 102,
+    "beat": 87.75,
+    "hand": "red",
+    "role": "Hard実音: 短い16分フィル",
     "phrase": 5,
-    "peakSeconds": 32.800454,
-    "distanceMs": -40.046,
-    "strength": 0.21
+    "peakSeconds": 32.920181,
+    "distanceMs": -14.069,
+    "strength": 1.5937
   },
   {
-    "index": 94,
+    "index": 103,
     "beat": 88.0,
     "hand": "blue",
     "role": "8分の裏拍",
@@ -950,7 +1040,7 @@
     "strength": 0.5732
   },
   {
-    "index": 95,
+    "index": 104,
     "beat": 88.5,
     "hand": "red",
     "role": "8分の裏拍",
@@ -960,7 +1050,7 @@
     "strength": 1.4256
   },
   {
-    "index": 96,
+    "index": 105,
     "beat": 89.5,
     "hand": "blue",
     "role": "8分の裏拍",
@@ -970,7 +1060,7 @@
     "strength": 1.1015
   },
   {
-    "index": 97,
+    "index": 106,
     "beat": 90.0,
     "hand": "red",
     "role": "8分の裏拍",
@@ -980,7 +1070,7 @@
     "strength": 0.6737
   },
   {
-    "index": 98,
+    "index": 107,
     "beat": 90.5,
     "hand": "blue",
     "role": "8分の裏拍",
@@ -990,7 +1080,7 @@
     "strength": 0.8838
   },
   {
-    "index": 99,
+    "index": 108,
     "beat": 91.0,
     "hand": "red",
     "role": "8分の裏拍",
@@ -1000,27 +1090,27 @@
     "strength": 1.2797
   },
   {
-    "index": 100,
-    "beat": 92.0,
-    "hand": "red",
-    "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
-    "phrase": 5,
-    "peakSeconds": 34.501587,
-    "distanceMs": -26.413,
-    "strength": 0.3403
-  },
-  {
-    "index": 101,
-    "beat": 93.0,
+    "index": 109,
+    "beat": 91.75,
     "hand": "blue",
-    "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
+    "role": "Hard実音: 短い16分フィル",
     "phrase": 5,
-    "peakSeconds": 34.860771,
-    "distanceMs": -42.229,
-    "strength": 0.2759
+    "peakSeconds": 34.41678,
+    "distanceMs": -17.47,
+    "strength": 1.467
   },
   {
-    "index": 102,
+    "index": 110,
+    "beat": 92.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 5,
+    "peakSeconds": 34.691156,
+    "distanceMs": -24.344,
+    "strength": 1.0534
+  },
+  {
+    "index": 111,
     "beat": 93.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -1030,7 +1120,7 @@
     "strength": 1.2756
   },
   {
-    "index": 103,
+    "index": 112,
     "beat": 94.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -1040,7 +1130,27 @@
     "strength": 0.7026
   },
   {
-    "index": 104,
+    "index": 113,
+    "beat": 95.0,
+    "hand": "blue",
+    "role": "Hard実音: 半拍",
+    "phrase": 5,
+    "peakSeconds": 35.673923,
+    "distanceMs": 20.923,
+    "strength": 1.2453
+  },
+  {
+    "index": 114,
+    "beat": 95.75,
+    "hand": "blue",
+    "role": "Hard実音: 短い16分フィル",
+    "phrase": 5,
+    "peakSeconds": 35.90839,
+    "distanceMs": -25.86,
+    "strength": 1.5025
+  },
+  {
+    "index": 115,
     "beat": 96.0,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -1050,7 +1160,7 @@
     "strength": 0.4445
   },
   {
-    "index": 105,
+    "index": 116,
     "beat": 96.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -1060,7 +1170,7 @@
     "strength": 1.4123
   },
   {
-    "index": 106,
+    "index": 117,
     "beat": 97.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -1070,7 +1180,7 @@
     "strength": 0.8531
   },
   {
-    "index": 107,
+    "index": 118,
     "beat": 98.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -1080,7 +1190,17 @@
     "strength": 0.5536
   },
   {
-    "index": 108,
+    "index": 119,
+    "beat": 99.0,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 6,
+    "peakSeconds": 37.160544,
+    "distanceMs": 7.544,
+    "strength": 0.7337
+  },
+  {
+    "index": 120,
     "beat": 99.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -1090,7 +1210,7 @@
     "strength": 0.6534
   },
   {
-    "index": 109,
+    "index": 121,
     "beat": 100.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -1100,7 +1220,7 @@
     "strength": 1.2872
   },
   {
-    "index": 110,
+    "index": 122,
     "beat": 101.0,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -1110,17 +1230,17 @@
     "strength": 0.8366
   },
   {
-    "index": 111,
-    "beat": 102.0,
-    "hand": "red",
-    "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
+    "index": 123,
+    "beat": 101.5,
+    "hand": "blue",
+    "role": "Hard実音: 半拍",
     "phrase": 6,
-    "peakSeconds": 38.307937,
-    "distanceMs": 29.937,
-    "strength": 0.274
+    "peakSeconds": 38.088435,
+    "distanceMs": -2.065,
+    "strength": 1.0352
   },
   {
-    "index": 112,
+    "index": 124,
     "beat": 103.0,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -1130,7 +1250,7 @@
     "strength": 1.0705
   },
   {
-    "index": 113,
+    "index": 125,
     "beat": 103.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -1140,7 +1260,7 @@
     "strength": 0.5224
   },
   {
-    "index": 114,
+    "index": 126,
     "beat": 104.0,
     "hand": "blue",
     "role": "8分の裏拍",
@@ -1150,7 +1270,7 @@
     "strength": 0.5495
   },
   {
-    "index": 115,
+    "index": 127,
     "beat": 104.5,
     "hand": "red",
     "role": "8分の裏拍",
@@ -1160,17 +1280,17 @@
     "strength": 1.2712
   },
   {
-    "index": 116,
-    "beat": 105.5,
+    "index": 128,
+    "beat": 105.0,
     "hand": "blue",
-    "role": "8分の裏拍",
+    "role": "Hard実音: 半拍",
     "phrase": 6,
-    "peakSeconds": 39.634921,
-    "distanceMs": 44.421,
-    "strength": 0.2642
+    "peakSeconds": 39.405442,
+    "distanceMs": 2.442,
+    "strength": 0.7895
   },
   {
-    "index": 117,
+    "index": 129,
     "beat": 106.0,
     "hand": "red",
     "role": "8分の裏拍",
@@ -1180,7 +1300,7 @@
     "strength": 0.9201
   },
   {
-    "index": 118,
+    "index": 130,
     "beat": 106.5,
     "hand": "blue",
     "role": "8分の裏拍",
@@ -1190,7 +1310,7 @@
     "strength": 0.996
   },
   {
-    "index": 119,
+    "index": 131,
     "beat": 107.0,
     "hand": "red",
     "role": "8分の裏拍",
@@ -1200,7 +1320,17 @@
     "strength": 1.2927
   },
   {
-    "index": 120,
+    "index": 132,
+    "beat": 107.75,
+    "hand": "red",
+    "role": "Hard実音: 短い16分フィル",
+    "phrase": 6,
+    "peakSeconds": 40.433107,
+    "distanceMs": -1.143,
+    "strength": 1.7048
+  },
+  {
+    "index": 133,
     "beat": 108.0,
     "hand": "blue",
     "role": "8分の裏拍",
@@ -1210,7 +1340,7 @@
     "strength": 0.6021
   },
   {
-    "index": 121,
+    "index": 134,
     "beat": 108.5,
     "hand": "red",
     "role": "8分の裏拍",
@@ -1220,7 +1350,7 @@
     "strength": 1.0366
   },
   {
-    "index": 122,
+    "index": 135,
     "beat": 109.5,
     "hand": "blue",
     "role": "8分の裏拍",
@@ -1230,7 +1360,7 @@
     "strength": 0.5846
   },
   {
-    "index": 123,
+    "index": 136,
     "beat": 110.0,
     "hand": "red",
     "role": "8分の裏拍",
@@ -1240,7 +1370,7 @@
     "strength": 0.3456
   },
   {
-    "index": 124,
+    "index": 137,
     "beat": 111.0,
     "hand": "red",
     "role": "8分の裏拍",
@@ -1250,7 +1380,7 @@
     "strength": 0.4601
   },
   {
-    "index": 125,
+    "index": 138,
     "beat": 112.5,
     "hand": "blue",
     "role": "8分の裏拍",
@@ -1260,7 +1390,7 @@
     "strength": 0.6695
   },
   {
-    "index": 126,
+    "index": 139,
     "beat": 113.5,
     "hand": "red",
     "role": "8分の裏拍",
@@ -1270,7 +1400,7 @@
     "strength": 0.8448
   },
   {
-    "index": 127,
+    "index": 140,
     "beat": 114.0,
     "hand": "blue",
     "role": "8分の裏拍",
@@ -1280,7 +1410,7 @@
     "strength": 1.0335
   },
   {
-    "index": 128,
+    "index": 141,
     "beat": 114.5,
     "hand": "red",
     "role": "8分の裏拍",
@@ -1290,7 +1420,7 @@
     "strength": 1.0689
   },
   {
-    "index": 129,
+    "index": 142,
     "beat": 115.0,
     "hand": "blue",
     "role": "8分の裏拍",
@@ -1300,7 +1430,17 @@
     "strength": 1.6387
   },
   {
-    "index": 130,
+    "index": 143,
+    "beat": 115.75,
+    "hand": "red",
+    "role": "Hard実音: 短い16分フィル",
+    "phrase": 7,
+    "peakSeconds": 43.431293,
+    "distanceMs": -2.957,
+    "strength": 1.7015
+  },
+  {
+    "index": 144,
     "beat": 116.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -1310,7 +1450,7 @@
     "strength": 1.6595
   },
   {
-    "index": 131,
+    "index": 145,
     "beat": 117.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -1320,7 +1460,7 @@
     "strength": 1.2523
   },
   {
-    "index": 132,
+    "index": 146,
     "beat": 118.0,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -1330,7 +1470,17 @@
     "strength": 0.8724
   },
   {
-    "index": 133,
+    "index": 147,
+    "beat": 118.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 7,
+    "peakSeconds": 44.473923,
+    "distanceMs": 8.423,
+    "strength": 1.0119
+  },
+  {
+    "index": 148,
     "beat": 119.0,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -1340,7 +1490,17 @@
     "strength": 1.1955
   },
   {
-    "index": 134,
+    "index": 149,
+    "beat": 119.75,
+    "hand": "blue",
+    "role": "Hard実音: 短い16分フィル",
+    "phrase": 7,
+    "peakSeconds": 44.922902,
+    "distanceMs": -11.348,
+    "strength": 1.524
+  },
+  {
+    "index": 150,
     "beat": 120.0,
     "hand": "red",
     "role": "8分の裏拍",
@@ -1350,7 +1510,7 @@
     "strength": 1.0632
   },
   {
-    "index": 135,
+    "index": 151,
     "beat": 120.5,
     "hand": "blue",
     "role": "8分の裏拍",
@@ -1360,7 +1520,7 @@
     "strength": 1.4912
   },
   {
-    "index": 136,
+    "index": 152,
     "beat": 121.5,
     "hand": "red",
     "role": "8分の裏拍",
@@ -1370,7 +1530,7 @@
     "strength": 1.4326
   },
   {
-    "index": 137,
+    "index": 153,
     "beat": 122.0,
     "hand": "blue",
     "role": "8分の裏拍",
@@ -1380,7 +1540,7 @@
     "strength": 0.407
   },
   {
-    "index": 138,
+    "index": 154,
     "beat": 122.5,
     "hand": "red",
     "role": "8分の裏拍",
@@ -1390,7 +1550,7 @@
     "strength": 0.967
   },
   {
-    "index": 139,
+    "index": 155,
     "beat": 123.0,
     "hand": "blue",
     "role": "8分の裏拍",
@@ -1400,7 +1560,17 @@
     "strength": 1.7077
   },
   {
-    "index": 140,
+    "index": 156,
+    "beat": 123.75,
+    "hand": "blue",
+    "role": "Hard実音: 短い16分フィル",
+    "phrase": 7,
+    "peakSeconds": 46.414512,
+    "distanceMs": -19.738,
+    "strength": 1.3523
+  },
+  {
+    "index": 157,
     "beat": 124.0,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -1410,7 +1580,17 @@
     "strength": 0.5348
   },
   {
-    "index": 141,
+    "index": 158,
+    "beat": 124.5,
+    "hand": "blue",
+    "role": "Hard実音: 半拍",
+    "phrase": 7,
+    "peakSeconds": 46.693878,
+    "distanceMs": -21.622,
+    "strength": 1.1486
+  },
+  {
+    "index": 159,
     "beat": 125.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -1420,7 +1600,7 @@
     "strength": 1.4474
   },
   {
-    "index": 142,
+    "index": 160,
     "beat": 126.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -1430,7 +1610,17 @@
     "strength": 1.5435
   },
   {
-    "index": 143,
+    "index": 161,
+    "beat": 127.0,
+    "hand": "blue",
+    "role": "Hard実音: 半拍",
+    "phrase": 7,
+    "peakSeconds": 47.636735,
+    "distanceMs": -16.265,
+    "strength": 1.3108
+  },
+  {
+    "index": 162,
     "beat": 127.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -1440,17 +1630,7 @@
     "strength": 0.656
   },
   {
-    "index": 144,
-    "beat": 128.0,
-    "hand": "red",
-    "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
-    "phrase": 8,
-    "peakSeconds": 47.995918,
-    "distanceMs": -32.082,
-    "strength": 0.3031
-  },
-  {
-    "index": 145,
+    "index": 163,
     "beat": 128.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -1460,7 +1640,7 @@
     "strength": 1.2187
   },
   {
-    "index": 146,
+    "index": 164,
     "beat": 129.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -1470,7 +1650,7 @@
     "strength": 0.9031
   },
   {
-    "index": 147,
+    "index": 165,
     "beat": 131.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -1480,7 +1660,7 @@
     "strength": 0.6141
   },
   {
-    "index": 148,
+    "index": 166,
     "beat": 132.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -1490,7 +1670,7 @@
     "strength": 0.8743
   },
   {
-    "index": 149,
+    "index": 167,
     "beat": 133.0,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -1500,17 +1680,17 @@
     "strength": 1.0559
   },
   {
-    "index": 150,
-    "beat": 134.0,
-    "hand": "red",
-    "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
+    "index": 168,
+    "beat": 133.5,
+    "hand": "blue",
+    "role": "Hard実音: 半拍",
     "phrase": 8,
-    "peakSeconds": 50.235828,
-    "distanceMs": -42.172,
-    "strength": 0.3007
+    "peakSeconds": 50.091156,
+    "distanceMs": 0.656,
+    "strength": 0.658
   },
   {
-    "index": 151,
+    "index": 169,
     "beat": 135.0,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -1520,7 +1700,7 @@
     "strength": 1.1494
   },
   {
-    "index": 152,
+    "index": 170,
     "beat": 135.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -1530,7 +1710,7 @@
     "strength": 0.5478
   },
   {
-    "index": 153,
+    "index": 171,
     "beat": 136.0,
     "hand": "red",
     "role": "8分の裏拍",
@@ -1540,7 +1720,7 @@
     "strength": 0.4268
   },
   {
-    "index": 154,
+    "index": 172,
     "beat": 136.5,
     "hand": "blue",
     "role": "8分の裏拍",
@@ -1550,7 +1730,17 @@
     "strength": 0.6928
   },
   {
-    "index": 155,
+    "index": 173,
+    "beat": 137.0,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 8,
+    "peakSeconds": 51.408163,
+    "distanceMs": 5.163,
+    "strength": 1.0366
+  },
+  {
+    "index": 174,
     "beat": 137.5,
     "hand": "red",
     "role": "8分の裏拍",
@@ -1560,7 +1750,7 @@
     "strength": 0.8857
   },
   {
-    "index": 156,
+    "index": 175,
     "beat": 138.0,
     "hand": "blue",
     "role": "8分の裏拍",
@@ -1570,7 +1760,7 @@
     "strength": 0.6734
   },
   {
-    "index": 157,
+    "index": 176,
     "beat": 138.5,
     "hand": "red",
     "role": "8分の裏拍",
@@ -1580,7 +1770,7 @@
     "strength": 1.0064
   },
   {
-    "index": 158,
+    "index": 177,
     "beat": 139.0,
     "hand": "blue",
     "role": "8分の裏拍",
@@ -1590,7 +1780,17 @@
     "strength": 1.3136
   },
   {
-    "index": 159,
+    "index": 178,
+    "beat": 139.75,
+    "hand": "blue",
+    "role": "Hard実音: 短い16分フィル",
+    "phrase": 8,
+    "peakSeconds": 52.42585,
+    "distanceMs": -8.4,
+    "strength": 1.2373
+  },
+  {
+    "index": 179,
     "beat": 140.5,
     "hand": "blue",
     "role": "8分の裏拍",
@@ -1600,7 +1800,7 @@
     "strength": 0.818
   },
   {
-    "index": 160,
+    "index": 180,
     "beat": 142.0,
     "hand": "blue",
     "role": "BPM120へ",
@@ -1610,7 +1810,7 @@
     "strength": 1.1546
   },
   {
-    "index": 161,
+    "index": 181,
     "beat": 143.0,
     "hand": "red",
     "role": "BPM120へ",
@@ -1620,7 +1820,7 @@
     "strength": 1.3774
   },
   {
-    "index": 162,
+    "index": 182,
     "beat": 144.0,
     "hand": "red",
     "role": "素材: 右手の2連から左手へ渡す",
@@ -1630,7 +1830,7 @@
     "strength": 1.3848
   },
   {
-    "index": 163,
+    "index": 183,
     "beat": 144.5,
     "hand": "red",
     "role": "素材: 右手の2連から左手へ渡す",
@@ -1640,7 +1840,17 @@
     "strength": 0.331
   },
   {
-    "index": 164,
+    "index": 184,
+    "beat": 145.0,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 9,
+    "peakSeconds": 54.895238,
+    "distanceMs": -7.762,
+    "strength": 1.4293
+  },
+  {
+    "index": 185,
     "beat": 145.5,
     "hand": "blue",
     "role": "素材: 右手の2連から左手へ渡す",
@@ -1650,7 +1860,7 @@
     "strength": 0.4975
   },
   {
-    "index": 165,
+    "index": 186,
     "beat": 146.5,
     "hand": "red",
     "role": "素材: 右手の2連から左手へ渡す",
@@ -1660,7 +1870,17 @@
     "strength": 0.4577
   },
   {
-    "index": 166,
+    "index": 187,
+    "beat": 147.0,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 9,
+    "peakSeconds": 55.902948,
+    "distanceMs": -0.052,
+    "strength": 0.8308
+  },
+  {
+    "index": 188,
     "beat": 147.5,
     "hand": "blue",
     "role": "素材: 右手の2連から左手へ渡す",
@@ -1670,7 +1890,7 @@
     "strength": 0.7497
   },
   {
-    "index": 167,
+    "index": 189,
     "beat": 148.0,
     "hand": "blue",
     "role": "素材: 右手の2連から左手へ渡す",
@@ -1680,7 +1900,7 @@
     "strength": 0.4058
   },
   {
-    "index": 168,
+    "index": 190,
     "beat": 148.5,
     "hand": "blue",
     "role": "素材: 右手の2連から左手へ渡す",
@@ -1690,7 +1910,7 @@
     "strength": 0.4185
   },
   {
-    "index": 169,
+    "index": 191,
     "beat": 149.5,
     "hand": "red",
     "role": "素材: 右手の2連から左手へ渡す",
@@ -1700,7 +1920,7 @@
     "strength": 0.2753
   },
   {
-    "index": 170,
+    "index": 192,
     "beat": 150.5,
     "hand": "blue",
     "role": "素材: 右手の2連から左手へ渡す",
@@ -1710,7 +1930,17 @@
     "strength": 0.4623
   },
   {
-    "index": 171,
+    "index": 193,
+    "beat": 151.0,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 9,
+    "peakSeconds": 57.883447,
+    "distanceMs": -19.553,
+    "strength": 0.7614
+  },
+  {
+    "index": 194,
     "beat": 151.5,
     "hand": "red",
     "role": "素材: 右手の2連から左手へ渡す",
@@ -1720,7 +1950,7 @@
     "strength": 0.4417
   },
   {
-    "index": 172,
+    "index": 195,
     "beat": 152.0,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -1730,7 +1960,7 @@
     "strength": 1.1355
   },
   {
-    "index": 173,
+    "index": 196,
     "beat": 152.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -1740,7 +1970,7 @@
     "strength": 0.422
   },
   {
-    "index": 174,
+    "index": 197,
     "beat": 153.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -1750,7 +1980,7 @@
     "strength": 0.4348
   },
   {
-    "index": 175,
+    "index": 198,
     "beat": 154.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -1760,7 +1990,17 @@
     "strength": 0.5393
   },
   {
-    "index": 176,
+    "index": 199,
+    "beat": 155.0,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 9,
+    "peakSeconds": 59.918821,
+    "distanceMs": 15.821,
+    "strength": 0.8922
+  },
+  {
+    "index": 200,
     "beat": 155.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -1770,7 +2010,7 @@
     "strength": 0.3495
   },
   {
-    "index": 177,
+    "index": 201,
     "beat": 156.0,
     "hand": "blue",
     "role": "BPM120へ",
@@ -1780,7 +2020,7 @@
     "strength": 0.6371
   },
   {
-    "index": 178,
+    "index": 202,
     "beat": 157.0,
     "hand": "red",
     "role": "BPM120へ",
@@ -1790,7 +2030,7 @@
     "strength": 1.2045
   },
   {
-    "index": 179,
+    "index": 203,
     "beat": 157.0,
     "hand": "blue",
     "role": "BPM120へ",
@@ -1800,7 +2040,7 @@
     "strength": 1.2045
   },
   {
-    "index": 180,
+    "index": 204,
     "beat": 158.0,
     "hand": "red",
     "role": "BPM120へ",
@@ -1810,7 +2050,7 @@
     "strength": 0.7214
   },
   {
-    "index": 181,
+    "index": 205,
     "beat": 159.0,
     "hand": "blue",
     "role": "BPM120へ",
@@ -1820,7 +2060,7 @@
     "strength": 1.8085
   },
   {
-    "index": 182,
+    "index": 206,
     "beat": 160.0,
     "hand": "blue",
     "role": "素材: 外向きの単発から短い折返し",
@@ -1830,7 +2070,7 @@
     "strength": 0.8045
   },
   {
-    "index": 183,
+    "index": 207,
     "beat": 161.0,
     "hand": "red",
     "role": "素材: 外向きの単発から短い折返し",
@@ -1840,7 +2080,7 @@
     "strength": 0.9959
   },
   {
-    "index": 184,
+    "index": 208,
     "beat": 162.0,
     "hand": "blue",
     "role": "素材: 外向きの単発から短い折返し",
@@ -1850,7 +2090,7 @@
     "strength": 0.4552
   },
   {
-    "index": 185,
+    "index": 209,
     "beat": 163.0,
     "hand": "red",
     "role": "素材: 外向きの単発から短い折返し",
@@ -1860,17 +2100,7 @@
     "strength": 1.0454
   },
   {
-    "index": 186,
-    "beat": 163.5,
-    "hand": "blue",
-    "role": "素材: 外向きの単発から短い折返し",
-    "phrase": -1,
-    "peakSeconds": 64.114286,
-    "distanceMs": -38.714,
-    "strength": 0.2591
-  },
-  {
-    "index": 187,
+    "index": 210,
     "beat": 164.0,
     "hand": "red",
     "role": "素材: 外向きの単発から短い折返し",
@@ -1880,7 +2110,7 @@
     "strength": 0.9288
   },
   {
-    "index": 188,
+    "index": 211,
     "beat": 165.0,
     "hand": "blue",
     "role": "素材: 外向きの単発から短い折返し",
@@ -1890,7 +2120,17 @@
     "strength": 1.6287
   },
   {
-    "index": 189,
+    "index": 212,
+    "beat": 165.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 10,
+    "peakSeconds": 65.126984,
+    "distanceMs": -26.016,
+    "strength": 0.6974
+  },
+  {
+    "index": 213,
     "beat": 166.0,
     "hand": "red",
     "role": "素材: 外向きの単発から短い折返し",
@@ -1900,7 +2140,7 @@
     "strength": 0.6011
   },
   {
-    "index": 190,
+    "index": 214,
     "beat": 167.0,
     "hand": "blue",
     "role": "素材: 外向きの単発から短い折返し",
@@ -1910,7 +2150,7 @@
     "strength": 1.1706
   },
   {
-    "index": 191,
+    "index": 215,
     "beat": 167.5,
     "hand": "red",
     "role": "素材: 外向きの単発から短い折返し",
@@ -1920,7 +2160,7 @@
     "strength": 0.6858
   },
   {
-    "index": 192,
+    "index": 216,
     "beat": 168.0,
     "hand": "red",
     "role": "BPM120へ",
@@ -1930,7 +2170,7 @@
     "strength": 1.0134
   },
   {
-    "index": 193,
+    "index": 217,
     "beat": 168.5,
     "hand": "blue",
     "role": "BPM120へ",
@@ -1940,7 +2180,7 @@
     "strength": 0.4993
   },
   {
-    "index": 194,
+    "index": 218,
     "beat": 169.0,
     "hand": "red",
     "role": "BPM120へ",
@@ -1950,7 +2190,7 @@
     "strength": 0.8905
   },
   {
-    "index": 195,
+    "index": 219,
     "beat": 170.0,
     "hand": "blue",
     "role": "BPM120へ",
@@ -1960,7 +2200,7 @@
     "strength": 0.2019
   },
   {
-    "index": 196,
+    "index": 220,
     "beat": 171.0,
     "hand": "red",
     "role": "BPM120へ",
@@ -1970,17 +2210,17 @@
     "strength": 0.3797
   },
   {
-    "index": 197,
-    "beat": 172.5,
-    "hand": "red",
-    "role": "BPM120へ",
+    "index": 221,
+    "beat": 175.5,
+    "hand": "blue",
+    "role": "Hard実音: 半拍",
     "phrase": 10,
-    "peakSeconds": 68.6839,
-    "distanceMs": 30.9,
-    "strength": 0.3493
+    "peakSeconds": 70.125624,
+    "distanceMs": -27.376,
+    "strength": 0.6372
   },
   {
-    "index": 198,
+    "index": 222,
     "beat": 176.0,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -1990,7 +2230,7 @@
     "strength": 0.6527
   },
   {
-    "index": 199,
+    "index": 223,
     "beat": 176.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2000,7 +2240,17 @@
     "strength": 0.5214
   },
   {
-    "index": 200,
+    "index": 224,
+    "beat": 177.0,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 11,
+    "peakSeconds": 70.898866,
+    "distanceMs": -4.134,
+    "strength": 1.6416
+  },
+  {
+    "index": 225,
     "beat": 177.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2010,7 +2260,17 @@
     "strength": 0.581
   },
   {
-    "index": 201,
+    "index": 226,
+    "beat": 178.0,
+    "hand": "blue",
+    "role": "Hard実音: 半拍",
+    "phrase": 11,
+    "peakSeconds": 71.382766,
+    "distanceMs": -20.234,
+    "strength": 0.7167
+  },
+  {
+    "index": 227,
     "beat": 178.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2020,7 +2280,17 @@
     "strength": 1.4094
   },
   {
-    "index": 202,
+    "index": 228,
+    "beat": 179.0,
+    "hand": "blue",
+    "role": "Hard実音: 半拍",
+    "phrase": 11,
+    "peakSeconds": 71.881633,
+    "distanceMs": -21.367,
+    "strength": 0.8868
+  },
+  {
+    "index": 229,
     "beat": 179.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2030,7 +2300,17 @@
     "strength": 0.471
   },
   {
-    "index": 203,
+    "index": 230,
+    "beat": 180.0,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 11,
+    "peakSeconds": 72.380499,
+    "distanceMs": -22.501,
+    "strength": 0.741
+  },
+  {
+    "index": 231,
     "beat": 180.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2040,7 +2320,7 @@
     "strength": 0.7182
   },
   {
-    "index": 204,
+    "index": 232,
     "beat": 181.0,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2050,7 +2330,7 @@
     "strength": 0.944
   },
   {
-    "index": 205,
+    "index": 233,
     "beat": 182.0,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2060,7 +2340,17 @@
     "strength": 0.8685
   },
   {
-    "index": 206,
+    "index": 234,
+    "beat": 182.5,
+    "hand": "blue",
+    "role": "Hard実音: 半拍",
+    "phrase": 11,
+    "peakSeconds": 73.667574,
+    "distanceMs": 14.574,
+    "strength": 0.6487
+  },
+  {
+    "index": 235,
     "beat": 183.0,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2070,7 +2360,7 @@
     "strength": 0.959
   },
   {
-    "index": 207,
+    "index": 236,
     "beat": 183.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2080,7 +2370,7 @@
     "strength": 0.6352
   },
   {
-    "index": 208,
+    "index": 237,
     "beat": 184.0,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2090,7 +2380,7 @@
     "strength": 0.5766
   },
   {
-    "index": 209,
+    "index": 238,
     "beat": 184.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2100,7 +2390,17 @@
     "strength": 1.0398
   },
   {
-    "index": 210,
+    "index": 239,
+    "beat": 185.0,
+    "hand": "blue",
+    "role": "Hard実音: 半拍",
+    "phrase": 11,
+    "peakSeconds": 74.929705,
+    "distanceMs": 26.705,
+    "strength": 1.0197
+  },
+  {
+    "index": 240,
     "beat": 185.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2110,7 +2410,7 @@
     "strength": 0.4978
   },
   {
-    "index": 211,
+    "index": 241,
     "beat": 186.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2120,7 +2420,7 @@
     "strength": 0.7254
   },
   {
-    "index": 212,
+    "index": 242,
     "beat": 187.0,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2130,7 +2430,17 @@
     "strength": 0.9186
   },
   {
-    "index": 213,
+    "index": 243,
+    "beat": 187.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 11,
+    "peakSeconds": 76.146939,
+    "distanceMs": -6.061,
+    "strength": 0.6139
+  },
+  {
+    "index": 244,
     "beat": 188.0,
     "hand": "blue",
     "role": "中盤の展開",
@@ -2140,7 +2450,7 @@
     "strength": 0.5502
   },
   {
-    "index": 214,
+    "index": 245,
     "beat": 188.5,
     "hand": "red",
     "role": "中盤の展開",
@@ -2150,7 +2460,7 @@
     "strength": 0.6787
   },
   {
-    "index": 215,
+    "index": 246,
     "beat": 189.0,
     "hand": "blue",
     "role": "中盤の展開",
@@ -2160,7 +2470,7 @@
     "strength": 0.9823
   },
   {
-    "index": 216,
+    "index": 247,
     "beat": 190.0,
     "hand": "red",
     "role": "中盤の展開",
@@ -2170,7 +2480,7 @@
     "strength": 0.7518
   },
   {
-    "index": 217,
+    "index": 248,
     "beat": 191.0,
     "hand": "red",
     "role": "中盤の展開",
@@ -2180,7 +2490,17 @@
     "strength": 0.8315
   },
   {
-    "index": 218,
+    "index": 249,
+    "beat": 191.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 11,
+    "peakSeconds": 78.152381,
+    "distanceMs": -0.619,
+    "strength": 0.9577
+  },
+  {
+    "index": 250,
     "beat": 192.0,
     "hand": "red",
     "role": "中盤の展開",
@@ -2190,7 +2510,7 @@
     "strength": 0.6398
   },
   {
-    "index": 219,
+    "index": 251,
     "beat": 192.0,
     "hand": "blue",
     "role": "中盤の展開",
@@ -2200,7 +2520,17 @@
     "strength": 0.6398
   },
   {
-    "index": 220,
+    "index": 252,
+    "beat": 192.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 12,
+    "peakSeconds": 78.651247,
+    "distanceMs": -1.753,
+    "strength": 1.2056
+  },
+  {
+    "index": 253,
     "beat": 193.0,
     "hand": "blue",
     "role": "中盤の展開",
@@ -2210,7 +2540,7 @@
     "strength": 0.7511
   },
   {
-    "index": 221,
+    "index": 254,
     "beat": 194.0,
     "hand": "red",
     "role": "中盤の展開",
@@ -2220,7 +2550,7 @@
     "strength": 0.5594
   },
   {
-    "index": 222,
+    "index": 255,
     "beat": 194.5,
     "hand": "blue",
     "role": "中盤の展開",
@@ -2230,7 +2560,7 @@
     "strength": 0.7403
   },
   {
-    "index": 223,
+    "index": 256,
     "beat": 195.0,
     "hand": "red",
     "role": "中盤の展開",
@@ -2240,7 +2570,17 @@
     "strength": 0.7081
   },
   {
-    "index": 224,
+    "index": 257,
+    "beat": 196.0,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 12,
+    "peakSeconds": 80.382313,
+    "distanceMs": -20.687,
+    "strength": 0.7269
+  },
+  {
+    "index": 258,
     "beat": 196.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2250,7 +2590,17 @@
     "strength": 1.0393
   },
   {
-    "index": 225,
+    "index": 259,
+    "beat": 197.0,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 12,
+    "peakSeconds": 80.901134,
+    "distanceMs": -1.866,
+    "strength": 1.0723
+  },
+  {
+    "index": 260,
     "beat": 197.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2260,7 +2610,7 @@
     "strength": 0.6
   },
   {
-    "index": 226,
+    "index": 261,
     "beat": 198.0,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2270,7 +2620,7 @@
     "strength": 0.7494
   },
   {
-    "index": 227,
+    "index": 262,
     "beat": 199.0,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2280,7 +2630,7 @@
     "strength": 1.1062
   },
   {
-    "index": 228,
+    "index": 263,
     "beat": 199.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2290,7 +2640,7 @@
     "strength": 0.585
   },
   {
-    "index": 229,
+    "index": 264,
     "beat": 200.0,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2300,7 +2650,7 @@
     "strength": 0.6599
   },
   {
-    "index": 230,
+    "index": 265,
     "beat": 200.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2310,7 +2660,7 @@
     "strength": 0.5164
   },
   {
-    "index": 231,
+    "index": 266,
     "beat": 201.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2320,7 +2670,17 @@
     "strength": 0.5224
   },
   {
-    "index": 232,
+    "index": 267,
+    "beat": 202.0,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 12,
+    "peakSeconds": 83.400454,
+    "distanceMs": -2.546,
+    "strength": 0.6798
+  },
+  {
+    "index": 268,
     "beat": 202.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2330,7 +2690,17 @@
     "strength": 0.6868
   },
   {
-    "index": 233,
+    "index": 269,
+    "beat": 203.0,
+    "hand": "blue",
+    "role": "Hard実音: 半拍",
+    "phrase": 12,
+    "peakSeconds": 83.89932,
+    "distanceMs": -3.68,
+    "strength": 0.6417
+  },
+  {
+    "index": 270,
     "beat": 203.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2340,7 +2710,7 @@
     "strength": 0.4993
   },
   {
-    "index": 234,
+    "index": 271,
     "beat": 204.0,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2350,7 +2720,17 @@
     "strength": 0.7251
   },
   {
-    "index": 235,
+    "index": 272,
+    "beat": 204.5,
+    "hand": "blue",
+    "role": "Hard実音: 半拍",
+    "phrase": 12,
+    "peakSeconds": 84.657596,
+    "distanceMs": 4.596,
+    "strength": 0.8582
+  },
+  {
+    "index": 273,
     "beat": 205.0,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2360,7 +2740,7 @@
     "strength": 1.1678
   },
   {
-    "index": 236,
+    "index": 274,
     "beat": 205.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2370,7 +2750,17 @@
     "strength": 0.4838
   },
   {
-    "index": 237,
+    "index": 275,
+    "beat": 206.0,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 12,
+    "peakSeconds": 85.395918,
+    "distanceMs": -7.082,
+    "strength": 1.5284
+  },
+  {
+    "index": 276,
     "beat": 206.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2380,7 +2770,7 @@
     "strength": 0.5878
   },
   {
-    "index": 238,
+    "index": 277,
     "beat": 207.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2390,7 +2780,17 @@
     "strength": 0.4932
   },
   {
-    "index": 239,
+    "index": 278,
+    "beat": 207.75,
+    "hand": "blue",
+    "role": "Hard実音: 短い16分フィル",
+    "phrase": 12,
+    "peakSeconds": 86.293878,
+    "distanceMs": 15.878,
+    "strength": 1.0159
+  },
+  {
+    "index": 279,
     "beat": 208.0,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2400,7 +2800,7 @@
     "strength": 0.6487
   },
   {
-    "index": 240,
+    "index": 280,
     "beat": 208.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2410,7 +2810,17 @@
     "strength": 0.5405
   },
   {
-    "index": 241,
+    "index": 281,
+    "beat": 209.0,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 13,
+    "peakSeconds": 86.902494,
+    "distanceMs": -0.506,
+    "strength": 1.2496
+  },
+  {
+    "index": 282,
     "beat": 209.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2420,7 +2830,17 @@
     "strength": 0.5461
   },
   {
-    "index": 242,
+    "index": 283,
+    "beat": 210.0,
+    "hand": "blue",
+    "role": "Hard実音: 半拍",
+    "phrase": 13,
+    "peakSeconds": 87.386395,
+    "distanceMs": -16.605,
+    "strength": 0.7406
+  },
+  {
+    "index": 284,
     "beat": 210.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2430,17 +2850,27 @@
     "strength": 1.2658
   },
   {
-    "index": 243,
-    "beat": 211.5,
+    "index": 285,
+    "beat": 211.0,
     "hand": "blue",
-    "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
+    "role": "Hard実音: 半拍",
     "phrase": 13,
-    "peakSeconds": 88.114739,
-    "distanceMs": -38.261,
-    "strength": 0.3643
+    "peakSeconds": 87.895238,
+    "distanceMs": -7.762,
+    "strength": 0.6692
   },
   {
-    "index": 244,
+    "index": 286,
+    "beat": 212.0,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 13,
+    "peakSeconds": 88.404082,
+    "distanceMs": 1.082,
+    "strength": 0.7065
+  },
+  {
+    "index": 287,
     "beat": 212.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2450,7 +2880,7 @@
     "strength": 0.8373
   },
   {
-    "index": 245,
+    "index": 288,
     "beat": 213.0,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2460,7 +2890,7 @@
     "strength": 0.8214
   },
   {
-    "index": 246,
+    "index": 289,
     "beat": 214.0,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2470,7 +2900,17 @@
     "strength": 0.5962
   },
   {
-    "index": 247,
+    "index": 290,
+    "beat": 214.5,
+    "hand": "blue",
+    "role": "Hard実音: 半拍",
+    "phrase": 13,
+    "peakSeconds": 89.651247,
+    "distanceMs": -1.753,
+    "strength": 0.6687
+  },
+  {
+    "index": 291,
     "beat": 215.0,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2480,7 +2920,7 @@
     "strength": 0.7456
   },
   {
-    "index": 248,
+    "index": 292,
     "beat": 215.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2490,7 +2930,7 @@
     "strength": 0.6492
   },
   {
-    "index": 249,
+    "index": 293,
     "beat": 216.0,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2500,7 +2940,7 @@
     "strength": 0.6066
   },
   {
-    "index": 250,
+    "index": 294,
     "beat": 216.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2510,7 +2950,17 @@
     "strength": 1.0037
   },
   {
-    "index": 251,
+    "index": 295,
+    "beat": 217.0,
+    "hand": "blue",
+    "role": "Hard実音: 半拍",
+    "phrase": 13,
+    "peakSeconds": 90.903401,
+    "distanceMs": 0.401,
+    "strength": 0.9636
+  },
+  {
+    "index": 296,
     "beat": 217.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2520,7 +2970,17 @@
     "strength": 0.4335
   },
   {
-    "index": 252,
+    "index": 297,
+    "beat": 218.0,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 13,
+    "peakSeconds": 91.377324,
+    "distanceMs": -25.676,
+    "strength": 0.6677
+  },
+  {
+    "index": 298,
     "beat": 218.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2530,7 +2990,7 @@
     "strength": 0.6274
   },
   {
-    "index": 253,
+    "index": 299,
     "beat": 219.0,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2540,7 +3000,7 @@
     "strength": 0.9915
   },
   {
-    "index": 254,
+    "index": 300,
     "beat": 220.0,
     "hand": "blue",
     "role": "中盤の展開",
@@ -2550,7 +3010,7 @@
     "strength": 0.7207
   },
   {
-    "index": 255,
+    "index": 301,
     "beat": 220.5,
     "hand": "red",
     "role": "中盤の展開",
@@ -2560,7 +3020,7 @@
     "strength": 0.6736
   },
   {
-    "index": 256,
+    "index": 302,
     "beat": 221.0,
     "hand": "blue",
     "role": "中盤の展開",
@@ -2570,7 +3030,7 @@
     "strength": 0.7095
   },
   {
-    "index": 257,
+    "index": 303,
     "beat": 222.0,
     "hand": "red",
     "role": "中盤の展開",
@@ -2580,7 +3040,7 @@
     "strength": 0.8386
   },
   {
-    "index": 258,
+    "index": 304,
     "beat": 223.0,
     "hand": "red",
     "role": "中盤の展開",
@@ -2590,7 +3050,17 @@
     "strength": 0.6875
   },
   {
-    "index": 259,
+    "index": 305,
+    "beat": 223.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 13,
+    "peakSeconds": 94.126077,
+    "distanceMs": -26.923,
+    "strength": 0.7055
+  },
+  {
+    "index": 306,
     "beat": 224.0,
     "hand": "red",
     "role": "段階的減速",
@@ -2600,7 +3070,7 @@
     "strength": 0.5014
   },
   {
-    "index": 260,
+    "index": 307,
     "beat": 224.0,
     "hand": "blue",
     "role": "段階的減速",
@@ -2610,7 +3080,7 @@
     "strength": 0.5014
   },
   {
-    "index": 261,
+    "index": 308,
     "beat": 225.0,
     "hand": "blue",
     "role": "段階的減速",
@@ -2620,7 +3090,7 @@
     "strength": 0.9353
   },
   {
-    "index": 262,
+    "index": 309,
     "beat": 225.5,
     "hand": "red",
     "role": "段階的減速",
@@ -2630,7 +3100,7 @@
     "strength": 0.5844
   },
   {
-    "index": 263,
+    "index": 310,
     "beat": 226.0,
     "hand": "blue",
     "role": "段階的減速",
@@ -2640,7 +3110,7 @@
     "strength": 0.7396
   },
   {
-    "index": 264,
+    "index": 311,
     "beat": 226.5,
     "hand": "red",
     "role": "段階的減速",
@@ -2650,7 +3120,7 @@
     "strength": 0.8018
   },
   {
-    "index": 265,
+    "index": 312,
     "beat": 227.0,
     "hand": "blue",
     "role": "段階的減速",
@@ -2660,7 +3130,7 @@
     "strength": 0.9213
   },
   {
-    "index": 266,
+    "index": 313,
     "beat": 227.5,
     "hand": "red",
     "role": "段階的減速",
@@ -2670,7 +3140,7 @@
     "strength": 0.5985
   },
   {
-    "index": 267,
+    "index": 314,
     "beat": 228.0,
     "hand": "blue",
     "role": "段階的減速",
@@ -2680,7 +3150,7 @@
     "strength": 0.7659
   },
   {
-    "index": 268,
+    "index": 315,
     "beat": 228.5,
     "hand": "red",
     "role": "段階的減速",
@@ -2690,7 +3160,7 @@
     "strength": 0.6526
   },
   {
-    "index": 269,
+    "index": 316,
     "beat": 229.0,
     "hand": "blue",
     "role": "段階的減速",
@@ -2700,7 +3170,7 @@
     "strength": 0.9631
   },
   {
-    "index": 270,
+    "index": 317,
     "beat": 229.5,
     "hand": "red",
     "role": "段階的減速",
@@ -2710,7 +3180,7 @@
     "strength": 0.6184
   },
   {
-    "index": 271,
+    "index": 318,
     "beat": 230.0,
     "hand": "blue",
     "role": "段階的減速",
@@ -2720,7 +3190,7 @@
     "strength": 0.7232
   },
   {
-    "index": 272,
+    "index": 319,
     "beat": 230.5,
     "hand": "red",
     "role": "段階的減速",
@@ -2730,7 +3200,7 @@
     "strength": 0.7116
   },
   {
-    "index": 273,
+    "index": 320,
     "beat": 231.0,
     "hand": "blue",
     "role": "段階的減速",
@@ -2740,7 +3210,7 @@
     "strength": 0.8234
   },
   {
-    "index": 274,
+    "index": 321,
     "beat": 231.5,
     "hand": "red",
     "role": "段階的減速",
@@ -2750,7 +3220,7 @@
     "strength": 0.3051
   },
   {
-    "index": 275,
+    "index": 322,
     "beat": 232.0,
     "hand": "blue",
     "role": "段階的減速",
@@ -2760,17 +3230,7 @@
     "strength": 0.3379
   },
   {
-    "index": 276,
-    "beat": 235.5,
-    "hand": "red",
-    "role": "段階的減速",
-    "phrase": 15,
-    "peakSeconds": 101.808617,
-    "distanceMs": -44.383,
-    "strength": 0.2932
-  },
-  {
-    "index": 277,
+    "index": 323,
     "beat": 237.0,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2780,7 +3240,7 @@
     "strength": 0.4975
   },
   {
-    "index": 278,
+    "index": 324,
     "beat": 238.0,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2790,7 +3250,7 @@
     "strength": 1.0047
   },
   {
-    "index": 279,
+    "index": 325,
     "beat": 238.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2800,7 +3260,7 @@
     "strength": 0.2437
   },
   {
-    "index": 280,
+    "index": 326,
     "beat": 239.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2810,7 +3270,17 @@
     "strength": 0.3071
   },
   {
-    "index": 281,
+    "index": 327,
+    "beat": 240.0,
+    "hand": "blue",
+    "role": "Hard実音: 半拍",
+    "phrase": 15,
+    "peakSeconds": 104.148299,
+    "distanceMs": -4.701,
+    "strength": 0.6101
+  },
+  {
+    "index": 328,
     "beat": 240.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2820,7 +3290,7 @@
     "strength": 0.4903
   },
   {
-    "index": 282,
+    "index": 329,
     "beat": 241.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2830,7 +3300,7 @@
     "strength": 1.7363
   },
   {
-    "index": 283,
+    "index": 330,
     "beat": 242.0,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2840,7 +3310,17 @@
     "strength": 0.4756
   },
   {
-    "index": 284,
+    "index": 331,
+    "beat": 242.5,
+    "hand": "blue",
+    "role": "Hard実音: 半拍",
+    "phrase": 15,
+    "peakSeconds": 105.430385,
+    "distanceMs": 27.385,
+    "strength": 1.5394
+  },
+  {
+    "index": 332,
     "beat": 243.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2850,7 +3330,7 @@
     "strength": 1.6371
   },
   {
-    "index": 285,
+    "index": 333,
     "beat": 244.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2860,7 +3340,7 @@
     "strength": 1.6615
   },
   {
-    "index": 286,
+    "index": 334,
     "beat": 245.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2870,7 +3350,7 @@
     "strength": 1.6513
   },
   {
-    "index": 287,
+    "index": 335,
     "beat": 246.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2880,7 +3360,7 @@
     "strength": 1.602
   },
   {
-    "index": 288,
+    "index": 336,
     "beat": 247.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2890,7 +3370,7 @@
     "strength": 1.6811
   },
   {
-    "index": 289,
+    "index": 337,
     "beat": 248.5,
     "hand": "blue",
     "role": "裏拍の主題B",
@@ -2900,7 +3380,7 @@
     "strength": 1.4856
   },
   {
-    "index": 290,
+    "index": 338,
     "beat": 250.5,
     "hand": "red",
     "role": "裏拍の主題B",
@@ -2910,17 +3390,7 @@
     "strength": 1.6102
   },
   {
-    "index": 291,
-    "beat": 251.5,
-    "hand": "red",
-    "role": "裏拍の主題B",
-    "phrase": 16,
-    "peakSeconds": 109.945125,
-    "distanceMs": 42.125,
-    "strength": 0.2672
-  },
-  {
-    "index": 292,
+    "index": 339,
     "beat": 252.0,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2930,7 +3400,7 @@
     "strength": 0.4018
   },
   {
-    "index": 293,
+    "index": 340,
     "beat": 252.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2940,17 +3410,7 @@
     "strength": 0.6322
   },
   {
-    "index": 294,
-    "beat": 253.5,
-    "hand": "red",
-    "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
-    "phrase": 15,
-    "peakSeconds": 110.85805,
-    "distanceMs": -44.95,
-    "strength": 0.3595
-  },
-  {
-    "index": 295,
+    "index": 341,
     "beat": 254.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2960,7 +3420,7 @@
     "strength": 2.13
   },
   {
-    "index": 296,
+    "index": 342,
     "beat": 255.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -2970,7 +3430,7 @@
     "strength": 0.6782
   },
   {
-    "index": 297,
+    "index": 343,
     "beat": 256,
     "hand": "blue",
     "role": "素材: 8分のリズムを左右へ配る",
@@ -2980,7 +3440,7 @@
     "strength": 0.3179
   },
   {
-    "index": 298,
+    "index": 344,
     "beat": 256.5,
     "hand": "red",
     "role": "素材: 8分のリズムを左右へ配る",
@@ -2990,17 +3450,7 @@
     "strength": 0.5901
   },
   {
-    "index": 299,
-    "beat": 257,
-    "hand": "red",
-    "role": "素材: 8分のリズムを左右へ配る",
-    "phrase": -1,
-    "peakSeconds": 112.624036,
-    "distanceMs": -28.964,
-    "strength": 0.2143
-  },
-  {
-    "index": 300,
+    "index": 345,
     "beat": 257.5,
     "hand": "blue",
     "role": "素材: 8分のリズムを左右へ配る",
@@ -3010,7 +3460,7 @@
     "strength": 0.5553
   },
   {
-    "index": 301,
+    "index": 346,
     "beat": 258,
     "hand": "red",
     "role": "素材: 8分のリズムを左右へ配る",
@@ -3020,7 +3470,7 @@
     "strength": 0.5395
   },
   {
-    "index": 302,
+    "index": 347,
     "beat": 258.5,
     "hand": "red",
     "role": "素材: 8分のリズムを左右へ配る",
@@ -3030,27 +3480,7 @@
     "strength": 2.3868
   },
   {
-    "index": 303,
-    "beat": 259,
-    "hand": "blue",
-    "role": "素材: 8分のリズムを左右へ配る",
-    "phrase": -1,
-    "peakSeconds": 113.611791,
-    "distanceMs": -41.209,
-    "strength": 0.264
-  },
-  {
-    "index": 304,
-    "beat": 259.5,
-    "hand": "red",
-    "role": "素材: 8分のリズムを左右へ配る",
-    "phrase": -1,
-    "peakSeconds": 113.861224,
-    "distanceMs": -41.776,
-    "strength": 0.2111
-  },
-  {
-    "index": 305,
+    "index": 348,
     "beat": 260,
     "hand": "red",
     "role": "素材: 8分のリズムを左右へ配る",
@@ -3060,7 +3490,7 @@
     "strength": 0.6816
   },
   {
-    "index": 306,
+    "index": 349,
     "beat": 260.5,
     "hand": "blue",
     "role": "素材: 8分のリズムを左右へ配る",
@@ -3070,7 +3500,7 @@
     "strength": 0.6524
   },
   {
-    "index": 307,
+    "index": 350,
     "beat": 261,
     "hand": "blue",
     "role": "素材: 8分のリズムを左右へ配る",
@@ -3080,7 +3510,7 @@
     "strength": 0.3905
   },
   {
-    "index": 308,
+    "index": 351,
     "beat": 261.5,
     "hand": "red",
     "role": "素材: 8分のリズムを左右へ配る",
@@ -3090,7 +3520,7 @@
     "strength": 0.66
   },
   {
-    "index": 309,
+    "index": 352,
     "beat": 262,
     "hand": "blue",
     "role": "素材: 8分のリズムを左右へ配る",
@@ -3100,7 +3530,7 @@
     "strength": 0.6532
   },
   {
-    "index": 310,
+    "index": 353,
     "beat": 262.5,
     "hand": "blue",
     "role": "素材: 8分のリズムを左右へ配る",
@@ -3110,7 +3540,7 @@
     "strength": 2.1931
   },
   {
-    "index": 311,
+    "index": 354,
     "beat": 263,
     "hand": "red",
     "role": "素材: 8分のリズムを左右へ配る",
@@ -3120,7 +3550,7 @@
     "strength": 0.6106
   },
   {
-    "index": 312,
+    "index": 355,
     "beat": 263.5,
     "hand": "blue",
     "role": "素材: 8分のリズムを左右へ配る",
@@ -3130,7 +3560,7 @@
     "strength": 0.4862
   },
   {
-    "index": 313,
+    "index": 356,
     "beat": 264.0,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -3140,7 +3570,7 @@
     "strength": 0.6461
   },
   {
-    "index": 314,
+    "index": 357,
     "beat": 264.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -3150,17 +3580,7 @@
     "strength": 0.8853
   },
   {
-    "index": 315,
-    "beat": 265.5,
-    "hand": "blue",
-    "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
-    "phrase": 16,
-    "peakSeconds": 116.874376,
-    "distanceMs": -28.624,
-    "strength": 0.33
-  },
-  {
-    "index": 316,
+    "index": 358,
     "beat": 266.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -3170,17 +3590,7 @@
     "strength": 0.9328
   },
   {
-    "index": 317,
-    "beat": 267.0,
-    "hand": "blue",
-    "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
-    "phrase": 16,
-    "peakSeconds": 117.627664,
-    "distanceMs": -25.336,
-    "strength": 0.2923
-  },
-  {
-    "index": 318,
+    "index": 359,
     "beat": 268.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -3190,17 +3600,7 @@
     "strength": 0.5654
   },
   {
-    "index": 319,
-    "beat": 269.0,
-    "hand": "red",
-    "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
-    "phrase": 16,
-    "peakSeconds": 118.61542,
-    "distanceMs": -37.58,
-    "strength": 0.2243
-  },
-  {
-    "index": 320,
+    "index": 360,
     "beat": 270.0,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -3210,7 +3610,7 @@
     "strength": 0.3546
   },
   {
-    "index": 321,
+    "index": 361,
     "beat": 270.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -3220,7 +3620,7 @@
     "strength": 1.2605
   },
   {
-    "index": 322,
+    "index": 362,
     "beat": 271.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -3230,7 +3630,7 @@
     "strength": 0.546
   },
   {
-    "index": 323,
+    "index": 363,
     "beat": 272.0,
     "hand": "blue",
     "role": "裏拍の主題B",
@@ -3240,7 +3640,7 @@
     "strength": 0.3849
   },
   {
-    "index": 324,
+    "index": 364,
     "beat": 272.5,
     "hand": "red",
     "role": "裏拍の主題B",
@@ -3250,17 +3650,7 @@
     "strength": 0.6329
   },
   {
-    "index": 325,
-    "beat": 273.5,
-    "hand": "blue",
-    "role": "裏拍の主題B",
-    "phrase": 18,
-    "peakSeconds": 120.935147,
-    "distanceMs": 32.147,
-    "strength": 0.227
-  },
-  {
-    "index": 326,
+    "index": 365,
     "beat": 274.0,
     "hand": "red",
     "role": "裏拍の主題B",
@@ -3270,7 +3660,7 @@
     "strength": 0.5359
   },
   {
-    "index": 327,
+    "index": 366,
     "beat": 274.5,
     "hand": "blue",
     "role": "裏拍の主題B",
@@ -3280,7 +3670,7 @@
     "strength": 1.373
   },
   {
-    "index": 328,
+    "index": 367,
     "beat": 276.0,
     "hand": "red",
     "role": "裏拍の主題B",
@@ -3290,7 +3680,7 @@
     "strength": 0.4821
   },
   {
-    "index": 329,
+    "index": 368,
     "beat": 276.5,
     "hand": "blue",
     "role": "裏拍の主題B",
@@ -3300,7 +3690,7 @@
     "strength": 0.5203
   },
   {
-    "index": 330,
+    "index": 369,
     "beat": 277.5,
     "hand": "red",
     "role": "裏拍の主題B",
@@ -3310,7 +3700,7 @@
     "strength": 0.3881
   },
   {
-    "index": 331,
+    "index": 370,
     "beat": 278.0,
     "hand": "blue",
     "role": "裏拍の主題B",
@@ -3320,7 +3710,7 @@
     "strength": 0.3999
   },
   {
-    "index": 332,
+    "index": 371,
     "beat": 278.5,
     "hand": "red",
     "role": "裏拍の主題B",
@@ -3330,7 +3720,7 @@
     "strength": 1.1612
   },
   {
-    "index": 333,
+    "index": 372,
     "beat": 279.0,
     "hand": "blue",
     "role": "裏拍の主題B",
@@ -3340,7 +3730,7 @@
     "strength": 0.3273
   },
   {
-    "index": 334,
+    "index": 373,
     "beat": 279.5,
     "hand": "red",
     "role": "裏拍の主題B",
@@ -3350,7 +3740,7 @@
     "strength": 0.3738
   },
   {
-    "index": 335,
+    "index": 374,
     "beat": 280.0,
     "hand": "blue",
     "role": "裏拍の主題B",
@@ -3360,7 +3750,7 @@
     "strength": 0.3673
   },
   {
-    "index": 336,
+    "index": 375,
     "beat": 280.5,
     "hand": "red",
     "role": "裏拍の主題B",
@@ -3370,7 +3760,7 @@
     "strength": 0.6275
   },
   {
-    "index": 337,
+    "index": 376,
     "beat": 282.0,
     "hand": "blue",
     "role": "裏拍の主題B",
@@ -3380,7 +3770,17 @@
     "strength": 0.5398
   },
   {
-    "index": 338,
+    "index": 377,
+    "beat": 282.5,
+    "hand": "blue",
+    "role": "Hard実音: 半拍",
+    "phrase": 17,
+    "peakSeconds": 125.4,
+    "distanceMs": -3.0,
+    "strength": 1.3273
+  },
+  {
+    "index": 378,
     "beat": 284.0,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -3390,7 +3790,7 @@
     "strength": 0.4056
   },
   {
-    "index": 339,
+    "index": 379,
     "beat": 284.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -3400,7 +3800,7 @@
     "strength": 1.3254
   },
   {
-    "index": 340,
+    "index": 380,
     "beat": 285.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -3410,7 +3810,7 @@
     "strength": 1.3457
   },
   {
-    "index": 341,
+    "index": 381,
     "beat": 286.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -3420,7 +3820,7 @@
     "strength": 1.3195
   },
   {
-    "index": 342,
+    "index": 382,
     "beat": 287.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -3430,7 +3830,7 @@
     "strength": 0.6194
   },
   {
-    "index": 343,
+    "index": 383,
     "beat": 288,
     "hand": "red",
     "role": "素材: 両手が一緒に移動する",
@@ -3440,7 +3840,7 @@
     "strength": 0.3909
   },
   {
-    "index": 344,
+    "index": 384,
     "beat": 288,
     "hand": "blue",
     "role": "素材: 両手が一緒に移動する",
@@ -3450,7 +3850,7 @@
     "strength": 0.3909
   },
   {
-    "index": 345,
+    "index": 385,
     "beat": 288.5,
     "hand": "red",
     "role": "素材: 両手が一緒に移動する",
@@ -3460,7 +3860,7 @@
     "strength": 1.1796
   },
   {
-    "index": 346,
+    "index": 386,
     "beat": 288.5,
     "hand": "blue",
     "role": "素材: 両手が一緒に移動する",
@@ -3470,7 +3870,7 @@
     "strength": 1.1796
   },
   {
-    "index": 347,
+    "index": 387,
     "beat": 289,
     "hand": "red",
     "role": "素材: 両手が一緒に移動する",
@@ -3480,7 +3880,7 @@
     "strength": 0.8746
   },
   {
-    "index": 348,
+    "index": 388,
     "beat": 289,
     "hand": "blue",
     "role": "素材: 両手が一緒に移動する",
@@ -3490,7 +3890,7 @@
     "strength": 0.8746
   },
   {
-    "index": 349,
+    "index": 389,
     "beat": 289.5,
     "hand": "red",
     "role": "素材: 両手が一緒に移動する",
@@ -3500,7 +3900,7 @@
     "strength": 0.7046
   },
   {
-    "index": 350,
+    "index": 390,
     "beat": 289.5,
     "hand": "blue",
     "role": "素材: 両手が一緒に移動する",
@@ -3510,7 +3910,7 @@
     "strength": 0.7046
   },
   {
-    "index": 351,
+    "index": 391,
     "beat": 290,
     "hand": "red",
     "role": "素材: 両手が一緒に移動する",
@@ -3520,7 +3920,7 @@
     "strength": 0.5457
   },
   {
-    "index": 352,
+    "index": 392,
     "beat": 290,
     "hand": "blue",
     "role": "素材: 両手が一緒に移動する",
@@ -3530,7 +3930,17 @@
     "strength": 0.5457
   },
   {
-    "index": 353,
+    "index": 393,
+    "beat": 290.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 18,
+    "peakSeconds": 129.405896,
+    "distanceMs": 2.896,
+    "strength": 1.5038
+  },
+  {
+    "index": 394,
     "beat": 291,
     "hand": "red",
     "role": "素材: 両手が一緒に移動する",
@@ -3540,7 +3950,7 @@
     "strength": 0.3876
   },
   {
-    "index": 354,
+    "index": 395,
     "beat": 291,
     "hand": "blue",
     "role": "素材: 両手が一緒に移動する",
@@ -3550,7 +3960,7 @@
     "strength": 0.3876
   },
   {
-    "index": 355,
+    "index": 396,
     "beat": 292,
     "hand": "red",
     "role": "素材: 両手が一緒に移動する",
@@ -3560,7 +3970,7 @@
     "strength": 0.3712
   },
   {
-    "index": 356,
+    "index": 397,
     "beat": 292,
     "hand": "blue",
     "role": "素材: 両手が一緒に移動する",
@@ -3570,7 +3980,7 @@
     "strength": 0.3712
   },
   {
-    "index": 357,
+    "index": 398,
     "beat": 292.5,
     "hand": "red",
     "role": "素材: 両手が一緒に移動する",
@@ -3580,7 +3990,7 @@
     "strength": 0.902
   },
   {
-    "index": 358,
+    "index": 399,
     "beat": 292.5,
     "hand": "blue",
     "role": "素材: 両手が一緒に移動する",
@@ -3590,7 +4000,7 @@
     "strength": 0.902
   },
   {
-    "index": 359,
+    "index": 400,
     "beat": 293,
     "hand": "red",
     "role": "素材: 両手が一緒に移動する",
@@ -3600,7 +4010,7 @@
     "strength": 0.2736
   },
   {
-    "index": 360,
+    "index": 401,
     "beat": 293,
     "hand": "blue",
     "role": "素材: 両手が一緒に移動する",
@@ -3610,7 +4020,7 @@
     "strength": 0.2736
   },
   {
-    "index": 361,
+    "index": 402,
     "beat": 293.5,
     "hand": "red",
     "role": "素材: 両手が一緒に移動する",
@@ -3620,7 +4030,7 @@
     "strength": 0.5439
   },
   {
-    "index": 362,
+    "index": 403,
     "beat": 293.5,
     "hand": "blue",
     "role": "素材: 両手が一緒に移動する",
@@ -3630,7 +4040,7 @@
     "strength": 0.5439
   },
   {
-    "index": 363,
+    "index": 404,
     "beat": 294,
     "hand": "red",
     "role": "素材: 両手が一緒に移動する",
@@ -3640,7 +4050,7 @@
     "strength": 0.8656
   },
   {
-    "index": 364,
+    "index": 405,
     "beat": 294,
     "hand": "blue",
     "role": "素材: 両手が一緒に移動する",
@@ -3650,7 +4060,17 @@
     "strength": 0.8656
   },
   {
-    "index": 365,
+    "index": 406,
+    "beat": 294.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 18,
+    "peakSeconds": 131.401361,
+    "distanceMs": -1.639,
+    "strength": 1.2784
+  },
+  {
+    "index": 407,
     "beat": 295,
     "hand": "red",
     "role": "素材: 両手が一緒に移動する",
@@ -3660,7 +4080,7 @@
     "strength": 0.4036
   },
   {
-    "index": 366,
+    "index": 408,
     "beat": 295,
     "hand": "blue",
     "role": "素材: 両手が一緒に移動する",
@@ -3670,7 +4090,7 @@
     "strength": 0.4036
   },
   {
-    "index": 367,
+    "index": 409,
     "beat": 296.0,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -3680,7 +4100,7 @@
     "strength": 0.4134
   },
   {
-    "index": 368,
+    "index": 410,
     "beat": 296.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -3690,7 +4110,7 @@
     "strength": 0.9717
   },
   {
-    "index": 369,
+    "index": 411,
     "beat": 297.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -3700,7 +4120,7 @@
     "strength": 0.8622
   },
   {
-    "index": 370,
+    "index": 412,
     "beat": 298.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -3710,17 +4130,7 @@
     "strength": 1.0203
   },
   {
-    "index": 371,
-    "beat": 299.0,
-    "hand": "blue",
-    "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
-    "phrase": 18,
-    "peakSeconds": 133.626304,
-    "distanceMs": -26.696,
-    "strength": 0.2734
-  },
-  {
-    "index": 372,
+    "index": 413,
     "beat": 300.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -3730,17 +4140,7 @@
     "strength": 0.7048
   },
   {
-    "index": 373,
-    "beat": 301.0,
-    "hand": "red",
-    "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
-    "phrase": 18,
-    "peakSeconds": 134.688889,
-    "distanceMs": 35.889,
-    "strength": 0.2962
-  },
-  {
-    "index": 374,
+    "index": 414,
     "beat": 302.0,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -3750,7 +4150,7 @@
     "strength": 0.2866
   },
   {
-    "index": 375,
+    "index": 415,
     "beat": 302.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -3760,7 +4160,7 @@
     "strength": 0.8323
   },
   {
-    "index": 376,
+    "index": 416,
     "beat": 303.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -3770,7 +4170,17 @@
     "strength": 0.5175
   },
   {
-    "index": 377,
+    "index": 417,
+    "beat": 304.0,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 19,
+    "peakSeconds": 136.155556,
+    "distanceMs": 2.556,
+    "strength": 0.7319
+  },
+  {
+    "index": 418,
     "beat": 304.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -3780,7 +4190,7 @@
     "strength": 0.9365
   },
   {
-    "index": 378,
+    "index": 419,
     "beat": 305.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -3790,17 +4200,7 @@
     "strength": 0.664
   },
   {
-    "index": 379,
-    "beat": 306.0,
-    "hand": "red",
-    "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
-    "phrase": 19,
-    "peakSeconds": 137.10839,
-    "distanceMs": -44.61,
-    "strength": 0.2683
-  },
-  {
-    "index": 380,
+    "index": 420,
     "beat": 307.0,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -3810,7 +4210,7 @@
     "strength": 0.7874
   },
   {
-    "index": 381,
+    "index": 421,
     "beat": 307.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -3820,7 +4220,7 @@
     "strength": 0.667
   },
   {
-    "index": 382,
+    "index": 422,
     "beat": 308.0,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -3830,7 +4230,7 @@
     "strength": 0.3913
   },
   {
-    "index": 383,
+    "index": 423,
     "beat": 308.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -3840,7 +4240,7 @@
     "strength": 1.0427
   },
   {
-    "index": 384,
+    "index": 424,
     "beat": 309.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -3850,7 +4250,7 @@
     "strength": 0.612
   },
   {
-    "index": 385,
+    "index": 425,
     "beat": 310.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -3860,7 +4260,7 @@
     "strength": 0.9308
   },
   {
-    "index": 386,
+    "index": 426,
     "beat": 311.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -3870,7 +4270,7 @@
     "strength": 0.2825
   },
   {
-    "index": 387,
+    "index": 427,
     "beat": 312.0,
     "hand": "blue",
     "role": "裏拍の主題B",
@@ -3880,7 +4280,7 @@
     "strength": 0.3517
   },
   {
-    "index": 388,
+    "index": 428,
     "beat": 312.5,
     "hand": "red",
     "role": "裏拍の主題B",
@@ -3890,17 +4290,7 @@
     "strength": 0.354
   },
   {
-    "index": 389,
-    "beat": 313.5,
-    "hand": "blue",
-    "role": "裏拍の主題B",
-    "phrase": 20,
-    "peakSeconds": 140.939683,
-    "distanceMs": 36.683,
-    "strength": 0.3655
-  },
-  {
-    "index": 390,
+    "index": 429,
     "beat": 317.5,
     "hand": "blue",
     "role": "裏拍の主題B",
@@ -3910,7 +4300,7 @@
     "strength": 0.6194
   },
   {
-    "index": 391,
+    "index": 430,
     "beat": 318.0,
     "hand": "red",
     "role": "裏拍の主題B",
@@ -3920,7 +4310,7 @@
     "strength": 0.4992
   },
   {
-    "index": 392,
+    "index": 431,
     "beat": 318.5,
     "hand": "blue",
     "role": "裏拍の主題B",
@@ -3930,7 +4320,7 @@
     "strength": 1.029
   },
   {
-    "index": 393,
+    "index": 432,
     "beat": 320.0,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -3940,7 +4330,7 @@
     "strength": 1.3246
   },
   {
-    "index": 394,
+    "index": 433,
     "beat": 320.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -3950,7 +4340,7 @@
     "strength": 0.2997
   },
   {
-    "index": 395,
+    "index": 434,
     "beat": 321.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -3960,7 +4350,7 @@
     "strength": 0.5181
   },
   {
-    "index": 396,
+    "index": 435,
     "beat": 322.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -3970,7 +4360,7 @@
     "strength": 0.2869
   },
   {
-    "index": 397,
+    "index": 436,
     "beat": 323.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -3980,7 +4370,7 @@
     "strength": 0.2467
   },
   {
-    "index": 398,
+    "index": 437,
     "beat": 324.0,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -3990,7 +4380,7 @@
     "strength": 0.7128
   },
   {
-    "index": 399,
+    "index": 438,
     "beat": 325.0,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -4000,7 +4390,7 @@
     "strength": 0.2258
   },
   {
-    "index": 400,
+    "index": 439,
     "beat": 325.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -4010,7 +4400,7 @@
     "strength": 0.6822
   },
   {
-    "index": 401,
+    "index": 440,
     "beat": 326.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -4020,7 +4410,7 @@
     "strength": 2.2878
   },
   {
-    "index": 402,
+    "index": 441,
     "beat": 327.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -4030,7 +4420,7 @@
     "strength": 0.6899
   },
   {
-    "index": 403,
+    "index": 442,
     "beat": 328.0,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -4040,7 +4430,7 @@
     "strength": 1.6361
   },
   {
-    "index": 404,
+    "index": 443,
     "beat": 328.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -4050,7 +4440,7 @@
     "strength": 0.7477
   },
   {
-    "index": 405,
+    "index": 444,
     "beat": 329.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -4060,7 +4450,7 @@
     "strength": 0.7816
   },
   {
-    "index": 406,
+    "index": 445,
     "beat": 330.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -4070,17 +4460,7 @@
     "strength": 0.7967
   },
   {
-    "index": 407,
-    "beat": 331.5,
-    "hand": "blue",
-    "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
-    "phrase": 20,
-    "peakSeconds": 149.864399,
-    "distanceMs": -38.601,
-    "strength": 0.3257
-  },
-  {
-    "index": 408,
+    "index": 446,
     "beat": 332.0,
     "hand": "red",
     "role": "主題Bの発展",
@@ -4090,7 +4470,7 @@
     "strength": 0.327
   },
   {
-    "index": 409,
+    "index": 447,
     "beat": 332.5,
     "hand": "blue",
     "role": "主題Bの発展",
@@ -4100,7 +4480,7 @@
     "strength": 0.8524
   },
   {
-    "index": 410,
+    "index": 448,
     "beat": 333.5,
     "hand": "red",
     "role": "主題Bの発展",
@@ -4110,7 +4490,7 @@
     "strength": 0.4604
   },
   {
-    "index": 411,
+    "index": 449,
     "beat": 334.0,
     "hand": "blue",
     "role": "主題Bの発展",
@@ -4120,7 +4500,17 @@
     "strength": 1.0569
   },
   {
-    "index": 412,
+    "index": 450,
+    "beat": 334.5,
+    "hand": "blue",
+    "role": "Hard実音: 半拍",
+    "phrase": 20,
+    "peakSeconds": 151.400907,
+    "distanceMs": -2.093,
+    "strength": 0.794
+  },
+  {
+    "index": 451,
     "beat": 335.0,
     "hand": "blue",
     "role": "主題Bの発展",
@@ -4130,7 +4520,27 @@
     "strength": 0.4198
   },
   {
-    "index": 413,
+    "index": 452,
+    "beat": 336.0,
+    "hand": "blue",
+    "role": "Hard実音: 半拍",
+    "phrase": 21,
+    "peakSeconds": 152.154195,
+    "distanceMs": 1.195,
+    "strength": 0.7651
+  },
+  {
+    "index": 453,
+    "beat": 336.5,
+    "hand": "blue",
+    "role": "Hard実音: 半拍",
+    "phrase": 21,
+    "peakSeconds": 152.398639,
+    "distanceMs": -4.361,
+    "strength": 0.9351
+  },
+  {
+    "index": 454,
     "beat": 337.5,
     "hand": "blue",
     "role": "主題Bの発展",
@@ -4140,7 +4550,7 @@
     "strength": 0.3818
   },
   {
-    "index": 414,
+    "index": 455,
     "beat": 338.0,
     "hand": "red",
     "role": "主題Bの発展",
@@ -4150,7 +4560,7 @@
     "strength": 0.5899
   },
   {
-    "index": 415,
+    "index": 456,
     "beat": 338.5,
     "hand": "blue",
     "role": "主題Bの発展",
@@ -4160,7 +4570,7 @@
     "strength": 0.8169
   },
   {
-    "index": 416,
+    "index": 457,
     "beat": 339.0,
     "hand": "red",
     "role": "主題Bの発展",
@@ -4170,7 +4580,7 @@
     "strength": 0.5341
   },
   {
-    "index": 417,
+    "index": 458,
     "beat": 339.5,
     "hand": "blue",
     "role": "主題Bの発展",
@@ -4180,17 +4590,7 @@
     "strength": 0.7013
   },
   {
-    "index": 418,
-    "beat": 340.0,
-    "hand": "blue",
-    "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
-    "phrase": 21,
-    "peakSeconds": 154.109751,
-    "distanceMs": -43.249,
-    "strength": 0.3772
-  },
-  {
-    "index": 419,
+    "index": 459,
     "beat": 340.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -4200,7 +4600,7 @@
     "strength": 0.7489
   },
   {
-    "index": 420,
+    "index": 460,
     "beat": 341.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -4210,7 +4610,7 @@
     "strength": 0.5947
   },
   {
-    "index": 421,
+    "index": 461,
     "beat": 342.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -4220,7 +4620,7 @@
     "strength": 1.5979
   },
   {
-    "index": 422,
+    "index": 462,
     "beat": 343.0,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -4230,7 +4630,7 @@
     "strength": 0.5107
   },
   {
-    "index": 423,
+    "index": 463,
     "beat": 344.0,
     "hand": "blue",
     "role": "主題Bの発展",
@@ -4240,7 +4640,7 @@
     "strength": 0.5681
   },
   {
-    "index": 424,
+    "index": 464,
     "beat": 344.5,
     "hand": "red",
     "role": "主題Bの発展",
@@ -4250,7 +4650,17 @@
     "strength": 0.8368
   },
   {
-    "index": 425,
+    "index": 465,
+    "beat": 345.0,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 21,
+    "peakSeconds": 156.64898,
+    "distanceMs": -4.02,
+    "strength": 0.6783
+  },
+  {
+    "index": 466,
     "beat": 345.5,
     "hand": "blue",
     "role": "主題Bの発展",
@@ -4260,7 +4670,7 @@
     "strength": 0.681
   },
   {
-    "index": 426,
+    "index": 467,
     "beat": 346.0,
     "hand": "red",
     "role": "主題Bの発展",
@@ -4270,7 +4680,7 @@
     "strength": 0.5581
   },
   {
-    "index": 427,
+    "index": 468,
     "beat": 346.5,
     "hand": "blue",
     "role": "主題Bの発展",
@@ -4280,7 +4690,7 @@
     "strength": 0.8078
   },
   {
-    "index": 428,
+    "index": 469,
     "beat": 347.0,
     "hand": "red",
     "role": "主題Bの発展",
@@ -4290,7 +4700,7 @@
     "strength": 0.7694
   },
   {
-    "index": 429,
+    "index": 470,
     "beat": 347.5,
     "hand": "blue",
     "role": "主題Bの発展",
@@ -4300,7 +4710,7 @@
     "strength": 0.5526
   },
   {
-    "index": 430,
+    "index": 471,
     "beat": 348.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -4310,7 +4720,7 @@
     "strength": 1.0026
   },
   {
-    "index": 431,
+    "index": 472,
     "beat": 349.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -4320,7 +4730,7 @@
     "strength": 0.5257
   },
   {
-    "index": 432,
+    "index": 473,
     "beat": 350.0,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -4330,7 +4740,17 @@
     "strength": 0.618
   },
   {
-    "index": 433,
+    "index": 474,
+    "beat": 350.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 21,
+    "peakSeconds": 159.397732,
+    "distanceMs": -5.268,
+    "strength": 0.7465
+  },
+  {
+    "index": 475,
     "beat": 351.0,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -4340,7 +4760,7 @@
     "strength": 0.4574
   },
   {
-    "index": 434,
+    "index": 476,
     "beat": 351.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -4350,7 +4770,7 @@
     "strength": 0.4542
   },
   {
-    "index": 435,
+    "index": 477,
     "beat": 352.0,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -4360,7 +4780,7 @@
     "strength": 0.457
   },
   {
-    "index": 436,
+    "index": 478,
     "beat": 352.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -4370,7 +4790,7 @@
     "strength": 0.9741
   },
   {
-    "index": 437,
+    "index": 479,
     "beat": 353.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -4380,7 +4800,7 @@
     "strength": 0.4166
   },
   {
-    "index": 438,
+    "index": 480,
     "beat": 354.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -4390,7 +4810,17 @@
     "strength": 1.1854
   },
   {
-    "index": 439,
+    "index": 481,
+    "beat": 355.0,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 22,
+    "peakSeconds": 161.647619,
+    "distanceMs": -5.381,
+    "strength": 0.6743
+  },
+  {
+    "index": 482,
     "beat": 355.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -4400,7 +4830,7 @@
     "strength": 0.884
   },
   {
-    "index": 440,
+    "index": 483,
     "beat": 356.0,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -4410,7 +4840,7 @@
     "strength": 0.8642
   },
   {
-    "index": 441,
+    "index": 484,
     "beat": 357.0,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -4420,7 +4850,7 @@
     "strength": 0.2602
   },
   {
-    "index": 442,
+    "index": 485,
     "beat": 357.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -4430,7 +4860,7 @@
     "strength": 0.2336
   },
   {
-    "index": 443,
+    "index": 486,
     "beat": 358.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -4440,7 +4870,7 @@
     "strength": 1.1975
   },
   {
-    "index": 444,
+    "index": 487,
     "beat": 359.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -4450,7 +4880,7 @@
     "strength": 0.5554
   },
   {
-    "index": 445,
+    "index": 488,
     "beat": 360.0,
     "hand": "blue",
     "role": "主題Bの発展",
@@ -4460,7 +4890,7 @@
     "strength": 0.5076
   },
   {
-    "index": 446,
+    "index": 489,
     "beat": 360.5,
     "hand": "red",
     "role": "主題Bの発展",
@@ -4470,7 +4900,7 @@
     "strength": 0.7448
   },
   {
-    "index": 447,
+    "index": 490,
     "beat": 361.5,
     "hand": "blue",
     "role": "主題Bの発展",
@@ -4480,7 +4910,7 @@
     "strength": 0.5197
   },
   {
-    "index": 448,
+    "index": 491,
     "beat": 362.0,
     "hand": "red",
     "role": "主題Bの発展",
@@ -4490,7 +4920,7 @@
     "strength": 0.5228
   },
   {
-    "index": 449,
+    "index": 492,
     "beat": 362.5,
     "hand": "blue",
     "role": "主題Bの発展",
@@ -4500,7 +4930,7 @@
     "strength": 0.8186
   },
   {
-    "index": 450,
+    "index": 493,
     "beat": 363.0,
     "hand": "red",
     "role": "主題Bの発展",
@@ -4510,7 +4940,7 @@
     "strength": 0.5451
   },
   {
-    "index": 451,
+    "index": 494,
     "beat": 363.5,
     "hand": "blue",
     "role": "主題Bの発展",
@@ -4520,7 +4950,7 @@
     "strength": 0.805
   },
   {
-    "index": 452,
+    "index": 495,
     "beat": 364.0,
     "hand": "red",
     "role": "主題Bの発展",
@@ -4530,7 +4960,7 @@
     "strength": 0.3531
   },
   {
-    "index": 453,
+    "index": 496,
     "beat": 364.5,
     "hand": "blue",
     "role": "主題Bの発展",
@@ -4540,7 +4970,7 @@
     "strength": 0.7464
   },
   {
-    "index": 454,
+    "index": 497,
     "beat": 365.5,
     "hand": "red",
     "role": "主題Bの発展",
@@ -4550,7 +4980,7 @@
     "strength": 0.4124
   },
   {
-    "index": 455,
+    "index": 498,
     "beat": 366.0,
     "hand": "blue",
     "role": "主題Bの発展",
@@ -4560,7 +4990,17 @@
     "strength": 0.3167
   },
   {
-    "index": 456,
+    "index": 499,
+    "beat": 366.5,
+    "hand": "blue",
+    "role": "Hard実音: 半拍",
+    "phrase": 22,
+    "peakSeconds": 167.404535,
+    "distanceMs": 1.535,
+    "strength": 1.0103
+  },
+  {
+    "index": 500,
     "beat": 367.0,
     "hand": "blue",
     "role": "主題Bの発展",
@@ -4570,7 +5010,7 @@
     "strength": 0.3675
   },
   {
-    "index": 457,
+    "index": 501,
     "beat": 368.0,
     "hand": "blue",
     "role": "主題Bの発展",
@@ -4580,7 +5020,7 @@
     "strength": 0.447
   },
   {
-    "index": 458,
+    "index": 502,
     "beat": 368.5,
     "hand": "red",
     "role": "主題Bの発展",
@@ -4590,17 +5030,7 @@
     "strength": 0.9642
   },
   {
-    "index": 459,
-    "beat": 369.5,
-    "hand": "blue",
-    "role": "主題Bの発展",
-    "phrase": 25,
-    "peakSeconds": 168.946032,
-    "distanceMs": 43.032,
-    "strength": 0.3491
-  },
-  {
-    "index": 460,
+    "index": 503,
     "beat": 370.0,
     "hand": "red",
     "role": "主題Bの発展",
@@ -4610,7 +5040,7 @@
     "strength": 0.3596
   },
   {
-    "index": 461,
+    "index": 504,
     "beat": 370.5,
     "hand": "blue",
     "role": "主題Bの発展",
@@ -4620,7 +5050,7 @@
     "strength": 0.9554
   },
   {
-    "index": 462,
+    "index": 505,
     "beat": 371.0,
     "hand": "red",
     "role": "主題Bの発展",
@@ -4630,7 +5060,7 @@
     "strength": 0.5044
   },
   {
-    "index": 463,
+    "index": 506,
     "beat": 371.5,
     "hand": "blue",
     "role": "主題Bの発展",
@@ -4640,17 +5070,7 @@
     "strength": 0.6884
   },
   {
-    "index": 464,
-    "beat": 372.0,
-    "hand": "blue",
-    "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
-    "phrase": 23,
-    "peakSeconds": 170.10839,
-    "distanceMs": -44.61,
-    "strength": 0.2868
-  },
-  {
-    "index": 465,
+    "index": 507,
     "beat": 372.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -4660,7 +5080,7 @@
     "strength": 0.8128
   },
   {
-    "index": 466,
+    "index": 508,
     "beat": 373.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -4670,7 +5090,7 @@
     "strength": 0.4357
   },
   {
-    "index": 467,
+    "index": 509,
     "beat": 374.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -4680,7 +5100,7 @@
     "strength": 1.405
   },
   {
-    "index": 468,
+    "index": 510,
     "beat": 375.0,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -4690,7 +5110,7 @@
     "strength": 0.5812
   },
   {
-    "index": 469,
+    "index": 511,
     "beat": 376.0,
     "hand": "blue",
     "role": "主題Bの発展",
@@ -4700,7 +5120,7 @@
     "strength": 0.5272
   },
   {
-    "index": 470,
+    "index": 512,
     "beat": 376.5,
     "hand": "red",
     "role": "主題Bの発展",
@@ -4710,7 +5130,17 @@
     "strength": 0.8492
   },
   {
-    "index": 471,
+    "index": 513,
+    "beat": 377.0,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 23,
+    "peakSeconds": 172.627664,
+    "distanceMs": -25.336,
+    "strength": 0.7013
+  },
+  {
+    "index": 514,
     "beat": 377.5,
     "hand": "blue",
     "role": "主題Bの発展",
@@ -4720,7 +5150,7 @@
     "strength": 0.4347
   },
   {
-    "index": 472,
+    "index": 515,
     "beat": 378.0,
     "hand": "red",
     "role": "主題Bの発展",
@@ -4730,7 +5160,7 @@
     "strength": 0.5299
   },
   {
-    "index": 473,
+    "index": 516,
     "beat": 378.5,
     "hand": "blue",
     "role": "主題Bの発展",
@@ -4740,7 +5170,7 @@
     "strength": 0.9035
   },
   {
-    "index": 474,
+    "index": 517,
     "beat": 379.0,
     "hand": "red",
     "role": "主題Bの発展",
@@ -4750,7 +5180,7 @@
     "strength": 0.4823
   },
   {
-    "index": 475,
+    "index": 518,
     "beat": 379.5,
     "hand": "blue",
     "role": "主題Bの発展",
@@ -4760,7 +5190,7 @@
     "strength": 0.7689
   },
   {
-    "index": 476,
+    "index": 519,
     "beat": 380.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -4770,7 +5200,7 @@
     "strength": 0.8953
   },
   {
-    "index": 477,
+    "index": 520,
     "beat": 381.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -4780,7 +5210,7 @@
     "strength": 0.5121
   },
   {
-    "index": 478,
+    "index": 521,
     "beat": 382.0,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -4790,7 +5220,17 @@
     "strength": 0.4332
   },
   {
-    "index": 479,
+    "index": 522,
+    "beat": 382.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 23,
+    "peakSeconds": 175.401361,
+    "distanceMs": -1.639,
+    "strength": 0.7568
+  },
+  {
+    "index": 523,
     "beat": 383.0,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -4800,27 +5240,7 @@
     "strength": 0.4438
   },
   {
-    "index": 480,
-    "beat": 383.5,
-    "hand": "blue",
-    "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
-    "phrase": 23,
-    "peakSeconds": 175.945125,
-    "distanceMs": 42.125,
-    "strength": 0.2708
-  },
-  {
-    "index": 481,
-    "beat": 384.0,
-    "hand": "red",
-    "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
-    "phrase": 24,
-    "peakSeconds": 176.189569,
-    "distanceMs": 36.569,
-    "strength": 0.2618
-  },
-  {
-    "index": 482,
+    "index": 524,
     "beat": 384.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -4830,17 +5250,7 @@
     "strength": 0.9342
   },
   {
-    "index": 483,
-    "beat": 385.5,
-    "hand": "red",
-    "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
-    "phrase": 24,
-    "peakSeconds": 176.947846,
-    "distanceMs": 44.846,
-    "strength": 0.2995
-  },
-  {
-    "index": 484,
+    "index": 525,
     "beat": 386.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -4850,7 +5260,7 @@
     "strength": 1.0335
   },
   {
-    "index": 485,
+    "index": 526,
     "beat": 387.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -4860,27 +5270,17 @@
     "strength": 0.7429
   },
   {
-    "index": 486,
-    "beat": 388.0,
-    "hand": "blue",
-    "role": "つなぎ",
-    "phrase": 26,
-    "peakSeconds": 178.110204,
-    "distanceMs": -42.796,
-    "strength": 0.242
-  },
-  {
-    "index": 487,
-    "beat": 389.0,
+    "index": 527,
+    "beat": 388.5,
     "hand": "red",
-    "role": "つなぎ",
-    "phrase": 26,
-    "peakSeconds": 178.619048,
-    "distanceMs": -33.952,
-    "strength": 0.3707
+    "role": "Hard実音: 半拍",
+    "phrase": 24,
+    "peakSeconds": 178.399546,
+    "distanceMs": -3.454,
+    "strength": 0.6556
   },
   {
-    "index": 488,
+    "index": 528,
     "beat": 390.0,
     "hand": "blue",
     "role": "つなぎ",
@@ -4890,7 +5290,7 @@
     "strength": 0.2315
   },
   {
-    "index": 489,
+    "index": 529,
     "beat": 392.0,
     "hand": "red",
     "role": "つなぎ",
@@ -4900,7 +5300,7 @@
     "strength": 0.2126
   },
   {
-    "index": 490,
+    "index": 530,
     "beat": 393.0,
     "hand": "blue",
     "role": "つなぎ",
@@ -4910,7 +5310,7 @@
     "strength": 0.2264
   },
   {
-    "index": 491,
+    "index": 531,
     "beat": 395.0,
     "hand": "red",
     "role": "つなぎ",
@@ -4920,7 +5320,7 @@
     "strength": 0.5137
   },
   {
-    "index": 492,
+    "index": 532,
     "beat": 396.0,
     "hand": "blue",
     "role": "つなぎ",
@@ -4930,7 +5330,7 @@
     "strength": 0.2138
   },
   {
-    "index": 493,
+    "index": 533,
     "beat": 397.0,
     "hand": "red",
     "role": "つなぎ",
@@ -4940,7 +5340,7 @@
     "strength": 0.251
   },
   {
-    "index": 494,
+    "index": 534,
     "beat": 398.0,
     "hand": "blue",
     "role": "つなぎ",
@@ -4950,7 +5350,7 @@
     "strength": 0.2255
   },
   {
-    "index": 495,
+    "index": 535,
     "beat": 400.0,
     "hand": "blue",
     "role": "つなぎ",
@@ -4960,17 +5360,7 @@
     "strength": 0.2881
   },
   {
-    "index": 496,
-    "beat": 400.5,
-    "hand": "red",
-    "role": "BPM160へ回帰",
-    "phrase": 28,
-    "peakSeconds": 184.365986,
-    "distanceMs": -37.014,
-    "strength": 0.2855
-  },
-  {
-    "index": 497,
+    "index": 536,
     "beat": 402.5,
     "hand": "blue",
     "role": "BPM160へ回帰",
@@ -4980,7 +5370,7 @@
     "strength": 1.6207
   },
   {
-    "index": 498,
+    "index": 537,
     "beat": 403.5,
     "hand": "red",
     "role": "BPM160へ回帰",
@@ -4990,7 +5380,7 @@
     "strength": 0.443
   },
   {
-    "index": 499,
+    "index": 538,
     "beat": 404.0,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -5000,7 +5390,7 @@
     "strength": 0.4122
   },
   {
-    "index": 500,
+    "index": 539,
     "beat": 404.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -5010,7 +5400,17 @@
     "strength": 0.411
   },
   {
-    "index": 501,
+    "index": 540,
+    "beat": 405.0,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 25,
+    "peakSeconds": 186.107029,
+    "distanceMs": 16.529,
+    "strength": 1.4867
+  },
+  {
+    "index": 541,
     "beat": 405.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -5020,17 +5420,7 @@
     "strength": 0.4033
   },
   {
-    "index": 502,
-    "beat": 406.5,
-    "hand": "red",
-    "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
-    "phrase": 25,
-    "peakSeconds": 186.680726,
-    "distanceMs": 27.726,
-    "strength": 0.3765
-  },
-  {
-    "index": 503,
+    "index": 542,
     "beat": 407.0,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -5040,7 +5430,17 @@
     "strength": 0.3926
   },
   {
-    "index": 504,
+    "index": 543,
+    "beat": 407.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 25,
+    "peakSeconds": 187.044898,
+    "distanceMs": 16.898,
+    "strength": 1.2829
+  },
+  {
+    "index": 544,
     "beat": 408.0,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -5050,7 +5450,7 @@
     "strength": 0.519
   },
   {
-    "index": 505,
+    "index": 545,
     "beat": 408.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -5060,7 +5460,7 @@
     "strength": 0.4134
   },
   {
-    "index": 506,
+    "index": 546,
     "beat": 409.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -5070,7 +5470,17 @@
     "strength": 0.3823
   },
   {
-    "index": 507,
+    "index": 547,
+    "beat": 410.0,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 25,
+    "peakSeconds": 187.982766,
+    "distanceMs": 17.266,
+    "strength": 1.1144
+  },
+  {
+    "index": 548,
     "beat": 410.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -5080,17 +5490,7 @@
     "strength": 0.5912
   },
   {
-    "index": 508,
-    "beat": 411.0,
-    "hand": "blue",
-    "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
-    "phrase": 25,
-    "peakSeconds": 188.312018,
-    "distanceMs": -28.482,
-    "strength": 0.3187
-  },
-  {
-    "index": 509,
+    "index": 549,
     "beat": 412.0,
     "hand": "blue",
     "role": "BPM160へ回帰",
@@ -5100,7 +5500,7 @@
     "strength": 0.4977
   },
   {
-    "index": 510,
+    "index": 550,
     "beat": 412.5,
     "hand": "red",
     "role": "BPM160へ回帰",
@@ -5110,7 +5510,17 @@
     "strength": 0.7321
   },
   {
-    "index": 511,
+    "index": 551,
+    "beat": 413.0,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 25,
+    "peakSeconds": 189.100227,
+    "distanceMs": 9.727,
+    "strength": 0.6146
+  },
+  {
+    "index": 552,
     "beat": 413.5,
     "hand": "blue",
     "role": "BPM160へ回帰",
@@ -5120,7 +5530,7 @@
     "strength": 0.5458
   },
   {
-    "index": 512,
+    "index": 553,
     "beat": 414.0,
     "hand": "red",
     "role": "BPM160へ回帰",
@@ -5130,7 +5540,7 @@
     "strength": 0.4253
   },
   {
-    "index": 513,
+    "index": 554,
     "beat": 414.5,
     "hand": "blue",
     "role": "BPM160へ回帰",
@@ -5140,7 +5550,17 @@
     "strength": 0.42
   },
   {
-    "index": 514,
+    "index": 555,
+    "beat": 415.5,
+    "hand": "blue",
+    "role": "Hard実音: 半拍",
+    "phrase": 25,
+    "peakSeconds": 190.048073,
+    "distanceMs": 20.073,
+    "strength": 1.0159
+  },
+  {
+    "index": 556,
     "beat": 416.0,
     "hand": "blue",
     "role": "BPM160へ回帰",
@@ -5150,7 +5570,7 @@
     "strength": 0.3522
   },
   {
-    "index": 515,
+    "index": 557,
     "beat": 417.5,
     "hand": "blue",
     "role": "BPM160へ回帰",
@@ -5160,7 +5580,7 @@
     "strength": 0.4551
   },
   {
-    "index": 516,
+    "index": 558,
     "beat": 418.0,
     "hand": "red",
     "role": "BPM160へ回帰",
@@ -5170,7 +5590,7 @@
     "strength": 1.123
   },
   {
-    "index": 517,
+    "index": 559,
     "beat": 418.5,
     "hand": "blue",
     "role": "BPM160へ回帰",
@@ -5180,7 +5600,7 @@
     "strength": 0.3575
   },
   {
-    "index": 518,
+    "index": 560,
     "beat": 419.5,
     "hand": "red",
     "role": "BPM160へ回帰",
@@ -5190,7 +5610,7 @@
     "strength": 0.4286
   },
   {
-    "index": 519,
+    "index": 561,
     "beat": 420.0,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -5200,7 +5620,7 @@
     "strength": 0.5724
   },
   {
-    "index": 520,
+    "index": 562,
     "beat": 420.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -5210,7 +5630,7 @@
     "strength": 1.0583
   },
   {
-    "index": 521,
+    "index": 563,
     "beat": 421.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -5220,7 +5640,7 @@
     "strength": 0.2771
   },
   {
-    "index": 522,
+    "index": 564,
     "beat": 422.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -5230,7 +5650,7 @@
     "strength": 0.4811
   },
   {
-    "index": 523,
+    "index": 565,
     "beat": 423.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -5240,7 +5660,7 @@
     "strength": 1.4216
   },
   {
-    "index": 524,
+    "index": 566,
     "beat": 424.0,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -5250,7 +5670,7 @@
     "strength": 0.5899
   },
   {
-    "index": 525,
+    "index": 567,
     "beat": 425.0,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -5260,7 +5680,7 @@
     "strength": 0.3502
   },
   {
-    "index": 526,
+    "index": 568,
     "beat": 425.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -5270,7 +5690,17 @@
     "strength": 0.4553
   },
   {
-    "index": 527,
+    "index": 569,
+    "beat": 426.0,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 26,
+    "peakSeconds": 193.979138,
+    "distanceMs": 13.638,
+    "strength": 1.2578
+  },
+  {
+    "index": 570,
     "beat": 426.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -5280,7 +5710,7 @@
     "strength": 0.4167
   },
   {
-    "index": 528,
+    "index": 571,
     "beat": 427.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -5290,7 +5720,7 @@
     "strength": 0.4364
   },
   {
-    "index": 529,
+    "index": 572,
     "beat": 428.0,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -5300,7 +5730,7 @@
     "strength": 0.4957
   },
   {
-    "index": 530,
+    "index": 573,
     "beat": 428.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -5310,7 +5740,7 @@
     "strength": 0.579
   },
   {
-    "index": 531,
+    "index": 574,
     "beat": 429.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -5320,7 +5750,7 @@
     "strength": 0.4557
   },
   {
-    "index": 532,
+    "index": 575,
     "beat": 430.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -5330,7 +5760,17 @@
     "strength": 0.5719
   },
   {
-    "index": 533,
+    "index": 576,
+    "beat": 431.0,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 26,
+    "peakSeconds": 195.854875,
+    "distanceMs": 14.375,
+    "strength": 0.8622
+  },
+  {
+    "index": 577,
     "beat": 431.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -5340,7 +5780,7 @@
     "strength": 0.3944
   },
   {
-    "index": 534,
+    "index": 578,
     "beat": 432.5,
     "hand": "red",
     "role": "BPM160へ回帰",
@@ -5350,7 +5790,7 @@
     "strength": 0.5939
   },
   {
-    "index": 535,
+    "index": 579,
     "beat": 432.5,
     "hand": "blue",
     "role": "BPM160へ回帰",
@@ -5360,7 +5800,17 @@
     "strength": 0.5939
   },
   {
-    "index": 536,
+    "index": 580,
+    "beat": 433.0,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 27,
+    "peakSeconds": 196.608163,
+    "distanceMs": 17.663,
+    "strength": 0.7149
+  },
+  {
+    "index": 581,
     "beat": 433.5,
     "hand": "red",
     "role": "BPM160へ回帰",
@@ -5370,7 +5820,7 @@
     "strength": 0.6731
   },
   {
-    "index": 537,
+    "index": 582,
     "beat": 434.0,
     "hand": "blue",
     "role": "BPM160へ回帰",
@@ -5380,7 +5830,7 @@
     "strength": 0.9598
   },
   {
-    "index": 538,
+    "index": 583,
     "beat": 434.5,
     "hand": "red",
     "role": "BPM160へ回帰",
@@ -5390,7 +5840,7 @@
     "strength": 0.4685
   },
   {
-    "index": 539,
+    "index": 584,
     "beat": 435.5,
     "hand": "blue",
     "role": "BPM160へ回帰",
@@ -5400,7 +5850,7 @@
     "strength": 0.3529
   },
   {
-    "index": 540,
+    "index": 585,
     "beat": 436.0,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -5410,7 +5860,7 @@
     "strength": 0.473
   },
   {
-    "index": 541,
+    "index": 586,
     "beat": 436.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -5420,7 +5870,7 @@
     "strength": 0.6443
   },
   {
-    "index": 542,
+    "index": 587,
     "beat": 437.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -5430,7 +5880,7 @@
     "strength": 0.3888
   },
   {
-    "index": 543,
+    "index": 588,
     "beat": 438.5,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -5440,7 +5890,7 @@
     "strength": 0.5468
   },
   {
-    "index": 544,
+    "index": 589,
     "beat": 439.0,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -5450,7 +5900,7 @@
     "strength": 0.7723
   },
   {
-    "index": 545,
+    "index": 590,
     "beat": 440.5,
     "hand": "blue",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -5460,7 +5910,7 @@
     "strength": 0.457
   },
   {
-    "index": 546,
+    "index": 591,
     "beat": 441.0,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -5470,7 +5920,17 @@
     "strength": 0.5376
   },
   {
-    "index": 547,
+    "index": 592,
+    "beat": 441.5,
+    "hand": "blue",
+    "role": "Hard実音: 半拍",
+    "phrase": 27,
+    "peakSeconds": 199.795918,
+    "distanceMs": 17.918,
+    "strength": 0.944
+  },
+  {
+    "index": 593,
     "beat": 442.0,
     "hand": "red",
     "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
@@ -5480,27 +5940,17 @@
     "strength": 0.4681
   },
   {
-    "index": 548,
-    "beat": 442.5,
+    "index": 594,
+    "beat": 443.0,
     "hand": "blue",
-    "role": "曲別: 3+3+2のアクセントと非対称な手の応答。8/8と変速の区切りを保持。",
+    "role": "Hard実音: 半拍",
     "phrase": 27,
-    "peakSeconds": 200.185034,
-    "distanceMs": 32.034,
-    "strength": 0.3363
+    "peakSeconds": 200.359637,
+    "distanceMs": 19.137,
+    "strength": 0.7944
   },
   {
-    "index": 549,
-    "beat": 444.0,
-    "hand": "blue",
-    "role": "終止",
-    "phrase": 31,
-    "peakSeconds": 200.673923,
-    "distanceMs": -41.577,
-    "strength": 0.2823
-  },
-  {
-    "index": 550,
+    "index": 595,
     "beat": 448.5,
     "hand": "red",
     "role": "終止",
@@ -5510,17 +5960,7 @@
     "strength": 0.5881
   },
   {
-    "index": 551,
-    "beat": 449.5,
-    "hand": "blue",
-    "role": "終止",
-    "phrase": 31,
-    "peakSeconds": 202.749206,
-    "distanceMs": -28.794,
-    "strength": 0.2359
-  },
-  {
-    "index": 552,
+    "index": 596,
     "beat": 454.5,
     "hand": "red",
     "role": "終止",

@@ -11,6 +11,16 @@
   },
   {
     "index": 1,
+    "beat": 2.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 0,
+    "peakSeconds": 0.957823,
+    "distanceMs": -3.677,
+    "strength": 0.8206
+  },
+  {
+    "index": 2,
     "beat": 3.0,
     "hand": "blue",
     "role": "導入",
@@ -20,7 +30,7 @@
     "strength": 0.7219
   },
   {
-    "index": 2,
+    "index": 3,
     "beat": 3.5,
     "hand": "red",
     "role": "導入",
@@ -30,7 +40,7 @@
     "strength": 0.8262
   },
   {
-    "index": 3,
+    "index": 4,
     "beat": 4.0,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -40,7 +50,7 @@
     "strength": 0.4094
   },
   {
-    "index": 4,
+    "index": 5,
     "beat": 4.0,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -50,7 +60,17 @@
     "strength": 0.4094
   },
   {
-    "index": 5,
+    "index": 6,
+    "beat": 4.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 0,
+    "peakSeconds": 1.7161,
+    "distanceMs": 4.6,
+    "strength": 0.7912
+  },
+  {
+    "index": 7,
     "beat": 5.0,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -60,7 +80,7 @@
     "strength": 0.7516
   },
   {
-    "index": 6,
+    "index": 8,
     "beat": 5.5,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -70,7 +90,7 @@
     "strength": 0.2969
   },
   {
-    "index": 7,
+    "index": 9,
     "beat": 6.0,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -80,7 +100,7 @@
     "strength": 0.5624
   },
   {
-    "index": 8,
+    "index": 10,
     "beat": 6.5,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -90,7 +110,7 @@
     "strength": 0.2584
   },
   {
-    "index": 9,
+    "index": 11,
     "beat": 7.0,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -100,7 +120,7 @@
     "strength": 0.7113
   },
   {
-    "index": 10,
+    "index": 12,
     "beat": 8.0,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -110,7 +130,7 @@
     "strength": 0.4104
   },
   {
-    "index": 11,
+    "index": 13,
     "beat": 8.5,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -120,7 +140,7 @@
     "strength": 0.6908
   },
   {
-    "index": 12,
+    "index": 14,
     "beat": 9.0,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -130,7 +150,7 @@
     "strength": 0.7102
   },
   {
-    "index": 13,
+    "index": 15,
     "beat": 9.5,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -140,7 +160,7 @@
     "strength": 0.4128
   },
   {
-    "index": 14,
+    "index": 16,
     "beat": 10.0,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -150,7 +170,17 @@
     "strength": 0.7975
   },
   {
-    "index": 15,
+    "index": 17,
+    "beat": 10.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 0,
+    "peakSeconds": 3.960998,
+    "distanceMs": -0.502,
+    "strength": 0.6671
+  },
+  {
+    "index": 18,
     "beat": 11.0,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -160,7 +190,7 @@
     "strength": 0.7424
   },
   {
-    "index": 16,
+    "index": 19,
     "beat": 12.0,
     "hand": "blue",
     "role": "導入",
@@ -170,7 +200,17 @@
     "strength": 0.5125
   },
   {
-    "index": 17,
+    "index": 20,
+    "beat": 12.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 0,
+    "peakSeconds": 4.714286,
+    "distanceMs": 2.786,
+    "strength": 0.6845
+  },
+  {
+    "index": 21,
     "beat": 13.0,
     "hand": "red",
     "role": "導入",
@@ -180,7 +220,7 @@
     "strength": 0.8046
   },
   {
-    "index": 18,
+    "index": 22,
     "beat": 13.5,
     "hand": "blue",
     "role": "導入",
@@ -190,7 +230,7 @@
     "strength": 0.363
   },
   {
-    "index": 19,
+    "index": 23,
     "beat": 14.0,
     "hand": "red",
     "role": "導入",
@@ -200,7 +240,17 @@
     "strength": 0.7993
   },
   {
-    "index": 20,
+    "index": 24,
+    "beat": 14.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 0,
+    "peakSeconds": 5.447619,
+    "distanceMs": -13.881,
+    "strength": 0.6125
+  },
+  {
+    "index": 25,
     "beat": 15.0,
     "hand": "red",
     "role": "導入",
@@ -210,7 +260,17 @@
     "strength": 0.5886
   },
   {
-    "index": 21,
+    "index": 26,
+    "beat": 15.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 0,
+    "peakSeconds": 5.81678,
+    "distanceMs": -19.72,
+    "strength": 0.6452
+  },
+  {
+    "index": 27,
     "beat": 16.0,
     "hand": "red",
     "role": "導入",
@@ -220,7 +280,17 @@
     "strength": 0.351
   },
   {
-    "index": 22,
+    "index": 28,
+    "beat": 16.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 1,
+    "peakSeconds": 6.205896,
+    "distanceMs": -5.604,
+    "strength": 0.8104
+  },
+  {
+    "index": 29,
     "beat": 17.0,
     "hand": "blue",
     "role": "導入",
@@ -230,7 +300,7 @@
     "strength": 0.8057
   },
   {
-    "index": 23,
+    "index": 30,
     "beat": 17.5,
     "hand": "red",
     "role": "導入",
@@ -240,7 +310,7 @@
     "strength": 0.6808
   },
   {
-    "index": 24,
+    "index": 31,
     "beat": 18.0,
     "hand": "blue",
     "role": "導入",
@@ -250,7 +320,7 @@
     "strength": 0.4258
   },
   {
-    "index": 25,
+    "index": 32,
     "beat": 19.0,
     "hand": "red",
     "role": "導入",
@@ -260,7 +330,7 @@
     "strength": 0.6146
   },
   {
-    "index": 26,
+    "index": 33,
     "beat": 19.5,
     "hand": "blue",
     "role": "導入",
@@ -270,7 +340,7 @@
     "strength": 0.5341
   },
   {
-    "index": 27,
+    "index": 34,
     "beat": 20.0,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -280,7 +350,7 @@
     "strength": 0.5046
   },
   {
-    "index": 28,
+    "index": 35,
     "beat": 20.5,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -290,7 +360,7 @@
     "strength": 0.5719
   },
   {
-    "index": 29,
+    "index": 36,
     "beat": 21.0,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -300,7 +370,17 @@
     "strength": 0.4115
   },
   {
-    "index": 30,
+    "index": 37,
+    "beat": 21.5,
+    "hand": "blue",
+    "role": "Hard実音: 半拍",
+    "phrase": 1,
+    "peakSeconds": 8.101587,
+    "distanceMs": 15.087,
+    "strength": 0.6849
+  },
+  {
+    "index": 38,
     "beat": 22.0,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -310,7 +390,7 @@
     "strength": 0.4661
   },
   {
-    "index": 31,
+    "index": 39,
     "beat": 23.0,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -320,7 +400,7 @@
     "strength": 0.7136
   },
   {
-    "index": 32,
+    "index": 40,
     "beat": 24.0,
     "hand": "red",
     "role": "導入",
@@ -330,7 +410,7 @@
     "strength": 0.3933
   },
   {
-    "index": 33,
+    "index": 41,
     "beat": 25.0,
     "hand": "blue",
     "role": "導入",
@@ -340,7 +420,7 @@
     "strength": 0.9631
   },
   {
-    "index": 34,
+    "index": 42,
     "beat": 25.5,
     "hand": "red",
     "role": "導入",
@@ -350,7 +430,7 @@
     "strength": 0.323
   },
   {
-    "index": 35,
+    "index": 43,
     "beat": 26.0,
     "hand": "blue",
     "role": "導入",
@@ -360,7 +440,7 @@
     "strength": 0.4857
   },
   {
-    "index": 36,
+    "index": 44,
     "beat": 27.0,
     "hand": "red",
     "role": "導入",
@@ -370,7 +450,7 @@
     "strength": 0.2449
   },
   {
-    "index": 37,
+    "index": 45,
     "beat": 27.5,
     "hand": "blue",
     "role": "導入",
@@ -380,7 +460,7 @@
     "strength": 0.3294
   },
   {
-    "index": 38,
+    "index": 46,
     "beat": 28.0,
     "hand": "red",
     "role": "導入",
@@ -390,7 +470,17 @@
     "strength": 0.4932
   },
   {
-    "index": 39,
+    "index": 47,
+    "beat": 28.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 1,
+    "peakSeconds": 10.685714,
+    "distanceMs": -25.786,
+    "strength": 0.9758
+  },
+  {
+    "index": 48,
     "beat": 29.0,
     "hand": "blue",
     "role": "導入",
@@ -400,7 +490,7 @@
     "strength": 0.3892
   },
   {
-    "index": 40,
+    "index": 49,
     "beat": 29.5,
     "hand": "red",
     "role": "導入",
@@ -410,7 +500,7 @@
     "strength": 0.4044
   },
   {
-    "index": 41,
+    "index": 50,
     "beat": 30.0,
     "hand": "blue",
     "role": "導入",
@@ -420,7 +510,7 @@
     "strength": 0.5121
   },
   {
-    "index": 42,
+    "index": 51,
     "beat": 31.0,
     "hand": "red",
     "role": "導入",
@@ -430,7 +520,7 @@
     "strength": 0.3372
   },
   {
-    "index": 43,
+    "index": 52,
     "beat": 32.0,
     "hand": "red",
     "role": "主題A",
@@ -440,7 +530,7 @@
     "strength": 1.2246
   },
   {
-    "index": 44,
+    "index": 53,
     "beat": 32.0,
     "hand": "blue",
     "role": "主題A",
@@ -450,7 +540,7 @@
     "strength": 1.2246
   },
   {
-    "index": 45,
+    "index": 54,
     "beat": 34.0,
     "hand": "red",
     "role": "主題A",
@@ -460,7 +550,7 @@
     "strength": 1.2416
   },
   {
-    "index": 46,
+    "index": 55,
     "beat": 34.5,
     "hand": "blue",
     "role": "主題A",
@@ -470,7 +560,7 @@
     "strength": 1.8011
   },
   {
-    "index": 47,
+    "index": 56,
     "beat": 35.0,
     "hand": "red",
     "role": "主題A",
@@ -480,7 +570,17 @@
     "strength": 1.0446
   },
   {
-    "index": 48,
+    "index": 57,
+    "beat": 35.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 2,
+    "peakSeconds": 13.339683,
+    "distanceMs": 3.183,
+    "strength": 1.0658
+  },
+  {
+    "index": 58,
     "beat": 36.0,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -490,7 +590,7 @@
     "strength": 0.9125
   },
   {
-    "index": 49,
+    "index": 59,
     "beat": 36.0,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -500,7 +600,17 @@
     "strength": 0.9125
   },
   {
-    "index": 50,
+    "index": 60,
+    "beat": 36.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 2,
+    "peakSeconds": 13.728798,
+    "distanceMs": 17.298,
+    "strength": 0.8292
+  },
+  {
+    "index": 61,
     "beat": 37.0,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -510,7 +620,17 @@
     "strength": 1.1344
   },
   {
-    "index": 51,
+    "index": 62,
+    "beat": 37.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 2,
+    "peakSeconds": 14.092971,
+    "distanceMs": 6.471,
+    "strength": 1.0986
+  },
+  {
+    "index": 63,
     "beat": 38.0,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -520,7 +640,7 @@
     "strength": 0.8315
   },
   {
-    "index": 52,
+    "index": 64,
     "beat": 38.5,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -530,7 +650,7 @@
     "strength": 1.249
   },
   {
-    "index": 53,
+    "index": 65,
     "beat": 39.0,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -540,7 +660,17 @@
     "strength": 0.9765
   },
   {
-    "index": 54,
+    "index": 66,
+    "beat": 39.5,
+    "hand": "blue",
+    "role": "Hard実音: 半拍",
+    "phrase": 2,
+    "peakSeconds": 14.84127,
+    "distanceMs": 4.77,
+    "strength": 1.0416
+  },
+  {
+    "index": 67,
     "beat": 40.0,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -550,7 +680,17 @@
     "strength": 0.9599
   },
   {
-    "index": 55,
+    "index": 68,
+    "beat": 40.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 2,
+    "peakSeconds": 15.230385,
+    "distanceMs": 18.885,
+    "strength": 0.9064
+  },
+  {
+    "index": 69,
     "beat": 41.0,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -560,7 +700,7 @@
     "strength": 1.1584
   },
   {
-    "index": 56,
+    "index": 70,
     "beat": 41.5,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -570,7 +710,7 @@
     "strength": 1.0935
   },
   {
-    "index": 57,
+    "index": 71,
     "beat": 42.0,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -580,7 +720,7 @@
     "strength": 0.8855
   },
   {
-    "index": 58,
+    "index": 72,
     "beat": 42.5,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -590,7 +730,7 @@
     "strength": 1.2869
   },
   {
-    "index": 59,
+    "index": 73,
     "beat": 43.0,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -600,7 +740,17 @@
     "strength": 0.9401
   },
   {
-    "index": 60,
+    "index": 74,
+    "beat": 43.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 2,
+    "peakSeconds": 16.337868,
+    "distanceMs": 1.368,
+    "strength": 1.1489
+  },
+  {
+    "index": 75,
     "beat": 44.0,
     "hand": "blue",
     "role": "主題A",
@@ -610,7 +760,7 @@
     "strength": 0.847
   },
   {
-    "index": 61,
+    "index": 76,
     "beat": 44.5,
     "hand": "red",
     "role": "主題A",
@@ -620,7 +770,7 @@
     "strength": 0.806
   },
   {
-    "index": 62,
+    "index": 77,
     "beat": 45.0,
     "hand": "blue",
     "role": "主題A",
@@ -630,7 +780,7 @@
     "strength": 1.1114
   },
   {
-    "index": 63,
+    "index": 78,
     "beat": 45.5,
     "hand": "red",
     "role": "主題A",
@@ -640,7 +790,7 @@
     "strength": 0.9659
   },
   {
-    "index": 64,
+    "index": 79,
     "beat": 46.0,
     "hand": "blue",
     "role": "主題A",
@@ -650,7 +800,7 @@
     "strength": 1.5761
   },
   {
-    "index": 65,
+    "index": 80,
     "beat": 47.0,
     "hand": "blue",
     "role": "主題A",
@@ -660,7 +810,27 @@
     "strength": 0.9147
   },
   {
-    "index": 66,
+    "index": 81,
+    "beat": 47.5,
+    "hand": "blue",
+    "role": "Hard実音: 半拍",
+    "phrase": 2,
+    "peakSeconds": 17.839456,
+    "distanceMs": 2.956,
+    "strength": 1.1026
+  },
+  {
+    "index": 82,
+    "beat": 48.0,
+    "hand": "blue",
+    "role": "Hard実音: 半拍",
+    "phrase": 3,
+    "peakSeconds": 18.029025,
+    "distanceMs": 5.025,
+    "strength": 1.248
+  },
+  {
+    "index": 83,
     "beat": 49.0,
     "hand": "red",
     "role": "主題A",
@@ -670,7 +840,17 @@
     "strength": 0.4478
   },
   {
-    "index": 67,
+    "index": 84,
+    "beat": 49.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 3,
+    "peakSeconds": 18.587755,
+    "distanceMs": 1.255,
+    "strength": 1.1671
+  },
+  {
+    "index": 85,
     "beat": 50.0,
     "hand": "blue",
     "role": "主題A",
@@ -680,7 +860,7 @@
     "strength": 1.0044
   },
   {
-    "index": 68,
+    "index": 86,
     "beat": 50.5,
     "hand": "red",
     "role": "主題A",
@@ -690,7 +870,7 @@
     "strength": 0.4184
   },
   {
-    "index": 69,
+    "index": 87,
     "beat": 51.0,
     "hand": "blue",
     "role": "主題A",
@@ -700,7 +880,17 @@
     "strength": 0.9144
   },
   {
-    "index": 70,
+    "index": 88,
+    "beat": 51.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 3,
+    "peakSeconds": 19.341043,
+    "distanceMs": 4.543,
+    "strength": 0.9388
+  },
+  {
+    "index": 89,
     "beat": 52.0,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -710,7 +900,7 @@
     "strength": 1.1505
   },
   {
-    "index": 71,
+    "index": 90,
     "beat": 52.5,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -720,7 +910,17 @@
     "strength": 1.0008
   },
   {
-    "index": 72,
+    "index": 91,
+    "beat": 53.0,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 3,
+    "peakSeconds": 19.904762,
+    "distanceMs": 5.762,
+    "strength": 1.2082
+  },
+  {
+    "index": 92,
     "beat": 53.5,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -730,7 +930,7 @@
     "strength": 1.0585
   },
   {
-    "index": 73,
+    "index": 93,
     "beat": 54.0,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -740,7 +940,17 @@
     "strength": 0.8016
   },
   {
-    "index": 74,
+    "index": 94,
+    "beat": 54.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 3,
+    "peakSeconds": 20.468481,
+    "distanceMs": 6.981,
+    "strength": 0.836
+  },
+  {
+    "index": 95,
     "beat": 55.0,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -750,7 +960,17 @@
     "strength": 1.0698
   },
   {
-    "index": 75,
+    "index": 96,
+    "beat": 55.5,
+    "hand": "blue",
+    "role": "Hard実音: 半拍",
+    "phrase": 3,
+    "peakSeconds": 20.84263,
+    "distanceMs": 6.13,
+    "strength": 1.2269
+  },
+  {
+    "index": 97,
     "beat": 56.0,
     "hand": "red",
     "role": "主題A",
@@ -760,7 +980,7 @@
     "strength": 1.3252
   },
   {
-    "index": 76,
+    "index": 98,
     "beat": 56.5,
     "hand": "blue",
     "role": "主題A",
@@ -770,7 +990,7 @@
     "strength": 1.0463
   },
   {
-    "index": 77,
+    "index": 99,
     "beat": 57.0,
     "hand": "red",
     "role": "主題A",
@@ -780,7 +1000,17 @@
     "strength": 1.5476
   },
   {
-    "index": 78,
+    "index": 100,
+    "beat": 57.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 3,
+    "peakSeconds": 21.59093,
+    "distanceMs": 4.43,
+    "strength": 1.4452
+  },
+  {
+    "index": 101,
     "beat": 58.0,
     "hand": "blue",
     "role": "主題A",
@@ -790,7 +1020,7 @@
     "strength": 1.5082
   },
   {
-    "index": 79,
+    "index": 102,
     "beat": 58.5,
     "hand": "red",
     "role": "主題A",
@@ -800,7 +1030,7 @@
     "strength": 0.7322
   },
   {
-    "index": 80,
+    "index": 103,
     "beat": 59.0,
     "hand": "blue",
     "role": "主題A",
@@ -810,7 +1040,17 @@
     "strength": 1.0325
   },
   {
-    "index": 81,
+    "index": 104,
+    "beat": 59.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 3,
+    "peakSeconds": 22.344218,
+    "distanceMs": 7.718,
+    "strength": 1.1115
+  },
+  {
+    "index": 105,
     "beat": 60.0,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -820,7 +1060,7 @@
     "strength": 1.3443
   },
   {
-    "index": 82,
+    "index": 106,
     "beat": 60.0,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -830,7 +1070,7 @@
     "strength": 1.3443
   },
   {
-    "index": 83,
+    "index": 107,
     "beat": 61.0,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -840,7 +1080,7 @@
     "strength": 0.2232
   },
   {
-    "index": 84,
+    "index": 108,
     "beat": 62.0,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -850,7 +1090,7 @@
     "strength": 1.7551
   },
   {
-    "index": 85,
+    "index": 109,
     "beat": 62.5,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -860,7 +1100,7 @@
     "strength": 0.9865
   },
   {
-    "index": 86,
+    "index": 110,
     "beat": 63.0,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -870,7 +1110,17 @@
     "strength": 0.9912
   },
   {
-    "index": 87,
+    "index": 111,
+    "beat": 63.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 3,
+    "peakSeconds": 23.840816,
+    "distanceMs": 4.316,
+    "strength": 1.1338
+  },
+  {
+    "index": 112,
     "beat": 64,
     "hand": "red",
     "role": "素材: 右手2打の向きを変えて左へ返す",
@@ -880,7 +1130,17 @@
     "strength": 1.4985
   },
   {
-    "index": 88,
+    "index": 113,
+    "beat": 64.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 4,
+    "peakSeconds": 24.209977,
+    "distanceMs": -1.523,
+    "strength": 1.238
+  },
+  {
+    "index": 114,
     "beat": 65,
     "hand": "blue",
     "role": "素材: 右手2打の向きを変えて左へ返す",
@@ -890,7 +1150,7 @@
     "strength": 0.8221
   },
   {
-    "index": 89,
+    "index": 115,
     "beat": 66,
     "hand": "blue",
     "role": "素材: 右手2打の向きを変えて左へ返す",
@@ -900,7 +1160,7 @@
     "strength": 1.2818
   },
   {
-    "index": 90,
+    "index": 116,
     "beat": 67,
     "hand": "red",
     "role": "素材: 右手2打の向きを変えて左へ返す",
@@ -910,7 +1170,17 @@
     "strength": 0.282
   },
   {
-    "index": 91,
+    "index": 117,
+    "beat": 67.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 4,
+    "peakSeconds": 25.337415,
+    "distanceMs": 0.915,
+    "strength": 1.2431
+  },
+  {
+    "index": 118,
     "beat": 68,
     "hand": "blue",
     "role": "素材: 右手2打の向きを変えて左へ返す",
@@ -920,7 +1190,17 @@
     "strength": 1.5327
   },
   {
-    "index": 92,
+    "index": 119,
+    "beat": 68.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 4,
+    "peakSeconds": 25.711565,
+    "distanceMs": 0.065,
+    "strength": 1.3295
+  },
+  {
+    "index": 120,
     "beat": 69,
     "hand": "red",
     "role": "素材: 右手2打の向きを変えて左へ返す",
@@ -930,7 +1210,17 @@
     "strength": 1.2716
   },
   {
-    "index": 93,
+    "index": 121,
+    "beat": 69.5,
+    "hand": "blue",
+    "role": "Hard実音: 半拍",
+    "phrase": 4,
+    "peakSeconds": 26.085714,
+    "distanceMs": -0.786,
+    "strength": 1.5201
+  },
+  {
+    "index": 122,
     "beat": 70,
     "hand": "red",
     "role": "素材: 右手2打の向きを変えて左へ返す",
@@ -940,7 +1230,17 @@
     "strength": 1.3179
   },
   {
-    "index": 94,
+    "index": 123,
+    "beat": 70.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 4,
+    "peakSeconds": 26.459864,
+    "distanceMs": -1.636,
+    "strength": 0.9286
+  },
+  {
+    "index": 124,
     "beat": 71,
     "hand": "blue",
     "role": "素材: 右手2打の向きを変えて左へ返す",
@@ -950,7 +1250,17 @@
     "strength": 1.3508
   },
   {
-    "index": 95,
+    "index": 125,
+    "beat": 71.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 4,
+    "peakSeconds": 26.839002,
+    "distanceMs": 2.502,
+    "strength": 0.9649
+  },
+  {
+    "index": 126,
     "beat": 72.0,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -960,7 +1270,17 @@
     "strength": 0.8786
   },
   {
-    "index": 96,
+    "index": 127,
+    "beat": 72.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 4,
+    "peakSeconds": 27.218141,
+    "distanceMs": 6.641,
+    "strength": 0.6588
+  },
+  {
+    "index": 128,
     "beat": 73.0,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -970,7 +1290,7 @@
     "strength": 0.6795
   },
   {
-    "index": 97,
+    "index": 129,
     "beat": 73.5,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -980,7 +1300,7 @@
     "strength": 0.932
   },
   {
-    "index": 98,
+    "index": 130,
     "beat": 74.0,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -990,7 +1310,7 @@
     "strength": 1.2069
   },
   {
-    "index": 99,
+    "index": 131,
     "beat": 74.5,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -1000,7 +1320,7 @@
     "strength": 0.7468
   },
   {
-    "index": 100,
+    "index": 132,
     "beat": 75.0,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -1010,7 +1330,17 @@
     "strength": 1.2442
   },
   {
-    "index": 101,
+    "index": 133,
+    "beat": 75.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 4,
+    "peakSeconds": 28.34059,
+    "distanceMs": 4.09,
+    "strength": 0.9593
+  },
+  {
+    "index": 134,
     "beat": 76.0,
     "hand": "blue",
     "role": "主題A",
@@ -1020,7 +1350,7 @@
     "strength": 1.005
   },
   {
-    "index": 102,
+    "index": 135,
     "beat": 76.5,
     "hand": "red",
     "role": "主題A",
@@ -1030,7 +1360,7 @@
     "strength": 0.7284
   },
   {
-    "index": 103,
+    "index": 136,
     "beat": 77.0,
     "hand": "blue",
     "role": "主題A",
@@ -1040,7 +1370,7 @@
     "strength": 0.8353
   },
   {
-    "index": 104,
+    "index": 137,
     "beat": 77.5,
     "hand": "red",
     "role": "主題A",
@@ -1050,7 +1380,7 @@
     "strength": 1.0194
   },
   {
-    "index": 105,
+    "index": 138,
     "beat": 78.0,
     "hand": "blue",
     "role": "主題A",
@@ -1060,7 +1390,7 @@
     "strength": 1.016
   },
   {
-    "index": 106,
+    "index": 139,
     "beat": 79.0,
     "hand": "blue",
     "role": "主題A",
@@ -1070,7 +1400,27 @@
     "strength": 0.8075
   },
   {
-    "index": 107,
+    "index": 140,
+    "beat": 79.5,
+    "hand": "blue",
+    "role": "Hard実音: 半拍",
+    "phrase": 4,
+    "peakSeconds": 29.817234,
+    "distanceMs": -19.266,
+    "strength": 0.9847
+  },
+  {
+    "index": 141,
+    "beat": 80.0,
+    "hand": "blue",
+    "role": "Hard実音: 半拍",
+    "phrase": 5,
+    "peakSeconds": 30.001814,
+    "distanceMs": -22.186,
+    "strength": 1.2053
+  },
+  {
+    "index": 142,
     "beat": 80.5,
     "hand": "blue",
     "role": "BPM100",
@@ -1080,7 +1430,7 @@
     "strength": 1.5308
   },
   {
-    "index": 108,
+    "index": 143,
     "beat": 81.0,
     "hand": "red",
     "role": "BPM100",
@@ -1090,7 +1440,7 @@
     "strength": 1.8435
   },
   {
-    "index": 109,
+    "index": 144,
     "beat": 81.5,
     "hand": "blue",
     "role": "BPM100",
@@ -1100,7 +1450,7 @@
     "strength": 2.4193
   },
   {
-    "index": 110,
+    "index": 145,
     "beat": 82.0,
     "hand": "red",
     "role": "BPM100",
@@ -1110,7 +1460,7 @@
     "strength": 0.8975
   },
   {
-    "index": 111,
+    "index": 146,
     "beat": 82.5,
     "hand": "blue",
     "role": "BPM100",
@@ -1120,7 +1470,7 @@
     "strength": 1.6581
   },
   {
-    "index": 112,
+    "index": 147,
     "beat": 83.0,
     "hand": "red",
     "role": "BPM100",
@@ -1130,7 +1480,7 @@
     "strength": 1.056
   },
   {
-    "index": 113,
+    "index": 148,
     "beat": 83.5,
     "hand": "blue",
     "role": "BPM100",
@@ -1140,7 +1490,7 @@
     "strength": 1.1315
   },
   {
-    "index": 114,
+    "index": 149,
     "beat": 84.0,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -1150,7 +1500,17 @@
     "strength": 1.2138
   },
   {
-    "index": 115,
+    "index": 150,
+    "beat": 84.5,
+    "hand": "blue",
+    "role": "Hard実音: 半拍",
+    "phrase": 5,
+    "peakSeconds": 32.725624,
+    "distanceMs": 1.624,
+    "strength": 1.4164
+  },
+  {
+    "index": 151,
     "beat": 85.0,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -1160,7 +1520,17 @@
     "strength": 1.1297
   },
   {
-    "index": 116,
+    "index": 152,
+    "beat": 85.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 5,
+    "peakSeconds": 33.319274,
+    "distanceMs": -4.726,
+    "strength": 1.0749
+  },
+  {
+    "index": 153,
     "beat": 86.0,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -1170,7 +1540,7 @@
     "strength": 1.5653
   },
   {
-    "index": 117,
+    "index": 154,
     "beat": 86.5,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -1180,7 +1550,17 @@
     "strength": 0.9919
   },
   {
-    "index": 118,
+    "index": 155,
+    "beat": 87.0,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 5,
+    "peakSeconds": 34.222222,
+    "distanceMs": -1.778,
+    "strength": 1.2536
+  },
+  {
+    "index": 156,
     "beat": 87.5,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -1190,7 +1570,7 @@
     "strength": 1.4455
   },
   {
-    "index": 119,
+    "index": 157,
     "beat": 88.0,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -1200,7 +1580,7 @@
     "strength": 0.8146
   },
   {
-    "index": 120,
+    "index": 158,
     "beat": 88.5,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -1210,7 +1590,17 @@
     "strength": 0.7814
   },
   {
-    "index": 121,
+    "index": 159,
+    "beat": 89.0,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 5,
+    "peakSeconds": 35.419501,
+    "distanceMs": -4.499,
+    "strength": 1.0071
+  },
+  {
+    "index": 160,
     "beat": 89.5,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -1220,7 +1610,17 @@
     "strength": 1.4334
   },
   {
-    "index": 122,
+    "index": 161,
+    "beat": 90.0,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 5,
+    "peakSeconds": 36.023129,
+    "distanceMs": -0.871,
+    "strength": 1.1419
+  },
+  {
+    "index": 162,
     "beat": 90.5,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -1230,7 +1630,7 @@
     "strength": 1.4547
   },
   {
-    "index": 123,
+    "index": 163,
     "beat": 91.0,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -1240,7 +1640,17 @@
     "strength": 1.4613
   },
   {
-    "index": 124,
+    "index": 164,
+    "beat": 91.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 5,
+    "peakSeconds": 36.926077,
+    "distanceMs": 2.077,
+    "strength": 1.2222
+  },
+  {
+    "index": 165,
     "beat": 92.0,
     "hand": "red",
     "role": "BPM100",
@@ -1250,7 +1660,7 @@
     "strength": 0.892
   },
   {
-    "index": 125,
+    "index": 166,
     "beat": 92.5,
     "hand": "blue",
     "role": "BPM100",
@@ -1260,7 +1670,7 @@
     "strength": 1.1919
   },
   {
-    "index": 126,
+    "index": 167,
     "beat": 93.0,
     "hand": "red",
     "role": "BPM100",
@@ -1270,7 +1680,7 @@
     "strength": 1.2864
   },
   {
-    "index": 127,
+    "index": 168,
     "beat": 93.5,
     "hand": "blue",
     "role": "BPM100",
@@ -1280,7 +1690,7 @@
     "strength": 1.3983
   },
   {
-    "index": 128,
+    "index": 169,
     "beat": 94.0,
     "hand": "red",
     "role": "BPM100",
@@ -1290,7 +1700,7 @@
     "strength": 1.0576
   },
   {
-    "index": 129,
+    "index": 170,
     "beat": 94.5,
     "hand": "blue",
     "role": "BPM100",
@@ -1300,7 +1710,17 @@
     "strength": 0.9563
   },
   {
-    "index": 130,
+    "index": 171,
+    "beat": 95.0,
+    "hand": "blue",
+    "role": "Hard実音: 半拍",
+    "phrase": 5,
+    "peakSeconds": 39.021315,
+    "distanceMs": -2.685,
+    "strength": 1.2213
+  },
+  {
+    "index": 172,
     "beat": 95.5,
     "hand": "blue",
     "role": "BPM100",
@@ -1310,7 +1730,7 @@
     "strength": 1.2041
   },
   {
-    "index": 131,
+    "index": 173,
     "beat": 96.0,
     "hand": "red",
     "role": "BPM100",
@@ -1320,7 +1740,7 @@
     "strength": 1.545
   },
   {
-    "index": 132,
+    "index": 174,
     "beat": 96.0,
     "hand": "blue",
     "role": "BPM100",
@@ -1330,7 +1750,17 @@
     "strength": 1.545
   },
   {
-    "index": 133,
+    "index": 175,
+    "beat": 96.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 6,
+    "peakSeconds": 39.924263,
+    "distanceMs": 0.263,
+    "strength": 1.2867
+  },
+  {
+    "index": 176,
     "beat": 97.0,
     "hand": "red",
     "role": "BPM100",
@@ -1340,7 +1770,7 @@
     "strength": 1.2217
   },
   {
-    "index": 134,
+    "index": 177,
     "beat": 97.5,
     "hand": "blue",
     "role": "BPM100",
@@ -1350,7 +1780,7 @@
     "strength": 1.1368
   },
   {
-    "index": 135,
+    "index": 178,
     "beat": 98.0,
     "hand": "red",
     "role": "BPM100",
@@ -1360,7 +1790,7 @@
     "strength": 0.8635
   },
   {
-    "index": 136,
+    "index": 179,
     "beat": 98.5,
     "hand": "blue",
     "role": "BPM100",
@@ -1370,7 +1800,7 @@
     "strength": 0.9706
   },
   {
-    "index": 137,
+    "index": 180,
     "beat": 99.0,
     "hand": "red",
     "role": "BPM100",
@@ -1380,7 +1810,7 @@
     "strength": 1.1471
   },
   {
-    "index": 138,
+    "index": 181,
     "beat": 99.5,
     "hand": "blue",
     "role": "BPM100",
@@ -1390,7 +1820,7 @@
     "strength": 0.9157
   },
   {
-    "index": 139,
+    "index": 182,
     "beat": 100.0,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -1400,7 +1830,17 @@
     "strength": 1.1433
   },
   {
-    "index": 140,
+    "index": 183,
+    "beat": 100.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 6,
+    "peakSeconds": 42.32381,
+    "distanceMs": -0.19,
+    "strength": 1.2803
+  },
+  {
+    "index": 184,
     "beat": 101.0,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -1410,7 +1850,17 @@
     "strength": 1.1327
   },
   {
-    "index": 141,
+    "index": 185,
+    "beat": 101.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 6,
+    "peakSeconds": 42.922449,
+    "distanceMs": -1.551,
+    "strength": 1.0289
+  },
+  {
+    "index": 186,
     "beat": 102.0,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -1420,7 +1870,7 @@
     "strength": 1.3998
   },
   {
-    "index": 142,
+    "index": 187,
     "beat": 102.5,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -1430,7 +1880,17 @@
     "strength": 1.2509
   },
   {
-    "index": 143,
+    "index": 188,
+    "beat": 103.0,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 6,
+    "peakSeconds": 43.825397,
+    "distanceMs": 1.397,
+    "strength": 1.3105
+  },
+  {
+    "index": 189,
     "beat": 103.5,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -1440,7 +1900,7 @@
     "strength": 0.8423
   },
   {
-    "index": 144,
+    "index": 190,
     "beat": 104.0,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -1450,7 +1910,7 @@
     "strength": 1.0875
   },
   {
-    "index": 145,
+    "index": 191,
     "beat": 104.5,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -1460,7 +1920,17 @@
     "strength": 1.0721
   },
   {
-    "index": 146,
+    "index": 192,
+    "beat": 105.0,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 6,
+    "peakSeconds": 45.022676,
+    "distanceMs": -1.324,
+    "strength": 1.3773
+  },
+  {
+    "index": 193,
     "beat": 105.5,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -1470,7 +1940,17 @@
     "strength": 1.1213
   },
   {
-    "index": 147,
+    "index": 194,
+    "beat": 106.0,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 6,
+    "peakSeconds": 45.621315,
+    "distanceMs": -2.685,
+    "strength": 1.9174
+  },
+  {
+    "index": 195,
     "beat": 106.5,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -1480,7 +1960,7 @@
     "strength": 1.0718
   },
   {
-    "index": 148,
+    "index": 196,
     "beat": 107.0,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -1490,7 +1970,17 @@
     "strength": 1.2542
   },
   {
-    "index": 149,
+    "index": 197,
+    "beat": 107.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 6,
+    "peakSeconds": 46.524263,
+    "distanceMs": 0.263,
+    "strength": 1.1554
+  },
+  {
+    "index": 198,
     "beat": 108.0,
     "hand": "red",
     "role": "BPM100",
@@ -1500,7 +1990,7 @@
     "strength": 1.3019
   },
   {
-    "index": 150,
+    "index": 199,
     "beat": 108.5,
     "hand": "blue",
     "role": "BPM100",
@@ -1510,7 +2000,7 @@
     "strength": 1.1263
   },
   {
-    "index": 151,
+    "index": 200,
     "beat": 109.0,
     "hand": "red",
     "role": "BPM100",
@@ -1520,7 +2010,7 @@
     "strength": 1.0855
   },
   {
-    "index": 152,
+    "index": 201,
     "beat": 109.5,
     "hand": "blue",
     "role": "BPM100",
@@ -1530,7 +2020,7 @@
     "strength": 1.2558
   },
   {
-    "index": 153,
+    "index": 202,
     "beat": 110.0,
     "hand": "red",
     "role": "BPM100",
@@ -1540,7 +2030,7 @@
     "strength": 1.5664
   },
   {
-    "index": 154,
+    "index": 203,
     "beat": 110.5,
     "hand": "blue",
     "role": "BPM100",
@@ -1550,7 +2040,17 @@
     "strength": 1.0209
   },
   {
-    "index": 155,
+    "index": 204,
+    "beat": 111.0,
+    "hand": "blue",
+    "role": "Hard実音: 半拍",
+    "phrase": 6,
+    "peakSeconds": 48.62449,
+    "distanceMs": 0.49,
+    "strength": 1.2627
+  },
+  {
+    "index": 205,
     "beat": 111.5,
     "hand": "blue",
     "role": "BPM100",
@@ -1560,7 +2060,7 @@
     "strength": 1.3493
   },
   {
-    "index": 156,
+    "index": 206,
     "beat": 112.0,
     "hand": "red",
     "role": "BPM100",
@@ -1570,7 +2070,7 @@
     "strength": 0.9415
   },
   {
-    "index": 157,
+    "index": 207,
     "beat": 112.0,
     "hand": "blue",
     "role": "BPM100",
@@ -1580,7 +2080,17 @@
     "strength": 0.9415
   },
   {
-    "index": 158,
+    "index": 208,
+    "beat": 112.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 7,
+    "peakSeconds": 49.51746,
+    "distanceMs": -6.54,
+    "strength": 0.9574
+  },
+  {
+    "index": 209,
     "beat": 113.0,
     "hand": "red",
     "role": "BPM100",
@@ -1590,7 +2100,7 @@
     "strength": 1.1591
   },
   {
-    "index": 159,
+    "index": 210,
     "beat": 113.5,
     "hand": "blue",
     "role": "BPM100",
@@ -1600,7 +2110,7 @@
     "strength": 1.2455
   },
   {
-    "index": 160,
+    "index": 211,
     "beat": 114.0,
     "hand": "red",
     "role": "主拍へ復帰",
@@ -1610,7 +2120,7 @@
     "strength": 0.2748
   },
   {
-    "index": 161,
+    "index": 212,
     "beat": 115.0,
     "hand": "blue",
     "role": "主拍へ復帰",
@@ -1620,7 +2130,7 @@
     "strength": 0.2571
   },
   {
-    "index": 162,
+    "index": 213,
     "beat": 116.0,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -1630,7 +2140,7 @@
     "strength": 1.033
   },
   {
-    "index": 163,
+    "index": 214,
     "beat": 116.5,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -1640,7 +2150,17 @@
     "strength": 0.2806
   },
   {
-    "index": 164,
+    "index": 215,
+    "beat": 117.0,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 7,
+    "peakSeconds": 51.542857,
+    "distanceMs": -6.143,
+    "strength": 1.1119
+  },
+  {
+    "index": 216,
     "beat": 117.5,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -1650,7 +2170,7 @@
     "strength": 0.209
   },
   {
-    "index": 165,
+    "index": 217,
     "beat": 118.0,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -1660,7 +2180,7 @@
     "strength": 0.9184
   },
   {
-    "index": 166,
+    "index": 218,
     "beat": 119.0,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -1670,7 +2190,7 @@
     "strength": 0.956
   },
   {
-    "index": 167,
+    "index": 219,
     "beat": 120.0,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -1680,7 +2200,7 @@
     "strength": 0.9709
   },
   {
-    "index": 168,
+    "index": 220,
     "beat": 120.5,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -1690,7 +2210,17 @@
     "strength": 0.3285
   },
   {
-    "index": 169,
+    "index": 221,
+    "beat": 121.0,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 7,
+    "peakSeconds": 53.049433,
+    "distanceMs": 0.433,
+    "strength": 0.9503
+  },
+  {
+    "index": 222,
     "beat": 121.5,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -1700,7 +2230,7 @@
     "strength": 0.3436
   },
   {
-    "index": 170,
+    "index": 223,
     "beat": 122.0,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -1710,7 +2240,7 @@
     "strength": 0.8016
   },
   {
-    "index": 171,
+    "index": 224,
     "beat": 123.0,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -1720,7 +2250,7 @@
     "strength": 1.1449
   },
   {
-    "index": 172,
+    "index": 225,
     "beat": 124.0,
     "hand": "red",
     "role": "主拍へ復帰",
@@ -1730,7 +2260,7 @@
     "strength": 1.2946
   },
   {
-    "index": 173,
+    "index": 226,
     "beat": 125.0,
     "hand": "blue",
     "role": "主拍へ復帰",
@@ -1740,7 +2270,7 @@
     "strength": 0.8887
   },
   {
-    "index": 174,
+    "index": 227,
     "beat": 125.5,
     "hand": "red",
     "role": "主拍へ復帰",
@@ -1750,7 +2280,7 @@
     "strength": 0.2273
   },
   {
-    "index": 175,
+    "index": 228,
     "beat": 126.0,
     "hand": "blue",
     "role": "主拍へ復帰",
@@ -1760,7 +2290,7 @@
     "strength": 0.8329
   },
   {
-    "index": 176,
+    "index": 229,
     "beat": 127.0,
     "hand": "red",
     "role": "主拍へ復帰",
@@ -1770,7 +2300,7 @@
     "strength": 1.017
   },
   {
-    "index": 177,
+    "index": 230,
     "beat": 128.0,
     "hand": "blue",
     "role": "主拍へ復帰",
@@ -1780,7 +2310,17 @@
     "strength": 1.0352
   },
   {
-    "index": 178,
+    "index": 231,
+    "beat": 129.0,
+    "hand": "blue",
+    "role": "Hard実音: 半拍",
+    "phrase": 8,
+    "peakSeconds": 56.047619,
+    "distanceMs": -1.381,
+    "strength": 0.9598
+  },
+  {
+    "index": 232,
     "beat": 130.0,
     "hand": "red",
     "role": "主拍へ復帰",
@@ -1790,7 +2330,7 @@
     "strength": 0.8876
   },
   {
-    "index": 179,
+    "index": 233,
     "beat": 130.0,
     "hand": "blue",
     "role": "主拍へ復帰",
@@ -1800,7 +2340,7 @@
     "strength": 0.8876
   },
   {
-    "index": 180,
+    "index": 234,
     "beat": 131.0,
     "hand": "blue",
     "role": "主拍へ復帰",
@@ -1810,7 +2350,7 @@
     "strength": 0.6785
   },
   {
-    "index": 181,
+    "index": 235,
     "beat": 132.0,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -1820,7 +2360,7 @@
     "strength": 0.7984
   },
   {
-    "index": 182,
+    "index": 236,
     "beat": 132.5,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -1830,7 +2370,7 @@
     "strength": 0.2363
   },
   {
-    "index": 183,
+    "index": 237,
     "beat": 133.0,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -1840,7 +2380,7 @@
     "strength": 0.8941
   },
   {
-    "index": 184,
+    "index": 238,
     "beat": 133.5,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -1850,7 +2390,7 @@
     "strength": 0.2208
   },
   {
-    "index": 185,
+    "index": 239,
     "beat": 134.0,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -1860,7 +2400,7 @@
     "strength": 0.9429
   },
   {
-    "index": 186,
+    "index": 240,
     "beat": 135.0,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -1870,7 +2410,7 @@
     "strength": 0.9276
   },
   {
-    "index": 187,
+    "index": 241,
     "beat": 136.0,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -1880,7 +2420,7 @@
     "strength": 0.9262
   },
   {
-    "index": 188,
+    "index": 242,
     "beat": 136.0,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -1890,7 +2430,7 @@
     "strength": 0.9262
   },
   {
-    "index": 189,
+    "index": 243,
     "beat": 137.0,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -1900,7 +2440,7 @@
     "strength": 0.8577
   },
   {
-    "index": 190,
+    "index": 244,
     "beat": 138.0,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -1910,7 +2450,7 @@
     "strength": 0.8564
   },
   {
-    "index": 191,
+    "index": 245,
     "beat": 138.5,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -1920,7 +2460,7 @@
     "strength": 0.3808
   },
   {
-    "index": 192,
+    "index": 246,
     "beat": 139.0,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -1930,7 +2470,7 @@
     "strength": 0.6062
   },
   {
-    "index": 193,
+    "index": 247,
     "beat": 140.0,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -1940,7 +2480,7 @@
     "strength": 0.8137
   },
   {
-    "index": 194,
+    "index": 248,
     "beat": 141.0,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -1950,7 +2490,7 @@
     "strength": 0.8889
   },
   {
-    "index": 195,
+    "index": 249,
     "beat": 141.5,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -1960,7 +2500,7 @@
     "strength": 0.3515
   },
   {
-    "index": 196,
+    "index": 250,
     "beat": 142.0,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -1970,7 +2510,7 @@
     "strength": 0.9887
   },
   {
-    "index": 197,
+    "index": 251,
     "beat": 142.5,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -1980,7 +2520,7 @@
     "strength": 0.2522
   },
   {
-    "index": 198,
+    "index": 252,
     "beat": 143.0,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -1990,7 +2530,7 @@
     "strength": 0.9433
   },
   {
-    "index": 199,
+    "index": 253,
     "beat": 144.0,
     "hand": "blue",
     "role": "素材: 横方向を含む短い反復",
@@ -2000,7 +2540,7 @@
     "strength": 0.9982
   },
   {
-    "index": 200,
+    "index": 254,
     "beat": 144.5,
     "hand": "red",
     "role": "素材: 横方向を含む短い反復",
@@ -2010,7 +2550,7 @@
     "strength": 0.3553
   },
   {
-    "index": 201,
+    "index": 255,
     "beat": 145.0,
     "hand": "blue",
     "role": "素材: 横方向を含む短い反復",
@@ -2020,7 +2560,7 @@
     "strength": 0.8813
   },
   {
-    "index": 202,
+    "index": 256,
     "beat": 146.0,
     "hand": "red",
     "role": "素材: 横方向を含む短い反復",
@@ -2030,7 +2570,7 @@
     "strength": 0.8526
   },
   {
-    "index": 203,
+    "index": 257,
     "beat": 146.5,
     "hand": "blue",
     "role": "素材: 横方向を含む短い反復",
@@ -2040,7 +2580,7 @@
     "strength": 0.45
   },
   {
-    "index": 204,
+    "index": 258,
     "beat": 147.0,
     "hand": "red",
     "role": "素材: 横方向を含む短い反復",
@@ -2050,7 +2590,7 @@
     "strength": 0.8467
   },
   {
-    "index": 205,
+    "index": 259,
     "beat": 148.0,
     "hand": "red",
     "role": "素材: 横方向を含む短い反復",
@@ -2060,7 +2600,7 @@
     "strength": 0.7232
   },
   {
-    "index": 206,
+    "index": 260,
     "beat": 148.5,
     "hand": "blue",
     "role": "素材: 横方向を含む短い反復",
@@ -2070,7 +2610,7 @@
     "strength": 0.2891
   },
   {
-    "index": 207,
+    "index": 261,
     "beat": 149.0,
     "hand": "red",
     "role": "素材: 横方向を含む短い反復",
@@ -2080,7 +2620,17 @@
     "strength": 1.3431
   },
   {
-    "index": 208,
+    "index": 262,
+    "beat": 149.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 9,
+    "peakSeconds": 63.750113,
+    "distanceMs": 13.613,
+    "strength": 1.3415
+  },
+  {
+    "index": 263,
     "beat": 150.0,
     "hand": "blue",
     "role": "素材: 横方向を含む短い反復",
@@ -2090,7 +2640,7 @@
     "strength": 1.4867
   },
   {
-    "index": 209,
+    "index": 264,
     "beat": 150.5,
     "hand": "red",
     "role": "素材: 横方向を含む短い反復",
@@ -2100,7 +2650,7 @@
     "strength": 1.4344
   },
   {
-    "index": 210,
+    "index": 265,
     "beat": 151.0,
     "hand": "blue",
     "role": "素材: 横方向を含む短い反復",
@@ -2110,7 +2660,17 @@
     "strength": 1.4841
   },
   {
-    "index": 211,
+    "index": 266,
+    "beat": 151.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 9,
+    "peakSeconds": 64.498413,
+    "distanceMs": 11.913,
+    "strength": 1.4087
+  },
+  {
+    "index": 267,
     "beat": 152.0,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -2120,7 +2680,7 @@
     "strength": 1.4611
   },
   {
-    "index": 212,
+    "index": 268,
     "beat": 152.5,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -2130,7 +2690,7 @@
     "strength": 1.0144
   },
   {
-    "index": 213,
+    "index": 269,
     "beat": 153.0,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -2140,7 +2700,7 @@
     "strength": 1.4595
   },
   {
-    "index": 214,
+    "index": 270,
     "beat": 153.5,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -2150,7 +2710,7 @@
     "strength": 1.4778
   },
   {
-    "index": 215,
+    "index": 271,
     "beat": 154.0,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -2160,7 +2720,17 @@
     "strength": 1.284
   },
   {
-    "index": 216,
+    "index": 272,
+    "beat": 154.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 9,
+    "peakSeconds": 65.62585,
+    "distanceMs": 14.35,
+    "strength": 1.5509
+  },
+  {
+    "index": 273,
     "beat": 155.0,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -2170,7 +2740,17 @@
     "strength": 1.4475
   },
   {
-    "index": 217,
+    "index": 274,
+    "beat": 155.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 9,
+    "peakSeconds": 66.0,
+    "distanceMs": 13.5,
+    "strength": 1.7239
+  },
+  {
+    "index": 275,
     "beat": 156.0,
     "hand": "blue",
     "role": "短い展開",
@@ -2180,7 +2760,7 @@
     "strength": 1.5389
   },
   {
-    "index": 218,
+    "index": 276,
     "beat": 156.5,
     "hand": "red",
     "role": "短い展開",
@@ -2190,7 +2770,7 @@
     "strength": 0.2409
   },
   {
-    "index": 219,
+    "index": 277,
     "beat": 157.0,
     "hand": "blue",
     "role": "短い展開",
@@ -2200,7 +2780,7 @@
     "strength": 1.24
   },
   {
-    "index": 220,
+    "index": 278,
     "beat": 157.5,
     "hand": "red",
     "role": "短い展開",
@@ -2210,7 +2790,7 @@
     "strength": 0.7872
   },
   {
-    "index": 221,
+    "index": 279,
     "beat": 158.0,
     "hand": "blue",
     "role": "短い展開",
@@ -2220,7 +2800,17 @@
     "strength": 1.4002
   },
   {
-    "index": 222,
+    "index": 280,
+    "beat": 158.5,
+    "hand": "blue",
+    "role": "Hard実音: 半拍",
+    "phrase": 9,
+    "peakSeconds": 67.127438,
+    "distanceMs": 15.938,
+    "strength": 1.3471
+  },
+  {
+    "index": 281,
     "beat": 159.0,
     "hand": "blue",
     "role": "短い展開",
@@ -2230,7 +2820,37 @@
     "strength": 0.9925
   },
   {
-    "index": 223,
+    "index": 282,
+    "beat": 159.5,
+    "hand": "blue",
+    "role": "Hard実音: 半拍",
+    "phrase": 9,
+    "peakSeconds": 67.501587,
+    "distanceMs": 15.087,
+    "strength": 1.4243
+  },
+  {
+    "index": 283,
+    "beat": 160.0,
+    "hand": "blue",
+    "role": "Hard実音: 半拍",
+    "phrase": 10,
+    "peakSeconds": 67.686168,
+    "distanceMs": 12.168,
+    "strength": 1.4233
+  },
+  {
+    "index": 284,
+    "beat": 160.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 10,
+    "peakSeconds": 67.875737,
+    "distanceMs": 14.237,
+    "strength": 1.0379
+  },
+  {
+    "index": 285,
     "beat": 161.0,
     "hand": "red",
     "role": "短い展開",
@@ -2240,7 +2860,7 @@
     "strength": 1.4165
   },
   {
-    "index": 224,
+    "index": 286,
     "beat": 162.5,
     "hand": "blue",
     "role": "短い展開",
@@ -2250,7 +2870,7 @@
     "strength": 0.203
   },
   {
-    "index": 225,
+    "index": 287,
     "beat": 163.0,
     "hand": "red",
     "role": "短い展開",
@@ -2260,7 +2880,17 @@
     "strength": 0.2304
   },
   {
-    "index": 226,
+    "index": 288,
+    "beat": 163.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 10,
+    "peakSeconds": 68.998186,
+    "distanceMs": 11.686,
+    "strength": 2.4301
+  },
+  {
+    "index": 289,
     "beat": 164.0,
     "hand": "blue",
     "role": "短い展開",
@@ -2270,7 +2900,7 @@
     "strength": 1.565
   },
   {
-    "index": 227,
+    "index": 290,
     "beat": 164.5,
     "hand": "red",
     "role": "短い展開",
@@ -2280,7 +2910,7 @@
     "strength": 0.2901
   },
   {
-    "index": 228,
+    "index": 291,
     "beat": 167.0,
     "hand": "blue",
     "role": "短い展開",
@@ -2290,7 +2920,17 @@
     "strength": 2.4031
   },
   {
-    "index": 229,
+    "index": 292,
+    "beat": 167.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 10,
+    "peakSeconds": 70.499773,
+    "distanceMs": 13.273,
+    "strength": 1.0507
+  },
+  {
+    "index": 293,
     "beat": 168.0,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -2300,7 +2940,7 @@
     "strength": 1.0727
   },
   {
-    "index": 230,
+    "index": 294,
     "beat": 168.5,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -2310,7 +2950,7 @@
     "strength": 0.9372
   },
   {
-    "index": 231,
+    "index": 295,
     "beat": 169.0,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -2320,7 +2960,7 @@
     "strength": 1.0637
   },
   {
-    "index": 232,
+    "index": 296,
     "beat": 169.5,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -2330,7 +2970,7 @@
     "strength": 0.9667
   },
   {
-    "index": 233,
+    "index": 297,
     "beat": 170.0,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -2340,7 +2980,7 @@
     "strength": 0.9286
   },
   {
-    "index": 234,
+    "index": 298,
     "beat": 171.0,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -2350,7 +2990,7 @@
     "strength": 1.5946
   },
   {
-    "index": 235,
+    "index": 299,
     "beat": 172.0,
     "hand": "red",
     "role": "小節頭と余韻",
@@ -2360,7 +3000,7 @@
     "strength": 0.3663
   },
   {
-    "index": 236,
+    "index": 300,
     "beat": 176.0,
     "hand": "blue",
     "role": "小節頭と余韻",
@@ -2370,7 +3010,7 @@
     "strength": 1.5526
   },
   {
-    "index": 237,
+    "index": 301,
     "beat": 180.0,
     "hand": "red",
     "role": "小節頭と余韻",
@@ -2380,7 +3020,7 @@
     "strength": 1.3308
   },
   {
-    "index": 238,
+    "index": 302,
     "beat": 184.0,
     "hand": "blue",
     "role": "小節頭と余韻",
@@ -2390,7 +3030,7 @@
     "strength": 1.3826
   },
   {
-    "index": 239,
+    "index": 303,
     "beat": 188.0,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -2400,7 +3040,7 @@
     "strength": 1.3427
   },
   {
-    "index": 240,
+    "index": 304,
     "beat": 188.5,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -2410,7 +3050,7 @@
     "strength": 0.2676
   },
   {
-    "index": 241,
+    "index": 305,
     "beat": 189.5,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -2420,7 +3060,7 @@
     "strength": 0.3942
   },
   {
-    "index": 242,
+    "index": 306,
     "beat": 190.0,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -2430,7 +3070,7 @@
     "strength": 0.3116
   },
   {
-    "index": 243,
+    "index": 307,
     "beat": 191.0,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -2440,7 +3080,7 @@
     "strength": 0.3311
   },
   {
-    "index": 244,
+    "index": 308,
     "beat": 192.0,
     "hand": "red",
     "role": "小節頭と余韻",
@@ -2450,7 +3090,7 @@
     "strength": 1.1477
   },
   {
-    "index": 245,
+    "index": 309,
     "beat": 194.0,
     "hand": "blue",
     "role": "小節頭と余韻",
@@ -2460,7 +3100,7 @@
     "strength": 0.4221
   },
   {
-    "index": 246,
+    "index": 310,
     "beat": 195.0,
     "hand": "red",
     "role": "小節頭と余韻",
@@ -2470,7 +3110,7 @@
     "strength": 0.3469
   },
   {
-    "index": 247,
+    "index": 311,
     "beat": 196.0,
     "hand": "blue",
     "role": "小節頭と余韻",
@@ -2480,7 +3120,7 @@
     "strength": 1.4899
   },
   {
-    "index": 248,
+    "index": 312,
     "beat": 198.0,
     "hand": "red",
     "role": "小節頭と余韻",
@@ -2490,7 +3130,7 @@
     "strength": 0.2707
   },
   {
-    "index": 249,
+    "index": 313,
     "beat": 200.0,
     "hand": "blue",
     "role": "小節頭と余韻",
@@ -2500,7 +3140,7 @@
     "strength": 1.4487
   },
   {
-    "index": 250,
+    "index": 314,
     "beat": 204.0,
     "hand": "red",
     "role": "小節頭と余韻",
@@ -2510,7 +3150,17 @@
     "strength": 1.5422
   },
   {
-    "index": 251,
+    "index": 315,
+    "beat": 209.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 13,
+    "peakSeconds": 86.234014,
+    "distanceMs": -2.486,
+    "strength": 1.1383
+  },
+  {
+    "index": 316,
     "beat": 210.0,
     "hand": "blue",
     "role": "主題Aの回帰",
@@ -2520,7 +3170,7 @@
     "strength": 0.571
   },
   {
-    "index": 252,
+    "index": 317,
     "beat": 210.5,
     "hand": "red",
     "role": "主題Aの回帰",
@@ -2530,7 +3180,7 @@
     "strength": 0.6839
   },
   {
-    "index": 253,
+    "index": 318,
     "beat": 211.0,
     "hand": "blue",
     "role": "主題Aの回帰",
@@ -2540,7 +3190,17 @@
     "strength": 0.3135
   },
   {
-    "index": 254,
+    "index": 319,
+    "beat": 211.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 13,
+    "peakSeconds": 86.982313,
+    "distanceMs": -4.187,
+    "strength": 0.712
+  },
+  {
+    "index": 320,
     "beat": 212.0,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -2550,7 +3210,7 @@
     "strength": 0.719
   },
   {
-    "index": 255,
+    "index": 321,
     "beat": 212.5,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -2560,7 +3220,7 @@
     "strength": 0.2225
   },
   {
-    "index": 256,
+    "index": 322,
     "beat": 213.0,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -2570,7 +3230,17 @@
     "strength": 1.4789
   },
   {
-    "index": 257,
+    "index": 323,
+    "beat": 213.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 13,
+    "peakSeconds": 87.735601,
+    "distanceMs": -0.899,
+    "strength": 0.98
+  },
+  {
+    "index": 324,
     "beat": 214.0,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -2580,7 +3250,27 @@
     "strength": 1.3857
   },
   {
-    "index": 258,
+    "index": 325,
+    "beat": 214.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 13,
+    "peakSeconds": 88.109751,
+    "distanceMs": -1.749,
+    "strength": 0.8108
+  },
+  {
+    "index": 326,
+    "beat": 214.75,
+    "hand": "blue",
+    "role": "Hard実音: 短い16分フィル",
+    "phrase": 13,
+    "peakSeconds": 88.204535,
+    "distanceMs": -0.715,
+    "strength": 1.2465
+  },
+  {
+    "index": 327,
     "beat": 215.0,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -2590,7 +3280,17 @@
     "strength": 0.8337
   },
   {
-    "index": 259,
+    "index": 328,
+    "beat": 215.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 13,
+    "peakSeconds": 88.4839,
+    "distanceMs": -2.6,
+    "strength": 0.8529
+  },
+  {
+    "index": 329,
     "beat": 216.0,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -2600,7 +3300,7 @@
     "strength": 1.5209
   },
   {
-    "index": 260,
+    "index": 330,
     "beat": 216.5,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -2610,7 +3310,17 @@
     "strength": 0.7404
   },
   {
-    "index": 261,
+    "index": 331,
+    "beat": 217.0,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 13,
+    "peakSeconds": 89.04263,
+    "distanceMs": -6.37,
+    "strength": 0.9591
+  },
+  {
+    "index": 332,
     "beat": 217.5,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -2620,7 +3330,7 @@
     "strength": 0.3985
   },
   {
-    "index": 262,
+    "index": 333,
     "beat": 218.0,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -2630,7 +3340,7 @@
     "strength": 1.2698
   },
   {
-    "index": 263,
+    "index": 334,
     "beat": 219.0,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -2640,7 +3350,7 @@
     "strength": 0.9007
   },
   {
-    "index": 264,
+    "index": 335,
     "beat": 220.0,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -2650,7 +3360,7 @@
     "strength": 1.2742
   },
   {
-    "index": 265,
+    "index": 336,
     "beat": 220.5,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -2660,7 +3370,17 @@
     "strength": 0.3348
   },
   {
-    "index": 266,
+    "index": 337,
+    "beat": 221.0,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 13,
+    "peakSeconds": 90.544218,
+    "distanceMs": -4.782,
+    "strength": 0.8726
+  },
+  {
+    "index": 338,
     "beat": 221.5,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -2670,7 +3390,7 @@
     "strength": 0.5207
   },
   {
-    "index": 267,
+    "index": 339,
     "beat": 222.0,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -2680,7 +3400,17 @@
     "strength": 1.3245
   },
   {
-    "index": 268,
+    "index": 340,
+    "beat": 222.75,
+    "hand": "blue",
+    "role": "Hard実音: 短い16分フィル",
+    "phrase": 13,
+    "peakSeconds": 91.197732,
+    "distanceMs": -7.518,
+    "strength": 1.257
+  },
+  {
+    "index": 341,
     "beat": 223.0,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -2690,7 +3420,7 @@
     "strength": 0.8374
   },
   {
-    "index": 269,
+    "index": 342,
     "beat": 224,
     "hand": "red",
     "role": "素材: 両手から片手連打へ",
@@ -2700,7 +3430,7 @@
     "strength": 1.3629
   },
   {
-    "index": 270,
+    "index": 343,
     "beat": 224,
     "hand": "blue",
     "role": "素材: 両手から片手連打へ",
@@ -2710,7 +3440,7 @@
     "strength": 1.3629
   },
   {
-    "index": 271,
+    "index": 344,
     "beat": 225,
     "hand": "red",
     "role": "素材: 両手から片手連打へ",
@@ -2720,7 +3450,7 @@
     "strength": 0.8742
   },
   {
-    "index": 272,
+    "index": 345,
     "beat": 226,
     "hand": "red",
     "role": "素材: 両手から片手連打へ",
@@ -2730,7 +3460,17 @@
     "strength": 1.2244
   },
   {
-    "index": 273,
+    "index": 346,
+    "beat": 226.75,
+    "hand": "red",
+    "role": "Hard実音: 短い16分フィル",
+    "phrase": 14,
+    "peakSeconds": 92.69932,
+    "distanceMs": -5.93,
+    "strength": 1.1052
+  },
+  {
+    "index": 347,
     "beat": 227,
     "hand": "blue",
     "role": "素材: 両手から片手連打へ",
@@ -2740,7 +3480,7 @@
     "strength": 0.7459
   },
   {
-    "index": 274,
+    "index": 348,
     "beat": 227.5,
     "hand": "blue",
     "role": "素材: 両手から片手連打へ",
@@ -2750,7 +3490,7 @@
     "strength": 0.8293
   },
   {
-    "index": 275,
+    "index": 349,
     "beat": 228,
     "hand": "red",
     "role": "素材: 両手から片手連打へ",
@@ -2760,7 +3500,7 @@
     "strength": 1.5244
   },
   {
-    "index": 276,
+    "index": 350,
     "beat": 228,
     "hand": "blue",
     "role": "素材: 両手から片手連打へ",
@@ -2770,7 +3510,17 @@
     "strength": 1.5244
   },
   {
-    "index": 277,
+    "index": 351,
+    "beat": 228.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 14,
+    "peakSeconds": 93.357823,
+    "distanceMs": -3.677,
+    "strength": 0.9307
+  },
+  {
+    "index": 352,
     "beat": 229,
     "hand": "blue",
     "role": "素材: 両手から片手連打へ",
@@ -2780,7 +3530,17 @@
     "strength": 1.315
   },
   {
-    "index": 278,
+    "index": 353,
+    "beat": 229.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 14,
+    "peakSeconds": 93.731973,
+    "distanceMs": -4.527,
+    "strength": 1.2093
+  },
+  {
+    "index": 354,
     "beat": 230,
     "hand": "blue",
     "role": "素材: 両手から片手連打へ",
@@ -2790,7 +3550,17 @@
     "strength": 1.2178
   },
   {
-    "index": 279,
+    "index": 355,
+    "beat": 230.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 14,
+    "peakSeconds": 94.106122,
+    "distanceMs": -5.378,
+    "strength": 1.3653
+  },
+  {
+    "index": 356,
     "beat": 231,
     "hand": "red",
     "role": "素材: 両手から片手連打へ",
@@ -2800,7 +3570,7 @@
     "strength": 1.2819
   },
   {
-    "index": 280,
+    "index": 357,
     "beat": 231.5,
     "hand": "red",
     "role": "素材: 両手から片手連打へ",
@@ -2810,7 +3580,7 @@
     "strength": 1.0024
   },
   {
-    "index": 281,
+    "index": 358,
     "beat": 232.0,
     "hand": "blue",
     "role": "主題Aの回帰",
@@ -2820,7 +3590,7 @@
     "strength": 1.4888
   },
   {
-    "index": 282,
+    "index": 359,
     "beat": 232.5,
     "hand": "red",
     "role": "主題Aの回帰",
@@ -2830,7 +3600,7 @@
     "strength": 0.8595
   },
   {
-    "index": 283,
+    "index": 360,
     "beat": 233.0,
     "hand": "blue",
     "role": "主題Aの回帰",
@@ -2840,7 +3610,17 @@
     "strength": 1.4998
   },
   {
-    "index": 284,
+    "index": 361,
+    "beat": 233.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 14,
+    "peakSeconds": 95.228571,
+    "distanceMs": -7.929,
+    "strength": 1.4679
+  },
+  {
+    "index": 362,
     "beat": 234.0,
     "hand": "red",
     "role": "主題Aの回帰",
@@ -2850,7 +3630,7 @@
     "strength": 1.2705
   },
   {
-    "index": 285,
+    "index": 363,
     "beat": 234.5,
     "hand": "blue",
     "role": "主題Aの回帰",
@@ -2860,7 +3640,7 @@
     "strength": 0.9979
   },
   {
-    "index": 286,
+    "index": 364,
     "beat": 235.0,
     "hand": "red",
     "role": "主題Aの回帰",
@@ -2870,7 +3650,17 @@
     "strength": 1.5092
   },
   {
-    "index": 287,
+    "index": 365,
+    "beat": 235.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 14,
+    "peakSeconds": 95.981859,
+    "distanceMs": -4.641,
+    "strength": 0.9663
+  },
+  {
+    "index": 366,
     "beat": 236.0,
     "hand": "blue",
     "role": "主題Aの回帰",
@@ -2880,7 +3670,7 @@
     "strength": 1.3448
   },
   {
-    "index": 288,
+    "index": 367,
     "beat": 236.5,
     "hand": "red",
     "role": "主題Aの回帰",
@@ -2890,7 +3680,7 @@
     "strength": 0.9893
   },
   {
-    "index": 289,
+    "index": 368,
     "beat": 237.0,
     "hand": "blue",
     "role": "主題Aの回帰",
@@ -2900,7 +3690,7 @@
     "strength": 1.3725
   },
   {
-    "index": 290,
+    "index": 369,
     "beat": 237.5,
     "hand": "red",
     "role": "主題Aの回帰",
@@ -2910,7 +3700,7 @@
     "strength": 1.0585
   },
   {
-    "index": 291,
+    "index": 370,
     "beat": 238.0,
     "hand": "blue",
     "role": "主題Aの回帰",
@@ -2920,7 +3710,17 @@
     "strength": 1.1961
   },
   {
-    "index": 292,
+    "index": 371,
+    "beat": 238.5,
+    "hand": "blue",
+    "role": "Hard実音: 半拍",
+    "phrase": 14,
+    "peakSeconds": 97.109297,
+    "distanceMs": -2.203,
+    "strength": 1.1591
+  },
+  {
+    "index": 372,
     "beat": 239.0,
     "hand": "blue",
     "role": "主題Aの回帰",
@@ -2930,7 +3730,37 @@
     "strength": 1.2153
   },
   {
-    "index": 293,
+    "index": 373,
+    "beat": 239.5,
+    "hand": "blue",
+    "role": "Hard実音: 半拍",
+    "phrase": 14,
+    "peakSeconds": 97.483447,
+    "distanceMs": -3.053,
+    "strength": 1.1015
+  },
+  {
+    "index": 374,
+    "beat": 240.0,
+    "hand": "blue",
+    "role": "Hard実音: 半拍",
+    "phrase": 15,
+    "peakSeconds": 97.668027,
+    "distanceMs": -5.973,
+    "strength": 1.3709
+  },
+  {
+    "index": 375,
+    "beat": 240.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 15,
+    "peakSeconds": 97.857596,
+    "distanceMs": -3.904,
+    "strength": 1.1483
+  },
+  {
+    "index": 376,
     "beat": 241.0,
     "hand": "blue",
     "role": "主拍",
@@ -2940,7 +3770,7 @@
     "strength": 0.6154
   },
   {
-    "index": 294,
+    "index": 377,
     "beat": 243.0,
     "hand": "red",
     "role": "主拍",
@@ -2950,7 +3780,7 @@
     "strength": 0.2111
   },
   {
-    "index": 295,
+    "index": 378,
     "beat": 244.0,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -2960,7 +3790,7 @@
     "strength": 0.6172
   },
   {
-    "index": 296,
+    "index": 379,
     "beat": 244.5,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -2970,7 +3800,17 @@
     "strength": 0.3552
   },
   {
-    "index": 297,
+    "index": 380,
+    "beat": 245.0,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 15,
+    "peakSeconds": 99.538776,
+    "distanceMs": -10.224,
+    "strength": 1.6231
+  },
+  {
+    "index": 381,
     "beat": 245.5,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -2980,7 +3820,7 @@
     "strength": 0.5073
   },
   {
-    "index": 298,
+    "index": 382,
     "beat": 246.0,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -2990,7 +3830,17 @@
     "strength": 1.2616
   },
   {
-    "index": 299,
+    "index": 383,
+    "beat": 246.75,
+    "hand": "blue",
+    "role": "Hard実音: 短い16分フィル",
+    "phrase": 15,
+    "peakSeconds": 100.202268,
+    "distanceMs": -2.982,
+    "strength": 1.2895
+  },
+  {
+    "index": 384,
     "beat": 247.0,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -3000,7 +3850,7 @@
     "strength": 0.8543
   },
   {
-    "index": 300,
+    "index": 385,
     "beat": 248.0,
     "hand": "red",
     "role": "主拍",
@@ -3010,7 +3860,7 @@
     "strength": 1.2696
   },
   {
-    "index": 301,
+    "index": 386,
     "beat": 249.0,
     "hand": "blue",
     "role": "主拍",
@@ -3020,7 +3870,7 @@
     "strength": 0.963
   },
   {
-    "index": 302,
+    "index": 387,
     "beat": 250.0,
     "hand": "red",
     "role": "主拍",
@@ -3030,7 +3880,17 @@
     "strength": 1.3417
   },
   {
-    "index": 303,
+    "index": 388,
+    "beat": 250.75,
+    "hand": "red",
+    "role": "Hard実音: 短い16分フィル",
+    "phrase": 15,
+    "peakSeconds": 101.698866,
+    "distanceMs": -6.384,
+    "strength": 1.0984
+  },
+  {
+    "index": 389,
     "beat": 251.0,
     "hand": "blue",
     "role": "主拍",
@@ -3040,7 +3900,7 @@
     "strength": 0.9277
   },
   {
-    "index": 304,
+    "index": 390,
     "beat": 251.5,
     "hand": "red",
     "role": "主拍",
@@ -3050,7 +3910,7 @@
     "strength": 0.4128
   },
   {
-    "index": 305,
+    "index": 391,
     "beat": 252.0,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -3060,7 +3920,7 @@
     "strength": 1.1974
   },
   {
-    "index": 306,
+    "index": 392,
     "beat": 252.0,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -3070,7 +3930,7 @@
     "strength": 1.1974
   },
   {
-    "index": 307,
+    "index": 393,
     "beat": 253.0,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -3080,7 +3940,7 @@
     "strength": 1.1006
   },
   {
-    "index": 308,
+    "index": 394,
     "beat": 253.5,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -3090,7 +3950,7 @@
     "strength": 0.5397
   },
   {
-    "index": 309,
+    "index": 395,
     "beat": 254.0,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -3100,7 +3960,7 @@
     "strength": 1.4187
   },
   {
-    "index": 310,
+    "index": 396,
     "beat": 254.5,
     "hand": "red",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -3110,7 +3970,7 @@
     "strength": 0.3989
   },
   {
-    "index": 311,
+    "index": 397,
     "beat": 255.0,
     "hand": "blue",
     "role": "曲別: 160 BPMの短い駆け上がりと100 BPMの間を置く応答を対比。70/360 BPMの特殊な終止は保持。",
@@ -3120,7 +3980,7 @@
     "strength": 0.9187
   },
   {
-    "index": 312,
+    "index": 398,
     "beat": 256,
     "hand": "red",
     "role": "素材: 細かい拍を含む交互",
@@ -3130,7 +3990,7 @@
     "strength": 1.5516
   },
   {
-    "index": 313,
+    "index": 399,
     "beat": 256.25,
     "hand": "blue",
     "role": "素材: 細かい拍を含む交互",
@@ -3140,7 +4000,7 @@
     "strength": 0.4346
   },
   {
-    "index": 314,
+    "index": 400,
     "beat": 256.5,
     "hand": "red",
     "role": "素材: 細かい拍を含む交互",
@@ -3150,7 +4010,7 @@
     "strength": 0.4922
   },
   {
-    "index": 315,
+    "index": 401,
     "beat": 257,
     "hand": "blue",
     "role": "素材: 細かい拍を含む交互",
@@ -3160,7 +4020,7 @@
     "strength": 1.0038
   },
   {
-    "index": 316,
+    "index": 402,
     "beat": 257.5,
     "hand": "blue",
     "role": "素材: 細かい拍を含む交互",
@@ -3170,7 +4030,7 @@
     "strength": 0.5801
   },
   {
-    "index": 317,
+    "index": 403,
     "beat": 258,
     "hand": "red",
     "role": "素材: 細かい拍を含む交互",
@@ -3180,7 +4040,7 @@
     "strength": 1.4064
   },
   {
-    "index": 318,
+    "index": 404,
     "beat": 258.5,
     "hand": "red",
     "role": "素材: 細かい拍を含む交互",
@@ -3190,7 +4050,7 @@
     "strength": 0.4596
   },
   {
-    "index": 319,
+    "index": 405,
     "beat": 259,
     "hand": "blue",
     "role": "素材: 細かい拍を含む交互",
@@ -3200,7 +4060,7 @@
     "strength": 0.9252
   },
   {
-    "index": 320,
+    "index": 406,
     "beat": 259.5,
     "hand": "red",
     "role": "素材: 細かい拍を含む交互",
@@ -3210,7 +4070,7 @@
     "strength": 0.42
   },
   {
-    "index": 321,
+    "index": 407,
     "beat": 260,
     "hand": "blue",
     "role": "素材: 細かい拍を含む交互",
@@ -3220,7 +4080,7 @@
     "strength": 1.3673
   },
   {
-    "index": 322,
+    "index": 408,
     "beat": 260.25,
     "hand": "red",
     "role": "素材: 細かい拍を含む交互",
@@ -3230,7 +4090,7 @@
     "strength": 0.3435
   },
   {
-    "index": 323,
+    "index": 409,
     "beat": 260.5,
     "hand": "blue",
     "role": "素材: 細かい拍を含む交互",
@@ -3240,7 +4100,7 @@
     "strength": 0.908
   },
   {
-    "index": 324,
+    "index": 410,
     "beat": 261,
     "hand": "red",
     "role": "素材: 細かい拍を含む交互",
@@ -3250,7 +4110,7 @@
     "strength": 1.3247
   },
   {
-    "index": 325,
+    "index": 411,
     "beat": 261.5,
     "hand": "red",
     "role": "素材: 細かい拍を含む交互",
@@ -3260,7 +4120,7 @@
     "strength": 1.0209
   },
   {
-    "index": 326,
+    "index": 412,
     "beat": 262,
     "hand": "blue",
     "role": "素材: 細かい拍を含む交互",
@@ -3270,7 +4130,7 @@
     "strength": 1.3216
   },
   {
-    "index": 327,
+    "index": 413,
     "beat": 262.5,
     "hand": "blue",
     "role": "素材: 細かい拍を含む交互",
@@ -3280,7 +4140,7 @@
     "strength": 1.2571
   },
   {
-    "index": 328,
+    "index": 414,
     "beat": 263,
     "hand": "red",
     "role": "素材: 細かい拍を含む交互",
@@ -3290,7 +4150,7 @@
     "strength": 1.3369
   },
   {
-    "index": 329,
+    "index": 415,
     "beat": 263.5,
     "hand": "blue",
     "role": "素材: 細かい拍を含む交互",
@@ -3300,7 +4160,7 @@
     "strength": 1.1341
   },
   {
-    "index": 330,
+    "index": 416,
     "beat": 264.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -3310,7 +4170,7 @@
     "strength": 1.2568
   },
   {
-    "index": 331,
+    "index": 417,
     "beat": 264.5,
     "hand": "red",
     "role": "主題Aの発展",
@@ -3320,7 +4180,7 @@
     "strength": 1.1724
   },
   {
-    "index": 332,
+    "index": 418,
     "beat": 265.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -3330,7 +4190,17 @@
     "strength": 1.3432
   },
   {
-    "index": 333,
+    "index": 419,
+    "beat": 265.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 16,
+    "peakSeconds": 107.231293,
+    "distanceMs": -5.207,
+    "strength": 1.4236
+  },
+  {
+    "index": 420,
     "beat": 266.0,
     "hand": "red",
     "role": "主題Aの発展",
@@ -3340,7 +4210,7 @@
     "strength": 1.3972
   },
   {
-    "index": 334,
+    "index": 421,
     "beat": 266.5,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -3350,7 +4220,7 @@
     "strength": 1.3779
   },
   {
-    "index": 335,
+    "index": 422,
     "beat": 267.0,
     "hand": "red",
     "role": "主題Aの発展",
@@ -3360,7 +4230,17 @@
     "strength": 1.4686
   },
   {
-    "index": 336,
+    "index": 423,
+    "beat": 267.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 16,
+    "peakSeconds": 107.979592,
+    "distanceMs": -6.908,
+    "strength": 1.3941
+  },
+  {
+    "index": 424,
     "beat": 268.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -3370,7 +4250,7 @@
     "strength": 1.4525
   },
   {
-    "index": 337,
+    "index": 425,
     "beat": 268.5,
     "hand": "red",
     "role": "主題Aの発展",
@@ -3380,7 +4260,7 @@
     "strength": 1.3847
   },
   {
-    "index": 338,
+    "index": 426,
     "beat": 269.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -3390,7 +4270,7 @@
     "strength": 1.142
   },
   {
-    "index": 339,
+    "index": 427,
     "beat": 269.5,
     "hand": "red",
     "role": "主題Aの発展",
@@ -3400,7 +4280,7 @@
     "strength": 0.5436
   },
   {
-    "index": 340,
+    "index": 428,
     "beat": 270.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -3410,7 +4290,17 @@
     "strength": 0.7397
   },
   {
-    "index": 341,
+    "index": 429,
+    "beat": 270.5,
+    "hand": "blue",
+    "role": "Hard実音: 半拍",
+    "phrase": 16,
+    "peakSeconds": 109.112018,
+    "distanceMs": 0.518,
+    "strength": 0.6358
+  },
+  {
+    "index": 430,
     "beat": 271.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -3420,7 +4310,37 @@
     "strength": 0.9729
   },
   {
-    "index": 342,
+    "index": 431,
+    "beat": 271.5,
+    "hand": "blue",
+    "role": "Hard実音: 半拍",
+    "phrase": 16,
+    "peakSeconds": 109.486168,
+    "distanceMs": -0.332,
+    "strength": 0.7394
+  },
+  {
+    "index": 432,
+    "beat": 272.0,
+    "hand": "blue",
+    "role": "Hard実音: 半拍",
+    "phrase": 17,
+    "peakSeconds": 109.675737,
+    "distanceMs": 1.737,
+    "strength": 0.8035
+  },
+  {
+    "index": 433,
+    "beat": 272.5,
+    "hand": "red",
+    "role": "Hard実音: 半拍",
+    "phrase": 17,
+    "peakSeconds": 109.860317,
+    "distanceMs": -1.183,
+    "strength": 0.6747
+  },
+  {
+    "index": 434,
     "beat": 273.0,
     "hand": "red",
     "role": "主題Aの発展",
@@ -3430,7 +4350,7 @@
     "strength": 0.4547
   },
   {
-    "index": 343,
+    "index": 435,
     "beat": 274.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -3440,7 +4360,7 @@
     "strength": 0.3564
   },
   {
-    "index": 344,
+    "index": 436,
     "beat": 274.5,
     "hand": "red",
     "role": "主題Aの発展",
@@ -3450,7 +4370,7 @@
     "strength": 0.4381
   },
   {
-    "index": 345,
+    "index": 437,
     "beat": 275.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -3460,7 +4380,7 @@
     "strength": 0.3812
   },
   {
-    "index": 346,
+    "index": 438,
     "beat": 277.0,
     "hand": "red",
     "role": "主題Aの発展",
@@ -3470,7 +4390,7 @@
     "strength": 0.5163
   },
   {
-    "index": 347,
+    "index": 439,
     "beat": 280.0,
     "hand": "blue",
     "role": "BPM70",
@@ -3480,7 +4400,7 @@
     "strength": 1.409
   },
   {
-    "index": 348,
+    "index": 440,
     "beat": 281.0,
     "hand": "red",
     "role": "BPM70",
@@ -3490,7 +4410,7 @@
     "strength": 0.9166
   },
   {
-    "index": 349,
+    "index": 441,
     "beat": 282.0,
     "hand": "blue",
     "role": "BPM70",
@@ -3500,7 +4420,7 @@
     "strength": 0.7946
   },
   {
-    "index": 350,
+    "index": 442,
     "beat": 283.5,
     "hand": "red",
     "role": "BPM70",
@@ -3510,7 +4430,7 @@
     "strength": 0.6399
   },
   {
-    "index": 351,
+    "index": 443,
     "beat": 284.0,
     "hand": "blue",
     "role": "BPM70",
@@ -3520,7 +4440,7 @@
     "strength": 0.7869
   },
   {
-    "index": 352,
+    "index": 444,
     "beat": 284.5,
     "hand": "red",
     "role": "BPM70",
@@ -3530,7 +4450,7 @@
     "strength": 0.8411
   },
   {
-    "index": 353,
+    "index": 445,
     "beat": 285.0,
     "hand": "blue",
     "role": "BPM70",
@@ -3540,7 +4460,7 @@
     "strength": 0.6155
   },
   {
-    "index": 354,
+    "index": 446,
     "beat": 285.5,
     "hand": "red",
     "role": "BPM70",
@@ -3550,7 +4470,7 @@
     "strength": 0.7579
   },
   {
-    "index": 355,
+    "index": 447,
     "beat": 286.0,
     "hand": "blue",
     "role": "BPM70",
@@ -3560,7 +4480,7 @@
     "strength": 0.5212
   },
   {
-    "index": 356,
+    "index": 448,
     "beat": 286.5,
     "hand": "red",
     "role": "BPM70",
@@ -3570,7 +4490,7 @@
     "strength": 0.747
   },
   {
-    "index": 357,
+    "index": 449,
     "beat": 287.0,
     "hand": "blue",
     "role": "BPM70",
@@ -3580,7 +4500,7 @@
     "strength": 1.2645
   },
   {
-    "index": 358,
+    "index": 450,
     "beat": 288.0,
     "hand": "red",
     "role": "BPM70",
@@ -3590,7 +4510,7 @@
     "strength": 0.7026
   },
   {
-    "index": 359,
+    "index": 451,
     "beat": 288.5,
     "hand": "blue",
     "role": "BPM70",
@@ -3600,7 +4520,7 @@
     "strength": 1.1286
   },
   {
-    "index": 360,
+    "index": 452,
     "beat": 289.0,
     "hand": "red",
     "role": "BPM70",
@@ -3610,7 +4530,7 @@
     "strength": 0.6424
   },
   {
-    "index": 361,
+    "index": 453,
     "beat": 289.5,
     "hand": "blue",
     "role": "BPM70",
@@ -3620,7 +4540,7 @@
     "strength": 1.2665
   },
   {
-    "index": 362,
+    "index": 454,
     "beat": 290.0,
     "hand": "red",
     "role": "BPM70",
@@ -3630,7 +4550,7 @@
     "strength": 0.711
   },
   {
-    "index": 363,
+    "index": 455,
     "beat": 290.5,
     "hand": "blue",
     "role": "BPM70",
@@ -3640,7 +4560,7 @@
     "strength": 0.5525
   },
   {
-    "index": 364,
+    "index": 456,
     "beat": 291.0,
     "hand": "red",
     "role": "BPM70",
@@ -3650,7 +4570,7 @@
     "strength": 0.8329
   },
   {
-    "index": 365,
+    "index": 457,
     "beat": 291.5,
     "hand": "blue",
     "role": "BPM70",
@@ -3660,7 +4580,7 @@
     "strength": 1.1891
   },
   {
-    "index": 366,
+    "index": 458,
     "beat": 292.0,
     "hand": "red",
     "role": "BPM70",
@@ -3670,7 +4590,7 @@
     "strength": 0.7292
   },
   {
-    "index": 367,
+    "index": 459,
     "beat": 292.5,
     "hand": "blue",
     "role": "BPM70",
@@ -3680,7 +4600,7 @@
     "strength": 1.1211
   },
   {
-    "index": 368,
+    "index": 460,
     "beat": 293.0,
     "hand": "red",
     "role": "BPM70",
@@ -3690,7 +4610,7 @@
     "strength": 0.8219
   },
   {
-    "index": 369,
+    "index": 461,
     "beat": 293.5,
     "hand": "blue",
     "role": "BPM70",
@@ -3700,7 +4620,7 @@
     "strength": 1.1929
   },
   {
-    "index": 370,
+    "index": 462,
     "beat": 294.0,
     "hand": "red",
     "role": "BPM70",
@@ -3710,7 +4630,7 @@
     "strength": 0.6788
   },
   {
-    "index": 371,
+    "index": 463,
     "beat": 294.5,
     "hand": "blue",
     "role": "BPM70",
@@ -3720,7 +4640,7 @@
     "strength": 0.5154
   },
   {
-    "index": 372,
+    "index": 464,
     "beat": 295.5,
     "hand": "blue",
     "role": "BPM70",
@@ -3730,7 +4650,7 @@
     "strength": 0.7987
   },
   {
-    "index": 373,
+    "index": 465,
     "beat": 296.0,
     "hand": "red",
     "role": "BPM70",
@@ -3740,7 +4660,7 @@
     "strength": 0.7553
   },
   {
-    "index": 374,
+    "index": 466,
     "beat": 296.0,
     "hand": "blue",
     "role": "BPM70",
@@ -3750,7 +4670,7 @@
     "strength": 0.7553
   },
   {
-    "index": 375,
+    "index": 467,
     "beat": 296.5,
     "hand": "blue",
     "role": "BPM70",
@@ -3760,7 +4680,7 @@
     "strength": 0.769
   },
   {
-    "index": 376,
+    "index": 468,
     "beat": 297.0,
     "hand": "red",
     "role": "BPM70",
@@ -3770,7 +4690,7 @@
     "strength": 0.6111
   },
   {
-    "index": 377,
+    "index": 469,
     "beat": 297.5,
     "hand": "blue",
     "role": "BPM70",
@@ -3780,7 +4700,7 @@
     "strength": 0.6105
   },
   {
-    "index": 378,
+    "index": 470,
     "beat": 298.0,
     "hand": "red",
     "role": "BPM70",
@@ -3790,7 +4710,7 @@
     "strength": 0.8561
   },
   {
-    "index": 379,
+    "index": 471,
     "beat": 298.5,
     "hand": "blue",
     "role": "BPM70",
@@ -3800,7 +4720,7 @@
     "strength": 0.7003
   },
   {
-    "index": 380,
+    "index": 472,
     "beat": 299.0,
     "hand": "red",
     "role": "BPM70",
@@ -3810,7 +4730,7 @@
     "strength": 0.74
   },
   {
-    "index": 381,
+    "index": 473,
     "beat": 299.5,
     "hand": "blue",
     "role": "BPM70",
@@ -3820,7 +4740,7 @@
     "strength": 0.8436
   },
   {
-    "index": 382,
+    "index": 474,
     "beat": 300.0,
     "hand": "red",
     "role": "BPM70",
@@ -3830,7 +4750,7 @@
     "strength": 0.5801
   },
   {
-    "index": 383,
+    "index": 475,
     "beat": 300.5,
     "hand": "blue",
     "role": "BPM70",
@@ -3840,7 +4760,7 @@
     "strength": 0.7293
   },
   {
-    "index": 384,
+    "index": 476,
     "beat": 301.0,
     "hand": "red",
     "role": "BPM70",
@@ -3850,7 +4770,7 @@
     "strength": 0.6903
   },
   {
-    "index": 385,
+    "index": 477,
     "beat": 301.5,
     "hand": "blue",
     "role": "BPM70",
@@ -3860,7 +4780,7 @@
     "strength": 0.5928
   },
   {
-    "index": 386,
+    "index": 478,
     "beat": 302.0,
     "hand": "red",
     "role": "BPM70",
@@ -3870,7 +4790,7 @@
     "strength": 0.7833
   },
   {
-    "index": 387,
+    "index": 479,
     "beat": 304.0,
     "hand": "blue",
     "role": "BPM360・実打は半速",
@@ -3880,7 +4800,7 @@
     "strength": 2.7585
   },
   {
-    "index": 388,
+    "index": 480,
     "beat": 306.0,
     "hand": "red",
     "role": "BPM360・実打は半速",
@@ -3890,7 +4810,7 @@
     "strength": 0.882
   },
   {
-    "index": 389,
+    "index": 481,
     "beat": 308.0,
     "hand": "blue",
     "role": "BPM360・実打は半速",
@@ -3900,7 +4820,7 @@
     "strength": 0.8855
   },
   {
-    "index": 390,
+    "index": 482,
     "beat": 310.0,
     "hand": "red",
     "role": "BPM360・実打は半速",
@@ -3910,7 +4830,7 @@
     "strength": 0.9268
   },
   {
-    "index": 391,
+    "index": 483,
     "beat": 312.0,
     "hand": "blue",
     "role": "BPM360・実打は半速",
@@ -3920,7 +4840,7 @@
     "strength": 0.927
   },
   {
-    "index": 392,
+    "index": 484,
     "beat": 314.0,
     "hand": "red",
     "role": "BPM360・実打は半速",
@@ -3930,7 +4850,7 @@
     "strength": 0.8953
   },
   {
-    "index": 393,
+    "index": 485,
     "beat": 316.0,
     "hand": "blue",
     "role": "BPM360・実打は半速",
@@ -3940,7 +4860,7 @@
     "strength": 0.9638
   },
   {
-    "index": 394,
+    "index": 486,
     "beat": 318.0,
     "hand": "red",
     "role": "BPM360・実打は半速",
@@ -3950,7 +4870,7 @@
     "strength": 0.9318
   },
   {
-    "index": 395,
+    "index": 487,
     "beat": 320.0,
     "hand": "blue",
     "role": "BPM360・実打は半速",
@@ -3960,7 +4880,7 @@
     "strength": 0.7029
   },
   {
-    "index": 396,
+    "index": 488,
     "beat": 322.0,
     "hand": "red",
     "role": "BPM360・実打は半速",

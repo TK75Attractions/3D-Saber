@@ -63,9 +63,9 @@ public class FiveSongPlayabilityTests
     {
         var chart=ChartLoader.LoadFromStreamingAssets(song,difficulty);
         var plan=LoadPlan(song,difficulty);
-        // 横配置が主軸であることだけを保証する。特殊配置の最低数は設けない。
+        // Hardの高低差は通常の運動として許可する。交差の最低数は設けない。
         int ordinary=chart.notes.Where((n,i)=>
-            Math.Abs(n.y)<=.6f && (HandFor(n,plan.notes[i])==SaberHand.Left?n.x<-.5f:n.x>.5f)).Count();
+            (difficulty=="hard" || Math.Abs(n.y)<=.6f) && (HandFor(n,plan.notes[i])==SaberHand.Left?n.x<-.5f:n.x>.5f)).Count();
         Assert.Greater(ordinary,chart.notes.Count/2,"通常配置より技のほうが多くなっている");
     }
 
