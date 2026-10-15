@@ -47,6 +47,24 @@ public class RushESecretTests
         Assert.IsFalse(stroke.Tick(Vector2.zero, 2.01, false));
     }
     [Test]
+    public void CameraSamplesSurviveRepeatedFramesAndResetAfterTrackingLoss()
+    {
+        var stroke = new RushECameraStroke();
+        var left = new Vector2(-1.5f, 0); var right = new Vector2(1.5f, 0);
+        Assert.IsFalse(stroke.Tick(left, 1, true));
+        for (int i = 0; i < 8; i++) Assert.IsFalse(stroke.Tick(left, 1, true));
+        Assert.IsTrue(stroke.Tick(right, 1.05, true), "カメラより描画が速くても1振りを認識する");
+        for (int i = 0; i < 8; i++) Assert.IsFalse(stroke.Tick(right, 1.05, true));
+        Assert.IsTrue(stroke.Tick(left, 1.10, true));
+        Assert.IsFalse(stroke.Tick(right, 1.4, true), "受信間隔が長い座標飛びは数えない");
+        Assert.IsFalse(stroke.Tick(right, 1.4, false));
+        Assert.IsFalse(stroke.Tick(left, 1.45, true), "追跡再開の最初の座標は始点だけに使う");
+        Assert.IsFalse(stroke.Tick(right, 1.44, true), "受信時計が戻った場合も始点を捨てる");
+        Assert.IsFalse(stroke.Tick(left, double.NaN, true));
+        Assert.IsFalse(stroke.Tick(left, 2, true));
+        Assert.IsTrue(stroke.Tick(right, 2.05, true));
+    }
+    [Test]
     public void TilesFullyCoverAtRevealAndHaveClearedBeforeStarting()
     {
         for (int y = 0; y < 9; y++) for (int x = 0; x < 16; x++)

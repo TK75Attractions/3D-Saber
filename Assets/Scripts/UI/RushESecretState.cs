@@ -41,6 +41,23 @@ public sealed class RushESecretState
     }
 }
 
+// 描画フレーム間で同じカメラ座標を読み直しても、軌跡の時刻や始点を更新しない。
+// 受信が途切れたときは始点を捨て、再接続の座標飛びを切断と数えない。
+public sealed class RushECameraStroke
+{
+    readonly RushEJacketStroke stroke = new RushEJacketStroke();
+    double lastSample = double.NegativeInfinity;
+    public void Reset() { lastSample = double.NegativeInfinity; stroke.Reset(); }
+    public bool Tick(Vector2 point, double sampleTime, bool available)
+    {
+        if (!available || double.IsNaN(sampleTime) || double.IsInfinity(sampleTime)) { Reset(); return false; }
+        if (sampleTime == lastSample) return false;
+        if (sampleTime < lastSample) stroke.Reset();
+        lastSample = sampleTime;
+        return stroke.Tick(point, sampleTime, true);
+    }
+}
+
 // ジャケット半径を1とした座標。細かな手ぶれや滞在を数えず、横切る1振りだけを受け付ける。
 public sealed class RushEJacketStroke
 {
