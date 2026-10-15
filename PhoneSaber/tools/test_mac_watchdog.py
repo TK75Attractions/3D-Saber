@@ -103,6 +103,42 @@ exit 2
 
 
 class MacLauncherAppTests(unittest.TestCase):
+    def test_generated_launcher_preserves_shell_metacharacters_in_repo_path(self):
+        with tempfile.TemporaryDirectory(prefix="縁日 launcher ") as directory:
+            root = Path(directory).resolve() / 'kit $station `true` "quoted" \\files'
+            here = root / "PhoneSaber/mac/app"
+            here.mkdir(parents=True)
+            installer = (SOURCE / "app/install_app.sh").read_text().replace(
+                "/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister",
+                "true")
+            (here / "install_app.sh").write_text(installer)
+            (here / "icon.icns").write_bytes((SOURCE / "app/icon.icns").read_bytes())
+            (here.parent / "saber-watchdog.sh").write_text('''#!/bin/bash
+printf '%s\\n' "$@" > "$LAUNCHER_TEST_ARGUMENTS"
+''')
+            app = root / "Builds/Mac/3D-Saber.app"
+            app.mkdir(parents=True)
+            tools = root / "bin"
+            tools.mkdir()
+            codesign = tools / "codesign"
+            codesign.write_text("#!/bin/bash\nexit 0\n")
+            codesign.chmod(0o755)
+            arguments = root / "arguments"
+            env = dict(os.environ, HOME=str(root / "home"), TMPDIR=directory,
+                       PATH=str(tools) + os.pathsep + os.environ["PATH"],
+                       LAUNCHER_TEST_ARGUMENTS=str(arguments))
+            result = subprocess.run(
+                ["/bin/bash", str(here / "install_app.sh"), "A", str(root)],
+                env=env, capture_output=True, text=True, timeout=10)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            launcher = root / "Beat Trace Slash.app/Contents/MacOS/launcher"
+            # エラー通知も代替し、生成した実行ファイルだけをウィンドウなしで動かす。
+            launcher.write_text(launcher.read_text().replace("/usr/bin/osascript", "false"))
+            result = subprocess.run([str(launcher)], env=env, input="",
+                                    capture_output=True, text=True, timeout=10)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertEqual(arguments.read_text().splitlines(), ["A", str(app)])
+
     def test_generated_launcher_starts_both_stations_in_utf8_locales(self):
         with tempfile.TemporaryDirectory(prefix="縁日 launcher ") as directory:
             root = Path(directory).resolve()
