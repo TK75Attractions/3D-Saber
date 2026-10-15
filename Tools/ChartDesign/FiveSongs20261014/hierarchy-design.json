@@ -1066,9 +1066,9 @@
           "notes": 564,
           "pairs": 42,
           "pairNotePercent": 14.89,
-          "movementOver1_2Within1s": 62.33,
+          "movementOver1_2Within1s": 61.19,
           "movementWithin1sDenominator": 523,
-          "movementOver1_2AllGaps": 61.92,
+          "movementOver1_2AllGaps": 60.85,
           "fastSameHandUnder250ms": 59,
           "sameHandSingleTransitionPercent": 19.62,
           "identicalBarRepeatPercent": 1.94,
@@ -2296,9 +2296,9 @@
           "notes": 469,
           "pairs": 37,
           "pairNotePercent": 15.78,
-          "movementOver1_2Within1s": 56.67,
+          "movementOver1_2Within1s": 53.11,
           "movementWithin1sDenominator": 450,
-          "movementOver1_2AllGaps": 56.32,
+          "movementOver1_2AllGaps": 52.89,
           "fastSameHandUnder250ms": 52,
           "sameHandSingleTransitionPercent": 21.07,
           "identicalBarRepeatPercent": 1.25,
@@ -2309,9 +2309,9 @@
           "notes": 171,
           "pairs": 13,
           "pairNotePercent": 15.2,
-          "movementOver1_2Within1s": 48.15,
+          "movementOver1_2Within1s": 46.3,
           "movementWithin1sDenominator": 108,
-          "movementOver1_2AllGaps": 46.75,
+          "movementOver1_2AllGaps": 45.56,
           "fastSameHandUnder250ms": 0,
           "sameHandSingleTransitionPercent": 15.28,
           "identicalBarRepeatPercent": 2.74,
@@ -3148,9 +3148,9 @@
           "notes": 578,
           "pairs": 42,
           "pairNotePercent": 14.53,
-          "movementOver1_2Within1s": 66.4,
+          "movementOver1_2Within1s": 66.01,
           "movementWithin1sDenominator": 506,
-          "movementOver1_2AllGaps": 67.01,
+          "movementOver1_2AllGaps": 66.67,
           "fastSameHandUnder250ms": 15,
           "sameHandSingleTransitionPercent": 20.89,
           "identicalBarRepeatPercent": 0.0,
@@ -3161,9 +3161,9 @@
           "notes": 334,
           "pairs": 21,
           "pairNotePercent": 12.57,
-          "movementOver1_2Within1s": 44.63,
+          "movementOver1_2Within1s": 45.76,
           "movementWithin1sDenominator": 177,
-          "movementOver1_2AllGaps": 49.4,
+          "movementOver1_2AllGaps": 50.0,
           "fastSameHandUnder250ms": 0,
           "sameHandSingleTransitionPercent": 15.12,
           "identicalBarRepeatPercent": 0.91,
@@ -4891,11 +4891,11 @@
   },
   "materialUpdate": {
     "added": [
-      "origins-normal-1",
-      "origins-normal-2",
-      "crystallized-hard-1",
-      "burning-normal-1",
-      "burning-normal-2"
+      "178-hard-1",
+      "178-hard-2",
+      "178-hard-3",
+      "bethere-hard-2",
+      "bethere-hard-3"
     ],
     "pending": [
       {
@@ -4945,9 +4945,17 @@
         "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
         "candidateCount": 0,
         "rejections": {}
+      },
+      {
+        "patternId": "bethere-hard-1",
+        "reason": "打点の一致候補はあるが、前後の移動・カット経路・下位包含を同時に満たさない。小節素材として保存。",
+        "candidateCount": 1,
+        "rejections": {
+          "movementOrSimultaneous": 1
+        }
       }
     ],
-    "batch": "hourly-20261015-0937"
+    "batch": "hourly-20261015-1547"
   },
   "validation": {
     "pack": "15譜面合格",

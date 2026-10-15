@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "convertedCount": 94,
-  "appliedCount": 86,
+  "convertedCount": 100,
+  "appliedCount": 91,
   "applications": [
     {
       "patternId": "shut-up-dance-2",
@@ -21,7 +21,7 @@
       "removedNotes": 14,
       "addedNotes": 13,
       "sourceCategory": "conditional",
-      "fidelity": "配置素材を参考にした区間を、曲の強い発音・応答・句尾の間に合わせて再編集。原作の正確な採譜ではない。旧適用はpreRhythmContrastAppliedNotes。",
+      "fidelity": "以前の素材を参照した区間を、今回の実音・4置き場・下位包含に合わせて再設計。元の翻案そのものと現在の区間は同一ではない。履歴はpreHierarchyAppliedNotes。",
       "sourceUrl": "https://www.youtube.com/watch?v=5aLDCKQ63P4&t=54",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=hard&t=126.65",
       "noteIndices": [
@@ -1773,7 +1773,7 @@
       "removedNotes": 12,
       "addedNotes": 10,
       "sourceCategory": "conditional",
-      "fidelity": "配置素材を参考にした区間を、曲の強い発音・応答・句尾の間に合わせて再編集。原作の正確な採譜ではない。旧適用はpreRhythmContrastAppliedNotes。",
+      "fidelity": "以前の素材を参照した区間を、今回の実音・4置き場・下位包含に合わせて再設計。元の翻案そのものと現在の区間は同一ではない。履歴はpreHierarchyAppliedNotes。",
       "sourceUrl": "https://www.youtube.com/watch?v=16oSzYCTD3A&t=88",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=BenkyouRemaster&difficulty=hard&t=102.17",
       "noteIndices": [
@@ -2527,7 +2527,7 @@
       "removedNotes": 14,
       "addedNotes": 11,
       "sourceCategory": "good",
-      "fidelity": "配置素材を参考にした区間を、曲の強い発音・応答・句尾の間に合わせて再編集。原作の正確な採譜ではない。旧適用はpreRhythmContrastAppliedNotes。",
+      "fidelity": "以前の素材を参照した区間を、今回の実音・4置き場・下位包含に合わせて再設計。元の翻案そのものと現在の区間は同一ではない。履歴はpreHierarchyAppliedNotes。",
       "sourceUrl": "https://www.youtube.com/watch?v=5aLDCKQ63P4&t=24",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=hard&t=110.65",
       "noteIndices": [
@@ -3183,7 +3183,7 @@
       "removedNotes": 13,
       "addedNotes": 13,
       "sourceCategory": "conditional",
-      "fidelity": "配置素材を参考にした区間を、曲の強い発音・応答・句尾の間に合わせて再編集。原作の正確な採譜ではない。旧適用はpreRhythmContrastAppliedNotes。",
+      "fidelity": "以前の素材を参照した区間を、今回の実音・4置き場・下位包含に合わせて再設計。元の翻案そのものと現在の区間は同一ではない。履歴はpreHierarchyAppliedNotes。",
       "sourceUrl": "https://www.youtube.com/watch?v=am22mbvgyD8&t=93",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=ManicSonic&difficulty=hard&t=111.67",
       "noteIndices": [
@@ -3874,7 +3874,7 @@
       "removedNotes": 13,
       "addedNotes": 10,
       "sourceCategory": "conditional",
-      "fidelity": "配置素材を参考にした区間を、曲の強い発音・応答・句尾の間に合わせて再編集。原作の正確な採譜ではない。旧適用はpreRhythmContrastAppliedNotes。",
+      "fidelity": "以前の素材を参照した区間を、今回の実音・4置き場・下位包含に合わせて再設計。元の翻案そのものと現在の区間は同一ではない。履歴はpreHierarchyAppliedNotes。",
       "sourceUrl": "https://www.youtube.com/watch?v=5aLDCKQ63P4&t=137",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=hard&t=108.21",
       "noteIndices": [
@@ -4518,7 +4518,7 @@
       "removedNotes": 11,
       "addedNotes": 13,
       "sourceCategory": "avoid",
-      "fidelity": "配置素材を参考にした区間を、曲の強い発音・応答・句尾の間に合わせて再編集。原作の正確な採譜ではない。旧適用はpreRhythmContrastAppliedNotes。",
+      "fidelity": "以前の素材を参照した区間を、今回の実音・4置き場・下位包含に合わせて再設計。元の翻案そのものと現在の区間は同一ではない。履歴はpreHierarchyAppliedNotes。",
       "sourceUrl": "https://www.youtube.com/watch?v=mgGaqZ20Scw&t=311",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=escapade&difficulty=hard&t=69.26",
       "noteIndices": [
@@ -5198,7 +5198,7 @@
       "removedNotes": 12,
       "addedNotes": 13,
       "sourceCategory": "conditional",
-      "fidelity": "配置素材を参考にした区間を、曲の強い発音・応答・句尾の間に合わせて再編集。原作の正確な採譜ではない。旧適用はpreRhythmContrastAppliedNotes。",
+      "fidelity": "以前の素材を参照した区間を、今回の実音・4置き場・下位包含に合わせて再設計。元の翻案そのものと現在の区間は同一ではない。履歴はpreHierarchyAppliedNotes。",
       "sourceUrl": "https://www.youtube.com/watch?v=16oSzYCTD3A&t=58",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=BenkyouRemaster&difficulty=hard&t=90.17",
       "noteIndices": [
@@ -5867,7 +5867,7 @@
       "removedNotes": 12,
       "addedNotes": 14,
       "sourceCategory": "conditional",
-      "fidelity": "配置素材を参考にした区間を、曲の強い発音・応答・句尾の間に合わせて再編集。原作の正確な採譜ではない。旧適用はpreRhythmContrastAppliedNotes。",
+      "fidelity": "以前の素材を参照した区間を、今回の実音・4置き場・下位包含に合わせて再設計。元の翻案そのものと現在の区間は同一ではない。履歴はpreHierarchyAppliedNotes。",
       "sourceUrl": "https://www.youtube.com/watch?v=QcaBh6KS7_E&t=56",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=ManicSonic&difficulty=hard&t=9.17",
       "noteIndices": [
@@ -6526,7 +6526,7 @@
       "removedNotes": 12,
       "addedNotes": 12,
       "sourceCategory": "conditional",
-      "fidelity": "配置素材を参考にした区間を、曲の強い発音・応答・句尾の間に合わせて再編集。原作の正確な採譜ではない。旧適用はpreRhythmContrastAppliedNotes。",
+      "fidelity": "以前の素材を参照した区間を、今回の実音・4置き場・下位包含に合わせて再設計。元の翻案そのものと現在の区間は同一ではない。履歴はpreHierarchyAppliedNotes。",
       "sourceUrl": "https://www.youtube.com/watch?v=QcaBh6KS7_E&t=137",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=hard&t=53.36",
       "noteIndices": [
@@ -7161,7 +7161,7 @@
       "removedNotes": 12,
       "addedNotes": 11,
       "sourceCategory": "good",
-      "fidelity": "配置素材を参考にした区間を、曲の強い発音・応答・句尾の間に合わせて再編集。原作の正確な採譜ではない。旧適用はpreRhythmContrastAppliedNotes。",
+      "fidelity": "以前の素材を参照した区間を、今回の実音・4置き場・下位包含に合わせて再設計。元の翻案そのものと現在の区間は同一ではない。履歴はpreHierarchyAppliedNotes。",
       "sourceUrl": "https://www.youtube.com/watch?v=VfRyM0-jCSs&t=91",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=escapade&difficulty=hard&t=89.47",
       "noteIndices": [
@@ -7828,7 +7828,7 @@
       "removedNotes": 12,
       "addedNotes": 14,
       "sourceCategory": "conditional",
-      "fidelity": "配置素材を参考にした区間を、曲の強い発音・応答・句尾の間に合わせて再編集。原作の正確な採譜ではない。旧適用はpreRhythmContrastAppliedNotes。",
+      "fidelity": "以前の素材を参照した区間を、今回の実音・4置き場・下位包含に合わせて再設計。元の翻案そのものと現在の区間は同一ではない。履歴はpreHierarchyAppliedNotes。",
       "sourceUrl": "https://www.youtube.com/watch?v=am22mbvgyD8&t=36",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=BenkyouRemaster&difficulty=hard&t=60.17",
       "noteIndices": [
@@ -8991,7 +8991,7 @@
       "removedNotes": 10,
       "addedNotes": 5,
       "sourceCategory": "good",
-      "fidelity": "配置素材を参考にした区間を、曲の強い発音・応答・句尾の間に合わせて再編集。原作の正確な採譜ではない。旧適用はpreRhythmContrastAppliedNotes。",
+      "fidelity": "以前の素材を参照した区間を、今回の実音・4置き場・下位包含に合わせて再設計。元の翻案そのものと現在の区間は同一ではない。履歴はpreHierarchyAppliedNotes。",
       "sourceUrl": "https://www.youtube.com/watch?v=pykGEBUtJeE&t=92",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=ManicSonic&difficulty=hard&t=5.17",
       "noteIndices": [
@@ -9421,7 +9421,7 @@
       "removedNotes": 8,
       "addedNotes": 5,
       "sourceCategory": "good",
-      "fidelity": "配置素材を参考にした区間を、曲の強い発音・応答・句尾の間に合わせて再編集。原作の正確な採譜ではない。旧適用はpreRhythmContrastAppliedNotes。",
+      "fidelity": "以前の素材を参照した区間を、今回の実音・4置き場・下位包含に合わせて再設計。元の翻案そのものと現在の区間は同一ではない。履歴はpreHierarchyAppliedNotes。",
       "sourceUrl": "https://www.youtube.com/watch?v=VfRyM0-jCSs&t=56",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=ManicSonic&difficulty=normal&t=111.67",
       "noteIndices": [
@@ -9692,7 +9692,7 @@
       "removedNotes": 8,
       "addedNotes": 5,
       "sourceCategory": "avoid",
-      "fidelity": "配置素材を参考にした区間を、曲の強い発音・応答・句尾の間に合わせて再編集。原作の正確な採譜ではない。旧適用はpreRhythmContrastAppliedNotes。",
+      "fidelity": "以前の素材を参照した区間を、今回の実音・4置き場・下位包含に合わせて再設計。元の翻案そのものと現在の区間は同一ではない。履歴はpreHierarchyAppliedNotes。",
       "sourceUrl": "https://www.youtube.com/watch?v=mgGaqZ20Scw&t=163",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=normal&t=103.07",
       "noteIndices": [
@@ -10791,7 +10791,7 @@
       "removedNotes": 9,
       "addedNotes": 4,
       "sourceCategory": "good",
-      "fidelity": "配置素材を参考にした区間を、曲の強い発音・応答・句尾の間に合わせて再編集。原作の正確な採譜ではない。旧適用はpreRhythmContrastAppliedNotes。",
+      "fidelity": "以前の素材を参照した区間を、今回の実音・4置き場・下位包含に合わせて再設計。元の翻案そのものと現在の区間は同一ではない。履歴はpreHierarchyAppliedNotes。",
       "sourceUrl": "https://www.youtube.com/watch?v=QcaBh6KS7_E&t=90",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=BenkyouRemaster&difficulty=normal&t=102.17",
       "noteIndices": [
@@ -11231,7 +11231,7 @@
       "removedNotes": 8,
       "addedNotes": 5,
       "sourceCategory": "conditional",
-      "fidelity": "配置素材を参考にした区間を、曲の強い発音・応答・句尾の間に合わせて再編集。原作の正確な採譜ではない。旧適用はpreRhythmContrastAppliedNotes。",
+      "fidelity": "以前の素材を参照した区間を、今回の実音・4置き場・下位包含に合わせて再設計。元の翻案そのものと現在の区間は同一ではない。履歴はpreHierarchyAppliedNotes。",
       "sourceUrl": "https://www.youtube.com/watch?v=VfRyM0-jCSs&t=158",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=escapade&difficulty=normal&t=38.94",
       "noteIndices": [
@@ -11852,7 +11852,7 @@
       "removedNotes": 8,
       "addedNotes": 3,
       "sourceCategory": "good",
-      "fidelity": "配置素材を参考にした区間を、曲の強い発音・応答・句尾の間に合わせて再編集。原作の正確な採譜ではない。旧適用はpreRhythmContrastAppliedNotes。",
+      "fidelity": "以前の素材を参照した区間を、今回の実音・4置き場・下位包含に合わせて再設計。元の翻案そのものと現在の区間は同一ではない。履歴はpreHierarchyAppliedNotes。",
       "sourceUrl": "https://www.youtube.com/watch?v=am22mbvgyD8&t=66",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=normal&t=22.53",
       "noteIndices": [
@@ -12055,7 +12055,7 @@
       "removedNotes": 8,
       "addedNotes": 2,
       "sourceCategory": "good",
-      "fidelity": "配置素材を参考にした区間を、曲の強い発音・応答・句尾の間に合わせて再編集。原作の正確な採譜ではない。旧適用はpreRhythmContrastAppliedNotes。",
+      "fidelity": "以前の素材を参照した区間を、今回の実音・4置き場・下位包含に合わせて再設計。元の翻案そのものと現在の区間は同一ではない。履歴はpreHierarchyAppliedNotes。",
       "sourceUrl": "https://www.youtube.com/watch?v=pykGEBUtJeE&t=14",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=escapade&difficulty=normal&t=28.84",
       "noteIndices": [
@@ -12257,7 +12257,7 @@
       "removedNotes": 8,
       "addedNotes": 5,
       "sourceCategory": "conditional",
-      "fidelity": "配置素材を参考にした区間を、曲の強い発音・応答・句尾の間に合わせて再編集。原作の正確な採譜ではない。旧適用はpreRhythmContrastAppliedNotes。",
+      "fidelity": "以前の素材を参照した区間を、今回の実音・4置き場・下位包含に合わせて再設計。元の翻案そのものと現在の区間は同一ではない。履歴はpreHierarchyAppliedNotes。",
       "sourceUrl": "https://www.youtube.com/watch?v=pykGEBUtJeE&t=36",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=ManicSonic&difficulty=normal&t=9.17",
       "noteIndices": [
@@ -12676,7 +12676,7 @@
       "removedNotes": 4,
       "addedNotes": 3,
       "sourceCategory": "avoid",
-      "fidelity": "配置素材を参考にした区間を、曲の強い発音・応答・句尾の間に合わせて再編集。原作の正確な採譜ではない。旧適用はpreRhythmContrastAppliedNotes。",
+      "fidelity": "以前の素材を参照した区間を、今回の実音・4置き場・下位包含に合わせて再設計。元の翻案そのものと現在の区間は同一ではない。履歴はpreHierarchyAppliedNotes。",
       "sourceUrl": "https://www.youtube.com/watch?v=mgGaqZ20Scw&t=97",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=easy&t=128.79",
       "noteIndices": [
@@ -13295,7 +13295,7 @@
       "removedNotes": 10,
       "addedNotes": 9,
       "sourceCategory": "conditional",
-      "fidelity": "配置素材を参考にした区間を、曲の強い発音・応答・句尾の間に合わせて再編集。原作の正確な採譜ではない。旧適用はpreRhythmContrastAppliedNotes。",
+      "fidelity": "以前の素材を参照した区間を、今回の実音・4置き場・下位包含に合わせて再設計。元の翻案そのものと現在の区間は同一ではない。履歴はpreHierarchyAppliedNotes。",
       "sourceUrl": "https://www.youtube.com/watch?v=DMFXNLMHLJE&t=59",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=hard&t=60.90",
       "noteIndices": [
@@ -14218,7 +14218,7 @@
       "removedNotes": 8,
       "addedNotes": 6,
       "sourceCategory": "good",
-      "fidelity": "配置素材を参考にした区間を、曲の強い発音・応答・句尾の間に合わせて再編集。原作の正確な採譜ではない。旧適用はpreRhythmContrastAppliedNotes。",
+      "fidelity": "以前の素材を参照した区間を、今回の実音・4置き場・下位包含に合わせて再設計。元の翻案そのものと現在の区間は同一ではない。履歴はpreHierarchyAppliedNotes。",
       "sourceUrl": "https://www.youtube.com/watch?v=DMFXNLMHLJE&t=23",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=normal&t=60.90",
       "noteIndices": [
@@ -14490,7 +14490,7 @@
       "removedNotes": 9,
       "addedNotes": 4,
       "sourceCategory": "good",
-      "fidelity": "配置素材を参考にした区間を、曲の強い発音・応答・句尾の間に合わせて再編集。原作の正確な採譜ではない。旧適用はpreRhythmContrastAppliedNotes。",
+      "fidelity": "以前の素材を参照した区間を、今回の実音・4置き場・下位包含に合わせて再設計。元の翻案そのものと現在の区間は同一ではない。履歴はpreHierarchyAppliedNotes。",
       "sourceUrl": "https://www.youtube.com/watch?v=WR5PG2IMFmg&t=58",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=normal&t=39.64",
       "noteIndices": [
@@ -14738,7 +14738,7 @@
       "removedNotes": 2,
       "addedNotes": 4,
       "sourceCategory": "conditional",
-      "fidelity": "配置素材を参考にした区間を、曲の強い発音・応答・句尾の間に合わせて再編集。原作の正確な採譜ではない。旧適用はpreRhythmContrastAppliedNotes。",
+      "fidelity": "以前の素材を参照した区間を、今回の実音・4置き場・下位包含に合わせて再設計。元の翻案そのものと現在の区間は同一ではない。履歴はpreHierarchyAppliedNotes。",
       "sourceUrl": "https://www.youtube.com/watch?v=WR5PG2IMFmg&t=89",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=easy&t=174.65",
       "noteIndices": [
@@ -14920,7 +14920,7 @@
       "removedNotes": 4,
       "addedNotes": 2,
       "sourceCategory": "good",
-      "fidelity": "配置素材を参考にした区間を、曲の強い発音・応答・句尾の間に合わせて再編集。原作の正確な採譜ではない。旧適用はpreRhythmContrastAppliedNotes。",
+      "fidelity": "以前の素材を参照した区間を、今回の実音・4置き場・下位包含に合わせて再設計。元の翻案そのものと現在の区間は同一ではない。履歴はpreHierarchyAppliedNotes。",
       "sourceUrl": "https://www.youtube.com/watch?v=WR5PG2IMFmg&t=24",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=easy&t=101.36",
       "noteIndices": [
@@ -15045,7 +15045,7 @@
       "removedNotes": 11,
       "addedNotes": 12,
       "sourceCategory": "conditional",
-      "fidelity": "配置素材を参考にした区間を、曲の強い発音・応答・句尾の間に合わせて再編集。原作の正確な採譜ではない。旧適用はpreRhythmContrastAppliedNotes。",
+      "fidelity": "以前の素材を参照した区間を、今回の実音・4置き場・下位包含に合わせて再設計。元の翻案そのものと現在の区間は同一ではない。履歴はpreHierarchyAppliedNotes。",
       "sourceUrl": "https://www.youtube.com/watch?v=KQoUHhbs6rA&t=85",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=BenkyouRemaster&difficulty=hard&t=22.52",
       "noteIndices": [
@@ -15635,7 +15635,7 @@
       "removedNotes": 8,
       "addedNotes": 6,
       "sourceCategory": "conditional",
-      "fidelity": "配置素材を参考にした区間を、曲の強い発音・応答・句尾の間に合わせて再編集。原作の正確な採譜ではない。旧適用はpreRhythmContrastAppliedNotes。",
+      "fidelity": "以前の素材を参照した区間を、今回の実音・4置き場・下位包含に合わせて再設計。元の翻案そのものと現在の区間は同一ではない。履歴はpreHierarchyAppliedNotes。",
       "sourceUrl": "https://www.youtube.com/watch?v=KQoUHhbs6rA&t=23",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=normal&t=27.64",
       "noteIndices": [
@@ -16198,7 +16198,7 @@
       "removedNotes": 4,
       "addedNotes": 3,
       "sourceCategory": "good",
-      "fidelity": "配置素材を参考にした区間を、曲の強い発音・応答・句尾の間に合わせて再編集。原作の正確な採譜ではない。旧適用はpreRhythmContrastAppliedNotes。",
+      "fidelity": "以前の素材を参照した区間を、今回の実音・4置き場・下位包含に合わせて再設計。元の翻案そのものと現在の区間は同一ではない。履歴はpreHierarchyAppliedNotes。",
       "sourceUrl": "https://www.youtube.com/watch?v=WAgUzLuNO64&t=108",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=easy&t=32.79",
       "noteIndices": [
@@ -16730,7 +16730,7 @@
       "removedNotes": 8,
       "addedNotes": 4,
       "sourceCategory": "conditional",
-      "fidelity": "配置素材を参考にした区間を、曲の強い発音・応答・句尾の間に合わせて再編集。原作の正確な採譜ではない。旧適用はpreRhythmContrastAppliedNotes。",
+      "fidelity": "以前の素材を参照した区間を、今回の実音・4置き場・下位包含に合わせて再設計。元の翻案そのものと現在の区間は同一ではない。履歴はpreHierarchyAppliedNotes。",
       "sourceUrl": "https://www.youtube.com/watch?v=qWqfjnDhju0&t=65",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=ManicSonic&difficulty=normal&t=41.17",
       "noteIndices": [
@@ -17234,7 +17234,7 @@
       "removedNotes": 4,
       "addedNotes": 6,
       "sourceCategory": "good",
-      "fidelity": "配置素材を参考にした区間を、曲の強い発音・応答・句尾の間に合わせて再編集。原作の正確な採譜ではない。旧適用はpreRhythmContrastAppliedNotes。",
+      "fidelity": "以前の素材を参照した区間を、今回の実音・4置き場・下位包含に合わせて再設計。元の翻案そのものと現在の区間は同一ではない。履歴はpreHierarchyAppliedNotes。",
       "sourceUrl": "https://www.youtube.com/watch?v=qWqfjnDhju0&t=118",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=easy&t=60.90",
       "noteIndices": [
@@ -17461,7 +17461,7 @@
       "removedNotes": 4,
       "addedNotes": 5,
       "sourceCategory": "good",
-      "fidelity": "配置素材を参考にした区間を、曲の強い発音・応答・句尾の間に合わせて再編集。原作の正確な採譜ではない。旧適用はpreRhythmContrastAppliedNotes。",
+      "fidelity": "以前の素材を参照した区間を、今回の実音・4置き場・下位包含に合わせて再設計。元の翻案そのものと現在の区間は同一ではない。履歴はpreHierarchyAppliedNotes。",
       "sourceUrl": "https://www.youtube.com/watch?v=Y8dPnG2YCz0&t=82",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=BenkyouRemaster&difficulty=easy&t=28.52",
       "noteIndices": [
@@ -17654,7 +17654,7 @@
       "removedNotes": 13,
       "addedNotes": 11,
       "sourceCategory": "good",
-      "fidelity": "配置素材を参考にした区間を、曲の強い発音・応答・句尾の間に合わせて再編集。原作の正確な採譜ではない。旧適用はpreRhythmContrastAppliedNotes。",
+      "fidelity": "以前の素材を参照した区間を、今回の実音・4置き場・下位包含に合わせて再設計。元の翻案そのものと現在の区間は同一ではない。履歴はpreHierarchyAppliedNotes。",
       "sourceUrl": "https://www.youtube.com/watch?v=wd_d19bUZ0Q&t=58",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=hard&t=12.21",
       "noteIndices": [
@@ -18684,7 +18684,7 @@
       "removedNotes": 9,
       "addedNotes": 7,
       "sourceCategory": "good",
-      "fidelity": "配置素材を参考にした区間を、曲の強い発音・応答・句尾の間に合わせて再編集。原作の正確な採譜ではない。旧適用はpreRhythmContrastAppliedNotes。",
+      "fidelity": "以前の素材を参照した区間を、今回の実音・4置き場・下位包含に合わせて再設計。元の翻案そのものと現在の区間は同一ではない。履歴はpreHierarchyAppliedNotes。",
       "sourceUrl": "https://www.youtube.com/watch?v=Zlse-YrMing&t=42",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=BenkyouRemaster&difficulty=normal&t=38.12",
       "noteIndices": [
@@ -19044,7 +19044,7 @@
       "removedNotes": 8,
       "addedNotes": 7,
       "sourceCategory": "conditional",
-      "fidelity": "配置素材を参考にした区間を、曲の強い発音・応答・句尾の間に合わせて再編集。原作の正確な採譜ではない。旧適用はpreRhythmContrastAppliedNotes。",
+      "fidelity": "以前の素材を参照した区間を、今回の実音・4置き場・下位包含に合わせて再設計。元の翻案そのものと現在の区間は同一ではない。履歴はpreHierarchyAppliedNotes。",
       "sourceUrl": "https://www.youtube.com/watch?v=Zlse-YrMing&t=90",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=normal&t=110.65",
       "noteIndices": [
@@ -19382,7 +19382,7 @@
       "removedNotes": 9,
       "addedNotes": 5,
       "sourceCategory": "conditional",
-      "fidelity": "配置素材を参考にした区間を、曲の強い発音・応答・句尾の間に合わせて再編集。原作の正確な採譜ではない。旧適用はpreRhythmContrastAppliedNotes。",
+      "fidelity": "以前の素材を参照した区間を、今回の実音・4置き場・下位包含に合わせて再設計。元の翻案そのものと現在の区間は同一ではない。履歴はpreHierarchyAppliedNotes。",
       "sourceUrl": "https://www.youtube.com/watch?v=Zlse-YrMing&t=121",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=normal&t=53.36",
       "noteIndices": [
@@ -19797,7 +19797,7 @@
       "removedNotes": 12,
       "addedNotes": 11,
       "sourceCategory": "good",
-      "fidelity": "配置素材を参考にした区間を、曲の強い発音・応答・句尾の間に合わせて再編集。原作の正確な採譜ではない。旧適用はpreRhythmContrastAppliedNotes。",
+      "fidelity": "以前の素材を参照した区間を、今回の実音・4置き場・下位包含に合わせて再設計。元の翻案そのものと現在の区間は同一ではない。履歴はpreHierarchyAppliedNotes。",
       "sourceUrl": "https://www.youtube.com/watch?v=SwzLFbM6Neg&t=18",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=ManicSonic&difficulty=hard&t=101.00",
       "noteIndices": [
@@ -21995,7 +21995,7 @@
       "removedNotes": 8,
       "addedNotes": 8,
       "sourceCategory": "good",
-      "fidelity": "配置素材を参考にした区間を、曲の強い発音・応答・句尾の間に合わせて再編集。原作の正確な採譜ではない。旧適用はpreRhythmContrastAppliedNotes。",
+      "fidelity": "以前の素材を参照した区間を、今回の実音・4置き場・下位包含に合わせて再設計。元の翻案そのものと現在の区間は同一ではない。履歴はpreHierarchyAppliedNotes。",
       "sourceUrl": "https://www.youtube.com/watch?v=zWQfdCgE1bo&t=42",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=normal&t=79.07",
       "noteIndices": [
@@ -22543,7 +22543,7 @@
           "lengthMs": 0
         }
       ],
-      "fidelity": "配置素材を参考にした区間を、曲の強い発音・応答・句尾の間に合わせて再編集。原作の正確な採譜ではない。旧適用はpreRhythmContrastAppliedNotes。",
+      "fidelity": "以前の素材を参照した区間を、今回の実音・4置き場・下位包含に合わせて再設計。元の翻案そのものと現在の区間は同一ではない。履歴はpreHierarchyAppliedNotes。",
       "sourceUrl": "https://www.youtube.com/watch?v=qG20h1eSPQY&t=23",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=hard&t=68.90",
       "noteIndices": [
@@ -23280,7 +23280,7 @@
           "lengthMs": 0
         }
       ],
-      "fidelity": "配置素材を参考にした区間を、曲の強い発音・応答・句尾の間に合わせて再編集。原作の正確な採譜ではない。旧適用はpreRhythmContrastAppliedNotes。",
+      "fidelity": "以前の素材を参照した区間を、今回の実音・4置き場・下位包含に合わせて再設計。元の翻案そのものと現在の区間は同一ではない。履歴はpreHierarchyAppliedNotes。",
       "sourceUrl": "https://www.youtube.com/watch?v=qG20h1eSPQY&t=81",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=hard&t=86.90",
       "noteIndices": [
@@ -23996,7 +23996,7 @@
           "lengthMs": 0
         }
       ],
-      "fidelity": "配置素材を参考にした区間を、曲の強い発音・応答・句尾の間に合わせて再編集。原作の正確な採譜ではない。旧適用はpreRhythmContrastAppliedNotes。",
+      "fidelity": "以前の素材を参照した区間を、今回の実音・4置き場・下位包含に合わせて再設計。元の翻案そのものと現在の区間は同一ではない。履歴はpreHierarchyAppliedNotes。",
       "sourceUrl": "https://www.youtube.com/watch?v=9rj8fuMslwk&t=26",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=hard&t=48.21",
       "noteIndices": [
@@ -24666,7 +24666,7 @@
           "lengthMs": 0
         }
       ],
-      "fidelity": "配置素材を参考にした区間を、曲の強い発音・応答・句尾の間に合わせて再編集。原作の正確な採譜ではない。旧適用はpreRhythmContrastAppliedNotes。",
+      "fidelity": "以前の素材を参照した区間を、今回の実音・4置き場・下位包含に合わせて再設計。元の翻案そのものと現在の区間は同一ではない。履歴はpreHierarchyAppliedNotes。",
       "sourceUrl": "https://www.youtube.com/watch?v=9rj8fuMslwk&t=98",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=hard&t=103.07",
       "noteIndices": [
@@ -26957,7 +26957,7 @@
       "positionChangedNotes": 4,
       "spatialLayout": "低い左から高い右、後半を休む",
       "layoutAdaptation": "曲別の音はめと共通アクセント、Hardからの包含を優先して再構成。原作配置のそのままのコピーではない。",
-      "fidelity": "配置素材を参考にした区間を、曲の強い発音・応答・句尾の間に合わせて再編集。原作の正確な採譜ではない。旧適用はpreRhythmContrastAppliedNotes。",
+      "fidelity": "以前の素材を参照した区間を、今回の実音・4置き場・下位包含に合わせて再設計。元の翻案そのものと現在の区間は同一ではない。履歴はpreHierarchyAppliedNotes。",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=BenkyouRemaster&difficulty=hard&t=5.02",
       "noteIndices": [
         8,
@@ -27487,7 +27487,7 @@
       "positionChangedNotes": 7,
       "spatialLayout": "内側の交互上下から最後だけ外へ",
       "layoutAdaptation": "曲別の音はめと共通アクセント、Hardからの包含を優先して再構成。原作配置のそのままのコピーではない。",
-      "fidelity": "配置素材を参考にした区間を、曲の強い発音・応答・句尾の間に合わせて再編集。原作の正確な採譜ではない。旧適用はpreRhythmContrastAppliedNotes。",
+      "fidelity": "以前の素材を参照した区間を、今回の実音・4置き場・下位包含に合わせて再設計。元の翻案そのものと現在の区間は同一ではない。履歴はpreHierarchyAppliedNotes。",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=hard&t=21.53",
       "noteIndices": [
         68,
@@ -28551,7 +28551,7 @@
       "positionChangedNotes": 5,
       "spatialLayout": "右を挟む左の内外・上下応答",
       "layoutAdaptation": "曲別の音はめと共通アクセント、Hardからの包含を優先して再構成。原作配置のそのままのコピーではない。",
-      "fidelity": "配置素材を参考にした区間を、曲の強い発音・応答・句尾の間に合わせて再編集。原作の正確な採譜ではない。旧適用はpreRhythmContrastAppliedNotes。",
+      "fidelity": "以前の素材を参照した区間を、今回の実音・4置き場・下位包含に合わせて再設計。元の翻案そのものと現在の区間は同一ではない。履歴はpreHierarchyAppliedNotes。",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=hard&t=65.86",
       "noteIndices": [
         224,
@@ -29386,7 +29386,7 @@
       "positionChangedNotes": 4,
       "spatialLayout": "左の上下・横から両手着地",
       "layoutAdaptation": "曲別の音はめと共通アクセント、Hardからの包含を優先して再構成。原作配置のそのままのコピーではない。",
-      "fidelity": "配置素材を参考にした区間を、曲の強い発音・応答・句尾の間に合わせて再編集。原作の正確な採譜ではない。旧適用はpreRhythmContrastAppliedNotes。",
+      "fidelity": "以前の素材を参照した区間を、今回の実音・4置き場・下位包含に合わせて再設計。元の翻案そのものと現在の区間は同一ではない。履歴はpreHierarchyAppliedNotes。",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=hard&t=33.29",
       "noteIndices": [
         111,
@@ -29951,7 +29951,7 @@
       "positionChangedNotes": 4,
       "spatialLayout": "上の受け渡しから左の下・外へ",
       "layoutAdaptation": "曲別の音はめと共通アクセント、Hardからの包含を優先して再構成。原作配置のそのままのコピーではない。",
-      "fidelity": "配置素材を参考にした区間を、曲の強い発音・応答・句尾の間に合わせて再編集。原作の正確な採譜ではない。旧適用はpreRhythmContrastAppliedNotes。",
+      "fidelity": "以前の素材を参照した区間を、今回の実音・4置き場・下位包含に合わせて再設計。元の翻案そのものと現在の区間は同一ではない。履歴はpreHierarchyAppliedNotes。",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=hard&t=19.57",
       "noteIndices": [
         67,
@@ -30363,8 +30363,8 @@
       "sourcePhaseOffsetBeats": 1,
       "positionChangedNotes": 4,
       "spatialLayout": "単発から両手へ返して休む",
-      "layoutAdaptation": "対応する実音の担当手へ、素材固有の置き場だけを移植。休符や中間の発音は本曲を保持。下位は同じ位置から間引く。",
-      "fidelity": "配置素材を参考にした区間を、曲の強い発音・応答・句尾の間に合わせて再編集。原作の正確な採譜ではない。旧適用はpreRhythmContrastAppliedNotes。",
+      "layoutAdaptation": "曲別の音はめと共通アクセント、Hardからの包含を優先して再構成。原作配置のそのままのコピーではない。",
+      "fidelity": "以前の素材を参照した区間を、今回の実音・4置き場・下位包含に合わせて再設計。元の翻案そのものと現在の区間は同一ではない。履歴はpreHierarchyAppliedNotes。",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=ManicSonic&difficulty=hard&t=48.33",
       "noteIndices": [
         200,
@@ -30729,7 +30729,174 @@
           "lengthMs": 0
         }
       ],
-      "rhythmContrastEdited": true
+      "rhythmContrastEdited": true,
+      "preHierarchyAppliedNotes": [
+        {
+          "beat": 148.0,
+          "time": 49333.3333,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 149.0,
+          "time": 49666.6667,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 150.0,
+          "time": 50000.0,
+          "x": 1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 150.0,
+          "time": 50000.0,
+          "x": -0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 150.5,
+          "time": 50166.6667,
+          "x": 1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 151.0,
+          "time": 50333.3333,
+          "x": -0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 151.5,
+          "time": 50500.0,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "direction",
+          "color": "red",
+          "direction": "left",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 152.0,
+          "time": 50666.6667,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 152.5,
+          "time": 50833.3333,
+          "x": 0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 153.0,
+          "time": 51000.0,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 153.5,
+          "time": 51166.6667,
+          "x": 1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 154.0,
+          "time": 51333.3333,
+          "x": 1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 154.0,
+          "time": 51333.3333,
+          "x": -0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 154.5,
+          "time": 51500.0,
+          "x": 1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 155.0,
+          "time": 51666.6667,
+          "x": -0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ]
     },
     {
       "patternId": "origins-normal-2",
@@ -30750,8 +30917,8 @@
       "sourcePhaseOffsetBeats": 2,
       "positionChangedNotes": 2,
       "spatialLayout": "低い左右応答から一拍空けて左外へ",
-      "layoutAdaptation": "対応する実音の担当手へ、素材固有の置き場だけを移植。休符や中間の発音は本曲を保持。下位は同じ位置から間引く。",
-      "fidelity": "配置素材を参考にした区間を、曲の強い発音・応答・句尾の間に合わせて再編集。原作の正確な採譜ではない。旧適用はpreRhythmContrastAppliedNotes。",
+      "layoutAdaptation": "曲別の音はめと共通アクセント、Hardからの包含を優先して再構成。原作配置のそのままのコピーではない。",
+      "fidelity": "以前の素材を参照した区間を、今回の実音・4置き場・下位包含に合わせて再設計。元の翻案そのものと現在の区間は同一ではない。履歴はpreHierarchyAppliedNotes。",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=ManicSonic&difficulty=hard&t=1.67",
       "noteIndices": [
         4,
@@ -30884,7 +31051,42 @@
           "lengthMs": 0
         }
       ],
-      "rhythmContrastEdited": true
+      "rhythmContrastEdited": true,
+      "preHierarchyAppliedNotes": [
+        {
+          "beat": 10.0,
+          "time": 3333.3333,
+          "x": -0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 12.0,
+          "time": 4000.0,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 14.0,
+          "time": 4666.6667,
+          "x": -0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ]
     },
     {
       "patternId": "crystallized-hard-1",
@@ -30905,8 +31107,8 @@
       "sourcePhaseOffsetBeats": 0.5,
       "positionChangedNotes": 6,
       "spatialLayout": "左の外内と右の上下を別の動線に",
-      "layoutAdaptation": "対応する実音の担当手へ、素材固有の置き場だけを移植。休符や中間の発音は本曲を保持。下位は同じ位置から間引く。",
-      "fidelity": "配置素材を参考にした区間を、曲の強い発音・応答・句尾の間に合わせて再編集。原作の正確な採譜ではない。旧適用はpreRhythmContrastAppliedNotes。",
+      "layoutAdaptation": "曲別の音はめと共通アクセント、Hardからの包含を優先して再構成。原作配置のそのままのコピーではない。",
+      "fidelity": "以前の素材を参照した区間を、今回の実音・4置き場・下位包含に合わせて再設計。元の翻案そのものと現在の区間は同一ではない。履歴はpreHierarchyAppliedNotes。",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=ManicSonic&difficulty=hard&t=31.00",
       "noteIndices": [
         120,
@@ -31190,7 +31392,130 @@
           "lengthMs": 0
         }
       ],
-      "rhythmContrastEdited": true
+      "rhythmContrastEdited": true,
+      "preHierarchyAppliedNotes": [
+        {
+          "beat": 96.0,
+          "time": 32000.0,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 97.0,
+          "time": 32333.3333,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 98.0,
+          "time": 32666.6667,
+          "x": 0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 99.0,
+          "time": 33000.0,
+          "x": -1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 100.0,
+          "time": 33333.3333,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 100.5,
+          "time": 33500.0,
+          "x": -1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 101.0,
+          "time": 33666.6667,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 102.0,
+          "time": 34000.0,
+          "x": -0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 102.5,
+          "time": 34166.6667,
+          "x": 0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 103.0,
+          "time": 34333.3333,
+          "x": -1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 103.5,
+          "time": 34500.0,
+          "x": 1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ]
     },
     {
       "patternId": "burning-normal-1",
@@ -31211,8 +31536,8 @@
       "sourcePhaseOffsetBeats": 0,
       "positionChangedNotes": 5,
       "spatialLayout": "右の返しから間を残して左外へ",
-      "layoutAdaptation": "対応する実音の担当手へ、素材固有の置き場だけを移植。休符や中間の発音は本曲を保持。下位は同じ位置から間引く。",
-      "fidelity": "映像に基づく動きの翻案。原作の正確な採譜ではない。",
+      "layoutAdaptation": "曲別の音はめと共通アクセント、Hardからの包含を優先して再構成。原作配置のそのままのコピーではない。",
+      "fidelity": "以前の素材を参照した区間を、今回の実音・4置き場・下位包含に合わせて再設計。元の翻案そのものと現在の区間は同一ではない。履歴はpreHierarchyAppliedNotes。",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=hard&t=23.00",
       "noteIndices": [
         73,
@@ -31374,7 +31699,152 @@
           "lengthMs": 0
         }
       ],
-      "addedNotes": 13
+      "addedNotes": 13,
+      "preHierarchyAppliedNotes": [
+        {
+          "beat": 56.0,
+          "time": 24000.0,
+          "x": -0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 57.0,
+          "time": 24428.5714,
+          "x": 1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 57.5,
+          "time": 24642.8571,
+          "x": -0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 58.0,
+          "time": 24857.1429,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 59.0,
+          "time": 25285.7143,
+          "x": -1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 59.5,
+          "time": 25500.0,
+          "x": 1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 60.0,
+          "time": 25714.2857,
+          "x": -0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 61.0,
+          "time": 26142.8571,
+          "x": 1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 61.5,
+          "time": 26357.1429,
+          "x": -0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 62.0,
+          "time": 26571.4286,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 62.5,
+          "time": 26785.7143,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 63.0,
+          "time": 27000.0,
+          "x": 1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 63.5,
+          "time": 27214.2857,
+          "x": -0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ]
     },
     {
       "patternId": "burning-normal-2",
@@ -31395,8 +31865,8 @@
       "sourcePhaseOffsetBeats": 0,
       "positionChangedNotes": 3,
       "spatialLayout": "右の上下二打から低い両手へ合流",
-      "layoutAdaptation": "対応する実音の担当手へ、素材固有の置き場だけを移植。休符や中間の発音は本曲を保持。下位は同じ位置から間引く。",
-      "fidelity": "配置素材を参考にした区間を、曲の強い発音・応答・句尾の間に合わせて再編集。原作の正確な採譜ではない。旧適用はpreRhythmContrastAppliedNotes。",
+      "layoutAdaptation": "曲別の音はめと共通アクセント、Hardからの包含を優先して再構成。原作配置のそのままのコピーではない。",
+      "fidelity": "以前の素材を参照した区間を、今回の実音・4置き場・下位包含に合わせて再設計。元の翻案そのものと現在の区間は同一ではない。履歴はpreHierarchyAppliedNotes。",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=hard&t=29.86",
       "noteIndices": [
         98,
@@ -31737,7 +32207,952 @@
           "lengthMs": 0
         }
       ],
-      "rhythmContrastEdited": true
+      "rhythmContrastEdited": true,
+      "preHierarchyAppliedNotes": [
+        {
+          "beat": 72.0,
+          "time": 30857.1429,
+          "x": -0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 73.0,
+          "time": 31285.7143,
+          "x": -0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 74.0,
+          "time": 31714.2857,
+          "x": -0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 74.5,
+          "time": 31928.5714,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 75.0,
+          "time": 32142.8571,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 75.0,
+          "time": 32142.8571,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 76.0,
+          "time": 32571.4286,
+          "x": -0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 77.0,
+          "time": 33000.0,
+          "x": 0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 77.5,
+          "time": 33214.2857,
+          "x": -1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 78.0,
+          "time": 33428.5714,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 79.0,
+          "time": 33857.1429,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 79.0,
+          "time": 33857.1429,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 79.5,
+          "time": 34071.4286,
+          "x": 1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ]
+    },
+    {
+      "patternId": "178-hard-1",
+      "songId": "escapade",
+      "songTitle": "escapade",
+      "difficulty": "hard",
+      "startBeat": 52,
+      "endBeat": 60,
+      "startBar": 14,
+      "barCount": 2,
+      "startSeconds": 16.4411,
+      "endSeconds": 18.9674,
+      "targetBpm": 190,
+      "referenceBpm": 200.0,
+      "bpmDifferencePercent": -5.0,
+      "sourceUrl": "https://www.youtube.com/watch?v=E4klCV1mjiM&t=25",
+      "integrationMode": "hierarchy-reference",
+      "sourcePhaseOffsetBeats": 2,
+      "positionChangedNotes": 7,
+      "spatialLayout": "左の短い上下と右の上下の6打",
+      "layoutAdaptation": "対応する実音の担当手へ、素材固有の置き場だけを移植。休符や中間の発音は本曲を保持。下位は同じ位置から間引く。",
+      "fidelity": "映像に基づく動きの翻案。原作の正確な採譜ではない。",
+      "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=escapade&difficulty=hard&t=15.44",
+      "noteIndices": [
+        61,
+        62,
+        63,
+        64,
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        71,
+        72
+      ],
+      "appliedNotes": [
+        {
+          "beat": 52.0,
+          "time": 16441.0526,
+          "x": 0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 52.5,
+          "time": 16598.9474,
+          "x": -1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 53.5,
+          "time": 16914.7368,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 54.0,
+          "time": 17072.6316,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 54.5,
+          "time": 17230.5263,
+          "x": -1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 55.5,
+          "time": 17546.3158,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 56.0,
+          "time": 17704.2105,
+          "x": 0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 56.5,
+          "time": 17862.1053,
+          "x": -1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 57.0,
+          "time": 18020.0,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 58.0,
+          "time": 18335.7895,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 58.5,
+          "time": 18493.6842,
+          "x": -1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 59.5,
+          "time": 18809.4737,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ],
+      "addedNotes": 12
+    },
+    {
+      "patternId": "178-hard-2",
+      "songId": "escapade",
+      "songTitle": "escapade",
+      "difficulty": "hard",
+      "startBeat": 116,
+      "endBeat": 124,
+      "startBar": 30,
+      "barCount": 2,
+      "startSeconds": 36.6516,
+      "endSeconds": 39.1779,
+      "targetBpm": 190,
+      "referenceBpm": 200.0,
+      "bpmDifferencePercent": -5.0,
+      "sourceUrl": "https://www.youtube.com/watch?v=E4klCV1mjiM&t=71",
+      "integrationMode": "hierarchy-reference",
+      "sourcePhaseOffsetBeats": 2,
+      "positionChangedNotes": 7,
+      "spatialLayout": "右のコンパクトな二打から句尾へ渡す",
+      "layoutAdaptation": "対応する実音の担当手へ、素材固有の置き場だけを移植。休符や中間の発音は本曲を保持。下位は同じ位置から間引く。",
+      "fidelity": "映像に基づく動きの翻案。原作の正確な採譜ではない。",
+      "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=escapade&difficulty=hard&t=35.65",
+      "noteIndices": [
+        159,
+        160,
+        161,
+        162,
+        163,
+        164,
+        165,
+        166,
+        167,
+        168,
+        169,
+        170
+      ],
+      "appliedNotes": [
+        {
+          "beat": 116.0,
+          "time": 36651.5789,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 116.5,
+          "time": 36809.4737,
+          "x": -0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 118.0,
+          "time": 37283.1579,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 118.5,
+          "time": 37441.0526,
+          "x": -0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 119.0,
+          "time": 37598.9474,
+          "x": 0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 119.5,
+          "time": 37756.8421,
+          "x": -0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 120.0,
+          "time": 37914.7368,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 120.5,
+          "time": 38072.6316,
+          "x": -0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 121.0,
+          "time": 38230.5263,
+          "x": 0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 122.0,
+          "time": 38546.3158,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 122.5,
+          "time": 38704.2105,
+          "x": -0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 123.5,
+          "time": 39020.0,
+          "x": -0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ],
+      "addedNotes": 12
+    },
+    {
+      "patternId": "178-hard-3",
+      "songId": "ManicSonic",
+      "songTitle": "Manic Sonic",
+      "difficulty": "hard",
+      "startBeat": 264,
+      "endBeat": 272,
+      "startBar": 67,
+      "barCount": 2,
+      "startSeconds": 89.1667,
+      "endSeconds": 91.8333,
+      "targetBpm": 180,
+      "referenceBpm": 200.0,
+      "bpmDifferencePercent": -10.0,
+      "sourceUrl": "https://www.youtube.com/watch?v=E4klCV1mjiM&t=130",
+      "integrationMode": "hierarchy-reference",
+      "sourcePhaseOffsetBeats": 2,
+      "positionChangedNotes": 5,
+      "spatialLayout": "右のコンパクトな受けから上段へ",
+      "layoutAdaptation": "対応する実音の担当手へ、素材固有の置き場だけを移植。休符や中間の発音は本曲を保持。下位は同じ位置から間引く。",
+      "fidelity": "映像に基づく動きの翻案。原作の正確な採譜ではない。",
+      "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=ManicSonic&difficulty=hard&t=88.17",
+      "noteIndices": [
+        342,
+        343,
+        344,
+        345,
+        346,
+        347,
+        348,
+        349,
+        350,
+        351,
+        352,
+        353,
+        354
+      ],
+      "appliedNotes": [
+        {
+          "beat": 264.0,
+          "time": 89166.6667,
+          "x": 0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 265.0,
+          "time": 89500.0,
+          "x": -0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 265.5,
+          "time": 89666.6667,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 266.0,
+          "time": 89833.3333,
+          "x": -1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 266.5,
+          "time": 90000.0,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 267.0,
+          "time": 90166.6667,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 268.0,
+          "time": 90500.0,
+          "x": 0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 269.0,
+          "time": 90833.3333,
+          "x": -0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 269.5,
+          "time": 91000.0,
+          "x": 0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 270.0,
+          "time": 91166.6667,
+          "x": -1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 270.5,
+          "time": 91333.3333,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 271.0,
+          "time": 91500.0,
+          "x": -0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 271.5,
+          "time": 91666.6667,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ],
+      "addedNotes": 13
+    },
+    {
+      "patternId": "bethere-hard-2",
+      "songId": "logic",
+      "songTitle": "logic!!!",
+      "difficulty": "hard",
+      "startBeat": 304,
+      "endBeat": 312,
+      "startBar": 77,
+      "barCount": 2,
+      "startSeconds": 136.153,
+      "endSeconds": 140.153,
+      "targetBpm": 120,
+      "referenceBpm": 126.0,
+      "bpmDifferencePercent": -4.762,
+      "sourceUrl": "https://www.youtube.com/watch?v=zbTpKSyXXBw&t=66",
+      "integrationMode": "hierarchy-reference",
+      "sourcePhaseOffsetBeats": 2.5,
+      "positionChangedNotes": 6,
+      "spatialLayout": "右の横返しと左の上下応答",
+      "layoutAdaptation": "対応する実音の担当手へ、素材固有の置き場だけを移植。休符や中間の発音は本曲を保持。下位は同じ位置から間引く。",
+      "fidelity": "映像に基づく動きの翻案。原作の正確な採譜ではない。",
+      "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=hard&t=135.15",
+      "noteIndices": [
+        398,
+        399,
+        400,
+        401,
+        402,
+        403,
+        404,
+        405,
+        406,
+        407
+      ],
+      "appliedNotes": [
+        {
+          "beat": 304.0,
+          "time": 136153.0,
+          "x": -0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 304.5,
+          "time": 136403.0,
+          "x": 1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 305.5,
+          "time": 136903.0,
+          "x": -1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 307.0,
+          "time": 137653.0,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 307.5,
+          "time": 137903.0,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 308.0,
+          "time": 138153.0,
+          "x": -1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 308.5,
+          "time": 138403.0,
+          "x": 1.9,
+          "y": 0.3,
+          "type": "direction",
+          "color": "red",
+          "direction": "upright",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 309.5,
+          "time": 138903.0,
+          "x": -1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 310.5,
+          "time": 139403.0,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 311.5,
+          "time": 139903.0,
+          "x": -0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ],
+      "addedNotes": 10
+    },
+    {
+      "patternId": "bethere-hard-3",
+      "songId": "logic",
+      "songTitle": "logic!!!",
+      "difficulty": "hard",
+      "startBeat": 248,
+      "endBeat": 256,
+      "startBar": 63,
+      "barCount": 2,
+      "startSeconds": 108.153,
+      "endSeconds": 112.153,
+      "targetBpm": 120,
+      "referenceBpm": 126.0,
+      "bpmDifferencePercent": -4.762,
+      "sourceUrl": "https://www.youtube.com/watch?v=zbTpKSyXXBw&t=114",
+      "integrationMode": "hierarchy-reference",
+      "sourcePhaseOffsetBeats": 0.5,
+      "positionChangedNotes": 4,
+      "spatialLayout": "一組の両手と前後の休符",
+      "layoutAdaptation": "対応する実音の担当手へ、素材固有の置き場だけを移植。休符や中間の発音は本曲を保持。下位は同じ位置から間引く。",
+      "fidelity": "映像に基づく動きの翻案。原作の正確な採譜ではない。",
+      "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=hard&t=107.15",
+      "noteIndices": [
+        327,
+        328,
+        329,
+        330,
+        331,
+        332,
+        333,
+        334
+      ],
+      "appliedNotes": [
+        {
+          "beat": 248.5,
+          "time": 108403.0,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 250.5,
+          "time": 109403.0,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 250.5,
+          "time": 109403.0,
+          "x": -0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 252.0,
+          "time": 110153.0,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 252.5,
+          "time": 110403.0,
+          "x": -0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 254.5,
+          "time": 111403.0,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 254.5,
+          "time": 111403.0,
+          "x": -0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 255.5,
+          "time": 111903.0,
+          "x": -0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ],
+      "addedNotes": 8
     }
   ],
   "inputChartHashes": {
@@ -31796,15 +33211,23 @@
       "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
       "candidateCount": 0,
       "rejections": {}
+    },
+    {
+      "patternId": "bethere-hard-1",
+      "reason": "打点の一致候補はあるが、前後の移動・カット経路・下位包含を同時に満たさない。小節素材として保存。",
+      "candidateCount": 1,
+      "rejections": {
+        "movementOrSimultaneous": 1
+      }
     }
   ],
   "hierarchyInputHashes": {
-    "Assets/StreamingAssets/Songs/Aobasou/chart_hard.json": "a3ce263f4c01005aa80b31e4a6f9592e1853771572a16c06d8b1b1bb08e94661",
-    "Assets/StreamingAssets/Songs/BenkyouRemaster/chart_hard.json": "d97f641352f6ffed724befe3c6b46dd2a2166ccb8d21c45401835c9d58cbc4bc",
-    "Assets/StreamingAssets/Songs/escapade/chart_hard.json": "0069c2a0351619f61bd0bb644c6d800be07922c03d397896947af3e4aad90651",
-    "Assets/StreamingAssets/Songs/logic/chart_hard.json": "28a2af7a8df7cfc5fa11e0f98763042123b168b41a49bcc70d60173e31195ba1",
-    "Assets/StreamingAssets/Songs/ManicSonic/chart_hard.json": "514c4beec036091e39df23fbe5de18cdac36e161fe750b5a4a1cd128332b8d33"
+    "Assets/StreamingAssets/Songs/Aobasou/chart_hard.json": "67f3326b9905f7fae9be832237f36c8089fac884dcec43cab24b5f8dca81489c",
+    "Assets/StreamingAssets/Songs/BenkyouRemaster/chart_hard.json": "00d2da2d15e20fbd836035035af73f4af6e48bb27fcfbb417be54e93c5844509",
+    "Assets/StreamingAssets/Songs/escapade/chart_hard.json": "bc114e7747894b73801a58c3539daf7a47b69521808d289428faae744eca12ef",
+    "Assets/StreamingAssets/Songs/logic/chart_hard.json": "e1816583bc3314bdb711026a016144a228da11acbde6c791e00c4956c594b207",
+    "Assets/StreamingAssets/Songs/ManicSonic/chart_hard.json": "cde21c72a7cb22ad4fd7f88982204ee61a56dbb574b2868b23533d82e4d81db0"
   },
-  "hierarchyBatch": "rhythm-contrast-20261015",
+  "hierarchyBatch": "hourly-20261015-1547",
   "rhythmContrastDesign": "../FiveSongs20261014/rhythm-contrast-design.json"
 }

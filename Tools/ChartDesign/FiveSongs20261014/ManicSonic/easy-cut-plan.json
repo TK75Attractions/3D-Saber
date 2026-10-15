@@ -934,8 +934,8 @@
         86333.3333
       ],
       "directions": [
-        "up",
-        "down"
+        "left",
+        "right"
       ]
     },
     {
@@ -955,7 +955,7 @@
         87500.0
       ],
       "directions": [
-        "up"
+        "left"
       ]
     },
     {
@@ -975,7 +975,7 @@
         89166.6667
       ],
       "directions": [
-        "down"
+        "left"
       ]
     },
     {
@@ -995,7 +995,7 @@
         91000.0
       ],
       "directions": [
-        "up"
+        "right"
       ]
     },
     {

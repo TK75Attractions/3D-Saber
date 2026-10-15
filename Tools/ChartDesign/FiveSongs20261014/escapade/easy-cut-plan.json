@@ -159,7 +159,7 @@
         16441.0526
       ],
       "directions": [
-        "right"
+        "up"
       ]
     },
     {
@@ -169,7 +169,7 @@
         18335.7895
       ],
       "directions": [
-        "left"
+        "downright"
       ]
     },
     {
@@ -339,7 +339,7 @@
         35704.2105
       ],
       "directions": [
-        "down"
+        "right"
       ]
     },
     {
@@ -369,7 +369,7 @@
         38704.2105
       ],
       "directions": [
-        "down"
+        "left"
       ]
     },
     {
@@ -379,7 +379,7 @@
         40598.9474
       ],
       "directions": [
-        "up"
+        "right"
       ]
     },
     {
@@ -399,7 +399,7 @@
         42493.6842
       ],
       "directions": [
-        "down"
+        "left"
       ]
     },
     {

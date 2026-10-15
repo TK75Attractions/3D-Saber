@@ -187,7 +187,7 @@
         13441.0526
       ],
       "directions": [
-        "down"
+        "right"
       ]
     },
     {
@@ -208,8 +208,8 @@
         15020.0
       ],
       "directions": [
-        "down",
-        "up"
+        "left",
+        "right"
       ]
     },
     {
@@ -219,7 +219,7 @@
         15809.4737
       ],
       "directions": [
-        "down"
+        "left"
       ]
     },
     {
@@ -229,7 +229,7 @@
         16283.1579
       ],
       "directions": [
-        "downright"
+        "right"
       ]
     },
     {
@@ -249,7 +249,7 @@
         17230.5263
       ],
       "directions": [
-        "left"
+        "up"
       ]
     },
     {
@@ -269,7 +269,7 @@
         19125.2632
       ],
       "directions": [
-        "left"
+        "down"
       ]
     },
     {
@@ -279,7 +279,7 @@
         19283.1579
       ],
       "directions": [
-        "left"
+        "right"
       ]
     },
     {
@@ -469,7 +469,7 @@
         29862.1053
       ],
       "directions": [
-        "down"
+        "left"
       ]
     },
     {
@@ -479,7 +479,7 @@
         30967.3684
       ],
       "directions": [
-        "down"
+        "right"
       ]
     },
     {
@@ -499,7 +499,7 @@
         32862.1053
       ],
       "directions": [
-        "left"
+        "right"
       ]
     },
     {
@@ -509,7 +509,7 @@
         33651.5789
       ],
       "directions": [
-        "right"
+        "left"
       ]
     },
     {
@@ -529,7 +529,7 @@
         34598.9474
       ],
       "directions": [
-        "left"
+        "right"
       ]
     },
     {
@@ -539,7 +539,7 @@
         35388.4211
       ],
       "directions": [
-        "left"
+        "up"
       ]
     },
     {
@@ -549,7 +549,7 @@
         35704.2105
       ],
       "directions": [
-        "up"
+        "right"
       ]
     },
     {
@@ -569,7 +569,7 @@
         36809.4737
       ],
       "directions": [
-        "up"
+        "right"
       ]
     },
     {
@@ -589,7 +589,7 @@
         37756.8421
       ],
       "directions": [
-        "downright"
+        "down"
       ]
     },
     {

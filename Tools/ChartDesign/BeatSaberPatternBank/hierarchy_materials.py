@@ -3,7 +3,7 @@ import argparse,copy,collections,math,sys
 from pathlib import Path
 HERE=Path(__file__).parent
 sys.path.insert(0,str(HERE.parent/'FiveSongs20261014'))
-from hierarchy_rework import read,save,Music,FORM,reduced,finalize,path_for
+from hierarchy_rework import read,save,Music,FORM,reduced,path_for,section
 from integrate_patterns import internal
 from scope_guard import authorize_specs
 
@@ -17,6 +17,18 @@ def movement_valid(ns,m):
  groups=collections.defaultdict(list)
  for n in ns:groups[n['time']].append(n)
  return all(len(g)<2 or math.dist((g[0]['x'],g[0]['y']),(g[1]['x'],g[1]['y']))>1.5 for g in groups.values())
+
+def finalize_preserved(ns,m,diff,metadata):
+ """定時の位置移植では打点と方向を再選択せず、そのまま通る経路だけ採用する。"""
+ assert len(ns)==len(metadata['notes']),('定時更新による打点増減',m.spec['id'],diff)
+ for n,old in zip(ns,metadata['notes']):
+  assert all(n[k]==old[k] for k in ('time','beat','color','count','lengthMs')),('確定打点の変更',m.spec['id'],diff)
+  n['type']=old['type'];n['direction']=old['direction'];n['_arrow']=old['direction']!='none';n['_forced']=old['direction'] if n['_arrow'] else None
+ plan,failure=path_for(ns,m)
+ assert failure is None,('既存方向での経路不成立',m.spec['id'],diff,failure)
+ chart=copy.deepcopy(metadata);chart['notes']=[{k:v for k,v in n.items() if not k.startswith('_')} for n in ns]
+ ev=[dict(index=i,beat=n['beat'],hand='red' if n['_hand']==0 else 'blue',role=FORM[m.spec['id']][section(m,n['beat'])][4],phrase=int(n['beat']//16),sharedAccent=n.get('_key',False),**m.ev(n['beat'])) for i,n in enumerate(ns)]
+ return chart,dict(notes=plan),ev
 
 def main():
  p=argparse.ArgumentParser();p.add_argument('--repo',type=Path,required=True);p.add_argument('--features',type=Path,required=True);args=p.parse_args()
@@ -65,7 +77,11 @@ def main():
    if failure is not None:rejections['cutPath']+=1;continue
    # 下位の共通アクセントを失わず、同じ手・位置で間引けることも先に検査。
    keys=[a['beat'] for a in history['songs'][sid]['sharedAccents']]
-   try:normal=reduced(ns,state['m'],'normal',keys);easy=reduced(normal,state['m'],'easy',keys)
+   try:
+    normal=reduced(ns,state['m'],'normal',keys);easy=reduced(normal,state['m'],'easy',keys)
+    for trial_diff,trial_ns in [('hard',ns),('normal',normal),('easy',easy)]:
+     metadata=read(repo/'Assets/StreamingAssets/Songs'/sid/f'chart_{trial_diff}.json')
+     finalize_preserved(copy.deepcopy(trial_ns),state['m'],trial_diff,metadata)
    except AssertionError:rejections['lowerHierarchy']+=1;continue
    accepted=(sid,base,phase,ns,changed,matches);break
   if accepted is None:
@@ -78,7 +94,7 @@ def main():
   if not state['changed']:continue
   m=state['m'];hard=state['ns'];keys=[a['beat'] for a in history['songs'][sid]['sharedAccents']];normal=reduced(hard,m,'normal',keys);easy=reduced(normal,m,'easy',keys)
   for diff,ns in [('hard',hard),('normal',normal),('easy',easy)]:
-   target=repo/'Assets/StreamingAssets/Songs'/sid;chart,plan,ev=finalize(ns,m,diff,read(target/f'chart_{diff}.json'),hard if diff=='normal' else None);save(target/f'chart_{diff}.json',chart)
+   target=repo/'Assets/StreamingAssets/Songs'/sid;chart,plan,ev=finalize_preserved(ns,m,diff,read(target/f'chart_{diff}.json'));save(target/f'chart_{diff}.json',chart)
    if diff=='normal':save(target/'chart.json',chart)
    save(design/sid/f'{diff}-cut-plan.json',plan);save(design/sid/f'{diff}-evidence.json',ev)
  # 改修前の適用は履歴へ。現在の索引は必ず現在の実ノーツへ対応させる。
