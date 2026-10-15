@@ -75,7 +75,7 @@ def main():
         sources = [JAVA / (name + ".kt") for name in ("RotationHelper", "NativeCore", "Protocol", "MirrorSettings",
                    "DeviceHealth", "EventRecovery", "SendingNetworkPolicy", "CameraPolicy",
                    "DiscoveryPolicy", "PcReplyWatch", "ThresholdSettings", "AnalysisExecutor",
-                   "LatencyLog", "MetricsDatagram")]
+                   "LatencyLog", "MetricsDatagram", "LaunchSettings")]
         # CameraPolicy の定数は Gradle と同じ CameraX AAR から読む。
         camera_aar = list((cache / "androidx.camera/camera-core/1.6.2").glob("*/camera-core-1.6.2.aar"))
         if len(camera_aar) != 1:

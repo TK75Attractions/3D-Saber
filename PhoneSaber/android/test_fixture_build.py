@@ -11,7 +11,7 @@ class FixtureBuildTest(unittest.TestCase):
         android = Path(__file__).resolve().parent
         # Kotlin daemon の外部キャッシュを使わず、サンドボックス内でも同じ検証を行う。
         result = subprocess.run(
-            [str(android / "gradlew"), "-Pkotlin.compiler.execution.strategy=in-process",
+            [str(android / "gradlew"), "--no-daemon", "-Pkotlin.compiler.execution.strategy=in-process",
              "--console=plain", ":app:lintDebug", ":app:assembleDebugAndroidTest"],
             cwd=android, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
             check=False,

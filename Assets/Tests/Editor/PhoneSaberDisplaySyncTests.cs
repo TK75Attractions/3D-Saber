@@ -25,7 +25,11 @@ public class PhoneSaberDisplaySyncTests
         {
             Assert.AreEqual(pair[1], PhoneSaberFrameCapSettings.TargetFrameRateToApply(pair[0], hz, -1));
             Assert.AreEqual(-1, PhoneSaberFrameCapSettings.TargetFrameRateToApply(pair[0], hz, pair[1]));
-            Assert.AreEqual(pair[1], PhoneSaberFrameCapSettings.TargetFrameRateToApply(pair[0], hz, 30));
+            Assert.AreEqual(pair[1], PhoneSaberFrameCapSettings.TargetFrameRateToApply(pair[0], hz, 0));
+            Assert.AreEqual(pair[1], PhoneSaberFrameCapSettings.TargetFrameRateToApply(pair[0], hz, pair[1] + 1));
+            // ゲームが自分で低くした値（メニューの 30 fps など）は上げない。
+            Assert.AreEqual(-1, PhoneSaberFrameCapSettings.TargetFrameRateToApply(pair[0], hz, 30));
+            Assert.AreEqual(-1, PhoneSaberFrameCapSettings.TargetFrameRateToApply(pair[0], hz, pair[1] - 1));
         }
     }
 
@@ -37,11 +41,14 @@ public class PhoneSaberDisplaySyncTests
         PlayerPrefs.DeleteKey(a); PlayerPrefs.DeleteKey(b); PlayerPrefs.DeleteKey(sync);
         try
         {
+            // 未設定の台は「画面の2倍」（上限なしの約1100 fps で Mac が熱くなるため）。
+            Assert.AreEqual(PhoneSaberFrameCapSettings.TwoTimes, PhoneSaberFrameCapSettings.Load("fcap-a"));
+            PhoneSaberFrameCapSettings.Save("fcap-a", PhoneSaberFrameCapSettings.GameDefault);
             Assert.AreEqual(PhoneSaberFrameCapSettings.GameDefault, PhoneSaberFrameCapSettings.Load("fcap-a"));
             PhoneSaberDisplaySyncSettings.Save("fcap-a", PhoneSaberDisplaySyncSettings.VSync);
             PhoneSaberFrameCapSettings.Save("fcap-a", PhoneSaberFrameCapSettings.TwoTimes);
             Assert.AreEqual(PhoneSaberFrameCapSettings.TwoTimes, PhoneSaberFrameCapSettings.Load("fcap-a"));
-            Assert.AreEqual(PhoneSaberFrameCapSettings.GameDefault, PhoneSaberFrameCapSettings.Load("fcap-b"));
+            Assert.AreEqual(PhoneSaberFrameCapSettings.TwoTimes, PhoneSaberFrameCapSettings.Load("fcap-b"));
             Assert.AreEqual(PhoneSaberDisplaySyncSettings.VSync, PhoneSaberDisplaySyncSettings.Load("fcap-a"));
             PlayerPrefs.SetInt(a, 7);
             Assert.AreEqual(PhoneSaberFrameCapSettings.GameDefault, PhoneSaberFrameCapSettings.Load("fcap-a"));

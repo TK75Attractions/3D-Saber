@@ -63,6 +63,28 @@ cd android
 ```
 
 APKは `app/build/outputs/apk/debug/app-debug.apk`。Run/debug APKにも診断機能は含めない。
+
+USB デバッグの承認とカメラ権限を済ませた端末を1台だけ接続すれば、repo root から次で
+debug APK の上書きインストール・今回だけの自動送信・20秒以内の赤青座標と診断受信を確認できる。
+ゲーム起動中は UDP ポートを開かず、新しい `events.log` の `latency-estimate` を読む。
+停止中は一時受信し、既存の探索要求へ応答する。赤青の剣をカメラに映し、同じ Wi-Fi に接続する。
+保存済みの台が B なら `--station B` を付ける（既定 A）。保存済みの宛先が別 PC なら先に確認する。
+
+```bash
+ANDROID_HOME="$HOME/Library/Android/sdk" python3 -B PhoneSaber/tools/android_ready.py
+ANDROID_HOME="$HOME/Library/Android/sdk" python3 -B PhoneSaber/tools/latency_matrix.py --phone android --only baseline fps30
+```
+
+手動で同じ起動を行う場合（`adb` は `ANDROID_HOME/platform-tools/adb` または PATH）:
+
+```bash
+adb shell am force-stop jp.phonesaber.sender
+adb shell am start -W -n jp.phonesaber.sender/.MainActivity --ez autoStartSending true --ei cameraFPS 60
+```
+
+`autoStartSending` は boolean、`cameraFPS` は整数 30 / 60 のみ受理する。
+省略・型違い・非対応 fps は従来の保存設定を使う。起動引数の値とそれによる自動開始は保存しない。
+`latency_matrix.py` の `lowlat` 条件だけは、既存の試験スイッチを `--ez lowLatencyCamera true` で今回だけ ON にする。
 公開配布用の署名鍵・keystoreはこのプロジェクトに入れていない。
 
 ## MacのAndroidエミュレータで送信経路を確認（開発用）

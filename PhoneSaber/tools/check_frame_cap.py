@@ -63,10 +63,12 @@ public class FrameCapHost {
         foreach (int sync in new[] {0,1,2}) {
             QualitySettings.vSyncCount=sync; Application.targetFrameRate=-1; tick();
             Assert.AreEqual(240, Application.targetFrameRate); Assert.AreEqual(sync, QualitySettings.vSyncCount);
-            Application.targetFrameRate=30; tick(); Assert.AreEqual(240, Application.targetFrameRate);
+            Application.targetFrameRate=1000; tick(); Assert.AreEqual(240, Application.targetFrameRate);
+            // 上限は下げる向きだけ。ゲームが自分で低くした値（メニューの 30 fps）は上げない。
+            Application.targetFrameRate=30; tick(); Assert.AreEqual(30, Application.targetFrameRate);
         }
         Screen.currentResolution = new Resolution {refreshRateRatio=new Rate {value=144}};
-        tick(); Assert.AreEqual(576, Application.targetFrameRate);
+        Application.targetFrameRate=-1; tick(); Assert.AreEqual(576, Application.targetFrameRate);
         Screen.currentResolution = new Resolution {refreshRateRatio=new Rate {value=60}};
     }
     [Test] public void TwoTimesAndExplicitVSyncRemainIndependent() {

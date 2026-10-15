@@ -1,3 +1,131 @@
+#if PHONESABER_FRAME_HOST
+using System;
+using System.Diagnostics;
+using System.Reflection;
+using NUnit.Framework;
+
+public static class FrameClock
+{
+    public static double realtimeSinceStartupAsDouble => 1;
+    public static float realtimeSinceStartup => 1;
+}
+public static class FrameScreen { public static int width => 1920; public static int height => 1080; }
+
+// Editor は起動しない。実 InputPoint の座標取込みと送信元監視を Unity 同梱 Mono で実行する。
+class Frames
+{
+    static int failed, failureMask;
+
+    static void CheckRegression(Action test, int mask, string message)
+    {
+        try { test(); }
+        catch (AssertionException e)
+        {
+            // lock 待ち以外の準備失敗や例外を旧実装の回帰再現として数えない。
+            if (!e.Message.Contains(message)) throw;
+            Console.WriteLine("FAIL " + mask + ": " + e.Message);
+            failed++;
+            failureMask |= mask;
+        }
+    }
+
+    static int Main(string[] args)
+    {
+        Console.WriteLine(System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription + " / " +
+            System.Runtime.InteropServices.RuntimeInformation.OSDescription + " / " +
+            System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture);
+        var tests = new PhoneSaberReceiverStateReadTests();
+        foreach (string gate in new[] { "lockObj", "lockObj2" })
+        {
+            CheckRegression(() => tests.IdleCoordinatesDoNotWaitForReceiverLock(gate),
+                gate == "lockObj" ? 1 : 2, "新着のない色の受信 lock で main thread を止めない");
+        }
+        tests.IdleCoordinatesAllocateZeroBytes();
+        tests.BothColoursConsumePacketsAndAllocateZeroBytesBetweenPackets();
+        tests.PendingDiagnosticIsDrainedEvenWithoutNewCoordinates("pendingFreezeReceiveLog1");
+        tests.PendingDiagnosticIsDrainedEvenWithoutNewCoordinates("pendingFreezeReceiveLog2");
+        var statsTests = new PhoneSaberInputStatsTests();
+        CheckRegression(statsTests.NoConflictPollingDoesNotWaitForStatisticsWriter, 4,
+            "競合のない frame は受信統計の lock を待たない");
+        statsTests.PollingStillExpiresConflictsAfterResetAndRebind();
+        RunFixture(typeof(PhoneSaberInputStatsTests));
+        RunFixture(typeof(PhoneSaberSenderGateTests));
+        var input = PhoneSaberReceiverStateReadTests.CreateIdleInput();
+        Action read = PhoneSaberReceiverStateReadTests.BindIdleRead(input);
+        bool zero = Measure("idle-input", i => read());
+        Action red = PhoneSaberReceiverStateReadTests.BindPacket(input, false);
+        Action blue = PhoneSaberReceiverStateReadTests.BindPacket(input, true);
+        zero &= Measure("dual-60Hz-at-1920fps", i =>
+        {
+            if (i % 32 == 0) { red(); blue(); }
+            read();
+        });
+        var statistics = new PhoneSaberPacketStatistics();
+        statistics.Record(0, "phone", true);
+        zero &= Measure("sender-poll-no-conflict", i => statistics.PollSenderGate(0.5));
+        PhoneSaberReceiverStateReadTests.DestroyIdleInput(input);
+        Console.WriteLine($"Frame regression: {8 - failed} PASS / {failed} FAIL");
+        int expected = args.Length == 1 ? int.Parse(args[0]) : 0;
+        return failureMask == expected && zero ? 0 : 1;
+    }
+
+    static void RunFixture(Type type)
+    {
+        int passed = 0;
+        foreach (var method in type.GetMethods())
+        {
+            if (method.Name == "NoConflictPollingDoesNotWaitForStatisticsWriter") continue; // 前後比較は上で行う。
+            var cases = method.GetCustomAttributes(typeof(TestCaseAttribute), false);
+            if (cases.Length == 0 && !method.IsDefined(typeof(TestAttribute), false)) continue;
+            if (cases.Length == 0) cases = new object[] { null };
+            foreach (var item in cases)
+            {
+                var target = Activator.CreateInstance(type);
+                var args = item == null ? new object[0] : ((TestCaseAttribute)item).Arguments;
+                var parameters = method.GetParameters();
+                for (int i = 0; i < args.Length; i++)
+                    if (args[i] != null) args[i] = Convert.ChangeType(args[i],
+                        Nullable.GetUnderlyingType(parameters[i].ParameterType) ?? parameters[i].ParameterType,
+                        System.Globalization.CultureInfo.InvariantCulture);
+                try
+                {
+                    foreach (var setup in type.GetMethods())
+                        if (setup.IsDefined(typeof(SetUpAttribute), false)) setup.Invoke(target, null);
+                    method.Invoke(target, args);
+                    passed++;
+                }
+                finally
+                {
+                    foreach (var teardown in type.GetMethods())
+                        if (teardown.IsDefined(typeof(TearDownAttribute), false)) teardown.Invoke(target, null);
+                }
+            }
+        }
+        Console.WriteLine(type.Name + ": " + passed + " PASS");
+    }
+
+    static bool Measure(string label, Action<int> step)
+    {
+        const int count = 1000000, repetitions = 21;
+        for (int i = 0; i < 10000; i++) step(i);
+        var times = new double[repetitions];
+        long allocated = 0;
+        for (int run = 0; run < repetitions; run++)
+        {
+            long bytes = GC.GetAllocatedBytesForCurrentThread();
+            long start = Stopwatch.GetTimestamp();
+            for (int i = 0; i < count; i++) step(i);
+            times[run] = (Stopwatch.GetTimestamp() - start) * 1e9 / Stopwatch.Frequency / count;
+            allocated += GC.GetAllocatedBytesForCurrentThread() - bytes;
+        }
+        Array.Sort(times);
+        Console.WriteLine(FormattableString.Invariant(
+            $"{label} warmup=10000 frames={count} repetitions={repetitions} median-ns={times[repetitions / 2]:F2} p95-ns={times[(int)Math.Ceiling(repetitions * .95) - 1]:F2} allocated-bytes={allocated}"));
+        return allocated == 0;
+    }
+}
+
+#else
 // 実Playerの代用ではない。PerfLogの窓境界と純粋な集計だけをhostで検証する。
 using System;
 using System.Collections.Generic;
@@ -67,3 +195,5 @@ public static class PhoneSaberEventLog
 public static class SwingMonotonicClock { public static long Timestamp => (long)(UnityEngine.Time.realtimeSinceStartupAsDouble * 1000000); public static double ToSeconds(long ticks) => ticks / 1000000.0; }
 
 public static class PhoneSaberEndpointPredictor { public const int MaximumHorizonMilliseconds = 120; public const int MaximumManualHorizonMilliseconds = 60; public const double MaximumGapSeconds = .1; }
+
+#endif

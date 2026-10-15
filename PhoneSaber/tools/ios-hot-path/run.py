@@ -24,6 +24,7 @@ def main():
     parser.add_argument("--source-root", type=pathlib.Path, default=ROOT)
     parser.add_argument("--revision", help="read source from a Git revision (e.g. origin/main)")
     parser.add_argument("--frames", type=int, default=240)
+    parser.add_argument("--no-network", action="store_true", help="UDP bind 不可の環境で NW 送信を除外する")
     args = parser.parse_args()
     source = args.source_root / "PhoneSaber/ios/PhoneSaberSender/PhoneSaberSender"
     def read_source(name):
@@ -47,7 +48,7 @@ final class DebugVideoRecorder {
 '''
     for marker in ["struct PixelPoint:", "enum SaberColor:", "func scaledPoint(", "func payload("]:
         scaffold += block(core, marker) + "\n"
-    for marker in ["struct CameraFrameIntervalStatistics:", "struct DetectedSaber {", "struct FrameTrace {", "enum HostMonotonicClock {"]:
+    for marker in ["struct CameraFrameIntervalStatistics:", "struct DetectedSaber {", "struct FrameTrace {", "enum HostMonotonicClock {", "struct LatestCameraFrameMailbox<Frame>"]:
         scaffold += block(camera if marker.startswith("struct CameraFrame") else frame, marker) + "\n"
     scaffold += block(camera, "final class CameraUIPendingState:") + "\n"
     scaffold += '''final class FrameProcessor {
@@ -63,10 +64,10 @@ final class DebugVideoRecorder {
     private var lastDimensions: (Int, Int)?
     private var generation = 0
     private let pendingLock = NSLock()
-    private var pendingFrame: PendingFrame?
+    private var mailbox = LatestCameraFrameMailbox<PendingFrame>()
     private var pendingFrameShouldSave = false
     private var rawFrameSaveRequested = false
-    private var workerScheduled = false
+    private var captureSynchronizationClock: CMClock?
     private var receivedFrames = 0
     private var replacedPendingFrames = 0
     private var nextFrameSequence: UInt64 = 0
@@ -80,7 +81,7 @@ final class DebugVideoRecorder {
     }
     private var debugVideoRecorder: DebugVideoRecorder? = nil
 '''
-    for marker in ["private struct PendingFrame {", "func submit(", "private func drainLatestFrames(", "private struct Track {", "private func emitResults(", "private func trackedResult(", "func processDetectedForTesting(", "private func scheduleExpiry(", "private func expireHeldFrames(", "private func stableEndpoints(", "private func predictedEndpoints(", "private func distance("]:
+    for marker in ["private struct PendingFrame {", "func submit(", "private func convertedCaptureHostTime(", "private func drainLatestFrames(", "private struct Track {", "private func emitResults(", "private func trackedResult(", "func processDetectedForTesting(", "private func scheduleExpiry(", "private func expireHeldFrames(", "private func stableEndpoints(", "private func predictedEndpoints(", "private func distance("]:
         if marker == "private func trackedResult(" and marker not in frame:
             continue
         scaffold += ("@discardableResult\n" if marker == "private func emitResults(" else "") + block(frame, marker) + "\n"
@@ -97,7 +98,7 @@ final class DebugVideoRecorder {
             copied.write_text(read_source(name))
             sender_sources.append(str(copied))
         subprocess.run(["xcrun", "swiftc", "-O", "-whole-module-optimization", "-module-cache-path", str(build / "cache"), *sender_sources, str(build / "Scaffold.swift"), str(pathlib.Path(__file__).with_name("Harness.swift")), str(build / "allocations.o"), "-o", str(build / "harness")], check=True)
-        subprocess.run([str(build / "harness"), str(args.frames)], check=True)
+        subprocess.run([str(build / "harness"), str(args.frames), *(["--no-network"] if args.no_network else [])], check=True)
 
 
 if __name__ == "__main__":

@@ -183,6 +183,8 @@ public sealed class PhoneSaberPacketStatistics
     string senderIP = "";
     bool payloadParsed;
     PhoneSaberSenderGate senderGate = new PhoneSaberSenderGate();
+    // 競合の失効処理が必要な間だけ main thread が lock を取る。更新はすべて gate 内。
+    volatile bool senderGateNeedsPoll;
     long senderRejectedPackets;
     bool hasTimingPacket;
     double lastTimingPacketAt;
@@ -195,10 +197,19 @@ public sealed class PhoneSaberPacketStatistics
         {
             senderGate.Reset();
             senderGate = new PhoneSaberSenderGate(record);
+            senderGateNeedsPoll = false;
         }
     }
 
-    public void PollSenderGate(double now) { lock (gate) senderGate.Poll(now); }
+    public void PollSenderGate(double now)
+    {
+        if (!senderGateNeedsPoll) return;
+        lock (gate)
+        {
+            senderGate.Poll(now);
+            senderGateNeedsPoll = senderGate.LockedSender.Length > 0;
+        }
+    }
 
     public void Reset(double now)
     {
@@ -214,6 +225,7 @@ public sealed class PhoneSaberPacketStatistics
             hasTimingPacket = false;
             senderRejectedPackets = 0;
             senderGate.Reset();
+            senderGateNeedsPoll = false;
         }
     }
 
@@ -250,6 +262,7 @@ public sealed class PhoneSaberPacketStatistics
                 lastTimingPacketAt = now;
                 timingSenderIP = sender;
             }
+            senderGateNeedsPoll = senderGate.LockedSender.Length > 0;
             return accepted;
         }
     }

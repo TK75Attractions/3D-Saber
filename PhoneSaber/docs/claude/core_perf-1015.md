@@ -1,0 +1,34 @@
+# core_perf-1015 完了監査（2026-10-16）
+- 対象: main=6846480、保存コミット79beace。git log --oneline -5 / git diff main...HEADを確認。開始時clean、commit/pushなし。
+- 保存コミットにはメモ差分なし。perf_core_detection.md（10/8）、core-r3/r4を確認したが、過去の速度・Gradle成功を今回の証拠には流用しない。
+- 中: core/tools/benchmark_compare.py:35 — main版binaryにはp95_ms列がなく、旧新版比較がKeyErrorで停止。未計測p95を空欄にして中央値比較を維持。
+- 回帰: test_benchmark_compare.pyの旧CSVケースは修正前ERROR→修正後PASS。p95集計・前後交互順も検証（2件）。
+- 低: core/tools/rotation_benchmark.kt:18 — 呼出元android_host_check.pyから指定できずテストもない角度引数を削除。既存4方向を全て実行する。
+- 維持: 8byteゼロ領域scanと256点reserve。点順/採点/閾値/候補順/UDP x1,y1,x2,y2/既定設定は不変。今回production追加修正なし。
+- allocation回帰: mainの成分走査で18回>10を再現、現行PASS。/tmpの試験だけassertをexit(1)へ置換してGUI crash reporterを避けた。
+- TODO/未使用option/stubの追加なし。新規.cs/Swift/Kotlinなし（.meta/project登録不要）。corpus/scenes/prefabs/.meta/ProjectSettings変更なし。
+- ログと一時ビルド: /tmp/phonesaber-finish-coreperf/。以下repo root、GUIアプリ/Simulator/Unityを起動せず実行。
+- 再実行の環境: PATH=/Users/satoshi/.pyenv/versions/3.12.1/bin:$PATH、CLANG_MODULE_CACHE_PATH=/tmp/phonesaber-finish-coreperf/swift-cache。
+- 初回PATHのpython3でのdiscoverはtools=272件/失敗1/error6/skip10/expected failure1、iOS tools=422件/失敗11/error34/skip1。旧Pythonのimportと書込不可module cacheも影響。以下は3.12再実行。
+- `python3 -B -m unittest discover -s PhoneSaber/tools -v`: 320件、失敗1/error1/skip12/expected failure1。auto latencyとWindows socket hostが権限拒否、変更ファイルはどちらの経路にも含まれない。
+- `python3 -B -m unittest discover -s PhoneSaber/ios/PhoneSaberSender/Tools -v`: 441件、失敗7/error51/skip1。socket bind拒否（失敗7＋error50）、録画容量API=0（error1）。容量gate未変更。
+- PASS: `make -C PhoneSaber/android/core test parity`（既定python3.12）: core＋Python4件、325 PNG/541遷移/27合成の不一致0、formal40/40。
+- PASS: 追加テスト後 `make -C PhoneSaber/android/core test BUILD=/tmp/phonesaber-finish-coreperf/after PYTHON=python3`: core＋Python6件。guard OFFでも同6件とcore PASS。
+- PASS: 同make testを -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer で実行、さらにASan/UBSan版phonesaber-pngでfixture全52 PNGを走査。
+- PASS: `python3 PhoneSaber/tools/check_pc_latency.py`: Unity API6構成compile、stats50/sender14/frame8/NUnit35件。
+- FAIL（socket拒否）: `python3 PhoneSaber/tools/check_auto_latency.py`: C#4/5、LoopbackMetricsFloodDoesNotSuppressDiscoveryReplyがAccess denied。後段Swift/実UDPは未到達。
+- PASS: `bash PhoneSaber/ios/PhoneSaberSender/run-static-tests.sh`: BGRA static＋DeviceHealth19件。
+- `python3 PhoneSaber/ios/PhoneSaberSenderTests/run_{camera_lifecycle,debug_transfer,high_speed,latency,send_gap}_host_tests.py`を各実行: 18/7/2/33＋delivery6件PASS、send_gapは22件中4件NWError1（P2P socket拒否）。
+- Android環境: JAVA_HOME=/Applications/Android Studio.app/Contents/jbr/Contents/Home、ANDROID_HOME=/Users/satoshi/Library/Android/sdk。
+- `python3 -B -m unittest discover -s PhoneSaber/android -v`: 3件中2件PASS、fixture build1件はGradle lock書込拒否。host JNI/JVMとtiny PNGのbenchmarkを実行。
+- PASS: `python3 PhoneSaber/android/core/tools/android_host_check.py --benchmark /tmp/phonesaber-finish-coreperf/tiny.png`: JNI/JVM87件、4方向のrotation/core median/p95全8行。
+- FAIL: `PhoneSaber/android/gradlew -p PhoneSaber/android --no-daemon -Pkotlin.compiler.execution.strategy=in-process :app:testDebugUnitTest :app:assembleDebug :app:assembleRelease :app:assembleDebugAndroidTest :app:lintDebug`: ~/.gradle lock拒否。一時cache＋--offline再試行は内部socket拒否でタスク開始前停止。
+- PASS: NDK30/CMake3.22.1、arm64-v8a/API29、Debug/Releaseのcore＋JNI compile/link（Debugはfixture/rotation probeも含む）。
+- FAIL: `xcodebuild -project PhoneSaber/ios/PhoneSaberSender/PhoneSaberSender.xcodeproj -scheme PhoneSaberSender -configuration Release -destination generic/platform=iOS -derivedDataPath /tmp/phonesaber-finish-coreperf/ios-release CODE_SIGNING_ALLOWED=NO PHONESABER_CORELINE_GUARD=1 build`: exit65、sandbox_apply拒否→SwiftUI macro server malformed response。
+- PASS: main/現行benchmarkを実buildし4 PNG×100frame×5組のCSV比較完走、旧p95空欄を確認。現行同士N=1×2組でp95=medianも確認。並行負荷で短縮率は-6.6～9.5%、性能改善は未認定。
+- PASS: git diff --check（作業差分とmain...HEAD）、認識/UDP差分の自己レビュー。
+- 未実行: 公式verify（operator担当）、Unity EditMode/PlayMode、iOS Simulator XCTest、Android connected test、実機fps/発熱/無線/光学遅延。Unity追加確認クラスなし。
+- operator最小1: 上記Python3.12環境で `PhoneSaber/tools/verify_phone_saber.sh`（既存Unity EditMode/PlayMode・iOS XCTest/Release・iOS toolsを含む）と `python3 -B -m unittest discover -s PhoneSaber/tools -v`、`python3 PhoneSaber/tools/check_auto_latency.py` をsocket許可環境で実行。
+- operator最小2: 上記Android環境で記載のGradleコマンド、続けて同--no-daemonで `:app:connectedDebugAndroidTest`（AQUOS接続）を実行。
+- operator最小3: `python3 PhoneSaber/ios/PhoneSaberSenderTests/run_send_gap_host_tests.py`でP2P実socket4件を再確認。AQUOSの通常設定で両剣30秒＋停止/再開を1回、DeviceHealthログで出力/fps/処理median/p95を確認。
+- 残るリスク: APK/実機の速度・60fps・長時間熱と上記sandbox外の統合検証。認識結果を変える提案/機能追加はなし。

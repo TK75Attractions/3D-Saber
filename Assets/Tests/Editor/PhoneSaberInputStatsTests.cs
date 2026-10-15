@@ -1,9 +1,61 @@
 using System.Globalization;
+using System.Diagnostics;
+using System.Reflection;
+using System.Threading;
 using NUnit.Framework;
 
 // ソケットや Unity の時計を使わず、運営表示の時間窓と未受信の境界を検証する。
 public class PhoneSaberInputStatsTests
 {
+    [Test]
+    public void NoConflictPollingDoesNotWaitForStatisticsWriter()
+    {
+        var statistics = new PhoneSaberPacketStatistics();
+        statistics.Record(0, "phone", true);
+        object gate = typeof(PhoneSaberPacketStatistics).GetField("gate", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(statistics);
+        using var acquired = new ManualResetEventSlim(false);
+        using var release = new ManualResetEventSlim(false);
+        var writer = new Thread(() =>
+        {
+            lock (gate) { acquired.Set(); release.Wait(1500); }
+        }) { IsBackground = true };
+        try
+        {
+            statistics.PollSenderGate(0); // JIT は計測外。
+            writer.Start();
+            Assert.IsTrue(acquired.Wait(2000));
+            var watch = Stopwatch.StartNew();
+            statistics.PollSenderGate(0.5);
+            watch.Stop();
+            Assert.Less(watch.ElapsedMilliseconds, 500, "競合のない frame は受信統計の lock を待たない");
+        }
+        finally { release.Set(); writer.Join(2500); }
+    }
+
+    [Test]
+    public void PollingStillExpiresConflictsAfterResetAndRebind()
+    {
+        var statistics = new PhoneSaberPacketStatistics();
+        for (int cycle = 0; cycle < 3; cycle++)
+        {
+            statistics.Record(0, "A", true);
+            statistics.Record(0.1, "B", true);
+            statistics.Record(0.2, "A", true);
+            statistics.PollSenderGate(1.199);
+            Assert.AreEqual("A", statistics.Read(1.199).LockedSender);
+            statistics.PollSenderGate(1.2);
+            Assert.AreEqual("", statistics.Read(1.2).LockedSender);
+            statistics.Record(2, "A", true);
+            statistics.Record(2.1, "B", true);
+            statistics.Record(2.2, "A", true);
+            Assert.AreEqual("A", statistics.Read(2.2).LockedSender);
+            if (cycle == 0) statistics.Reset(0);
+            else statistics.ResetSenderGate();
+            statistics.PollSenderGate(10);
+            Assert.AreEqual("", statistics.Read(10).LockedSender);
+        }
+    }
+
     [Test]
     public void InterleavingSenderCannotReplaceKeptSendersLatencySamples()
     {

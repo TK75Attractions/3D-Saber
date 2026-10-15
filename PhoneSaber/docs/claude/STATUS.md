@@ -2,6 +2,35 @@
 
 資料の索引と、実行ファイル・道具の場所は [README.md](README.md)。
 
+## 2026-10-15 Android 無人起動・準備確認 最終監査
+
+- 対象: `git log --oneline -5`、`git diff main...HEAD`、ac98d54/aa841d1 の前回メモ。開始時 clean。commit/push・GUI起動なし。
+- P2 `tools/latency_matrix.py:87`: 選択Androidのカメラ停止中でも別iPhoneの測定だけでexit 0。条件ごとにadbでwlan0 IPv4を取得し、Androidの新鮮な赤metrics・各blockのdisplay行（同じ送信元、conditions-changed=0）・終了行を照合。不明な測定元は失敗、他端末の数値は集計から除外。
+- P2 `tools/android_ready.py:185`: 時計源UNKNOWNの正常端末もfloat変換で必ずNG。撮影起点の2項目だけ明示的UNKNOWNを許容。欠落・NaN・負数・送信停止・処理計測不足は引き続きNG。
+- 回帰3本を旧HEADへ適用: assertion 12失敗、harness error 0。修正後: `test_android_ready.py` 19件／`test_tracking_report.py` 21件成功（macOS/Windows分岐・別iOS/Android・送信元変更・metrics欠落/陳腐化・混在時の数値も確認）。
+- 未完成監査: 上記2欠陥と以下の未検証を確認。追加TODO・dead code・stub・未到達optionなし。adbの自動開始/30/60/lowlatは型付きextrasの既存回帰とGradle/hostで検証。
+- 既定動作: 引数なし保存設定・iOS起動コマンド維持を回帰確認。前回メモの今回限定extras以外のゲーム動作変更なし。認識/UDP形式/formal corpus/Unity資産/ProjectSettings差分なし。
+- 新規C#/Swiftなし。新規KotlinのLaunchSettings/LaunchSettingsTestはGradleに自動収録され、host compile一覧にも収録済み。
+- `PATH=/Users/satoshi/.pyenv/versions/3.12.1/bin:$PATH python3 -B -m unittest discover -s PhoneSaber/tools`: 315件、失敗0、skip 11（Windows/PowerShell）、既存expected failure 1。
+- `python3 -B -m unittest discover -s PhoneSaber/ios/PhoneSaberSender/Tools`: 439件、skip 1、error 1。E2E setUpClassが容量API=0で拒否（required=1040187392、df空き414GiB）。単独再試行も同じ。容量ゲート未変更。
+- `python3 -B PhoneSaber/tools/check_pc_latency.py`: Unity API 6構成compile、NUnit host 35/35成功。
+- `python3 -B PhoneSaber/tools/check_auto_latency.py`: C# 5/5、Swift 3/3、実Swift→C# UDP往復成功。
+- `make -C PhoneSaber/android/core test parity`: C++・Python4件、formal40件/325PNG/541遷移/合成27件、不一致0。
+- `bash PhoneSaber/ios/PhoneSaberSender/run-static-tests.sh`: static BGRA・DeviceHealth 13/13成功。
+- `python3 -B PhoneSaber/ios/PhoneSaberSenderTests/run_{high_speed,camera_lifecycle,send_gap,debug_transfer}_host_tests.py` を各実行: 2/18/21/7件成功。
+- 差分外の既存不良: 同ディレクトリの `run_latency_host_tests.py` は27件成功後、P2PTransportTests.swift:1892/1916/1932のNWError未解決でcompile失敗。Network importがSTANDALONE時に除外される。`git diff main -- PhoneSaber/ios` は空。今回修正対象外。
+- Android環境: `JAVA_HOME='/Applications/Android Studio.app/Contents/jbr/Contents/Home' ANDROID_HOME=/Users/satoshi/Library/Android/sdk`（以下2検証で指定）。
+- `PhoneSaber/android/gradlew -p PhoneSaber/android --no-daemon --rerun-tasks -Pkotlin.compiler.execution.strategy=in-process :app:testDebugUnitTest :app:assembleDebug :app:assembleRelease :app:assembleDebugAndroidTest :app:lintDebug`: 138 tasks実行、95 tests失敗0、APK/lint成功。
+- `python3 -B -m unittest discover -s PhoneSaber/android`: 3件成功（JNI/JVM87件・fixture APK/lint・decoder benchmark）。端末なしの `android_ready.py` は期待どおりexit 1。
+- iOS Release: `xcodebuild -project PhoneSaber/ios/PhoneSaberSender/PhoneSaberSender.xcodeproj -scheme PhoneSaberSender -configuration Release -destination 'generic/platform=iOS' -derivedDataPath /tmp/android-rig-review-ios-release CODE_SIGNING_ALLOWED=NO build`: exit 65。sandbox_apply拒否でSwiftUI macro起動失敗。iOS差分なし。
+- 未実行: 公式verify、Unity EditMode/PlayMode・Player画面、iOS target XCTest、Android connectedDebugAndroidTest、実機カメラ/Wi-Fi/保存設定/発熱/光学遅延、実Windows。host成功を実機性能の証拠にしない。
+- operator最小: 制約外で `PATH=/Users/satoshi/.pyenv/versions/3.12.1/bin:$PATH bash PhoneSaber/tools/verify_phone_saber.sh`（Unity EditMode/PlayMode、iOS XCTest/Release、上記E2Eを含む）。追加Unityテストクラスなし。
+- Android実機: USB承認・カメラ許可・同一Wi-Fi・赤青の剣で `ANDROID_HOME=/Users/satoshi/Library/Android/sdk python3 -B PhoneSaber/tools/android_ready.py` をPlayer停止中/起動中に各1回。
+- 実機比較: 同じ環境で `python3 -B PhoneSaber/tools/latency_matrix.py --phone android --only baseline fps30 --blocks 1`。両条件成功、60/30要求、通常再起動で保存設定復帰を確認。選択Androidのカメラ拒否＋別iPhone送信では必ず非0終了すること。
+- 実機JNI: 上記JBR/SDKで `PhoneSaber/android/gradlew -p PhoneSaber/android --no-daemon -Pkotlin.compiler.execution.strategy=in-process :app:connectedDebugAndroidTest`。
+- `git diff --check` と `git diff main...HEAD --check` 成功。
+- ログ: `/tmp/android-rig-review-*.log`。変更はtoolsの2欠陥・回帰テスト・この短いメモのみ。
+
 ## ユーザー待ち
 
 **10-13 両色同時停止:** オペレーターのレビュー・公式verify・iOS target XCTest待ち。次の実機停止後にDebug Recordingを終了し、Macへ届いた`connectivity.log`とUnity UTCを照合する。[原因一覧・検証](ios-send-gaps-20261013.md)。commit / pushは今回行わない。

@@ -1,5 +1,5 @@
-#if !PIPELINE_ROUTING_STANDALONE
 import Network
+#if !PIPELINE_ROUTING_STANDALONE
 @testable import PhoneSaberSender
 import XCTest
 
@@ -676,6 +676,50 @@ final class P2PTransportTests: XCTestCase {
         now.mutate { $0 += 2 }
         callback.value?(nil)
         await fulfillment(of: [fallback], timeout: 3)
+    }
+
+    func testUDPNetworkSendFailureReconnectsOnlyTheFailedPortAndKeepsTheLatestCoordinate() async {
+        let callback = LockedBox<((Result<TimeInterval, Error>) -> Void)?>(nil)
+        let packets = LockedBox<[(String, Int)]>([])
+        let first = expectation(description: "first RED send")
+        let failed = expectation(description: "RED failure reported")
+        let latest = expectation(description: "latest RED delivered after reconnect")
+        let blue = expectation(description: "BLUE remains usable")
+        let timing = UDPSender.Timing(waitingTimeout: 1, sendWatchdogTimeout: 1,
+                                      reconnectInitialDelay: 0.05, reconnectMaximumDelay: 0.05)
+        let sender = UDPSender(sendHandler: { text, port, complete in
+            packets.mutate { $0.append((text, port)) }
+            if text == "1,2,3,4" {
+                callback.mutate { $0 = complete }
+                first.fulfill()
+            } else { complete(.success(1)) }
+        }, timing: timing)
+        defer { sender.stop() }
+        sender.configure(host: "127.0.0.1")
+        let redGeneration = sender.connectionGenerationForTesting(port: 5005)
+        let blueGeneration = sender.connectionGenerationForTesting(port: 5006)
+        sender.send("1,2,3,4", to: 5005) { result in
+            if case .success = result { XCTFail("network failure must be reported") }
+            failed.fulfill()
+        }
+        await fulfillment(of: [first], timeout: 2)
+        sender.send("5,6,7,8", to: 5005) { _ in XCTFail("superseded coordinate") }
+        sender.send("9,10,11,12", to: 5005) { result in
+            if case .failure = result { XCTFail("latest coordinate must recover") }
+            latest.fulfill()
+        }
+        XCTAssertEqual(sender.pendingCountForTesting, 1)
+        // state は ready のまま、Network の送信完了だけが経路のエラーを返す。
+        callback.value?(.failure(NWError.posix(.ENETDOWN)))
+        await fulfillment(of: [failed, latest], timeout: 2)
+        XCTAssertEqual(sender.connectionGenerationForTesting(port: 5005), redGeneration + 1)
+        XCTAssertEqual(sender.reconnectCountForTesting(port: 5005), 1)
+        XCTAssertEqual(sender.watchdogTimeoutCountForTesting(port: 5005), 0)
+        XCTAssertEqual(packets.value.filter { $0.1 == 5005 }.map(\.0), ["1,2,3,4", "9,10,11,12"])
+        sender.send("13,14,15,16", to: 5006) { _ in blue.fulfill() }
+        await fulfillment(of: [blue], timeout: 2)
+        XCTAssertEqual(sender.connectionGenerationForTesting(port: 5006), blueGeneration)
+        XCTAssertEqual(sender.reconnectCountForTesting(port: 5006), 0)
     }
 
     private func fastTiming() -> P2PSender.Timing {
@@ -1592,6 +1636,7 @@ final class FakeHTTPReceiver: @unchecked Sendable {
 #else
 import XCTest
 import Foundation
+import Network
 #endif
 
 // このクラスは Mac の standalone XCTest でも同じ production 経路を検証する。

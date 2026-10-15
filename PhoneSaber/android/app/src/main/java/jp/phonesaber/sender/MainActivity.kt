@@ -88,6 +88,7 @@ class MainActivity : ComponentActivity() {
     private var wifi: Network? = null
     private var sending = false
     private lateinit var resumePolicy: SendingResumePolicy
+    private lateinit var launchSettings: LaunchSettings
     private val prefs by lazy { getSharedPreferences("destination", MODE_PRIVATE) }
     private val cameraBackoff = RecoveryBackoff()
     private val pcReplyWatch = PcReplyWatch()
@@ -174,6 +175,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        @Suppress("DEPRECATION")
+        val settings = LaunchSettings.read { key -> intent.extras?.get(key) }
+        launchSettings = settings
         savedInstanceState?.let { state ->
             val restored = ThresholdSettings.restore { key, default -> state.getInt(key, default) }
             brightness = restored.brightness; dominance = restored.dominance
@@ -268,7 +272,7 @@ class MainActivity : ComponentActivity() {
         recoveryStatus = label("")
         Switch(this).apply {
             text = "起動時に送信を自動開始"
-            isChecked = prefs.getBoolean(SendingResumePolicy.AUTO_START_KEY, false)
+            isChecked = launchSettings.autoStart(prefs.getBoolean(SendingResumePolicy.AUTO_START_KEY, false))
             panel.addView(this)
             setOnCheckedChangeListener { _, enabled ->
                 prefs.edit().putBoolean(SendingResumePolicy.AUTO_START_KEY, enabled).apply()
@@ -330,15 +334,15 @@ class MainActivity : ComponentActivity() {
         // 既定 ON。iPhone の 60fps で撮影→送信が約13ms短縮（2026-10-07 実測）。非対応端末は自動で 30fps。
         fps60Switch = Switch(this).apply {
             text = "カメラ 60fps（低遅延）"
-            isChecked = prefs.getInt("cameraFps", 60) == 60
+            isChecked = launchSettings.cameraFps(prefs.getInt("cameraFps", 60)) == 60
             setOnCheckedChangeListener { _, on -> prefs.edit().putInt("cameraFps", if (on) 60 else 30).apply() }
             panel.addView(this)
         }
         label("暗い場所では60fps固定により画像が暗くなる場合があります。暗さ・発熱・処理落ちが続くときは OFF で30fpsと比較します。変更は停止中のみ。")
-        // 保存しない。再起動時はOFFに戻し、本番で意図せず画素が変わるのを防ぐ。
+        // 保存しない。今回の起動引数がなければOFFに戻す。
         lowLatencyCameraSwitch = Switch(this).apply {
             text = "低遅延カメラ設定（試験）"
-            isChecked = false
+            isChecked = launchSettings.lowLatencyCamera
             panel.addView(this)
         }
         label("ノイズ低減・輪郭強調を対応端末で OFF にします。画質と認識結果が変わる可能性があります。既定 OFF。変更は停止中のみ。")
@@ -374,9 +378,9 @@ class MainActivity : ComponentActivity() {
         thermalStatus = power.currentThermalStatus
         power.addThermalStatusListener(ContextCompat.getMainExecutor(this), thermalListener)
         updateHealth()
-        if (resumePolicy.foreground(prefs.getBoolean(SendingResumePolicy.AUTO_START_KEY, false))) {
+        if (resumePolicy.foreground(launchSettings.autoStart(prefs.getBoolean(SendingResumePolicy.AUTO_START_KEY, false)))) {
             automaticResumePending = true
-            persistSendingIntent()
+            if (launchSettings.persistAutomaticResume) persistSendingIntent()
             cameraBackoff.reset()
             requestSending()
         }

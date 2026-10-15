@@ -117,7 +117,8 @@ final class DebugBundleTransfer {
                  "testP2PConnectedNotificationPreservesPendingVerifiedLANCoordinates",
                  "testCoordinateSendFailureInvalidatesP2PAndFallsBackToLAN",
                  "testRecoveredP2PDiscardsCoordinatesQueuedByTheLANFallback",
-                 "testPendingP2PCoordinateFallsBackWhenPongsExpireBeforeCompletion"]:
+                 "testPendingP2PCoordinateFallsBackWhenPongsExpireBeforeCompletion",
+                 "testUDPNetworkSendFailureReconnectsOnlyTheFailedPortAndKeepsTheLatestCoordinate"]:
         method = block(tests, "func " + name + "(")
         if "@MainActor\n    func " + name in tests:
             method = "@MainActor\n" + method
