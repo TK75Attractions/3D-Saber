@@ -32,6 +32,7 @@ fun main(args: Array<String>) {
             for (rotationOnly in listOf(true, false)) {
                 repeat(400) { frame(it % 2 == 0, rotationOnly) }
                 val medians = Array(2) { ArrayList<Double>() }
+                val tails = Array(2) { ArrayList<Double>() }
                 repeat(5) { pair ->
                     for (index in if (pair % 2 == 0) intArrayOf(0, 1) else intArrayOf(1, 0)) {
                         val times = DoubleArray(100) {
@@ -41,11 +42,13 @@ fun main(args: Array<String>) {
                         }
                         times.sort()
                         medians[index].add(times[50])
+                        tails[index].add(times[94])
                     }
                 }
                 val before = medians[0].sorted()[2]; val after = medians[1].sorted()[2]
-                println(String.format(Locale.US, "angle=%d %s before_ms=%.6f after_ms=%.6f reduction=%.1f%%",
-                    angle, if (rotationOnly) "rotation" else "rotation+jni+core", before, after, (before-after)*100/before))
+                println(String.format(Locale.US, "angle=%d %s before_ms=%.6f after_ms=%.6f reduction=%.1f%% before_p95_ms=%.6f after_p95_ms=%.6f",
+                    angle, if (rotationOnly) "rotation" else "rotation+jni+core", before, after, (before-after)*100/before,
+                    tails[0].sorted()[2], tails[1].sorted()[2]))
             }
         }
     } finally { NativeRotationProbe.destroy(probe); old.close(); native.close() }

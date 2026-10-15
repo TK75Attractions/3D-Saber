@@ -3,6 +3,34 @@
 #include <cassert>
 #include <cstring>
 #include <iostream>
+#include <cstdlib>
+#include <new>
+
+namespace { bool count_allocations = false; std::size_t allocation_count = 0; }
+void* operator new(std::size_t size) {
+    void* p = std::malloc(size ? size : 1);
+    if (!p) throw std::bad_alloc();
+    if (count_allocations) ++allocation_count;
+    return p;
+}
+void* operator new[](std::size_t size) { return ::operator new(size); }
+void operator delete(void* p) noexcept { std::free(p); }
+void operator delete[](void* p) noexcept { std::free(p); }
+
+// 面積 gate で落ちる大成分でも、小容量からの FIFO 成長を繰り返さない。
+static void component_allocation_tests() {
+    using namespace phonesaber;
+    using namespace phonesaber::detail;
+    constexpr int w = 256, h = 256;
+    Mask mask(w*h,1), values(w*h,255);
+    Evidence evidence{SaberColor::red,values,values,values,mask,mask};
+    allocation_count = 0; count_allocations = true;
+    int pixels = 0;
+    auto result = components(mask,w,h,evidence,&pixels);
+    count_allocations = false;
+    assert(result.empty() && pixels == w*h);
+    assert(allocation_count <= 10); // remaining 1回、FIFO は256点から最大9回。
+}
 using namespace phonesaber;
 static FrameAnalysis detection(Endpoints e) { FrameAnalysis a; a.selected[0] = e; return a; }
 // 元画素の非 sample 支持、白芯、次候補への選択と RED の維持を確認する。
@@ -93,7 +121,7 @@ static void morphology_tests() {
 static void component_order_tests() {
     using namespace detail;
     uint32_t random = 0x51ab3u;
-    for (int w : {9,17,31}) {
+    for (int w : {1,2,3,5,9,17,31}) {
         int h = w+2;
         Mask value(w*h), chroma(w*h), radiance(w*h), core(w*h);
         for (int i = 0; i < w*h; ++i) {
@@ -104,11 +132,11 @@ static void component_order_tests() {
             Mask mask(w*h);
             for (int i = 0; i < w*h; ++i) {
                 random = random*1664525u+1013904223u;
-                if (pattern >= 512) mask[i] = (random >> 24) < 24;
+                if (pattern >= 512 && (random >> 24) < 24) mask[i] = uint8_t(random >> 16)|1;
             }
             if (pattern < 512) {
-                int x0 = pattern%3 == 0 ? 0 : w-3, y0 = pattern%2 == 0 ? 0 : h-3;
-                for (int y = 0; y < 3; ++y) for (int x = 0; x < 3; ++x)
+                int x0 = pattern%3 == 0 ? 0 : std::max(0,w-3), y0 = pattern%2 == 0 ? 0 : h-3;
+                for (int y = 0; y < 3; ++y) for (int x = 0; x < std::min(w,3); ++x)
                     mask[(y0+y)*w+x0+x] = (pattern >> (y*3+x))&1;
             } else {
                 for (int y = 0; y < h; ++y) mask[y*w+(pattern%2 ? w/2 : y%w)] = 1;
@@ -242,6 +270,7 @@ int main() {
     rotation_tests();
     morphology_tests();
     component_order_tests();
+    component_allocation_tests();
     blue_support_tests();
     FrameProcessor p;
     auto a = p.process(detection({{10,20},{30,40}}),100,100,1.0);

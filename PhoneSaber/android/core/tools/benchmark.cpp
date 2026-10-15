@@ -11,7 +11,7 @@ int main(int argc, char** argv) {
         if (argc < 3) throw std::runtime_error("usage: core-benchmark ITERATIONS PNG [PNG ...]");
         int iterations = std::stoi(argv[1]);
         if (iterations < 1) throw std::runtime_error("iterations must be positive");
-        std::cout << "png,width,height,median_ms,min_ms,max_ms\n" << std::fixed << std::setprecision(6);
+        std::cout << "png,width,height,median_ms,p95_ms,min_ms,max_ms\n" << std::fixed << std::setprecision(6);
         for (int file = 2; file < argc; ++file) {
             auto image = read_png(argv[file]);
             // JNI と同じ BGRA 入力。デコードと変換は計測区間の外。
@@ -32,7 +32,7 @@ int main(int argc, char** argv) {
             }
             std::sort(times.begin(),times.end());
             std::cout << argv[file] << ',' << image.width << ',' << image.height << ','
-                << times[times.size()/2] << ',' << times.front() << ',' << times.back() << '\n';
+                << times[times.size()/2] << ',' << times[(times.size()*95-1)/100] << ',' << times.front() << ',' << times.back() << '\n';
             // 結果を使用し、最適化による呼び出しの除去を防ぐ。
             std::cerr << argv[file] << ": results=" << result_count << '\n';
         }

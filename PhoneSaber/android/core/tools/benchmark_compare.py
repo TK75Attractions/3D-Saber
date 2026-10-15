@@ -19,9 +19,10 @@ def main():
     if args.iterations < 1 or args.rounds < 1:
         parser.error("iterations and rounds must be positive")
     writer = csv.writer(sys.stdout)
-    writer.writerow(("png", "before_ms", "after_ms", "reduction_percent", "before_trials_ms", "after_trials_ms"))
+    writer.writerow(("png", "before_ms", "after_ms", "reduction_percent", "before_p95_ms", "after_p95_ms", "before_trials_ms", "after_trials_ms"))
     for path in args.png:
         trials = [[], []]
+        tails = [[], []]
         for round_index in range(args.rounds):
             for index in ((0, 1) if round_index % 2 == 0 else (1, 0)):
                 result = subprocess.run([(args.baseline, args.current)[index], str(args.iterations), path],
@@ -30,8 +31,12 @@ def main():
                 if len(rows) != 1 or rows[0]["png"] != path:
                     raise RuntimeError("unexpected benchmark CSV")
                 trials[index].append(float(rows[0]["median_ms"]))
+                # 旧版の CSV に p95 はない。未計測を中央値で代用しない。
+                if "p95_ms" in rows[0]:
+                    tails[index].append(float(rows[0]["p95_ms"]))
         before, after = map(statistics.median, trials)
         writer.writerow((path, f"{before:.6f}", f"{after:.6f}", f"{100*(1-after/before):.1f}",
+                         *[f"{statistics.median(values):.6f}" if values else "" for values in tails],
                          *[";".join(f"{value:.6f}" for value in values) for values in trials]))
         sys.stdout.flush()
 

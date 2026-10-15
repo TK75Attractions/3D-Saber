@@ -1,6 +1,7 @@
 // Direct C++17 translation of DetectionCore.swift's production component path.
 #include "internal.hpp"
 #include <numeric>
+#include <cstring>
 
 namespace phonesaber {
 double ScoreBreakdown::total() const {
@@ -351,7 +352,18 @@ std::vector<Scored> components(const Mask& mask, int w, int h, const Evidence& e
     std::vector<Scored> candidates;
     // 発見順と FIFO の取り出し順は同じ。点列そのものをキューにして除算・複製を省く。
     Points points;
-    for (int seed = 0; seed < int(remaining.size()); ++seed) if (remaining[seed]) {
+    // 小さな初期領域だけ確保し、疎な画像で全画素数分の点列を確保しない。
+    points.reserve(std::min(mask.size(),std::size_t(256)));
+    for (int seed = 0; seed < int(remaining.size()); ++seed) {
+        // 空領域は8画素ずつ飛ばす。非整列読み出しと末尾の境界を守り、非ゼロ値はすべて扱う。
+        while (seed+8 <= int(remaining.size())) {
+            uint64_t block;
+            std::memcpy(&block,remaining.data()+seed,sizeof(block));
+            if (block) break;
+            seed += 8;
+        }
+        if (seed == int(remaining.size())) break;
+        if (!remaining[seed]) continue;
         remaining[seed] = 0; points.clear(); points.push_back({seed%w,seed/w});
         std::size_t head = 0;
         while (head < points.size()) {
