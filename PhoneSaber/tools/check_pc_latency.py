@@ -25,6 +25,9 @@ def main():
     parser.add_argument('--before-ref', help='旧PerfLogで窓境界の回帰3件がFAILすることも確認')
     parser.add_argument('--compensation-before-ref', help='旧自動補正/画面推定で2件の回帰FAILを確認')
     parser.add_argument('--platform-before-ref', help='旧macOS専用サービスのWindows Editor判定FAILを確認')
+    parser.add_argument('--frame-before-ref', help='旧InputPointの新着なしlock回帰FAILとhost計測を確認')
+    parser.add_argument('--frames-only', action='store_true', help='新着なし/定常入力のhost回帰と計測だけ実行')
+    parser.add_argument('--sender-before-ref', help='旧統計の競合なしpoll回帰FAILとhost計測を確認')
     args = parser.parse_args()
     editor = Path(os.environ.get('PHONESABER_UNITY_CONTENTS', '/Applications/Unity/Hub/Editor/6000.3.9f1/Unity.app/Contents'))
     mono = editor / 'Resources/Scripting/MonoBleedingEdge'
@@ -58,6 +61,38 @@ public static class ProjectorMode { public const float BladeWidthScale=1,BladeOu
         refs = ['/r:' + str(p) for p in (editor / 'Resources/Scripting/Managed/UnityEngine').glob('*.dll')]
         refs += ['/r:' + str(template / 'Unity.InputSystem.dll'), '/r:' + str(mono / 'lib/mono/4.5/Facades/netstandard.dll')]
         sources = sorted(INPUT.glob('PhoneSaber*.cs')) + [INPUT / 'InputPoint.cs', INPUT / 'SwingEventStream.cs', ROOT / 'Assets/Scripts/Saber/SaberInputBridge.cs', ROOT / 'Assets/Scripts/Saber/MouseSaberInput.cs', ROOT / 'Assets/Scripts/Saber/CameraSaberHistory.cs', stubs]
+        frame_tests = ROOT / 'Assets/Tests/Editor/PhoneSaberReceiverStateReadTests.cs'
+        stats_tests = ROOT / 'Assets/Tests/Editor/PhoneSaberInputStatsTests.cs'
+        sender_tests = ROOT / 'Assets/Tests/Editor/PhoneSaberSenderGateTests.cs'
+        frame_sources = sources + [frame_tests, stats_tests, sender_tests, HOST / 'Host.cs']
+        runtime = dict(os.environ, MONO_PATH=os.pathsep.join(map(str, (
+            nunit.parent, build, editor / 'Resources/Scripting/Managed/UnityEngine', template))))
+        for before in ([True, False] if args.frame_before_ref or args.sender_before_ref else [False]):
+            current = list(frame_sources)
+            # native API は起動しない。時計を固定し、未使用の旧画面写像のqueryもhostへ差し替える。
+            host_input = build / 'InputPointHost.cs'
+            source = (subprocess.check_output(['git', 'show', args.frame_before_ref +
+                ':Assets/Scripts/Managers/Inputsystem/Input/InputPoint.cs'], cwd=ROOT).decode()
+                if before and args.frame_before_ref else (INPUT / 'InputPoint.cs').read_text())
+            host_input.write_text('using Time = FrameClock;\nusing Screen = FrameScreen;\n' + source)
+            current[current.index(INPUT / 'InputPoint.cs')] = host_input
+            if before and args.sender_before_ref:
+                old = build / 'InputStatsBefore.cs'
+                old.write_bytes(subprocess.check_output(['git', 'show', args.sender_before_ref +
+                    ':Assets/Scripts/Managers/Inputsystem/Input/PhoneSaberInputStats.cs'], cwd=ROOT))
+                current[current.index(INPUT / 'PhoneSaberInputStats.cs')] = old
+            exe = build / ('frames-before.exe' if before else 'frames.exe')
+            if run(compiler + ['/optimize+', '/define:UNITY_EDITOR,UNITY_EDITOR_WIN,PHONESABER_FRAME_HOST',
+                              '/r:' + str(nunit), '/out:' + str(exe)] + refs + list(map(str, current))):
+                return 1
+            expected = (3 if before and args.frame_before_ref else 0) | (4 if before and args.sender_before_ref else 0)
+            result = run([str(mono / 'bin/mono'), str(exe), str(expected)], env=runtime)
+            if result:
+                return 1
+            if before:
+                print('Before lock regressions FAIL reproduced (expected mask): ' + str(expected))
+        if args.frames_only:
+            return 0
         if args.platform_before_ref:
             for name in ('PhoneSaberBonjourPublisher.cs', 'PhoneSaberP2PBridgeProcess.cs', 'PhoneSaberTriageReceiverLauncher.cs'):
                 before = build / name
@@ -101,7 +136,7 @@ class Check { static int Main(string[] args) {
             if platform.startswith('UNITY_EDITOR'):
                 tests = [ROOT / 'Assets/Tests/Editor/PhoneSaberLatencyCompensationTests.cs',
                          ROOT / 'Assets/Tests/Editor/PhoneSaberLatencyProbeTests.cs',
-                         ROOT / 'Assets/Tests/Editor/PhoneSaberEndpointPredictorTests.cs']
+                         ROOT / 'Assets/Tests/Editor/PhoneSaberEndpointPredictorTests.cs', frame_tests, stats_tests, sender_tests]
                 if run(compiler + ['/target:library', '/r:' + str(nunit),
                                    '/out:' + str(build / (platform.replace(',', '-') + '-tests.dll'))] + refs + list(map(str, sources + tests))):
                     return 1

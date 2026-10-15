@@ -53,7 +53,7 @@ public class InputPoint : MonoBehaviour
     // 生データ（スレッドで更新される）
     float rawX, rawY;
     float rawX1a, rawY1a, rawX1b, rawY1b;
-    bool hasNewData = false;
+    volatile bool hasNewData = false;
     bool hasStickData = false;
     long rawReceiveTimestampTicks;
     string rawSender, rawSender2;
@@ -63,7 +63,7 @@ public class InputPoint : MonoBehaviour
         => Volatile.Read(ref discoveryResponder)?.Metrics.Read(sender, now);
     float rawX2, rawY2;
     float rawX2a, rawY2a, rawX2b, rawY2b;
-    bool hasNewData2 = false;
+    volatile bool hasNewData2 = false;
     bool hasStickData2 = false;
     long rawReceiveTimestampTicks2;
 
@@ -729,10 +729,16 @@ public class InputPoint : MonoBehaviour
         string freezeReceiveLog2 = null;
 #endif
 
+        // 新着なしでは受信 thread の lock を待たない。volatile は通知だけに使い、
+        // 座標・フラグのコピーと通知のクリアは従来どおり同じ lock 内で行う。
+        bool readRed = hasNewData;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        readRed |= Volatile.Read(ref pendingFreezeReceiveLog1) != null;
+#endif
         // スレッドから受け取った値をコピー
         // 有効フラグもこの座標スナップショットと一緒に main thread で公開する。
         // receive thread が次の packet のフラグだけを先に公開してはいけない。
-        lock (lockObj)
+        if (readRed) lock (lockObj)
         {
             if (hasNewData)
             {
@@ -758,7 +764,11 @@ public class InputPoint : MonoBehaviour
 #endif
         }
 
-        lock (lockObj2)
+        bool readBlue = hasNewData2;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        readBlue |= Volatile.Read(ref pendingFreezeReceiveLog2) != null;
+#endif
+        if (readBlue) lock (lockObj2)
         {
             if (hasNewData2)
             {
