@@ -149,6 +149,37 @@ class TrackingReportTests(unittest.TestCase):
 
 
 class LatencyMatrixTests(unittest.TestCase):
+    def test_mac_probe_keeps_only_this_runs_events_across_rotation(self):
+        fresh = ['event=latency-block block=0 n=15 median-ms=120',
+                 'event=latency-block block=1 n=15 median-ms=130',
+                 'event=latency-loop-end n=30 p95-ms=150']
+        for rotations in ((), (0,), (1,), (2,), (0, 1)):
+            with self.subTest(rotations=rotations), tempfile.TemporaryDirectory() as directory:
+                events = Path(directory) / 'events.log'
+                events.write_text('old log\n' * 500, encoding='utf-8')
+                (events.parent / 'events.log.1').write_text('old rotated log\n', encoding='utf-8')
+
+                def probe(*args, **kwargs):
+                    for index, line in enumerate(fresh):
+                        if index in rotations:
+                            # Unity と同じく、既存の世代を後ろへ移して新しいログを作る。
+                            for generation in range(3, -1, -1):
+                                path = events.parent / ('events.log' + (f'.{generation}' if generation else ''))
+                                if path.exists():
+                                    path.rename(events.parent / f'events.log.{generation + 1}')
+                            events.write_text('', encoding='utf-8')
+                        with events.open('a', encoding='utf-8') as handle:
+                            handle.write(line + '\n')
+
+                with mock.patch.object(latency_matrix, 'EVENTS', events), \
+                        mock.patch.object(latency_matrix.subprocess, 'run', side_effect=probe):
+                    lines = latency_matrix.run_probe(Path(directory) / '3D-Saber.app', 2, [],
+                                                     Path(directory) / 'player.log')
+                self.assertEqual(lines, fresh)
+                summary = latency_matrix.summarise(lines, required_blocks=2)
+                self.assertTrue(summary['complete'])
+                self.assertEqual((summary['loop'], summary['samples']), (125, 30))
+
     @staticmethod
     def android_run(sender='192.168.1.42', platform='android'):
         lines = [f'event=latency-estimate colour=RED sender={sender} platform={platform} '

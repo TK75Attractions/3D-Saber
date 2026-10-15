@@ -76,12 +76,10 @@ def launch_android(adb, device, arguments):
 
 
 def run_probe(app, blocks, unity_arguments, log):
-    offset = EVENTS.stat().st_size if EVENTS.exists() else 0
+    cursor = event_cursor(EVENTS.parent)
     subprocess.run(["/usr/bin/open", "-n", "-W", str(app), "--args", "-phonesaberStation", "A",
                     "-phonesaberLatencyProbe", str(blocks), *unity_arguments, "-logFile", str(log)])
-    with EVENTS.open("rb") as handle:
-        handle.seek(offset)
-        return handle.read().decode("utf-8", "replace").splitlines()
+    return new_events(EVENTS.parent, cursor)
 
 
 def summarise(lines, required_blocks=None, addresses=None):
