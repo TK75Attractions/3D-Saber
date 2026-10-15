@@ -684,7 +684,8 @@ public class InputPoint : MonoBehaviour
     void Update()
     {
         // 自動の統計読出しは秒1回だけ。描画ごとに時刻配列や文字列を作らない。
-        double predictionNow = Time.realtimeSinceStartupAsDouble;
+        // 予測の有効期限は受信と同じ Stopwatch 基準。Unity 起動からの経過秒とは比較しない。
+        double predictionNow = SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp);
         if (PredictionAutomatic && (predictionNow >= nextPredictionRefresh ||
             redPrediction.NeedsExpiry(predictionNow) || bluePrediction.NeedsExpiry(predictionNow)))
         {

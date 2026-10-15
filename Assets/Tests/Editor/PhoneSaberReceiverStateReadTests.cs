@@ -23,6 +23,8 @@ public class PhoneSaberReceiverStateReadTests
         SetField(input, "lockObj2", new object());
         SetField(input, "<RedCoordinateTiming>k__BackingField", new PhoneSaberCoordinateTiming());
         SetField(input, "<BlueCoordinateTiming>k__BackingField", new PhoneSaberCoordinateTiming());
+        SetField(input, "redInputStats", new PhoneSaberPacketStatistics());
+        SetField(input, "blueInputStats", new PhoneSaberPacketStatistics());
 #else
         var go = new GameObject("新着なしの座標読み取り");
         go.SetActive(false);
@@ -72,6 +74,36 @@ public class PhoneSaberReceiverStateReadTests
 #if !PHONESABER_FRAME_HOST
         UnityEngine.Object.DestroyImmediate(input.gameObject);
 #endif
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public void AutomaticPredictionExpiresBeforeTheNextPeriodicRefresh(bool blue)
+    {
+        var input = CreateIdleInput();
+        try
+        {
+            double now = SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp);
+            var expired = new PhoneSaberAutomaticLeadPolicy();
+            var fresh = new PhoneSaberAutomaticLeadPolicy();
+            expired.Update(now - 1, null, 44, null, now - 0.1);
+            fresh.Update(now - 1, null, 60, null, now + 10);
+            SetField(input, "redPrediction", blue ? fresh : expired);
+            SetField(input, "bluePrediction", blue ? expired : fresh);
+            SetField(input, "<PredictionAutomatic>k__BackingField", true);
+            SetField(input, "<LastReceivedMonotonicTime>k__BackingField", now);
+            SetField(input, "<LastReceivedMonotonicTime2>k__BackingField", now);
+            // 次の定期更新より前でも、受信時計で期限切れになった色だけは即座に解除する。
+            SetField(input, "nextPredictionRefresh", now + 1);
+            SetField(input, "networkShutdown", false);
+            var update = (Action)Delegate.CreateDelegate(typeof(Action), input, typeof(InputPoint)
+                .GetMethod("Update", BindingFlags.Instance | BindingFlags.NonPublic));
+            update();
+            Assert.AreEqual(0, input.PredictionLead(blue), "受信時計の期限切れを次の定期更新まで持ち越さない");
+            Assert.AreEqual("fallback", input.PredictionSource(blue));
+            Assert.AreEqual(60, input.PredictionLead(!blue), "有効な別色の予測量は維持する");
+        }
+        finally { DestroyIdleInput(input); }
     }
 
     [TestCase("lockObj")]

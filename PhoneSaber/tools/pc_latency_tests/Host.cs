@@ -11,6 +11,13 @@ public static class FrameClock
 }
 public static class FrameScreen { public static int width => 1920; public static int height => 1080; }
 
+// 座標取込みhostでは、画面・PlayerPrefsを読む推定入口だけを欠測に固定する。
+public static class FramePredictionPerfLog
+{
+    public static PhoneSaberLatencyEstimate Estimate(InputPoint input, bool blue, double now, PhoneSaberTimingStats timing) =>
+        new PhoneSaberLatencyEstimate(null, timing, null, 0, now, 60, 0);
+}
+
 // Editor は起動しない。実 InputPoint の座標取込みと送信元監視を Unity 同梱 Mono で実行する。
 class Frames
 {
@@ -44,6 +51,11 @@ class Frames
         tests.BothColoursConsumePacketsAndAllocateZeroBytesBetweenPackets();
         tests.PendingDiagnosticIsDrainedEvenWithoutNewCoordinates("pendingFreezeReceiveLog1");
         tests.PendingDiagnosticIsDrainedEvenWithoutNewCoordinates("pendingFreezeReceiveLog2");
+        bool checkPrediction = args.Length < 2 || args[1] != "skip-prediction";
+        if (checkPrediction)
+            foreach (bool secondStick in new[] { false, true })
+                CheckRegression(() => tests.AutomaticPredictionExpiresBeforeTheNextPeriodicRefresh(secondStick),
+                    secondStick ? 16 : 8, "受信時計の期限切れを次の定期更新まで持ち越さない");
         var statsTests = new PhoneSaberInputStatsTests();
         CheckRegression(statsTests.NoConflictPollingDoesNotWaitForStatisticsWriter, 4,
             "競合のない frame は受信統計の lock を待たない");
@@ -64,8 +76,8 @@ class Frames
         statistics.Record(0, "phone", true);
         zero &= Measure("sender-poll-no-conflict", i => statistics.PollSenderGate(0.5));
         PhoneSaberReceiverStateReadTests.DestroyIdleInput(input);
-        Console.WriteLine($"Frame regression: {8 - failed} PASS / {failed} FAIL");
-        int expected = args.Length == 1 ? int.Parse(args[0]) : 0;
+        Console.WriteLine($"Frame regression: {(checkPrediction ? 10 : 8) - failed} PASS / {failed} FAIL");
+        int expected = args.Length >= 1 ? int.Parse(args[0]) : 0;
         return failureMask == expected && zero ? 0 : 1;
     }
 
