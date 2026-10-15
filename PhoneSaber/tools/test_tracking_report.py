@@ -311,13 +311,34 @@ class LatencyMatrixTests(unittest.TestCase):
                 mock.patch('subprocess.run', return_value=mock.Mock(stdout=b'')), \
                 mock.patch.object(latency_matrix, 'device_id', return_value='iphone'), \
                 mock.patch.object(latency_matrix, 'launch_phone', return_value=True) as launch, \
-                mock.patch.object(latency_matrix, 'run_probe', return_value=[]) as probe, \
+                mock.patch.object(latency_matrix, 'run_probe', return_value=self.android_run(platform='ios')) as probe, \
                 mock.patch('android_ready.device_id') as android, contextlib.redirect_stdout(io.StringIO()):
             self.assertEqual(latency_matrix.main(), 0)
         android.assert_not_called()
         self.assertEqual(launch.call_args_list, [mock.call('iphone', latency_matrix.CONDITIONS[name][0])
                                                for name in ('baseline', 'lowlat')])
         self.assertEqual(probe.call_count, 2)
+
+    def test_ios_incomplete_or_failed_conditions_cannot_succeed(self):
+        complete = self.android_run(platform='ios')
+        cases = [
+            ('empty', [True] * 4, []),
+            ('missing-end', [True] * 4, complete[:-1]),
+            ('missing-block', [True] * 4, [line for line in complete if 'block=1' not in line]),
+            ('insufficient-samples', [True] * 4, [line.replace('n=15', 'n=3') for line in complete]),
+            ('zero-total', [True] * 4, [line.replace('n=45', 'n=0') for line in complete]),
+            ('failed-first-condition', [False, True, True, True], complete),
+            ('failed-last-condition', [True, True, True, False], complete),
+        ]
+        for name, launches, lines in cases:
+            with self.subTest(name=name), mock.patch('sys.platform', 'darwin'), \
+                    mock.patch('sys.argv', ['latency_matrix.py', '--repeat', '2', '--warmup', '0']), \
+                    mock.patch('subprocess.run', return_value=mock.Mock(stdout=b'')), \
+                    mock.patch.object(latency_matrix, 'device_id', return_value='iphone'), \
+                    mock.patch.object(latency_matrix, 'launch_phone', side_effect=launches), \
+                    mock.patch.object(latency_matrix, 'run_probe', return_value=lines), \
+                    contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(latency_matrix.main(), 1)
 
     def test_summary_reads_blocks_estimates_and_display(self):
         lines = [

@@ -208,7 +208,7 @@ def main():
                     description = 'Androidの現在の送信設定・全画面'
             else:
                 summary = summarise(run_probe(args.app, args.blocks, unity_arguments, log),
-                                    args.blocks if args.phone == 'android' else None, addresses)
+                                    args.blocks, addresses)
             summary.update(name=name, description=description, round=round_index + 1)
             results.append(summary)
             print(f"{name:9} #{round_index + 1}: 往復 {show(summary['loop'])} ms (p95 {show(summary['loop_p95'])}, "
@@ -217,10 +217,9 @@ def main():
                   f"発熱 {','.join(summary['thermal']) or '-'} fps {','.join(summary['fps_mode']) or '-'}", flush=True)
     if args.json:
         Path(args.json).write_text(json.dumps(results, ensure_ascii=False, indent=1), encoding="utf-8")
-    if args.phone == 'android' and len(results) != args.repeat * len(names):
+    if len(results) != args.repeat * len(names):
         return 1
-    return 0 if results and (not (windows or args.phone == 'android') or
-                            all(r['complete'] and r['samples'] > 0 and r['loop'] is not None for r in results)) else 1
+    return 0 if results and all(r['complete'] and r['samples'] > 0 and r['loop'] is not None for r in results) else 1
 
 
 if __name__ == "__main__":
