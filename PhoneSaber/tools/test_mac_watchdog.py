@@ -102,5 +102,54 @@ exit 2
         self.assertEqual(self.calls.read_text().splitlines(), ["launch"])
 
 
+class MacLauncherAppTests(unittest.TestCase):
+    def test_generated_launcher_starts_both_stations_in_utf8_locales(self):
+        with tempfile.TemporaryDirectory(prefix="縁日 launcher ") as directory:
+            root = Path(directory).resolve()
+            here = root / "PhoneSaber/mac/app"
+            here.mkdir(parents=True)
+            # 署名・LaunchServices 登録・通知は代替し、実アプリやゲームは起動しない。
+            installer = (SOURCE / "app/install_app.sh").read_text().replace(
+                "/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister",
+                "true")
+            (here / "install_app.sh").write_text(installer)
+            (here / "icon.icns").write_bytes((SOURCE / "app/icon.icns").read_bytes())
+            (here.parent / "saber-watchdog.sh").write_text('''#!/bin/bash
+printf '%s\n' "$@" > "$LAUNCHER_TEST_ARGUMENTS"
+''')
+            app = root / "Builds/Mac/3D-Saber.app"
+            app.mkdir(parents=True)
+            tools = root / "bin"
+            tools.mkdir()
+            codesign = tools / "codesign"
+            codesign.write_text("#!/bin/bash\nexit 0\n")
+            codesign.chmod(0o755)
+            temporary = root / "tmp"
+            temporary.mkdir()
+            arguments = root / "arguments"
+            env = dict(os.environ, HOME=str(root / "home"), TMPDIR=str(temporary),
+                       PATH=str(tools) + os.pathsep + os.environ["PATH"],
+                       LAUNCHER_TEST_ARGUMENTS=str(arguments))
+            for locale in ("C", "en_US.UTF-8", "ja_JP.UTF-8"):
+                for station in ("A", "B"):
+                    with self.subTest(locale=locale, station=station):
+                        env["LC_ALL"] = locale
+                        result = subprocess.run(
+                            ["/bin/bash", str(here / "install_app.sh"), station, str(root)],
+                            env=env, capture_output=True, text=True, errors="replace", timeout=10)
+                        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                        name = "Beat Trace Slash B" if station == "B" else "Beat Trace Slash"
+                        launcher = root / (name + ".app/Contents/MacOS/launcher")
+                        self.assertTrue(launcher.read_text().startswith("#!/bin/bash\n"), result.stderr)
+                        self.assertTrue(os.access(launcher, os.X_OK))
+                        launcher.write_text(launcher.read_text().replace("/usr/bin/osascript", "false"))
+                        result = subprocess.run([str(launcher)], env=env, input="",
+                                                capture_output=True, text=True, timeout=10)
+                        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                        self.assertEqual(arguments.read_text().splitlines(), [station, str(app)])
+                        log = root / "home/Library/Logs/PhoneSaber/launcher.log"
+                        self.assertIn(f"起動（台 {station}）", log.read_text())
+
+
 if __name__ == "__main__":
     unittest.main()

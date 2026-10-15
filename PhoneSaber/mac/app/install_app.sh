@@ -41,7 +41,7 @@ if [[ ! -x "\$REPO/PhoneSaber/mac/saber-watchdog.sh" && ! -f "\$REPO/PhoneSaber/
     /usr/bin/osascript -e 'display alert "Beat Trace Slash" message "ゲーム本体が見つかりません: '"\$REPO"'/Builds/Mac/3D-Saber.app"' >/dev/null 2>&1
     exit 1
 fi
-printf '\n=== %s 起動（台 $STATION）\n' "\$(date '+%Y-%m-%d %H:%M:%S')" >> "\$LOG"
+printf '\n=== %s 起動（台 ${STATION}）\n' "\$(date '+%Y-%m-%d %H:%M:%S')" >> "\$LOG"
 exec /bin/bash "\$REPO/PhoneSaber/mac/saber-watchdog.sh" $STATION "\$REPO/Builds/Mac/3D-Saber.app" < /dev/null >> "\$LOG" 2>&1
 SCRIPT
 chmod +x "$staged/Contents/MacOS/launcher" || exit 1
