@@ -27,7 +27,10 @@ public static class PhoneSaberDisplaySyncSettings
         Clamp(mode) == VSync && currentVSyncCount != 1 ? 1 : -1;
 }
 
-// vsync とは別の上限。既定では targetFrameRate にも書き込まない。
+// vsync とは別の上限。ゲームは vsync を切って上限なし（targetFrameRate=-1）で描くので、60 Hz の画面でも
+// 約1100 fps になり、起動しているだけで Mac が熱くなっていた（2026-10-15 events.log の event=perf、Result 画面）。
+// 遅延は vsync の有無で差が出なかった（2026-10-14 実測）ため、未設定の台は「画面の2倍」を既定にする。
+// 上限は下げる向きだけに効かせ、ゲームが自分で決めた低い値（メニューの 30 fps など）は上げない。
 public static class PhoneSaberFrameCapSettings
 {
     public const int GameDefault = 0;
@@ -38,7 +41,8 @@ public static class PhoneSaberFrameCapSettings
         "PhoneSaber.FrameCap." + PhoneSaberStation.Normalize(station) + ".v1";
 
     public static int Clamp(int mode) => mode == FourTimes || mode == TwoTimes ? mode : GameDefault;
-    public static int Load(string station) => Clamp(PlayerPrefs.GetInt(Key(station), GameDefault));
+    public const int Default = TwoTimes;
+    public static int Load(string station) => Clamp(PlayerPrefs.GetInt(Key(station), Default));
 
     public static void Save(string station, int mode)
     {
@@ -49,14 +53,14 @@ public static class PhoneSaberFrameCapSettings
     public static string Label(int mode) => Clamp(mode) == FourTimes ? "画面の4倍" :
         Clamp(mode) == TwoTimes ? "画面の2倍" : "ゲームの設定のまま";
 
-    // 59.94 Hz は 240 / 120 fps へ丸める。Hz 不明・範囲外・変更不要なら -1。
+    // 59.94 Hz は 240 / 120 fps へ丸める。Hz 不明・範囲外・変更不要・ゲームの値がすでに上限以下なら -1。
     public static int TargetFrameRateToApply(int mode, double refreshHz, int currentTarget)
     {
         mode = Clamp(mode);
         if (mode == GameDefault || !(refreshHz > 0)) return -1;
         double target = System.Math.Round(refreshHz * (mode == FourTimes ? 4 : 2));
         if (!(target >= 1 && target <= int.MaxValue)) return -1;
-        return currentTarget == (int)target ? -1 : (int)target;
+        return currentTarget > 0 && currentTarget <= (int)target ? -1 : (int)target;
     }
 }
 
