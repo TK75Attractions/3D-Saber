@@ -150,7 +150,8 @@ class PcDiscovery(context: Context,
         publish()
         val wifi = network ?: return
         // 開発用の非Wi-Fi経路は手入力だけ。Wi-Fi探索・multicast lockは使わない。
-        if (!isWifi(wifi)) return
+        // 通常はWi-Fi限定の通知で選択済み。通知に遅れる同期getterのnullで探索を止めない。
+        if (allowNonWifi && !isWifi(wifi)) return
         val token = generation
         try { multicast.acquire() } catch (e: Exception) {
             warning = "探索ロック失敗: ${e.localizedMessage}"

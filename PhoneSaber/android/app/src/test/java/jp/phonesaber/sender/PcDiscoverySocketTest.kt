@@ -3,6 +3,11 @@ package jp.phonesaber.sender
 import android.content.Context
 import android.content.SharedPreferences
 import android.net.ConnectivityManager
+import android.net.LinkAddress
+import android.net.LinkProperties
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import android.net.nsd.NsdManager
 import android.net.nsd.NsdServiceInfo
 import android.net.wifi.WifiManager
@@ -22,13 +27,14 @@ import org.mockito.Mockito.*
 class PcDiscoverySocketTest {
     private fun withDiscovery(nsd: NsdManager = mock(NsdManager::class.java), runPosts: Boolean = false,
                               onUpdate: (Destination?, android.net.Network?, String) -> Unit = { _, _, _ -> },
+                              connectivity: ConnectivityManager = mock(ConnectivityManager::class.java),
                               test: (PcDiscovery) -> Unit) {
         val context = mock(Context::class.java)
         val wifi = mock(WifiManager::class.java)
         val multicast = mock(WifiManager.MulticastLock::class.java)
         `when`(context.applicationContext).thenReturn(context)
         `when`(context.getSystemService(ConnectivityManager::class.java))
-            .thenReturn(mock(ConnectivityManager::class.java))
+            .thenReturn(connectivity)
         `when`(context.getSystemService(NsdManager::class.java)).thenReturn(nsd)
         `when`(context.getSystemService(WifiManager::class.java)).thenReturn(wifi)
         `when`(wifi.createMulticastLock("PhoneSaber-discovery")).thenReturn(multicast)
@@ -43,6 +49,60 @@ class PcDiscoverySocketTest {
                         .`when`(handler).post(any(Runnable::class.java))
                 }.use {
                     test(PcDiscovery(context, { _, _ -> }, onUpdate))
+                }
+            }
+        }
+    }
+
+    @Test fun wifiCallbackStartsDiscoveryBeforeSynchronousCapabilitiesCatchUp() {
+        val connectivity = mock(ConnectivityManager::class.java)
+        val nsd = mock(NsdManager::class.java)
+        val wifi = mock(Network::class.java)
+        val capabilities = mock(NetworkCapabilities::class.java)
+        `when`(capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)).thenReturn(true)
+        `when`(connectivity.allNetworks).thenReturn(emptyArray())
+        // 通知と同期getterは競合し得る。Wi-Fi通知と初期LinkPropertiesが先に届く。
+        `when`(connectivity.getNetworkCapabilities(wifi)).thenReturn(null)
+        val address = mock(LinkAddress::class.java)
+        `when`(address.address).thenReturn(InetAddress.getByName("192.168.1.50"))
+        `when`(address.prefixLength).thenReturn(24)
+        val properties = mock(LinkProperties::class.java)
+        `when`(properties.linkAddresses).thenReturn(listOf(address))
+        `when`(connectivity.getLinkProperties(wifi)).thenReturn(properties)
+        val request = mock(NetworkRequest::class.java)
+        mockConstruction(NetworkRequest.Builder::class.java, withSettings().defaultAnswer(RETURNS_SELF)) { builder, _ ->
+            `when`(builder.build()).thenReturn(request)
+        }.use {
+            // 探索開始を検証する。実ネットワークへbroadcastは送らない。
+            mockConstruction(DatagramSocket::class.java) { socket, _ ->
+                `when`(socket.isClosed).thenReturn(true)
+            }.use { sockets ->
+                withDiscovery(nsd, runPosts = true, connectivity = connectivity) { discovery ->
+                    try {
+                        discovery.start()
+                        val events = ArgumentCaptor.forClass(ConnectivityManager.NetworkCallback::class.java)
+                        verify(connectivity).registerNetworkCallback(eq(request), events.capture())
+                        events.value.onAvailable(wifi)
+                        events.value.onCapabilitiesChanged(wifi, capabilities)
+                        events.value.onLinkPropertiesChanged(wifi, properties)
+                        // この後ネットワーク変更がなくても、UDPとBonjourの探索が開始済みである。
+                        verify(nsd).discoverServices(eq("_phonesaber._udp."), eq(NsdManager.PROTOCOL_DNS_SD),
+                            any(NsdManager.DiscoveryListener::class.java))
+                        assertEquals(1, sockets.constructed().size)
+                        verify(wifi).bindSocket(sockets.constructed().single())
+                        discovery.stop()
+                        verify(connectivity).unregisterNetworkCallback(events.value)
+                        verify(nsd).stopServiceDiscovery(any(NsdManager.DiscoveryListener::class.java))
+                        verify(sockets.constructed().single(), atLeastOnce()).close()
+                        // 能力情報が揃った通常の停止→再開でも探索を再生成する。
+                        `when`(connectivity.getNetworkCapabilities(wifi)).thenReturn(capabilities)
+                        `when`(connectivity.allNetworks).thenReturn(arrayOf(wifi))
+                        discovery.start()
+                        assertEquals(2, sockets.constructed().size)
+                        verify(wifi).bindSocket(sockets.constructed().last())
+                        verify(nsd, times(2)).discoverServices(eq("_phonesaber._udp."), eq(NsdManager.PROTOCOL_DNS_SD),
+                            any(NsdManager.DiscoveryListener::class.java))
+                    } finally { discovery.stop() }
                 }
             }
         }
