@@ -95,7 +95,9 @@
       "PowerShell(Get-Command py, python3, python -ErrorAction SilentlyContinue | Select-Object Name, Source; Get-ChildItem \"$env:LOCALAPPDATA\\\\Programs\\\\Python\" -ErrorAction SilentlyContinue | Select-Object Name)",
       "Bash(grep -n \"CameraImuJudgment\\\\|cameraImuJudgment\\\\|m_Script: {fileID: 11500000, guid: \" Assets/Scenes/Game.unity)",
       "PowerShell($f = \"C:\\\\Users\\\\shike\\\\.claude\\\\projects\\\\C--Users-shike-dev-3D-Saber\\\\884c4483-83b0-4cb1-aca6-3210fafb9bd4.jsonl\"; $lines = Get-Content $f -Tail 40 -Encoding UTF8; foreach \\($l in $lines\\) { try { $o = $l | ConvertFrom-Json; $t = $o.type; $ts = $o.timestamp; $txt = \"\"; if \\($o.message -and $o.message.content\\) { if \\($o.message.content -is [string]\\) { $txt = $o.message.content } else { foreach \\($c in $o.message.content\\) { if \\($c.type -eq \"text\"\\) { $txt += \"[text] \" + $c.text } elseif \\($c.type -eq \"tool_use\"\\) { $txt += \"[tool_use \" + $c.name + \"] \" + \\($c.input | ConvertTo-Json -Compress -Depth 3\\) } elseif \\($c.type -eq \"tool_result\"\\) { $cc = $c.content; if \\($cc -isnot [string]\\) { $cc = \\($cc | ConvertTo-Json -Compress -Depth 3\\) }; $txt += \"[tool_result] \" + $cc } elseif \\($c.type -eq \"thinking\"\\) { $txt += \"[thinking] \" } } } }; if \\($txt.Length -gt 400\\) { $txt = $txt.Substring\\(0,400\\) + \"...\" }; \"$ts | $t | $txt\" } catch { \"PARSE-ERR\" } })",
-      "Bash(node dump_session.js \"C:/Users/shike/.claude/projects/C--Users-shike-dev-3D-Saber/884c4483-83b0-4cb1-aca6-3210fafb9bd4.jsonl\" prompts 2500)"
+      "Bash(node dump_session.js \"C:/Users/shike/.claude/projects/C--Users-shike-dev-3D-Saber/884c4483-83b0-4cb1-aca6-3210fafb9bd4.jsonl\" prompts 2500)",
+      "PowerShell(git -C C:\\\\Users\\\\shike\\\\dev\\\\3D-Saber status --short)",
+      "PowerShell(git -C C:\\\\Users\\\\shike\\\\dev\\\\3D-Saber log --oneline -15)"
     ],
     "defaultMode": "bypassPermissions"
   }

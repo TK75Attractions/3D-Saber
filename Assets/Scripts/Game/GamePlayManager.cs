@@ -52,7 +52,8 @@ public class GamePlayManager : MonoBehaviour
     // リニューアル版のセーバー判定。「だいぶ甘く」の要望(2026-07)でさらに緩和
     // (前値 blade 0.26 / hitXY 0.45 / minSpeed 3.0 → 当たりを広く、必要な振り速度を低く)。
     // 2026-10「切りにくすぎる」の要望で当たりを 1.3 倍(刃との距離 0.92 → 1.20)に広げた。
-    // 後続ノーツの巻き込みは SaberCutJudge の「1回の振りで1つの時刻」で防ぐ。シーンにも同じ値を保存している。
+    // 後続ノーツの巻き込みは SaberCutJudge の「1回の振りで1つの時刻」で防ぐ(間隔どおりのなぞりだけは続けて切れる)。
+    // シーンにも同じ値を保存している。
     public float saberBladeRadiusV2 = 0.32f;
     public float saberNoteHitRadiusXYV2 = 0.88f;
     public float saberMinCutSpeedV2 = 2.0f;

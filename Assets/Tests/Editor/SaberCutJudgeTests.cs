@@ -381,12 +381,142 @@ public class SaberCutJudgeTests
         if (pause)
         {
             // 0.1秒止まる(strokeRestSeconds=0.08 を超える)
+            tracker.Tick(new Vector3(1.5f, 0f, 0f), 0.05f); judge.TryCut(1.05);
             tracker.Tick(new Vector3(1.5f, 0f, 0f), 0.05f); judge.TryCut(1.1);
-            tracker.Tick(new Vector3(1.5f, 0f, 0f), 0.05f); judge.TryCut(1.15);
         }
-        tracker.Tick(new Vector3(5f, 0f, 0f), 0.1f); // 同じ向きに振って2つ目を通過
-        judge.TryCut(1.3);
-        Assert.AreEqual(pause, next.IsCut, pause ? "止まったあとの振りなら次のノーツを切れる" : "止まらずに振り続けた続きでは切らない");
+        // 同じ向きに振って2つ目を通過。2つ目の時刻より0.18秒早く、1つ目からの間も譜面の間隔の半分(0.15秒)に届かない。
+        tracker.Tick(new Vector3(5f, 0f, 0f), 0.02f);
+        judge.TryCut(1.12);
+        Assert.AreEqual(pause, next.IsCut, pause ? "止まったあとの振りなら次のノーツを切れる"
+            : "止まらずに振り続けた勢いで早く届いたノーツは切らない(巻き込み)");
+    }
+
+    // ------ なぞり: 隣のマスへ順番に来るノーツを、その間隔どおりに1回の振りでなぞると続けて切れる(曲時計があるときだけ) ------
+
+    // 本編と同じ当たりの刃と、譜面どおりに受付窓を開け閉めするノーツ(NoteSpawner)と採点(ScoreManager)。
+    private (SaberCutJudge judge, SaberTracker tracker, SaberInputBridge bridge, NoteSpawner spawner, ScoreManager score,
+        List<CuttableNote> notes) SweepRig(params NoteData[] chart)
+    {
+        var (judge, tracker, bridge) = GameBladeRig();
+        var root = new GameObject("SweepSpawner"); created.Add(root);
+        var prefab = new GameObject("SweepPrefab"); created.Add(prefab);
+        prefab.AddComponent<CuttableNote>(); prefab.SetActive(false);
+        var spawner = root.AddComponent<NoteSpawner>();
+        spawner.notePrefab = prefab; spawner.buildTimingCues = false;
+        spawner.simultaneousGuideEnabled = false;
+        var score = root.AddComponent<ScoreManager>(); score.Bind(spawner);
+        var notes = new List<CuttableNote>();
+        spawner.OnNoteSpawned += n => { n.gameObject.SetActive(true); created.Add(n.gameObject); notes.Add(n); };
+        spawner.SetChart(new ChartData { notes = new List<NoteData>(chart) });
+        spawner.Tick(.55); // 先読み(1秒)の境界ちょうどに置かない
+        return (judge, tracker, bridge, spawner, score, notes);
+    }
+
+    private static NoteData SweepNote(int ms, float x, float y = 0f, string direction = "none")
+        => new NoteData { time = ms, x = x, y = y, color = "red", type = direction == "none" ? "tap" : "direction",
+            direction = direction, count = 1 };
+
+    // 縦の刃を、本編と同じ順(受付窓の更新 → 刃の判定 → ノーツの更新)で0.02秒ずつ動かす。
+    private static void SweepStep(SaberCutJudge judge, SaberTracker tracker, SaberInputBridge bridge, NoteSpawner spawner,
+        Vector2 center, double time)
+    {
+        spawner.RefreshJudgmentWindows(time);
+        Step(judge, tracker, bridge, center, time);
+        spawner.Tick(time);
+    }
+
+    // 4つのノーツ(横に1ずつ・0.2秒おき)を、刃を秒速5で右へ動かしてなぞる。lateBy だけ遅れてなぞる。
+    private static void SweepRight(SaberCutJudge judge, SaberTracker tracker, SaberInputBridge bridge, NoteSpawner spawner,
+        double lateBy, double from = .7, double to = 2.0)
+    {
+        tracker.ResetTo(new Vector3(-1.5f + 5f * (float)(from - .02 - 1.0 - lateBy), 0f, 0f));
+        for (int i = 0; ; i++)
+        {
+            double t = from + i * .02;
+            if (t > to + 1e-9) break;
+            SweepStep(judge, tracker, bridge, spawner, new Vector2(-1.5f + 5f * (float)(t - 1.0 - lateBy), 0f), t);
+        }
+    }
+
+    private static NoteData[] FourInARow(string thirdDirection = "none") => new[]
+    {
+        SweepNote(1000, -1.5f), SweepNote(1200, -.5f), SweepNote(1400, .5f, 0f, thirdDirection), SweepNote(1600, 1.5f)
+    };
+
+    [Test]
+    public void OneSwingSweepsFourNotesInAdjacentCellsWhenEachIsReachedOnTime()
+    {
+        var (judge, tracker, bridge, spawner, score, notes) = SweepRig(FourInARow());
+        SweepRight(judge, tracker, bridge, spawner, 0);
+        Assert.AreEqual(4, notes.Count);
+        Assert.True(notes.TrueForAll(n => n.IsCut), "隣の4マスを順番どおりになぞれば、1回の振りで4つとも切れる");
+        Assert.AreEqual(4, score.HitCount);
+        Assert.AreEqual(0, score.MissCount);
+        Assert.AreEqual(4, score.PerfectCount, "それぞれ刃が届いた時刻で採点する");
+        foreach (var n in notes) Assert.AreEqual(n.HitTime, n.LastCutSongTime.Value, .011);
+    }
+
+    [Test]
+    public void LateSweepStillCutsTheFirstNote()
+    {
+        // 間隔0.2秒の半分(0.1秒)より遅れてなぞる。まだ刃の届かない2つ目と比べて1つ目を見送らない。
+        var (judge, tracker, bridge, spawner, score, notes) = SweepRig(FourInARow());
+        SweepRight(judge, tracker, bridge, spawner, .12);
+        Assert.True(notes.TrueForAll(n => n.IsCut));
+        Assert.AreEqual(0, score.MissCount);
+        Assert.AreEqual(4, score.GreatCount, "4つとも0.12秒遅れ");
+    }
+
+    [Test]
+    public void SweepDoesNotCutANoteWhoseArrowPointsElsewhere()
+    {
+        var (judge, tracker, bridge, spawner, score, notes) = SweepRig(FourInARow("down"));
+        SweepRight(judge, tracker, bridge, spawner, 0);
+        Assert.True(notes[0].IsCut && notes[1].IsCut && notes[3].IsCut, "矢印の合うノーツはなぞりで切れる");
+        Assert.False(notes[2].IsCut, "下向きの矢印は右へのなぞりでは切らない(向き違いの降格カットもしない)");
+        Assert.True(notes[2].IsMissed);
+        Assert.AreEqual(3, score.PerfectCount);
+        Assert.AreEqual(1, score.MissCount);
+    }
+
+    [Test]
+    public void FastFollowThroughDoesNotCutTheNextNoteButTheReturnSwingDoes()
+    {
+        // 0.25秒あとのノーツが隣にある。速い振り(秒速25)の勢いで0.04秒後に届いても切らず、振り返しで自分の時刻に切る。
+        var (judge, tracker, bridge, spawner, score, notes) = SweepRig(SweepNote(1000, -.5f), SweepNote(1250, .5f));
+        tracker.ResetTo(new Vector3(-3f, 0f, 0f));
+        for (int i = 0; i <= 10; i++) SweepStep(judge, tracker, bridge, spawner, new Vector2(-2.5f + .5f * i, 0f), .96 + i * .02);
+        Assert.True(notes[0].IsCut);
+        Assert.False(notes[1].IsCut, "振り抜けの勢いで、譜面の間隔の半分より早く届いた後ろのノーツは切らない");
+        for (int i = 1; i <= 7; i++) SweepStep(judge, tracker, bridge, spawner, new Vector2(2.5f - .5f * i, 0f), 1.16 + i * .02);
+        Assert.True(notes[1].IsCut, "振り返した次の振りなら切れる");
+        Assert.AreEqual(2, score.PerfectCount, "どちらも刃が自分の時刻に届いた振りで採点する");
+        Assert.AreEqual(0, score.MissCount);
+    }
+
+    [Test]
+    public void SweepingIsOffWithoutTheSongClock()
+    {
+        var (judge, tracker) = MakeRig();
+        var first = TimedNote(Vector3.zero, 1.0);
+        var next = TimedNote(new Vector3(3f, 0f, 0f), 1.3);
+        tracker.ResetTo(new Vector3(-2f, 0f, 0f));
+        tracker.Tick(new Vector3(1.5f, 0f, 0f), 0.1f);
+        judge.TryCut();
+        tracker.Tick(new Vector3(5f, 0f, 0f), 0.1f);
+        judge.TryCut();
+        Assert.True(first.IsCut);
+        Assert.False(next.IsCut, "曲時計のない画面(タイトル・選曲)は従来どおり、1回の振りで1つの時刻だけ");
+    }
+
+    [Test]
+    public void SweepingCanBeTurnedOff()
+    {
+        var (judge, tracker, bridge, spawner, score, notes) = SweepRig(FourInARow());
+        judge.sweepEnabled = false;
+        SweepRight(judge, tracker, bridge, spawner, 0);
+        Assert.AreEqual(1, notes.FindAll(n => n.IsCut).Count, "sweepEnabled=false なら従来どおり1回の振りで1つだけ");
+        Assert.AreEqual(3, score.MissCount);
     }
 
     [Test]

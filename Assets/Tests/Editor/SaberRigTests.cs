@@ -55,10 +55,14 @@ public class SaberRigTests
     public void EnsureSecondSaber_CopiesJudgeTuning()
     {
         var primary = MakePrimary();
+        primary.sweepEnabled = false;
+        primary.sweepPaceRatio = .7f;
         var second = SaberRig.EnsureSecondSaber(primary, SaberHand.Right);
         Assert.AreEqual(primary.bladeRadius, second.bladeRadius, 0.0001f);
         Assert.AreEqual(primary.noteHitRadiusXY, second.noteHitRadiusXY, 0.0001f);
         Assert.AreEqual(primary.minCutSpeed, second.minCutSpeed, 0.0001f);
+        Assert.IsFalse(second.sweepEnabled, "なぞりの切り替えも2本目へ写す");
+        Assert.AreEqual(.7f, second.sweepPaceRatio, 0.0001f);
     }
 
     [Test]

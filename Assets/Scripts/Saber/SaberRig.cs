@@ -85,6 +85,8 @@ public static class SaberRig
         to.verticalDirectionScale = from.verticalDirectionScale;
         to.minSwingWidth = from.minSwingWidth;
         to.widenGuardDistance = from.widenGuardDistance;
+        to.sweepEnabled = from.sweepEnabled;
+        to.sweepPaceRatio = from.sweepPaceRatio;
     }
 
     private static SaberCutJudge FindSecondJudge(SaberCutJudge primary)

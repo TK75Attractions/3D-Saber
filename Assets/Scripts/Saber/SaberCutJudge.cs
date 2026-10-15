@@ -11,10 +11,11 @@ using UnityEngine;
 // 曲時計があるときは、前に判定したときの刃から今の刃までが通った面でも入ったかを見て(速い振りの飛び越し)、
 // 採点はノーツに届く部分がノーツの中心を通り過ぎた時刻にする(前後の刃の値の間で割り振る)。
 // カメラの値で細い側から振ると、振りを横切る刃の幅がなくなるので、そのときだけ当たりを広げる(近くに別の時刻のノーツがなければ)。
-// 1回の振りで切れるのは1つの時刻のノーツだけ(同時のノーツはまとめて)。後続のノーツは同じ振りの続きでは切れない。
+// 1回の振りで切れるのは、基本は1つの時刻のノーツだけ(同時のノーツはまとめて)。振り抜けの勢いで後続のノーツを巻き込まない。
+// ただし曲時計があるときは、隣のマスへ順番に来るノーツを、その間隔どおりになぞれば同じ振りで続けて切れる(Sweeps)。
 public class SaberCutJudge : MonoBehaviour
 {
-    // 同時に切れるとみなすノーツの時刻の差(秒)。譜面の同時ノーツは時刻差0で、後続のノーツは0.12秒以上離れている。
+    // 同時に切れるとみなすノーツの時刻の差(秒)。譜面の同時ノーツは時刻差0で、後続のノーツは0.06秒以上離れている。
     public const float SimultaneousSeconds = .025f;
     // 向きを刃の中心の動きで決めるのに要る最小の移動量。これより短ければ従来どおり速さの向きを使う。
     const float DirectionTravel = .5f;
@@ -54,6 +55,12 @@ public class SaberCutJudge : MonoBehaviour
     public float minSwingWidth = 3.4f;
     // 広げた当たりで入るのは、この距離の中に時刻の違う受付中のノーツ(この手で切れるもの)がないときだけ(巻き込みを増やさない)。
     public float widenGuardDistance = 2.9f;
+    // 隣のマスへ順番に来るノーツを、1回の振りでなぞって続けて切れるようにする(曲時計があるときだけ)。false なら従来どおり1つの時刻だけ。
+    public bool sweepEnabled = true;
+    // なぞりとみなすのは、前に切ったノーツから「譜面の間隔×この割合」以上たって刃が届いたとき。
+    // 0.5 は、プレイヤーのずれを差し引いて、前のノーツより自分の時刻に近いときに届いたという意味。
+    // それより早く届いたのは振り抜けの勢い(巻き込み)なので切らない。ただし自分の時刻から PERFECT の幅以内に届いたら切る。
+    [Range(0f, 1f)] public float sweepPaceRatio = .5f;
 
     // GamePlayManager / GManager から RunJudge() を呼ぶときは false にして
     // 自前の Update を止め、外部から1点で呼び出す（GManager 主体パターン）。
@@ -94,12 +101,14 @@ public class SaberCutJudge : MonoBehaviour
     private int contactResetVersion;
     double songTime = double.NaN;
 
-    // 今の振り。止まるか向きが大きく変わるまでを1回とし、その振りで切った時刻(未カットは NaN)を覚える。
+    // 今の振り。止まるか向きが大きく変わるまでを1回とし、その振りで最後に切った時刻(未カットは NaN)と、
+    // そのノーツに刃が届いた曲時計(なぞりの間隔を測る起点)を覚える。
     int strokeTick = -1;
     bool strokeMoving;
     Vector2 strokeDirection;
     float strokeRest;
     double strokeGroupTime = double.NaN;
+    double strokeGroupReach = double.NaN;
     readonly Dictionary<CuttableNote, uint> strokeBlocked = new Dictionary<CuttableNote, uint>();
     // 次の振りに変わった(保留中のノーツの起点を置き直す)。
     bool strokeRestarted;
@@ -284,7 +293,8 @@ public class SaberCutJudge : MonoBehaviour
             float distNow = blade ? DistPointToSegment(noteXY, a, b, out closest) : Vector2.Distance(center, noteXY);
             if (distNow > p.range)
             {
-                if (TakeTurn(note)) Finish(note, p, imuHint, ExitVelocity(p, center));
+                Vector3 exit = ExitVelocity(p, center);
+                if (TakeTurn(note, p, exit, imuHint, a, b)) Finish(note, p, imuHint, exit);
                 cuts++;
                 toRemove.Add(note);
                 continue;
@@ -293,9 +303,10 @@ public class SaberCutJudge : MonoBehaviour
             if (!Passed(p, a, b, center, noteXY)) continue;
             // 通り過ぎた: 抜け切るのを待たずに切る。切れなかったら(逆向き・ロングの途中)この振りではもう切らない。
             // 構えの振りで通り過ぎても、振り返してから入り直すので、振り下ろしの時刻で採点される。
-            if (TakeTurn(note))
+            Vector3 swing = SwingVelocity(p, center - p.anchor);
+            if (TakeTurn(note, p, swing, imuHint, a, b))
             {
-                Finish(note, p, imuHint, SwingVelocity(p, center - p.anchor));
+                Finish(note, p, imuHint, swing);
                 if (!note.IsCut) Block(note);
             }
             cuts++;
@@ -505,25 +516,39 @@ public class SaberCutJudge : MonoBehaviour
         bool clocked = Finite(songTime);
         Vector2 motion = new Vector2(velocity.x, velocity.y);
         double? judged = clocked ? ScoreTime(note, p, motion) : Finite(p.bestSongTime) ? p.bestSongTime : (double?)null;
-        // 向きの幅は曲時計があるときだけ広げる(時計がないタイトル等は従来の±30°)。
-        float tolerance = clocked ? Mathf.Cos(directionToleranceDegrees * Mathf.Deg2Rad) : .866f;
-        // カメラの値は縦が縮んで届くので、向きを比べるときだけ縦の動きを戻す(切り口や破片の向きは画面の動きのまま)。
-        Vector2? direction = clocked && ReceivingCamera
-            ? new Vector2(motion.x, motion.y * verticalDirectionScale) : (Vector2?)null;
-        bool accepted = note.CutAtSongTime(p.hitPoint, velocity, imuHint, EffectiveHand(), judged, tolerance, direction);
-        if (accepted && Grouped(note) && double.IsNaN(strokeGroupTime)) strokeGroupTime = note.HitTime;
+        Vector2? direction = clocked && ReceivingCamera ? JudgedDirection(motion) : (Vector2?)null;
+        bool accepted = note.CutAtSongTime(p.hitPoint, velocity, imuHint, EffectiveHand(), judged, DirectionTolerance(), direction);
+        if (!accepted || !Grouped(note)) return;
+        // この振りで切った時刻を進める(同時のノーツは最初の1つで決まる)。次のなぞりの間隔は、刃がこのノーツに届いた時刻から測る。
+        if (double.IsNaN(strokeGroupTime) || note.HitTime - strokeGroupTime > SimultaneousSeconds)
+        {
+            strokeGroupTime = note.HitTime;
+            strokeGroupReach = clocked ? ReachTime(p, motion) : double.NaN;
+        }
     }
 
     bool ReceivingCamera => bladeProvider != null && bladeProvider.ReceivingCamera;
 
-    // 採点の時刻: 刃のうちノーツに届く部分がノーツの中心を通り過ぎた時刻(切った向きと同じ向きに通り過ぎたもの)。
+    // 向きが合うとみなす幅(dot の閾値)。曲時計があるときだけ広げる(時計がないタイトル等は従来の±30°)。
+    float DirectionTolerance() => Finite(songTime) ? Mathf.Cos(directionToleranceDegrees * Mathf.Deg2Rad) : .866f;
+
+    // カメラの値は縦が縮んで届くので、向きを比べるときだけ縦の動きを戻す(切り口や破片の向きは画面の動きのまま)。
+    Vector2 JudgedDirection(Vector2 motion) => new Vector2(motion.x, motion.y * verticalDirectionScale);
+
+    // 刃がノーツに届いた時刻: 刃のうちノーツに届く部分がノーツの中心を通り過ぎた時刻(切った向きと同じ向きに通り過ぎたもの)。
     // なければいちばん近づいた時刻。
+    static double ReachTime(Pending p, Vector2 cutMotion)
+    {
+        if (Finite(p.crossSongTime) && Vector2.Dot(p.crossDirection, cutMotion) > 0f) return p.crossSongTime;
+        if (Finite(p.previousCrossSongTime) && Vector2.Dot(p.previousCrossDirection, cutMotion) > 0f) return p.previousCrossSongTime;
+        return p.bestSongTime;
+    }
+
+    // 採点の時刻は刃がノーツに届いた時刻。
     // 1回で切るノーツは判定窓の端に収める(切れたのに MISS と採点しない)。ロングは完了の割合で採点する。
     double? ScoreTime(CuttableNote note, Pending p, Vector2 cutMotion)
     {
-        double time = p.bestSongTime;
-        if (Finite(p.crossSongTime) && Vector2.Dot(p.crossDirection, cutMotion) > 0f) time = p.crossSongTime;
-        else if (Finite(p.previousCrossSongTime) && Vector2.Dot(p.previousCrossDirection, cutMotion) > 0f) time = p.previousCrossSongTime;
+        double time = ReachTime(p, cutMotion);
         if (!Finite(time)) return null;
         if (Grouped(note))
             time = System.Math.Max(note.HitTime - JudgmentTierHelper.EarlyBadSeconds,
@@ -531,17 +556,41 @@ public class SaberCutJudge : MonoBehaviour
         return time;
     }
 
-    // 抜けたノーツを今の振りで切ってよいか。1回の振りでは1つの時刻のノーツだけを切る。
+    // 抜けた(通り過ぎた)ノーツを今の振りで切ってよいか。
     // まだ何も切っていない振りが複数のノーツにかかっていたら、タイミングのいちばん合ったノーツを選ぶ。
-    bool TakeTurn(CuttableNote note)
+    // 切ったあとは、同時のノーツと、なぞりで届いた後ろの時刻のノーツ(Sweeps)だけを切る。ほかはこの振りでは切らない。
+    bool TakeTurn(CuttableNote note, Pending p, Vector3 velocity, CutDirection imuHint, Vector2 a, Vector2 b)
     {
         if (!Grouped(note)) return true;
         if (!double.IsNaN(strokeGroupTime))
-            return System.Math.Abs(note.HitTime - strokeGroupTime) <= SimultaneousSeconds || Block(note);
-        CuttableNote best = BestTimed();
+            return System.Math.Abs(note.HitTime - strokeGroupTime) <= SimultaneousSeconds
+                || Sweeps(note, p, velocity, imuHint) || Block(note);
+        CuttableNote best = BestTimed(note, a, b);
         if (best == null || System.Math.Abs(note.HitTime - best.HitTime) <= SimultaneousSeconds) return true;
         return Block(note);
     }
+
+    // 同じ振りの続きで、後ろの時刻のノーツをなぞりとして切ってよいか(曲時計があるときだけ)。
+    // 前に切ったノーツから「譜面の間隔×sweepPaceRatio」以上たって届いたか、このノーツの時刻から PERFECT の幅以内に届いたこと。
+    // 向きの決まったノーツは振りの向きが合うときだけ(なぞりの途中で、向き違いの降格カットをしない)。
+    bool Sweeps(CuttableNote note, Pending p, Vector3 velocity, CutDirection imuHint)
+    {
+        if (!SweepActive || !Finite(strokeGroupReach)) return false;
+        double gap = note.HitTime - strokeGroupTime;
+        if (gap <= SimultaneousSeconds) return false;
+        Vector2 motion = new Vector2(velocity.x, velocity.y);
+        double reach = ReachTime(p, motion);
+        if (!Finite(reach)) return false;
+        bool paced = reach - strokeGroupReach >= gap * sweepPaceRatio;
+        bool onTime = reach >= note.HitTime - JudgmentTierHelper.EarlyPerfectSeconds
+            && reach <= note.HitTime + JudgmentTierHelper.LatePerfectSeconds;
+        if (!paced && !onTime) return false;
+        if (note.RequiredDirection == CutDirection.None || note.DirectionVisualOnly) return true;
+        return CutDirectionHelper.MatchesWithHint(note.RequiredDirection,
+            ReceivingCamera ? JudgedDirection(motion) : motion, imuHint, DirectionTolerance());
+    }
+
+    bool SweepActive => sweepEnabled && Finite(songTime);
 
     bool Block(CuttableNote note)
     {
@@ -550,7 +599,9 @@ public class SaberCutJudge : MonoBehaviour
     }
 
     // 保留中のノーツのうち、通り過ぎた(なければ近づいた)時刻がヒット時刻にいちばん近いもの(時計がなければヒット時刻が早いもの)。
-    CuttableNote BestTimed()
+    // なぞりを使うときは、decided より後ろの時刻で刃がまだ届いていないノーツは比べない(近づいている途中の時刻で比べると、
+    // 遅めのなぞりで1つ目を見送ってしまう)。そのノーツは、なぞりの続きで届いたときに Sweeps で決める。
+    CuttableNote BestTimed(CuttableNote decided, Vector2 a, Vector2 b)
     {
         CuttableNote best = null;
         bool bestTimed = false;
@@ -559,6 +610,7 @@ public class SaberCutJudge : MonoBehaviour
         {
             CuttableNote note = kv.Key;
             if (!Grouped(note) || !StillCuttable(note, kv.Value) || IsBlocked(note)) continue;
+            if (NotReachedYet(note, kv.Value, decided, a, b)) continue;
             double time = Finite(kv.Value.crossSongTime) ? kv.Value.crossSongTime : kv.Value.bestSongTime;
             bool timed = Finite(time);
             double score = timed ? System.Math.Abs(time - note.HitTime) : note.HitTime;
@@ -571,12 +623,27 @@ public class SaberCutJudge : MonoBehaviour
         return best;
     }
 
-    // 今の振りでは切らないノーツ: この振りで見送ったもの、またはすでに切った時刻と同時でない単発ノーツ。
+    // なぞりの続きで届くかもしれないノーツ: decided より後ろの時刻で、通り過ぎた記録がなく、
+    // 刃のうちノーツに届く部分より、動いている向きの先にある。
+    bool NotReachedYet(CuttableNote note, Pending p, CuttableNote decided, Vector2 a, Vector2 b)
+    {
+        if (!SweepActive || note.HitTime - decided.HitTime <= SimultaneousSeconds || Finite(p.crossSongTime)) return false;
+        Vector2 m = hasLastMotion ? lastMotion : new Vector2(saber.Velocity.x, saber.Velocity.y);
+        if (m.sqrMagnitude < 1e-8f) return false;
+        m.Normalize();
+        Vector2 noteXY = new Vector2(note.transform.position.x, note.transform.position.y);
+        return Vector2.Dot(noteXY - CuttingPoint(a, b, noteXY, m), m) > 0f;
+    }
+
+    // 今の振りでは切らないノーツ: この振りで見送ったもの、またはすでに切った時刻より前の単発ノーツ。
+    // 後ろの時刻のノーツは、なぞりの続きで届けば切れるので入れておく(なぞりを使わないときは従来どおり同時のものだけ)。
     bool ExcludedFromStroke(CuttableNote note)
     {
         if (IsBlocked(note)) return true;
-        return Grouped(note) && !double.IsNaN(strokeGroupTime)
-            && System.Math.Abs(note.HitTime - strokeGroupTime) > SimultaneousSeconds;
+        if (!Grouped(note) || double.IsNaN(strokeGroupTime)) return false;
+        double gap = note.HitTime - strokeGroupTime;
+        if (System.Math.Abs(gap) <= SimultaneousSeconds) return false;
+        return gap < 0 || !SweepActive;
     }
 
     bool IsBlocked(CuttableNote note) => strokeBlocked.TryGetValue(note, out uint version) && version == note.SpawnVersion;
@@ -610,7 +677,7 @@ public class SaberCutJudge : MonoBehaviour
     {
         strokeMoving = false;
         strokeRest = 0;
-        strokeGroupTime = double.NaN;
+        strokeGroupTime = strokeGroupReach = double.NaN;
         strokeBlocked.Clear();
         strokeRestarted = true;
     }
