@@ -59,7 +59,8 @@ struct ProbeRoundTrip {
         if values.count > 16 { values.removeFirst(values.count - 16) }
     }
     func snapshot(at now: Double) -> (median: Double?, count: Int, age: Double?) {
-        let live = values.filter { now - $0.at <= 10 }
+        // 呼出側の時刻取得と lock 取得の間に届いた応答は、次の集計で使う。
+        let live = values.filter { $0.at <= now && now - $0.at <= 10 }
         let sorted = live.map(\.ms).sorted(), n = live.count
         guard n > 0, let last = live.last else { return (nil, 0, nil) }
         return (n.isMultiple(of: 2) ? (sorted[n / 2 - 1] + sorted[n / 2]) / 2 : sorted[n / 2], n, now - last.at)
