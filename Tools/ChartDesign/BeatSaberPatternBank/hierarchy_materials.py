@@ -7,6 +7,11 @@ from hierarchy_rework import read,save,Music,FORM,reduced,path_for,section
 from integrate_patterns import internal
 from scope_guard import authorize_specs
 
+def style_core_valid(ns,anchors):
+ """曲の代表フレーズは定時の位置素材で共通形へ戻さない。手は色由来の記録で照合。"""
+ lookup={(round(n['time'],4),n['_hand']):(n['x'],n['y']) for n in ns}
+ return all(lookup.get((round(a['time'],4),a['hand']))==(a['x'],a['y']) for a in anchors)
+
 def movement_valid(ns,m):
  for h in (0,1):
   seq=[n for n in ns if n['_hand']==h]
@@ -33,12 +38,13 @@ def finalize_preserved(ns,m,diff,metadata):
 def main():
  p=argparse.ArgumentParser();p.add_argument('--repo',type=Path,required=True);p.add_argument('--features',type=Path,required=True);args=p.parse_args()
  repo=args.repo;design=repo/'Tools/ChartDesign/FiveSongs20261014';bank=repo/'Tools/ChartDesign/BeatSaberPatternBank';prior=read(bank/'applications.json');apps=prior['applications'];patterns=read(bank/'converted-patterns.json')['patterns'];history=read(design/'hierarchy-design.json');specs=read(design/'songs.json');authorize_specs(specs)
+ styles=read(design/'song-style-design.json') if (design/'song-style-design.json').exists() else {'songs':{}}
  states={};pending=[];added=[];done={a['patternId'] for a in apps}
  for spec in specs:
   sid=spec['id'];m=Music(spec,args.features);chart=read(repo/'Assets/StreamingAssets/Songs'/sid/'chart_hard.json');ev=read(design/sid/'hard-evidence.json');ns=internal(chart,read(design/sid/'hard-cut-plan.json'),m,ev)
   groups=collections.Counter(n['time'] for n in ns)
   for n,e in zip(ns,ev):n['_key']=e.get('sharedAccent',False);n['_pair']=groups[n['time']]==2;n['_arrow']=False;n['_forced']=None
-  states[sid]=dict(m=m,chart=chart,ns=ns,changed=False)
+  states[sid]=dict(m=m,chart=chart,ns=ns,changed=False,styleCore=styles['songs'].get(sid,{}).get('protectedCoreHits',[]))
  for pattern in patterns:
   if pattern['id'] in done:continue
   choices=[]
@@ -72,6 +78,7 @@ def main():
    for i,source in matches:
     changed+=(ns[i]['x'],ns[i]['y'])!=(source['x'],source['y']);ns[i]['x']=source['x'];ns[i]['y']=source['y']
    if changed<2:rejections['unchanged']+=1;continue
+   if not style_core_valid(ns,state['styleCore']):rejections['songStyleCore']+=1;continue
    if not movement_valid(ns,state['m']):rejections['movementOrSimultaneous']+=1;continue
    _,failure=path_for(ns,state['m'])
    if failure is not None:rejections['cutPath']+=1;continue

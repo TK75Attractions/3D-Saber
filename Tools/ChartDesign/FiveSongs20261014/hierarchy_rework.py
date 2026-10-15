@@ -301,7 +301,7 @@ def finalize(ns,m,diff,metadata,upper=None):
   if n['_arrow']:n['direction']=plan[i]['directions'][0];n['type']='direction'
  chart=copy.deepcopy(metadata);chart['notes']=[{k:v for k,v in n.items() if not k.startswith('_')} for n in ns]
  chart['hierarchyDesignVersion']=1;chart['_comment']='Hard主譜面から下位へ打点・手・位置を包含。4置き場と共通アクセント。hierarchy-design.json参照。'
- chart['displayLevel']={'ManicSonic':(3,6,10),'escapade':(3,6,10),'logic':(3,6,9),'BenkyouRemaster':(3,6,9),'Aobasou':(3,6,10)}[m.spec['id']][('easy','normal','hard').index(diff)]
+ chart['displayLevel']=metadata['displayLevel'] if metadata.get('styleDesignVersion') else {'ManicSonic':(3,6,9),'escapade':(3,6,9),'logic':(3,6,7),'BenkyouRemaster':(3,6,8),'Aobasou':(3,6,8)}[m.spec['id']][('easy','normal','hard').index(diff)]
  ev=[dict(index=i,beat=n['beat'],hand='red' if n['_hand']==0 else 'blue',role=FORM[m.spec['id']][section(m,n['beat'])][4],phrase=int(n['beat']//16),sharedAccent=n.get('_key',False),**m.ev(n['beat'])) for i,n in enumerate(ns)]
  return chart,dict(notes=plan),ev
 

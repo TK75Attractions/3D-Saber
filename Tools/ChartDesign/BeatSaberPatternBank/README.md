@@ -101,3 +101,9 @@ One Hope Normal145、Immortal Normal150、Firestarter Easy135 BPMから6素材�
 ## 定時の方向保持 2026-10-15 15:47
 
 位置素材の適用では既存の打点・担当手・ロング・フリック方向を保持し、`hierarchy_materials.finalize_preserved` で全難易度のカット経路を採用前に検査する。方向練習用のフォールバックも、確定済みの下位譜面へ新しい打点を追加しない。`test_direction_training.py` の3件を追加し、既存6件と合わせて検証する。
+
+## 曲別スタイルとHard 7〜9への改修
+
+`song-style-design.json` が最新の人間の指示による音型・手順・動線の設計。Manic Sonic 9、escapade 9、logic!!! 7、勉強 8、青葉騒 8。表示だけでなく実データのゲーム計算も同じ整数になるよう検証。Normal・Easyも新しいHardからの部分列で、`rhythm-contrast-design.json` を第2版に更新。従来の手順・位置を定時更新で戻さない。旧リズム設計は `rhythm-contrast-design.pre-style.json` に保存。既存100素材の出典・個別JSONは保持。旧91適用のうち90区間の再編集前を `preSongStyleAppliedNotes` に記録し、休符になった1素材は保留へ戻した。計90適用・10保留。
+
+定時更新では代表フレーズの `protectedCoreHits` を `style_core_valid` で保持する。その他の区間は、現在の実音・手順・方向と移動条件が合う場合だけ素材を適用する。`test_style_core.py` の3件を含め、回帰検査は12件。
