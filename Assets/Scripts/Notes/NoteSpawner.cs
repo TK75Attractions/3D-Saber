@@ -348,7 +348,7 @@ public class NoteSpawner : MonoBehaviour
 
         if(warming) { Recycle(note); return; }
 
-        // 同時押しガイド: 既に生きている同時刻ノーツと白線で結ぶ(小節線より薄い)
+        // 同時押しガイド: 同時刻のノーツを明るい白線で結び、本体も少し光らせる。
         if (simultaneousGuideEnabled)
         {
             foreach (var other in liveNotes)

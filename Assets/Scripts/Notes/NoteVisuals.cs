@@ -43,6 +43,9 @@ public class NoteVisuals : MonoBehaviour
     private readonly List<Material> ownedSubMaterials = new List<Material>();
     private float age;
     private float emissionBoost = 1f;
+    // 接続本数にかかわらず一定倍率。判定窓のブーストとは独立して合成する。
+    private const float SimultaneousEmissionBoost = 1.22f;
+    private int simultaneousLinkCount;
     private float lastAppliedStrength = -1f;
     private bool bodyDimmed;
 
@@ -147,13 +150,17 @@ public class NoteVisuals : MonoBehaviour
 
     void Update()
     {
-        float pulse = 1f;
         if (pulseAmplitude > 0f && pulseSpeedHz > 0f)
-        {
             age += Time.deltaTime;
-            pulse = 1f + pulseAmplitude * Mathf.Sin(age * pulseSpeedHz * 2f * Mathf.PI);
-        }
-        float combined = pulse * emissionBoost;
+        ApplyCurrentEmission();
+    }
+
+    private void ApplyCurrentEmission()
+    {
+        float pulse = pulseAmplitude > 0f && pulseSpeedHz > 0f
+            ? 1f + pulseAmplitude * Mathf.Sin(age * pulseSpeedHz * 2f * Mathf.PI) : 1f;
+        float simultaneousBoost = simultaneousLinkCount > 0 && !bodyDimmed ? SimultaneousEmissionBoost : 1f;
+        float combined = pulse * emissionBoost * simultaneousBoost;
         float strength = baseEmissionStrength * combined;
         // 脈動もブーストも変化していなければ SetColor を呼ばない
         if (Mathf.Approximately(strength, lastAppliedStrength)) return;
@@ -173,6 +180,18 @@ public class NoteVisuals : MonoBehaviour
         emissionBoost = Mathf.Max(0f, boost);
     }
 
+    internal void AddSimultaneousLink()
+    {
+        simultaneousLinkCount++;
+        ApplyCurrentEmission();
+    }
+
+    internal void RemoveSimultaneousLink()
+    {
+        simultaneousLinkCount = Mathf.Max(0, simultaneousLinkCount - 1);
+        ApplyCurrentEmission();
+    }
+
     public void DimAfterMiss()
     {
         if (runtimeBodyMat == null || bodyDimmed) return;
@@ -188,6 +207,7 @@ public class NoteVisuals : MonoBehaviour
     public void ResetForReuse()
     {
         bodyDimmed = false;
+        simultaneousLinkCount = 0;
         age=0; emissionBoost=1; lastAppliedStrength=-1;
         if(runtimeBodyMat != null) {
             var color=baseColor; color.a=DisplaySettings.ProjectorMode?1f:.85f; SetBaseColor(runtimeBodyMat,color);

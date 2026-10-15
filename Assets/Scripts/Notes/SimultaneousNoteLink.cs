@@ -1,14 +1,14 @@
 using UnityEngine;
 
-// 同時押しノーツの間に張る細い白線ガイド(プロセカの「同時線」相当)。
+// 同時押しノーツの間に張る明るい白線ガイド(プロセカの「同時線」相当)。
 // NoteSpawner が同時刻(±SimultaneousEpsilonSeconds)のノーツペアを検出して生成する。
 // 毎フレーム両ノーツの現在位置へ追従し、どちらかが消えた(カット/ミス/非アクティブ)瞬間に自分も消える。
-// 見た目は小節線(GameStageSkin.BarLineAlpha=0.12)より薄い白: 標準機能として常時有効。
+// 小節線より太く明るい白線と、本体の控えめな発光で同時押しを知らせる。
+[ExecuteAlways] // 編集中のプレビューでも破棄・非表示時に発光と材質を解放する。
 public class SimultaneousNoteLink : MonoBehaviour
 {
-    // 透明度は小節線(α0.12)より控えめのまま、幅は視認しやすいようしっかり太くする(小節線0.02の4倍)
-    public const float DefaultAlpha = 0.095f;
-    public const float DefaultWidth = 0.08f;
+    public const float DefaultAlpha = 0.32f;
+    public const float DefaultWidth = 0.13f;
 
     public CuttableNote noteA;
     public CuttableNote noteB;
@@ -16,6 +16,8 @@ public class SimultaneousNoteLink : MonoBehaviour
     uint versionA, versionB;
     private LineRenderer line;
     private Material ownedMaterial;
+    private NoteVisuals visualsA, visualsB;
+    private bool glowApplied;
 
     public LineRenderer Line => line;
 
@@ -71,6 +73,7 @@ public class SimultaneousNoteLink : MonoBehaviour
 
     void OnDestroy()
     {
+        ReleaseNoteGlow();
         if (ownedMaterial != null)
         {
             if (Application.isPlaying) Destroy(ownedMaterial);
@@ -79,14 +82,41 @@ public class SimultaneousNoteLink : MonoBehaviour
         }
     }
 
+    void OnDisable()
+    {
+        // エディタープレビューはコンポーネントだけ無効にしてRefreshを手動で呼ぶ。
+        if (!gameObject.activeInHierarchy) ReleaseNoteGlow();
+    }
+
+    private void ApplyNoteGlow()
+    {
+        if (glowApplied || !gameObject.activeInHierarchy) return;
+        visualsA = noteA.GetComponent<NoteVisuals>();
+        visualsB = noteB.GetComponent<NoteVisuals>();
+        if (visualsA != null) visualsA.AddSimultaneousLink();
+        if (visualsB != null) visualsB.AddSimultaneousLink();
+        glowApplied = true;
+    }
+
+    private void ReleaseNoteGlow()
+    {
+        if (!glowApplied) return;
+        glowApplied = false;
+        // 再利用後のノーツには、前の組のリンク解除を持ち越さない。
+        if (noteA != null && noteA.SpawnVersion == versionA && visualsA != null) visualsA.RemoveSimultaneousLink();
+        if (noteB != null && noteB.SpawnVersion == versionB && visualsB != null) visualsB.RemoveSimultaneousLink();
+    }
+
     // 端点をノーツ現在位置へ更新する。ペアが両方生存していれば true(テストから直接呼べる)。
     public bool Refresh()
     {
         if (!IsAlive(noteA) || !IsAlive(noteB) || noteA.SpawnVersion != versionA || noteB.SpawnVersion != versionB)
         {
             if (line != null) line.enabled = false;
+            ReleaseNoteGlow();
             return false;
         }
+        ApplyNoteGlow();
         if (line != null)
         {
             Vector3 a = noteA.transform.position, b = noteB.transform.position;

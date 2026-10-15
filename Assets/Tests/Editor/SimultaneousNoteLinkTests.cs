@@ -135,19 +135,110 @@ public class SimultaneousNoteLinkTests
         Assert.IsFalse(link.Refresh(), "片方がカットされたら消える");
     }
 
-    [Test]
-    public void Link_IsFainterThanBarLine()
+    private CuttableNote VisualNote(SaberHand hand, float x)
     {
-        // 要件: 小節線(GameStageSkin.BarLineAlpha)より薄い白
-        Assert.Less(SimultaneousNoteLink.DefaultAlpha, GameStageSkin.BarLineAlpha);
+        var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        created.Add(go);
+        go.transform.position = Vector3.right * x;
+        var note = go.AddComponent<CuttableNote>();
+        note.RequiredHand = hand;
+        var visuals = go.AddComponent<NoteVisuals>();
+        visuals.Initialize();
+        visuals.ResetForReuse();
+        return note;
+    }
+
+    private static Color Emission(CuttableNote note)
+    {
+        return note.GetComponent<MeshRenderer>().sharedMaterial.GetColor("_EmissionColor");
+    }
+
+    private static void UpdateVisuals(NoteVisuals visuals)
+    {
+        typeof(NoteVisuals).GetMethod("Update", System.Reflection.BindingFlags.Instance |
+            System.Reflection.BindingFlags.NonPublic).Invoke(visuals, null);
+    }
+
+    [Test]
+    public void Link_GentlyLightsOnlyItsNotesAndPreservesTimingHighlight()
+    {
+        var a = VisualNote(SaberHand.Left, -2);
+        var b = VisualNote(SaberHand.Right, 2);
+        var single = VisualNote(SaberHand.Left, 4);
+        Color baseA = Emission(a), baseB = Emission(b), baseSingle = Emission(single);
+        Color bodyColor = a.GetComponent<MeshRenderer>().sharedMaterial.GetColor("_BaseColor");
+        var link = SimultaneousNoteLink.Create(a, b, null);
+        float ratio = Emission(a).maxColorComponent / baseA.maxColorComponent;
+        Assert.That(ratio, Is.InRange(1.1f, 1.35f), "同時押しは控えめな発光に留める");
+        Assert.AreEqual(ratio, Emission(b).maxColorComponent / baseB.maxColorComponent, .001f);
+        Assert.AreEqual(baseSingle, Emission(single), "単独ノーツへ波及しない");
+        Assert.AreEqual(bodyColor, a.GetComponent<MeshRenderer>().sharedMaterial.GetColor("_BaseColor"));
+        var visuals = a.GetComponent<NoteVisuals>();
+        visuals.SetEmissionBoost(1.4f);
+        UpdateVisuals(visuals);
+        Assert.AreEqual(baseA.maxColorComponent * ratio * 1.4f, Emission(a).maxColorComponent, .001f);
+        Object.DestroyImmediate(link.gameObject);
+        Assert.AreEqual(baseA.maxColorComponent * 1.4f, Emission(a).maxColorComponent, .001f);
+        Assert.AreEqual(baseB, Emission(b));
+    }
+
+    [Test]
+    public void MultipleLinks_DoNotStackGlowAndReleaseOnlyAfterLastLink()
+    {
+        var a = VisualNote(SaberHand.Left, -2);
+        var b = VisualNote(SaberHand.Right, 2);
+        var c = VisualNote(SaberHand.Left, 4);
+        Color baseline = Emission(a);
+        var ab = SimultaneousNoteLink.Create(a, b, null);
+        Color paired = Emission(a);
+        var ac = SimultaneousNoteLink.Create(a, c, null);
+        Assert.AreEqual(paired, Emission(a), "三個以上でも光量を重ねない");
+        ab.gameObject.SetActive(false);
+        Object.DestroyImmediate(ab.gameObject);
+        Assert.AreEqual(paired, Emission(a), "無効化と破棄で二重に解除しない");
+        c.MarkMiss();
+        Color dim = Emission(c);
+        Assert.IsFalse(ac.Refresh());
+        UpdateVisuals(c.GetComponent<NoteVisuals>());
+        Assert.AreEqual(dim, Emission(c), "ミスした本体を再点灯しない");
+        Assert.AreEqual(baseline, Emission(a));
+    }
+
+    [Test]
+    public void Reuse_ClearsOldGlowAndOldLinkCannotRemoveNewPairsGlow()
+    {
+        var a = VisualNote(SaberHand.Left, -2);
+        var b = VisualNote(SaberHand.Right, 2);
+        var c = VisualNote(SaberHand.Right, 4);
+        Color baseline = Emission(a);
+        var oldLink = SimultaneousNoteLink.Create(a, b, null);
+        typeof(CuttableNote).GetMethod("ResetForSpawn", System.Reflection.BindingFlags.Instance |
+            System.Reflection.BindingFlags.NonPublic).Invoke(a, null);
+        a.GetComponent<NoteVisuals>().ResetForReuse();
+        Assert.AreEqual(baseline, Emission(a), "単独ノーツへの再利用で発光を持ち越さない");
+        var newLink = SimultaneousNoteLink.Create(a, c, null);
+        Color paired = Emission(a);
+        Assert.IsFalse(oldLink.Refresh());
+        Object.DestroyImmediate(oldLink.gameObject);
+        Assert.AreEqual(paired, Emission(a), "古いリンクの遅延破棄は新しい組へ影響しない");
+        Object.DestroyImmediate(newLink.gameObject);
+        Assert.AreEqual(baseline, Emission(a));
+    }
+
+    [Test]
+    public void Link_IsBrighterThanBarLineAndUsesReadableWidth()
+    {
+        Assert.Greater(SimultaneousNoteLink.DefaultAlpha, GameStageSkin.BarLineAlpha);
 
         var spawner = MakeSpawner();
         spawner.SetChart(TwoNoteChart(1000f, 1000f));
         spawner.Tick(0.0);
         var link = Object.FindObjectsByType<SimultaneousNoteLink>(FindObjectsSortMode.None)[0];
-        // LineRenderer の頂点色は8bit量子化される(0.095→約0.0941)ため許容を広めに取る
+        // LineRenderer の頂点色は8bit量子化されるため許容を広めに取る。
         Assert.AreEqual(SimultaneousNoteLink.DefaultAlpha, link.Line.startColor.a, 0.005f);
-        Assert.Less(link.Line.startColor.a, GameStageSkin.BarLineAlpha, "実測アルファも小節線より薄い");
+        Assert.Greater(link.Line.startColor.a, GameStageSkin.BarLineAlpha, "同時押しを小節線より明るく示す");
+        Assert.AreEqual(SimultaneousNoteLink.DefaultWidth, link.Line.startWidth, .0001f);
+        Assert.AreEqual(SimultaneousNoteLink.DefaultWidth, link.Line.endWidth, .0001f);
         Assert.AreEqual(1f, link.Line.startColor.r, 1e-4f, "白である");
     }
 }

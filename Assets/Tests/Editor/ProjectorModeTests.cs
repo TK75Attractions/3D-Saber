@@ -105,7 +105,7 @@ public class ProjectorModeTests
         Assert.Greater(GameStageSkin.GateEmission, emOff, "ゲートは明るく");
         Assert.Greater(GameStageSkin.BarLineAlpha, lineOff, "小節線は濃く");
         Assert.Greater(GameStageSkin.PanelFillAlpha, fillOff, "判定面の塗りは少し濃く");
-        Assert.Less(SimultaneousNoteLink.DefaultAlpha, GameStageSkin.BarLineAlpha, "同時線は小節線より薄い、の序列は保つ");
+        Assert.Greater(SimultaneousNoteLink.DefaultAlpha, GameStageSkin.BarLineAlpha, "投影時も同時押しを小節線より明るく示す");
     }
 
     // ---- ノーツ ----
