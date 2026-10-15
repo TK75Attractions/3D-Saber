@@ -48,6 +48,31 @@ namespace Saber.ChartEditor
             return BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(text ?? ""))).Replace("-", "").ToLowerInvariant();
         }
         public static string ChartHash(SaberChartDocument chart) => Hash(SaberChartUtility.ToJson(chart, false));
+        // 同時押しは一つの到達時刻として移動し、オフセットを含む音源時刻で比較する。
+        public static float AdjacentNoteTime(SaberChartDocument chart, float seconds, int direction)
+        {
+            if (!Finite(seconds) || direction == 0) throw new ArgumentException("移動方向と現在時刻を確認してください。");
+            var times = chart.notes.Select(n => (n.time + chart.offsetMs) / 1000f).Where(t => t >= 0);
+            return direction > 0 ? times.Where(t => t > seconds + .0005f).DefaultIfEmpty(-1).Min()
+                : times.Where(t => t < seconds - .0005f).DefaultIfEmpty(-1).Max();
+        }
+        public static void ValidateComments(SaberChartDocument chart, List<SaberReviewComment> comments, float duration)
+        {
+            if (comments == null) throw new InvalidOperationException("指摘の一覧がありません。");
+            var ids = new HashSet<string>();
+            foreach (var comment in comments)
+            {
+                if (comment == null || !Guid.TryParseExact(comment.id, "N", out _) || !ids.Add(comment.id)
+                    || !Finite(comment.fromSeconds) || !Finite(comment.toSeconds) || !Finite(comment.frameSeconds)
+                    || comment.fromSeconds < 0 || comment.toSeconds < comment.fromSeconds || comment.frameSeconds < 0
+                    || (duration > 0 && (comment.toSeconds > duration + .001f || comment.frameSeconds > duration + .001f))
+                    || string.IsNullOrWhiteSpace(comment.instruction) || comment.noteIndices == null
+                    || comment.noteIndices.Any(i => i < 0 || i >= chart.notes.Count)
+                    || (comment.hasPoint && (!Finite(comment.screenPoint.x) || !Finite(comment.screenPoint.y)
+                        || comment.screenPoint.x < 0 || comment.screenPoint.x > 1 || comment.screenPoint.y < 0 || comment.screenPoint.y > 1)))
+                    throw new InvalidOperationException("指摘の時刻・対象ノーツ・文章・画像位置を確認してください。");
+            }
+        }
         public static int[] NotesInRange(SaberChartDocument chart, float from, float to)
         {
             if (!Finite(from) || !Finite(to) || to < from) throw new ArgumentException("区間の開始・終了を確認してください。");
@@ -112,8 +137,14 @@ namespace Saber.ChartEditor
             var text = new StringBuilder();
             text.AppendLine("3D-Saberのプレイレビューを修正してください。").AppendLine("依頼フォルダー: " + folder);
             text.AppendLine("request.json、chart-before.jsonと各frame-*.pngを読んでください。音源は含みません。");
-            foreach (var c in request.comments)
-                text.AppendLine($"- {c.fromSeconds:0.000}〜{c.toSeconds:0.000}秒 / ノーツ[{string.Join(",", c.noteIndices)}]: {c.instruction}");
+            text.AppendLine($"曲: {request.songId} / 難易度: {request.difficulty} / 指摘: {request.comments.Count}件");
+            int number = 0;
+            foreach (var c in request.comments.OrderBy(c => c.fromSeconds).ThenBy(c => c.frameSeconds))
+            {
+                text.AppendLine(FormattableString.Invariant($"{++number}. {c.fromSeconds:0.000}〜{c.toSeconds:0.000}秒 / ノーツ[{string.Join(",", c.noteIndices)}]: {c.instruction}"));
+                text.AppendLine(FormattableString.Invariant($"   停止画像: frame-{c.id}.png ({c.frameSeconds:0.000}秒)"));
+                if (c.noteIndices.Length == 0) text.AppendLine("   個別ノーツの選択なし。区間と画像から対象を確認してください。");
+            }
             text.AppendLine("譜面修正はpatch-template.jsonの形式でreply.jsonに出力。baseHash・songId・difficultyを保持し、operationsにはadd/replace/deleteを指定してください。");
             text.AppendLine("indexはrequest.chart.notesの0始まりの元添字。replace/addのnoteは全フィールドを記述。timeとlengthMsはミリ秒。範囲外のノーツや曲設定は変更しないでください。");
             text.AppendLine("背景や演出の指示は対象コードの変更として扱い、譜面パッチへ混ぜず、変更内容を説明してください。");

@@ -27,6 +27,38 @@ public class PlaybackReviewTests
         CollectionAssert.AreEqual(new[] { 2 }, SaberPlaybackReviewData.NotesInRange(chart, 4.4f, 4.6f));
         Assert.IsEmpty(SaberPlaybackReviewData.NotesInRange(chart, 0, 1));
     }
+    [Test] public void NoteNavigationSkipsSimultaneousNotesAndUsesAudioOffset()
+    {
+        chart.notes.Add(new SaberChartNote { time = 2000, color = "blue" });
+        Assert.AreEqual(1.25f, SaberPlaybackReviewData.AdjacentNoteTime(chart, 0, 1));
+        Assert.AreEqual(3.25f, SaberPlaybackReviewData.AdjacentNoteTime(chart, 2.25f, 1));
+        Assert.AreEqual(1.25f, SaberPlaybackReviewData.AdjacentNoteTime(chart, 2.25f, -1));
+        Assert.AreEqual(-1, SaberPlaybackReviewData.AdjacentNoteTime(chart, 0, -1));
+        Assert.AreEqual(-1, SaberPlaybackReviewData.AdjacentNoteTime(chart, 4, 1));
+    }
+    [Test] public void ReviewValidationRejectsInvalidTimesTargetsAndDuplicateImageIds()
+    {
+        var c = request.comments[0];
+        SaberPlaybackReviewData.ValidateComments(chart, request.comments, 10);
+        c.frameSeconds = float.NaN;
+        Assert.Throws<InvalidOperationException>(() => SaberPlaybackReviewData.ValidateComments(chart, request.comments, 10));
+        c.frameSeconds = 1; c.noteIndices = new[] { -1 };
+        Assert.Throws<InvalidOperationException>(() => SaberPlaybackReviewData.ValidateComments(chart, request.comments, 10));
+        c.noteIndices = new[] { 0 }; c.toSeconds = 11;
+        Assert.Throws<InvalidOperationException>(() => SaberPlaybackReviewData.ValidateComments(chart, request.comments, 10));
+        c.toSeconds = 2; request.comments.Add(c);
+        Assert.Throws<InvalidOperationException>(() => SaberPlaybackReviewData.ValidateComments(chart, request.comments, 10));
+    }
+    [Test] public void PromptOrdersReportsAndLinksEachExactFrame()
+    {
+        var early = new SaberReviewComment { fromSeconds = .2f, toSeconds = .4f, frameSeconds = .3f, instruction = "先頭を確認" };
+        request.comments.Add(early);
+        string prompt = SaberPlaybackReviewData.Prompt(request, "test-folder");
+        Assert.Less(prompt.IndexOf("先頭を確認", StringComparison.Ordinal), prompt.IndexOf("赤を右へ", StringComparison.Ordinal));
+        Assert.That(prompt, Does.Contain("frame-" + early.id + ".png (0.300秒)"));
+        Assert.That(prompt, Does.Contain("個別ノーツの選択なし"));
+        Assert.That(prompt, Does.Contain("曲: RushE / 難易度: e / 指摘: 2件"));
+    }
     [Test] public void EditsUseOriginalIndicesAndPreserveOtherNotesAndMetadata()
     {
         string before = SaberChartUtility.ToJson(chart); var replacement = chart.notes[1].Clone(); replacement.x = 2;

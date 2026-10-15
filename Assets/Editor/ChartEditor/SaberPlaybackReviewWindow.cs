@@ -8,7 +8,7 @@ using UnityEngine;
 namespace Saber.ChartEditor
 {
     // 再生とレビューに絞った窓。元の譜面エディターと同じ描画・音声・保存処理を使う。
-    public sealed class SaberPlaybackReviewWindow : EditorWindow
+    public sealed partial class SaberPlaybackReviewWindow : EditorWindow
     {
         [SerializeField] string song = "RushE", difficulty = "e", chartJson, diskHash, legacyHash;
         [SerializeField] float seconds, rangeA, rangeB = 1;
@@ -41,13 +41,14 @@ namespace Saber.ChartEditor
         {
             minSize = new Vector2(1000, 660); titleContent = new GUIContent("プレイレビュー");
             RefreshSongs();
-            if (!string.IsNullOrEmpty(chartJson)) { document = SaberChartUtility.FromJson(chartJson); clip = SaberChartFileStore.LoadAudioClip(song); }
+            if (!string.IsNullOrEmpty(chartJson)) { document = SaberChartUtility.FromJson(chartJson); clip = SaberChartFileStore.LoadAudioClip(song); loadedSong = song; loadedDifficulty = difficulty; }
             if (!string.IsNullOrEmpty(candidateJson)) candidate = SaberChartUtility.FromJson(candidateJson);
+            if (document != null) RestoreDraft();
             EditorApplication.update += Tick;
         }
         void OnDisable()
         {
-            Stop(); EditorApplication.update -= Tick; preview?.Dispose(); preview = null;
+            Stop(); SaveDraft(); EditorApplication.update -= Tick; preview?.Dispose(); preview = null;
         }
         void RefreshSongs()
         {
@@ -62,14 +63,18 @@ namespace Saber.ChartEditor
         }
         void LoadChart()
         {
+            bool discardEdits = hasUnsavedChanges;
             if (hasUnsavedChanges && !EditorUtility.DisplayDialog("未保存の譜面", "この窓の未保存の修正を破棄して開きますか？", "破棄して開く", "戻る")) return;
-            Stop();
+            Stop(); SaveDraft();
             string raw = File.ReadAllText(ChartPath);
             document = SaberChartUtility.FromJson(raw); chartJson = SaberChartUtility.ToJson(document, false); diskHash = SaberPlaybackReviewData.Hash(raw);
             legacyHash = ReadLegacyHash(); clip = SaberChartFileStore.LoadAudioClip(song);
             seconds = rangeA = 0; rangeB = Mathf.Min(1, Duration); comments.Clear(); selected.Clear(); undo.Clear();
             candidate = null; candidateJson = requestJson = ""; hasPoint = after = hasUnsavedChanges = false;
+            instruction = lastFolder = editingCommentId = ""; deletedComment = null;
+            loadedSong = song; loadedDifficulty = difficulty; timelineStart = 0;
             status = clip == null ? "音源なし：映像のみ再生できます。" : "シークして停止 → 区間やノーツを指定 → 指示を追加。";
+            if (!discardEdits) RestoreDraft();
         }
         string ReadLegacyHash()
         {
@@ -80,6 +85,7 @@ namespace Saber.ChartEditor
         void Play()
         {
             if (document == null || EditorApplication.isPlayingOrWillChangePlaymode) return;
+            if (seconds >= Duration) seconds = 0;
             if (loop && (seconds < rangeA || seconds >= rangeB)) seconds = rangeA;
             playing = clip == null || SaberChartAudioPreview.Play(clip, seconds); lastTick = EditorApplication.timeSinceStartup;
             if (!playing) status = SaberChartAudioPreview.LastError;
@@ -91,6 +97,8 @@ namespace Saber.ChartEditor
         }
         void Tick()
         {
+            if (document != null && EditorApplication.timeSinceStartup >= nextDraftSave)
+            { nextDraftSave = EditorApplication.timeSinceStartup + 2; SaveDraft(); }
             if (!playing) return;
             if (EditorApplication.isPlayingOrWillChangePlaymode) { Stop(); return; }
             double now = EditorApplication.timeSinceStartup;
@@ -129,12 +137,14 @@ namespace Saber.ChartEditor
                 using (new EditorGUI.DisabledScope(!hasUnsavedChanges)) if (GUILayout.Button("本編へ保存", EditorStyles.toolbarButton, GUILayout.Width(90))) SaveChanges();
             }
             if (document == null) { EditorGUILayout.HelpBox(status, MessageType.Info); return; }
+            HandleShortcuts();
             using (new EditorGUI.DisabledScope(EditorApplication.isPlayingOrWillChangePlaymode))
             using (new EditorGUILayout.HorizontalScope())
             {
                 using (new EditorGUILayout.VerticalScope(GUILayout.Width(position.width - 366)))
                 {
-                    Rect area = GUILayoutUtility.GetRect(200, (position.width - 386) * 9 / 16f, GUILayout.ExpandWidth(true));
+                    float frameHeight = Mathf.Min((position.width - 386) * 9 / 16f, Mathf.Max(140, position.height - 390));
+                    Rect area = GUILayoutUtility.GetRect(200, frameHeight, GUILayout.ExpandWidth(true));
                     DrawFrame(area);
                     using (new EditorGUILayout.HorizontalScope())
                     {
@@ -150,15 +160,17 @@ namespace Saber.ChartEditor
                     }
                     EditorGUI.BeginChangeCheck(); float sought = GUILayout.HorizontalSlider(seconds, 0, Duration);
                     if (EditorGUI.EndChangeCheck()) Seek(sought);
+                    DrawTimeline();
                     DrawRange();
-                    GUILayout.Label("区間内のノーツ（クリックで選択・その時刻へ移動）", EditorStyles.boldLabel);
+                    DrawNavigation();
+                    GUILayout.Label("区間内のノーツ（複数選択できます）", EditorStyles.boldLabel);
                     using (new EditorGUI.DisabledScope(candidate != null))
                     using (var list = new EditorGUILayout.ScrollViewScope(scroll, GUILayout.MinHeight(90)))
                     {
                         scroll = list.scrollPosition;
-                        foreach (int i in SaberPlaybackReviewData.NotesInRange(document, rangeA, rangeB))
+                        foreach (int i in SaberPlaybackReviewData.NotesInRange(VisibleDocument, rangeA, rangeB))
                         {
-                            var n = document.notes[i]; bool picked = selected.Contains(i);
+                            var n = VisibleDocument.notes[i]; bool picked = selected.Contains(i);
                             bool next = GUILayout.Toggle(picked, $"#{i:D4}   {(n.time + document.offsetMs) / 1000f:0.000}s   {n.color,-5}  {n.type,-9}  ({n.x:0.00}, {n.y:0.00})  ×{n.count}", "Button");
                             if (next != picked) { if (next) selected.Add(i); else selected.Remove(i); Stop(); Seek(Mathf.Max(0, (n.time + document.offsetMs) / 1000f - .2f)); }
                         }
@@ -172,6 +184,8 @@ namespace Saber.ChartEditor
         }
         void DrawFrame(Rect area)
         {
+            float width = Mathf.Min(area.width, area.height * 16 / 9);
+            area = new Rect(area.center.x - width / 2, area.y, width, width * 9 / 16);
             GUI.Box(area, GUIContent.none);
             if (Event.current.type == EventType.Repaint)
             {
@@ -194,7 +208,8 @@ namespace Saber.ChartEditor
             {
                 float a = EditorGUILayout.FloatField(rangeA, GUILayout.Width(74));
                 float b = EditorGUILayout.FloatField(rangeB, GUILayout.Width(74));
-                if (!float.IsNaN(a) && !float.IsInfinity(a) && !float.IsNaN(b) && !float.IsInfinity(b)) { rangeA = Mathf.Clamp(a, 0, Duration); rangeB = Mathf.Clamp(b, rangeA, Duration); }
+                if (!float.IsNaN(a) && !float.IsInfinity(a) && !float.IsNaN(b) && !float.IsInfinity(b))
+                { if (a != rangeA || b != rangeB) selected.Clear(); rangeA = Mathf.Clamp(a, 0, Duration); rangeB = Mathf.Clamp(b, rangeA, Duration); }
                 if (GUILayout.Button("今をAに", GUILayout.Width(70))) { rangeA = seconds; rangeB = Mathf.Min(Duration, Mathf.Max(rangeB, rangeA + .1f)); selected.Clear(); }
                 if (GUILayout.Button("今をBに", GUILayout.Width(70))) { rangeB = seconds; rangeA = Mathf.Min(rangeA, rangeB); selected.Clear(); }
                 if (GUILayout.Button("現在±1秒", GUILayout.Width(78))) { rangeA = Mathf.Max(0, seconds - 1); rangeB = Mathf.Min(Duration, seconds + 1); selected.Clear(); }
@@ -204,36 +219,56 @@ namespace Saber.ChartEditor
         }
         void DrawReviewPanel()
         {
-            GUILayout.Label("この箇所をAIに指摘", EditorStyles.boldLabel);
+            GUILayout.Label(string.IsNullOrEmpty(editingCommentId) ? "この箇所をAIに指摘" : "保存した指摘を編集中", EditorStyles.boldLabel);
             GUILayout.Label($"{rangeA:0.000}〜{rangeB:0.000}秒 / 選択 {selected.Count} ノーツ");
             GUILayout.Label(hasPoint ? "画面の指摘位置を記録します" : "映像をクリックして指摘位置を指定できます", EditorStyles.wordWrappedMiniLabel);
             if (hasPoint && GUILayout.Button("指摘位置を外す")) hasPoint = false;
-            instruction = EditorGUILayout.TextArea(instruction, GUILayout.Height(86));
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (GUILayout.Button("タイミング")) AppendTemplate("タイミングが合わない。希望：");
+                if (GUILayout.Button("配置")) AppendTemplate("配置を調整したい。希望：");
+                if (GUILayout.Button("難しさ")) AppendTemplate("難しさを調整したい。希望：");
+            }
+            GUI.SetNextControlName("ReviewInstruction");
+            instruction = EditorGUILayout.TextArea(instruction, GUILayout.Height(72));
             using (new EditorGUI.DisabledScope(string.IsNullOrWhiteSpace(instruction) || candidate != null))
-                if (GUILayout.Button("指示を追加（現在のフレームを記録）", GUILayout.Height(29))) AddComment();
+                if (GUILayout.Button(string.IsNullOrEmpty(editingCommentId) ? "指摘を追加  Ctrl+Enter" : "指摘を更新  Ctrl+Enter", GUILayout.Height(29))) AddComment();
+            if (!string.IsNullOrEmpty(editingCommentId) && GUILayout.Button("編集を取り消す")) { editingCommentId = ""; instruction = ""; }
             GUILayout.Space(8);
-            using (var list = new EditorGUILayout.ScrollViewScope(commentScroll, GUILayout.Height(Mathf.Max(95, position.height - 520))))
+            GUILayout.Label($"指摘 {comments.Count}件 · 時刻順", EditorStyles.boldLabel);
+            using (var list = new EditorGUILayout.ScrollViewScope(commentScroll, GUILayout.Height(Mathf.Clamp(position.height - 560, 95, 260))))
             {
                 commentScroll = list.scrollPosition;
-                foreach (var c in comments.ToArray())
+                int reportNumber = 0;
+                foreach (var c in comments.OrderBy(c => c.fromSeconds).ThenBy(c => c.frameSeconds).ToArray())
                 {
-                    GUILayout.Label($"{c.fromSeconds:0.000}–{c.toSeconds:0.000}s", EditorStyles.boldLabel);
+                    GUILayout.Label($"{++reportNumber}. {c.fromSeconds:0.000}–{c.toSeconds:0.000}s", EditorStyles.boldLabel);
                     GUILayout.Label(c.instruction, EditorStyles.wordWrappedLabel);
                     using (new EditorGUILayout.HorizontalScope())
                     {
-                        if (GUILayout.Button("この箇所へ")) { Stop(); Seek(c.frameSeconds); rangeA = c.fromSeconds; rangeB = c.toSeconds; point = c.screenPoint; hasPoint = c.hasPoint; }
-                        if (GUILayout.Button("削除", GUILayout.Width(52))) comments.Remove(c);
+                        if (GUILayout.Button("この箇所へ")) VisitComment(c);
+                        using (new EditorGUI.DisabledScope(candidate != null))
+                        {
+                            if (GUILayout.Button("編集", GUILayout.Width(48))) EditComment(c);
+                            if (GUILayout.Button("削除", GUILayout.Width(48))) DeleteComment(c);
+                        }
                     }
                 }
             }
-            using (new EditorGUI.DisabledScope(comments.Count == 0 || candidate != null))
+            using (new EditorGUI.DisabledScope(deletedComment == null || candidate != null))
+                if (GUILayout.Button("直前に削除した指摘を戻す")) RestoreDeletedComment();
+            if (!string.IsNullOrWhiteSpace(instruction))
+                EditorGUILayout.HelpBox("入力中の指摘を追加・更新してから書き出してください。", MessageType.Info);
+            using (new EditorGUI.DisabledScope(comments.Count == 0 || candidate != null || !string.IsNullOrWhiteSpace(instruction)))
                 if (GUILayout.Button("AIへの依頼を書き出す", GUILayout.Height(30))) { Stop(); exportPending = true; Repaint(); }
             if (!string.IsNullOrEmpty(lastFolder))
             {
-                if (GUILayout.Button("依頼文をコピー")) { EditorGUIUtility.systemCopyBuffer = File.ReadAllText(Path.Combine(lastFolder, "prompt.txt")); status = "このチャットに貼り付けてください。"; }
+                using (new EditorGUI.DisabledScope(!ExportIsCurrent))
+                    if (GUILayout.Button("依頼文をコピー")) { EditorGUIUtility.systemCopyBuffer = File.ReadAllText(Path.Combine(lastFolder, "prompt.txt")); status = "このチャットに貼り付けてください。"; }
+                if (!ExportIsCurrent) GUILayout.Label("指摘が更新されています。もう一度書き出してください。", EditorStyles.wordWrappedMiniLabel);
                 if (GUILayout.Button("依頼フォルダーを開く")) EditorUtility.RevealInFinder(lastFolder);
             }
-            using (new EditorGUI.DisabledScope(string.IsNullOrEmpty(requestJson)))
+            using (new EditorGUI.DisabledScope(!ExportIsCurrent))
                 if (GUILayout.Button("AIの返信JSONを開く")) ImportReply();
             if (candidate != null)
             {
@@ -246,24 +281,30 @@ namespace Saber.ChartEditor
                     if (GUILayout.Button("案を閉じる")) { candidate = null; candidateJson = ""; after = false; }
                 }
             }
-            using (new EditorGUI.DisabledScope(undo.Count == 0)) if (GUILayout.Button("適用を1回戻す")) { Stop(); document = SaberChartUtility.FromJson(undo.Pop()); chartJson = SaberChartUtility.ToJson(document, false); candidate = null; candidateJson = ""; hasUnsavedChanges = true; }
+            using (new EditorGUI.DisabledScope(undo.Count == 0)) if (GUILayout.Button("適用を1回戻す")) { Stop(); document = SaberChartUtility.FromJson(undo.Pop()); chartJson = SaberChartUtility.ToJson(document, false); candidate = null; candidateJson = requestJson = ""; comments.Clear(); selected.Clear(); hasUnsavedChanges = true; }
             GUILayout.Label("AIのチャットへ依頼を渡し、返信JSONをここで確認します。", EditorStyles.wordWrappedMiniLabel);
+            GUILayout.Label(draftMessage, EditorStyles.wordWrappedMiniLabel);
         }
         Vector2 commentScroll;
         void AddComment()
         {
+            if (document == null || candidate != null || string.IsNullOrWhiteSpace(instruction)) return;
             Stop();
             var c = new SaberReviewComment { fromSeconds = rangeA, toSeconds = rangeB, frameSeconds = seconds, hasPoint = hasPoint, screenPoint = point,
-                instruction = instruction.Trim(), noteIndices = selected.Where(i => i < document.notes.Count).OrderBy(i => i).ToArray() };
-            comments.Add(c); instruction = "";
+                instruction = instruction.Trim(), noteIndices = selected.Where(i => i >= 0 && i < document.notes.Count).OrderBy(i => i).ToArray() };
+            int editing = comments.FindIndex(item => item.id == editingCommentId);
+            if (editing >= 0) { c.id = editingCommentId; comments[editing] = c; } else comments.Add(c);
+            instruction = editingCommentId = ""; SaveDraft();
             // 次の再描画で常にこの時刻から画像を作り直すため、古い描画フレームは使わない。
             status = "指示を追加しました。書き出し時に各指示の時刻を撮影します。";
         }
         public void ExportRequest()
         {
             if (comments.Count == 0) return;
+            if (!string.IsNullOrWhiteSpace(instruction) || candidate != null) throw new InvalidOperationException("入力中の指摘を確定し、変更案を閉じてから書き出してください。");
             string folder = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "PlaybackReviews", DateTime.Now.ToString("yyyyMMdd-HHmmss") + "-" + Guid.NewGuid().ToString("N").Substring(0, 6)));
             var request = SaberPlaybackReviewData.Request(document, song, difficulty, "Assets/StreamingAssets/Songs/" + song + "/chart_" + difficulty + ".json", comments);
+            SaberPlaybackReviewData.ValidateComments(document, request.comments, Duration);
             foreach (var comment in request.comments)
                 if (!Guid.TryParseExact(comment.id, "N", out _) || float.IsNaN(comment.frameSeconds) || float.IsInfinity(comment.frameSeconds))
                     throw new InvalidOperationException("指示のIDまたは撮影時刻が不正です。");
@@ -276,6 +317,7 @@ namespace Saber.ChartEditor
                 File.WriteAllBytes(Path.Combine(folder, "frame-" + comment.id + ".png"), Capture(frame, comment));
             }
             requestJson = JsonUtility.ToJson(request); lastFolder = folder;
+            SaveDraft();
             EditorGUIUtility.systemCopyBuffer = SaberPlaybackReviewData.Prompt(request, folder);
             status = "依頼を書き出し、依頼文をコピーしました。このチャットへ貼り付けられます。";
         }
@@ -304,6 +346,7 @@ namespace Saber.ChartEditor
         }
         public void LoadReply(string json)
         {
+            if (!ExportIsCurrent) throw new InvalidOperationException("指摘が変わっています。依頼をもう一度書き出してから返信を開いてください。");
             Stop(); var request = JsonUtility.FromJson<SaberReviewRequest>(requestJson); var patch = JsonUtility.FromJson<SaberReviewPatch>(json);
             candidate = SaberPlaybackReviewData.Apply(request, document, patch, Duration); candidateJson = SaberChartUtility.ToJson(candidate, false); after = true;
             changeSummary = string.Join("\n", patch.operations.Take(8).Select(op => op.action == "delete" ? $"#{op.index}: 削除" : op.action == "add" ? $"追加 {Describe(op.note)}" : $"#{op.index}: {Describe(document.notes[op.index])}\n → {Describe(op.note)}"));
@@ -317,6 +360,7 @@ namespace Saber.ChartEditor
             Stop(); undo.Push(chartJson); document = candidate; chartJson = SaberChartUtility.ToJson(document, false);
             candidate = null; candidateJson = ""; after = false; hasUnsavedChanges = true; selected.Clear();
             comments.Clear(); requestJson = "";
+            instruction = editingCommentId = lastFolder = ""; deletedComment = null; SaveDraft();
             status = "修正を適用しました。「本編へ保存」でファイルへ反映します。";
         }
         public override void SaveChanges()
@@ -327,9 +371,23 @@ namespace Saber.ChartEditor
                 if (!File.Exists(ChartPath) || SaberPlaybackReviewData.Hash(File.ReadAllText(ChartPath)) != diskHash || (difficulty == "normal" && ReadLegacyHash() != legacyHash))
                     throw new InvalidOperationException("外部で譜面が更新されています。上書きせず、再読込して新しい譜面で依頼してください。");
                 SaberChartFileStore.Save(document, song, difficulty); diskHash = SaberPlaybackReviewData.Hash(File.ReadAllText(ChartPath)); legacyHash = ReadLegacyHash();
-                hasUnsavedChanges = false; status = "本編へ保存しました。元ファイルはLibrary/3DSaberChartBackupsに保存されています。"; base.SaveChanges();
+                hasUnsavedChanges = false; SaveDraft(); status = "本編へ保存しました。元ファイルはLibrary/3DSaberChartBackupsに保存されています。"; base.SaveChanges();
             }
             catch (Exception e) { status = e.Message; Debug.LogWarning("[PlaybackReview] " + status); }
+        }
+        public override void DiscardChanges()
+        {
+            // Unityの閉じる確認で破棄を選んだ修正を、次回の下書き復元で復活させない。
+            Stop();
+            if (document != null && File.Exists(ChartPath))
+            {
+                string raw = File.ReadAllText(ChartPath);
+                document = SaberChartUtility.FromJson(raw); chartJson = SaberChartUtility.ToJson(document, false);
+                diskHash = SaberPlaybackReviewData.Hash(raw); legacyHash = ReadLegacyHash();
+                candidate = null; candidateJson = requestJson = lastFolder = instruction = editingCommentId = "";
+                comments.Clear(); selected.Clear(); undo.Clear(); deletedComment = null; after = hasPoint = false;
+            }
+            base.DiscardChanges(); SaveDraft();
         }
         void ResumeRequest()
         {
@@ -344,17 +402,21 @@ namespace Saber.ChartEditor
                 || !SaberChartFileStore.IsValidSongId(request.songId, out _) || !new[] { "easy", "normal", "hard", "e" }.Contains(request.difficulty)
                 || SaberPlaybackReviewData.ChartHash(request.chart) != request.baseHash) throw new InvalidOperationException("有効なレビュー依頼ではありません。");
             string source = SaberChartFileStore.ChartPath(request.songId, request.difficulty);
+            SaberPlaybackReviewData.ValidateComments(request.chart, request.comments, 0);
             if (!File.Exists(source) || SaberPlaybackReviewData.Hash(File.ReadAllText(source)) != request.sourceDiskHash)
                 throw new InvalidOperationException("依頼後に本編の譜面が変わっています。新しい譜面を開いて指示を追加してください。");
-            Stop(); song = request.songId; difficulty = request.difficulty; RefreshDifficulties();
+            Stop(); SaveDraft(); song = request.songId; difficulty = request.difficulty; RefreshDifficulties();
             document = SaberChartUtility.Clone(request.chart); chartJson = SaberChartUtility.ToJson(document, false);
             diskHash = request.sourceDiskHash; legacyHash = request.sourceLegacyHash; clip = SaberChartFileStore.LoadAudioClip(song);
             requestJson = JsonUtility.ToJson(request); comments = request.comments; lastFolder = Path.GetDirectoryName(path);
             candidate = null; candidateJson = ""; after = false; selected.Clear(); undo.Clear();
+            loadedSong = song; loadedDifficulty = difficulty; instruction = editingCommentId = ""; deletedComment = null;
             hasUnsavedChanges = SaberPlaybackReviewData.ChartHash(SaberChartUtility.FromJson(File.ReadAllText(source))) != request.baseHash;
             var first = comments.FirstOrDefault(); seconds = first?.frameSeconds ?? 0; rangeA = first?.fromSeconds ?? 0; rangeB = first?.toSeconds ?? 1;
             hasPoint = first?.hasPoint ?? false; point = first?.screenPoint ?? Vector2.zero;
             status = "依頼を再開しました。AIの返信JSONを開けます。";
+            if (first != null) VisitComment(first);
+            SaveDraft();
         }
     }
 }
