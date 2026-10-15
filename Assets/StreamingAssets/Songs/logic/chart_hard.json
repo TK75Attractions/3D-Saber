@@ -1,10 +1,10 @@
 {
-  "_comment": "曲別の音型・手順・動線を設計。Hard→Normal→Easyで打点・手・位置を包含。song-style-design.json参照。",
+  "_comment": "曲別に短いリズムのまとまりと句尾の間を設計。Hard→Normal→Easyの時刻・手・位置の包含を保持。rhythm-contrast-design.json参照。",
   "bpm": 160,
   "coordScale": 1,
   "offsetMs": 0,
   "beatZeroMs": 28.0,
-  "displayLevel": 7,
+  "displayLevel": 9,
   "timeSignatures": [
     {
       "beat": 0,
@@ -121,7 +121,7 @@
       "beat": 3.0,
       "time": 1153.0,
       "x": 1.9,
-      "y": -0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -142,7 +142,7 @@
     {
       "beat": 4.0,
       "time": 1528.0,
-      "x": 0.6,
+      "x": 1.9,
       "y": -0.6,
       "type": "tap",
       "color": "red",
@@ -175,17 +175,6 @@
     {
       "beat": 6.0,
       "time": 2278.0,
-      "x": -0.6,
-      "y": -0.6,
-      "type": "tap",
-      "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 6.5,
-      "time": 2465.5,
       "x": 1.9,
       "y": -0.6,
       "type": "tap",
@@ -195,12 +184,23 @@
       "lengthMs": 0
     },
     {
-      "beat": 7.0,
-      "time": 2653.0,
+      "beat": 6.5,
+      "time": 2465.5,
       "x": -1.9,
-      "y": -0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 7.0,
+      "time": 2653.0,
+      "x": 0.6,
+      "y": -0.6,
+      "type": "tap",
+      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -208,6 +208,17 @@
     {
       "beat": 8.0,
       "time": 3028.0,
+      "x": 1.9,
+      "y": 0.3,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 8.5,
+      "time": 3215.5,
       "x": -1.9,
       "y": -0.6,
       "type": "tap",
@@ -217,8 +228,8 @@
       "lengthMs": 0
     },
     {
-      "beat": 8.5,
-      "time": 3215.5,
+      "beat": 9.0,
+      "time": 3403.0,
       "x": 1.9,
       "y": -0.6,
       "type": "tap",
@@ -230,10 +241,10 @@
     {
       "beat": 9.5,
       "time": 3590.5,
-      "x": 0.6,
+      "x": -0.6,
       "y": -0.6,
       "type": "tap",
-      "color": "red",
+      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -250,8 +261,30 @@
       "lengthMs": 0
     },
     {
+      "beat": 11.0,
+      "time": 4153.0,
+      "x": -1.9,
+      "y": -0.6,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 11.5,
       "time": 4340.5,
+      "x": 1.9,
+      "y": -0.6,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 12.0,
+      "time": 4528.0,
       "x": -0.6,
       "y": -0.6,
       "type": "tap",
@@ -261,8 +294,30 @@
       "lengthMs": 0
     },
     {
-      "beat": 12.0,
-      "time": 4528.0,
+      "beat": 16.0,
+      "time": 6028.0,
+      "x": 0.6,
+      "y": -0.6,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 18.0,
+      "time": 6778.0,
+      "x": -1.9,
+      "y": -0.6,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 19.0,
+      "time": 7153.0,
       "x": 1.9,
       "y": -0.6,
       "type": "tap",
@@ -274,28 +329,6 @@
     {
       "beat": 21.5,
       "time": 8090.5,
-      "x": 1.9,
-      "y": -0.6,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 23.5,
-      "time": 8840.5,
-      "x": 0.6,
-      "y": -0.6,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 24.5,
-      "time": 9215.5,
       "x": -0.6,
       "y": -0.6,
       "type": "tap",
@@ -305,9 +338,53 @@
       "lengthMs": 0
     },
     {
+      "beat": 22.0,
+      "time": 8278.0,
+      "x": 0.6,
+      "y": -0.6,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 23.0,
+      "time": 8653.0,
+      "x": -1.9,
+      "y": -0.6,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 23.5,
+      "time": 8840.5,
+      "x": 0.6,
+      "y": 0.3,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 24.5,
+      "time": 9215.5,
+      "x": 0.6,
+      "y": -0.6,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 26.5,
       "time": 9965.5,
-      "x": -1.9,
+      "x": -0.6,
       "y": -0.6,
       "type": "tap",
       "color": "blue",
@@ -333,6 +410,17 @@
       "y": -0.6,
       "type": "tap",
       "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 32.0,
+      "time": 12028.0,
+      "x": 1.9,
+      "y": 0.3,
+      "type": "tap",
+      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -340,7 +428,29 @@
     {
       "beat": 32.5,
       "time": 12215.5,
-      "x": 1.9,
+      "x": -0.6,
+      "y": -0.6,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 33.5,
+      "time": 12590.5,
+      "x": -1.9,
+      "y": -0.6,
+      "type": "direction",
+      "color": "blue",
+      "direction": "left",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 34.5,
+      "time": 12965.5,
+      "x": 0.6,
       "y": -0.6,
       "type": "tap",
       "color": "red",
@@ -349,20 +459,9 @@
       "lengthMs": 0
     },
     {
-      "beat": 33.5,
-      "time": 12590.5,
-      "x": 0.6,
-      "y": -0.6,
-      "type": "direction",
-      "color": "red",
-      "direction": "upleft",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 34.5,
-      "time": 12965.5,
-      "x": -1.9,
+      "beat": 35.0,
+      "time": 13153.0,
+      "x": -0.6,
       "y": -0.6,
       "type": "tap",
       "color": "blue",
@@ -406,10 +505,10 @@
     {
       "beat": 37.5,
       "time": 14090.5,
-      "x": 1.9,
+      "x": -0.6,
       "y": -0.6,
       "type": "tap",
-      "color": "red",
+      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -426,8 +525,41 @@
       "lengthMs": 0
     },
     {
+      "beat": 39.0,
+      "time": 14653.0,
+      "x": -1.9,
+      "y": 0.3,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 40.5,
       "time": 15215.5,
+      "x": -0.6,
+      "y": 0.3,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 41.0,
+      "time": 15403.0,
+      "x": 1.9,
+      "y": 0.3,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 41.5,
+      "time": 15590.5,
       "x": -0.6,
       "y": -0.6,
       "type": "tap",
@@ -437,8 +569,19 @@
       "lengthMs": 0
     },
     {
-      "beat": 41.5,
-      "time": 15590.5,
+      "beat": 42.0,
+      "time": 15778.0,
+      "x": 1.9,
+      "y": -0.6,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 42.5,
+      "time": 15965.5,
       "x": -1.9,
       "y": -0.6,
       "type": "tap",
@@ -448,20 +591,9 @@
       "lengthMs": 0
     },
     {
-      "beat": 42.5,
-      "time": 15965.5,
-      "x": 0.6,
-      "y": -0.6,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
       "beat": 43.5,
       "time": 16340.5,
-      "x": 1.9,
+      "x": 0.6,
       "y": -0.6,
       "type": "tap",
       "color": "red",
@@ -472,6 +604,17 @@
     {
       "beat": 44.0,
       "time": 16528.0,
+      "x": -0.6,
+      "y": -0.6,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 45.0,
+      "time": 16903.0,
       "x": -1.9,
       "y": -0.6,
       "type": "tap",
@@ -483,7 +626,7 @@
     {
       "beat": 45.5,
       "time": 17090.5,
-      "x": 0.6,
+      "x": 1.9,
       "y": -0.6,
       "type": "long",
       "color": "red",
@@ -492,8 +635,41 @@
       "lengthMs": 840.0
     },
     {
+      "beat": 46.0,
+      "time": 17278.0,
+      "x": -1.9,
+      "y": 0.3,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 46.5,
       "time": 17465.5,
+      "x": -1.9,
+      "y": 0.3,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 47.0,
+      "time": 17653.0,
+      "x": -1.9,
+      "y": 0.3,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 48.0,
+      "time": 18028.0,
       "x": -0.6,
       "y": -0.6,
       "type": "tap",
@@ -516,6 +692,28 @@
     {
       "beat": 49.5,
       "time": 18590.5,
+      "x": -1.9,
+      "y": -0.6,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 50.0,
+      "time": 18778.0,
+      "x": 1.9,
+      "y": -0.6,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 51.0,
+      "time": 19153.0,
       "x": -0.6,
       "y": -0.6,
       "type": "tap",
@@ -527,10 +725,10 @@
     {
       "beat": 51.5,
       "time": 19340.5,
-      "x": -1.9,
-      "y": -0.6,
+      "x": 1.9,
+      "y": 0.3,
       "type": "tap",
-      "color": "blue",
+      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -539,7 +737,7 @@
       "beat": 52.0,
       "time": 19528.0,
       "x": 1.9,
-      "y": -0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -558,9 +756,20 @@
       "lengthMs": 0
     },
     {
+      "beat": 53.0,
+      "time": 19903.0,
+      "x": -0.6,
+      "y": -0.6,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 53.5,
       "time": 20090.5,
-      "x": 1.9,
+      "x": 0.6,
       "y": -0.6,
       "type": "tap",
       "color": "red",
@@ -573,9 +782,9 @@
       "time": 20465.5,
       "x": 1.9,
       "y": -0.6,
-      "type": "tap",
+      "type": "direction",
       "color": "red",
-      "direction": "none",
+      "direction": "upright",
       "count": 1,
       "lengthMs": 0
     },
@@ -583,9 +792,20 @@
       "beat": 55.5,
       "time": 20840.5,
       "x": -0.6,
-      "y": -0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 56.0,
+      "time": 21028.0,
+      "x": 1.9,
+      "y": 0.3,
+      "type": "tap",
+      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -593,10 +813,10 @@
     {
       "beat": 57.0,
       "time": 21403.0,
-      "x": -0.6,
+      "x": 0.6,
       "y": -0.6,
       "type": "tap",
-      "color": "blue",
+      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -604,10 +824,32 @@
     {
       "beat": 57.5,
       "time": 21590.5,
-      "x": 0.6,
+      "x": -1.9,
+      "y": 0.3,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 58.0,
+      "time": 21778.0,
+      "x": 1.9,
       "y": -0.6,
       "type": "tap",
       "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 59.0,
+      "time": 22153.0,
+      "x": -0.6,
+      "y": 0.3,
+      "type": "tap",
+      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -617,6 +859,17 @@
       "time": 22340.5,
       "x": 0.6,
       "y": -0.6,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 61.0,
+      "time": 22903.0,
+      "x": 0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -635,9 +888,20 @@
       "lengthMs": 0
     },
     {
+      "beat": 62.0,
+      "time": 23278.0,
+      "x": 1.9,
+      "y": 0.3,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 62.5,
       "time": 23465.5,
-      "x": -1.9,
+      "x": -0.6,
       "y": -0.6,
       "type": "tap",
       "color": "blue",
@@ -648,6 +912,28 @@
     {
       "beat": 64.5,
       "time": 24215.5,
+      "x": -0.6,
+      "y": 0.3,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 65.0,
+      "time": 24403.0,
+      "x": 0.6,
+      "y": 0.3,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 66.5,
+      "time": 24965.5,
       "x": 1.9,
       "y": -0.6,
       "type": "tap",
@@ -657,19 +943,8 @@
       "lengthMs": 0
     },
     {
-      "beat": 65.0,
-      "time": 24403.0,
-      "x": -0.6,
-      "y": -0.6,
-      "type": "tap",
-      "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 66.5,
-      "time": 24965.5,
+      "beat": 67.0,
+      "time": 25153.0,
       "x": -0.6,
       "y": -0.6,
       "type": "tap",
@@ -681,7 +956,18 @@
     {
       "beat": 67.5,
       "time": 25340.5,
-      "x": -1.9,
+      "x": 0.6,
+      "y": -0.6,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 68.0,
+      "time": 25528.0,
+      "x": -0.6,
       "y": -0.6,
       "type": "tap",
       "color": "blue",
@@ -692,7 +978,7 @@
     {
       "beat": 68.5,
       "time": 25715.5,
-      "x": 1.9,
+      "x": 0.6,
       "y": -0.6,
       "type": "tap",
       "color": "red",
@@ -703,10 +989,10 @@
     {
       "beat": 69.5,
       "time": 26090.5,
-      "x": 0.6,
-      "y": -0.6,
+      "x": -0.6,
+      "y": 0.3,
       "type": "tap",
-      "color": "red",
+      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -714,7 +1000,18 @@
     {
       "beat": 70.0,
       "time": 26278.0,
-      "x": -1.9,
+      "x": 0.6,
+      "y": 0.3,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 71.0,
+      "time": 26653.0,
+      "x": -0.6,
       "y": -0.6,
       "type": "tap",
       "color": "blue",
@@ -725,10 +1022,65 @@
     {
       "beat": 71.5,
       "time": 26840.5,
+      "x": 0.6,
+      "y": -0.6,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 72.0,
+      "time": 27028.0,
+      "x": -1.9,
+      "y": -0.6,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 73.0,
+      "time": 27403.0,
       "x": -0.6,
       "y": -0.6,
       "type": "tap",
       "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 74.0,
+      "time": 27778.0,
+      "x": 1.9,
+      "y": -0.6,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 75.0,
+      "time": 28153.0,
+      "x": -1.9,
+      "y": -0.6,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 76.0,
+      "time": 28528.0,
+      "x": 0.6,
+      "y": -0.6,
+      "type": "tap",
+      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -745,6 +1097,28 @@
       "lengthMs": 840.0
     },
     {
+      "beat": 78.0,
+      "time": 29278.0,
+      "x": 1.9,
+      "y": -0.6,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 80.0,
+      "time": 30028.0,
+      "x": 0.6,
+      "y": -0.6,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 81.25,
       "time": 30496.75,
       "x": 1.9,
@@ -762,6 +1136,17 @@
       "y": -0.6,
       "type": "tap",
       "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 82.0,
+      "time": 30778.0,
+      "x": 1.9,
+      "y": 0.3,
+      "type": "tap",
+      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -769,72 +1154,17 @@
     {
       "beat": 82.5,
       "time": 30965.5,
-      "x": 1.9,
+      "x": -0.6,
       "y": -0.6,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
+      "type": "direction",
+      "color": "blue",
+      "direction": "right",
       "count": 1,
       "lengthMs": 0
     },
     {
       "beat": 83.0,
       "time": 31153.0,
-      "x": -1.9,
-      "y": -0.6,
-      "type": "tap",
-      "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 83.75,
-      "time": 31434.25,
-      "x": 1.9,
-      "y": 0.3,
-      "type": "direction",
-      "color": "red",
-      "direction": "upright",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 84.5,
-      "time": 31715.5,
-      "x": -1.9,
-      "y": 0.3,
-      "type": "tap",
-      "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 85.5,
-      "time": 32090.5,
-      "x": 1.9,
-      "y": -0.6,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 85.5,
-      "time": 32090.5,
-      "x": -1.9,
-      "y": -0.6,
-      "type": "tap",
-      "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 86.5,
-      "time": 32465.5,
       "x": 0.6,
       "y": 0.3,
       "type": "tap",
@@ -844,8 +1174,63 @@
       "lengthMs": 0
     },
     {
-      "beat": 87.0,
-      "time": 32653.0,
+      "beat": 83.75,
+      "time": 31434.25,
+      "x": 0.6,
+      "y": 0.3,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 84.5,
+      "time": 31715.5,
+      "x": -1.9,
+      "y": -0.6,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 85.5,
+      "time": 32090.5,
+      "x": 1.9,
+      "y": -0.6,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 85.5,
+      "time": 32090.5,
+      "x": -1.9,
+      "y": 0.3,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 86.0,
+      "time": 32278.0,
+      "x": 1.9,
+      "y": -0.6,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 86.5,
+      "time": 32465.5,
       "x": -0.6,
       "y": 0.3,
       "type": "tap",
@@ -855,9 +1240,20 @@
       "lengthMs": 0
     },
     {
+      "beat": 87.0,
+      "time": 32653.0,
+      "x": 0.6,
+      "y": -0.6,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 87.75,
       "time": 32934.25,
-      "x": 1.9,
+      "x": 0.6,
       "y": 0.3,
       "type": "tap",
       "color": "red",
@@ -866,10 +1262,10 @@
       "lengthMs": 0
     },
     {
-      "beat": 88.5,
-      "time": 33215.5,
-      "x": -1.9,
-      "y": 0.3,
+      "beat": 88.0,
+      "time": 33028.0,
+      "x": -0.6,
+      "y": -0.6,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -877,9 +1273,31 @@
       "lengthMs": 0
     },
     {
+      "beat": 88.5,
+      "time": 33215.5,
+      "x": 0.6,
+      "y": -0.6,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 89.5,
       "time": 33590.5,
-      "x": 0.6,
+      "x": -1.9,
+      "y": -0.6,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 90.0,
+      "time": 33778.0,
+      "x": 1.9,
       "y": -0.6,
       "type": "tap",
       "color": "red",
@@ -890,10 +1308,10 @@
     {
       "beat": 90.5,
       "time": 33965.5,
-      "x": 1.9,
+      "x": -0.6,
       "y": -0.6,
       "type": "tap",
-      "color": "red",
+      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -901,10 +1319,10 @@
     {
       "beat": 91.0,
       "time": 34153.0,
-      "x": -1.9,
-      "y": -0.6,
+      "x": 1.9,
+      "y": 0.3,
       "type": "tap",
-      "color": "blue",
+      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -945,10 +1363,10 @@
     {
       "beat": 93.5,
       "time": 35090.5,
-      "x": 0.6,
-      "y": 0.3,
+      "x": -0.6,
+      "y": -0.6,
       "type": "tap",
-      "color": "red",
+      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -956,8 +1374,8 @@
     {
       "beat": 94.5,
       "time": 35465.5,
-      "x": 1.9,
-      "y": 0.3,
+      "x": 0.6,
+      "y": -0.6,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -968,7 +1386,7 @@
       "beat": 95.0,
       "time": 35653.0,
       "x": -1.9,
-      "y": 0.3,
+      "y": -0.6,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -978,6 +1396,17 @@
     {
       "beat": 95.75,
       "time": 35934.25,
+      "x": -1.9,
+      "y": 0.3,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 96.0,
+      "time": 36028.0,
       "x": 1.9,
       "y": -0.6,
       "type": "tap",
@@ -1011,8 +1440,8 @@
     {
       "beat": 97.5,
       "time": 36590.5,
-      "x": 1.9,
-      "y": 0.3,
+      "x": 0.6,
+      "y": -0.6,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -1031,12 +1460,23 @@
       "lengthMs": 0
     },
     {
-      "beat": 99.5,
-      "time": 37340.5,
+      "beat": 99.0,
+      "time": 37153.0,
       "x": -0.6,
-      "y": 0.3,
+      "y": -0.6,
       "type": "tap",
       "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 99.5,
+      "time": 37340.5,
+      "x": 0.6,
+      "y": -0.6,
+      "type": "tap",
+      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -1045,7 +1485,7 @@
       "beat": 100.5,
       "time": 37715.5,
       "x": 1.9,
-      "y": 0.3,
+      "y": -0.6,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -1067,7 +1507,7 @@
       "beat": 101.0,
       "time": 37903.0,
       "x": 1.9,
-      "y": 0.3,
+      "y": -0.6,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -1088,6 +1528,17 @@
     {
       "beat": 103.0,
       "time": 38653.0,
+      "x": -1.9,
+      "y": -0.6,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 103.5,
+      "time": 38840.5,
       "x": 0.6,
       "y": -0.6,
       "type": "tap",
@@ -1097,9 +1548,9 @@
       "lengthMs": 0
     },
     {
-      "beat": 103.5,
-      "time": 38840.5,
-      "x": -1.9,
+      "beat": 104.0,
+      "time": 39028.0,
+      "x": -0.6,
       "y": -0.6,
       "type": "tap",
       "color": "blue",
@@ -1110,17 +1561,6 @@
     {
       "beat": 104.5,
       "time": 39215.5,
-      "x": -1.9,
-      "y": 0.3,
-      "type": "tap",
-      "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 105.0,
-      "time": 39403.0,
       "x": 1.9,
       "y": -0.6,
       "type": "tap",
@@ -1130,10 +1570,21 @@
       "lengthMs": 0
     },
     {
+      "beat": 105.0,
+      "time": 39403.0,
+      "x": -0.6,
+      "y": 0.3,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 106.0,
       "time": 39778.0,
-      "x": 1.9,
-      "y": 0.3,
+      "x": 0.6,
+      "y": -0.6,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -1144,7 +1595,7 @@
       "beat": 106.5,
       "time": 39965.5,
       "x": -1.9,
-      "y": -0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -1166,7 +1617,7 @@
       "beat": 107.0,
       "time": 40153.0,
       "x": -1.9,
-      "y": -0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -1185,12 +1636,23 @@
       "lengthMs": 0
     },
     {
-      "beat": 108.5,
-      "time": 40715.5,
-      "x": -1.9,
+      "beat": 108.0,
+      "time": 40528.0,
+      "x": -0.6,
       "y": 0.3,
       "type": "tap",
       "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 108.5,
+      "time": 40715.5,
+      "x": 1.9,
+      "y": -0.6,
+      "type": "tap",
+      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -1207,6 +1669,28 @@
       "lengthMs": 840.0
     },
     {
+      "beat": 110.0,
+      "time": 41278.0,
+      "x": 0.6,
+      "y": -0.6,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 111.0,
+      "time": 41653.0,
+      "x": 1.9,
+      "y": -0.6,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 112.5,
       "time": 42215.5,
       "x": -1.9,
@@ -1220,10 +1704,10 @@
     {
       "beat": 113.5,
       "time": 42590.5,
-      "x": -1.9,
-      "y": 0.3,
+      "x": 0.6,
+      "y": -0.6,
       "type": "tap",
-      "color": "blue",
+      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -1231,19 +1715,8 @@
     {
       "beat": 114.0,
       "time": 42778.0,
-      "x": 1.9,
-      "y": 0.3,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 114.5,
-      "time": 42965.5,
       "x": -0.6,
-      "y": 0.3,
+      "y": -0.6,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -1251,12 +1724,23 @@
       "lengthMs": 0
     },
     {
-      "beat": 115.0,
-      "time": 43153.0,
-      "x": 1.9,
-      "y": -0.6,
+      "beat": 114.5,
+      "time": 42965.5,
+      "x": 0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 115.0,
+      "time": 43153.0,
+      "x": -1.9,
+      "y": -0.6,
+      "type": "tap",
+      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -1265,7 +1749,7 @@
       "beat": 115.75,
       "time": 43434.25,
       "x": 1.9,
-      "y": -0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -1276,7 +1760,7 @@
       "beat": 115.75,
       "time": 43434.25,
       "x": -1.9,
-      "y": -0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -1286,10 +1770,10 @@
     {
       "beat": 116.5,
       "time": 43715.5,
-      "x": 1.9,
-      "y": 0.3,
+      "x": -1.9,
+      "y": -0.6,
       "type": "tap",
-      "color": "red",
+      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -1297,10 +1781,21 @@
     {
       "beat": 117.5,
       "time": 44090.5,
-      "x": 0.6,
-      "y": 0.3,
-      "type": "tap",
+      "x": 1.9,
+      "y": -0.6,
+      "type": "direction",
       "color": "red",
+      "direction": "downleft",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 118.0,
+      "time": 44278.0,
+      "x": -0.6,
+      "y": -0.6,
+      "type": "tap",
+      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -1309,7 +1804,7 @@
       "beat": 118.5,
       "time": 44465.5,
       "x": 0.6,
-      "y": 0.3,
+      "y": -0.6,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -1320,7 +1815,7 @@
       "beat": 119.0,
       "time": 44653.0,
       "x": -1.9,
-      "y": 0.3,
+      "y": -0.6,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -1330,8 +1825,19 @@
     {
       "beat": 119.75,
       "time": 44934.25,
-      "x": 1.9,
+      "x": -1.9,
       "y": 0.3,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 120.0,
+      "time": 45028.0,
+      "x": 1.9,
+      "y": -0.6,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -1341,7 +1847,7 @@
     {
       "beat": 120.5,
       "time": 45215.5,
-      "x": -0.6,
+      "x": -1.9,
       "y": -0.6,
       "type": "tap",
       "color": "blue",
@@ -1361,12 +1867,23 @@
       "lengthMs": 0
     },
     {
-      "beat": 122.5,
-      "time": 45965.5,
-      "x": -1.9,
+      "beat": 122.0,
+      "time": 45778.0,
+      "x": -0.6,
       "y": -0.6,
       "type": "tap",
       "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 122.5,
+      "time": 45965.5,
+      "x": 1.9,
+      "y": -0.6,
+      "type": "tap",
+      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -1396,8 +1913,19 @@
     {
       "beat": 123.75,
       "time": 46434.25,
-      "x": 1.9,
+      "x": -1.9,
       "y": 0.3,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 124.0,
+      "time": 46528.0,
+      "x": 0.6,
+      "y": -0.6,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -1407,8 +1935,8 @@
     {
       "beat": 124.5,
       "time": 46715.5,
-      "x": -0.6,
-      "y": 0.3,
+      "x": -1.9,
+      "y": -0.6,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -1418,10 +1946,10 @@
     {
       "beat": 125.5,
       "time": 47090.5,
-      "x": 0.6,
-      "y": 0.3,
+      "x": -0.6,
+      "y": -0.6,
       "type": "tap",
-      "color": "red",
+      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -1460,10 +1988,21 @@
       "lengthMs": 0
     },
     {
+      "beat": 127.5,
+      "time": 47840.5,
+      "x": -0.6,
+      "y": -0.6,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 128.5,
       "time": 48215.5,
       "x": -1.9,
-      "y": 0.3,
+      "y": -0.6,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -1484,10 +2023,10 @@
     {
       "beat": 131.5,
       "time": 49340.5,
-      "x": 1.9,
+      "x": -0.6,
       "y": -0.6,
       "type": "tap",
-      "color": "red",
+      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -1495,7 +2034,7 @@
     {
       "beat": 132.5,
       "time": 49715.5,
-      "x": -0.6,
+      "x": -1.9,
       "y": -0.6,
       "type": "tap",
       "color": "blue",
@@ -1507,7 +2046,7 @@
       "beat": 133.0,
       "time": 49903.0,
       "x": 1.9,
-      "y": 0.3,
+      "y": -0.6,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -1517,7 +2056,7 @@
     {
       "beat": 133.5,
       "time": 50090.5,
-      "x": -1.9,
+      "x": -0.6,
       "y": -0.6,
       "type": "tap",
       "color": "blue",
@@ -1528,21 +2067,21 @@
     {
       "beat": 135.0,
       "time": 50653.0,
-      "x": 0.6,
+      "x": -0.6,
       "y": 0.3,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
+      "type": "direction",
+      "color": "blue",
+      "direction": "upleft",
       "count": 1,
       "lengthMs": 0
     },
     {
       "beat": 136.5,
       "time": 51215.5,
-      "x": -1.9,
+      "x": 0.6,
       "y": 0.3,
       "type": "tap",
-      "color": "blue",
+      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -1550,10 +2089,10 @@
     {
       "beat": 137.0,
       "time": 51403.0,
-      "x": 0.6,
-      "y": 0.3,
+      "x": -1.9,
+      "y": -0.6,
       "type": "tap",
-      "color": "red",
+      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -1561,10 +2100,10 @@
     {
       "beat": 137.5,
       "time": 51590.5,
-      "x": -0.6,
-      "y": 0.3,
+      "x": 0.6,
+      "y": -0.6,
       "type": "tap",
-      "color": "blue",
+      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -1605,17 +2144,6 @@
     {
       "beat": 139.75,
       "time": 52434.25,
-      "x": 1.9,
-      "y": -0.6,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 140.5,
-      "time": 52715.5,
       "x": -1.9,
       "y": 0.3,
       "type": "tap",
@@ -1625,9 +2153,9 @@
       "lengthMs": 0
     },
     {
-      "beat": 142.0,
-      "time": 53403.0,
-      "x": 1.9,
+      "beat": 140.5,
+      "time": 52715.5,
+      "x": 0.6,
       "y": -0.6,
       "type": "tap",
       "color": "red",
@@ -1636,10 +2164,21 @@
       "lengthMs": 0
     },
     {
+      "beat": 142.0,
+      "time": 53403.0,
+      "x": -0.6,
+      "y": -0.6,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 143.0,
       "time": 53903.0,
       "x": 0.6,
-      "y": -0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -1650,7 +2189,7 @@
       "beat": 143.92688,
       "time": 54366.44,
       "x": 1.9,
-      "y": -0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -1684,9 +2223,9 @@
       "time": 54903.0,
       "x": -0.6,
       "y": -0.6,
-      "type": "direction",
+      "type": "tap",
       "color": "blue",
-      "direction": "right",
+      "direction": "none",
       "count": 1,
       "lengthMs": 0
     },
@@ -1694,7 +2233,7 @@
       "beat": 145.5,
       "time": 55153.0,
       "x": 1.9,
-      "y": -0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -1715,7 +2254,7 @@
     {
       "beat": 147.0,
       "time": 55903.0,
-      "x": -0.6,
+      "x": -1.9,
       "y": -0.6,
       "type": "tap",
       "color": "blue",
@@ -1726,7 +2265,7 @@
     {
       "beat": 147.5,
       "time": 56153.0,
-      "x": 0.6,
+      "x": 1.9,
       "y": -0.6,
       "type": "tap",
       "color": "red",
@@ -1735,9 +2274,20 @@
       "lengthMs": 0
     },
     {
+      "beat": 148.0,
+      "time": 56403.0,
+      "x": -0.6,
+      "y": -0.6,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 148.5,
       "time": 56653.0,
-      "x": 1.9,
+      "x": 0.6,
       "y": -0.6,
       "type": "tap",
       "color": "red",
@@ -1781,7 +2331,7 @@
     {
       "beat": 151.5,
       "time": 58153.0,
-      "x": -1.9,
+      "x": -0.6,
       "y": -0.6,
       "type": "tap",
       "color": "blue",
@@ -1792,21 +2342,21 @@
     {
       "beat": 152.0,
       "time": 58403.0,
-      "x": 0.6,
+      "x": 1.9,
       "y": -0.6,
-      "type": "tap",
+      "type": "direction",
       "color": "red",
-      "direction": "none",
+      "direction": "right",
       "count": 1,
       "lengthMs": 0
     },
     {
       "beat": 154.5,
       "time": 59653.0,
-      "x": -0.6,
-      "y": -0.6,
+      "x": 0.6,
+      "y": 0.3,
       "type": "tap",
-      "color": "blue",
+      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -1814,10 +2364,10 @@
     {
       "beat": 155.0,
       "time": 59903.0,
-      "x": 1.9,
+      "x": -0.6,
       "y": -0.6,
       "type": "tap",
-      "color": "red",
+      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -1859,7 +2409,7 @@
       "beat": 159.0,
       "time": 61903.0,
       "x": -1.9,
-      "y": -0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -1869,8 +2419,8 @@
     {
       "beat": 160.0,
       "time": 62403.0,
-      "x": -1.9,
-      "y": -0.6,
+      "x": -0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -1880,10 +2430,10 @@
     {
       "beat": 161.0,
       "time": 62903.0,
-      "x": -1.9,
+      "x": 0.6,
       "y": -0.6,
       "type": "tap",
-      "color": "blue",
+      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -1891,8 +2441,8 @@
     {
       "beat": 163.0,
       "time": 63903.0,
-      "x": 1.9,
-      "y": -0.6,
+      "x": 0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -1902,7 +2452,7 @@
     {
       "beat": 164.0,
       "time": 64403.0,
-      "x": 1.9,
+      "x": 0.6,
       "y": -0.6,
       "type": "tap",
       "color": "red",
@@ -1936,7 +2486,7 @@
       "beat": 165.5,
       "time": 65153.0,
       "x": 1.9,
-      "y": -0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -1946,7 +2496,7 @@
     {
       "beat": 167.0,
       "time": 65903.0,
-      "x": -0.6,
+      "x": -1.9,
       "y": -0.6,
       "type": "tap",
       "color": "blue",
@@ -1957,7 +2507,7 @@
     {
       "beat": 167.5,
       "time": 66153.0,
-      "x": 1.9,
+      "x": 0.6,
       "y": -0.6,
       "type": "tap",
       "color": "red",
@@ -1969,7 +2519,7 @@
       "beat": 168.0,
       "time": 66403.0,
       "x": -1.9,
-      "y": -0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -1990,7 +2540,7 @@
     {
       "beat": 169.0,
       "time": 66903.0,
-      "x": -1.9,
+      "x": -0.6,
       "y": -0.6,
       "type": "tap",
       "color": "blue",
@@ -2001,7 +2551,7 @@
     {
       "beat": 170.0,
       "time": 67403.0,
-      "x": -0.6,
+      "x": -1.9,
       "y": -0.6,
       "type": "long",
       "color": "blue",
@@ -2010,8 +2560,8 @@
       "lengthMs": 1090.0
     },
     {
-      "beat": 175.5,
-      "time": 70153.0,
+      "beat": 171.0,
+      "time": 67903.0,
       "x": 0.6,
       "y": -0.6,
       "type": "tap",
@@ -2021,10 +2571,21 @@
       "lengthMs": 0
     },
     {
-      "beat": 177.0,
-      "time": 70903.0,
-      "x": 1.9,
+      "beat": 175.5,
+      "time": 70153.0,
+      "x": -0.6,
       "y": -0.6,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 176.0,
+      "time": 70403.0,
+      "x": 0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -2034,39 +2595,6 @@
     {
       "beat": 177.0,
       "time": 70903.0,
-      "x": -1.9,
-      "y": -0.6,
-      "type": "tap",
-      "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 178.0,
-      "time": 71403.0,
-      "x": 1.9,
-      "y": -0.6,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 178.5,
-      "time": 71653.0,
-      "x": -1.9,
-      "y": -0.6,
-      "type": "tap",
-      "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 179.0,
-      "time": 71903.0,
       "x": 1.9,
       "y": 0.3,
       "type": "tap",
@@ -2076,9 +2604,53 @@
       "lengthMs": 0
     },
     {
+      "beat": 177.0,
+      "time": 70903.0,
+      "x": -1.9,
+      "y": 0.3,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 178.0,
+      "time": 71403.0,
+      "x": -0.6,
+      "y": 0.3,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 178.5,
+      "time": 71653.0,
+      "x": 1.9,
+      "y": 0.3,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 179.0,
+      "time": 71903.0,
+      "x": -1.9,
+      "y": 0.3,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 180.0,
       "time": 72403.0,
-      "x": -1.9,
+      "x": -0.6,
       "y": 0.3,
       "type": "tap",
       "color": "blue",
@@ -2089,8 +2661,8 @@
     {
       "beat": 180.5,
       "time": 72653.0,
-      "x": 0.6,
-      "y": 0.3,
+      "x": 1.9,
+      "y": -0.6,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -2100,30 +2672,19 @@
     {
       "beat": 181.0,
       "time": 72903.0,
-      "x": -0.6,
-      "y": 0.3,
-      "type": "tap",
+      "x": -1.9,
+      "y": -0.6,
+      "type": "direction",
       "color": "blue",
-      "direction": "none",
+      "direction": "left",
       "count": 1,
       "lengthMs": 0
     },
     {
       "beat": 182.0,
       "time": 73403.0,
-      "x": -0.6,
-      "y": 0.3,
-      "type": "tap",
-      "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 182.5,
-      "time": 73653.0,
       "x": 0.6,
-      "y": 0.3,
+      "y": -0.6,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -2131,8 +2692,8 @@
       "lengthMs": 0
     },
     {
-      "beat": 183.0,
-      "time": 73903.0,
+      "beat": 182.5,
+      "time": 73653.0,
       "x": -1.9,
       "y": 0.3,
       "type": "tap",
@@ -2142,8 +2703,30 @@
       "lengthMs": 0
     },
     {
+      "beat": 183.0,
+      "time": 73903.0,
+      "x": 0.6,
+      "y": 0.3,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 183.5,
       "time": 74153.0,
+      "x": -0.6,
+      "y": 0.3,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 184.0,
+      "time": 74403.0,
       "x": 1.9,
       "y": 0.3,
       "type": "tap",
@@ -2155,7 +2738,7 @@
     {
       "beat": 184.5,
       "time": 74653.0,
-      "x": -0.6,
+      "x": -1.9,
       "y": -0.6,
       "type": "tap",
       "color": "blue",
@@ -2167,7 +2750,7 @@
       "beat": 185.0,
       "time": 74903.0,
       "x": 0.6,
-      "y": -0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -2178,7 +2761,7 @@
       "beat": 186.5,
       "time": 75653.0,
       "x": 1.9,
-      "y": -0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -2188,8 +2771,8 @@
     {
       "beat": 187.0,
       "time": 75903.0,
-      "x": -1.9,
-      "y": -0.6,
+      "x": -0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -2199,7 +2782,7 @@
     {
       "beat": 187.5,
       "time": 76153.0,
-      "x": 1.9,
+      "x": 0.6,
       "y": 0.3,
       "type": "tap",
       "color": "red",
@@ -2208,8 +2791,8 @@
       "lengthMs": 0
     },
     {
-      "beat": 188.5,
-      "time": 76653.0,
+      "beat": 188.0,
+      "time": 76403.0,
       "x": -1.9,
       "y": 0.3,
       "type": "tap",
@@ -2219,12 +2802,23 @@
       "lengthMs": 0
     },
     {
-      "beat": 189.0,
-      "time": 76903.0,
+      "beat": 188.5,
+      "time": 76653.0,
       "x": 0.6,
       "y": -0.6,
-      "type": "long",
+      "type": "tap",
       "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 189.0,
+      "time": 76903.0,
+      "x": -0.6,
+      "y": 0.3,
+      "type": "long",
+      "color": "blue",
       "direction": "none",
       "count": 2,
       "lengthMs": 1090.0
@@ -2232,10 +2826,10 @@
     {
       "beat": 190.0,
       "time": 77403.0,
-      "x": -0.6,
+      "x": 0.6,
       "y": 0.3,
       "type": "tap",
-      "color": "blue",
+      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -2243,10 +2837,10 @@
     {
       "beat": 191.0,
       "time": 77903.0,
-      "x": -0.6,
+      "x": 1.9,
       "y": 0.3,
       "type": "tap",
-      "color": "blue",
+      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -2254,8 +2848,19 @@
     {
       "beat": 191.5,
       "time": 78153.0,
-      "x": 0.6,
-      "y": 0.3,
+      "x": -0.6,
+      "y": -0.6,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 192.0,
+      "time": 78403.0,
+      "x": 1.9,
+      "y": -0.6,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -2266,7 +2871,7 @@
       "beat": 192.5,
       "time": 78653.0,
       "x": 1.9,
-      "y": -0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -2296,12 +2901,23 @@
       "lengthMs": 0
     },
     {
-      "beat": 194.5,
-      "time": 79653.0,
-      "x": 1.9,
-      "y": -0.6,
+      "beat": 194.0,
+      "time": 79403.0,
+      "x": 0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 194.5,
+      "time": 79653.0,
+      "x": -0.6,
+      "y": -0.6,
+      "type": "tap",
+      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -2309,28 +2925,6 @@
     {
       "beat": 195.0,
       "time": 79903.0,
-      "x": -0.6,
-      "y": -0.6,
-      "type": "tap",
-      "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 196.0,
-      "time": 80403.0,
-      "x": -1.9,
-      "y": -0.6,
-      "type": "tap",
-      "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 196.5,
-      "time": 80653.0,
       "x": 1.9,
       "y": 0.3,
       "type": "tap",
@@ -2340,8 +2934,41 @@
       "lengthMs": 0
     },
     {
+      "beat": 196.0,
+      "time": 80403.0,
+      "x": 0.6,
+      "y": 0.3,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 196.5,
+      "time": 80653.0,
+      "x": -0.6,
+      "y": 0.3,
+      "type": "direction",
+      "color": "blue",
+      "direction": "upleft",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 197.0,
       "time": 80903.0,
+      "x": 0.6,
+      "y": -0.6,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 197.5,
+      "time": 81153.0,
       "x": -1.9,
       "y": 0.3,
       "type": "tap",
@@ -2351,10 +2978,10 @@
       "lengthMs": 0
     },
     {
-      "beat": 197.5,
-      "time": 81153.0,
-      "x": 0.6,
-      "y": 0.3,
+      "beat": 198.0,
+      "time": 81403.0,
+      "x": 1.9,
+      "y": -0.6,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -2362,8 +2989,8 @@
       "lengthMs": 0
     },
     {
-      "beat": 198.0,
-      "time": 81403.0,
+      "beat": 199.0,
+      "time": 81903.0,
       "x": -0.6,
       "y": 0.3,
       "type": "tap",
@@ -2373,8 +3000,8 @@
       "lengthMs": 0
     },
     {
-      "beat": 199.0,
-      "time": 81903.0,
+      "beat": 199.5,
+      "time": 82153.0,
       "x": 0.6,
       "y": 0.3,
       "type": "tap",
@@ -2384,9 +3011,9 @@
       "lengthMs": 0
     },
     {
-      "beat": 199.5,
-      "time": 82153.0,
-      "x": -0.6,
+      "beat": 200.0,
+      "time": 82403.0,
+      "x": -1.9,
       "y": 0.3,
       "type": "tap",
       "color": "blue",
@@ -2397,7 +3024,18 @@
     {
       "beat": 202.0,
       "time": 83403.0,
-      "x": -1.9,
+      "x": 1.9,
+      "y": -0.6,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 202.5,
+      "time": 83653.0,
+      "x": -0.6,
       "y": 0.3,
       "type": "tap",
       "color": "blue",
@@ -2406,9 +3044,9 @@
       "lengthMs": 0
     },
     {
-      "beat": 202.5,
-      "time": 83653.0,
-      "x": 1.9,
+      "beat": 203.0,
+      "time": 83903.0,
+      "x": 0.6,
       "y": 0.3,
       "type": "tap",
       "color": "red",
@@ -2419,8 +3057,8 @@
     {
       "beat": 204.0,
       "time": 84403.0,
-      "x": 0.6,
-      "y": -0.6,
+      "x": 1.9,
+      "y": 0.3,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -2431,7 +3069,7 @@
       "beat": 204.5,
       "time": 84653.0,
       "x": -0.6,
-      "y": -0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -2441,8 +3079,8 @@
     {
       "beat": 205.0,
       "time": 84903.0,
-      "x": 1.9,
-      "y": -0.6,
+      "x": 0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -2453,7 +3091,7 @@
       "beat": 206.0,
       "time": 85403.0,
       "x": 1.9,
-      "y": -0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -2474,28 +3112,6 @@
     {
       "beat": 207.75,
       "time": 86278.0,
-      "x": -1.9,
-      "y": 0.3,
-      "type": "tap",
-      "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 208.5,
-      "time": 86653.0,
-      "x": 0.6,
-      "y": 0.3,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 209.0,
-      "time": 86903.0,
       "x": -0.6,
       "y": 0.3,
       "type": "tap",
@@ -2505,10 +3121,10 @@
       "lengthMs": 0
     },
     {
-      "beat": 209.5,
-      "time": 87153.0,
-      "x": 0.6,
-      "y": 0.3,
+      "beat": 208.0,
+      "time": 86403.0,
+      "x": 1.9,
+      "y": -0.6,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -2516,12 +3132,45 @@
       "lengthMs": 0
     },
     {
-      "beat": 210.0,
-      "time": 87403.0,
+      "beat": 208.5,
+      "time": 86653.0,
       "x": -1.9,
       "y": 0.3,
       "type": "tap",
       "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 209.0,
+      "time": 86903.0,
+      "x": 0.6,
+      "y": 0.3,
+      "type": "direction",
+      "color": "red",
+      "direction": "upleft",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 209.5,
+      "time": 87153.0,
+      "x": -0.6,
+      "y": 0.3,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 210.0,
+      "time": 87403.0,
+      "x": 1.9,
+      "y": 0.3,
+      "type": "tap",
+      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -2541,9 +3190,20 @@
       "beat": 210.5,
       "time": 87653.0,
       "x": -1.9,
-      "y": -0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 211.0,
+      "time": 87903.0,
+      "x": 1.9,
+      "y": 0.3,
+      "type": "tap",
+      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -2552,7 +3212,7 @@
       "beat": 212.0,
       "time": 88403.0,
       "x": 0.6,
-      "y": -0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -2563,7 +3223,7 @@
       "beat": 212.5,
       "time": 88653.0,
       "x": -0.6,
-      "y": -0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -2574,7 +3234,18 @@
       "beat": 213.0,
       "time": 88903.0,
       "x": 1.9,
-      "y": -0.6,
+      "y": 0.3,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 214.0,
+      "time": 89403.0,
+      "x": 0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -2584,7 +3255,7 @@
     {
       "beat": 214.5,
       "time": 89653.0,
-      "x": -1.9,
+      "x": -0.6,
       "y": -0.6,
       "type": "tap",
       "color": "blue",
@@ -2596,7 +3267,7 @@
       "beat": 215.0,
       "time": 89903.0,
       "x": 1.9,
-      "y": 0.3,
+      "y": -0.6,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -2606,7 +3277,7 @@
     {
       "beat": 215.5,
       "time": 90153.0,
-      "x": -1.9,
+      "x": -0.6,
       "y": 0.3,
       "type": "tap",
       "color": "blue",
@@ -2615,9 +3286,20 @@
       "lengthMs": 0
     },
     {
+      "beat": 216.0,
+      "time": 90403.0,
+      "x": 1.9,
+      "y": 0.3,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 216.5,
       "time": 90653.0,
-      "x": -0.6,
+      "x": -1.9,
       "y": 0.3,
       "type": "tap",
       "color": "blue",
@@ -2629,6 +3311,17 @@
       "beat": 217.0,
       "time": 90903.0,
       "x": 0.6,
+      "y": 0.3,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 218.0,
+      "time": 91403.0,
+      "x": 1.9,
       "y": 0.3,
       "type": "tap",
       "color": "red",
@@ -2650,6 +3343,17 @@
     {
       "beat": 220.0,
       "time": 92403.0,
+      "x": -1.9,
+      "y": -0.6,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 220.5,
+      "time": 92653.0,
       "x": 1.9,
       "y": 0.3,
       "type": "tap",
@@ -2659,23 +3363,12 @@
       "lengthMs": 0
     },
     {
-      "beat": 220.5,
-      "time": 92653.0,
-      "x": -0.6,
-      "y": 0.3,
-      "type": "tap",
-      "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
       "beat": 221.0,
       "time": 92903.0,
-      "x": 0.6,
-      "y": -0.6,
+      "x": -0.6,
+      "y": 0.3,
       "type": "long",
-      "color": "red",
+      "color": "blue",
       "direction": "none",
       "count": 2,
       "lengthMs": 1090.0
@@ -2683,17 +3376,28 @@
     {
       "beat": 222.0,
       "time": 93403.0,
-      "x": -1.9,
+      "x": 0.6,
       "y": 0.3,
-      "type": "tap",
-      "color": "blue",
-      "direction": "none",
+      "type": "direction",
+      "color": "red",
+      "direction": "left",
       "count": 1,
       "lengthMs": 0
     },
     {
       "beat": 223.0,
       "time": 93903.0,
+      "x": 1.9,
+      "y": 0.3,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 223.5,
+      "time": 94153.0,
       "x": -0.6,
       "y": -0.6,
       "type": "tap",
@@ -2703,10 +3407,10 @@
       "lengthMs": 0
     },
     {
-      "beat": 223.5,
-      "time": 94153.0,
+      "beat": 224.0,
+      "time": 94403.0,
       "x": 0.6,
-      "y": -0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -2716,10 +3420,21 @@
     {
       "beat": 225.0,
       "time": 94903.0,
-      "x": 1.9,
+      "x": -1.9,
       "y": -0.6,
       "type": "tap",
-      "color": "red",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 226.0,
+      "time": 95403.0,
+      "x": -0.6,
+      "y": -0.6,
+      "type": "tap",
+      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -2727,7 +3442,7 @@
     {
       "beat": 226.5,
       "time": 95653.0,
-      "x": 0.6,
+      "x": 1.9,
       "y": -0.6,
       "type": "tap",
       "color": "red",
@@ -2739,7 +3454,18 @@
       "beat": 227.0,
       "time": 95903.0,
       "x": -1.9,
-      "y": -0.6,
+      "y": 0.3,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 228.0,
+      "time": 96453.0,
+      "x": -0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -2769,9 +3495,42 @@
       "lengthMs": 0
     },
     {
+      "beat": 230.0,
+      "time": 97803.0,
+      "x": -1.9,
+      "y": -0.6,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 231.0,
       "time": 98553.0,
-      "x": 1.9,
+      "x": -0.6,
+      "y": -0.6,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 232.0,
+      "time": 99303.0,
+      "x": -1.9,
+      "y": -0.6,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 237.0,
+      "time": 102653.0,
+      "x": 0.6,
       "y": -0.6,
       "type": "tap",
       "color": "red",
@@ -2782,11 +3541,11 @@
     {
       "beat": 238.0,
       "time": 103153.0,
-      "x": 0.6,
+      "x": 1.9,
       "y": -0.6,
-      "type": "tap",
+      "type": "direction",
       "color": "red",
-      "direction": "none",
+      "direction": "right",
       "count": 1,
       "lengthMs": 0
     },
@@ -2804,6 +3563,28 @@
     {
       "beat": 239.5,
       "time": 103903.0,
+      "x": 0.6,
+      "y": -0.6,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 240.0,
+      "time": 104153.0,
+      "x": -1.9,
+      "y": -0.6,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 240.5,
+      "time": 104403.0,
       "x": 1.9,
       "y": -0.6,
       "type": "tap",
@@ -2813,9 +3594,9 @@
       "lengthMs": 0
     },
     {
-      "beat": 240.5,
-      "time": 104403.0,
-      "x": -1.9,
+      "beat": 241.5,
+      "time": 104903.0,
+      "x": -0.6,
       "y": -0.6,
       "type": "tap",
       "color": "blue",
@@ -2824,12 +3605,12 @@
       "lengthMs": 0
     },
     {
-      "beat": 241.5,
-      "time": 104903.0,
-      "x": -1.9,
-      "y": 0.3,
+      "beat": 242.0,
+      "time": 105153.0,
+      "x": 0.6,
+      "y": -0.6,
       "type": "tap",
-      "color": "blue",
+      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -2837,8 +3618,8 @@
     {
       "beat": 242.5,
       "time": 105403.0,
-      "x": -0.6,
-      "y": 0.3,
+      "x": -1.9,
+      "y": -0.6,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -2860,7 +3641,7 @@
       "beat": 243.5,
       "time": 105903.0,
       "x": -1.9,
-      "y": -0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "gold",
       "direction": "none",
@@ -2870,7 +3651,7 @@
     {
       "beat": 244.5,
       "time": 106403.0,
-      "x": 0.6,
+      "x": 1.9,
       "y": 0.3,
       "type": "tap",
       "color": "red",
@@ -2903,8 +3684,8 @@
     {
       "beat": 246.5,
       "time": 107403.0,
-      "x": 1.9,
-      "y": 0.3,
+      "x": 0.6,
+      "y": -0.6,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -2926,7 +3707,7 @@
       "beat": 247.5,
       "time": 107903.0,
       "x": -1.9,
-      "y": -0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "gold",
       "direction": "none",
@@ -2936,28 +3717,6 @@
     {
       "beat": 248.5,
       "time": 108403.0,
-      "x": 1.9,
-      "y": -0.6,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 250.5,
-      "time": 109403.0,
-      "x": 1.9,
-      "y": -0.6,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 250.5,
-      "time": 109403.0,
       "x": -1.9,
       "y": -0.6,
       "type": "tap",
@@ -2967,9 +3726,42 @@
       "lengthMs": 0
     },
     {
+      "beat": 250.5,
+      "time": 109403.0,
+      "x": 1.9,
+      "y": 0.3,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 250.5,
+      "time": 109403.0,
+      "x": -1.9,
+      "y": 0.3,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 252.0,
+      "time": 110153.0,
+      "x": 1.9,
+      "y": -0.6,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 252.5,
       "time": 110403.0,
-      "x": -1.9,
+      "x": -0.6,
       "y": 0.3,
       "type": "tap",
       "color": "blue",
@@ -2981,7 +3773,7 @@
       "beat": 254.5,
       "time": 111403.0,
       "x": 1.9,
-      "y": -0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -3003,9 +3795,20 @@
       "beat": 255.5,
       "time": 111903.0,
       "x": -0.6,
-      "y": 0.3,
+      "y": -0.6,
       "type": "tap",
       "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 256,
+      "time": 112153.0,
+      "x": 1.9,
+      "y": -0.6,
+      "type": "tap",
+      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -3014,7 +3817,7 @@
       "beat": 256.5,
       "time": 112403.0,
       "x": -1.9,
-      "y": 0.3,
+      "y": -0.6,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -3024,7 +3827,18 @@
     {
       "beat": 257.5,
       "time": 112903.0,
-      "x": 0.6,
+      "x": -1.9,
+      "y": 0.3,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 258,
+      "time": 113153.0,
+      "x": 1.9,
       "y": 0.3,
       "type": "tap",
       "color": "red",
@@ -3057,10 +3871,10 @@
     {
       "beat": 260.5,
       "time": 114403.0,
-      "x": 0.6,
+      "x": -0.6,
       "y": -0.6,
       "type": "tap",
-      "color": "red",
+      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -3068,28 +3882,6 @@
     {
       "beat": 261.5,
       "time": 114903.0,
-      "x": 1.9,
-      "y": -0.6,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 262.5,
-      "time": 115403.0,
-      "x": 1.9,
-      "y": -0.6,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 262.5,
-      "time": 115403.0,
       "x": -1.9,
       "y": -0.6,
       "type": "tap",
@@ -3099,10 +3891,54 @@
       "lengthMs": 0
     },
     {
+      "beat": 262,
+      "time": 115153.0,
+      "x": 1.9,
+      "y": 0.3,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 262.5,
+      "time": 115403.0,
+      "x": 1.9,
+      "y": -0.6,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 262.5,
+      "time": 115403.0,
+      "x": -1.9,
+      "y": 0.3,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 264.0,
+      "time": 116153.0,
+      "x": 1.9,
+      "y": -0.6,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 264.5,
       "time": 116403.0,
       "x": -1.9,
-      "y": 0.3,
+      "y": -0.6,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -3112,10 +3948,10 @@
     {
       "beat": 266.5,
       "time": 117403.0,
-      "x": -0.6,
-      "y": 0.3,
+      "x": 0.6,
+      "y": -0.6,
       "type": "tap",
-      "color": "blue",
+      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -3124,9 +3960,20 @@
       "beat": 268.5,
       "time": 118403.0,
       "x": -0.6,
-      "y": 0.3,
+      "y": -0.6,
       "type": "tap",
       "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 270.0,
+      "time": 119153.0,
+      "x": 1.9,
+      "y": -0.6,
+      "type": "tap",
+      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -3135,7 +3982,7 @@
       "beat": 270.5,
       "time": 119403.0,
       "x": 1.9,
-      "y": -0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -3165,10 +4012,32 @@
       "lengthMs": 0
     },
     {
+      "beat": 272.0,
+      "time": 120153.0,
+      "x": -0.6,
+      "y": -0.6,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 272.5,
       "time": 120403.0,
+      "x": 0.6,
+      "y": -0.6,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 274.0,
+      "time": 121153.0,
       "x": 1.9,
-      "y": 0.3,
+      "y": -0.6,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -3179,7 +4048,7 @@
       "beat": 274.5,
       "time": 121403.0,
       "x": 1.9,
-      "y": -0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -3198,9 +4067,31 @@
       "lengthMs": 0
     },
     {
+      "beat": 276.0,
+      "time": 122153.0,
+      "x": 0.6,
+      "y": 0.3,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 276.5,
       "time": 122403.0,
-      "x": 1.9,
+      "x": -1.9,
+      "y": 0.3,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 277.5,
+      "time": 122903.0,
+      "x": 0.6,
       "y": -0.6,
       "type": "tap",
       "color": "red",
@@ -3209,10 +4100,10 @@
       "lengthMs": 0
     },
     {
-      "beat": 277.5,
-      "time": 122903.0,
-      "x": -1.9,
-      "y": -0.6,
+      "beat": 278.0,
+      "time": 123153.0,
+      "x": -0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -3222,8 +4113,19 @@
     {
       "beat": 278.5,
       "time": 123403.0,
+      "x": 1.9,
+      "y": -0.6,
+      "type": "direction",
+      "color": "red",
+      "direction": "upright",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 279.0,
+      "time": 123653.0,
       "x": -1.9,
-      "y": 0.3,
+      "y": -0.6,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -3233,8 +4135,19 @@
     {
       "beat": 279.5,
       "time": 123903.0,
+      "x": 0.6,
+      "y": -0.6,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 280.0,
+      "time": 124153.0,
       "x": -0.6,
-      "y": 0.3,
+      "y": -0.6,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -3245,17 +4158,6 @@
       "beat": 280.5,
       "time": 124403.0,
       "x": 1.9,
-      "y": 0.3,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 282.5,
-      "time": 125403.0,
-      "x": 1.9,
       "y": -0.6,
       "type": "tap",
       "color": "red",
@@ -3264,8 +4166,8 @@
       "lengthMs": 0
     },
     {
-      "beat": 282.5,
-      "time": 125403.0,
+      "beat": 282.0,
+      "time": 125153.0,
       "x": -1.9,
       "y": -0.6,
       "type": "tap",
@@ -3275,13 +4177,46 @@
       "lengthMs": 0
     },
     {
-      "beat": 284.5,
-      "time": 126403.0,
+      "beat": 282.5,
+      "time": 125403.0,
+      "x": 1.9,
+      "y": 0.3,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 282.5,
+      "time": 125403.0,
+      "x": -1.9,
+      "y": 0.3,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 284.0,
+      "time": 126153.0,
       "x": 0.6,
       "y": 0.3,
-      "type": "direction",
+      "type": "tap",
       "color": "red",
-      "direction": "upleft",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 284.5,
+      "time": 126403.0,
+      "x": -0.6,
+      "y": 0.3,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
       "count": 1,
       "lengthMs": 0
     },
@@ -3300,7 +4235,7 @@
       "beat": 285.5,
       "time": 126903.0,
       "x": -1.9,
-      "y": -0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -3321,7 +4256,7 @@
     {
       "beat": 287.5,
       "time": 127903.0,
-      "x": -0.6,
+      "x": -1.9,
       "y": -0.6,
       "type": "tap",
       "color": "blue",
@@ -3332,7 +4267,7 @@
     {
       "beat": 288.5,
       "time": 128403.0,
-      "x": -1.9,
+      "x": -0.6,
       "y": -0.6,
       "type": "tap",
       "color": "blue",
@@ -3343,7 +4278,7 @@
     {
       "beat": 289,
       "time": 128653.0,
-      "x": 1.9,
+      "x": 0.6,
       "y": -0.6,
       "type": "tap",
       "color": "red",
@@ -3355,7 +4290,7 @@
       "beat": 289.5,
       "time": 128903.0,
       "x": -1.9,
-      "y": 0.3,
+      "y": -0.6,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -3366,7 +4301,7 @@
       "beat": 290.5,
       "time": 129403.0,
       "x": 1.9,
-      "y": -0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -3377,7 +4312,7 @@
       "beat": 290.5,
       "time": 129403.0,
       "x": -1.9,
-      "y": -0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -3385,10 +4320,32 @@
       "lengthMs": 0
     },
     {
+      "beat": 292,
+      "time": 130153.0,
+      "x": 0.6,
+      "y": -0.6,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 292.5,
       "time": 130403.0,
-      "x": 0.6,
-      "y": 0.3,
+      "x": -1.9,
+      "y": -0.6,
+      "type": "direction",
+      "color": "blue",
+      "direction": "downright",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 293,
+      "time": 130653.0,
+      "x": 1.9,
+      "y": -0.6,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -3398,10 +4355,10 @@
     {
       "beat": 293.5,
       "time": 130903.0,
-      "x": 0.6,
-      "y": 0.3,
+      "x": -0.6,
+      "y": -0.6,
       "type": "tap",
-      "color": "red",
+      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -3409,10 +4366,10 @@
     {
       "beat": 294,
       "time": 131153.0,
-      "x": -1.9,
+      "x": 1.9,
       "y": 0.3,
       "type": "tap",
-      "color": "blue",
+      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -3432,6 +4389,28 @@
       "beat": 294.5,
       "time": 131403.0,
       "x": -1.9,
+      "y": -0.6,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 295,
+      "time": 131653.0,
+      "x": 1.9,
+      "y": 0.3,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 296.0,
+      "time": 132153.0,
+      "x": -0.6,
       "y": -0.6,
       "type": "tap",
       "color": "blue",
@@ -3442,10 +4421,10 @@
     {
       "beat": 296.5,
       "time": 132403.0,
-      "x": -0.6,
+      "x": 1.9,
       "y": -0.6,
       "type": "tap",
-      "color": "blue",
+      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -3475,6 +4454,17 @@
     {
       "beat": 300.5,
       "time": 134403.0,
+      "x": -1.9,
+      "y": 0.3,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 302.0,
+      "time": 135153.0,
       "x": 1.9,
       "y": -0.6,
       "type": "tap",
@@ -3486,10 +4476,10 @@
     {
       "beat": 302.5,
       "time": 135403.0,
-      "x": 1.9,
+      "x": -0.6,
       "y": 0.3,
       "type": "tap",
-      "color": "red",
+      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -3498,9 +4488,9 @@
       "beat": 303.5,
       "time": 135903.0,
       "x": 0.6,
-      "y": 0.3,
+      "y": -0.6,
       "type": "tap",
-      "color": "blue",
+      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -3508,10 +4498,10 @@
     {
       "beat": 304.0,
       "time": 136153.0,
-      "x": 0.6,
-      "y": 0.3,
+      "x": -0.6,
+      "y": -0.6,
       "type": "tap",
-      "color": "red",
+      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -3519,6 +4509,28 @@
     {
       "beat": 304.5,
       "time": 136403.0,
+      "x": 1.9,
+      "y": -0.6,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 305.5,
+      "time": 136903.0,
+      "x": -1.9,
+      "y": -0.6,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 307.0,
+      "time": 137653.0,
       "x": -0.6,
       "y": 0.3,
       "type": "tap",
@@ -3528,31 +4540,20 @@
       "lengthMs": 0
     },
     {
-      "beat": 305.5,
-      "time": 136903.0,
-      "x": 0.6,
-      "y": 0.3,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 307.0,
-      "time": 137653.0,
-      "x": 1.9,
-      "y": 0.3,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
       "beat": 307.5,
       "time": 137903.0,
-      "x": -0.6,
+      "x": 0.6,
+      "y": -0.6,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 308.0,
+      "time": 138153.0,
+      "x": -1.9,
       "y": 0.3,
       "type": "tap",
       "color": "blue",
@@ -3563,18 +4564,18 @@
     {
       "beat": 308.5,
       "time": 138403.0,
-      "x": -1.9,
-      "y": 0.3,
-      "type": "tap",
-      "color": "blue",
-      "direction": "none",
+      "x": 1.9,
+      "y": -0.6,
+      "type": "direction",
+      "color": "red",
+      "direction": "upright",
       "count": 1,
       "lengthMs": 0
     },
     {
       "beat": 309.5,
       "time": 138903.0,
-      "x": -0.6,
+      "x": -1.9,
       "y": -0.6,
       "type": "tap",
       "color": "blue",
@@ -3585,7 +4586,18 @@
     {
       "beat": 310.5,
       "time": 139403.0,
-      "x": -1.9,
+      "x": 1.9,
+      "y": 0.3,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 311.5,
+      "time": 139903.0,
+      "x": -0.6,
       "y": -0.6,
       "type": "tap",
       "color": "blue",
@@ -3594,9 +4606,9 @@
       "lengthMs": 0
     },
     {
-      "beat": 311.5,
-      "time": 139903.0,
-      "x": 0.6,
+      "beat": 312.0,
+      "time": 140153.0,
+      "x": 1.9,
       "y": -0.6,
       "type": "tap",
       "color": "red",
@@ -3607,7 +4619,7 @@
     {
       "beat": 312.5,
       "time": 140403.0,
-      "x": -0.6,
+      "x": -1.9,
       "y": -0.6,
       "type": "long",
       "color": "blue",
@@ -3618,7 +4630,18 @@
     {
       "beat": 317.5,
       "time": 142903.0,
-      "x": 1.9,
+      "x": -0.6,
+      "y": -0.6,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 318.0,
+      "time": 143153.0,
+      "x": 0.6,
       "y": -0.6,
       "type": "tap",
       "color": "red",
@@ -3629,8 +4652,8 @@
     {
       "beat": 318.5,
       "time": 143403.0,
-      "x": -0.6,
-      "y": 0.3,
+      "x": -1.9,
+      "y": -0.6,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -3652,7 +4675,7 @@
       "beat": 320.0,
       "time": 144153.0,
       "x": -1.9,
-      "y": -0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -3663,7 +4686,7 @@
       "beat": 320.5,
       "time": 144403.0,
       "x": 1.9,
-      "y": -0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -3673,10 +4696,10 @@
     {
       "beat": 321.5,
       "time": 144903.0,
-      "x": 1.9,
-      "y": 0.3,
+      "x": -1.9,
+      "y": -0.6,
       "type": "tap",
-      "color": "red",
+      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -3684,8 +4707,8 @@
     {
       "beat": 322.5,
       "time": 145403.0,
-      "x": 0.6,
-      "y": 0.3,
+      "x": 1.9,
+      "y": -0.6,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -3696,7 +4719,7 @@
       "beat": 323.5,
       "time": 145903.0,
       "x": -1.9,
-      "y": -0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -3706,6 +4729,28 @@
     {
       "beat": 324.0,
       "time": 146153.0,
+      "x": 1.9,
+      "y": 0.3,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 325.0,
+      "time": 146653.0,
+      "x": -0.6,
+      "y": 0.3,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 325.5,
+      "time": 146903.0,
       "x": 0.6,
       "y": 0.3,
       "type": "tap",
@@ -3715,21 +4760,10 @@
       "lengthMs": 0
     },
     {
-      "beat": 325.5,
-      "time": 146903.0,
-      "x": -1.9,
-      "y": 0.3,
-      "type": "tap",
-      "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
       "beat": 326.5,
       "time": 147403.0,
       "x": 1.9,
-      "y": -0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -3740,7 +4774,7 @@
       "beat": 326.5,
       "time": 147403.0,
       "x": -1.9,
-      "y": -0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -3761,11 +4795,11 @@
     {
       "beat": 328.0,
       "time": 148153.0,
-      "x": -0.6,
-      "y": 0.3,
+      "x": -1.9,
+      "y": -0.6,
       "type": "direction",
       "color": "blue",
-      "direction": "upright",
+      "direction": "down",
       "count": 1,
       "lengthMs": 0
     },
@@ -3783,6 +4817,17 @@
     {
       "beat": 329.5,
       "time": 148903.0,
+      "x": 1.9,
+      "y": 0.3,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 330.5,
+      "time": 149403.0,
       "x": -1.9,
       "y": 0.3,
       "type": "tap",
@@ -3792,12 +4837,12 @@
       "lengthMs": 0
     },
     {
-      "beat": 330.5,
-      "time": 149403.0,
-      "x": -0.6,
-      "y": -0.6,
+      "beat": 332.0,
+      "time": 150153.0,
+      "x": 0.6,
+      "y": 0.3,
       "type": "tap",
-      "color": "blue",
+      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -3805,8 +4850,8 @@
     {
       "beat": 332.5,
       "time": 150403.0,
-      "x": -1.9,
-      "y": -0.6,
+      "x": -0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -3816,8 +4861,8 @@
     {
       "beat": 333.5,
       "time": 150903.0,
-      "x": 0.6,
-      "y": -0.6,
+      "x": 1.9,
+      "y": 0.3,
       "type": "long",
       "color": "red",
       "direction": "none",
@@ -3827,7 +4872,7 @@
     {
       "beat": 334.0,
       "time": 151153.0,
-      "x": -0.6,
+      "x": -1.9,
       "y": 0.3,
       "type": "tap",
       "color": "blue",
@@ -3838,7 +4883,18 @@
     {
       "beat": 334.5,
       "time": 151403.0,
-      "x": -0.6,
+      "x": -1.9,
+      "y": -0.6,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 335.0,
+      "time": 151653.0,
+      "x": -1.9,
       "y": 0.3,
       "type": "tap",
       "color": "blue",
@@ -3871,6 +4927,28 @@
     {
       "beat": 337.5,
       "time": 152903.0,
+      "x": -0.6,
+      "y": -0.6,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 338.0,
+      "time": 153153.0,
+      "x": 0.6,
+      "y": -0.6,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 338.5,
+      "time": 153403.0,
       "x": -1.9,
       "y": 0.3,
       "type": "tap",
@@ -3880,9 +4958,9 @@
       "lengthMs": 0
     },
     {
-      "beat": 338.5,
-      "time": 153403.0,
-      "x": 0.6,
+      "beat": 339.0,
+      "time": 153653.0,
+      "x": 1.9,
       "y": 0.3,
       "type": "tap",
       "color": "red",
@@ -3893,10 +4971,10 @@
     {
       "beat": 339.5,
       "time": 153903.0,
-      "x": 1.9,
+      "x": -0.6,
       "y": 0.3,
       "type": "tap",
-      "color": "red",
+      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -3905,7 +4983,7 @@
       "beat": 340.5,
       "time": 154403.0,
       "x": 0.6,
-      "y": -0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -3915,8 +4993,8 @@
     {
       "beat": 341.5,
       "time": 154903.0,
-      "x": -0.6,
-      "y": -0.6,
+      "x": -1.9,
+      "y": 0.3,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -3927,7 +5005,7 @@
       "beat": 342.5,
       "time": 155403.0,
       "x": 1.9,
-      "y": -0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -3946,8 +5024,30 @@
       "lengthMs": 0
     },
     {
+      "beat": 343.0,
+      "time": 155653.0,
+      "x": 1.9,
+      "y": -0.6,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 344.5,
       "time": 156403.0,
+      "x": 0.6,
+      "y": -0.6,
+      "type": "direction",
+      "color": "red",
+      "direction": "upleft",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 345.0,
+      "time": 156653.0,
       "x": -1.9,
       "y": 0.3,
       "type": "tap",
@@ -3959,10 +5059,10 @@
     {
       "beat": 345.5,
       "time": 156903.0,
-      "x": -0.6,
+      "x": 1.9,
       "y": 0.3,
       "type": "tap",
-      "color": "blue",
+      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -3970,7 +5070,7 @@
     {
       "beat": 346.5,
       "time": 157403.0,
-      "x": 1.9,
+      "x": 0.6,
       "y": 0.3,
       "type": "tap",
       "color": "red",
@@ -3982,7 +5082,7 @@
       "beat": 347.0,
       "time": 157653.0,
       "x": -0.6,
-      "y": 0.3,
+      "y": -0.6,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -3992,17 +5092,6 @@
     {
       "beat": 348.5,
       "time": 158403.0,
-      "x": 0.6,
-      "y": 0.3,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 349.5,
-      "time": 158903.0,
       "x": -1.9,
       "y": 0.3,
       "type": "tap",
@@ -4012,8 +5101,8 @@
       "lengthMs": 0
     },
     {
-      "beat": 350.5,
-      "time": 159403.0,
+      "beat": 349.5,
+      "time": 158903.0,
       "x": -0.6,
       "y": -0.6,
       "type": "tap",
@@ -4023,10 +5112,21 @@
       "lengthMs": 0
     },
     {
-      "beat": 351.5,
-      "time": 159903.0,
-      "x": -1.9,
+      "beat": 350.0,
+      "time": 159153.0,
+      "x": 0.6,
       "y": -0.6,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 350.5,
+      "time": 159403.0,
+      "x": -1.9,
+      "y": 0.3,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -4034,9 +5134,31 @@
       "lengthMs": 0
     },
     {
-      "beat": 352.5,
-      "time": 160403.0,
-      "x": 0.6,
+      "beat": 351.0,
+      "time": 159653.0,
+      "x": 1.9,
+      "y": -0.6,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 351.5,
+      "time": 159903.0,
+      "x": -0.6,
+      "y": 0.3,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 352.0,
+      "time": 160153.0,
+      "x": 1.9,
       "y": 0.3,
       "type": "tap",
       "color": "red",
@@ -4045,12 +5167,23 @@
       "lengthMs": 0
     },
     {
-      "beat": 353.5,
-      "time": 160903.0,
-      "x": 1.9,
+      "beat": 352.5,
+      "time": 160403.0,
+      "x": -1.9,
       "y": 0.3,
       "type": "tap",
-      "color": "red",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 353.5,
+      "time": 160903.0,
+      "x": -0.6,
+      "y": -0.6,
+      "type": "tap",
+      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -4067,12 +5200,23 @@
       "lengthMs": 0
     },
     {
-      "beat": 355.5,
-      "time": 161903.0,
+      "beat": 355.0,
+      "time": 161653.0,
       "x": -1.9,
       "y": 0.3,
       "type": "tap",
       "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 355.5,
+      "time": 161903.0,
+      "x": 1.9,
+      "y": 0.3,
+      "type": "tap",
+      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -4080,6 +5224,28 @@
     {
       "beat": 356.0,
       "time": 162153.0,
+      "x": -1.9,
+      "y": -0.6,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 357.0,
+      "time": 162653.0,
+      "x": -0.6,
+      "y": -0.6,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 357.5,
+      "time": 162903.0,
       "x": 1.9,
       "y": -0.6,
       "type": "tap",
@@ -4089,21 +5255,10 @@
       "lengthMs": 0
     },
     {
-      "beat": 357.5,
-      "time": 162903.0,
-      "x": -0.6,
-      "y": 0.3,
-      "type": "tap",
-      "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
       "beat": 358.5,
       "time": 163403.0,
       "x": 1.9,
-      "y": -0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -4114,7 +5269,7 @@
       "beat": 358.5,
       "time": 163403.0,
       "x": -1.9,
-      "y": -0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -4133,9 +5288,20 @@
       "lengthMs": 0
     },
     {
+      "beat": 360.0,
+      "time": 164153.0,
+      "x": -0.6,
+      "y": 0.3,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 360.5,
       "time": 164403.0,
-      "x": 0.6,
+      "x": 1.9,
       "y": 0.3,
       "type": "tap",
       "color": "red",
@@ -4146,8 +5312,19 @@
     {
       "beat": 361.5,
       "time": 164903.0,
+      "x": -0.6,
+      "y": -0.6,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 362.0,
+      "time": 165153.0,
       "x": 1.9,
-      "y": 0.3,
+      "y": -0.6,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -4159,8 +5336,19 @@
       "time": 165403.0,
       "x": -1.9,
       "y": 0.3,
-      "type": "tap",
+      "type": "direction",
       "color": "blue",
+      "direction": "upleft",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 363.0,
+      "time": 165653.0,
+      "x": 1.9,
+      "y": 0.3,
+      "type": "tap",
+      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -4169,9 +5357,20 @@
       "beat": 363.5,
       "time": 165903.0,
       "x": -0.6,
-      "y": -0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 364.0,
+      "time": 166153.0,
+      "x": 0.6,
+      "y": 0.3,
+      "type": "tap",
+      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -4180,7 +5379,7 @@
       "beat": 364.5,
       "time": 166403.0,
       "x": -1.9,
-      "y": -0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -4190,13 +5389,24 @@
     {
       "beat": 365.5,
       "time": 166903.0,
-      "x": 0.6,
-      "y": -0.6,
+      "x": 1.9,
+      "y": 0.3,
       "type": "long",
       "color": "red",
       "direction": "none",
       "count": 2,
       "lengthMs": 1090.0
+    },
+    {
+      "beat": 366.0,
+      "time": 167153.0,
+      "x": -1.9,
+      "y": -0.6,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
     },
     {
       "beat": 366.5,
@@ -4210,8 +5420,41 @@
       "lengthMs": 0
     },
     {
+      "beat": 367.0,
+      "time": 167653.0,
+      "x": -1.9,
+      "y": -0.6,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 368.0,
+      "time": 168153.0,
+      "x": -0.6,
+      "y": -0.6,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 368.5,
       "time": 168403.0,
+      "x": 0.6,
+      "y": -0.6,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 370.0,
+      "time": 169153.0,
       "x": 1.9,
       "y": -0.6,
       "type": "tap",
@@ -4232,9 +5475,20 @@
       "lengthMs": 0
     },
     {
+      "beat": 371.0,
+      "time": 169653.0,
+      "x": 1.9,
+      "y": 0.3,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 371.5,
       "time": 169903.0,
-      "x": -0.6,
+      "x": -1.9,
       "y": 0.3,
       "type": "tap",
       "color": "blue",
@@ -4245,50 +5499,6 @@
     {
       "beat": 372.5,
       "time": 170403.0,
-      "x": -1.9,
-      "y": 0.3,
-      "type": "tap",
-      "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 373.5,
-      "time": 170903.0,
-      "x": 1.9,
-      "y": 0.3,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 374.5,
-      "time": 171403.0,
-      "x": 1.9,
-      "y": -0.6,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 374.5,
-      "time": 171403.0,
-      "x": -1.9,
-      "y": -0.6,
-      "type": "tap",
-      "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 376.5,
-      "time": 172403.0,
       "x": 0.6,
       "y": 0.3,
       "type": "tap",
@@ -4298,10 +5508,65 @@
       "lengthMs": 0
     },
     {
+      "beat": 373.5,
+      "time": 170903.0,
+      "x": -0.6,
+      "y": 0.3,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 374.5,
+      "time": 171403.0,
+      "x": 1.9,
+      "y": 0.3,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 374.5,
+      "time": 171403.0,
+      "x": -1.9,
+      "y": 0.3,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 375.0,
+      "time": 171653.0,
+      "x": 1.9,
+      "y": -0.6,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 376.5,
+      "time": 172403.0,
+      "x": 1.9,
+      "y": 0.3,
+      "type": "direction",
+      "color": "red",
+      "direction": "upleft",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 377.0,
       "time": 172653.0,
       "x": -1.9,
-      "y": -0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -4311,10 +5576,10 @@
     {
       "beat": 378.5,
       "time": 173403.0,
-      "x": -1.9,
+      "x": 1.9,
       "y": 0.3,
       "type": "tap",
-      "color": "blue",
+      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -4322,10 +5587,10 @@
     {
       "beat": 379.5,
       "time": 173903.0,
-      "x": -0.6,
+      "x": 0.6,
       "y": 0.3,
       "type": "tap",
-      "color": "blue",
+      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -4333,8 +5598,8 @@
     {
       "beat": 380.5,
       "time": 174403.0,
-      "x": -0.6,
-      "y": 0.3,
+      "x": -1.9,
+      "y": -0.6,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -4344,6 +5609,17 @@
     {
       "beat": 381.5,
       "time": 174903.0,
+      "x": -1.9,
+      "y": 0.3,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 382.0,
+      "time": 175153.0,
       "x": 1.9,
       "y": 0.3,
       "type": "tap",
@@ -4355,8 +5631,19 @@
     {
       "beat": 382.5,
       "time": 175403.0,
+      "x": -0.6,
+      "y": 0.3,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 383.0,
+      "time": 175653.0,
       "x": 0.6,
-      "y": -0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -4366,10 +5653,10 @@
     {
       "beat": 384.5,
       "time": 176403.0,
-      "x": 1.9,
+      "x": -0.6,
       "y": -0.6,
       "type": "tap",
-      "color": "red",
+      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -4377,7 +5664,7 @@
     {
       "beat": 386.5,
       "time": 177403.0,
-      "x": 0.6,
+      "x": 1.9,
       "y": -0.6,
       "type": "tap",
       "color": "red",
@@ -4399,6 +5686,61 @@
     {
       "beat": 388.5,
       "time": 178403.0,
+      "x": 0.6,
+      "y": -0.6,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 390.0,
+      "time": 179153.0,
+      "x": -0.6,
+      "y": -0.6,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 392.0,
+      "time": 180153.0,
+      "x": 1.9,
+      "y": 0.3,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 393.0,
+      "time": 180653.0,
+      "x": -1.9,
+      "y": -0.6,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 395.0,
+      "time": 181653.0,
+      "x": 1.9,
+      "y": -0.6,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 396.0,
+      "time": 182153.0,
       "x": -0.6,
       "y": -0.6,
       "type": "tap",
@@ -4419,10 +5761,32 @@
       "lengthMs": 1090.0
     },
     {
+      "beat": 398.0,
+      "time": 183153.0,
+      "x": -1.9,
+      "y": -0.6,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 400.0,
+      "time": 184153.0,
+      "x": -0.6,
+      "y": -0.6,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 402.5,
       "time": 185153.0,
       "x": 1.9,
-      "y": -0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -4443,8 +5807,8 @@
     {
       "beat": 403.5,
       "time": 185528.0,
-      "x": 1.9,
-      "y": -0.6,
+      "x": 0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -4452,10 +5816,21 @@
       "lengthMs": 0
     },
     {
+      "beat": 404.0,
+      "time": 185715.5,
+      "x": -1.9,
+      "y": 0.3,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 404.5,
       "time": 185903.0,
-      "x": 1.9,
-      "y": 0.3,
+      "x": 0.6,
+      "y": -0.6,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -4465,11 +5840,11 @@
     {
       "beat": 405.0,
       "time": 186090.5,
-      "x": -1.9,
-      "y": -0.6,
-      "type": "tap",
+      "x": -0.6,
+      "y": 0.3,
+      "type": "direction",
       "color": "blue",
-      "direction": "none",
+      "direction": "downright",
       "count": 1,
       "lengthMs": 0
     },
@@ -4485,10 +5860,21 @@
       "lengthMs": 0
     },
     {
+      "beat": 407.0,
+      "time": 186840.5,
+      "x": -1.9,
+      "y": -0.6,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 407.5,
       "time": 187028.0,
       "x": 1.9,
-      "y": -0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -4507,8 +5893,8 @@
       "lengthMs": 0
     },
     {
-      "beat": 408.5,
-      "time": 187403.0,
+      "beat": 408.0,
+      "time": 187215.5,
       "x": 1.9,
       "y": 0.3,
       "type": "tap",
@@ -4518,19 +5904,19 @@
       "lengthMs": 0
     },
     {
-      "beat": 409.5,
-      "time": 187778.0,
-      "x": 0.6,
-      "y": -0.6,
+      "beat": 408.5,
+      "time": 187403.0,
+      "x": -1.9,
+      "y": 0.3,
       "type": "tap",
-      "color": "red",
+      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
     },
     {
-      "beat": 410.0,
-      "time": 187965.5,
+      "beat": 409.5,
+      "time": 187778.0,
       "x": -0.6,
       "y": 0.3,
       "type": "tap",
@@ -4540,12 +5926,34 @@
       "lengthMs": 0
     },
     {
-      "beat": 410.5,
-      "time": 188153.0,
-      "x": 1.9,
-      "y": -0.6,
+      "beat": 410.0,
+      "time": 187965.5,
+      "x": 0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 410.5,
+      "time": 188153.0,
+      "x": -1.9,
+      "y": 0.3,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 412.0,
+      "time": 188715.5,
+      "x": -0.6,
+      "y": 0.3,
+      "type": "tap",
+      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -4557,6 +5965,17 @@
       "y": 0.3,
       "type": "tap",
       "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 413.0,
+      "time": 189090.5,
+      "x": -0.6,
+      "y": -0.6,
+      "type": "tap",
+      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -4575,7 +5994,7 @@
     {
       "beat": 414.0,
       "time": 189465.5,
-      "x": -0.6,
+      "x": -1.9,
       "y": -0.6,
       "type": "long",
       "color": "blue",
@@ -4587,7 +6006,7 @@
       "beat": 414.5,
       "time": 189653.0,
       "x": 0.6,
-      "y": 0.3,
+      "y": -0.6,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -4597,7 +6016,18 @@
     {
       "beat": 415.5,
       "time": 190028.0,
-      "x": 1.9,
+      "x": 0.6,
+      "y": 0.3,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 416.0,
+      "time": 190215.5,
+      "x": 0.6,
       "y": 0.3,
       "type": "tap",
       "color": "red",
@@ -4608,17 +6038,6 @@
     {
       "beat": 417.5,
       "time": 190778.0,
-      "x": 0.6,
-      "y": -0.6,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 418.0,
-      "time": 190965.5,
       "x": -1.9,
       "y": 0.3,
       "type": "tap",
@@ -4628,8 +6047,30 @@
       "lengthMs": 0
     },
     {
+      "beat": 418.0,
+      "time": 190965.5,
+      "x": 0.6,
+      "y": -0.6,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 418.5,
       "time": 191153.0,
+      "x": -0.6,
+      "y": 0.3,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 419.5,
+      "time": 191528.0,
       "x": 1.9,
       "y": -0.6,
       "type": "tap",
@@ -4639,12 +6080,12 @@
       "lengthMs": 0
     },
     {
-      "beat": 419.5,
-      "time": 191528.0,
-      "x": 1.9,
+      "beat": 420.0,
+      "time": 191715.5,
+      "x": -1.9,
       "y": 0.3,
       "type": "tap",
-      "color": "red",
+      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -4664,7 +6105,7 @@
       "beat": 421.5,
       "time": 192278.0,
       "x": -0.6,
-      "y": -0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -4674,10 +6115,10 @@
     {
       "beat": 422.5,
       "time": 192653.0,
-      "x": -1.9,
-      "y": -0.6,
+      "x": 1.9,
+      "y": 0.3,
       "type": "tap",
-      "color": "blue",
+      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -4697,7 +6138,29 @@
       "beat": 423.5,
       "time": 193028.0,
       "x": -1.9,
+      "y": 0.3,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 424.0,
+      "time": 193215.5,
+      "x": 1.9,
       "y": -0.6,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 425.0,
+      "time": 193590.5,
+      "x": -0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -4707,7 +6170,7 @@
     {
       "beat": 425.5,
       "time": 193778.0,
-      "x": 1.9,
+      "x": 0.6,
       "y": 0.3,
       "type": "tap",
       "color": "red",
@@ -4718,19 +6181,19 @@
     {
       "beat": 426.0,
       "time": 193965.5,
-      "x": -0.6,
+      "x": -1.9,
       "y": 0.3,
       "type": "direction",
       "color": "blue",
-      "direction": "right",
+      "direction": "left",
       "count": 1,
       "lengthMs": 0
     },
     {
       "beat": 426.5,
       "time": 194153.0,
-      "x": 0.6,
-      "y": -0.6,
+      "x": 1.9,
+      "y": 0.3,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -4740,6 +6203,17 @@
     {
       "beat": 427.5,
       "time": 194528.0,
+      "x": 0.6,
+      "y": 0.3,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 428.0,
+      "time": 194715.5,
       "x": -0.6,
       "y": 0.3,
       "type": "tap",
@@ -4751,7 +6225,7 @@
     {
       "beat": 428.5,
       "time": 194903.0,
-      "x": 1.9,
+      "x": 0.6,
       "y": -0.6,
       "type": "tap",
       "color": "red",
@@ -4763,7 +6237,7 @@
       "beat": 429.5,
       "time": 195278.0,
       "x": 1.9,
-      "y": 0.3,
+      "y": -0.6,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -4785,7 +6259,7 @@
       "beat": 431.0,
       "time": 195840.5,
       "x": 0.6,
-      "y": 0.3,
+      "y": -0.6,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -4796,7 +6270,7 @@
       "beat": 431.5,
       "time": 196028.0,
       "x": -0.6,
-      "y": -0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -4818,7 +6292,7 @@
       "beat": 433.0,
       "time": 196590.5,
       "x": -1.9,
-      "y": -0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -4839,7 +6313,7 @@
     {
       "beat": 434.0,
       "time": 196965.5,
-      "x": -1.9,
+      "x": -0.6,
       "y": 0.3,
       "type": "tap",
       "color": "blue",
@@ -4851,7 +6325,7 @@
       "beat": 434.5,
       "time": 197153.0,
       "x": 0.6,
-      "y": -0.6,
+      "y": 0.3,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -4861,8 +6335,8 @@
     {
       "beat": 435.5,
       "time": 197528.0,
-      "x": -0.6,
-      "y": 0.3,
+      "x": -1.9,
+      "y": -0.6,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -4870,9 +6344,20 @@
       "lengthMs": 0
     },
     {
+      "beat": 436.0,
+      "time": 197715.5,
+      "x": 1.9,
+      "y": 0.3,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 436.5,
       "time": 197903.0,
-      "x": -0.6,
+      "x": -1.9,
       "y": 0.3,
       "type": "tap",
       "color": "blue",
@@ -4883,10 +6368,10 @@
     {
       "beat": 437.5,
       "time": 198278.0,
-      "x": 1.9,
-      "y": -0.6,
+      "x": -0.6,
+      "y": 0.3,
       "type": "tap",
-      "color": "red",
+      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -4894,7 +6379,7 @@
     {
       "beat": 438.5,
       "time": 198653.0,
-      "x": 1.9,
+      "x": 0.6,
       "y": 0.3,
       "type": "tap",
       "color": "red",
@@ -4916,8 +6401,19 @@
     {
       "beat": 440.5,
       "time": 199403.0,
-      "x": 0.6,
-      "y": -0.6,
+      "x": -0.6,
+      "y": 0.3,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 441.0,
+      "time": 199590.5,
+      "x": 1.9,
+      "y": 0.3,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -4927,17 +6423,6 @@
     {
       "beat": 441.5,
       "time": 199778.0,
-      "x": 1.9,
-      "y": -0.6,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 448.5,
-      "time": 202403.0,
       "x": -0.6,
       "y": -0.6,
       "type": "tap",
@@ -4947,13 +6432,46 @@
       "lengthMs": 0
     },
     {
-      "beat": 454.5,
-      "time": 204653.0,
+      "beat": 442.0,
+      "time": 199965.5,
+      "x": 1.9,
+      "y": -0.6,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 443.0,
+      "time": 200340.5,
       "x": -1.9,
       "y": -0.6,
       "type": "tap",
       "color": "blue",
       "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 448.5,
+      "time": 202403.0,
+      "x": 0.6,
+      "y": -0.6,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 454.5,
+      "time": 204653.0,
+      "x": 1.9,
+      "y": -0.6,
+      "type": "direction",
+      "color": "red",
+      "direction": "right",
       "count": 1,
       "lengthMs": 0
     }
@@ -4962,6 +6480,5 @@
   "identityDesignVersion": 1,
   "hardRhythmDesignVersion": 1,
   "hierarchyDesignVersion": 1,
-  "rhythmContrastDesignVersion": 1,
-  "styleDesignVersion": 1
+  "rhythmContrastDesignVersion": 1
 }

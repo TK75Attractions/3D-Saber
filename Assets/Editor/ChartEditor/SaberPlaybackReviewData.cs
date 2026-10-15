@@ -48,37 +48,6 @@ namespace Saber.ChartEditor
             return BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(text ?? ""))).Replace("-", "").ToLowerInvariant();
         }
         public static string ChartHash(SaberChartDocument chart) => Hash(SaberChartUtility.ToJson(chart, false));
-        public static float SnapAudioTime(SaberChartDocument chart, float seconds, int divisions, float duration)
-        {
-            if (!Finite(seconds) || divisions < 1 || !Finite(duration) || duration < 0) throw new ArgumentException("拍の刻みと時刻を確認してください。");
-            var grid = new SaberChartGrid(chart.bpm, chart.beatZeroMs, chart.tempoMap);
-            float beat = grid.BeatAt(seconds * 1000 - chart.offsetMs);
-            return Mathf.Clamp((grid.TimeAt(Mathf.Round(beat * divisions) / divisions) + chart.offsetMs) / 1000f, 0, duration);
-        }
-        // 横幅から求めた許容秒で、同じ色の行にあるノーツを選ぶ。短いノーツの近くではロングの胴より開始位置を優先する。
-        public static int PickTimelineNote(SaberChartDocument chart, float seconds, string color, float tolerance)
-        {
-            int closest = -1, tail = -1; float distance = float.PositiveInfinity, tailStart = float.NegativeInfinity;
-            for (int i = 0; i < chart.notes.Count; i++)
-            {
-                var note = chart.notes[i]; string lane = note.color == "blue" ? "blue" : note.color == "gold" ? "gold" : "red";
-                if (lane != color) continue;
-                float start = (note.time + chart.offsetMs) / 1000f, delta = Mathf.Abs(start - seconds);
-                if (delta <= tolerance && delta < distance) { closest = i; distance = delta; }
-                float end = start + SaberChartUtility.EffectiveLongLengthMs(note) / 1000f;
-                if (seconds >= start && seconds <= end && start > tailStart) { tail = i; tailStart = start; }
-            }
-            return closest >= 0 ? closest : tail;
-        }
-        public static Vector2 ChangeRange(SaberChartDocument chart, SaberReviewOperation operation)
-        {
-            var notes = new List<SaberChartNote>();
-            if (operation.action != "add") notes.Add(chart.notes[operation.index]);
-            if (operation.action != "delete") notes.Add(operation.note);
-            float from = notes.Min(n => (n.time + chart.offsetMs) / 1000f);
-            float to = notes.Max(n => (n.time + chart.offsetMs + SaberChartUtility.EffectiveLongLengthMs(n)) / 1000f);
-            return new Vector2(from, to);
-        }
         // 同時押しは一つの到達時刻として移動し、オフセットを含む音源時刻で比較する。
         public static float AdjacentNoteTime(SaberChartDocument chart, float seconds, int direction)
         {

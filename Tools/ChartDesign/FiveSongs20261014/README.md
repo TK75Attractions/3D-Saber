@@ -1,7 +1,7 @@
 # 5曲追加 / 2026-10-14
 
-**現行版は2026-10-15の包含構造とリズム改修版。素材は100件変換済み、90件適用・10件保留。**
-`hierarchy-design.json` と `rhythm-contrast-design.json` を現行仕様とし、Hardから下位難易度へ残した打点を保持する。
+**現行版は2026-10-15の包含構造とリズム改修版。素材は94件変換済み、86件適用・8件保留。**
++`hierarchy-design.json` と `rhythm-contrast-design.json` を現行仕様とし、Hardから下位難易度へ残した打点を保持する。
 [配置方針](RECHART.md)、[素材ごとの変換・適用記録](../BeatSaberPatternBank/README.md)を参照。
 現在は通常の横配置を主軸とし、縦並び・交差・反転は選んだ短いフレーズで使う。
 全曲の周期回転と、全難易度へ特殊配置を義務付ける方針は廃止した。
@@ -100,13 +100,3 @@ Unityの検証は `FiveSongPackTests` / `FiveSongPlayabilityTests` / `FiveSongLo
 4分・8分の長い列を、曲別の発音の強弱と区切りに沿って短いまとまりと休符へ整理した。5曲15譜面が対象。新規の発音は追加せず、残した打点の時刻・手・位置、既存ロング、共通アクセントは保持。Hardの強い発音上位15%も保持。`rhythm-contrast-design.json` に曲別の変更理由、元の発音強度、変更前後の列長と休み、下位で残す打点を保存。
 
 `hierarchy_rework.reduced` はこの設計が存在する場合、`rhythm_selection.select_retained` で確定打点を保持する。定時の位置素材追加で旧来の平均間隔へ再生成しない。新しい配置が保持打点の移動時間を満たさなければ候補を不採用にする。リズムを再改修するときは、この設計も明示的に更新する。
-
-## 定時の方向保持 2026-10-15 15:47
-
-位置素材の適用では既存の打点・担当手・ロング・フリック方向を保持し、`hierarchy_materials.finalize_preserved` で全難易度のカット経路を採用前に検査する。方向練習用のフォールバックも、確定済みの下位譜面へ新しい打点を追加しない。`test_direction_training.py` の3件を追加し、既存6件と合わせて検証する。
-
-## 曲別スタイルとHard 7〜9への改修
-
-`song-style-design.json` が最新の人間の指示による音型・手順・動線の設計。Manic Sonic 9、escapade 9、logic!!! 7、勉強 8、青葉騒 8。表示だけでなく実データのゲーム計算も同じ整数になるよう検証。Normal・Easyも新しいHardからの部分列で、`rhythm-contrast-design.json` を第2版に更新。従来の手順・位置を定時更新で戻さない。旧リズム設計は `rhythm-contrast-design.pre-style.json` に保存。既存100素材の出典・個別JSONは保持。旧91適用のうち90区間の再編集前を `preSongStyleAppliedNotes` に記録し、休符になった1素材は保留へ戻した。計90適用・10保留。
-
-定時更新では代表フレーズの `protectedCoreHits` を `style_core_valid` で保持する。その他の区間は、現在の実音・手順・方向と移動条件が合う場合だけ素材を適用する。`test_style_core.py` の3件を含め、回帰検査は12件。

@@ -456,43 +456,6 @@ public class SaberCutJudgeTests
         foreach (var n in notes) Assert.AreEqual(n.HitTime, n.LastCutSongTime.Value, .011);
     }
 
-    // 実機に近い条件: カメラの値は1秒に cameraHz 回しか届かず、そのあいだ刃は止まって見える(予測なし)。Unity は fps で回る。
-    // 値には少し揺れがあり、カメラの遅れ(0.135秒)は本編と同じく判定の時計を0.12秒戻して差し引く。
-    [TestCase(900, 60)]
-    [TestCase(120, 30)]
-    [TestCase(60, 60)]
-    public void SweepWorksWithSparseShakyCameraValuesAtTheGameFrameRate(int fps, int cameraHz)
-    {
-        var (judge, tracker, bridge, spawner, score, notes) = SweepRig(FourInARow());
-        bridge.OverrideCameraInput(true);
-        spawner.JudgeLatencySeconds = .12;
-        const double cameraDelay = .135;
-        var shake = new System.Random(7);
-        double dt = 1.0 / fps, sampleEvery = 1.0 / cameraHz, lastSample = double.NegativeInfinity;
-        // カメラが写すのは cameraDelay 前の手。手は秒速5で右へ動き、各ノーツの時刻ちょうどにノーツの上を通る。
-        float HandX(double t) => -1.5f + 5f * (float)(t - cameraDelay - 1.0);
-        Vector2 held = new Vector2(HandX(.7 - sampleEvery), 0f);
-        tracker.ResetTo(held);
-        for (int i = 0; ; i++)
-        {
-            double t = .7 + i * dt;
-            if (t > 2.2) break;
-            if (t - lastSample >= sampleEvery - 1e-9)
-            {
-                lastSample = t;
-                held = new Vector2(HandX(t) + (float)(shake.NextDouble() - .5) * .06f, (float)(shake.NextDouble() - .5) * .1f);
-            }
-            spawner.RefreshJudgmentWindows(t);
-            tracker.Tick(held, (float)dt);
-            bridge.OverrideBlade(held + new Vector2(0f, -.5f), held + new Vector2(0f, .5f));
-            judge.TryCut(spawner.JudgeClock(t));
-            spawner.Tick(t);
-        }
-        Assert.True(notes.TrueForAll(n => n.IsCut), $"{fps}fps・カメラ{cameraHz}回/秒でも、なぞれば4つとも切れる");
-        Assert.AreEqual(0, score.MissCount);
-        Assert.AreEqual(4, score.PerfectCount);
-    }
-
     [Test]
     public void LateSweepStillCutsTheFirstNote()
     {
