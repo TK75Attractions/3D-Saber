@@ -8,13 +8,14 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import statistics
 import tempfile
 from pathlib import Path
 
 from run_lossless_regression import (DEFAULT_MANIFEST, analyze_png, command_output, compile_harness,
-                                     load_fixtures, percentile, selected_candidate)
+                                     load_fixtures, selected_candidate)
 
 # checkout 内の共通ビルドスイッチ。認識の既定値は両言語の core にも置く。
 import sys as _guard_sys
@@ -40,10 +41,10 @@ def summarize(samples: list[dict]) -> dict:
         result["blade" if blade_present else "no_blade"] = {
             metric: {
                 "median": statistics.median(value(row, metric) for row in group),
-                "p95": percentile([value(row, metric) for row in group], 0.95),
+                "p95": sorted(value(row, metric) for row in group)[math.ceil(len(group) * 0.95) - 1],
                 "max": max(value(row, metric) for row in group),
             }
-            for metric in METRICS
+            for metric in METRICS if group
         }
         result["blade" if blade_present else "no_blade"]["samples"] = len(group)
     return result
@@ -72,7 +73,7 @@ def main() -> None:
     args = parser.parse_args()
     if args.iterations < 5:
         parser.error("at least five iterations are required")
-    fixtures, skipped = load_fixtures(args.manifest)
+    _, fixtures = load_fixtures(args.manifest)
     # Each fixture is analyzed in a fresh Swift process. Fix Set's hash seed
     # so harmless floating-point summation order does not look like a score change.
     os.environ["SWIFT_DETERMINISTIC_HASHING"] = "1"
@@ -105,7 +106,7 @@ def main() -> None:
                     }
                     samples.append({
                         "phase": phase, "iteration": iteration, "fixture": fixture["name"],
-                        "blade_present": fixture["category"] not in ("no-blade", "background-negative"),
+                        "blade_present": fixture["expectedDetected"],
                         "profile": analysis["profile"],
                         "components": sum(value["components"] for value in analysis["pipeline"].values()),
                         "selected": selected,
@@ -116,7 +117,7 @@ def main() -> None:
         result = {phase: summarize([row for row in samples if row["phase"] == phase])
                   for phase in ("before", "after")}
     output = {"iterations": args.iterations, "fixture_count": len(fixtures),
-              "skipped_optional": skipped, "summary": result, "samples": samples}
+              "summary": result, "samples": samples}
     args.json.write_text(json.dumps(output, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(output["summary"], indent=2))
 

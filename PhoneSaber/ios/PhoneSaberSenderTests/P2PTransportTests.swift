@@ -1,5 +1,5 @@
-#if !PIPELINE_ROUTING_STANDALONE
 import Network
+#if !PIPELINE_ROUTING_STANDALONE
 @testable import PhoneSaberSender
 import XCTest
 
