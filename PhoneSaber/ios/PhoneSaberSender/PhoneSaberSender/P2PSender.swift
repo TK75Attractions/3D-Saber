@@ -687,10 +687,11 @@ final class P2PSender {
             guard let self else { return }
             self.queue.async {
                 guard self.connectionGeneration == generation else { return }
+                let now = self.clock()
+                // 重複・未送信の pong は生存確認にも使わず、受信待ちは継続する。
                 if let data, case .success(let message) = P2PMessage.decode(data),
-                   message.kind == .pong, message.session == self.session {
-                    let now = self.clock()
-                    self.roundTrips.pongReceived(message.sequence, at: now)
+                   message.kind == .pong, message.session == self.session,
+                   self.roundTrips.pongReceived(message.sequence, at: now) != nil {
                     self.monitor.pongReceived(at: now)
                     self.backoff.reset()
                     if self.monitor.isUsable(at: now) { self.rotation.reset() }
