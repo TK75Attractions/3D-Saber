@@ -373,8 +373,8 @@
     {
       "beat": 60.0,
       "time": 25714.2857,
-      "x": -1.9,
-      "y": 0.3,
+      "x": -0.6,
+      "y": -0.6,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -428,7 +428,7 @@
     {
       "beat": 72.0,
       "time": 30857.1429,
-      "x": -1.9,
+      "x": -0.6,
       "y": -0.6,
       "type": "tap",
       "color": "blue",
@@ -462,7 +462,7 @@
       "beat": 76.0,
       "time": 32571.4286,
       "x": -0.6,
-      "y": 0.3,
+      "y": -0.6,
       "type": "tap",
       "color": "blue",
       "direction": "none",

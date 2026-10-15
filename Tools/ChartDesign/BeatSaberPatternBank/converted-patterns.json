@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "count": 88,
+  "count": 94,
   "patterns": [
     {
       "id": "dream-normal-1",
@@ -7429,6 +7429,555 @@
           {
             "beat": 3,
             "time": 1333.3333,
+            "x": -1.9,
+            "y": -0.6,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "origins-normal-1",
+      "title": "単発から両手で着地し、次まで休む",
+      "category": "good",
+      "minimumDifficulty": "hard",
+      "referenceBpm": 175.0,
+      "sourceUrl": "https://www.youtube.com/watch?v=eidFLmVmAI4&t=26",
+      "preferredSongs": [
+        "ManicSonic",
+        "escapade",
+        "logic",
+        "BenkyouRemaster"
+      ],
+      "maximumBpmDifferencePercent": 10,
+      "applicationMode": "hierarchy-reference",
+      "adaptation": "黄色を本作の金ノーツとは扱わない。左外下の単発から左内上・右外上の両手へ返し、後半を休符にする。壁は移さず、実音に両手と休みがある区間だけで使う。 画面配置は単発から両手へ返して休むを使用。色は担当手を示し、画面の左右に絶対固定せず、特殊配置は短い技として選ぶ。",
+      "layout": "単発から両手へ返して休む",
+      "orientationDegrees": 0,
+      "fidelity": "映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。",
+      "sourceTiming": "estimated",
+      "chartFile": "patterns/origins-normal-1.json",
+      "beats": 4,
+      "noteCount": 3,
+      "flickCount": 0,
+      "chart": {
+        "_comment": "映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。",
+        "bpm": 175.0,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 7,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 0,
+            "time": 0.0,
+            "x": -1.9,
+            "y": -0.6,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1,
+            "time": 342.8571,
+            "x": 1.9,
+            "y": 0.3,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1,
+            "time": 342.8571,
+            "x": -0.6,
+            "y": 0.3,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "origins-normal-2",
+      "title": "左右の下向きから間を置いて左へ開く",
+      "category": "good",
+      "minimumDifficulty": "hard",
+      "referenceBpm": 175.0,
+      "sourceUrl": "https://www.youtube.com/watch?v=eidFLmVmAI4&t=97",
+      "preferredSongs": [
+        "ManicSonic",
+        "escapade",
+        "logic",
+        "BenkyouRemaster"
+      ],
+      "maximumBpmDifferencePercent": 10,
+      "applicationMode": "hierarchy-reference",
+      "adaptation": "左内下・右内下の受け渡しから1拍を空け、左外上へ移動する3打。原作の横の戻しを内外の置き場に翻案し、休みを削らない。 画面配置は低い左右応答から一拍空けて左外へを使用。色は担当手を示し、画面の左右に絶対固定せず、特殊配置は短い技として選ぶ。",
+      "layout": "低い左右応答から一拍空けて左外へ",
+      "orientationDegrees": 0,
+      "fidelity": "映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。",
+      "sourceTiming": "estimated",
+      "chartFile": "patterns/origins-normal-2.json",
+      "beats": 4,
+      "noteCount": 3,
+      "flickCount": 0,
+      "chart": {
+        "_comment": "映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。",
+        "bpm": 175.0,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 7,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 0,
+            "time": 0.0,
+            "x": -0.6,
+            "y": -0.6,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1,
+            "time": 342.8571,
+            "x": 0.6,
+            "y": -0.6,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3,
+            "time": 1028.5714,
+            "x": -1.9,
+            "y": 0.3,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "crystallized-hard-1",
+      "title": "左の横振りと右の上下を交互に渡す",
+      "category": "good",
+      "minimumDifficulty": "hard",
+      "referenceBpm": 174.0,
+      "sourceUrl": "https://www.youtube.com/watch?v=nC6Sc5x3uPg&t=18",
+      "preferredSongs": [
+        "ManicSonic",
+        "escapade",
+        "logic",
+        "BenkyouRemaster"
+      ],
+      "maximumBpmDifferencePercent": 10,
+      "applicationMode": "hierarchy-reference",
+      "adaptation": "細分を6打へ整理。左は外上・内下・外上、右は内下・内上・外下の応答にする。フリックは付けず、同じ手が大きく移動するまで0.3秒以上を確保する。 画面配置は左の外内と右の上下を別の動線にを使用。色は担当手を示し、画面の左右に絶対固定せず、特殊配置は短い技として選ぶ。",
+      "layout": "左の外内と右の上下を別の動線に",
+      "orientationDegrees": 0,
+      "fidelity": "映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。",
+      "sourceTiming": "estimated",
+      "chartFile": "patterns/crystallized-hard-1.json",
+      "beats": 4,
+      "noteCount": 6,
+      "flickCount": 0,
+      "chart": {
+        "_comment": "映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。",
+        "bpm": 174.0,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 7,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 0,
+            "time": 0.0,
+            "x": -1.9,
+            "y": 0.3,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 0.5,
+            "time": 172.4138,
+            "x": 0.6,
+            "y": -0.6,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1,
+            "time": 344.8276,
+            "x": -0.6,
+            "y": -0.6,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2,
+            "time": 689.6552,
+            "x": 0.6,
+            "y": 0.3,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2.5,
+            "time": 862.069,
+            "x": -1.9,
+            "y": 0.3,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3.5,
+            "time": 1206.8966,
+            "x": 1.9,
+            "y": -0.6,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "crystallized-hard-2",
+      "title": "両手の上下から単発へほどく",
+      "category": "conditional",
+      "minimumDifficulty": "hard",
+      "referenceBpm": 174.0,
+      "sourceUrl": "https://www.youtube.com/watch?v=nC6Sc5x3uPg&t=90",
+      "preferredSongs": [
+        "ManicSonic",
+        "escapade",
+        "logic",
+        "BenkyouRemaster"
+      ],
+      "maximumBpmDifferencePercent": 10,
+      "applicationMode": "hierarchy-reference",
+      "adaptation": "両手の外下・外上を一往復し、右低・左低・右内上の単発へ整理。細かい打点と壁は省き、両手アクセントが実音にある所だけを使う。 画面配置は両手の上下を単発の受け渡しへほどくを使用。色は担当手を示し、画面の左右に絶対固定せず、特殊配置は短い技として選ぶ。",
+      "layout": "両手の上下を単発の受け渡しへほどく",
+      "orientationDegrees": 0,
+      "fidelity": "映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。",
+      "sourceTiming": "estimated",
+      "chartFile": "patterns/crystallized-hard-2.json",
+      "beats": 4,
+      "noteCount": 7,
+      "flickCount": 0,
+      "chart": {
+        "_comment": "映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。",
+        "bpm": 174.0,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 7,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 0,
+            "time": 0.0,
+            "x": 1.9,
+            "y": -0.6,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 0,
+            "time": 0.0,
+            "x": -1.9,
+            "y": -0.6,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1,
+            "time": 344.8276,
+            "x": 1.9,
+            "y": 0.3,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1,
+            "time": 344.8276,
+            "x": -1.9,
+            "y": 0.3,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2,
+            "time": 689.6552,
+            "x": 1.9,
+            "y": -0.6,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3,
+            "time": 1034.4828,
+            "x": -1.9,
+            "y": -0.6,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3.5,
+            "time": 1206.8966,
+            "x": 0.6,
+            "y": 0.3,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "burning-normal-1",
+      "title": "右の返しの後、間を残して左の自由打ちへ",
+      "category": "good",
+      "minimumDifficulty": "hard",
+      "referenceBpm": 142.0,
+      "sourceUrl": "https://www.youtube.com/watch?v=9m4euMfEKtI&t=26",
+      "preferredSongs": [
+        "Aobasou"
+      ],
+      "maximumBpmDifferencePercent": 10,
+      "applicationMode": "hierarchy-reference",
+      "adaptation": "左内下・右外上から1拍を空けて左外上へ渡す3打。元の方向指定なしも含め、全てタップで表現する。次の小節への大きな戻りが速すぎる場合は適用しない。 画面配置は右の返しから間を残して左外へを使用。色は担当手を示し、画面の左右に絶対固定せず、特殊配置は短い技として選ぶ。",
+      "layout": "右の返しから間を残して左外へ",
+      "orientationDegrees": 0,
+      "fidelity": "映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。",
+      "sourceTiming": "estimated",
+      "chartFile": "patterns/burning-normal-1.json",
+      "beats": 4,
+      "noteCount": 3,
+      "flickCount": 0,
+      "chart": {
+        "_comment": "映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。",
+        "bpm": 142.0,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 7,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 0,
+            "time": 0.0,
+            "x": -0.6,
+            "y": -0.6,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1,
+            "time": 422.5352,
+            "x": 1.9,
+            "y": 0.3,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3,
+            "time": 1267.6056,
+            "x": -1.9,
+            "y": 0.3,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "burning-normal-2",
+      "title": "右の上下二打を挟み、左と合流する",
+      "category": "conditional",
+      "minimumDifficulty": "hard",
+      "referenceBpm": 142.0,
+      "sourceUrl": "https://www.youtube.com/watch?v=9m4euMfEKtI&t=105",
+      "preferredSongs": [
+        "Aobasou"
+      ],
+      "maximumBpmDifferencePercent": 10,
+      "applicationMode": "hierarchy-reference",
+      "adaptation": "左内下、右内上・内下から外下の両手へまとめる。原作を正確に採譜したものではなく合流の構造の翻案。右の二打と両手前後の待ち時間を確認する。 画面配置は右の上下二打から低い両手へ合流を使用。色は担当手を示し、画面の左右に絶対固定せず、特殊配置は短い技として選ぶ。",
+      "layout": "右の上下二打から低い両手へ合流",
+      "orientationDegrees": 0,
+      "fidelity": "映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。",
+      "sourceTiming": "estimated",
+      "chartFile": "patterns/burning-normal-2.json",
+      "beats": 4,
+      "noteCount": 5,
+      "flickCount": 0,
+      "chart": {
+        "_comment": "映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。",
+        "bpm": 142.0,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 7,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 0,
+            "time": 0.0,
+            "x": -0.6,
+            "y": -0.6,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1,
+            "time": 422.5352,
+            "x": 0.6,
+            "y": 0.3,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2,
+            "time": 845.0704,
+            "x": 0.6,
+            "y": -0.6,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3,
+            "time": 1267.6056,
+            "x": 1.9,
+            "y": -0.6,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3,
+            "time": 1267.6056,
             "x": -1.9,
             "y": -0.6,
             "type": "tap",

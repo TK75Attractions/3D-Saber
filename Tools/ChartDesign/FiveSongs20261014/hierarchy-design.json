@@ -1066,9 +1066,9 @@
           "notes": 624,
           "pairs": 42,
           "pairNotePercent": 13.46,
-          "movementOver1_2Within1s": 64.42,
+          "movementOver1_2Within1s": 63.91,
           "movementWithin1sDenominator": 593,
-          "movementOver1_2AllGaps": 64.31,
+          "movementOver1_2AllGaps": 63.99,
           "fastSameHandUnder250ms": 70,
           "sameHandSingleTransitionPercent": 14.1,
           "identicalBarRepeatPercent": 0.97,
@@ -1076,28 +1076,28 @@
           "sharedAccents": 8
         },
         "normal": {
-          "notes": 274,
+          "notes": 276,
           "pairs": 16,
-          "pairNotePercent": 11.68,
-          "movementOver1_2Within1s": 43.88,
-          "movementWithin1sDenominator": 196,
-          "movementOver1_2AllGaps": 42.65,
+          "pairNotePercent": 11.59,
+          "movementOver1_2Within1s": 44.83,
+          "movementWithin1sDenominator": 203,
+          "movementOver1_2AllGaps": 43.8,
           "fastSameHandUnder250ms": 0,
-          "sameHandSingleTransitionPercent": 11.2,
-          "identicalBarRepeatPercent": 1.94,
+          "sameHandSingleTransitionPercent": 10.29,
+          "identicalBarRepeatPercent": 2.91,
           "inheritedTimeHandPositionPercent": 100,
           "sharedAccents": 8
         },
         "easy": {
-          "notes": 176,
+          "notes": 172,
           "pairs": 8,
-          "pairNotePercent": 9.09,
-          "movementOver1_2Within1s": 21.05,
-          "movementWithin1sDenominator": 19,
-          "movementOver1_2AllGaps": 37.36,
+          "pairNotePercent": 9.3,
+          "movementOver1_2Within1s": 26.67,
+          "movementWithin1sDenominator": 15,
+          "movementOver1_2AllGaps": 40.59,
           "fastSameHandUnder250ms": 0,
-          "sameHandSingleTransitionPercent": 12.58,
-          "identicalBarRepeatPercent": 9.18,
+          "sameHandSingleTransitionPercent": 11.61,
+          "identicalBarRepeatPercent": 9.38,
           "inheritedTimeHandPositionPercent": 100,
           "sharedAccents": 8
         }
@@ -4851,9 +4851,9 @@
           "notes": 582,
           "pairs": 39,
           "pairNotePercent": 13.4,
-          "movementOver1_2Within1s": 63.32,
+          "movementOver1_2Within1s": 62.61,
           "movementWithin1sDenominator": 567,
-          "movementOver1_2AllGaps": 63.1,
+          "movementOver1_2AllGaps": 62.41,
           "fastSameHandUnder250ms": 76,
           "sameHandSingleTransitionPercent": 14.91,
           "identicalBarRepeatPercent": 0.0,
@@ -4864,7 +4864,7 @@
           "notes": 275,
           "pairs": 14,
           "pairNotePercent": 10.18,
-          "movementOver1_2Within1s": 45.34,
+          "movementOver1_2Within1s": 45.96,
           "movementWithin1sDenominator": 161,
           "movementOver1_2AllGaps": 43.59,
           "fastSameHandUnder250ms": 0,
@@ -4879,7 +4879,7 @@
           "pairNotePercent": 7.23,
           "movementOver1_2Within1s": 23.08,
           "movementWithin1sDenominator": 13,
-          "movementOver1_2AllGaps": 46.95,
+          "movementOver1_2AllGaps": 44.51,
           "fastSameHandUnder250ms": 0,
           "sameHandSingleTransitionPercent": 18.95,
           "identicalBarRepeatPercent": 3.85,
@@ -4891,10 +4891,11 @@
   },
   "materialUpdate": {
     "added": [
-      "onehope-normal-1",
-      "immortal-normal-1",
-      "immortal-normal-2",
-      "firestarter-easy-1"
+      "origins-normal-1",
+      "origins-normal-2",
+      "crystallized-hard-1",
+      "burning-normal-1",
+      "burning-normal-2"
     ],
     "pending": [
       {
@@ -4938,9 +4939,15 @@
         "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
         "candidateCount": 0,
         "rejections": {}
+      },
+      {
+        "patternId": "crystallized-hard-2",
+        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+        "candidateCount": 0,
+        "rejections": {}
       }
     ],
-    "batch": "hourly-20261015-0705"
+    "batch": "hourly-20261015-0937"
   },
   "validation": {
     "pack": "15譜面合格",

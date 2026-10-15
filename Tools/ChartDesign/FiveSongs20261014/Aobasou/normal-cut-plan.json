@@ -441,7 +441,7 @@
         23142.8571
       ],
       "directions": [
-        "up"
+        "down"
       ]
     },
     {
@@ -461,7 +461,7 @@
         24642.8571
       ],
       "directions": [
-        "left"
+        "down"
       ]
     },
     {
@@ -491,7 +491,7 @@
         26142.8571
       ],
       "directions": [
-        "upright"
+        "right"
       ]
     },
     {
@@ -571,7 +571,7 @@
         30000.0
       ],
       "directions": [
-        "left"
+        "down"
       ]
     },
     {
@@ -581,7 +581,7 @@
         30857.1429
       ],
       "directions": [
-        "right"
+        "left"
       ]
     },
     {
@@ -601,7 +601,7 @@
         31714.2857
       ],
       "directions": [
-        "up"
+        "right"
       ]
     },
     {
@@ -651,7 +651,7 @@
         33857.1429
       ],
       "directions": [
-        "left"
+        "upleft"
       ]
     },
     {

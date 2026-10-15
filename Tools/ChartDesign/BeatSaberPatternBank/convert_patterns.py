@@ -8,6 +8,13 @@ from spatial_layout import rotate
 
 # 通常配置を主体にし、短い特徴的なフレーズだけ縦・反転・斜めを使う。
 LAYOUT={
+ 'origins-normal-1':0,
+ 'origins-normal-2':0,
+ 'crystallized-hard-1':0,
+ 'crystallized-hard-2':0,
+ 'burning-normal-1':0,
+ 'burning-normal-2':0,
+
  'onehope-normal-1':0,
  'onehope-normal-2':0,
  'immortal-normal-1':0,
@@ -108,6 +115,13 @@ LAYOUT={
 # 映像で確認した単発・休符・担当手の順を、素材ごとに個別に翻案する。
 # 座標は本作用に設計済み。原作映像のセイバー色から担当手を確認し、本作の担当色（左=青）へ変換する。
 EXPLICIT={
+ 'origins-normal-1':('hard', '単発から両手へ返して休む', [(0, 'left', -1.9, -0.6), (1, 'left', -0.6, 0.3), (1, 'right', 1.9, 0.3)]),
+ 'origins-normal-2':('hard', '低い左右応答から一拍空けて左外へ', [(0, 'left', -0.6, -0.6), (1, 'right', 0.6, -0.6), (3, 'left', -1.9, 0.3)]),
+ 'crystallized-hard-1':('hard', '左の外内と右の上下を別の動線に', [(0, 'left', -1.9, 0.3), (0.5, 'right', 0.6, -0.6), (1, 'left', -0.6, -0.6), (2, 'right', 0.6, 0.3), (2.5, 'left', -1.9, 0.3), (3.5, 'right', 1.9, -0.6)]),
+ 'crystallized-hard-2':('hard', '両手の上下を単発の受け渡しへほどく', [(0, 'left', -1.9, -0.6), (0, 'right', 1.9, -0.6), (1, 'left', -1.9, 0.3), (1, 'right', 1.9, 0.3), (2, 'right', 1.9, -0.6), (3, 'left', -1.9, -0.6), (3.5, 'right', 0.6, 0.3)]),
+ 'burning-normal-1':('hard', '右の返しから間を残して左外へ', [(0, 'left', -0.6, -0.6), (1, 'right', 1.9, 0.3), (3, 'left', -1.9, 0.3)]),
+ 'burning-normal-2':('hard', '右の上下二打から低い両手へ合流', [(0, 'left', -0.6, -0.6), (1, 'right', 0.6, 0.3), (2, 'right', 0.6, -0.6), (3, 'left', -1.9, -0.6), (3, 'right', 1.9, -0.6)]),
+
  'onehope-normal-1':('normal', '右を挟む左の内外・上下応答', [(0, 'left', -1.9, -0.6), (1, 'right', 0.6, -0.6), (2, 'left', -0.6, -0.6), (3, 'left', -0.6, 0.3)]),
  'onehope-normal-2':('normal', '右の外から内への戻りと左の応答', [(0, 'left', -0.6, -0.6), (1, 'right', 1.9, 0.3), (2, 'left', -0.6, 0.3), (3, 'right', 0.6, -0.6)]),
  'immortal-normal-1':('hard', '両手から右・左へほどき最後を休む', [(0, 'left', -1.9, -0.6), (0, 'right', 1.9, -0.6), (1, 'right', 0.6, 0.3), (2, 'left', -0.6, -0.6)]),

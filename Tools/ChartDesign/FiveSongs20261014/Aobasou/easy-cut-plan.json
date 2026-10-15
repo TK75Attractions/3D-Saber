@@ -261,7 +261,7 @@
         23142.8571
       ],
       "directions": [
-        "right"
+        "downright"
       ]
     },
     {
@@ -301,7 +301,7 @@
         27214.2857
       ],
       "directions": [
-        "right"
+        "up"
       ]
     },
     {
@@ -321,7 +321,7 @@
         29142.8571
       ],
       "directions": [
-        "left"
+        "up"
       ]
     },
     {
@@ -381,7 +381,7 @@
         33857.1429
       ],
       "directions": [
-        "left"
+        "upleft"
       ]
     },
     {
