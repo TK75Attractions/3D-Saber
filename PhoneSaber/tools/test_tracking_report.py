@@ -149,6 +149,145 @@ class TrackingReportTests(unittest.TestCase):
 
 
 class LatencyMatrixTests(unittest.TestCase):
+    @staticmethod
+    def android_run(sender='192.168.1.42', platform='android'):
+        lines = [f'event=latency-estimate colour=RED sender={sender} platform={platform} '
+                 'phone-age-s=0.1 pc-coordinate-age-s=0.1 c2s-median-ms=12.0 fps-mode=60.0']
+        for block in range(3):
+            lines += [f'event=latency-block block={block} n=15 median-ms=120',
+                      f'event=display-measured block={block} sender={sender} conditions-changed=0 '
+                      'status=valid display-ms=90']
+        return lines + [f'event=latency-loop-end n=45 sender={sender}']
+
+    def test_android_cli_rejects_other_phones_and_unattributed_measurements(self):
+        good = self.android_run()
+        bad_runs = [self.android_run('192.168.1.99', 'ios'), self.android_run(platform='ios'),
+                    self.android_run('192.168.1.99'),
+                    [line for line in good if 'latency-estimate' not in line],
+                    [line for line in good if 'display-measured' not in line],
+                    [line.replace('conditions-changed=0', 'conditions-changed=1') for line in good],
+                    [line.replace('sender=192.168.1.42', 'sender=192.168.1.99')
+                     if 'display-measured block=1' in line else line for line in good],
+                    [line.replace('sender=192.168.1.42', 'sender=192.168.1.99')
+                     if 'latency-loop-end' in line else line for line in good],
+                    [line.replace('phone-age-s=0.1', 'phone-age-s=30.0') for line in good]]
+        mixed = good + ['event=latency-estimate colour=RED sender=192.168.1.99 platform=android '
+                        'phone-age-s=0.1 pc-coordinate-age-s=0.1 c2s-median-ms=999 fps-mode=30.0',
+                        'event=latency-estimate colour=RED sender=192.168.1.42 platform=ios '
+                        'phone-age-s=0.1 pc-coordinate-age-s=0.1 c2s-median-ms=999 fps-mode=30.0',
+                        'event=display-measured block=9 sender=192.168.1.99 conditions-changed=0 '
+                        'status=valid display-ms=999']
+        for platform in ('darwin', 'win32'):
+            for lines in bad_runs + [good, mixed]:
+                with self.subTest(platform=platform, lines=lines), mock.patch('sys.platform', platform), \
+                        mock.patch('sys.argv', ['latency_matrix.py', '--phone', 'android', '--only',
+                                                'baseline', '--warmup', '0']), \
+                        mock.patch('subprocess.run', return_value=mock.Mock(stdout=b'')), \
+                        mock.patch('android_ready.device_id', return_value='aquos'), \
+                        mock.patch('android_ready.phone_addresses', return_value={'192.168.1.42'}), \
+                        mock.patch.object(latency_matrix, 'launch_android', return_value=True), \
+                        mock.patch.object(latency_matrix, 'run_probe', return_value=lines), \
+                        mock.patch.object(latency_matrix, 'run_windows_probe'), \
+                        mock.patch.object(latency_matrix, 'new_events', return_value=lines), \
+                        mock.patch.object(latency_matrix, 'event_cursor'), \
+                        contextlib.redirect_stdout(io.StringIO()) as output:
+                    valid = lines in (good, mixed)
+                    self.assertEqual(latency_matrix.main(), 0 if valid else 1)
+                if valid:
+                    self.assertIn('スマホ 12.0 通信 - 画面 90', output.getvalue())
+                    self.assertIn('fps 60.0', output.getvalue())
+
+    def test_android_without_wifi_identity_does_not_start_a_probe(self):
+        for addresses in (set(), OSError('adb disconnected')):
+            with self.subTest(addresses=addresses), mock.patch('sys.platform', 'darwin'), \
+                    mock.patch('sys.argv', ['latency_matrix.py', '--phone', 'android', '--warmup', '0']), \
+                    mock.patch('subprocess.run', return_value=mock.Mock(stdout=b'')), \
+                    mock.patch('android_ready.device_id', return_value='aquos'), \
+                    mock.patch('android_ready.phone_addresses', side_effect=[addresses]), \
+                    mock.patch.object(latency_matrix, 'launch_android', return_value=True), \
+                    mock.patch.object(latency_matrix, 'run_probe', return_value=[]) as probe, \
+                    contextlib.redirect_stdout(io.StringIO()):
+                self.assertNotEqual(latency_matrix.main(), 0)
+            probe.assert_not_called()
+
+    def test_android_incomplete_or_failed_conditions_cannot_succeed(self):
+        complete = self.android_run()
+        for launches, logs in (([True, False], complete), ([True, True], [])):
+            with self.subTest(launches=launches, logs=logs), mock.patch('sys.platform', 'darwin'), \
+                    mock.patch('sys.argv', ['latency_matrix.py', '--phone', 'android', '--only',
+                                            'baseline', 'fps30', '--warmup', '0']), \
+                    mock.patch('subprocess.run', return_value=mock.Mock(stdout=b'')), \
+                    mock.patch('android_ready.device_id', return_value='aquos'), \
+                    mock.patch('android_ready.phone_addresses', return_value={'192.168.1.42'}), \
+                    mock.patch.object(latency_matrix, 'launch_android', side_effect=launches), \
+                    mock.patch.object(latency_matrix, 'run_probe', return_value=logs), \
+                    contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(latency_matrix.main(), 1)
+
+    def test_android_launch_force_stops_and_passes_typed_extras(self):
+        with mock.patch('subprocess.run', return_value=mock.Mock(returncode=0, stdout='Starting: Intent', stderr='')) as run:
+            self.assertTrue(latency_matrix.launch_android('adb', 'aquos', ['-cameraFPS', '30']))
+        self.assertEqual(run.call_args_list, [
+            mock.call(['adb', '-s', 'aquos', 'shell', 'am', 'force-stop', 'jp.phonesaber.sender'],
+                      capture_output=True, text=True),
+            mock.call(['adb', '-s', 'aquos', 'shell', 'am', 'start', '-W', '-n',
+                       'jp.phonesaber.sender/.MainActivity', '--ez', 'autoStartSending', 'true',
+                       '--ei', 'cameraFPS', '30'], capture_output=True, text=True)])
+
+    def test_android_launch_errors_and_force_stop_failures_are_failures(self):
+        for results in ([mock.Mock(returncode=1, stdout='')],
+                        [mock.Mock(returncode=0, stdout=''), mock.Mock(returncode=0, stdout='Error: locked', stderr='')]):
+            with mock.patch('subprocess.run', side_effect=results):
+                self.assertFalse(latency_matrix.launch_android('adb', 'aquos', ['-cameraFPS', '60']))
+
+    def test_android_lowlat_uses_existing_opt_in_switch_only_for_that_launch(self):
+        with mock.patch('subprocess.run', return_value=mock.Mock(returncode=0, stdout='', stderr='')) as run:
+            self.assertTrue(latency_matrix.launch_android('adb', 'aquos', latency_matrix.CONDITIONS['lowlat'][0]))
+        self.assertEqual(run.call_args.args[0][-3:], ['--ez', 'lowLatencyCamera', 'true'])
+
+    def test_android_cli_uses_adb_and_existing_probe_for_each_fps(self):
+        def run(command, **kwargs):
+            if command[:1] == ['pgrep']:
+                return mock.Mock(returncode=1, stdout=b'')
+            if command == ['adb', 'devices']:
+                return mock.Mock(returncode=0, stdout='List of devices attached\naquos\tdevice\n')
+            self.assertEqual(command[:3], ['adb', '-s', 'aquos'])
+            if 'ip' in command:
+                return mock.Mock(returncode=0, stdout='24: wlan0 inet 192.168.1.42/24 scope global wlan0')
+            return mock.Mock(returncode=0, stdout='Starting: Intent', stderr='')
+        with mock.patch('sys.platform', 'darwin'), mock.patch('sys.argv', [
+                'latency_matrix.py', '--phone', 'android', '--only', 'baseline', 'fps30', '--warmup', '0']), \
+                mock.patch('subprocess.run', side_effect=run) as adb, \
+                mock.patch('android_ready.adb_path', return_value='adb'), \
+                mock.patch.object(latency_matrix, 'run_probe', return_value=self.android_run()) as probe, \
+                contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(latency_matrix.main(), 0)
+        self.assertEqual(probe.call_count, 2)
+        starts = [call.args[0] for call in adb.call_args_list if 'start' in call.args[0]]
+        self.assertEqual([command[-1] for command in starts], ['60', '30'])
+
+    def test_default_ios_launch_command_is_unchanged(self):
+        with mock.patch('subprocess.run', return_value=mock.Mock(stdout='Launched')) as run:
+            self.assertTrue(latency_matrix.launch_phone('iphone', ['-cameraFPS', '60']))
+        run.assert_called_once_with(['xcrun', 'devicectl', 'device', 'process', 'launch', '--device',
+                                     'iphone', '--terminate-existing', latency_matrix.BUNDLE, '--',
+                                     '-PhoneSaber.autoStartSending', 'YES', '-cameraFPS', '60'],
+                                    capture_output=True, text=True)
+
+    def test_default_ios_cli_keeps_conditions_and_does_not_use_adb(self):
+        with mock.patch('sys.platform', 'darwin'), \
+                mock.patch('sys.argv', ['latency_matrix.py', '--warmup', '0']), \
+                mock.patch('subprocess.run', return_value=mock.Mock(stdout=b'')), \
+                mock.patch.object(latency_matrix, 'device_id', return_value='iphone'), \
+                mock.patch.object(latency_matrix, 'launch_phone', return_value=True) as launch, \
+                mock.patch.object(latency_matrix, 'run_probe', return_value=[]) as probe, \
+                mock.patch('android_ready.device_id') as android, contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(latency_matrix.main(), 0)
+        android.assert_not_called()
+        self.assertEqual(launch.call_args_list, [mock.call('iphone', latency_matrix.CONDITIONS[name][0])
+                                               for name in ('baseline', 'lowlat')])
+        self.assertEqual(probe.call_count, 2)
+
     def test_summary_reads_blocks_estimates_and_display(self):
         lines = [
             "t station=A colour=RED event=latency-block block=0 median-ms=120 p95-ms=150 n=15 red-pkt-per-s=30.0",
