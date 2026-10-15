@@ -145,6 +145,11 @@ def position_path(ns,m):
 
 def reduced(ns,m,diff,keybeats,movement_penalty=None):
  """主譜面の打点・担当手・位置を残して間引く。強い裏拍は表拍より優先できる。"""
+ # 曲別に確定した応答と休符を、平均間隔へ引き戻さない。
+ rhythm_policy=Path(__file__).with_name('rhythm-contrast-design.json')
+ if rhythm_policy.exists():
+  from rhythm_selection import select_retained
+  return select_retained(ns,m,diff,read(rhythm_policy))
  if movement_penalty is None:
   candidates=[]
   for penalty in (0,.025,.05,.075,.10,.15,.25):

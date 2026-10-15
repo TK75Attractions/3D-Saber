@@ -1,6 +1,7 @@
 # 5曲追加 / 2026-10-14
 
-**現行版は同日の作り直し版へ、収集した58素材をすべて組み込んだ版。**
+**現行版は2026-10-15の包含構造とリズム改修版。素材は94件変換済み、86件適用・8件保留。**
++`hierarchy-design.json` と `rhythm-contrast-design.json` を現行仕様とし、Hardから下位難易度へ残した打点を保持する。
 [配置方針](RECHART.md)、[素材ごとの変換・適用記録](../BeatSaberPatternBank/README.md)を参照。
 現在は通常の横配置を主軸とし、縦並び・交差・反転は選んだ短いフレーズで使う。
 全曲の周期回転と、全難易度へ特殊配置を義務付ける方針は廃止した。
@@ -10,7 +11,7 @@
 `chart.json` は Normal と同一。曲名・作曲者・拍子はユーザー添付の2枚の表が出典。
 「Manic Sonic ???」はユーザー確認により「Manic Sonic」とする。
 
-|曲名|作曲者|拍子|Easy / Normal / Hard|
+|曲名|作曲者|拍子|初回収録時の Easy / Normal / Hard|
 |---|---|---|---|
 |Manic Sonic|浜Bay|4/4|3 / 6 / 8|
 |escapade|ぴくちゃ|4/4|3 / 5 / 7|
@@ -93,3 +94,9 @@ python Tools/ChartDesign/FiveSongs20261014/verify_pack.py --repo . --output <検
 `build_pack.py` の旧生成入口も現行の `rechart.py` へ転送する。
 Unityの検証は `FiveSongPackTests` / `FiveSongPlayabilityTests` / `FiveSongLoadingPlayTests`。
 実選曲画面の確認はバッチで `SongSelectDesignPreview.Render -fiveSongPack -songSelectPreviewOutput <出力先>`。
+
+## 2026-10-15 フレーズのメリハリ改修
+
+4分・8分の長い列を、曲別の発音の強弱と区切りに沿って短いまとまりと休符へ整理した。5曲15譜面が対象。新規の発音は追加せず、残した打点の時刻・手・位置、既存ロング、共通アクセントは保持。Hardの強い発音上位15%も保持。`rhythm-contrast-design.json` に曲別の変更理由、元の発音強度、変更前後の列長と休み、下位で残す打点を保存。
+
+`hierarchy_rework.reduced` はこの設計が存在する場合、`rhythm_selection.select_retained` で確定打点を保持する。定時の位置素材追加で旧来の平均間隔へ再生成しない。新しい配置が保持打点の移動時間を満たさなければ候補を不採用にする。リズムを再改修するときは、この設計も明示的に更新する。

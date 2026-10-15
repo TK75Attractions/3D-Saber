@@ -34,17 +34,6 @@
   },
   {
     "index": 3,
-    "beat": 5.0,
-    "hand": "red",
-    "role": "導入",
-    "phrase": 0,
-    "sharedAccent": false,
-    "peakSeconds": 1.681179,
-    "distanceMs": 14.512,
-    "strength": 0.5065
-  },
-  {
-    "index": 4,
     "beat": 6.0,
     "hand": "blue",
     "role": "導入",
@@ -55,40 +44,7 @@
     "strength": 0.9556
   },
   {
-    "index": 5,
-    "beat": 7.0,
-    "hand": "blue",
-    "role": "導入",
-    "phrase": 0,
-    "sharedAccent": false,
-    "peakSeconds": 2.289796,
-    "distanceMs": -43.537,
-    "strength": 0.5786
-  },
-  {
-    "index": 6,
-    "beat": 8.0,
-    "hand": "red",
-    "role": "導入",
-    "phrase": 0,
-    "sharedAccent": false,
-    "peakSeconds": 2.653968,
-    "distanceMs": -12.698,
-    "strength": 0.4213
-  },
-  {
-    "index": 7,
-    "beat": 9.0,
-    "hand": "red",
-    "role": "導入",
-    "phrase": 0,
-    "sharedAccent": false,
-    "peakSeconds": 2.993197,
-    "distanceMs": -6.803,
-    "strength": 0.56
-  },
-  {
-    "index": 8,
+    "index": 4,
     "beat": 10.0,
     "hand": "blue",
     "role": "導入",
@@ -99,18 +55,7 @@
     "strength": 0.9309
   },
   {
-    "index": 9,
-    "beat": 11.0,
-    "hand": "red",
-    "role": "導入",
-    "phrase": 0,
-    "sharedAccent": false,
-    "peakSeconds": 3.706576,
-    "distanceMs": 39.909,
-    "strength": 0.6734
-  },
-  {
-    "index": 10,
+    "index": 5,
     "beat": 12.0,
     "hand": "red",
     "role": "導入",
@@ -121,18 +66,7 @@
     "strength": 0.659
   },
   {
-    "index": 11,
-    "beat": 13.0,
-    "hand": "blue",
-    "role": "導入",
-    "phrase": 0,
-    "sharedAccent": false,
-    "peakSeconds": 4.330159,
-    "distanceMs": -3.175,
-    "strength": 0.5021
-  },
-  {
-    "index": 12,
+    "index": 6,
     "beat": 14.0,
     "hand": "blue",
     "role": "導入",
@@ -143,18 +77,7 @@
     "strength": 1.0409
   },
   {
-    "index": 13,
-    "beat": 15.0,
-    "hand": "red",
-    "role": "導入",
-    "phrase": 0,
-    "sharedAccent": false,
-    "peakSeconds": 5.023583,
-    "distanceMs": 23.583,
-    "strength": 0.5426
-  },
-  {
-    "index": 14,
+    "index": 7,
     "beat": 16.0,
     "hand": "blue",
     "role": "導入",
@@ -165,29 +88,7 @@
     "strength": 0.7118
   },
   {
-    "index": 15,
-    "beat": 17.0,
-    "hand": "red",
-    "role": "導入",
-    "phrase": 1,
-    "sharedAccent": false,
-    "peakSeconds": 5.66712,
-    "distanceMs": 0.454,
-    "strength": 0.427
-  },
-  {
-    "index": 16,
-    "beat": 18.0,
-    "hand": "blue",
-    "role": "導入",
-    "phrase": 1,
-    "sharedAccent": false,
-    "peakSeconds": 6.031293,
-    "distanceMs": 31.293,
-    "strength": 0.5699
-  },
-  {
-    "index": 17,
+    "index": 8,
     "beat": 19.0,
     "hand": "red",
     "role": "導入",
@@ -198,7 +99,7 @@
     "strength": 0.8873
   },
   {
-    "index": 18,
+    "index": 9,
     "beat": 20.0,
     "hand": "red",
     "role": "導入",
@@ -209,18 +110,7 @@
     "strength": 0.8725
   },
   {
-    "index": 19,
-    "beat": 21.0,
-    "hand": "blue",
-    "role": "導入",
-    "phrase": 1,
-    "sharedAccent": false,
-    "peakSeconds": 7.004082,
-    "distanceMs": 4.082,
-    "strength": 0.5889
-  },
-  {
-    "index": 20,
+    "index": 10,
     "beat": 22.0,
     "hand": "red",
     "role": "導入",
@@ -231,18 +121,7 @@
     "strength": 0.931
   },
   {
-    "index": 21,
-    "beat": 23.0,
-    "hand": "red",
-    "role": "導入",
-    "phrase": 1,
-    "sharedAccent": false,
-    "peakSeconds": 7.637642,
-    "distanceMs": -29.025,
-    "strength": 0.4579
-  },
-  {
-    "index": 22,
+    "index": 11,
     "beat": 24.0,
     "hand": "blue",
     "role": "導入",
@@ -253,18 +132,7 @@
     "strength": 1.0988
   },
   {
-    "index": 23,
-    "beat": 25.0,
-    "hand": "red",
-    "role": "導入",
-    "phrase": 1,
-    "sharedAccent": false,
-    "peakSeconds": 8.331066,
-    "distanceMs": -2.268,
-    "strength": 0.5804
-  },
-  {
-    "index": 24,
+    "index": 12,
     "beat": 26.0,
     "hand": "blue",
     "role": "導入",
@@ -275,7 +143,7 @@
     "strength": 0.8717
   },
   {
-    "index": 25,
+    "index": 13,
     "beat": 27.0,
     "hand": "red",
     "role": "導入",
@@ -286,18 +154,7 @@
     "strength": 0.7579
   },
   {
-    "index": 26,
-    "beat": 28.0,
-    "hand": "red",
-    "role": "導入",
-    "phrase": 1,
-    "sharedAccent": false,
-    "peakSeconds": 9.338776,
-    "distanceMs": 5.442,
-    "strength": 0.5543
-  },
-  {
-    "index": 27,
+    "index": 14,
     "beat": 29.0,
     "hand": "blue",
     "role": "導入",
@@ -308,7 +165,7 @@
     "strength": 0.8338
   },
   {
-    "index": 28,
+    "index": 15,
     "beat": 30.0,
     "hand": "blue",
     "role": "導入",
@@ -319,7 +176,7 @@
     "strength": 0.8901
   },
   {
-    "index": 29,
+    "index": 16,
     "beat": 31.0,
     "hand": "red",
     "role": "導入",
@@ -330,7 +187,7 @@
     "strength": 0.6764
   },
   {
-    "index": 30,
+    "index": 17,
     "beat": 32.0,
     "hand": "red",
     "role": "主拍",
@@ -341,7 +198,7 @@
     "strength": 0.8349
   },
   {
-    "index": 31,
+    "index": 18,
     "beat": 32.5,
     "hand": "blue",
     "role": "主拍",
@@ -352,7 +209,7 @@
     "strength": 0.5111
   },
   {
-    "index": 32,
+    "index": 19,
     "beat": 33.0,
     "hand": "red",
     "role": "主拍",
@@ -363,7 +220,7 @@
     "strength": 0.6882
   },
   {
-    "index": 33,
+    "index": 20,
     "beat": 34.0,
     "hand": "red",
     "role": "主拍",
@@ -374,7 +231,7 @@
     "strength": 0.5369
   },
   {
-    "index": 34,
+    "index": 21,
     "beat": 34.5,
     "hand": "blue",
     "role": "主拍",
@@ -385,7 +242,7 @@
     "strength": 0.6649
   },
   {
-    "index": 35,
+    "index": 22,
     "beat": 35.0,
     "hand": "red",
     "role": "主拍",
@@ -396,7 +253,7 @@
     "strength": 0.6166
   },
   {
-    "index": 36,
+    "index": 23,
     "beat": 36.0,
     "hand": "blue",
     "role": "主拍",
@@ -407,18 +264,7 @@
     "strength": 1.0274
   },
   {
-    "index": 37,
-    "beat": 36.5,
-    "hand": "red",
-    "role": "主拍",
-    "phrase": 2,
-    "sharedAccent": false,
-    "peakSeconds": 12.152381,
-    "distanceMs": -14.286,
-    "strength": 0.3627
-  },
-  {
-    "index": 38,
+    "index": 24,
     "beat": 37.0,
     "hand": "red",
     "role": "主拍",
@@ -429,7 +275,7 @@
     "strength": 1.7015
   },
   {
-    "index": 39,
+    "index": 25,
     "beat": 37.0,
     "hand": "blue",
     "role": "主拍",
@@ -440,7 +286,7 @@
     "strength": 1.7015
   },
   {
-    "index": 40,
+    "index": 26,
     "beat": 37.5,
     "hand": "red",
     "role": "主拍",
@@ -451,7 +297,7 @@
     "strength": 0.7789
   },
   {
-    "index": 41,
+    "index": 27,
     "beat": 38.0,
     "hand": "blue",
     "role": "主拍",
@@ -462,7 +308,7 @@
     "strength": 1.2848
   },
   {
-    "index": 42,
+    "index": 28,
     "beat": 38.5,
     "hand": "red",
     "role": "主拍",
@@ -473,7 +319,7 @@
     "strength": 0.6841
   },
   {
-    "index": 43,
+    "index": 29,
     "beat": 39.0,
     "hand": "blue",
     "role": "主拍",
@@ -484,7 +330,7 @@
     "strength": 1.3613
   },
   {
-    "index": 44,
+    "index": 30,
     "beat": 39.5,
     "hand": "red",
     "role": "主拍",
@@ -495,7 +341,7 @@
     "strength": 0.6224
   },
   {
-    "index": 45,
+    "index": 31,
     "beat": 40.0,
     "hand": "blue",
     "role": "主拍",
@@ -506,7 +352,7 @@
     "strength": 1.2826
   },
   {
-    "index": 46,
+    "index": 32,
     "beat": 41.0,
     "hand": "red",
     "role": "主拍",
@@ -517,7 +363,7 @@
     "strength": 2.0566
   },
   {
-    "index": 47,
+    "index": 33,
     "beat": 41.0,
     "hand": "blue",
     "role": "主拍",
@@ -528,18 +374,7 @@
     "strength": 2.0566
   },
   {
-    "index": 48,
-    "beat": 41.5,
-    "hand": "red",
-    "role": "主拍",
-    "phrase": 2,
-    "sharedAccent": false,
-    "peakSeconds": 13.843537,
-    "distanceMs": 10.204,
-    "strength": 0.8636
-  },
-  {
-    "index": 49,
+    "index": 34,
     "beat": 42.0,
     "hand": "blue",
     "role": "主拍",
@@ -550,7 +385,7 @@
     "strength": 1.4237
   },
   {
-    "index": 50,
+    "index": 35,
     "beat": 42.5,
     "hand": "red",
     "role": "主拍",
@@ -561,7 +396,7 @@
     "strength": 0.8152
   },
   {
-    "index": 51,
+    "index": 36,
     "beat": 43.0,
     "hand": "blue",
     "role": "主拍",
@@ -572,7 +407,7 @@
     "strength": 1.3159
   },
   {
-    "index": 52,
+    "index": 37,
     "beat": 43.5,
     "hand": "red",
     "role": "主拍",
@@ -583,7 +418,7 @@
     "strength": 0.8876
   },
   {
-    "index": 53,
+    "index": 38,
     "beat": 44.0,
     "hand": "blue",
     "role": "主拍",
@@ -594,18 +429,7 @@
     "strength": 1.451
   },
   {
-    "index": 54,
-    "beat": 44.5,
-    "hand": "red",
-    "role": "主拍",
-    "phrase": 2,
-    "sharedAccent": false,
-    "peakSeconds": 14.811338,
-    "distanceMs": -21.995,
-    "strength": 0.2613
-  },
-  {
-    "index": 55,
+    "index": 39,
     "beat": 45.0,
     "hand": "red",
     "role": "主拍",
@@ -616,7 +440,7 @@
     "strength": 1.8659
   },
   {
-    "index": 56,
+    "index": 40,
     "beat": 45.0,
     "hand": "blue",
     "role": "主拍",
@@ -627,7 +451,7 @@
     "strength": 1.8659
   },
   {
-    "index": 57,
+    "index": 41,
     "beat": 45.5,
     "hand": "red",
     "role": "主拍",
@@ -638,7 +462,7 @@
     "strength": 0.6849
   },
   {
-    "index": 58,
+    "index": 42,
     "beat": 46.0,
     "hand": "blue",
     "role": "主拍",
@@ -649,7 +473,7 @@
     "strength": 1.4815
   },
   {
-    "index": 59,
+    "index": 43,
     "beat": 46.5,
     "hand": "blue",
     "role": "主拍",
@@ -660,7 +484,7 @@
     "strength": 0.6169
   },
   {
-    "index": 60,
+    "index": 44,
     "beat": 47.0,
     "hand": "blue",
     "role": "主拍",
@@ -671,18 +495,7 @@
     "strength": 1.3335
   },
   {
-    "index": 61,
-    "beat": 47.5,
-    "hand": "blue",
-    "role": "主拍",
-    "phrase": 2,
-    "sharedAccent": false,
-    "peakSeconds": 15.84898,
-    "distanceMs": 15.646,
-    "strength": 0.6232
-  },
-  {
-    "index": 62,
+    "index": 45,
     "beat": 48.0,
     "hand": "blue",
     "role": "主拍",
@@ -693,7 +506,7 @@
     "strength": 1.3864
   },
   {
-    "index": 63,
+    "index": 46,
     "beat": 49.0,
     "hand": "red",
     "role": "主拍",
@@ -704,7 +517,7 @@
     "strength": 2.0132
   },
   {
-    "index": 64,
+    "index": 47,
     "beat": 49.0,
     "hand": "blue",
     "role": "主拍",
@@ -715,7 +528,7 @@
     "strength": 2.0132
   },
   {
-    "index": 65,
+    "index": 48,
     "beat": 49.5,
     "hand": "red",
     "role": "主拍",
@@ -726,7 +539,7 @@
     "strength": 0.8855
   },
   {
-    "index": 66,
+    "index": 49,
     "beat": 50.0,
     "hand": "blue",
     "role": "主拍",
@@ -737,7 +550,7 @@
     "strength": 1.4786
   },
   {
-    "index": 67,
+    "index": 50,
     "beat": 50.5,
     "hand": "red",
     "role": "主拍",
@@ -748,7 +561,7 @@
     "strength": 0.7868
   },
   {
-    "index": 68,
+    "index": 51,
     "beat": 51.0,
     "hand": "blue",
     "role": "主拍",
@@ -759,7 +572,7 @@
     "strength": 1.3213
   },
   {
-    "index": 69,
+    "index": 52,
     "beat": 52.0,
     "hand": "red",
     "role": "主拍",
@@ -770,7 +583,7 @@
     "strength": 1.7217
   },
   {
-    "index": 70,
+    "index": 53,
     "beat": 53.0,
     "hand": "red",
     "role": "主拍",
@@ -781,7 +594,7 @@
     "strength": 1.4677
   },
   {
-    "index": 71,
+    "index": 54,
     "beat": 53.0,
     "hand": "blue",
     "role": "主拍",
@@ -792,7 +605,7 @@
     "strength": 1.4677
   },
   {
-    "index": 72,
+    "index": 55,
     "beat": 53.5,
     "hand": "red",
     "role": "主拍",
@@ -803,7 +616,7 @@
     "strength": 0.5276
   },
   {
-    "index": 73,
+    "index": 56,
     "beat": 54.0,
     "hand": "blue",
     "role": "主拍",
@@ -814,7 +627,7 @@
     "strength": 1.3252
   },
   {
-    "index": 74,
+    "index": 57,
     "beat": 55.0,
     "hand": "red",
     "role": "主拍",
@@ -825,7 +638,7 @@
     "strength": 0.7307
   },
   {
-    "index": 75,
+    "index": 58,
     "beat": 55.5,
     "hand": "blue",
     "role": "主拍",
@@ -836,7 +649,7 @@
     "strength": 0.6492
   },
   {
-    "index": 76,
+    "index": 59,
     "beat": 56.0,
     "hand": "red",
     "role": "主拍",
@@ -847,7 +660,7 @@
     "strength": 0.9846
   },
   {
-    "index": 77,
+    "index": 60,
     "beat": 56.5,
     "hand": "blue",
     "role": "主拍",
@@ -858,7 +671,7 @@
     "strength": 0.8451
   },
   {
-    "index": 78,
+    "index": 61,
     "beat": 57.0,
     "hand": "red",
     "role": "主拍",
@@ -869,7 +682,7 @@
     "strength": 0.9871
   },
   {
-    "index": 79,
+    "index": 62,
     "beat": 58.0,
     "hand": "blue",
     "role": "主拍",
@@ -880,7 +693,7 @@
     "strength": 1.164
   },
   {
-    "index": 80,
+    "index": 63,
     "beat": 58.5,
     "hand": "red",
     "role": "主拍",
@@ -891,7 +704,7 @@
     "strength": 0.5448
   },
   {
-    "index": 81,
+    "index": 64,
     "beat": 59.0,
     "hand": "blue",
     "role": "主拍",
@@ -902,7 +715,7 @@
     "strength": 0.9276
   },
   {
-    "index": 82,
+    "index": 65,
     "beat": 59.5,
     "hand": "red",
     "role": "主拍",
@@ -913,7 +726,7 @@
     "strength": 0.6466
   },
   {
-    "index": 83,
+    "index": 66,
     "beat": 60.0,
     "hand": "blue",
     "role": "主拍",
@@ -924,7 +737,7 @@
     "strength": 1.0856
   },
   {
-    "index": 84,
+    "index": 67,
     "beat": 61.0,
     "hand": "red",
     "role": "主拍",
@@ -935,7 +748,7 @@
     "strength": 1.2295
   },
   {
-    "index": 85,
+    "index": 68,
     "beat": 61.0,
     "hand": "blue",
     "role": "主拍",
@@ -946,7 +759,7 @@
     "strength": 1.2295
   },
   {
-    "index": 86,
+    "index": 69,
     "beat": 61.5,
     "hand": "red",
     "role": "主拍",
@@ -957,7 +770,7 @@
     "strength": 0.475
   },
   {
-    "index": 87,
+    "index": 70,
     "beat": 62.0,
     "hand": "blue",
     "role": "主拍",
@@ -968,7 +781,7 @@
     "strength": 1.1122
   },
   {
-    "index": 88,
+    "index": 71,
     "beat": 63.0,
     "hand": "blue",
     "role": "主拍",
@@ -979,7 +792,7 @@
     "strength": 0.728
   },
   {
-    "index": 89,
+    "index": 72,
     "beat": 64.0,
     "hand": "red",
     "role": "主題A",
@@ -990,7 +803,7 @@
     "strength": 0.8739
   },
   {
-    "index": 90,
+    "index": 73,
     "beat": 65.0,
     "hand": "red",
     "role": "主題A",
@@ -1001,7 +814,7 @@
     "strength": 0.6269
   },
   {
-    "index": 91,
+    "index": 74,
     "beat": 65.5,
     "hand": "blue",
     "role": "主題A",
@@ -1012,7 +825,7 @@
     "strength": 0.5787
   },
   {
-    "index": 92,
+    "index": 75,
     "beat": 66.0,
     "hand": "red",
     "role": "主題A",
@@ -1023,7 +836,7 @@
     "strength": 0.6639
   },
   {
-    "index": 93,
+    "index": 76,
     "beat": 67.0,
     "hand": "red",
     "role": "主題A",
@@ -1034,7 +847,7 @@
     "strength": 1.3336
   },
   {
-    "index": 94,
+    "index": 77,
     "beat": 67.0,
     "hand": "blue",
     "role": "主題A",
@@ -1045,7 +858,7 @@
     "strength": 1.3336
   },
   {
-    "index": 95,
+    "index": 78,
     "beat": 68.0,
     "hand": "red",
     "role": "主題A",
@@ -1056,7 +869,7 @@
     "strength": 0.7606
   },
   {
-    "index": 96,
+    "index": 79,
     "beat": 68.5,
     "hand": "blue",
     "role": "主題A",
@@ -1067,7 +880,7 @@
     "strength": 0.5238
   },
   {
-    "index": 97,
+    "index": 80,
     "beat": 69.0,
     "hand": "red",
     "role": "主題A",
@@ -1078,7 +891,7 @@
     "strength": 0.7808
   },
   {
-    "index": 98,
+    "index": 81,
     "beat": 70.0,
     "hand": "blue",
     "role": "主題A",
@@ -1089,7 +902,7 @@
     "strength": 0.6351
   },
   {
-    "index": 99,
+    "index": 82,
     "beat": 70.5,
     "hand": "red",
     "role": "主題A",
@@ -1100,7 +913,7 @@
     "strength": 0.7819
   },
   {
-    "index": 100,
+    "index": 83,
     "beat": 71.0,
     "hand": "blue",
     "role": "主題A",
@@ -1111,7 +924,7 @@
     "strength": 0.881
   },
   {
-    "index": 101,
+    "index": 84,
     "beat": 72.0,
     "hand": "blue",
     "role": "主題A",
@@ -1122,7 +935,7 @@
     "strength": 0.8894
   },
   {
-    "index": 102,
+    "index": 85,
     "beat": 72.5,
     "hand": "red",
     "role": "主題A",
@@ -1133,7 +946,7 @@
     "strength": 0.7344
   },
   {
-    "index": 103,
+    "index": 86,
     "beat": 73.0,
     "hand": "blue",
     "role": "主題A",
@@ -1144,7 +957,7 @@
     "strength": 0.7229
   },
   {
-    "index": 104,
+    "index": 87,
     "beat": 74.0,
     "hand": "red",
     "role": "主題A",
@@ -1155,7 +968,7 @@
     "strength": 0.7258
   },
   {
-    "index": 105,
+    "index": 88,
     "beat": 75.0,
     "hand": "blue",
     "role": "主題A",
@@ -1166,7 +979,7 @@
     "strength": 0.5303
   },
   {
-    "index": 106,
+    "index": 89,
     "beat": 76.0,
     "hand": "red",
     "role": "主題A",
@@ -1177,18 +990,7 @@
     "strength": 0.9414
   },
   {
-    "index": 107,
-    "beat": 76.5,
-    "hand": "blue",
-    "role": "主題A",
-    "phrase": 4,
-    "sharedAccent": false,
-    "peakSeconds": 25.462132,
-    "distanceMs": -37.868,
-    "strength": 0.413
-  },
-  {
-    "index": 108,
+    "index": 90,
     "beat": 77.0,
     "hand": "red",
     "role": "主題A",
@@ -1199,18 +1001,7 @@
     "strength": 0.8509
   },
   {
-    "index": 109,
-    "beat": 77.5,
-    "hand": "blue",
-    "role": "主題A",
-    "phrase": 4,
-    "sharedAccent": false,
-    "peakSeconds": 25.826304,
-    "distanceMs": -7.029,
-    "strength": 0.6187
-  },
-  {
-    "index": 110,
+    "index": 91,
     "beat": 78.0,
     "hand": "red",
     "role": "主題A",
@@ -1221,7 +1012,7 @@
     "strength": 0.7535
   },
   {
-    "index": 111,
+    "index": 92,
     "beat": 78.5,
     "hand": "red",
     "role": "主題A",
@@ -1232,7 +1023,7 @@
     "strength": 1.0888
   },
   {
-    "index": 112,
+    "index": 93,
     "beat": 79.0,
     "hand": "red",
     "role": "主題A",
@@ -1243,7 +1034,7 @@
     "strength": 0.8953
   },
   {
-    "index": 113,
+    "index": 94,
     "beat": 79.5,
     "hand": "red",
     "role": "主題A",
@@ -1254,7 +1045,7 @@
     "strength": 1.3879
   },
   {
-    "index": 114,
+    "index": 95,
     "beat": 79.5,
     "hand": "blue",
     "role": "主題A",
@@ -1265,7 +1056,7 @@
     "strength": 1.3879
   },
   {
-    "index": 115,
+    "index": 96,
     "beat": 80.0,
     "hand": "red",
     "role": "主題A",
@@ -1276,7 +1067,7 @@
     "strength": 0.8134
   },
   {
-    "index": 116,
+    "index": 97,
     "beat": 80.5,
     "hand": "blue",
     "role": "主題A",
@@ -1287,7 +1078,7 @@
     "strength": 0.8765
   },
   {
-    "index": 117,
+    "index": 98,
     "beat": 81.0,
     "hand": "red",
     "role": "主題A",
@@ -1298,7 +1089,7 @@
     "strength": 0.7995
   },
   {
-    "index": 118,
+    "index": 99,
     "beat": 81.5,
     "hand": "blue",
     "role": "主題A",
@@ -1309,29 +1100,7 @@
     "strength": 0.7722
   },
   {
-    "index": 119,
-    "beat": 82.0,
-    "hand": "red",
-    "role": "主題A",
-    "phrase": 5,
-    "sharedAccent": false,
-    "peakSeconds": 27.342857,
-    "distanceMs": 9.524,
-    "strength": 0.5433
-  },
-  {
-    "index": 120,
-    "beat": 82.5,
-    "hand": "blue",
-    "role": "主題A",
-    "phrase": 5,
-    "sharedAccent": false,
-    "peakSeconds": 27.522449,
-    "distanceMs": 22.449,
-    "strength": 0.5921
-  },
-  {
-    "index": 121,
+    "index": 100,
     "beat": 83.0,
     "hand": "red",
     "role": "主題A",
@@ -1342,7 +1111,7 @@
     "strength": 1.2203
   },
   {
-    "index": 122,
+    "index": 101,
     "beat": 83.0,
     "hand": "blue",
     "role": "主題A",
@@ -1353,7 +1122,7 @@
     "strength": 1.2203
   },
   {
-    "index": 123,
+    "index": 102,
     "beat": 84.0,
     "hand": "red",
     "role": "主題A",
@@ -1364,7 +1133,7 @@
     "strength": 0.6757
   },
   {
-    "index": 124,
+    "index": 103,
     "beat": 85.0,
     "hand": "red",
     "role": "主題A",
@@ -1375,7 +1144,7 @@
     "strength": 0.6963
   },
   {
-    "index": 125,
+    "index": 104,
     "beat": 85.5,
     "hand": "blue",
     "role": "主題A",
@@ -1386,7 +1155,7 @@
     "strength": 0.5179
   },
   {
-    "index": 126,
+    "index": 105,
     "beat": 86.0,
     "hand": "red",
     "role": "主題A",
@@ -1397,7 +1166,7 @@
     "strength": 0.7753
   },
   {
-    "index": 127,
+    "index": 106,
     "beat": 87.0,
     "hand": "blue",
     "role": "主題A",
@@ -1408,7 +1177,7 @@
     "strength": 0.7313
   },
   {
-    "index": 128,
+    "index": 107,
     "beat": 88.0,
     "hand": "blue",
     "role": "主題A",
@@ -1419,7 +1188,7 @@
     "strength": 0.8586
   },
   {
-    "index": 129,
+    "index": 108,
     "beat": 88.5,
     "hand": "red",
     "role": "主題A",
@@ -1430,7 +1199,7 @@
     "strength": 0.6693
   },
   {
-    "index": 130,
+    "index": 109,
     "beat": 89.0,
     "hand": "blue",
     "role": "主題A",
@@ -1441,7 +1210,7 @@
     "strength": 0.6773
   },
   {
-    "index": 131,
+    "index": 110,
     "beat": 90.0,
     "hand": "red",
     "role": "主題A",
@@ -1452,7 +1221,7 @@
     "strength": 0.7528
   },
   {
-    "index": 132,
+    "index": 111,
     "beat": 90.5,
     "hand": "blue",
     "role": "主題A",
@@ -1463,7 +1232,7 @@
     "strength": 0.6653
   },
   {
-    "index": 133,
+    "index": 112,
     "beat": 91.0,
     "hand": "red",
     "role": "主題A",
@@ -1474,7 +1243,7 @@
     "strength": 0.656
   },
   {
-    "index": 134,
+    "index": 113,
     "beat": 92.0,
     "hand": "red",
     "role": "主題A",
@@ -1485,7 +1254,7 @@
     "strength": 0.7978
   },
   {
-    "index": 135,
+    "index": 114,
     "beat": 93.0,
     "hand": "blue",
     "role": "主題A",
@@ -1496,7 +1265,7 @@
     "strength": 0.7391
   },
   {
-    "index": 136,
+    "index": 115,
     "beat": 94.0,
     "hand": "red",
     "role": "主題A",
@@ -1507,7 +1276,7 @@
     "strength": 0.9129
   },
   {
-    "index": 137,
+    "index": 116,
     "beat": 94.5,
     "hand": "blue",
     "role": "主題A",
@@ -1518,7 +1287,7 @@
     "strength": 1.2429
   },
   {
-    "index": 138,
+    "index": 117,
     "beat": 95.0,
     "hand": "red",
     "role": "主題A",
@@ -1529,7 +1298,7 @@
     "strength": 0.9208
   },
   {
-    "index": 139,
+    "index": 118,
     "beat": 95.5,
     "hand": "red",
     "role": "主題A",
@@ -1540,7 +1309,7 @@
     "strength": 1.3421
   },
   {
-    "index": 140,
+    "index": 119,
     "beat": 95.5,
     "hand": "blue",
     "role": "主題A",
@@ -1551,7 +1320,7 @@
     "strength": 1.3421
   },
   {
-    "index": 141,
+    "index": 120,
     "beat": 96.0,
     "hand": "red",
     "role": "主題A",
@@ -1562,18 +1331,7 @@
     "strength": 0.7136
   },
   {
-    "index": 142,
-    "beat": 96.5,
-    "hand": "blue",
-    "role": "主題A",
-    "phrase": 6,
-    "sharedAccent": false,
-    "peakSeconds": 32.166893,
-    "distanceMs": 0.227,
-    "strength": 0.6611
-  },
-  {
-    "index": 143,
+    "index": 121,
     "beat": 97.0,
     "hand": "red",
     "role": "主題A",
@@ -1584,18 +1342,7 @@
     "strength": 0.7301
   },
   {
-    "index": 144,
-    "beat": 97.5,
-    "hand": "blue",
-    "role": "主題A",
-    "phrase": 6,
-    "sharedAccent": false,
-    "peakSeconds": 32.496145,
-    "distanceMs": -3.855,
-    "strength": 0.7055
-  },
-  {
-    "index": 145,
+    "index": 122,
     "beat": 98.0,
     "hand": "red",
     "role": "主題A",
@@ -1606,7 +1353,7 @@
     "strength": 0.5424
   },
   {
-    "index": 146,
+    "index": 123,
     "beat": 99.0,
     "hand": "blue",
     "role": "主題A",
@@ -1617,7 +1364,7 @@
     "strength": 0.7946
   },
   {
-    "index": 147,
+    "index": 124,
     "beat": 100.0,
     "hand": "red",
     "role": "主題A",
@@ -1628,7 +1375,7 @@
     "strength": 0.5891
   },
   {
-    "index": 148,
+    "index": 125,
     "beat": 100.5,
     "hand": "blue",
     "role": "主題A",
@@ -1639,7 +1386,7 @@
     "strength": 0.5409
   },
   {
-    "index": 149,
+    "index": 126,
     "beat": 101.0,
     "hand": "red",
     "role": "主題A",
@@ -1650,7 +1397,7 @@
     "strength": 0.7558
   },
   {
-    "index": 150,
+    "index": 127,
     "beat": 102.0,
     "hand": "blue",
     "role": "主題A",
@@ -1661,7 +1408,7 @@
     "strength": 0.9881
   },
   {
-    "index": 151,
+    "index": 128,
     "beat": 102.5,
     "hand": "red",
     "role": "主題A",
@@ -1672,7 +1419,7 @@
     "strength": 0.5453
   },
   {
-    "index": 152,
+    "index": 129,
     "beat": 103.0,
     "hand": "blue",
     "role": "主題A",
@@ -1683,7 +1430,7 @@
     "strength": 0.663
   },
   {
-    "index": 153,
+    "index": 130,
     "beat": 103.5,
     "hand": "red",
     "role": "主題A",
@@ -1694,7 +1441,7 @@
     "strength": 0.6079
   },
   {
-    "index": 154,
+    "index": 131,
     "beat": 104.0,
     "hand": "blue",
     "role": "主題A",
@@ -1705,7 +1452,7 @@
     "strength": 0.8213
   },
   {
-    "index": 155,
+    "index": 132,
     "beat": 104.5,
     "hand": "red",
     "role": "主題A",
@@ -1716,7 +1463,7 @@
     "strength": 0.7696
   },
   {
-    "index": 156,
+    "index": 133,
     "beat": 105.0,
     "hand": "blue",
     "role": "主題A",
@@ -1727,7 +1474,7 @@
     "strength": 0.6131
   },
   {
-    "index": 157,
+    "index": 134,
     "beat": 106.0,
     "hand": "red",
     "role": "主題A",
@@ -1738,7 +1485,7 @@
     "strength": 0.7085
   },
   {
-    "index": 158,
+    "index": 135,
     "beat": 106.5,
     "hand": "blue",
     "role": "主題A",
@@ -1749,7 +1496,7 @@
     "strength": 0.6692
   },
   {
-    "index": 159,
+    "index": 136,
     "beat": 107.0,
     "hand": "red",
     "role": "主題A",
@@ -1760,29 +1507,7 @@
     "strength": 0.6047
   },
   {
-    "index": 160,
-    "beat": 108.0,
-    "hand": "red",
-    "role": "主題A",
-    "phrase": 6,
-    "sharedAccent": false,
-    "peakSeconds": 35.998186,
-    "distanceMs": -1.814,
-    "strength": 0.5939
-  },
-  {
-    "index": 161,
-    "beat": 108.5,
-    "hand": "blue",
-    "role": "主題A",
-    "phrase": 6,
-    "sharedAccent": false,
-    "peakSeconds": 36.127891,
-    "distanceMs": -38.776,
-    "strength": 0.511
-  },
-  {
-    "index": 162,
+    "index": 137,
     "beat": 109.0,
     "hand": "red",
     "role": "主題A",
@@ -1793,7 +1518,7 @@
     "strength": 0.9989
   },
   {
-    "index": 163,
+    "index": 138,
     "beat": 109.5,
     "hand": "blue",
     "role": "主題A",
@@ -1804,7 +1529,7 @@
     "strength": 0.6792
   },
   {
-    "index": 164,
+    "index": 139,
     "beat": 110.0,
     "hand": "red",
     "role": "主題A",
@@ -1815,7 +1540,7 @@
     "strength": 0.9047
   },
   {
-    "index": 165,
+    "index": 140,
     "beat": 110.5,
     "hand": "red",
     "role": "主題A",
@@ -1826,7 +1551,7 @@
     "strength": 1.1128
   },
   {
-    "index": 166,
+    "index": 141,
     "beat": 111.0,
     "hand": "red",
     "role": "主題A",
@@ -1837,7 +1562,7 @@
     "strength": 0.9648
   },
   {
-    "index": 167,
+    "index": 142,
     "beat": 111.5,
     "hand": "red",
     "role": "主題A",
@@ -1848,7 +1573,7 @@
     "strength": 1.5109
   },
   {
-    "index": 168,
+    "index": 143,
     "beat": 111.5,
     "hand": "blue",
     "role": "主題A",
@@ -1859,7 +1584,7 @@
     "strength": 1.5109
   },
   {
-    "index": 169,
+    "index": 144,
     "beat": 112.0,
     "hand": "red",
     "role": "主題A",
@@ -1870,7 +1595,7 @@
     "strength": 0.9521
   },
   {
-    "index": 170,
+    "index": 145,
     "beat": 113.0,
     "hand": "blue",
     "role": "主題A",
@@ -1881,7 +1606,7 @@
     "strength": 0.6098
   },
   {
-    "index": 171,
+    "index": 146,
     "beat": 113.5,
     "hand": "red",
     "role": "主題A",
@@ -1892,7 +1617,7 @@
     "strength": 0.7951
   },
   {
-    "index": 172,
+    "index": 147,
     "beat": 114.0,
     "hand": "blue",
     "role": "主題A",
@@ -1903,7 +1628,7 @@
     "strength": 0.8861
   },
   {
-    "index": 173,
+    "index": 148,
     "beat": 114.5,
     "hand": "red",
     "role": "主題A",
@@ -1914,7 +1639,7 @@
     "strength": 0.4058
   },
   {
-    "index": 174,
+    "index": 149,
     "beat": 115.0,
     "hand": "blue",
     "role": "主題A",
@@ -1925,7 +1650,7 @@
     "strength": 1.0718
   },
   {
-    "index": 175,
+    "index": 150,
     "beat": 116.0,
     "hand": "red",
     "role": "主題A",
@@ -1936,7 +1661,7 @@
     "strength": 0.5956
   },
   {
-    "index": 176,
+    "index": 151,
     "beat": 117.0,
     "hand": "red",
     "role": "主題A",
@@ -1947,7 +1672,7 @@
     "strength": 0.7078
   },
   {
-    "index": 177,
+    "index": 152,
     "beat": 117.5,
     "hand": "blue",
     "role": "主題A",
@@ -1958,7 +1683,7 @@
     "strength": 0.5174
   },
   {
-    "index": 178,
+    "index": 153,
     "beat": 118.0,
     "hand": "red",
     "role": "主題A",
@@ -1969,7 +1694,7 @@
     "strength": 0.6326
   },
   {
-    "index": 179,
+    "index": 154,
     "beat": 119.0,
     "hand": "blue",
     "role": "主題A",
@@ -1980,7 +1705,7 @@
     "strength": 0.6152
   },
   {
-    "index": 180,
+    "index": 155,
     "beat": 120.0,
     "hand": "blue",
     "role": "主題A",
@@ -1991,7 +1716,7 @@
     "strength": 0.9339
   },
   {
-    "index": 181,
+    "index": 156,
     "beat": 120.5,
     "hand": "red",
     "role": "主題A",
@@ -2002,7 +1727,7 @@
     "strength": 0.9357
   },
   {
-    "index": 182,
+    "index": 157,
     "beat": 121.0,
     "hand": "blue",
     "role": "主題A",
@@ -2013,7 +1738,7 @@
     "strength": 0.6572
   },
   {
-    "index": 183,
+    "index": 158,
     "beat": 122.0,
     "hand": "red",
     "role": "主題A",
@@ -2024,7 +1749,7 @@
     "strength": 0.8834
   },
   {
-    "index": 184,
+    "index": 159,
     "beat": 122.5,
     "hand": "blue",
     "role": "主題A",
@@ -2035,7 +1760,7 @@
     "strength": 0.584
   },
   {
-    "index": 185,
+    "index": 160,
     "beat": 123.0,
     "hand": "red",
     "role": "主題A",
@@ -2046,7 +1771,7 @@
     "strength": 0.8485
   },
   {
-    "index": 186,
+    "index": 161,
     "beat": 124.0,
     "hand": "red",
     "role": "主題A",
@@ -2057,7 +1782,7 @@
     "strength": 0.7393
   },
   {
-    "index": 187,
+    "index": 162,
     "beat": 125.0,
     "hand": "blue",
     "role": "主題A",
@@ -2068,7 +1793,7 @@
     "strength": 1.1588
   },
   {
-    "index": 188,
+    "index": 163,
     "beat": 126.0,
     "hand": "red",
     "role": "主題A",
@@ -2079,7 +1804,7 @@
     "strength": 1.0227
   },
   {
-    "index": 189,
+    "index": 164,
     "beat": 126.5,
     "hand": "blue",
     "role": "主題A",
@@ -2090,7 +1815,7 @@
     "strength": 1.2784
   },
   {
-    "index": 190,
+    "index": 165,
     "beat": 127.0,
     "hand": "red",
     "role": "主題A",
@@ -2101,7 +1826,7 @@
     "strength": 0.8075
   },
   {
-    "index": 191,
+    "index": 166,
     "beat": 127.5,
     "hand": "red",
     "role": "主題A",
@@ -2112,7 +1837,7 @@
     "strength": 1.3933
   },
   {
-    "index": 192,
+    "index": 167,
     "beat": 127.5,
     "hand": "blue",
     "role": "主題A",
@@ -2123,7 +1848,7 @@
     "strength": 1.3933
   },
   {
-    "index": 193,
+    "index": 168,
     "beat": 128.0,
     "hand": "red",
     "role": "応答",
@@ -2134,18 +1859,7 @@
     "strength": 0.7792
   },
   {
-    "index": 194,
-    "beat": 128.5,
-    "hand": "blue",
-    "role": "応答",
-    "phrase": 8,
-    "sharedAccent": false,
-    "peakSeconds": 42.837642,
-    "distanceMs": 4.308,
-    "strength": 0.5535
-  },
-  {
-    "index": 195,
+    "index": 169,
     "beat": 129.0,
     "hand": "red",
     "role": "応答",
@@ -2156,18 +1870,7 @@
     "strength": 0.651
   },
   {
-    "index": 196,
-    "beat": 129.5,
-    "hand": "blue",
-    "role": "応答",
-    "phrase": 8,
-    "sharedAccent": false,
-    "peakSeconds": 43.166893,
-    "distanceMs": 0.227,
-    "strength": 0.6819
-  },
-  {
-    "index": 197,
+    "index": 170,
     "beat": 130.0,
     "hand": "red",
     "role": "応答",
@@ -2178,7 +1881,7 @@
     "strength": 0.8841
   },
   {
-    "index": 198,
+    "index": 171,
     "beat": 130.5,
     "hand": "blue",
     "role": "応答",
@@ -2189,29 +1892,7 @@
     "strength": 0.8186
   },
   {
-    "index": 199,
-    "beat": 131.0,
-    "hand": "red",
-    "role": "応答",
-    "phrase": 8,
-    "sharedAccent": false,
-    "peakSeconds": 43.66576,
-    "distanceMs": -0.907,
-    "strength": 0.6881
-  },
-  {
-    "index": 200,
-    "beat": 131.5,
-    "hand": "blue",
-    "role": "応答",
-    "phrase": 8,
-    "sharedAccent": false,
-    "peakSeconds": 43.835374,
-    "distanceMs": 2.041,
-    "strength": 0.8459
-  },
-  {
-    "index": 201,
+    "index": 172,
     "beat": 132.0,
     "hand": "red",
     "role": "応答",
@@ -2222,7 +1903,7 @@
     "strength": 0.8397
   },
   {
-    "index": 202,
+    "index": 173,
     "beat": 133.0,
     "hand": "blue",
     "role": "応答",
@@ -2233,18 +1914,7 @@
     "strength": 1.088
   },
   {
-    "index": 203,
-    "beat": 133.5,
-    "hand": "red",
-    "role": "応答",
-    "phrase": 8,
-    "sharedAccent": false,
-    "peakSeconds": 44.493878,
-    "distanceMs": -6.122,
-    "strength": 0.5046
-  },
-  {
-    "index": 204,
+    "index": 174,
     "beat": 134.0,
     "hand": "red",
     "role": "応答",
@@ -2255,7 +1925,7 @@
     "strength": 1.4035
   },
   {
-    "index": 205,
+    "index": 175,
     "beat": 134.0,
     "hand": "blue",
     "role": "応答",
@@ -2266,7 +1936,7 @@
     "strength": 1.4035
   },
   {
-    "index": 206,
+    "index": 176,
     "beat": 134.5,
     "hand": "red",
     "role": "応答",
@@ -2277,29 +1947,7 @@
     "strength": 0.6019
   },
   {
-    "index": 207,
-    "beat": 135.0,
-    "hand": "blue",
-    "role": "応答",
-    "phrase": 8,
-    "sharedAccent": false,
-    "peakSeconds": 44.977778,
-    "distanceMs": -22.222,
-    "strength": 0.4625
-  },
-  {
-    "index": 208,
-    "beat": 135.5,
-    "hand": "red",
-    "role": "応答",
-    "phrase": 8,
-    "sharedAccent": false,
-    "peakSeconds": 45.15737,
-    "distanceMs": -9.297,
-    "strength": 0.8737
-  },
-  {
-    "index": 209,
+    "index": 177,
     "beat": 136.0,
     "hand": "blue",
     "role": "応答",
@@ -2310,7 +1958,7 @@
     "strength": 1.3728
   },
   {
-    "index": 210,
+    "index": 178,
     "beat": 136.5,
     "hand": "red",
     "role": "応答",
@@ -2321,7 +1969,7 @@
     "strength": 0.8091
   },
   {
-    "index": 211,
+    "index": 179,
     "beat": 137.0,
     "hand": "blue",
     "role": "応答",
@@ -2332,7 +1980,7 @@
     "strength": 0.7164
   },
   {
-    "index": 212,
+    "index": 180,
     "beat": 137.5,
     "hand": "red",
     "role": "応答",
@@ -2343,7 +1991,7 @@
     "strength": 0.6638
   },
   {
-    "index": 213,
+    "index": 181,
     "beat": 138.0,
     "hand": "red",
     "role": "応答",
@@ -2354,7 +2002,7 @@
     "strength": 1.7788
   },
   {
-    "index": 214,
+    "index": 182,
     "beat": 138.0,
     "hand": "blue",
     "role": "応答",
@@ -2365,7 +2013,7 @@
     "strength": 1.7788
   },
   {
-    "index": 215,
+    "index": 183,
     "beat": 139.0,
     "hand": "red",
     "role": "応答",
@@ -2376,7 +2024,7 @@
     "strength": 1.4043
   },
   {
-    "index": 216,
+    "index": 184,
     "beat": 139.5,
     "hand": "blue",
     "role": "応答",
@@ -2387,7 +2035,7 @@
     "strength": 0.98
   },
   {
-    "index": 217,
+    "index": 185,
     "beat": 140.0,
     "hand": "red",
     "role": "応答",
@@ -2398,7 +2046,7 @@
     "strength": 1.3826
   },
   {
-    "index": 218,
+    "index": 186,
     "beat": 141.0,
     "hand": "blue",
     "role": "応答",
@@ -2409,7 +2057,7 @@
     "strength": 1.1775
   },
   {
-    "index": 219,
+    "index": 187,
     "beat": 141.5,
     "hand": "red",
     "role": "応答",
@@ -2420,7 +2068,7 @@
     "strength": 0.5122
   },
   {
-    "index": 220,
+    "index": 188,
     "beat": 142.0,
     "hand": "red",
     "role": "応答",
@@ -2431,7 +2079,7 @@
     "strength": 1.6983
   },
   {
-    "index": 221,
+    "index": 189,
     "beat": 142.0,
     "hand": "blue",
     "role": "応答",
@@ -2442,7 +2090,7 @@
     "strength": 1.6983
   },
   {
-    "index": 222,
+    "index": 190,
     "beat": 143.0,
     "hand": "blue",
     "role": "応答",
@@ -2453,7 +2101,7 @@
     "strength": 0.627
   },
   {
-    "index": 223,
+    "index": 191,
     "beat": 143.5,
     "hand": "red",
     "role": "応答",
@@ -2464,7 +2112,7 @@
     "strength": 1.0859
   },
   {
-    "index": 224,
+    "index": 192,
     "beat": 144.0,
     "hand": "blue",
     "role": "応答",
@@ -2475,7 +2123,7 @@
     "strength": 1.3072
   },
   {
-    "index": 225,
+    "index": 193,
     "beat": 144.5,
     "hand": "red",
     "role": "応答",
@@ -2486,7 +2134,7 @@
     "strength": 0.9334
   },
   {
-    "index": 226,
+    "index": 194,
     "beat": 145.0,
     "hand": "blue",
     "role": "応答",
@@ -2497,7 +2145,7 @@
     "strength": 0.6928
   },
   {
-    "index": 227,
+    "index": 195,
     "beat": 145.5,
     "hand": "red",
     "role": "応答",
@@ -2508,7 +2156,7 @@
     "strength": 0.5898
   },
   {
-    "index": 228,
+    "index": 196,
     "beat": 146.0,
     "hand": "red",
     "role": "応答",
@@ -2519,7 +2167,7 @@
     "strength": 1.8062
   },
   {
-    "index": 229,
+    "index": 197,
     "beat": 146.0,
     "hand": "blue",
     "role": "応答",
@@ -2530,7 +2178,7 @@
     "strength": 1.8062
   },
   {
-    "index": 230,
+    "index": 198,
     "beat": 147.0,
     "hand": "red",
     "role": "応答",
@@ -2541,7 +2189,7 @@
     "strength": 1.3162
   },
   {
-    "index": 231,
+    "index": 199,
     "beat": 147.5,
     "hand": "blue",
     "role": "応答",
@@ -2552,7 +2200,7 @@
     "strength": 0.8547
   },
   {
-    "index": 232,
+    "index": 200,
     "beat": 148.0,
     "hand": "red",
     "role": "応答",
@@ -2563,7 +2211,7 @@
     "strength": 1.1331
   },
   {
-    "index": 233,
+    "index": 201,
     "beat": 149.0,
     "hand": "blue",
     "role": "応答",
@@ -2574,7 +2222,7 @@
     "strength": 0.9255
   },
   {
-    "index": 234,
+    "index": 202,
     "beat": 150.0,
     "hand": "red",
     "role": "応答",
@@ -2585,7 +2233,7 @@
     "strength": 1.2859
   },
   {
-    "index": 235,
+    "index": 203,
     "beat": 150.0,
     "hand": "blue",
     "role": "応答",
@@ -2596,7 +2244,7 @@
     "strength": 1.2859
   },
   {
-    "index": 236,
+    "index": 204,
     "beat": 150.5,
     "hand": "red",
     "role": "応答",
@@ -2607,7 +2255,7 @@
     "strength": 0.5989
   },
   {
-    "index": 237,
+    "index": 205,
     "beat": 151.0,
     "hand": "blue",
     "role": "応答",
@@ -2618,7 +2266,7 @@
     "strength": 0.9851
   },
   {
-    "index": 238,
+    "index": 206,
     "beat": 151.5,
     "hand": "red",
     "role": "応答",
@@ -2629,7 +2277,7 @@
     "strength": 0.9578
   },
   {
-    "index": 239,
+    "index": 207,
     "beat": 152.0,
     "hand": "blue",
     "role": "応答",
@@ -2640,7 +2288,7 @@
     "strength": 1.1299
   },
   {
-    "index": 240,
+    "index": 208,
     "beat": 152.5,
     "hand": "red",
     "role": "応答",
@@ -2651,7 +2299,7 @@
     "strength": 0.7445
   },
   {
-    "index": 241,
+    "index": 209,
     "beat": 153.0,
     "hand": "blue",
     "role": "応答",
@@ -2662,7 +2310,7 @@
     "strength": 1.1165
   },
   {
-    "index": 242,
+    "index": 210,
     "beat": 153.5,
     "hand": "red",
     "role": "応答",
@@ -2673,7 +2321,7 @@
     "strength": 0.9855
   },
   {
-    "index": 243,
+    "index": 211,
     "beat": 154.0,
     "hand": "red",
     "role": "応答",
@@ -2684,7 +2332,7 @@
     "strength": 1.3259
   },
   {
-    "index": 244,
+    "index": 212,
     "beat": 154.0,
     "hand": "blue",
     "role": "応答",
@@ -2695,7 +2343,7 @@
     "strength": 1.3259
   },
   {
-    "index": 245,
+    "index": 213,
     "beat": 154.5,
     "hand": "red",
     "role": "応答",
@@ -2706,7 +2354,7 @@
     "strength": 1.2872
   },
   {
-    "index": 246,
+    "index": 214,
     "beat": 155.0,
     "hand": "blue",
     "role": "応答",
@@ -2717,18 +2365,7 @@
     "strength": 1.0232
   },
   {
-    "index": 247,
-    "beat": 155.5,
-    "hand": "red",
-    "role": "応答",
-    "phrase": 9,
-    "sharedAccent": false,
-    "peakSeconds": 51.837188,
-    "distanceMs": 3.855,
-    "strength": 0.5184
-  },
-  {
-    "index": 248,
+    "index": 215,
     "beat": 156.0,
     "hand": "blue",
     "role": "応答",
@@ -2739,18 +2376,7 @@
     "strength": 1.4553
   },
   {
-    "index": 249,
-    "beat": 156.5,
-    "hand": "red",
-    "role": "応答",
-    "phrase": 9,
-    "sharedAccent": false,
-    "peakSeconds": 52.161451,
-    "distanceMs": -5.215,
-    "strength": 0.5897
-  },
-  {
-    "index": 250,
+    "index": 216,
     "beat": 157.0,
     "hand": "blue",
     "role": "応答",
@@ -2761,7 +2387,7 @@
     "strength": 1.314
   },
   {
-    "index": 251,
+    "index": 217,
     "beat": 158.0,
     "hand": "red",
     "role": "応答",
@@ -2772,7 +2398,7 @@
     "strength": 1.5609
   },
   {
-    "index": 252,
+    "index": 218,
     "beat": 158.0,
     "hand": "blue",
     "role": "応答",
@@ -2783,18 +2409,7 @@
     "strength": 1.5609
   },
   {
-    "index": 253,
-    "beat": 158.5,
-    "hand": "red",
-    "role": "応答",
-    "phrase": 9,
-    "sharedAccent": false,
-    "peakSeconds": 52.829932,
-    "distanceMs": -3.401,
-    "strength": 0.6386
-  },
-  {
-    "index": 254,
+    "index": 219,
     "beat": 159.0,
     "hand": "blue",
     "role": "応答",
@@ -2805,7 +2420,7 @@
     "strength": 0.717
   },
   {
-    "index": 255,
+    "index": 220,
     "beat": 159.5,
     "hand": "red",
     "role": "応答",
@@ -2816,7 +2431,7 @@
     "strength": 0.7406
   },
   {
-    "index": 256,
+    "index": 221,
     "beat": 160.0,
     "hand": "blue",
     "role": "減速と余韻",
@@ -2827,7 +2442,7 @@
     "strength": 0.8668
   },
   {
-    "index": 257,
+    "index": 222,
     "beat": 160.5,
     "hand": "red",
     "role": "減速と余韻",
@@ -2838,7 +2453,7 @@
     "strength": 0.6436
   },
   {
-    "index": 258,
+    "index": 223,
     "beat": 161,
     "hand": "blue",
     "role": "減速と余韻",
@@ -2849,7 +2464,7 @@
     "strength": 0.7176
   },
   {
-    "index": 259,
+    "index": 224,
     "beat": 162,
     "hand": "red",
     "role": "減速と余韻",
@@ -2860,7 +2475,7 @@
     "strength": 0.6902
   },
   {
-    "index": 260,
+    "index": 225,
     "beat": 163.5,
     "hand": "red",
     "role": "減速と余韻",
@@ -2871,7 +2486,7 @@
     "strength": 0.4999
   },
   {
-    "index": 261,
+    "index": 226,
     "beat": 164.0,
     "hand": "blue",
     "role": "減速と余韻",
@@ -2882,7 +2497,7 @@
     "strength": 1.0896
   },
   {
-    "index": 262,
+    "index": 227,
     "beat": 165,
     "hand": "red",
     "role": "減速と余韻",
@@ -2893,7 +2508,7 @@
     "strength": 0.2611
   },
   {
-    "index": 263,
+    "index": 228,
     "beat": 166,
     "hand": "blue",
     "role": "減速と余韻",
@@ -2904,7 +2519,7 @@
     "strength": 0.2032
   },
   {
-    "index": 264,
+    "index": 229,
     "beat": 167.5,
     "hand": "red",
     "role": "減速と余韻",
@@ -2915,7 +2530,7 @@
     "strength": 0.3125
   },
   {
-    "index": 265,
+    "index": 230,
     "beat": 168.0,
     "hand": "blue",
     "role": "減速と余韻",
@@ -2926,7 +2541,7 @@
     "strength": 0.2393
   },
   {
-    "index": 266,
+    "index": 231,
     "beat": 170.0,
     "hand": "red",
     "role": "減速と余韻",
@@ -2937,7 +2552,7 @@
     "strength": 0.4678
   },
   {
-    "index": 267,
+    "index": 232,
     "beat": 171.0,
     "hand": "blue",
     "role": "減速と余韻",
@@ -2948,7 +2563,7 @@
     "strength": 0.4576
   },
   {
-    "index": 268,
+    "index": 233,
     "beat": 172.0,
     "hand": "red",
     "role": "減速と余韻",
@@ -2959,7 +2574,7 @@
     "strength": 1.365
   },
   {
-    "index": 269,
+    "index": 234,
     "beat": 172.0,
     "hand": "blue",
     "role": "減速と余韻",
@@ -2970,7 +2585,7 @@
     "strength": 1.365
   },
   {
-    "index": 270,
+    "index": 235,
     "beat": 173.0,
     "hand": "blue",
     "role": "減速と余韻",
@@ -2981,7 +2596,7 @@
     "strength": 0.255
   },
   {
-    "index": 271,
+    "index": 236,
     "beat": 179.0,
     "hand": "red",
     "role": "減速と余韻",
@@ -2992,7 +2607,7 @@
     "strength": 0.2712
   },
   {
-    "index": 272,
+    "index": 237,
     "beat": 180.0,
     "hand": "red",
     "role": "減速と余韻",
@@ -3003,7 +2618,7 @@
     "strength": 0.868
   },
   {
-    "index": 273,
+    "index": 238,
     "beat": 180.5,
     "hand": "blue",
     "role": "減速と余韻",
@@ -3014,7 +2629,7 @@
     "strength": 0.2013
   },
   {
-    "index": 274,
+    "index": 239,
     "beat": 181.0,
     "hand": "red",
     "role": "減速と余韻",
@@ -3025,7 +2640,7 @@
     "strength": 0.2826
   },
   {
-    "index": 275,
+    "index": 240,
     "beat": 182.0,
     "hand": "blue",
     "role": "減速と余韻",
@@ -3036,7 +2651,7 @@
     "strength": 0.2487
   },
   {
-    "index": 276,
+    "index": 241,
     "beat": 182.5,
     "hand": "red",
     "role": "減速と余韻",
@@ -3047,7 +2662,7 @@
     "strength": 0.2614
   },
   {
-    "index": 277,
+    "index": 242,
     "beat": 184.5,
     "hand": "red",
     "role": "減速と余韻",
@@ -3058,7 +2673,7 @@
     "strength": 0.2577
   },
   {
-    "index": 278,
+    "index": 243,
     "beat": 187.0,
     "hand": "blue",
     "role": "減速と余韻",
@@ -3069,7 +2684,7 @@
     "strength": 0.2191
   },
   {
-    "index": 279,
+    "index": 244,
     "beat": 188.0,
     "hand": "blue",
     "role": "減速と余韻",
@@ -3080,7 +2695,7 @@
     "strength": 0.7372
   },
   {
-    "index": 280,
+    "index": 245,
     "beat": 189.0,
     "hand": "red",
     "role": "減速と余韻",
@@ -3091,7 +2706,7 @@
     "strength": 0.2622
   },
   {
-    "index": 281,
+    "index": 246,
     "beat": 195.0,
     "hand": "red",
     "role": "減速と余韻",
@@ -3102,7 +2717,7 @@
     "strength": 0.2112
   },
   {
-    "index": 282,
+    "index": 247,
     "beat": 196.0,
     "hand": "blue",
     "role": "減速と余韻",
@@ -3113,7 +2728,7 @@
     "strength": 0.9683
   },
   {
-    "index": 283,
+    "index": 248,
     "beat": 197.0,
     "hand": "red",
     "role": "減速と余韻",
@@ -3124,7 +2739,7 @@
     "strength": 0.2793
   },
   {
-    "index": 284,
+    "index": 249,
     "beat": 200.0,
     "hand": "red",
     "role": "再導入",
@@ -3135,7 +2750,7 @@
     "strength": 1.6978
   },
   {
-    "index": 285,
+    "index": 250,
     "beat": 200.0,
     "hand": "blue",
     "role": "再導入",
@@ -3146,7 +2761,7 @@
     "strength": 1.6978
   },
   {
-    "index": 286,
+    "index": 251,
     "beat": 201.0,
     "hand": "blue",
     "role": "再導入",
@@ -3157,7 +2772,7 @@
     "strength": 0.4451
   },
   {
-    "index": 287,
+    "index": 252,
     "beat": 201.5,
     "hand": "red",
     "role": "再導入",
@@ -3168,7 +2783,7 @@
     "strength": 1.1869
   },
   {
-    "index": 288,
+    "index": 253,
     "beat": 202.5,
     "hand": "blue",
     "role": "再導入",
@@ -3179,7 +2794,7 @@
     "strength": 0.2192
   },
   {
-    "index": 289,
+    "index": 254,
     "beat": 206.0,
     "hand": "red",
     "role": "再導入",
@@ -3190,7 +2805,7 @@
     "strength": 0.8262
   },
   {
-    "index": 290,
+    "index": 255,
     "beat": 206.5,
     "hand": "blue",
     "role": "再導入",
@@ -3201,7 +2816,7 @@
     "strength": 0.4175
   },
   {
-    "index": 291,
+    "index": 256,
     "beat": 207.0,
     "hand": "red",
     "role": "再導入",
@@ -3212,7 +2827,7 @@
     "strength": 0.392
   },
   {
-    "index": 292,
+    "index": 257,
     "beat": 208.0,
     "hand": "blue",
     "role": "再導入",
@@ -3223,7 +2838,7 @@
     "strength": 0.9895
   },
   {
-    "index": 293,
+    "index": 258,
     "beat": 209.5,
     "hand": "red",
     "role": "再導入",
@@ -3234,7 +2849,7 @@
     "strength": 1.6284
   },
   {
-    "index": 294,
+    "index": 259,
     "beat": 209.5,
     "hand": "blue",
     "role": "再導入",
@@ -3245,7 +2860,7 @@
     "strength": 1.6284
   },
   {
-    "index": 295,
+    "index": 260,
     "beat": 210.0,
     "hand": "red",
     "role": "再導入",
@@ -3256,7 +2871,7 @@
     "strength": 0.4007
   },
   {
-    "index": 296,
+    "index": 261,
     "beat": 214.0,
     "hand": "blue",
     "role": "再導入",
@@ -3267,7 +2882,7 @@
     "strength": 1.146
   },
   {
-    "index": 297,
+    "index": 262,
     "beat": 215.0,
     "hand": "blue",
     "role": "再導入",
@@ -3278,7 +2893,7 @@
     "strength": 0.4106
   },
   {
-    "index": 298,
+    "index": 263,
     "beat": 216.0,
     "hand": "red",
     "role": "再導入",
@@ -3289,7 +2904,7 @@
     "strength": 0.9114
   },
   {
-    "index": 299,
+    "index": 264,
     "beat": 216.5,
     "hand": "blue",
     "role": "再導入",
@@ -3300,7 +2915,7 @@
     "strength": 0.5395
   },
   {
-    "index": 300,
+    "index": 265,
     "beat": 217.0,
     "hand": "red",
     "role": "再導入",
@@ -3311,7 +2926,7 @@
     "strength": 0.9363
   },
   {
-    "index": 301,
+    "index": 266,
     "beat": 217.5,
     "hand": "blue",
     "role": "再導入",
@@ -3322,7 +2937,7 @@
     "strength": 0.9573
   },
   {
-    "index": 302,
+    "index": 267,
     "beat": 218.0,
     "hand": "red",
     "role": "再導入",
@@ -3333,7 +2948,7 @@
     "strength": 0.8496
   },
   {
-    "index": 303,
+    "index": 268,
     "beat": 219.0,
     "hand": "red",
     "role": "再導入",
@@ -3344,7 +2959,7 @@
     "strength": 1.6961
   },
   {
-    "index": 304,
+    "index": 269,
     "beat": 219.0,
     "hand": "blue",
     "role": "再導入",
@@ -3355,7 +2970,7 @@
     "strength": 1.6961
   },
   {
-    "index": 305,
+    "index": 270,
     "beat": 220.0,
     "hand": "blue",
     "role": "再導入",
@@ -3366,7 +2981,7 @@
     "strength": 1.6083
   },
   {
-    "index": 306,
+    "index": 271,
     "beat": 221.0,
     "hand": "red",
     "role": "再導入",
@@ -3377,7 +2992,7 @@
     "strength": 1.9125
   },
   {
-    "index": 307,
+    "index": 272,
     "beat": 222.0,
     "hand": "blue",
     "role": "再導入",
@@ -3388,7 +3003,7 @@
     "strength": 1.6041
   },
   {
-    "index": 308,
+    "index": 273,
     "beat": 223.0,
     "hand": "blue",
     "role": "再導入",
@@ -3399,7 +3014,7 @@
     "strength": 1.0495
   },
   {
-    "index": 309,
+    "index": 274,
     "beat": 223.5,
     "hand": "blue",
     "role": "再導入",
@@ -3410,7 +3025,7 @@
     "strength": 0.6517
   },
   {
-    "index": 310,
+    "index": 275,
     "beat": 224.0,
     "hand": "red",
     "role": "主題Aの発展",
@@ -3421,7 +3036,7 @@
     "strength": 1.1357
   },
   {
-    "index": 311,
+    "index": 276,
     "beat": 224.5,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -3432,7 +3047,7 @@
     "strength": 1.2052
   },
   {
-    "index": 312,
+    "index": 277,
     "beat": 225.0,
     "hand": "red",
     "role": "主題Aの発展",
@@ -3443,7 +3058,7 @@
     "strength": 1.3814
   },
   {
-    "index": 313,
+    "index": 278,
     "beat": 225.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -3454,7 +3069,7 @@
     "strength": 1.3814
   },
   {
-    "index": 314,
+    "index": 279,
     "beat": 225.5,
     "hand": "red",
     "role": "主題Aの発展",
@@ -3465,7 +3080,7 @@
     "strength": 1.2449
   },
   {
-    "index": 315,
+    "index": 280,
     "beat": 226.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -3476,7 +3091,7 @@
     "strength": 1.1709
   },
   {
-    "index": 316,
+    "index": 281,
     "beat": 226.5,
     "hand": "red",
     "role": "主題Aの発展",
@@ -3487,7 +3102,7 @@
     "strength": 1.226
   },
   {
-    "index": 317,
+    "index": 282,
     "beat": 227.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -3498,7 +3113,7 @@
     "strength": 1.2214
   },
   {
-    "index": 318,
+    "index": 283,
     "beat": 227.5,
     "hand": "red",
     "role": "主題Aの発展",
@@ -3509,7 +3124,7 @@
     "strength": 1.0179
   },
   {
-    "index": 319,
+    "index": 284,
     "beat": 228.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -3520,7 +3135,7 @@
     "strength": 0.9304
   },
   {
-    "index": 320,
+    "index": 285,
     "beat": 228.5,
     "hand": "red",
     "role": "主題Aの発展",
@@ -3531,7 +3146,7 @@
     "strength": 0.8113
   },
   {
-    "index": 321,
+    "index": 286,
     "beat": 229.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -3542,7 +3157,7 @@
     "strength": 0.8788
   },
   {
-    "index": 322,
+    "index": 287,
     "beat": 229.5,
     "hand": "red",
     "role": "主題Aの発展",
@@ -3553,51 +3168,7 @@
     "strength": 0.7412
   },
   {
-    "index": 323,
-    "beat": 230.0,
-    "hand": "blue",
-    "role": "主題Aの発展",
-    "phrase": 14,
-    "sharedAccent": false,
-    "peakSeconds": 77.833107,
-    "distanceMs": -0.227,
-    "strength": 0.4812
-  },
-  {
-    "index": 324,
-    "beat": 230.5,
-    "hand": "red",
-    "role": "主題Aの発展",
-    "phrase": 14,
-    "sharedAccent": false,
-    "peakSeconds": 77.997732,
-    "distanceMs": -2.268,
-    "strength": 0.5959
-  },
-  {
-    "index": 325,
-    "beat": 231.0,
-    "hand": "blue",
-    "role": "主題Aの発展",
-    "phrase": 14,
-    "sharedAccent": false,
-    "peakSeconds": 78.147392,
-    "distanceMs": -19.274,
-    "strength": 0.5582
-  },
-  {
-    "index": 326,
-    "beat": 231.5,
-    "hand": "red",
-    "role": "主題Aの発展",
-    "phrase": 14,
-    "sharedAccent": false,
-    "peakSeconds": 78.326984,
-    "distanceMs": -6.349,
-    "strength": 0.6899
-  },
-  {
-    "index": 327,
+    "index": 288,
     "beat": 232.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -3608,7 +3179,7 @@
     "strength": 0.6238
   },
   {
-    "index": 328,
+    "index": 289,
     "beat": 232.5,
     "hand": "red",
     "role": "主題Aの発展",
@@ -3619,7 +3190,7 @@
     "strength": 1.0961
   },
   {
-    "index": 329,
+    "index": 290,
     "beat": 233.0,
     "hand": "red",
     "role": "主題Aの発展",
@@ -3630,7 +3201,7 @@
     "strength": 1.2052
   },
   {
-    "index": 330,
+    "index": 291,
     "beat": 233.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -3641,7 +3212,7 @@
     "strength": 1.2052
   },
   {
-    "index": 331,
+    "index": 292,
     "beat": 233.5,
     "hand": "red",
     "role": "主題Aの発展",
@@ -3652,7 +3223,7 @@
     "strength": 1.2294
   },
   {
-    "index": 332,
+    "index": 293,
     "beat": 234.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -3663,7 +3234,7 @@
     "strength": 1.2886
   },
   {
-    "index": 333,
+    "index": 294,
     "beat": 234.75,
     "hand": "red",
     "role": "主題Aの発展",
@@ -3674,7 +3245,7 @@
     "strength": 1.3614
   },
   {
-    "index": 334,
+    "index": 295,
     "beat": 235.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -3685,7 +3256,7 @@
     "strength": 0.9852
   },
   {
-    "index": 335,
+    "index": 296,
     "beat": 235.5,
     "hand": "red",
     "role": "主題Aの発展",
@@ -3696,7 +3267,7 @@
     "strength": 1.2826
   },
   {
-    "index": 336,
+    "index": 297,
     "beat": 236.5,
     "hand": "red",
     "role": "主題Aの発展",
@@ -3707,7 +3278,7 @@
     "strength": 1.3045
   },
   {
-    "index": 337,
+    "index": 298,
     "beat": 236.5,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -3718,7 +3289,7 @@
     "strength": 1.3045
   },
   {
-    "index": 338,
+    "index": 299,
     "beat": 237.0,
     "hand": "red",
     "role": "主題Aの発展",
@@ -3729,7 +3300,7 @@
     "strength": 1.022
   },
   {
-    "index": 339,
+    "index": 300,
     "beat": 237.5,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -3740,7 +3311,7 @@
     "strength": 0.3222
   },
   {
-    "index": 340,
+    "index": 301,
     "beat": 238.0,
     "hand": "red",
     "role": "主題Aの発展",
@@ -3751,7 +3322,7 @@
     "strength": 0.4682
   },
   {
-    "index": 341,
+    "index": 302,
     "beat": 239.0,
     "hand": "red",
     "role": "主題Aの発展",
@@ -3762,7 +3333,7 @@
     "strength": 0.4828
   },
   {
-    "index": 342,
+    "index": 303,
     "beat": 241.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -3773,7 +3344,7 @@
     "strength": 0.3512
   },
   {
-    "index": 343,
+    "index": 304,
     "beat": 242.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -3784,7 +3355,7 @@
     "strength": 0.4371
   },
   {
-    "index": 344,
+    "index": 305,
     "beat": 242.5,
     "hand": "red",
     "role": "主題Aの発展",
@@ -3795,7 +3366,7 @@
     "strength": 0.2513
   },
   {
-    "index": 345,
+    "index": 306,
     "beat": 243.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -3806,7 +3377,7 @@
     "strength": 1.0447
   },
   {
-    "index": 346,
+    "index": 307,
     "beat": 243.5,
     "hand": "red",
     "role": "主題Aの発展",
@@ -3817,7 +3388,7 @@
     "strength": 0.6
   },
   {
-    "index": 347,
+    "index": 308,
     "beat": 244.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -3828,7 +3399,7 @@
     "strength": 1.154
   },
   {
-    "index": 348,
+    "index": 309,
     "beat": 245.0,
     "hand": "red",
     "role": "主題Aの発展",
@@ -3839,7 +3410,7 @@
     "strength": 0.4523
   },
   {
-    "index": 349,
+    "index": 310,
     "beat": 245.5,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -3850,7 +3421,7 @@
     "strength": 0.6077
   },
   {
-    "index": 350,
+    "index": 311,
     "beat": 246.0,
     "hand": "red",
     "role": "主題Aの発展",
@@ -3861,7 +3432,7 @@
     "strength": 1.0165
   },
   {
-    "index": 351,
+    "index": 312,
     "beat": 246.75,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -3872,7 +3443,7 @@
     "strength": 1.0315
   },
   {
-    "index": 352,
+    "index": 313,
     "beat": 247.0,
     "hand": "red",
     "role": "主題Aの発展",
@@ -3883,7 +3454,7 @@
     "strength": 0.5802
   },
   {
-    "index": 353,
+    "index": 314,
     "beat": 247.5,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -3894,7 +3465,7 @@
     "strength": 1.0186
   },
   {
-    "index": 354,
+    "index": 315,
     "beat": 248.0,
     "hand": "red",
     "role": "主題Aの発展",
@@ -3905,7 +3476,7 @@
     "strength": 0.5216
   },
   {
-    "index": 355,
+    "index": 316,
     "beat": 249.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -3916,7 +3487,7 @@
     "strength": 0.7999
   },
   {
-    "index": 356,
+    "index": 317,
     "beat": 249.5,
     "hand": "red",
     "role": "主題Aの発展",
@@ -3927,7 +3498,7 @@
     "strength": 0.6616
   },
   {
-    "index": 357,
+    "index": 318,
     "beat": 250.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -3938,7 +3509,7 @@
     "strength": 0.9386
   },
   {
-    "index": 358,
+    "index": 319,
     "beat": 250.5,
     "hand": "red",
     "role": "主題Aの発展",
@@ -3949,7 +3520,7 @@
     "strength": 0.6881
   },
   {
-    "index": 359,
+    "index": 320,
     "beat": 251.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -3960,7 +3531,7 @@
     "strength": 0.712
   },
   {
-    "index": 360,
+    "index": 321,
     "beat": 251.5,
     "hand": "red",
     "role": "主題Aの発展",
@@ -3971,7 +3542,7 @@
     "strength": 0.5408
   },
   {
-    "index": 361,
+    "index": 322,
     "beat": 252.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -3982,18 +3553,7 @@
     "strength": 0.8615
   },
   {
-    "index": 362,
-    "beat": 252.5,
-    "hand": "red",
-    "role": "主題Aの発展",
-    "phrase": 15,
-    "sharedAccent": false,
-    "peakSeconds": 85.341043,
-    "distanceMs": 7.71,
-    "strength": 0.4749
-  },
-  {
-    "index": 363,
+    "index": 323,
     "beat": 253.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -4004,7 +3564,7 @@
     "strength": 0.9291
   },
   {
-    "index": 364,
+    "index": 324,
     "beat": 253.5,
     "hand": "red",
     "role": "主題Aの発展",
@@ -4015,7 +3575,7 @@
     "strength": 0.5311
   },
   {
-    "index": 365,
+    "index": 325,
     "beat": 254.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -4026,7 +3586,7 @@
     "strength": 1.0642
   },
   {
-    "index": 366,
+    "index": 326,
     "beat": 254.5,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -4037,7 +3597,7 @@
     "strength": 0.7671
   },
   {
-    "index": 367,
+    "index": 327,
     "beat": 255.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -4048,7 +3608,7 @@
     "strength": 0.9523
   },
   {
-    "index": 368,
+    "index": 328,
     "beat": 255.5,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -4059,7 +3619,7 @@
     "strength": 0.812
   },
   {
-    "index": 369,
+    "index": 329,
     "beat": 256.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -4070,7 +3630,7 @@
     "strength": 1.1057
   },
   {
-    "index": 370,
+    "index": 330,
     "beat": 257.0,
     "hand": "red",
     "role": "主題Aの発展",
@@ -4081,7 +3641,7 @@
     "strength": 0.7781
   },
   {
-    "index": 371,
+    "index": 331,
     "beat": 258.0,
     "hand": "red",
     "role": "主題Aの発展",
@@ -4092,7 +3652,7 @@
     "strength": 0.7697
   },
   {
-    "index": 372,
+    "index": 332,
     "beat": 258.5,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -4103,7 +3663,7 @@
     "strength": 0.4841
   },
   {
-    "index": 373,
+    "index": 333,
     "beat": 259.0,
     "hand": "red",
     "role": "主題Aの発展",
@@ -4114,7 +3674,7 @@
     "strength": 0.9661
   },
   {
-    "index": 374,
+    "index": 334,
     "beat": 260.0,
     "hand": "red",
     "role": "主題Aの発展",
@@ -4125,7 +3685,7 @@
     "strength": 0.645
   },
   {
-    "index": 375,
+    "index": 335,
     "beat": 260.5,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -4136,7 +3696,7 @@
     "strength": 0.4987
   },
   {
-    "index": 376,
+    "index": 336,
     "beat": 261.0,
     "hand": "red",
     "role": "主題Aの発展",
@@ -4147,7 +3707,7 @@
     "strength": 0.7875
   },
   {
-    "index": 377,
+    "index": 337,
     "beat": 261.5,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -4158,7 +3718,7 @@
     "strength": 0.6891
   },
   {
-    "index": 378,
+    "index": 338,
     "beat": 262.0,
     "hand": "red",
     "role": "主題Aの発展",
@@ -4169,7 +3729,7 @@
     "strength": 0.6568
   },
   {
-    "index": 379,
+    "index": 339,
     "beat": 262.75,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -4180,7 +3740,7 @@
     "strength": 1.3778
   },
   {
-    "index": 380,
+    "index": 340,
     "beat": 263.0,
     "hand": "red",
     "role": "主題Aの発展",
@@ -4191,7 +3751,7 @@
     "strength": 0.4155
   },
   {
-    "index": 381,
+    "index": 341,
     "beat": 263.5,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -4202,7 +3762,7 @@
     "strength": 1.1636
   },
   {
-    "index": 382,
+    "index": 342,
     "beat": 264.0,
     "hand": "red",
     "role": "主題Aの発展",
@@ -4213,7 +3773,7 @@
     "strength": 1.0923
   },
   {
-    "index": 383,
+    "index": 343,
     "beat": 265.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -4224,7 +3784,7 @@
     "strength": 0.4115
   },
   {
-    "index": 384,
+    "index": 344,
     "beat": 265.5,
     "hand": "red",
     "role": "主題Aの発展",
@@ -4235,7 +3795,7 @@
     "strength": 0.9771
   },
   {
-    "index": 385,
+    "index": 345,
     "beat": 266.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -4246,7 +3806,7 @@
     "strength": 0.5251
   },
   {
-    "index": 386,
+    "index": 346,
     "beat": 266.5,
     "hand": "red",
     "role": "主題Aの発展",
@@ -4257,7 +3817,7 @@
     "strength": 0.4492
   },
   {
-    "index": 387,
+    "index": 347,
     "beat": 267.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -4268,7 +3828,7 @@
     "strength": 0.8738
   },
   {
-    "index": 388,
+    "index": 348,
     "beat": 268.0,
     "hand": "red",
     "role": "主題Aの発展",
@@ -4279,7 +3839,7 @@
     "strength": 0.9198
   },
   {
-    "index": 389,
+    "index": 349,
     "beat": 269.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -4290,7 +3850,7 @@
     "strength": 0.754
   },
   {
-    "index": 390,
+    "index": 350,
     "beat": 269.5,
     "hand": "red",
     "role": "主題Aの発展",
@@ -4301,7 +3861,7 @@
     "strength": 0.6555
   },
   {
-    "index": 391,
+    "index": 351,
     "beat": 270.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -4312,7 +3872,7 @@
     "strength": 0.9951
   },
   {
-    "index": 392,
+    "index": 352,
     "beat": 270.5,
     "hand": "red",
     "role": "主題Aの発展",
@@ -4323,7 +3883,7 @@
     "strength": 0.8767
   },
   {
-    "index": 393,
+    "index": 353,
     "beat": 271.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -4334,7 +3894,7 @@
     "strength": 0.5988
   },
   {
-    "index": 394,
+    "index": 354,
     "beat": 271.5,
     "hand": "red",
     "role": "主題Aの発展",
@@ -4345,7 +3905,7 @@
     "strength": 0.9268
   },
   {
-    "index": 395,
+    "index": 355,
     "beat": 272.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -4356,18 +3916,7 @@
     "strength": 0.8562
   },
   {
-    "index": 396,
-    "beat": 272.5,
-    "hand": "red",
-    "role": "主題Aの発展",
-    "phrase": 17,
-    "sharedAccent": false,
-    "peakSeconds": 91.995918,
-    "distanceMs": -4.082,
-    "strength": 0.4138
-  },
-  {
-    "index": 397,
+    "index": 356,
     "beat": 273.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -4378,7 +3927,7 @@
     "strength": 0.8197
   },
   {
-    "index": 398,
+    "index": 357,
     "beat": 273.5,
     "hand": "red",
     "role": "主題Aの発展",
@@ -4389,7 +3938,7 @@
     "strength": 0.6568
   },
   {
-    "index": 399,
+    "index": 358,
     "beat": 274.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -4400,18 +3949,7 @@
     "strength": 1.0843
   },
   {
-    "index": 400,
-    "beat": 274.5,
-    "hand": "red",
-    "role": "主題Aの発展",
-    "phrase": 17,
-    "sharedAccent": false,
-    "peakSeconds": 92.694331,
-    "distanceMs": 27.664,
-    "strength": 0.4877
-  },
-  {
-    "index": 401,
+    "index": 359,
     "beat": 275.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -4422,7 +3960,7 @@
     "strength": 0.7714
   },
   {
-    "index": 402,
+    "index": 360,
     "beat": 275.5,
     "hand": "red",
     "role": "主題Aの発展",
@@ -4433,7 +3971,7 @@
     "strength": 0.7905
   },
   {
-    "index": 403,
+    "index": 361,
     "beat": 276.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -4444,7 +3982,7 @@
     "strength": 1.1779
   },
   {
-    "index": 404,
+    "index": 362,
     "beat": 277.0,
     "hand": "red",
     "role": "主題Aの発展",
@@ -4455,7 +3993,7 @@
     "strength": 0.5648
   },
   {
-    "index": 405,
+    "index": 363,
     "beat": 277.5,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -4466,7 +4004,7 @@
     "strength": 0.5081
   },
   {
-    "index": 406,
+    "index": 364,
     "beat": 278.0,
     "hand": "red",
     "role": "主題Aの発展",
@@ -4477,7 +4015,7 @@
     "strength": 0.7857
   },
   {
-    "index": 407,
+    "index": 365,
     "beat": 278.75,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -4488,7 +4026,7 @@
     "strength": 0.9715
   },
   {
-    "index": 408,
+    "index": 366,
     "beat": 279.0,
     "hand": "red",
     "role": "主題Aの発展",
@@ -4499,7 +4037,7 @@
     "strength": 0.5451
   },
   {
-    "index": 409,
+    "index": 367,
     "beat": 279.5,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -4510,7 +4048,7 @@
     "strength": 0.8562
   },
   {
-    "index": 410,
+    "index": 368,
     "beat": 280.0,
     "hand": "red",
     "role": "主題Aの発展",
@@ -4521,7 +4059,7 @@
     "strength": 0.555
   },
   {
-    "index": 411,
+    "index": 369,
     "beat": 281.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -4532,7 +4070,7 @@
     "strength": 0.7143
   },
   {
-    "index": 412,
+    "index": 370,
     "beat": 281.5,
     "hand": "red",
     "role": "主題Aの発展",
@@ -4543,7 +4081,7 @@
     "strength": 0.5503
   },
   {
-    "index": 413,
+    "index": 371,
     "beat": 282.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -4554,7 +4092,7 @@
     "strength": 0.8941
   },
   {
-    "index": 414,
+    "index": 372,
     "beat": 282.5,
     "hand": "red",
     "role": "主題Aの発展",
@@ -4565,7 +4103,7 @@
     "strength": 0.6157
   },
   {
-    "index": 415,
+    "index": 373,
     "beat": 283.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -4576,7 +4114,7 @@
     "strength": 0.7773
   },
   {
-    "index": 416,
+    "index": 374,
     "beat": 283.5,
     "hand": "red",
     "role": "主題Aの発展",
@@ -4587,7 +4125,7 @@
     "strength": 0.6517
   },
   {
-    "index": 417,
+    "index": 375,
     "beat": 284.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -4598,18 +4136,7 @@
     "strength": 0.9753
   },
   {
-    "index": 418,
-    "beat": 284.5,
-    "hand": "red",
-    "role": "主題Aの発展",
-    "phrase": 17,
-    "sharedAccent": false,
-    "peakSeconds": 96.006803,
-    "distanceMs": 6.803,
-    "strength": 0.476
-  },
-  {
-    "index": 419,
+    "index": 376,
     "beat": 285.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -4620,7 +4147,7 @@
     "strength": 0.726
   },
   {
-    "index": 420,
+    "index": 377,
     "beat": 285.5,
     "hand": "red",
     "role": "主題Aの発展",
@@ -4631,7 +4158,7 @@
     "strength": 0.5878
   },
   {
-    "index": 421,
+    "index": 378,
     "beat": 286.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -4642,7 +4169,7 @@
     "strength": 0.7338
   },
   {
-    "index": 422,
+    "index": 379,
     "beat": 287.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -4653,7 +4180,7 @@
     "strength": 0.5872
   },
   {
-    "index": 423,
+    "index": 380,
     "beat": 287.5,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -4664,7 +4191,7 @@
     "strength": 1.0257
   },
   {
-    "index": 424,
+    "index": 381,
     "beat": 288.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -4675,7 +4202,7 @@
     "strength": 1.1238
   },
   {
-    "index": 425,
+    "index": 382,
     "beat": 289.0,
     "hand": "red",
     "role": "主題Aの発展",
@@ -4686,7 +4213,7 @@
     "strength": 0.8465
   },
   {
-    "index": 426,
+    "index": 383,
     "beat": 290.0,
     "hand": "red",
     "role": "主題Aの発展",
@@ -4697,18 +4224,7 @@
     "strength": 0.7396
   },
   {
-    "index": 427,
-    "beat": 290.5,
-    "hand": "blue",
-    "role": "主題Aの発展",
-    "phrase": 18,
-    "sharedAccent": false,
-    "peakSeconds": 97.95737,
-    "distanceMs": -42.63,
-    "strength": 0.4474
-  },
-  {
-    "index": 428,
+    "index": 384,
     "beat": 291.0,
     "hand": "red",
     "role": "主題Aの発展",
@@ -4719,7 +4235,7 @@
     "strength": 0.967
   },
   {
-    "index": 429,
+    "index": 385,
     "beat": 291.5,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -4730,7 +4246,7 @@
     "strength": 0.635
   },
   {
-    "index": 430,
+    "index": 386,
     "beat": 292.0,
     "hand": "red",
     "role": "主題Aの発展",
@@ -4741,7 +4257,7 @@
     "strength": 0.8551
   },
   {
-    "index": 431,
+    "index": 387,
     "beat": 292.5,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -4752,7 +4268,7 @@
     "strength": 0.6696
   },
   {
-    "index": 432,
+    "index": 388,
     "beat": 293.0,
     "hand": "red",
     "role": "主題Aの発展",
@@ -4763,7 +4279,7 @@
     "strength": 0.9895
   },
   {
-    "index": 433,
+    "index": 389,
     "beat": 293.5,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -4774,7 +4290,7 @@
     "strength": 0.7092
   },
   {
-    "index": 434,
+    "index": 390,
     "beat": 294.0,
     "hand": "red",
     "role": "主題Aの発展",
@@ -4785,18 +4301,7 @@
     "strength": 0.866
   },
   {
-    "index": 435,
-    "beat": 294.5,
-    "hand": "blue",
-    "role": "主題Aの発展",
-    "phrase": 18,
-    "sharedAccent": false,
-    "peakSeconds": 99.349206,
-    "distanceMs": 15.873,
-    "strength": 0.3167
-  },
-  {
-    "index": 436,
+    "index": 391,
     "beat": 295.0,
     "hand": "red",
     "role": "主題Aの発展",
@@ -4807,7 +4312,7 @@
     "strength": 0.6865
   },
   {
-    "index": 437,
+    "index": 392,
     "beat": 295.5,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -4818,7 +4323,7 @@
     "strength": 1.0901
   },
   {
-    "index": 438,
+    "index": 393,
     "beat": 296.0,
     "hand": "red",
     "role": "主題Aの発展",
@@ -4829,7 +4334,7 @@
     "strength": 1.4788
   },
   {
-    "index": 439,
+    "index": 394,
     "beat": 296.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -4840,29 +4345,7 @@
     "strength": 1.4788
   },
   {
-    "index": 440,
-    "beat": 296.5,
-    "hand": "red",
-    "role": "主題Aの発展",
-    "phrase": 18,
-    "sharedAccent": false,
-    "peakSeconds": 99.997732,
-    "distanceMs": -2.268,
-    "strength": 0.3788
-  },
-  {
-    "index": 441,
-    "beat": 297.0,
-    "hand": "blue",
-    "role": "主題Aの発展",
-    "phrase": 18,
-    "sharedAccent": false,
-    "peakSeconds": 100.162358,
-    "distanceMs": -4.308,
-    "strength": 0.5765
-  },
-  {
-    "index": 442,
+    "index": 395,
     "beat": 297.5,
     "hand": "red",
     "role": "主題Aの発展",
@@ -4873,7 +4356,7 @@
     "strength": 0.9322
   },
   {
-    "index": 443,
+    "index": 396,
     "beat": 298.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -4884,7 +4367,7 @@
     "strength": 1.0012
   },
   {
-    "index": 444,
+    "index": 397,
     "beat": 298.5,
     "hand": "red",
     "role": "主題Aの発展",
@@ -4895,7 +4378,7 @@
     "strength": 0.5241
   },
   {
-    "index": 445,
+    "index": 398,
     "beat": 299.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -4906,7 +4389,7 @@
     "strength": 0.9886
   },
   {
-    "index": 446,
+    "index": 399,
     "beat": 300.0,
     "hand": "red",
     "role": "主題Aの発展",
@@ -4917,7 +4400,7 @@
     "strength": 0.9389
   },
   {
-    "index": 447,
+    "index": 400,
     "beat": 300.5,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -4928,7 +4411,7 @@
     "strength": 0.8307
   },
   {
-    "index": 448,
+    "index": 401,
     "beat": 301.0,
     "hand": "red",
     "role": "主題Aの発展",
@@ -4939,7 +4422,7 @@
     "strength": 0.9055
   },
   {
-    "index": 449,
+    "index": 402,
     "beat": 301.5,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -4950,7 +4433,7 @@
     "strength": 1.1526
   },
   {
-    "index": 450,
+    "index": 403,
     "beat": 302.0,
     "hand": "red",
     "role": "主題Aの発展",
@@ -4961,40 +4444,7 @@
     "strength": 0.9393
   },
   {
-    "index": 451,
-    "beat": 302.5,
-    "hand": "blue",
-    "role": "主題Aの発展",
-    "phrase": 18,
-    "sharedAccent": false,
-    "peakSeconds": 101.998186,
-    "distanceMs": -1.814,
-    "strength": 0.7304
-  },
-  {
-    "index": 452,
-    "beat": 303.0,
-    "hand": "red",
-    "role": "主題Aの発展",
-    "phrase": 18,
-    "sharedAccent": false,
-    "peakSeconds": 102.162812,
-    "distanceMs": -3.855,
-    "strength": 0.7346
-  },
-  {
-    "index": 453,
-    "beat": 303.5,
-    "hand": "blue",
-    "role": "主題Aの発展",
-    "phrase": 18,
-    "sharedAccent": false,
-    "peakSeconds": 102.332426,
-    "distanceMs": -0.907,
-    "strength": 0.8913
-  },
-  {
-    "index": 454,
+    "index": 404,
     "beat": 304,
     "hand": "red",
     "role": "主題Aの発展",
@@ -5005,7 +4455,7 @@
     "strength": 0.7198
   },
   {
-    "index": 455,
+    "index": 405,
     "beat": 304.5,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -5016,7 +4466,7 @@
     "strength": 0.6758
   },
   {
-    "index": 456,
+    "index": 406,
     "beat": 305,
     "hand": "red",
     "role": "主題Aの発展",
@@ -5027,7 +4477,7 @@
     "strength": 0.6895
   },
   {
-    "index": 457,
+    "index": 407,
     "beat": 305.5,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -5038,18 +4488,7 @@
     "strength": 0.7746
   },
   {
-    "index": 458,
-    "beat": 306,
-    "hand": "red",
-    "role": "主題Aの発展",
-    "phrase": 19,
-    "sharedAccent": false,
-    "peakSeconds": 103.160544,
-    "distanceMs": -6.122,
-    "strength": 0.6438
-  },
-  {
-    "index": 459,
+    "index": 408,
     "beat": 307,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -5060,7 +4499,7 @@
     "strength": 0.6647
   },
   {
-    "index": 460,
+    "index": 409,
     "beat": 308,
     "hand": "red",
     "role": "主題Aの発展",
@@ -5071,7 +4510,7 @@
     "strength": 0.8273
   },
   {
-    "index": 461,
+    "index": 410,
     "beat": 308.5,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -5082,7 +4521,7 @@
     "strength": 0.8595
   },
   {
-    "index": 462,
+    "index": 411,
     "beat": 309,
     "hand": "red",
     "role": "主題Aの発展",
@@ -5093,7 +4532,7 @@
     "strength": 0.8526
   },
   {
-    "index": 463,
+    "index": 412,
     "beat": 309.5,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -5104,7 +4543,7 @@
     "strength": 0.7497
   },
   {
-    "index": 464,
+    "index": 413,
     "beat": 310,
     "hand": "red",
     "role": "主題Aの発展",
@@ -5115,7 +4554,7 @@
     "strength": 0.9219
   },
   {
-    "index": 465,
+    "index": 414,
     "beat": 310.5,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -5126,29 +4565,7 @@
     "strength": 0.961
   },
   {
-    "index": 466,
-    "beat": 311,
-    "hand": "red",
-    "role": "主題Aの発展",
-    "phrase": 19,
-    "sharedAccent": false,
-    "peakSeconds": 104.831746,
-    "distanceMs": -1.587,
-    "strength": 0.7956
-  },
-  {
-    "index": 467,
-    "beat": 311.5,
-    "hand": "blue",
-    "role": "主題Aの発展",
-    "phrase": 19,
-    "sharedAccent": false,
-    "peakSeconds": 105.026304,
-    "distanceMs": 26.304,
-    "strength": 0.7338
-  },
-  {
-    "index": 468,
+    "index": 415,
     "beat": 312.0,
     "hand": "red",
     "role": "主題Aの発展",
@@ -5159,7 +4576,7 @@
     "strength": 0.9019
   },
   {
-    "index": 469,
+    "index": 416,
     "beat": 313.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -5170,7 +4587,7 @@
     "strength": 0.6071
   },
   {
-    "index": 470,
+    "index": 417,
     "beat": 313.5,
     "hand": "red",
     "role": "主題Aの発展",
@@ -5181,7 +4598,7 @@
     "strength": 0.5174
   },
   {
-    "index": 471,
+    "index": 418,
     "beat": 314.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -5192,7 +4609,7 @@
     "strength": 0.7521
   },
   {
-    "index": 472,
+    "index": 419,
     "beat": 315.0,
     "hand": "red",
     "role": "主題Aの発展",
@@ -5203,7 +4620,7 @@
     "strength": 0.6557
   },
   {
-    "index": 473,
+    "index": 420,
     "beat": 315.5,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -5214,7 +4631,7 @@
     "strength": 0.8261
   },
   {
-    "index": 474,
+    "index": 421,
     "beat": 316.0,
     "hand": "red",
     "role": "主題Aの発展",
@@ -5225,18 +4642,7 @@
     "strength": 0.5864
   },
   {
-    "index": 475,
-    "beat": 316.5,
-    "hand": "blue",
-    "role": "主題Aの発展",
-    "phrase": 19,
-    "sharedAccent": false,
-    "peakSeconds": 106.667574,
-    "distanceMs": 0.907,
-    "strength": 0.2216
-  },
-  {
-    "index": 476,
+    "index": 422,
     "beat": 317.0,
     "hand": "red",
     "role": "主題Aの発展",
@@ -5247,7 +4653,7 @@
     "strength": 1.8003
   },
   {
-    "index": 477,
+    "index": 423,
     "beat": 317.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -5258,7 +4664,7 @@
     "strength": 1.8003
   },
   {
-    "index": 478,
+    "index": 424,
     "beat": 317.5,
     "hand": "red",
     "role": "主題Aの発展",
@@ -5269,7 +4675,7 @@
     "strength": 0.5128
   },
   {
-    "index": 479,
+    "index": 425,
     "beat": 318.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -5280,7 +4686,7 @@
     "strength": 1.2856
   },
   {
-    "index": 480,
+    "index": 426,
     "beat": 318.5,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -5291,7 +4697,7 @@
     "strength": 0.6736
   },
   {
-    "index": 481,
+    "index": 427,
     "beat": 319.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -5302,7 +4708,7 @@
     "strength": 1.1986
   },
   {
-    "index": 482,
+    "index": 428,
     "beat": 319.5,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -5313,7 +4719,7 @@
     "strength": 0.6742
   },
   {
-    "index": 483,
+    "index": 429,
     "beat": 320.0,
     "hand": "blue",
     "role": "主題の回帰",
@@ -5324,7 +4730,7 @@
     "strength": 1.3203
   },
   {
-    "index": 484,
+    "index": 430,
     "beat": 321.0,
     "hand": "red",
     "role": "主題の回帰",
@@ -5335,7 +4741,7 @@
     "strength": 2.064
   },
   {
-    "index": 485,
+    "index": 431,
     "beat": 321.0,
     "hand": "blue",
     "role": "主題の回帰",
@@ -5346,7 +4752,7 @@
     "strength": 2.064
   },
   {
-    "index": 486,
+    "index": 432,
     "beat": 321.5,
     "hand": "red",
     "role": "主題の回帰",
@@ -5357,7 +4763,7 @@
     "strength": 0.4806
   },
   {
-    "index": 487,
+    "index": 433,
     "beat": 322.0,
     "hand": "blue",
     "role": "主題の回帰",
@@ -5368,7 +4774,7 @@
     "strength": 1.2925
   },
   {
-    "index": 488,
+    "index": 434,
     "beat": 323.0,
     "hand": "blue",
     "role": "主題の回帰",
@@ -5379,7 +4785,7 @@
     "strength": 1.4805
   },
   {
-    "index": 489,
+    "index": 435,
     "beat": 323.5,
     "hand": "red",
     "role": "主題の回帰",
@@ -5390,7 +4796,7 @@
     "strength": 0.5573
   },
   {
-    "index": 490,
+    "index": 436,
     "beat": 324.0,
     "hand": "blue",
     "role": "主題の回帰",
@@ -5401,7 +4807,7 @@
     "strength": 1.3447
   },
   {
-    "index": 491,
+    "index": 437,
     "beat": 325.0,
     "hand": "red",
     "role": "主題の回帰",
@@ -5412,7 +4818,7 @@
     "strength": 2.0188
   },
   {
-    "index": 492,
+    "index": 438,
     "beat": 325.0,
     "hand": "blue",
     "role": "主題の回帰",
@@ -5423,7 +4829,7 @@
     "strength": 2.0188
   },
   {
-    "index": 493,
+    "index": 439,
     "beat": 325.5,
     "hand": "red",
     "role": "主題の回帰",
@@ -5434,7 +4840,7 @@
     "strength": 0.4929
   },
   {
-    "index": 494,
+    "index": 440,
     "beat": 326.0,
     "hand": "blue",
     "role": "主題の回帰",
@@ -5445,7 +4851,7 @@
     "strength": 1.5496
   },
   {
-    "index": 495,
+    "index": 441,
     "beat": 327.0,
     "hand": "red",
     "role": "主題の回帰",
@@ -5456,7 +4862,7 @@
     "strength": 1.2988
   },
   {
-    "index": 496,
+    "index": 442,
     "beat": 328.0,
     "hand": "blue",
     "role": "主題の回帰",
@@ -5467,7 +4873,7 @@
     "strength": 1.441
   },
   {
-    "index": 497,
+    "index": 443,
     "beat": 329.0,
     "hand": "red",
     "role": "主題の回帰",
@@ -5478,7 +4884,7 @@
     "strength": 1.9512
   },
   {
-    "index": 498,
+    "index": 444,
     "beat": 329.0,
     "hand": "blue",
     "role": "主題の回帰",
@@ -5489,7 +4895,7 @@
     "strength": 1.9512
   },
   {
-    "index": 499,
+    "index": 445,
     "beat": 329.5,
     "hand": "red",
     "role": "主題の回帰",
@@ -5500,7 +4906,7 @@
     "strength": 0.6456
   },
   {
-    "index": 500,
+    "index": 446,
     "beat": 330.0,
     "hand": "blue",
     "role": "主題の回帰",
@@ -5511,7 +4917,7 @@
     "strength": 1.347
   },
   {
-    "index": 501,
+    "index": 447,
     "beat": 331.0,
     "hand": "blue",
     "role": "主題の回帰",
@@ -5522,7 +4928,7 @@
     "strength": 1.3049
   },
   {
-    "index": 502,
+    "index": 448,
     "beat": 331.5,
     "hand": "red",
     "role": "主題の回帰",
@@ -5533,7 +4939,7 @@
     "strength": 0.4617
   },
   {
-    "index": 503,
+    "index": 449,
     "beat": 332.0,
     "hand": "blue",
     "role": "主題の回帰",
@@ -5544,7 +4950,7 @@
     "strength": 1.5417
   },
   {
-    "index": 504,
+    "index": 450,
     "beat": 333.0,
     "hand": "red",
     "role": "主題の回帰",
@@ -5555,7 +4961,7 @@
     "strength": 1.6998
   },
   {
-    "index": 505,
+    "index": 451,
     "beat": 333.0,
     "hand": "blue",
     "role": "主題の回帰",
@@ -5566,18 +4972,7 @@
     "strength": 1.6998
   },
   {
-    "index": 506,
-    "beat": 333.5,
-    "hand": "red",
-    "role": "主題の回帰",
-    "phrase": 20,
-    "sharedAccent": false,
-    "peakSeconds": 112.34966,
-    "distanceMs": 16.327,
-    "strength": 0.4635
-  },
-  {
-    "index": 507,
+    "index": 452,
     "beat": 334.0,
     "hand": "blue",
     "role": "主題の回帰",
@@ -5588,18 +4983,7 @@
     "strength": 1.309
   },
   {
-    "index": 508,
-    "beat": 334.5,
-    "hand": "red",
-    "role": "主題の回帰",
-    "phrase": 20,
-    "sharedAccent": false,
-    "peakSeconds": 112.678912,
-    "distanceMs": 12.245,
-    "strength": 0.7713
-  },
-  {
-    "index": 509,
+    "index": 453,
     "beat": 335.0,
     "hand": "blue",
     "role": "主題の回帰",
@@ -5610,7 +4994,7 @@
     "strength": 0.8262
   },
   {
-    "index": 510,
+    "index": 454,
     "beat": 335.5,
     "hand": "red",
     "role": "主題の回帰",
@@ -5621,7 +5005,7 @@
     "strength": 0.6187
   },
   {
-    "index": 511,
+    "index": 455,
     "beat": 336.0,
     "hand": "blue",
     "role": "主題の回帰",
@@ -5632,7 +5016,7 @@
     "strength": 1.0468
   },
   {
-    "index": 512,
+    "index": 456,
     "beat": 336.5,
     "hand": "red",
     "role": "主題の回帰",
@@ -5643,7 +5027,7 @@
     "strength": 0.9155
   },
   {
-    "index": 513,
+    "index": 457,
     "beat": 337.0,
     "hand": "blue",
     "role": "主題の回帰",
@@ -5654,18 +5038,7 @@
     "strength": 0.9944
   },
   {
-    "index": 514,
-    "beat": 337.5,
-    "hand": "red",
-    "role": "主題の回帰",
-    "phrase": 21,
-    "sharedAccent": false,
-    "peakSeconds": 113.681633,
-    "distanceMs": 14.966,
-    "strength": 0.6589
-  },
-  {
-    "index": 515,
+    "index": 458,
     "beat": 338.0,
     "hand": "blue",
     "role": "主題の回帰",
@@ -5676,18 +5049,7 @@
     "strength": 1.2445
   },
   {
-    "index": 516,
-    "beat": 338.5,
-    "hand": "red",
-    "role": "主題の回帰",
-    "phrase": 21,
-    "sharedAccent": false,
-    "peakSeconds": 114.015873,
-    "distanceMs": 15.873,
-    "strength": 0.4327
-  },
-  {
-    "index": 517,
+    "index": 459,
     "beat": 339.0,
     "hand": "blue",
     "role": "主題の回帰",
@@ -5698,18 +5060,7 @@
     "strength": 0.7475
   },
   {
-    "index": 518,
-    "beat": 339.5,
-    "hand": "red",
-    "role": "主題の回帰",
-    "phrase": 21,
-    "sharedAccent": false,
-    "peakSeconds": 114.345125,
-    "distanceMs": 11.791,
-    "strength": 0.6758
-  },
-  {
-    "index": 519,
+    "index": 460,
     "beat": 340.0,
     "hand": "blue",
     "role": "主題の回帰",
@@ -5720,7 +5071,7 @@
     "strength": 1.1907
   },
   {
-    "index": 520,
+    "index": 461,
     "beat": 341.0,
     "hand": "red",
     "role": "主題の回帰",
@@ -5731,7 +5082,7 @@
     "strength": 1.7211
   },
   {
-    "index": 521,
+    "index": 462,
     "beat": 341.0,
     "hand": "blue",
     "role": "主題の回帰",
@@ -5742,7 +5093,7 @@
     "strength": 1.7211
   },
   {
-    "index": 522,
+    "index": 463,
     "beat": 341.5,
     "hand": "red",
     "role": "主題の回帰",
@@ -5753,7 +5104,7 @@
     "strength": 0.5497
   },
   {
-    "index": 523,
+    "index": 464,
     "beat": 342.0,
     "hand": "blue",
     "role": "主題の回帰",
@@ -5764,7 +5115,7 @@
     "strength": 1.2902
   },
   {
-    "index": 524,
+    "index": 465,
     "beat": 342.5,
     "hand": "red",
     "role": "主題の回帰",
@@ -5775,7 +5126,7 @@
     "strength": 0.5564
   },
   {
-    "index": 525,
+    "index": 466,
     "beat": 343.0,
     "hand": "blue",
     "role": "主題の回帰",
@@ -5786,7 +5137,7 @@
     "strength": 0.8261
   },
   {
-    "index": 526,
+    "index": 467,
     "beat": 343.5,
     "hand": "red",
     "role": "主題の回帰",
@@ -5797,7 +5148,7 @@
     "strength": 0.7008
   },
   {
-    "index": 527,
+    "index": 468,
     "beat": 344.0,
     "hand": "blue",
     "role": "主題の回帰",
@@ -5808,7 +5159,7 @@
     "strength": 1.0284
   },
   {
-    "index": 528,
+    "index": 469,
     "beat": 345.0,
     "hand": "red",
     "role": "主題の回帰",
@@ -5819,7 +5170,7 @@
     "strength": 1.7755
   },
   {
-    "index": 529,
+    "index": 470,
     "beat": 345.0,
     "hand": "blue",
     "role": "主題の回帰",
@@ -5830,7 +5181,7 @@
     "strength": 1.7755
   },
   {
-    "index": 530,
+    "index": 471,
     "beat": 345.5,
     "hand": "red",
     "role": "主題の回帰",
@@ -5841,7 +5192,7 @@
     "strength": 0.5969
   },
   {
-    "index": 531,
+    "index": 472,
     "beat": 346.0,
     "hand": "blue",
     "role": "主題の回帰",
@@ -5852,7 +5203,7 @@
     "strength": 1.2754
   },
   {
-    "index": 532,
+    "index": 473,
     "beat": 346.5,
     "hand": "red",
     "role": "主題の回帰",
@@ -5863,7 +5214,7 @@
     "strength": 0.6043
   },
   {
-    "index": 533,
+    "index": 474,
     "beat": 347.0,
     "hand": "blue",
     "role": "主題の回帰",
@@ -5874,7 +5225,7 @@
     "strength": 0.6336
   },
   {
-    "index": 534,
+    "index": 475,
     "beat": 347.5,
     "hand": "red",
     "role": "主題の回帰",
@@ -5885,7 +5236,7 @@
     "strength": 0.7776
   },
   {
-    "index": 535,
+    "index": 476,
     "beat": 348.0,
     "hand": "blue",
     "role": "主題の回帰",
@@ -5896,7 +5247,7 @@
     "strength": 1.2968
   },
   {
-    "index": 536,
+    "index": 477,
     "beat": 349.0,
     "hand": "blue",
     "role": "主題の回帰",
@@ -5907,7 +5258,7 @@
     "strength": 1.6727
   },
   {
-    "index": 537,
+    "index": 478,
     "beat": 349.5,
     "hand": "red",
     "role": "主題の回帰",
@@ -5918,7 +5269,7 @@
     "strength": 0.5326
   },
   {
-    "index": 538,
+    "index": 479,
     "beat": 350.0,
     "hand": "red",
     "role": "主題の回帰",
@@ -5929,7 +5280,7 @@
     "strength": 1.7062
   },
   {
-    "index": 539,
+    "index": 480,
     "beat": 350.0,
     "hand": "blue",
     "role": "主題の回帰",
@@ -5940,7 +5291,7 @@
     "strength": 1.7062
   },
   {
-    "index": 540,
+    "index": 481,
     "beat": 351.0,
     "hand": "blue",
     "role": "主題の回帰",
@@ -5951,7 +5302,7 @@
     "strength": 1.2604
   },
   {
-    "index": 541,
+    "index": 482,
     "beat": 351.5,
     "hand": "red",
     "role": "主題の回帰",
@@ -5962,7 +5313,7 @@
     "strength": 0.8674
   },
   {
-    "index": 542,
+    "index": 483,
     "beat": 352.0,
     "hand": "blue",
     "role": "主題の回帰",
@@ -5973,7 +5324,7 @@
     "strength": 1.3794
   },
   {
-    "index": 543,
+    "index": 484,
     "beat": 352.5,
     "hand": "red",
     "role": "主題の回帰",
@@ -5984,7 +5335,7 @@
     "strength": 0.7559
   },
   {
-    "index": 544,
+    "index": 485,
     "beat": 353.0,
     "hand": "blue",
     "role": "主題の回帰",
@@ -5995,7 +5346,7 @@
     "strength": 1.5786
   },
   {
-    "index": 545,
+    "index": 486,
     "beat": 353.5,
     "hand": "red",
     "role": "主題の回帰",
@@ -6006,7 +5357,7 @@
     "strength": 0.6038
   },
   {
-    "index": 546,
+    "index": 487,
     "beat": 354.0,
     "hand": "blue",
     "role": "主題の回帰",
@@ -6017,7 +5368,7 @@
     "strength": 1.1993
   },
   {
-    "index": 547,
+    "index": 488,
     "beat": 355.0,
     "hand": "red",
     "role": "主題の回帰",
@@ -6028,7 +5379,7 @@
     "strength": 1.2804
   },
   {
-    "index": 548,
+    "index": 489,
     "beat": 355.5,
     "hand": "blue",
     "role": "主題の回帰",
@@ -6039,7 +5390,7 @@
     "strength": 0.8453
   },
   {
-    "index": 549,
+    "index": 490,
     "beat": 356.0,
     "hand": "red",
     "role": "主題の回帰",
@@ -6050,7 +5401,7 @@
     "strength": 1.1299
   },
   {
-    "index": 550,
+    "index": 491,
     "beat": 357.0,
     "hand": "blue",
     "role": "主題の回帰",
@@ -6061,7 +5412,7 @@
     "strength": 1.6269
   },
   {
-    "index": 551,
+    "index": 492,
     "beat": 357.5,
     "hand": "red",
     "role": "主題の回帰",
@@ -6072,7 +5423,7 @@
     "strength": 0.589
   },
   {
-    "index": 552,
+    "index": 493,
     "beat": 358.0,
     "hand": "red",
     "role": "主題の回帰",
@@ -6083,7 +5434,7 @@
     "strength": 1.6353
   },
   {
-    "index": 553,
+    "index": 494,
     "beat": 358.0,
     "hand": "blue",
     "role": "主題の回帰",
@@ -6094,7 +5445,7 @@
     "strength": 1.6353
   },
   {
-    "index": 554,
+    "index": 495,
     "beat": 359.0,
     "hand": "red",
     "role": "主題の回帰",
@@ -6105,7 +5456,7 @@
     "strength": 1.3004
   },
   {
-    "index": 555,
+    "index": 496,
     "beat": 359.5,
     "hand": "blue",
     "role": "主題の回帰",
@@ -6116,7 +5467,7 @@
     "strength": 0.7778
   },
   {
-    "index": 556,
+    "index": 497,
     "beat": 360.0,
     "hand": "red",
     "role": "主題の回帰",
@@ -6127,7 +5478,7 @@
     "strength": 1.292
   },
   {
-    "index": 557,
+    "index": 498,
     "beat": 360.5,
     "hand": "blue",
     "role": "主題の回帰",
@@ -6138,7 +5489,7 @@
     "strength": 0.2237
   },
   {
-    "index": 558,
+    "index": 499,
     "beat": 361.5,
     "hand": "red",
     "role": "主題の回帰",
@@ -6149,7 +5500,7 @@
     "strength": 1.7313
   },
   {
-    "index": 559,
+    "index": 500,
     "beat": 362.0,
     "hand": "blue",
     "role": "主題の回帰",
@@ -6160,7 +5511,7 @@
     "strength": 1.4264
   },
   {
-    "index": 560,
+    "index": 501,
     "beat": 362.75,
     "hand": "red",
     "role": "主題の回帰",
@@ -6171,7 +5522,7 @@
     "strength": 1.0757
   },
   {
-    "index": 561,
+    "index": 502,
     "beat": 363.5,
     "hand": "red",
     "role": "主題の回帰",
@@ -6182,7 +5533,7 @@
     "strength": 1.8395
   },
   {
-    "index": 562,
+    "index": 503,
     "beat": 363.5,
     "hand": "blue",
     "role": "主題の回帰",
@@ -6193,7 +5544,7 @@
     "strength": 1.8395
   },
   {
-    "index": 563,
+    "index": 504,
     "beat": 364.0,
     "hand": "red",
     "role": "主題の回帰",
@@ -6204,7 +5555,7 @@
     "strength": 1.2704
   },
   {
-    "index": 564,
+    "index": 505,
     "beat": 364.5,
     "hand": "blue",
     "role": "主題の回帰",
@@ -6215,7 +5566,7 @@
     "strength": 1.1445
   },
   {
-    "index": 565,
+    "index": 506,
     "beat": 365.0,
     "hand": "red",
     "role": "主題の回帰",
@@ -6226,7 +5577,7 @@
     "strength": 1.1438
   },
   {
-    "index": 566,
+    "index": 507,
     "beat": 365.5,
     "hand": "blue",
     "role": "主題の回帰",
@@ -6237,7 +5588,7 @@
     "strength": 1.14
   },
   {
-    "index": 567,
+    "index": 508,
     "beat": 366.0,
     "hand": "red",
     "role": "主題の回帰",
@@ -6248,7 +5599,7 @@
     "strength": 1.196
   },
   {
-    "index": 568,
+    "index": 509,
     "beat": 366.5,
     "hand": "blue",
     "role": "主題の回帰",
@@ -6259,7 +5610,7 @@
     "strength": 1.1192
   },
   {
-    "index": 569,
+    "index": 510,
     "beat": 367.0,
     "hand": "red",
     "role": "主題の回帰",
@@ -6270,7 +5621,7 @@
     "strength": 1.2025
   },
   {
-    "index": 570,
+    "index": 511,
     "beat": 367.0,
     "hand": "blue",
     "role": "主題の回帰",
@@ -6281,7 +5632,7 @@
     "strength": 1.2025
   },
   {
-    "index": 571,
+    "index": 512,
     "beat": 367.5,
     "hand": "red",
     "role": "主題の回帰",
@@ -6292,7 +5643,7 @@
     "strength": 1.0707
   },
   {
-    "index": 572,
+    "index": 513,
     "beat": 368.0,
     "hand": "blue",
     "role": "ブレイク",
@@ -6303,7 +5654,7 @@
     "strength": 1.0875
   },
   {
-    "index": 573,
+    "index": 514,
     "beat": 379.0,
     "hand": "red",
     "role": "BPM60",
@@ -6314,7 +5665,7 @@
     "strength": 0.6275
   },
   {
-    "index": 574,
+    "index": 515,
     "beat": 381.0,
     "hand": "red",
     "role": "BPM60",
@@ -6325,7 +5676,7 @@
     "strength": 0.2575
   },
   {
-    "index": 575,
+    "index": 516,
     "beat": 383.5,
     "hand": "blue",
     "role": "BPM60",
@@ -6336,7 +5687,7 @@
     "strength": 0.4222
   },
   {
-    "index": 576,
+    "index": 517,
     "beat": 385.0,
     "hand": "red",
     "role": "BPM60",
@@ -6347,7 +5698,7 @@
     "strength": 0.3945
   },
   {
-    "index": 577,
+    "index": 518,
     "beat": 385.5,
     "hand": "blue",
     "role": "BPM60",
@@ -6358,7 +5709,7 @@
     "strength": 0.2642
   },
   {
-    "index": 578,
+    "index": 519,
     "beat": 386.0,
     "hand": "red",
     "role": "BPM60",
@@ -6369,7 +5720,7 @@
     "strength": 0.2764
   },
   {
-    "index": 579,
+    "index": 520,
     "beat": 386.5,
     "hand": "blue",
     "role": "BPM60",
@@ -6380,7 +5731,7 @@
     "strength": 0.3729
   },
   {
-    "index": 580,
+    "index": 521,
     "beat": 387.0,
     "hand": "red",
     "role": "BPM60",
@@ -6391,7 +5742,7 @@
     "strength": 0.344
   },
   {
-    "index": 581,
+    "index": 522,
     "beat": 387.5,
     "hand": "blue",
     "role": "BPM60",
@@ -6402,7 +5753,7 @@
     "strength": 0.3197
   },
   {
-    "index": 582,
+    "index": 523,
     "beat": 388.0,
     "hand": "red",
     "role": "BPM60",
@@ -6413,7 +5764,7 @@
     "strength": 0.233
   },
   {
-    "index": 583,
+    "index": 524,
     "beat": 389.0,
     "hand": "blue",
     "role": "BPM60",
@@ -6424,7 +5775,7 @@
     "strength": 0.3169
   },
   {
-    "index": 584,
+    "index": 525,
     "beat": 389.5,
     "hand": "red",
     "role": "BPM60",
@@ -6435,7 +5786,7 @@
     "strength": 0.2174
   },
   {
-    "index": 585,
+    "index": 526,
     "beat": 390.0,
     "hand": "blue",
     "role": "BPM60",
@@ -6446,7 +5797,7 @@
     "strength": 0.2831
   },
   {
-    "index": 586,
+    "index": 527,
     "beat": 390.5,
     "hand": "red",
     "role": "BPM60",
@@ -6457,7 +5808,7 @@
     "strength": 0.392
   },
   {
-    "index": 587,
+    "index": 528,
     "beat": 391.0,
     "hand": "blue",
     "role": "BPM60",
@@ -6468,7 +5819,7 @@
     "strength": 0.3719
   },
   {
-    "index": 588,
+    "index": 529,
     "beat": 391.5,
     "hand": "red",
     "role": "BPM60",
@@ -6479,7 +5830,7 @@
     "strength": 0.3456
   },
   {
-    "index": 589,
+    "index": 530,
     "beat": 392.0,
     "hand": "blue",
     "role": "BPM60",
@@ -6490,7 +5841,7 @@
     "strength": 0.2296
   },
   {
-    "index": 590,
+    "index": 531,
     "beat": 395.0,
     "hand": "red",
     "role": "再加速",
@@ -6501,7 +5852,7 @@
     "strength": 1.5744
   },
   {
-    "index": 591,
+    "index": 532,
     "beat": 395.0,
     "hand": "blue",
     "role": "再加速",
@@ -6512,7 +5863,7 @@
     "strength": 1.5744
   },
   {
-    "index": 592,
+    "index": 533,
     "beat": 395.5,
     "hand": "red",
     "role": "再加速",
@@ -6523,7 +5874,7 @@
     "strength": 0.6918
   },
   {
-    "index": 593,
+    "index": 534,
     "beat": 396.0,
     "hand": "blue",
     "role": "再加速",
@@ -6534,7 +5885,7 @@
     "strength": 1.1253
   },
   {
-    "index": 594,
+    "index": 535,
     "beat": 397.0,
     "hand": "red",
     "role": "再加速",
@@ -6545,7 +5896,7 @@
     "strength": 0.9162
   },
   {
-    "index": 595,
+    "index": 536,
     "beat": 397.5,
     "hand": "blue",
     "role": "再加速",
@@ -6556,7 +5907,7 @@
     "strength": 0.7648
   },
   {
-    "index": 596,
+    "index": 537,
     "beat": 398.0,
     "hand": "red",
     "role": "再加速",
@@ -6567,7 +5918,7 @@
     "strength": 1.2433
   },
   {
-    "index": 597,
+    "index": 538,
     "beat": 398.75,
     "hand": "blue",
     "role": "再加速",
@@ -6578,7 +5929,7 @@
     "strength": 1.323
   },
   {
-    "index": 598,
+    "index": 539,
     "beat": 399.0,
     "hand": "red",
     "role": "再加速",
@@ -6589,7 +5940,7 @@
     "strength": 0.6161
   },
   {
-    "index": 599,
+    "index": 540,
     "beat": 399.5,
     "hand": "blue",
     "role": "再加速",
@@ -6600,7 +5951,7 @@
     "strength": 1.1656
   },
   {
-    "index": 600,
+    "index": 541,
     "beat": 400.0,
     "hand": "red",
     "role": "再加速",
@@ -6611,7 +5962,7 @@
     "strength": 1.3057
   },
   {
-    "index": 601,
+    "index": 542,
     "beat": 400.0,
     "hand": "blue",
     "role": "再加速",
@@ -6622,7 +5973,7 @@
     "strength": 1.3057
   },
   {
-    "index": 602,
+    "index": 543,
     "beat": 401.0,
     "hand": "red",
     "role": "再加速",
@@ -6633,7 +5984,7 @@
     "strength": 0.6343
   },
   {
-    "index": 603,
+    "index": 544,
     "beat": 401.5,
     "hand": "blue",
     "role": "再加速",
@@ -6644,7 +5995,7 @@
     "strength": 1.2171
   },
   {
-    "index": 604,
+    "index": 545,
     "beat": 402.0,
     "hand": "red",
     "role": "再加速",
@@ -6655,7 +6006,7 @@
     "strength": 1.0722
   },
   {
-    "index": 605,
+    "index": 546,
     "beat": 403.0,
     "hand": "blue",
     "role": "終止",
@@ -6666,7 +6017,7 @@
     "strength": 1.0348
   },
   {
-    "index": 606,
+    "index": 547,
     "beat": 403.5,
     "hand": "red",
     "role": "終止",
@@ -6677,7 +6028,7 @@
     "strength": 0.6016
   },
   {
-    "index": 607,
+    "index": 548,
     "beat": 404.0,
     "hand": "red",
     "role": "終止",
@@ -6688,7 +6039,7 @@
     "strength": 1.3271
   },
   {
-    "index": 608,
+    "index": 549,
     "beat": 404.0,
     "hand": "blue",
     "role": "終止",
@@ -6699,7 +6050,7 @@
     "strength": 1.3271
   },
   {
-    "index": 609,
+    "index": 550,
     "beat": 404.5,
     "hand": "red",
     "role": "終止",
@@ -6710,7 +6061,7 @@
     "strength": 0.7925
   },
   {
-    "index": 610,
+    "index": 551,
     "beat": 405.0,
     "hand": "blue",
     "role": "終止",
@@ -6721,7 +6072,7 @@
     "strength": 0.9577
   },
   {
-    "index": 611,
+    "index": 552,
     "beat": 405.5,
     "hand": "red",
     "role": "終止",
@@ -6732,7 +6083,7 @@
     "strength": 1.0596
   },
   {
-    "index": 612,
+    "index": 553,
     "beat": 406.0,
     "hand": "blue",
     "role": "終止",
@@ -6743,7 +6094,7 @@
     "strength": 0.924
   },
   {
-    "index": 613,
+    "index": 554,
     "beat": 406.5,
     "hand": "red",
     "role": "終止",
@@ -6754,7 +6105,7 @@
     "strength": 0.8426
   },
   {
-    "index": 614,
+    "index": 555,
     "beat": 407.0,
     "hand": "blue",
     "role": "終止",
@@ -6765,7 +6116,7 @@
     "strength": 1.0376
   },
   {
-    "index": 615,
+    "index": 556,
     "beat": 407.5,
     "hand": "red",
     "role": "終止",
@@ -6776,7 +6127,7 @@
     "strength": 1.0876
   },
   {
-    "index": 616,
+    "index": 557,
     "beat": 408.0,
     "hand": "blue",
     "role": "終止",
@@ -6787,7 +6138,7 @@
     "strength": 0.9143
   },
   {
-    "index": 617,
+    "index": 558,
     "beat": 408.5,
     "hand": "red",
     "role": "終止",
@@ -6798,7 +6149,7 @@
     "strength": 0.9371
   },
   {
-    "index": 618,
+    "index": 559,
     "beat": 409.0,
     "hand": "blue",
     "role": "終止",
@@ -6809,18 +6160,7 @@
     "strength": 0.8509
   },
   {
-    "index": 619,
-    "beat": 409.5,
-    "hand": "red",
-    "role": "終止",
-    "phrase": 25,
-    "sharedAccent": false,
-    "peakSeconds": 148.098413,
-    "distanceMs": -18.254,
-    "strength": 0.7436
-  },
-  {
-    "index": 620,
+    "index": 560,
     "beat": 410.0,
     "hand": "blue",
     "role": "終止",
@@ -6831,7 +6171,7 @@
     "strength": 0.8483
   },
   {
-    "index": 621,
+    "index": 561,
     "beat": 411.0,
     "hand": "blue",
     "role": "終止",
@@ -6842,7 +6182,7 @@
     "strength": 0.6029
   },
   {
-    "index": 622,
+    "index": 562,
     "beat": 411.5,
     "hand": "red",
     "role": "終止",
@@ -6853,7 +6193,7 @@
     "strength": 0.7317
   },
   {
-    "index": 623,
+    "index": 563,
     "beat": 412.0,
     "hand": "blue",
     "role": "終止",
