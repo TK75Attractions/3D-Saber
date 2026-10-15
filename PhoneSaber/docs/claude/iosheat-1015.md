@@ -1,0 +1,33 @@
+# iosheat 再レビュー（2026-10-15）
+- 対象e6ae5ee。git log -5 / git diff main...HEADを確認。対応する前回メモは存在せず、直前のframe-cap.mdも確認。commit/pushなし。
+- 中・修正: DeviceHealth.swift:134。10→9→14秒の追加で内部の9秒が消えず、遅れた13秒snapshotに復活。逆転窓だけ圧縮し、旧配列の削除順・容量制限を維持。
+- 中・修正: DeviceHealth.swift:207。captureToSendMsがnil/範囲外/非有限のとき旧標本が失効しない。無効値でも期限切れ処理を実行。
+- 低・修正: P2PTransportTests.swift:1595。既存standalone分岐のNetwork import漏れでlatency hostがNWError未解決。実コンパイルFAIL→PASS。
+- 前回の未接続検証: heat.pyとrun.py --no-networkをtools/test_ios_heat.pyから通常unittest探索で実行。アプリ内の新規オプションなし。
+- 不変: 認識/ranking/eligibility/scoring/PCA/threshold、座標UDP、formal corpus、Unity scene/prefab/meta/ProjectSettingsに差分なし。撮影・送信・画面設定の既定値は維持。
+- 前回差分の観測可能な変更はCAPTURE_METRICSへの電池%・充電状態・画面輝度追記のみ。設定は変更しない。同一session再代入抑制と統計収集最適化は維持。
+- 以下のログは /private/tmp/phonesaber-finish-iosheat/。GUI/macOS appは起動していない。
+- 回帰: DeviceHealth追加3テストが修正前53 assertion FAIL→修正後19テスト全PASS（regression-before.log / static-after.log）。3000回の順序逆転・wrap/reset・snapshotを旧配列と比較。
+- PASS: bash PhoneSaber/ios/PhoneSaberSender/run-static-tests.sh（static BGRA一式＋上記19件）。
+- PASS: python3 PhoneSaber/tools/ios-hot-path/heat.py（6000 frame、収集malloc=0、1Hz snapshot後も0、同一session代入0。heat-after.log）。
+- 対照: 同コマンド --revision mainはmalloc=36・同一session代入120で期待するFAIL（heat-main.log）。--frames 599はexit 2。
+- PASS: python3.12 -B -m unittest -v test_ios_heat（PhoneSaber/tools内、2/2。heat-unittest.log）。
+- PASS: python3 PhoneSaber/tools/ios-hot-path/run.py --frames 240 --no-network（ローカル6段階。hotpath-offline.log）。既定のLAN/P2P送信はsocket拒否でFAIL（hotpath.log）。
+- PASS: python3 PhoneSaber/ios/PhoneSaberSenderTests/run_latency_host_tests.py（撮影14＋health19＋経路6。latency-after.log）。
+- PASS: 同ディレクトリのrun_camera_lifecycle_host_tests.py（18）、run_high_speed_host_tests.py（Release/--debug各2）、run_debug_transfer_host_tests.py（7）。
+- FAIL: run_send_gap_host_tests.py（21件中ネットワーク4件が権限拒否、他17件PASS。sendgap.log）。ゲート/期待値は変更していない。
+- PASS: python3 PhoneSaber/tools/check_pc_latency.py（Unity 6000.3.9f1 API 4構成compile、NUnit 35/35。pc.log）。
+- FAIL: python3 PhoneSaber/tools/check_auto_latency.py（C# 4 PASS / UDP loopback 1権限拒否、後続Swift未実行。auto.log）。
+- Python再実行: python3.12 -B -m unittest discover -v（tools内276件、1 FAIL=上記loopback、skip7、既存expected failure1。tools-312.log）。新規heat2件は別途PASS。
+- Python再実行: 同コマンド（ios/PhoneSaberSender/Tools内438件、failure7/error51/skip1。ios-tools-312.log）。socket拒否と既存tracking E2Eの重要用途容量0。容量ゲートは維持。
+- 初回python3はディレクトリにより3.9/3.13。依存不足・巨大整数制限の版差・cache書込拒否を含む失敗後、3.12＋SWIFT_MODULECACHE_PATH/CLANG_MODULE_CACHE_PATHをログ配下へ指定して再実行。
+- PASS: PhoneSaber内python3.12 -B -m unittest discover -v（85件、skip14=socket等。root-python.log）。
+- PASS: make -C PhoneSaber/android/core test parity（C++ build/core＋Python4件、325 PNG/27合成/541遷移で差0、formal40/40。core.log）。Android差分なし、Gradle対象なし。
+- PASS: tools/robustness/run_host.py swift / csharp --seconds 1（各build＋181668/59389反復。robust-*.log）。
+- PASS: iOS SDK arm64/iOS16でContentView/App以外の実行コード15 Swiftをswiftc -typecheck（ios-typecheck.log）。
+- FAIL: xcodebuild -project PhoneSaber/ios/PhoneSaberSender/PhoneSaberSender.xcodeproj -scheme PhoneSaberSender -configuration Release -destination generic/platform=iOS -derivedDataPath /tmp/phonesaber-finish-iosheat/Release CODE_SIGNING_ALLOWED=NO build（exit65、SwiftUI State macroのsandbox_apply拒否。xcode-release.log）。
+- PASS: git diff --check / git diff main...HEAD --check。新規.cs/Kotlinなし。新規HeatHarness.swiftはheat.pyのswiftc入力に明記、既存アプリ/テストSwiftはpbxproj登録済み。
+- 未検証: 公式verify、Unity Editor、Simulator XCTest、完全なRelease link、実NW送信、実機previewと消費電力/発熱。host CPU/mallocから実機の発熱改善は主張しない。
+- operator最小: PATH=/Users/satoshi/.pyenv/versions/3.12.1/bin:$PATH PhoneSaber/tools/verify_phone_saber.sh（iOS全XCTest/Release・Python・Unity既定EditMode/PlayMode。今回固有のUnity追加filterなし）。
+- operator追加: python3 PhoneSaber/ios/PhoneSaberSenderTests/run_send_gap_host_tests.py と python3 PhoneSaber/tools/ios-hot-path/run.py --frames 240（実NW経路だけ再確認）。
+- 実機最小: 同じ充電/輝度/箱/60fps条件でmainと本差分を各30分送信。停止→再開・前面復帰後のpreviewと座標を確認し、CAPTURE_METRICSのthermal/fps/撮影→送信と電池推移を比較。実証までは省電力効果を未認証とする。

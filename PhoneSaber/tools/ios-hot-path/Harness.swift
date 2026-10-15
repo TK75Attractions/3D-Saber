@@ -66,6 +66,7 @@ final class Receiver {
 @main
 struct HotPathHarness {
     static func main() {
+        setbuf(stdout, nil)
         let frames = Int(CommandLine.arguments.dropFirst().first ?? "240")!
         precondition(frames > 0)
         // main queue を空け、Network.framework の callbacks を実行する。
@@ -136,6 +137,10 @@ struct HotPathHarness {
         let probe = LANLivenessProbe()
         probe.recordReplyForTesting("PHONESABER_UNITY 1")
         measure("LAN-probe-read", frames: frames) { _ in _ = probe.isAlive }
+        if CommandLine.arguments.contains("--no-network") {
+            print("LAN/P2P NW-send: NOT RUN (--no-network)")
+            return
+        }
         let lanReceiver = Receiver(p2p: false)
         let sender = UDPSender()
         sender.configure(host: "127.0.0.1", ports: [Int(lanReceiver.port)])

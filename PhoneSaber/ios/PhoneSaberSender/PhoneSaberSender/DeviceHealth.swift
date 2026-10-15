@@ -87,12 +87,89 @@ struct CaptureLatencyLogPolicy {
     }
 
     static func line(route: String, captureModeFPS: Double, rates: DeviceHealthRates,
-                     thermal: DeviceThermalLevel) -> String {
+                     thermal: DeviceThermalLevel, brightness: Double? = nil,
+                     batteryLevel: Double? = nil, batteryState: String = "unknown") -> String {
         let median = rates.medianCaptureToSendMs.map { String(format: "%.1f", $0) } ?? "unavailable"
         let p95 = rates.p95CaptureToSendMs.map { String(format: "%.1f", $0) } ?? "unavailable"
+        // 充電条件と画面輝度も同じ時刻に残し、実機の発熱比較に使う。設定は変更しない。
+        func unit(_ value: Double?, scale: Double) -> String {
+            guard let value, value.isFinite, (0...1).contains(value) else { return "unknown" }
+            return String(format: "%.1f", value * scale)
+        }
+        let state = ["charging", "full", "unplugged", "unknown"].contains(batteryState) ? batteryState : "unknown"
         return String(format: "route=%@ capture-mode-fps=%.0f capture-fps=%.1f processed-fps=%.1f send-fps-red=%.1f send-fps-blue=%.1f capture-to-send-median-ms=%@ capture-to-send-p95-ms=%@ thermal=%@ window-s=5",
                       route, captureModeFPS, rates.cameraFPS, rates.processingFPS, rates.redSendFPS,
-                      rates.blueSendFPS, median, p95, thermal.metadataValue)
+                      rates.blueSendFPS, median, p95, thermal.metadataValue) +
+            " battery-pct=\(unit(batteryLevel, scale: 100)) battery-state=\(state) screen-brightness=\(unit(brightness, scale: 1))"
+    }
+}
+
+// 固定容量の観測窓。時刻順なら毎フレームの配列走査・移動・再確保を避ける。
+// 時刻の絞り込みは snapshot 側でも行う（別キューの完了順が前後しても数えない）。
+struct DeviceHealthSampleWindow<Value> {
+    private var slots: [(time: TimeInterval, value: Value)?]
+    private var head = 0
+    private var count = 0
+    private var ordered = true
+
+    init(capacity: Int) {
+        precondition(capacity > 0)
+        slots = Array(repeating: nil, count: capacity)
+    }
+
+    mutating func append(at time: TimeInterval, value: Value, window: TimeInterval) {
+        expire(at: time, window: window)
+        if count > 0, let last = slots[(head + count - 1) % slots.count], !(last.time <= time) {
+            ordered = false
+        }
+        if count == slots.count {
+            slots[head] = nil
+            head = (head + 1) % slots.count
+            count -= 1
+        }
+        slots[(head + count) % slots.count] = (time, value)
+        count += 1
+    }
+
+    mutating func expire(at time: TimeInterval, window: TimeInterval) {
+        while count > 0, let oldest = slots[head], oldest.time <= time - window {
+            slots[head] = nil
+            head = (head + 1) % slots.count
+            count -= 1
+        }
+        // 完了順が逆転した窓だけ全体を詰める。削除済みの標本を遅れた集計で復活させない。
+        if !ordered {
+            var retained = 0
+            var previous: TimeInterval?
+            ordered = true
+            for offset in 0..<count {
+                if let sample = slots[(head + offset) % slots.count], !(sample.time <= time - window) {
+                    if let previous, !(previous <= sample.time) { ordered = false }
+                    previous = sample.time
+                    slots[(head + retained) % slots.count] = sample
+                    retained += 1
+                }
+            }
+            for offset in retained..<count { slots[(head + offset) % slots.count] = nil }
+            count = retained
+        }
+        if count == 0 { ordered = true }
+    }
+
+    mutating func reset() {
+        for index in slots.indices { slots[index] = nil }
+        head = 0; count = 0; ordered = true
+    }
+
+    func recent(at time: TimeInterval, window: TimeInterval) -> [(time: TimeInterval, value: Value)] {
+        var values: [(time: TimeInterval, value: Value)] = []
+        values.reserveCapacity(count)
+        for offset in 0..<count {
+            if let sample = slots[(head + offset) % slots.count], sample.time > time - window {
+                values.append(sample)
+            }
+        }
+        return values
     }
 }
 
@@ -101,48 +178,41 @@ final class DeviceHealthMeter: @unchecked Sendable {
     private let lock = NSLock()
     private var started: TimeInterval?
     private var generation = 0
-    private var cameraTimes: [TimeInterval] = []
-    private var processing: [(time: TimeInterval, ms: Double)] = []
+    private var cameraTimes = DeviceHealthSampleWindow<Void>(capacity: 1200)
+    private var processing = DeviceHealthSampleWindow<Double>(capacity: 1200)
     // 撮影時刻（AVCapture のホスト時計）から認識完了＝送信直前まで。0〜2秒の範囲外は捨てる。
-    private var captureToSend: [(time: TimeInterval, ms: Double)] = []
-    private var sends: [(time: TimeInterval, port: Int)] = []
+    private var captureToSend = DeviceHealthSampleWindow<Double>(capacity: 1200)
+    private var sends = DeviceHealthSampleWindow<Int>(capacity: 2400)
     private let window = 5.0
 
     func reset(at time: TimeInterval, generation: Int) {
         lock.lock(); defer { lock.unlock() }
         started = time; self.generation = generation
-        cameraTimes.removeAll(keepingCapacity: true); processing.removeAll(keepingCapacity: true)
-        captureToSend.removeAll(keepingCapacity: true)
-        sends.removeAll(keepingCapacity: true)
+        cameraTimes.reset(); processing.reset()
+        captureToSend.reset(); sends.reset()
     }
 
     // ローカル送信完了の頻度。PCでの受信確認を意味しない。
     func sent(at time: TimeInterval, port: Int, generation: Int) {
         lock.lock(); defer { lock.unlock() }
         guard generation == self.generation, port == 5005 || port == 5006 else { return }
-        sends.append((time, port))
-        sends.removeAll { $0.time <= time - window }
-        if sends.count > 2400 { sends.removeFirst(sends.count - 2400) }
+        sends.append(at: time, value: port, window: window)
     }
 
     func cameraFrame(at time: TimeInterval) {
         lock.lock(); defer { lock.unlock() }
-        cameraTimes.append(time)
-        cameraTimes.removeAll { $0 <= time - window }
-        if cameraTimes.count > 1200 { cameraTimes.removeFirst(cameraTimes.count - 1200) }
+        cameraTimes.append(at: time, value: (), window: window)
     }
 
     func processed(at time: TimeInterval, milliseconds: Double, generation: Int, captureToSendMs: Double? = nil) {
         lock.lock(); defer { lock.unlock() }
         guard generation == self.generation, milliseconds.isFinite, milliseconds >= 0 else { return }
-        processing.append((time, milliseconds))
-        processing.removeAll { $0.time <= time - window }
-        if processing.count > 1200 { processing.removeFirst(processing.count - 1200) }
+        processing.append(at: time, value: milliseconds, window: window)
         if let age = captureToSendMs, age.isFinite, (0...2000).contains(age) {
-            captureToSend.append((time, age))
+            captureToSend.append(at: time, value: age, window: window)
+        } else {
+            captureToSend.expire(at: time, window: window)
         }
-        captureToSend.removeAll { $0.time <= time - window }
-        if captureToSend.count > 1200 { captureToSend.removeFirst(captureToSend.count - 1200) }
     }
 
     private static func median(_ values: [Double]) -> Double? {
@@ -156,24 +226,21 @@ final class DeviceHealthMeter: @unchecked Sendable {
         // UIのソート中に検出・capture・UDPキューを待たせない。
         lock.lock()
         let started = started
-        let cameraTimes = cameraTimes
-        let processing = processing
-        let captureToSend = captureToSend
-        let sends = sends
+        let liveCamera = cameraTimes.recent(at: time, window: window)
+        let liveProcessing = processing.recent(at: time, window: window)
+        let captureToSend = captureToSend.recent(at: time, window: window)
+        let liveSends = sends.recent(at: time, window: window)
         lock.unlock()
         guard let started, time > started else { return DeviceHealthRates() }
-        let liveCamera = cameraTimes.filter { $0 > time - window }
-        let liveProcessing = processing.filter { $0.time > time - window }
-        let ages = captureToSend.filter { $0.time > time - window }.map(\.ms).sorted()
-        let liveSends = sends.filter { $0.time > time - window }
+        let ages = captureToSend.map(\.value).sorted()
         let duration = min(window, time - started)
         return DeviceHealthRates(cameraFPS: Double(liveCamera.count) / duration,
                                  processingFPS: Double(liveProcessing.count) / duration,
-                                 medianProcessingMs: Self.median(liveProcessing.map(\.ms)), ready: time - started >= 3,
+                                 medianProcessingMs: Self.median(liveProcessing.map(\.value)), ready: time - started >= 3,
                                  medianCaptureToSendMs: Self.median(ages),
                                  p95CaptureToSendMs: ages.isEmpty ? nil : ages[Int(ceil(Double(ages.count) * 0.95)) - 1],
-                                 redSendFPS: Double(liveSends.filter { $0.port == 5005 }.count) / duration,
-                                 blueSendFPS: Double(liveSends.filter { $0.port == 5006 }.count) / duration,
+                                 redSendFPS: Double(liveSends.filter { $0.value == 5005 }.count) / duration,
+                                 blueSendFPS: Double(liveSends.filter { $0.value == 5006 }.count) / duration,
                                  captureToSendSamples: ages.count)
     }
 }

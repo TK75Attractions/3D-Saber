@@ -1336,12 +1336,13 @@ final class CameraViewModel: NSObject, ObservableObject {
         }
         lastThermalState = state
         let rates = running ? healthMeter.snapshot(at: time) : DeviceHealthRates()
+        let battery = deviceBatterySnapshot()
         if latencyLogPolicy.shouldLog(at: time, sending: running) {
             ConnectivityLog.shared.recordToFileOnly("CAPTURE_METRICS", CaptureLatencyLogPolicy.line(
                 route: delivery.currentRoute.rawValue, captureModeFPS: activeCaptureFPS,
-                rates: rates, thermal: thermal))
+                rates: rates, thermal: thermal, brightness: Double(UIScreen.main.brightness),
+                batteryLevel: battery.level, batteryState: battery.state))
         }
-        let battery = deviceBatterySnapshot()
         if metricsCadence.due(at: time, sending: running),
            delivery.currentRoute == .lanVerified || delivery.currentRoute == .lanUnverified {
             let rtt = lanProbe.metricsRoundTrip(at: time)

@@ -5,6 +5,92 @@ import XCTest
 #endif
 
 final class DeviceHealthTests: XCTestCase {
+    func testExpiredReorderedSamplesDoNotReturnAtAnEarlierSnapshot() {
+        var window = DeviceHealthSampleWindow<Int>(capacity: 3)
+        for time in [10.0, 9, 14] { window.append(at: time, value: Int(time), window: 5) }
+        // 14秒の追加時に9秒は削除済み。遅れて届いた13秒の集計でも復活しない。
+        XCTAssertEqual(window.recent(at: 13, window: 5).map(\.value), [10, 14])
+    }
+
+    func testReorderedWindowMatchesArrayReferenceAcrossWrapsAndSnapshots() {
+        var window = DeviceHealthSampleWindow<Int>(capacity: 7)
+        var reference: [(time: Double, value: Int)] = []
+        for frame in 0..<3000 {
+            let time = Double(frame) / 10 + Double((frame * 37) % 81 - 40) / 10
+            window.append(at: time, value: frame, window: 5)
+            reference.append((time, frame))
+            reference.removeAll { $0.time <= time - 5 }
+            if reference.count > 7 { reference.removeFirst(reference.count - 7) }
+            for snapshot in [time - 2, time, time + 2] {
+                XCTAssertEqual(window.recent(at: snapshot, window: 5).map(\.value),
+                               reference.filter { $0.time > snapshot - 5 }.map(\.value))
+            }
+            if frame.isMultiple(of: 101) { window.reset(); reference.removeAll() }
+        }
+    }
+
+    func testInvalidCaptureAgeStillExpiresPreviousSamples() {
+        for age: Double? in [nil, -1, 2001, .nan, .infinity] {
+            let meter = DeviceHealthMeter()
+            meter.reset(at: 0, generation: 1)
+            meter.processed(at: 9, milliseconds: 3, generation: 1, captureToSendMs: 20)
+            meter.processed(at: 10, milliseconds: 3, generation: 1, captureToSendMs: 30)
+            meter.processed(at: 14, milliseconds: 3, generation: 1, captureToSendMs: age)
+            let rates = meter.snapshot(at: 13)
+            XCTAssertEqual(rates.captureToSendSamples, 1)
+            XCTAssertEqual(rates.medianCaptureToSendMs, 30)
+        }
+    }
+
+    func testFixedWindowWrapExpiryReorderedCompletionAndReset() {
+        var window = DeviceHealthSampleWindow<Int>(capacity: 3)
+        for time in 1...4 { window.append(at: Double(time), value: time, window: 5) }
+        XCTAssertEqual(window.recent(at: 4, window: 5).map(\.value), [2, 3, 4])
+        // 別キューの完了で順序が前後しても、期限を過ぎた標本を数えない。
+        window.append(at: 3.9, value: 39, window: 5)
+        XCTAssertEqual(window.recent(at: 8.95, window: 5).map(\.value), [4])
+        window.append(at: 20, value: 20, window: 5)
+        XCTAssertEqual(window.recent(at: 20, window: 5).map(\.value), [20])
+        XCTAssertTrue(window.recent(at: 25, window: 5).isEmpty)
+        window.reset()
+        XCTAssertTrue(window.recent(at: 20, window: 5).isEmpty)
+        window.append(at: 1, value: 10, window: 5)
+        XCTAssertEqual(window.recent(at: 1, window: 5).map(\.value), [10])
+        window.reset()
+        for time in [10.0, 9, 14] { window.append(at: time, value: Int(time), window: 5) }
+        window.append(at: 14.5, value: 145, window: 5)
+        XCTAssertEqual(window.recent(at: 14.5, window: 5).map(\.value), [10, 14, 145])
+    }
+
+    func testCollectorMatchesArrayReferenceThroughRepeatedSnapshotsAndWraps() {
+        let meter = DeviceHealthMeter()
+        meter.reset(at: 0, generation: 1)
+        var reference: [(time: Double, ms: Double)] = []
+        for frame in 1...6000 {
+            let time = Double(frame) / 120
+            let ms = Double(frame % 17)
+            meter.cameraFrame(at: time)
+            meter.processed(at: time, milliseconds: ms, generation: 1, captureToSendMs: ms)
+            meter.sent(at: time, port: 5005, generation: 1)
+            meter.sent(at: time, port: 5006, generation: 1)
+            reference.append((time, ms))
+            reference.removeAll { $0.time <= time - 5 }
+            if frame.isMultiple(of: 120) {
+                let rates = meter.snapshot(at: time)
+                let sorted = reference.map(\.ms).sorted(), n = sorted.count
+                let median = n.isMultiple(of: 2) ? (sorted[n / 2 - 1] + sorted[n / 2]) / 2 : sorted[n / 2]
+                XCTAssertEqual(rates.cameraFPS, Double(n) / min(time, 5))
+                XCTAssertEqual(rates.processingFPS, rates.cameraFPS)
+                XCTAssertEqual(rates.redSendFPS, rates.cameraFPS)
+                XCTAssertEqual(rates.blueSendFPS, rates.cameraFPS)
+                XCTAssertEqual(rates.medianProcessingMs, median)
+                XCTAssertEqual(rates.medianCaptureToSendMs, median)
+                XCTAssertEqual(rates.p95CaptureToSendMs, sorted[Int(ceil(Double(n) * 0.95)) - 1])
+                XCTAssertEqual(rates.captureToSendSamples, n)
+            }
+        }
+    }
+
     func testRatesAfterEightHoursUseOnlyTheRecentWindow() {
         let meter = DeviceHealthMeter()
         meter.reset(at: 0, generation: 1)
@@ -56,6 +142,22 @@ final class DeviceHealthTests: XCTestCase {
         XCTAssertTrue(empty.contains("capture-to-send-p95-ms=unavailable"))
         XCTAssertTrue(empty.contains("thermal=serious"))
         XCTAssertFalse(empty.contains("\n"))
+    }
+
+    func testCaptureMetricsLogsChargingAndBrightnessWithoutChangingSettings() {
+        let line = CaptureLatencyLogPolicy.line(route: "LAN", captureModeFPS: 60,
+            rates: DeviceHealthRates(), thermal: .elevated, brightness: 0.7,
+            batteryLevel: 0.45, batteryState: "charging")
+        for field in ["thermal=fair", "battery-pct=45.0", "battery-state=charging", "screen-brightness=0.7"] {
+            XCTAssertTrue(line.contains(field), line)
+        }
+        for invalid in [-1.0, 1.1, .nan, .infinity] {
+            let invalidLine = CaptureLatencyLogPolicy.line(route: "P2P", captureModeFPS: 60,
+                rates: DeviceHealthRates(), thermal: .normal, brightness: invalid,
+                batteryLevel: invalid, batteryState: "charging\n")
+            XCTAssertTrue(invalidLine.contains("battery-pct=unknown battery-state=unknown screen-brightness=unknown"))
+            XCTAssertFalse(invalidLine.contains("\n"))
+        }
     }
 
     func testCaptureLatencyLogContainsMeasuredRatesPercentilesAndRejectsOldSends() {
