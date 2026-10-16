@@ -303,8 +303,8 @@ struct CameraLifecycleStateMachine {
     }
 
     mutating func sessionStarted(at time: TimeInterval) {
-        guard isSending, state == .starting || state == .live else { return }
-        if state == .live { return }
+        // 遅れて届く起動完了で、中断・失敗・復旧の状態を上書きしない。
+        guard isSending, state == .starting else { return }
         state = .starting
         captureStartAt = time
     }
