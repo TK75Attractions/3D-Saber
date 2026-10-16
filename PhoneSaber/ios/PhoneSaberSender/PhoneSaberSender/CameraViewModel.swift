@@ -1685,6 +1685,8 @@ final class CameraViewModel: NSObject, ObservableObject {
     }
 
     func stop() {
+        // 表示の最終集計でfps比較が期限切れになっても、停止中のカメラを再起動させない。
+        running = false
         publishPendingUI()
         resumePolicy.stop()
         ConnectivityLog.sendGapMonitor.setIntent(false)
@@ -1700,7 +1702,6 @@ final class CameraViewModel: NSObject, ObservableObject {
         cameraRecoveryInProgress = false
         cameraBackoff.reset()
         if debugRecordingActive { stopDebugRecording() }
-        running = false
         refreshConnectivityStatus()
         publishDeviceHealth(at: ProcessInfo.processInfo.systemUptime, force: true)
         cameraWatchdogTask?.cancel()

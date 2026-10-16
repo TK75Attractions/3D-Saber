@@ -22,6 +22,38 @@ def block(source, marker):
 
 @unittest.skipUnless(sys.platform == "darwin" and shutil.which("xcrun"), "macOS/Swift required")
 class IOSCameraLifecycleTests(unittest.TestCase):
+    def test_stop_at_fps_comparison_expiry_does_not_restart_capture(self):
+        camera = (SOURCE / "CameraViewModel.swift").read_text()
+        fixture = "import Foundation\nimport Darwin\n"
+        for marker in ["enum CameraLifecycleState:", "struct CameraLifecycleStateMachine",
+                       "func storedCameraFPS("]:
+            fixture += block(camera, marker) + "\n"
+        fixture += STOP_COMPARISON_MODEL
+        for marker in ["func stop()", "func selectCameraFPS(", "private func restartCameraForFPSChange(",
+                       "private func scheduleFPSAlternation("]:
+            # 状態機械のstopではなく、ViewModelの実停止処理を使う。
+            source = camera[camera.index("final class CameraViewModel:"):]
+            fixture += block(source, marker) + "\n"
+        # UI集計には触れず、停止が呼ぶ公開処理の先頭にある期限切れ処理を実行する。
+        fixture += block(camera, "func publishPendingUI()").split("        refreshConnectivityStatus()", 1)[0]
+        fixture += "}\n}\n" + STOP_COMPARISON_MAIN
+        with tempfile.TemporaryDirectory(prefix="phonesaber-stop-comparison-") as temporary:
+            directory = Path(temporary)
+            source = directory / "Fixture.swift"
+            source.write_text(fixture)
+            for flags in ([], ["-D", "DEBUG"]):
+                with self.subTest(flags=flags):
+                    binary = directory / "fixture"
+                    compiled = subprocess.run(
+                        ["xcrun", "swiftc", "-O", "-parse-as-library", *flags,
+                         "-module-cache-path", str(directory / "cache"),
+                         str(SOURCE / "EventRecovery.swift"), str(source), "-o", str(binary)],
+                        capture_output=True, text=True, timeout=90,
+                    )
+                    self.assertEqual(compiled.returncode, 0, compiled.stderr)
+                    run = subprocess.run([str(binary)], capture_output=True, text=True, timeout=10)
+                    self.assertEqual(run.returncode, 0, run.stdout + run.stderr)
+
     def test_late_start_completion_finishes_stop_before_next_configuration(self):
         camera = (SOURCE / "CameraViewModel.swift").read_text()
         # 完了処理・sessionキュー・状態遷移を再実装せず、そのままコンパイルする。
@@ -47,6 +79,86 @@ class IOSCameraLifecycleTests(unittest.TestCase):
                     run = subprocess.run([str(binary)], capture_output=True, text=True, timeout=10)
                     self.assertEqual(run.returncode, 0, run.stdout + run.stderr)
 
+
+STOP_COMPARISON_MODEL = r'''
+// カメラ・通信・表示は起動せず、再起動要求と停止回数だけを数える。
+enum ConnectivityLog {
+    static let sendGapMonitor = Monitor()
+    struct Monitor {
+        func context(_ value: String) {}
+        func setIntent(_ value: Bool) {}
+        func beginReconfiguration() {}
+        func endReconfiguration() {}
+    }
+}
+final class SessionRunner {
+    var stops = 0
+    func stopSynchronously() { stops += 1 }
+}
+struct Transport { func stop() {} }
+@MainActor final class CameraViewModel {
+    static let cameraFPSKey = "PhoneSaber.tests.cameraFPS"
+    var running = true, sceneIsActive = true, permissionPending = false
+    var automaticResumePending = false, cameraRecoveryInProgress = false
+    var cameraLifecycleEnabled = true, debugRecordingActive = false
+    var lanConfigured = true, supports120FPS = false, supports60FPS = true
+    var cameraFPS = 30, starts = 0, lifecycleGeneration = 1, cameraRecoveryGeneration = 0
+    var automaticResumeMessage = "", cameraRecoveryMessage = "", activeDestination = "", status = ""
+    var redEndpoints: Int?, blueEndpoints: Int?
+    var cameraErrorMessage: String?, connectionErrorMessage: String?
+    var senderStates: [Int: String] = [:], senderErrors: [Int: String] = [:], sendErrorMessages: [Int: String] = [:]
+    var cameraRecoveryTask: Task<Void, Never>?, cameraWatchdogTask: Task<Void, Never>?
+    var resumePolicy = SendingResumePolicy(wasSending: true)
+    var cameraLifecycle = CameraLifecycleStateMachine(), cameraBackoff = RecoveryBackoff()
+    let sessionRunner = SessionRunner(), sender = Transport(), lanProbe = Transport()
+    var fpsAlternationTask: Task<Void, Never>?
+    var fpsComparisonPolicy = FPSComparisonPolicy()
+    var debugComparisonHighFPS = 60
+    var debugAlternateFPS = true { didSet { scheduleFPSAlternation() } }
+    func start() { starts += 1; running = true; resumePolicy.start() }
+    func persistSendingIntent() {}
+    func stopDebugRecording() {}
+    func refreshConnectivityStatus() {}
+    func publishDeviceHealth(at time: TimeInterval, force: Bool) {}
+    func publishCameraLifecycle(at time: TimeInterval) {}
+    func updateIdleTimerPolicy() {}
+    func resetProcessor() {}
+    func recomputeErrorMessage() {}
+'''
+
+STOP_COMPARISON_MAIN = r'''
+@main struct Check {
+    @MainActor static func main() {
+        // 実アプリの保存値は読み書きしない。このプロセス内だけの既定値。
+        UserDefaults.standard.register(defaults: [CameraViewModel.cameraFPSKey: 60])
+        var failures = 0
+        for expired in [false, true] {
+            let model = CameraViewModel()
+            model.cameraLifecycle.requestStart(at: ProcessInfo.processInfo.systemUptime)
+            model.fpsComparisonPolicy.setEnabled(true, at: ProcessInfo.processInfo.systemUptime - (expired ? 301 : 0))
+            model.stop()
+            var passed = model.starts == 0 && model.sessionRunner.stops == 1 && !model.running
+                && !model.resumePolicy.wantsSending && model.cameraLifecycle.state == .stopped
+#if DEBUG
+            passed = passed && model.debugAlternateFPS == !expired && model.cameraFPS == (expired ? 60 : 30)
+#endif
+            print("stop comparison expired=\(expired):", passed ? "PASS" : "FAIL: starts=\(model.starts), stops=\(model.sessionRunner.stops)")
+            if !passed { failures += 1 }
+        }
+#if DEBUG
+        // 送信を続けている通常のUI更新では、期限切れ時に保存値へ戻して再設定する。
+        let model = CameraViewModel()
+        model.fpsComparisonPolicy.setEnabled(true, at: ProcessInfo.processInfo.systemUptime - 301)
+        model.publishPendingUI()
+        let passed = model.starts == 1 && model.running && !model.debugAlternateFPS && model.cameraFPS == 60
+        print("periodic comparison expiry:", passed ? "PASS" : "FAIL")
+        if !passed { failures += 1 }
+        model.stop()
+#endif
+        exit(failures == 0 ? 0 : 1)
+    }
+}
+'''
 
 HEAD = r'''import Foundation
 import Darwin
