@@ -58,6 +58,7 @@ class WindowsStationTests
             sender.Client.ReceiveTimeout = 2000;
             var flags = BindingFlags.Instance | BindingFlags.NonPublic;
             typeof(PhoneSaberDiscoveryResponder).GetField("running", flags).SetValue(responder, true);
+            typeof(PhoneSaberDiscoveryResponder).GetField("socket", flags).SetValue(responder, socket);
             byte[] reply = Encoding.ASCII.GetBytes(PhoneSaberDiscoveryResponder.BuildReply(5005, 5006, "PC", "A"));
             var loop = typeof(PhoneSaberDiscoveryResponder).GetMethod("Loop", flags);
             var thread = new Thread(() => loop.Invoke(responder, new object[] { socket, reply })) { IsBackground = true };

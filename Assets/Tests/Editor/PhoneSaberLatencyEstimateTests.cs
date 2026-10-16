@@ -73,6 +73,7 @@ public class PhoneSaberLatencyEstimateTests
             receiver.Client.ReceiveTimeout = 500; sender.Client.ReceiveTimeout = 1000;
             var endpoint = (IPEndPoint)receiver.Client.LocalEndPoint;
             typeof(PhoneSaberDiscoveryResponder).GetField("running", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(responder, true);
+            typeof(PhoneSaberDiscoveryResponder).GetField("socket", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(responder, receiver);
             var reply = Encoding.ASCII.GetBytes(PhoneSaberDiscoveryResponder.BuildReply(5005, 5006, "test", "A"));
             var loop = typeof(PhoneSaberDiscoveryResponder).GetMethod("Loop", BindingFlags.Instance | BindingFlags.NonPublic);
             var thread = new Thread(() => loop.Invoke(responder, new object[] { receiver, reply }));

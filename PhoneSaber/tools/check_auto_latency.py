@@ -31,9 +31,11 @@ def main():
         stubs.write_text('''using System;
 using System.Diagnostics;
 namespace UnityEngine {
+ public enum LogType { Warning }
  public static class Debug { public static void Log(object x){} public static void LogWarning(object x){} }
  public static class PlayerPrefs { public static string GetString(string k,string d)=>d; public static void SetString(string k,string v){} public static void Save(){} }
 }
+namespace UnityEngine.TestTools { public static class LogAssert { public static void Expect(UnityEngine.LogType t,System.Text.RegularExpressions.Regex r){} } }
 public static class PhoneSaberP2PBridgeProcess { public static bool AutoStartEnabled=true; }
 public static class SwingMonotonicClock { public static long Timestamp => Stopwatch.GetTimestamp(); public static double ToSeconds(long ticks) => ticks/(double)Stopwatch.Frequency; }
 ''')
@@ -45,6 +47,7 @@ class Run { static int Main(string[] args) {
   using(var receiver=new System.Net.Sockets.UdpClient(new System.Net.IPEndPoint(System.Net.IPAddress.Loopback,0))) {
    receiver.Client.ReceiveTimeout=500;
    typeof(PhoneSaberDiscoveryResponder).GetField("running",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(responder,true);
+   typeof(PhoneSaberDiscoveryResponder).GetField("socket",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(responder,receiver);
    var reply=System.Text.Encoding.ASCII.GetBytes(PhoneSaberDiscoveryResponder.BuildReply(5005,5006,"host","A"));
    var loop=typeof(PhoneSaberDiscoveryResponder).GetMethod("Loop",BindingFlags.Instance|BindingFlags.NonPublic);
    var thread=new System.Threading.Thread(()=>loop.Invoke(responder,new object[]{receiver,reply}));thread.IsBackground=true;thread.Start();
@@ -69,7 +72,8 @@ class Run { static int Main(string[] args) {
 }}
 ''')
         sources = [stubs, runner, INPUT / 'PhoneSaberLatencyEstimate.cs', INPUT / 'PhoneSaberInputStats.cs',
-                   INPUT / 'PhoneSaberDiscoveryResponder.cs', ROOT / 'Assets/Tests/Editor/PhoneSaberLatencyEstimateTests.cs']
+                   INPUT / 'PhoneSaberDiscoveryResponder.cs', ROOT / 'Assets/Tests/Editor/PhoneSaberLatencyEstimateTests.cs',
+                   ROOT / 'Assets/Tests/Editor/PhoneSaberDiscoveryResponderTests.cs']
         env = dict(os.environ, MONO_PATH=str(nunit.parent))
         if args.before_ref:
             before = tmp / 'BeforeEventLog.cs'
@@ -89,6 +93,7 @@ class Run {static int Main() {
  using(var r=new PhoneSaberDiscoveryResponder()) using(var s=new UdpClient(new IPEndPoint(IPAddress.Loopback,0))) using(var c=new UdpClient(0)) {
  s.Client.ReceiveTimeout=500;c.Client.ReceiveTimeout=200;
  typeof(PhoneSaberDiscoveryResponder).GetField("running",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(r,true);
+ typeof(PhoneSaberDiscoveryResponder).GetField("socket",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(r,s);
  var loop=typeof(PhoneSaberDiscoveryResponder).GetMethod("Loop",BindingFlags.Instance|BindingFlags.NonPublic);
  byte[] reply=Encoding.ASCII.GetBytes(PhoneSaberDiscoveryResponder.BuildReply(5005,5006,"host","A"));
  var t=new Thread(()=>loop.Invoke(r,new object[]{s,reply}));t.IsBackground=true;t.Start();

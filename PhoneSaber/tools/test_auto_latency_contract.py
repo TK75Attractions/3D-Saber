@@ -33,7 +33,7 @@ class AutoLatencyContractTests(unittest.TestCase):
         result = subprocess.run([sys.executable, str(ROOT / 'PhoneSaber/tools/check_auto_latency.py')],
                                 cwd=ROOT, env=env, text=True, capture_output=True, timeout=120)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertIn('5 PASS / 0 FAIL', result.stdout)
+        self.assertIn('8 PASS / 0 FAIL', result.stdout)
         self.assertIn('Swift -> actual C# discovery Loop metrics=PASS', result.stdout)
 
 

@@ -90,7 +90,8 @@ public sealed class PhoneSaberDiscoveryResponder : IDisposable
     {
         EndPoint remote = new IPEndPoint(IPAddress.Any, 0);
         var data = new byte[PhoneSaberMetrics.MaximumBytes + 1];
-        while (running)
+        // Stop の Join 時間切れ後に再起動しても、閉じた旧 socket で例外を繰り返さない。
+        while (running && ReferenceEquals(Volatile.Read(ref socket), client))
         {
             try
             {

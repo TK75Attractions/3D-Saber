@@ -1,7 +1,10 @@
 using System;
 using System.Net.Sockets;
+using System.Reflection;
 using System.Runtime.Serialization;
+using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
@@ -9,6 +12,46 @@ using UnityEngine.TestTools;
 // 5007 を占有せず、bind 失敗後の socket 解放を確認する。
 public class PhoneSaberDiscoveryResponderTests
 {
+    [Test]
+    public void RetiredLoopExitsWhileReplacementIsRunning()
+    {
+        bool savedAutoStart = PhoneSaberP2PBridgeProcess.AutoStartEnabled;
+        using (var responder = new PhoneSaberDiscoveryResponder())
+        using (var retired = new UdpClient(0))
+        using (var phone = new UdpClient(0))
+        {
+            Thread oldThread = null;
+            try
+            {
+                PhoneSaberP2PBridgeProcess.AutoStartEnabled = true;
+                UdpClient replacement = null;
+                Assert.IsTrue(responder.Start(5005, 5006,
+                    () => replacement = new UdpClient(AddressFamily.InterNetwork), "A", 0));
+                retired.Close();
+                // Stop の Join が時間切れになり、旧 Loop の再開前に Start が running を true に戻した状態。
+                var loop = typeof(PhoneSaberDiscoveryResponder).GetMethod("Loop", BindingFlags.NonPublic | BindingFlags.Instance);
+                byte[] reply = Encoding.ASCII.GetBytes("replacement");
+                oldThread = new Thread(() => loop.Invoke(responder, new object[] { retired, reply })) { IsBackground = true };
+                oldThread.Start();
+                Assert.IsTrue(oldThread.Join(1000), "閉じた旧 socket の例外を繰り返して CPU を占有しない");
+                Assert.IsTrue(responder.IsRunning, "旧 Loop の終了で新しい受信機を止めない");
+                phone.Client.ReceiveTimeout = 2000;
+                byte[] request = Encoding.ASCII.GetBytes(PhoneSaberDiscoveryResponder.Request);
+                phone.Send(request, request.Length, new System.Net.IPEndPoint(System.Net.IPAddress.Loopback,
+                    ((System.Net.IPEndPoint)replacement.Client.LocalEndPoint).Port));
+                var remote = new System.Net.IPEndPoint(System.Net.IPAddress.Any, 0);
+                Assert.AreEqual(PhoneSaberDiscoveryResponder.BuildReply(5005, 5006, Environment.MachineName, "A"),
+                    Encoding.ASCII.GetString(phone.Receive(ref remote)));
+            }
+            finally
+            {
+                responder.Stop();
+                oldThread?.Join(2000);
+                PhoneSaberP2PBridgeProcess.AutoStartEnabled = savedAutoStart;
+            }
+        }
+    }
+
     // OS の socket を開かず、初期化途中の失敗と Dispose の呼び出しを確認する。
     sealed class TrackingClient : UdpClient
     {
