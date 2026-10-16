@@ -17,6 +17,7 @@ Arguments after `--` go to the bridge (see PhoneSaberP2PBridge.swift --help).
 from __future__ import annotations
 
 import argparse
+import ctypes
 import hashlib
 import os
 import signal
@@ -32,6 +33,39 @@ SOURCES = (
 )
 DEFAULT_CACHE = Path.home() / "Library" / "Caches" / "PhoneSaber" / "p2p-bridge"
 BINARY_NAME = "PhoneSaberP2PBridge"
+
+
+def _kill_compiler_tree(pid: int) -> None:
+    # swift-frontend creates its own process group. Freeze each parent before
+    # enumerating children so cancellation cannot race with another compiler job.
+    libproc = ctypes.CDLL("/usr/lib/libproc.dylib")
+    pending = [pid]
+    stopped = []
+    try:
+        for current in pending:
+            try:
+                os.kill(current, signal.SIGSTOP)
+            except ProcessLookupError:
+                continue
+            stopped.append(current)
+            capacity = libproc.proc_listchildpids(current, None, 0)
+            if capacity <= 0:
+                continue
+            # proc_listchildpids returns PID counts; only its buffer size is in bytes.
+            # A full buffer may be truncated, so grow it before traversing the tree.
+            while True:
+                children = (ctypes.c_int * capacity)()
+                count = libproc.proc_listchildpids(current, children, ctypes.sizeof(children))
+                if count < capacity:
+                    break
+                capacity *= 2
+            pending.extend(child for child in children[:max(0, count)] if child > 0)
+    finally:
+        for current in reversed(stopped):
+            try:
+                os.kill(current, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
 
 
 def source_digest(sources: tuple[Path, ...] = SOURCES) -> str:
@@ -55,16 +89,17 @@ def build(cache_dir: Path = DEFAULT_CACHE, *, force: bool = False) -> Path:
     xcrun = "/usr/bin/xcrun" if os.path.exists("/usr/bin/xcrun") else "xcrun"
     command = [xcrun, "swiftc", "-O", "-parse-as-library", *map(str, SOURCES), "-o", str(temporary)]
     print(f"[P2P] building bridge: {' '.join(command)}", flush=True)
-    compiler = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    compiler = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+                                start_new_session=True)
 
     def stop_compiler(signum, _frame):
-        # Unity stopping Play during the first build: never leave swiftc running.
-        compiler.terminate()
+        # Unity stopping Play during the first build: stop swiftc and its frontend children.
         try:
-            compiler.wait(timeout=5)
-        except subprocess.TimeoutExpired:
-            compiler.kill()
-        temporary.unlink(missing_ok=True)
+            if compiler.poll() is None:
+                _kill_compiler_tree(compiler.pid)
+        finally:
+            compiler.wait()
+            temporary.unlink(missing_ok=True)
         raise SystemExit(128 + signum)
 
     previous = {sig: signal.signal(sig, stop_compiler) for sig in (signal.SIGTERM, signal.SIGINT)}
