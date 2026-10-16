@@ -387,7 +387,8 @@ class PcDiscovery(context: Context,
         socket?.close(); socket = null
         listener?.let { try { nsd.stopServiceDiscovery(it) } catch (_: Exception) { } }
         listener = null
-        if (multicast.isHeld) multicast.release()
+        // 解放RPCの失敗でも停止・再探索を完了する。保持状態が残れば次の終了時に再試行する。
+        try { if (multicast.isHeld) multicast.release() } catch (_: RuntimeException) { }
         broadcastTargets = null
     }
 

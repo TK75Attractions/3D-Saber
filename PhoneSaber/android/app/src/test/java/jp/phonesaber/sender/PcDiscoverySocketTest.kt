@@ -109,6 +109,66 @@ class PcDiscoverySocketTest {
         }
     }
 
+    @Test fun multicastReleaseFailureDoesNotAbortStopOrRediscovery() {
+        for (stop in listOf(true, false)) {
+            val connectivity = mock(ConnectivityManager::class.java)
+            val nsd = mock(NsdManager::class.java)
+            val wifi = mock(Network::class.java)
+            val capabilities = mock(NetworkCapabilities::class.java)
+            val multicast = mock(WifiManager.MulticastLock::class.java)
+            var held = false
+            var releases = 0
+            `when`(multicast.isHeld).thenAnswer { held }
+            doAnswer { held = true; null }.`when`(multicast).acquire()
+            doAnswer {
+                // SDK同様、解放RPCの失敗時は保持状態が残る。次の解放は成功する。
+                if (++releases == 1) throw RuntimeException("releaseMulticastLock failed")
+                held = false; null
+            }.`when`(multicast).release()
+            `when`(capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)).thenReturn(true)
+            `when`(connectivity.getNetworkCapabilities(wifi)).thenReturn(capabilities)
+            `when`(connectivity.allNetworks).thenReturn(arrayOf(wifi))
+            val request = mock(NetworkRequest::class.java)
+            mockConstruction(NetworkRequest.Builder::class.java, withSettings().defaultAnswer(RETURNS_SELF)) { builder, _ ->
+                `when`(builder.build()).thenReturn(request)
+            }.use {
+                mockConstruction(DatagramSocket::class.java) { socket, _ ->
+                    `when`(socket.isClosed).thenReturn(true)
+                }.use { sockets ->
+                    val networks = mutableListOf<Network?>()
+                    withDiscovery(nsd, runPosts = true, connectivity = connectivity, multicast = multicast,
+                        onUpdate = { _, network, _ -> networks.add(network) }) { discovery ->
+                        try {
+                            discovery.start()
+                            val events = ArgumentCaptor.forClass(ConnectivityManager.NetworkCallback::class.java)
+                            verify(connectivity).registerNetworkCallback(eq(request), events.capture())
+                            assertTrue(held)
+                            if (stop) {
+                                discovery.stop()
+                                `when`(connectivity.allNetworks).thenReturn(emptyArray())
+                                discovery.start()
+                                assertNull("解放失敗でも停止前の接続を破棄する", networks.last())
+                                val updates = networks.size
+                                events.value.onAvailable(wifi)
+                                assertEquals("停止前のcallbackを無視する", updates, networks.size)
+                                val restarted = ArgumentCaptor.forClass(ConnectivityManager.NetworkCallback::class.java)
+                                verify(connectivity, times(2)).registerNetworkCallback(eq(request), restarted.capture())
+                                restarted.value.onAvailable(wifi)
+                            } else discovery.setStation("B")
+                            assertEquals(wifi, networks.last())
+                            assertEquals("解放失敗でも探索を再開する", 2, sockets.constructed().size)
+                            verify(sockets.constructed().first(), atLeastOnce()).close()
+                            verify(nsd, times(2)).discoverServices(eq("_phonesaber._udp."),
+                                eq(NsdManager.PROTOCOL_DNS_SD), any(NsdManager.DiscoveryListener::class.java))
+                        } finally { discovery.stop() }
+                        assertFalse("次の終了で保持中のlockを再度解放する", held)
+                        verify(sockets.constructed().last(), atLeastOnce()).close()
+                    }
+                }
+            }
+        }
+    }
+
     @Test fun lostWifiIsNotReselectedFromStaleNetworkSnapshot() {
         checkLostNetwork(developerOverride = false)
     }
