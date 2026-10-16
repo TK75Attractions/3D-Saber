@@ -1267,6 +1267,7 @@ final class CameraViewModel: NSObject, ObservableObject {
         case .ignore:
             return
         case .stopSession:
+            // 次の start() の beginConfiguration と停止処理を競合させない。
             // 次の start() の設定区間に、この停止を持ち越さない。
             sessionRunner.stopSynchronously()
             return
