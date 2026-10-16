@@ -31,6 +31,8 @@ public static class PhoneSaberDisplaySyncSettings
 // 約1100 fps になり、起動しているだけで Mac が熱くなっていた（2026-10-15 events.log の event=perf、Result 画面）。
 // 遅延は vsync の有無で差が出なかった（2026-10-14 実測）ため、未設定の台は「画面の2倍」を既定にする。
 // 上限は下げる向きだけに効かせ、ゲームが自分で決めた低い値（メニューの 30 fps など）は上げない。
+// 本編（Game）以外のメニュー画面は入力の遅れが効かないので画面と同じ回数（60 Hz なら 60 fps）にする
+// （2026-10-16: 上限 120 でもタイトルで CPU 約40%、Mac が熱いまま）。F9 などの計測中は本編と同じ倍率のまま。
 public static class PhoneSaberFrameCapSettings
 {
     public const int GameDefault = 0;
@@ -53,12 +55,12 @@ public static class PhoneSaberFrameCapSettings
     public static string Label(int mode) => Clamp(mode) == FourTimes ? "画面の4倍" :
         Clamp(mode) == TwoTimes ? "画面の2倍" : "ゲームの設定のまま";
 
-    // 59.94 Hz は 240 / 120 fps へ丸める。Hz 不明・範囲外・変更不要・ゲームの値がすでに上限以下なら -1。
-    public static int TargetFrameRateToApply(int mode, double refreshHz, int currentTarget)
+    // 59.94 Hz は 240 / 120 fps（メニューは 60 fps）へ丸める。Hz 不明・範囲外・変更不要・ゲームの値がすでに上限以下なら -1。
+    public static int TargetFrameRateToApply(int mode, double refreshHz, int currentTarget, bool menu = false)
     {
         mode = Clamp(mode);
         if (mode == GameDefault || !(refreshHz > 0)) return -1;
-        double target = System.Math.Round(refreshHz * (mode == FourTimes ? 4 : 2));
+        double target = System.Math.Round(refreshHz * (menu ? 1 : mode == FourTimes ? 4 : 2));
         if (!(target >= 1 && target <= int.MaxValue)) return -1;
         return currentTarget > 0 && currentTarget <= (int)target ? -1 : (int)target;
     }
@@ -70,6 +72,8 @@ public sealed class PhoneSaberDisplaySync : MonoBehaviour
     public static int FrameCapMode { get; private set; }
     // 注意の表示確認用(-phonesaberSmokeRefreshHz)。0 なら実際の画面の値を使う。
     public static double RefreshHzOverride;
+    // 遅延の計測（F9・追従計測）中は true。メニューでも本編と同じ回数で描く（計測値を本編と揃える）。
+    public static bool Measuring;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     static void CreateAtStartup()
@@ -84,6 +88,8 @@ public sealed class PhoneSaberDisplaySync : MonoBehaviour
 
     PhoneSaberDisplayNotice notice;
     double nextNoticeCheck;
+    int sceneHandle;
+    bool inGameScene;
 
     // OFF へ戻したときは値を書き戻さない（ゲームが次のシーンで自分の設定を入れ直す）。
     public static void SetMode(int mode)
@@ -115,8 +121,15 @@ public sealed class PhoneSaberDisplaySync : MonoBehaviour
         if (value >= 0) QualitySettings.vSyncCount = value;
         if (FrameCapMode != PhoneSaberFrameCapSettings.GameDefault)
         {
+            // シーン名は切り替わったときだけ読む（毎フレームの文字列確保を避ける）。
+            Scene scene = SceneManager.GetActiveScene();
+            if (scene.handle != sceneHandle)
+            {
+                sceneHandle = scene.handle;
+                inGameScene = scene.name == PhoneSaberDisplayNotice.GameSceneName;
+            }
             int target = PhoneSaberFrameCapSettings.TargetFrameRateToApply(FrameCapMode,
-                Screen.currentResolution.refreshRateRatio.value, Application.targetFrameRate);
+                Screen.currentResolution.refreshRateRatio.value, Application.targetFrameRate, !inGameScene && !Measuring);
             if (target >= 0) Application.targetFrameRate = target;
         }
         // 画面の更新が遅い（低電力モードなど）ときの知らせ。確認は秒1回、描画は必要なときだけ有効にする。

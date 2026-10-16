@@ -36,6 +36,7 @@ using System;
 using System.Diagnostics;
 using System.Reflection;
 using NUnit.Framework;
+using UnityEngine.SceneManagement;
 using UnityEngine;
 public class FrameCapHost {
     const BindingFlags Private = BindingFlags.Static | BindingFlags.Instance | BindingFlags.NonPublic;
@@ -49,6 +50,9 @@ public class FrameCapHost {
         typeof(PhoneSaberDisplaySync).GetField("notice", Private).SetValue(GameObject.LastSync, null);
         // 注意のテスト用Hzはフレーム上限の実Hzに混ぜない。
         PhoneSaberDisplaySync.RefreshHzOverride = 30;
+        // 倍率の検査は本編で行う（メニューは画面と同じ回数、下の MenusUseTheDisplayRate）。
+        SceneManager.Active = new Scene {name="Game", handle=2};
+        PhoneSaberDisplaySync.Measuring = false;
         return (Action)Delegate.CreateDelegate(typeof(Action), GameObject.LastSync, Update);
     }
     [Test] public void DefaultDoesNotWriteEitherGameSetting() {
@@ -70,6 +74,15 @@ public class FrameCapHost {
         Screen.currentResolution = new Resolution {refreshRateRatio=new Rate {value=144}};
         Application.targetFrameRate=-1; tick(); Assert.AreEqual(576, Application.targetFrameRate);
         Screen.currentResolution = new Resolution {refreshRateRatio=new Rate {value=60}};
+    }
+    [Test] public void MenusUseTheDisplayRateUnlessMeasuring() {
+        var tick = Start(2); SceneManager.Active = new Scene {name="Title", handle=3};
+        Application.targetFrameRate=-1; tick(); Assert.AreEqual(60, Application.targetFrameRate);
+        Application.targetFrameRate=30; tick(); Assert.AreEqual(30, Application.targetFrameRate);
+        PhoneSaberDisplaySync.Measuring = true; Application.targetFrameRate=-1; tick();
+        Assert.AreEqual(120, Application.targetFrameRate);
+        PhoneSaberDisplaySync.Measuring = false; SceneManager.Active = new Scene {name="Game", handle=4};
+        Application.targetFrameRate=-1; tick(); Assert.AreEqual(120, Application.targetFrameRate);
     }
     [Test] public void TwoTimesAndExplicitVSyncRemainIndependent() {
         var tick = Start(2,1); QualitySettings.vSyncCount=0; Application.targetFrameRate=-1; tick();

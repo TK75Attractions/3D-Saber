@@ -29,6 +29,7 @@ public sealed class PhoneSaberTrackingProbe : MonoBehaviour
         if (seconds <= 0f) return;
         var probe = new GameObject("PhoneSaber Tracking Probe").AddComponent<PhoneSaberTrackingProbe>();
         probe.duration = seconds;
+        PhoneSaberDisplaySync.Measuring = true; // 終わればアプリごと終了する
         DontDestroyOnLoad(probe.gameObject);
     }
 

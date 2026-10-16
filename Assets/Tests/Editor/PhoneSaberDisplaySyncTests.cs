@@ -33,6 +33,21 @@ public class PhoneSaberDisplaySyncTests
         }
     }
 
+    [TestCase(60, 60)]
+    [TestCase(59.94, 60)]
+    [TestCase(144, 144)]
+    public void MenusAreCappedAtTheDisplayRateWhateverTheGameplayCap(double hz, int menu)
+    {
+        foreach (int mode in new[] { PhoneSaberFrameCapSettings.FourTimes, PhoneSaberFrameCapSettings.TwoTimes })
+        {
+            Assert.AreEqual(menu, PhoneSaberFrameCapSettings.TargetFrameRateToApply(mode, hz, -1, menu: true));
+            Assert.AreEqual(menu, PhoneSaberFrameCapSettings.TargetFrameRateToApply(mode, hz, menu * 2, menu: true));
+            Assert.AreEqual(-1, PhoneSaberFrameCapSettings.TargetFrameRateToApply(mode, hz, menu, menu: true));
+            Assert.AreEqual(-1, PhoneSaberFrameCapSettings.TargetFrameRateToApply(mode, hz, 30, menu: true));
+        }
+        Assert.AreEqual(-1, PhoneSaberFrameCapSettings.TargetFrameRateToApply(PhoneSaberFrameCapSettings.GameDefault, 60, -1, menu: true));
+    }
+
     [Test]
     public void FrameCapPersistsSeparatelyFromDisplaySyncAndOtherStations()
     {

@@ -116,6 +116,7 @@ public sealed class PhoneSaberLatencyProbe : MonoBehaviour
             else
             {
                 active = true;
+                PhoneSaberDisplaySync.Measuring = true;
                 EnsureGuiRenderer();
                 guiRenderer.enabled = true;
                 resultText = ""; resultUntil = 0; startedAt = now;
@@ -259,6 +260,7 @@ public sealed class PhoneSaberLatencyProbe : MonoBehaviour
         if (blockIndex == 0 || blockSamples.Count < BlockSize && blockSamples.Count > 0)
             RecordBlock(SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp));
         active = false;
+        PhoneSaberDisplaySync.Measuring = false;
         resultUntil = SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp) + 20;
         if (guiRenderer != null) guiRenderer.enabled = true;
         Record("latency-loop-end");
