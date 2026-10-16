@@ -156,6 +156,93 @@ public class PlaybackReviewWindowTests
         Invoke("Stop"); Assert.IsFalse(Get<bool>("audition"));
         Set("rangeA", .2f); Invoke("StartAudition"); Assert.AreEqual(0, Get<float>("seconds"));
     }
+    [Test] public void TimingCaptureGroupsArrivalsPreservesWrittenFeedbackAndExportsWithoutChangingChart()
+    {
+        string before = File.ReadAllText(Path.Combine(folder, "chart_e.json"));
+        Set("timingCapture", true); Set("instruction", "別の指摘を入力中");
+        InvokeWith("RecordTimingAt", 1.23f); InvokeWith("RecordTimingAt", 1.23f);
+        Set("beatSnap", 1); InvokeWith("RecordTimingAt", 1.76f);
+        CollectionAssert.AreEqual(new[] { 1.23f, 2f }, Get<List<float>>("pendingNoteSeconds"));
+        Assert.Throws<InvalidOperationException>(() => window.ExportRequest());
+        Invoke("FinishTimingCapture");
+        Assert.AreEqual("別の指摘を入力中", Get<string>("instruction"));
+        var comment = Get<List<SaberReviewComment>>("comments").Single();
+        CollectionAssert.AreEqual(new[] { 1.23f, 2f }, comment.requestedNoteSeconds);
+        Set("instruction", ""); InvokeWith("EditComment", comment); Set("instruction", "青赤交互に配置して");
+        Set("rangeA", 1.5f); Set("rangeB", 1.7f); Invoke("AddComment");
+        comment = Get<List<SaberReviewComment>>("comments").Single();
+        Assert.AreEqual(1.23f, comment.fromSeconds); Assert.AreEqual(2f, comment.toSeconds);
+        CollectionAssert.AreEqual(new[] { 1.23f, 2f }, comment.requestedNoteSeconds);
+        window.ExportRequest(); exported = Get<string>("lastFolder");
+        var request = JsonUtility.FromJson<SaberReviewRequest>(File.ReadAllText(Path.Combine(exported, "request.json")));
+        CollectionAssert.AreEqual(comment.requestedNoteSeconds, request.comments.Single().requestedNoteSeconds);
+        Assert.AreEqual(1, Directory.GetFiles(exported, "frame-*.png").Length, "連打しても画像は指摘単位にまとめる");
+        Assert.AreEqual(before, File.ReadAllText(Path.Combine(folder, "chart_e.json"))); Assert.IsFalse(window.hasUnsavedChanges);
+        Set("timingCapture", true); InvokeWith("RecordTimingAt", 3f);
+        Assert.IsFalse(Property<bool>("ExportIsCurrent")); Assert.Throws<InvalidOperationException>(() => window.LoadReply("{}"));
+    }
+    [Test] public void UnfinishedTimingCaptureRestoresPausedAndCanBeFinishedOrUndone()
+    {
+        Set("timingCapture", true); InvokeWith("RecordTimingAt", 3f); InvokeWith("RecordTimingAt", 1f);
+        UnityEngine.Object.DestroyImmediate(window); window = ScriptableObject.CreateInstance<SaberPlaybackReviewWindow>();
+        Set("song", song); Set("difficulty", "e"); Invoke("LoadChart");
+        Assert.IsFalse(Get<bool>("timingCapture")); Assert.IsFalse(Get<bool>("playing"));
+        CollectionAssert.AreEqual(new[] { 3f, 1f }, Get<List<float>>("pendingNoteSeconds"));
+        Invoke("UndoTiming"); CollectionAssert.AreEqual(new[] { 3f }, Get<List<float>>("pendingNoteSeconds"));
+        Invoke("FinishTimingCapture");
+        CollectionAssert.AreEqual(new[] { 3f }, Get<List<SaberReviewComment>>("comments").Single().requestedNoteSeconds);
+        Assert.IsEmpty(Get<List<float>>("pendingNoteSeconds"));
+    }
+    [Test] public void TimingCaptureDoesNotUseStaleFrameTimeWhenAudioClockIsUnavailable()
+    {
+        testClip = AudioClip.Create("UnavailableReviewClock", 16000, 1, 16000, false);
+        Set("clip", testClip); Set("playing", true); Set("timingCapture", true); Set("seconds", .5f);
+        Invoke("CaptureTiming");
+        Assert.IsEmpty(Get<List<float>>("pendingNoteSeconds"));
+        Assert.That(Get<string>("status"), Does.Contain("再生位置を取得できません"));
+    }
+    [UnityTest] public IEnumerator TimingKeysAndClicksCaptureOnPressWithoutStoppingOrRepeating()
+    {
+        window.Show(); shown = true; window.position = new Rect(40, 40, 1000, 660); Set("timingCapture", true);
+        for (int i = 0; i < 8; i++) { window.Repaint(); yield return null; }
+        var taps = Get<List<float>>("pendingNoteSeconds");
+        Vector2 origin = window.rootVisualElement.worldBound.position;
+        UnityEditor.EditorGUIUtility.editingTextField = false;
+        Set("playing", true); Set("seconds", 1.2f); Set("lastTick", UnityEditor.EditorApplication.timeSinceStartup);
+        window.SendEvent(new Event { type = EventType.KeyDown, keyCode = KeyCode.T, modifiers = EventModifiers.None });
+        Assert.AreEqual(1, taps.Count); Assert.AreEqual(1.2f, taps[0], .15f); Assert.IsTrue(Get<bool>("playing"));
+        Set("seconds", 2f); Set("lastTick", UnityEditor.EditorApplication.timeSinceStartup);
+        window.SendEvent(new Event { type = EventType.KeyDown, keyCode = KeyCode.T, modifiers = EventModifiers.None });
+        Assert.AreEqual(1, taps.Count, "押しっぱなしのキーリピートを記録しない");
+        window.SendEvent(new Event { type = EventType.KeyUp, keyCode = KeyCode.T, modifiers = EventModifiers.None });
+        window.SendEvent(new Event { type = EventType.KeyDown, keyCode = KeyCode.T, modifiers = EventModifiers.None });
+        Assert.AreEqual(2, taps.Count);
+        window.SendEvent(new Event { type = EventType.KeyUp, keyCode = KeyCode.T, modifiers = EventModifiers.None });
+        UnityEditor.EditorGUIUtility.editingTextField = true;
+        window.SendEvent(new Event { type = EventType.KeyDown, keyCode = KeyCode.T, modifiers = EventModifiers.None });
+        Assert.AreEqual(2, taps.Count, "文章入力中は記録しない");
+        window.SendEvent(new Event { type = EventType.KeyUp, keyCode = KeyCode.T, modifiers = EventModifiers.None });
+        UnityEditor.EditorGUIUtility.editingTextField = false;
+        window.SendEvent(new Event { type = EventType.KeyDown, keyCode = KeyCode.Backspace, modifiers = EventModifiers.None });
+        window.SendEvent(new Event { type = EventType.KeyDown, keyCode = KeyCode.Backspace, modifiers = EventModifiers.None });
+        Assert.AreEqual(1, taps.Count);
+        window.SendEvent(new Event { type = EventType.KeyUp, keyCode = KeyCode.Backspace, modifiers = EventModifiers.None });
+        Set("seconds", 2.5f); Set("lastTick", UnityEditor.EditorApplication.timeSinceStartup);
+        Vector2 framePoint = origin + Get<Rect>("reviewFrameRect").center;
+        window.SendEvent(new Event { type = EventType.MouseDown, button = 0, mousePosition = framePoint, modifiers = EventModifiers.None });
+        Assert.AreEqual(2, taps.Count); Assert.IsFalse(Get<bool>("hasPoint")); Assert.IsTrue(Get<bool>("playing"));
+        window.SendEvent(new Event { type = EventType.MouseUp, button = 0, mousePosition = framePoint, modifiers = EventModifiers.None });
+        Assert.AreEqual(2, taps.Count);
+        Set("seconds", 3.2f); Set("lastTick", UnityEditor.EditorApplication.timeSinceStartup);
+        Vector2 buttonPoint = origin + Get<Rect>("timingTapRect").center;
+        window.SendEvent(new Event { type = EventType.MouseDown, button = 0, mousePosition = buttonPoint, modifiers = EventModifiers.None });
+        Assert.AreEqual(3, taps.Count, "ボタンは離すまで待たずに押した瞬間を記録する");
+        window.SendEvent(new Event { type = EventType.MouseUp, button = 0, mousePosition = buttonPoint, modifiers = EventModifiers.None });
+        Assert.AreEqual(3, taps.Count);
+        window.SendEvent(new Event { type = EventType.KeyDown, keyCode = KeyCode.Escape, modifiers = EventModifiers.None });
+        Assert.IsFalse(Get<bool>("playing")); Assert.IsFalse(Get<bool>("timingCapture"));
+        Assert.AreEqual(3, Get<List<SaberReviewComment>>("comments").Single().requestedNoteSeconds.Length);
+    }
     [Test] public void DirectNoteSelectionIncludesTargetsAndLongEndAndDoesNotMutateChart()
     {
         var chart = Get<SaberChartDocument>("document");

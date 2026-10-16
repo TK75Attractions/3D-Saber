@@ -21,6 +21,45 @@ public class PlaybackReviewTests
         });
     }
     SaberReviewPatch Patch(params SaberReviewOperation[] operations) => new SaberReviewPatch { songId = "RushE", difficulty = "e", baseHash = request.baseHash, operations = operations.ToList() };
+    [Test] public void TimingRequestKeepsEveryArrivalAndDescribesAudioOffsetConversion()
+    {
+        string before = SaberChartUtility.ToJson(chart);
+        var comment = SaberPlaybackReviewData.TimingComment(chart, new[] { 2.125f, .75f, 1.5f, 1.5f }, 10);
+        CollectionAssert.AreEqual(new[] { .75f, 1.5f, 2.125f }, comment.requestedNoteSeconds);
+        Assert.AreEqual(.5f, comment.fromSeconds); Assert.AreEqual(2.375f, comment.toSeconds);
+        Assert.IsFalse(comment.hasPoint); Assert.IsEmpty(comment.noteIndices);
+        request.comments.Clear(); request.comments.Add(comment);
+        var roundTrip = JsonUtility.FromJson<SaberReviewRequest>(JsonUtility.ToJson(request));
+        SaberPlaybackReviewData.ValidateComments(chart, roundTrip.comments, 10);
+        CollectionAssert.AreEqual(comment.requestedNoteSeconds, roundTrip.comments[0].requestedNoteSeconds);
+        string prompt = SaberPlaybackReviewData.Prompt(roundTrip, "review");
+        Assert.That(prompt, Does.Contain("0.750, 1.500, 2.125"));
+        Assert.That(prompt, Does.Contain("秒 × 1000 − chart.offsetMs"));
+        Assert.That(prompt, Does.Contain("クリック位置は配置座標の指定ではありません"));
+        Assert.That(prompt, Does.Not.Contain("区間と画像から対象を確認"));
+        Assert.AreEqual(before, SaberChartUtility.ToJson(chart));
+        var patch = Patch(comment.requestedNoteSeconds.Select(t => new SaberReviewOperation {
+            action = "add", note = new SaberChartNote { time = t * 1000 - chart.offsetMs, x = -1, color = "blue" }
+        }).ToArray());
+        var result = SaberPlaybackReviewData.Apply(request, chart, patch, 10);
+        Assert.AreEqual(chart.notes.Count + 3, result.notes.Count);
+        foreach (float time in comment.requestedNoteSeconds)
+            Assert.IsTrue(result.notes.Any(n => Mathf.Abs((n.time + result.offsetMs) / 1000 - time) < .0001f));
+    }
+    [TestCase(float.NaN)] [TestCase(float.PositiveInfinity)] [TestCase(-1f)] [TestCase(.1f)] [TestCase(11f)]
+    public void TimingRequestsRejectUnrepresentableArrivalTimes(float time)
+    {
+        Assert.Throws<InvalidOperationException>(() => SaberPlaybackReviewData.TimingComment(chart, new[] { time }, 10));
+        request.comments[0].requestedNoteSeconds = new[] { time };
+        Assert.Throws<InvalidOperationException>(() => SaberPlaybackReviewData.ValidateComments(chart, request.comments, 10));
+    }
+    [Test] public void TimingRequestsCannotHideArrivalsOutsideTheirCommentRange()
+    {
+        var comment = SaberPlaybackReviewData.TimingComment(chart, new[] { 1f, 3f }, 10);
+        comment.toSeconds = 2;
+        Assert.Throws<InvalidOperationException>(() => SaberPlaybackReviewData.ValidateComments(chart, new System.Collections.Generic.List<SaberReviewComment> { comment }, 10));
+        Assert.Throws<InvalidOperationException>(() => SaberPlaybackReviewData.TimingComment(chart, Array.Empty<float>(), 10));
+    }
     [Test] public void RangeUsesAudioClockOffsetAndIncludesLongTail()
     {
         CollectionAssert.AreEqual(new[] { 0 }, SaberPlaybackReviewData.NotesInRange(chart, 1.2f, 1.3f));

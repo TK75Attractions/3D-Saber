@@ -72,6 +72,7 @@ namespace Saber.ChartEditor
             seconds = rangeA = 0; rangeB = Mathf.Min(1, Duration); comments.Clear(); selected.Clear(); undo.Clear();
             candidate = null; candidateJson = requestJson = ""; hasPoint = after = hasUnsavedChanges = false;
             replyJson = ""; changeIndex = -1; changePage = 0;
+            ResetTimingCapture();
             instruction = lastFolder = editingCommentId = ""; deletedComment = null;
             loadedSong = song; loadedDifficulty = difficulty; timelineStart = 0;
             status = clip == null ? "音源なし：映像のみ再生できます。" : "シークして停止 → 区間やノーツを指定 → 指示を追加。";
@@ -143,7 +144,7 @@ namespace Saber.ChartEditor
             {
                 using (new EditorGUILayout.VerticalScope(GUILayout.Width(position.width - 366)))
                 {
-                    float frameHeight = Mathf.Min((position.width - 386) * 9 / 16f, Mathf.Max(140, position.height - 415));
+                    float frameHeight = Mathf.Min((position.width - 386) * 9 / 16f, Mathf.Max(140, position.height - 445));
                     Rect area = GUILayoutUtility.GetRect(200, frameHeight, GUILayout.ExpandWidth(true));
                     DrawFrame(area);
                     using (new EditorGUILayout.HorizontalScope())
@@ -161,6 +162,7 @@ namespace Saber.ChartEditor
                     EditorGUI.BeginChangeCheck(); float sought = GUILayout.HorizontalSlider(seconds, 0, Duration);
                     if (EditorGUI.EndChangeCheck()) Seek(sought);
                     DrawInspectionControls();
+                    DrawTimingCaptureControls();
                     DrawTimeline();
                     DrawRange();
                     DrawNavigation();
@@ -187,6 +189,7 @@ namespace Saber.ChartEditor
         {
             float width = Mathf.Min(area.width, area.height * 16 / 9);
             area = new Rect(area.center.x - width / 2, area.y, width, width * 9 / 16);
+            reviewFrameRect = area;
             GUI.Box(area, GUIContent.none);
             if (Event.current.type == EventType.Repaint)
             {
@@ -199,8 +202,13 @@ namespace Saber.ChartEditor
                 Vector2 p = area.position + Vector2.Scale(point, area.size);
                 EditorGUI.DrawRect(new Rect(p.x - 10, p.y - 2, 20, 4), Color.yellow); EditorGUI.DrawRect(new Rect(p.x - 2, p.y - 10, 4, 20), Color.yellow);
             }
-            if (Event.current.type == EventType.MouseDown && Event.current.button == 0 && area.Contains(Event.current.mousePosition))
-            { Stop(); point = new Vector2((Event.current.mousePosition.x - area.x) / area.width, (Event.current.mousePosition.y - area.y) / area.height); hasPoint = true; Event.current.Use(); Repaint(); }
+            if (timingCapture) GUI.Label(new Rect(area.x + 10, area.yMax - 27, area.width - 20, 24), "● 映像クリック / Tキーでタイミング記録 · 配置はAIにお任せ", EditorStyles.whiteBoldLabel);
+            if (GUI.enabled && Event.current.type == EventType.MouseDown && Event.current.button == 0 && area.Contains(Event.current.mousePosition))
+            {
+                if (timingCapture) { GUI.FocusControl(null); CaptureTiming(); }
+                else { Stop(); point = new Vector2((Event.current.mousePosition.x - area.x) / area.width, (Event.current.mousePosition.y - area.y) / area.height); hasPoint = true; }
+                Event.current.Use(); Repaint();
+            }
             if (exportPending && Event.current.type == EventType.Repaint) { exportPending = false; ExportRequest(); }
         }
         void DrawRange()
@@ -245,6 +253,8 @@ namespace Saber.ChartEditor
                 {
                     GUILayout.Label($"{++reportNumber}. {c.fromSeconds:0.000}–{c.toSeconds:0.000}s", EditorStyles.boldLabel);
                     GUILayout.Label(c.instruction, EditorStyles.wordWrappedLabel);
+                    if (c.requestedNoteSeconds != null && c.requestedNoteSeconds.Length > 0)
+                        GUILayout.Label($"ノーツ到達の希望 {c.requestedNoteSeconds.Length}打 · 緑の目印", EditorStyles.miniLabel);
                     using (new EditorGUILayout.HorizontalScope())
                     {
                         if (GUILayout.Button("この箇所へ")) VisitComment(c);
@@ -260,7 +270,9 @@ namespace Saber.ChartEditor
                 if (GUILayout.Button("直前に削除した指摘を戻す")) RestoreDeletedComment();
             if (!string.IsNullOrWhiteSpace(instruction))
                 EditorGUILayout.HelpBox("入力中の指摘を追加・更新してから書き出してください。", MessageType.Info);
-            using (new EditorGUI.DisabledScope(comments.Count == 0 || candidate != null || !string.IsNullOrWhiteSpace(instruction)))
+            if (timingCapture || pendingNoteSeconds.Count > 0)
+                EditorGUILayout.HelpBox("タイミング記録を終了して指摘に追加すると、AIへ配置を依頼できます。", MessageType.Info);
+            using (new EditorGUI.DisabledScope(timingCapture || pendingNoteSeconds.Count > 0 || comments.Count == 0 || candidate != null || !string.IsNullOrWhiteSpace(instruction)))
                 if (GUILayout.Button("AIへの依頼を書き出す", GUILayout.Height(30))) { Stop(); exportPending = true; Repaint(); }
             if (!string.IsNullOrEmpty(lastFolder))
             {
@@ -294,13 +306,21 @@ namespace Saber.ChartEditor
             var c = new SaberReviewComment { fromSeconds = rangeA, toSeconds = rangeB, frameSeconds = seconds, hasPoint = hasPoint, screenPoint = point,
                 instruction = instruction.Trim(), noteIndices = selected.Where(i => i >= 0 && i < document.notes.Count).OrderBy(i => i).ToArray() };
             int editing = comments.FindIndex(item => item.id == editingCommentId);
-            if (editing >= 0) { c.id = editingCommentId; comments[editing] = c; } else comments.Add(c);
+            if (editing >= 0)
+            {
+                c.id = editingCommentId; c.requestedNoteSeconds = comments[editing].requestedNoteSeconds;
+                if (c.requestedNoteSeconds != null && c.requestedNoteSeconds.Length > 0)
+                { c.fromSeconds = Mathf.Min(c.fromSeconds, c.requestedNoteSeconds.Min()); c.toSeconds = Mathf.Max(c.toSeconds, c.requestedNoteSeconds.Max()); }
+                comments[editing] = c;
+            }
+            else comments.Add(c);
             instruction = editingCommentId = ""; SaveDraft();
             // 次の再描画で常にこの時刻から画像を作り直すため、古い描画フレームは使わない。
             status = "指示を追加しました。書き出し時に各指示の時刻を撮影します。";
         }
         public void ExportRequest()
         {
+            if (timingCapture || pendingNoteSeconds.Count > 0) throw new InvalidOperationException("タイミング記録を終了し、指摘に追加してから書き出してください。");
             if (comments.Count == 0) return;
             if (!string.IsNullOrWhiteSpace(instruction) || candidate != null) throw new InvalidOperationException("入力中の指摘を確定し、変更案を閉じてから書き出してください。");
             string folder = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "PlaybackReviews", DateTime.Now.ToString("yyyyMMdd-HHmmss") + "-" + Guid.NewGuid().ToString("N").Substring(0, 6)));
@@ -388,6 +408,7 @@ namespace Saber.ChartEditor
                 diskHash = SaberPlaybackReviewData.Hash(raw); legacyHash = ReadLegacyHash();
                 candidate = null; candidateJson = requestJson = replyJson = lastFolder = instruction = editingCommentId = "";
                 comments.Clear(); selected.Clear(); undo.Clear(); deletedComment = null; after = hasPoint = false;
+                ResetTimingCapture();
             }
             base.DiscardChanges(); SaveDraft();
         }
@@ -413,6 +434,7 @@ namespace Saber.ChartEditor
             requestJson = JsonUtility.ToJson(request); comments = request.comments; lastFolder = Path.GetDirectoryName(path);
             candidate = null; candidateJson = replyJson = ""; after = false; selected.Clear(); undo.Clear();
             loadedSong = song; loadedDifficulty = difficulty; instruction = editingCommentId = ""; deletedComment = null;
+            ResetTimingCapture();
             hasUnsavedChanges = SaberPlaybackReviewData.ChartHash(SaberChartUtility.FromJson(File.ReadAllText(source))) != request.baseHash;
             var first = comments.FirstOrDefault(); seconds = first?.frameSeconds ?? 0; rangeA = first?.fromSeconds ?? 0; rangeB = first?.toSeconds ?? 1;
             hasPoint = first?.hasPoint ?? false; point = first?.screenPoint ?? Vector2.zero;

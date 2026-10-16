@@ -23,6 +23,7 @@ namespace Saber.ChartEditor
         public int beatSnap, timelineZoom, changeIndex = -1, changePage;
         public float timelineStart, reviewLeadIn = 1;
         public bool showWaveform = true;
+        public float[] pendingNoteSeconds;
     }
 
     public sealed partial class SaberPlaybackReviewWindow
@@ -47,7 +48,7 @@ namespace Saber.ChartEditor
         {
             get
             {
-                if (string.IsNullOrEmpty(requestJson) || !string.IsNullOrWhiteSpace(instruction)) return false;
+                if (timingCapture || pendingNoteSeconds.Count > 0 || string.IsNullOrEmpty(requestJson) || !string.IsNullOrWhiteSpace(instruction)) return false;
                 // 毎描画で数千ノーツの依頼JSONを読み直さない。
                 if (checkedRequestJson != requestJson) { checkedRequest = JsonUtility.FromJson<SaberReviewRequest>(requestJson); checkedRequestJson = requestJson; }
                 if (checkedChartJson != chartJson) { checkedChartHash = SaberPlaybackReviewData.Hash(chartJson); checkedChartJson = chartJson; }
@@ -70,7 +71,8 @@ namespace Saber.ChartEditor
                     loop = loop, after = after, unsaved = hasUnsavedChanges, selected = selected.OrderBy(i => i).ToArray(),
                     undo = undo.ToArray(), comments = comments, replyJson = replyJson,
                     beatSnap = beatSnap, timelineZoom = timelineZoom, timelineStart = timelineStart,
-                    reviewLeadIn = reviewLeadIn, showWaveform = showWaveform, changeIndex = changeIndex, changePage = changePage
+                    reviewLeadIn = reviewLeadIn, showWaveform = showWaveform, changeIndex = changeIndex, changePage = changePage,
+                    pendingNoteSeconds = pendingNoteSeconds.ToArray()
                 });
                 if (json == lastDraftJson && File.Exists(DraftPath)) return;
                 Directory.CreateDirectory(Path.GetDirectoryName(DraftPath));
@@ -94,6 +96,7 @@ namespace Saber.ChartEditor
                 var restored = SaberChartUtility.FromJson(draft.chartJson);
                 var restoredCandidate = string.IsNullOrEmpty(draft.candidateJson) ? null : SaberChartUtility.FromJson(draft.candidateJson);
                 SaberPlaybackReviewData.ValidateComments(restored, draft.comments, Duration);
+                SaberPlaybackReviewData.ValidateTimingSeconds(restored, draft.pendingNoteSeconds, Duration);
                 document = restored; chartJson = draft.chartJson; candidate = restoredCandidate; candidateJson = draft.candidateJson;
                 legacyHash = draft.legacyHash; requestJson = draft.requestJson; lastFolder = draft.lastFolder;
                 comments = draft.comments; instruction = draft.instruction ?? ""; editingCommentId = draft.editingCommentId ?? "";
@@ -102,6 +105,7 @@ namespace Saber.ChartEditor
                 timelineZoom = Mathf.Clamp(draft.timelineZoom, 0, 3); timelineStart = SafeTime(draft.timelineStart);
                 reviewLeadIn = new[] { 0f, .5f, 1f, 2f }.Contains(draft.reviewLeadIn) ? draft.reviewLeadIn : 1;
                 showWaveform = draft.showWaveform; changeIndex = draft.changeIndex; changePage = draft.changePage;
+                ResetTimingCapture(); pendingNoteSeconds.AddRange(draft.pendingNoteSeconds ?? Array.Empty<float>());
                 rangeB = Mathf.Max(rangeA, SafeTime(draft.rangeB)); hasPoint = draft.hasPoint; point = draft.point;
                 loop = draft.loop; after = draft.after; hasUnsavedChanges = draft.unsaved;
                 selected.Clear(); foreach (int i in draft.selected ?? Array.Empty<int>()) if (i >= 0 && i < document.notes.Count) selected.Add(i);
@@ -183,6 +187,7 @@ namespace Saber.ChartEditor
         void HandleShortcuts()
         {
             var e = Event.current;
+            if (HandleTimingKeys(e)) return;
             if (e.type != EventType.KeyDown || EditorApplication.isPlayingOrWillChangePlaymode) return;
             if ((e.control || e.command) && (e.keyCode == KeyCode.Return || e.keyCode == KeyCode.KeypadEnter))
             { AddComment(); e.Use(); return; }
@@ -231,6 +236,7 @@ namespace Saber.ChartEditor
                 GUI.Label(new Rect(Mathf.Min(x + 2, rect.xMax - 50), rect.y, 50, 17), time.ToString("0.00"), EditorStyles.miniLabel);
             }
             var chart = VisibleDocument;
+            DrawTimingMarkers(rect, timelineStart, span);
             foreach (int i in SaberPlaybackReviewData.NotesInRange(chart, timelineStart, timelineStart + span))
             {
                 var n = chart.notes[i]; float time = (n.time + chart.offsetMs) / 1000f;

@@ -16,6 +16,8 @@ namespace Saber.ChartEditor
         public Vector2 screenPoint;
         public string instruction;
         public int[] noteIndices = Array.Empty<int>();
+        // ノーツが到達してほしい音源時刻。色・座標はAIへの配置依頼で決める。
+        public float[] requestedNoteSeconds = Array.Empty<float>();
     }
     [Serializable] public sealed class SaberReviewRequest
     {
@@ -48,6 +50,22 @@ namespace Saber.ChartEditor
             return BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(text ?? ""))).Replace("-", "").ToLowerInvariant();
         }
         public static string ChartHash(SaberChartDocument chart) => Hash(SaberChartUtility.ToJson(chart, false));
+        public static void ValidateTimingSeconds(SaberChartDocument chart, IEnumerable<float> times, float duration)
+        {
+            if ((times ?? Array.Empty<float>()).Any(t => !Finite(t) || t < 0 || t * 1000 - chart.offsetMs < 0 || t > duration))
+                throw new InvalidOperationException("追加タイミングが音源または譜面の範囲外です。");
+        }
+        public static SaberReviewComment TimingComment(SaberChartDocument chart, IEnumerable<float> times, float duration)
+        {
+            var sorted = times.OrderBy(t => t).Distinct().ToArray();
+            if (sorted.Length == 0) throw new InvalidOperationException("追加タイミングを記録してください。");
+            ValidateTimingSeconds(chart, sorted, duration);
+            return new SaberReviewComment {
+                requestedNoteSeconds = sorted, fromSeconds = Mathf.Max(0, sorted[0] - .25f),
+                toSeconds = Mathf.Min(duration, sorted[sorted.Length - 1] + .25f), frameSeconds = Mathf.Max(0, sorted[0] - .2f),
+                instruction = "記録した各タイミングにノーツが来るように配置してください。色・位置・種類は前後の流れに合わせてお任せします。既存ノーツで満たせる時刻は再利用し、必要なノーツを追加してください。"
+            };
+        }
         public static float SnapAudioTime(SaberChartDocument chart, float seconds, int divisions, float duration)
         {
             if (!Finite(seconds) || divisions < 1 || !Finite(duration) || duration < 0) throw new ArgumentException("拍の刻みと時刻を確認してください。");
@@ -102,6 +120,9 @@ namespace Saber.ChartEditor
                     || (comment.hasPoint && (!Finite(comment.screenPoint.x) || !Finite(comment.screenPoint.y)
                         || comment.screenPoint.x < 0 || comment.screenPoint.x > 1 || comment.screenPoint.y < 0 || comment.screenPoint.y > 1)))
                     throw new InvalidOperationException("指摘の時刻・対象ノーツ・文章・画像位置を確認してください。");
+                ValidateTimingSeconds(chart, comment.requestedNoteSeconds, duration);
+                if ((comment.requestedNoteSeconds ?? Array.Empty<float>()).Any(t => t < comment.fromSeconds || t > comment.toSeconds))
+                    throw new InvalidOperationException("追加タイミングを指摘区間に含めてください。");
             }
         }
         public static int[] NotesInRange(SaberChartDocument chart, float from, float to)
@@ -174,7 +195,12 @@ namespace Saber.ChartEditor
             {
                 text.AppendLine(FormattableString.Invariant($"{++number}. {c.fromSeconds:0.000}〜{c.toSeconds:0.000}秒 / ノーツ[{string.Join(",", c.noteIndices)}]: {c.instruction}"));
                 text.AppendLine(FormattableString.Invariant($"   停止画像: frame-{c.id}.png ({c.frameSeconds:0.000}秒)"));
-                if (c.noteIndices.Length == 0) text.AppendLine("   個別ノーツの選択なし。区間と画像から対象を確認してください。");
+                if (c.requestedNoteSeconds != null && c.requestedNoteSeconds.Length > 0)
+                {
+                    text.AppendLine("   ノーツ到達の希望時刻（音源先頭からの秒）: " + string.Join(", ", c.requestedNoteSeconds.Select(t => FormattableString.Invariant($"{t:0.000}"))));
+                    text.AppendLine("   requestedNoteSecondsの各時刻を優先し、note.time = 秒 × 1000 − chart.offsetMsで変換してください。色・座標・種類は指示と前後の譜面に合わせて配置してください。クリック位置は配置座標の指定ではありません。停止画像は区間の参考です。");
+                }
+                else if (c.noteIndices.Length == 0) text.AppendLine("   個別ノーツの選択なし。区間と画像から対象を確認してください。");
             }
             text.AppendLine("譜面修正はpatch-template.jsonの形式でreply.jsonに出力。baseHash・songId・difficultyを保持し、operationsにはadd/replace/deleteを指定してください。");
             text.AppendLine("indexはrequest.chart.notesの0始まりの元添字。replace/addのnoteは全フィールドを記述。timeとlengthMsはミリ秒。範囲外のノーツや曲設定は変更しないでください。");
