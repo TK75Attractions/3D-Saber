@@ -57,6 +57,20 @@ class IOSCrashLivenessTests(unittest.TestCase):
         end = recorder.index("            let presentationTime", start)
         self.run_swift(OVERLAY_HEAD + recorder[start:end] + OVERLAY_TAIL)
 
+    def test_stopped_start_completion_cannot_stop_during_next_configuration(self):
+        camera = (SOURCE / "CameraViewModel.swift").read_text()
+        lifecycle = camera[camera.index("enum CameraLifecycleState:"):
+                           camera.index("private final class CaptureSessionRunner")]
+        start = camera.index("private final class CaptureSessionRunner")
+        end = camera.index("// 最新の表示値", start)
+        runner = camera[start:end].replace("private final class", "final class", 1)
+        start = camera.index("    private func finishCameraStart(")
+        end = camera.index("    private func startCameraWatchdog()", start)
+        method = camera[start:end].replace("private func finish", "func finish")
+        recovery = (SOURCE / "EventRecovery.swift").read_text()
+        self.run_swift(recovery + lifecycle + STOP_CONFIGURATION_HEAD + runner +
+                       STOP_CONFIGURATION_MODEL + method + STOP_CONFIGURATION_TAIL)
+
 
 NOTIFICATION_HEAD = r'''import Foundation
 import Darwin
@@ -102,6 +116,7 @@ import Darwin
 final class SessionRunner {
  var stops = 0
  func stop() { stops += 1 }
+ func stopSynchronously() { stops += 1 }
 }
 @MainActor final class CameraViewModel {
  let sessionRunner = SessionRunner()
@@ -143,6 +158,75 @@ START_COMPLETION_TAIL = r'''
    }
   }
   exit(failures == 0 ? 0 : 1)
+ }
+}
+'''
+
+STOP_CONFIGURATION_HEAD = r'''
+import Darwin
+// SDK の「設定中の stopRunning は NSGenericException」を記録して検証する。
+// 停止の開始を遅らせ、古い完了通知の直後に次の beginConfiguration を挟む。
+final class AVCaptureSession: @unchecked Sendable {
+ let allowStop = DispatchSemaphore(value: 0)
+ let stopped = DispatchSemaphore(value: 0)
+ private let lock = NSLock()
+ private var configuring = false
+ private var overlap = false
+ var isRunning: Bool { false }
+ func startRunning() {}
+ func stopRunning() {
+  _ = allowStop.wait(timeout: .now() + 0.1)
+  lock.lock()
+  overlap = overlap || configuring
+  lock.unlock()
+  stopped.signal()
+ }
+ func beginConfiguration() {
+  lock.lock(); configuring = true; lock.unlock()
+ }
+ func commitConfiguration() {
+  lock.lock(); configuring = false; lock.unlock()
+ }
+ var stoppedDuringConfiguration: Bool {
+  lock.lock(); defer { lock.unlock() }; return overlap
+ }
+}
+'''
+
+STOP_CONFIGURATION_MODEL = r'''
+@MainActor final class CameraViewModel {
+ let session: AVCaptureSession
+ let sessionRunner: CaptureSessionRunner
+ var cameraLifecycle = CameraLifecycleStateMachine()
+ var lifecycleGeneration = 2
+ var cameraRecoveryGeneration = 0
+ var running = false
+ var cameraRecoveryInProgress = false
+ var cameraErrorMessage: String?
+ init(session: AVCaptureSession) {
+  self.session = session
+  sessionRunner = CaptureSessionRunner(session: session)
+ }
+ func publishCameraLifecycle(at time: TimeInterval) {}
+ func recomputeErrorMessage() {}
+'''
+
+STOP_CONFIGURATION_TAIL = r'''
+}
+@main struct Audit {
+ @MainActor static func main() {
+  let session = AVCaptureSession()
+  let model = CameraViewModel(session: session)
+  // stop() が元の startRunning を同期停止済みで、古い完了 Task だけが残る状態。
+  model.finishCameraStart(succeeded: true, lifecycle: 1, recovery: nil, isRecovery: false)
+  // 直後の start() が MainActor 上で実行する設定区間。
+  session.beginConfiguration()
+  session.allowStop.signal()
+  let completed = session.stopped.wait(timeout: .now() + 1) == .success
+  session.commitConfiguration()
+  let passed = completed && !session.stoppedDuringConfiguration
+  print("stopped start completion before next configuration", passed ? "PASS" : "FAIL: stopRunning overlaps begin/commitConfiguration")
+  exit(passed ? 0 : 1)
  }
 }
 '''

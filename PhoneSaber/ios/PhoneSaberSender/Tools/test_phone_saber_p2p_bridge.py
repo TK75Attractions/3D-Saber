@@ -537,6 +537,122 @@ class DiagnosticsRelayTests(unittest.TestCase):
 
 
 class P2PBridgeLauncherTests(unittest.TestCase):
+    def test_compiler_tree_enumeration_uses_pid_counts_not_byte_counts(self):
+        tree = {100: list(range(101, 109)), 101: [201, 202, 203]}
+
+        def children(pid, buffer, size):
+            pids = tree.get(pid, [])
+            if buffer is None:
+                return len(pids)
+            self.assertEqual(size, launcher.ctypes.sizeof(buffer))
+            for index, child in enumerate(pids[:len(buffer)]):
+                buffer[index] = child
+            return min(len(pids), len(buffer))
+
+        libproc = mock.Mock()
+        libproc.proc_listchildpids.side_effect = children
+        with mock.patch.object(launcher.ctypes, "CDLL", return_value=libproc), \
+                mock.patch.object(launcher.os, "kill") as kill:
+            launcher._kill_compiler_tree(100)
+        pids = [100, *tree[100], *tree[101]]
+        self.assertEqual(kill.call_args_list,
+                         [mock.call(pid, signal.SIGSTOP) for pid in pids]
+                         + [mock.call(pid, signal.SIGKILL) for pid in reversed(pids)])
+
+    def test_compiler_tree_enumeration_retries_a_full_buffer(self):
+        capacities = []
+
+        def children(pid, buffer, size):
+            if pid != 100:
+                return 0
+            if buffer is None:
+                return 2
+            capacities.append(len(buffer))
+            pids = [101, 102, 103, 104, 105]
+            for index, child in enumerate(pids[:len(buffer)]):
+                buffer[index] = child
+            return min(len(pids), len(buffer))
+
+        libproc = mock.Mock()
+        libproc.proc_listchildpids.side_effect = children
+        with mock.patch.object(launcher.ctypes, "CDLL", return_value=libproc), \
+                mock.patch.object(launcher.os, "kill") as kill:
+            launcher._kill_compiler_tree(100)
+        self.assertEqual(capacities[0], 2)
+        self.assertGreater(capacities[-1], 5)
+        self.assertEqual([call.args[0] for call in kill.call_args_list
+                          if call.args[1] == signal.SIGKILL], [105, 104, 103, 102, 101, 100])
+
+    @unittest.skipUnless(sys.platform == "darwin", "requires macOS libproc")
+    def test_interrupted_build_stops_compiler_descendants(self):
+        for signum in (signal.SIGTERM, signal.SIGINT):
+            with self.subTest(signal=signum), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                ready = root / "frontend-ready"
+                driver_pid = root / "driver-pid"
+                frontend = root / "frontend.py"
+                frontend.write_text(
+                    "import os, pathlib, signal, socket, time\n"
+                    "os.setpgid(0, 0)\n"
+                    "signal.signal(signal.SIGTERM, signal.SIG_IGN)\n"
+                    "signal.signal(signal.SIGINT, signal.SIG_IGN)\n"
+                    "server = socket.socket()\n"
+                    "server.bind(('127.0.0.1', 0))\n"
+                    "server.listen()\n"
+                    f"pathlib.Path({str(ready)!r}).write_text(f'{{os.getpid()}} {{server.getsockname()[1]}}')\n"
+                    "client, _ = server.accept()\n"
+                    "client.sendall(b'ready')\n"
+                    "time.sleep(60)\n")
+                # swiftc と同様に子を起動する実プロセスで、ドライバだけ終了する場合も再現する。
+                driver = root / "driver.py"
+                driver.write_text(
+                    "import os, pathlib, subprocess, sys, time\n"
+                    f"pathlib.Path({str(driver_pid)!r}).write_text(str(os.getpid()))\n"
+                    "pathlib.Path(sys.argv[1]).write_bytes(b'partial compiler output')\n"
+                    f"subprocess.Popen([sys.executable, {str(frontend)!r}])\n"
+                    "time.sleep(60)\n")
+                harness = root / "build.py"
+                harness.write_text(
+                    "import pathlib, subprocess, sys\n"
+                    f"sys.path.insert(0, {str(Path(launcher.__file__).parent)!r})\n"
+                    "import phone_saber_p2p_bridge as launcher\n"
+                    "popen = subprocess.Popen\n"
+                    "def compile(command, **kwargs):\n"
+                    f"    return popen([sys.executable, {str(driver)!r}, command[-1]], **kwargs)\n"
+                    "launcher.subprocess.Popen = compile\n"
+                    f"launcher.build(pathlib.Path({str(root / 'cache')!r}))\n")
+                process = subprocess.Popen([sys.executable, "-B", str(harness)],
+                                           stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                try:
+                    deadline = time.monotonic() + 10
+                    while not ready.exists() and process.poll() is None and time.monotonic() < deadline:
+                        time.sleep(0.02)
+                    self.assertTrue(ready.exists(), "compiler frontend did not start")
+                    _, port = map(int, ready.read_text().split())
+                    with socket.create_connection(("127.0.0.1", port), timeout=3) as client:
+                        self.assertEqual(client.recv(5), b"ready")
+                        process.send_signal(signum)
+                        _, stderr = process.communicate(timeout=10)
+                        self.assertEqual(process.returncode, 128 + signum, stderr)
+                        try:
+                            closed = client.recv(1) == b""
+                        except ConnectionResetError:
+                            closed = True
+                        except socket.timeout:
+                            closed = False
+                        self.assertTrue(closed, "compiler frontend survived build cancellation")
+                    self.assertEqual(list((root / "cache").rglob("*.tmp")), [])
+                finally:
+                    if process.poll() is None:
+                        process.kill()
+                    process.communicate(timeout=5)
+                    for path in (ready, driver_pid):
+                        if path.exists():
+                            try:
+                                os.kill(int(path.read_text().split()[0]), signal.SIGKILL)
+                            except ProcessLookupError:
+                                pass
+
     def test_changed_sources_during_build_are_not_published_under_the_old_digest(self):
         with tempfile.TemporaryDirectory() as directory:
             source = Path(directory) / "bridge.swift"

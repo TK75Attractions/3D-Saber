@@ -28,6 +28,7 @@ def main():
     parser.add_argument('--frame-before-ref', help='旧InputPointの新着なしlock回帰FAILとhost計測を確認')
     parser.add_argument('--frames-only', action='store_true', help='新着なし/定常入力のhost回帰と計測だけ実行')
     parser.add_argument('--sender-before-ref', help='旧統計の競合なしpoll回帰FAILとhost計測を確認')
+    parser.add_argument('--prediction-before-ref', help='旧InputPointの時計混在による予測期限切れ回帰FAILを確認')
     args = parser.parse_args()
     editor = Path(os.environ.get('PHONESABER_UNITY_CONTENTS', '/Applications/Unity/Hub/Editor/6000.3.9f1/Unity.app/Contents'))
     mono = editor / 'Resources/Scripting/MonoBleedingEdge'
@@ -67,13 +68,15 @@ public static class ProjectorMode { public const float BladeWidthScale=1,BladeOu
         frame_sources = sources + [frame_tests, stats_tests, sender_tests, HOST / 'Host.cs']
         runtime = dict(os.environ, MONO_PATH=os.pathsep.join(map(str, (
             nunit.parent, build, editor / 'Resources/Scripting/Managed/UnityEngine', template))))
-        for before in ([True, False] if args.frame_before_ref or args.sender_before_ref else [False]):
+        for before in ([True, False] if args.frame_before_ref or args.sender_before_ref or args.prediction_before_ref else [False]):
             current = list(frame_sources)
-            # native API は起動しない。時計を固定し、未使用の旧画面写像のqueryもhostへ差し替える。
+            # native API は起動しない。Unity時計を固定し、画面・保存設定のqueryもhostへ差し替える。
             host_input = build / 'InputPointHost.cs'
-            source = (subprocess.check_output(['git', 'show', args.frame_before_ref +
+            input_before = args.frame_before_ref or args.prediction_before_ref
+            source = (subprocess.check_output(['git', 'show', input_before +
                 ':Assets/Scripts/Managers/Inputsystem/Input/InputPoint.cs'], cwd=ROOT).decode()
-                if before and args.frame_before_ref else (INPUT / 'InputPoint.cs').read_text())
+                if before and input_before else (INPUT / 'InputPoint.cs').read_text())
+            source = source.replace('PhoneSaberPerfLog.Estimate(', 'FramePredictionPerfLog.Estimate(')
             host_input.write_text('using Time = FrameClock;\nusing Screen = FrameScreen;\n' + source)
             current[current.index(INPUT / 'InputPoint.cs')] = host_input
             if before and args.sender_before_ref:
@@ -86,11 +89,13 @@ public static class ProjectorMode { public const float BladeWidthScale=1,BladeOu
                               '/r:' + str(nunit), '/out:' + str(exe)] + refs + list(map(str, current))):
                 return 1
             expected = (3 if before and args.frame_before_ref else 0) | (4 if before and args.sender_before_ref else 0)
-            result = run([str(mono / 'bin/mono'), str(exe), str(expected)], env=runtime)
+            expected |= 24 if before and args.prediction_before_ref else 0
+            skip_prediction = ['skip-prediction'] if before and args.frame_before_ref and not args.prediction_before_ref else []
+            result = run([str(mono / 'bin/mono'), str(exe), str(expected)] + skip_prediction, env=runtime)
             if result:
                 return 1
             if before:
-                print('Before lock regressions FAIL reproduced (expected mask): ' + str(expected))
+                print('Before frame regressions FAIL reproduced (expected mask): ' + str(expected))
         if args.frames_only:
             return 0
         if args.platform_before_ref:

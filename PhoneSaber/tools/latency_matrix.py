@@ -76,12 +76,10 @@ def launch_android(adb, device, arguments):
 
 
 def run_probe(app, blocks, unity_arguments, log):
-    offset = EVENTS.stat().st_size if EVENTS.exists() else 0
+    cursor = event_cursor(EVENTS.parent)
     subprocess.run(["/usr/bin/open", "-n", "-W", str(app), "--args", "-phonesaberStation", "A",
                     "-phonesaberLatencyProbe", str(blocks), *unity_arguments, "-logFile", str(log)])
-    with EVENTS.open("rb") as handle:
-        handle.seek(offset)
-        return handle.read().decode("utf-8", "replace").splitlines()
+    return new_events(EVENTS.parent, cursor)
 
 
 def summarise(lines, required_blocks=None, addresses=None):
@@ -210,7 +208,7 @@ def main():
                     description = 'Androidの現在の送信設定・全画面'
             else:
                 summary = summarise(run_probe(args.app, args.blocks, unity_arguments, log),
-                                    args.blocks if args.phone == 'android' else None, addresses)
+                                    args.blocks, addresses)
             summary.update(name=name, description=description, round=round_index + 1)
             results.append(summary)
             print(f"{name:9} #{round_index + 1}: 往復 {show(summary['loop'])} ms (p95 {show(summary['loop_p95'])}, "
@@ -219,10 +217,9 @@ def main():
                   f"発熱 {','.join(summary['thermal']) or '-'} fps {','.join(summary['fps_mode']) or '-'}", flush=True)
     if args.json:
         Path(args.json).write_text(json.dumps(results, ensure_ascii=False, indent=1), encoding="utf-8")
-    if args.phone == 'android' and len(results) != args.repeat * len(names):
+    if len(results) != args.repeat * len(names):
         return 1
-    return 0 if results and (not (windows or args.phone == 'android') or
-                            all(r['complete'] and r['samples'] > 0 and r['loop'] is not None for r in results)) else 1
+    return 0 if results and all(r['complete'] and r['samples'] > 0 and r['loop'] is not None for r in results) else 1
 
 
 if __name__ == "__main__":

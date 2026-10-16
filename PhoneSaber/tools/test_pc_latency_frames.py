@@ -24,6 +24,11 @@ class FrameRegressionGateTests(unittest.TestCase):
         fixture.write_text('''using System;
 using NUnit.Framework;
 public class InputPoint {}
+public struct PhoneSaberTimingStats {}
+public class PhoneSaberLatencyEstimate {
+ public PhoneSaberLatencyEstimate(object phone, PhoneSaberTimingStats timing, string sender,
+  double age, double now, double hz, int vsync) {}
+}
 public class PhoneSaberReceiverStateReadTests {
  public static InputPoint CreateIdleInput() => new InputPoint();
  public static Action BindIdleRead(InputPoint input) => () => {};
@@ -40,6 +45,10 @@ public class PhoneSaberReceiverStateReadTests {
  public void IdleCoordinatesAllocateZeroBytes() {}
  public void BothColoursConsumePacketsAndAllocateZeroBytesBetweenPackets() {}
  public void PendingDiagnosticIsDrainedEvenWithoutNewCoordinates(string field) {}
+ public void AutomaticPredictionExpiresBeforeTheNextPeriodicRefresh(bool blue) {
+  if (Environment.GetEnvironmentVariable("FRAME_GATE_FAILURE") == (blue ? "prediction-blue" : "prediction-red"))
+   Assert.AreEqual(0, 44, "受信時計の期限切れを次の定期更新まで持ち越さない");
+ }
 }
 public class PhoneSaberPacketStatistics {
  public void Record(double now, string sender, bool parsed) {}
@@ -66,14 +75,16 @@ public class PhoneSaberSenderGateTests {}
                               capture_output=True, text=True, timeout=30)
 
     def test_after_and_exact_before_failure_are_accepted(self):
-        for failure, expected in [('', 0), ('red', 1)]:
+        for failure, expected in [('', 0), ('red', 1), ('prediction-red', 8), ('prediction-blue', 16)]:
             with self.subTest(failure=failure):
                 result = self.run_gate(failure, expected)
                 self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_same_count_wrong_target_is_rejected(self):
-        result = self.run_gate('blue', 1)
-        self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+        for failure, expected in [('blue', 1), ('prediction-blue', 8)]:
+            with self.subTest(failure=failure):
+                result = self.run_gate(failure, expected)
+                self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_unexpected_exception_and_setup_failure_are_rejected(self):
         for failure in ['exception', 'setup']:

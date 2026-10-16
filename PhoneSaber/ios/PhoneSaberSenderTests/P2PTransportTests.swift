@@ -771,6 +771,44 @@ final class P2PTransportTests: XCTestCase {
         XCTAssertTrue(recovered)
     }
 
+    func testDuplicatePongsDoNotRestoreAStaleLink() async throws {
+        let bridge = try FakeBridge()
+        defer { bridge.stop() }
+        let port = try await bridge.ready()
+        let now = LockedBox<TimeInterval>(100)
+        let sender = P2PSender(timing: fastTiming(),
+                               endpointOverride: .hostPort(host: "127.0.0.1", port: port),
+                               clock: { now.value })
+        defer { sender.stop() }
+        let falseRecovery = expectation(description: "重複 pong で P2P に戻らない")
+        falseRecovery.isInverted = true
+        let watching = LockedBox(false)
+        sender.start(onState: { state in
+            if watching.value && state.isConnected { falseRecovery.fulfill() }
+        })
+        let connected = await waitFor { sender.isUsable }
+        XCTAssertTrue(connected)
+        bridge.answering = false
+        // 送信済みの応答を処理してから、最後の pong を期限切れにする。
+        try await Task.sleep(for: .milliseconds(150))
+        now.mutate { $0 += 0.4 }
+        let stale = await waitFor { !sender.isUsable }
+        XCTAssertTrue(stale)
+        watching.mutate { $0 = true }
+        bridge.repeatLastPong(count: 3)
+        await fulfillment(of: [falseRecovery], timeout: 0.3)
+        XCTAssertFalse(sender.isUsable, "同じ応答3枚では新しい疎通の証拠にならない")
+        let fallback = expectation(description: "LAN へ退避する")
+        sender.send("1,2,3,4", to: 5005, completion: { _ in XCTFail("古い pong で座標を送らない") },
+                    fallback: { fallback.fulfill() })
+        await fulfillment(of: [fallback], timeout: 1)
+
+        watching.mutate { $0 = false }
+        bridge.answering = true
+        let recovered = await waitFor { sender.isUsable }
+        XCTAssertTrue(recovered, "新しい ping への応答なら復帰する")
+    }
+
     func testOnlyTheNewestCoordinateWaitsAndPortsOutsideRedBlueAreRejected() async throws {
         let bridge = try FakeBridge()
         defer { bridge.stop() }
@@ -1463,6 +1501,7 @@ final class FakeBridge: @unchecked Sendable {
     private let queue = DispatchQueue(label: "FakeBridge")
     private let state = LockedBox<(coordinates: [P2PMessage], answering: Bool)>(([], true))
     private var connections: [NWConnection] = []
+    private var lastPong: (connection: NWConnection, data: Data)?
 
     init() throws {
         let parameters = NWParameters.udp
@@ -1507,8 +1546,9 @@ final class FakeBridge: @unchecked Sendable {
             if let data, case .success(let message) = P2PMessage.decode(data) {
                 switch message.kind {
                 case .ping where self.answering:
-                    connection.send(content: P2PMessage.pong(session: message.session, echoing: message.sequence).encoded(),
-                                    completion: .idempotent)
+                    let pong = P2PMessage.pong(session: message.session, echoing: message.sequence).encoded()
+                    self.lastPong = (connection, pong)
+                    connection.send(content: pong, completion: .idempotent)
                 case .coordinates:
                     self.state.mutate { $0.coordinates.append(message) }
                 default:
@@ -1516,6 +1556,15 @@ final class FakeBridge: @unchecked Sendable {
                 }
             }
             if error == nil { self.receive(connection) }
+        }
+    }
+
+    func repeatLastPong(count: Int) {
+        queue.sync {
+            guard let lastPong else { return }
+            for _ in 0..<count {
+                lastPong.connection.send(content: lastPong.data, completion: .idempotent)
+            }
         }
     }
 

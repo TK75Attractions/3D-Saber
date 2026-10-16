@@ -32,16 +32,22 @@ cat > "$staged/Contents/Info.plist" <<PLIST
 </dict></plist>
 PLIST
 # 起動側は Dock に出さない（ゲーム本体が出る）。ゲームが終わるまで監視を続け、ログは ~/Library/Logs/PhoneSaber。
+# パス中の $・引用符・バッククォートを、起動時にシェルのコードとして解釈させない。
+# bash 3.2 の %q は UTF-8 locale で文字を壊すため、この変換だけ C locale にする。
+REPO_LITERAL="$(
+    LC_ALL=C
+    printf '%q' "$REPO"
+)"
 cat > "$staged/Contents/MacOS/launcher" <<SCRIPT
 #!/bin/bash
-REPO="$REPO"
+REPO=$REPO_LITERAL
 LOG="\$HOME/Library/Logs/PhoneSaber/launcher.log"
 mkdir -p "\$(dirname "\$LOG")"
 if [[ ! -x "\$REPO/PhoneSaber/mac/saber-watchdog.sh" && ! -f "\$REPO/PhoneSaber/mac/saber-watchdog.sh" ]] || [[ ! -d "\$REPO/Builds/Mac/3D-Saber.app" ]]; then
     /usr/bin/osascript -e 'display alert "Beat Trace Slash" message "ゲーム本体が見つかりません: '"\$REPO"'/Builds/Mac/3D-Saber.app"' >/dev/null 2>&1
     exit 1
 fi
-printf '\n=== %s 起動（台 $STATION）\n' "\$(date '+%Y-%m-%d %H:%M:%S')" >> "\$LOG"
+printf '\n=== %s 起動（台 ${STATION}）\n' "\$(date '+%Y-%m-%d %H:%M:%S')" >> "\$LOG"
 exec /bin/bash "\$REPO/PhoneSaber/mac/saber-watchdog.sh" $STATION "\$REPO/Builds/Mac/3D-Saber.app" < /dev/null >> "\$LOG" 2>&1
 SCRIPT
 chmod +x "$staged/Contents/MacOS/launcher" || exit 1

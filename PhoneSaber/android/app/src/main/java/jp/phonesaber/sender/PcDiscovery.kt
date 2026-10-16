@@ -150,7 +150,8 @@ class PcDiscovery(context: Context,
         publish()
         val wifi = network ?: return
         // 開発用の非Wi-Fi経路は手入力だけ。Wi-Fi探索・multicast lockは使わない。
-        if (!isWifi(wifi)) return
+        // 通常はWi-Fi限定の通知で選択済み。通知に遅れる同期getterのnullで探索を止めない。
+        if (allowNonWifi && !isWifi(wifi)) return
         val token = generation
         try { multicast.acquire() } catch (e: Exception) {
             warning = "探索ロック失敗: ${e.localizedMessage}"
@@ -256,7 +257,7 @@ class PcDiscovery(context: Context,
     @Suppress("DEPRECATION") // API 29-compatible resolver; serialize requests to avoid ALREADY_ACTIVE.
     private fun beginNsd(token: Int) {
         val queue = ArrayDeque<NsdServiceInfo>()
-        val present = mutableSetOf<String>()
+        val present = mutableMapOf<String, NsdServiceInfo>()
         fun resolveNext() {
             if (token != generation || queue.isEmpty()) return
             if (resolveBusy) { resumeResolve = { resolveNext() }; return }
@@ -293,7 +294,8 @@ class PcDiscovery(context: Context,
                                     info.hostAddresses.firstOrNull { it is Inet4Address }
                                         ?: info.hostAddresses.firstOrNull()
                                 } else info.host
-                                if (info.serviceName in present && StationMatcher.service(station, info.serviceName) &&
+                                // 同名で再出現しても、消失前の解決結果で旧IPを復活させない。
+                                if (present[info.serviceName] === service && StationMatcher.service(station, info.serviceName) &&
                                     host != null && !host.isAnyLocalAddress) {
                                     // Bonjour service port is discovery metadata. Coordinates use fixed ports.
                                     val key = "nsd:${info.serviceName}"
@@ -322,7 +324,7 @@ class PcDiscovery(context: Context,
             override fun onServiceFound(info: NsdServiceInfo) {
                 main.post {
                     if (!active || token != generation || !StationMatcher.service(station, info.serviceName) ||
-                        !present.add(info.serviceName)) return@post
+                        present.putIfAbsent(info.serviceName, info) != null) return@post
                     if (queue.size < 16) { queue.add(info); resolveNext() }
                 }
             }

@@ -250,16 +250,6 @@ def short_techniques(ns,m):
   for n,x,y in prior:n['x']=x;n['y']=y
  return report
 
-def direction_training_candidate(ns,source,preserve_hits):
- """方向練習のために確定済み休符を埋めず、上位の方向を固定する。"""
- candidate=copy.deepcopy(ns)
- existing=next((n for n in candidate if n['time']==source['time'] and n['_hand']==source['_hand']),None)
- if existing is None:
-  if preserve_hits:return None
-  existing=copy.deepcopy(source);candidate.append(existing)
- existing.update(_arrow=True,_forced=source['direction'])
- return candidate
-
 def finalize(ns,m,diff,metadata,upper=None):
  for n in ns:n['_arrow']=False;n['_forced']=None;n['direction']='none';n['type']='long' if n['count']==2 else 'tap'
  # フリックは少数の強い区切りだけ。下位は同じ座標で方向指定を簡略化できる。
@@ -286,8 +276,9 @@ def finalize(ns,m,diff,metadata,upper=None):
   # 方向指定の練習を最低一つ残す。Hardの既存打点を同じ手・位置・方向で採用する。
   for source in upper:
    if not source['_arrow'] or source.get('_pair'):continue
-   candidate=direction_training_candidate(ns,source,(Path(__file__).parent/'rhythm-contrast-design.json').exists())
-   if candidate is None:continue
+   candidate=copy.deepcopy(ns);existing=next((n for n in candidate if n['time']==source['time'] and n['_hand']==source['_hand']),None)
+   if existing is None:candidate.append(copy.deepcopy(source))
+   else:existing.update(_arrow=True,_forced=source['direction'])
    candidate.sort(key=lambda n:(n['time'],n['_hand']));valid=True
    seq=[n for n in candidate if n['_hand']==source['_hand']]
    for a,b in zip(seq,seq[1:]):
@@ -301,7 +292,7 @@ def finalize(ns,m,diff,metadata,upper=None):
   if n['_arrow']:n['direction']=plan[i]['directions'][0];n['type']='direction'
  chart=copy.deepcopy(metadata);chart['notes']=[{k:v for k,v in n.items() if not k.startswith('_')} for n in ns]
  chart['hierarchyDesignVersion']=1;chart['_comment']='Hard主譜面から下位へ打点・手・位置を包含。4置き場と共通アクセント。hierarchy-design.json参照。'
- chart['displayLevel']=metadata['displayLevel'] if metadata.get('styleDesignVersion') else {'ManicSonic':(3,6,9),'escapade':(3,6,9),'logic':(3,6,7),'BenkyouRemaster':(3,6,8),'Aobasou':(3,6,8)}[m.spec['id']][('easy','normal','hard').index(diff)]
+ chart['displayLevel']={'ManicSonic':(3,6,10),'escapade':(3,6,10),'logic':(3,6,9),'BenkyouRemaster':(3,6,9),'Aobasou':(3,6,10)}[m.spec['id']][('easy','normal','hard').index(diff)]
  ev=[dict(index=i,beat=n['beat'],hand='red' if n['_hand']==0 else 'blue',role=FORM[m.spec['id']][section(m,n['beat'])][4],phrase=int(n['beat']//16),sharedAccent=n.get('_key',False),**m.ev(n['beat'])) for i,n in enumerate(ns)]
  return chart,dict(notes=plan),ev
 

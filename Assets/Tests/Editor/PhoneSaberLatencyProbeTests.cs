@@ -158,6 +158,40 @@ public class PhoneSaberLatencyProbeTests
         Assert.AreEqual(80.0, loop.SamplesMs[0], 1e-6);
     }
 
+    [TestCase(1.500001)]
+    [TestCase(3.0)]
+    public void PacketReceivedAfterTimeoutIsAMissAndNextMeasurementRecovers(double delay)
+    {
+        var loop = new PhoneSaberLatencyLoop();
+        loop.Tick(1.0, 0.99, -0.5f, true);
+        Assert.IsTrue(loop.Waiting);
+        double receivedAt = 1.0 + delay;
+        loop.Tick(receivedAt + 0.01, receivedAt, 0.5f, true);
+        Assert.AreEqual(0, loop.TotalSamples, "期限後に届いた応答を遅延の実測値へ加えない");
+        Assert.AreEqual(0, loop.SamplesMs.Count);
+        Assert.AreEqual(1, loop.Misses);
+        Assert.IsFalse(loop.Waiting);
+
+        double next = receivedAt + 1.1;
+        loop.Tick(next, next - 0.01, 0.5f, true);
+        Assert.IsTrue(loop.Waiting, "タイムアウト後も次の測定を始められる");
+        loop.Tick(next + 0.10, next + 0.08, -0.5f, true);
+        Assert.AreEqual(1, loop.TotalSamples);
+        Assert.AreEqual(80.0, loop.SamplesMs[0], 1e-6);
+        Assert.AreEqual(1, loop.Misses);
+    }
+
+    [Test]
+    public void PacketReceivedExactlyAtTimeoutRemainsValidEvenIfTickIsDelayed()
+    {
+        var loop = new PhoneSaberLatencyLoop();
+        loop.Tick(1.0, 0.99, -0.5f, true);
+        loop.Tick(3.0, 1.0 + PhoneSaberLatencyLoop.TimeoutSeconds, 0.5f, true);
+        Assert.AreEqual(1, loop.TotalSamples);
+        Assert.AreEqual(PhoneSaberLatencyLoop.TimeoutSeconds * 1000, loop.SamplesMs[0], 1e-6);
+        Assert.AreEqual(0, loop.Misses);
+    }
+
     [Test]
     public void RejectsImplausiblyFastAndWrongSideResponses()
     {

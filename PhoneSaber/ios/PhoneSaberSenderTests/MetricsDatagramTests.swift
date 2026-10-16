@@ -40,6 +40,29 @@ final class MetricsDatagramTests: XCTestCase {
         for i in 0..<100 { meter.sent(at: 20 + Double(i) / 100); meter.reply(at: 20.001 + Double(i) / 100) }
         XCTAssertEqual(meter.snapshot(at: 21).count, 16)
     }
+    func testRttSnapshotExcludesRepliesNewerThanTheRequestedTime() {
+        var meter = ProbeRoundTrip()
+        meter.sent(at: 10); meter.reply(at: 10.01)
+        // 集計側が時刻を取得してから lock を取る間に、探索キューへ次の応答が届く。
+        let snapshotTime = 10.02
+        meter.sent(at: 10.02); meter.reply(at: 10.05)
+        let snapshot = meter.snapshot(at: snapshotTime)
+        XCTAssertEqual(snapshot.count, 1)
+        XCTAssertEqual(snapshot.median!, 10, accuracy: 1e-9)
+        XCTAssertEqual(snapshot.age!, 0.01, accuracy: 1e-9)
+        var metrics = MetricsDatagram()
+        metrics.rtt = snapshot.median; metrics.rttSamples = snapshot.count; metrics.rttAge = snapshot.age
+        XCTAssertTrue(metrics.line()!.contains("rtt-ms=10.0 rtt-n=1 rtt-age-s=0.0"))
+
+        let beforeFirstReply = meter.snapshot(at: 10)
+        XCTAssertEqual(beforeFirstReply.count, 0)
+        XCTAssertNil(beforeFirstReply.median)
+        XCTAssertNil(beforeFirstReply.age)
+        // 将来の集計では除外した応答も使え、10秒ちょうどの標本も残る。
+        XCTAssertEqual(meter.snapshot(at: 10.05).count, 2)
+        XCTAssertEqual(meter.snapshot(at: 20.05).count, 1)
+        XCTAssertEqual(meter.snapshot(at: 20.051).count, 0)
+    }
     func testCadenceAndUntrustedValues() {
         var cadence = MetricsCadence()
         XCTAssertFalse(cadence.due(at: 0, sending: true)); XCTAssertFalse(cadence.due(at: 4.99, sending: true))

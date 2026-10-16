@@ -415,7 +415,8 @@ public sealed class PhoneSaberLatencyLoop
         if (fresh) lastPacketTime = packetTime;
         if (Waiting)
         {
-            if (fresh && packetTime > switchAt && baseline.HasValue &&
+            // 処理が遅れた場合も受信時刻で期限を判定し、期限後の応答を測定値にしない。
+            if (fresh && packetTime > switchAt && packetTime - switchAt <= TimeoutSeconds && baseline.HasValue &&
                 Distance(x, y, baseline.Value, baselineY) > MoveThreshold)
             {
                 double latencyMs = (packetTime - switchAt) * 1000.0;

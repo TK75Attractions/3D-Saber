@@ -1267,7 +1267,8 @@ final class CameraViewModel: NSObject, ObservableObject {
         case .ignore:
             return
         case .stopSession:
-            sessionRunner.stop()
+            // 次の start() の設定区間に、この停止を持ち越さない。
+            sessionRunner.stopSynchronously()
             return
         }
         // 初回起動の遅い完了通知で、その後の中断・エラー・復旧状態を上書きしない。

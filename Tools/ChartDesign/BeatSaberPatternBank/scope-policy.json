@@ -21,7 +21,5 @@
   "layoutPolicy": "通常の横配置を中心にし、縦・交差・反転は短いフレーズの技として使う。曲全体を回転させない。",
   "handPolicy": "色で担当手を判定し、金はcut-plan/evidenceを使う。x座標から手を推定しない。",
   "hardPolicy": "Hardは広い横幅・高低差を使用する。短い縦・交差・同側の技は音と動線に応じて選ぶ。実音の打点と休符を優先し、全体の一律回転をしない。",
-  "hierarchyPolicy": "Hardを主譜面、NormalとEasyは下位包含。保持した時刻・手・位置は一致。4置き場とsharedAccentsを維持しverify_hierarchy.pyを必須にする。",
-  "hardLevelPolicy": "最新の曲別HardはManicSonic9/escapade9/logic7/BenkyouRemaster8/Aobasou8。実データのChartDifficultyRaterも7〜9で一致。",
-  "songStylePolicy": "song-style-design.jsonとrhythm-contrast-design.json第2版を優先。protectedCoreHitsで曲の代表フレーズを定時更新から保護。"
+  "hierarchyPolicy": "Hardを主譜面、NormalとEasyは下位包含。保持した時刻・手・位置は一致。4置き場とsharedAccentsを維持しverify_hierarchy.pyを必須にする。"
 }
