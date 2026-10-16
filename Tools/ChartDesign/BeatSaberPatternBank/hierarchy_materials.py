@@ -12,6 +12,15 @@ def style_core_valid(ns,anchors):
  lookup={(round(n['time'],4),n['_hand']):(n['x'],n['y']) for n in ns}
  return all(lookup.get((round(a['time'],4),a['hand']))==(a['x'],a['y']) for a in anchors)
 
+def rest_ranges_valid(ns,base,phase,ranges):
+ """休みを主題にした素材は、移植先にも同じ位相の休みがあるときだけ使う。"""
+ for n in ns:
+  for cut in n.get('_cutBeats',[n['beat']]):
+   if base<=cut<base+8:
+    beat=(cut-base-phase)%4
+    if any(start-1e-6<=beat<end-1e-6 for start,end in ranges):return False
+ return True
+
 def movement_valid(ns,m):
  for h in (0,1):
   seq=[n for n in ns if n['_hand']==h]
@@ -59,6 +68,7 @@ def main():
     if any(n.get('_key') or n['type']=='long' for n in window):continue
     if len(pattern['chart']['notes'])==1 and len(window)>4:continue
     for phase in (0,.5,1,1.5,2,2.5,3,3.5):
+     if not rest_ranges_valid(ns,base,phase,pattern.get('requiredRestRanges',[])):continue
      matches=[]
      for r in (0,1):
       for source in pattern['chart']['notes']:
@@ -110,7 +120,7 @@ def main():
   if 'appliedNotes' in a:a.setdefault('preHierarchyAppliedNotes',copy.deepcopy(a['appliedNotes']))
   a['noteIndices']=[i for i,n in enumerate(chart['notes']) if a['startBeat']<=n['beat']<a['endBeat']];a['appliedNotes']=[chart['notes'][i] for i in a['noteIndices']];a['addedNotes']=len(a['appliedNotes'])
   if a['patternId'] not in added:
-   a['fidelity']='以前の素材を参照した区間を、今回の実音・4置き場・下位包含に合わせて再設計。元の翻案そのものと現在の区間は同一ではない。履歴はpreHierarchyAppliedNotes。'
+   a['fidelity']='映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。'
    a['layoutAdaptation']='曲別の音はめと共通アクセント、Hardからの包含を優先して再構成。原作配置のそのままのコピーではない。'
  prior.update(applications=apps,pending=pending,convertedCount=len(patterns),appliedCount=len(apps));save(bank/'applications.json',prior)
  history['materialUpdate']={'added':added,'pending':pending};save(design/'hierarchy-design.json',history)

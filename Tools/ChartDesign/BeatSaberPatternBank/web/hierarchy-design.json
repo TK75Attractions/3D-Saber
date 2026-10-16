@@ -3148,9 +3148,9 @@
           "notes": 416,
           "pairs": 42,
           "pairNotePercent": 20.19,
-          "movementOver1_2Within1s": 54.66,
+          "movementOver1_2Within1s": 53.7,
           "movementWithin1sDenominator": 311,
-          "movementOver1_2AllGaps": 54.59,
+          "movementOver1_2AllGaps": 53.62,
           "fastSameHandUnder250ms": 7,
           "sameHandSingleTransitionPercent": 36.86,
           "identicalBarRepeatPercent": 2.75,
@@ -3161,12 +3161,12 @@
           "notes": 242,
           "pairs": 28,
           "pairNotePercent": 23.14,
-          "movementOver1_2Within1s": 54.07,
+          "movementOver1_2Within1s": 52.59,
           "movementWithin1sDenominator": 135,
           "movementOver1_2AllGaps": 53.33,
           "fastSameHandUnder250ms": 0,
           "sameHandSingleTransitionPercent": 40.54,
-          "identicalBarRepeatPercent": 8.16,
+          "identicalBarRepeatPercent": 9.18,
           "inheritedTimeHandPositionPercent": 100,
           "sharedAccents": 6
         },
@@ -4891,9 +4891,7 @@
   },
   "materialUpdate": {
     "added": [
-      "bring-it-on-1",
-      "onehope-normal-2",
-      "popstars-hard-2"
+      "www-normal-1"
     ],
     "pending": [
       {
@@ -4975,9 +4973,39 @@
         "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
         "candidateCount": 0,
         "rejections": {}
+      },
+      {
+        "patternId": "machine-normal-1",
+        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+        "candidateCount": 0,
+        "rejections": {}
+      },
+      {
+        "patternId": "machine-normal-2",
+        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+        "candidateCount": 0,
+        "rejections": {}
+      },
+      {
+        "patternId": "www-normal-2",
+        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+        "candidateCount": 0,
+        "rejections": {}
+      },
+      {
+        "patternId": "untamed-hard-1",
+        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+        "candidateCount": 0,
+        "rejections": {}
+      },
+      {
+        "patternId": "untamed-hard-2",
+        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+        "candidateCount": 0,
+        "rejections": {}
       }
     ],
-    "batch": "hourly-20261016-0934"
+    "batch": "hourly-20261016-1227"
   },
   "validation": {
     "pack": "15譜面合格",

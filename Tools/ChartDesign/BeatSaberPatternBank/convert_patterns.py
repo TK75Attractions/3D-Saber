@@ -8,6 +8,13 @@ from spatial_layout import rotate
 
 # 通常配置を主体にし、短い特徴的なフレーズだけ縦・反転・斜めを使う。
 LAYOUT={
+ 'machine-normal-1':0,
+ 'machine-normal-2':0,
+ 'www-normal-1':0,
+ 'www-normal-2':0,
+ 'untamed-hard-1':0,
+ 'untamed-hard-2':0,
+
  'popstars-hard-1':0,
  'popstars-hard-2':0,
  'crabrave-hard-1':0,
@@ -129,6 +136,13 @@ LAYOUT={
 # 映像で確認した単発・休符・担当手の順を、素材ごとに個別に翻案する。
 # 座標は本作用に設計済み。原作映像のセイバー色から担当手を確認し、本作の担当色（左=青）へ変換する。
 EXPLICIT={
+ 'machine-normal-1':('normal', '右の横二打を左の単発で挟む', [(0, 'left', -1.9, -0.6), (1, 'right', 0.6, -0.3), (2.5, 'right', 1.9, -0.3), (3.5, 'left', -1.9, 0.3)]),
+ 'machine-normal-2':('hard', '低い受けから上と横へほどく', [(0, 'left', -0.6, -0.6), (0.5, 'right', 0.6, -0.6), (1.5, 'left', -0.6, 0.3), (3, 'left', -1.9, 0.3)]),
+ 'www-normal-1':('normal', '疎な拍の右高低と左の合いの手', [(0, 'right', 0.6, -0.6), (1, 'left', -1.9, -0.6), (2, 'right', 0.6, 0.3), (3, 'right', 0.6, -0.6)]),
+ 'www-normal-2':('hard', '片手の上下から両手外下へ着地', [(0, 'left', -0.6, -0.6), (0.5, 'right', 0.6, -0.6), (1.5, 'left', -0.6, 0.3), (2.5, 'right', 0.6, 0.3), (3.5, 'left', -1.9, -0.6), (3.5, 'right', 1.9, -0.6)]),
+ 'untamed-hard-1':('normal', '休符の後に二手で再開', [(2.5, 'left', -0.6, -0.6), (3, 'right', 0.6, 0.3)]),
+ 'untamed-hard-2':('hard', '左二打から内側の短い返事', [(0, 'left', -1.9, -0.6), (1, 'left', -1.9, 0.3), (2, 'right', 0.6, -0.6), (2.5, 'left', -0.6, 0.3), (3, 'right', 0.6, 0.3)]),
+
  'popstars-hard-1':('hard', '余白の後の三打応答', [(0.5, 'left', -0.6, -0.6), (1.5, 'right', 0.6, 0.3), (3, 'left', -1.9, 0.3)]),
  'popstars-hard-2':('hard', '左上下と右の横返し', [(0, 'left', -1.9, -0.6), (1, 'right', 1.9, 0.3), (2, 'left', -1.9, 0.3)]),
  'crabrave-hard-1':('hard', '左の内外と右の高低の六打', [(0, 'left', -1.9, -0.6), (0.5, 'right', 0.6, 0.3), (1.5, 'left', -0.6, 0.3), (2, 'right', 0.6, -0.6), (2.5, 'left', -0.6, -0.6), (3.5, 'right', 1.9, 0.3)]),
@@ -313,7 +327,7 @@ def convert(item):
   'timeSignatures':[{'beat':0,'numerator':4,'denominator':4}],'editorTempoMap':[],
   'notes':[{k:v for k,v in n.items() if not k.startswith('_')} for n in notes]}
  return {'id':identifier,'title':item['title'],'category':item['category'],'minimumDifficulty':diff,'referenceBpm':bpm,'sourceUrl':item['sourceUrl'],
-  **{k:item[k] for k in ('preferredSongs','maximumBpmDifferencePercent','applicationMode') if k in item},
+  **{k:item[k] for k in ('preferredSongs','maximumBpmDifferencePercent','applicationMode','requiredRestRanges') if k in item},
   'adaptation':item['adaptation']+' 画面配置は'+layout+'を使用。色は担当手を示し、画面の左右に絶対固定せず、特殊配置は短い技として選ぶ。',
   'layout':layout,'orientationDegrees':angle,'fidelity':fidelity,'sourceTiming':item['timing'],'chartFile':'patterns/'+identifier+'.json','beats':4,
   'noteCount':len(notes),'flickCount':sum(n['_arrow'] for n in notes),'chart':chart}

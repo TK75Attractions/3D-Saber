@@ -68,6 +68,8 @@ def main():
  # This does not modify any video, poster, ZIP, or mobile game chart.
  compacted=0
  for asset in dist.rglob('*.json'):
+  # 分類ZIPのメタデータは保存一覧のSHA-256を保持する。package.pyが生成・検証する。
+  if 'packages' in asset.relative_to(dist).parts:continue
   original=asset.read_bytes();value=read(asset)
   compact=(json.dumps(value,ensure_ascii=False,separators=(',',':'))+'\n').encode('utf-8')
   assert json.loads(compact)==value

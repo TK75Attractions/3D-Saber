@@ -1903,7 +1903,7 @@
         142903.0
       ],
       "directions": [
-        "right"
+        "downright"
       ]
     },
     {
@@ -1913,7 +1913,7 @@
         144153.0
       ],
       "directions": [
-        "left"
+        "upleft"
       ]
     },
     {
@@ -1933,7 +1933,7 @@
         146153.0
       ],
       "directions": [
-        "up"
+        "left"
       ]
     },
     {
@@ -1943,7 +1943,7 @@
         147403.0
       ],
       "directions": [
-        "down"
+        "right"
       ]
     },
     {
@@ -1973,7 +1973,7 @@
         149153.0
       ],
       "directions": [
-        "up"
+        "left"
       ]
     },
     {
@@ -2013,7 +2013,7 @@
         154403.0
       ],
       "directions": [
-        "down"
+        "right"
       ]
     },
     {
@@ -2023,7 +2023,7 @@
         154903.0
       ],
       "directions": [
-        "down"
+        "left"
       ]
     },
     {
@@ -2043,7 +2043,7 @@
         155403.0
       ],
       "directions": [
-        "left"
+        "right"
       ]
     },
     {
@@ -2063,7 +2063,7 @@
         156653.0
       ],
       "directions": [
-        "right"
+        "left"
       ]
     },
     {

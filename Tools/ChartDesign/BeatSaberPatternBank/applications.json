@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "convertedCount": 106,
-  "appliedCount": 93,
+  "convertedCount": 112,
+  "appliedCount": 94,
   "applications": [
     {
       "patternId": "shut-up-dance-2",
@@ -21,7 +21,7 @@
       "removedNotes": 14,
       "addedNotes": 10,
       "sourceCategory": "conditional",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=5aLDCKQ63P4&t=54",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=hard&t=126.65",
       "noteIndices": [
@@ -1166,7 +1166,7 @@
       "removedNotes": 13,
       "addedNotes": 14,
       "sourceCategory": "conditional",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=5aLDCKQ63P4&t=92",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=hard&t=80.79",
       "noteIndices": [
@@ -2312,7 +2312,7 @@
       "removedNotes": 12,
       "addedNotes": 10,
       "sourceCategory": "conditional",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=16oSzYCTD3A&t=88",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=BenkyouRemaster&difficulty=hard&t=102.17",
       "noteIndices": [
@@ -3292,7 +3292,7 @@
       "removedNotes": 14,
       "addedNotes": 8,
       "sourceCategory": "good",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=5aLDCKQ63P4&t=24",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=hard&t=110.65",
       "noteIndices": [
@@ -4127,7 +4127,7 @@
       "removedNotes": 13,
       "addedNotes": 8,
       "sourceCategory": "conditional",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=am22mbvgyD8&t=93",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=ManicSonic&difficulty=hard&t=111.67",
       "noteIndices": [
@@ -5017,7 +5017,7 @@
       "removedNotes": 13,
       "addedNotes": 11,
       "sourceCategory": "conditional",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=5aLDCKQ63P4&t=137",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=hard&t=108.21",
       "noteIndices": [
@@ -5899,7 +5899,7 @@
       "removedNotes": 11,
       "addedNotes": 12,
       "sourceCategory": "avoid",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=mgGaqZ20Scw&t=311",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=escapade&difficulty=hard&t=69.26",
       "noteIndices": [
@@ -6848,7 +6848,7 @@
       "removedNotes": 12,
       "addedNotes": 12,
       "sourceCategory": "conditional",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=16oSzYCTD3A&t=58",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=BenkyouRemaster&difficulty=hard&t=90.17",
       "noteIndices": [
@@ -7786,7 +7786,7 @@
       "removedNotes": 12,
       "addedNotes": 8,
       "sourceCategory": "conditional",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=QcaBh6KS7_E&t=56",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=ManicSonic&difficulty=hard&t=9.17",
       "noteIndices": [
@@ -8632,7 +8632,7 @@
       "removedNotes": 12,
       "addedNotes": 9,
       "sourceCategory": "conditional",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=QcaBh6KS7_E&t=137",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=hard&t=53.36",
       "noteIndices": [
@@ -9468,7 +9468,7 @@
       "removedNotes": 12,
       "addedNotes": 8,
       "sourceCategory": "good",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=VfRyM0-jCSs&t=91",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=escapade&difficulty=hard&t=89.47",
       "noteIndices": [
@@ -10314,7 +10314,7 @@
       "removedNotes": 12,
       "addedNotes": 10,
       "sourceCategory": "conditional",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=am22mbvgyD8&t=36",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=BenkyouRemaster&difficulty=hard&t=60.17",
       "noteIndices": [
@@ -11195,7 +11195,7 @@
       "removedNotes": 10,
       "addedNotes": 14,
       "sourceCategory": "good",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=pykGEBUtJeE&t=67",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=escapade&difficulty=hard&t=65.47",
       "noteIndices": [
@@ -12011,7 +12011,7 @@
       "removedNotes": 10,
       "addedNotes": 5,
       "sourceCategory": "good",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=pykGEBUtJeE&t=92",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=ManicSonic&difficulty=hard&t=5.17",
       "noteIndices": [
@@ -12557,7 +12557,7 @@
       "removedNotes": 8,
       "addedNotes": 6,
       "sourceCategory": "good",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=VfRyM0-jCSs&t=56",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=ManicSonic&difficulty=normal&t=111.67",
       "noteIndices": [
@@ -12978,7 +12978,7 @@
       "removedNotes": 8,
       "addedNotes": 8,
       "sourceCategory": "avoid",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=mgGaqZ20Scw&t=163",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=normal&t=103.07",
       "noteIndices": [
@@ -13445,7 +13445,7 @@
       "removedNotes": 8,
       "addedNotes": 5,
       "sourceCategory": "avoid",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=mgGaqZ20Scw&t=259",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=BenkyouRemaster&difficulty=normal&t=60.17",
       "noteIndices": [
@@ -13763,7 +13763,7 @@
       "removedNotes": 8,
       "addedNotes": 7,
       "sourceCategory": "avoid",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=mgGaqZ20Scw&t=68",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=normal&t=42.03",
       "noteIndices": [
@@ -14127,7 +14127,7 @@
       "removedNotes": 8,
       "addedNotes": 8,
       "sourceCategory": "avoid",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=mgGaqZ20Scw&t=206",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=normal&t=96.21",
       "noteIndices": [
@@ -14503,7 +14503,7 @@
       "removedNotes": 8,
       "addedNotes": 8,
       "sourceCategory": "good",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=QcaBh6KS7_E&t=24",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=escapade&difficulty=normal&t=66.73",
       "noteIndices": [
@@ -14912,7 +14912,7 @@
       "removedNotes": 9,
       "addedNotes": 6,
       "sourceCategory": "good",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=QcaBh6KS7_E&t=90",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=BenkyouRemaster&difficulty=normal&t=102.17",
       "noteIndices": [
@@ -15300,7 +15300,7 @@
       "removedNotes": 8,
       "addedNotes": 7,
       "sourceCategory": "conditional",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=VfRyM0-jCSs&t=24",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=ManicSonic&difficulty=normal&t=107.67",
       "noteIndices": [
@@ -15653,7 +15653,7 @@
       "removedNotes": 8,
       "addedNotes": 3,
       "sourceCategory": "conditional",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=VfRyM0-jCSs&t=158",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=escapade&difficulty=normal&t=38.94",
       "noteIndices": [
@@ -15972,7 +15972,7 @@
       "removedNotes": 8,
       "addedNotes": 2,
       "sourceCategory": "good",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=JmEDepUBXgU&t=55",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=normal&t=10.53",
       "noteIndices": [
@@ -16188,7 +16188,7 @@
       "removedNotes": 9,
       "addedNotes": 7,
       "sourceCategory": "conditional",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=am22mbvgyD8&t=15",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=BenkyouRemaster&difficulty=normal&t=90.17",
       "noteIndices": [
@@ -16563,7 +16563,7 @@
       "removedNotes": 8,
       "addedNotes": 2,
       "sourceCategory": "good",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=am22mbvgyD8&t=66",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=normal&t=22.53",
       "noteIndices": [
@@ -16815,7 +16815,7 @@
       "removedNotes": 8,
       "addedNotes": 3,
       "sourceCategory": "good",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=pykGEBUtJeE&t=14",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=escapade&difficulty=normal&t=28.84",
       "noteIndices": [
@@ -17090,7 +17090,7 @@
       "removedNotes": 8,
       "addedNotes": 6,
       "sourceCategory": "conditional",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=pykGEBUtJeE&t=36",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=ManicSonic&difficulty=normal&t=9.17",
       "noteIndices": [
@@ -17445,7 +17445,7 @@
       "removedNotes": 6,
       "addedNotes": 5,
       "sourceCategory": "good",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=16oSzYCTD3A&t=46",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=normal&t=130.50",
       "noteIndices": [
@@ -17730,7 +17730,7 @@
       "removedNotes": 4,
       "addedNotes": 3,
       "sourceCategory": "avoid",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=mgGaqZ20Scw&t=97",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=easy&t=128.79",
       "noteIndices": [
@@ -17961,7 +17961,7 @@
       "removedNotes": 2,
       "addedNotes": 1,
       "sourceCategory": "good",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=JmEDepUBXgU&t=24",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=ManicSonic&difficulty=easy&t=51.83",
       "noteIndices": [
@@ -18121,7 +18121,7 @@
       "removedNotes": 4,
       "addedNotes": 3,
       "sourceCategory": "good",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=JmEDepUBXgU&t=91",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=escapade&difficulty=easy&t=99.57",
       "noteIndices": [
@@ -18305,7 +18305,7 @@
       "removedNotes": 2,
       "addedNotes": 2,
       "sourceCategory": "good",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=JmEDepUBXgU&t=137",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=BenkyouRemaster&difficulty=easy&t=81.17",
       "noteIndices": [
@@ -18455,7 +18455,7 @@
       "removedNotes": 10,
       "addedNotes": 7,
       "sourceCategory": "conditional",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=DMFXNLMHLJE&t=59",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=hard&t=60.90",
       "noteIndices": [
@@ -19124,7 +19124,7 @@
       "removedNotes": 10,
       "addedNotes": 7,
       "sourceCategory": "conditional",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=DMFXNLMHLJE&t=106",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=hard&t=52.90",
       "noteIndices": [
@@ -19757,7 +19757,7 @@
       "removedNotes": 8,
       "addedNotes": 4,
       "sourceCategory": "good",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=DMFXNLMHLJE&t=23",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=normal&t=60.90",
       "noteIndices": [
@@ -20143,7 +20143,7 @@
       "removedNotes": 9,
       "addedNotes": 9,
       "sourceCategory": "good",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=WR5PG2IMFmg&t=58",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=normal&t=39.64",
       "noteIndices": [
@@ -20578,7 +20578,7 @@
       "removedNotes": 2,
       "addedNotes": 3,
       "sourceCategory": "conditional",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=WR5PG2IMFmg&t=89",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=easy&t=174.65",
       "noteIndices": [
@@ -20831,7 +20831,7 @@
       "removedNotes": 4,
       "addedNotes": 6,
       "sourceCategory": "good",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=WR5PG2IMFmg&t=24",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=easy&t=101.36",
       "noteIndices": [
@@ -21098,7 +21098,7 @@
       "removedNotes": 11,
       "addedNotes": 9,
       "sourceCategory": "conditional",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=KQoUHhbs6rA&t=85",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=BenkyouRemaster&difficulty=hard&t=22.52",
       "noteIndices": [
@@ -21922,7 +21922,7 @@
       "removedNotes": 8,
       "addedNotes": 8,
       "sourceCategory": "conditional",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=KQoUHhbs6rA&t=23",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=normal&t=27.64",
       "noteIndices": [
@@ -22355,7 +22355,7 @@
       "removedNotes": 8,
       "addedNotes": 6,
       "sourceCategory": "good",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=KQoUHhbs6rA&t=55",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=BenkyouRemaster&difficulty=normal&t=19.52",
       "noteIndices": [
@@ -22662,7 +22662,7 @@
       "removedNotes": 4,
       "addedNotes": 2,
       "sourceCategory": "good",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=WAgUzLuNO64&t=57",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=escapade&difficulty=easy&t=94.52",
       "noteIndices": [
@@ -22833,7 +22833,7 @@
       "removedNotes": 4,
       "addedNotes": 2,
       "sourceCategory": "good",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=WAgUzLuNO64&t=108",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=easy&t=32.79",
       "noteIndices": [
@@ -23062,7 +23062,7 @@
       "removedNotes": 2,
       "addedNotes": 2,
       "sourceCategory": "good",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=WAgUzLuNO64&t=23",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=BenkyouRemaster&difficulty=easy&t=75.17",
       "noteIndices": [
@@ -23200,7 +23200,7 @@
       "removedNotes": 9,
       "addedNotes": 8,
       "sourceCategory": "good",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=Y8dPnG2YCz0&t=41",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=normal&t=76.90",
       "noteIndices": [
@@ -23696,7 +23696,7 @@
       "removedNotes": 8,
       "addedNotes": 3,
       "sourceCategory": "conditional",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=qWqfjnDhju0&t=65",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=ManicSonic&difficulty=normal&t=41.17",
       "noteIndices": [
@@ -24003,7 +24003,7 @@
       "removedNotes": 6,
       "addedNotes": 4,
       "sourceCategory": "good",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=Y8dPnG2YCz0&t=24",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=escapade&difficulty=normal&t=99.57",
       "noteIndices": [
@@ -24242,7 +24242,7 @@
       "removedNotes": 5,
       "addedNotes": 5,
       "sourceCategory": "good",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=qWqfjnDhju0&t=23",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=ManicSonic&difficulty=easy&t=106.33",
       "noteIndices": [
@@ -24482,7 +24482,7 @@
       "removedNotes": 4,
       "addedNotes": 4,
       "sourceCategory": "good",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=qWqfjnDhju0&t=118",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=easy&t=60.90",
       "noteIndices": [
@@ -24812,7 +24812,7 @@
       "removedNotes": 4,
       "addedNotes": 7,
       "sourceCategory": "good",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=Y8dPnG2YCz0&t=82",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=BenkyouRemaster&difficulty=easy&t=28.52",
       "noteIndices": [
@@ -25145,7 +25145,7 @@
       "removedNotes": 13,
       "addedNotes": 6,
       "sourceCategory": "good",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=wd_d19bUZ0Q&t=58",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=hard&t=12.21",
       "noteIndices": [
@@ -25955,7 +25955,7 @@
       "removedNotes": 7,
       "addedNotes": 4,
       "sourceCategory": "good",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=wd_d19bUZ0Q&t=114",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=ManicSonic&difficulty=hard&t=51.83",
       "noteIndices": [
@@ -26397,7 +26397,7 @@
       "removedNotes": 9,
       "addedNotes": 9,
       "sourceCategory": "good",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=Zlse-YrMing&t=42",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=BenkyouRemaster&difficulty=normal&t=38.12",
       "noteIndices": [
@@ -26952,7 +26952,7 @@
       "removedNotes": 8,
       "addedNotes": 6,
       "sourceCategory": "conditional",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=Zlse-YrMing&t=90",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=normal&t=110.65",
       "noteIndices": [
@@ -27427,7 +27427,7 @@
       "removedNotes": 9,
       "addedNotes": 8,
       "sourceCategory": "conditional",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=Zlse-YrMing&t=121",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=normal&t=53.36",
       "noteIndices": [
@@ -27871,7 +27871,7 @@
       "removedNotes": 5,
       "addedNotes": 5,
       "sourceCategory": "conditional",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=wd_d19bUZ0Q&t=26",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=ManicSonic&difficulty=easy&t=14.50",
       "noteIndices": [
@@ -28144,7 +28144,7 @@
       "removedNotes": 12,
       "addedNotes": 8,
       "sourceCategory": "good",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=SwzLFbM6Neg&t=18",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=ManicSonic&difficulty=hard&t=101.00",
       "noteIndices": [
@@ -28957,7 +28957,7 @@
       "removedNotes": 12,
       "addedNotes": 11,
       "sourceCategory": "good",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=zWQfdCgE1bo&t=138",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=hard&t=121.93",
       "noteIndices": [
@@ -29726,7 +29726,7 @@
       "removedNotes": 11,
       "addedNotes": 9,
       "sourceCategory": "conditional",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=CFfJH5zFTec&t=13",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=escapade&difficulty=hard&t=59.15",
       "noteIndices": [
@@ -30361,7 +30361,7 @@
       "removedNotes": 10,
       "addedNotes": 8,
       "sourceCategory": "conditional",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=CFfJH5zFTec&t=54",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=escapade&difficulty=hard&t=8.63",
       "noteIndices": [
@@ -30962,7 +30962,7 @@
       "removedNotes": 7,
       "addedNotes": 8,
       "sourceCategory": "good",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=SwzLFbM6Neg&t=81",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=ManicSonic&difficulty=normal&t=19.83",
       "noteIndices": [
@@ -31272,7 +31272,7 @@
       "removedNotes": 8,
       "addedNotes": 6,
       "sourceCategory": "good",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=zWQfdCgE1bo&t=42",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=normal&t=79.07",
       "noteIndices": [
@@ -31978,7 +31978,7 @@
           "lengthMs": 0
         }
       ],
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=qG20h1eSPQY&t=23",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=hard&t=68.90",
       "noteIndices": [
@@ -32948,7 +32948,7 @@
           "lengthMs": 0
         }
       ],
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=qG20h1eSPQY&t=81",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=hard&t=86.90",
       "noteIndices": [
@@ -33853,7 +33853,7 @@
           "lengthMs": 0
         }
       ],
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=9rj8fuMslwk&t=26",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=hard&t=48.21",
       "noteIndices": [
@@ -34729,7 +34729,7 @@
           "lengthMs": 0
         }
       ],
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=9rj8fuMslwk&t=98",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=hard&t=103.07",
       "noteIndices": [
@@ -35730,7 +35730,7 @@
           "lengthMs": 0
         }
       ],
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=GnwUlvJd5a4&t=42",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=ManicSonic&difficulty=hard&t=19.83",
       "noteIndices": [
@@ -36457,7 +36457,7 @@
           "lengthMs": 0
         }
       ],
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=GnwUlvJd5a4&t=106",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=ManicSonic&difficulty=hard&t=27.83",
       "noteIndices": [
@@ -37034,7 +37034,7 @@
       "positionChangedNotes": 2,
       "spatialLayout": "右外から左低、右内へ",
       "layoutAdaptation": "曲別の音はめと共通アクセント、Hardからの包含を優先して再構成。原作配置のそのままのコピーではない。",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=escapade&difficulty=hard&t=20.49",
       "noteIndices": [
         57,
@@ -37539,7 +37539,7 @@
       "positionChangedNotes": 3,
       "spatialLayout": "左の高い音から右の低い音へ",
       "layoutAdaptation": "曲別の音はめと共通アクセント、Hardからの包含を優先して再構成。原作配置のそのままのコピーではない。",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=escapade&difficulty=hard&t=33.13",
       "noteIndices": [
         96,
@@ -38068,7 +38068,7 @@
       "positionChangedNotes": 4,
       "spatialLayout": "低い左から高い右、後半を休む",
       "layoutAdaptation": "曲別の音はめと共通アクセント、Hardからの包含を優先して再構成。原作配置のそのままのコピーではない。",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=BenkyouRemaster&difficulty=hard&t=5.02",
       "noteIndices": [
         8,
@@ -38386,7 +38386,7 @@
       "positionChangedNotes": 5,
       "spatialLayout": "左の同列上下に右の低い応答",
       "layoutAdaptation": "曲別の音はめと共通アクセント、Hardからの包含を優先して再構成。原作配置のそのままのコピーではない。",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=BenkyouRemaster&difficulty=hard&t=57.67",
       "noteIndices": [
         148,
@@ -38849,7 +38849,7 @@
       "positionChangedNotes": 7,
       "spatialLayout": "内側の交互上下から最後だけ外へ",
       "layoutAdaptation": "曲別の音はめと共通アクセント、Hardからの包含を優先して再構成。原作配置のそのままのコピーではない。",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=hard&t=21.53",
       "noteIndices": [
         46,
@@ -39434,7 +39434,7 @@
       "positionChangedNotes": 2,
       "spatialLayout": "左右で異なる内外の受け渡し",
       "layoutAdaptation": "曲別の音はめと共通アクセント、Hardからの包含を優先して再構成。原作配置のそのままのコピーではない。",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=BenkyouRemaster&difficulty=hard&t=99.67",
       "noteIndices": [
         257,
@@ -39942,7 +39942,7 @@
       "positionChangedNotes": 3,
       "spatialLayout": "右の二打を挟む左から左への応答",
       "layoutAdaptation": "曲別の音はめと共通アクセント、Hardからの包含を優先して再構成。原作配置のそのままのコピーではない。",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=hard&t=157.15",
       "noteIndices": [
         339,
@@ -40427,7 +40427,7 @@
       "positionChangedNotes": 5,
       "spatialLayout": "右を挟む左の内外・上下応答",
       "layoutAdaptation": "曲別の音はめと共通アクセント、Hardからの包含を優先して再構成。原作配置のそのままのコピーではない。",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=hard&t=65.86",
       "noteIndices": [
         159,
@@ -41021,7 +41021,7 @@
       "positionChangedNotes": 5,
       "spatialLayout": "両手から右・左へほどき最後を休む",
       "layoutAdaptation": "曲別の音はめと共通アクセント、Hardからの包含を優先して再構成。原作配置のそのままのコピーではない。",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=hard&t=95.00",
       "noteIndices": [
         235,
@@ -41595,7 +41595,7 @@
       "positionChangedNotes": 4,
       "spatialLayout": "左の上下・横から両手着地",
       "layoutAdaptation": "曲別の音はめと共通アクセント、Hardからの包含を優先して再構成。原作配置のそのままのコピーではない。",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=hard&t=33.29",
       "noteIndices": [
         74,
@@ -42380,7 +42380,7 @@
       "positionChangedNotes": 4,
       "spatialLayout": "上の受け渡しから左の下・外へ",
       "layoutAdaptation": "曲別の音はめと共通アクセント、Hardからの包含を優先して再構成。原作配置のそのままのコピーではない。",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=hard&t=19.57",
       "noteIndices": [
         40,
@@ -42931,7 +42931,7 @@
       "positionChangedNotes": 4,
       "spatialLayout": "単発から両手へ返して休む",
       "layoutAdaptation": "曲別の音はめと共通アクセント、Hardからの包含を優先して再構成。原作配置のそのままのコピーではない。",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=ManicSonic&difficulty=hard&t=48.33",
       "noteIndices": [
         163,
@@ -43752,7 +43752,7 @@
       "positionChangedNotes": 2,
       "spatialLayout": "低い左右応答から一拍空けて左外へ",
       "layoutAdaptation": "曲別の音はめと共通アクセント、Hardからの包含を優先して再構成。原作配置のそのままのコピーではない。",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=ManicSonic&difficulty=hard&t=1.67",
       "noteIndices": [
         4,
@@ -44014,7 +44014,7 @@
       "positionChangedNotes": 6,
       "spatialLayout": "左の外内と右の上下を別の動線に",
       "layoutAdaptation": "曲別の音はめと共通アクセント、Hardからの包含を優先して再構成。原作配置のそのままのコピーではない。",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=ManicSonic&difficulty=hard&t=31.00",
       "noteIndices": [
         98,
@@ -44599,7 +44599,7 @@
       "positionChangedNotes": 5,
       "spatialLayout": "右の返しから間を残して左外へ",
       "layoutAdaptation": "曲別の音はめと共通アクセント、Hardからの包含を優先して再構成。原作配置のそのままのコピーではない。",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=hard&t=23.00",
       "noteIndices": [
         46,
@@ -45128,7 +45128,7 @@
       "positionChangedNotes": 3,
       "spatialLayout": "右の上下二打から低い両手へ合流",
       "layoutAdaptation": "曲別の音はめと共通アクセント、Hardからの包含を優先して再構成。原作配置のそのままのコピーではない。",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=hard&t=29.86",
       "noteIndices": [
         64,
@@ -45859,7 +45859,7 @@
       "positionChangedNotes": 7,
       "spatialLayout": "左の短い上下と右の上下の6打",
       "layoutAdaptation": "曲別の音はめと共通アクセント、Hardからの包含を優先して再構成。原作配置のそのままのコピーではない。",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=escapade&difficulty=hard&t=15.44",
       "noteIndices": [
         42,
@@ -46277,7 +46277,7 @@
       "positionChangedNotes": 7,
       "spatialLayout": "右のコンパクトな二打から句尾へ渡す",
       "layoutAdaptation": "曲別の音はめと共通アクセント、Hardからの包含を優先して再構成。原作配置のそのままのコピーではない。",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=escapade&difficulty=hard&t=35.65",
       "noteIndices": [
         105,
@@ -46673,7 +46673,7 @@
       "positionChangedNotes": 5,
       "spatialLayout": "右のコンパクトな受けから上段へ",
       "layoutAdaptation": "曲別の音はめと共通アクセント、Hardからの包含を優先して再構成。原作配置のそのままのコピーではない。",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=ManicSonic&difficulty=hard&t=88.17",
       "noteIndices": [
         261,
@@ -47260,7 +47260,7 @@
       "positionChangedNotes": 6,
       "spatialLayout": "右の横返しと左の上下応答",
       "layoutAdaptation": "曲別の音はめと共通アクセント、Hardからの包含を優先して再構成。原作配置のそのままのコピーではない。",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=hard&t=135.15",
       "noteIndices": [
         294,
@@ -47712,7 +47712,7 @@
       "positionChangedNotes": 4,
       "spatialLayout": "一組の両手と前後の休符",
       "layoutAdaptation": "曲別の音はめと共通アクセント、Hardからの包含を優先して再構成。原作配置のそのままのコピーではない。",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=hard&t=107.15",
       "noteIndices": [
         242,
@@ -48073,8 +48073,8 @@
       "sourcePhaseOffsetBeats": 0.5,
       "positionChangedNotes": 4,
       "spatialLayout": "通常の左右配置",
-      "layoutAdaptation": "対応する実音の担当手へ、素材固有の置き場だけを移植。休符や中間の発音は本曲を保持。下位は同じ位置から間引く。",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "layoutAdaptation": "曲別の音はめと共通アクセント、Hardからの包含を優先して再構成。原作配置のそのままのコピーではない。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=BenkyouRemaster&difficulty=hard&t=12.52",
       "noteIndices": [
         18,
@@ -48301,7 +48301,108 @@
           "lengthMs": 0
         }
       ],
-      "beatPickupEdited": true
+      "beatPickupEdited": true,
+      "preHierarchyAppliedNotes": [
+        {
+          "time": 13524.0,
+          "beat": 36.0,
+          "x": -1.9,
+          "y": -0.6,
+          "color": "blue",
+          "direction": "none",
+          "type": "tap",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 37.0,
+          "time": 13899.0,
+          "x": 0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 39.0,
+          "time": 14649.0,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 41.0,
+          "time": 15399.0,
+          "x": 1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 41.5,
+          "time": 15586.5,
+          "x": -1.35,
+          "y": -0.24,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 42.0,
+          "time": 15774.0,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 42.5,
+          "time": 15961.5,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 43.0,
+          "time": 16149.0,
+          "x": 0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 43.5,
+          "time": 16336.5,
+          "x": -1.05,
+          "y": -0.24,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ]
     },
     {
       "patternId": "onehope-normal-2",
@@ -48322,8 +48423,8 @@
       "sourcePhaseOffsetBeats": 1,
       "positionChangedNotes": 5,
       "spatialLayout": "右の外から内への戻りと左の応答",
-      "layoutAdaptation": "対応する実音の担当手へ、素材固有の置き場だけを移植。休符や中間の発音は本曲を保持。下位は同じ位置から間引く。",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "layoutAdaptation": "曲別の音はめと共通アクセント、Hardからの包含を優先して再構成。原作配置のそのままのコピーではない。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=hard&t=7.57",
       "noteIndices": [
         13,
@@ -48516,7 +48617,97 @@
           "lengthMs": 0
         }
       ],
-      "beatPickupEdited": true
+      "beatPickupEdited": true,
+      "preHierarchyAppliedNotes": [
+        {
+          "beat": 20.0,
+          "time": 8571.4286,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 21.0,
+          "time": 9000.0,
+          "x": -0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 22.0,
+          "time": 9428.5714,
+          "x": 1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 23.0,
+          "time": 9857.1429,
+          "x": -0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 24.0,
+          "time": 10285.7143,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 25.0,
+          "time": 10714.2857,
+          "x": -0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 26.0,
+          "time": 11142.8571,
+          "x": 1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 27.0,
+          "time": 11571.4286,
+          "x": -0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ]
     },
     {
       "patternId": "popstars-hard-2",
@@ -48537,8 +48728,8 @@
       "sourcePhaseOffsetBeats": 1,
       "positionChangedNotes": 5,
       "spatialLayout": "左上下と右の横返し",
-      "layoutAdaptation": "対応する実音の担当手へ、素材固有の置き場だけを移植。休符や中間の発音は本曲を保持。下位は同じ位置から間引く。",
-      "fidelity": "映像からの翻案を使った区間を、拍の土台と実音への応答に再編集。元動画の正確な採譜ではない。変更前はpreGrooveAppliedNotes。",
+      "layoutAdaptation": "曲別の音はめと共通アクセント、Hardからの包含を優先して再構成。原作配置のそのままのコピーではない。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=BenkyouRemaster&difficulty=hard&t=50.17",
       "noteIndices": [
         126,
@@ -48731,7 +48922,233 @@
           "lengthMs": 0
         }
       ],
-      "beatPickupEdited": true
+      "beatPickupEdited": true,
+      "preHierarchyAppliedNotes": [
+        {
+          "beat": 116.0,
+          "time": 51174.0,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 117.0,
+          "time": 51549.0,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 118.0,
+          "time": 51924.0,
+          "x": 1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 119.0,
+          "time": 52299.0,
+          "x": -1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 120.0,
+          "time": 52674.0,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 121.0,
+          "time": 53049.0,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 122.0,
+          "time": 53424.0,
+          "x": 1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 123.0,
+          "time": 53799.0,
+          "x": -1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ]
+    },
+    {
+      "patternId": "www-normal-1",
+      "songId": "logic",
+      "songTitle": "logic!!!",
+      "difficulty": "hard",
+      "startBeat": 336,
+      "endBeat": 344,
+      "startBar": 85,
+      "barCount": 2,
+      "startSeconds": 152.153,
+      "endSeconds": 156.153,
+      "targetBpm": 120,
+      "referenceBpm": 128,
+      "bpmDifferencePercent": -6.25,
+      "sourceUrl": "https://www.youtube.com/watch?v=s4nDImkd1x8&t=27",
+      "integrationMode": "hierarchy-reference",
+      "sourcePhaseOffsetBeats": 0.5,
+      "positionChangedNotes": 4,
+      "spatialLayout": "疎な拍の右高低と左の合いの手",
+      "layoutAdaptation": "対応する実音の担当手へ、素材固有の置き場だけを移植。休符や中間の発音は本曲を保持。下位は同じ位置から間引く。",
+      "fidelity": "映像に基づく動きの翻案。原作の正確な採譜ではない。",
+      "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=hard&t=151.15",
+      "noteIndices": [
+        326,
+        327,
+        328,
+        329,
+        330,
+        331,
+        332,
+        333,
+        334
+      ],
+      "appliedNotes": [
+        {
+          "beat": 336.0,
+          "time": 152153.0,
+          "x": -0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 336.5,
+          "time": 152403.0,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 337.5,
+          "time": 152903.0,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 338.5,
+          "time": 153403.0,
+          "x": 0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 339.5,
+          "time": 153903.0,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 340.5,
+          "time": 154403.0,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 341.5,
+          "time": 154903.0,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 342.5,
+          "time": 155403.0,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 342.5,
+          "time": 155403.0,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ],
+      "addedNotes": 9
     }
   ],
   "inputChartHashes": {
@@ -48822,16 +49239,46 @@
       "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
       "candidateCount": 0,
       "rejections": {}
+    },
+    {
+      "patternId": "machine-normal-1",
+      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+      "candidateCount": 0,
+      "rejections": {}
+    },
+    {
+      "patternId": "machine-normal-2",
+      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+      "candidateCount": 0,
+      "rejections": {}
+    },
+    {
+      "patternId": "www-normal-2",
+      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+      "candidateCount": 0,
+      "rejections": {}
+    },
+    {
+      "patternId": "untamed-hard-1",
+      "reason": "近いBPMの未使用区間に、前半2.5拍の休みと後半の二手の実音が一致する場所がない。既存の拍や歌の応答を消さず、休符付き小節素材として保存。",
+      "candidateCount": 0,
+      "rejections": {}
+    },
+    {
+      "patternId": "untamed-hard-2",
+      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+      "candidateCount": 0,
+      "rejections": {}
     }
   ],
   "hierarchyInputHashes": {
-    "Assets/StreamingAssets/Songs/Aobasou/chart_hard.json": "d004c74a58e0750850b6dfbc36326e6a7800d3c7ebace28d8894d9c21c62d19e",
-    "Assets/StreamingAssets/Songs/BenkyouRemaster/chart_hard.json": "505a1207b9c28320360cd121068d1da667cb9300adc2e5732418003936ce9b53",
-    "Assets/StreamingAssets/Songs/escapade/chart_hard.json": "b436263c83afefb899e86883acdebe8684b40e14f5eae7dc81a9b7f9a701dea7",
-    "Assets/StreamingAssets/Songs/logic/chart_hard.json": "d09e9016fb2694380d264af7f12da4432a3e603f7af8dab272ae94c2128fd6d3",
-    "Assets/StreamingAssets/Songs/ManicSonic/chart_hard.json": "a377c0677df1de02af612cc20ebe38c3a0c5f49276137592a77f7c069233e3f0"
+    "Assets/StreamingAssets/Songs/Aobasou/chart_hard.json": "a254c508886f6a0282a6321413b9f77c698cb55432e3b9b4068197ac12b07821",
+    "Assets/StreamingAssets/Songs/BenkyouRemaster/chart_hard.json": "61ac2a75c9722eb3e2d5b0c3b4a6f90061cc93d61b80dd727b78d55d01fd4ac8",
+    "Assets/StreamingAssets/Songs/escapade/chart_hard.json": "985ac1c09a24e324c30e82799cf16cc959b8986f7cb4e8e8ec7c64bf36ce21af",
+    "Assets/StreamingAssets/Songs/logic/chart_hard.json": "7982dd57ae4edcc366e1d219e94bcdc166476e86ef5009d1c398e8a058b5ff28",
+    "Assets/StreamingAssets/Songs/ManicSonic/chart_hard.json": "9f7e17838121c65336a8635b3a33b0917cc5b5bfff60e3455e77821b61fc6f24"
   },
-  "hierarchyBatch": "hourly-20261016-0934",
+  "hierarchyBatch": "hourly-20261016-1227",
   "rhythmContrastDesign": "../FiveSongs20261014/rhythm-contrast-design.json",
   "preSongStyleApplications": [
     {
