@@ -60,6 +60,29 @@ public class PhoneSaberLatencyCompensationTests
     }
 
 #if !COMPENSATION_BEFORE
+    [TestCase(false)]
+    [TestCase(true)]
+    public void MissingReceiverDoesNotDisplayCachedLatency(bool blue)
+    {
+        var cached = typeof(PhoneSaberPerfLog).GetField(blue ? "blueEstimate" : "redEstimate",
+            System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
+        var instance = typeof(InputPoint).GetProperty("Instance");
+        var previousEstimate = cached.GetValue(null);
+        var previousInput = InputPoint.Instance;
+        try
+        {
+            var estimate = Estimate();
+            Assert.IsNotNull(estimate.TotalMs, "受信機があった時点の有効な推定値を再現する");
+            cached.SetValue(null, estimate);
+            // 受信機の破棄後も、スマホ計測とキャッシュの有効期限は残っている。
+            instance.SetValue(null, null);
+            string line = PhoneSaberPerfLog.LatencyLine(blue, .1);
+            StringAssert.Contains("計測不足", line, "受信機がなければ過去の推定値を表示しない");
+            StringAssert.DoesNotContain("約52 ms", line);
+        }
+        finally { cached.SetValue(null, previousEstimate); instance.SetValue(null, previousInput); }
+    }
+
     [Test] public void ThirtySecondMedianAndStrictFiveMsHysteresis()
     {
         var policy = new PhoneSaberAutomaticLeadPolicy();

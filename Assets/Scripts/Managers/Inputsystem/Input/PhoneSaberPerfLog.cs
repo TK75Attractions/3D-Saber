@@ -30,7 +30,7 @@ public sealed class PhoneSaberPerfLog : MonoBehaviour
         string sender = input == null ? null : blue ? input.BlueCoordinateSender : input.RedCoordinateSender;
         if (sender == "127.0.0.1" || sender == "::1")
             return "遅延の目安 " + (blue ? "青" : "赤") + ": スマホからの計測が届いていません（旧アプリ / P2P 経由）";
-        if (input != null && estimate != null &&
+        if (input == null || estimate != null &&
             (estimate.Sender != (blue ? input.BlueCoordinateSender : input.RedCoordinateSender) ||
              now - (blue ? input.LastReceivedMonotonicTime2 : input.LastReceivedMonotonicTime) > 1))
             return "遅延の目安 " + (blue ? "青" : "赤") + ": 計測不足（座標の未受信 / 経路切替）";

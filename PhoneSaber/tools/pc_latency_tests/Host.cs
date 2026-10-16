@@ -177,7 +177,7 @@ namespace UnityEngine.SceneManagement
 }
 public class InputPoint
 {
-    public static InputPoint Instance;
+    public static InputPoint Instance { get; set; }
     public int ReceivedPacketCount, ReceivedPacketCount2;
 #if AFTER
     public PhoneSaberCoordinateTiming RedCoordinateTiming = new PhoneSaberCoordinateTiming(), BlueCoordinateTiming = new PhoneSaberCoordinateTiming();
