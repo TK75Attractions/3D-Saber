@@ -22,6 +22,8 @@ public sealed class PhoneSaberPerfLog : MonoBehaviour
     double gpuSum;
     int gpuCount;
     static PhoneSaberLatencyEstimate redEstimate, blueEstimate;
+    static InputPoint estimateInput;
+    static int redEstimateRevision, blueEstimateRevision;
     double nextLatencyLog;
     public static string LatencyLine(bool blue, double now)
     {
@@ -30,8 +32,12 @@ public sealed class PhoneSaberPerfLog : MonoBehaviour
         string sender = input == null ? null : blue ? input.BlueCoordinateSender : input.RedCoordinateSender;
         if (sender == "127.0.0.1" || sender == "::1")
             return "遅延の目安 " + (blue ? "青" : "赤") + ": スマホからの計測が届いていません（旧アプリ / P2P 経由）";
+        // 同じIPへ戻っても、停止・経路切替で破棄した統計の推定値は再利用しない。
         if (input == null || estimate != null &&
-            (estimate.Sender != (blue ? input.BlueCoordinateSender : input.RedCoordinateSender) ||
+            (!ReferenceEquals(input, estimateInput) ||
+             estimate.Sender != (blue ? input.BlueCoordinateSender : input.RedCoordinateSender) ||
+             (blue ? input.BlueCoordinateTiming : input.RedCoordinateTiming).SourceRevision !=
+                (blue ? blueEstimateRevision : redEstimateRevision) ||
              now - (blue ? input.LastReceivedMonotonicTime2 : input.LastReceivedMonotonicTime) > 1))
             return "遅延の目安 " + (blue ? "青" : "赤") + ": 計測不足（座標の未受信 / 経路切替）";
         return estimate?.Line(blue ? "青" : "赤", now)
@@ -42,6 +48,7 @@ public sealed class PhoneSaberPerfLog : MonoBehaviour
     void OnEnable()
     {
         redEstimate = blueEstimate = null;
+        estimateInput = null;
         nextLatencyLog = Time.realtimeSinceStartupAsDouble + WindowSeconds;
         lowPowerAtLaunch = Environment.GetEnvironmentVariable("PHONESABER_LOW_POWER_MODE") ?? "unknown";
         Application.onBeforeRender += BeforeRender;
@@ -158,6 +165,9 @@ public sealed class PhoneSaberPerfLog : MonoBehaviour
         double clockNow = SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp);
         redEstimate = Estimate(input, false, clockNow, input.RedCoordinateTiming.Shown);
         blueEstimate = Estimate(input, true, clockNow, input.BlueCoordinateTiming.Shown);
+        estimateInput = input;
+        redEstimateRevision = input.RedCoordinateTiming.SourceRevision;
+        blueEstimateRevision = input.BlueCoordinateTiming.SourceRevision;
         PhoneSaberEventLog.Record(input.StationLabel, "RED", "latency-estimate", redEstimate.Log());
         PhoneSaberEventLog.Record(input.StationLabel, "BLUE", "latency-estimate", blueEstimate.Log());
     }
@@ -235,6 +245,7 @@ public sealed class PhoneSaberCoordinateTiming
     double received = double.NegativeInfinity, readReceived = double.NegativeInfinity;
     double renderedReceived = double.NegativeInfinity, shownReceived = double.NegativeInfinity;
     int lastFrame = -1, lastShownFrame = -1, dropped;
+    public int SourceRevision { get; private set; }
     public bool NeedsFirstRead => received != readReceived && !double.IsNegativeInfinity(received);
 
     public void Applied(double receiveAt, double appliedAt)
@@ -301,6 +312,7 @@ public sealed class PhoneSaberCoordinateTiming
     // 別の送信元へ切り替わったら、前の端末の「読み出し済み座標」を診断に混ぜない。
     public void ResetSource()
     {
+        SourceRevision++;
         ClearWindow();
         received = readReceived = renderedReceived = shownReceived = double.NegativeInfinity;
         lastFrame = lastShownFrame = -1;

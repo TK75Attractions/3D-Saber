@@ -37,6 +37,61 @@ public class AutoLatencyWindowTests
 {
     static void Invoke(PhoneSaberPerfLog log, string method) => typeof(PhoneSaberPerfLog)
         .GetMethod(method, BindingFlags.Instance | BindingFlags.NonPublic).Invoke(log, null);
+    [TestCase(false, false)]
+    [TestCase(true, false)]
+    [TestCase(false, true)]
+    [TestCase(true, true)]
+    public void ReturningToSameSenderDoesNotRevivePreviousSessionEstimate(bool blue, bool replaceReceiver)
+    {
+        var previousInput = InputPoint.Instance;
+        Time.realtimeSinceStartupAsDouble = 0;
+        var log = new PhoneSaberPerfLog();
+        var input = new InputPoint { RedCoordinateSender="red", BlueCoordinateSender="blue",
+            LastReceivedMonotonicTime=9.993, LastReceivedMonotonicTime2=9.993, StationLabel="A" };
+        InputPoint.Instance = input;
+        Invoke(log, "OnEnable"); Invoke(log, "Update");
+        try
+        {
+            var text = System.IO.File.ReadAllLines("PhoneSaber/tools/fixtures/protocol_metrics.tsv")[1].Split('\t')[1];
+            var metrics = System.Text.Encoding.ASCII.GetBytes(text);
+            input.Metrics.Receive(metrics, metrics.Length, "red", 5);
+            input.Metrics.Receive(metrics, metrics.Length, "blue", 5);
+            foreach (var timing in new[] { input.RedCoordinateTiming, input.BlueCoordinateTiming })
+            { timing.Applied(9.993, 9.998); timing.BeforeRender(10, 1); }
+            Time.realtimeSinceStartupAsDouble = 10; Invoke(log, "Update");
+            StringAssert.Contains("約62 ms", PhoneSaberPerfLog.LatencyLine(blue, 10));
+
+            // 経路切替または停止・再開で統計を破棄した後、同じIPの新着座標が届く。
+            if (replaceReceiver)
+            {
+                input = new InputPoint { RedCoordinateSender="red", BlueCoordinateSender="blue",
+                    LastReceivedMonotonicTime=10.1, LastReceivedMonotonicTime2=10.1, StationLabel="A" };
+                InputPoint.Instance = input;
+            }
+            var restarted = blue ? input.BlueCoordinateTiming : input.RedCoordinateTiming;
+            restarted.ClearWindow();
+            if (!replaceReceiver)
+            {
+                StringAssert.Contains("約62 ms", PhoneSaberPerfLog.LatencyLine(blue, 10), "通常の集計窓更新では推定を破棄しない");
+                restarted.ResetSource(); restarted.ResetSource();
+            }
+            if (blue) input.LastReceivedMonotonicTime2 = 10.1;
+            else input.LastReceivedMonotonicTime = 10.1;
+            restarted.Applied(10.1, 10.102); restarted.BeforeRender(10.103, 2);
+            StringAssert.Contains("計測不足", PhoneSaberPerfLog.LatencyLine(blue, 10.2),
+                "同じ送信元でも破棄済みセッションの推定値を復活させない");
+            if (!replaceReceiver)
+                StringAssert.Contains("約62 ms", PhoneSaberPerfLog.LatencyLine(!blue, 10.2), "反対色の計測は維持する");
+
+            input.Metrics.Receive(metrics, metrics.Length, blue ? "blue" : "red", 19);
+            if (blue) input.LastReceivedMonotonicTime2 = 19.993;
+            else input.LastReceivedMonotonicTime = 19.993;
+            restarted.Applied(19.993, 19.998); restarted.BeforeRender(20, 3);
+            Time.realtimeSinceStartupAsDouble = 20; Invoke(log, "Update");
+            StringAssert.Contains("約60 ms", PhoneSaberPerfLog.LatencyLine(blue, 20), "新しい計測後は表示へ復帰する");
+        }
+        finally { Invoke(log, "OnDisable"); InputPoint.Instance = previousInput; }
+    }
     [Test] public void ColourBreakdownsUseTheirOwnCoordinateSender()
     {
         Time.realtimeSinceStartupAsDouble = 0;
