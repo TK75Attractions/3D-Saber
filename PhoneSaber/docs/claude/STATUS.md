@@ -2,6 +2,30 @@
 
 資料の索引と、実行ファイル・道具の場所は [README.md](README.md)。
 
+## 2026-10-16 flaky_p2p-1016 最終監査・未検証変更の撤去
+
+- 対象: `git log --oneline -5`、`git diff main...HEAD`、8a510ae の前回メモ。開始時 clean。commit/push・GUI起動なし。
+- P2: 前回変更は対象assert未到達で、変更前FAIL→変更後PASS・CPU負荷下の改善率・新しいpong 1/2/3個のassertが未検証。初回pongの3秒超過とticker/仮想時計の競合はいずれも原因未確定。
+- 再確認: 対象XCTest/FakeBridge/LockedBoxを抽出し、実P2PSender/P2PProtocol/UDPSender/MetricsDatagram/HostMonotonicClockと `xcrun swiftc -O -D DEBUG` でビルド。前回変更版・main版ともコンパイル成功、実行はNWListenerのEPERMでassert前に停止。修正効果の証拠にはならない。
+- 結論: 「完了または除去」の指示に従い、前回のテスト変更と `tickForTesting()` を全撤去。両Swiftファイルはmainと同一。既存のflaky自体は未解決で、修正済みとは扱わない。新しいバグ修正・回帰テストの追加なし。
+- 未完監査: 残る新規option/TODO/dead code/stubなし。前回メモはBLOCKEDを明記しており成功の偽記載はなかったが、撤去後の実装と矛盾しないよう本節で置換。/tmpのharnessを受入条件にしない。
+- 既定動作: `git diff main` のコード差分0。認識/ranking/eligibility/scoring/PCA/threshold/UDP形式/formal corpus/Unity scenes・prefabs・meta/ProjectSettings不変。新規C#/Swift/Kotlinなし、meta/project追加不要。
+- 実行環境: 初回Pythonの依存不足・Swiftキャッシュ書込拒否後、Python 3.12.1と/tmp内のSWIFT_MODULECACHE_PATH・CLANG_MODULE_CACHE_PATHで再実行。以下は再実行結果。
+- `python3 -B -m unittest discover -v`（PhoneSaber/tools）: 324件、failure 1/error 1/skip 12/既存expected failure 1。auto-latencyとWindows socket policyのlocalhost拒否。全PASSではない。
+- 同コマンド（ios/PhoneSaberSender/Tools）: 445件、failure 9/error 51/skip 1。50 errorはbindのEPERM、1 errorは録画E2Eの空き容量照会0。9 failureはreceiver bind拒否と、同じbindを使うcompiler-child準備待ち。後者は単独再実行も2 subtest失敗。
+- 同コマンド（PhoneSaber/）: 85件、failure/error 0、skip 14（ソケット禁止等）。
+- `python3 PhoneSaber/tools/check_pc_latency.py`: PASS（stats 50/sender gate 14/frame 10/NUnit 35、Unity API compile各構成成功）。Editor/Player実行ではない。
+- `python3 PhoneSaber/tools/check_auto_latency.py`: C# 4 PASS/1 FAIL（loopback Access denied）で停止。後続Swift→C#実通信は未到達。
+- `make -C PhoneSaber/android/core test parity`: C++/Python 6件PASS、formal 40件成功、325 PNG/541遷移/27 synthetic不一致0。
+- `bash PhoneSaber/ios/PhoneSaberSender/run-static-tests.sh`: Static BGRA・DeviceHealth 19件PASS。
+- `python3 PhoneSaber/ios/PhoneSaberSenderTests/run_{latency,high_speed,camera_lifecycle,debug_transfer}_host_tests.py` を各実行: latency 39/high_speed 2/camera_lifecycle 18/debug_transfer 7件PASS。
+- `run_send_gap_host_tests.py`: 24件中18 PASS、6件NWListener EPERM。抽出した既存P2P純粋ロジックXCTest 13件PASS。
+- `python3.12 -B PhoneSaber/ios/PhoneSaberSender/Tools/run_lossless_regression.py`: 40/40 PASS（positive 23/23、negative false positive 0/17）。
+- `xcodebuild -project PhoneSaber/ios/PhoneSaberSender/PhoneSaberSender.xcodeproj -scheme PhoneSaberSender -configuration Release -destination 'generic/platform=iOS' -derivedDataPath /tmp/phonesaber-finish-1016/ios-release CODE_SIGNING_ALLOWED=NO build`: exit 65、sandbox_apply拒否→SwiftUIマクロ起動失敗。
+- `xcrun simctl list devices booted`: CoreSimulatorService接続拒否。iOS XCTestは未実行。Unity Editor・実機/AWDL・公式verifyも未実行。GradleはAndroid差分がないため対象外。
+- operator残検証: repo rootで `bash PhoneSaber/tools/verify_phone_saber.sh`（既存iOS XCTest/Release・Unity EditMode/PlayMode/compile）。今回追加のUnity/実機試験や前回変更の前後50回比較は不要（変更を撤去）。既存flakyの原因確定・修正は別途必要。
+- `git diff --check` PASS。全ログ: `/tmp/phonesaber-finish-1016/`。空き容量照会0はdfの409GiBと不一致、録画E2Eは制約外で要再確認。いずれも今回差分による失敗ではなく、gate緩和・無関係な修正なし。
+
 ## 2026-10-15 Android 無人起動・準備確認 最終監査
 
 - 対象: `git log --oneline -5`、`git diff main...HEAD`、ac98d54/aa841d1 の前回メモ。開始時 clean。commit/push・GUI起動なし。
