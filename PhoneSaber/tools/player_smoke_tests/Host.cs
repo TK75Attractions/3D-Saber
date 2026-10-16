@@ -65,7 +65,7 @@ namespace UnityEngine.Profiling
 }
 namespace UnityEngine.SceneManagement
 {
-    public struct Scene { public string name; }
+    public struct Scene { public string name; public int handle => name == null ? 0 : name.GetHashCode(); }
     public static class SceneManager
     {
         public static readonly List<string> scenes = new List<string>();
