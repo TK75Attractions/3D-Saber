@@ -3,18 +3,12 @@
   "request": "音を拾う区間ではメロディーを拾ってほしい。",
   "priority": "2026-10-16のユーザーによる意味の明確化。歌・主旋律の発音とフレーズを優先し、混合音の発音強度だけを旋律一致の根拠としない。",
   "allowedSongIds": [
-    "ManicSonic",
     "escapade",
-    "logic",
-    "BenkyouRemaster",
-    "Aobasou"
+    "logic"
   ],
   "hardLevels": {
-    "ManicSonic": 9,
     "escapade": 9,
-    "logic": 7,
-    "BenkyouRemaster": 8,
-    "Aobasou": 8
+    "logic": 7
   },
   "rhythmRoles": {
     "pulse": "ドラムや伴奏の拍に乗る短い区間。拍を支える音と音楽的なまとまりを確認する。",
@@ -201,5 +195,7 @@
         "chartApplied": false
       }
     ]
-  }
+  },
+  "scopeUpdated": "2026-10-16",
+  "scopeReason": "最新のユーザー指示により今後の編集はescapadeとlogicのみ。他3曲のsurveyは過去の調査資料として保持し、譜面へ適用しない。"
 }

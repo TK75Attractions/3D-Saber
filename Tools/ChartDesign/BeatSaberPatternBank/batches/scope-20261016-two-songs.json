@@ -1,0 +1,19 @@
+{
+  "passed": true,
+  "unitTests": 19,
+  "fixtureExport": true,
+  "allowedSongs": [
+    "escapade",
+    "logic"
+  ],
+  "concurrentSongExcluded": "escapade",
+  "frozenPreviewCount": 75,
+  "frozenViewerCount": 37,
+  "actualChartsUnchanged": 57,
+  "publicChartsChanged": 0,
+  "materialCounts": {
+    "converted": 118,
+    "applied": 94,
+    "pending": 24
+  }
+}

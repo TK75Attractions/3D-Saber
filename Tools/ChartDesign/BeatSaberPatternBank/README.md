@@ -1,4 +1,12 @@
 # Beat Saber 配置素材と5曲の設計
+## 現行の編集対象（2026-10-16）
+
+今後の譜面編集・素材適用・公開更新は **escapade と logic の Easy / Normal / Hard のみ**。Hardは9 / 7を維持。ManicSonic、BenkyouRemaster、Aobasouを含む他の全曲は現状維持。以下の5曲・15譜面の説明は過去の制作記録であり、今後の編集許可ではない。
+
+`scope-policy.json` を生成・適用・exportの許可基準とする。`songs.json` は履歴として5曲を保持し、定時適用は `select_allowed_specs` で2曲だけを選ぶ。旧一括再生成は許可リスト外を含めると停止する。素材サイトの対象外・除外曲の適用プレビューは、公開済みのJSON・担当手・レベルをそのまま再利用し、実ファイルの他作業の変更を取り込まない。
+
+escapadeの並行手編集は保護し、未レビューの間は `--exclude-song escapade` を継続。曲を編集可能にしたことは、手編集の巻き戻しや無審査公開の許可ではない。メロディー改修もこの2曲だけで進める。他3曲の調査データは資料として残す。
+
 
 素材集: https://beat-saber-pattern-bank.metuji48.chatgpt.site
 譜面: https://beat-saber-pattern-bank.metuji48.chatgpt.site/patterns.html

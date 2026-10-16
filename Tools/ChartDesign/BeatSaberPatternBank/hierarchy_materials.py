@@ -5,7 +5,7 @@ HERE=Path(__file__).parent
 sys.path.insert(0,str(HERE.parent/'FiveSongs20261014'))
 from hierarchy_rework import read,save,Music,FORM,reduced,path_for,section
 from integrate_patterns import internal
-from scope_guard import authorize_specs
+from scope_guard import select_allowed_specs
 
 def style_core_valid(ns,anchors):
  """曲の代表フレーズは定時の位置素材で共通形へ戻さない。手は色由来の記録で照合。"""
@@ -46,7 +46,7 @@ def finalize_preserved(ns,m,diff,metadata):
 
 def main():
  p=argparse.ArgumentParser();p.add_argument('--repo',type=Path,required=True);p.add_argument('--features',type=Path,required=True);p.add_argument('--exclude-song',action='append',default=[],help='並行編集中の曲を今回の適用から除外する');args=p.parse_args()
- repo=args.repo;design=repo/'Tools/ChartDesign/FiveSongs20261014';bank=repo/'Tools/ChartDesign/BeatSaberPatternBank';prior=read(bank/'applications.json');apps=prior['applications'];patterns=read(bank/'converted-patterns.json')['patterns'];history=read(design/'hierarchy-design.json');specs=read(design/'songs.json');authorize_specs(specs)
+ repo=args.repo;design=repo/'Tools/ChartDesign/FiveSongs20261014';bank=repo/'Tools/ChartDesign/BeatSaberPatternBank';prior=read(bank/'applications.json');apps=prior['applications'];patterns=read(bank/'converted-patterns.json')['patterns'];history=read(design/'hierarchy-design.json');specs=select_allowed_specs(read(design/'songs.json'))
  styles=read(design/'song-style-design.json') if (design/'song-style-design.json').exists() else {'songs':{}}
  excluded=set(args.exclude_song);assert excluded<={s['id'] for s in specs},('Unknown excluded song',excluded)
  states={};pending=[];added=[];done={a['patternId'] for a in apps}
@@ -119,7 +119,7 @@ def main():
    save(design/sid/f'{diff}-cut-plan.json',plan);save(design/sid/f'{diff}-evidence.json',ev)
  # 改修前の適用は履歴へ。現在の索引は必ず現在の実ノーツへ対応させる。
  for a in apps:
-  if a['songId'] in excluded:continue
+  if a['songId'] not in states:continue
   chart=read(repo/'Assets/StreamingAssets/Songs'/a['songId']/f"chart_{a['difficulty']}.json")
   if 'appliedNotes' in a:a.setdefault('preHierarchyAppliedNotes',copy.deepcopy(a['appliedNotes']))
   a['noteIndices']=[i for i,n in enumerate(chart['notes']) if a['startBeat']<=n['beat']<a['endBeat']];a['appliedNotes']=[chart['notes'][i] for i in a['noteIndices']];a['addedNotes']=len(a['appliedNotes'])

@@ -1,15 +1,36 @@
-"""素材プレビューと更新した5曲だけを既存のスマホサイトへ反映する。"""
+"""素材プレビューと許可された曲だけを既存のスマホサイトへ反映する。"""
 import argparse,copy,hashlib,json,shutil,zipfile,datetime
 from pathlib import Path
 from scope_guard import ALLOWED,authorize,protected_web,assert_unchanged
 HERE=Path(__file__).resolve().parent
 def read(p):return json.loads(p.read_text(encoding='utf-8-sig'))
 def save(p,d):p.parent.mkdir(parents=True,exist_ok=True);p.write_text(json.dumps(d,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+def application_key(a):
+ return (a['patternId'],a['songId'],a['difficulty'],a['startBeat'],a['endBeat'])
+
+def frozen_applications(dist,apps,writable):
+ """対象外と並行編集中の適用プレビューは、実ファイルを読まず公開済み版を保持。"""
+ prior=read(dist/'converted-patterns.json')
+ frozen={application_key(a):copy.deepcopy(a) for p in prior['patterns'] for a in p.get('applications',[]) if a['songId'] not in writable}
+ requested={application_key(a) for a in apps if a['songId'] not in writable}
+ if requested!=set(frozen):raise ValueError('対象外の適用履歴が公開済み版と異なるため出力を中止')
+ hashes={}
+ for a in frozen.values():
+  path=Path(a['chartFile'])
+  if path.is_absolute() or '..' in path.parts or path.parts[0]!='applied':raise ValueError('不正な適用プレビューのパス')
+  asset=dist/path
+  if read(asset)!=a['chart']:raise ValueError('公開済み適用プレビューと索引が不一致')
+  hashes[path.as_posix()]=hashlib.sha256(asset.read_bytes()).hexdigest()
+ return frozen,hashes
+
 def main():
  p=argparse.ArgumentParser();p.add_argument('--pattern-site',type=Path,required=True);p.add_argument('--chart-site',type=Path,required=True);p.add_argument('--exclude-song',action='append',default=[],help='並行編集中の曲の公開ファイルを保持する');args=p.parse_args()
  repo=HERE.parents[2];dist=args.pattern_site/'dist';data=read(HERE/'converted-patterns.json');apps=read(HERE/'applications.json')['applications']
  protected=protected_web(args.chart_site/'dist')
- for a in apps:authorize(a['songId'],a['difficulty'])
+ excluded=set(args.exclude_song);assert excluded<=ALLOWED;ids=ALLOWED-excluded
+ frozen,frozen_hashes=frozen_applications(dist,apps,ids)
+ for a in apps:
+  if a['songId'] in ids:authorize(a['songId'],a['difficulty'])
  for source in (HERE/'web').iterdir():shutil.copy2(source,dist/source.name)
  # 既存の動画一覧から、選択した素材の変換結果へ直接移動できるようにする。
  page=dist/'index.html';html=page.read_text(encoding='utf-8')
@@ -27,10 +48,11 @@ def main():
  for name in ['core.js','renderer.js']:
   (dist/'pattern-renderer').mkdir(exist_ok=True);shutil.copy2(repo/'Tools/MobileChartLibrary/web'/name,dist/'pattern-renderer'/name)
  for pattern in data['patterns']:
-  pattern['applications']=[a for a in apps if a['patternId']==pattern['id']]
+  pattern['applications']=[copy.deepcopy(frozen[application_key(a)] if a['songId'] not in ids else a) for a in apps if a['patternId']==pattern['id']]
   pattern['pending']=next((p for p in read(HERE/'applications.json').get('pending',[]) if p['patternId']==pattern['id']),None)
   save(dist/pattern['chartFile'],pattern['chart'])
   for a in pattern['applications']:
+   if a['songId'] not in ids:continue
    chart=read(repo/'Assets/StreamingAssets/Songs'/a['songId']/f"chart_{a['difficulty']}.json")
    evidence=read(repo/'Tools/ChartDesign/FiveSongs20261014'/a['songId']/f"{a['difficulty']}-evidence.json")
    a['hands']=[evidence[i]['hand'] for i in a['noteIndices']]
@@ -73,11 +95,12 @@ def main():
  compacted=0
  for asset in dist.rglob('*.json'):
   # 分類ZIPのメタデータは保存一覧のSHA-256を保持する。package.pyが生成・検証する。
-  if 'packages' in asset.relative_to(dist).parts:continue
+  if 'packages' in asset.relative_to(dist).parts or asset.relative_to(dist).as_posix() in frozen_hashes:continue
   original=asset.read_bytes();value=read(asset)
   compact=(json.dumps(value,ensure_ascii=False,separators=(',',':'))+'\n').encode('utf-8')
   assert json.loads(compact)==value
   if len(compact)<len(original):asset.write_bytes(compact);compacted+=len(original)-len(compact)
+ assert all(hashlib.sha256((dist/k).read_bytes()).hexdigest()==v for k,v in frozen_hashes.items()),'凍結プレビューに変更あり'
  expanded=sum(asset.stat().st_size for asset in dist.rglob('*') if asset.is_file())
  save(HERE/'hosting-size-verification.json',{'expandedStaticBytes':expanded,'limitBytes':256*1024*1024,'jsonWhitespaceBytesRemoved':compacted,'mediaAndZipContentsUnchanged':True})
  assert expanded<256*1024*1024-512*1024,('Hosting archive needs more capacity; retain the verified materials without overwriting production.',expanded)
