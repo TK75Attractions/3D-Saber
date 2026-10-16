@@ -90,6 +90,31 @@ exit 2
         self.assertIn("STOP", result.stderr)
         self.assertFalse(self.calls.exists())
 
+    def test_stop_during_power_check_prevents_launch(self):
+        tools = self.root / "bin"
+        tools.mkdir()
+        pmset = tools / "pmset"
+        # 電源確認・低電力警告の待機中にスタッフが STOP を置く順序を固定する。
+        pmset.write_text('''#!/bin/bash
+touch "$WATCHDOG_TEST_STOP"
+if [[ "$2" == "batt" ]]; then
+    printf "Now drawing from 'AC Power'\\n"
+else
+    printf ' lowpowermode 0\\n'
+fi
+''')
+        pmset.chmod(0o755)
+        self.env["PATH"] = str(tools) + os.pathsep + os.environ["PATH"]
+        for stop in (self.mac / "STOP", self.mac / "Start-Saber-A.STOP"):
+            with self.subTest(stop=stop.name):
+                self.calls.unlink(missing_ok=True)
+                self.env["WATCHDOG_TEST_STOP"] = str(stop)
+                result = self.run_script("Start-Saber-A.command")
+                stop.unlink()
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assertFalse(self.calls.exists(), "STOP 後にゲームを起動した")
+                self.assertIn("watchdog-stopped STOP-file", (self.mac / "Start-Saber-A.log").read_text())
+
     def test_dead_lock_is_reclaimed_and_log_rotates(self):
         lock = self.mac / ".saber-watchdog.lock"
         lock.mkdir()

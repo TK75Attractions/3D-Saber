@@ -200,6 +200,7 @@ while ! stopped; do
         read -r -t "${PHONESABER_LOW_POWER_WAIT:-10}" _ || true
         log "low-power-wait done"
     fi
+    stopped && break
     rm -f "$QUIT_MARKER" "$MARKER_DIR"/heartbeat-*
     HEARTBEAT="$MARKER_DIR/heartbeat-$RESTART_COUNT"
     HANG_DETECTED=0
