@@ -3,7 +3,7 @@ using UnityEngine.InputSystem;
 
 // RUSH Eのジャケットの裏に、描画もレイキャストも持たない切断判定を重ねる。
 // 10回目までは回数・輪・打音を出さず、通常の選曲画面に秘密のヒントを残さない。
-// カメラ両手・マウスドラッグ・クリックが同じコントローラーの解除状態を使う。
+// カメラ両手・ボタン不要のマウス移動・クリックが同じコントローラーの解除状態を使う。
 [DefaultExecutionOrder(90)]
 public sealed class RushESecret : MonoBehaviour
 {
@@ -78,8 +78,9 @@ public sealed class RushESecret : MonoBehaviour
         bool cut = red.Tick(Unit(r ? Vector2.Scale(input.NormalizedPosition, pixels) : Vector2.zero, area), r ? input.LastReceivedTime : 0, r);
         cut |= blue.Tick(Unit(b ? Vector2.Scale(input.NormalizedPosition2, pixels) : Vector2.zero, area), b ? input.LastReceivedTime2 : 0, b);
         var pointer = Mouse.current;
+        // 本編と同じく、マウスは移動だけで切る。押下を要求するとかざす操作しかできない。
         cut |= mouse.Tick(Unit(pointer != null ? pointer.position.ReadValue() : Vector2.zero, area), now,
-            eligible && !r && !b && pointer != null && pointer.leftButton.isPressed);
+            eligible && !r && !b && pointer != null);
         if (cut)
         {
             suppressClickUntil = now + .20;

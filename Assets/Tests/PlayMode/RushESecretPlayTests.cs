@@ -7,11 +7,90 @@ using System.Reflection;
 using System.Text;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.LowLevel;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 
 public class RushESecretPlayTests
 {
+    [UnityTest]
+    public IEnumerator MouseMovementWithoutAnyButtonRevealsEAfterTenCuts()
+    {
+        if (!File.Exists(Path.Combine(Application.streamingAssetsPath, "Songs", "RushE", "audio.wav"))) Assert.Ignore("文化祭用ローカル音源が必要です。");
+        var originalSettings = InputSystem.settings;
+        var settings = Object.Instantiate(originalSettings);
+        InputSystem.settings = settings;
+        settings.backgroundBehavior = InputSettings.BackgroundBehavior.IgnoreFocus;
+#if UNITY_EDITOR
+        settings.editorInputBehaviorInPlayMode = InputSettings.EditorInputBehaviorInPlayMode.AllDeviceInputAlwaysGoesToGameView;
+#endif
+        var mouse = InputSystem.AddDevice<Mouse>();
+        SongSelectController ctl = null;
+        try
+        {
+            InputSystem.QueueStateEvent(mouse, new MouseState { position = Vector2.zero });
+            yield return SceneManager.LoadSceneAsync("SongSelect", LoadSceneMode.Single);
+            ctl = Object.FindFirstObjectByType<SongSelectController>();
+            var skin = Object.FindFirstObjectByType<SongSelectSkin>();
+            float deadline = Time.realtimeSinceStartup + 15;
+            while (!skin.IsReady && Time.realtimeSinceStartup < deadline) yield return null;
+            Assert.IsTrue(skin.IsReady);
+            ctl.Select(Enumerable.Range(0, ctl.SongCount).First(i => ctl.SongIdAt(i) == "RushE"));
+            ctl.SetDifficulty(2);
+            deadline = Time.realtimeSinceStartup + 5;
+            while ((ScreenTransition.IsBusy || !skin.DiscsSettled) && Time.realtimeSinceStartup < deadline) yield return null;
+            Assert.IsTrue(skin.DiscsSettled); Assert.IsFalse(ScreenTransition.IsBusy);
+            yield return new WaitForSecondsRealtime(.2f);
+            Assert.IsFalse(InputPoint.Instance.IsRecentlyActive(.15) || InputPoint.Instance.IsRecentlyActive2(.15));
+            var secret = Object.FindFirstObjectByType<RushESecret>();
+            var aim = Object.FindFirstObjectByType<SongSelectAimPointer>();
+            Assert.IsTrue(aim.enabled);
+            Canvas.ForceUpdateCanvases();
+            Rect area = skin.SelectedDiscScreenRect;
+            float radius = Mathf.Min(area.width, area.height) * .5f;
+            Vector2 left = area.center + Vector2.left * radius * 1.3f;
+            Vector2 right = area.center + Vector2.right * radius * 1.3f;
+            InputSystem.QueueStateEvent(mouse, new MouseState { position = left });
+            yield return null;
+            yield return new WaitForSecondsRealtime(.2f);
+            Assert.Zero(ctl.RushESecret.Hits, "置いただけでは切断しない");
+            for (int cut = 0; cut < 10; cut++)
+            {
+                // ボタンを一度も押さず、実際のInput System更新で盤を往復する。
+                for (int step = 1; step <= 10; step++)
+                {
+                    Vector2 point = Vector2.Lerp(cut % 2 == 0 ? left : right, cut % 2 == 0 ? right : left, step / 10f);
+                    InputSystem.QueueStateEvent(mouse, new MouseState { position = point });
+                    yield return null;
+                }
+                yield return new WaitForSecondsRealtime(.15f);
+                Assert.IsFalse(mouse.leftButton.isPressed || mouse.rightButton.isPressed || mouse.middleButton.isPressed);
+                Assert.AreEqual(cut + 1, ctl.RushESecret.Hits, "押していないマウスの1往路を1回だけ数える");
+                Assert.AreEqual("SongSelect", SceneManager.GetActiveScene().name);
+                if (cut < 9)
+                {
+                    Assert.IsFalse(ctl.RushESecret.Transitioning);
+                    Assert.IsFalse(secret.Curtain.gameObject.activeSelf);
+                    Assert.IsFalse(secret.GetComponent<AudioSource>().isPlaying);
+                    Assert.IsNull(GameObject.Find("RushEHitRing"));
+                    Assert.IsNull(GameObject.Find("RushEOnlyDifficulty"));
+                }
+            }
+            Assert.Zero(aim.ShotCount, "切る途中でかざす操作が発火しない");
+            yield return new WaitForSecondsRealtime(RushESecretState.TransitionSeconds + .1f);
+            Assert.AreEqual("E", ctl.CurrentDifficultyName);
+            Assert.IsTrue(ctl.RushESecret.Unlocked); Assert.IsFalse(ctl.RushESecret.Transitioning);
+        }
+        finally
+        {
+            if (ctl != null) ctl.StopPreview();
+            InputSystem.RemoveDevice(mouse);
+            InputSystem.settings = originalSettings;
+            Object.DestroyImmediate(settings);
+        }
+    }
+
     [UnityTest]
     public IEnumerator CameraCutsRevealEWithoutClicksOrHintsBeforeTheTenthCut()
     {
