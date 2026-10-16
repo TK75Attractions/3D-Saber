@@ -220,6 +220,63 @@ namespace Saber.ChartEditor
             }
         }
 
+        /// <summary>
+        /// 守2: 読み込んだあとにほかのツールが書き換えた stage.json(latestText)へ、ここで変えた項目だけを重ねた中身。
+        /// 触っていない項目と書き方(字下げ・改行)は相手のまま保つ。同じ項目を両方で変えていたら、ここでの値を使う。
+        /// changedKeys は重ねた項目の名前(stage.json のキー)。
+        /// </summary>
+        public SaberStageInfo MergeOnto(string latestText, out List<string> changedKeys)
+        {
+            SaberStageInfo latest = Parse(latestText);
+            SaberJsonObject before = !string.IsNullOrEmpty(EditingBaselineText) &&
+                                     SaberJson.Parse(EditingBaselineText.TrimStart('﻿')) is SaberJsonObject parsed
+                ? parsed
+                : new SaberJsonObject();
+            changedKeys = new List<string>();
+            var keys = root.Members.Select(member => member.Key).Concat(before.Members.Select(member => member.Key)).Distinct().ToList();
+            foreach (string key in keys)
+            {
+                SaberJsonNode mine = root.Get(key), old = before.Get(key);
+                string mineText = mine == null ? null : SaberJson.WriteCompact(mine);
+                if (mineText == (old == null ? null : SaberJson.WriteCompact(old))) continue;
+                changedKeys.Add(key);
+                if (mine == null)
+                {
+                    latest.root.Remove(key);
+                    continue;
+                }
+                SaberJsonNode copy = SaberJson.Parse(mineText);
+                if (latest.root.Has(key))
+                {
+                    latest.root.Set(key, copy);
+                    continue;
+                }
+                // 相手に無い項目は、ここでの並びで後ろにある項目の前に入れる(ふりがなは timeOrigin の前、など)。
+                int at = root.Members.FindIndex(member => member.Key == key);
+                string next = root.Members.Skip(at + 1).Select(member => member.Key).FirstOrDefault(name => latest.root.Has(name));
+                if (next != null) latest.root.SetBefore(key, copy, next);
+                else latest.root.Set(key, copy);
+            }
+            return latest;
+        }
+
+        /// <summary>stage.json のキーの、画面での呼び名。</summary>
+        public static string KeyLabel(string key)
+        {
+            switch (key)
+            {
+                case "displayName": return "表示名";
+                case "displayReading": return "ふりがな";
+                case "composer": return "作曲者";
+                case "artist": return "アーティスト";
+                case "listed": return "選曲に出す";
+                case "previewStartSeconds": return "試聴の開始";
+                case "sections": return "区間";
+                case "audioSha256": return "音源の照合";
+                default: return key;
+            }
+        }
+
         public string Write()
         {
             string text = SaberJson.WritePretty(root, indent, inlineDepth);

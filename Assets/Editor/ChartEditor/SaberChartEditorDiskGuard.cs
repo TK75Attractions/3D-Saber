@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Text;
 using UnityEditor;
 using UnityEngine;
 
@@ -86,6 +87,7 @@ namespace Saber.ChartEditor
         {
             if (EditorApplication.timeSinceStartup < nextDiskCheckAt) return;
             nextDiskCheckAt = EditorApplication.timeSinceStartup + 2;
+            CheckStageForExternalChanges();
             if (diskBaseline == null || string.IsNullOrEmpty(loadedSongId) || string.IsNullOrEmpty(loadedDifficulty)) return;
             if (diskBaselineKey != TargetKey(loadedSongId, loadedDifficulty) || RecordingBusy || draggingNote || isPlaying) return;
             bool same;
@@ -100,6 +102,48 @@ namespace Saber.ChartEditor
                 SetStatus("ディスクの譜面が書き換えられました（診断・復元を見てください）");
                 Repaint();
             }
+        }
+
+        // ---- 守2: stage.json も、ほかのツールが書き換えたら気付く ----
+
+        private bool stageChangedOutside;
+        private const string StageChangedMessage =
+            "stage.json がほかのツールで書き換えられました。曲情報を保存すると、ここで変えた項目だけを最新のファイルに重ねます" +
+            "（触っていない項目は、ほかで直した値のまま残ります）。";
+
+        /// <summary>読み込んだ時点の stage.json と比べる。未編集なら黙って読み直し、編集中なら保存時に重ねることを知らせる。</summary>
+        private void CheckStageForExternalChanges()
+        {
+            if (songInfo == null || !SaberChartFileStore.IsValidSongId(songInfoSong, out _)) return;
+            string disk;
+            try { disk = ReadStageText(songInfoSong); }
+            catch (IOException) { return; }
+            catch (UnauthorizedAccessException) { return; }
+            if (disk == (songInfo.Exists ? songInfo.OriginalText : null))
+            {
+                stageChangedOutside = false;
+                return;
+            }
+            if (!SongInfoDirty)
+            {
+                LoadSongInfo(songInfoSong);
+                CacheSongInfoDraft();
+                stageChangedOutside = false;
+                SetStatus("ほかのツールで保存された曲情報（stage.json）を読み直しました");
+                Repaint();
+            }
+            else if (!stageChangedOutside)
+            {
+                stageChangedOutside = true;
+                SetStatus(StageChangedMessage);
+                Repaint();
+            }
+        }
+
+        private static string ReadStageText(string song)
+        {
+            string path = SaberChartFileStore.StagePath(song);
+            return !string.IsNullOrEmpty(path) && File.Exists(path) ? File.ReadAllText(path, Encoding.UTF8) : null;
         }
 
         /// <summary>編集中の譜面をディスクから読み直す。表示位置は保ち、選択と Undo の履歴は読込と同じく捨てる。</summary>

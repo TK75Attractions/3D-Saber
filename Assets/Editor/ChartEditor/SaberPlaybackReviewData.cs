@@ -80,20 +80,25 @@ namespace Saber.ChartEditor
                 instruction = "記録した各タイミングにノーツが来るように配置してください。色・位置・種類は前後の流れに合わせてお任せします。既存ノーツで満たせる時刻は再利用し、必要なノーツを追加してください。"
             };
         }
+        // divisions は1拍(4分)あたりの刻みの数(3連の8分なら3)。譜面エディターと同じく小節の頭から数える(5/8 などの小節でも格子がずれない)。
         public static float SnapAudioTime(SaberChartDocument chart, float seconds, int divisions, float duration)
         {
             if (!Finite(seconds) || divisions < 1 || !Finite(duration) || duration < 0) throw new ArgumentException("拍の刻みと時刻を確認してください。");
             var grid = new SaberChartGrid(chart.bpm, chart.beatZeroMs, chart.tempoMap);
             float beat = grid.BeatAt(seconds * 1000 - chart.offsetMs);
-            return Mathf.Clamp((grid.TimeAt(Mathf.Round(beat * divisions) / divisions) + chart.offsetMs) / 1000f, 0, duration);
+            // 曲の原点より前は小節がないので、拍の数のまま丸める。
+            float snapped = beat >= 0 ? SaberChartUtility.QuantizeBeat(beat, divisions * 4, chart) : Mathf.Round(beat * divisions) / divisions;
+            return Mathf.Clamp((grid.TimeAt(snapped) + chart.offsetMs) / 1000f, 0, duration);
         }
+        // タイムラインの段。赤・青のほかは、どちらの手でも切れるので「金」の段に並べる(自由色も含む)。
+        public static string TimelineLane(string color) => color == "blue" ? "blue" : color == "red" ? "red" : "gold";
         // 横幅から求めた許容秒で、同じ色の行にあるノーツを選ぶ。短いノーツの近くではロングの胴より開始位置を優先する。
         public static int PickTimelineNote(SaberChartDocument chart, float seconds, string color, float tolerance)
         {
             int closest = -1, tail = -1; float distance = float.PositiveInfinity, tailStart = float.NegativeInfinity;
             for (int i = 0; i < chart.notes.Count; i++)
             {
-                var note = chart.notes[i]; string lane = note.color == "blue" ? "blue" : note.color == "gold" ? "gold" : "red";
+                var note = chart.notes[i]; string lane = TimelineLane(note.color);
                 if (lane != color) continue;
                 float start = (note.time + chart.offsetMs) / 1000f, delta = Mathf.Abs(start - seconds);
                 if (delta <= tolerance && delta < distance) { closest = i; distance = delta; }
@@ -101,6 +106,60 @@ namespace Saber.ChartEditor
                 if (seconds >= start && seconds <= end && start > tailStart) { tail = i; tailStart = start; }
             }
             return closest >= 0 ? closest : tail;
+        }
+        static readonly Dictionary<string, string> ColorNames = new Dictionary<string, string>
+            { { "red", "赤" }, { "blue", "青" }, { "gold", "金" }, { "default", "自由" } };
+        static readonly Dictionary<string, string> ArrowGlyphs = new Dictionary<string, string>
+        {
+            { "up", "↑" }, { "down", "↓" }, { "left", "←" }, { "right", "→" },
+            { "upleft", "↖" }, { "upright", "↗" }, { "downleft", "↙" }, { "downright", "↘" },
+        };
+        static string ColorName(string color) => color != null && ColorNames.TryGetValue(color, out string name) ? name : color;
+        static string Kind(SaberChartNote n)
+        {
+            string arrow = n.direction != null && ArrowGlyphs.TryGetValue(n.direction, out string glyph) ? glyph : "";
+            return n.type == "long" ? FormattableString.Invariant($"LONG×{n.count}{arrow} {SaberChartUtility.EffectiveLongLengthMs(n) / 1000f:0.00}秒")
+                : n.type == "direction" ? "方向" + arrow : "TAP" + arrow;
+        }
+        // 一覧に出すノーツの説明(音源上の秒・色・種類と向き・位置)。
+        public static string DescribeNote(SaberChartNote n, float offsetMs) =>
+            FormattableString.Invariant($"{(n.time + offsetMs) / 1000f:0.000}秒 {ColorName(n.color)} {Kind(n)} (x {n.x:0.##}, y {n.y:0.##})");
+        // 使2: 変更で変わる項目だけ(「x 1→1.7・方向↓→方向←」)。全部を並べると、どこが変わるのか読み比べないと分からないため。
+        public static string DescribeChange(SaberChartNote before, SaberChartNote after, float offsetMs)
+        {
+            var parts = new List<string>();
+            if (Mathf.Abs(before.time - after.time) >= .5f)
+                parts.Add(FormattableString.Invariant(
+                    $"時刻 {(before.time + offsetMs) / 1000f:0.000}→{(after.time + offsetMs) / 1000f:0.000}秒（{after.time - before.time:+0;-0}ms）"));
+            if (Mathf.Abs(before.x - after.x) >= .005f) parts.Add(FormattableString.Invariant($"x {before.x:0.##}→{after.x:0.##}"));
+            if (Mathf.Abs(before.y - after.y) >= .005f) parts.Add(FormattableString.Invariant($"y {before.y:0.##}→{after.y:0.##}"));
+            if (before.color != after.color) parts.Add($"色 {ColorName(before.color)}→{ColorName(after.color)}");
+            string kindBefore = Kind(before), kindAfter = Kind(after);
+            if (kindBefore != kindAfter) parts.Add($"{kindBefore}→{kindAfter}");
+            return parts.Count == 0 ? "変わる項目はありません" : string.Join("・", parts);
+        }
+        // AI8: 指摘の区間(前後1秒)にあるノーツの表。依頼のノーツには番号がないので、添字・時刻・位置を数え違えずに選べるようにする。
+        public static string NearbyNotesTable(SaberChartDocument chart, SaberReviewComment comment, int limit = 40)
+        {
+            int[] indices = NotesInRange(chart, Mathf.Max(0, comment.fromSeconds - 1f), comment.toSeconds + 1f);
+            if (indices.Length == 0) return "";
+            var grid = new SaberChartGrid(chart.bpm, chart.beatZeroMs, chart.tempoMap);
+            var meter = new ChartMeterMap(chart.timeSignatures);
+            var picked = new HashSet<int>(comment.noteIndices ?? Array.Empty<int>());
+            var text = new StringBuilder();
+            text.AppendLine("   周辺のノーツ（*=指摘で選んだノーツ。index|音源秒|小節:拍|color|type|direction|x|y|count|lengthMs）:");
+            foreach (int i in indices.Take(limit))
+            {
+                var n = chart.notes[i];
+                var position = meter.At(Math.Max(0, grid.BeatAt(n.time)));
+                string beat = position.Fraction > .001
+                    ? FormattableString.Invariant($"{position.Measure}:{position.Beat}+{position.Fraction:0.##}")
+                    : FormattableString.Invariant($"{position.Measure}:{position.Beat}");
+                text.AppendLine(FormattableString.Invariant(
+                    $"   {(picked.Contains(i) ? "*" : " ")}{i}|{(n.time + chart.offsetMs) / 1000f:0.000}|{beat}|{n.color}|{n.type}|{n.direction}|{n.x:0.###}|{n.y:0.###}|{n.count}|{n.lengthMs:0.###}"));
+            }
+            if (indices.Length > limit) text.AppendLine($"   ほか {indices.Length - limit} 個（request.json の chart.notes）");
+            return text.ToString();
         }
         public static Vector2 ChangeRange(SaberChartDocument chart, SaberReviewOperation operation)
         {
@@ -375,9 +434,11 @@ namespace Saber.ChartEditor
                     text.AppendLine("   requestedNoteSecondsの各時刻を優先し、note.time = 秒 × 1000 − chart.offsetMsで変換してください。色・座標・種類は指示と前後の譜面に合わせて配置してください。クリック位置は配置座標の指定ではありません。停止画像は区間の参考です。");
                 }
                 else if (c.noteIndices.Length == 0) text.AppendLine("   個別ノーツの選択なし。区間と画像から対象を確認してください。");
+                text.Append(NearbyNotesTable(request.chart, c));
             }
             text.AppendLine("譜面修正はpatch-template.jsonの形式でreply.jsonに出力。baseHash・songId・difficultyを保持し、operationsにはadd/replace/deleteを指定してください。");
             text.AppendLine("indexはrequest.chart.notesの0始まりの元添字。replace/addのnoteは全フィールドを記述。timeとlengthMsはミリ秒。範囲外のノーツや曲設定は変更しないでください。");
+            text.AppendLine("ノーツの時刻は time が正で、beat は参考値です（このツールが時刻から計算し直します）。周辺のノーツの表の小節:拍は、譜面の拍子とテンポ地図で数えた位置です。");
             text.AppendLine("背景や演出の指示は対象コードの変更として扱い、譜面パッチへ混ぜず、変更内容を説明してください。");
             text.AppendLine().AppendLine(ReplyFormat());
             text.AppendLine().AppendLine(GameRules());

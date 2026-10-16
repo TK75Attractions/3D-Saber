@@ -59,6 +59,13 @@ namespace Saber.ChartEditor
             return sorted.Count % 2 == 1 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) * .5f;
         }
 
+        /// <summary>
+        /// 合4: 録音のずれは「いちばん近い格子」との差なので、格子の半分を越える遅れは早さに見える(BPM190 の16分なら ±40ms で折り返す)。
+        /// 中央値が格子の間隔の1/4を越えたら、遅れか早さか決められないとみなし、補正には使わない。
+        /// </summary>
+        public static bool AmbiguousAgainstGrid(float medianMs, float gridStepMs) =>
+            gridStepMs > 0f && !float.IsInfinity(gridStepMs) && !float.IsNaN(gridStepMs) && Mathf.Abs(medianMs) >= gridStepMs / 4f;
+
         public static float ClickTimeMs(int beat) => beat * 60000f / CalibrationBpm;
 
         /// <summary>

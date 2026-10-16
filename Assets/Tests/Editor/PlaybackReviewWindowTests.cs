@@ -422,6 +422,22 @@ public class PlaybackReviewWindowTests
         CollectionAssert.AreEquivalent(new[] { 0 }, Get<HashSet<int>>("selected"));
         Assert.AreEqual(before, SaberChartUtility.ToJson(chart));
     }
+    [Test] public void MarkingKeepsSelectedNotesAndSnapsUseTheEditorDivisions()
+    {
+        InvokeArgs("SelectTimelineNote", 1, false);
+        float a = Get<float>("rangeA"), b = Get<float>("rangeB");
+        Invoke("MarkCurrent");
+        CollectionAssert.AreEquivalent(new[] { 1 }, Get<HashSet<int>>("selected"), "N で選んだノーツを外さない");
+        Assert.AreEqual(a, Get<float>("rangeA")); Assert.AreEqual(b, Get<float>("rangeB"));
+        Get<HashSet<int>>("selected").Clear(); Set("seconds", 5f);
+        Invoke("MarkCurrent");
+        Assert.AreEqual(4f, Get<float>("rangeA"), .001f); Assert.AreEqual(6f, Get<float>("rangeB"), .001f, "選択がなければ前後1秒");
+        // 12分(3連の8分)。BPM120 では1刻み 1/6 秒。
+        Set("beatSnap", 4);
+        Assert.AreEqual(7f / 6f, (float)InvokeArgs("PointerTime", 1.17f), .001f);
+        Set("beatSnap", 6);
+        Assert.AreEqual(1.1875f, (float)InvokeArgs("PointerTime", 1.19f), .001f, "32分");
+    }
     [Test] public void AllReplyOperationsRemainNavigableAfterReopeningAndComparisonKeepsTime()
     {
         var chart = Get<SaberChartDocument>("document");
@@ -510,5 +526,17 @@ public class PlaybackReviewWindowTests
         float compareTime = Get<float>("seconds");
         window.SendEvent(new Event { type = EventType.KeyDown, keyCode = KeyCode.B, modifiers = EventModifiers.None });
         Assert.IsFalse(Get<bool>("after")); Assert.AreEqual(compareTime, Get<float>("seconds"));
+        // , . で前後のノーツ、PgUp / PgDn で前後の変更へ(マウスを使わずに見て回る)。
+        Set("seconds", 0f);
+        window.SendEvent(new Event { type = EventType.KeyDown, keyCode = KeyCode.Period, modifiers = EventModifiers.None });
+        Assert.AreEqual(2.5f, Get<float>("seconds"), .001f);
+        window.SendEvent(new Event { type = EventType.KeyDown, keyCode = KeyCode.Period, modifiers = EventModifiers.None });
+        Assert.AreEqual(3f, Get<float>("seconds"), .001f);
+        window.SendEvent(new Event { type = EventType.KeyDown, keyCode = KeyCode.Comma, modifiers = EventModifiers.None });
+        Assert.AreEqual(2.5f, Get<float>("seconds"), .001f);
+        window.SendEvent(new Event { type = EventType.KeyDown, keyCode = KeyCode.PageUp, modifiers = EventModifiers.None });
+        Assert.AreEqual(7, Get<int>("changeIndex"));
+        window.SendEvent(new Event { type = EventType.KeyDown, keyCode = KeyCode.PageDown, modifiers = EventModifiers.None });
+        Assert.AreEqual(8, Get<int>("changeIndex"));
     }
 }

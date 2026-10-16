@@ -22,9 +22,24 @@ namespace Saber.ChartEditor
         private static List<SaberChartNote> rangeClipboard;
         private static float rangeClipboardStartMs;
 
+        // 範囲の対象の色(0=全部)。片手だけをずらす・消すときに使う。範囲を外すと全部に戻す(気付かずに一部だけ消さないように)。
+        [SerializeField] private int rangeColorFilter;
+        private static readonly string[] RangeFilterLabels = { "全部", "赤だけ", "青だけ", "金だけ" };
+        private static readonly string[] RangeFilterColors =
+            { null, SaberChartUtility.ColorRed, SaberChartUtility.ColorBlue, SaberChartUtility.ColorGold };
+
         private bool HasRangeSelection => rangeStartMs >= 0f && rangeEndMs > rangeStartMs;
 
-        private List<SaberChartNote> RangeNotes() => SaberChartRangeOps.NotesIn(document, rangeStartMs, rangeEndMs);
+        private List<SaberChartNote> RangeNotes()
+        {
+            List<SaberChartNote> notes = SaberChartRangeOps.NotesIn(document, rangeStartMs, rangeEndMs);
+            if (rangeColorFilter <= 0 || rangeColorFilter >= RangeFilterColors.Length) return notes;
+            string color = RangeFilterColors[rangeColorFilter];
+            return notes.Where(note => note.color == color).ToList();
+        }
+
+        private string RangeFilterSuffix =>
+            rangeColorFilter > 0 && rangeColorFilter < RangeFilterLabels.Length ? $"（{RangeFilterLabels[rangeColorFilter]}）" : "";
 
         private void SetRange(float startMs, float endMs)
         {
@@ -45,6 +60,7 @@ namespace Saber.ChartEditor
         private void ClearRange()
         {
             rangeStartMs = rangeEndMs = -1f;
+            rangeColorFilter = 0;
             draggingRange = false;
             Repaint();
         }
@@ -102,6 +118,14 @@ namespace Saber.ChartEditor
                 current.Use();
                 return true;
             }
+            // 範囲がなければ、Esc で1個の選択も外す(画面の外に残った選択に Delete や方向キーが効かないように)。
+            if (plain && !current.shift && current.keyCode == KeyCode.Escape && selectedIndex >= 0)
+            {
+                selectedIndex = -1;
+                SetStatus("選択を外しました");
+                current.Use();
+                return true;
+            }
             if (action && !current.shift && current.keyCode == KeyCode.C)
             {
                 CopySelection();
@@ -125,7 +149,7 @@ namespace Saber.ChartEditor
 
         private void DrawRangePanel()
         {
-            SectionLabel(HasRangeSelection ? $"範囲  {RangeNotes().Count}ノーツ" : "範囲の編集");
+            SectionLabel(HasRangeSelection ? $"範囲  {RangeNotes().Count}ノーツ{RangeFilterSuffix}" : "範囲の編集");
             GUILayout.BeginHorizontal();
             if (GUILayout.Button(new GUIContent("始め [", "今の位置を範囲の始めにします"), EditorStyles.miniButtonLeft)) SetRangeStartAtCursor();
             if (GUILayout.Button(new GUIContent("終わり ]", "今の位置を範囲の終わりにします"), EditorStyles.miniButtonMid)) SetRangeEndAtCursor();
@@ -138,6 +162,15 @@ namespace Saber.ChartEditor
                 return;
             }
             GUILayout.Label($"{FormatClock(rangeStartMs + document.offsetMs)} 〜 {FormatClock(rangeEndMs + document.offsetMs)}（Esc で解除）", smallMutedStyle);
+            GUILayout.BeginHorizontal();
+            GUILayout.Label(new GUIContent("対象", "範囲の操作を、この色のノーツだけにします（片手だけずらす・消す・向きを付けるなど）"), GUILayout.Width(28f));
+            int filter = GUILayout.Toolbar(rangeColorFilter, RangeFilterLabels, EditorStyles.miniButton);
+            if (filter != rangeColorFilter)
+            {
+                rangeColorFilter = filter;
+                SetStatus($"範囲の対象: {RangeFilterLabels[filter]}（{RangeNotes().Count}ノーツ）");
+            }
+            GUILayout.EndHorizontal();
             using (new EditorGUI.DisabledScope(!CanEditAtCursor))
             {
                 GUILayout.BeginHorizontal();
@@ -160,6 +193,9 @@ namespace Saber.ChartEditor
                 if (GUILayout.Button("−", EditorStyles.miniButtonLeft, GUILayout.Width(22f))) ShiftSelectionByMsText(-1f);
                 if (GUILayout.Button("+", EditorStyles.miniButtonRight, GUILayout.Width(22f))) ShiftSelectionByMsText(1f);
                 GUILayout.EndHorizontal();
+                if (GUILayout.Button(new GUIContent($"拍にそろえる（{SnapLabels[Mathf.Clamp(snapIndex, 0, SnapLabels.Length - 1)]}）",
+                        "範囲のノーツを、上の Snap の格子のいちばん近い位置へ寄せます。テンポ地図と拍子に合わせます。位置・長さは変えません")))
+                    SnapRangeToGrid();
                 GUILayout.BeginHorizontal();
                 GUILayout.Label("色", GUILayout.Width(28f));
                 for (int i = 0; i < ColorValues.Length; i++)
@@ -183,6 +219,14 @@ namespace Saber.ChartEditor
             EditorGUI.DrawRect(band, new Color(.95f, .85f, .3f, .08f));
             EditorGUI.DrawRect(new Rect(timelineRect.x, bottom, laneRect.xMax - timelineRect.x, 2f), new Color(.95f, .85f, .3f, .8f));
             EditorGUI.DrawRect(new Rect(timelineRect.x, top, laneRect.xMax - timelineRect.x, 2f), new Color(.95f, .85f, .3f, .8f));
+            // 色で絞っているときは、操作の対象になるノーツを枠で示す。
+            if (rangeColorFilter <= 0) return;
+            foreach (SaberChartNote note in RangeNotes())
+            {
+                Rect rect = NoteRect(note, laneRect);
+                if (rect.yMax < laneRect.y || rect.y > laneRect.yMax) continue;
+                DrawOutline(new Rect(rect.x - 3f, rect.y - 3f, rect.width + 6f, rect.height + 6f), new Color(.95f, .85f, .3f, .9f), 1f);
+            }
         }
 
         // 左の目盛りの Shift+ドラッグで範囲を選ぶ。
@@ -305,6 +349,33 @@ namespace Saber.ChartEditor
         {
             float step = SaberChartUtility.SnapStep(CurrentSnap);
             ShiftSelection(note => GridTimeAt(GridBeatAt(note.time) + steps * step), $"{(steps > 0 ? "+" : "−")}1 Snap 動かしました");
+        }
+
+        // 速2: 範囲のノーツを今の Snap の格子へ寄せる(1個の「拍にそろえる」と同じ計算。録音や手置きの細かいずれをまとめて直す)。
+        private void SnapRangeToGrid()
+        {
+            if (!HasRangeSelection || !CanEditAtCursor) return;
+            var targets = new Dictionary<SaberChartNote, float>();
+            float largest = 0f;
+            foreach (SaberChartNote note in RangeNotes())
+            {
+                float time = TimeAtBeat(SaberChartUtility.QuantizeBeat(TimelineBeat(note), CurrentSnap, document));
+                // 既に格子上なら、古い譜面の拍情報を不用意に更新しない。
+                if (Mathf.Abs(time - note.time) < .01f) continue;
+                targets[note] = time;
+                largest = Mathf.Max(largest, Mathf.Abs(time - note.time));
+            }
+            if (targets.Count == 0)
+            {
+                SetStatus("範囲のノーツは、もう格子の上にあります");
+                return;
+            }
+            string snap = SnapLabels[Mathf.Clamp(snapIndex, 0, SnapLabels.Length - 1)];
+            ApplySelectionEdit($"{targets.Count}ノーツを{snap}の格子へそろえました（いちばん大きく動いたのは {largest:0}ms）。Ctrl+Z で戻せます", list =>
+            {
+                foreach (var pair in targets) SetNoteTime(pair.Key, pair.Value);
+                return true;
+            });
         }
 
         private void ShiftSelectionByMsText(float sign)

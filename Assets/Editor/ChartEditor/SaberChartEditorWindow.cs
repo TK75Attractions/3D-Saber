@@ -172,6 +172,9 @@ namespace Saber.ChartEditor
         {
             titleContent = new GUIContent("3D Saber 譜面");
             minSize = new Vector2(1050f, 650f);
+            // マウスを乗せたノーツの中身を出すため(変わったときだけ描き直す)。
+            wantsMouseMove = true;
+            wantsMouseEnterLeaveWindow = true;
             saveChangesMessage = "譜面または曲情報に未保存の変更があります。保存しますか？";
             document ??= new SaberChartDocument();
             SaberChartUtility.Normalize(document);
@@ -752,11 +755,15 @@ namespace Saber.ChartEditor
                     SetNoteTime(selected, Mathf.Max(0f, nextTime));
                 selected.x = nextX;
                 selected.y = nextY;
-                selected.type = TypeValues[Mathf.Clamp(nextTypeIndex, 0, TypeValues.Length - 1)];
-                selected.color = ColorValues[Mathf.Clamp(nextColorIndex, 0, ColorValues.Length - 1)];
                 string nextType = TypeValues[Mathf.Clamp(nextTypeIndex, 0, TypeValues.Length - 1)];
-                bool changedAwayFromDirection = nextTypeIndex != typeIndex && nextType != SaberChartUtility.TypeDirection;
                 string chosenDirection = DirectionValues[Mathf.Clamp(nextDirectionIndex, 0, DirectionValues.Length - 1)];
+                // 向きだけを変えたときは、キーで向きを付けたときと同じく種類も合わせる(TAP に向きを付けると矢印が出ないまま
+                // 本編では向きを判定してしまうため)。
+                if (nextTypeIndex == typeIndex && nextDirectionIndex != directionIndex)
+                    nextType = TypeAfterDirectionEdit(nextType, chosenDirection);
+                selected.type = nextType;
+                selected.color = ColorValues[Mathf.Clamp(nextColorIndex, 0, ColorValues.Length - 1)];
+                bool changedAwayFromDirection = nextTypeIndex != typeIndex && nextType != SaberChartUtility.TypeDirection;
                 if (nextType == SaberChartUtility.TypeDirection && chosenDirection == SaberChartUtility.DirectionNone)
                     chosenDirection = "up";
                 selected.direction = changedAwayFromDirection ? SaberChartUtility.DirectionNone : chosenDirection;
@@ -875,6 +882,7 @@ namespace Saber.ChartEditor
                 DrawPlayhead(rect, laneRect);
                 DrawSnapBadge(laneRect);
                 DrawOverview(rect, Event.current);
+                DrawHoveredNoteInfo(laneRect);
                 HandleTimelineInput(rect, laneRect, Event.current);
                 DrawOutline(rect, new Color(0.12f, 0.2f, 0.28f), 1f);
             }
@@ -954,6 +962,7 @@ namespace Saber.ChartEditor
         private void DrawNotes(Rect laneRect)
         {
             if (document?.notes == null) return;
+            int[] marks = NoteIssueMarks();
             for (int index = 0; index < document.notes.Count; index++)
             {
                 SaberChartNote note = document.notes[index];
@@ -997,7 +1006,73 @@ namespace Saber.ChartEditor
                     DrawOutline(new Rect(noteRect.x - 2f, noteRect.y - 2f, noteRect.width + 4f, noteRect.height + 4f),
                         Color.white, 2f);
                 }
+
+                // 使1: 本編で取れない(赤)・取りにくい(黄)ノーツの右上に印。F8 で順に回れる。
+                int mark = index < marks.Length ? marks[index] : 0;
+                if (mark > 0)
+                {
+                    Rect corner = new Rect(noteRect.xMax - 6f, noteRect.y - 3f, 9f, 9f);
+                    EditorGUI.DrawRect(corner, new Color(0f, 0f, 0f, .8f));
+                    EditorGUI.DrawRect(new Rect(corner.x + 1f, corner.y + 1f, 7f, 7f),
+                        mark >= 2 ? new Color(1f, .32f, .32f) : new Color(1f, .78f, .25f));
+                }
             }
+        }
+
+        // ---- 使3: マウスを乗せたノーツの中身(高さ・向き・時刻・問題)を、選ばなくても見られるようにする ----
+
+        private int hoveredNoteIndex = -1;
+        private GUIStyle hoverInfoStyle;
+
+        private void UpdateHoveredNote(Event current, Rect laneRect)
+        {
+            int hover = current.type == EventType.MouseMove && !draggingNote && laneRect.Contains(current.mousePosition)
+                ? FindNoteAt(current.mousePosition, laneRect)
+                : -1;
+            if (hover == hoveredNoteIndex) return;
+            hoveredNoteIndex = hover;
+            Repaint();
+        }
+
+        private void DrawHoveredNoteInfo(Rect laneRect)
+        {
+            if (Event.current.type != EventType.Repaint || draggingNote || hoveredNoteIndex < 0 || hoveredNoteIndex >= document.notes.Count) return;
+            SaberChartNote note = document.notes[hoveredNoteIndex];
+            Rect noteRect = NoteRect(note, laneRect);
+            // 譜面が変わって別のノーツが来ていたら出さない(次のマウスの動きで選び直す)。
+            if (!new Rect(noteRect.x - 3f, noteRect.y - 4f, noteRect.width + 6f, noteRect.height + 8f).Contains(Event.current.mousePosition)) return;
+            hoverInfoStyle ??= new GUIStyle(EditorStyles.miniLabel)
+            {
+                normal = { textColor = new Color(.93f, .95f, .99f) },
+                padding = new RectOffset(7, 7, 4, 4),
+                wordWrap = false,
+            };
+            var content = new GUIContent(NoteInfoText(note, hoveredNoteIndex));
+            Vector2 size = hoverInfoStyle.CalcSize(content);
+            float x = noteRect.xMax + 8f;
+            if (x + size.x > laneRect.xMax) x = Mathf.Max(laneRect.x, noteRect.x - 8f - size.x);
+            float y = Mathf.Clamp(noteRect.y - 6f, laneRect.y, Mathf.Max(laneRect.y, laneRect.yMax - size.y));
+            var box = new Rect(x, y, size.x, size.y);
+            EditorGUI.DrawRect(box, new Color(.05f, .06f, .09f, .95f));
+            DrawOutline(box, new Color(1f, 1f, 1f, .28f), 1f);
+            GUI.Label(box, content, hoverInfoStyle);
+        }
+
+        private string NoteInfoText(SaberChartNote note, int index)
+        {
+            int colorIndex = Array.IndexOf(ColorValues, note.color);
+            string color = colorIndex >= 0 ? ColorLabels[colorIndex] : note.color;
+            string arrow = note.direction != SaberChartUtility.DirectionNone ? " " + DirectionGlyph(note.direction) : "";
+            string kind = note.type == SaberChartUtility.TypeLong
+                ? $"LONG ×{note.count}{arrow}（{SaberChartUtility.EffectiveLongLengthMs(note) / 1000f:0.00}秒）"
+                : note.type == SaberChartUtility.TypeDirection ? "方向" + arrow : "TAP" + arrow;
+            int height = SaberChartUtility.LaneForCoordinate(note.y, LaneCount,
+                SaberChartUtility.DefaultYMin, SaberChartUtility.DefaultYMax) + 1;
+            string text = $"#{index + 1}  {color} · {kind}\n" +
+                          $"{(note.time + document.offsetMs) / 1000f:0.000}秒 · {SaberChartUtility.FormatMusicalPosition(TimelineBeat(note), document, CurrentSnap)}\n" +
+                          $"X {note.x:0.##} · Y {note.y:0.##}（高さ {height}/{LaneCount}）";
+            SaberChartIssue issue = WorstIssueFor(index);
+            return issue == null ? text : text + $"\n{SaberChartLint.Label(issue.level)}: {issue.message}";
         }
 
         private void DrawPlayhead(Rect timelineRect, Rect laneRect)
@@ -1012,6 +1087,11 @@ namespace Saber.ChartEditor
 
         private void HandleTimelineInput(Rect timelineRect, Rect laneRect, Event current)
         {
+            if (current.type == EventType.MouseMove || current.type == EventType.MouseLeaveWindow)
+            {
+                UpdateHoveredNote(current, laneRect);
+                return;
+            }
             if (RecordingBusy) return;
             // 範囲のドラッグは枠の外で離しても終える。
             if (HandleRangeDrag(timelineRect, laneRect, current)) return;
@@ -1333,6 +1413,12 @@ namespace Saber.ChartEditor
                 Redo();
                 current.Use();
             }
+            else if (!action && !current.alt && current.keyCode == KeyCode.F8)
+            {
+                // 使1: 次(Shift で前)のエラー・注意のノーツへ。診断の欄を開かずに順に直していける。
+                JumpToIssue(current.shift ? -1 : 1);
+                current.Use();
+            }
             else if (HandleSelectionOrBeatShortcut(current) || HandleRangeKeys(current))
             {
                 // 「選択があれば選択、無ければ今の拍」の操作と、範囲の操作。
@@ -1424,6 +1510,26 @@ namespace Saber.ChartEditor
         private void LoadDocument()
         {
             LoadDocumentForSong(songId);
+        }
+
+        /// <summary>
+        /// 使いやすさ: 同じ曲の別の難易度を、ヘッダーから1回で開く(未保存なら保存するかを先に聞く)。
+        /// 保存の確認でやめたとき・読めなかったときは、「開く・作る」の選択を元に戻す。
+        /// </summary>
+        private void SwitchEditingDifficulty(int index)
+        {
+            if (RecordingBusy || index < 0 || index >= DifficultyValues.Length || index == EditingDifficultyIndex) return;
+            string previousSong = songId;
+            int previousDifficulty = difficultyIndex;
+            songId = EditingSongId;
+            difficultyIndex = index;
+            LoadDocument();
+            if (EditingDifficultyIndex != index)
+            {
+                songId = previousSong;
+                difficultyIndex = previousDifficulty;
+            }
+            difficultyFilesSong = null;
         }
 
         private void LoadDocumentForSong(string targetSongId)
@@ -1539,9 +1645,23 @@ namespace Saber.ChartEditor
             }
             catch (Exception exception)
             {
-                EditorUtility.DisplayDialog("譜面を保存できません", exception.Message, "OK");
+                SetStatus("譜面を保存できません: " + exception.Message);
+                EditorUtility.DisplayDialog("譜面を保存できません", SaveFailureMessage(exception), "OK");
                 return false;
             }
+        }
+
+        /// <summary>
+        /// 使1: 保存できなかったときの文。例外の文だけでなく、よくある原因と次にすることを書き、編集が消えていないことも伝える。
+        /// </summary>
+        private static string SaveFailureMessage(Exception exception)
+        {
+            string hint = exception is UnauthorizedAccessException
+                ? "ファイルが読み取り専用か、書き込む権限がありません。読み取り専用を外すか、ほかのアプリが使っていないかを確かめてから、もう一度保存してください。"
+                : exception is IOException
+                    ? "ほかのアプリ（テキストエディター・同期ソフト・ウイルス対策など）がファイルを開いている可能性があります。閉じてから、もう一度保存してください。"
+                    : "もう一度保存してください。続くときは、この文をそのまま共有してください（下の知らせの欄を押すとコピーできます）。";
+            return exception.Message + "\n\n" + hint + "\n\n編集中の内容は、この窓に残っています。";
         }
 
         private bool ConfirmAbandonChanges()
@@ -1982,7 +2102,10 @@ namespace Saber.ChartEditor
         {
             EditorGUI.DrawRect(rect, HeaderColor);
             string visibleStatus = EditorApplication.timeSinceStartup <= statusUntil ? statusMessage : "準備完了";
-            GUI.Label(new Rect(rect.x + 10f, rect.y + 4f, rect.width * 0.30f, 20f), visibleStatus, smallMutedStyle);
+            Rect statusRect = new Rect(rect.x + 10f, rect.y + 4f, rect.width * 0.30f, 20f);
+            EditorGUIUtility.AddCursorRect(statusRect, MouseCursor.Link);
+            if (GUI.Button(statusRect, new GUIContent(visibleStatus, "押すと最近の知らせを見返せます（選ぶと文をコピー）"), smallMutedStyle))
+                ShowStatusHistory();
             // モードごとに、いま効くキーだけを出す。
             GUI.Label(
                 new Rect(rect.x + rect.width * 0.30f, rect.y + 4f, rect.width * 0.69f - 10f, 20f),
@@ -2237,8 +2360,46 @@ namespace Saber.ChartEditor
         private void SetStatus(string message)
         {
             statusMessage = message;
-            statusUntil = EditorApplication.timeSinceStartup + 3.0;
+            // 使1: 長い知らせほど長く出す(読み切れるように3〜10秒)。消えたあとも下の欄を押せば見返せる。
+            statusUntil = EditorApplication.timeSinceStartup + StatusSeconds(message);
+            RememberStatus(message);
             Repaint();
+        }
+
+        private const int StatusHistoryLimit = 15;
+        private readonly List<(string time, string message)> statusHistory = new List<(string, string)>();
+
+        private static double StatusSeconds(string message) => Mathf.Clamp(3f + (message?.Length ?? 0) * .08f, 3f, 10f);
+
+        private void RememberStatus(string message)
+        {
+            if (string.IsNullOrEmpty(message)) return;
+            // ズームの値など、数だけが変わる知らせが続いたら1件にまとめる。
+            string kind = System.Text.RegularExpressions.Regex.Replace(message, "[0-9.+−-]+", "#");
+            if (statusHistory.Count > 0 &&
+                System.Text.RegularExpressions.Regex.Replace(statusHistory[0].message, "[0-9.+−-]+", "#") == kind)
+                statusHistory.RemoveAt(0);
+            statusHistory.Insert(0, (DateTime.Now.ToString("HH:mm:ss"), message));
+            if (statusHistory.Count > StatusHistoryLimit) statusHistory.RemoveAt(statusHistory.Count - 1);
+        }
+
+        // 最近の知らせ。選ぶとその文をコピーする(AI やほかの人に、出た文をそのまま渡せるように)。
+        private void ShowStatusHistory()
+        {
+            var menu = new GenericMenu();
+            if (statusHistory.Count == 0) menu.AddDisabledItem(new GUIContent("まだ知らせはありません"));
+            foreach ((string time, string message) in statusHistory)
+            {
+                string text = message.Length > 90 ? message.Substring(0, 89) + "…" : message;
+                // メニューの「/」は階層になるので全角にする。
+                string copied = message;
+                menu.AddItem(new GUIContent($"{time}  {text.Replace('/', '／')}"), false, () =>
+                {
+                    EditorGUIUtility.systemCopyBuffer = copied;
+                    SetStatus("知らせの文をコピーしました");
+                });
+            }
+            menu.ShowAsContext();
         }
 
         private void DrawToolToggle(EditTool tool, string label)

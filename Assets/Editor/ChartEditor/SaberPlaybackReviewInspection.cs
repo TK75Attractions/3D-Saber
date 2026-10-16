@@ -27,7 +27,11 @@ namespace Saber.ChartEditor
         readonly SaberChartWaveform reviewWaveform = new SaberChartWaveform();
         string cachedReplyJson;
         SaberReviewPatch cachedReply;
-        static readonly int[] BeatDivisions = { 0, 1, 2, 4 };
+        // AI10: 拍に合わせる刻み。譜面エディターと同じ音符の分母(3連の12・24分を含む)で、小節の頭から数える。
+        // beatSnap の値は前からの下書きと同じ意味を保つ(0=OFF・1=4分・2=8分・3=16分)。足した刻みは後ろに置き、表示だけ音符の順に並べる。
+        static readonly int[] SnapDenominators = { 0, 4, 8, 16, 12, 24, 32 };
+        static readonly int[] SnapMenuValues = { 0, 1, 2, 4, 3, 5, 6 };
+        static readonly string[] SnapMenuLabels = { "OFF", "4分（1拍）", "8分", "12分（3連）", "16分", "24分（3連）", "32分" };
         const int ChangesPerPage = 6;
 
         // AIの説明(変更のない返信でも残す)。
@@ -56,8 +60,10 @@ namespace Saber.ChartEditor
             return !comments.Any(c => range.y >= c.fromSeconds - .5f && range.x <= c.toSeconds + .5f);
         }
 
-        float PointerTime(float raw) => beatSnap == 0 ? SafeTime(raw)
-            : SaberPlaybackReviewData.SnapAudioTime(document, raw, BeatDivisions[beatSnap], Duration);
+        int SnapDenominator => SnapDenominators[Mathf.Clamp(beatSnap, 0, SnapDenominators.Length - 1)];
+
+        float PointerTime(float raw) => SnapDenominator == 0 ? SafeTime(raw)
+            : SaberPlaybackReviewData.SnapAudioTime(document, raw, SnapDenominator / 4, Duration);
 
         void SelectTimelineNote(int index, bool additive)
         {
@@ -106,8 +112,9 @@ namespace Saber.ChartEditor
                 int next = EditorGUILayout.Popup(Math.Max(0, lead), new[] { "0秒", "0.5秒", "1秒", "2秒" }, GUILayout.Width(58));
                 reviewLeadIn = new[] { 0f, .5f, 1f, 2f }[next];
                 showWaveform = GUILayout.Toggle(showWaveform, "波形", GUILayout.Width(55));
-                GUILayout.Label("拍に合わせる", GUILayout.Width(82));
-                beatSnap = EditorGUILayout.Popup(beatSnap, new[] { "OFF", "1拍", "1/2拍", "1/4拍" }, GUILayout.Width(75));
+                GUILayout.Label(new GUIContent("拍に合わせる", "タイムラインのクリック・ドラッグと打点を、この刻みの格子へ寄せます（譜面エディターの Snap と同じ。小節の頭から数えます）"),
+                    GUILayout.Width(82));
+                beatSnap = EditorGUILayout.IntPopup(Mathf.Clamp(beatSnap, 0, SnapDenominators.Length - 1), SnapMenuLabels, SnapMenuValues, GUILayout.Width(92));
                 GUILayout.FlexibleSpace();
             }
         }
@@ -131,16 +138,28 @@ namespace Saber.ChartEditor
             }
             if (timelineZoom == 0) return;
             var grid = new SaberChartGrid(document.bpm, document.beatZeroMs, document.tempoMap);
-            int division = beatSnap > 0 ? BeatDivisions[beatSnap] : 1;
-            float first = grid.BeatAt(start * 1000 - document.offsetMs);
+            var meter = new ChartMeterMap(document.timeSignatures);
+            float first = Mathf.Max(0, grid.BeatAt(start * 1000 - document.offsetMs));
             float last = grid.BeatAt((start + span) * 1000 - document.offsetMs);
-            // 極端なテンポのファイルでも描画数を制限する。
-            int step = Math.Max(1, Mathf.CeilToInt((last - first) * division / 150));
-            for (int tick = Mathf.CeilToInt(first * division), count = 0; tick <= last * division && count < 151; tick += step, count++)
+            if (last < first) return;
+            // 刻みは小節の頭から数える(エディターと同じ格子)。数が多すぎるときは拍の線だけにする。
+            double step = 4.0 / Math.Max(4, SnapDenominator == 0 ? 4 : SnapDenominator);
+            if ((last - first) / step > 150) step = 1;
+            int count = 0;
+            foreach (double barStart in meter.BarStarts(meter.At(first).BarStart, last))
             {
-                float time = (grid.TimeAt(tick / (float)division) + document.offsetMs) / 1000f;
-                float x = rect.x + (time - start) / span * rect.width;
-                EditorGUI.DrawRect(new Rect(x, rect.y + 17, 1, 46), new Color(1, 1, 1, tick % division == 0 ? .22f : .09f));
+                var bar = meter.At(barStart);
+                for (double beat = barStart; beat < bar.BarEnd - ChartMeterMap.Epsilon && beat <= last && count < 300; beat += step)
+                {
+                    if (beat < first - ChartMeterMap.Epsilon) continue;
+                    float time = (grid.TimeAt((float)beat) + document.offsetMs) / 1000f;
+                    float x = rect.x + (time - start) / span * rect.width;
+                    double pulses = (beat - barStart) * bar.Denominator / 4.0;
+                    bool onPulse = Math.Abs(pulses - Math.Round(pulses)) < 1e-4;
+                    float alpha = beat - barStart < ChartMeterMap.Epsilon ? .38f : onPulse ? .22f : .09f;
+                    EditorGUI.DrawRect(new Rect(x, rect.y + 17, 1, 46), new Color(1, 1, 1, alpha));
+                    count++;
+                }
             }
         }
 
@@ -184,9 +203,11 @@ namespace Saber.ChartEditor
             for (int i = changePage * ChangesPerPage; i < Math.Min(count, (changePage + 1) * ChangesPerPage); i++)
             {
                 var op = patch.operations[i];
-                string label = op.action == "delete" ? $"削除 #{op.index}\n{Describe(document.notes[op.index])}"
-                    : op.action == "add" ? $"追加\n{Describe(op.note)}"
-                    : $"変更 #{op.index}\n{Describe(document.notes[op.index])}\n→ {Describe(op.note)}";
+                float offset = document.offsetMs;
+                string label = op.action == "delete" ? $"削除 #{op.index}  {SaberPlaybackReviewData.DescribeNote(document.notes[op.index], offset)}"
+                    : op.action == "add" ? $"追加  {SaberPlaybackReviewData.DescribeNote(op.note, offset)}"
+                    : $"変更 #{op.index}  {SaberPlaybackReviewData.DescribeNote(document.notes[op.index], offset)}\n" +
+                      $"→ {SaberPlaybackReviewData.DescribeChange(document.notes[op.index], op.note, offset)}";
                 if (!string.IsNullOrWhiteSpace(op.reason)) label += "\n理由: " + op.reason.Trim();
                 if (OutsideComments(op)) label += "\n【区間外】どの指摘の区間にも入っていない変更です。頼んだ範囲か確かめてください。";
                 using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
@@ -350,9 +371,10 @@ namespace Saber.ChartEditor
             if (!string.IsNullOrWhiteSpace(instruction) && !string.IsNullOrEmpty(editingCommentId))
             { status = "編集中の指摘を先に更新してください。"; return; }
             VisitIssue(document, issue, false);
+            ReleaseInstructionFocus();
             instruction = (string.IsNullOrWhiteSpace(instruction) ? "" : instruction.TrimEnd() + "\n") +
                 $"譜面チェックの{SaberChartLint.Label(issue.level)}を直してください: {issue.message}";
-            EditorGUI.FocusTextInControl("ReviewInstruction");
+            FocusInstructionSoon();
             status = "指摘の欄に入れました。必要なら書き足して「指摘を追加」を押してください。";
         }
     }

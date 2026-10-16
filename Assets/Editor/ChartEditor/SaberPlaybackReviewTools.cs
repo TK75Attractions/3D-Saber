@@ -107,7 +107,7 @@ namespace Saber.ChartEditor
                 legacyHash = draft.legacyHash; requestJson = draft.requestJson; lastFolder = draft.lastFolder;
                 comments = draft.comments; instruction = draft.instruction ?? ""; editingCommentId = draft.editingCommentId ?? "";
                 changeSummary = draft.changeSummary; seconds = SafeTime(draft.seconds); rangeA = SafeTime(draft.rangeA);
-                replyJson = draft.replyJson ?? ""; beatSnap = Mathf.Clamp(draft.beatSnap, 0, 3);
+                replyJson = draft.replyJson ?? ""; beatSnap = Mathf.Clamp(draft.beatSnap, 0, SnapDenominators.Length - 1);
                 replyExplanation = draft.replyExplanation ?? "";
                 if (draft.replyExplanation == null && !string.IsNullOrEmpty(replyJson))
                 {
@@ -150,14 +150,32 @@ namespace Saber.ChartEditor
             // 書きかけの別の指摘を、一覧の操作で黙って捨てない。
             if (!string.IsNullOrWhiteSpace(instruction) && (editingCommentId != comment.id || instruction != comment.instruction))
             { status = "入力中の指摘を先に追加・更新してください。"; return; }
+            ReleaseInstructionFocus();
             VisitComment(comment); instruction = comment.instruction; editingCommentId = comment.id;
-            EditorGUI.FocusTextInControl("ReviewInstruction");
+            FocusInstructionSoon();
         }
         void DeleteComment(SaberReviewComment comment)
         {
             deletedComment = comment; comments.Remove(comment);
-            if (editingCommentId == comment.id) { editingCommentId = ""; instruction = ""; }
+            if (editingCommentId == comment.id) { ReleaseInstructionFocus(); editingCommentId = ""; instruction = ""; }
             SaveDraft();
+        }
+
+        // 守7: 入力中の欄の文をコードで書き換える前に、欄の編集を終える(IMGUI は編集中の欄の古い文を持ち続け、
+        // 次のキー入力で書き戻すため)。欄へ戻すのは、欄を一度フォーカスなしで描いたあと(次の再描画)にする。
+        bool refocusInstruction;
+        void ReleaseInstructionFocus()
+        {
+            GUIUtility.keyboardControl = 0;
+            EditorGUIUtility.editingTextField = false;
+        }
+        void FocusInstructionSoon() { refocusInstruction = true; Repaint(); }
+        void ApplyPendingInstructionFocus()
+        {
+            if (!refocusInstruction || Event.current.type != EventType.Repaint) return;
+            refocusInstruction = false;
+            EditorGUI.FocusTextInControl("ReviewInstruction");
+            Repaint();
         }
         void RestoreDeletedComment()
         {
@@ -166,14 +184,22 @@ namespace Saber.ChartEditor
         }
         void AppendTemplate(string text)
         {
+            ReleaseInstructionFocus();
             Stop(); instruction += (string.IsNullOrWhiteSpace(instruction) ? "" : "\n") + text;
-            EditorGUI.FocusTextInControl("ReviewInstruction");
+            FocusInstructionSoon();
         }
         void MarkCurrent()
         {
-            Stop(); rangeA = Mathf.Max(0, seconds - 1); rangeB = Mathf.Min(Duration, seconds + 1);
-            selected.Clear(); hasPoint = false;
-            EditorGUI.FocusTextInControl("ReviewInstruction");
+            Stop();
+            // 速2: ノーツを選んでいれば、そのノーツへの指摘にする(区間は選んだときにノーツに合わせてある)。
+            if (selected.Count == 0)
+            {
+                rangeA = Mathf.Max(0, seconds - 1); rangeB = Mathf.Min(Duration, seconds + 1);
+                hasPoint = false;
+                status = "今の位置の前後1秒を指摘の区間にしました。文を書いて「指摘を追加」を押してください。";
+            }
+            else status = $"選んだ {selected.Count} ノーツへの指摘を書けます。文を書いて「指摘を追加」を押してください。";
+            FocusInstructionSoon();
         }
         void JumpNote(int direction)
         {
@@ -187,16 +213,17 @@ namespace Saber.ChartEditor
         {
             using (new EditorGUILayout.HorizontalScope())
             {
-                if (GUILayout.Button("◀ 前のノーツ")) JumpNote(-1);
-                if (GUILayout.Button("次のノーツ ▶")) JumpNote(1);
+                if (GUILayout.Button(new GUIContent("◀ 前のノーツ", "キーは ,"))) JumpNote(-1);
+                if (GUILayout.Button(new GUIContent("次のノーツ ▶", "キーは ."))) JumpNote(1);
                 using (new EditorGUI.DisabledScope(candidate != null))
                 {
                     if (GUILayout.Button("区間を全選択")) { selected.Clear(); selected.UnionWith(SaberPlaybackReviewData.NotesInRange(document, rangeA, rangeB)); }
                     if (GUILayout.Button("選択解除")) selected.Clear();
-                    if (GUILayout.Button("ここを指摘  N")) MarkCurrent();
+                    if (GUILayout.Button(new GUIContent("ここを指摘  N", "ノーツを選んでいれば、そのノーツへの指摘になります"))) MarkCurrent();
                 }
             }
-            GUILayout.Label("Space 再生/停止 · ← → 1秒 · Shift+← → 1コマ · [ ] 区間A/B", EditorStyles.miniLabel);
+            GUILayout.Label("Space 再生/停止 · ← → 1秒 · Shift+← → 1コマ · , . 前後のノーツ · PgUp/PgDn 前後の変更 · [ ] 区間A/B · N 指摘 · B 比較",
+                EditorStyles.wordWrappedMiniLabel);
         }
         void HandleShortcuts()
         {
@@ -215,6 +242,11 @@ namespace Saber.ChartEditor
                 case KeyCode.RightBracket: rangeB = seconds; rangeA = Mathf.Min(rangeA, rangeB); selected.Clear(); break;
                 case KeyCode.N: if (candidate == null) MarkCurrent(); break;
                 case KeyCode.B: ToggleComparison(); break;
+                // 速2: 前後のノーツ(同時押しは1か所)と、AIの変更案の前後の変更へ、マウスを使わずに移る。
+                case KeyCode.Comma: JumpNote(-1); break;
+                case KeyCode.Period: JumpNote(1); break;
+                case KeyCode.PageUp: if (Reply == null) return; VisitChange(Mathf.Max(0, changeIndex - 1)); break;
+                case KeyCode.PageDown: if (Reply == null) return; VisitChange(Mathf.Min(Reply.operations.Count - 1, changeIndex + 1)); break;
                 default: return;
             }
             e.Use(); Repaint();
@@ -255,9 +287,11 @@ namespace Saber.ChartEditor
             {
                 var n = chart.notes[i]; float time = (n.time + chart.offsetMs) / 1000f;
                 float end = time + SaberChartUtility.EffectiveLongLengthMs(n) / 1000f;
-                bool blue = n.color == "blue", gold = n.color == "gold";
-                float y = rect.y + (blue ? 20 : gold ? 48 : 34);
-                Color color = blue ? new Color(.2f, .65f, 1) : gold ? new Color(1, .78f, .2f) : new Color(1, .3f, .4f);
+                // 赤・青のほかは、どちらの手でも切れるので下の段(金)に描く。自由色は灰色にして金と分ける。
+                string lane = SaberPlaybackReviewData.TimelineLane(n.color);
+                float y = rect.y + (lane == "blue" ? 20 : lane == "gold" ? 48 : 34);
+                Color color = lane == "blue" ? new Color(.2f, .65f, 1) : lane == "red" ? new Color(1, .3f, .4f)
+                    : n.color == "gold" ? new Color(1, .78f, .2f) : new Color(.75f, .75f, .8f);
                 float noteX = Mathf.Min(X(time), rect.xMax - 3), noteWidth = Mathf.Max(3, X(end) - X(time));
                 if (candidate == null && selected.Contains(i)) EditorGUI.DrawRect(new Rect(noteX - 1, y - 2, noteWidth + 2, 13), Color.white);
                 EditorGUI.DrawRect(new Rect(noteX, y, noteWidth, 9), color);

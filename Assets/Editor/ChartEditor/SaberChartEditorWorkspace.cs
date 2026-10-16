@@ -71,6 +71,7 @@ namespace Saber.ChartEditor
                 $"保存先: {EditingSongId} / {EditingDifficultyLabel}。開く・作るの選択先へは自動で保存しません。"),
                 new GUIStyle(EditorStyles.boldLabel) { normal = { textColor = Color.white }, clipping = TextClipping.Clip },
                 GUILayout.MinWidth(120), GUILayout.ExpandWidth(true));
+            DrawDifficultySwitch();
             GUILayout.Label($"{document.notes.Count:N0} NOTES", smallMutedStyle, GUILayout.Width(82));
             DrawCheckBadge();
             using (new EditorGUI.DisabledScope(RecordingBusy))
@@ -99,6 +100,55 @@ namespace Saber.ChartEditor
             }
             GUILayout.EndHorizontal();
             GUILayout.EndArea();
+        }
+
+        // ---- 使いやすさ: 難易度は「開く・作る」を開かずに、ヘッダーの E / N / H から1回で切り替える ----
+
+        private static readonly string[] DifficultyShortLabels = { "E", "N", "H" };
+        private string difficultyFilesSong;
+        private double difficultyFilesCheckedAt;
+        private readonly bool[] difficultyFiles = new bool[3];
+        private GUIStyle[] missingDifficultyStyles;
+
+        // 難易度のファイルがあるか。描画のたびにディスクを見ないよう、曲ごとに2秒だけ覚える。
+        private bool DifficultyFileExists(int index)
+        {
+            if (difficultyFilesSong != EditingSongId || EditorApplication.timeSinceStartup >= difficultyFilesCheckedAt + 2)
+            {
+                difficultyFilesSong = EditingSongId;
+                difficultyFilesCheckedAt = EditorApplication.timeSinceStartup;
+                bool valid = SaberChartFileStore.IsValidSongId(EditingSongId, out _);
+                for (int i = 0; i < DifficultyValues.Length; i++)
+                    difficultyFiles[i] = valid && SaberChartFileStore.ChartExists(EditingSongId, DifficultyValues[i]);
+            }
+            return difficultyFiles[index];
+        }
+
+        private void DrawDifficultySwitch()
+        {
+            if (missingDifficultyStyles == null)
+            {
+                var gray = new Color(.55f, .58f, .62f);
+                missingDifficultyStyles = new[] { EditorStyles.miniButtonLeft, EditorStyles.miniButtonMid, EditorStyles.miniButtonRight }
+                    .Select(style => new GUIStyle(style) { normal = { textColor = gray }, hover = { textColor = gray } }).ToArray();
+            }
+            using (new EditorGUI.DisabledScope(RecordingBusy || !SaberChartFileStore.IsValidSongId(EditingSongId, out _)))
+            {
+                for (int i = 0; i < DifficultyValues.Length; i++)
+                {
+                    bool editing = i == EditingDifficultyIndex;
+                    bool exists = editing || DifficultyFileExists(i);
+                    GUIStyle style = !exists ? missingDifficultyStyles[i]
+                        : i == 0 ? EditorStyles.miniButtonLeft : i == DifficultyValues.Length - 1 ? EditorStyles.miniButtonRight : EditorStyles.miniButtonMid;
+                    string tip = editing ? $"{DifficultyLabels[i]} を編集中"
+                        : exists ? $"{DifficultyLabels[i]} を開きます（未保存の変更があれば、先に保存するかを聞きます）"
+                        : $"{DifficultyLabels[i]} はまだありません。Normal を元に、未保存の新しい譜面として開きます";
+                    bool pressed = GUILayout.Toggle(editing, new GUIContent(DifficultyShortLabels[i], tip), style, GUILayout.Width(24));
+                    if (!pressed || editing) continue;
+                    SwitchEditingDifficulty(i);
+                    GUIUtility.ExitGUI();
+                }
+            }
         }
 
         private void DrawTransportBar(Rect rect)
@@ -338,6 +388,72 @@ namespace Saber.ChartEditor
                 lintCacheKey = key;
             }
             return lintCache;
+        }
+
+        // 使1: ノーツごとの印(0=なし、1=注意、2=エラー)。タイムラインの印と F8 の移動に使う。チェックの結果が変わったときだけ作り直す。
+        private int[] noteIssueMarks = Array.Empty<int>();
+        private List<SaberChartIssue> noteIssueMarksSource;
+
+        private int[] NoteIssueMarks()
+        {
+            List<SaberChartIssue> issues = LintIssues(PackagedAudioLengthMs());
+            if (ReferenceEquals(issues, noteIssueMarksSource) && noteIssueMarks.Length == document.notes.Count) return noteIssueMarks;
+            var marks = new int[document.notes.Count];
+            foreach (SaberChartIssue issue in issues)
+            {
+                int level = issue.level == SaberChartIssueLevel.Error ? 2 : issue.level == SaberChartIssueLevel.Warning ? 1 : 0;
+                if (level == 0) continue;
+                foreach (int index in issue.notes)
+                    if (index >= 0 && index < marks.Length) marks[index] = Mathf.Max(marks[index], level);
+            }
+            noteIssueMarks = marks;
+            noteIssueMarksSource = issues;
+            return marks;
+        }
+
+        // そのノーツのいちばん重いエラー・注意(なければ null)。
+        private SaberChartIssue WorstIssueFor(int index)
+        {
+            SaberChartIssue worst = null;
+            foreach (SaberChartIssue issue in LintIssues(PackagedAudioLengthMs()))
+            {
+                if (issue.level == SaberChartIssueLevel.Info || Array.IndexOf(issue.notes, index) < 0) continue;
+                if (worst == null || issue.level < worst.level) worst = issue;
+            }
+            return worst;
+        }
+
+        /// <summary>
+        /// 使1: 次(direction=1)・前(-1)のエラーか注意のノーツを選ぶ。選択があればその次、なければ今の位置から探し、
+        /// 端まで行ったら反対の端へ戻る。理由は下の知らせに出す。
+        /// </summary>
+        private void JumpToIssue(int direction)
+        {
+            if (!CanEditAtCursor) return;
+            int[] marks = NoteIssueMarks();
+            var flagged = new List<int>();
+            for (int i = 0; i < marks.Length && i < document.notes.Count; i++)
+                if (marks[i] > 0) flagged.Add(i);
+            if (flagged.Count == 0)
+            {
+                SetStatus("エラー・注意のあるノーツはありません");
+                return;
+            }
+            float now = TimeAtBeat(currentBeat);
+            bool selected = SelectedNote != null;
+            // ノーツは時刻順に並んでいるので、添字の順で探せば時刻の順になる。
+            Func<int, bool> ahead = selected ? i => i > selectedIndex : (Func<int, bool>)(i => document.notes[i].time >= now - 1f);
+            Func<int, bool> behind = selected ? i => i < selectedIndex : (Func<int, bool>)(i => document.notes[i].time <= now + 1f);
+            int target = direction > 0
+                ? flagged.Where(ahead).DefaultIfEmpty(-1).First()
+                : flagged.Where(behind).DefaultIfEmpty(-1).Last();
+            bool wrapped = target < 0;
+            if (wrapped) target = direction > 0 ? flagged[0] : flagged[flagged.Count - 1];
+            FocusDiagnosticNote(target);
+            SaberChartIssue issue = WorstIssueFor(target);
+            string reason = issue == null ? "" : $"{SaberChartLint.Label(issue.level)}: {issue.message}";
+            SetStatus($"{flagged.IndexOf(target) + 1}/{flagged.Count}  {reason}" +
+                      (wrapped ? (direction > 0 ? "（最初に戻りました）" : "（最後に戻りました）") : ""));
         }
 
         // ノーツから推定した難易度(本編の ChartDifficultyRater。表示レベルが0のとき選曲画面に出る値)。内容が同じなら計算し直さない。

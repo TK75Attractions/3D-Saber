@@ -77,6 +77,7 @@ namespace Saber.ChartEditor
             candidate = null; candidateJson = requestJson = ""; hasPoint = after = hasUnsavedChanges = false;
             replyJson = replyExplanation = ""; changeIndex = -1; changePage = 0; rejectedOperations.Clear();
             ResetTimingCapture();
+            ReleaseInstructionFocus();
             instruction = lastFolder = editingCommentId = ""; deletedComment = null; diskChanged = false;
             loadedSong = song; loadedDifficulty = difficulty; timelineStart = 0;
             status = clip == null ? "音源なし：映像のみ再生できます。" : "シークして停止 → 区間やノーツを指定 → 指摘を追加。";
@@ -180,7 +181,7 @@ namespace Saber.ChartEditor
                         foreach (int i in SaberPlaybackReviewData.NotesInRange(VisibleDocument, rangeA, rangeB))
                         {
                             var n = VisibleDocument.notes[i]; bool picked = selected.Contains(i);
-                            bool next = GUILayout.Toggle(picked, $"#{i:D4}   {(n.time + document.offsetMs) / 1000f:0.000}s   {n.color,-5}  {n.type,-9}  ({n.x:0.00}, {n.y:0.00})  ×{n.count}", "Button");
+                            bool next = GUILayout.Toggle(picked, $"#{i:D4}   {SaberPlaybackReviewData.DescribeNote(n, VisibleDocument.offsetMs)}", "Button");
                             if (next != picked) { if (next) selected.Add(i); else selected.Remove(i); Stop(); Seek(Mathf.Max(0, (n.time + document.offsetMs) / 1000f - .2f)); }
                         }
                     }
@@ -190,6 +191,7 @@ namespace Saber.ChartEditor
                 { reviewScroll = panel.scrollPosition; DrawReviewPanel(); }
             }
             EditorGUILayout.HelpBox(status ?? "", MessageType.None);
+            ApplyPendingInstructionFocus();
         }
         // 本番は1プレイごとにノーツの速さを既定(GameSession.NoteApproachTimeDefault)へ戻す。来場者が見る速さで確かめ、AIへの画像も同じにする。
         static SaberChartPlaybackPreview ReviewPreview() => new SaberChartPlaybackPreview { ApproachTimeOverride = GameSession.NoteApproachTimeDefault };
@@ -204,7 +206,9 @@ namespace Saber.ChartEditor
                 preview ??= ReviewPreview(); preview.Tick(VisibleDocument, seconds);
                 lastFrame = preview.Render(area); if (lastFrame != null) GUI.DrawTexture(area, lastFrame, ScaleMode.StretchToFill);
             }
-            GUI.Label(new Rect(area.x + 10, area.y + 8, 270, 24), $"{song} / {difficulty.ToUpperInvariant()}  {(after && candidate != null ? "変更案" : "変更前")}  {seconds:0.000}s", EditorStyles.whiteBoldLabel);
+            // 「変更前」「変更案」は、比べる変更案があるときだけ出す。
+            string which = candidate == null ? "" : after ? "変更案" : "変更前";
+            GUI.Label(new Rect(area.x + 10, area.y + 8, 270, 24), $"{song} / {difficulty.ToUpperInvariant()}  {which}  {seconds:0.000}s", EditorStyles.whiteBoldLabel);
             if (hasPoint)
             {
                 Vector2 p = area.position + Vector2.Scale(point, area.size);
@@ -252,7 +256,7 @@ namespace Saber.ChartEditor
             instruction = EditorGUILayout.TextArea(instruction, GUILayout.Height(72));
             using (new EditorGUI.DisabledScope(string.IsNullOrWhiteSpace(instruction) || candidate != null))
                 if (GUILayout.Button(string.IsNullOrEmpty(editingCommentId) ? "指摘を追加  Ctrl+Enter" : "指摘を更新  Ctrl+Enter", GUILayout.Height(29))) AddComment();
-            if (!string.IsNullOrEmpty(editingCommentId) && GUILayout.Button("編集を取り消す")) { editingCommentId = ""; instruction = ""; }
+            if (!string.IsNullOrEmpty(editingCommentId) && GUILayout.Button("編集を取り消す")) { ReleaseInstructionFocus(); editingCommentId = ""; instruction = ""; }
             GUILayout.Space(8);
             GUILayout.Label($"指摘 {comments.Count}件 · 時刻順", EditorStyles.boldLabel);
             using (var list = new EditorGUILayout.ScrollViewScope(commentScroll, GUILayout.Height(Mathf.Clamp(position.height - 560, 95, 260))))
@@ -372,6 +376,8 @@ namespace Saber.ChartEditor
                 comments[editing] = c;
             }
             else comments.Add(c);
+            // Ctrl+Enter で追加したときも欄に古い文を残さない(守7)。
+            ReleaseInstructionFocus();
             instruction = editingCommentId = ""; SaveDraft();
             // 次の再描画で常にこの時刻から画像を作り直すため、古い描画フレームは使わない。
             status = "指摘を追加しました。書き出し時に各指摘の時刻を撮影します。";
@@ -452,18 +458,20 @@ namespace Saber.ChartEditor
                 // コードだけ直した場合など、譜面の変更がない返信は説明だけを見せる。
                 status = "譜面の変更はない返信です。AIの説明を確かめてください。"; SaveDraft(); return;
             }
-            changeSummary = string.Join("\n", patch.operations.Take(8).Select(op => op.action == "delete" ? $"#{op.index}: 削除" : op.action == "add" ? $"追加 {Describe(op.note)}" : $"#{op.index}: {Describe(document.notes[op.index])}\n → {Describe(op.note)}"));
+            changeSummary = string.Join("\n", patch.operations.Take(8).Select(op => op.action == "delete" ? $"#{op.index}: 削除" : op.action == "add" ? $"追加 {Describe(op.note)}"
+                : $"#{op.index}: {Describe(document.notes[op.index])}\n → {SaberPlaybackReviewData.DescribeChange(document.notes[op.index], op.note, document.offsetMs)}"));
             if (patch.operations.Count > 8) changeSummary += $"\nほか {patch.operations.Count - 8} 件";
             status = $"変更案 {patch.operations.Count}件: {patch.explanation}";
             SaveDraft();
         }
-        string Describe(SaberChartNote note) => $"{(note.time + document.offsetMs) / 1000f:0.000}s ({note.x:0.##},{note.y:0.##}) {note.color}/{note.type} {note.direction} ×{note.count} / {note.lengthMs:0.###}ms";
+        string Describe(SaberChartNote note) => SaberPlaybackReviewData.DescribeNote(note, document.offsetMs);
         void ApplyCandidate()
         {
             if (candidate == null) return;
             Stop(); undo.Push(chartJson); document = candidate; chartJson = SaberChartUtility.ToJson(document, false);
             candidate = null; candidateJson = replyJson = replyExplanation = ""; after = false; hasUnsavedChanges = true; selected.Clear(); rejectedOperations.Clear();
             comments.Clear(); requestJson = "";
+            ReleaseInstructionFocus();
             instruction = editingCommentId = lastFolder = ""; deletedComment = null; SaveDraft();
             status = "修正を適用しました。「本編へ保存」でファイルへ反映します。";
         }

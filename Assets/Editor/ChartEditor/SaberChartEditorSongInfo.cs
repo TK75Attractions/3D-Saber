@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
@@ -25,6 +27,9 @@ namespace Saber.ChartEditor
 
         private Func<string, string, bool> confirmSongInfoDialog = (title, message) =>
             EditorUtility.DisplayDialog(title, message, "保存", "保存しない");
+        // 守13: 区間を消す・読み直して捨てる前の確認(タイトル、本文、実行するボタンの名前)。
+        private Func<string, string, string, bool> confirmSongInfoAction = (title, message, ok) =>
+            EditorUtility.DisplayDialog(title, message, ok, "キャンセル");
 
         private bool SongInfoDirty
         {
@@ -107,6 +112,7 @@ namespace Saber.ChartEditor
                 return;
             }
             if (!songInfo.Exists) GUILayout.Label("まだ stage.json がありません。保存すると作ります", smallMutedStyle);
+            if (stageChangedOutside) EditorGUILayout.HelpBox(StageChangedMessage, MessageType.Warning);
 
             GUI.SetNextControlName("ChartText:songInfo.DisplayName");
 
@@ -162,7 +168,11 @@ namespace Saber.ChartEditor
             using (new EditorGUI.DisabledScope(!SongInfoDirty))
             {
                 if (GUILayout.Button("曲情報を保存")) SaveSongInfo();
-                if (GUILayout.Button("ファイルから読み直す", GUILayout.Width(130f))) LoadSongInfo(EditingSongId);
+                if (GUILayout.Button("ファイルから読み直す", GUILayout.Width(130f)))
+                {
+                    ReloadSongInfoFromFile();
+                    GUIUtility.ExitGUI();
+                }
             }
             GUILayout.EndHorizontal();
             GUILayout.Label("編集中の難易度の表示レベルは、譜面と一緒に保存します", smallMutedStyle);
@@ -194,8 +204,8 @@ namespace Saber.ChartEditor
                 GUILayout.EndHorizontal();
                 if (remove)
                 {
-                    songInfo.RemoveSection(i);
-                    break;
+                    RemoveSongSection(i);
+                    GUIUtility.ExitGUI();
                 }
             }
             if (GUILayout.Button(new GUIContent("今の位置から区間を足す", "今の位置から16拍の区間を足します。名前・終わり・強さを直してください")))
@@ -204,6 +214,35 @@ namespace Saber.ChartEditor
                 double end = BeatToAudioSeconds(currentBeat + 16f);
                 songInfo.AddSection($"区間{sections.Count + 1}", start, end);
             }
+        }
+
+        // 守13: 区間の「×」は確認してから消す(Undo の外なので、うっかり押すと戻せない)。
+        private bool RemoveSongSection(int index)
+        {
+            IReadOnlyList<SaberStageInfo.Section> sections = songInfo?.Sections;
+            if (sections == null || index < 0 || index >= sections.Count) return false;
+            SaberStageInfo.Section section = sections[index];
+            string name = string.IsNullOrWhiteSpace(section.Label) ? $"区間{index + 1}" : section.Label;
+            if (!confirmSongInfoAction("区間を消しますか？",
+                    $"「{name}」（{SaberStageInfo.FormatSeconds(section.StartSeconds)}〜{SaberStageInfo.FormatSeconds(section.EndSeconds)}秒）を消します。\n" +
+                    "曲情報を保存するまで stage.json は変わりません（保存する前なら「ファイルから読み直す」で戻せます）。", "消す"))
+                return false;
+            songInfo.RemoveSection(index);
+            SetStatus($"区間「{name}」を消しました（曲情報を保存するとファイルに書きます）");
+            return true;
+        }
+
+        // 守13: 保存していない曲情報を捨てる前に確かめる。
+        private bool ReloadSongInfoFromFile()
+        {
+            if (SongInfoDirty && !confirmSongInfoAction("曲情報を読み直しますか？",
+                    "保存していない曲情報の変更（表示名・区間・表示レベルなど）を捨てて、stage.json から読み直します。", "読み直す"))
+                return false;
+            LoadSongInfo(EditingSongId);
+            CacheSongInfoDraft();
+            stageChangedOutside = false;
+            SetStatus("曲情報をファイルから読み直しました");
+            return true;
         }
 
         private void DrawCoverRow()
@@ -300,7 +339,20 @@ namespace Saber.ChartEditor
             {
                 songInfo.SortSections();
                 if (!songInfo.Exists) songInfo.SetAudioHashIfMissing(SaberChartFileStore.AudioPath(songInfoSong));
-                if (songInfo.IsDirty) SaberChartFileStore.SaveStage(songInfoSong, songInfo.Write());
+                string merged = null;
+                if (songInfo.IsDirty)
+                {
+                    string text = songInfo.Write();
+                    // 守2: 読み込んだあとに stage.json がほかで変わっていたら、ここで変えた項目だけを最新の中身に重ねる
+                    // (ほかの人・ツールが直した作曲者や区間を、読み込んだときの古い値で上書きしない)。
+                    string disk = ReadStageText(songInfoSong);
+                    if (disk != null && disk != (songInfo.Exists ? songInfo.OriginalText : null))
+                    {
+                        text = songInfo.MergeOnto(disk, out List<string> keys).Write();
+                        merged = string.Join("・", keys.Select(SaberStageInfo.KeyLabel));
+                    }
+                    SaberChartFileStore.SaveStage(songInfoSong, text);
+                }
                 for (int i = 0; i < DifficultyValues.Length; i++)
                 {
                     if (DifficultyValues[i] == EditingDifficulty && songInfoSong == EditingSongId) continue;
@@ -316,13 +368,17 @@ namespace Saber.ChartEditor
                 string saved = songInfoSong;
                 LoadSongInfo(saved);
                 CacheSongInfoDraft();
+                stageChangedOutside = false;
                 UpdateDirtyState();
-                SetStatus($"{saved} の曲情報を保存しました");
+                SetStatus(merged == null
+                    ? $"{saved} の曲情報を保存しました"
+                    : $"{saved} の曲情報を保存しました（stage.json がほかで変わっていたので、ここで変えた項目〔{merged}〕だけを重ねました）");
                 return true;
             }
             catch (Exception exception)
             {
-                EditorUtility.DisplayDialog("曲情報を保存できません", exception.Message, "OK");
+                SetStatus("曲情報を保存できません: " + exception.Message);
+                EditorUtility.DisplayDialog("曲情報を保存できません", SaveFailureMessage(exception), "OK");
                 return false;
             }
         }

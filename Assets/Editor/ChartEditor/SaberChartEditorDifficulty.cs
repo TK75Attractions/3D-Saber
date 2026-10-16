@@ -213,6 +213,8 @@ namespace Saber.ChartEditor
 
         private Func<string, string, bool> confirmSettingsCopy = (title, message) =>
             EditorUtility.DisplayDialog(title, message, "コピーする", "キャンセル");
+        private Action<string, string> reportSettingsCopyProblem = (title, message) =>
+            EditorUtility.DisplayDialog(title, message, "OK");
 
         private void CopySongSettingsToOtherDifficulties()
         {
@@ -225,26 +227,44 @@ namespace Saber.ChartEditor
             if (!confirmSettingsCopy("曲の設定をコピーしますか？",
                     $"{names} のファイルへ、この譜面の BPM・OFFSET・原点・拍子・座標倍率・目印・テンポ地図を書きます。\n" +
                     "ノーツの時刻は変えません。書く前のファイルはバックアップされます。")) return;
-            try
+            // 守13: 1つの難易度で失敗しても残りは続け、どれを書けてどれを書けなかったかを一覧で知らせる。
+            var written = new List<string>();
+            var failed = new List<string>();
+            foreach (string difficulty in targets)
             {
-                foreach (string difficulty in targets)
+                string label = DifficultyLabels[Array.IndexOf(DifficultyValues, difficulty)];
+                try
                 {
                     SaberChartDocument other = SaberChartFileStore.TryLoadExact(EditingSongId, difficulty);
-                    if (other == null) continue;
+                    if (other == null)
+                    {
+                        failed.Add($"{label}: ファイルを読めませんでした（JSON が壊れていないか確かめてください）");
+                        continue;
+                    }
                     bool followed = SaberChartUtility.BeatsFollowSingleGrid(other);
                     SaberChartUtility.CopySongSettings(document, other);
                     // 1つの格子に乗っていた拍の値だけ、新しい格子に合わせる(テンポの変わる曲の拍は保つ)。
                     if (followed) SaberChartUtility.RecalculateBeatsFromTimes(other, beatZeroMs);
                     SaberChartFileStore.Save(other, EditingSongId, difficulty);
+                    written.Add(label);
                 }
-                settingsMismatchKey = null;
-                upperDocumentKey = null;
-                SetStatus($"{names} へ曲の設定をコピーしました");
+                catch (Exception exception)
+                {
+                    failed.Add($"{label}: {exception.Message}");
+                }
             }
-            catch (Exception exception)
+            settingsMismatchKey = null;
+            upperDocumentKey = null;
+            if (failed.Count == 0)
             {
-                EditorUtility.DisplayDialog("曲の設定をコピーできません", exception.Message, "OK");
+                SetStatus($"{names} へ曲の設定をコピーしました");
+                return;
             }
+            string done = written.Count > 0 ? $"書けた難易度: {string.Join("・", written)}" : "どの難易度にも書けませんでした";
+            SetStatus($"曲の設定を一部コピーできませんでした（{done}）");
+            reportSettingsCopyProblem("曲の設定を一部コピーできませんでした",
+                done + "\n\n書けなかった難易度:\n" + string.Join("\n", failed) +
+                "\n\n書けなかったファイルは変えていません（書く前の状態のままです）。直してから、もう一度コピーしてください。");
         }
 
         private void LoadSongSettingsFrom(string difficulty)

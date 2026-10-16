@@ -344,4 +344,45 @@ public class PlaybackReviewTests
         }
         finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
     }
+
+    // ---- 使いやすさ: 拍に合わせる刻み・変更の説明・周辺のノーツの表・自由色の段 ----
+    [Test] public void TripletAndMeterSnapsFollowTheEditorGrid()
+    {
+        var plain = new SaberChartDocument();
+        // 3連の8分(1拍に3つ)。1.30拍 → 4/3拍。
+        Assert.AreEqual(4f / 3f * .5f, SaberPlaybackReviewData.SnapAudioTime(plain, .65f, 3, 10), .0005f);
+        // 5/8 の小節(2.5拍)は小節の頭から数える。2.6拍は次の小節の頭(2.5拍)に寄せ、拍の数だけで丸めた3拍にはしない。
+        var odd = new SaberChartDocument();
+        odd.timeSignatures.Add(new ChartTimeSignature { beat = 0, numerator = 5, denominator = 8 });
+        Assert.AreEqual(1.25f, SaberPlaybackReviewData.SnapAudioTime(odd, 1.3f, 1, 10), .0005f);
+        Assert.AreEqual(1f, SaberPlaybackReviewData.SnapAudioTime(odd, 1.15f, 1, 10), .0005f);
+    }
+    [Test] public void ChangeDescriptionsShowOnlyWhatChanges()
+    {
+        var before = new SaberChartNote { time = 2000, x = 1, color = "red" };
+        var after = before.Clone(); after.x = 1.7f; after.type = "direction"; after.direction = "down";
+        string change = SaberPlaybackReviewData.DescribeChange(before, after, 250);
+        StringAssert.Contains("x 1→1.7", change);
+        StringAssert.Contains("TAP→方向↓", change);
+        StringAssert.DoesNotContain("時刻", change); StringAssert.DoesNotContain("色", change);
+        var later = before.Clone(); later.time = 2040;
+        StringAssert.Contains("時刻 2.250→2.290秒（+40ms）", SaberPlaybackReviewData.DescribeChange(before, later, 250));
+        Assert.AreEqual("2.250秒 赤 TAP (x 1, y 0)", SaberPlaybackReviewData.DescribeNote(before, 250));
+        StringAssert.Contains("LONG×3", SaberPlaybackReviewData.DescribeNote(chart.notes[2], chart.offsetMs));
+    }
+    [Test] public void PromptListsTheNotesAroundEachComment()
+    {
+        string prompt = SaberPlaybackReviewData.Prompt(request, "review");
+        StringAssert.Contains("周辺のノーツ", prompt);
+        StringAssert.Contains("*1|2.250|", prompt, "指摘で選んだノーツに印");
+        StringAssert.Contains(" 0|1.250|", prompt, "区間の前後1秒のノーツも載せる");
+        StringAssert.Contains("time が正で、beat は参考値", prompt);
+    }
+    [Test] public void FreeColoredNotesShareTheEitherHandRow()
+    {
+        chart.notes.Add(new SaberChartNote { time = 6000, color = "default" });
+        Assert.AreEqual("gold", SaberPlaybackReviewData.TimelineLane("default"));
+        Assert.AreEqual(3, SaberPlaybackReviewData.PickTimelineNote(chart, 6.25f, "gold", .03f), "どちらの手でも切れるので金の段");
+        Assert.AreEqual(-1, SaberPlaybackReviewData.PickTimelineNote(chart, 6.25f, "red", .03f), "赤の段には出さない");
+    }
 }

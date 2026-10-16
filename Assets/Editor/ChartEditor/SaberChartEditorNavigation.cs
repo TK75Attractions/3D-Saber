@@ -53,10 +53,13 @@ namespace Saber.ChartEditor
 
         private int DirectionKeyIndex(Event input)
         {
-            if (input.control || input.command || input.alt) return -1;
-            int index = Array.IndexOf(DirectionPadKeys, input.keyCode);
-            if (index >= 0) return index;
-            return LettersAreNoteKeys ? -1 : Array.IndexOf(DirectionLetterKeys, input.keyCode);
+            if (input.control || input.command) return -1;
+            int pad = Array.IndexOf(DirectionPadKeys, input.keyCode);
+            if (pad >= 0) return input.alt ? -1 : pad;
+            int letter = Array.IndexOf(DirectionLetterKeys, input.keyCode);
+            if (letter < 0) return -1;
+            // 録音・ステップでは文字が入力のキーなので、Alt を押したときだけ向きにする(テンキーの無いノートPCでも付けられる)。
+            return input.alt || !LettersAreNoteKeys ? letter : -1;
         }
 
         /// <summary>
@@ -134,11 +137,15 @@ namespace Saber.ChartEditor
         private static void SetNoteDirection(SaberChartNote note, string direction)
         {
             note.direction = direction;
-            if (note.type == SaberChartUtility.TypeLong || note.count > 1) return;
-            note.type = direction == SaberChartUtility.DirectionNone
-                ? SaberChartUtility.TypeTap
-                : SaberChartUtility.TypeDirection;
+            if (note.count > 1) return;
+            note.type = TypeAfterDirectionEdit(note.type, direction);
         }
+
+        /// <summary>向きを変えたあとの種類。TAP と方向ノーツは向きの有無に合わせ(本編は種類より向きで判定する)、LONG は LONG のまま。</summary>
+        private static string TypeAfterDirectionEdit(string type, string direction) =>
+            type == SaberChartUtility.TypeLong ? type
+            : direction == SaberChartUtility.DirectionNone ? SaberChartUtility.TypeTap
+            : SaberChartUtility.TypeDirection;
 
         private void SelectNextNoteAfter(SaberChartNote note)
         {
@@ -580,12 +587,12 @@ namespace Saber.ChartEditor
         private string FooterKeyGuide()
         {
             if (RecordingBusy)
-                return "D F G J K 単打 / H B 同時 / Backspace 1打戻す / Space・Esc 終了 / Alt+矢印 位置 / テンキー 次の方向";
+                return "D F G J K 単打 / H B 同時 / Backspace 1打戻す / Space・Esc 終了 / Alt+矢印 位置 / テンキー・Alt+QWE 次の方向";
             if (recordMode && recordStepMode)
-                return "D F G J K・H B 配置 / Tab 次 / Backspace 1打戻す / ←→↑↓ シーク / Alt+矢印 位置 / テンキー 方向 / Ctrl+D コピー / Ctrl+M 反転";
+                return "D F G J K・H B 配置 / Tab 次 / Backspace 1打戻す / ←→↑↓ シーク / Alt+矢印 位置 / テンキー・Alt+QWE 方向 / Ctrl+D コピー / Ctrl+M 反転";
             if (recordMode)
-                return "R 録音 / Shift+R 録り直し / Enter 聴き直す / 1〜5 キー選択 / Alt+矢印 位置 / F1〜F3 配置 / テンキー 方向";
-            return "Space 再生 / ←→↑↓ シーク / Alt+矢印 位置 / Del 削除 / Ctrl+D 複製 / Ctrl+M 反転 / QWE・ASD・ZXC・テンキー 方向 / PgUp・PgDn ノーツへ / [ ] 範囲";
+                return "R 録音 / Shift+R 録り直し / Enter 聴き直す / 1〜5 キー選択 / Alt+矢印 位置 / F1〜F3 配置 / テンキー・Alt+QWE 方向";
+            return "Space 再生 / ←→↑↓ シーク / Alt+矢印 位置 / Del 削除 / Ctrl+D 複製 / Ctrl+M 反転 / QWE・ASD・ZXC 方向 / PgUp・PgDn ノーツへ / F8 次の問題 / [ ] 範囲 / Esc 解除";
         }
 
         // ---- ステップ入力の Backspace: 直前の1打を取り消し、その拍へ戻る ----
@@ -613,6 +620,9 @@ namespace Saber.ChartEditor
             }
             if (float.IsInfinity(target)) { SetStatus("この先にノーツはありません"); return; }
             SeekToBeat(target);
+            // 使2: 移った先にない選択は外す(画面の外に残った選択へ W・Delete・Alt+矢印が効かないように)。
+            // 選択を外せば、Ctrl+D・Ctrl+M・Shift+Delete は移った先の拍のノーツに効く。
+            if (SelectedNote != null && Mathf.Abs(TimelineBeat(SelectedNote) - target) > .0001f) selectedIndex = -1;
             FinishTextEditing();
         }
     }

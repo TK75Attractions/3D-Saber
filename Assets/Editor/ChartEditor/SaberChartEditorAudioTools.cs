@@ -35,6 +35,8 @@ namespace Saber.ChartEditor
         private string calibrationResult;
         private SaberChartLatency.Summary lastTakeSummary;
         private bool hasLastTakeSummary;
+        // 録ったずれを測った格子の間隔(ms)。ずれがこの1/4を越えたら補正に使わない(合4)。
+        private float lastTakeGridStepMs = float.PositiveInfinity;
 
         private SaberChartGrid gridCache;
         private float gridBpm = float.NaN;
@@ -313,18 +315,23 @@ namespace Saber.ChartEditor
             SaberChartLatency.Summary summary = lastTakeSummary;
             GUILayout.Label($"今回のずれ（Snap 前）: 中央値 {summary.Median:+0;-0;0}ms・ばらつき {summary.Spread:0}ms・外れ {summary.Outliers}（{summary.Count}打）",
                 EditorStyles.wordWrappedMiniLabel);
-            using (new EditorGUI.DisabledScope(!summary.Reliable))
+            bool ambiguous = SaberChartLatency.AmbiguousAgainstGrid(summary.Median, lastTakeGridStepMs);
+            using (new EditorGUI.DisabledScope(!summary.Reliable || ambiguous))
             {
-                string label = summary.Reliable
-                    ? $"{summary.Median:+0;-0;0}ms を入力補正に足す"
+                string label = ambiguous ? "格子の間隔に近いずれなので使いません"
+                    : summary.Reliable ? $"{summary.Median:+0;-0;0}ms を入力補正に足す"
                     : summary.Count < SaberChartLatency.MinHits ? $"{SaberChartLatency.MinHits}打以上で使えます" : "ばらつきが大きいので使いません";
                 if (GUILayout.Button(label)) ApplyLastTakeOffset();
             }
+            if (ambiguous)
+                GUILayout.Label($"格子の間隔（{lastTakeGridStepMs:0}ms）の1/4を越えるずれは、遅れか早さか決められません（速い曲の細かい Snap で起きます）。" +
+                                "上の「遅れを測る（クリック16拍）」で測ってください", EditorStyles.wordWrappedMiniLabel);
         }
 
         private void ApplyLastTakeOffset()
         {
             if (!hasLastTakeSummary || !lastTakeSummary.Reliable) return;
+            if (SaberChartLatency.AmbiguousAgainstGrid(lastTakeSummary.Median, lastTakeGridStepMs)) return;
             float add = Mathf.Round(lastTakeSummary.Median);
             recordInputOffsetMs = Mathf.Clamp(recordInputOffsetMs + add, -1000f, 1000f);
             SaveInputOffsetProfile($"録音から {add:+0;-0;0}ms・{DateTime.Now:M/d HH:mm}");
@@ -430,6 +437,7 @@ namespace Saber.ChartEditor
         private void RememberTakeLatency(SaberChartRecorder take)
         {
             lastTakeSummary = SaberChartLatency.Summarize(take?.Deviations);
+            lastTakeGridStepMs = take?.MinGridStepMs ?? float.PositiveInfinity;
             hasLastTakeSummary = lastTakeSummary.Count > 0;
         }
     }

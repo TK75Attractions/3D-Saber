@@ -38,6 +38,8 @@ namespace Saber.ChartEditor
         public bool CanUndoInput => inputGroups.Count > 0;
         public bool IsHeld(int input) => held.ContainsKey(input);
         public IReadOnlyList<float> Deviations => deviations;
+        // ずれを測った格子のいちばん狭い間隔(ms)。ずれがこの半分に近いと、遅れか早さか決められない(合4)。
+        public float MinGridStepMs { get; private set; } = float.PositiveInfinity;
 
         // 1操作で入力する同時打ちに同じIDを渡し、取り消すときも左右をまとめる。
         public int BeginInputGroup() => ++nextInputGroup;
@@ -97,7 +99,15 @@ namespace Saber.ChartEditor
             held[input].note = note;
             AddedCount++;
             // Snap しないときも16分の格子に対する差を取る。曲頭の原点より前の打鍵は数えない。
-            if (rawTime >= grid.TimeAt(0f)) deviations.Add(rawTime - SnapTime(rawTime, snap > 0 ? snap : 16));
+            if (rawTime >= grid.TimeAt(0f))
+            {
+                int denominator = snap > 0 ? snap : 16;
+                float nearest = SnapTime(rawTime, denominator);
+                deviations.Add(rawTime - nearest);
+                float nearestBeat = grid.BeatAt(nearest);
+                float step = grid.TimeAt(nearestBeat + SaberChartUtility.SnapStep(denominator)) - nearest;
+                if (step > 0f) MinGridStepMs = Mathf.Min(MinGridStepMs, step);
+            }
             if (inputGroup == 0) inputGroup = BeginInputGroup();
             if (inputGroups.Count == 0 || inputGroups[inputGroups.Count - 1].id != inputGroup)
                 inputGroups.Add(new InputGroup { id = inputGroup });
