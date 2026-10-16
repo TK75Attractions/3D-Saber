@@ -440,18 +440,22 @@ namespace Saber.ChartEditor
             if (!ExportIsCurrent) throw new InvalidOperationException("指摘が変わっています。依頼をもう一度書き出してから返信を開いてください。");
             Stop(); var request = JsonUtility.FromJson<SaberReviewRequest>(requestJson); var patch = SaberPlaybackReviewData.ParseReply(json);
             SaberPlaybackReviewData.ValidateTarget(request, document, patch);
+            // 返信全体が有効と分かるまで、前の候補と説明を変更しない。
+            var nextCandidate = patch.operations.Count == 0 ? null : SaberPlaybackReviewData.Apply(request, document, patch, Duration);
+            string nextJson = nextCandidate == null ? "" : SaberChartUtility.ToJson(nextCandidate, false);
             replyExplanation = patch.explanation ?? "";
+            candidate = nextCandidate; candidateJson = nextJson;
+            rejectedOperations.Clear(); changeIndex = -1; changePage = 0;
+            after = candidate != null; replyJson = json; changeSummary = "";
             if (patch.operations.Count == 0)
             {
                 // コードだけ直した場合など、譜面の変更がない返信は説明だけを見せる。
-                status = "譜面の変更はない返信です。AIの説明を確かめてください。"; return;
+                status = "譜面の変更はない返信です。AIの説明を確かめてください。"; SaveDraft(); return;
             }
-            candidate = SaberPlaybackReviewData.Apply(request, document, patch, Duration); candidateJson = SaberChartUtility.ToJson(candidate, false); after = true;
-            rejectedOperations.Clear();
-            replyJson = json; changeIndex = -1; changePage = 0;
             changeSummary = string.Join("\n", patch.operations.Take(8).Select(op => op.action == "delete" ? $"#{op.index}: 削除" : op.action == "add" ? $"追加 {Describe(op.note)}" : $"#{op.index}: {Describe(document.notes[op.index])}\n → {Describe(op.note)}"));
             if (patch.operations.Count > 8) changeSummary += $"\nほか {patch.operations.Count - 8} 件";
             status = $"変更案 {patch.operations.Count}件: {patch.explanation}";
+            SaveDraft();
         }
         string Describe(SaberChartNote note) => $"{(note.time + document.offsetMs) / 1000f:0.000}s ({note.x:0.##},{note.y:0.##}) {note.color}/{note.type} {note.direction} ×{note.count} / {note.lengthMs:0.###}ms";
         void ApplyCandidate()

@@ -266,6 +266,7 @@ namespace Saber.ChartEditor
                         using (new EditorGUI.DisabledScope(RecordingBusy))
                         {
                             DrawDraftBanner();
+                            DrawDraftHistory();
                             if (!string.IsNullOrEmpty(persistentWarning)) EditorGUILayout.HelpBox(persistentWarning, MessageType.Warning);
                             DrawValidationSummary();
                             DrawWorkspaceDiagnosticNotes();

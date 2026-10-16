@@ -267,6 +267,55 @@ public class PlaybackReviewTests
         StringAssert.Contains("青=左手、赤=右手", prompt);
         StringAssert.Contains("ロングの途中に同じ手のノーツ", prompt);
     }
+    [Test] public void NewIssuesCountAdditionalOverlapsAtTheSameTime()
+    {
+        var before = new SaberChartDocument();
+        before.notes.Add(new SaberChartNote { time = 1000, color = "gold" });
+        before.notes.Add(before.notes[0].Clone());
+        var after = SaberChartUtility.Clone(before); after.notes.Add(after.notes[0].Clone());
+        var oldIssues = SaberChartLint.Check(before, "hard"); var newIssues = SaberChartLint.Check(after, "hard");
+        Assert.AreEqual(2, SaberPlaybackReviewData.NewIssues(oldIssues, newIssues, before, after).Count(i => i.rule == "duplicate"));
+        Assert.AreEqual(2, SaberPlaybackReviewData.NewIssues(oldIssues, newIssues).Count(i => i.rule == "duplicate"));
+    }
+
+    [Test] public void NewIssuesFollowNoteContentsInsteadOfShiftedIndices()
+    {
+        var before = new SaberChartDocument();
+        before.notes.Add(new SaberChartNote { time = 1000, color = "gold", x = 3 });
+        var after = SaberChartUtility.Clone(before);
+        after.notes.Insert(0, new SaberChartNote { time = 100, color = "gold" });
+        var original = SaberChartLint.Check(before, "hard");
+        Assert.IsEmpty(SaberPlaybackReviewData.NewIssues(original, SaberChartLint.Check(after, "hard"), before, after));
+        after.notes[1].x = -3;
+        Assert.AreEqual("outside", SaberPlaybackReviewData.NewIssues(original, SaberChartLint.Check(after, "hard"), before, after).Single().rule);
+    }
+
+    [Test] public void NewIssuesDistinguishSeverityAtTheSameTime()
+    {
+        var before = new[] { new SaberChartIssue { rule = "example", timeMs = 1000, level = SaberChartIssueLevel.Warning } }.ToList();
+        var after = new[] { new SaberChartIssue { rule = "example", timeMs = 1000, level = SaberChartIssueLevel.Error } }.ToList();
+        Assert.AreEqual(1, SaberPlaybackReviewData.NewIssues(before, after).Count);
+    }
+
+    [Test] public void LargeProductionChartDiagnosticsKeepTheDocumentAndReportTiming()
+    {
+        string songs = Path.Combine(Application.streamingAssetsPath, "Songs");
+        var largest = Directory.GetFiles(songs, "chart*.json", SearchOption.AllDirectories)
+            .Select(path => new { path, document = SaberChartUtility.FromJson(File.ReadAllText(path)) })
+            .OrderByDescending(item => item.document.notes.Count).Take(3).ToList();
+        Assert.IsNotEmpty(largest);
+        foreach (var item in largest)
+        {
+            string before = SaberChartUtility.ToJson(item.document, false);
+            SaberChartLint.Check(item.document, "hard");
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            for (int i = 0; i < 5; i++) SaberChartLint.Check(item.document, "hard");
+            watch.Stop();
+            Debug.Log($"CHART_DIAGNOSTIC_TIMING {Path.GetFileName(Path.GetDirectoryName(item.path))}/{Path.GetFileName(item.path)} notes={item.document.notes.Count} averageMs={watch.Elapsed.TotalMilliseconds / 5:0.000}");
+            Assert.AreEqual(before, SaberChartUtility.ToJson(item.document, false), "診断は譜面を変更しない");
+        }
+    }
+
     [Test] public void NewIssuesAreThoseThatTheProposalAdds()
     {
         var after = SaberChartUtility.Clone(chart);

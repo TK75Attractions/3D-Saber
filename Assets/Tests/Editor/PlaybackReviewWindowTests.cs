@@ -98,6 +98,90 @@ public class PlaybackReviewWindowTests
         Assert.AreEqual(2, Get<SaberChartDocument>("document").notes.Count);
         Assert.AreEqual(1.7f, Get<SaberChartDocument>("document").notes[0].x);
     }
+    [Test] public void ExplanationOnlyReplyReplacesAnExistingCandidateAndSurvivesReopening()
+    {
+        var request = ExportOneComment("赤を移動して");
+        var moved = request.chart.notes[0].Clone(); moved.x = 1.7f;
+        var patch = new SaberReviewPatch { songId = song, difficulty = "e", baseHash = request.baseHash,
+            explanation = "移動案", operations = new List<SaberReviewOperation> {
+                new SaberReviewOperation { action = "replace", index = 0, note = moved } } };
+        window.LoadReply(JsonUtility.ToJson(patch));
+        Assert.NotNull(Get<SaberChartDocument>("candidate"));
+        patch.operations.Clear(); patch.explanation = "変更は不要です";
+        window.LoadReply(JsonUtility.ToJson(patch));
+        Assert.IsNull(Get<SaberChartDocument>("candidate"));
+        Assert.IsFalse(Get<bool>("after")); Assert.IsEmpty(Get<string>("candidateJson"));
+        Assert.IsNull(Property<SaberReviewPatch>("Reply"));
+        UnityEngine.Object.DestroyImmediate(window);
+        window = ScriptableObject.CreateInstance<SaberPlaybackReviewWindow>(); Set("song", song); Set("difficulty", "e"); Invoke("LoadChart");
+        Assert.IsNull(Get<SaberChartDocument>("candidate"));
+        Assert.AreEqual("変更は不要です", Get<string>("replyExplanation"));
+        Assert.AreEqual(1f, Get<SaberChartDocument>("document").notes[0].x);
+        Assert.AreEqual(1f, SaberChartUtility.FromJson(File.ReadAllText(Path.Combine(folder, "chart_e.json"))).notes[0].x);
+    }
+
+    [Test] public void LegacyReviewDraftRecoversExplanationFromItsReply()
+    {
+        var request = ExportOneComment("確認して");
+        var patch = new SaberReviewPatch { songId = song, difficulty = "e", baseHash = request.baseHash,
+            explanation = "以前の返信です", operations = new List<SaberReviewOperation>() };
+        window.LoadReply(JsonUtility.ToJson(patch));
+        string path = Property<string>("DraftPath");
+        UnityEngine.Object.DestroyImmediate(window);
+        string json = File.ReadAllText(path);
+        string legacy = json.Replace("\"replyExplanation\":\"以前の返信です\",", "");
+        Assert.AreNotEqual(json, legacy);
+        File.WriteAllText(path, legacy);
+        window = ScriptableObject.CreateInstance<SaberPlaybackReviewWindow>(); Set("song", song); Set("difficulty", "e"); Invoke("LoadChart");
+        Assert.AreEqual("以前の返信です", Get<string>("replyExplanation"));
+        Assert.IsNull(Get<SaberChartDocument>("candidate"));
+    }
+
+    [Test] public void InvalidReplacementReplyKeepsThePreviousCandidateExplanationAndChoices()
+    {
+        var request = ExportOneComment("赤を移動して");
+        var moved = request.chart.notes[0].Clone(); moved.x = 1.7f;
+        var patch = new SaberReviewPatch { songId = song, difficulty = "e", baseHash = request.baseHash,
+            explanation = "有効な案", operations = new List<SaberReviewOperation> {
+                new SaberReviewOperation { action = "replace", index = 0, note = moved },
+                new SaberReviewOperation { action = "delete", index = 1 } } };
+        window.LoadReply(JsonUtility.ToJson(patch)); InvokeArgs("SetOperationAccepted", 1, false);
+        string candidate = Get<string>("candidateJson"), reply = Get<string>("replyJson");
+        patch.explanation = "失敗した案"; moved.x = 99;
+        Assert.Throws<InvalidOperationException>(() => window.LoadReply(JsonUtility.ToJson(patch)));
+        Assert.AreEqual(candidate, Get<string>("candidateJson")); Assert.AreEqual(reply, Get<string>("replyJson"));
+        Assert.AreEqual("有効な案", Get<string>("replyExplanation"));
+        CollectionAssert.AreEqual(new[] { 1 }, Get<List<int>>("rejectedOperations"));
+    }
+
+    [Test] public void EveryDiagnosticCanBeVisitedAndShrinkingCandidatesClampThePage()
+    {
+        var chart = new SaberChartDocument();
+        for (int i = 0; i < 18; i++) chart.notes.Add(new SaberChartNote { time = 1000 + i * 1000, type = "direction", color = "gold", direction = "none" });
+        Set("document", chart); Invoke("RefreshChecks");
+        var seen = new HashSet<int>();
+        for (int page = 0; page < 3; page++)
+        {
+            Set("chartCheckPage", page);
+            var issues = (List<SaberChartIssue>)InvokeArgs("CheckPage", false);
+            foreach (var issue in issues) seen.UnionWith(issue.notes);
+        }
+        Assert.AreEqual(18, seen.Count);
+        var lastIssue = ((List<SaberChartIssue>)InvokeArgs("CheckPage", false)).Last();
+        InvokeArgs("VisitIssue", chart, lastIssue, false);
+        Assert.IsTrue(Get<HashSet<int>>("selected").Contains(17));
+        Set("document", new SaberChartDocument()); Set("candidate", chart); Invoke("RefreshChecks");
+        Set("candidateCheckPage", 2);
+        var lastPage = (List<SaberChartIssue>)InvokeArgs("CheckPage", true);
+        Assert.AreEqual(2, lastPage.Count);
+        InvokeArgs("VisitIssue", chart, lastPage.Last(), true); Assert.IsTrue(Get<bool>("after"));
+        chart.notes.RemoveRange(8, 10); Invoke("RefreshChecks");
+        Assert.AreEqual(8, ((List<SaberChartIssue>)InvokeArgs("CheckPage", true)).Count);
+        Assert.AreEqual(0, Get<int>("candidateCheckPage"));
+        Set("candidateCheckFilter", 2);
+        Assert.IsEmpty((List<SaberChartIssue>)InvokeArgs("CheckPage", true));
+    }
+
     [Test] public void ExplanationOnlyReplyShowsTheExplanationWithoutACandidate()
     {
         var request = ExportOneComment("背景を明るくして");

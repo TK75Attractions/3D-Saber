@@ -15,8 +15,12 @@ namespace Saber.ChartEditor
         // 返信の操作のうち、採用しないもの(返信JSONの operations の添字)。変更案はこれを除いて作り直す。
         [SerializeField] List<int> rejectedOperations = new List<int>();
         [SerializeField] bool showChecks;
+        [SerializeField] int chartCheckPage, candidateCheckPage, chartCheckFilter, candidateCheckFilter;
+        const int ChecksPerPage = 8;
+        static readonly string[] CheckFilters = { "エラー・注意", "エラー", "注意" };
         // 譜面チェックの結果。変更前・変更案・音源の長さが同じなら、描画のたびに検査し直さない。
         List<SaberChartIssue> documentIssues = new List<SaberChartIssue>(), candidateIssues;
+        List<SaberChartIssue> addedCandidateIssues = new List<SaberChartIssue>();
         string checkKey;
         bool audition;
         float auditionStart, auditionEnd;
@@ -246,9 +250,51 @@ namespace Saber.ChartEditor
             checkKey = key;
             documentIssues = SaberChartLint.Check(document, difficulty, audioMs);
             candidateIssues = candidate == null ? null : SaberChartLint.Check(candidate, difficulty, audioMs);
+            addedCandidateIssues = candidateIssues == null ? new List<SaberChartIssue>()
+                : SaberPlaybackReviewData.NewIssues(documentIssues, candidateIssues, document, candidate);
         }
 
         static int CountLevel(List<SaberChartIssue> issues, SaberChartIssueLevel level) => issues?.Count(i => i.level == level) ?? 0;
+
+        List<SaberChartIssue> FilteredChecks(bool proposal)
+        {
+            int filter = proposal ? candidateCheckFilter : chartCheckFilter;
+            return (proposal ? addedCandidateIssues : documentIssues).Where(issue =>
+                issue.level != SaberChartIssueLevel.Info && (filter == 0 || (int)issue.level == filter - 1)).ToList();
+        }
+
+        // 全件をたどれる一覧。候補の採否で件数が減った場合も、存在する最後のページへ戻す。
+        List<SaberChartIssue> CheckPage(bool proposal)
+        {
+            var issues = FilteredChecks(proposal);
+            int last = Math.Max(0, (issues.Count - 1) / ChecksPerPage);
+            int page = Mathf.Clamp(proposal ? candidateCheckPage : chartCheckPage, 0, last);
+            if (proposal) candidateCheckPage = page; else chartCheckPage = page;
+            return issues.Skip(page * ChecksPerPage).Take(ChecksPerPage).ToList();
+        }
+
+        void DrawCheckPageControls(bool proposal)
+        {
+            int filter = proposal ? candidateCheckFilter : chartCheckFilter;
+            int next = GUILayout.Toolbar(filter, CheckFilters);
+            if (next != filter)
+            {
+                if (proposal) { candidateCheckFilter = next; candidateCheckPage = 0; }
+                else { chartCheckFilter = next; chartCheckPage = 0; }
+            }
+            CheckPage(proposal);
+            int count = FilteredChecks(proposal).Count;
+            int page = proposal ? candidateCheckPage : chartCheckPage;
+            int pages = Math.Max(1, (count + ChecksPerPage - 1) / ChecksPerPage);
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                using (new EditorGUI.DisabledScope(page == 0)) if (GUILayout.Button("前の項目")) page--;
+                GUILayout.Label($"{page + 1}/{pages}（{count}件）", EditorStyles.miniLabel);
+                using (new EditorGUI.DisabledScope(page + 1 >= pages)) if (GUILayout.Button("次の項目")) page++;
+            }
+            if (proposal) candidateCheckPage = page; else chartCheckPage = page;
+            if (count == 0) GUILayout.Label("この絞り込みに該当する項目はありません。", EditorStyles.wordWrappedMiniLabel);
+        }
 
         // 今の譜面のチェック。本編で取れない・取りにくい配置を見つけて、そのまま指摘にできる。
         void DrawChartChecks()
@@ -259,7 +305,8 @@ namespace Saber.ChartEditor
                 $"譜面チェック（エラー {CountLevel(documentIssues, SaberChartIssueLevel.Error)}・注意 {CountLevel(documentIssues, SaberChartIssueLevel.Warning)}）", true);
             if (!showChecks) return;
             if (shown.Count == 0) { GUILayout.Label("本編で取れない・取りにくい配置はありません。", EditorStyles.wordWrappedMiniLabel); return; }
-            foreach (var issue in shown.Take(8))
+            DrawCheckPageControls(false);
+            foreach (var issue in CheckPage(false))
             {
                 using (new EditorGUILayout.HorizontalScope())
                 {
@@ -268,7 +315,6 @@ namespace Saber.ChartEditor
                         if (GUILayout.Button(new GUIContent("指摘に", "この箇所を選び、直してほしい内容を指摘の欄に入れます。"), GUILayout.Width(52))) AddIssueToInstruction(issue);
                 }
             }
-            if (shown.Count > 8) GUILayout.Label($"ほか {shown.Count - 8} 件（譜面エディターの「診断・復元」で全件を見られます）", EditorStyles.wordWrappedMiniLabel);
         }
 
         // 変更案で新しく出たエラー・注意。採用する前に確かめられるよう、移動できるようにする。
@@ -278,11 +324,12 @@ namespace Saber.ChartEditor
             if (candidateIssues == null) return;
             GUILayout.Label($"変更案のチェック: エラー {CountLevel(documentIssues, SaberChartIssueLevel.Error)}→{CountLevel(candidateIssues, SaberChartIssueLevel.Error)}" +
                 $" / 注意 {CountLevel(documentIssues, SaberChartIssueLevel.Warning)}→{CountLevel(candidateIssues, SaberChartIssueLevel.Warning)}", EditorStyles.miniBoldLabel);
-            var added = SaberPlaybackReviewData.NewIssues(documentIssues, candidateIssues).Where(i => i.level != SaberChartIssueLevel.Info).ToList();
+            var added = addedCandidateIssues.Where(i => i.level != SaberChartIssueLevel.Info).ToList();
             if (added.Count == 0) { GUILayout.Label("変更案で新しく増えたエラー・注意はありません。", EditorStyles.wordWrappedMiniLabel); return; }
             EditorGUILayout.HelpBox($"変更案で新しく出たエラー・注意 {added.Count}件。採用する前に確かめてください。",
                 added.Any(i => i.level == SaberChartIssueLevel.Error) ? MessageType.Error : MessageType.Warning);
-            foreach (var issue in added.Take(5))
+            DrawCheckPageControls(true);
+            foreach (var issue in CheckPage(true))
                 if (GUILayout.Button(SaberChartLint.Describe(candidate, issue), EditorStyles.wordWrappedMiniLabel)) VisitIssue(candidate, issue, true);
         }
 

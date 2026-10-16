@@ -280,13 +280,30 @@ namespace Saber.ChartEditor
             version = patch.version, songId = patch.songId, difficulty = patch.difficulty, baseHash = patch.baseHash, explanation = patch.explanation,
             operations = patch.operations.Where((_, i) => rejected == null || !rejected.Contains(i)).ToList()
         };
-        // 変更案で新しく出た譜面チェックの項目(同じ規則・同じ時刻のものは、変更前からあったとみなす)。
-        public static List<SaberChartIssue> NewIssues(List<SaberChartIssue> before, List<SaberChartIssue> after)
+        // 同時刻の同じ規則でも対象が異なれば別件。添字は追加・削除で変わるため、ノーツの内容で照合する。
+        public static List<SaberChartIssue> NewIssues(List<SaberChartIssue> before, List<SaberChartIssue> after,
+            SaberChartDocument beforeChart = null, SaberChartDocument afterChart = null)
         {
-            var known = new HashSet<string>(before.Select(IssueKey));
-            return after.Where(issue => !known.Contains(IssueKey(issue))).ToList();
+            var known = before.GroupBy(issue => IssueKey(issue, beforeChart)).ToDictionary(group => group.Key, group => group.Count());
+            var added = new List<SaberChartIssue>();
+            foreach (var issue in after)
+            {
+                string key = IssueKey(issue, afterChart);
+                if (known.TryGetValue(key, out int count) && count > 0) known[key] = count - 1;
+                else added.Add(issue);
+            }
+            return added;
         }
-        static string IssueKey(SaberChartIssue issue) => issue.rule + "@" + Mathf.RoundToInt(issue.timeMs);
+        static string IssueKey(SaberChartIssue issue, SaberChartDocument chart)
+        {
+            string key = issue.rule + "@" + Mathf.RoundToInt(issue.timeMs) + "@" + issue.level;
+            if (chart == null) return key;
+            var notes = (issue.notes ?? Array.Empty<int>()).Where(i => i >= 0 && i < chart.notes.Count && chart.notes[i] != null)
+                .Select(i => chart.notes[i]).Select(n => FormattableString.Invariant(
+                    $"{n.time:R}/{n.x:R}/{n.y:R}/{n.type}/{n.color}/{n.direction}/{n.count}/{n.lengthMs:R}"))
+                .OrderBy(value => value, StringComparer.Ordinal);
+            return key + FormattableString.Invariant($"@{chart.offsetMs:R}/{chart.coordScale:R}@") + string.Join(";", notes);
+        }
         static bool Finite(float value) => !float.IsNaN(value) && !float.IsInfinity(value);
         static readonly string[] Types = { "tap", "direction", "long" };
         static readonly string[] Colors = { "red", "blue", "gold", "default" };

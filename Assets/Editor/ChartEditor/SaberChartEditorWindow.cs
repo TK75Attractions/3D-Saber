@@ -2068,8 +2068,10 @@ namespace Saber.ChartEditor
             if (!SaberChartFileStore.IsValidSongId(EditingSongId, out _)) return false;
             try
             {
+                SaberChartDrafts.LatestFor(EditingSongId, EditingDifficulty, out string previousPath);
                 string path = SaberChartDrafts.Write(EditingSongId, EditingDifficulty, document, DraftSourceHash());
-                if (!sessionDraftPaths.Contains(path)) sessionDraftPaths.Add(path);
+                // 同じ内容の過去の下書きを再利用しても、この窓が作ったファイルとはみなさない。
+                if (path != previousPath && !sessionDraftPaths.Contains(path)) sessionDraftPaths.Add(path);
                 lastDraftSavedAt = DateTime.Now.ToString("HH:mm");
                 lastDraftTarget = TargetKey(EditingSongId, EditingDifficulty);
                 return true;
@@ -2125,6 +2127,24 @@ namespace Saber.ChartEditor
             GUILayout.Space(8f);
         }
 
+        private void DrawDraftHistory()
+        {
+            using (new EditorGUI.DisabledScope(!CanEditAtCursor))
+            {
+                if (!GUILayout.Button("保存済みの下書きを選ぶ…")) return;
+                var drafts = SaberChartDrafts.ListFor(EditingSongId, EditingDifficulty);
+                var menu = new GenericMenu();
+                if (drafts.Count == 0) menu.AddDisabledItem(new GUIContent("この譜面の下書きはありません"));
+                for (int i = 0; i < drafts.Count; i++)
+                {
+                    SaberChartDrafts.Draft draft = drafts[i];
+                    string label = $"{i + 1}. {draft.SavedAtUtc.ToLocalTime():yyyy-MM-dd HH:mm:ss}・{draft.noteCount}ノーツ";
+                    menu.AddItem(new GUIContent(label), false, () => { pendingDraft = draft; RestoreDraft(); Repaint(); });
+                }
+                menu.ShowAsContext();
+            }
+        }
+
         private void RestoreDraft()
         {
             if (pendingDraft == null) return;
@@ -2140,8 +2160,17 @@ namespace Saber.ChartEditor
             try { restored = SaberChartUtility.FromJson(pendingDraft.document); }
             catch (FormatException exception)
             {
-                EditorUtility.DisplayDialog("下書きを開けません", exception.Message, "OK");
-                DiscardDraft();
+                try
+                {
+                    SaberChartDrafts.KeepUnreadable(pendingDraft);
+                    pendingDraft = SaberChartDrafts.LatestFor(EditingSongId, EditingDifficulty, out _);
+                    SetStatus("この下書きは読めません。読めないファイルを控えに残し、ほかの下書きは保持しました。" + exception.Message);
+                }
+                catch (Exception keepError) when (keepError is IOException || keepError is UnauthorizedAccessException)
+                {
+                    SetStatus("下書きを開けず、控えへの移動もできません。元のファイルは残しています。" + keepError.Message);
+                }
+                Repaint();
                 return;
             }
             string before = CurrentJson();

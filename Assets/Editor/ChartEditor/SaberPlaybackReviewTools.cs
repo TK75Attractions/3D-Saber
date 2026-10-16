@@ -13,6 +13,7 @@ namespace Saber.ChartEditor
         public int version = 1;
         public string song, difficulty, diskHash, legacyHash, chartJson, candidateJson, requestJson, lastFolder;
         public string instruction, editingCommentId, changeSummary;
+        public string replyExplanation;
         public float seconds, rangeA, rangeB;
         public bool hasPoint, loop, after, unsaved;
         public Vector2 point;
@@ -69,6 +70,7 @@ namespace Saber.ChartEditor
                     song = loadedSong, difficulty = loadedDifficulty, diskHash = diskHash, legacyHash = legacyHash,
                     chartJson = chartJson, candidateJson = candidateJson, requestJson = requestJson, lastFolder = lastFolder,
                     instruction = instruction, editingCommentId = editingCommentId, changeSummary = changeSummary,
+                    replyExplanation = replyExplanation,
                     seconds = seconds, rangeA = rangeA, rangeB = rangeB, hasPoint = hasPoint, point = point,
                     loop = loop, after = after, unsaved = hasUnsavedChanges, selected = selected.OrderBy(i => i).ToArray(),
                     undo = undo.ToArray(), comments = comments, replyJson = replyJson,
@@ -106,6 +108,12 @@ namespace Saber.ChartEditor
                 comments = draft.comments; instruction = draft.instruction ?? ""; editingCommentId = draft.editingCommentId ?? "";
                 changeSummary = draft.changeSummary; seconds = SafeTime(draft.seconds); rangeA = SafeTime(draft.rangeA);
                 replyJson = draft.replyJson ?? ""; beatSnap = Mathf.Clamp(draft.beatSnap, 0, 3);
+                replyExplanation = draft.replyExplanation ?? "";
+                if (draft.replyExplanation == null && !string.IsNullOrEmpty(replyJson))
+                {
+                    try { replyExplanation = SaberPlaybackReviewData.ParseReply(replyJson).explanation ?? ""; }
+                    catch (InvalidOperationException) { }
+                }
                 timelineZoom = Mathf.Clamp(draft.timelineZoom, 0, 3); timelineStart = SafeTime(draft.timelineStart);
                 reviewLeadIn = new[] { 0f, .5f, 1f, 2f }.Contains(draft.reviewLeadIn) ? draft.reviewLeadIn : 1;
                 showWaveform = draft.showWaveform; changeIndex = draft.changeIndex; changePage = draft.changePage;

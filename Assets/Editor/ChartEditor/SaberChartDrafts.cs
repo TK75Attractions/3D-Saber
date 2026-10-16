@@ -30,6 +30,7 @@ namespace Saber.ChartEditor
             public string document;
             // 編集のもとになった譜面ファイルのハッシュ(読み込んだ時点)。開くときに、そのあと外で書き換えられていないかを見る。
             public string sourceHash;
+            [NonSerialized] public string filePath;
 
             public DateTime SavedAtUtc =>
                 DateTime.TryParse(savedAtUtc, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out DateTime value)
@@ -45,7 +46,7 @@ namespace Saber.ChartEditor
             string json = SaberChartUtility.ToJson(document, false);
             // いちばん新しい下書きと同じ中身なら書かない(放っておいても同じ下書きが増えて、ほかを押し出さない)。
             Draft latest = LatestFor(songId, difficulty, out string latestPath);
-            if (latest != null && latest.document == json && latestPath != null) return latestPath;
+            if (latest != null && latest.document == json && (latest.sourceHash ?? "") == (sourceHash ?? "") && latestPath != null) return latestPath;
             DateTime now = DateTime.UtcNow;
             var draft = new Draft
             {
@@ -88,6 +89,21 @@ namespace Saber.ChartEditor
             }
         }
 
+        // 自動案内より古い下書きも、診断・復元から明示的に選べる。
+        public static List<Draft> ListFor(string songId, string difficulty) => ReadAll()
+            .Where(item => Same(item.draft.songId, songId) && Same(item.draft.difficulty, difficulty))
+            .Select(item => item.draft).OrderByDescending(draft => draft.SavedAtUtc).ToList();
+
+        // 読めなかった1件だけを控えへ移す。他の復旧候補をまとめて捨てない。
+        public static void KeepUnreadable(Draft draft)
+        {
+            if (draft == null || string.IsNullOrEmpty(draft.filePath)) return;
+            string path = Path.GetFullPath(draft.filePath);
+            if (!string.Equals(Path.GetDirectoryName(path), Path.GetFullPath(Root), StringComparison.OrdinalIgnoreCase))
+                throw new IOException("下書きの保存先が一致しません。");
+            if (File.Exists(path)) File.Move(path, path + ".unreadable-" + Guid.NewGuid().ToString("N"));
+        }
+
         /// <summary>この窓が書いた下書きだけを消す(保存したとき。前の起動で残った下書きは、案内を見るまで残す)。</summary>
         public static void Delete(IEnumerable<string> paths)
         {
@@ -108,7 +124,11 @@ namespace Saber.ChartEditor
                 try { draft = JsonUtility.FromJson<Draft>(File.ReadAllText(file, Encoding.UTF8)); }
                 catch (Exception exception) when (exception is IOException || exception is UnauthorizedAccessException ||
                                                   exception is ArgumentException) { }
-                if (draft != null && !string.IsNullOrEmpty(draft.document)) yield return (file, draft);
+                if (draft != null && !string.IsNullOrEmpty(draft.document))
+                {
+                    draft.filePath = file;
+                    yield return (file, draft);
+                }
             }
         }
 

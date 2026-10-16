@@ -502,6 +502,81 @@ public class ChartEditorSafetyTests
     }
 
     [Test]
+    public void BrokenNewestDraftKeepsOlderRecoveryAndTheCurrentDocument()
+    {
+        WithChartFolder((target, folder) =>
+        {
+            string chartPath = Path.Combine(folder, "chart_normal.json");
+            File.WriteAllText(chartPath, OneNoteChart); File.SetLastWriteTimeUtc(chartPath, DateTime.UtcNow.AddHours(-1));
+            Load(target, 1);
+            var recovery = SaberChartUtility.Clone(Document); recovery.notes[0].x = 1.25f;
+            string oldPath = (string)Drafts.GetMethod("Write").Invoke(null, new object[] { target, "normal", recovery, null });
+            recovery.notes[0].x = 1.5f;
+            string brokenPath = (string)Drafts.GetMethod("Write").Invoke(null, new object[] { target, "normal", recovery, null });
+            var args = new object[] { target, "normal", null };
+            object broken = Drafts.GetMethod("LatestFor").Invoke(null, args);
+            broken.GetType().GetField("document").SetValue(broken, "{bad json");
+            File.WriteAllText(brokenPath, JsonUtility.ToJson(broken));
+            Call("CheckForDraft");
+            string before = SaberChartUtility.ToJson(Document, false), disk = File.ReadAllText(chartPath);
+            Call("RestoreDraft");
+            Assert.AreEqual(before, SaberChartUtility.ToJson(Document, false));
+            Assert.AreEqual(disk, File.ReadAllText(chartPath));
+            Assert.IsTrue(File.Exists(oldPath)); Assert.IsFalse(File.Exists(brokenPath));
+            Assert.AreEqual(1, Directory.GetFiles(draftRoot, "*.unreadable-*").Length);
+            Assert.NotNull(Get<object>("pendingDraft"), "前の下書きを次の復元候補にする");
+            Call("RestoreDraft"); Assert.AreEqual(1.25f, Document.notes[0].x);
+            Key(KeyCode.Z, EventModifiers.Control);
+            Assert.AreEqual(before, SaberChartUtility.ToJson(Document, false));
+        });
+    }
+
+    [Test]
+    public void DraftDeduplicationPreservesItsSourceVersion()
+    {
+        var write = Drafts.GetMethod("Write");
+        string first = (string)write.Invoke(null, new object[] { "__DraftSource", "normal", Document, "version-one" });
+        string second = (string)write.Invoke(null, new object[] { "__DraftSource", "normal", Document, "version-two" });
+        Assert.AreNotEqual(first, second);
+        Assert.AreEqual(second, write.Invoke(null, new object[] { "__DraftSource", "normal", Document, "version-two" }));
+        Assert.AreEqual(2, (int)Drafts.GetMethod("Count").Invoke(null, null));
+    }
+
+    [Test]
+    public void ReusingAnEarlierSessionDraftDoesNotClaimItForDeletionOnSave()
+    {
+        WithChartFolder((target, folder) =>
+        {
+            File.WriteAllText(Path.Combine(folder, "chart_normal.json"), OneNoteChart);
+            Load(target, 1); Document.notes[0].x = 1.25f; Call("UpdateDirtyState");
+            string prior = (string)Drafts.GetMethod("Write").Invoke(null,
+                new object[] { target, "normal", Document, Call("DraftSourceHash") });
+            Assert.IsTrue((bool)Call("WriteDraftNow"));
+            Assert.IsFalse(Get<List<string>>("sessionDraftPaths").Contains(prior));
+            Assert.IsTrue((bool)Call("SaveDocument")); Assert.IsTrue(File.Exists(prior));
+        });
+    }
+
+    [Test]
+    public void ManualDraftListIncludesDraftsOlderThanAnExternallyUpdatedChart()
+    {
+        WithChartFolder((target, folder) =>
+        {
+            string chartPath = Path.Combine(folder, "chart_normal.json");
+            File.WriteAllText(chartPath, OneNoteChart); Load(target, 1);
+            var recovery = SaberChartUtility.Clone(Document); recovery.notes[0].x = 1.25f;
+            Drafts.GetMethod("Write").Invoke(null, new object[] { target, "normal", recovery, Call("DraftSourceHash") });
+            File.AppendAllText(chartPath, "\n ");
+            Call("CheckForDraft"); Assert.IsNull(Get<object>("pendingDraft"));
+            var drafts = (System.Collections.IEnumerable)Drafts.GetMethod("ListFor").Invoke(null, new object[] { target, "normal" });
+            object draft = drafts.Cast<object>().Single(); Set("pendingDraft", draft);
+            bool warned = false; Set("confirmStaleDraft", new Func<string, bool>(message => { warned = true; return false; }));
+            string before = SaberChartUtility.ToJson(Document, false); Call("RestoreDraft");
+            Assert.IsTrue(warned); Assert.AreEqual(before, SaberChartUtility.ToJson(Document, false));
+        });
+    }
+
+    [Test]
     public void DraftsKeepTheNewestFivePerChartAndSkipUnchangedContent()
     {
         var write = Drafts.GetMethod("Write");
