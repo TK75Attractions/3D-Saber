@@ -529,6 +529,82 @@ class PhoneSaberReceiverLauncherTests(unittest.TestCase):
             mock.call(4242, signal.SIGTERM), mock.call(4242, signal.SIGKILL)])
         self.assertEqual(process.wait.call_count, 3)
 
+    def test_repeated_stop_signals_do_not_interrupt_receiver_cleanup(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            log_dir = root / "logs"
+            ready = root / "ready"
+            stopping = root / "stopping"
+            stopped = root / "stopped"
+            release = root / "release"
+            receiver_pid = root / "receiver.pid"
+            harness = root / "launcher.py"
+            receiver_code = (
+                "import os, pathlib, signal, sys, time\n"
+                "def stop(*_):\n"
+                "    signal.signal(signal.SIGINT, signal.SIG_IGN)\n"
+                f"    pathlib.Path({str(stopping)!r}).touch()\n"
+                f"    while not pathlib.Path({str(release)!r}).exists(): time.sleep(0.01)\n"
+                f"    pathlib.Path({str(stopped)!r}).touch()\n"
+                "    sys.exit(0)\n"
+                "signal.signal(signal.SIGINT, stop)\n"
+                f"pathlib.Path({str(receiver_pid)!r}).write_text(str(os.getpid()))\n"
+                f"pathlib.Path({str(ready)!r}).touch()\n"
+                "time.sleep(60)\n"
+            )
+            harness.write_text(
+                "import pathlib, sys\n"
+                f"sys.path.insert(0, {str(TOOLS_SOURCE)!r})\n"
+                "import phone_saber_receiver_launcher as launcher\n"
+                f"root = pathlib.Path({str(root)!r})\n"
+                "snapshot = launcher.GitSnapshot(root, 'main', '## main', False, 0, 0)\n"
+                "raise SystemExit(launcher.run_receiver(root, snapshot, root / 'logs', "
+                f"receiver_command=[sys.executable, '-c', {receiver_code!r}], "
+                "listener_finder=lambda _port: None))\n",
+                encoding="utf-8",
+            )
+            # 実際の停止待ち中に連打し、例外で lock だけが先に解放されないことを確認する。
+            with (root / "transcript").open("w+") as output:
+                process = subprocess.Popen([sys.executable, str(harness)], stdout=output,
+                                           stderr=subprocess.STDOUT, start_new_session=True)
+                try:
+                    for marker, signum in ((ready, signal.SIGINT), (stopping, signal.SIGINT)):
+                        deadline = time.monotonic() + 10
+                        while not marker.exists() and process.poll() is None and time.monotonic() < deadline:
+                            time.sleep(0.01)
+                        self.assertTrue(marker.exists(), f"receiver did not reach {marker.name}")
+                        os.kill(process.pid, signum)
+                    for signum in (signal.SIGTERM, signal.SIGHUP, signal.SIGINT):
+                        time.sleep(0.05)
+                        if process.poll() is None:
+                            os.kill(process.pid, signum)
+                    lock, _ = launcher._acquire_single_instance_lock(log_dir)
+                    try:
+                        self.assertIsNone(lock, "launcher released its lock during receiver cleanup")
+                    finally:
+                        if lock is not None:
+                            lock.close()
+                    release.touch()
+                    process.wait(timeout=10)
+                    output.seek(0)
+                    self.assertEqual(process.returncode, 130, output.read())
+                    self.assertTrue(stopped.exists(), "launcher returned before receiver cleanup finished")
+                    with self.assertRaises(ProcessLookupError):
+                        os.kill(int(receiver_pid.read_text()), 0)
+                    lock, _ = launcher._acquire_single_instance_lock(log_dir)
+                    self.assertIsNotNone(lock)
+                    if lock is not None:
+                        lock.close()
+                finally:
+                    if process.poll() is None:
+                        process.kill()
+                    process.wait(timeout=3)
+                    if receiver_pid.exists():
+                        try:
+                            os.killpg(int(receiver_pid.read_text()), signal.SIGKILL)
+                        except ProcessLookupError:
+                            pass
+
     def test_ctrl_c_stops_receiver_process_group_and_waits_for_child(self) -> None:
         if not hasattr(signal, "SIGINT"):
             self.skipTest("SIGINT is unavailable")

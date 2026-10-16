@@ -434,6 +434,10 @@ def _wait_for_lock(log_dir: Path, timeout: float) -> IO[str] | None:
 
 
 def _signal_handler(signum: int, _frame: object) -> None:
+    # Ignore repeated stop requests until run_receiver restores the handlers.
+    # Otherwise Ctrl+C during wait() can abort cleanup and release the lock early.
+    for stop_signal in (signal.SIGINT, signal.SIGTERM, signal.SIGHUP):
+        signal.signal(stop_signal, signal.SIG_IGN)
     raise StopRequested(signum)
 
 
