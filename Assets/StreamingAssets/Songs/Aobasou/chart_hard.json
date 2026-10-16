@@ -1,5 +1,5 @@
 {
-  "_comment": "曲別の音型・手順・動線を設計。Hard→Normal→Easyで打点・手・位置を包含。song-style-design.json参照。",
+  "_comment": "拍を支えるまとまりと歌・楽器への応答を曲別に編集。beat-pickup-design.json参照。Hard→Normal→Easyで時刻・手・位置を包含。",
   "bpm": 140,
   "coordScale": 1,
   "offsetMs": 0,
@@ -28,6 +28,10 @@
       "name": "導入"
     },
     {
+      "timeMs": 0.0,
+      "name": "拍の土台：拍を支えながら音を拾う"
+    },
+    {
       "timeMs": 13714.2857,
       "name": "歌の応答"
     },
@@ -36,8 +40,32 @@
       "name": "素材: reason-hard-2"
     },
     {
+      "timeMs": 13714.2857,
+      "name": "音の応答：歌・楽器への応答"
+    },
+    {
+      "timeMs": 20571.4286,
+      "name": "音の応答：歌・楽器への応答"
+    },
+    {
       "timeMs": 27428.5714,
       "name": "主拍の主題"
+    },
+    {
+      "timeMs": 27428.5714,
+      "name": "拍の土台：拍の土台"
+    },
+    {
+      "timeMs": 34285.7143,
+      "name": "音の応答：歌・楽器への応答"
+    },
+    {
+      "timeMs": 41142.8571,
+      "name": "拍の土台：拍の土台"
+    },
+    {
+      "timeMs": 46285.7143,
+      "name": "音の応答：歌・楽器への応答"
     },
     {
       "timeMs": 49714.2857,
@@ -52,6 +80,14 @@
       "name": "素材: burning-hard-4"
     },
     {
+      "timeMs": 54857.1429,
+      "name": "拍の土台：拍の土台"
+    },
+    {
+      "timeMs": 61714.2857,
+      "name": "音の応答：歌・楽器への応答"
+    },
+    {
       "timeMs": 68571.4286,
       "name": "つなぎ"
     },
@@ -60,12 +96,28 @@
       "name": "歌の裏拍"
     },
     {
+      "timeMs": 75428.5714,
+      "name": "音の応答：歌・楽器への応答"
+    },
+    {
       "timeMs": 82285.7143,
       "name": "素材: shut-up-dance-3"
     },
     {
+      "timeMs": 89142.8571,
+      "name": "拍の土台：拍を支えながら音を拾う"
+    },
+    {
       "timeMs": 96000.0,
       "name": "主拍への回帰"
+    },
+    {
+      "timeMs": 96000.0,
+      "name": "拍の土台：拍の土台"
+    },
+    {
+      "timeMs": 102857.1429,
+      "name": "音の応答：歌・楽器への応答"
     },
     {
       "timeMs": 104571.4286,
@@ -80,8 +132,20 @@
       "name": "素材: shut-up-dance-4"
     },
     {
+      "timeMs": 109714.2857,
+      "name": "拍の土台：拍を支えながら音を拾う"
+    },
+    {
+      "timeMs": 116571.4286,
+      "name": "音の応答：歌・楽器への応答"
+    },
+    {
       "timeMs": 123428.5714,
       "name": "素材: fire-normal-2"
+    },
+    {
+      "timeMs": 123428.5714,
+      "name": "拍の土台：拍を支えながら音を拾う"
     },
     {
       "timeMs": 130285.7143,
@@ -915,17 +979,6 @@
       "lengthMs": 0
     },
     {
-      "beat": 81.0,
-      "time": 34714.2857,
-      "x": 1.9,
-      "y": 0.3,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
       "beat": 82.0,
       "time": 35142.8571,
       "x": -1.9,
@@ -965,17 +1018,6 @@
       "y": -0.6,
       "type": "tap",
       "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 85.0,
-      "time": 36428.5714,
-      "x": -0.6,
-      "y": -0.6,
-      "type": "tap",
-      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -1025,17 +1067,6 @@
       "lengthMs": 0
     },
     {
-      "beat": 88.0,
-      "time": 37714.2857,
-      "x": 1.9,
-      "y": -0.6,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
       "beat": 90.25,
       "time": 38678.5714,
       "x": -1.9,
@@ -1064,17 +1095,6 @@
       "y": -0.6,
       "type": "tap",
       "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 94.0,
-      "time": 40285.7143,
-      "x": 1.9,
-      "y": 0.3,
-      "type": "tap",
-      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -1300,6 +1320,17 @@
       "lengthMs": 0
     },
     {
+      "time": 46607.1429,
+      "beat": 108.75,
+      "x": -1.9,
+      "y": 0.3,
+      "color": "blue",
+      "direction": "none",
+      "type": "tap",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 109.0,
       "time": 46714.2857,
       "x": 0.6,
@@ -1366,6 +1397,17 @@
       "lengthMs": 0
     },
     {
+      "time": 48642.8571,
+      "beat": 113.5,
+      "x": 1.9,
+      "y": 0.3,
+      "color": "red",
+      "direction": "none",
+      "type": "tap",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 114.0,
       "time": 48857.1429,
       "x": 1.9,
@@ -1410,6 +1452,17 @@
       "lengthMs": 0
     },
     {
+      "time": 50357.1429,
+      "beat": 117.5,
+      "x": -1.9,
+      "y": -0.6,
+      "color": "blue",
+      "direction": "none",
+      "type": "tap",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 118.0,
       "time": 50571.4286,
       "x": 0.6,
@@ -1417,6 +1470,17 @@
       "type": "tap",
       "color": "red",
       "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "time": 50785.7143,
+      "beat": 118.5,
+      "x": -1.9,
+      "y": -0.6,
+      "color": "blue",
+      "direction": "none",
+      "type": "tap",
       "count": 1,
       "lengthMs": 0
     },
@@ -1575,6 +1639,17 @@
       "lengthMs": 0
     },
     {
+      "time": 56571.4286,
+      "beat": 132.0,
+      "x": -0.6,
+      "y": 0.3,
+      "color": "blue",
+      "direction": "none",
+      "type": "tap",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 133.0,
       "time": 57000.0,
       "x": 1.9,
@@ -1614,17 +1689,6 @@
       "y": -0.6,
       "type": "tap",
       "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 135.5,
-      "time": 58071.4286,
-      "x": 1.9,
-      "y": -0.6,
-      "type": "tap",
-      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -1762,34 +1826,12 @@
       "lengthMs": 0
     },
     {
-      "beat": 148.0,
-      "time": 63428.5714,
-      "x": -1.9,
-      "y": 0.3,
-      "type": "tap",
-      "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
       "beat": 149.0,
       "time": 63857.1429,
       "x": 1.9,
       "y": -0.6,
       "type": "tap",
       "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 150.0,
-      "time": 64285.7143,
-      "x": -1.9,
-      "y": -0.6,
-      "type": "tap",
-      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -2037,17 +2079,6 @@
       "lengthMs": 0
     },
     {
-      "beat": 181.0,
-      "time": 77571.4286,
-      "x": -1.9,
-      "y": 0.3,
-      "type": "tap",
-      "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
       "beat": 181.5,
       "time": 77785.7143,
       "x": 1.9,
@@ -2065,17 +2096,6 @@
       "y": 0.3,
       "type": "tap",
       "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 182.0,
-      "time": 78000.0,
-      "x": 1.9,
-      "y": 0.3,
-      "type": "tap",
-      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -2323,17 +2343,6 @@
       "lengthMs": 0
     },
     {
-      "beat": 197,
-      "time": 84428.5714,
-      "x": -1.9,
-      "y": -0.6,
-      "type": "tap",
-      "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
       "beat": 197.5,
       "time": 84642.8571,
       "x": 1.9,
@@ -2455,17 +2464,6 @@
       "lengthMs": 0
     },
     {
-      "beat": 206.0,
-      "time": 88285.7143,
-      "x": 1.9,
-      "y": -0.6,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
       "beat": 206.5,
       "time": 88500.0,
       "x": 1.9,
@@ -2554,6 +2552,17 @@
       "lengthMs": 0
     },
     {
+      "time": 90857.1429,
+      "beat": 212.0,
+      "x": -0.6,
+      "y": -0.6,
+      "color": "blue",
+      "direction": "none",
+      "type": "tap",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 213.5,
       "time": 91500.0,
       "x": 0.6,
@@ -2598,6 +2607,17 @@
       "lengthMs": 0
     },
     {
+      "time": 92571.4286,
+      "beat": 216.0,
+      "x": 1.9,
+      "y": -0.6,
+      "color": "red",
+      "direction": "none",
+      "type": "tap",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 216.5,
       "time": 92785.7143,
       "x": -0.6,
@@ -2620,13 +2640,13 @@
       "lengthMs": 0
     },
     {
-      "beat": 218.5,
-      "time": 93642.8571,
+      "time": 93428.5714,
+      "beat": 218.0,
       "x": 1.9,
       "y": -0.6,
-      "type": "tap",
       "color": "red",
       "direction": "none",
+      "type": "tap",
       "count": 1,
       "lengthMs": 0
     },
@@ -3049,6 +3069,17 @@
       "lengthMs": 0
     },
     {
+      "time": 105214.2857,
+      "beat": 245.5,
+      "x": -1.9,
+      "y": 0.3,
+      "color": "blue",
+      "direction": "none",
+      "type": "tap",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 246.0,
       "time": 105428.5714,
       "x": 1.9,
@@ -3056,6 +3087,17 @@
       "type": "tap",
       "color": "red",
       "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "time": 105642.8571,
+      "beat": 246.5,
+      "x": -1.9,
+      "y": 0.3,
+      "color": "blue",
+      "direction": "none",
+      "type": "tap",
       "count": 1,
       "lengthMs": 0
     },
@@ -3225,6 +3267,17 @@
       "lengthMs": 0
     },
     {
+      "time": 110571.4286,
+      "beat": 258.0,
+      "x": 1.9,
+      "y": -0.6,
+      "color": "red",
+      "direction": "none",
+      "type": "tap",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 259,
       "time": 111000.0,
       "x": -0.6,
@@ -3320,6 +3373,17 @@
       "type": "tap",
       "color": "blue",
       "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "time": 114000.0,
+      "beat": 266.0,
+      "x": 0.6,
+      "y": 0.3,
+      "color": "red",
+      "direction": "none",
+      "type": "tap",
       "count": 1,
       "lengthMs": 0
     },
@@ -3445,17 +3509,6 @@
       "lengthMs": 0
     },
     {
-      "beat": 275.0,
-      "time": 117857.1429,
-      "x": 1.9,
-      "y": -0.6,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
       "beat": 275.5,
       "time": 118071.4286,
       "x": -0.6,
@@ -3481,17 +3534,6 @@
       "beat": 278.0,
       "time": 119142.8571,
       "x": 0.6,
-      "y": 0.3,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 279.0,
-      "time": 119571.4286,
-      "x": 1.9,
       "y": 0.3,
       "type": "tap",
       "color": "red",
@@ -3632,17 +3674,6 @@
       "lengthMs": 0
     },
     {
-      "beat": 287.0,
-      "time": 123000.0,
-      "x": 1.9,
-      "y": 0.3,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
       "beat": 287.5,
       "time": 123214.2857,
       "x": -1.9,
@@ -3676,13 +3707,13 @@
       "lengthMs": 0
     },
     {
-      "beat": 288.5,
-      "time": 123642.8571,
-      "x": 0.6,
+      "time": 123428.5714,
+      "beat": 288.0,
+      "x": 1.9,
       "y": -0.6,
-      "type": "tap",
       "color": "red",
       "direction": "none",
+      "type": "tap",
       "count": 1,
       "lengthMs": 0
     },
@@ -3694,6 +3725,17 @@
       "type": "tap",
       "color": "blue",
       "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "time": 124285.7143,
+      "beat": 290.0,
+      "x": 1.9,
+      "y": -0.6,
+      "color": "red",
+      "direction": "none",
+      "type": "tap",
       "count": 1,
       "lengthMs": 0
     },
@@ -3742,17 +3784,6 @@
       "lengthMs": 0
     },
     {
-      "beat": 292.5,
-      "time": 125357.1429,
-      "x": -1.9,
-      "y": -0.6,
-      "type": "tap",
-      "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
       "beat": 293,
       "time": 125571.4286,
       "x": 0.6,
@@ -3775,13 +3806,13 @@
       "lengthMs": 0
     },
     {
-      "beat": 294.5,
-      "time": 126214.2857,
-      "x": -0.6,
+      "time": 126000.0,
+      "beat": 294.0,
+      "x": 0.6,
       "y": 0.3,
-      "type": "tap",
-      "color": "blue",
+      "color": "red",
       "direction": "none",
+      "type": "tap",
       "count": 1,
       "lengthMs": 0
     },
@@ -3826,6 +3857,17 @@
       "type": "tap",
       "color": "red",
       "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "time": 127714.2857,
+      "beat": 298.0,
+      "x": -0.6,
+      "y": 0.3,
+      "color": "blue",
+      "direction": "none",
+      "type": "tap",
       "count": 1,
       "lengthMs": 0
     },
@@ -4110,5 +4152,6 @@
   "hardRhythmDesignVersion": 1,
   "hierarchyDesignVersion": 1,
   "rhythmContrastDesignVersion": 1,
-  "styleDesignVersion": 1
+  "styleDesignVersion": 1,
+  "grooveDesignVersion": 1
 }

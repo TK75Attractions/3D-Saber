@@ -1,5 +1,5 @@
 {
-  "_comment": "曲別の音型・手順・動線を設計。Hard→Normal→Easyで打点・手・位置を包含。song-style-design.json参照。",
+  "_comment": "拍を支えるまとまりと歌・楽器への応答を曲別に編集。beat-pickup-design.json参照。Hard→Normal→Easyで時刻・手・位置を包含。",
   "bpm": 160,
   "coordScale": 1,
   "offsetMs": 0,
@@ -48,20 +48,60 @@
       "name": "主題A"
     },
     {
+      "timeMs": 12024.0,
+      "name": "拍の土台：拍の土台"
+    },
+    {
+      "timeMs": 15024.0,
+      "name": "音の応答：短い実音の連打"
+    },
+    {
       "timeMs": 21024.0,
       "name": "素材: beat-hard-2"
+    },
+    {
+      "timeMs": 24024.0,
+      "name": "拍の土台：拍の土台"
+    },
+    {
+      "timeMs": 27024.0,
+      "name": "音の応答：短い実音の連打"
     },
     {
       "timeMs": 30024.0,
       "name": "BPM100"
     },
     {
+      "timeMs": 30024.0,
+      "name": "拍の土台：拍の土台"
+    },
+    {
+      "timeMs": 34824.0,
+      "name": "音の応答：歌・楽器への応答"
+    },
+    {
       "timeMs": 39624.0,
       "name": "素材: crab-normal-1"
     },
     {
+      "timeMs": 39624.0,
+      "name": "拍の土台：拍の土台"
+    },
+    {
+      "timeMs": 44424.0,
+      "name": "音の応答：歌・楽器への応答"
+    },
+    {
       "timeMs": 50424.0,
       "name": "主拍へ復帰"
+    },
+    {
+      "timeMs": 50424.0,
+      "name": "拍の土台：拍の土台"
+    },
+    {
+      "timeMs": 53424.0,
+      "name": "音の応答：短い実音の連打"
     },
     {
       "timeMs": 61674.0,
@@ -80,12 +120,28 @@
       "name": "主題Aの回帰"
     },
     {
+      "timeMs": 85674.0,
+      "name": "拍の土台：拍の土台"
+    },
+    {
+      "timeMs": 88674.0,
+      "name": "音の応答：短い実音の連打"
+    },
+    {
       "timeMs": 91674.0,
       "name": "素材: lvl-expert-1"
     },
     {
       "timeMs": 97674.0,
       "name": "主拍"
+    },
+    {
+      "timeMs": 97674.0,
+      "name": "拍の土台：拍の土台"
+    },
+    {
+      "timeMs": 100674.0,
+      "name": "音の応答：短い実音の連打"
     },
     {
       "timeMs": 103674.0,
@@ -183,8 +239,19 @@
       "lengthMs": 0
     },
     {
-      "beat": 34.5,
-      "time": 12961.5,
+      "beat": 32.0,
+      "time": 12024.0,
+      "x": -1.9,
+      "y": -0.6,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 34.0,
+      "time": 12774.0,
       "x": 1.9,
       "y": -0.6,
       "type": "tap",
@@ -194,13 +261,24 @@
       "lengthMs": 0
     },
     {
-      "beat": 34.5,
-      "time": 12961.5,
-      "x": -1.9,
+      "beat": 35.0,
+      "time": 13149.0,
+      "x": 1.9,
       "y": -0.6,
       "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "time": 13524.0,
+      "beat": 36.0,
+      "x": -1.9,
+      "y": -0.6,
       "color": "blue",
       "direction": "none",
+      "type": "tap",
       "count": 1,
       "lengthMs": 0
     },
@@ -211,17 +289,6 @@
       "y": 0.3,
       "type": "tap",
       "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 37.5,
-      "time": 14086.5,
-      "x": -1.35,
-      "y": -0.24,
-      "type": "tap",
-      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -238,17 +305,6 @@
       "lengthMs": 0
     },
     {
-      "beat": 39.5,
-      "time": 14836.5,
-      "x": -1.05,
-      "y": -0.24,
-      "type": "tap",
-      "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
       "beat": 41.5,
       "time": 15586.5,
       "x": -1.35,
@@ -260,12 +316,12 @@
       "lengthMs": 0
     },
     {
-      "beat": 42.0,
-      "time": 15774.0,
-      "x": 1.9,
+      "beat": 42.5,
+      "time": 15961.5,
+      "x": -1.9,
       "y": -0.6,
       "type": "tap",
-      "color": "red",
+      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -458,17 +514,6 @@
       "lengthMs": 0
     },
     {
-      "beat": 64.5,
-      "time": 24211.5,
-      "x": 1.9,
-      "y": -0.6,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
       "beat": 66,
       "time": 24774.0,
       "x": 1.9,
@@ -480,23 +525,23 @@
       "lengthMs": 0
     },
     {
-      "beat": 67.5,
-      "time": 25336.5,
-      "x": -1.9,
+      "beat": 68,
+      "time": 25524.0,
+      "x": 1.9,
       "y": -0.6,
       "type": "tap",
-      "color": "blue",
+      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
     },
     {
-      "beat": 68.5,
-      "time": 25711.5,
-      "x": 1.9,
+      "beat": 68,
+      "time": 25524.0,
+      "x": -1.9,
       "y": -0.6,
       "type": "tap",
-      "color": "red",
+      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -568,17 +613,6 @@
       "lengthMs": 0
     },
     {
-      "beat": 76.0,
-      "time": 28524.0,
-      "x": -1.9,
-      "y": -0.6,
-      "type": "tap",
-      "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
       "beat": 77.5,
       "time": 29086.5,
       "x": -1.9,
@@ -588,17 +622,6 @@
       "direction": "none",
       "count": 2,
       "lengthMs": 840.0
-    },
-    {
-      "beat": 78.0,
-      "time": 29274.0,
-      "x": 1.9,
-      "y": 0.3,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
     },
     {
       "beat": 80.0,
@@ -612,6 +635,17 @@
       "lengthMs": 0
     },
     {
+      "beat": 81.0,
+      "time": 30624.0,
+      "x": -1.9,
+      "y": 0.3,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 81.5,
       "time": 30924.0,
       "x": 1.9,
@@ -623,24 +657,13 @@
       "lengthMs": 0
     },
     {
-      "beat": 81.5,
-      "time": 30924.0,
-      "x": -1.9,
-      "y": -0.6,
-      "type": "tap",
-      "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
       "beat": 82.5,
       "time": 31524.0,
       "x": -0.6,
       "y": -0.6,
-      "type": "direction",
+      "type": "tap",
       "color": "blue",
-      "direction": "upright",
+      "direction": "none",
       "count": 1,
       "lengthMs": 0
     },
@@ -678,9 +701,42 @@
       "lengthMs": 0
     },
     {
-      "beat": 87.5,
-      "time": 34524.0,
-      "x": 0.6,
+      "time": 33024.0,
+      "beat": 85.0,
+      "x": -1.9,
+      "y": -0.6,
+      "color": "blue",
+      "direction": "none",
+      "type": "tap",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 86.0,
+      "time": 33624.0,
+      "x": 1.9,
+      "y": -0.6,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 86.0,
+      "time": 33624.0,
+      "x": -1.9,
+      "y": -0.6,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 87.0,
+      "time": 34224.0,
+      "x": 1.9,
       "y": -0.6,
       "type": "tap",
       "color": "red",
@@ -799,10 +855,32 @@
       "lengthMs": 0
     },
     {
-      "beat": 97.5,
-      "time": 40524.0,
-      "x": 0.6,
+      "beat": 97.0,
+      "time": 40224.0,
+      "x": -1.9,
+      "y": 0.3,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "time": 40824.0,
+      "beat": 98.0,
+      "x": 1.9,
       "y": -0.6,
+      "color": "red",
+      "direction": "none",
+      "type": "tap",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 99.0,
+      "time": 41424.0,
+      "x": 1.9,
+      "y": 0.3,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -821,9 +899,9 @@
       "lengthMs": 0
     },
     {
-      "beat": 100.5,
-      "time": 42324.0,
-      "x": 1.9,
+      "beat": 101.0,
+      "time": 42624.0,
+      "x": 0.6,
       "y": -0.6,
       "type": "tap",
       "color": "red",
@@ -838,17 +916,6 @@
       "y": 0.3,
       "type": "tap",
       "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 102.5,
-      "time": 43524.0,
-      "x": -1.9,
-      "y": 0.3,
-      "type": "tap",
-      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -891,17 +958,6 @@
       "time": 45624.0,
       "x": -1.9,
       "y": -0.6,
-      "type": "tap",
-      "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 107.0,
-      "time": 46224.0,
-      "x": -1.9,
-      "y": 0.3,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -975,6 +1031,39 @@
       "lengthMs": 0
     },
     {
+      "beat": 116.0,
+      "time": 51174.0,
+      "x": 1.9,
+      "y": -0.6,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 117.0,
+      "time": 51549.0,
+      "x": -1.9,
+      "y": -0.6,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 118.0,
+      "time": 51924.0,
+      "x": 1.9,
+      "y": 0.3,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 119.0,
       "time": 52299.0,
       "x": -1.9,
@@ -992,6 +1081,17 @@
       "y": -0.6,
       "type": "tap",
       "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 121.0,
+      "time": 53049.0,
+      "x": -1.9,
+      "y": -0.6,
+      "type": "tap",
+      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -1019,17 +1119,6 @@
       "lengthMs": 0
     },
     {
-      "beat": 126.0,
-      "time": 54924.0,
-      "x": 1.9,
-      "y": 0.3,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
       "beat": 127.0,
       "time": 55299.0,
       "x": 1.9,
@@ -1039,17 +1128,6 @@
       "direction": "none",
       "count": 2,
       "lengthMs": 840.0
-    },
-    {
-      "beat": 129.0,
-      "time": 56049.0,
-      "x": -0.6,
-      "y": 0.3,
-      "type": "tap",
-      "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
     },
     {
       "beat": 132.0,
@@ -1069,28 +1147,6 @@
       "y": 0.3,
       "type": "tap",
       "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 135.0,
-      "time": 58299.0,
-      "x": -1.9,
-      "y": -0.6,
-      "type": "tap",
-      "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 137.0,
-      "time": 59049.0,
-      "x": -0.6,
-      "y": 0.3,
-      "type": "tap",
-      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -1492,13 +1548,13 @@
       "lengthMs": 0
     },
     {
-      "beat": 209.5,
-      "time": 86236.5,
+      "time": 86424.0,
+      "beat": 210.0,
       "x": 1.9,
       "y": -0.6,
-      "type": "tap",
       "color": "red",
       "direction": "none",
+      "type": "tap",
       "count": 1,
       "lengthMs": 0
     },
@@ -1521,17 +1577,6 @@
       "type": "direction",
       "color": "red",
       "direction": "up",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 213.5,
-      "time": 87736.5,
-      "x": -1.9,
-      "y": 0.3,
-      "type": "tap",
-      "color": "blue",
-      "direction": "none",
       "count": 1,
       "lengthMs": 0
     },
@@ -1619,17 +1664,6 @@
       "y": 0.3,
       "type": "tap",
       "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 225,
-      "time": 92049.0,
-      "x": -1.9,
-      "y": 0.3,
-      "type": "tap",
-      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -1767,6 +1801,28 @@
       "lengthMs": 0
     },
     {
+      "beat": 241.0,
+      "time": 98049.0,
+      "x": 1.9,
+      "y": 0.3,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 244.0,
+      "time": 99174.0,
+      "x": -1.9,
+      "y": 0.3,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 245.0,
       "time": 99549.0,
       "x": 1.9,
@@ -1789,12 +1845,12 @@
       "lengthMs": 0
     },
     {
-      "beat": 246.75,
-      "time": 100205.25,
-      "x": -0.6,
-      "y": 0.3,
+      "beat": 247.0,
+      "time": 100299.0,
+      "x": 1.9,
+      "y": -0.6,
       "type": "tap",
-      "color": "blue",
+      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -1806,17 +1862,6 @@
       "y": -0.6,
       "type": "tap",
       "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 249.0,
-      "time": 101049.0,
-      "x": 1.9,
-      "y": 0.3,
-      "type": "tap",
-      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -1861,17 +1906,6 @@
       "y": -0.6,
       "type": "tap",
       "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 255.0,
-      "time": 103299.0,
-      "x": -1.9,
-      "y": -0.6,
-      "type": "tap",
-      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -2200,5 +2234,6 @@
   "identityDesignVersion": 1,
   "hierarchyDesignVersion": 1,
   "rhythmContrastDesignVersion": 1,
-  "styleDesignVersion": 1
+  "styleDesignVersion": 1,
+  "grooveDesignVersion": 1
 }

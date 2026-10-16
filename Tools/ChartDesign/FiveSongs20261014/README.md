@@ -110,3 +110,7 @@ Unityの検証は `FiveSongPackTests` / `FiveSongPlayabilityTests` / `FiveSongLo
 `song-style-design.json` が最新の人間の指示による音型・手順・動線の設計。Manic Sonic 9、escapade 9、logic!!! 7、勉強 8、青葉騒 8。表示だけでなく実データのゲーム計算も同じ整数になるよう検証。Normal・Easyも新しいHardからの部分列で、`rhythm-contrast-design.json` を第2版に更新。従来の手順・位置を定時更新で戻さない。旧リズム設計は `rhythm-contrast-design.pre-style.json` に保存。既存100素材の出典・個別JSONは保持。旧91適用のうち90区間の再編集前を `preSongStyleAppliedNotes` に記録し、休符になった1素材は保留へ戻した。計90適用・10保留。
 
 定時更新では代表フレーズの `protectedCoreHits` を `style_core_valid` で保持する。その他の区間は、現在の実音・手順・方向と移動条件が合う場合だけ素材を適用する。`test_style_core.py` の3件を含め、回帰検査は12件。
+
+## 2026-10-16 拍の土台と音への応答
+
+`beat-pickup-design.json` と `rhythm-contrast-design.json` 第3版が最新の人間のリズム編集。曲別の短い拍刻み、二拍の土台、歌・楽器への応答とフィルを組み合わせる。強い発音の順位だけで土台の拍を消さず、発音のない拍を追加しない。今回追加した打点は発音強度0.45以上・時刻誤差30ms以内を確認。Hardの既存ロング・強い発音上位15%・共通アクセント・フリックを保持。編集区間外のリズムと、残した全ノーツの担当手・座標を保持。Hardは9/9/7/8/8。Normal/Easyは完全な部分列で、定時更新では第3版のretainedHitsを守る。古い短列化や主音だけの選択へ再生成しない。素材106・適用93・保留13を維持。適用区間の旧ノーツはpreGrooveAppliedNotes。

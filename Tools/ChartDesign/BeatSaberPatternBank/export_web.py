@@ -63,5 +63,17 @@ def main():
  catalog['updated']=datetime.date.today().isoformat();save(chartdist/'catalog.json',catalog)
  assert_unchanged(protected,protected_web(chartdist))
  save(HERE/'export-scope-verification.json',{'passed':True,'protectedCharts':len(protected['hashes']),'allowedSongs':sorted(ALLOWED),'protectedHashes':protected['hashes']})
+ # Hosting has a 256 MiB expanded archive limit. Keep readable canonical
+ # research JSON in the repository, but do not ship redundant indentation.
+ # This does not modify any video, poster, ZIP, or mobile game chart.
+ compacted=0
+ for asset in dist.rglob('*.json'):
+  original=asset.read_bytes();value=read(asset)
+  compact=(json.dumps(value,ensure_ascii=False,separators=(',',':'))+'\n').encode('utf-8')
+  assert json.loads(compact)==value
+  if len(compact)<len(original):asset.write_bytes(compact);compacted+=len(original)-len(compact)
+ expanded=sum(asset.stat().st_size for asset in dist.rglob('*') if asset.is_file())
+ save(HERE/'hosting-size-verification.json',{'expandedStaticBytes':expanded,'limitBytes':256*1024*1024,'jsonWhitespaceBytesRemoved':compacted,'mediaAndZipContentsUnchanged':True})
+ assert expanded<256*1024*1024-512*1024,('Hosting archive needs more capacity; retain the verified materials without overwriting production.',expanded)
  print(json.dumps({'patterns':len(data['patterns']),'applications':len(apps),'updatedCharts':updates}))
 if __name__=='__main__':main()

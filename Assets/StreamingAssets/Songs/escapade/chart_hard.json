@@ -1,5 +1,5 @@
 {
-  "_comment": "曲別の音型・手順・動線を設計。Hard→Normal→Easyで打点・手・位置を包含。song-style-design.json参照。",
+  "_comment": "拍を支えるまとまりと歌・楽器への応答を曲別に編集。beat-pickup-design.json参照。Hard→Normal→Easyで時刻・手・位置を包含。",
   "bpm": 190,
   "coordScale": 1,
   "offsetMs": 0,
@@ -32,12 +32,44 @@
       "name": "裏拍の主題"
     },
     {
+      "timeMs": 5072.6316,
+      "name": "拍の土台：拍を支えながら音を拾う"
+    },
+    {
+      "timeMs": 7598.9474,
+      "name": "音の応答：歌・楽器への応答"
+    },
+    {
       "timeMs": 10125.2632,
       "name": "素材: misa-expertplus-2"
     },
     {
+      "timeMs": 15177.8947,
+      "name": "拍の土台：拍を支えながら音を拾う"
+    },
+    {
+      "timeMs": 17704.2105,
+      "name": "音の応答：歌・楽器への応答"
+    },
+    {
       "timeMs": 25283.1579,
       "name": "主題の応答"
+    },
+    {
+      "timeMs": 25283.1579,
+      "name": "拍の土台：拍を支えながら音を拾う"
+    },
+    {
+      "timeMs": 27809.4737,
+      "name": "音の応答：歌・楽器への応答"
+    },
+    {
+      "timeMs": 35388.4211,
+      "name": "拍の土台：拍を支えながら音を拾う"
+    },
+    {
+      "timeMs": 37914.7368,
+      "name": "音の応答：歌・楽器への応答"
     },
     {
       "timeMs": 45493.6842,
@@ -48,12 +80,32 @@
       "name": "表拍へ"
     },
     {
+      "timeMs": 50546.3158,
+      "name": "拍の土台：拍の土台"
+    },
+    {
+      "timeMs": 53072.6316,
+      "name": "音の応答：歌・楽器への応答"
+    },
+    {
+      "timeMs": 55598.9474,
+      "name": "拍の土台：拍を支えながら音を拾う"
+    },
+    {
+      "timeMs": 58125.2632,
+      "name": "音の応答：歌・楽器への応答"
+    },
+    {
       "timeMs": 60651.5789,
       "name": "素材: misa-expertplus-1"
     },
     {
       "timeMs": 65704.2105,
       "name": "シンコペーション"
+    },
+    {
+      "timeMs": 65704.2105,
+      "name": "音の応答：短い実音の連打"
     },
     {
       "timeMs": 66967.3684,
@@ -70,6 +122,14 @@
     {
       "timeMs": 85914.7368,
       "name": "主題の回帰"
+    },
+    {
+      "timeMs": 85914.7368,
+      "name": "拍の土台：拍を支えながら音を拾う"
+    },
+    {
+      "timeMs": 88441.0526,
+      "name": "音の応答：歌・楽器への応答"
     },
     {
       "timeMs": 90967.3684,
@@ -104,17 +164,6 @@
       "lengthMs": 0
     },
     {
-      "beat": 17.5,
-      "time": 5546.3158,
-      "x": 0.6,
-      "y": -0.6,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
       "beat": 18.5,
       "time": 5862.1053,
       "x": 1.9,
@@ -144,6 +193,17 @@
       "type": "tap",
       "color": "blue",
       "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "time": 6967.3684,
+      "beat": 22.0,
+      "x": -1.9,
+      "y": -0.6,
+      "color": "blue",
+      "direction": "none",
+      "type": "tap",
       "count": 1,
       "lengthMs": 0
     },
@@ -511,6 +571,28 @@
       "lengthMs": 0
     },
     {
+      "time": 15177.8947,
+      "beat": 48.0,
+      "x": -0.6,
+      "y": -0.6,
+      "color": "blue",
+      "direction": "none",
+      "type": "tap",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "time": 15809.4737,
+      "beat": 50.0,
+      "x": -0.6,
+      "y": -0.6,
+      "color": "blue",
+      "direction": "none",
+      "type": "tap",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 50.5,
       "time": 15967.3684,
       "x": 0.6,
@@ -540,6 +622,17 @@
       "type": "tap",
       "color": "blue",
       "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "time": 17072.6316,
+      "beat": 54.0,
+      "x": 1.9,
+      "y": 0.3,
+      "color": "red",
+      "direction": "none",
+      "type": "tap",
       "count": 1,
       "lengthMs": 0
     },
@@ -808,6 +901,17 @@
       "lengthMs": 0
     },
     {
+      "time": 25283.1579,
+      "beat": 80.0,
+      "x": -1.9,
+      "y": -0.6,
+      "color": "blue",
+      "direction": "none",
+      "type": "tap",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 81.5,
       "time": 25756.8421,
       "x": 1.9,
@@ -819,6 +923,17 @@
       "lengthMs": 0
     },
     {
+      "time": 25914.7368,
+      "beat": 82.0,
+      "x": -1.9,
+      "y": -0.6,
+      "color": "blue",
+      "direction": "none",
+      "type": "tap",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 82.5,
       "time": 26072.6316,
       "x": 1.9,
@@ -826,6 +941,17 @@
       "type": "tap",
       "color": "red",
       "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "time": 26546.3158,
+      "beat": 84.0,
+      "x": 1.9,
+      "y": 0.3,
+      "color": "red",
+      "direction": "none",
+      "type": "tap",
       "count": 1,
       "lengthMs": 0
     },
@@ -848,6 +974,17 @@
       "type": "tap",
       "color": "blue",
       "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "time": 27177.8947,
+      "beat": 86.0,
+      "x": 1.9,
+      "y": -0.6,
+      "color": "red",
+      "direction": "none",
+      "type": "tap",
       "count": 1,
       "lengthMs": 0
     },
@@ -1116,6 +1253,17 @@
       "lengthMs": 0
     },
     {
+      "time": 35388.4211,
+      "beat": 112.0,
+      "x": -1.9,
+      "y": -0.6,
+      "color": "blue",
+      "direction": "none",
+      "type": "tap",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 113.5,
       "time": 35862.1053,
       "x": -1.9,
@@ -1123,6 +1271,17 @@
       "type": "tap",
       "color": "blue",
       "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "time": 36020.0,
+      "beat": 114.0,
+      "x": 0.6,
+      "y": -0.6,
+      "color": "red",
+      "direction": "none",
+      "type": "tap",
       "count": 1,
       "lengthMs": 0
     },
@@ -1138,6 +1297,17 @@
       "lengthMs": 0
     },
     {
+      "time": 36651.5789,
+      "beat": 116.0,
+      "x": -0.6,
+      "y": -0.6,
+      "color": "blue",
+      "direction": "none",
+      "type": "tap",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 116.5,
       "time": 36809.4737,
       "x": 0.6,
@@ -1145,6 +1315,17 @@
       "type": "tap",
       "color": "red",
       "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "time": 37283.1579,
+      "beat": 118.0,
+      "x": -0.6,
+      "y": -0.6,
+      "color": "blue",
+      "direction": "none",
+      "type": "tap",
       "count": 1,
       "lengthMs": 0
     },
@@ -1501,24 +1682,57 @@
       "lengthMs": 0
     },
     {
-      "beat": 162.75,
-      "time": 51414.7368,
-      "x": 0.6,
-      "y": 0.3,
-      "type": "tap",
+      "time": 50546.3158,
+      "beat": 160.0,
+      "x": 1.9,
+      "y": -0.6,
       "color": "red",
       "direction": "none",
+      "type": "tap",
       "count": 1,
       "lengthMs": 0
     },
     {
-      "beat": 163.5,
-      "time": 51651.5789,
+      "time": 50862.1053,
+      "beat": 161.0,
       "x": -0.6,
-      "y": 0.3,
-      "type": "tap",
+      "y": -0.6,
       "color": "blue",
       "direction": "none",
+      "type": "tap",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "time": 51177.8947,
+      "beat": 162.0,
+      "x": 1.9,
+      "y": -0.6,
+      "color": "red",
+      "direction": "none",
+      "type": "tap",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "time": 51809.4737,
+      "beat": 164.0,
+      "x": -0.6,
+      "y": -0.6,
+      "color": "blue",
+      "direction": "none",
+      "type": "tap",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "time": 52125.2632,
+      "beat": 165.0,
+      "x": 0,
+      "y": 0.95,
+      "color": "red",
+      "direction": "none",
+      "type": "tap",
       "count": 1,
       "lengthMs": 0
     },
@@ -1538,17 +1752,6 @@
       "time": 52441.0526,
       "x": 0,
       "y": -0.95,
-      "type": "tap",
-      "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 167.5,
-      "time": 52914.7368,
-      "x": -1.9,
-      "y": 0.3,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -1611,6 +1814,28 @@
       "lengthMs": 0
     },
     {
+      "time": 55598.9474,
+      "beat": 176.0,
+      "x": 1.9,
+      "y": -0.6,
+      "color": "red",
+      "direction": "none",
+      "type": "tap",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "time": 56230.5263,
+      "beat": 178.0,
+      "x": 1.9,
+      "y": -0.6,
+      "color": "red",
+      "direction": "none",
+      "type": "tap",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 179.5,
       "time": 56704.2105,
       "x": -1.9,
@@ -1644,17 +1869,6 @@
       "lengthMs": 0
     },
     {
-      "beat": 180.5,
-      "time": 57020.0,
-      "x": 1.9,
-      "y": -0.6,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
       "beat": 181.5,
       "time": 57335.7895,
       "x": 1.9,
@@ -1672,17 +1886,6 @@
       "y": -0.6,
       "type": "tap",
       "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 182.5,
-      "time": 57651.5789,
-      "x": 0.6,
-      "y": -0.6,
-      "type": "tap",
-      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -2612,6 +2815,17 @@
       "lengthMs": 0
     },
     {
+      "time": 85914.7368,
+      "beat": 272.0,
+      "x": -1.9,
+      "y": -0.6,
+      "color": "blue",
+      "direction": "none",
+      "type": "tap",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 272.5,
       "time": 86072.6316,
       "x": 0.6,
@@ -2630,6 +2844,17 @@
       "type": "tap",
       "color": "red",
       "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "time": 86546.3158,
+      "beat": 274.0,
+      "x": -1.9,
+      "y": -0.6,
+      "color": "blue",
+      "direction": "none",
+      "type": "tap",
       "count": 1,
       "lengthMs": 0
     },
@@ -2667,23 +2892,23 @@
       "lengthMs": 0
     },
     {
+      "time": 87809.4737,
+      "beat": 278.0,
+      "x": 1.9,
+      "y": -0.6,
+      "color": "red",
+      "direction": "none",
+      "type": "tap",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 278.5,
       "time": 87967.3684,
       "x": -1.9,
       "y": -0.6,
       "type": "tap",
       "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 279.5,
-      "time": 88283.1579,
-      "x": 1.9,
-      "y": -0.6,
-      "type": "tap",
-      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -3233,5 +3458,6 @@
   "hardRhythmDesignVersion": 1,
   "hierarchyDesignVersion": 1,
   "rhythmContrastDesignVersion": 1,
-  "styleDesignVersion": 1
+  "styleDesignVersion": 1,
+  "grooveDesignVersion": 1
 }

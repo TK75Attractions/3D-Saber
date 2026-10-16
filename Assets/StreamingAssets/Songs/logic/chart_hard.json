@@ -1,5 +1,5 @@
 {
-  "_comment": "曲別の音型・手順・動線を設計。Hard→Normal→Easyで打点・手・位置を包含。song-style-design.json参照。",
+  "_comment": "拍を支えるまとまりと歌・楽器への応答を曲別に編集。beat-pickup-design.json参照。Hard→Normal→Easyで時刻・手・位置を包含。",
   "bpm": 160,
   "coordScale": 1,
   "offsetMs": 0,
@@ -56,6 +56,14 @@
       "name": "応答"
     },
     {
+      "timeMs": 12028.0,
+      "name": "音の応答：歌・楽器への応答"
+    },
+    {
+      "timeMs": 18028.0,
+      "name": "音の応答：歌・楽器への応答"
+    },
+    {
       "timeMs": 30028.0,
       "name": "8分の裏拍"
     },
@@ -64,8 +72,16 @@
       "name": "BPM120へ"
     },
     {
+      "timeMs": 52903.0,
+      "name": "拍の土台：拍を支えながら音を拾う"
+    },
+    {
       "timeMs": 54403.0,
       "name": "素材: elixia-hard-3"
+    },
+    {
+      "timeMs": 56903.0,
+      "name": "音の応答：歌・楽器への応答"
     },
     {
       "timeMs": 62403.0,
@@ -80,8 +96,24 @@
       "name": "素材: full-charge-normal-1"
     },
     {
+      "timeMs": 70403.0,
+      "name": "拍の土台：拍の土台"
+    },
+    {
+      "timeMs": 74403.0,
+      "name": "音の応答：歌・楽器への応答"
+    },
+    {
+      "timeMs": 86403.0,
+      "name": "拍の土台：拍を支えながら音を拾う"
+    },
+    {
       "timeMs": 88403.0,
       "name": "素材: full-charge-normal-2"
+    },
+    {
+      "timeMs": 90403.0,
+      "name": "音の応答：歌・楽器への応答"
     },
     {
       "timeMs": 94403.0,
@@ -104,12 +136,36 @@
       "name": "主題Bの発展"
     },
     {
+      "timeMs": 148153.0,
+      "name": "拍の土台：拍を支えながら音を拾う"
+    },
+    {
+      "timeMs": 152153.0,
+      "name": "音の応答：歌・楽器への応答"
+    },
+    {
+      "timeMs": 156153.0,
+      "name": "拍の土台：拍の土台"
+    },
+    {
+      "timeMs": 160153.0,
+      "name": "音の応答：歌・楽器への応答"
+    },
+    {
       "timeMs": 176153.0,
       "name": "つなぎ"
     },
     {
       "timeMs": 184403.0,
       "name": "BPM160へ回帰"
+    },
+    {
+      "timeMs": 184403.0,
+      "name": "拍の土台：拍を支えながら音を拾う"
+    },
+    {
+      "timeMs": 187403.0,
+      "name": "音の応答：歌・楽器への応答"
     },
     {
       "timeMs": 199215.5,
@@ -1669,17 +1725,6 @@
       "lengthMs": 0
     },
     {
-      "beat": 144.5,
-      "time": 54653.0,
-      "x": 1.9,
-      "y": -0.6,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
       "beat": 145.0,
       "time": 54903.0,
       "x": -0.6,
@@ -1687,28 +1732,6 @@
       "type": "direction",
       "color": "blue",
       "direction": "right",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 145.5,
-      "time": 55153.0,
-      "x": 1.9,
-      "y": -0.6,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 146.5,
-      "time": 55653.0,
-      "x": 0.6,
-      "y": -0.6,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
       "count": 1,
       "lengthMs": 0
     },
@@ -1727,17 +1750,6 @@
       "beat": 147.5,
       "time": 56153.0,
       "x": 0.6,
-      "y": -0.6,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 148.5,
-      "time": 56653.0,
-      "x": 1.9,
       "y": -0.6,
       "type": "tap",
       "color": "red",
@@ -1834,17 +1846,6 @@
       "lengthMs": 0
     },
     {
-      "beat": 158.0,
-      "time": 61403.0,
-      "x": 0.6,
-      "y": -0.6,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
       "beat": 159.0,
       "time": 61903.0,
       "x": 1.9,
@@ -1858,17 +1859,6 @@
     {
       "beat": 159.0,
       "time": 61903.0,
-      "x": -1.9,
-      "y": -0.6,
-      "type": "tap",
-      "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 160.0,
-      "time": 62403.0,
       "x": -1.9,
       "y": -0.6,
       "type": "tap",
@@ -1891,17 +1881,6 @@
     {
       "beat": 163.0,
       "time": 63903.0,
-      "x": 1.9,
-      "y": -0.6,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 164.0,
-      "time": 64403.0,
       "x": 1.9,
       "y": -0.6,
       "type": "tap",
@@ -2087,17 +2066,6 @@
       "lengthMs": 0
     },
     {
-      "beat": 180.5,
-      "time": 72653.0,
-      "x": 0.6,
-      "y": 0.3,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
       "beat": 181.0,
       "time": 72903.0,
       "x": -0.6,
@@ -2120,34 +2088,12 @@
       "lengthMs": 0
     },
     {
-      "beat": 182.5,
-      "time": 73653.0,
-      "x": 0.6,
-      "y": 0.3,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
       "beat": 183.0,
       "time": 73903.0,
       "x": -1.9,
       "y": 0.3,
       "type": "tap",
       "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 183.5,
-      "time": 74153.0,
-      "x": 1.9,
-      "y": 0.3,
-      "type": "tap",
-      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -2280,17 +2226,6 @@
       "y": -0.6,
       "type": "tap",
       "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 193.0,
-      "time": 78903.0,
-      "x": 1.9,
-      "y": -0.6,
-      "type": "tap",
-      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -2483,34 +2418,12 @@
       "lengthMs": 0
     },
     {
-      "beat": 208.5,
-      "time": 86653.0,
-      "x": 0.6,
-      "y": 0.3,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
       "beat": 209.0,
       "time": 86903.0,
       "x": -0.6,
       "y": 0.3,
       "type": "tap",
       "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 209.5,
-      "time": 87153.0,
-      "x": 0.6,
-      "y": 0.3,
-      "type": "tap",
-      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -2599,17 +2512,6 @@
       "y": 0.3,
       "type": "tap",
       "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 215.5,
-      "time": 90153.0,
-      "x": -1.9,
-      "y": 0.3,
-      "type": "tap",
-      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -3792,6 +3694,17 @@
       "lengthMs": 0
     },
     {
+      "time": 149153.0,
+      "beat": 330.0,
+      "x": 1.9,
+      "y": -0.6,
+      "color": "red",
+      "direction": "none",
+      "type": "tap",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 330.5,
       "time": 149403.0,
       "x": -0.6,
@@ -3946,35 +3859,35 @@
       "lengthMs": 0
     },
     {
-      "beat": 344.5,
-      "time": 156403.0,
-      "x": -1.9,
-      "y": 0.3,
-      "type": "tap",
-      "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 345.5,
-      "time": 156903.0,
-      "x": -0.6,
-      "y": 0.3,
-      "type": "tap",
-      "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 346.5,
-      "time": 157403.0,
+      "time": 156153.0,
+      "beat": 344.0,
       "x": 1.9,
-      "y": 0.3,
-      "type": "tap",
+      "y": -0.6,
       "color": "red",
       "direction": "none",
+      "type": "tap",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "time": 156653.0,
+      "beat": 345.0,
+      "x": -1.9,
+      "y": -0.6,
+      "color": "blue",
+      "direction": "none",
+      "type": "tap",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "time": 157153.0,
+      "beat": 346.0,
+      "x": 1.9,
+      "y": -0.6,
+      "color": "red",
+      "direction": "none",
+      "type": "tap",
       "count": 1,
       "lengthMs": 0
     },
@@ -3990,46 +3903,46 @@
       "lengthMs": 0
     },
     {
-      "beat": 348.5,
-      "time": 158403.0,
-      "x": 0.6,
-      "y": 0.3,
-      "type": "tap",
+      "time": 158153.0,
+      "beat": 348.0,
+      "x": 1.9,
+      "y": -0.6,
       "color": "red",
       "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 349.5,
-      "time": 158903.0,
-      "x": -1.9,
-      "y": 0.3,
       "type": "tap",
-      "color": "blue",
-      "direction": "none",
       "count": 1,
       "lengthMs": 0
     },
     {
-      "beat": 350.5,
-      "time": 159403.0,
+      "time": 158653.0,
+      "beat": 349.0,
       "x": -0.6,
-      "y": -0.6,
-      "type": "tap",
+      "y": 0.3,
       "color": "blue",
       "direction": "none",
+      "type": "tap",
       "count": 1,
       "lengthMs": 0
     },
     {
-      "beat": 351.5,
-      "time": 159903.0,
-      "x": -1.9,
+      "time": 159153.0,
+      "beat": 350.0,
+      "x": 1.9,
       "y": -0.6,
+      "color": "red",
+      "direction": "none",
       "type": "tap",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "time": 159653.0,
+      "beat": 351.0,
+      "x": -0.6,
+      "y": 0.3,
       "color": "blue",
       "direction": "none",
+      "type": "tap",
       "count": 1,
       "lengthMs": 0
     },
@@ -4441,17 +4354,6 @@
       "lengthMs": 0
     },
     {
-      "beat": 403.5,
-      "time": 185528.0,
-      "x": 1.9,
-      "y": -0.6,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
       "beat": 404.5,
       "time": 185903.0,
       "x": 1.9,
@@ -4474,17 +4376,6 @@
       "lengthMs": 0
     },
     {
-      "beat": 405.5,
-      "time": 186278.0,
-      "x": 0.6,
-      "y": 0.3,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
       "beat": 407.5,
       "time": 187028.0,
       "x": 1.9,
@@ -4507,45 +4398,12 @@
       "lengthMs": 0
     },
     {
-      "beat": 408.5,
-      "time": 187403.0,
-      "x": 1.9,
-      "y": 0.3,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 409.5,
-      "time": 187778.0,
-      "x": 0.6,
-      "y": -0.6,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
       "beat": 410.0,
       "time": 187965.5,
       "x": -0.6,
       "y": 0.3,
       "type": "tap",
       "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 410.5,
-      "time": 188153.0,
-      "x": 1.9,
-      "y": -0.6,
-      "type": "tap",
-      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -4584,32 +4442,10 @@
       "lengthMs": 840.0
     },
     {
-      "beat": 414.5,
-      "time": 189653.0,
-      "x": 0.6,
-      "y": 0.3,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
       "beat": 415.5,
       "time": 190028.0,
       "x": 1.9,
       "y": 0.3,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 417.5,
-      "time": 190778.0,
-      "x": 0.6,
-      "y": -0.6,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -4628,56 +4464,12 @@
       "lengthMs": 0
     },
     {
-      "beat": 418.5,
-      "time": 191153.0,
-      "x": 1.9,
-      "y": -0.6,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 419.5,
-      "time": 191528.0,
-      "x": 1.9,
-      "y": 0.3,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
       "beat": 420.5,
       "time": 191903.0,
       "x": 0.6,
       "y": 0.3,
       "type": "tap",
       "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 421.5,
-      "time": 192278.0,
-      "x": -0.6,
-      "y": -0.6,
-      "type": "tap",
-      "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 422.5,
-      "time": 192653.0,
-      "x": -1.9,
-      "y": -0.6,
-      "type": "tap",
-      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -4963,5 +4755,6 @@
   "hardRhythmDesignVersion": 1,
   "hierarchyDesignVersion": 1,
   "rhythmContrastDesignVersion": 1,
-  "styleDesignVersion": 1
+  "styleDesignVersion": 1,
+  "grooveDesignVersion": 1
 }

@@ -1,5 +1,5 @@
 {
-  "_comment": "曲別の音型・手順・動線を設計。Hard→Normal→Easyで打点・手・位置を包含。song-style-design.json参照。",
+  "_comment": "拍を支えるまとまりと歌・楽器への応答を曲別に編集。beat-pickup-design.json参照。Hard→Normal→Easyで時刻・手・位置を包含。",
   "bpm": 190,
   "coordScale": 1,
   "offsetMs": 0,
@@ -32,8 +32,40 @@
       "name": "裏拍の主題"
     },
     {
+      "timeMs": 5072.6316,
+      "name": "拍の土台：拍を支えながら音を拾う"
+    },
+    {
+      "timeMs": 7598.9474,
+      "name": "音の応答：歌・楽器への応答"
+    },
+    {
+      "timeMs": 15177.8947,
+      "name": "拍の土台：拍を支えながら音を拾う"
+    },
+    {
+      "timeMs": 17704.2105,
+      "name": "音の応答：歌・楽器への応答"
+    },
+    {
       "timeMs": 25283.1579,
       "name": "主題の応答"
+    },
+    {
+      "timeMs": 25283.1579,
+      "name": "拍の土台：拍を支えながら音を拾う"
+    },
+    {
+      "timeMs": 27809.4737,
+      "name": "音の応答：歌・楽器への応答"
+    },
+    {
+      "timeMs": 35388.4211,
+      "name": "拍の土台：拍を支えながら音を拾う"
+    },
+    {
+      "timeMs": 37914.7368,
+      "name": "音の応答：歌・楽器への応答"
     },
     {
       "timeMs": 45493.6842,
@@ -44,8 +76,28 @@
       "name": "表拍へ"
     },
     {
+      "timeMs": 50546.3158,
+      "name": "拍の土台：拍の土台"
+    },
+    {
+      "timeMs": 53072.6316,
+      "name": "音の応答：歌・楽器への応答"
+    },
+    {
+      "timeMs": 55598.9474,
+      "name": "拍の土台：拍を支えながら音を拾う"
+    },
+    {
+      "timeMs": 58125.2632,
+      "name": "音の応答：歌・楽器への応答"
+    },
+    {
       "timeMs": 65704.2105,
       "name": "シンコペーション"
+    },
+    {
+      "timeMs": 65704.2105,
+      "name": "音の応答：短い実音の連打"
     },
     {
       "timeMs": 75809.4737,
@@ -54,6 +106,14 @@
     {
       "timeMs": 85914.7368,
       "name": "主題の回帰"
+    },
+    {
+      "timeMs": 85914.7368,
+      "name": "拍の土台：拍を支えながら音を拾う"
+    },
+    {
+      "timeMs": 88441.0526,
+      "name": "音の応答：歌・楽器への応答"
     },
     {
       "timeMs": 96020.0,
@@ -87,28 +147,6 @@
       "y": -0.6,
       "type": "tap",
       "color": "gold",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 19.5,
-      "time": 6177.8947,
-      "x": -0.6,
-      "y": -0.6,
-      "type": "tap",
-      "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 22.5,
-      "time": 7125.2632,
-      "x": 1.9,
-      "y": -0.6,
-      "type": "tap",
-      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -169,6 +207,28 @@
       "lengthMs": 721.5789
     },
     {
+      "time": 15177.8947,
+      "beat": 48.0,
+      "x": -0.6,
+      "y": -0.6,
+      "color": "blue",
+      "direction": "none",
+      "type": "tap",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 54.5,
+      "time": 17230.5263,
+      "x": 1.9,
+      "y": 0.3,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 60.5,
       "time": 19125.2632,
       "x": 0.6,
@@ -186,17 +246,6 @@
       "y": -0.6,
       "type": "tap",
       "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 63.5,
-      "time": 20072.6316,
-      "x": 1.9,
-      "y": 0.3,
-      "type": "tap",
-      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -235,6 +284,28 @@
       "lengthMs": 0
     },
     {
+      "time": 25283.1579,
+      "beat": 80.0,
+      "x": -1.9,
+      "y": -0.6,
+      "color": "blue",
+      "direction": "none",
+      "type": "tap",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "time": 25914.7368,
+      "beat": 82.0,
+      "x": -1.9,
+      "y": -0.6,
+      "color": "blue",
+      "direction": "none",
+      "type": "tap",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 82.5,
       "time": 26072.6316,
       "x": 1.9,
@@ -246,13 +317,13 @@
       "lengthMs": 0
     },
     {
-      "beat": 84.5,
-      "time": 26704.2105,
-      "x": -1.9,
+      "time": 27177.8947,
+      "beat": 86.0,
+      "x": 1.9,
       "y": -0.6,
-      "type": "tap",
-      "color": "blue",
+      "color": "red",
       "direction": "none",
+      "type": "tap",
       "count": 1,
       "lengthMs": 0
     },
@@ -323,6 +394,28 @@
       "lengthMs": 0
     },
     {
+      "time": 35388.4211,
+      "beat": 112.0,
+      "x": -1.9,
+      "y": -0.6,
+      "color": "blue",
+      "direction": "none",
+      "type": "tap",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "time": 36020.0,
+      "beat": 114.0,
+      "x": 0.6,
+      "y": -0.6,
+      "color": "red",
+      "direction": "none",
+      "type": "tap",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 116.5,
       "time": 36809.4737,
       "x": 0.6,
@@ -330,6 +423,17 @@
       "type": "tap",
       "color": "red",
       "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "time": 37283.1579,
+      "beat": 118.0,
+      "x": -0.6,
+      "y": -0.6,
+      "color": "blue",
+      "direction": "none",
+      "type": "tap",
       "count": 1,
       "lengthMs": 0
     },
@@ -422,10 +526,32 @@
       "lengthMs": 0
     },
     {
-      "beat": 162.75,
-      "time": 51414.7368,
-      "x": 0.6,
-      "y": 0.3,
+      "time": 51177.8947,
+      "beat": 162.0,
+      "x": 1.9,
+      "y": -0.6,
+      "color": "red",
+      "direction": "none",
+      "type": "tap",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "time": 51809.4737,
+      "beat": 164.0,
+      "x": -0.6,
+      "y": -0.6,
+      "color": "blue",
+      "direction": "none",
+      "type": "tap",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 175.0,
+      "time": 55283.1579,
+      "x": 1.9,
+      "y": -0.6,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -433,24 +559,13 @@
       "lengthMs": 0
     },
     {
-      "beat": 163.5,
-      "time": 51651.5789,
-      "x": -0.6,
-      "y": 0.3,
-      "type": "tap",
-      "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 168.5,
-      "time": 53230.5263,
-      "x": -1.9,
+      "time": 56230.5263,
+      "beat": 178.0,
+      "x": 1.9,
       "y": -0.6,
-      "type": "tap",
-      "color": "blue",
+      "color": "red",
       "direction": "none",
+      "type": "tap",
       "count": 1,
       "lengthMs": 0
     },
@@ -461,6 +576,17 @@
       "y": -0.6,
       "type": "tap",
       "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 180.0,
+      "time": 56862.1053,
+      "x": 1.9,
+      "y": -0.6,
+      "type": "tap",
+      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -477,17 +603,6 @@
       "lengthMs": 0
     },
     {
-      "beat": 182.5,
-      "time": 57651.5789,
-      "x": 0.6,
-      "y": -0.6,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
       "beat": 186.0,
       "time": 58756.8421,
       "x": 1.9,
@@ -499,34 +614,12 @@
       "lengthMs": 0
     },
     {
-      "beat": 186.0,
-      "time": 58756.8421,
-      "x": -1.9,
-      "y": -0.6,
-      "type": "tap",
-      "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
       "beat": 189.5,
       "time": 59862.1053,
       "x": -1.9,
       "y": 0.3,
       "type": "tap",
       "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 194,
-      "time": 61283.1579,
-      "x": 0.6,
-      "y": -0.6,
-      "type": "tap",
-      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -609,23 +702,23 @@
       "lengthMs": 0
     },
     {
-      "beat": 213.0,
-      "time": 67283.1579,
-      "x": -0.6,
-      "y": 0.3,
-      "type": "tap",
-      "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
       "beat": 213.5,
       "time": 67441.0526,
       "x": 0.6,
       "y": -0.6,
       "type": "tap",
       "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 214.25,
+      "time": 67677.8947,
+      "x": -1.9,
+      "y": -0.6,
+      "type": "tap",
+      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -752,17 +845,6 @@
       "lengthMs": 0
     },
     {
-      "beat": 233.0,
-      "time": 73598.9474,
-      "x": 1.9,
-      "y": -0.6,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
       "beat": 233.5,
       "time": 73756.8421,
       "x": -1.9,
@@ -774,10 +856,10 @@
       "lengthMs": 0
     },
     {
-      "beat": 235.0,
-      "time": 74230.5263,
+      "beat": 234.25,
+      "time": 73993.6842,
       "x": 1.9,
-      "y": 0.3,
+      "y": -0.6,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -807,13 +889,24 @@
       "lengthMs": 0
     },
     {
-      "beat": 272.5,
-      "time": 86072.6316,
-      "x": 0.6,
-      "y": 0.3,
+      "time": 85914.7368,
+      "beat": 272.0,
+      "x": -1.9,
+      "y": -0.6,
+      "color": "blue",
+      "direction": "none",
       "type": "tap",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "time": 87809.4737,
+      "beat": 278.0,
+      "x": 1.9,
+      "y": -0.6,
       "color": "red",
       "direction": "none",
+      "type": "tap",
       "count": 1,
       "lengthMs": 0
     },
@@ -1031,5 +1124,6 @@
   "identityDesignVersion": 1,
   "hierarchyDesignVersion": 1,
   "rhythmContrastDesignVersion": 1,
-  "styleDesignVersion": 1
+  "styleDesignVersion": 1,
+  "grooveDesignVersion": 1
 }
