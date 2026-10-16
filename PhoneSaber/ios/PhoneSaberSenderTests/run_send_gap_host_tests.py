@@ -117,6 +117,7 @@ final class DebugBundleTransfer {
                  "testUnchangedBonjourAndPathRefreshPreserveBothLANConnections",
                  "testP2PConnectedNotificationPreservesPendingVerifiedLANCoordinates",
                  "testCoordinateSendFailureInvalidatesP2PAndFallsBackToLAN",
+                 "testLateP2PFailureDoesNotSendOlderCoordinatesAfterNewerLANCoordinates",
                  "testRecoveredP2PDiscardsCoordinatesQueuedByTheLANFallback",
                  "testPendingP2PCoordinateFallsBackWhenPongsExpireBeforeCompletion",
                  "testUDPNetworkSendFailureReconnectsOnlyTheFailedPortAndKeepsTheLatestCoordinate"]:
