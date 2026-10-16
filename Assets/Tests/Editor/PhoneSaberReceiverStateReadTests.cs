@@ -106,6 +106,43 @@ public class PhoneSaberReceiverStateReadTests
         finally { DestroyIdleInput(input); }
     }
 
+    [TestCase(false, false)]
+    [TestCase(false, true)]
+    [TestCase(true, false)]
+    [TestCase(true, true)]
+    public void DelayedCoordinateApplyDoesNotRenewReceptionFreshness(bool blue, bool stick)
+    {
+        var input = CreateIdleInput();
+        try
+        {
+            Action read = BindIdleRead(input), packet = BindPacket(input, blue, stick);
+            BindPacket(input, !blue)();
+            read();
+            packet();
+            // 受信後に main thread が2秒止まった状態。実際には待たず受信時計だけ遡らせる。
+            long received = Stopwatch.GetTimestamp() - 2 * Stopwatch.Frequency;
+            SetField(input, blue ? "rawReceiveTimestampTicks2" : "rawReceiveTimestampTicks", received);
+            read();
+            Assert.IsFalse(blue ? input.IsRecentlyActive2() : input.IsRecentlyActive(),
+                "取込み待ちの古い座標を新着扱いしない");
+            Assert.IsTrue(blue ? input.IsRecentlyActive() : input.IsRecentlyActive2(),
+                "別色の新しい受信は有効なまま");
+            Assert.AreEqual(SwingMonotonicClock.ToSeconds(received),
+                blue ? input.LastReceivedMonotonicTime2 : input.LastReceivedMonotonicTime);
+            Assert.AreEqual(stick, blue ? input.HasValidStickEndpoints2 : input.HasValidStickEndpoints);
+            Assert.AreEqual(Vector2.zero, blue ? input.LastRaw2 : input.LastRaw);
+
+            packet(); read();
+            Assert.IsTrue(blue ? input.IsRecentlyActive2() : input.IsRecentlyActive(),
+                "新しい受信で通常どおり復帰する");
+            double at = blue ? input.LastReceivedTime2 : input.LastReceivedTime;
+            read();
+            Assert.AreEqual(at, blue ? input.LastReceivedTime2 : input.LastReceivedTime,
+                "新着なしの再読出しで受信時刻を延長しない");
+        }
+        finally { DestroyIdleInput(input); }
+    }
+
     [TestCase("lockObj")]
     [TestCase("lockObj2")]
     public void IdleCoordinatesDoNotWaitForReceiverLock(string field)

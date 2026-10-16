@@ -856,10 +856,11 @@ public class InputPoint : MonoBehaviour
                 LocalStickLengthNormalized = LocalStickLength / Mathf.Sqrt(8f);
                 LocalAngleDeg = Mathf.Atan2(nyB - nyA, nxB - nxA) * Mathf.Rad2Deg;
             }
-            LastReceivedTime = Time.realtimeSinceStartupAsDouble;
             LastReceivedMonotonicTime = SwingMonotonicClock.ToSeconds(receiveTimestampTicks);
-            RedCoordinateTiming.Applied(LastReceivedMonotonicTime,
-                SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp));
+            double appliedAt = SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp);
+            // 取込み待ちの時間を鮮度へ戻し、古い受信を新着扱いしない。
+            LastReceivedTime = Time.realtimeSinceStartupAsDouble - (appliedAt - LastReceivedMonotonicTime);
+            RedCoordinateTiming.Applied(LastReceivedMonotonicTime, appliedAt);
             if (debugCoordinates)
             {
                 bool isNorm = Mathf.Abs(x) <= 1.5f && Mathf.Abs(y) <= 1.5f;
@@ -905,10 +906,11 @@ public class InputPoint : MonoBehaviour
                 LocalStickLengthNormalized2 = LocalStickLength2 / Mathf.Sqrt(8f);
                 LocalAngleDeg2 = Mathf.Atan2(nyB2 - nyA2, nxB2 - nxA2) * Mathf.Rad2Deg;
             }
-            LastReceivedTime2 = Time.realtimeSinceStartupAsDouble;
             LastReceivedMonotonicTime2 = SwingMonotonicClock.ToSeconds(receiveTimestampTicks2);
-            BlueCoordinateTiming.Applied(LastReceivedMonotonicTime2,
-                SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp));
+            double appliedAt = SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp);
+            // 棒2も受信から取込みまでの待ち時間を鮮度へ含める。
+            LastReceivedTime2 = Time.realtimeSinceStartupAsDouble - (appliedAt - LastReceivedMonotonicTime2);
+            BlueCoordinateTiming.Applied(LastReceivedMonotonicTime2, appliedAt);
         }
 
         if (updated)
