@@ -90,12 +90,20 @@ def main():
                "-logFile", str(log)]
     if not args.windowed:
         command.insert(command.index("--args") + 1, "-batchmode")
-    player = subprocess.Popen(command)
+    # LAN アドレスが途中で失われても、送信不能な Player だけを起動したまま残さない。
+    sender = None
+    try:
+        sender = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sender.bind((address, 0))
+        player = subprocess.Popen(command)
+    except OSError as error:
+        if sender is not None:
+            sender.close()
+        print(f"送信ソケットの準備または Player の起動に失敗しました: {error}")
+        return 1
     stop = threading.Event()
     if args.windowed:
         threading.Thread(target=hide_if_front, args=(stop,), daemon=True).start()
-    sender = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sender.bind((address, 0))
     started = time.monotonic()
     next_metrics = 0.0
     frame = 0
@@ -114,6 +122,7 @@ def main():
         frame += 1
         time.sleep(1 / 60)
     stop.set()
+    sender.close()
     code = player.poll()
     if code is None:
         subprocess.run(["pkill", "-KILL", "-f", "--", "-phonesaberSmoke"])

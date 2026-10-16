@@ -24,6 +24,41 @@ def launch_player(player, log_text=SUCCESS):
 
 
 class AutoLatencyPlayerLogTests(unittest.TestCase):
+    def test_sender_setup_failure_does_not_launch_an_unmonitored_player(self):
+        for stage in ("socket", "bind"):
+            with self.subTest(stage=stage), tempfile.TemporaryDirectory() as tmp:
+                sender = mock.Mock()
+                error = (OSError(errno.EMFILE, "Too many open files") if stage == "socket"
+                         else OSError(errno.EADDRNOTAVAIL, "Can't assign requested address"))
+                if stage == "bind":
+                    sender.bind.side_effect = error
+                with mock.patch.object(check, "EVENTS", Path(tmp) / "events.log"), \
+                        mock.patch.object(check, "lan_address", return_value="192.0.2.2"), \
+                        mock.patch.object(check.subprocess, "run", return_value=SimpleNamespace(stdout=b"")), \
+                        mock.patch.object(check.subprocess, "Popen") as popen, \
+                        mock.patch.object(check.socket, "socket", side_effect=error if stage == "socket" else None,
+                                          return_value=sender), \
+                        mock.patch.dict(check.os.environ, {"TMPDIR": tmp}), \
+                        mock.patch("sys.argv", ["check"]), contextlib.redirect_stdout(io.StringIO()):
+                    self.assertEqual(check.main(), 1)
+                popen.assert_not_called()
+                if stage == "bind":
+                    sender.close.assert_called_once_with()
+
+    def test_player_launch_failure_closes_the_prepared_sender(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            sender = mock.Mock()
+            with mock.patch.object(check, "EVENTS", Path(tmp) / "events.log"), \
+                    mock.patch.object(check, "lan_address", return_value="192.0.2.2"), \
+                    mock.patch.object(check.subprocess, "run", return_value=SimpleNamespace(stdout=b"")), \
+                    mock.patch.object(check.subprocess, "Popen", side_effect=OSError("launch failed")), \
+                    mock.patch.object(check.socket, "socket", return_value=sender), \
+                    mock.patch.dict(check.os.environ, {"TMPDIR": tmp}), \
+                    mock.patch("sys.argv", ["check"]), contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(check.main(), 1)
+            sender.bind.assert_called_once_with(("192.0.2.2", 0))
+            sender.close.assert_called_once_with()
+
     def run_completed_check(self, tmp, log_text, exit_code=0):
         events = Path(tmp) / "events.log"
         player = mock.Mock()
@@ -37,10 +72,12 @@ class AutoLatencyPlayerLogTests(unittest.TestCase):
                 mock.patch.object(check, "lan_address", return_value="192.0.2.2"), \
                 mock.patch.object(check.subprocess, "run", return_value=SimpleNamespace(stdout=b"")), \
                 mock.patch.object(check.subprocess, "Popen", side_effect=launch) as popen, \
-                mock.patch.object(check.socket, "socket"), \
+                mock.patch.object(check.socket, "socket") as socket_factory, \
                 mock.patch.dict(check.os.environ, {"TMPDIR": tmp}), \
                 mock.patch("sys.argv", ["check"]), contextlib.redirect_stdout(io.StringIO()):
             result = check.main()
+        if popen.called:
+            socket_factory.return_value.close.assert_called_once_with()
         return result, popen.called
 
     def test_estimate_before_abnormal_player_completion_is_not_success(self):
