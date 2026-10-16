@@ -61,6 +61,24 @@ class IOSCrashLivenessTests(unittest.TestCase):
         camera = (SOURCE / "CameraViewModel.swift").read_text()
         lifecycle = camera[camera.index("enum CameraLifecycleState:"):
                            camera.index("private final class CaptureSessionRunner")]
+        runner = camera[camera.index("private final class CaptureSessionRunner"):
+                        camera.index("// 最新の表示値と累積カウンタ")]
+        runner = runner.replace("private final class", "final class", 1)
+        start = camera.index("    private func finishCameraStart(")
+        end = camera.index("    private func startCameraWatchdog()", start)
+        method = camera[start:end].replace("private func finish", "func finish")
+        head = START_COMPLETION_HEAD[START_COMPLETION_HEAD.index("@MainActor final class"):]
+        head = head.replace("let sessionRunner = SessionRunner()",
+                            "let sessionRunner: CaptureSessionRunner\n"
+                            " init(session: AVCaptureSession) { sessionRunner = CaptureSessionRunner(session: session) }")
+        recovery = (SOURCE / "EventRecovery.swift").read_text()
+        self.run_swift(recovery + lifecycle + STOP_COMPLETION_SESSION + runner +
+                       STOP_COMPLETION_QUEUE + head + method + STOP_COMPLETION_TAIL)
+
+    def test_stopped_start_completion_finishes_before_next_configuration(self):
+        camera = (SOURCE / "CameraViewModel.swift").read_text()
+        lifecycle = camera[camera.index("enum CameraLifecycleState:"):
+                           camera.index("private final class CaptureSessionRunner")]
         start = camera.index("private final class CaptureSessionRunner")
         end = camera.index("// 最新の表示値", start)
         runner = camera[start:end].replace("private final class", "final class", 1)
@@ -158,6 +176,70 @@ START_COMPLETION_TAIL = r'''
    }
   }
   exit(failures == 0 ? 0 : 1)
+ }
+}
+'''
+
+STOP_COMPLETION_SESSION = r'''
+import Darwin
+// 実カメラは開かず、AVFoundation が例外にする設定中の stopRunning を記録する。
+final class AVCaptureSession: @unchecked Sendable {
+ let lock = NSLock()
+ var configuring = false
+ var stops = 0
+ var invalidStops = 0
+ var isRunning: Bool { false }
+ func startRunning() {}
+ func stopRunning() {
+  lock.lock(); defer { lock.unlock() }
+  stops += 1
+  if configuring { invalidStops += 1 }
+ }
+ func beginConfiguration() { lock.lock(); configuring = true; lock.unlock() }
+ func commitConfiguration() { lock.lock(); configuring = false; lock.unlock() }
+}
+'''
+
+STOP_COMPLETION_QUEUE = r'''
+extension CaptureSessionRunner {
+ // キューの実行を遅らせ、古い停止要求と次の設定の交差を決定的に再現する。
+ func holdForTesting(entered: DispatchSemaphore, release: DispatchSemaphore) {
+  queue.async { entered.signal(); release.wait() }
+ }
+ func drainForTesting() { queue.sync {} }
+}
+'''
+
+STOP_COMPLETION_TAIL = r'''
+}
+@main struct Audit {
+ @MainActor static func main() {
+  let session = AVCaptureSession()
+  let model = CameraViewModel(session: session)
+  // stop() は起動キューを同期で排出し、セッションを停止済み。
+  model.sessionRunner.stopSynchronously()
+  model.running = false
+  model.lifecycleGeneration = 2
+  let entered = DispatchSemaphore(value: 0)
+  let release = DispatchSemaphore(value: 0)
+  model.sessionRunner.holdForTesting(entered: entered, release: release)
+  guard entered.wait(timeout: .now() + 1) == .success else { exit(2) }
+  // 非同期停止なら次の設定開始まで待ち、同期停止なら設定前にキューを解放する。
+  let configured = DispatchSemaphore(value: 0)
+  DispatchQueue.global().async {
+   _ = configured.wait(timeout: .now() + 0.1)
+   release.signal()
+  }
+  // MainActor に遅れて届いた、停止前の startRunning の完了通知。
+  model.finishCameraStart(succeeded: true, lifecycle: 1, recovery: nil, isRecovery: false)
+  // 次の start() の設定区間に、古い通知が積んだ stop を実行させる。
+  session.beginConfiguration()
+  configured.signal()
+  model.sessionRunner.drainForTesting()
+  session.commitConfiguration()
+  let passed = session.invalidStops == 0 && session.stops == 2
+  print("late stopped start: stops=\(session.stops) during-configuration=\(session.invalidStops)")
+  exit(passed ? 0 : 1)
  }
 }
 '''
