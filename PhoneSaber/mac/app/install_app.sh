@@ -13,7 +13,21 @@ NAME="Beat Trace Slash"
 [[ "$STATION" == "B" ]] && NAME="Beat Trace Slash B"
 APP="$DEST_DIR/$NAME.app"
 [[ -f "$HERE/icon.icns" ]] || python3 "$HERE/make_icon.py" >/dev/null || exit 1
-staged="$(mktemp -d)/$NAME.app"
+# 配置先と同じファイルシステムで作り、配置失敗時は既存の app を復元する。
+staging="$(mktemp -d "$DEST_DIR/.phonesaber-launcher.XXXXXX")" || exit 1
+staged="$staging/$NAME.app"
+previous="$staging/previous.app"
+cleanup() {
+    rm -rf "$staged"
+    if [[ -e "$previous" || -L "$previous" ]]; then
+        if [[ ! -e "$APP" && ! -L "$APP" ]]; then
+            mv "$previous" "$APP" || return 1
+        fi
+    fi
+    # 復元できなかった旧 app は削除せず、退避先に残す。
+    rmdir "$staging" 2>/dev/null || true
+}
+trap cleanup EXIT
 mkdir -p "$staged/Contents/MacOS" "$staged/Contents/Resources" || exit 1
 cp "$HERE/icon.icns" "$staged/Contents/Resources/icon.icns" || exit 1
 cat > "$staged/Contents/Info.plist" <<PLIST
@@ -52,7 +66,11 @@ exec /bin/bash "\$REPO/PhoneSaber/mac/saber-watchdog.sh" $STATION "\$REPO/Builds
 SCRIPT
 chmod +x "$staged/Contents/MacOS/launcher" || exit 1
 codesign --force --sign - "$staged" >/dev/null 2>&1 || true
-rm -rf "$APP" && mv "$staged" "$APP" || exit 1
+if [[ -e "$APP" || -L "$APP" ]]; then
+    mv "$APP" "$previous" || exit 1
+fi
+mv "$staged" "$APP" || exit 1
+rm -rf "$previous"
 touch "$APP"
 /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f "$APP" >/dev/null 2>&1 || true
 echo "作成: $APP"

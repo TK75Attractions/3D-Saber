@@ -103,6 +103,49 @@ exit 2
 
 
 class MacLauncherAppTests(unittest.TestCase):
+    def test_failed_replacement_preserves_the_installed_launcher(self):
+        with tempfile.TemporaryDirectory(prefix="縁日 launcher ") as directory:
+            root = Path(directory).resolve()
+            here = root / "PhoneSaber/mac/app"
+            here.mkdir(parents=True)
+            installer = (SOURCE / "app/install_app.sh").read_text().replace(
+                "/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister",
+                "true")
+            (here / "install_app.sh").write_text(installer)
+            (here / "icon.icns").write_bytes((SOURCE / "app/icon.icns").read_bytes())
+            destination = root / "Applications"
+            app = destination / "Beat Trace Slash.app"
+            app.mkdir(parents=True)
+            original = app / "old-launcher"
+            original.write_text("working launcher\n")
+            original_inode = original.stat().st_ino
+            tools = root / "bin"
+            tools.mkdir()
+            for name, script in {
+                "codesign": "#!/bin/bash\nexit 0\n",
+                # 新しい app の配置だけを失敗させ、退避・復元は実際の mv で行う。
+                "mv": '''#!/bin/bash
+if [[ "$1" == *'/Beat Trace Slash.app' && "$1" != "$LAUNCHER_TEST_APP" ]]; then
+    exit 1
+fi
+exec /bin/mv "$@"
+''',
+            }.items():
+                executable = tools / name
+                executable.write_text(script)
+                executable.chmod(0o755)
+            env = dict(os.environ, TMPDIR=directory,
+                       PATH=str(tools) + os.pathsep + os.environ["PATH"],
+                       LAUNCHER_TEST_APP=str(app))
+            result = subprocess.run(
+                ["/bin/bash", str(here / "install_app.sh"), "A", str(destination)],
+                env=env, capture_output=True, text=True, timeout=10)
+            self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertTrue(original.is_file(), "replacement failure removed the working launcher")
+            self.assertEqual(original.read_text(), "working launcher\n")
+            self.assertEqual(original.stat().st_ino, original_inode)
+            self.assertEqual(list(destination.glob(".phonesaber-launcher.*")), [])
+
     def test_generated_launcher_preserves_shell_metacharacters_in_repo_path(self):
         with tempfile.TemporaryDirectory(prefix="縁日 launcher ") as directory:
             root = Path(directory).resolve() / 'kit $station `true` "quoted" \\files'
