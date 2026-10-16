@@ -1027,6 +1027,8 @@ final class CoordinateDelivery: @unchecked Sendable {
     private var settings = Settings()
     private var routedViaP2P = false
     private var lastRoute: Route?
+    private var nextRequestID: UInt64 = 0
+    private var latestRequestByPort: [Int: UInt64] = [:]
     private let sender: UDPSender
     private let p2pSender: P2PSender
     private let lanProbe: LANLivenessProbe
@@ -1090,6 +1092,9 @@ final class CoordinateDelivery: @unchecked Sendable {
             ConnectivityLog.sendGapMonitor.blocked("generation rejected")
             return
         }
+        nextRequestID &+= 1
+        let requestID = nextRequestID
+        latestRequestByPort[port] = requestID
         let valid: () -> Bool = { [weak self] in self?.isCurrent(request) == true }
         let lanVerified = settings.lanConfigured && lanProbe.isAlive
         if !settings.manual && settings.p2pEnabled && p2pSender.isUsable && !lanVerified {
@@ -1102,7 +1107,8 @@ final class CoordinateDelivery: @unchecked Sendable {
                            fallback: { [weak self] in
                                guard let self else { return }
                                self.lock.lock(); defer { self.lock.unlock() }
-                               guard self.matches(request) else { return }
+                               // 同じ色に新しい送信要求があれば、古い座標を後から LAN へ送らない。
+                               guard self.matches(request), self.latestRequestByPort[port] == requestID else { return }
                                // 次に P2P へ戻るとき、LAN 退避中に溜まった古い座標も破棄する。
                                self.routedViaP2P = false
                                if self.settings.lanConfigured {

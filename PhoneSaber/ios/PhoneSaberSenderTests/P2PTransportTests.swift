@@ -599,6 +599,54 @@ final class P2PTransportTests: XCTestCase {
         XCTAssertEqual(delivery.currentRoute, .lanUnverified)
     }
 
+    func testLateP2PFailureDoesNotSendOlderCoordinatesAfterNewerLANCoordinates() async throws {
+        for newerPort in [5005, 5006] {
+            let bridge = try FakeBridge()
+            defer { bridge.stop() }
+            let port = try await bridge.ready()
+            let callback = LockedBox<((Error?) -> Void)?>(nil)
+            let p2p = P2PSender(timing: fastTiming(), endpointOverride: .hostPort(host: "127.0.0.1", port: port),
+                                coordinateSendHook: { _, complete in callback.mutate { $0 = complete } })
+            let packets = LockedBox<[(String, Int)]>([])
+            let lan = UDPSender { text, port, complete in
+                packets.mutate { $0.append((text, port)) }
+                complete(.success(1))
+            }
+            let probe = LANLivenessProbe()
+            defer { p2p.stop(); lan.stop(); probe.stop() }
+            p2p.start()
+            let usable = await waitFor { p2p.isUsable }
+            XCTAssertTrue(usable)
+            lan.configure(host: "127.0.0.1")
+            let delivery = CoordinateDelivery(sender: lan, p2pSender: p2p, lanProbe: probe)
+            var config = CoordinateDelivery.Settings()
+            config.running = true; config.lanConfigured = true; config.p2pEnabled = true
+            delivery.update(config)
+            let oldCompleted = LockedBox(false)
+            delivery.route("1,2,3,4", port: 5005, settings: config, onSendStarted: nil,
+                           completion: { _ in oldCompleted.mutate { $0 = true } }, noRoute: { XCTFail("LAN exists") })
+            let started = await waitFor { callback.value != nil }
+            XCTAssertTrue(started)
+            // P2P の完了待ちの間に LAN が復帰し、新しい座標が先に届く。
+            probe.recordReplyForTesting(LANLivenessProbe.replyPrefix)
+            let newerSent = expectation(description: "newer coordinate via LAN")
+            delivery.route("5,6,7,8", port: newerPort, settings: config, onSendStarted: nil,
+                           completion: { _ in newerSent.fulfill() }, noRoute: { XCTFail("LAN exists") })
+            await fulfillment(of: [newerSent], timeout: 2)
+            callback.value?(POSIXError(.ENETDOWN))
+            // 両キューを通過させてから、遅延した fallback の有無を確認する。
+            _ = p2p.stateForTesting
+            _ = lan.pendingCountForTesting
+            if newerPort != 5005 {
+                let completed = await waitFor { oldCompleted.value }
+                XCTAssertTrue(completed)
+            }
+            XCTAssertEqual(packets.value.map { $0.0 }, newerPort == 5005 ? ["5,6,7,8"] : ["5,6,7,8", "1,2,3,4"])
+            XCTAssertEqual(oldCompleted.value, newerPort != 5005, "別の色の更新では fallback を破棄しない")
+            if newerPort == 5005 { XCTAssertEqual(delivery.currentRoute, .lanVerified) }
+        }
+    }
+
     func testRecoveredP2PDiscardsCoordinatesQueuedByTheLANFallback() async throws {
         for colorPort in [5005, 5006] {
             let bridge = try FakeBridge()
