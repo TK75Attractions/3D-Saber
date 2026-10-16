@@ -480,7 +480,7 @@ namespace Saber.ChartEditor
         private List<SaberChartNote> RecordingStepNotes()
         {
             float time = TimeAtBeat(currentBeat);
-            return document.notes.FindAll(note => Mathf.Abs(note.time - time) < 1f);
+            return document.notes.FindAll(note => Mathf.Abs(note.time - time) <= SaberChartLint.SimultaneousMs);
         }
 
         private void DrawRecordingStepActions()
@@ -758,7 +758,7 @@ namespace Saber.ChartEditor
             {
                 if (Mathf.Abs(note.time - time) > 300 || Mathf.Abs(note.x) > 2.5f || Mathf.Abs(note.y) > 1.5f) continue;
                 Vector2 p = RecordingPositionToPoint(plane, new Vector2(note.x, note.y));
-                bool atStep = recordStepMode && Mathf.Abs(note.time - time) < 1f;
+                bool atStep = recordStepMode && Mathf.Abs(note.time - time) <= SaberChartLint.SimultaneousMs;
                 Color color = NoteColor(note.color);
                 if (recordStepMode && !atStep) color.a = .3f;
                 float size = atStep ? 11 : 7;

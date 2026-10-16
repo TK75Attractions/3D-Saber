@@ -83,7 +83,7 @@ namespace Saber.ChartEditor
             float time = NoteTime(audioSeconds);
             if (time < 0 || time + document.offsetMs < 0 || time + document.offsetMs >= audioLength * 1000f)
                 return null;
-            if (document.notes.Any(n => Mathf.Abs(n.time - time) < 1f &&
+            if (document.notes.Any(n => Mathf.Abs(n.time - time) <= SaberChartLint.SimultaneousMs &&
                 Mathf.Abs(n.x - x) < .0001f && Mathf.Abs(n.y - y) < .0001f && n.color == color)) return null;
             var note = new SaberChartNote
             {

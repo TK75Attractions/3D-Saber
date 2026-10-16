@@ -383,6 +383,28 @@ namespace Saber.ChartEditor
             return false;
         }
 
+        // 直前の取り込みで置き換えた音源を残した場所(置き換えがなければ null)。
+        public static string LastReplacedAudioBackup { get; private set; }
+
+        private static string KeepReplacedAudio(string songId, List<(string original, string backup)> moved)
+        {
+            if (moved.Count == 0) return null;
+            try
+            {
+                string folder = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Library", "3DSaberChartBackups",
+                    songId.Trim(), "audio-" + DateTime.Now.ToString("yyyyMMdd-HHmmss")));
+                Directory.CreateDirectory(folder);
+                foreach (var (original, backup) in moved)
+                    if (File.Exists(backup)) File.Move(backup, Path.Combine(folder, Path.GetFileName(original)));
+                return folder;
+            }
+            catch (Exception exception) when (exception is IOException || exception is UnauthorizedAccessException)
+            {
+                Debug.LogWarning("置き換えた音源をバックアップへ移せませんでした: " + exception.Message);
+                return null;
+            }
+        }
+
         public static AudioClip ImportAudio(string sourcePath, string songId, bool removeOtherFormats)
         {
             if (!File.Exists(sourcePath)) throw new FileNotFoundException("音源が見つかりません。", sourcePath);
@@ -451,6 +473,8 @@ namespace Saber.ChartEditor
             finally
             {
                 if (!committed && importedClip != null) UnityEngine.Object.DestroyImmediate(importedClip);
+                // 守12: 置き換えた音源は消さずに、譜面のバックアップと同じ場所へ残す(元に戻せるように)。
+                LastReplacedAudioBackup = committed ? KeepReplacedAudio(songId, movedFiles) : null;
                 if (!keepRecoveryFiles)
                 {
                     try { Directory.Delete(temporary, true); }

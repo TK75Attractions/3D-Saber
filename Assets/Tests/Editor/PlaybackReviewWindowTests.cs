@@ -76,6 +76,86 @@ public class PlaybackReviewWindowTests
         Assert.AreEqual(1.7f, SaberChartUtility.FromJson(File.ReadAllText(Path.Combine(folder, "chart_e.json"))).notes[0].x);
         Assert.IsFalse(File.Exists(Path.Combine(folder, "chart_normal.json"))); Assert.IsFalse(File.Exists(Path.Combine(folder, "chart.json")));
     }
+    SaberReviewRequest ExportOneComment(string text)
+    {
+        Set("instruction", text); Invoke("AddComment"); window.ExportRequest(); exported = Get<string>("lastFolder");
+        return JsonUtility.FromJson<SaberReviewRequest>(File.ReadAllText(Path.Combine(exported, "request.json")));
+    }
+    [Test] public void RejectedOperationsShrinkTheCandidateAndSurviveReopening()
+    {
+        var request = ExportOneComment("2か所を直して");
+        var moved = request.chart.notes[0].Clone(); moved.x = 1.7f;
+        window.LoadReply(JsonUtility.ToJson(new SaberReviewPatch { songId = song, difficulty = "e", baseHash = request.baseHash, operations = new List<SaberReviewOperation> {
+            new SaberReviewOperation { action = "replace", index = 0, note = moved }, new SaberReviewOperation { action = "delete", index = 1 } } }));
+        Assert.AreEqual(1, Get<SaberChartDocument>("candidate").notes.Count);
+        InvokeArgs("SetOperationAccepted", 1, false);
+        Assert.AreEqual(2, Get<SaberChartDocument>("candidate").notes.Count, "削除を外すと、そのノーツは変更案に残る");
+        Assert.AreEqual(1.7f, Get<SaberChartDocument>("candidate").notes[0].x);
+        UnityEngine.Object.DestroyImmediate(window);
+        window = ScriptableObject.CreateInstance<SaberPlaybackReviewWindow>(); Set("song", song); Set("difficulty", "e"); Invoke("LoadChart");
+        CollectionAssert.AreEqual(new[] { 1 }, Get<List<int>>("rejectedOperations"), "採用しない変更も下書きから戻る");
+        Invoke("ApplyCandidate");
+        Assert.AreEqual(2, Get<SaberChartDocument>("document").notes.Count);
+        Assert.AreEqual(1.7f, Get<SaberChartDocument>("document").notes[0].x);
+    }
+    [Test] public void ExplanationOnlyReplyShowsTheExplanationWithoutACandidate()
+    {
+        var request = ExportOneComment("背景を明るくして");
+        window.LoadReply("{\"version\":1,\"songId\":\"" + song + "\",\"difficulty\":\"e\",\"baseHash\":\"" + request.baseHash +
+            "\",\"explanation\":\"背景のコードを直しました\",\"operations\":[]}");
+        Assert.IsNull(Get<SaberChartDocument>("candidate"));
+        Assert.AreEqual("背景のコードを直しました", Get<string>("replyExplanation"));
+    }
+    [Test] public void ExternalChangeBlocksExportBeforeAskingTheAi()
+    {
+        Set("instruction", "ここを直して"); Invoke("AddComment");
+        File.AppendAllText(Path.Combine(folder, "chart_e.json"), "\n ");
+        Assert.Throws<InvalidOperationException>(() => window.ExportRequest());
+        Assert.IsTrue(Get<bool>("diskChanged"));
+        Assert.IsTrue(string.IsNullOrEmpty(Get<string>("lastFolder")), "古い譜面のまま依頼を書き出さない");
+    }
+    [Test] public void RetappingTheSameBeatMergesIntoOneTap()
+    {
+        Set("timingCapture", true);
+        InvokeWith("RecordTimingAt", 1.20f); InvokeWith("RecordTimingAt", 1.23f); InvokeWith("RecordTimingAt", 1.5f);
+        var taps = Get<List<float>>("pendingNoteSeconds");
+        Assert.AreEqual(2, taps.Count, "40ms 以内の叩き直しは1打");
+        Assert.AreEqual(1.215f, taps[0], .0001f);
+    }
+    [Test] public void TapsWhilePlayingSubtractTheMeasuredInputDelay()
+    {
+        Set("timingCapture", true); Set("timingInputOffsetMs", 50f);
+        Set("playing", true); Set("seconds", 2f); Set("lastTick", UnityEditor.EditorApplication.timeSinceStartup);
+        Invoke("CaptureTiming");
+        Assert.AreEqual(1.95f, Get<List<float>>("pendingNoteSeconds").Single(), .03f, "押す遅れ50msを差し引く");
+        Set("playing", false); Set("seconds", 2.5f);
+        Invoke("CaptureTiming");
+        Assert.AreEqual(2.5f, Get<List<float>>("pendingNoteSeconds")[1], .0001f, "止めて置く打点は位置そのまま");
+    }
+    [Test] public void ResumingARequestKeepsCommentsAddedAfterItInADraftBackup()
+    {
+        ExportOneComment("最初の指摘");
+        Set("instruction", "あとから足した指摘"); Invoke("AddComment");
+        string draft = Property<string>("DraftPath");
+        window.ResumeRequestFile(Path.Combine(exported, "request.json"));
+        Assert.AreEqual(1, Get<List<SaberReviewComment>>("comments").Count);
+        var backups = Directory.GetFiles(Path.GetDirectoryName(draft), Path.GetFileName(draft) + ".before-resume-*");
+        try { Assert.AreEqual(1, backups.Length); StringAssert.Contains("あとから足した指摘", File.ReadAllText(backups[0])); }
+        finally { foreach (string backup in backups) File.Delete(backup); }
+    }
+    [Test] public void UndoingAnApplyKeepsLaterCommentsButDropsTheirNoteTargets()
+    {
+        var request = ExportOneComment("赤を右へ");
+        var moved = request.chart.notes[0].Clone(); moved.x = 1.7f;
+        window.LoadReply(JsonUtility.ToJson(new SaberReviewPatch { songId = song, difficulty = "e", baseHash = request.baseHash,
+            operations = new List<SaberReviewOperation> { new SaberReviewOperation { action = "replace", index = 0, note = moved } } }));
+        Invoke("ApplyCandidate");
+        Get<HashSet<int>>("selected").Add(0); Set("instruction", "適用後の指摘"); Invoke("AddComment");
+        Invoke("UndoApply");
+        Assert.AreEqual(1f, Get<SaberChartDocument>("document").notes[0].x);
+        var comment = Get<List<SaberReviewComment>>("comments").Single();
+        Assert.AreEqual("適用後の指摘", comment.instruction); Assert.IsEmpty(comment.noteIndices);
+    }
     [Test] public void ChangedDiskBlocksResumeAndSave()
     {
         Set("instruction", "時刻を調整"); Invoke("AddComment"); window.ExportRequest(); exported = Get<string>("lastFolder");
@@ -334,7 +414,7 @@ public class PlaybackReviewWindowTests
         window.SendEvent(new Event { type = EventType.KeyDown, keyCode = KeyCode.Return, modifiers = EventModifiers.Control });
         Assert.AreEqual(2, Get<List<SaberReviewComment>>("comments").Count);
         for (int i = 0; i < 5; i++) { window.Repaint(); yield return null; }
-        Assert.That(Get<string>("status"), Does.Contain("指示を追加しました"));
+        Assert.That(Get<string>("status"), Does.Contain("指摘を追加しました"));
         var request = SaberPlaybackReviewData.Request(Get<SaberChartDocument>("document"), song, "e", "chart_e.json", Get<List<SaberReviewComment>>("comments"));
         Set("requestJson", JsonUtility.ToJson(request));
         var patch = new SaberReviewPatch { songId = song, difficulty = "e", baseHash = request.baseHash,

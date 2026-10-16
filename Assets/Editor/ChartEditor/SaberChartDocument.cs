@@ -24,7 +24,8 @@ namespace Saber.ChartEditor
         public List<SaberChartExtraField> extraFields = new List<SaberChartExtraField>();
         // 名前付きの目印(サビ・Aメロなど)。ファイルでは本編が読まない "editorMarkers" に書く。
         public List<SaberChartMarker> markers = new List<SaberChartMarker>();
-        // テンポの変わる曲のための、エディターの格子だけのテンポ地図。ファイルでは "editorTempoMap"(本編は読まない)。
+        // テンポの変わる曲のための、拍と時刻の対応(テンポ地図)。ファイルでは "editorTempoMap"。
+        // エディターの格子のほか、本編の小節線(BarLineSpawner)と選曲画面の拍(SongSelectBeatTimeline)も使う。
         public List<SaberChartTempoPoint> tempoMap = new List<SaberChartTempoPoint>();
     }
 

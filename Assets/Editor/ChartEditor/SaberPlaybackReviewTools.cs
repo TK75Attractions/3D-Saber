@@ -24,6 +24,8 @@ namespace Saber.ChartEditor
         public float timelineStart, reviewLeadIn = 1;
         public bool showWaveform = true;
         public float[] pendingNoteSeconds;
+        // 返信の操作のうち、採用しないもの。変更案(candidateJson)はこれを除いて作ってある。
+        public int[] rejected;
     }
 
     public sealed partial class SaberPlaybackReviewWindow
@@ -72,7 +74,7 @@ namespace Saber.ChartEditor
                     undo = undo.ToArray(), comments = comments, replyJson = replyJson,
                     beatSnap = beatSnap, timelineZoom = timelineZoom, timelineStart = timelineStart,
                     reviewLeadIn = reviewLeadIn, showWaveform = showWaveform, changeIndex = changeIndex, changePage = changePage,
-                    pendingNoteSeconds = pendingNoteSeconds.ToArray()
+                    pendingNoteSeconds = pendingNoteSeconds.ToArray(), rejected = rejectedOperations.ToArray()
                 });
                 if (json == lastDraftJson && File.Exists(DraftPath)) return;
                 Directory.CreateDirectory(Path.GetDirectoryName(DraftPath));
@@ -95,8 +97,10 @@ namespace Saber.ChartEditor
                     throw new InvalidOperationException("曲・難易度または元譜面が一致しません。");
                 var restored = SaberChartUtility.FromJson(draft.chartJson);
                 var restoredCandidate = string.IsNullOrEmpty(draft.candidateJson) ? null : SaberChartUtility.FromJson(draft.candidateJson);
-                SaberPlaybackReviewData.ValidateComments(restored, draft.comments, Duration);
-                SaberPlaybackReviewData.ValidateTimingSeconds(restored, draft.pendingNoteSeconds, Duration);
+                // 音源を読めないときは長さが「最後のノーツ+3秒」に縮むので、終わりは確かめない(下書きを丸ごと捨てない)。
+                float limit = clip != null ? Duration : 0f;
+                SaberPlaybackReviewData.ValidateComments(restored, draft.comments, limit);
+                SaberPlaybackReviewData.ValidateTimingSeconds(restored, draft.pendingNoteSeconds, limit);
                 document = restored; chartJson = draft.chartJson; candidate = restoredCandidate; candidateJson = draft.candidateJson;
                 legacyHash = draft.legacyHash; requestJson = draft.requestJson; lastFolder = draft.lastFolder;
                 comments = draft.comments; instruction = draft.instruction ?? ""; editingCommentId = draft.editingCommentId ?? "";
@@ -105,6 +109,8 @@ namespace Saber.ChartEditor
                 timelineZoom = Mathf.Clamp(draft.timelineZoom, 0, 3); timelineStart = SafeTime(draft.timelineStart);
                 reviewLeadIn = new[] { 0f, .5f, 1f, 2f }.Contains(draft.reviewLeadIn) ? draft.reviewLeadIn : 1;
                 showWaveform = draft.showWaveform; changeIndex = draft.changeIndex; changePage = draft.changePage;
+                rejectedOperations.Clear();
+                if (restoredCandidate != null) rejectedOperations.AddRange((draft.rejected ?? Array.Empty<int>()).Where(i => i >= 0).Distinct());
                 ResetTimingCapture(); pendingNoteSeconds.AddRange(draft.pendingNoteSeconds ?? Array.Empty<float>());
                 rangeB = Mathf.Max(rangeA, SafeTime(draft.rangeB)); hasPoint = draft.hasPoint; point = draft.point;
                 loop = draft.loop; after = draft.after; hasUnsavedChanges = draft.unsaved;

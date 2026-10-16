@@ -502,11 +502,19 @@ public class ChartEditorSafetyTests
     }
 
     [Test]
-    public void DraftsKeepOnlyTheNewestFifteen()
+    public void DraftsKeepTheNewestFivePerChartAndSkipUnchangedContent()
     {
         var write = Drafts.GetMethod("Write");
-        for (int i = 0; i < 17; i++) write.Invoke(null, new object[] { "__DraftPrune", "normal", Document });
-        Assert.AreEqual(15, (int)Drafts.GetMethod("Count").Invoke(null, null));
+        write.Invoke(null, new object[] { "__DraftOther", "hard", Document, null });
+        write.Invoke(null, new object[] { "__DraftPrune", "normal", Document, null });
+        write.Invoke(null, new object[] { "__DraftPrune", "normal", Document, null });
+        Assert.AreEqual(2, (int)Drafts.GetMethod("Count").Invoke(null, null), "中身が同じなら書かない");
+        for (int i = 0; i < 8; i++)
+        {
+            Document.offsetMs = i + 1; // 中身を変えて書く
+            write.Invoke(null, new object[] { "__DraftPrune", "normal", Document, null });
+        }
+        Assert.AreEqual(6, (int)Drafts.GetMethod("Count").Invoke(null, null), "1つの譜面は新しい5件。ほかの譜面の下書きは押し出さない");
     }
 
     [Test]
@@ -603,6 +611,44 @@ public class ChartEditorSafetyTests
             Set("confirmExternalOverwrite", new Func<string, bool>(message => false));
             Assert.False((bool)Call("SaveDocument"));
             Assert.AreEqual(OneNoteChart, File.ReadAllText(Path.Combine(folder, "chart_hard.json")));
+        });
+    }
+
+    [Test]
+    public void MissingDifficultyOpensNormalAsAnUnsavedNewChart()
+    {
+        WithChartFolder((target, folder) =>
+        {
+            File.WriteAllText(Path.Combine(folder, "chart.json"), OneNoteChart);
+            Load(target, 2);
+            Assert.AreEqual(1, Document.notes.Count, "Normal の内容を元にする");
+            Call("UpdateDirtyState");
+            Assert.True(window.hasUnsavedChanges, "保存や本編テストで黙って Hard を作らないよう、未保存の新しい譜面として開く");
+            StringAssert.Contains("まだありません", Get<string>("persistentWarning"));
+            Assert.False(File.Exists(Path.Combine(folder, "chart_hard.json")));
+        });
+    }
+
+    [Test]
+    public void OutsideSavesReloadACleanChartAndWarnAnEditedOne()
+    {
+        WithChartFolder((target, folder) =>
+        {
+            string path = Path.Combine(folder, "chart_normal.json");
+            File.WriteAllText(path, OneNoteChart);
+            Load(target, 1);
+            Set("currentBeat", 3f);
+            File.WriteAllText(path, VariableTempoChart);
+            Set("nextDiskCheckAt", 0d); Call("CheckDiskForExternalChanges");
+            Assert.AreEqual(ChartLoader.LoadFromFile(path).notes.Count, Document.notes.Count, "未編集なら、ほかのツールが保存した最新を読み直す");
+            Assert.False(window.hasUnsavedChanges);
+            Assert.AreEqual(3f, Get<float>("currentBeat"), "表示位置は保つ");
+            Set("selectedIndex", 0); Key(KeyCode.D, EventModifiers.Control);
+            string edited = SaberChartUtility.ToJson(Document, false);
+            File.WriteAllText(path, OneNoteChart);
+            Set("nextDiskCheckAt", 0d); Call("CheckDiskForExternalChanges");
+            Assert.AreEqual(edited, SaberChartUtility.ToJson(Document, false), "編集中は読み直さない");
+            StringAssert.Contains("書き換えられました", Get<string>("persistentWarning"));
         });
     }
 

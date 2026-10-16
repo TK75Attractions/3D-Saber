@@ -145,6 +145,15 @@ namespace Saber.ChartEditor
                 }
             }
             GUILayout.EndHorizontal();
+            // 質3: 編集中の譜面のノーツから推定したレベルを並べる(0=自動のとき選曲画面に出る値)。大きく違えば知らせる。
+            int estimate = EstimatedLevel();
+            if (estimate > 0)
+            {
+                string level = document.displayLevel > 0 && Math.Abs(document.displayLevel - estimate) >= 3
+                    ? $"{EditingDifficultyLabel} のノーツからの推定は Lv{estimate}（表示レベル {document.displayLevel} と3以上違います）"
+                    : $"{EditingDifficultyLabel} のノーツからの推定は Lv{estimate}（表示レベルが0のとき選曲画面に出る値）";
+                GUILayout.Label(level, smallMutedStyle);
+            }
 
             DrawSongSections();
             DrawCoverRow();

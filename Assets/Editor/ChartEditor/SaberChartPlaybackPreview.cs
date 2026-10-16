@@ -104,6 +104,9 @@ namespace Saber.ChartEditor
 
         // カーソルは既に音声サンプル位置から判定調整を引いた値。ここで再加算しない。
         // 全状態を時刻から求めるので、停止・巻き戻し・途中へのジャンプも同じ結果になる。
+        // ノーツが飛んでくる秒数を固定する(null ならこのPCの設定)。プレイレビューは、本番が1プレイごとに戻す既定値で見せる。
+        public float? ApproachTimeOverride { get; set; }
+
         public void Tick(SaberChartDocument document, double songTime)
         {
             if (disposed || document == null || double.IsNaN(songTime) || double.IsInfinity(songTime)) return;
@@ -111,7 +114,7 @@ namespace Saber.ChartEditor
             bool rebuildLinks = false;
             bool modeChanged = projectorMode != DisplaySettings.ProjectorMode;
             projectorMode = DisplaySettings.ProjectorMode;
-            motion.approachTime = Mathf.Clamp(GameSession.NoteApproachTime, .5f, 5f);
+            motion.approachTime = Mathf.Clamp(ApproachTimeOverride ?? GameSession.NoteApproachTime, .5f, 5f);
             visible.Clear();
             foreach (var data in document.notes)
             {

@@ -176,7 +176,7 @@ namespace Saber.ChartEditor
             }
             // 同時打ちは左から順に、まだ付けていないノーツへ付ける。
             List<SaberChartNote> group = document.notes
-                .Where(note => Mathf.Abs(note.time - nearest.time) < 1f)
+                .Where(note => Mathf.Abs(note.time - nearest.time) <= SaberChartLint.SimultaneousMs)
                 .OrderBy(note => note.x)
                 .ToList();
             SaberChartNote target = group.FirstOrDefault(note => !directionPassAssigned.Contains(note)) ?? group[0];

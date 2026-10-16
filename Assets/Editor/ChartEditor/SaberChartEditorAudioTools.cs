@@ -71,10 +71,10 @@ namespace Saber.ChartEditor
         private void DrawTempoMapPanel()
         {
             int count = document.tempoMap?.Count ?? 0;
-            showTempoMap = EditorGUILayout.Foldout(showTempoMap, $"テンポ地図（エディターの格子だけ・{count}点）", true);
+            showTempoMap = EditorGUILayout.Foldout(showTempoMap, $"テンポ地図（格子と本編の小節線・{count}点）", true);
             if (!showTempoMap) return;
             EditorGUILayout.HelpBox("テンポが途中で変わる曲用です。拍と時刻の対応点を置くと、点の間を直線で結んだ格子になります。" +
-                                    "本編の小節線・カウントインは、上の BPM と原点のまま変わりません。", MessageType.None);
+                                    "本編もこの地図で小節線と選曲画面の拍を描きます（カウントインは上の BPM と原点のまま）。", MessageType.None);
             for (int i = 0; i < count; i++)
             {
                 SaberChartTempoPoint point = document.tempoMap[i];
@@ -251,6 +251,14 @@ namespace Saber.ChartEditor
         // ---- 合1: 打ち込みの遅れを測って補正する(出力機器ごと) ----
 
         private string ProfileKey(string name) => PrefPrefix + name + "." + Mathf.Clamp(outputProfile, 0, OutputProfileLabels.Length - 1);
+
+        /// <summary>このPCで測った入力補正(選んでいる出力機器の値)。プレイレビューの打点にも同じ値を使う。</summary>
+        internal static float SavedInputOffsetMs(out string profileLabel)
+        {
+            int profile = Mathf.Clamp(EditorPrefs.GetInt(PrefPrefix + "OutputProfile", 0), 0, OutputProfileLabels.Length - 1);
+            profileLabel = OutputProfileLabels[profile];
+            return Mathf.Clamp(EditorPrefs.GetFloat(PrefPrefix + "InputOffset." + profile, 0f), -1000f, 1000f);
+        }
 
         /// <summary>選んでいる出力機器の入力補正を読み込む。メニューから開いたときと、出力を切り替えたときに使う。</summary>
         private void LoadInputOffsetProfile()

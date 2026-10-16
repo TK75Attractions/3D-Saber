@@ -9,7 +9,15 @@ namespace Saber.ChartEditor
     public sealed partial class SaberPlaybackReviewWindow
     {
         [SerializeField] List<float> pendingNoteSeconds = new List<float>();
+        // 再生中に叩いた打点から差し引く入力の遅れ(ms)。譜面エディターの録音で測った値を、メニューから開いたときだけ読む
+        // (テストの窓では個人設定を使わない)。
+        [SerializeField] float timingInputOffsetMs;
+        [SerializeField] string timingInputProfile = "";
+        // これより近い打点は、ループで叩き直した同じ拍とみなして1打にまとめる。
+        const float MergeTapSeconds = .04f;
         bool timingCapture;
+
+        void LoadTimingInputOffset() => timingInputOffsetMs = SaberChartEditorWindow.SavedInputOffsetMs(out timingInputProfile);
         readonly HashSet<KeyCode> timingHeldKeys = new HashSet<KeyCode>();
         Rect timingTapRect, reviewFrameRect;
 
@@ -26,8 +34,12 @@ namespace Saber.ChartEditor
             timingCapture = true; timingHeldKeys.Clear();
             GUI.FocusControl(null);
             if (!playing) Play();
-            status = "映像のクリック / Tキーで、ノーツが来てほしい時刻を記録します。Spaceで一時停止、Backspaceで1打戻す。";
+            status = "映像のクリック / Tキーで、ノーツが来てほしい時刻を記録します。Spaceで一時停止、Backspaceで1打戻す。" + TimingOffsetNote;
         }
+
+        string TimingOffsetNote => timingInputOffsetMs != 0f
+            ? $" 押す遅れ {timingInputOffsetMs:+0;-0}ms（{timingInputProfile}）を差し引きます。"
+            : " 押す遅れは0msで記録します（譜面エディターの録音で測ると、ここでも使います）。";
 
         void CaptureTiming()
         {
@@ -41,6 +53,8 @@ namespace Saber.ChartEditor
                     { status = "音声の再生位置を取得できません。停止して位置を確認してください。"; return; }
                 }
                 else time += (float)(EditorApplication.timeSinceStartup - lastTick);
+                // 聞いてから押すまでの遅れ(譜面エディターの録音と同じ値)を差し引く。止めて置く打点は位置そのまま。
+                time -= timingInputOffsetMs / 1000f;
             }
             RecordTimingAt(time);
         }
@@ -52,8 +66,13 @@ namespace Saber.ChartEditor
             float time = PointerTime(raw);
             if (time * 1000 - document.offsetMs < 0)
             { status = "この時刻は譜面のOFFSETより前です。OFFSET以降で記録してください。"; return; }
-            if (pendingNoteSeconds.Any(t => Mathf.Abs(t - time) < .001f))
-            { status = $"{time:0.000}秒は記録済みです。"; return; }
+            int near = pendingNoteSeconds.FindIndex(t => Mathf.Abs(t - time) < MergeTapSeconds);
+            if (near >= 0)
+            {
+                // ループで同じ拍を叩き直したときは2打にせず、平均して1打にまとめる。
+                pendingNoteSeconds[near] = (pendingNoteSeconds[near] + time) / 2f;
+                status = $"{pendingNoteSeconds[near]:0.000}秒の近く（{MergeTapSeconds * 1000:0}ms以内）は1打にまとめました。"; Repaint(); return;
+            }
             pendingNoteSeconds.Add(time);
             status = $"● {pendingNoteSeconds.Count}打を記録 · 最後 {time:0.000}秒 · 色や位置はAIにお任せ";
             Repaint();
@@ -73,6 +92,7 @@ namespace Saber.ChartEditor
             if (pendingNoteSeconds.Count > 0)
             {
                 var comment = SaberPlaybackReviewData.TimingComment(document, pendingNoteSeconds, Duration);
+                comment.inputOffsetMs = timingInputOffsetMs;
                 comments.Add(comment); pendingNoteSeconds.Clear();
                 status = $"{comment.requestedNoteSeconds.Length}打のタイミングを指摘に追加しました。AIへの依頼を書き出してください。";
             }
@@ -108,7 +128,8 @@ namespace Saber.ChartEditor
                 var e = Event.current;
                 if (GUI.enabled && timingCapture && e.type == EventType.MouseDown && e.button == 0 && timingTapRect.Contains(e.mousePosition))
                 { GUI.FocusControl(null); CaptureTiming(); e.Use(); }
-                GUILayout.Label($"{pendingNoteSeconds.Count}打", GUILayout.Width(43));
+                GUILayout.Label(new GUIContent($"{pendingNoteSeconds.Count}打", "押す遅れ " + (timingInputOffsetMs == 0f ? "0ms（未測定）" :
+                    $"{timingInputOffsetMs:+0;-0}ms（{timingInputProfile}）") + " を差し引いて記録します。"), GUILayout.Width(43));
                 using (new EditorGUI.DisabledScope(pendingNoteSeconds.Count == 0))
                 {
                     if (GUILayout.Button("1打戻す", GUILayout.Width(64))) UndoTiming();

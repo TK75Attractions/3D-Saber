@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
@@ -71,6 +72,7 @@ namespace Saber.ChartEditor
                 new GUIStyle(EditorStyles.boldLabel) { normal = { textColor = Color.white }, clipping = TextClipping.Clip },
                 GUILayout.MinWidth(120), GUILayout.ExpandWidth(true));
             GUILayout.Label($"{document.notes.Count:N0} NOTES", smallMutedStyle, GUILayout.Width(82));
+            DrawCheckBadge();
             using (new EditorGUI.DisabledScope(RecordingBusy))
             {
                 if (GUILayout.Button(showDocumentPicker ? "開く・作る ▲" : "開く・作る ▼", GUILayout.Width(94)))
@@ -310,36 +312,107 @@ namespace Saber.ChartEditor
         {
             public int index;
             public string reason;
+            public SaberChartIssueLevel level;
+        }
+
+        // 譜面チェック(SaberChartLint)の結果。内容・難易度・音源の長さが同じなら、描画のたびに検査し直さない。
+        private List<SaberChartIssue> lintCache;
+        private string lintCacheKey;
+        // 診断の一覧に出す重さ(0=すべて、1=エラー、2=注意、3=情報)。
+        [SerializeField] private int diagnosticFilter;
+        private static readonly string[] DiagnosticFilterLabels = { "すべて", "エラー", "注意", "情報" };
+
+        private List<SaberChartIssue> LintIssues(float audioLengthMs)
+        {
+            SaberChartDocument upper = UpperDocument();
+            string key = SaberChartLint.Fingerprint(document) + "|" + EditingDifficultyLabel + "|" + audioLengthMs + "|" + upperDocumentKey;
+            if (lintCache == null || key != lintCacheKey)
+            {
+                lintCache = SaberChartLint.Check(document, EditingDifficultyLabel, audioLengthMs);
+                // 下の難易度が上の難易度の一部になっているか(上にない時刻のノーツをまとめて1件)。
+                string upperDifficulty = SaberChartDerive.UpperDifficulty(EditingDifficulty);
+                SaberChartIssue nesting = upperDifficulty == null ? null : SaberChartLint.NotInUpper(document, upper,
+                    DifficultyLabels[Array.IndexOf(DifficultyValues, upperDifficulty)]);
+                if (nesting != null) lintCache.Add(nesting);
+                lintCacheKey = key;
+            }
+            return lintCache;
+        }
+
+        // ノーツから推定した難易度(本編の ChartDifficultyRater。表示レベルが0のとき選曲画面に出る値)。内容が同じなら計算し直さない。
+        private int estimatedLevelKey = int.MinValue, estimatedLevel;
+        private int EstimatedLevel()
+        {
+            int key = SaberChartLint.Fingerprint(document);
+            if (key == estimatedLevelKey) return estimatedLevel;
+            estimatedLevelKey = key;
+            try { estimatedLevel = ChartDifficultyRater.Rate(JsonUtility.FromJson<ChartData>(SaberChartUtility.ToFileJson(document))); }
+            catch (Exception) { estimatedLevel = 0; }
+            return estimatedLevel;
+        }
+
+        // 本編用の音源の長さ。描画のたびにファイルを調べないよう、曲ごとに2秒だけ覚える。
+        private string packagedAudioSong;
+        private double packagedAudioCheckedAt;
+        private float packagedAudioLengthMs;
+        private float PackagedAudioLengthMs()
+        {
+            if (packagedAudioSong != EditingSongId || EditorApplication.timeSinceStartup >= packagedAudioCheckedAt + 2)
+            {
+                AudioClip packaged = SaberChartFileStore.LoadAudioClip(EditingSongId);
+                packagedAudioLengthMs = packaged != null ? packaged.length * 1000f : 0f;
+                packagedAudioSong = EditingSongId;
+                packagedAudioCheckedAt = EditorApplication.timeSinceStartup;
+            }
+            return packagedAudioLengthMs;
+        }
+
+        // 使1: 本編で取れない配置や、ほかのツールによる書き換えを、診断の欄を開かなくても見えるようにする。押すと診断へ移る。
+        private void DrawCheckBadge()
+        {
+            List<SaberChartIssue> issues = LintIssues(PackagedAudioLengthMs());
+            int errors = issues.Count(issue => issue.level == SaberChartIssueLevel.Error);
+            int cautions = issues.Count(issue => issue.level == SaberChartIssueLevel.Warning);
+            bool warning = !string.IsNullOrEmpty(persistentWarning);
+            if (errors == 0 && cautions == 0 && !warning)
+            {
+                GUILayout.Label(new GUIContent("チェックOK", "本編で取れない・取りにくい配置はありません（診断・復元で詳しく見られます）"),
+                    smallMutedStyle, GUILayout.Width(70));
+                return;
+            }
+            string text = warning ? "要確認" : errors > 0 ? $"エラー {errors}" + (cautions > 0 ? $"・注意 {cautions}" : "") : $"注意 {cautions}";
+            var style = new GUIStyle(EditorStyles.miniButton)
+            { normal = { textColor = errors > 0 || warning ? new Color(1f, .45f, .45f) : new Color(1f, .82f, .35f) } };
+            string tip = warning ? persistentWarning : "本編で取れない（エラー）・取りにくい（注意）配置があります。押すと「診断・復元」で一覧を開きます。";
+            if (GUILayout.Button(new GUIContent(text, tip), style, GUILayout.Width(110)))
+            {
+                showInspector = true;
+                SetInspectorSection(InspectorSection.Diagnostics);
+                GUIUtility.ExitGUI();
+            }
         }
 
         private List<WorkspaceNoteIssue> WorkspaceNoteIssues(float audioLengthMs)
         {
             var result = new List<WorkspaceNoteIssue>();
-            var positions = new HashSet<string>();
-            for (int i = 0; i < document.notes.Count; i++)
+            foreach (SaberChartIssue issue in LintIssues(audioLengthMs))
             {
-                SaberChartNote note = document.notes[i];
-                var reasons = new List<string>();
-                float time = note.time + document.offsetMs;
-                if (time < 0) reasons.Add("音源より前");
-                if (audioLengthMs > 0 && time + SaberChartUtility.EffectiveLongLengthMs(note) > audioLengthMs) reasons.Add("音源の末尾を越える");
-                float x = note.x * document.coordScale, y = note.y * document.coordScale;
-                if (x < SaberChartUtility.DefaultXMin || x > SaberChartUtility.DefaultXMax ||
-                    y < SaberChartUtility.DefaultYMin || y > SaberChartUtility.DefaultYMax) reasons.Add("推奨XY範囲の外");
-                if (note.type == SaberChartUtility.TypeDirection && note.direction == SaberChartUtility.DirectionNone) reasons.Add("矢印が未指定");
-                if (!positions.Add($"{Mathf.RoundToInt(note.time)}:{note.x:F3}:{note.y:F3}")) reasons.Add("同時刻・同位置");
-                if (reasons.Count > 0) result.Add(new WorkspaceNoteIssue { index = i, reason = string.Join(" / ", reasons) });
+                if (issue.notes.Length == 0) continue;
+                if (diagnosticFilter > 0 && (int)issue.level != diagnosticFilter - 1) continue;
+                result.Add(new WorkspaceNoteIssue { index = issue.notes[0], reason = issue.message, level = issue.level });
             }
             return result;
         }
 
         private void DrawWorkspaceDiagnosticNotes()
         {
-            AudioClip packaged = SaberChartFileStore.LoadAudioClip(EditingSongId);
-            var issues = WorkspaceNoteIssues(packaged != null ? packaged.length * 1000f : 0f);
+            var issues = WorkspaceNoteIssues(PackagedAudioLengthMs());
             GUILayout.Space(10);
-            SectionLabel($"対象ノーツへ移動（{issues.Count}個）");
-            GUILayout.Label("配置の候補です。意図した同時打ちなどは修正不要です。", new GUIStyle(smallMutedStyle) { wordWrap = true });
+            SectionLabel($"対象ノーツへ移動（{issues.Count}件）");
+            int filter = GUILayout.Toolbar(diagnosticFilter, DiagnosticFilterLabels);
+            if (filter != diagnosticFilter) { diagnosticFilter = filter; diagnosticPage = 0; GUIUtility.ExitGUI(); }
+            GUILayout.Label("エラーは本編で取れない・鳴らない配置、注意は取りにくい配置、情報は目安です。意図した配置なら直さなくてかまいません。",
+                new GUIStyle(smallMutedStyle) { wordWrap = true });
             const int pageSize = 30;
             int pages = Mathf.Max(1, Mathf.CeilToInt(issues.Count / (float)pageSize));
             diagnosticPage = Mathf.Clamp(diagnosticPage, 0, pages - 1);
@@ -360,7 +433,7 @@ namespace Saber.ChartEditor
                 {
                     WorkspaceNoteIssue issue = issues[i];
                     SaberChartNote note = document.notes[issue.index];
-                    string label = $"#{issue.index + 1}  {(note.time + document.offsetMs) / 1000f:0.000}s\n{issue.reason}";
+                    string label = $"{SaberChartLint.Label(issue.level)}  #{issue.index + 1}  {(note.time + document.offsetMs) / 1000f:0.000}s\n{issue.reason}";
                     if (GUILayout.Button(label, new GUIStyle(GUI.skin.button) { wordWrap = true, alignment = TextAnchor.MiddleLeft }, GUILayout.MinHeight(44)))
                     {
                         FocusDiagnosticNote(issue.index); GUIUtility.ExitGUI();

@@ -10,11 +10,13 @@ namespace Saber.ChartEditor
 {
     /// <summary>
     /// 未保存の編集を Library へ定期的に退避する下書き。Unity が落ちても作業を失わないためのもので、
-    /// 本編の譜面ファイルには触れない。新しいものから一定数だけ残す。
+    /// 本編の譜面ファイルには触れない。譜面ごとに新しいものから一定数だけ残す
+    /// (1つの譜面を長く編集しても、ほかの譜面の下書きを押し出さない)。中身が前と同じなら書かない。
     /// </summary>
     internal static class SaberChartDrafts
     {
-        public const int Keep = 15;
+        public const int KeepPerChart = 5;
+        public const int Keep = 60;
         // テストでは利用者の下書きフォルダに触れないよう差し替える。
         internal static string rootOverride;
 
@@ -26,6 +28,8 @@ namespace Saber.ChartEditor
             public string savedAtUtc;
             public int noteCount;
             public string document;
+            // 編集のもとになった譜面ファイルのハッシュ(読み込んだ時点)。開くときに、そのあと外で書き換えられていないかを見る。
+            public string sourceHash;
 
             public DateTime SavedAtUtc =>
                 DateTime.TryParse(savedAtUtc, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out DateTime value)
@@ -35,9 +39,13 @@ namespace Saber.ChartEditor
         public static string Root => rootOverride ??
             Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Library", "3DSaberChartDrafts"));
 
-        public static string Write(string songId, string difficulty, SaberChartDocument document)
+        public static string Write(string songId, string difficulty, SaberChartDocument document, string sourceHash = null)
         {
             Directory.CreateDirectory(Root);
+            string json = SaberChartUtility.ToJson(document, false);
+            // いちばん新しい下書きと同じ中身なら書かない(放っておいても同じ下書きが増えて、ほかを押し出さない)。
+            Draft latest = LatestFor(songId, difficulty, out string latestPath);
+            if (latest != null && latest.document == json && latestPath != null) return latestPath;
             DateTime now = DateTime.UtcNow;
             var draft = new Draft
             {
@@ -45,7 +53,8 @@ namespace Saber.ChartEditor
                 difficulty = difficulty ?? string.Empty,
                 savedAtUtc = now.ToString("o", CultureInfo.InvariantCulture),
                 noteCount = document?.notes?.Count ?? 0,
-                document = SaberChartUtility.ToJson(document, false),
+                document = json,
+                sourceHash = sourceHash,
             };
             string safeSong = Sanitize(songId);
             string unique = Guid.NewGuid().ToString("N").Substring(0, 6);
@@ -79,6 +88,15 @@ namespace Saber.ChartEditor
             }
         }
 
+        /// <summary>この窓が書いた下書きだけを消す(保存したとき。前の起動で残った下書きは、案内を見るまで残す)。</summary>
+        public static void Delete(IEnumerable<string> paths)
+        {
+            foreach (string path in paths ?? Enumerable.Empty<string>())
+                if (!string.IsNullOrEmpty(path) && File.Exists(path) &&
+                    string.Equals(Path.GetDirectoryName(Path.GetFullPath(path)), Path.GetFullPath(Root), StringComparison.OrdinalIgnoreCase))
+                    TryDelete(path);
+        }
+
         public static int Count() => Directory.Exists(Root) ? Directory.GetFiles(Root, "*.json").Length : 0;
 
         private static IEnumerable<(string file, Draft draft)> ReadAll()
@@ -102,7 +120,25 @@ namespace Saber.ChartEditor
                 .OrderByDescending(info => info.LastWriteTimeUtc)
                 .ThenByDescending(info => info.Name, StringComparer.Ordinal)
                 .ToList();
-            for (int i = Keep; i < files.Count; i++) TryDelete(files[i].FullName);
+            // 譜面ごとに新しい KeepPerChart 件、全体で Keep 件まで残す。譜面はファイル名の「曲_難易度」で分ける。
+            var kept = new List<FileInfo>();
+            foreach (var chart in files.GroupBy(info => ChartKey(info.Name)))
+            {
+                int index = 0;
+                foreach (FileInfo info in chart)
+                {
+                    if (index++ < KeepPerChart) kept.Add(info);
+                    else TryDelete(info.FullName);
+                }
+            }
+            foreach (FileInfo info in kept.OrderByDescending(info => info.LastWriteTimeUtc).Skip(Keep)) TryDelete(info.FullName);
+        }
+
+        // 「曲_難易度_日付_時刻_ミリ秒_識別子.json」から「曲_難易度」を取り出す(曲の名前に _ があってもよい)。
+        private static string ChartKey(string fileName)
+        {
+            string[] parts = Path.GetFileNameWithoutExtension(fileName).Split('_');
+            return parts.Length > 4 ? string.Join("_", parts.Take(parts.Length - 4)) : fileName;
         }
 
         private static void TryDelete(string file)

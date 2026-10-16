@@ -282,6 +282,33 @@ public class ChartEditorWorkflowTests
         finally { Call("StopPreview", false); Object.DestroyImmediate(clip); }
     }
 
+    [UnityTest]
+    public IEnumerator PausingWithTheGameOffsetDoesNotRewindEachTime()
+    {
+        bool hadOffset = PlayerPrefs.HasKey("judgmentOffsetMs");
+        int savedOffset = GameSession.JudgmentOffsetMs;
+        var clip = AudioClip.Create("EditorPauseSilence", 48000 * 5, 1, 48000, false);
+        try
+        {
+            PlayerPrefs.SetInt("judgmentOffsetMs", 125);
+            Call("SetAudioClip", clip);
+            Set("useGameTiming", true);
+            Set("currentBeat", 2f);
+            Call("TogglePreview");
+            yield return AwaitPreview(clip, 1.3f);
+            float audio = (int)AudioCall("GetPreviewClipSamplePosition") / (float)clip.frequency;
+            Call("TogglePreview");
+            // 表示補正(125ms)のぶん戻した位置で止めると、止めて再生するたびに補正だけ巻き戻る。
+            Assert.That(Get<float>("currentBeat"), Is.EqualTo(audio * 2).Within(.06f), "止めた位置は音声の位置");
+        }
+        finally
+        {
+            Call("StopPreview", false);
+            Object.DestroyImmediate(clip);
+            if (hadOffset) PlayerPrefs.SetInt("judgmentOffsetMs", savedOffset); else PlayerPrefs.DeleteKey("judgmentOffsetMs");
+        }
+    }
+
     SaberChartDocument Document => Get<SaberChartDocument>("document");
 
     [TestCase(false, "malformed")]

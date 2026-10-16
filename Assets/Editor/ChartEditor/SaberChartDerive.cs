@@ -49,9 +49,8 @@ namespace Saber.ChartEditor
             var lastByHand = new Dictionary<string, float>();
             var lastBeatByHand = new Dictionary<string, float>();
 
-            foreach (var group in upper.Where(note => note != null)
-                         .OrderBy(note => note.time)
-                         .GroupBy(note => Mathf.Round(note.time)))
+            // 同時打ちは本編と同じ 25ms でまとめる(1ms だと、数ms ずれた和音の片方だけが残る)。
+            foreach (var group in SaberChartLint.GroupSimultaneous(upper))
             {
                 float time = group.First().time;
                 float beat = beatAt(time);

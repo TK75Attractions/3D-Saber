@@ -223,7 +223,7 @@ namespace Saber.ChartEditor
             if (targets.Count == 0) return;
             string names = string.Join("・", targets.Select(d => DifficultyLabels[Array.IndexOf(DifficultyValues, d)]));
             if (!confirmSettingsCopy("曲の設定をコピーしますか？",
-                    $"{names} のファイルへ、この譜面の BPM・OFFSET・原点・拍子・座標倍率・目印を書きます。\n" +
+                    $"{names} のファイルへ、この譜面の BPM・OFFSET・原点・拍子・座標倍率・目印・テンポ地図を書きます。\n" +
                     "ノーツの時刻は変えません。書く前のファイルはバックアップされます。")) return;
             try
             {

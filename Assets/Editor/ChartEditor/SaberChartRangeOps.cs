@@ -84,7 +84,7 @@ namespace Saber.ChartEditor
         }
 
         public static bool SameSlot(SaberChartNote a, SaberChartNote b) =>
-            a != null && b != null && Mathf.Abs(a.time - b.time) < 1f &&
+            a != null && b != null && Mathf.Abs(a.time - b.time) <= SaberChartLint.SimultaneousMs &&
             Mathf.Abs(a.x - b.x) < .0001f && Mathf.Abs(a.y - b.y) < .0001f && a.color == b.color;
 
         /// <summary>種類をまとめて変える。TAP は方向と回数を消し、LONG は回数を、方向は方向を補う。</summary>

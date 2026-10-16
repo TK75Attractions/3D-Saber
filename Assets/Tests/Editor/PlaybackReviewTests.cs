@@ -191,4 +191,108 @@ public class PlaybackReviewTests
         var next = SaberPlaybackReviewData.Request(result, "RushE", "e", "chart_e.json", new[] { new SaberReviewComment { noteIndices = new[] { 1 } } });
         Assert.AreEqual(result.notes[1].x, next.chart.notes[next.comments[0].noteIndices[0]].x);
     }
+
+    // ---- AIの返信を読む: 欠けた項目・```の囲み・綴り・expect・説明だけの返信 ----
+    string ReplyJson(string operations) => "{\"version\":1,\"songId\":\"RushE\",\"difficulty\":\"e\",\"baseHash\":\"" + request.baseHash +
+        "\",\"explanation\":\"説明\",\"operations\":[" + operations + "]}";
+
+    [Test] public void RepliesWithMissingFieldsAreRejectedWithTheOperationNumber()
+    {
+        // JsonUtility は欠けた項目を既定値で埋めるので、そのまま読むと青の矢印が赤のタップに化ける。
+        var e = Assert.Throws<InvalidOperationException>(() => SaberPlaybackReviewData.ParseReply(ReplyJson(
+            "{\"action\":\"delete\",\"index\":0},{\"action\":\"replace\",\"index\":1,\"note\":{\"time\":2000,\"x\":1,\"y\":0,\"direction\":\"up\"}}")));
+        StringAssert.Contains("操作2", e.Message); StringAssert.Contains("type", e.Message); StringAssert.Contains("color", e.Message);
+        StringAssert.DoesNotContain("操作1", e.Message);
+    }
+    [Test] public void FencedRepliesAndLooseSpellingsAreAccepted()
+    {
+        var patch = SaberPlaybackReviewData.ParseReply("```json\n" + ReplyJson(
+            "{\"action\":\"Replace\",\"index\":1,\"note\":{\"time\":2000,\"x\":1.5,\"y\":0,\"type\":\"Direction\",\"color\":\"Red\",\"direction\":\"Up-Left\",\"count\":1,\"lengthMs\":0}}") + "\n```");
+        var op = patch.operations.Single();
+        Assert.AreEqual("replace", op.action); Assert.AreEqual("direction", op.note.type);
+        Assert.AreEqual("red", op.note.color); Assert.AreEqual("upleft", op.note.direction);
+        Assert.IsNull(op.expect, "expect を書いていない操作は照合しない");
+        Assert.AreEqual("upleft", SaberPlaybackReviewData.Apply(request, chart, patch, 10).notes[1].direction);
+    }
+    [Test] public void ExpectCatchesMiscountedIndices()
+    {
+        var wrong = SaberPlaybackReviewData.ParseReply(ReplyJson("{\"action\":\"delete\",\"index\":0,\"expect\":{\"time\":2000,\"color\":\"red\",\"x\":1,\"y\":0}}"));
+        StringAssert.Contains("expect", Assert.Throws<InvalidOperationException>(() => SaberPlaybackReviewData.Apply(request, chart, wrong, 10)).Message);
+        var right = SaberPlaybackReviewData.ParseReply(ReplyJson("{\"action\":\"delete\",\"index\":1,\"expect\":{\"time\":2000,\"color\":\"red\",\"x\":1,\"y\":0}}"));
+        Assert.AreEqual(2, SaberPlaybackReviewData.Apply(request, chart, right, 10).notes.Count);
+    }
+    [Test] public void RepliesWrittenByJsonUtilityStillApply()
+    {
+        // JsonUtility は空の expect(色なし)を必ず書く。それは照合に使わない。
+        var replacement = chart.notes[1].Clone(); replacement.x = 2;
+        string json = JsonUtility.ToJson(Patch(new SaberReviewOperation { action = "replace", index = 1, note = replacement }));
+        Assert.AreEqual(2, SaberPlaybackReviewData.Apply(request, chart, SaberPlaybackReviewData.ParseReply(json), 10).notes[1].x);
+    }
+    [Test] public void AllInvalidOperationsAreListedAndNothingIsApplied()
+    {
+        string before = SaberChartUtility.ToJson(chart);
+        var bad = chart.notes[0].Clone(); bad.type = "tap"; bad.direction = "up";
+        var e = Assert.Throws<InvalidOperationException>(() => SaberPlaybackReviewData.Apply(request, chart, Patch(
+            new SaberReviewOperation { action = "replace", index = 0, note = bad },
+            new SaberReviewOperation { action = "delete", index = 9 }), 10));
+        StringAssert.Contains("操作1", e.Message); StringAssert.Contains("tap に向きは付けない", e.Message);
+        StringAssert.Contains("操作2", e.Message); StringAssert.Contains("範囲外", e.Message);
+        Assert.AreEqual(before, SaberChartUtility.ToJson(chart));
+    }
+    [Test] public void ExplanationOnlyRepliesParseWithoutOperations()
+    {
+        var patch = SaberPlaybackReviewData.ParseReply(ReplyJson(""));
+        Assert.IsEmpty(patch.operations);
+        Assert.DoesNotThrow(() => SaberPlaybackReviewData.ValidateTarget(request, chart, patch));
+        Assert.Throws<InvalidOperationException>(() => SaberPlaybackReviewData.ParseReply("{\"version\":1}"), "operations の欠けは知らせる");
+    }
+    [Test] public void SelectedOperationsApplyOnlyTheAcceptedChanges()
+    {
+        var replacement = chart.notes[1].Clone(); replacement.x = 2;
+        var patch = Patch(new SaberReviewOperation { action = "delete", index = 0 },
+            new SaberReviewOperation { action = "replace", index = 1, note = replacement });
+        var result = SaberPlaybackReviewData.Apply(request, chart, SaberPlaybackReviewData.Selected(patch, new[] { 0 }), 10);
+        Assert.AreEqual(3, result.notes.Count, "削除は採用していない");
+        Assert.AreEqual(2, result.notes.Single(n => n.color == "red" && n.type != "long").x);
+        Assert.AreEqual(2, patch.operations.Count, "元の返信は変えない");
+    }
+    [Test] public void PromptExplainsTheReplyFormatGameRulesAndCurrentChecks()
+    {
+        chart.notes.Add(new SaberChartNote { time = 3500, color = "red", x = 1 }); // 赤のロング(3000〜4400ms)の途中
+        var withIssue = SaberPlaybackReviewData.Request(chart, "RushE", "e", "chart_e.json", request.comments, 10000);
+        Assert.IsTrue(withIssue.checks.Any(i => i.rule == "long-overlap"));
+        string prompt = SaberPlaybackReviewData.Prompt(withIssue, "review");
+        StringAssert.Contains("\"action\": \"replace\"", prompt);
+        StringAssert.Contains("expect", prompt);
+        StringAssert.Contains("青=左手、赤=右手", prompt);
+        StringAssert.Contains("ロングの途中に同じ手のノーツ", prompt);
+    }
+    [Test] public void NewIssuesAreThoseThatTheProposalAdds()
+    {
+        var after = SaberChartUtility.Clone(chart);
+        after.notes.Add(new SaberChartNote { time = 3500, color = "red", x = 1 });
+        var added = SaberPlaybackReviewData.NewIssues(SaberChartLint.Check(chart, "e"), SaberChartLint.Check(after, "e"));
+        Assert.AreEqual("long-overlap", added.Single(i => i.level == SaberChartIssueLevel.Error).rule);
+        Assert.IsEmpty(SaberPlaybackReviewData.NewIssues(SaberChartLint.Check(after, "e"), SaberChartLint.Check(after, "e")));
+    }
+    [Test] public void TimingRequestsCanBeValidatedWithoutKnowingTheAudioLength()
+    {
+        // 「依頼を再開」は音源の長さを知らずに検査する(以前は打点を含む依頼を再開できなかった)。
+        var comment = SaberPlaybackReviewData.TimingComment(chart, new[] { 1f, 2f }, 10);
+        Assert.DoesNotThrow(() => SaberPlaybackReviewData.ValidateComments(chart, new System.Collections.Generic.List<SaberReviewComment> { comment }, 0));
+    }
+    [Test] public void ExportedFilesHaveNoByteOrderMark()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), "SaberReviewBom-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            SaberPlaybackReviewData.Export(directory, request);
+            foreach (string file in new[] { "request.json", "chart-before.json", "prompt.txt", "patch-template.json" })
+            {
+                byte[] bytes = File.ReadAllBytes(Path.Combine(directory, file));
+                Assert.IsFalse(bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF, file + " に BOM(Python の json.load が読めない)");
+            }
+        }
+        finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
+    }
 }
