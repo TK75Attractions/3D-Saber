@@ -101,10 +101,16 @@ class BleUdpBridge:
             for client in clients:
                 if client is None or not client.is_connected:
                     continue
-                if command.startswith("H:1"):
-                    await client.write_gatt_char(RX_UUID, b"1\n", response=False)
-                elif command.startswith("H:0"):
-                    await client.write_gatt_char(RX_UUID, b"0\n", response=False)
+                try:
+                    if command.startswith("H:1"):
+                        await client.write_gatt_char(RX_UUID, b"1\n", response=False)
+                    elif command.startswith("H:0"):
+                        await client.write_gatt_char(RX_UUID, b"0\n", response=False)
+                except asyncio.CancelledError:
+                    raise
+                except Exception as exc:
+                    # 切断中の1回の失敗で消費側を止めると、再接続後もキューが増え続ける。
+                    print(f"[IMU BLE] Command write failed: {exc}", flush=True)
 
     @staticmethod
     def _names(device: Any, advertisement: Any) -> tuple[str, str]:
