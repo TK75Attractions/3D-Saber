@@ -36,6 +36,7 @@ class PcDiscovery(context: Context,
     private var lifecycle = 0
     @Volatile private var generation = 0
     private var network: Network? = null
+    private val availableWifi = linkedSetOf<Network>()
     private var socket: DatagramSocket? = null
     private var listener: NsdManager.DiscoveryListener? = null
     private var callback: ConnectivityManager.NetworkCallback? = null
@@ -101,7 +102,12 @@ class PcDiscovery(context: Context,
         val session = ++lifecycle
         val request = NetworkRequest.Builder().addTransportType(NetworkCapabilities.TRANSPORT_WIFI).build()
         val events = object : ConnectivityManager.NetworkCallback() {
-            override fun onAvailable(wifi: Network) { main.post { if (active && session == lifecycle) switchNetwork(wifi) } }
+            override fun onAvailable(wifi: Network) { main.post {
+                if (active && session == lifecycle) {
+                    if (!allowNonWifi) availableWifi.add(wifi)
+                    switchNetwork(wifi)
+                }
+            } }
             override fun onLinkPropertiesChanged(wifi: Network, properties: LinkProperties) {
                 main.post {
                     // IPv6 の RA 更新や DHCP lease 時刻でも通知される。broadcast 先が同じなら候補を消さない。
@@ -114,10 +120,13 @@ class PcDiscovery(context: Context,
             }
             override fun onLost(wifi: Network) {
                 main.post {
-                    if (active && session == lifecycle && wifi == network) {
-                        switchNetwork(null)
-                        if (allowNonWifi) connectivity.activeNetwork?.let(::switchNetwork)
-                        else connectivity.allNetworks.firstOrNull(::isWifi)?.let(::switchNetwork)
+                    if (active && session == lifecycle) {
+                        availableWifi.remove(wifi)
+                        if (wifi == network) {
+                            switchNetwork(null)
+                            // 同期getterは切断前の値を返し得る。通知済みの生存Wi-Fiだけへ戻す。
+                            if (!allowNonWifi) availableWifi.firstOrNull()?.let(::switchNetwork)
+                        }
                     }
                 }
             }
@@ -128,7 +137,8 @@ class PcDiscovery(context: Context,
             connectivity.activeNetwork?.let(::switchNetwork)
         } else {
             connectivity.registerNetworkCallback(request, events)
-            connectivity.allNetworks.firstOrNull(::isWifi)?.let(::switchNetwork)
+            availableWifi.addAll(connectivity.allNetworks.filter(::isWifi))
+            availableWifi.firstOrNull()?.let(::switchNetwork)
         }
         publish()
     }
@@ -388,6 +398,7 @@ class PcDiscovery(context: Context,
         callback = null
         endDiscovery()
         network = null
+        availableWifi.clear()
         found.clear(); selectedKey = null
     }
 }

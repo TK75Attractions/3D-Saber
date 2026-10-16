@@ -54,6 +54,79 @@ class PcDiscoverySocketTest {
         }
     }
 
+    @Test fun lostWifiIsNotReselectedFromStaleNetworkSnapshot() {
+        checkLostNetwork(developerOverride = false)
+    }
+
+    @Test fun lostDeveloperNetworkIsNotReselectedFromStaleDefaultNetwork() {
+        org.junit.Assume.assumeTrue(BuildConfig.DEBUG)
+        checkLostNetwork(developerOverride = true)
+    }
+
+    private fun checkLostNetwork(developerOverride: Boolean) {
+        val connectivity = mock(ConnectivityManager::class.java)
+        val lost = mock(Network::class.java)
+        val replacement = mock(Network::class.java)
+        val fallback = mock(Network::class.java)
+        val capabilities = mock(NetworkCapabilities::class.java)
+        `when`(capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)).thenReturn(true)
+        `when`(connectivity.getNetworkCapabilities(lost)).thenReturn(capabilities)
+        `when`(connectivity.getNetworkCapabilities(replacement)).thenReturn(capabilities)
+        `when`(connectivity.getNetworkCapabilities(fallback)).thenReturn(capabilities)
+        `when`(connectivity.allNetworks).thenReturn(arrayOf(lost))
+        `when`(connectivity.activeNetwork).thenReturn(lost)
+        val networks = mutableListOf<Network?>()
+        val request = mock(NetworkRequest::class.java)
+        mockConstruction(NetworkRequest.Builder::class.java, withSettings().defaultAnswer(RETURNS_SELF)) { builder, _ ->
+            `when`(builder.build()).thenReturn(request)
+        }.use {
+            // 実ネットワークへ探索を送らず、callbackと同期getterの順序だけを再現する。
+            mockConstruction(DatagramSocket::class.java) { socket, _ ->
+                `when`(socket.isClosed).thenReturn(true)
+            }.use { sockets ->
+                withDiscovery(runPosts = true, connectivity = connectivity,
+                    onUpdate = { _, network, _ -> networks.add(network) }) { discovery ->
+                    try {
+                        discovery.setDeveloperNetworkOverride(developerOverride)
+                        discovery.start()
+                        val events = ArgumentCaptor.forClass(ConnectivityManager.NetworkCallback::class.java)
+                        if (developerOverride) verify(connectivity).registerDefaultNetworkCallback(events.capture())
+                        else verify(connectivity).registerNetworkCallback(any(NetworkRequest::class.java), events.capture())
+                        assertEquals(lost, networks.last())
+                        // onLost後も同期getterが切断前のネットワークを返す。
+                        events.value.onLost(lost)
+                        assertNull("切断通知済みの経路を同期getterから復活させない", networks.last())
+                        assertEquals(1, sockets.constructed().size)
+                        // 新しい接続通知では、停止操作なしで通常どおり探索を再開する。
+                        events.value.onAvailable(replacement)
+                        assertEquals(replacement, networks.last())
+                        assertEquals(2, sockets.constructed().size)
+                        if (!developerOverride) {
+                            // 別のWi-Fiが既にある場合は、配列の先頭が切断済みでも生存側へ戻る。
+                            events.value.onAvailable(fallback)
+                            events.value.onAvailable(replacement)
+                            `when`(connectivity.allNetworks).thenReturn(arrayOf(replacement, fallback))
+                            events.value.onLost(replacement)
+                            assertEquals(fallback, networks.last())
+                            events.value.onAvailable(replacement)
+                            events.value.onLost(fallback)
+                            assertEquals("非選択側の切断では現在の接続を維持する", replacement, networks.last())
+                            events.value.onLost(replacement)
+                            assertNull("連続切断でも以前の切断済み経路へ戻らない", networks.last())
+                        }
+                        events.value.onAvailable(replacement)
+                        discovery.stop()
+                        `when`(connectivity.allNetworks).thenReturn(emptyArray())
+                        `when`(connectivity.activeNetwork).thenReturn(null)
+                        discovery.start()
+                        events.value.onAvailable(lost)
+                        assertNull("停止前の接続とcallbackを次の世代へ持ち越さない", networks.last())
+                    } finally { discovery.stop() }
+                }
+            }
+        }
+    }
+
     @Test fun wifiCallbackStartsDiscoveryBeforeSynchronousCapabilitiesCatchUp() {
         val connectivity = mock(ConnectivityManager::class.java)
         val nsd = mock(NsdManager::class.java)
