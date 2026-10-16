@@ -1,65 +1,65 @@
 {
-  "batch": "hourly-20261016-1227",
-  "completedAt": "2026-10-16T03:54:28.642544+00:00",
+  "batch": "hourly-20261016-1334",
+  "completedAt": "2026-10-16T05:00:43.748716+00:00",
   "materialAdded": 6,
-  "materialTotal": 112,
+  "materialTotal": 118,
   "convertedAdded": 6,
-  "convertedTotal": 112,
-  "newMaterialApplied": 1,
+  "convertedTotal": 118,
+  "newMaterialApplied": 0,
   "priorPendingApplied": 0,
   "totalAppliedMaterials": 94,
   "pending": [
     {
       "patternId": "light-normal-1",
-      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
       "candidateCount": 0,
       "rejections": {}
     },
     {
       "patternId": "light-normal-2",
-      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
       "candidateCount": 0,
       "rejections": {}
     },
     {
       "patternId": "liftoff-hard-2",
-      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
       "candidateCount": 0,
       "rejections": {}
     },
     {
       "patternId": "cathedral-hard-1",
-      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
       "candidateCount": 0,
       "rejections": {}
     },
     {
       "patternId": "cathedral-hard-2",
-      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
       "candidateCount": 0,
       "rejections": {}
     },
     {
       "patternId": "firestarter-easy-2",
-      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
       "candidateCount": 0,
       "rejections": {}
     },
     {
       "patternId": "crystallized-hard-2",
-      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
       "candidateCount": 0,
       "rejections": {}
     },
     {
       "patternId": "bethere-hard-1",
-      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
       "candidateCount": 0,
       "rejections": {}
     },
     {
       "patternId": "popstars-hard-1",
-      "reason": "打点の一致候補はあるが、前後の移動・カット経路・下位包含を同時に満たさない。小節素材として保存。",
+      "reason": "打点の一致候補はあるが、前後の移動・カット経路・下位包含を同時に満たさない。小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
       "candidateCount": 1,
       "rejections": {
         "cutPath": 1
@@ -67,61 +67,97 @@
     },
     {
       "patternId": "crabrave-hard-1",
-      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
       "candidateCount": 0,
       "rejections": {}
     },
     {
       "patternId": "crabrave-hard-2",
-      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
       "candidateCount": 0,
       "rejections": {}
     },
     {
       "patternId": "rumbass-hard-1",
-      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
       "candidateCount": 0,
       "rejections": {}
     },
     {
       "patternId": "rumbass-hard-2",
-      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
       "candidateCount": 0,
       "rejections": {}
     },
     {
       "patternId": "machine-normal-1",
-      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
       "candidateCount": 0,
       "rejections": {}
     },
     {
       "patternId": "machine-normal-2",
-      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
       "candidateCount": 0,
       "rejections": {}
     },
     {
       "patternId": "www-normal-2",
-      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
       "candidateCount": 0,
       "rejections": {}
     },
     {
       "patternId": "untamed-hard-1",
-      "reason": "近いBPMの未使用区間に、前半2.5拍の休みと後半の二手の実音が一致する場所がない。既存の拍や歌の応答を消さず、休符付き小節素材として保存。",
+      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
       "candidateCount": 0,
       "rejections": {}
     },
     {
       "patternId": "untamed-hard-2",
-      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
+      "candidateCount": 0,
+      "rejections": {}
+    },
+    {
+      "patternId": "cycle-hard-1",
+      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
+      "candidateCount": 0,
+      "rejections": {}
+    },
+    {
+      "patternId": "cycle-hard-2",
+      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
+      "candidateCount": 0,
+      "rejections": {}
+    },
+    {
+      "patternId": "whatthecat-normal-1",
+      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
+      "candidateCount": 0,
+      "rejections": {}
+    },
+    {
+      "patternId": "whatthecat-normal-2",
+      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
+      "candidateCount": 0,
+      "rejections": {}
+    },
+    {
+      "patternId": "light-hard-1",
+      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
+      "candidateCount": 0,
+      "rejections": {}
+    },
+    {
+      "patternId": "light-hard-2",
+      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
       "candidateCount": 0,
       "rejections": {}
     }
   ],
-  "newAppliedBars": 2,
-  "changedCharts": 2,
+  "newAppliedBars": 0,
+  "changedCharts": 0,
   "diff": {
     "charts": [
       {
@@ -183,18 +219,18 @@
       {
         "songId": "logic",
         "difficulty": "normal",
-        "changed": true,
+        "changed": false,
         "notesBefore": 242,
         "notesAfter": 242,
-        "sameIndexPositionChanges": 2
+        "sameIndexPositionChanges": 0
       },
       {
         "songId": "logic",
         "difficulty": "hard",
-        "changed": true,
+        "changed": false,
         "notesBefore": 416,
         "notesAfter": 416,
-        "sameIndexPositionChanges": 4
+        "sameIndexPositionChanges": 0
       },
       {
         "songId": "BenkyouRemaster",
@@ -246,71 +282,59 @@
       }
     ],
     "hardTimingHandsAndLongsPreserved": true,
-    "applied": [
-      {
-        "patternId": "www-normal-1",
-        "songId": "logic",
-        "startBeat": 336,
-        "startSeconds": 152.153,
-        "endSeconds": 156.153,
-        "referenceBpm": 128,
-        "targetBpm": 120,
-        "bpmDifferencePercent": -6.25,
-        "positionChangedNotes": 4
-      }
-    ],
+    "applied": [],
     "pending": [
       {
         "patternId": "light-normal-1",
-        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
         "candidateCount": 0,
         "rejections": {}
       },
       {
         "patternId": "light-normal-2",
-        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
         "candidateCount": 0,
         "rejections": {}
       },
       {
         "patternId": "liftoff-hard-2",
-        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
         "candidateCount": 0,
         "rejections": {}
       },
       {
         "patternId": "cathedral-hard-1",
-        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
         "candidateCount": 0,
         "rejections": {}
       },
       {
         "patternId": "cathedral-hard-2",
-        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
         "candidateCount": 0,
         "rejections": {}
       },
       {
         "patternId": "firestarter-easy-2",
-        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
         "candidateCount": 0,
         "rejections": {}
       },
       {
         "patternId": "crystallized-hard-2",
-        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
         "candidateCount": 0,
         "rejections": {}
       },
       {
         "patternId": "bethere-hard-1",
-        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
         "candidateCount": 0,
         "rejections": {}
       },
       {
         "patternId": "popstars-hard-1",
-        "reason": "打点の一致候補はあるが、前後の移動・カット経路・下位包含を同時に満たさない。小節素材として保存。",
+        "reason": "打点の一致候補はあるが、前後の移動・カット経路・下位包含を同時に満たさない。小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
         "candidateCount": 1,
         "rejections": {
           "cutPath": 1
@@ -318,55 +342,91 @@
       },
       {
         "patternId": "crabrave-hard-1",
-        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
         "candidateCount": 0,
         "rejections": {}
       },
       {
         "patternId": "crabrave-hard-2",
-        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
         "candidateCount": 0,
         "rejections": {}
       },
       {
         "patternId": "rumbass-hard-1",
-        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
         "candidateCount": 0,
         "rejections": {}
       },
       {
         "patternId": "rumbass-hard-2",
-        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
         "candidateCount": 0,
         "rejections": {}
       },
       {
         "patternId": "machine-normal-1",
-        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
         "candidateCount": 0,
         "rejections": {}
       },
       {
         "patternId": "machine-normal-2",
-        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
         "candidateCount": 0,
         "rejections": {}
       },
       {
         "patternId": "www-normal-2",
-        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
         "candidateCount": 0,
         "rejections": {}
       },
       {
         "patternId": "untamed-hard-1",
-        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
         "candidateCount": 0,
         "rejections": {}
       },
       {
         "patternId": "untamed-hard-2",
-        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
+        "candidateCount": 0,
+        "rejections": {}
+      },
+      {
+        "patternId": "cycle-hard-1",
+        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
+        "candidateCount": 0,
+        "rejections": {}
+      },
+      {
+        "patternId": "cycle-hard-2",
+        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
+        "candidateCount": 0,
+        "rejections": {}
+      },
+      {
+        "patternId": "whatthecat-normal-1",
+        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
+        "candidateCount": 0,
+        "rejections": {}
+      },
+      {
+        "patternId": "whatthecat-normal-2",
+        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
+        "candidateCount": 0,
+        "rejections": {}
+      },
+      {
+        "patternId": "light-hard-1",
+        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
+        "candidateCount": 0,
+        "rejections": {}
+      },
+      {
+        "patternId": "light-hard-2",
+        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
         "candidateCount": 0,
         "rejections": {}
       }
@@ -459,9 +519,9 @@
           "notes": 416,
           "pairs": 42,
           "pairNotePercent": 20.19,
-          "movementOver1_2Within1s": 54.66,
+          "movementOver1_2Within1s": 53.7,
           "movementWithin1sDenominator": 311,
-          "movementOver1_2AllGaps": 54.59,
+          "movementOver1_2AllGaps": 53.62,
           "fastSameHandUnder250ms": 7,
           "sameHandSingleTransitionPercent": 36.86,
           "identicalBarRepeatPercent": 2.75,
@@ -472,12 +532,12 @@
           "notes": 242,
           "pairs": 28,
           "pairNotePercent": 23.14,
-          "movementOver1_2Within1s": 54.07,
+          "movementOver1_2Within1s": 52.59,
           "movementWithin1sDenominator": 135,
           "movementOver1_2AllGaps": 53.33,
           "fastSameHandUnder250ms": 0,
           "sameHandSingleTransitionPercent": 40.54,
-          "identicalBarRepeatPercent": 8.16,
+          "identicalBarRepeatPercent": 9.18,
           "inheritedTimeHandPositionPercent": 100,
           "sharedAccents": 6
         },
@@ -1750,7 +1810,7 @@
         ],
         "difficulty": "normal",
         "signature": "position",
-        "before": 0.056604,
+        "before": 0.056962,
         "after": 0.056962
       },
       {
@@ -1780,7 +1840,7 @@
         ],
         "difficulty": "normal",
         "signature": "position",
-        "before": 0.049296,
+        "before": 0.049645,
         "after": 0.049645
       },
       {
@@ -1810,7 +1870,7 @@
         ],
         "difficulty": "normal",
         "signature": "position",
-        "before": 0.026846,
+        "before": 0.027027,
         "after": 0.027027
       },
       {
@@ -1820,7 +1880,7 @@
         ],
         "difficulty": "normal",
         "signature": "position",
-        "before": 0.038217,
+        "before": 0.038462,
         "after": 0.038462
       },
       {
@@ -2135,20 +2195,25 @@
       }
     ]
   },
-  "unity": [
-    {
-      "result": "Passed",
-      "total": "63",
-      "passed": "63",
-      "failed": "0"
-    },
-    {
-      "result": "Passed",
-      "total": "1",
-      "passed": "1",
-      "failed": "0"
-    }
-  ],
+  "unity": {
+    "rerun": false,
+    "reason": "候補15譜面は前回検証済みと同一。escapadeの並行手編集は本検証と公開に含めない。",
+    "sourceBatch": "hourly-20261016-1227",
+    "results": [
+      {
+        "result": "Passed",
+        "total": "63",
+        "passed": "63",
+        "failed": "0"
+      },
+      {
+        "result": "Passed",
+        "total": "1",
+        "passed": "1",
+        "failed": "0"
+      }
+    ]
+  },
   "regressionTests": {
     "lastCutMovementGate": 3,
     "rhythmSelection": 3,
@@ -2253,123 +2318,123 @@
           "downloadMatched": true
         }
       ],
-      "sourceAndAppliedViews": 7,
-      "videoLinks": 224,
+      "sourceAndAppliedViews": 6,
+      "videoLinks": 236,
       "protectedCharts": 28,
       "errors": []
     },
     "media-browser-validation": {
       "videos": 12,
-      "totalMaterials": 112,
+      "totalMaterials": 118,
       "errors": [],
       "results": [
         {
-          "id": "machine-normal-1",
+          "id": "cycle-hard-1",
           "mode": "bar",
-          "time": 0.060162,
+          "time": 0.11422,
           "width": 854,
           "height": 480,
-          "duration": 1.899675,
-          "src": "http://127.0.0.1:8898/clips/machine-normal-1-bar.mp4"
+          "duration": 1.399675,
+          "src": "http://127.0.0.1:8898/clips/cycle-hard-1-bar.mp4"
         },
         {
-          "id": "machine-normal-1",
+          "id": "cycle-hard-1",
           "mode": "context",
-          "time": 0.066105,
+          "time": 0.058215,
           "width": 854,
           "height": 480,
-          "duration": 5.633008,
-          "src": "http://127.0.0.1:8898/clips/machine-normal-1-context.mp4"
+          "duration": 4.133008,
+          "src": "http://127.0.0.1:8898/clips/cycle-hard-1-context.mp4"
         },
         {
-          "id": "machine-normal-2",
+          "id": "cycle-hard-2",
           "mode": "bar",
-          "time": 0.061193,
+          "time": 0.054838,
           "width": 854,
           "height": 480,
-          "duration": 1.899675,
-          "src": "http://127.0.0.1:8898/clips/machine-normal-2-bar.mp4"
+          "duration": 1.371,
+          "src": "http://127.0.0.1:8898/clips/cycle-hard-2-bar.mp4"
         },
         {
-          "id": "machine-normal-2",
+          "id": "cycle-hard-2",
           "mode": "context",
-          "time": 0.056083,
+          "time": 0.057971,
           "width": 854,
           "height": 480,
-          "duration": 5.633333,
-          "src": "http://127.0.0.1:8898/clips/machine-normal-2-context.mp4"
+          "duration": 4.133008,
+          "src": "http://127.0.0.1:8898/clips/cycle-hard-2-context.mp4"
         },
         {
-          "id": "www-normal-1",
+          "id": "whatthecat-normal-1",
           "mode": "bar",
-          "time": 0.059627,
+          "time": 0.055952,
           "width": 854,
           "height": 480,
-          "duration": 1.875,
-          "src": "http://127.0.0.1:8898/clips/www-normal-1-bar.mp4"
+          "duration": 1.2,
+          "src": "http://127.0.0.1:8898/clips/whatthecat-normal-1-bar.mp4"
         },
         {
-          "id": "www-normal-1",
+          "id": "whatthecat-normal-1",
           "mode": "context",
-          "time": 0.057062,
+          "time": 0.055905,
           "width": 854,
           "height": 480,
-          "duration": 5.633008,
-          "src": "http://127.0.0.1:8898/clips/www-normal-1-context.mp4"
+          "duration": 3.6,
+          "src": "http://127.0.0.1:8898/clips/whatthecat-normal-1-context.mp4"
         },
         {
-          "id": "www-normal-2",
+          "id": "whatthecat-normal-2",
           "mode": "bar",
-          "time": 0.058477,
+          "time": 0.061081,
           "width": 854,
           "height": 480,
-          "duration": 1.899675,
-          "src": "http://127.0.0.1:8898/clips/www-normal-2-bar.mp4"
+          "duration": 1.2,
+          "src": "http://127.0.0.1:8898/clips/whatthecat-normal-2-bar.mp4"
         },
         {
-          "id": "www-normal-2",
+          "id": "whatthecat-normal-2",
           "mode": "context",
-          "time": 0.062225,
+          "time": 0.070569,
           "width": 854,
           "height": 480,
-          "duration": 5.633008,
-          "src": "http://127.0.0.1:8898/clips/www-normal-2-context.mp4"
+          "duration": 3.6,
+          "src": "http://127.0.0.1:8898/clips/whatthecat-normal-2-context.mp4"
         },
         {
-          "id": "untamed-hard-1",
+          "id": "light-hard-1",
           "mode": "bar",
-          "time": 0.061402,
+          "time": 0.060492,
           "width": 854,
           "height": 480,
-          "duration": 1.666341,
-          "src": "http://127.0.0.1:8898/clips/untamed-hard-1-bar.mp4"
+          "duration": 1.399675,
+          "src": "http://127.0.0.1:8898/clips/light-hard-1-bar.mp4"
         },
         {
-          "id": "untamed-hard-1",
+          "id": "light-hard-1",
           "mode": "context",
-          "time": 0.055903,
+          "time": 0.05884,
           "width": 854,
           "height": 480,
-          "duration": 4.966667,
-          "src": "http://127.0.0.1:8898/clips/untamed-hard-1-context.mp4"
+          "duration": 4.166341,
+          "src": "http://127.0.0.1:8898/clips/light-hard-1-context.mp4"
         },
         {
-          "id": "untamed-hard-2",
+          "id": "light-hard-2",
           "mode": "bar",
-          "time": 0.062377,
+          "time": 0.058463,
           "width": 854,
           "height": 480,
-          "duration": 1.666667,
-          "src": "http://127.0.0.1:8898/clips/untamed-hard-2-bar.mp4"
+          "duration": 1.379,
+          "src": "http://127.0.0.1:8898/clips/light-hard-2-bar.mp4"
         },
         {
-          "id": "untamed-hard-2",
+          "id": "light-hard-2",
           "mode": "context",
-          "time": 0.063838,
+          "time": 0.064072,
           "width": 854,
           "height": 480,
-          "duration": 4.966341,
-          "src": "http://127.0.0.1:8898/clips/untamed-hard-2-context.mp4"
+          "duration": 4.166341,
+          "src": "http://127.0.0.1:8898/clips/light-hard-2-context.mp4"
         }
       ],
       "passed": true
@@ -2378,89 +2443,82 @@
       "passed": true,
       "videos": [
         {
-          "id": "machine-normal-1",
+          "id": "cycle-hard-1",
           "mode": "bar",
-          "duration": 1.899675,
+          "duration": 1.399675,
           "decoded": true
         },
         {
-          "id": "machine-normal-1",
+          "id": "cycle-hard-1",
           "mode": "context",
-          "duration": 5.633008,
+          "duration": 4.133008,
           "decoded": true
         },
         {
-          "id": "machine-normal-2",
+          "id": "cycle-hard-2",
           "mode": "bar",
-          "duration": 1.899675,
+          "duration": 1.371,
           "decoded": true
         },
         {
-          "id": "machine-normal-2",
+          "id": "cycle-hard-2",
           "mode": "context",
-          "duration": 5.633333,
+          "duration": 4.133008,
           "decoded": true
         },
         {
-          "id": "www-normal-1",
+          "id": "whatthecat-normal-1",
           "mode": "bar",
-          "duration": 1.875,
+          "duration": 1.2,
           "decoded": true
         },
         {
-          "id": "www-normal-1",
+          "id": "whatthecat-normal-1",
           "mode": "context",
-          "duration": 5.633008,
+          "duration": 3.6,
           "decoded": true
         },
         {
-          "id": "www-normal-2",
+          "id": "whatthecat-normal-2",
           "mode": "bar",
-          "duration": 1.899675,
+          "duration": 1.2,
           "decoded": true
         },
         {
-          "id": "www-normal-2",
+          "id": "whatthecat-normal-2",
           "mode": "context",
-          "duration": 5.633008,
+          "duration": 3.6,
           "decoded": true
         },
         {
-          "id": "untamed-hard-1",
+          "id": "light-hard-1",
           "mode": "bar",
-          "duration": 1.666341,
+          "duration": 1.399675,
           "decoded": true
         },
         {
-          "id": "untamed-hard-1",
+          "id": "light-hard-1",
           "mode": "context",
-          "duration": 4.966667,
+          "duration": 4.166341,
           "decoded": true
         },
         {
-          "id": "untamed-hard-2",
+          "id": "light-hard-2",
           "mode": "bar",
-          "duration": 1.666667,
+          "duration": 1.379,
           "decoded": true
         },
         {
-          "id": "untamed-hard-2",
+          "id": "light-hard-2",
           "mode": "context",
-          "duration": 4.966341,
+          "duration": 4.166341,
           "decoded": true
         }
       ]
     },
     "application-browser-validation": {
       "passed": true,
-      "checked": [
-        {
-          "id": "www-normal-1",
-          "song": "logic",
-          "from": 151.753,
-          "to": 152.983927
-        }
-      ],
+      "checked": [],
       "errors": []
     },
     "package-browser-verification": {
@@ -2472,37 +2530,37 @@
       "packages": [
         {
           "file": "good.zip",
-          "size": 24676277,
+          "size": 24676279,
           "saved": true
         },
         {
           "file": "good-2.zip",
-          "size": 24589771,
+          "size": 24589773,
           "saved": true
         },
         {
           "file": "good-3.zip",
-          "size": 21358289,
+          "size": 23090714,
           "saved": true
         },
         {
           "file": "conditional.zip",
-          "size": 24347186,
+          "size": 24347188,
           "saved": true
         },
         {
           "file": "conditional-2.zip",
-          "size": 24342105,
+          "size": 24342107,
           "saved": true
         },
         {
           "file": "conditional-3.zip",
-          "size": 12801310,
+          "size": 17746635,
           "saved": true
         },
         {
           "file": "avoid.zip",
-          "size": 7373296,
+          "size": 7373298,
           "saved": true
         }
       ],
@@ -2528,7 +2586,7 @@
         },
         {
           "file": "good-3.zip",
-          "members": 60,
+          "members": 66,
           "allHashesMatched": true
         },
         {
@@ -2543,7 +2601,7 @@
         },
         {
           "file": "conditional-3.zip",
-          "members": 33,
+          "members": 45,
           "allHashesMatched": true
         },
         {
@@ -2552,8 +2610,8 @@
           "allHashesMatched": true
         }
       ],
-      "previousMediaUnchanged": 318,
-      "expandedBytes": 142729004
+      "previousMediaUnchanged": 336,
+      "expandedBytes": 149473751
     },
     "rhythm-preservation": {
       "passed": true,
@@ -2714,116 +2772,136 @@
           "passed": true
         }
       ]
+    },
+    "melody-browser-validation": {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "policyLoaded": true,
+      "unappliedStatusVisible": true,
+      "errors": [],
+      "passed": true
     }
   },
   "physicalPlayTest": false,
   "sourceReview": {
-    "batch": "hourly-20261016-1227",
+    "batch": "hourly-20261016-1334",
     "status": "reviewed-reference-materials-ready-for-parent-integration",
     "newMaterials": 6,
-    "previousMaterials": 106,
+    "previousMaterials": 112,
     "officialMapperEvidence": {
       "url": "https://beatsaber.com/documentation/level-mappers/index.html",
       "checked": "2026-10-16",
-      "I Wanna Be A Machine / Normal": "ConnorJC",
-      "World Wide Web / Normal": "ETAN",
-      "Untamed / Hard": "Kolezan"
+      "Cycle Hit / Hard": "Freeek",
+      "WHAT THE CAT!? / Normal": "Freeek",
+      "Light It Up / Hard": "Ruckus"
     },
     "primaryVideoSources": [
-      "https://www.youtube.com/watch?v=4nLUlPpz9ns",
-      "https://www.youtube.com/watch?v=s4nDImkd1x8",
-      "https://www.youtube.com/watch?v=ov3CGt-dt8o"
+      "https://www.youtube.com/watch?v=k54Fo-Zyhlw",
+      "https://www.youtube.com/watch?v=sTecT1brJCY",
+      "https://www.youtube.com/watch?v=ev2PaQ--p1c"
     ],
     "referenceBpmToPreferredTarget": [
       {
-        "source": "I Wanna Be A Machine",
-        "bpm": 128,
-        "targetSong": "logic",
-        "targetSectionBpm": 120,
-        "differenceBpm": 8,
-        "differencePercentOfTarget": 6.666667
+        "source": "Cycle Hit",
+        "bpm": 175,
+        "targetSong": "ManicSonic",
+        "targetSectionBpm": 180,
+        "differenceBpm": -5,
+        "differencePercentOfTarget": 2.777778
       },
       {
-        "source": "World Wide Web",
-        "bpm": 128,
-        "targetSong": "logic",
-        "targetSectionBpm": 120,
-        "differenceBpm": 8,
-        "differencePercentOfTarget": 6.666667
+        "source": "WHAT THE CAT!?",
+        "bpm": 200,
+        "targetSong": "escapade",
+        "targetSectionBpm": 190,
+        "differenceBpm": 10,
+        "differencePercentOfTarget": 5.263158,
+        "applicationHold": "Parent detected concurrent manual changes to escapade. Do not apply this run or change target merely to increase count."
       },
       {
-        "source": "Untamed",
-        "bpm": 145,
-        "targetSong": "Aobasou",
-        "targetSectionBpm": 140,
-        "differenceBpm": 5,
-        "differencePercentOfTarget": 3.571429
+        "source": "Light It Up",
+        "bpm": 174,
+        "targetSong": "ManicSonic",
+        "targetSectionBpm": 180,
+        "differenceBpm": -6,
+        "differencePercentOfTarget": 3.333333
       }
     ],
-    "timingLimit": "3曲とも動画説明に変速の記載あり。周辺24秒の推定周期は名目BPMに近いが、原譜面のタイミングマップは未取得。小節頭を断定せず4拍相当として登録。個別JSONは映像の構造を本作用に翻案したもので正確採譜ではない。",
+    "timingLimit": "原譜面のタイミングマップ・ハッシュ未取得。投稿者の説明欄の名目BPMと、取得24秒の発音周期の一致を確認したが、小節頭は確定せず4拍相当として登録。現行版と2019/2020年映像の同一性も未確定。個別JSONは手順・休み・密度の構造の翻案で、時刻や位置の正確採譜ではない。",
     "review": {
       "sourceOverviewFrames": 144,
       "selectedAndContextFrames": 144,
-      "extraDetailFrames": {
-        "machine-normal-1": 16
+      "selectedDetailFrames": 96,
+      "confirmedSourceHands": "全3動画で赤=左手・青=右手。セイバーの担当を目視し、ノーツx座標から手を推定していない。本作の翻案はleft=青・right=赤。",
+      "handOrder": {
+        "cycle-hard-1": "L,R,LR,rest",
+        "cycle-hard-2": "L,R,L,R,R",
+        "whatthecat-normal-1": "L,R,L",
+        "whatthecat-normal-2": "LR,LR,L",
+        "light-hard-1": "rest,LR,LR",
+        "light-hard-2": "L,LR,LR,short rest"
       },
-      "confirmedSourceHands": "Machineは赤=左・青=右、WWW/Untamedは橙=左・青=右。セイバーの担当を目視し、ノーツx座標から手を推定していない。本作の翻案ではleft=青、right=赤。",
-      "machineNormal1Correction": "詳細フレームで選択区間がL,R,R,Lと確認。初期の前後全体を広く要約したL,L,R案は採用せず、最終POSITIONS/added.jsonはL,R,R,L。",
-      "listening": "音声の発音周期を数値解析。人間による聴感評価をしたとの主張はしない。",
-      "playback": "全12本ffmpeg完全デコード済み。スマホ幅ブラウザ再生は親担当の最終検証へ委ねる。"
+      "selectedAlternative": "WHAT THE CAT!? 1の当初候補27.8499秒はCycle Hit 1と同じ単発二手→両手の型だったため不採用。19.4499秒の左上・右横・左下へ変更し、前後24フレームと詳細16フレームで再確認した。",
+      "melodyLimit": "発音周期を数値解析したが、主旋律・歌・伴奏の音源分離や個別採譜は未実施。主旋律を拾った素材という断定をせず、手順・短い応答・休みの資料として分類した。人間による聴感評価や試遊をしたとの主張はしない。",
+      "playback": "12本のffmpeg完全デコードとH264/AAC・長さを確認。スマホブラウザ再生は親担当の最終検証。",
+      "applicationPolicy": "休符を持つ3素材にはrequiredRestRangesを追加。元動画Normalでも本作の高速で広い移動の翻案はHard向け。全6翻案をタップとしフリックは0。"
     },
-    "rejectedCandidates": "Country Rounds210 / Balearic Pumping111 / Breezer112.5 / Commercial Pumping105 / It Takes Me220 / Ludicrous+260 / Tempo-Katana225 / Magic208 / Damage110等は一次情報のBPMを確認して今回の120〜200枠から除外。検索結果の無関係曲も採用しなかった。",
-    "downloadScope": "各動画は18〜42秒、76〜100秒の2区間のみ。全尺取得なし。Source内に必要周辺映像144秒とメタデータを保持。各addedエントリーのsourceExcerptOffsetSecondsとsourceExcerptLocalStartに元動画絶対時刻との差を明記。",
-    "mutationScope": "Research内の新規ファイルのみ。ゲーム実リポジトリ、サイト、譜面、既存素材、定時設計には変更なし。"
+    "deduplication": "既存112件のID、元動画ID・難易度・時間範囲を照合し重複0。同じ曲のLight It Up Normalは既存だが、今回Hardは新規。譜面ハッシュ未取得なのでハッシュ一致の重複排除を行ったとは主張しない。",
+    "downloadScope": "各動画18〜42秒・76〜100秒の24秒区間を2本、計144秒だけ取得。全尺取得なし。Sourceに周辺映像とメタデータを保持。added.jsonに絶対時刻とsourceExcerptOffsetSeconds/sourceExcerptLocalStartを記録。",
+    "mutationScope": "Research内のファイルのみ。ゲーム実リポジトリ、サイト、ゲーム譜面、既存素材、定時設計には変更なし。",
+    "rights": "出典付きの短い研究用抜粋。映像・楽曲・譜面の権利は各権利者に帰属し、自由利用ライセンスを主張しない。"
   },
   "references": [
     {
-      "id": "machine-normal-1",
-      "sourceUrl": "https://www.youtube.com/watch?v=4nLUlPpz9ns&t=27",
-      "mapper": "ConnorJC",
-      "observation": "選択4拍の16フレームでも確認すると、赤の左手の横向き単発、青の右手の横向き二打、赤の左手の下向きという順になる。右手は横のアークに沿って返し、左手はその間に次の締めへ備える。前後では両手の着地にも移る。",
-      "adaptation": "映像の担当手順と同じ左・右・右・左の四打へ整理。右を内から外へ動かし、その二打を左の単発で挟む。タイミングと座標は本作用の翻案であり、アークの保持や連続フリックは移さず全てタップにする。"
+      "id": "cycle-hard-1",
+      "sourceUrl": "https://www.youtube.com/watch?v=k54Fo-Zyhlw&t=27",
+      "mapper": "Freeek",
+      "observation": "赤の左手の横向き単発、青の右手の横向き単発、赤青の低い下向き同時打ち、短い空きという順。選択16フレームのコンボは74から78へ増え、末尾は78で止まる。前後にも横の受け渡しがあり、同時打ちで一つのまとまりを締める。",
+      "adaptation": "左外・右外の単発を先に出し、両手内下で締めて最後の1拍を空ける四ノーツへ翻案。原作の横方向矢印をフリックへ置き換えず、位置の戻りで表現する。前後の空きが同じ場所だけで使う。"
     },
     {
-      "id": "machine-normal-2",
-      "sourceUrl": "https://www.youtube.com/watch?v=4nLUlPpz9ns&t=85",
-      "mapper": "ConnorJC",
-      "observation": "前の4拍では赤青の上下がまとまっているが、この4拍付近から赤の横アークと青の応答へほどける。両手のまとまりをそのまま繰り返しておらず密度の差が見える。一方、左右の壁と視点移動が重なる。",
-      "adaptation": "壁を除き、左右の低い受けから左の上段、左の外側への横返しへ移す四打。アークはタップへ置き換え、両手が同時に壁を避ける体の動きは要求しない。"
+      "id": "cycle-hard-2",
+      "sourceUrl": "https://www.youtube.com/watch?v=k54Fo-Zyhlw&t=85",
+      "mapper": "Freeek",
+      "observation": "赤の左下向き、青の右下向き、赤の左上向きの三打に続き、青の右手が横向きを二打返す。選択16フレームでコンボ139から144を確認した。前後も左の縦と右の横が分担しており、左右が同じ動きを反復しない。",
+      "adaptation": "左下・右下・左上の短い入口から、右内下・右外下の横二打へつなぐ五打へ翻案。原作の速い同手の振りを大きくし過ぎず、右の横移動には1.5拍を確保する。連結時の移動時間が合わない場所には使わない。"
     },
     {
-      "id": "www-normal-1",
-      "sourceUrl": "https://www.youtube.com/watch?v=s4nDImkd1x8&t=27",
-      "mapper": "ETAN",
-      "observation": "青の下向き、橙の下向き、青の上向きという単発の受け渡しが、左右の細い壁の間で続く。前後に空きがあり、少ないノーツでも次の拍が読める。壁による体の左右移動が見え方にも影響している。",
-      "adaptation": "右下、左下、右上、右下の四打へ翻案し、右手の高低で拍の継続を見せる。壁を除き、短い土台として使って歌の応答へ渡す。四分列を長く連結しない。"
+      "id": "whatthecat-normal-1",
+      "sourceUrl": "https://www.youtube.com/watch?v=sTecT1brJCY&t=19",
+      "mapper": "Freeek",
+      "observation": "赤の左手の上向き、青の右手の横向き、赤の左手の下向きが間を取りながら続く。前後付き24フレームでは同時打ちを加えず、左の戻りに右の単発を挟んでいる。等間隔の両手列とは違い、片手の準備時間が見える。",
+      "adaptation": "左上・右外・左下の三打を0.5・2・3.5拍へ配置する。右の横打ちを左の高低の間へ挟み、空いた拍は残す。元動画のNormalと本作の難易度は別で、BPM200ではHard向けの短い応答として扱う。"
     },
     {
-      "id": "www-normal-2",
-      "sourceUrl": "https://www.youtube.com/watch?v=s4nDImkd1x8&t=85",
-      "mapper": "ETAN",
-      "observation": "橙の下向きから青の下向き、橙の上向き、青の上向きと一手ずつ戻り、末尾付近で橙青の両手下向きがそろう。単発の問いから両手の答えへ密度が変わる。前後の壁は別の負荷になる。",
-      "adaptation": "左右の低い受け、片手ずつの上への返し、末尾の両手外下という六ノーツへ整理。壁を除き、両手アクセントに対応する実音がある場所だけで採用する。全てタップ。"
+      "id": "whatthecat-normal-2",
+      "sourceUrl": "https://www.youtube.com/watch?v=sTecT1brJCY&t=85",
+      "mapper": "Freeek",
+      "observation": "選択区間は赤青の両手下向き、両手上向き、赤の左手だけの下向きへ移る。コンボ276から281の五ノーツを16フレームで確認。直前は両手が続き、直後は赤の片手単発が中心になり、同時打ちの列をそのまま引き延ばさない。",
+      "adaptation": "両手下・両手上・左下の五ノーツへ整理する。最初の両手は外寄り、次を内側へほどき、最後の左は同じ内側で受ける。BPM200の速さを考え、広い左右往復や連続フリックにはしない。"
     },
     {
-      "id": "untamed-hard-1",
-      "sourceUrl": "https://www.youtube.com/watch?v=ov3CGt-dt8o&t=28",
-      "mapper": "Kolezan",
-      "observation": "前のノーツが終わったあと、前後付き映像にはまとまった空白がある。橙の左手の単発から青の右手の斜め上向きへ順に再開し、直後にも空白を残す。Hardでも全ての拍を埋めず、次のフレーズの入口を明瞭にできる。",
-      "adaptation": "前半を休符とし、2.5拍で左の低い単発、3拍で右の高い単発という二打にする。休み自体を素材として保持し、候補の空白へノーツを増やす目的には使わない。"
+      "id": "light-hard-1",
+      "sourceUrl": "https://www.youtube.com/watch?v=ev2PaQ--p1c&t=27",
+      "mapper": "Ruckus",
+      "observation": "選択4拍の前半ではコンボ66が変わらず、壁の間を抜けた後に赤青の両手上向き、続いて両手下向きで68・70へ進む。前の区間にも空白があり、その後は両手の短いまとまりへ入る。壁が視認と体の動きへ別の負荷を加える。",
+      "adaptation": "前半2.5拍は休みとして保持し、2.5拍の両手上、3.5拍の両手下だけを四ノーツにする。壁は移さず、再開の二打に主役を置く。既存の休符をノーツで埋めるためには使わない。"
     },
     {
-      "id": "untamed-hard-2",
-      "sourceUrl": "https://www.youtube.com/watch?v=ov3CGt-dt8o&t=86",
-      "mapper": "Kolezan",
-      "observation": "橙の下向きと上向きの二打を先に示し、青の下向き、橙の上向き、青の上向きへ受け渡す。前の青の弧と次の短い交互につながり、片手のまとまりと交互の密度が対比される。",
-      "adaptation": "左の外下・外上の二打を軸に、右下・左内上・右上の短い返事へ進む五打。速い終端では内側に動線を寄せ、まとまりの前半だけ広い動きを使う。全てタップへ翻案する。"
+      "id": "light-hard-2",
+      "sourceUrl": "https://www.youtube.com/watch?v=ev2PaQ--p1c&t=85",
+      "mapper": "Ruckus",
+      "observation": "赤の左手のドット単発に続き、赤の斜めと青の上向きの組、赤の横と青の下向きの組になる。16フレームでコンボ247から252、末尾の空きを確認した。両手でも左右の高さと方向が一致せず、入口の単発から異なる動きへ展開する。",
+      "adaptation": "左上の単発、左下と右上の両手、左上と右下の両手という非対称な五ノーツへ翻案する。左は内側の単発から最初の両手で外側へ広げ、その後は外側で高低を返す。原作の斜め矢印を連続フリックへ変換しない。主旋律への対応はこの映像だけでは確定していない。"
     }
   ],
   "limitations": [
     "物理的な到達・カメラ追跡・人間の試遊による楽しさは未確認。",
     "映像の4拍相当で小節頭・現在の譜面版は未確定。",
-    "今回の5素材は既存の実音・手順・休符と合う未使用区間がないため保留。"
+    "今回の6素材は既存の打点・手順・休符と合う区間がなく保留。escapadeは並行編集を保護し今回未適用。",
+    "メロディー優先という最新指示は設計に保存。推定分離・音高解析は候補調査であり、主旋律として確認済みの打点へはまだ変更していない。"
   ],
   "chartHashesTestedInUnity": {
     "Assets/StreamingAssets/Songs/Aobasou/chart.json": "0a184746f8a81e57c1609f495937d40aba4d40e19b37d8e25f0e41592f1e9556",
@@ -2849,7 +2927,7 @@
   },
   "capacity": {
     "method": "分類ZIPを必要時に端末側で生成し、動画を重複配信しない。画質と出典は保持。",
-    "previousBytes": 265949320,
+    "previousBytes": 142729004,
     "passed": true,
     "packages": [
       {
@@ -2864,7 +2942,7 @@
       },
       {
         "file": "good-3.zip",
-        "members": 60,
+        "members": 66,
         "allHashesMatched": true
       },
       {
@@ -2879,7 +2957,7 @@
       },
       {
         "file": "conditional-3.zip",
-        "members": 33,
+        "members": 45,
         "allHashesMatched": true
       },
       {
@@ -2888,22 +2966,22 @@
         "allHashesMatched": true
       }
     ],
-    "previousMediaUnchanged": 318,
-    "expandedBytes": 142729004
+    "previousMediaUnchanged": 336,
+    "expandedBytes": 149473751
   },
   "publication": {
     "pattern": {
       "source": {
         "project_id": "appgprj_6acf41e8dc0c8191b5a040cbed34bdc2",
-        "checkout_path": "C:\\Users\\shike\\OneDrive\\ドキュメント\\GitHub\\3D-Saber\\Outputs\\beat-saber-pattern-bank-20261014",
-        "commit_sha": "431f2e6f8e181b365f714c0bfadd6272ec45b164",
-        "archive": "C:/Users/shike/OneDrive/ドキュメント/GitHub/3D-Saber/Tools/BeatSaberPatternBank20261014/Hourly20261016-1227/pattern.tar"
+        "checkout_path": "C:/Users/shike/OneDrive/ドキュメント/GitHub/3D-Saber/Outputs/beat-saber-pattern-bank-20261014",
+        "commit_sha": "5ecede0457a7f327acbaa7ecaf6316e62d2cb86c",
+        "archive": "C:/Users/shike/OneDrive/ドキュメント/GitHub/3D-Saber/Tools/BeatSaberPatternBank20261014/Hourly20261016-1334/pattern.tar"
       },
       "deployment": {
-        "id": "appgdep_6ad19f7efe1881919ef29d3676a0b2d0",
+        "id": "appgdep_6ad1b0204aec8191b24c4389dc61d51c",
         "project_id": "appgprj_6acf41e8dc0c8191b5a040cbed34bdc2",
         "title": "Beat Saber 配置素材ノート",
-        "version_id": "appgprj_6acf41e8dc0c8191b5a040cbed34bdc2~appgver_3d20c73f12a48191891029c04ab51a1c",
+        "version_id": "appgprj_6acf41e8dc0c8191b5a040cbed34bdc2~appgver_a46eb5e1a7e481918eea7492c2fa3974",
         "type": "publish",
         "status": "succeeded",
         "url": "https://beat-saber-pattern-bank.metuji48.chatgpt.site",
@@ -2912,7 +2990,7 @@
         "provider_deployment_id": "site---6acf41e8dc0c8191b5a040cbed34bdc2",
         "failure_message": null,
         "env_set_revision": 0,
-        "updated_at": "2026-10-16T03:52:50.675853+00:00"
+        "updated_at": "2026-10-16T05:03:53.482829+00:00"
       }
     },
     "charts": {
@@ -2936,7 +3014,16 @@
         "failure_message": null,
         "env_set_revision": 0,
         "updated_at": "2026-10-16T03:53:37.048452+00:00"
-      }
+      },
+      "reused": true,
+      "reason": "全Web譜面と目録は変更なし。escapadeの並行手編集は公開へ混ぜず、前回の検証済み版を維持。"
     }
+  },
+  "melodyPriority": {
+    "status": "analysis_in_progress_not_applied",
+    "surveySongs": 5,
+    "surveySeconds": 100,
+    "gameChartChanges": 0,
+    "policy": "FiveSongs20261014/melody-priority-design.json"
   }
 }

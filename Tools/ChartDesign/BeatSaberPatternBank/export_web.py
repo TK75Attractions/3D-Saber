@@ -6,7 +6,7 @@ HERE=Path(__file__).resolve().parent
 def read(p):return json.loads(p.read_text(encoding='utf-8-sig'))
 def save(p,d):p.parent.mkdir(parents=True,exist_ok=True);p.write_text(json.dumps(d,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
 def main():
- p=argparse.ArgumentParser();p.add_argument('--pattern-site',type=Path,required=True);p.add_argument('--chart-site',type=Path,required=True);args=p.parse_args()
+ p=argparse.ArgumentParser();p.add_argument('--pattern-site',type=Path,required=True);p.add_argument('--chart-site',type=Path,required=True);p.add_argument('--exclude-song',action='append',default=[],help='並行編集中の曲の公開ファイルを保持する');args=p.parse_args()
  repo=HERE.parents[2];dist=args.pattern_site/'dist';data=read(HERE/'converted-patterns.json');apps=read(HERE/'applications.json')['applications']
  protected=protected_web(args.chart_site/'dist')
  for a in apps:authorize(a['songId'],a['difficulty'])
@@ -50,7 +50,9 @@ def main():
   for folder in ['patterns','applied']:
    for f in (dist/folder).glob('*.json'):archive.write(f,f.relative_to(dist))
   archive.writestr('README.txt','3D-Saber形式の4拍素材と、5曲へ実際に組み込んだ2小節の譜面です。\n動画に基づく翻案であり、完全な原作採譜ではありません。\n適用先・出典・変更理由はconverted-patterns.jsonを参照。')
- chartdist=args.chart_site/'dist';catalog=read(chartdist/'catalog.json');ids=ALLOWED;updates=0
+ chartdist=args.chart_site/'dist';catalog=read(chartdist/'catalog.json');excluded=set(args.exclude_song);assert excluded<=ALLOWED;ids=ALLOWED-excluded;updates=0
+ excluded_before={s['sourceId']:copy.deepcopy(s) for s in catalog['songs'] if s['sourceId'] in excluded}
+ excluded_hashes={c['path']:hashlib.sha256((chartdist/c['path']).read_bytes()).hexdigest() for s in catalog['songs'] if s['sourceId'] in excluded for c in s['charts']}
  for song in catalog['songs']:
   if song['sourceId'] not in ids:continue
   for entry in song['charts']:
@@ -61,6 +63,8 @@ def main():
     shutil.copy2(source,chartdist/entry['path']);updates+=1
    entry.update(sha256=hashlib.sha256(source.read_bytes()).hexdigest(),level=chart['displayLevel'],count=len(ns),flicks=sum(n['direction']!='none' for n in ns),longs=sum(n['count']>1 for n in ns),gold=sum(n['color']=='gold' for n in ns))
  catalog['updated']=datetime.date.today().isoformat();save(chartdist/'catalog.json',catalog)
+ assert all(s==excluded_before[s['sourceId']] for s in catalog['songs'] if s['sourceId'] in excluded)
+ assert all(hashlib.sha256((chartdist/k).read_bytes()).hexdigest()==v for k,v in excluded_hashes.items())
  assert_unchanged(protected,protected_web(chartdist))
  save(HERE/'export-scope-verification.json',{'passed':True,'protectedCharts':len(protected['hashes']),'allowedSongs':sorted(ALLOWED),'protectedHashes':protected['hashes']})
  # Hosting has a 256 MiB expanded archive limit. Keep readable canonical

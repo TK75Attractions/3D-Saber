@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "convertedCount": 112,
+  "convertedCount": 118,
   "appliedCount": 94,
   "applications": [
     {
@@ -49033,8 +49033,8 @@
       "sourcePhaseOffsetBeats": 0.5,
       "positionChangedNotes": 4,
       "spatialLayout": "疎な拍の右高低と左の合いの手",
-      "layoutAdaptation": "対応する実音の担当手へ、素材固有の置き場だけを移植。休符や中間の発音は本曲を保持。下位は同じ位置から間引く。",
-      "fidelity": "映像に基づく動きの翻案。原作の正確な採譜ではない。",
+      "layoutAdaptation": "曲別の音はめと共通アクセント、Hardからの包含を優先して再構成。原作配置のそのままのコピーではない。",
+      "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=hard&t=151.15",
       "noteIndices": [
         326,
@@ -49148,7 +49148,108 @@
           "lengthMs": 0
         }
       ],
-      "addedNotes": 9
+      "addedNotes": 9,
+      "preHierarchyAppliedNotes": [
+        {
+          "beat": 336.0,
+          "time": 152153.0,
+          "x": -0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 336.5,
+          "time": 152403.0,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 337.5,
+          "time": 152903.0,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 338.5,
+          "time": 153403.0,
+          "x": 0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 339.5,
+          "time": 153903.0,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 340.5,
+          "time": 154403.0,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 341.5,
+          "time": 154903.0,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 342.5,
+          "time": 155403.0,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 342.5,
+          "time": 155403.0,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ]
     }
   ],
   "inputChartHashes": {
@@ -49162,55 +49263,55 @@
   "pending": [
     {
       "patternId": "light-normal-1",
-      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
       "candidateCount": 0,
       "rejections": {}
     },
     {
       "patternId": "light-normal-2",
-      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
       "candidateCount": 0,
       "rejections": {}
     },
     {
       "patternId": "liftoff-hard-2",
-      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
       "candidateCount": 0,
       "rejections": {}
     },
     {
       "patternId": "cathedral-hard-1",
-      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
       "candidateCount": 0,
       "rejections": {}
     },
     {
       "patternId": "cathedral-hard-2",
-      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
       "candidateCount": 0,
       "rejections": {}
     },
     {
       "patternId": "firestarter-easy-2",
-      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
       "candidateCount": 0,
       "rejections": {}
     },
     {
       "patternId": "crystallized-hard-2",
-      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
       "candidateCount": 0,
       "rejections": {}
     },
     {
       "patternId": "bethere-hard-1",
-      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
       "candidateCount": 0,
       "rejections": {}
     },
     {
       "patternId": "popstars-hard-1",
-      "reason": "打点の一致候補はあるが、前後の移動・カット経路・下位包含を同時に満たさない。小節素材として保存。",
+      "reason": "打点の一致候補はあるが、前後の移動・カット経路・下位包含を同時に満たさない。小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
       "candidateCount": 1,
       "rejections": {
         "cutPath": 1
@@ -49218,55 +49319,91 @@
     },
     {
       "patternId": "crabrave-hard-1",
-      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
       "candidateCount": 0,
       "rejections": {}
     },
     {
       "patternId": "crabrave-hard-2",
-      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
       "candidateCount": 0,
       "rejections": {}
     },
     {
       "patternId": "rumbass-hard-1",
-      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
       "candidateCount": 0,
       "rejections": {}
     },
     {
       "patternId": "rumbass-hard-2",
-      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
       "candidateCount": 0,
       "rejections": {}
     },
     {
       "patternId": "machine-normal-1",
-      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
       "candidateCount": 0,
       "rejections": {}
     },
     {
       "patternId": "machine-normal-2",
-      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
       "candidateCount": 0,
       "rejections": {}
     },
     {
       "patternId": "www-normal-2",
-      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
       "candidateCount": 0,
       "rejections": {}
     },
     {
       "patternId": "untamed-hard-1",
-      "reason": "近いBPMの未使用区間に、前半2.5拍の休みと後半の二手の実音が一致する場所がない。既存の拍や歌の応答を消さず、休符付き小節素材として保存。",
+      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
       "candidateCount": 0,
       "rejections": {}
     },
     {
       "patternId": "untamed-hard-2",
-      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
+      "candidateCount": 0,
+      "rejections": {}
+    },
+    {
+      "patternId": "cycle-hard-1",
+      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
+      "candidateCount": 0,
+      "rejections": {}
+    },
+    {
+      "patternId": "cycle-hard-2",
+      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
+      "candidateCount": 0,
+      "rejections": {}
+    },
+    {
+      "patternId": "whatthecat-normal-1",
+      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
+      "candidateCount": 0,
+      "rejections": {}
+    },
+    {
+      "patternId": "whatthecat-normal-2",
+      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
+      "candidateCount": 0,
+      "rejections": {}
+    },
+    {
+      "patternId": "light-hard-1",
+      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
+      "candidateCount": 0,
+      "rejections": {}
+    },
+    {
+      "patternId": "light-hard-2",
+      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。 今回は並行編集中のescapadeを適合調査・適用から除外。",
       "candidateCount": 0,
       "rejections": {}
     }
@@ -49274,11 +49411,11 @@
   "hierarchyInputHashes": {
     "Assets/StreamingAssets/Songs/Aobasou/chart_hard.json": "a254c508886f6a0282a6321413b9f77c698cb55432e3b9b4068197ac12b07821",
     "Assets/StreamingAssets/Songs/BenkyouRemaster/chart_hard.json": "61ac2a75c9722eb3e2d5b0c3b4a6f90061cc93d61b80dd727b78d55d01fd4ac8",
-    "Assets/StreamingAssets/Songs/escapade/chart_hard.json": "985ac1c09a24e324c30e82799cf16cc959b8986f7cb4e8e8ec7c64bf36ce21af",
-    "Assets/StreamingAssets/Songs/logic/chart_hard.json": "7982dd57ae4edcc366e1d219e94bcdc166476e86ef5009d1c398e8a058b5ff28",
+    "Assets/StreamingAssets/Songs/escapade/chart_hard.json": "8997a60b81dd14f5724606d236da7378bea64179b815291ed6216c340da761f5",
+    "Assets/StreamingAssets/Songs/logic/chart_hard.json": "d16d7a9bdd5bd8a5ac7971f990e29ec19cb3c65d37ab8e7cd790404084f47aae",
     "Assets/StreamingAssets/Songs/ManicSonic/chart_hard.json": "9f7e17838121c65336a8635b3a33b0917cc5b5bfff60e3455e77821b61fc6f24"
   },
-  "hierarchyBatch": "hourly-20261016-1227",
+  "hierarchyBatch": "hourly-20261016-1334",
   "rhythmContrastDesign": "../FiveSongs20261014/rhythm-contrast-design.json",
   "preSongStyleApplications": [
     {

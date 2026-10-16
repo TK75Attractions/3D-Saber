@@ -23,5 +23,6 @@
   "hardPolicy": "Hardは広い横幅・高低差を使用する。短い縦・交差・同側の技は音と動線に応じて選ぶ。実音の打点と休符を優先し、全体の一律回転をしない。",
   "hierarchyPolicy": "Hardを主譜面、NormalとEasyは完全な下位包含。保持した時刻・手・位置は一致。最新の曲別動線とsharedAccentsを維持しverify_hierarchy.pyを必須にする。",
   "hardLevelPolicy": "最新の曲別HardはManicSonic9/escapade9/logic7/BenkyouRemaster8/Aobasou8。実データのChartDifficultyRaterも7〜9で一致。",
-  "songStylePolicy": "song-style-design.jsonとbeat-pickup-design.json、rhythm-contrast-design.json第3版を優先。代表フレーズ、確定打点と休符、色、方向、レベルを定時更新から保護する。"
+  "songStylePolicy": "song-style-design.jsonとbeat-pickup-design.json、rhythm-contrast-design.json第3版を優先。代表フレーズ、確定打点と休符、色、方向、レベルを定時更新から保護する。",
+  "melodyPolicy": "melody-priority-design.jsonを最新の意味の定義とする。音を拾う区間は歌・主旋律の発音とフレーズを対象とし、混合音の強さだけでは採用しない。旋律確認前に既存の確定打点を定時更新で選び直さない。"
 }

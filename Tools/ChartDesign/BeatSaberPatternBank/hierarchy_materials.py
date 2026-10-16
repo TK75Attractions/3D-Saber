@@ -45,11 +45,13 @@ def finalize_preserved(ns,m,diff,metadata):
  return chart,dict(notes=plan),ev
 
 def main():
- p=argparse.ArgumentParser();p.add_argument('--repo',type=Path,required=True);p.add_argument('--features',type=Path,required=True);args=p.parse_args()
+ p=argparse.ArgumentParser();p.add_argument('--repo',type=Path,required=True);p.add_argument('--features',type=Path,required=True);p.add_argument('--exclude-song',action='append',default=[],help='並行編集中の曲を今回の適用から除外する');args=p.parse_args()
  repo=args.repo;design=repo/'Tools/ChartDesign/FiveSongs20261014';bank=repo/'Tools/ChartDesign/BeatSaberPatternBank';prior=read(bank/'applications.json');apps=prior['applications'];patterns=read(bank/'converted-patterns.json')['patterns'];history=read(design/'hierarchy-design.json');specs=read(design/'songs.json');authorize_specs(specs)
  styles=read(design/'song-style-design.json') if (design/'song-style-design.json').exists() else {'songs':{}}
+ excluded=set(args.exclude_song);assert excluded<={s['id'] for s in specs},('Unknown excluded song',excluded)
  states={};pending=[];added=[];done={a['patternId'] for a in apps}
  for spec in specs:
+  if spec['id'] in excluded:continue
   sid=spec['id'];m=Music(spec,args.features);chart=read(repo/'Assets/StreamingAssets/Songs'/sid/'chart_hard.json');ev=read(design/sid/'hard-evidence.json');ns=internal(chart,read(design/sid/'hard-cut-plan.json'),m,ev)
   groups=collections.Counter(n['time'] for n in ns)
   for n,e in zip(ns,ev):n['_key']=e.get('sharedAccent',False);n['_pair']=groups[n['time']]==2;n['_arrow']=False;n['_forced']=None
@@ -103,6 +105,7 @@ def main():
    accepted=(sid,base,phase,ns,changed,matches);break
   if accepted is None:
    reason=('近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。' if not choices else '打点の一致候補はあるが、前後の移動・カット経路・下位包含を同時に満たさない。小節素材として保存。')
+   if excluded:reason+=' 今回は並行編集中の'+', '.join(sorted(excluded))+'を適合調査・適用から除外。'
    pending.append({'patternId':pattern['id'],'reason':reason,'candidateCount':len(choices),'rejections':dict(rejections)});continue
   sid,base,phase,ns,changed,matches=accepted;state=states[sid];state.update(ns=ns,changed=True);m=state['m']
   app=dict(patternId=pattern['id'],songId=sid,songTitle=m.spec['title'],difficulty='hard',startBeat=base,endBeat=base+8,startBar=base//4+1,barCount=2,startSeconds=round(m.t(base),4),endSeconds=round(m.t(base+8),4),targetBpm=m.bpm(base),referenceBpm=pattern['referenceBpm'],bpmDifferencePercent=round((m.bpm(base)/pattern['referenceBpm']-1)*100,3),sourceUrl=pattern['sourceUrl'],integrationMode='hierarchy-reference',sourcePhaseOffsetBeats=phase,positionChangedNotes=changed,spatialLayout=pattern['layout'],layoutAdaptation='対応する実音の担当手へ、素材固有の置き場だけを移植。休符や中間の発音は本曲を保持。下位は同じ位置から間引く。',fidelity='映像に基づく動きの翻案。原作の正確な採譜ではない。',viewerUrl=f'https://saber-chart-library.metuji48.chatgpt.site/?song={sid}&difficulty=hard&t={max(0,m.t(base)-1):.2f}')
@@ -116,6 +119,7 @@ def main():
    save(design/sid/f'{diff}-cut-plan.json',plan);save(design/sid/f'{diff}-evidence.json',ev)
  # 改修前の適用は履歴へ。現在の索引は必ず現在の実ノーツへ対応させる。
  for a in apps:
+  if a['songId'] in excluded:continue
   chart=read(repo/'Assets/StreamingAssets/Songs'/a['songId']/f"chart_{a['difficulty']}.json")
   if 'appliedNotes' in a:a.setdefault('preHierarchyAppliedNotes',copy.deepcopy(a['appliedNotes']))
   a['noteIndices']=[i for i,n in enumerate(chart['notes']) if a['startBeat']<=n['beat']<a['endBeat']];a['appliedNotes']=[chart['notes'][i] for i in a['noteIndices']];a['addedNotes']=len(a['appliedNotes'])
@@ -123,6 +127,6 @@ def main():
    a['fidelity']='映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。'
    a['layoutAdaptation']='曲別の音はめと共通アクセント、Hardからの包含を優先して再構成。原作配置のそのままのコピーではない。'
  prior.update(applications=apps,pending=pending,convertedCount=len(patterns),appliedCount=len(apps));save(bank/'applications.json',prior)
- history['materialUpdate']={'added':added,'pending':pending};save(design/'hierarchy-design.json',history)
+ history['materialUpdate']={'added':added,'pending':pending,'excludedSongs':sorted(excluded)};save(design/'hierarchy-design.json',history)
  print({'newApplied':len(added),'pending':len(pending)})
 if __name__=='__main__':main()

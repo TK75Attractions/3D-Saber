@@ -1,0 +1,205 @@
+{
+  "version": 1,
+  "request": "音を拾う区間ではメロディーを拾ってほしい。",
+  "priority": "2026-10-16のユーザーによる意味の明確化。歌・主旋律の発音とフレーズを優先し、混合音の発音強度だけを旋律一致の根拠としない。",
+  "allowedSongIds": [
+    "ManicSonic",
+    "escapade",
+    "logic",
+    "BenkyouRemaster",
+    "Aobasou"
+  ],
+  "hardLevels": {
+    "ManicSonic": 9,
+    "escapade": 9,
+    "logic": 7,
+    "BenkyouRemaster": 8,
+    "Aobasou": 8
+  },
+  "rhythmRoles": {
+    "pulse": "ドラムや伴奏の拍に乗る短い区間。拍を支える音と音楽的なまとまりを確認する。",
+    "melody": "歌または前景の主旋律を、音の入り・音価・細かい動き・伸ばし・句尾の間としてなぞる。強さの順位より旋律上の役割を優先する。",
+    "accent": "共通の決めや両手アクセント。主旋律と一致するかは別に記録する。"
+  },
+  "requirements": [
+    "歌が主役なら歌の発音を優先し、インストや間奏は前景のリード楽器を選ぶ。",
+    "旋律に対応する音源パート、時刻、選択理由、前後の音価と休みを記録する。",
+    "同音の歌の発音は音高変化がなくても打点候補。逆にビブラートや滑らかなピッチ変化を全て新打点にしない。",
+    "伸ばす音を細かいタップで埋めず、休止を残す。ロングは本作の中間カットが旋律の発音に合う場合だけ使う。",
+    "ドラムやベースの強い立ち上がりだけで歌・主旋律対応と表示しない。",
+    "推定ステムのotherには伴奏も混ざる。音源分離や単音高推定だけで主旋律を確認済みとしない。",
+    "下位も旋律の特徴的な入り・応答を残し、Hardの時刻・担当手・位置の部分列とする。",
+    "5曲共通テンプレートや曲全体の4分・8分列へ戻さず、曲別スタイルと確定休符を保持する。"
+  ],
+  "status": "analysis_in_progress_not_applied",
+  "currentChartStatus": "この回はメロディー再採譜による譜面変更を行っていない。beat-pickup-design.json第1版/リズム第3版は既存譜面の履歴・保護として残す。旋律照合を終えた候補だけ人間の今回指示による改修として次版に反映する。",
+  "survey": [
+    {
+      "songId": "ManicSonic",
+      "startSeconds": 16,
+      "endSeconds": 36,
+      "model": "htdemucs",
+      "sourceAudioSha256": "c14d865027b435813886f8b25dd119c8ec835c6719840b42bd942327d7d62176",
+      "secondsToSeparate": 54.01,
+      "stemRms": {
+        "drums": 0.118611,
+        "bass": 0.197746,
+        "other": 0.117672,
+        "vocals": 0.055894
+      },
+      "limitations": "推定分離。vocalsは歌の候補、otherは主旋律と伴奏の混在。主旋律一致は別途確認が必要。"
+    },
+    {
+      "songId": "escapade",
+      "startSeconds": 7.5,
+      "endSeconds": 27.5,
+      "model": "htdemucs",
+      "sourceAudioSha256": "f204714e47d8cb885d7aa899dd4098c1b79744c9f6acdc3f1e25039bff3c8ca8",
+      "secondsToSeparate": 38.11,
+      "stemRms": {
+        "drums": 0.115869,
+        "bass": 0.105035,
+        "other": 0.101216,
+        "vocals": 0.002419
+      },
+      "limitations": "推定分離。vocalsは歌の候補、otherは主旋律と伴奏の混在。主旋律一致は別途確認が必要。"
+    },
+    {
+      "songId": "logic",
+      "startSeconds": 12,
+      "endSeconds": 32,
+      "model": "htdemucs",
+      "sourceAudioSha256": "7a328946d53336ea6f1cbcf6aca6251fdfa4ce436d593bfac65d591e20befa7a",
+      "secondsToSeparate": 39.35,
+      "stemRms": {
+        "drums": 0.007873,
+        "bass": 0.003397,
+        "other": 0.01863,
+        "vocals": 0.00567
+      },
+      "limitations": "推定分離。vocalsは歌の候補、otherは主旋律と伴奏の混在。主旋律一致は別途確認が必要。"
+    },
+    {
+      "songId": "BenkyouRemaster",
+      "startSeconds": 26,
+      "endSeconds": 46,
+      "model": "htdemucs",
+      "sourceAudioSha256": "e8a897d48b2a36c6112d0df155b6aabb21b60ab596450627be6098d26ed5e920",
+      "secondsToSeparate": 34.23,
+      "stemRms": {
+        "drums": 0.077203,
+        "bass": 0.083444,
+        "other": 0.046228,
+        "vocals": 0.083966
+      },
+      "limitations": "推定分離。vocalsは歌の候補、otherは主旋律と伴奏の混在。主旋律一致は別途確認が必要。"
+    },
+    {
+      "songId": "Aobasou",
+      "startSeconds": 13,
+      "endSeconds": 33,
+      "model": "htdemucs",
+      "sourceAudioSha256": "0eaa9b9519f700f8e60345943c2d3bb67cb671ac4c1bab7437e6c67b1521f8dc",
+      "secondsToSeparate": 34.81,
+      "stemRms": {
+        "drums": 0.14239,
+        "bass": 0.06091,
+        "other": 0.291083,
+        "vocals": 0.107756
+      },
+      "limitations": "推定分離。vocalsは歌の候補、otherは主旋律と伴奏の混在。主旋律一致は別途確認が必要。"
+    }
+  ],
+  "concurrentEditing": {
+    "excludedSong": "escapade",
+    "reason": "実Hardに並行の手編集を検出。この回は実ファイルも公開ファイルも置換しない。"
+  },
+  "physicalPlayTest": false,
+  "pitchSurvey": {
+    "method": "分離した歌・楽器成分の音高推定と発音候補の可視化。全5曲各20秒。",
+    "purpose": "主旋律と伴奏を取り違えないための候補調査。ピークを自動的に打点へ変換しない。",
+    "humanListeningVerified": false,
+    "items": [
+      {
+        "songId": "ManicSonic",
+        "startSeconds": 16,
+        "endSeconds": 36,
+        "sourceAudioSha256": "c14d865027b435813886f8b25dd119c8ec835c6719840b42bd942327d7d62176",
+        "analysisFile": "C:\\Users\\shike\\OneDrive\\ドキュメント\\GitHub\\3D-Saber\\Tools\\BeatSaberPatternBank20261014\\Hourly20261016-1334\\MelodySurvey\\ManicSonic\\features.json",
+        "analysisSha256": "6b2367bb1ce4f75b4c0a4d6b5029ff53f57feb2ef6f63b1f7a2d9848b19fda48",
+        "candidateOnsetCount": {
+          "vocals": 25,
+          "other": 66,
+          "drums": 78
+        },
+        "observation": "楽器成分に段階的な音高の動きがある。低音・伴奏との識別を継続する。",
+        "melodyVerified": false,
+        "chartApplied": false
+      },
+      {
+        "songId": "escapade",
+        "startSeconds": 7.5,
+        "endSeconds": 27.5,
+        "sourceAudioSha256": "f204714e47d8cb885d7aa899dd4098c1b79744c9f6acdc3f1e25039bff3c8ca8",
+        "analysisFile": "C:\\Users\\shike\\OneDrive\\ドキュメント\\GitHub\\3D-Saber\\Tools\\BeatSaberPatternBank20261014\\Hourly20261016-1334\\MelodySurvey\\escapade\\features.json",
+        "analysisSha256": "37f58914dc386357f04c50d08ee899aee8e573859b1423cd8a0231bc8c18f139",
+        "candidateOnsetCount": {
+          "vocals": 64,
+          "other": 99,
+          "drums": 101
+        },
+        "observation": "歌成分が小さく、歌の推定ピークを旋律の発音として採用しない。前景の楽器を照合する。実譜面は並行編集を保護。",
+        "melodyVerified": false,
+        "chartApplied": false
+      },
+      {
+        "songId": "logic",
+        "startSeconds": 12,
+        "endSeconds": 32,
+        "sourceAudioSha256": "7a328946d53336ea6f1cbcf6aca6251fdfa4ce436d593bfac65d591e20befa7a",
+        "analysisFile": "C:\\Users\\shike\\OneDrive\\ドキュメント\\GitHub\\3D-Saber\\Tools\\BeatSaberPatternBank20261014\\Hourly20261016-1334\\MelodySurvey\\logic\\features.json",
+        "analysisSha256": "acd735580666866e855b5e4ba9b9b43d666e1ed64a219c5db83a797269e6335b",
+        "candidateOnsetCount": {
+          "vocals": 6,
+          "other": 72,
+          "drums": 53
+        },
+        "observation": "楽器成分の低い音高が中心。低音の動きだけを主旋律とみなさず、前景パートを照合する。",
+        "melodyVerified": false,
+        "chartApplied": false
+      },
+      {
+        "songId": "BenkyouRemaster",
+        "startSeconds": 26,
+        "endSeconds": 46,
+        "sourceAudioSha256": "e8a897d48b2a36c6112d0df155b6aabb21b60ab596450627be6098d26ed5e920",
+        "analysisFile": "C:\\Users\\shike\\OneDrive\\ドキュメント\\GitHub\\3D-Saber\\Tools\\BeatSaberPatternBank20261014\\Hourly20261016-1334\\MelodySurvey\\BenkyouRemaster\\features.json",
+        "analysisSha256": "e19f0052ecf77d54a1bec51f94a818ec495b0b042022048616adb798a85a56bb",
+        "candidateOnsetCount": {
+          "vocals": 96,
+          "other": 28,
+          "drums": 45
+        },
+        "observation": "楽器成分から歌成分への変化がある。歌の同音発音と滑らかなピッチ変化を区別する。",
+        "melodyVerified": false,
+        "chartApplied": false
+      },
+      {
+        "songId": "Aobasou",
+        "startSeconds": 13,
+        "endSeconds": 33,
+        "sourceAudioSha256": "0eaa9b9519f700f8e60345943c2d3bb67cb671ac4c1bab7437e6c67b1521f8dc",
+        "analysisFile": "C:\\Users\\shike\\OneDrive\\ドキュメント\\GitHub\\3D-Saber\\Tools\\BeatSaberPatternBank20261014\\Hourly20261016-1334\\MelodySurvey\\Aobasou\\features.json",
+        "analysisSha256": "e25ec454a7a9914d5b8cf323d9ba196a722e10b889a6b4ad1835bb656f517565",
+        "candidateOnsetCount": {
+          "vocals": 32,
+          "other": 58,
+          "drums": 63
+        },
+        "observation": "歌成分のまとまりと楽器成分の低い音高が異なる。伴奏の立ち上がりを歌の発音の代用にしない。",
+        "melodyVerified": false,
+        "chartApplied": false
+      }
+    ]
+  }
+}
