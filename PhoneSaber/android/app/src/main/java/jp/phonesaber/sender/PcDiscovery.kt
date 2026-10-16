@@ -132,11 +132,20 @@ class PcDiscovery(context: Context,
             }
         }
         callback = events
+        try {
+            if (allowNonWifi) connectivity.registerDefaultNetworkCallback(events)
+            else connectivity.registerNetworkCallback(request, events)
+        } catch (e: RuntimeException) {
+            // 登録RPCの失敗でもクラッシュさせず、停止・次の開始で無効になる再試行を予約する。
+            stop()
+            val retrySession = lifecycle
+            onUpdate(null, null, "ネットワーク探索失敗: ${e.localizedMessage}")
+            main.postDelayed({ if (!active && retrySession == lifecycle) start() }, 30_000)
+            return
+        }
         if (allowNonWifi) {
-            connectivity.registerDefaultNetworkCallback(events)
             connectivity.activeNetwork?.let(::switchNetwork)
         } else {
-            connectivity.registerNetworkCallback(request, events)
             availableWifi.addAll(connectivity.allNetworks.filter(::isWifi))
             availableWifi.firstOrNull()?.let(::switchNetwork)
         }

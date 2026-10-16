@@ -29,6 +29,7 @@ class PcDiscoverySocketTest {
                               onUpdate: (Destination?, android.net.Network?, String) -> Unit = { _, _, _ -> },
                               connectivity: ConnectivityManager = mock(ConnectivityManager::class.java),
                               multicast: WifiManager.MulticastLock = mock(WifiManager.MulticastLock::class.java),
+                              delayed: MutableList<Pair<Runnable, Long>>? = null,
                               test: (PcDiscovery) -> Unit) {
         val context = mock(Context::class.java)
         val wifi = mock(WifiManager::class.java)
@@ -47,8 +48,79 @@ class PcDiscoverySocketTest {
                 mockConstruction(Handler::class.java) { handler, _ ->
                     if (runPosts) doAnswer { call -> call.getArgument<Runnable>(0).run(); true }
                         .`when`(handler).post(any(Runnable::class.java))
+                    if (delayed != null) doAnswer { call ->
+                        delayed.add(call.getArgument<Runnable>(0) to call.getArgument<Long>(1)); true
+                    }.`when`(handler).postDelayed(any(Runnable::class.java), anyLong())
                 }.use {
                     test(PcDiscovery(context, { _, _ -> }, onUpdate))
+                }
+            }
+        }
+    }
+
+    @Test fun registrationFailureRetriesAndStopInvalidatesTheRetry() {
+        for (developerOverride in if (BuildConfig.DEBUG) listOf(false, true) else listOf(false)) {
+            val connectivity = mock(ConnectivityManager::class.java)
+            val nsd = mock(NsdManager::class.java)
+            val wifi = mock(Network::class.java)
+            val capabilities = mock(NetworkCapabilities::class.java)
+            `when`(capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)).thenReturn(true)
+            `when`(connectivity.getNetworkCapabilities(wifi)).thenReturn(capabilities)
+            `when`(connectivity.allNetworks).thenReturn(arrayOf(wifi))
+            `when`(connectivity.activeNetwork).thenReturn(wifi)
+            val callbacks = mutableListOf<ConnectivityManager.NetworkCallback>()
+            val register = org.mockito.stubbing.Answer<Any?> { call ->
+                callbacks.add(call.getArgument(if (developerOverride) 0 else 1))
+                if (callbacks.size == 1) throw RuntimeException("listenForNetwork failed")
+                null
+            }
+            if (developerOverride) doAnswer(register).`when`(connectivity)
+                .registerDefaultNetworkCallback(any(ConnectivityManager.NetworkCallback::class.java))
+            else doAnswer(register).`when`(connectivity).registerNetworkCallback(
+                any(NetworkRequest::class.java), any(ConnectivityManager.NetworkCallback::class.java))
+            val request = mock(NetworkRequest::class.java)
+            mockConstruction(NetworkRequest.Builder::class.java, withSettings().defaultAnswer(RETURNS_SELF)) { builder, _ ->
+                `when`(builder.build()).thenReturn(request)
+            }.use {
+                mockConstruction(DatagramSocket::class.java) { socket, _ ->
+                    `when`(socket.isClosed).thenReturn(true)
+                }.use { sockets ->
+                    val delayed = mutableListOf<Pair<Runnable, Long>>()
+                    val networks = mutableListOf<Network?>()
+                    val messages = mutableListOf<String>()
+                    withDiscovery(nsd, runPosts = true, connectivity = connectivity, delayed = delayed,
+                        onUpdate = { _, network, message -> networks.add(network); messages.add(message) }) { discovery ->
+                        try {
+                            discovery.setDeveloperNetworkOverride(developerOverride)
+                            discovery.start()
+                            assertTrue(messages.last().contains("listenForNetwork failed"))
+                            assertNull(networks.last())
+                            assertTrue(sockets.constructed().isEmpty())
+                            verifyNoInteractions(nsd)
+                            val retry = delayed.single { it.second == 30_000L }.first
+                            // 登録失敗前の通知が遅れて届いても、切断状態を復活させない。
+                            val updates = networks.size
+                            callbacks.first().onAvailable(wifi)
+                            assertEquals(updates, networks.size)
+                            retry.run()
+                            assertEquals(2, callbacks.size)
+                            assertEquals(wifi, networks.last())
+                            assertEquals(1, sockets.constructed().size)
+                            // 再開済みの世代には、同じ古い再試行を適用しない。
+                            retry.run()
+                            assertEquals(2, callbacks.size)
+                            discovery.stop()
+                            // 次の登録も失敗させ、停止後の再試行が無効になることを確認する。
+                            callbacks.clear()
+                            delayed.clear()
+                            discovery.start()
+                            val stoppedRetry = delayed.single { it.second == 30_000L }.first
+                            discovery.stop()
+                            stoppedRetry.run()
+                            assertEquals(1, callbacks.size)
+                            assertEquals(1, sockets.constructed().size)
+                        } finally { discovery.stop() }
+                    }
                 }
             }
         }
