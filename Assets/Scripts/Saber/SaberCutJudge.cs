@@ -217,8 +217,10 @@ public class SaberCutJudge : MonoBehaviour
             if (d > hitRange && sweep)
             {
                 // 通った面で入ったときは、動き始めた位置(前の刃の中心)を起点にする。
-                float swept = CameraSaberHistory.SweptDistance(noteXY, a0, b0, a, b, out Vector2 sweptClosest);
-                if (swept < d) { d = swept; closest = sweptClosest; anchor = (a0 + b0) * .5f; }
+                float start = OrderEntryFraction(note);
+                Vector2 allowedA = Vector2.Lerp(a0, a, start), allowedB = Vector2.Lerp(b0, b, start);
+                float swept = CameraSaberHistory.SweptDistance(noteXY, allowedA, allowedB, a, b, out Vector2 sweptClosest);
+                if (swept < d) { d = swept; closest = sweptClosest; anchor = (allowedA + allowedB) * .5f; }
             }
             // 広げた当たりで入るのは、近くに時刻の違う受付中のノーツがないときだけ(巻き込みを増やさない)。
             float range = d > hitRange && d <= thinRange && !Crowded(note) ? thinRange : hitRange;
@@ -250,12 +252,24 @@ public class SaberCutJudge : MonoBehaviour
             if (!SaberHandHelper.CanCut(note.RequiredHand, EffectiveHand())) continue;
             if (pending.ContainsKey(note) || ExcludedFromStroke(note)) continue;
             Vector2 noteXY = new Vector2(note.transform.position.x, note.transform.position.y);
-            float d = DistPointToSegment(noteXY, from, to, out Vector2 closest);
+            Vector2 allowedFrom = Vector2.Lerp(from, to, OrderEntryFraction(note));
+            float d = DistPointToSegment(noteXY, allowedFrom, to, out Vector2 closest);
             // 点は1フレームの軌跡で入るので、起点はその軌跡の始まり。
-            if (d <= hitRange) pending[note] = NewPending(note, closest, d, from, to, hitRange);
+            if (d <= hitRange) pending[note] = NewPending(note, closest, d, allowedFrom, to, hitRange);
         }
 
         return CheckPending(false);
+    }
+
+    // 保護が解ける前に通った軌跡を、解放後のフレームへ持ち越さない。
+    float OrderEntryFraction(CuttableNote note)
+    {
+        if (!Finite(songTime)) return 0f;
+        double start = note.CutOrderStartTime(EffectiveHand());
+        double from = hasStepFrom && Finite(stepFromTime) ? stepFromTime : songTime - saber.LastDeltaTime;
+        if (start <= from) return 0f;
+        if (songTime <= from) return 1f;
+        return Mathf.Clamp01((float)((start - from) / (songTime - from)));
     }
 
     // 保留中のノーツを見て、刃が範囲から抜けたら切る。曲時計があれば、刃がノーツを通り過ぎたときにも切る。
@@ -350,6 +364,7 @@ public class SaberCutJudge : MonoBehaviour
         double time = Finite(span) && span >= 0 && span <= MaxStepSeconds
             ? stepFromTime + span * (before / (before - after))
             : stepToTime;
+        if (!note.CanBeginCutAt(time, EffectiveHand())) return;
         if (time == p.crossSongTime && m == p.crossDirection) return;
         p.previousCrossSongTime = p.crossSongTime;
         p.previousCrossDirection = p.crossDirection;
@@ -443,7 +458,8 @@ public class SaberCutJudge : MonoBehaviour
         for (int i = 0; i < notes.Count; i++)
         {
             var other = notes[i];
-            if (other == note || !IsCandidate(other)) continue;
+            // 早切り保護中の後続も混雑に数える。当たりを広げる条件まで緩めない。
+            if (other == note || !IsCandidate(other, checkCutOrder: false)) continue;
             if (!SaberHandHelper.CanCut(other.RequiredHand, EffectiveHand())) continue;
             if (System.Math.Abs(other.HitTime - note.HitTime) <= SimultaneousSeconds) continue;
             Vector2 o = new Vector2(other.transform.position.x, other.transform.position.y);
@@ -689,12 +705,13 @@ public class SaberCutJudge : MonoBehaviour
         ResetMotion();
     }
 
-    private static bool IsCandidate(CuttableNote n)
+    private bool IsCandidate(CuttableNote n, bool checkCutOrder = true)
     {
         if (n == null) return false;
         if (n.IsCut || n.IsMissed) return false;
         if (!n.IsJudgeable) return false;
         if (!n.gameObject.activeInHierarchy) return false;
+        if (checkCutOrder && !n.CanBeginCutAt(songTime, EffectiveHand())) return false;
         return true;
     }
 

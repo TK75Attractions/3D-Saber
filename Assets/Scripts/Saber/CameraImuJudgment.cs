@@ -35,6 +35,8 @@ public class CameraImuJudgment : MonoBehaviour
         public int NoteId;
         public bool PositionPassed, Swept;
         public JudgmentTier Original;
+        // このSwingの時刻に保護されていたノーツ。後から前のノーツが切れても古いSwingを再利用しない。
+        public System.Collections.Generic.List<(CuttableNote note, uint version)> OrderBlocked;
     }
 
     struct SeenSwing { public bool Valid; public GameplaySwing Swing; }
@@ -214,6 +216,16 @@ public class CameraImuJudgment : MonoBehaviour
                 p.SongTime = songTime - age;
                 p.HasSongTime = true;
                 if (p.Swing.Side == PhysicalSaberSide.Left) leftConfirmed = true; else rightConfirmed = true;
+                var orderJudge = JudgeFor(CameraFor(p.Swing.Side));
+                if (spawner != null && orderJudge != null)
+                {
+                    foreach (var note in spawner.LiveNotes)
+                    {
+                        if (note == null || note.CanBeginCutAt(p.SongTime, orderJudge.EffectiveHand())) continue;
+                        p.OrderBlocked ??= new System.Collections.Generic.List<(CuttableNote, uint)>();
+                        p.OrderBlocked.Add((note, note.SpawnVersion));
+                    }
+                }
             }
             if (TryResolve(ref p)) p.Active = false;
             pending[i] = p;
@@ -232,6 +244,10 @@ public class CameraImuJudgment : MonoBehaviour
     {
         if (note == null || !note.gameObject.activeInHierarchy || note.IsCut || note.IsMissed || note.IsFinalized) return false;
         if (!SaberHandHelper.CanCut(note.RequiredHand, judge.EffectiveHand())) return false;
+        if (!note.CanBeginCutAt(p.SongTime, judge.EffectiveHand())) return false;
+        if (p.OrderBlocked != null)
+            foreach (var blocked in p.OrderBlocked)
+                if (blocked.note == note && blocked.version == note.SpawnVersion) return false;
         double error = p.SongTime - note.HitTime;
         return error >= -spawner.earlyJudgeWindow && error <= spawner.LateWindowFor(note);
     }

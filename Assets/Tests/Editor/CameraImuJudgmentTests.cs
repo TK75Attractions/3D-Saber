@@ -170,6 +170,33 @@ public class CameraImuJudgmentTests
         Assert.That(score.LastTier, Is.EqualTo(JudgmentTier.Perfect));
     }
 
+    [TestCase(1019, -.100, true)]
+    [TestCase(1020, -.100, false)]
+    [TestCase(1200, -.086, false)]
+    [TestCase(1200, -.085, true)]
+    public void FollowingNoteUsesSwingTimeForOrderProtection(float secondMs, double error, bool expected)
+    {
+        Create(twoNotes: true, secondTime: secondMs);
+        notes[0].transform.position = Vector3.up * 10;
+        double at = secondMs / 1000.0 - 1 + error;
+        Swing(at); Path(at); Advance(at + .17);
+        Assert.AreEqual(expected, notes[1].IsCut, "カメラが届いた時刻ではなくSwingの時刻で保護を判定する");
+        Assert.False(notes[0].IsCut);
+    }
+
+    [Test]
+    public void ProtectedSwingCannotBeReusedAfterThePreviousNoteIsCut()
+    {
+        Create(twoNotes: true, secondTime: 1200);
+        notes[0].transform.position = Vector3.up * 10;
+        Swing(.1); Advance(.1); // 後続はまだPerfectに入っていない。カメラは未着。
+        notes[0].Cut(Vector3.up * 10, Vector3.right * 10);
+        Path(.1); Advance(.27);
+        Assert.False(notes[1].IsCut, "前のノーツが切れても、保護中のSwingは再利用しない");
+        Swing(.28, 2, xiao: 456); Path(.28); Advance(.45);
+        Assert.True(notes[1].IsCut, "新しいSwingは通常どおり受け付ける");
+    }
+
     [TestCase("right", false, JudgmentTier.Perfect)]
     [TestCase("right", true, JudgmentTier.Great)]
     [TestCase("up", false, JudgmentTier.Great)]

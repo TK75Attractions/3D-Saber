@@ -324,6 +324,92 @@ public class SaberCutJudgeTests
         return note;
     }
 
+    [TestCase(.019, -.100, true)]
+    [TestCase(.020, -.100, false)]
+    [TestCase(.021, -.100, false)]
+    [TestCase(.200, -.085001, false)]
+    [TestCase(.200, -.085, true)]
+    [TestCase(.200, .100, true)]
+    public void FollowingNoteWaitsForItsPerfectZone(double gap, double error, bool allowed)
+    {
+        var first = TimedNote(Vector3.up * 10, 1.0);
+        var next = TimedNote(Vector3.zero, 1.0 + gap);
+        first.RequiredHand = next.RequiredHand = SaberHand.Right;
+        Assert.AreEqual(allowed, next.CutAtSongTime(Vector3.zero, Vector3.right * 10,
+            CutDirection.None, SaberHand.Right, next.HitTime + error));
+        Assert.AreEqual(allowed, next.IsCut);
+        Assert.False(first.IsCut);
+    }
+
+    [TestCase(SaberHand.Left, SaberHand.Right, SaberHand.Any, true)]
+    [TestCase(SaberHand.Right, SaberHand.Right, SaberHand.Any, false)]
+    [TestCase(SaberHand.Any, SaberHand.Right, SaberHand.Right, false)]
+    [TestCase(SaberHand.Left, SaberHand.Any, SaberHand.Right, true)]
+    [TestCase(SaberHand.Right, SaberHand.Any, SaberHand.Right, false)]
+    public void CutOrderKeepsHandsIndependentIncludingMouseAndGold(SaberHand previousHand,
+        SaberHand nextHand, SaberHand cutter, bool allowed)
+    {
+        var first = TimedNote(Vector3.up * 10, 1);
+        var next = TimedNote(Vector3.zero, 1.2);
+        first.RequiredHand = previousHand; next.RequiredHand = nextHand;
+        Assert.AreEqual(allowed, next.CanBeginCutAt(1.1, cutter));
+    }
+
+    [TestCase(1)] [TestCase(3)]
+    public void FirstAcceptedCutReleasesFollowingNoteIncludingLong(int count)
+    {
+        var first = TimedNote(Vector3.up * 10, 1);
+        var next = TimedNote(Vector3.zero, 1.2);
+        first.RequiredCutCount = first.RemainingCuts = count;
+        Assert.False(next.CanBeginCutAt(1.1, SaberHand.Right));
+        first.Cut(Vector3.up * 10, Vector3.right * 10);
+        Assert.True(next.CutAtSongTime(Vector3.zero, Vector3.right * 10,
+            CutDirection.None, SaberHand.Right, 1.1));
+    }
+
+    [Test]
+    public void MissedOrInactiveNotesDoNotKeepTheFollowingNoteLocked()
+    {
+        var first = TimedNote(Vector3.up * 10, 1);
+        var next = TimedNote(Vector3.zero, 1.2);
+        first.gameObject.SetActive(false);
+        Assert.True(next.CanBeginCutAt(1.1, SaberHand.Right));
+        first.gameObject.SetActive(true);
+        Assert.False(next.CanBeginCutAt(1.1, SaberHand.Right));
+        first.MarkMiss();
+        Assert.True(next.CanBeginCutAt(1.1, SaberHand.Right));
+    }
+
+    [TestCase(false)] [TestCase(true)]
+    public void ProtectedContactAndOldSweptPathAreNotSavedUntilUnlock(bool blade)
+    {
+        var (judge, tracker, bridge) = MakeBladeRig();
+        if (!blade) judge.bladeProvider = null;
+        TimedNote(Vector3.up * 10, 1);
+        var next = TimedNote(Vector3.zero, 1.2);
+        tracker.ResetTo(Vector3.left * 2);
+        tracker.Tick(new Vector3(-.2f, 0, 0), .02f);
+        bridge.OverrideBlade(new Vector3(-.2f, -1, 0), new Vector3(-.2f, 1, 0));
+        judge.TryCut(1.1);
+        Assert.AreEqual(0, judge.PendingCount, "保護中の接触は保存しない");
+        tracker.Tick(Vector3.right * 2, .02f);
+        bridge.OverrideBlade(new Vector3(2, -1, 0), new Vector3(2, 1, 0));
+        judge.TryCut(1.12);
+        Assert.False(next.IsCut, "Perfectに入ったとき既に通り過ぎていた古い軌跡は使わない");
+        tracker.Tick(Vector3.left * 2, .08f);
+        bridge.OverrideBlade(new Vector3(-2, -1, 0), new Vector3(-2, 1, 0));
+        judge.TryCut(1.2);
+        Assert.True(next.IsCut, "解放後の新しい振りでは切れる");
+    }
+
+    [Test]
+    public void NotesFromAnotherSpawnerDoNotBlockGameplay()
+    {
+        TimedNote(Vector3.up * 10, 1);
+        var (_, _, _, _, _, notes) = SweepRig(SweepNote(1200, 0));
+        Assert.True(notes[0].CanBeginCutAt(1.1, SaberHand.Right));
+    }
+
     [Test]
     public void OneSwingDoesNotRopeInTheFollowingNote_ButTheReturnSwingCutsIt()
     {

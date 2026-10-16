@@ -38,6 +38,7 @@ public class CuttableNote : MonoBehaviour
         OnRetired?.Invoke(this);
         OnCut = null; OnJudged = null; OnMiss = null; OnPartialCut = null; OnRetired = null;
         IsCut = IsMissed = IsFinalized = judgeable = false;
+        JudgmentOwner = null;
         MinimumCutSpeed = 0; RequireJudgeableOnCut = DirectionVisualOnly = false;
         LastCutCorrectDirection = true; LastCutterHand = SaberHand.Any;
         LastCutSongTime = null;
@@ -60,6 +61,28 @@ public class CuttableNote : MonoBehaviour
     public bool RequireJudgeableOnCut { get; set; }
     public bool IsMissed { get; private set; }
     public double HitTime { get; set; }
+    // 同じ譜面の、同じ手で切れる未切断ノーツによる早切り防止。別のSpawnerやメニューには干渉しない。
+    internal NoteSpawner JudgmentOwner;
+    public const double FollowingNoteGapSeconds = .020;
+    const double OrderTimeEpsilon = 1e-7;
+
+    public double CutOrderStartTime(SaberHand cutterHand)
+    {
+        SaberHand lane = RequiredHand == SaberHand.Any ? cutterHand : RequiredHand;
+        foreach (var earlier in activeNotes)
+        {
+            if (earlier == this || earlier == null || !earlier.isActiveAndEnabled) continue;
+            if (earlier.JudgmentOwner != JudgmentOwner || earlier.IsCut || earlier.IsMissed || earlier.IsFinalized) continue;
+            // ロングは最初の1カットで後続を解放する。残り回数を終えるまで後続を拘束しない。
+            if (earlier.CutsAchieved > 0 || !SaberHandHelper.CanCut(earlier.RequiredHand, lane)) continue;
+            if (HitTime - earlier.HitTime + OrderTimeEpsilon >= FollowingNoteGapSeconds)
+                return HitTime - JudgmentTierHelper.EarlyPerfectSeconds;
+        }
+        return double.NegativeInfinity;
+    }
+
+    public bool CanBeginCutAt(double songTime, SaberHand cutterHand)
+        => !CameraSaberHistory.Finite(songTime) || songTime + OrderTimeEpsilon >= CutOrderStartTime(cutterHand);
     // 採点に使う曲時計。IMU+Camera照合ではSwingの時刻、従来判定では刃がいちばん近づいた時刻。時計がなければnull。
     public double? LastCutSongTime { get; private set; }
     // 金ノーツ：切ったときに豪華音を鳴らすため NoteSpawner が立てる。
@@ -212,6 +235,8 @@ public class CuttableNote : MonoBehaviour
 
         // 担当ハンド不一致のスイングは切れない。ノーツは無傷のまま、正しい手での再判定が可能。
         if (!SaberHandHelper.CanCut(RequiredHand, cutterHand)) return false;
+        double? cutTime = swingSongTime ?? judgedSongTime;
+        if (cutTime.HasValue && !CanBeginCutAt(cutTime.Value, cutterHand)) return false;
 
         // 逆方向（要求方向と約120°以上ズレた）スイングはそもそも切らない。
         // 「準備で間違って切ってしまう」現象を防ぐためのガード。
