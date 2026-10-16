@@ -1496,6 +1496,42 @@ final class P2PTransportTests: XCTestCase {
         XCTAssertFalse(probe.isAlive)
     }
 
+    func testLANProbeDoesNotQueueRequestsBeforeReadyAndRecoversAfterHostChange() async throws {
+        let unity = try FakeUnityDiscovery()
+        defer { unity.stop() }
+        let port = try await unity.ready()
+        let probe = LANLivenessProbe(port: port.rawValue)
+        defer { probe.stop() }
+        // DNS がローカルで BadParam を返し、接続が ready にならない宛先。
+        probe.start(host: "..")
+        let created = await waitFor { probe.createdConnectionCountForTesting > 0 }
+        XCTAssertTrue(created)
+        try await Task.sleep(for: .seconds(1.1))
+        XCTAssertEqual(probe.sentRequestCountForTesting, 0, "待機中に周期送信を蓄積しない")
+        XCTAssertFalse(probe.isAlive)
+
+        probe.start(host: "127.0.0.1")
+        let recovered = await waitFor {
+            probe.isAlive && probe.metricsRoundTrip(at: ProcessInfo.processInfo.systemUptime).count > 0
+        }
+        XCTAssertTrue(recovered, "到達できる宛先に変えたら探索応答を受け取る")
+        XCTAssertGreaterThan(probe.sentRequestCountForTesting, 0)
+        XCTAssertGreaterThan(probe.metricsRoundTrip(at: ProcessInfo.processInfo.systemUptime).count, 0)
+        let sent = probe.sentRequestCountForTesting
+        try await Task.sleep(for: .seconds(0.6))
+        XCTAssertGreaterThan(probe.sentRequestCountForTesting, sent, "ready の間は周期送信を続ける")
+
+        probe.stop()
+        let stopped = probe.sentRequestCountForTesting
+        try await Task.sleep(for: .seconds(0.6))
+        XCTAssertEqual(probe.sentRequestCountForTesting, stopped)
+        XCTAssertFalse(probe.isAlive)
+        probe.start(host: "127.0.0.1")
+        let restarted = await waitFor { probe.isAlive }
+        XCTAssertTrue(restarted, "停止後も新しい接続で探索を再開できる")
+        XCTAssertGreaterThan(probe.sentRequestCountForTesting, stopped)
+    }
+
     // 受信待ちが error で終わった接続は作り直し、その後も Unity の応答で生存を保つ。
     func testLANLivenessProbeRebuildsTheConnectionAfterAReceiveError() async throws {
         let unity = try FakeUnityDiscovery()

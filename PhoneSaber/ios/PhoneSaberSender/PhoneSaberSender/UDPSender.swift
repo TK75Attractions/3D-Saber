@@ -593,6 +593,7 @@ final class LANLivenessProbe {
     private var timer: DispatchSourceTimer?
     private var lastReply = -Double.infinity
     private var createdConnectionCount = 0
+    private var sentRequestCount = 0
     private var roundTrip = ProbeRoundTrip()
 
     init(port: UInt16 = LANLivenessProbe.port,
@@ -659,6 +660,11 @@ final class LANLivenessProbe {
         return createdConnectionCount
     }
 
+    var sentRequestCountForTesting: Int {
+        lock.lock(); defer { lock.unlock() }
+        return sentRequestCount
+    }
+
     /// 受信待ちが error で終わった場合と同じ処理（次の tick で接続を作り直す）。
     func simulateReceiveErrorForTesting() {
         queue.sync {
@@ -683,14 +689,25 @@ final class LANLivenessProbe {
             if stillCurrent { self.connection = created; createdConnectionCount += 1 }
             lock.unlock()
             guard stillCurrent else { return }
+            created.stateUpdateHandler = { [weak self, weak created] state in
+                guard case .ready = state, let created else { return }
+                self?.sendRequest(on: created)
+            }
             created.start(queue: queue)
             receive(on: created)
-            connection = created
+            return
         }
-        if let connection, case .ready = connection.state {
-            lock.lock(); roundTrip.sent(at: clock()); lock.unlock()
-        }
-        connection?.send(content: Data(Self.request.utf8), completion: .idempotent)
+        if let connection { sendRequest(on: connection) }
+    }
+
+    private func sendRequest(on connection: NWConnection) {
+        // waiting 中の send は接続内に溜まる。初回は ready 通知で送り、以後は周期送信する。
+        lock.lock()
+        guard self.connection === connection, case .ready = connection.state else { lock.unlock(); return }
+        roundTrip.sent(at: clock())
+        sentRequestCount += 1
+        lock.unlock()
+        connection.send(content: Data(Self.request.utf8), completion: .idempotent)
     }
 
     private func receive(on connection: NWConnection) {

@@ -110,10 +110,14 @@ final class DebugBundleTransfer {
     for marker in ["static func makePackage(", "private static func checkedRelativePath(", "private static func sha256("]:
         support += block(transfer, marker) + "\n"
     support += "}\n"
-    for marker in ["final class LockedBox", "final class FakeBridge"]:
+    for marker in ["final class LockedBox", "final class FakeBridge", "final class FakeUnityDiscovery"]:
         support += block(tests, marker) + "\n"
     focused = "import XCTest\nimport Network\nimport Foundation\nfinal class SendGapNetworkTests: XCTestCase {\n"
     for name in ["testFailedBrowserReplacesPendingWaitingRetry",
+                 "testLANProbeDoesNotQueueRequestsBeforeReadyAndRecoversAfterHostChange",
+                 "testLANLivenessProbeRebuildsTheConnectionAfterAReceiveError",
+                 "testLANLivenessProbeAcceptsOnlyRepliesForTheVersionAndPortsThisPhoneUses",
+                 "testLANLivenessProbeRequiresARecentUnityReply",
                  "testExpiredPongsBeforeTheTimerDoNotRestoreTheLinkOrCountAsSuccessful",
                  "testDuplicatePongsDoNotRestoreAStaleLink",
                  "testUnchangedBonjourAndPathRefreshPreserveBothLANConnections",
