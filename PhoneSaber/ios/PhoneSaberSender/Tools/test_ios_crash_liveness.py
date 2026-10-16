@@ -1,4 +1,4 @@
-"""実際の通知登録と overlay 待機を抜き出して実行する、macOS 用回帰テスト。"""
+"""実際のカメラ設定・通知登録と overlay 待機を抜き出して実行する、macOS 用回帰テスト。"""
 import os
 from pathlib import Path
 import shutil
@@ -56,6 +56,19 @@ class IOSCrashLivenessTests(unittest.TestCase):
         start = recorder.index("            while !input.isReadyForMoreMediaData {")
         end = recorder.index("            let presentationTime", start)
         self.run_swift(OVERLAY_HEAD + recorder[start:end] + OVERLAY_TAIL)
+
+    def test_camera_configuration_lock_failure_preserves_default_and_experimental_modes(self):
+        camera = (SOURCE / "CameraViewModel.swift").read_text()
+        lifecycle = camera[camera.index("enum CameraLifecycleState:"):
+                           camera.index("private final class CaptureSessionRunner")]
+        start = camera.index("        if let format {", camera.index("    private func configureAndStart("))
+        end = camera.index("        output.videoSettings =", start)
+        setup = camera[start:end]
+        start = camera.index("    private func fail(")
+        end = camera.index("    private func resetStartState()", start)
+        failure = camera[start:end]
+        self.run_swift("import Foundation\n" + lifecycle + FORMAT_FAILURE_HEAD + setup +
+                       FORMAT_FAILURE_MIDDLE + failure + FORMAT_FAILURE_TAIL)
 
     def test_stopped_start_completion_cannot_stop_during_next_configuration(self):
         camera = (SOURCE / "CameraViewModel.swift").read_text()
@@ -124,6 +137,104 @@ NOTIFICATION_TAIL = r'''
    print(name.rawValue, passed ? "PASS" : "FAIL: poster waits for main")
   }
   model.sessionObserverTokens.forEach(NotificationCenter.default.removeObserver)
+  exit(failures == 0 ? 0 : 1)
+ }
+}
+'''
+
+FORMAT_FAILURE_HEAD = r'''
+import Darwin
+// カメラは使わず、設定ロックの一時的な失敗だけを注入する。
+final class Camera {
+ struct Range { let minFrameRate = 1.0, maxFrameRate = 120.0 }
+ struct Format {
+  let isAutoVideoFrameRateSupported = true
+  let videoSupportedFrameRateRanges = [Range()]
+ }
+ var shouldFail = true, isAutoVideoFrameRateEnabled = true
+ var activeFormat = Format()
+ var activeVideoMinFrameDuration = 1.0 / 60, activeVideoMaxFrameDuration = 1.0 / 60
+ var unlocks = 0, restores = 0
+ func lockForConfiguration() throws {
+  if shouldFail { throw NSError(domain: "CameraLockRegression", code: 1) }
+ }
+ func unlockForConfiguration() { unlocks += 1 }
+}
+struct CameraPostProcessingState {
+ init(_ camera: Camera) {}
+ func restore(_ camera: Camera) { camera.restores += 1 }
+}
+func configureCameraPostProcessing(_ camera: Camera, experimental: Bool) -> Bool { true }
+func fixedFrameDuration(fps: Double, ranges: [ClosedRange<Double>]) -> Double? { 1 / fps }
+final class Session {
+ var commits = 0
+ func commitConfiguration() { commits += 1 }
+}
+final class CameraViewModel {
+ let session = Session(), camera = Camera()
+ var cameraLifecycle = CameraLifecycleStateMachine()
+ var cameraRecoveryInProgress = false, lowLatencyCameraSettings = false
+ var cameraPostProcessingState: CameraPostProcessingState?
+ var cameraErrorMessage: String?, errorMessage: String?
+ var starts = 0
+ func publishCameraLifecycle(at time: TimeInterval) {}
+ func recomputeErrorMessage() { errorMessage = cameraErrorMessage }
+ func configure(targetFPS: Double) {
+  let camera = camera
+  let format: Camera.Format? = camera.activeFormat
+'''
+
+FORMAT_FAILURE_MIDDLE = r'''
+  session.commitConfiguration()
+  starts += 1
+ }
+'''
+
+FORMAT_FAILURE_TAIL = r'''
+}
+@main struct Audit {
+ static func main() {
+  var failures = 0
+  for (experimental, restoring) in [(false, false), (true, false), (false, true)] {
+   for recovery in [false, true] {
+    let model = CameraViewModel()
+    model.lowLatencyCameraSettings = experimental
+    if restoring { model.cameraPostProcessingState = CameraPostProcessingState(model.camera) }
+    model.cameraLifecycle.requestStart(at: 0)
+    if recovery { _ = model.cameraLifecycle.beginRecovery(at: 1) }
+    model.cameraRecoveryInProgress = recovery
+    model.configure(targetFPS: 30)
+    let requiresRetry = experimental || restoring
+    // 通常モードの既存の起動継続と、実験設定・復元中の再試行を区別する。
+    let passed = model.starts == (requiresRetry ? 0 : 1) && model.session.commits == 1 &&
+     model.cameraLifecycle.state.canRetry == requiresRetry &&
+     model.cameraRecoveryInProgress == (requiresRetry ? false : recovery) &&
+     model.errorMessage?.hasPrefix("カメラ形式を設定できません:") == true &&
+     (model.cameraErrorMessage != nil) == requiresRetry && model.camera.unlocks == 0 &&
+     model.camera.restores == 0 &&
+     model.camera.activeVideoMinFrameDuration == 1.0 / 60 &&
+     model.camera.activeVideoMaxFrameDuration == 1.0 / 60 &&
+     (model.cameraPostProcessingState != nil) == restoring
+    print("camera lock failure", experimental, restoring, recovery, passed ? "PASS" : "FAIL: changed configuration failure policy")
+    if !passed { failures += 1 }
+    if requiresRetry {
+     guard model.cameraLifecycle.beginRecovery(at: 2) else { failures += 1; continue }
+    }
+    // 次の設定では要求fps・ロック解放と、保存設定の復元呼出しを確認する。
+    model.camera.shouldFail = false
+    model.configure(targetFPS: 30)
+    if requiresRetry || recovery { model.cameraLifecycle.restartFinished(succeeded: true, at: 3) }
+    model.cameraLifecycle.receivedFrame(at: 3.1)
+    let recovered = model.starts == (requiresRetry ? 1 : 2) && model.session.commits == 2 &&
+     model.camera.activeVideoMinFrameDuration == 1.0 / 30 &&
+     model.camera.activeVideoMaxFrameDuration == 1.0 / 30 &&
+     model.camera.unlocks == 1 && model.camera.restores == (restoring ? 1 : 0) &&
+     model.cameraLifecycle.state == .live &&
+     (model.cameraPostProcessingState != nil) == experimental
+    print("camera lock subsequent configuration", experimental, restoring, recovery, recovered ? "PASS" : "FAIL")
+    if !recovered { failures += 1 }
+   }
+  }
   exit(failures == 0 ? 0 : 1)
  }
 }
