@@ -96,15 +96,15 @@ def main():
     limit = args.seconds * 5 + 90
     while player.poll() is None and time.monotonic() - started < limit:
         now = time.monotonic() - started
-        if now >= next_metrics:
-            next_metrics = now + 5
-            sender.sendto(METRICS.encode("ascii"), (address, 5007))
         sweep = 600 + (frame * 7) % 500
         try:
+            if now >= next_metrics:
+                next_metrics = now + 5
+                sender.sendto(METRICS.encode("ascii"), (address, 5007))
             sender.sendto(f"{sweep},300,{sweep + 300},700".encode("ascii"), (address, 5005))
             sender.sendto(f"{1500 - sweep},300,{1200 - sweep},700".encode("ascii"), (address, 5006))
         except OSError:
-            pass  # Player がまだ受信を始めていない間は無視
+            pass  # 受信開始前や一時的な通信断でも、次の送信を続ける。
         frame += 1
         time.sleep(1 / 60)
     stop.set()
