@@ -22,6 +22,32 @@ def block(source, marker):
 
 @unittest.skipUnless(sys.platform == "darwin" and shutil.which("xcrun"), "macOS/Swift required")
 class IOSCameraLifecycleTests(unittest.TestCase):
+    def test_persistent_fps_configuration_failure_does_not_repeat_restarts(self):
+        camera = (SOURCE / "CameraViewModel.swift").read_text()
+        health = block(camera, "private func publishDeviceHealth(")
+        # 実際の公開処理で再設定要求を数え、設定失敗が続く場合も検証する。
+        start = health.index("        let effectiveFPS = effectiveCameraFPS(at: time)")
+        fixture = "import Foundation\nimport Darwin\n"
+        fixture += block(camera, "enum CameraLifecycleState:") + "\n"
+        fixture += block(camera, "struct CameraLifecycleStateMachine") + "\n"
+        fixture += THERMAL_RETRY_MODEL + health[start:] + "\n}\n" + THERMAL_RETRY_MAIN
+        with tempfile.TemporaryDirectory(prefix="phonesaber-thermal-retry-") as temporary:
+            directory = Path(temporary)
+            source = directory / "Fixture.swift"
+            source.write_text(fixture)
+            for flags in ([], ["-D", "DEBUG"]):
+                with self.subTest(flags=flags):
+                    binary = directory / "fixture"
+                    compiled = subprocess.run(
+                        ["xcrun", "swiftc", "-O", "-parse-as-library", *flags,
+                         "-module-cache-path", str(directory / "cache"),
+                         str(SOURCE / "DeviceHealth.swift"), str(source), "-o", str(binary)],
+                        capture_output=True, text=True, timeout=90,
+                    )
+                    self.assertEqual(compiled.returncode, 0, compiled.stderr)
+                    run = subprocess.run([str(binary)], capture_output=True, text=True, timeout=10)
+                    self.assertEqual(run.returncode, 0, run.stdout + run.stderr)
+
     def test_stop_at_fps_comparison_expiry_does_not_restart_capture(self):
         camera = (SOURCE / "CameraViewModel.swift").read_text()
         fixture = "import Foundation\nimport Darwin\n"
@@ -79,6 +105,74 @@ class IOSCameraLifecycleTests(unittest.TestCase):
                     run = subprocess.run([str(binary)], capture_output=True, text=True, timeout=10)
                     self.assertEqual(run.returncode, 0, run.stdout + run.stderr)
 
+
+THERMAL_RETRY_MODEL = r'''
+final class CameraViewModel {
+    var requestedHealthFPS = 30.0, activeCaptureFPS = 60.0
+    var running = true, sceneIsActive = true, cameraLifecycleEnabled = true
+    var cameraRecoveryInProgress = false, restarts = 0
+    var cameraLifecycle = CameraLifecycleStateMachine()
+    var targetFPS = 30
+    var appliesFPS = false
+    func effectiveCameraFPS(at time: TimeInterval) -> Int { targetFPS }
+    // 再設定時は要求値だけ更新し、設定ロック失敗時の実設定値を維持する。
+    func restartCameraForFPSChange() {
+        restarts += 1
+        requestedHealthFPS = Double(targetFPS)
+        if appliesFPS { activeCaptureFPS = Double(targetFPS) }
+    }
+    func publishDeviceHealth(at time: TimeInterval) {
+'''
+
+THERMAL_RETRY_MAIN = r'''
+@main struct Check {
+    static func main() {
+        var failures = 0
+        for actual in [0.0, 30, 60, 120] {
+            let model = CameraViewModel()
+            model.activeCaptureFPS = actual
+            model.cameraLifecycle.requestStart(at: 0)
+            model.cameraLifecycle.receivedFrame(at: 0.1)
+            // 既に要求したfpsが反映されなくても、liveの送信を毎秒止めない。
+            for time in 1...300 { model.publishDeviceHealth(at: Double(time)) }
+            let passed = model.restarts == 0
+            print("persistent requested=30 actual=\(actual):", passed ? "PASS" : "FAIL: repeated restarts=\(model.restarts)")
+            if !passed { failures += 1 }
+        }
+        for appliesFPS in [false, true] {
+            let model = CameraViewModel()
+            model.appliesFPS = appliesFPS
+            model.requestedHealthFPS = 60
+            model.cameraLifecycle.requestStart(at: 0)
+            model.cameraLifecycle.receivedFrame(at: 0.1)
+            // 発熱→冷却→再発熱では、成否にかかわらず要求変更ごとに一度だけ再設定する。
+            for (index, target) in [30, 60, 30].enumerated() {
+                model.targetFPS = target
+                for time in 1...300 { model.publishDeviceHealth(at: Double(index * 300 + time)) }
+                let passed = model.restarts == index + 1
+                    && model.requestedHealthFPS == Double(target)
+                    && model.activeCaptureFPS == (appliesFPS ? Double(target) : 60)
+                print("applies=\(appliesFPS) target=\(target):", passed ? "PASS" : "FAIL: restarts=\(model.restarts)")
+                if !passed { failures += 1 }
+            }
+        }
+        // 前面・送信中・live・復旧中でない、という既存の制約を保つ。
+        for blocked in 0..<5 {
+            let model = CameraViewModel()
+            model.cameraLifecycle.requestStart(at: 0)
+            if blocked != 0 { model.cameraLifecycle.receivedFrame(at: 0.1) }
+            if blocked == 1 { model.running = false }
+            if blocked == 2 { model.sceneIsActive = false }
+            if blocked == 3 { model.cameraRecoveryInProgress = true }
+            if blocked == 4 { model.cameraLifecycleEnabled = false }
+            model.requestedHealthFPS = 60
+            model.publishDeviceHealth(at: 1)
+            if model.restarts != 0 { failures += 1 }
+        }
+        exit(failures == 0 ? 0 : 1)
+    }
+}
+'''
 
 STOP_COMPARISON_MODEL = r'''
 // カメラ・通信・表示は起動せず、再起動要求と停止回数だけを数える。
