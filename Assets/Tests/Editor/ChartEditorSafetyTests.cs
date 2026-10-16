@@ -89,7 +89,7 @@ public class ChartEditorSafetyTests
         var start = new Vector2(200, 360);
         Call("BeginNoteDrag", 0, start);
         Call("DragNoteTo", start + new Vector2(2, -3), false, timeline, lanes);
-        Call("DragNoteTo", start + new Vector2(3, -3), false, timeline, lanes);
+        Call("DragNoteTo", start + new Vector2(3, -2), false, timeline, lanes);
         Call("EndNoteDrag");
         Assert.AreEqual(before, SaberChartUtility.ToJson(Document, false), "選んだだけで格子・8列へ丸めない");
         Assert.False(window.hasUnsavedChanges);
@@ -99,6 +99,7 @@ public class ChartEditorSafetyTests
     [Test]
     public void DragMovesInWholeSnapStepsAndLanesWhileKeepingRecordedOffsets()
     {
+        Set("placementSnap", true);
         var start = new Vector2(200, 360);
         float laneWidth = lanes.width / 8;
         Call("BeginNoteDrag", 0, start);
@@ -123,6 +124,116 @@ public class ChartEditorSafetyTests
         var moved = Document.notes.Single(n => Mathf.Abs(n.time - 2125f) < .01f);
         Assert.AreEqual(4.25f, moved.beat, .0001f);
         Assert.AreEqual(SaberChartUtility.CoordinateForLane(4, 8, -2.5f, 2.5f), moved.x, .0001f);
+    }
+
+    [Test]
+    public void DefaultPlacementIgnoresTheSavedSnapAndCanRecreateAnOffGridNote()
+    {
+        Assert.False(Get<bool>("placementSnap"));
+        var original = Document.notes[0].Clone();
+        Document.notes.Clear();
+        float x = (float)typeof(SaberChartEditorWindow).GetMethod("NoteCenterX",
+            BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, new object[] { original.x, lanes });
+        float y = (float)Call("YForBeat", original.beat, timeline);
+        Call("AddNoteAtMouse", new Vector2(x, y), timeline, lanes);
+        Assert.AreEqual(original.time, Document.notes[0].time, .001f);
+        Assert.AreEqual(original.x, Document.notes[0].x, .0001f);
+        Call("AddNoteAtMouse", new Vector2(x, y), timeline, lanes);
+        Assert.AreEqual(1, Document.notes.Count, "同じ自由位置に重複配置しない");
+    }
+
+    [Test]
+    public void FreeDragMovesLessThanOneSnapAndUndoesInOneOperation()
+    {
+        string before = SaberChartUtility.ToJson(Document, false);
+        var note = Document.notes[0];
+        var start = new Vector2(200, 360);
+        Call("BeginNoteDrag", 0, start);
+        Call("DragNoteTo", start + new Vector2(7, -5), false, timeline, lanes);
+        Call("DragNoteTo", start + new Vector2(9, -7), false, timeline, lanes);
+        Call("EndNoteDrag");
+        Assert.AreEqual(2003.7f + 500f * 7f / 82f, note.time, .001f);
+        Assert.AreEqual(.123f + 9f / (lanes.width / 8f) * (5f / 7f), note.x, .0001f);
+        Key(KeyCode.Z, EventModifiers.Control);
+        Assert.AreEqual(before, SaberChartUtility.ToJson(Document, false));
+        Assert.False(History<bool>("CanUndo"));
+    }
+
+    [Test]
+    public void FreeDragBackToTheStartRestoresExactTimePositionAndStoredBeat()
+    {
+        Document.notes[0].beat = 99.123f; // 時刻から再計算できない既存の拍も保つ。
+        string before = SaberChartUtility.ToJson(Document, false);
+        Set("savedJson", before);
+        var start = new Vector2(200, 360);
+        Call("BeginNoteDrag", 0, start);
+        Call("DragNoteTo", start + new Vector2(9, -7), false, timeline, lanes);
+        Call("DragNoteTo", start, false, timeline, lanes);
+        Call("EndNoteDrag");
+        Assert.AreEqual(before, SaberChartUtility.ToJson(Document, false));
+        Assert.False(window.hasUnsavedChanges);
+    }
+
+    [Test]
+    public void FreeHorizontalDragPreservesTheOriginalTimingAndBeat()
+    {
+        var note = Document.notes[0];
+        float beat = note.beat;
+        var start = new Vector2(200, 360);
+        Call("BeginNoteDrag", 0, start);
+        Call("DragNoteTo", start + new Vector2(7, 0), false, timeline, lanes);
+        Call("EndNoteDrag");
+        Assert.AreEqual(2003.7f, note.time);
+        Assert.AreEqual(beat, note.beat);
+        Assert.AreNotEqual(.123f, note.x);
+    }
+
+    [Test]
+    public void FreeDragAcrossTempoChangeFollowsThePointerWithoutRounding()
+    {
+        Document.tempoMap = new List<SaberChartTempoPoint>
+        {
+            new SaberChartTempoPoint { beat = 0, timeMs = 0 },
+            new SaberChartTempoPoint { beat = 4, timeMs = 2000 },
+            new SaberChartTempoPoint { beat = 8, timeMs = 3000 },
+        };
+        var note = Document.notes[0];
+        note.time = 1990f;
+        var start = new Vector2(200, 360);
+        Call("BeginNoteDrag", 0, start);
+        Call("DragNoteTo", start + new Vector2(0, -8.2f), false, timeline, lanes);
+        Call("EndNoteDrag");
+        Assert.AreEqual(2020f, note.time, .001f);
+        Assert.AreEqual(4.08f, note.beat, .0001f);
+        Assert.AreEqual(.123f, note.x);
+    }
+
+    [Test]
+    public void FreeDragClampsToChartStartAndCanStillReturnToTheOriginalPosition()
+    {
+        var note = Document.notes[0];
+        var start = new Vector2(200, 360);
+        Call("BeginNoteDrag", 0, start);
+        Call("DragNoteTo", start + new Vector2(-1000, 1000), false, timeline, lanes);
+        Assert.AreEqual(0f, note.time);
+        Assert.AreEqual(-2.5f, note.x);
+        Call("DragNoteTo", start, false, timeline, lanes);
+        Call("EndNoteDrag");
+        Assert.AreEqual(2003.7f, note.time);
+        Assert.AreEqual(.123f, note.x);
+    }
+
+    [Test]
+    public void PlacementSnapIsOptionalAndShiftCanTemporarilyEnableIt()
+    {
+        Assert.AreEqual(4.137f, (float)Call("PlacementBeat", 4.137f, false));
+        Assert.AreEqual(4.25f, (float)Call("PlacementBeat", 4.137f, true));
+        Set("placementSnap", true);
+        Assert.AreEqual(4.25f, (float)Call("PlacementBeat", 4.137f, false));
+        Document.notes.Clear();
+        Call("AddNoteAtMouse", new Vector2(200, 360 - .137f * 82), timeline, lanes);
+        Assert.AreEqual(2125f, Document.notes[0].time, .001f);
+        Assert.AreEqual(SaberChartUtility.CoordinateForLane(3, 8, -2.5f, 2.5f), Document.notes[0].x);
     }
 
     // ---- 守2・守8: 再コンパイルのあとも未保存の印と Undo を失わない ----

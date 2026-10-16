@@ -148,16 +148,16 @@ public class ChartEditorWorkflowTests
     }
 
     [Test]
-    public void NewEasyChartStartsOnWholeBeats()
+    public void NewEasyChartAllowsFreePlacementWithWholeBeatGuides()
     {
         Set("difficultyIndex", 0);
         Call("NewDocument");
         Assert.AreEqual(4, GetProperty<int>("CurrentSnap"));
-        // 半拍の近くをクリックしても、新規Easyの既定では整数拍へ置く。
+        // Easyの格子は表拍でも、通常の配置はクリックした細かな位置を保つ。
         Call("AddNoteAtMouse", new Vector2(200, 500 * .72f - 1.4f * 82), timeline, lanes);
         Assert.AreEqual(1, Document.notes.Count);
-        Assert.AreEqual(1f, Document.notes[0].beat);
-        Assert.AreEqual(500f, Document.notes[0].time);
+        Assert.AreEqual(1.4f, Document.notes[0].beat, .0001f);
+        Assert.AreEqual(700f, Document.notes[0].time, .001f);
     }
 
     [TestCase(1)]

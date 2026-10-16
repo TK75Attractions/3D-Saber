@@ -567,9 +567,11 @@ namespace Saber.ChartEditor
 
         private void DrawSnapBadge(Rect laneRect)
         {
-            string label = $"Snap {SnapLabels[Mathf.Clamp(snapIndex, 0, SnapLabels.Length - 1)]}";
+            string label = placementSnap
+                ? $"吸着 ON · {SnapLabels[Mathf.Clamp(snapIndex, 0, SnapLabels.Length - 1)]}"
+                : "自由配置 · Shiftで拍に吸着";
             var style = new GUIStyle(smallMutedStyle) { alignment = TextAnchor.MiddleLeft, normal = { textColor = AccentColor } };
-            Rect rect = new Rect(laneRect.x + 4f, laneRect.y + 3f, 140f, 16f);
+            Rect rect = new Rect(laneRect.x + 4f, laneRect.y + 3f, style.CalcSize(new GUIContent(label)).x, 16f);
             EditorGUI.DrawRect(new Rect(rect.x - 2f, rect.y, style.CalcSize(new GUIContent(label)).x + 6f, rect.height),
                 new Color(0f, 0f, 0f, .45f));
             GUI.Label(rect, label, style);

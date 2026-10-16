@@ -79,6 +79,8 @@ namespace Saber.ChartEditor
         [SerializeField] private float currentBeat;
         [SerializeField] private float pixelsPerBeat = 82f;
         [SerializeField] private int snapIndex = 3;
+        // 格子の分解能とマウス操作の吸着は別。既存のSnap設定があっても自由配置から始める。
+        [SerializeField] private bool placementSnap;
         [SerializeField] private EditTool editTool = EditTool.Draw;
         [SerializeField] private int paletteXLane = 3;
         [SerializeField] private int paletteYLane = 3;
@@ -427,8 +429,10 @@ namespace Saber.ChartEditor
 
             GUILayout.Space(10f);
             SectionLabel("分解能 / SNAP");
+            placementSnap = EditorGUILayout.ToggleLeft("配置・移動を格子に吸着", placementSnap);
             snapIndex = EditorGUILayout.Popup(snapIndex, SnapLabels, GUILayout.Width(contentWidth));
             GUILayout.Label($"1ステップ = {SaberChartUtility.SnapStep(CurrentSnap):0.###} 拍", smallMutedStyle);
+            GUILayout.Label("吸着OFF: 自由配置 / Shiftで一時吸着", smallMutedStyle);
 
             GUILayout.Space(10f);
             SectionLabel("履歴");
@@ -1069,7 +1073,7 @@ namespace Saber.ChartEditor
                 else
                 {
                     selectedIndex = -1;
-                    SeekToBeat(SaberChartUtility.QuantizeBeat(BeatAtY(current.mousePosition.y, timelineRect), CurrentSnap, document));
+                    SeekToBeat(PlacementBeat(BeatAtY(current.mousePosition.y, timelineRect), current.shift));
                 }
                 current.Use();
                 return;
@@ -1095,7 +1099,7 @@ namespace Saber.ChartEditor
         {
             if (!isPlaying) return false;
             if (button == 0)
-                SeekToBeat(SaberChartUtility.QuantizeBeat(BeatAtY(mouse.y, timelineRect), CurrentSnap, document));
+                SeekToBeat(PlacementBeat(BeatAtY(mouse.y, timelineRect), Event.current != null && Event.current.shift));
             return true;
         }
 
@@ -1150,8 +1154,8 @@ namespace Saber.ChartEditor
         }
 
         /// <summary>
-        /// ドラッグ先の時刻と横位置。元の値からの相対移動で、時刻は Snap の整数倍、横は列の間隔の整数倍だけ動かす。
-        /// 録音した細かな時刻や位置の端数は保つ。Shift を押したときだけ、格子と列の中心へ吸い付ける。
+        /// 通常はマウスの移動量どおりに相対移動し、元の細かな時刻・位置を保つ。
+        /// 吸着ONでは移動量を格子にそろえ、Shiftでは格子と列の中心へ直接吸い付ける。
         /// </summary>
         private (float time, float x) DragTarget(Vector2 mouse, bool snapToGrid, Rect timelineRect, Rect laneRect)
         {
@@ -1164,16 +1168,28 @@ namespace Saber.ChartEditor
                     SaberChartUtility.CoordinateForLane(LaneAtX(mouse.x, laneRect), LaneCount, xMin, xMax));
             }
 
-            float step = SaberChartUtility.SnapStep(CurrentSnap);
-            int steps = Mathf.RoundToInt((dragStartMouse.y - mouse.y) / Mathf.Max(1f, pixelsPerBeat) / step);
-            float time = steps == 0
+            float beatDelta = (dragStartMouse.y - mouse.y) / Mathf.Max(1f, pixelsPerBeat);
+            if (placementSnap)
+            {
+                float step = SaberChartUtility.SnapStep(CurrentSnap);
+                beatDelta = Mathf.Round(beatDelta / step) * step;
+            }
+            float time = beatDelta == 0f
                 ? dragOriginalTime
-                : Mathf.Max(0f, GridTimeAt(GridBeatAt(dragOriginalTime) + steps * step));
+                : Mathf.Max(0f, GridTimeAt(GridBeatAt(dragOriginalTime) + beatDelta));
             float laneWidth = Mathf.Max(1f, laneRect.width / LaneCount);
-            int lanes = Mathf.RoundToInt((mouse.x - dragStartMouse.x) / laneWidth);
+            float lanes = (mouse.x - dragStartMouse.x) / laneWidth;
+            if (placementSnap) lanes = Mathf.Round(lanes);
             float spacing = (xMax - xMin) / (LaneCount - 1);
             float x = lanes == 0 ? dragOriginalX : Mathf.Clamp(dragOriginalX + lanes * spacing, xMin, xMax);
             return (time, x);
+        }
+
+        private float PlacementBeat(float beat, bool forceSnap)
+        {
+            return placementSnap || forceSnap
+                ? SaberChartUtility.QuantizeBeat(beat, CurrentSnap, document)
+                : Mathf.Max(0f, beat);
         }
 
         private void EndNoteDrag()
@@ -1194,12 +1210,17 @@ namespace Saber.ChartEditor
 
         private void AddNoteAtMouse(Vector2 mouse, Rect timelineRect, Rect laneRect)
         {
+            bool forceSnap = Event.current != null && Event.current.shift;
             int xLane = LaneAtX(mouse.x, laneRect);
-            float x = SaberChartUtility.CoordinateForLane(xLane, LaneCount,
-                SaberChartUtility.DefaultXMin, SaberChartUtility.DefaultXMax);
+            float x = placementSnap || forceSnap
+                ? SaberChartUtility.CoordinateForLane(xLane, LaneCount,
+                    SaberChartUtility.DefaultXMin, SaberChartUtility.DefaultXMax)
+                : SaberChartUtility.DefaultXMin + Mathf.Clamp01(
+                    ((mouse.x - laneRect.x) / Mathf.Max(1f, laneRect.width / LaneCount) - .5f) / (LaneCount - 1)) *
+                    (SaberChartUtility.DefaultXMax - SaberChartUtility.DefaultXMin);
             float y = SaberChartUtility.CoordinateForLane(paletteYLane, LaneCount,
                 SaberChartUtility.DefaultYMin, SaberChartUtility.DefaultYMax);
-            float beat = SaberChartUtility.QuantizeBeat(BeatAtY(mouse.y, timelineRect), CurrentSnap, document);
+            float beat = PlacementBeat(BeatAtY(mouse.y, timelineRect), forceSnap);
             SaberChartNote existing = document.notes.FirstOrDefault(note =>
                 Mathf.Abs(TimelineBeat(note) - beat) < 0.0001f &&
                 Mathf.Abs(note.x - x) < 0.0001f && Mathf.Abs(note.y - y) < 0.0001f);

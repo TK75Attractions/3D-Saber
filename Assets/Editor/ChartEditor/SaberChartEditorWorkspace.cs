@@ -113,7 +113,8 @@ namespace Saber.ChartEditor
             GUILayout.Space(5);
             using (new EditorGUI.DisabledScope(RecordingBusy))
             {
-                GUILayout.Label("Snap", GUILayout.Width(33));
+                placementSnap = GUILayout.Toggle(placementSnap,
+                    new GUIContent("吸着", "OFFで自由配置。Shiftを押している間だけ拍・列に吸着します。右の分解能は格子表示・ステップ入力にも使います。"), GUILayout.Width(48));
                 snapIndex = EditorGUILayout.Popup(snapIndex, SnapLabels, GUILayout.Width(102));
             }
             using (new EditorGUI.DisabledScope(RecordingBusy || !history.CanUndo))
