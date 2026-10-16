@@ -80,6 +80,12 @@ def main():
         except FileNotFoundError:
             pass
     log = Path(os.environ.get("TMPDIR", "/tmp")) / "phonesaber-auto-latency-check.log"
+    # 前回の正常完了ログを、今回の途中終了の結果として再利用しない。
+    try:
+        log.unlink(missing_ok=True)
+    except OSError as error:
+        print(f"Player のログを初期化できません: {error}")
+        return 1
     command = ["/usr/bin/open", "-g", "-j", "-n", "-W", args.app, "--args", "-phonesaberSmoke", str(args.seconds),
                "-logFile", str(log)]
     if not args.windowed:
@@ -108,9 +114,21 @@ def main():
         frame += 1
         time.sleep(1 / 60)
     stop.set()
-    if player.poll() is None:
+    code = player.poll()
+    if code is None:
         subprocess.run(["pkill", "-KILL", "-f", "--", "-phonesaberSmoke"])
         print("Player が終わらないため中止しました:", log)
+        return 1
+    # open が 0 でも Player は途中で落ち得る。遅延推定だけでなく、今回の正常完了も必須。
+    try:
+        completions = [line for line in log.read_text(encoding="utf-8", errors="replace").splitlines()
+                       if "[PhoneSaberSmoke] done" in line]
+    except OSError as error:
+        print(f"Player の完了ログを読めません: {error}")
+        return 1
+    if code != 0 or len(completions) != 1 or not re.fullmatch(
+            r"\[PhoneSaberSmoke\] done exceptions=0 errors=0 input=ok cuts=[1-9][0-9]* flow=ok", completions[0]):
+        print(f"Player の正常完了を確認できません (exit={code}): {log}")
         return 1
     lines = []
     for generation in range(4, -1, -1):
