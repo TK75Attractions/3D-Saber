@@ -12,6 +12,68 @@ public class PhoneSaberReceiverLifecycleTests
     [TestCase(false, true)]
     [TestCase(true, false)]
     [TestCase(true, true)]
+    public void MissingFallbackCameraClearsPreviousBladeAndCameraSample(bool wasMouseFallback, bool destroyedCamera)
+    {
+        var cameras = Object.FindObjectsByType<Camera>(FindObjectsSortMode.None);
+        var tags = new string[cameras.Length];
+        var go = new GameObject("カメラ喪失の刃テスト");
+        go.SetActive(false);
+        var b = go.AddComponent<SaberInputBridge>();
+        var cameraObject = new GameObject("破棄されるカメラ");
+        var line = b.gameObject.AddComponent<LineRenderer>();
+        const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
+        for (int i = 0; i < cameras.Length; i++) tags[i] = cameras[i].tag;
+        try
+        {
+            // シーン切替で対象カメラも MainCamera も失った状態を再現する。
+            for (int i = 0; i < cameras.Length; i++)
+            {
+                if (tags[i] == "MainCamera") cameras[i].tag = "Untagged";
+            }
+            b.useInputPoint = false;
+            b.fallbackToMouse = true;
+            b.targetCamera = destroyedCamera ? cameraObject.AddComponent<Camera>() : null;
+            Object.DestroyImmediate(cameraObject);
+            typeof(SaberInputBridge).GetField("bladeLine", flags).SetValue(b, line);
+            typeof(SaberInputBridge).GetField("hasCameraSample", flags).SetValue(b, true);
+            b.OverrideBlade(Vector3.left, Vector3.right);
+            b.OverrideMouseFallback(wasMouseFallback);
+            line.enabled = true;
+            Assert.IsNull(Camera.main);
+
+            typeof(SaberInputBridge).GetMethod("Update", flags).Invoke(b, null);
+
+            Assert.IsFalse(b.HasBlade, "カメラを失った後に古い刃を有効なまま残さない");
+            Assert.IsFalse(line.enabled);
+            Assert.IsFalse(b.UsingMouseFallback);
+            Assert.IsFalse((bool)typeof(SaberInputBridge).GetField("hasCameraSample", flags).GetValue(b));
+
+            // MainCamera が再生成されたら、次のフレームで通常のマウス入力へ戻る。
+            cameraObject = new GameObject("復帰したカメラ");
+            var camera = cameraObject.AddComponent<Camera>();
+            camera.tag = "MainCamera";
+            camera.transform.position = new Vector3(0, 0, -10);
+            camera.orthographic = true;
+            camera.pixelRect = new Rect(0, 0, 640, 480);
+            typeof(SaberInputBridge).GetMethod("Update", flags).Invoke(b, null);
+            Assert.AreSame(camera, b.targetCamera);
+            Assert.IsTrue(b.HasBlade);
+            Assert.IsTrue(line.enabled);
+            Assert.IsTrue(b.UsingMouseFallback);
+        }
+        finally
+        {
+            for (int i = 0; i < cameras.Length; i++)
+                if (cameras[i] != null) cameras[i].tag = tags[i];
+            Object.DestroyImmediate(cameraObject);
+            Object.DestroyImmediate(go);
+        }
+    }
+
+    [TestCase(false, false)]
+    [TestCase(false, true)]
+    [TestCase(true, false)]
+    [TestCase(true, true)]
     public void ReceiverRestartDoesNotReusePendingOrPublishedCoordinates(bool blue, bool publishBeforeStop)
     {
         var go = new GameObject("受信再開の座標テスト");

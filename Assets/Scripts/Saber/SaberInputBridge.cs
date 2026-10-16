@@ -458,7 +458,7 @@ public class SaberInputBridge : MonoBehaviour
         if (!consumed && fallbackToMouse)
         {
             if (targetCamera == null) targetCamera = Camera.main;
-            if (targetCamera == null) return;
+            if (targetCamera == null) { HideBlade(); return; }
             Vector2 mouseScreen = MouseSaberInput.ReadMouseScreen();
             if (MouseSaberInput.TryProjectToPlane(mouseScreen, fixedZ, targetCamera, out Vector3 world))
             {
