@@ -154,6 +154,64 @@ final class EventRecoveryTests: XCTestCase {
         XCTAssertEqual(camera.state, .recovering)
     }
 
+    func testDelayedStartupCompletionPreservesInterruptionUntilItEnds() {
+        var camera = CameraLifecycleStateMachine()
+        camera.requestStart(at: 0)
+        camera.interruptionBegan(reason: "camera in use")
+        // startRunning の完了より先に中断通知が届くことがある。
+        camera.sessionStarted(at: 0.1)
+        XCTAssertEqual(camera.state, .interrupted("camera in use"))
+        camera.receivedFrame(at: 0.2)
+        XCTAssertEqual(camera.state, .interrupted("camera in use"))
+        XCTAssertTrue(camera.interruptionEnded(at: 0.3))
+        camera.restartFinished(succeeded: true, at: 0.4)
+        camera.receivedFrame(at: 0.5)
+        XCTAssertEqual(camera.state, .live)
+        XCTAssertEqual(camera.lastFrameAt, 0.5)
+    }
+
+    func testDelayedStartupCompletionCannotReplacePendingRecoveryOrFailure() {
+        var camera = CameraLifecycleStateMachine()
+        camera.requestStart(at: 0)
+        camera.runtimeError("media services reset")
+        camera.sessionStarted(at: 0.1)
+        XCTAssertEqual(camera.state, .failed("media services reset"))
+        XCTAssertTrue(camera.beginRecovery(at: 0.2))
+        camera.sessionStarted(at: 0.3)
+        XCTAssertEqual(camera.state, .recovering)
+        camera.receivedFrame(at: 0.4)
+        XCTAssertEqual(camera.state, .recovering)
+        camera.restartFinished(succeeded: true, at: 0.5)
+        XCTAssertEqual(camera.state, .starting)
+        camera.receivedFrame(at: 0.6)
+        XCTAssertEqual(camera.state, .live)
+    }
+
+    func testDelayedStartupCompletionCannotClearAStallOrStoppedRun() {
+        var camera = CameraLifecycleStateMachine()
+        camera.requestStart(at: 0)
+        XCTAssertTrue(camera.evaluateStall(at: 2))
+        camera.sessionStarted(at: 2.1)
+        XCTAssertEqual(camera.state, .stalled)
+        XCTAssertTrue(camera.state.canRetry)
+        camera.stop()
+        camera.sessionStarted(at: 2.2)
+        XCTAssertEqual(camera.state, .stopped)
+    }
+
+    func testStartupCompletionStillWaitsForFirstFrameAndPreservesLiveCamera() {
+        var camera = CameraLifecycleStateMachine()
+        camera.requestStart(at: 0)
+        camera.sessionStarted(at: 0.1)
+        XCTAssertEqual(camera.state, .starting)
+        XCTAssertFalse(camera.evaluateStall(at: 2.099))
+        camera.receivedFrame(at: 2.1)
+        XCTAssertEqual(camera.state, .live)
+        camera.sessionStarted(at: 2.2)
+        XCTAssertEqual(camera.state, .live)
+        XCTAssertEqual(camera.lastFrameAt, 2.1)
+    }
+
     func testFPSComparisonSupports60Versus120AndFallsBackOnUnsupportedDevices() {
         XCTAssertEqual(FPSComparisonPolicy.nextFPS(current: 60, highFPS: 120, supports120: true), 120)
         XCTAssertEqual(FPSComparisonPolicy.nextFPS(current: 120, highFPS: 120, supports120: true), 60)
