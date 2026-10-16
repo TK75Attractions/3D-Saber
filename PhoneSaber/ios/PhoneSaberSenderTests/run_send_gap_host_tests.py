@@ -113,7 +113,8 @@ final class DebugBundleTransfer {
     for marker in ["final class LockedBox", "final class FakeBridge"]:
         support += block(tests, marker) + "\n"
     focused = "import XCTest\nimport Network\nimport Foundation\nfinal class SendGapNetworkTests: XCTestCase {\n"
-    for name in ["testDuplicatePongsDoNotRestoreAStaleLink",
+    for name in ["testExpiredPongsBeforeTheTimerDoNotRestoreTheLinkOrCountAsSuccessful",
+                 "testDuplicatePongsDoNotRestoreAStaleLink",
                  "testUnchangedBonjourAndPathRefreshPreserveBothLANConnections",
                  "testP2PConnectedNotificationPreservesPendingVerifiedLANCoordinates",
                  "testCoordinateSendFailureInvalidatesP2PAndFallsBackToLAN",

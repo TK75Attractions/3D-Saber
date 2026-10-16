@@ -230,11 +230,16 @@ struct P2PRoundTripStats: Equatable {
         outstanding[sequence] = now
     }
 
-    /// Returns the round trip in seconds when the pong answers a known ping.
+    /// Returns the round trip in seconds when the pong answers a known, unexpired ping.
     @discardableResult
     mutating func pongReceived(_ sequence: UInt64, at now: TimeInterval) -> TimeInterval? {
         guard let sentAt = outstanding.removeValue(forKey: sequence) else { return nil }
         let roundTrip = max(0, now - sentAt)
+        // timer より先に届いても、期限切れの応答は疎通の証拠にしない。
+        guard roundTrip <= expireAfter else {
+            append(&outcomes, false)
+            return nil
+        }
         append(&roundTrips, roundTrip)
         append(&outcomes, true)
         return roundTrip

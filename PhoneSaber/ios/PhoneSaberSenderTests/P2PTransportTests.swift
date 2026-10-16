@@ -524,6 +524,47 @@ final class P2PTransportTests: XCTestCase {
         XCTAssertNil(stats.summary)
     }
 
+    func testExpiredPongsBeforeTheTimerDoNotRestoreTheLinkOrCountAsSuccessful() throws {
+        for expireBeforeReply in [false, true] {
+            var stats = P2PRoundTripStats(window: 10, expireAfter: 2)
+            var monitor = P2PLivenessMonitor()
+            monitor.connectionStarted(at: 100)
+            stats.pingSent(1, at: 100)
+            monitor.pongReceived(at: 100.05)
+            XCTAssertNotNil(stats.pongReceived(1, at: 100.05))
+            for sequence in 2...4 {
+                stats.pingSent(UInt64(sequence), at: 100 + Double(sequence) / 10)
+            }
+            // 復帰直後、timer の失効処理より先に古い応答が3枚届いても疎通の証拠にしない。
+            if expireBeforeReply { stats.expire(at: 103) }
+            for sequence in 2...4 {
+                let now = 103 + Double(sequence) / 100
+                let roundTrip = stats.pongReceived(UInt64(sequence), at: now)
+                XCTAssertNil(roundTrip, "timer と受信の実行順で期限が変わらない")
+                if roundTrip != nil { monitor.pongReceived(at: now) }
+            }
+            XCTAssertFalse(monitor.isUsable(at: 103.04), "古い3枚で P2P に復帰しない")
+            let summary = try XCTUnwrap(stats.summary)
+            XCTAssertEqual(summary.samples, 1)
+            XCTAssertEqual(summary.lostPercent, 75)
+            stats.expire(at: 104)
+            XCTAssertNil(stats.pongReceived(2, at: 104))
+            XCTAssertEqual(stats.summary?.lostPercent, 75, "失効済みの重複応答を二重集計しない")
+            // 新しく送った ping の応答なら、従来どおり連続3枚で復帰する。
+            for sequence in 5...7 {
+                let now = 104 + Double(sequence) / 10
+                stats.pingSent(UInt64(sequence), at: now)
+                if stats.pongReceived(UInt64(sequence), at: now + 0.05) != nil {
+                    monitor.pongReceived(at: now + 0.05)
+                }
+            }
+            XCTAssertTrue(monitor.isUsable(at: 104.75))
+        }
+        var boundary = P2PRoundTripStats(expireAfter: 2)
+        boundary.pingSent(1, at: 10)
+        XCTAssertEqual(boundary.pongReceived(1, at: 12), 2, "期限ちょうどは既存の失効処理と同じく受理する")
+    }
+
     // MARK: Loopback link against a fake bridge
 
     @MainActor
