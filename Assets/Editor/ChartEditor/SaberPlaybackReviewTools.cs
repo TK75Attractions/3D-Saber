@@ -19,6 +19,10 @@ namespace Saber.ChartEditor
         public int[] selected;
         public string[] undo;
         public List<SaberReviewComment> comments;
+        public string replyJson;
+        public int beatSnap, timelineZoom, changeIndex = -1, changePage;
+        public float timelineStart, reviewLeadIn = 1;
+        public bool showWaveform = true;
     }
 
     public sealed partial class SaberPlaybackReviewWindow
@@ -64,7 +68,9 @@ namespace Saber.ChartEditor
                     instruction = instruction, editingCommentId = editingCommentId, changeSummary = changeSummary,
                     seconds = seconds, rangeA = rangeA, rangeB = rangeB, hasPoint = hasPoint, point = point,
                     loop = loop, after = after, unsaved = hasUnsavedChanges, selected = selected.OrderBy(i => i).ToArray(),
-                    undo = undo.ToArray(), comments = comments
+                    undo = undo.ToArray(), comments = comments, replyJson = replyJson,
+                    beatSnap = beatSnap, timelineZoom = timelineZoom, timelineStart = timelineStart,
+                    reviewLeadIn = reviewLeadIn, showWaveform = showWaveform, changeIndex = changeIndex, changePage = changePage
                 });
                 if (json == lastDraftJson && File.Exists(DraftPath)) return;
                 Directory.CreateDirectory(Path.GetDirectoryName(DraftPath));
@@ -92,6 +98,10 @@ namespace Saber.ChartEditor
                 legacyHash = draft.legacyHash; requestJson = draft.requestJson; lastFolder = draft.lastFolder;
                 comments = draft.comments; instruction = draft.instruction ?? ""; editingCommentId = draft.editingCommentId ?? "";
                 changeSummary = draft.changeSummary; seconds = SafeTime(draft.seconds); rangeA = SafeTime(draft.rangeA);
+                replyJson = draft.replyJson ?? ""; beatSnap = Mathf.Clamp(draft.beatSnap, 0, 3);
+                timelineZoom = Mathf.Clamp(draft.timelineZoom, 0, 3); timelineStart = SafeTime(draft.timelineStart);
+                reviewLeadIn = new[] { 0f, .5f, 1f, 2f }.Contains(draft.reviewLeadIn) ? draft.reviewLeadIn : 1;
+                showWaveform = draft.showWaveform; changeIndex = draft.changeIndex; changePage = draft.changePage;
                 rangeB = Mathf.Max(rangeA, SafeTime(draft.rangeB)); hasPoint = draft.hasPoint; point = draft.point;
                 loop = draft.loop; after = draft.after; hasUnsavedChanges = draft.unsaved;
                 selected.Clear(); foreach (int i in draft.selected ?? Array.Empty<int>()) if (i >= 0 && i < document.notes.Count) selected.Add(i);
@@ -185,6 +195,7 @@ namespace Saber.ChartEditor
                 case KeyCode.LeftBracket: rangeA = seconds; rangeB = Mathf.Max(rangeB, rangeA); selected.Clear(); break;
                 case KeyCode.RightBracket: rangeB = seconds; rangeA = Mathf.Min(rangeA, rangeB); selected.Clear(); break;
                 case KeyCode.N: if (candidate == null) MarkCurrent(); break;
+                case KeyCode.B: ToggleComparison(); break;
                 default: return;
             }
             e.Use(); Repaint();
@@ -195,7 +206,8 @@ namespace Saber.ChartEditor
             using (new EditorGUILayout.HorizontalScope())
             {
                 GUILayout.Label("譜面 / 指摘", EditorStyles.boldLabel, GUILayout.Width(85));
-                timelineZoom = GUILayout.Toolbar(timelineZoom, new[] { "曲全体", "10秒", "5秒", "2秒" }, GUILayout.Width(230));
+                int zoom = GUILayout.Toolbar(timelineZoom, new[] { "曲全体", "10秒", "5秒", "2秒" }, GUILayout.Width(230));
+                if (zoom != timelineZoom) { timelineZoom = zoom; timelineStart = seconds - TimelineSpans[zoom] / 2; }
                 if (GUILayout.Button("現在位置", GUILayout.Width(68))) timelineStart = seconds - TimelineSpans[timelineZoom] / 2;
                 GUILayout.FlexibleSpace();
                 GUILayout.Label("Shift+ドラッグで区間", EditorStyles.miniLabel);
@@ -210,6 +222,7 @@ namespace Saber.ChartEditor
             float X(float time) => rect.x + Mathf.Clamp01((time - timelineStart) / span) * rect.width;
             if (rangeB >= timelineStart && rangeA <= timelineStart + span)
                 EditorGUI.DrawRect(new Rect(X(rangeA), rect.y, Mathf.Max(1, X(rangeB) - X(rangeA)), rect.height), new Color(.25f, .55f, .7f, .18f));
+            DrawAudioGuide(rect, timelineStart, span);
             for (int tick = 0; tick <= 4; tick++)
             {
                 float time = timelineStart + span * tick / 4;
@@ -225,8 +238,9 @@ namespace Saber.ChartEditor
                 bool blue = n.color == "blue", gold = n.color == "gold";
                 float y = rect.y + (blue ? 20 : gold ? 48 : 34);
                 Color color = blue ? new Color(.2f, .65f, 1) : gold ? new Color(1, .78f, .2f) : new Color(1, .3f, .4f);
-                EditorGUI.DrawRect(new Rect(Mathf.Min(X(time), rect.xMax - 3), y, Mathf.Max(3, X(end) - X(time)), 9), color);
-                if (candidate == null && selected.Contains(i)) EditorGUI.DrawRect(new Rect(X(time), y - 2, 4, 2), Color.white);
+                float noteX = Mathf.Min(X(time), rect.xMax - 3), noteWidth = Mathf.Max(3, X(end) - X(time));
+                if (candidate == null && selected.Contains(i)) EditorGUI.DrawRect(new Rect(noteX - 1, y - 2, noteWidth + 2, 13), Color.white);
+                EditorGUI.DrawRect(new Rect(noteX, y, noteWidth, 9), color);
             }
             int marker = 0;
             foreach (var comment in comments.OrderBy(c => c.fromSeconds).ThenBy(c => c.frameSeconds))
@@ -240,19 +254,39 @@ namespace Saber.ChartEditor
                 EditorGUI.DrawRect(new Rect(Mathf.Min(X(seconds), rect.xMax - 2), rect.y, 2, 62), Color.white);
             var e = Event.current;
             int control = GUIUtility.GetControlID(FocusType.Passive, rect);
+            if (e.type == EventType.ScrollWheel && rect.Contains(e.mousePosition) && !timelineDragging)
+            {
+                float ratio = Mathf.Clamp01((e.mousePosition.x - rect.x) / rect.width);
+                float anchor = timelineStart + ratio * span;
+                timelineZoom = Mathf.Clamp(timelineZoom + (e.delta.y < 0 ? 1 : -1), 0, TimelineSpans.Length - 1);
+                float nextSpan = timelineZoom == 0 ? Duration : Mathf.Min(Duration, TimelineSpans[timelineZoom]);
+                timelineStart = Mathf.Clamp(anchor - ratio * nextSpan, 0, Mathf.Max(0, Duration - nextSpan));
+                e.Use(); Repaint();
+            }
             if (e.type == EventType.MouseDown && e.button == 0 && rect.Contains(e.mousePosition))
             {
-                GUIUtility.hotControl = control; GUI.FocusControl(null);
-                timelineDragging = true; resumeAfterDrag = playing; rangeDragging = e.shift; Stop();
-                dragAnchor = timelineStart + Mathf.Clamp01((e.mousePosition.x - rect.x) / rect.width) * span;
-                Seek(dragAnchor); if (rangeDragging) { rangeA = rangeB = dragAnchor; selected.Clear(); }
-                e.Use();
+                float raw = timelineStart + Mathf.Clamp01((e.mousePosition.x - rect.x) / rect.width) * span;
+                float row = e.mousePosition.y - rect.y;
+                string color = row >= 18 && row < 32 ? "blue" : row >= 32 && row < 46 ? "red" : row >= 46 && row < 61 ? "gold" : null;
+                int picked = !e.shift && candidate == null && color != null ? SaberPlaybackReviewData.PickTimelineNote(document, raw, color, span * 6 / rect.width) : -1;
+                if (picked >= 0)
+                {
+                    GUI.FocusControl(null); SelectTimelineNote(picked, e.control || e.command); e.Use(); Repaint();
+                }
+                else
+                {
+                    GUIUtility.hotControl = control; GUI.FocusControl(null);
+                    timelineDragging = true; resumeAfterDrag = playing; rangeDragging = e.shift; Stop();
+                    dragAnchor = PointerTime(raw);
+                    Seek(dragAnchor); if (rangeDragging) { rangeA = rangeB = dragAnchor; selected.Clear(); }
+                    e.Use();
+                }
             }
             if (timelineDragging && GUIUtility.hotControl == control)
             {
                 if (e.type == EventType.MouseDrag || e.type == EventType.MouseUp)
                 {
-                    float target = timelineStart + Mathf.Clamp01((e.mousePosition.x - rect.x) / rect.width) * span;
+                    float target = PointerTime(timelineStart + Mathf.Clamp01((e.mousePosition.x - rect.x) / rect.width) * span);
                     Seek(target);
                     if (rangeDragging) { rangeA = Mathf.Min(dragAnchor, target); rangeB = Mathf.Max(dragAnchor, target); }
                     if (e.type == EventType.MouseUp) { GUIUtility.hotControl = 0; timelineDragging = false; if (resumeAfterDrag && !rangeDragging) Play(); }

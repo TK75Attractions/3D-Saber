@@ -36,6 +36,39 @@ public class PlaybackReviewTests
         Assert.AreEqual(-1, SaberPlaybackReviewData.AdjacentNoteTime(chart, 0, -1));
         Assert.AreEqual(-1, SaberPlaybackReviewData.AdjacentNoteTime(chart, 4, 1));
     }
+    [Test] public void BeatSnapUsesOffsetBeatOriginAndVariableTempoWithoutChangingNotes()
+    {
+        chart.beatZeroMs = 100;
+        string before = SaberChartUtility.ToJson(chart);
+        Assert.AreEqual(.85f, SaberPlaybackReviewData.SnapAudioTime(chart, .83f, 1, 10), .0001f);
+        Assert.AreEqual(1.1f, SaberPlaybackReviewData.SnapAudioTime(chart, 1.03f, 2, 10), .0001f);
+        Assert.AreEqual(before, SaberChartUtility.ToJson(chart));
+        chart.tempoMap.Add(new SaberChartTempoPoint { beat = 0, timeMs = 100 });
+        chart.tempoMap.Add(new SaberChartTempoPoint { beat = 4, timeMs = 2100 });
+        chart.tempoMap.Add(new SaberChartTempoPoint { beat = 8, timeMs = 6100 });
+        Assert.AreEqual(3.35f, SaberPlaybackReviewData.SnapAudioTime(chart, 3.36f, 1, 10), .0001f);
+        Assert.AreEqual(0, SaberPlaybackReviewData.SnapAudioTime(chart, -2, 4, 10));
+        Assert.AreEqual(10, SaberPlaybackReviewData.SnapAudioTime(chart, 100, 4, 10));
+    }
+    [Test] public void TimelinePickingDistinguishesHandsAndLongBodiesAndPrefersNearbyStarts()
+    {
+        Assert.AreEqual(1, SaberPlaybackReviewData.PickTimelineNote(chart, 2.26f, "red", .03f));
+        Assert.AreEqual(-1, SaberPlaybackReviewData.PickTimelineNote(chart, 2.26f, "blue", .03f));
+        Assert.AreEqual(2, SaberPlaybackReviewData.PickTimelineNote(chart, 4, "red", .03f));
+        Assert.AreEqual(-1, SaberPlaybackReviewData.PickTimelineNote(chart, 5, "red", .03f));
+        chart.notes.Add(new SaberChartNote { time = 4000, color = "red" });
+        Assert.AreEqual(3, SaberPlaybackReviewData.PickTimelineNote(chart, 4.25f, "red", .03f));
+    }
+    [Test] public void ChangeNavigationIncludesBothOldAndNewTimesAndLongEnds()
+    {
+        var moved = chart.notes[2].Clone(); moved.time = 5000; moved.lengthMs = 2000;
+        var range = SaberPlaybackReviewData.ChangeRange(chart, new SaberReviewOperation { action = "replace", index = 2, note = moved });
+        Assert.AreEqual(3.25f, range.x); Assert.AreEqual(7.25f, range.y);
+        range = SaberPlaybackReviewData.ChangeRange(chart, new SaberReviewOperation { action = "delete", index = 2 });
+        Assert.AreEqual(4.65f, range.y, .0001f);
+        range = SaberPlaybackReviewData.ChangeRange(chart, new SaberReviewOperation { action = "add", note = moved });
+        Assert.AreEqual(5.25f, range.x); Assert.AreEqual(7.25f, range.y);
+    }
     [Test] public void ReviewValidationRejectsInvalidTimesTargetsAndDuplicateImageIds()
     {
         var c = request.comments[0];

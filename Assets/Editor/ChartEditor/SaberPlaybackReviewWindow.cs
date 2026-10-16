@@ -71,6 +71,7 @@ namespace Saber.ChartEditor
             legacyHash = ReadLegacyHash(); clip = SaberChartFileStore.LoadAudioClip(song);
             seconds = rangeA = 0; rangeB = Mathf.Min(1, Duration); comments.Clear(); selected.Clear(); undo.Clear();
             candidate = null; candidateJson = requestJson = ""; hasPoint = after = hasUnsavedChanges = false;
+            replyJson = ""; changeIndex = -1; changePage = 0;
             instruction = lastFolder = editingCommentId = ""; deletedComment = null;
             loadedSong = song; loadedDifficulty = difficulty; timelineStart = 0;
             status = clip == null ? "音源なし：映像のみ再生できます。" : "シークして停止 → 区間やノーツを指定 → 指示を追加。";
@@ -81,12 +82,12 @@ namespace Saber.ChartEditor
             string path = Path.Combine(SaberChartFileStore.SongFolderPath(song), "chart.json");
             return File.Exists(path) ? SaberPlaybackReviewData.Hash(File.ReadAllText(path)) : "missing";
         }
-        void Stop() { if (playing) SaberChartAudioPreview.Stop(); playing = false; }
+        void Stop() { if (playing) SaberChartAudioPreview.Stop(); playing = false; audition = false; }
         void Play()
         {
             if (document == null || EditorApplication.isPlayingOrWillChangePlaymode) return;
             if (seconds >= Duration) seconds = 0;
-            if (loop && (seconds < rangeA || seconds >= rangeB)) seconds = rangeA;
+            if (!audition && loop && (seconds < rangeA || seconds >= rangeB)) seconds = rangeA;
             playing = clip == null || SaberChartAudioPreview.Play(clip, seconds); lastTick = EditorApplication.timeSinceStartup;
             if (!playing) status = SaberChartAudioPreview.LastError;
         }
@@ -106,8 +107,7 @@ namespace Saber.ChartEditor
             else if (SaberChartAudioPreview.TryGetPosition(clip, out float position)) seconds = position;
             else { Stop(); Repaint(); return; }
             lastTick = now;
-            if (loop && seconds >= rangeB && rangeB > rangeA) { Stop(); seconds = rangeA; Play(); }
-            else if (seconds >= Duration) { seconds = Duration; Stop(); }
+            UpdatePlaybackBoundary();
             Repaint();
         }
         void OnGUI()
@@ -143,7 +143,7 @@ namespace Saber.ChartEditor
             {
                 using (new EditorGUILayout.VerticalScope(GUILayout.Width(position.width - 366)))
                 {
-                    float frameHeight = Mathf.Min((position.width - 386) * 9 / 16f, Mathf.Max(140, position.height - 390));
+                    float frameHeight = Mathf.Min((position.width - 386) * 9 / 16f, Mathf.Max(140, position.height - 415));
                     Rect area = GUILayoutUtility.GetRect(200, frameHeight, GUILayout.ExpandWidth(true));
                     DrawFrame(area);
                     using (new EditorGUILayout.HorizontalScope())
@@ -160,6 +160,7 @@ namespace Saber.ChartEditor
                     }
                     EditorGUI.BeginChangeCheck(); float sought = GUILayout.HorizontalSlider(seconds, 0, Duration);
                     if (EditorGUI.EndChangeCheck()) Seek(sought);
+                    DrawInspectionControls();
                     DrawTimeline();
                     DrawRange();
                     DrawNavigation();
@@ -274,14 +275,14 @@ namespace Saber.ChartEditor
             {
                 after = GUILayout.Toolbar(after ? 1 : 0, new[] { "変更前", "変更案" }) == 1;
                 GUILayout.Label($"{document.notes.Count} → {candidate.notes.Count} ノーツ", EditorStyles.boldLabel);
-                GUILayout.Label(changeSummary ?? "", EditorStyles.wordWrappedMiniLabel);
+                DrawChanges();
                 using (new EditorGUILayout.HorizontalScope())
                 {
                     if (GUILayout.Button("この修正を適用")) ApplyCandidate();
-                    if (GUILayout.Button("案を閉じる")) { candidate = null; candidateJson = ""; after = false; }
+                    if (GUILayout.Button("案を閉じる")) { Stop(); candidate = null; candidateJson = replyJson = ""; after = false; }
                 }
             }
-            using (new EditorGUI.DisabledScope(undo.Count == 0)) if (GUILayout.Button("適用を1回戻す")) { Stop(); document = SaberChartUtility.FromJson(undo.Pop()); chartJson = SaberChartUtility.ToJson(document, false); candidate = null; candidateJson = requestJson = ""; comments.Clear(); selected.Clear(); hasUnsavedChanges = true; }
+            using (new EditorGUI.DisabledScope(undo.Count == 0)) if (GUILayout.Button("適用を1回戻す")) { Stop(); document = SaberChartUtility.FromJson(undo.Pop()); chartJson = SaberChartUtility.ToJson(document, false); candidate = null; candidateJson = requestJson = replyJson = ""; comments.Clear(); selected.Clear(); hasUnsavedChanges = true; }
             GUILayout.Label("AIのチャットへ依頼を渡し、返信JSONをここで確認します。", EditorStyles.wordWrappedMiniLabel);
             GUILayout.Label(draftMessage, EditorStyles.wordWrappedMiniLabel);
         }
@@ -349,16 +350,17 @@ namespace Saber.ChartEditor
             if (!ExportIsCurrent) throw new InvalidOperationException("指摘が変わっています。依頼をもう一度書き出してから返信を開いてください。");
             Stop(); var request = JsonUtility.FromJson<SaberReviewRequest>(requestJson); var patch = JsonUtility.FromJson<SaberReviewPatch>(json);
             candidate = SaberPlaybackReviewData.Apply(request, document, patch, Duration); candidateJson = SaberChartUtility.ToJson(candidate, false); after = true;
+            replyJson = json; changeIndex = -1; changePage = 0;
             changeSummary = string.Join("\n", patch.operations.Take(8).Select(op => op.action == "delete" ? $"#{op.index}: 削除" : op.action == "add" ? $"追加 {Describe(op.note)}" : $"#{op.index}: {Describe(document.notes[op.index])}\n → {Describe(op.note)}"));
             if (patch.operations.Count > 8) changeSummary += $"\nほか {patch.operations.Count - 8} 件";
             status = $"変更案 {patch.operations.Count}件: {patch.explanation}";
         }
-        static string Describe(SaberChartNote note) => $"{note.time:0.###}ms ({note.x:0.##},{note.y:0.##}) {note.color}/{note.type} ×{note.count}";
+        string Describe(SaberChartNote note) => $"{(note.time + document.offsetMs) / 1000f:0.000}s ({note.x:0.##},{note.y:0.##}) {note.color}/{note.type} {note.direction} ×{note.count} / {note.lengthMs:0.###}ms";
         void ApplyCandidate()
         {
             if (candidate == null) return;
             Stop(); undo.Push(chartJson); document = candidate; chartJson = SaberChartUtility.ToJson(document, false);
-            candidate = null; candidateJson = ""; after = false; hasUnsavedChanges = true; selected.Clear();
+            candidate = null; candidateJson = replyJson = ""; after = false; hasUnsavedChanges = true; selected.Clear();
             comments.Clear(); requestJson = "";
             instruction = editingCommentId = lastFolder = ""; deletedComment = null; SaveDraft();
             status = "修正を適用しました。「本編へ保存」でファイルへ反映します。";
@@ -384,7 +386,7 @@ namespace Saber.ChartEditor
                 string raw = File.ReadAllText(ChartPath);
                 document = SaberChartUtility.FromJson(raw); chartJson = SaberChartUtility.ToJson(document, false);
                 diskHash = SaberPlaybackReviewData.Hash(raw); legacyHash = ReadLegacyHash();
-                candidate = null; candidateJson = requestJson = lastFolder = instruction = editingCommentId = "";
+                candidate = null; candidateJson = requestJson = replyJson = lastFolder = instruction = editingCommentId = "";
                 comments.Clear(); selected.Clear(); undo.Clear(); deletedComment = null; after = hasPoint = false;
             }
             base.DiscardChanges(); SaveDraft();
@@ -409,7 +411,7 @@ namespace Saber.ChartEditor
             document = SaberChartUtility.Clone(request.chart); chartJson = SaberChartUtility.ToJson(document, false);
             diskHash = request.sourceDiskHash; legacyHash = request.sourceLegacyHash; clip = SaberChartFileStore.LoadAudioClip(song);
             requestJson = JsonUtility.ToJson(request); comments = request.comments; lastFolder = Path.GetDirectoryName(path);
-            candidate = null; candidateJson = ""; after = false; selected.Clear(); undo.Clear();
+            candidate = null; candidateJson = replyJson = ""; after = false; selected.Clear(); undo.Clear();
             loadedSong = song; loadedDifficulty = difficulty; instruction = editingCommentId = ""; deletedComment = null;
             hasUnsavedChanges = SaberPlaybackReviewData.ChartHash(SaberChartUtility.FromJson(File.ReadAllText(source))) != request.baseHash;
             var first = comments.FirstOrDefault(); seconds = first?.frameSeconds ?? 0; rangeA = first?.fromSeconds ?? 0; rangeB = first?.toSeconds ?? 1;
