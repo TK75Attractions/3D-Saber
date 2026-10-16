@@ -394,7 +394,8 @@ class PcDiscovery(context: Context,
     fun stop() {
         active = false
         lifecycle++
-        callback?.let { connectivity.unregisterNetworkCallback(it) }
+        // callback解除の失敗で、独立した探索socket・NSD・lockの解放を中断しない。
+        callback?.let { try { connectivity.unregisterNetworkCallback(it) } catch (_: RuntimeException) { } }
         callback = null
         endDiscovery()
         network = null

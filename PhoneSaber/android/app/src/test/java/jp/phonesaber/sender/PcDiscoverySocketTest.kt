@@ -28,10 +28,10 @@ class PcDiscoverySocketTest {
     private fun withDiscovery(nsd: NsdManager = mock(NsdManager::class.java), runPosts: Boolean = false,
                               onUpdate: (Destination?, android.net.Network?, String) -> Unit = { _, _, _ -> },
                               connectivity: ConnectivityManager = mock(ConnectivityManager::class.java),
+                              multicast: WifiManager.MulticastLock = mock(WifiManager.MulticastLock::class.java),
                               test: (PcDiscovery) -> Unit) {
         val context = mock(Context::class.java)
         val wifi = mock(WifiManager::class.java)
-        val multicast = mock(WifiManager.MulticastLock::class.java)
         `when`(context.applicationContext).thenReturn(context)
         `when`(context.getSystemService(ConnectivityManager::class.java))
             .thenReturn(connectivity)
@@ -49,6 +49,61 @@ class PcDiscoverySocketTest {
                         .`when`(handler).post(any(Runnable::class.java))
                 }.use {
                     test(PcDiscovery(context, { _, _ -> }, onUpdate))
+                }
+            }
+        }
+    }
+
+    @Test fun unregisterFailureStillReleasesDiscoveryAndAllowsRestart() {
+        val connectivity = mock(ConnectivityManager::class.java)
+        val nsd = mock(NsdManager::class.java)
+        val wifi = mock(Network::class.java)
+        val capabilities = mock(NetworkCapabilities::class.java)
+        val multicast = mock(WifiManager.MulticastLock::class.java)
+        var held = false
+        `when`(multicast.isHeld).thenAnswer { held }
+        doAnswer { held = true; null }.`when`(multicast).acquire()
+        doAnswer { held = false; null }.`when`(multicast).release()
+        `when`(capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)).thenReturn(true)
+        `when`(connectivity.getNetworkCapabilities(wifi)).thenReturn(capabilities)
+        `when`(connectivity.allNetworks).thenReturn(arrayOf(wifi))
+        val request = mock(NetworkRequest::class.java)
+        mockConstruction(NetworkRequest.Builder::class.java, withSettings().defaultAnswer(RETURNS_SELF)) { builder, _ ->
+            `when`(builder.build()).thenReturn(request)
+        }.use {
+            mockConstruction(DatagramSocket::class.java) { socket, _ ->
+                `when`(socket.isClosed).thenReturn(true)
+            }.use { sockets ->
+                val networks = mutableListOf<Network?>()
+                withDiscovery(nsd, runPosts = true, connectivity = connectivity, multicast = multicast,
+                    onUpdate = { _, network, _ -> networks.add(network) }) { discovery ->
+                    try {
+                        discovery.start()
+                        val events = ArgumentCaptor.forClass(ConnectivityManager.NetworkCallback::class.java)
+                        verify(connectivity).registerNetworkCallback(eq(request), events.capture())
+                        assertTrue(held)
+                        // Androidの解除RPC失敗はRuntimeExceptionになる。独立した探索資源は解放する。
+                        doThrow(RuntimeException("releaseNetworkRequest failed")).doNothing()
+                            .`when`(connectivity).unregisterNetworkCallback(events.value)
+                        discovery.stop()
+                        verify(sockets.constructed().single(), atLeastOnce()).close()
+                        verify(nsd).stopServiceDiscovery(any(NsdManager.DiscoveryListener::class.java))
+                        assertFalse("callback解除失敗でもmulticast lockを残さない", held)
+                        val updates = networks.size
+                        events.value.onAvailable(wifi)
+                        assertEquals("停止前のcallbackを無視する", updates, networks.size)
+                        `when`(connectivity.allNetworks).thenReturn(emptyArray())
+                        discovery.start()
+                        assertNull("停止前のネットワークを次の開始へ持ち越さない", networks.last())
+                        val restarted = ArgumentCaptor.forClass(ConnectivityManager.NetworkCallback::class.java)
+                        verify(connectivity, times(2)).registerNetworkCallback(eq(request), restarted.capture())
+                        restarted.value.onAvailable(wifi)
+                        assertEquals(wifi, networks.last())
+                        assertEquals(2, sockets.constructed().size)
+                        assertTrue(held)
+                    } finally { discovery.stop() }
+                    assertFalse(held)
+                    verify(sockets.constructed().last(), atLeastOnce()).close()
                 }
             }
         }
