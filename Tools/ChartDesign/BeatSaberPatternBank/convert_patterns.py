@@ -8,6 +8,20 @@ from spatial_layout import rotate
 
 # 通常配置を主体にし、短い特徴的なフレーズだけ縦・反転・斜めを使う。
 LAYOUT={
+ 'popstars-hard-1':0,
+ 'popstars-hard-2':0,
+ 'crabrave-hard-1':0,
+ 'crabrave-hard-2':0,
+ 'rumbass-hard-1':0,
+ 'rumbass-hard-2':0,
+
+ '178-hard-1':0,
+ '178-hard-2':0,
+ '178-hard-3':0,
+ 'bethere-hard-1':0,
+ 'bethere-hard-2':0,
+ 'bethere-hard-3':0,
+
  'origins-normal-1':0,
  'origins-normal-2':0,
  'crystallized-hard-1':0,
@@ -115,6 +129,20 @@ LAYOUT={
 # 映像で確認した単発・休符・担当手の順を、素材ごとに個別に翻案する。
 # 座標は本作用に設計済み。原作映像のセイバー色から担当手を確認し、本作の担当色（左=青）へ変換する。
 EXPLICIT={
+ 'popstars-hard-1':('hard', '余白の後の三打応答', [(0.5, 'left', -0.6, -0.6), (1.5, 'right', 0.6, 0.3), (3, 'left', -1.9, 0.3)]),
+ 'popstars-hard-2':('hard', '左上下と右の横返し', [(0, 'left', -1.9, -0.6), (1, 'right', 1.9, 0.3), (2, 'left', -1.9, 0.3)]),
+ 'crabrave-hard-1':('hard', '左の内外と右の高低の六打', [(0, 'left', -1.9, -0.6), (0.5, 'right', 0.6, 0.3), (1.5, 'left', -0.6, 0.3), (2, 'right', 0.6, -0.6), (2.5, 'left', -0.6, -0.6), (3.5, 'right', 1.9, 0.3)]),
+ 'crabrave-hard-2':('hard', '右から間のある左二打へ', [(0, 'right', 1.9, 0.3), (1, 'left', -0.6, -0.6), (3, 'left', -1.9, 0.3)]),
+ 'rumbass-hard-1':('hard', '単発と二組の両手の開閉', [(0, 'right', 0.6, 0.3), (0.5, 'left', -0.6, -0.6), (0.5, 'right', 0.6, -0.6), (2.5, 'left', -1.9, 0.3), (2.5, 'right', 1.9, 0.3)]),
+ 'rumbass-hard-2':('hard', '片手ずつの入りから両手の応答', [(0, 'right', 0.6, 0.3), (0.5, 'left', -0.6, 0.3), (1.5, 'left', -0.6, -0.6), (1.5, 'right', 0.6, -0.6), (3, 'left', -1.9, 0.3), (3, 'right', 1.9, 0.3)]),
+
+ '178-hard-1':('hard', '左の短い上下と右の上下の6打', [(0, 'right', 0.6, -0.6), (0.5, 'left', -1.9, 0.3), (1.5, 'left', -1.9, -0.6), (2, 'right', 0.6, 0.3), (2.5, 'left', -1.9, 0.3), (3.5, 'right', 1.9, -0.6)]),
+ '178-hard-2':('hard', '右のコンパクトな二打から句尾へ渡す', [(0, 'right', 0.6, -0.6), (1, 'right', 0.6, 0.3), (1.5, 'left', -0.6, -0.6), (2, 'right', 0.6, -0.6), (2.5, 'left', -0.6, 0.3), (3.5, 'right', 1.9, 0.3)]),
+ '178-hard-3':('hard', '右のコンパクトな受けから上段へ', [(0, 'left', -1.9, 0.3), (0.5, 'right', 0.6, -0.6), (1, 'right', 0.6, -0.6), (2, 'right', 0.6, 0.3), (3, 'left', -0.6, -0.6)]),
+ 'bethere-hard-1':('hard', '横へ開いて間を置き内上へ戻す', [(0, 'right', 1.9, -0.6), (1.5, 'left', -1.9, -0.6), (3, 'right', 0.6, 0.3)]),
+ 'bethere-hard-2':('hard', '右の横返しと左の上下応答', [(0, 'right', 0.6, -0.6), (0.5, 'left', -1.9, -0.6), (2, 'right', 1.9, 0.3), (3, 'left', -1.9, 0.3)]),
+ 'bethere-hard-3':('hard', '一組の両手と前後の休符', [(2, 'left', -0.6, 0.3), (2, 'right', 1.9, -0.6)]),
+
  'origins-normal-1':('hard', '単発から両手へ返して休む', [(0, 'left', -1.9, -0.6), (1, 'left', -0.6, 0.3), (1, 'right', 1.9, 0.3)]),
  'origins-normal-2':('hard', '低い左右応答から一拍空けて左外へ', [(0, 'left', -0.6, -0.6), (1, 'right', 0.6, -0.6), (3, 'left', -1.9, 0.3)]),
  'crystallized-hard-1':('hard', '左の外内と右の上下を別の動線に', [(0, 'left', -1.9, 0.3), (0.5, 'right', 0.6, -0.6), (1, 'left', -0.6, -0.6), (2, 'right', 0.6, 0.3), (2.5, 'left', -1.9, 0.3), (3.5, 'right', 1.9, -0.6)]),
@@ -299,3 +327,4 @@ def main():
  save(args.output/'converted-patterns.json',{'schemaVersion':1,'count':len(patterns),'patterns':patterns})
  print(json.dumps({'converted':len(patterns),'sourceData':sum('sourceNotes' in c for c in collection['items']),'videoAdaptations':sum('sourceNotes' not in c and c['category']!='avoid' for c in collection['items']),'corrected':sum(c['category']=='avoid' for c in collection['items'])}))
 if __name__=='__main__':main()
+

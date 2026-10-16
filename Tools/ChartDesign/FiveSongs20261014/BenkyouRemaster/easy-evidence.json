@@ -12,94 +12,17 @@
   },
   {
     "index": 1,
-    "beat": 3.0,
-    "hand": "blue",
-    "role": "導入",
-    "phrase": 0,
+    "beat": 34.5,
+    "hand": "red",
+    "role": "主題A",
+    "phrase": 2,
     "sharedAccent": false,
-    "peakSeconds": 1.147392,
-    "distanceMs": -1.608,
-    "strength": 0.7219
+    "peakSeconds": 12.960544,
+    "distanceMs": -0.956,
+    "strength": 1.8011
   },
   {
     "index": 2,
-    "beat": 7.0,
-    "hand": "red",
-    "role": "導入",
-    "phrase": 0,
-    "sharedAccent": false,
-    "peakSeconds": 2.629025,
-    "distanceMs": -19.975,
-    "strength": 0.7113
-  },
-  {
-    "index": 3,
-    "beat": 9.0,
-    "hand": "blue",
-    "role": "導入",
-    "phrase": 0,
-    "sharedAccent": false,
-    "peakSeconds": 3.397279,
-    "distanceMs": -1.721,
-    "strength": 0.7102
-  },
-  {
-    "index": 4,
-    "beat": 10.0,
-    "hand": "red",
-    "role": "導入",
-    "phrase": 0,
-    "sharedAccent": false,
-    "peakSeconds": 3.771429,
-    "distanceMs": -2.571,
-    "strength": 0.7975
-  },
-  {
-    "index": 5,
-    "beat": 13.0,
-    "hand": "red",
-    "role": "導入",
-    "phrase": 0,
-    "sharedAccent": false,
-    "peakSeconds": 4.903855,
-    "distanceMs": 4.855,
-    "strength": 0.8046
-  },
-  {
-    "index": 6,
-    "beat": 19.0,
-    "hand": "red",
-    "role": "導入",
-    "phrase": 1,
-    "sharedAccent": false,
-    "peakSeconds": 7.168707,
-    "distanceMs": 19.707,
-    "strength": 0.6146
-  },
-  {
-    "index": 7,
-    "beat": 23.0,
-    "hand": "red",
-    "role": "導入",
-    "phrase": 1,
-    "sharedAccent": false,
-    "peakSeconds": 8.645351,
-    "distanceMs": -3.649,
-    "strength": 0.7136
-  },
-  {
-    "index": 8,
-    "beat": 30.0,
-    "hand": "blue",
-    "role": "導入",
-    "phrase": 1,
-    "sharedAccent": false,
-    "peakSeconds": 11.304308,
-    "distanceMs": 30.308,
-    "strength": 0.5121
-  },
-  {
-    "index": 9,
     "beat": 34.5,
     "hand": "blue",
     "role": "主題A",
@@ -110,7 +33,7 @@
     "strength": 1.8011
   },
   {
-    "index": 10,
+    "index": 3,
     "beat": 37.0,
     "hand": "red",
     "role": "主題A",
@@ -121,7 +44,7 @@
     "strength": 1.1344
   },
   {
-    "index": 11,
+    "index": 4,
     "beat": 39.5,
     "hand": "blue",
     "role": "主題A",
@@ -132,18 +55,7 @@
     "strength": 1.0416
   },
   {
-    "index": 12,
-    "beat": 42.0,
-    "hand": "red",
-    "role": "主題A",
-    "phrase": 2,
-    "sharedAccent": false,
-    "peakSeconds": 15.80907,
-    "distanceMs": 35.07,
-    "strength": 0.8855
-  },
-  {
-    "index": 13,
+    "index": 5,
     "beat": 43.5,
     "hand": "blue",
     "role": "主題A",
@@ -154,9 +66,9 @@
     "strength": 1.1489
   },
   {
-    "index": 14,
+    "index": 6,
     "beat": 47.5,
-    "hand": "red",
+    "hand": "blue",
     "role": "主題A",
     "phrase": 2,
     "sharedAccent": false,
@@ -165,9 +77,9 @@
     "strength": 1.1026
   },
   {
-    "index": 15,
+    "index": 7,
     "beat": 48.0,
-    "hand": "blue",
+    "hand": "red",
     "role": "主題A",
     "phrase": 3,
     "sharedAccent": false,
@@ -176,20 +88,9 @@
     "strength": 1.248
   },
   {
-    "index": 16,
-    "beat": 50.0,
-    "hand": "red",
-    "role": "主題A",
-    "phrase": 3,
-    "sharedAccent": false,
-    "peakSeconds": 18.802268,
-    "distanceMs": 28.268,
-    "strength": 1.0044
-  },
-  {
-    "index": 17,
+    "index": 8,
     "beat": 52.5,
-    "hand": "blue",
+    "hand": "red",
     "role": "主題A",
     "phrase": 3,
     "sharedAccent": false,
@@ -198,9 +99,9 @@
     "strength": 1.0008
   },
   {
-    "index": 18,
+    "index": 9,
     "beat": 55.0,
-    "hand": "red",
+    "hand": "blue",
     "role": "主題A",
     "phrase": 3,
     "sharedAccent": false,
@@ -209,9 +110,9 @@
     "strength": 1.0698
   },
   {
-    "index": 19,
+    "index": 10,
     "beat": 55.5,
-    "hand": "blue",
+    "hand": "red",
     "role": "主題A",
     "phrase": 3,
     "sharedAccent": false,
@@ -220,9 +121,9 @@
     "strength": 1.2269
   },
   {
-    "index": 20,
+    "index": 11,
     "beat": 59.5,
-    "hand": "red",
+    "hand": "blue",
     "role": "主題A",
     "phrase": 3,
     "sharedAccent": false,
@@ -231,9 +132,9 @@
     "strength": 1.1115
   },
   {
-    "index": 21,
+    "index": 12,
     "beat": 60.0,
-    "hand": "blue",
+    "hand": "red",
     "role": "主題A",
     "phrase": 3,
     "sharedAccent": false,
@@ -242,7 +143,7 @@
     "strength": 1.3443
   },
   {
-    "index": 22,
+    "index": 13,
     "beat": 64.5,
     "hand": "red",
     "role": "主題A",
@@ -253,18 +154,7 @@
     "strength": 1.238
   },
   {
-    "index": 23,
-    "beat": 65,
-    "hand": "blue",
-    "role": "主題A",
-    "phrase": 4,
-    "sharedAccent": false,
-    "peakSeconds": 24.434467,
-    "distanceMs": 35.467,
-    "strength": 0.8221
-  },
-  {
-    "index": 24,
+    "index": 14,
     "beat": 69.5,
     "hand": "red",
     "role": "主題A",
@@ -275,7 +165,7 @@
     "strength": 1.5201
   },
   {
-    "index": 25,
+    "index": 15,
     "beat": 70,
     "hand": "blue",
     "role": "主題A",
@@ -286,9 +176,9 @@
     "strength": 1.3179
   },
   {
-    "index": 26,
+    "index": 16,
     "beat": 73.5,
-    "hand": "red",
+    "hand": "blue",
     "role": "主題A",
     "phrase": 4,
     "sharedAccent": false,
@@ -297,9 +187,9 @@
     "strength": 0.932
   },
   {
-    "index": 27,
+    "index": 17,
     "beat": 74.0,
-    "hand": "blue",
+    "hand": "red",
     "role": "主題A",
     "phrase": 4,
     "sharedAccent": false,
@@ -308,9 +198,9 @@
     "strength": 1.2069
   },
   {
-    "index": 28,
+    "index": 18,
     "beat": 77.5,
-    "hand": "red",
+    "hand": "blue",
     "role": "主題A",
     "phrase": 4,
     "sharedAccent": false,
@@ -319,9 +209,9 @@
     "strength": 1.0194
   },
   {
-    "index": 29,
+    "index": 19,
     "beat": 78.0,
-    "hand": "blue",
+    "hand": "red",
     "role": "主題A",
     "phrase": 4,
     "sharedAccent": false,
@@ -330,7 +220,7 @@
     "strength": 1.016
   },
   {
-    "index": 30,
+    "index": 20,
     "beat": 81.5,
     "hand": "red",
     "role": "BPM100",
@@ -341,7 +231,7 @@
     "strength": 2.4193
   },
   {
-    "index": 31,
+    "index": 21,
     "beat": 81.5,
     "hand": "blue",
     "role": "BPM100",
@@ -352,7 +242,7 @@
     "strength": 2.4193
   },
   {
-    "index": 32,
+    "index": 22,
     "beat": 84.0,
     "hand": "blue",
     "role": "BPM100",
@@ -363,7 +253,7 @@
     "strength": 1.2138
   },
   {
-    "index": 33,
+    "index": 23,
     "beat": 84.5,
     "hand": "red",
     "role": "BPM100",
@@ -374,9 +264,9 @@
     "strength": 1.4164
   },
   {
-    "index": 34,
+    "index": 24,
     "beat": 87.5,
-    "hand": "blue",
+    "hand": "red",
     "role": "BPM100",
     "phrase": 5,
     "sharedAccent": false,
@@ -385,9 +275,9 @@
     "strength": 1.4455
   },
   {
-    "index": 35,
+    "index": 25,
     "beat": 89.5,
-    "hand": "blue",
+    "hand": "red",
     "role": "BPM100",
     "phrase": 5,
     "sharedAccent": false,
@@ -396,7 +286,7 @@
     "strength": 1.4334
   },
   {
-    "index": 36,
+    "index": 26,
     "beat": 91.5,
     "hand": "red",
     "role": "BPM100",
@@ -407,18 +297,7 @@
     "strength": 1.2222
   },
   {
-    "index": 37,
-    "beat": 92.5,
-    "hand": "blue",
-    "role": "BPM100",
-    "phrase": 5,
-    "sharedAccent": false,
-    "peakSeconds": 37.519728,
-    "distanceMs": -4.272,
-    "strength": 1.1919
-  },
-  {
-    "index": 38,
+    "index": 27,
     "beat": 94.0,
     "hand": "red",
     "role": "BPM100",
@@ -429,9 +308,9 @@
     "strength": 1.0576
   },
   {
-    "index": 39,
+    "index": 28,
     "beat": 97.5,
-    "hand": "blue",
+    "hand": "red",
     "role": "BPM100",
     "phrase": 6,
     "sharedAccent": false,
@@ -440,7 +319,7 @@
     "strength": 1.1368
   },
   {
-    "index": 40,
+    "index": 29,
     "beat": 100.0,
     "hand": "blue",
     "role": "BPM100",
@@ -451,7 +330,7 @@
     "strength": 1.1433
   },
   {
-    "index": 41,
+    "index": 30,
     "beat": 100.5,
     "hand": "red",
     "role": "BPM100",
@@ -462,9 +341,9 @@
     "strength": 1.2803
   },
   {
-    "index": 42,
+    "index": 31,
     "beat": 102.0,
-    "hand": "blue",
+    "hand": "red",
     "role": "BPM100",
     "phrase": 6,
     "sharedAccent": false,
@@ -473,9 +352,9 @@
     "strength": 1.3998
   },
   {
-    "index": 43,
+    "index": 32,
     "beat": 102.5,
-    "hand": "red",
+    "hand": "blue",
     "role": "BPM100",
     "phrase": 6,
     "sharedAccent": false,
@@ -484,7 +363,7 @@
     "strength": 1.2509
   },
   {
-    "index": 44,
+    "index": 33,
     "beat": 106.0,
     "hand": "red",
     "role": "BPM100",
@@ -495,7 +374,7 @@
     "strength": 1.9174
   },
   {
-    "index": 45,
+    "index": 34,
     "beat": 106.0,
     "hand": "blue",
     "role": "BPM100",
@@ -506,9 +385,9 @@
     "strength": 1.9174
   },
   {
-    "index": 46,
+    "index": 35,
     "beat": 108.0,
-    "hand": "red",
+    "hand": "blue",
     "role": "BPM100",
     "phrase": 6,
     "sharedAccent": false,
@@ -517,18 +396,7 @@
     "strength": 1.3019
   },
   {
-    "index": 47,
-    "beat": 108.5,
-    "hand": "blue",
-    "role": "BPM100",
-    "phrase": 6,
-    "sharedAccent": false,
-    "peakSeconds": 47.122902,
-    "distanceMs": -1.098,
-    "strength": 1.1263
-  },
-  {
-    "index": 48,
+    "index": 36,
     "beat": 110.0,
     "hand": "red",
     "role": "BPM100",
@@ -539,7 +407,7 @@
     "strength": 1.5664
   },
   {
-    "index": 49,
+    "index": 37,
     "beat": 111.0,
     "hand": "blue",
     "role": "BPM100",
@@ -550,9 +418,9 @@
     "strength": 1.2627
   },
   {
-    "index": 50,
+    "index": 38,
     "beat": 113.0,
-    "hand": "red",
+    "hand": "blue",
     "role": "BPM100",
     "phrase": 7,
     "sharedAccent": false,
@@ -561,9 +429,9 @@
     "strength": 1.1591
   },
   {
-    "index": 51,
+    "index": 39,
     "beat": 113.5,
-    "hand": "blue",
+    "hand": "red",
     "role": "BPM100",
     "phrase": 7,
     "sharedAccent": false,
@@ -572,7 +440,7 @@
     "strength": 1.2455
   },
   {
-    "index": 52,
+    "index": 40,
     "beat": 119.0,
     "hand": "blue",
     "role": "主拍へ復帰",
@@ -583,7 +451,7 @@
     "strength": 0.956
   },
   {
-    "index": 53,
+    "index": 41,
     "beat": 120.0,
     "hand": "red",
     "role": "主拍へ復帰",
@@ -594,9 +462,9 @@
     "strength": 0.9709
   },
   {
-    "index": 54,
+    "index": 42,
     "beat": 123.0,
-    "hand": "red",
+    "hand": "blue",
     "role": "主拍へ復帰",
     "phrase": 7,
     "sharedAccent": false,
@@ -605,9 +473,9 @@
     "strength": 1.1449
   },
   {
-    "index": 55,
+    "index": 43,
     "beat": 124.0,
-    "hand": "blue",
+    "hand": "red",
     "role": "主拍へ復帰",
     "phrase": 7,
     "sharedAccent": false,
@@ -616,7 +484,7 @@
     "strength": 1.2946
   },
   {
-    "index": 56,
+    "index": 44,
     "beat": 127.0,
     "hand": "red",
     "role": "主拍へ復帰",
@@ -627,7 +495,7 @@
     "strength": 1.017
   },
   {
-    "index": 57,
+    "index": 45,
     "beat": 129.0,
     "hand": "blue",
     "role": "主拍へ復帰",
@@ -638,20 +506,9 @@
     "strength": 0.9598
   },
   {
-    "index": 58,
-    "beat": 132.5,
-    "hand": "red",
-    "role": "主拍へ復帰",
-    "phrase": 8,
-    "sharedAccent": false,
-    "peakSeconds": 57.319728,
-    "distanceMs": -41.772,
-    "strength": 0.2363
-  },
-  {
-    "index": 59,
+    "index": 46,
     "beat": 134.0,
-    "hand": "blue",
+    "hand": "red",
     "role": "主拍へ復帰",
     "phrase": 8,
     "sharedAccent": false,
@@ -660,9 +517,9 @@
     "strength": 0.9429
   },
   {
-    "index": 60,
+    "index": 47,
     "beat": 135.0,
-    "hand": "red",
+    "hand": "blue",
     "role": "主拍へ復帰",
     "phrase": 8,
     "sharedAccent": false,
@@ -671,53 +528,9 @@
     "strength": 0.9276
   },
   {
-    "index": 61,
-    "beat": 137.0,
-    "hand": "blue",
-    "role": "主拍へ復帰",
-    "phrase": 8,
-    "sharedAccent": false,
-    "peakSeconds": 59.045805,
-    "distanceMs": -3.195,
-    "strength": 0.8577
-  },
-  {
-    "index": 62,
-    "beat": 138.0,
-    "hand": "red",
-    "role": "主拍へ復帰",
-    "phrase": 8,
-    "sharedAccent": false,
-    "peakSeconds": 59.424943,
-    "distanceMs": 0.943,
-    "strength": 0.8564
-  },
-  {
-    "index": 63,
-    "beat": 141.0,
-    "hand": "blue",
-    "role": "主拍へ復帰",
-    "phrase": 8,
-    "sharedAccent": false,
-    "peakSeconds": 60.552381,
-    "distanceMs": 3.381,
-    "strength": 0.8889
-  },
-  {
-    "index": 64,
-    "beat": 142.5,
-    "hand": "red",
-    "role": "主拍へ復帰",
-    "phrase": 8,
-    "sharedAccent": false,
-    "peakSeconds": 61.081179,
-    "distanceMs": -30.321,
-    "strength": 0.2522
-  },
-  {
-    "index": 65,
+    "index": 48,
     "beat": 144.0,
-    "hand": "blue",
+    "hand": "red",
     "role": "短い展開",
     "phrase": 9,
     "sharedAccent": false,
@@ -726,53 +539,9 @@
     "strength": 0.9982
   },
   {
-    "index": 66,
-    "beat": 146.5,
-    "hand": "blue",
-    "role": "短い展開",
-    "phrase": 9,
-    "sharedAccent": false,
-    "peakSeconds": 62.612698,
-    "distanceMs": 1.198,
-    "strength": 0.45
-  },
-  {
-    "index": 67,
-    "beat": 147.0,
-    "hand": "red",
-    "role": "短い展開",
-    "phrase": 9,
-    "sharedAccent": false,
-    "peakSeconds": 62.817234,
-    "distanceMs": 18.234,
-    "strength": 0.8467
-  },
-  {
-    "index": 68,
-    "beat": 149.5,
-    "hand": "blue",
-    "role": "短い展開",
-    "phrase": 9,
-    "sharedAccent": false,
-    "peakSeconds": 63.750113,
-    "distanceMs": 13.613,
-    "strength": 1.3415
-  },
-  {
-    "index": 69,
-    "beat": 151.5,
-    "hand": "red",
-    "role": "短い展開",
-    "phrase": 9,
-    "sharedAccent": false,
-    "peakSeconds": 64.498413,
-    "distanceMs": 11.913,
-    "strength": 1.4087
-  },
-  {
-    "index": 70,
+    "index": 49,
     "beat": 152.0,
-    "hand": "blue",
+    "hand": "red",
     "role": "短い展開",
     "phrase": 9,
     "sharedAccent": false,
@@ -781,7 +550,7 @@
     "strength": 1.4611
   },
   {
-    "index": 71,
+    "index": 50,
     "beat": 155.0,
     "hand": "blue",
     "role": "短い展開",
@@ -792,7 +561,7 @@
     "strength": 1.4475
   },
   {
-    "index": 72,
+    "index": 51,
     "beat": 156.0,
     "hand": "red",
     "role": "短い展開",
@@ -803,18 +572,7 @@
     "strength": 1.5389
   },
   {
-    "index": 73,
-    "beat": 157.5,
-    "hand": "blue",
-    "role": "短い展開",
-    "phrase": 9,
-    "sharedAccent": false,
-    "peakSeconds": 66.753288,
-    "distanceMs": 16.788,
-    "strength": 0.7872
-  },
-  {
-    "index": 74,
+    "index": 52,
     "beat": 158.5,
     "hand": "red",
     "role": "短い展開",
@@ -825,7 +583,7 @@
     "strength": 1.3471
   },
   {
-    "index": 75,
+    "index": 53,
     "beat": 163.5,
     "hand": "red",
     "role": "短い展開",
@@ -836,7 +594,7 @@
     "strength": 2.4301
   },
   {
-    "index": 76,
+    "index": 54,
     "beat": 163.5,
     "hand": "blue",
     "role": "短い展開",
@@ -847,7 +605,7 @@
     "strength": 2.4301
   },
   {
-    "index": 77,
+    "index": 55,
     "beat": 167.0,
     "hand": "red",
     "role": "短い展開",
@@ -858,7 +616,7 @@
     "strength": 2.4031
   },
   {
-    "index": 78,
+    "index": 56,
     "beat": 167.0,
     "hand": "blue",
     "role": "短い展開",
@@ -869,7 +627,18 @@
     "strength": 2.4031
   },
   {
-    "index": 79,
+    "index": 57,
+    "beat": 171.0,
+    "hand": "red",
+    "role": "小節頭と余韻",
+    "phrase": 10,
+    "sharedAccent": false,
+    "peakSeconds": 71.791837,
+    "distanceMs": -7.163,
+    "strength": 1.5946
+  },
+  {
+    "index": 58,
     "beat": 171.0,
     "hand": "blue",
     "role": "小節頭と余韻",
@@ -880,18 +649,7 @@
     "strength": 1.5946
   },
   {
-    "index": 80,
-    "beat": 172.0,
-    "hand": "red",
-    "role": "小節頭と余韻",
-    "phrase": 10,
-    "sharedAccent": false,
-    "peakSeconds": 72.19093,
-    "distanceMs": 16.93,
-    "strength": 0.3663
-  },
-  {
-    "index": 81,
+    "index": 59,
     "beat": 176.0,
     "hand": "red",
     "role": "小節頭と余韻",
@@ -902,7 +660,7 @@
     "strength": 1.5526
   },
   {
-    "index": 82,
+    "index": 60,
     "beat": 176.0,
     "hand": "blue",
     "role": "小節頭と余韻",
@@ -913,7 +671,7 @@
     "strength": 1.5526
   },
   {
-    "index": 83,
+    "index": 61,
     "beat": 180.0,
     "hand": "red",
     "role": "小節頭と余韻",
@@ -924,7 +682,7 @@
     "strength": 1.3308
   },
   {
-    "index": 84,
+    "index": 62,
     "beat": 184.0,
     "hand": "blue",
     "role": "小節頭と余韻",
@@ -935,7 +693,7 @@
     "strength": 1.3826
   },
   {
-    "index": 85,
+    "index": 63,
     "beat": 188.0,
     "hand": "red",
     "role": "小節頭と余韻",
@@ -946,20 +704,9 @@
     "strength": 1.3427
   },
   {
-    "index": 86,
-    "beat": 188.5,
-    "hand": "blue",
-    "role": "小節頭と余韻",
-    "phrase": 11,
-    "sharedAccent": false,
-    "peakSeconds": 78.336961,
-    "distanceMs": -24.539,
-    "strength": 0.2676
-  },
-  {
-    "index": 87,
+    "index": 64,
     "beat": 192.0,
-    "hand": "red",
+    "hand": "blue",
     "role": "小節頭と余韻",
     "phrase": 12,
     "sharedAccent": false,
@@ -968,29 +715,7 @@
     "strength": 1.1477
   },
   {
-    "index": 88,
-    "beat": 194.0,
-    "hand": "blue",
-    "role": "小節頭と余韻",
-    "phrase": 12,
-    "sharedAccent": false,
-    "peakSeconds": 80.427211,
-    "distanceMs": 3.211,
-    "strength": 0.4221
-  },
-  {
-    "index": 89,
-    "beat": 195.0,
-    "hand": "red",
-    "role": "小節頭と余韻",
-    "phrase": 12,
-    "sharedAccent": false,
-    "peakSeconds": 80.801361,
-    "distanceMs": 2.361,
-    "strength": 0.3469
-  },
-  {
-    "index": 90,
+    "index": 65,
     "beat": 196.0,
     "hand": "blue",
     "role": "小節頭と余韻",
@@ -1001,18 +726,7 @@
     "strength": 1.4899
   },
   {
-    "index": 91,
-    "beat": 198.0,
-    "hand": "red",
-    "role": "小節頭と余韻",
-    "phrase": 12,
-    "sharedAccent": false,
-    "peakSeconds": 81.903855,
-    "distanceMs": -20.145,
-    "strength": 0.2707
-  },
-  {
-    "index": 92,
+    "index": 66,
     "beat": 204.0,
     "hand": "red",
     "role": "小節頭と余韻",
@@ -1023,7 +737,7 @@
     "strength": 1.5422
   },
   {
-    "index": 93,
+    "index": 67,
     "beat": 204.0,
     "hand": "blue",
     "role": "小節頭と余韻",
@@ -1034,7 +748,7 @@
     "strength": 1.5422
   },
   {
-    "index": 94,
+    "index": 68,
     "beat": 209.5,
     "hand": "red",
     "role": "主題Aの回帰",
@@ -1045,9 +759,9 @@
     "strength": 1.1383
   },
   {
-    "index": 95,
+    "index": 69,
     "beat": 213.5,
-    "hand": "red",
+    "hand": "blue",
     "role": "主題Aの回帰",
     "phrase": 13,
     "sharedAccent": false,
@@ -1056,9 +770,9 @@
     "strength": 0.98
   },
   {
-    "index": 96,
+    "index": 70,
     "beat": 214.0,
-    "hand": "blue",
+    "hand": "red",
     "role": "主題Aの回帰",
     "phrase": 13,
     "sharedAccent": false,
@@ -1067,18 +781,7 @@
     "strength": 1.3857
   },
   {
-    "index": 97,
-    "beat": 217.5,
-    "hand": "red",
-    "role": "主題Aの回帰",
-    "phrase": 13,
-    "sharedAccent": false,
-    "peakSeconds": 89.242177,
-    "distanceMs": 5.677,
-    "strength": 0.3985
-  },
-  {
-    "index": 98,
+    "index": 71,
     "beat": 218.0,
     "hand": "blue",
     "role": "主題Aの回帰",
@@ -1089,20 +792,9 @@
     "strength": 1.2698
   },
   {
-    "index": 99,
-    "beat": 220.5,
-    "hand": "blue",
-    "role": "主題Aの回帰",
-    "phrase": 13,
-    "sharedAccent": false,
-    "peakSeconds": 90.364626,
-    "distanceMs": 3.126,
-    "strength": 0.3348
-  },
-  {
-    "index": 100,
+    "index": 72,
     "beat": 222.0,
-    "hand": "red",
+    "hand": "blue",
     "role": "主題Aの回帰",
     "phrase": 13,
     "sharedAccent": false,
@@ -1111,18 +803,7 @@
     "strength": 1.3245
   },
   {
-    "index": 101,
-    "beat": 225,
-    "hand": "blue",
-    "role": "主題Aの回帰",
-    "phrase": 14,
-    "sharedAccent": false,
-    "peakSeconds": 92.045805,
-    "distanceMs": -3.195,
-    "strength": 0.8742
-  },
-  {
-    "index": 102,
+    "index": 73,
     "beat": 226,
     "hand": "red",
     "role": "主題Aの回帰",
@@ -1133,7 +814,7 @@
     "strength": 1.2244
   },
   {
-    "index": 103,
+    "index": 74,
     "beat": 230.5,
     "hand": "red",
     "role": "主題Aの回帰",
@@ -1144,7 +825,7 @@
     "strength": 1.3653
   },
   {
-    "index": 104,
+    "index": 75,
     "beat": 231,
     "hand": "blue",
     "role": "主題Aの回帰",
@@ -1155,9 +836,9 @@
     "strength": 1.2819
   },
   {
-    "index": 105,
+    "index": 76,
     "beat": 236.0,
-    "hand": "blue",
+    "hand": "red",
     "role": "主題Aの回帰",
     "phrase": 14,
     "sharedAccent": false,
@@ -1166,9 +847,9 @@
     "strength": 1.3448
   },
   {
-    "index": 106,
+    "index": 77,
     "beat": 237.5,
-    "hand": "red",
+    "hand": "blue",
     "role": "主題Aの回帰",
     "phrase": 14,
     "sharedAccent": false,
@@ -1177,29 +858,7 @@
     "strength": 1.0585
   },
   {
-    "index": 107,
-    "beat": 241.0,
-    "hand": "blue",
-    "role": "主拍",
-    "phrase": 15,
-    "sharedAccent": false,
-    "peakSeconds": 98.057143,
-    "distanceMs": 8.143,
-    "strength": 0.6154
-  },
-  {
-    "index": 108,
-    "beat": 243.0,
-    "hand": "red",
-    "role": "主拍",
-    "phrase": 15,
-    "sharedAccent": false,
-    "peakSeconds": 98.81542,
-    "distanceMs": 16.42,
-    "strength": 0.2111
-  },
-  {
-    "index": 109,
+    "index": 78,
     "beat": 246.75,
     "hand": "blue",
     "role": "主拍",
@@ -1210,31 +869,9 @@
     "strength": 1.2895
   },
   {
-    "index": 110,
-    "beat": 248.0,
-    "hand": "red",
-    "role": "主拍",
-    "phrase": 15,
-    "sharedAccent": false,
-    "peakSeconds": 100.666213,
-    "distanceMs": -7.787,
-    "strength": 1.2696
-  },
-  {
-    "index": 111,
-    "beat": 250.75,
-    "hand": "red",
-    "role": "主拍",
-    "phrase": 15,
-    "sharedAccent": false,
-    "peakSeconds": 101.698866,
-    "distanceMs": -6.384,
-    "strength": 1.0984
-  },
-  {
-    "index": 112,
+    "index": 79,
     "beat": 252.0,
-    "hand": "blue",
+    "hand": "red",
     "role": "主拍",
     "phrase": 15,
     "sharedAccent": false,
@@ -1243,18 +880,7 @@
     "strength": 1.1974
   },
   {
-    "index": 113,
-    "beat": 253.5,
-    "hand": "red",
-    "role": "主拍",
-    "phrase": 15,
-    "sharedAccent": false,
-    "peakSeconds": 102.746485,
-    "distanceMs": 9.985,
-    "strength": 0.5397
-  },
-  {
-    "index": 114,
+    "index": 80,
     "beat": 255.0,
     "hand": "blue",
     "role": "主拍",
@@ -1265,9 +891,20 @@
     "strength": 0.9187
   },
   {
-    "index": 115,
+    "index": 81,
+    "beat": 256,
+    "hand": "red",
+    "role": "主題Aの発展",
+    "phrase": 16,
+    "sharedAccent": false,
+    "peakSeconds": 103.669388,
+    "distanceMs": -4.612,
+    "strength": 1.5516
+  },
+  {
+    "index": 82,
     "beat": 258,
-    "hand": "blue",
+    "hand": "red",
     "role": "主題Aの発展",
     "phrase": 16,
     "sharedAccent": false,
@@ -1276,9 +913,9 @@
     "strength": 1.4064
   },
   {
-    "index": 116,
+    "index": 83,
     "beat": 263,
-    "hand": "red",
+    "hand": "blue",
     "role": "主題Aの発展",
     "phrase": 16,
     "sharedAccent": false,
@@ -1287,9 +924,9 @@
     "strength": 1.3369
   },
   {
-    "index": 117,
+    "index": 84,
     "beat": 265.5,
-    "hand": "blue",
+    "hand": "red",
     "role": "主題Aの発展",
     "phrase": 16,
     "sharedAccent": false,
@@ -1298,9 +935,9 @@
     "strength": 1.4236
   },
   {
-    "index": 118,
+    "index": 85,
     "beat": 267.0,
-    "hand": "red",
+    "hand": "blue",
     "role": "主題Aの発展",
     "phrase": 16,
     "sharedAccent": false,
@@ -1309,40 +946,18 @@
     "strength": 1.4686
   },
   {
-    "index": 119,
-    "beat": 269.5,
-    "hand": "blue",
-    "role": "主題Aの発展",
-    "phrase": 16,
-    "sharedAccent": false,
-    "peakSeconds": 108.737868,
-    "distanceMs": 1.368,
-    "strength": 0.5436
-  },
-  {
-    "index": 120,
-    "beat": 272.0,
+    "index": 86,
+    "beat": 280.0,
     "hand": "red",
-    "role": "主題Aの発展",
+    "role": "BPM70",
     "phrase": 17,
     "sharedAccent": false,
-    "peakSeconds": 109.675737,
-    "distanceMs": 1.737,
-    "strength": 0.8035
+    "peakSeconds": 112.668934,
+    "distanceMs": -5.066,
+    "strength": 1.409
   },
   {
-    "index": 121,
-    "beat": 277.0,
-    "hand": "red",
-    "role": "主題Aの発展",
-    "phrase": 17,
-    "sharedAccent": false,
-    "peakSeconds": 111.551474,
-    "distanceMs": 2.474,
-    "strength": 0.5163
-  },
-  {
-    "index": 122,
+    "index": 87,
     "beat": 280.0,
     "hand": "blue",
     "role": "BPM70",
@@ -1353,7 +968,7 @@
     "strength": 1.409
   },
   {
-    "index": 123,
+    "index": 88,
     "beat": 281.0,
     "hand": "red",
     "role": "BPM70",
@@ -1364,42 +979,9 @@
     "strength": 0.9166
   },
   {
-    "index": 124,
-    "beat": 282.0,
-    "hand": "blue",
-    "role": "BPM70",
-    "phrase": 17,
-    "sharedAccent": false,
-    "peakSeconds": 114.385034,
-    "distanceMs": -3.252,
-    "strength": 0.7946
-  },
-  {
-    "index": 125,
-    "beat": 284.0,
-    "hand": "blue",
-    "role": "BPM70",
-    "phrase": 17,
-    "sharedAccent": false,
-    "peakSeconds": 116.101134,
-    "distanceMs": -1.438,
-    "strength": 0.7869
-  },
-  {
-    "index": 126,
-    "beat": 284.5,
-    "hand": "red",
-    "role": "BPM70",
-    "phrase": 17,
-    "sharedAccent": false,
-    "peakSeconds": 116.52517,
-    "distanceMs": -5.973,
-    "strength": 0.8411
-  },
-  {
-    "index": 127,
+    "index": 89,
     "beat": 287.0,
-    "hand": "blue",
+    "hand": "red",
     "role": "BPM70",
     "phrase": 17,
     "sharedAccent": false,
@@ -1408,18 +990,7 @@
     "strength": 1.2645
   },
   {
-    "index": 128,
-    "beat": 288.0,
-    "hand": "red",
-    "role": "BPM70",
-    "phrase": 18,
-    "sharedAccent": false,
-    "peakSeconds": 119.528345,
-    "distanceMs": -2.798,
-    "strength": 0.7026
-  },
-  {
-    "index": 129,
+    "index": 90,
     "beat": 288.5,
     "hand": "blue",
     "role": "BPM70",
@@ -1430,7 +1001,7 @@
     "strength": 1.1286
   },
   {
-    "index": 130,
+    "index": 91,
     "beat": 289.5,
     "hand": "blue",
     "role": "BPM70",
@@ -1441,31 +1012,9 @@
     "strength": 1.2665
   },
   {
-    "index": 131,
-    "beat": 290.0,
-    "hand": "red",
-    "role": "BPM70",
-    "phrase": 18,
-    "sharedAccent": false,
-    "peakSeconds": 121.239456,
-    "distanceMs": -5.973,
-    "strength": 0.711
-  },
-  {
-    "index": 132,
-    "beat": 291.0,
-    "hand": "red",
-    "role": "BPM70",
-    "phrase": 18,
-    "sharedAccent": false,
-    "peakSeconds": 122.097506,
-    "distanceMs": -5.066,
-    "strength": 0.8329
-  },
-  {
-    "index": 133,
+    "index": 92,
     "beat": 291.5,
-    "hand": "blue",
+    "hand": "red",
     "role": "BPM70",
     "phrase": 18,
     "sharedAccent": false,
@@ -1474,18 +1023,7 @@
     "strength": 1.1891
   },
   {
-    "index": 134,
-    "beat": 292.0,
-    "hand": "red",
-    "role": "BPM70",
-    "phrase": 18,
-    "sharedAccent": false,
-    "peakSeconds": 122.955556,
-    "distanceMs": -4.159,
-    "strength": 0.7292
-  },
-  {
-    "index": 135,
+    "index": 93,
     "beat": 292.5,
     "hand": "blue",
     "role": "BPM70",
@@ -1496,95 +1034,7 @@
     "strength": 1.1211
   },
   {
-    "index": 136,
-    "beat": 294.0,
-    "hand": "red",
-    "role": "BPM70",
-    "phrase": 18,
-    "sharedAccent": false,
-    "peakSeconds": 124.671655,
-    "distanceMs": -2.345,
-    "strength": 0.6788
-  },
-  {
-    "index": 137,
-    "beat": 295.5,
-    "hand": "red",
-    "role": "BPM70",
-    "phrase": 18,
-    "sharedAccent": false,
-    "peakSeconds": 125.953741,
-    "distanceMs": -5.973,
-    "strength": 0.7987
-  },
-  {
-    "index": 138,
-    "beat": 296.0,
-    "hand": "blue",
-    "role": "BPM70",
-    "phrase": 18,
-    "sharedAccent": false,
-    "peakSeconds": 126.382766,
-    "distanceMs": -5.519,
-    "strength": 0.7553
-  },
-  {
-    "index": 139,
-    "beat": 299.0,
-    "hand": "red",
-    "role": "BPM70",
-    "phrase": 18,
-    "sharedAccent": false,
-    "peakSeconds": 128.956916,
-    "distanceMs": -2.798,
-    "strength": 0.74
-  },
-  {
-    "index": 140,
-    "beat": 299.5,
-    "hand": "blue",
-    "role": "BPM70",
-    "phrase": 18,
-    "sharedAccent": false,
-    "peakSeconds": 129.380952,
-    "distanceMs": -7.333,
-    "strength": 0.8436
-  },
-  {
-    "index": 141,
-    "beat": 300.5,
-    "hand": "blue",
-    "role": "BPM70",
-    "phrase": 18,
-    "sharedAccent": false,
-    "peakSeconds": 130.239002,
-    "distanceMs": -6.426,
-    "strength": 0.7293
-  },
-  {
-    "index": 142,
-    "beat": 302.0,
-    "hand": "red",
-    "role": "BPM70",
-    "phrase": 18,
-    "sharedAccent": false,
-    "peakSeconds": 131.526077,
-    "distanceMs": -5.066,
-    "strength": 0.7833
-  },
-  {
-    "index": 143,
-    "beat": 302.0,
-    "hand": "blue",
-    "role": "BPM70",
-    "phrase": 18,
-    "sharedAccent": false,
-    "peakSeconds": 131.526077,
-    "distanceMs": -5.066,
-    "strength": 0.7833
-  },
-  {
-    "index": 144,
+    "index": 94,
     "beat": 304.0,
     "hand": "red",
     "role": "BPM360・実打は半速",
@@ -1595,7 +1045,7 @@
     "strength": 2.7585
   },
   {
-    "index": 145,
+    "index": 95,
     "beat": 304.0,
     "hand": "blue",
     "role": "BPM360・実打は半速",
@@ -1606,9 +1056,9 @@
     "strength": 2.7585
   },
   {
-    "index": 146,
+    "index": 96,
     "beat": 310.0,
-    "hand": "red",
+    "hand": "blue",
     "role": "BPM360・実打は半速",
     "phrase": 19,
     "sharedAccent": false,
@@ -1617,9 +1067,9 @@
     "strength": 0.9268
   },
   {
-    "index": 147,
+    "index": 97,
     "beat": 312.0,
-    "hand": "blue",
+    "hand": "red",
     "role": "BPM360・実打は半速",
     "phrase": 19,
     "sharedAccent": false,
@@ -1628,25 +1078,14 @@
     "strength": 0.927
   },
   {
-    "index": 148,
+    "index": 98,
     "beat": 318.0,
-    "hand": "red",
+    "hand": "blue",
     "role": "BPM360・実打は半速",
     "phrase": 19,
     "sharedAccent": false,
     "peakSeconds": 135.576871,
     "distanceMs": -1.891,
     "strength": 0.9318
-  },
-  {
-    "index": 149,
-    "beat": 320.0,
-    "hand": "blue",
-    "role": "BPM360・実打は半速",
-    "phrase": 20,
-    "sharedAccent": false,
-    "peakSeconds": 135.871202,
-    "distanceMs": -40.893,
-    "strength": 0.7029
   }
 ]

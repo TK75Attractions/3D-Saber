@@ -40,6 +40,10 @@ def main():
    # 開始時刻表示の丸め差を再生時刻へ持ち込まない。
    for n in applied['notes']:n['time']=round(n['beat']*60000/a['targetBpm'],4)
    a['chart']=applied;a['chartFile']='applied/'+pattern['id']+'.json';save(dist/a['chartFile'],applied)
+ # 保留へ戻った素材の旧適用JSONを、現行ZIPへ混ぜない。原素材の4拍JSONは保持。
+ current_applied={a['patternId']+'.json' for a in apps}
+ for obsolete in (dist/'applied').glob('*.json'):
+  if obsolete.name not in current_applied:obsolete.unlink()
  save(dist/'converted-patterns.json',data)
  with zipfile.ZipFile(dist/'patterns-3d-saber.zip','w',zipfile.ZIP_DEFLATED) as archive:
   archive.write(dist/'converted-patterns.json','converted-patterns.json')
