@@ -498,6 +498,30 @@ final class P2PTransportTests: XCTestCase {
         XCTAssertTrue(P2PBrowseErrorText.describe(.dns(-65537), waiting: false).hasPrefix("browse: "))
     }
 
+    // MARK: Browser recovery
+
+    func testFailedBrowserReplacesPendingWaitingRetry() {
+        let failed = expectation(description: "探索の失敗を通知する")
+        let restarted = expectation(description: "待機中の再試行予約があっても探索を再開する")
+        let sawFailure = LockedBox(false)
+        let sender = P2PSender(timing: .init(browserRestartDelay: 0.01, browserWaitingRetryDelay: 0.05))
+        defer { sender.stop() }
+        // 実際の会場の bridge は選ばず、状態通知だけを再現する。
+        sender.start(station: UUID().uuidString) { state in
+            if case .failed = state, !sawFailure.value {
+                sawFailure.mutate { $0 = true }
+                failed.fulfill()
+            } else if case .searching = state, sawFailure.value {
+                restarted.fulfill()
+            }
+        }
+        sender.simulateBrowserStatesForTesting([
+            .waiting(NWError.dns(P2PBrowseErrorText.policyDeniedCode)),
+            .failed(NWError.posix(.ENETDOWN))
+        ])
+        wait(for: [failed, restarted], timeout: 1)
+    }
+
     // MARK: Round-trip statistics
 
     func testRoundTripStatsSummariseLatencyAndLostPings() {

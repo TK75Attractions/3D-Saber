@@ -519,6 +519,8 @@ final class P2PSender {
                     }
                 case .failed(let error):
                     self.log("browser failed: \(error)")
+                    // waiting 用の予約は旧 browser に紐づくため、失敗後の再起動で置き換える。
+                    self.browserRestart?.cancel(); self.browserRestart = nil
                     self.browser?.cancel(); self.browser = nil
                     if self.connection == nil {
                         self.setState(.failed(reason: P2PBrowseErrorText.describe(error, waiting: false)))
@@ -875,6 +877,17 @@ final class P2PSender {
     }
 
     // MARK: Testing
+
+    func simulateBrowserStatesForTesting(_ states: [NWBrowser.State]) {
+        queue.sync {
+            guard let browser else { return }
+            // OS の通知を止め、同じ browser の状態遷移を順番どおりに再現する。
+            let handler = browser.stateUpdateHandler
+            browser.stateUpdateHandler = nil
+            browser.cancel()
+            for state in states { handler?(state) }
+        }
+    }
 
     var stateForTesting: P2PLinkState { queue.sync { state } }
     var roundTripSummaryForTesting: P2PRoundTripStats.Summary? { queue.sync { roundTrips.summary } }
