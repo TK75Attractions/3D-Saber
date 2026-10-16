@@ -58,7 +58,10 @@ REPO=$REPO_LITERAL
 LOG="\$HOME/Library/Logs/PhoneSaber/launcher.log"
 mkdir -p "\$(dirname "\$LOG")"
 if [[ ! -x "\$REPO/PhoneSaber/mac/saber-watchdog.sh" && ! -f "\$REPO/PhoneSaber/mac/saber-watchdog.sh" ]] || [[ ! -d "\$REPO/Builds/Mac/3D-Saber.app" ]]; then
-    /usr/bin/osascript -e 'display alert "Beat Trace Slash" message "ゲーム本体が見つかりません: '"\$REPO"'/Builds/Mac/3D-Saber.app"' >/dev/null 2>&1
+    # パスを AppleScript のコードに埋め込まず、引用符や改行も文字列として渡す。
+    /usr/bin/osascript -e 'on run argv
+        display alert "Beat Trace Slash" message ("ゲーム本体が見つかりません: " & (item 1 of argv))
+    end run' "\$REPO/Builds/Mac/3D-Saber.app" >/dev/null 2>&1
     exit 1
 fi
 printf '\n=== %s 起動（台 ${STATION}）\n' "\$(date '+%Y-%m-%d %H:%M:%S')" >> "\$LOG"

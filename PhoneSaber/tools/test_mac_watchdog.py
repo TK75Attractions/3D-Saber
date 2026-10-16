@@ -1,7 +1,10 @@
 """ゲームを起動せず、bash 3.2 と偽 open で Mac ランチャーを検証する。"""
+import json
 import os
 from pathlib import Path
+import shlex
 import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -206,6 +209,50 @@ printf '%s\\n' "$@" > "$LAUNCHER_TEST_ARGUMENTS"
                                     capture_output=True, text=True, timeout=10)
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             self.assertEqual(arguments.read_text().splitlines(), ["A", str(app)])
+
+    @unittest.skipUnless(Path("/usr/bin/osascript").is_file(), "requires macOS AppleScript")
+    def test_missing_game_alert_preserves_special_characters_in_repo_path(self):
+        with tempfile.TemporaryDirectory(prefix='縁日 "launcher" \\files\n') as directory:
+            root = Path(directory).resolve()
+            here = root / "PhoneSaber/mac/app"
+            here.mkdir(parents=True)
+            installer = (SOURCE / "app/install_app.sh").read_text().replace(
+                "/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister",
+                "true")
+            (here / "install_app.sh").write_text(installer)
+            (here / "icon.icns").write_bytes((SOURCE / "app/icon.icns").read_bytes())
+            tools = root / "bin"
+            tools.mkdir()
+            codesign = tools / "codesign"
+            codesign.write_text("#!/bin/bash\nexit 0\n")
+            codesign.chmod(0o755)
+            probe = tools / "alert-probe.py"
+            probe.write_text('''import json, os, subprocess, sys
+args = [arg.replace('display alert "Beat Trace Slash" message', 'return')
+        for arg in sys.argv[1:]]
+# 通知だけを return に置換し、同じ AppleScript の構文と文字列評価を実行する。
+result = subprocess.run(['/usr/bin/osascript', *args], capture_output=True, text=True)
+with open(os.environ['LAUNCHER_TEST_ALERT'], 'w') as output:
+    json.dump([result.returncode, result.stdout, result.stderr], output)
+''')
+            alert = root / "alert.json"
+            env = dict(os.environ, HOME=str(root / "home"), TMPDIR=directory,
+                       PATH=str(tools) + os.pathsep + os.environ["PATH"],
+                       LAUNCHER_TEST_ALERT=str(alert))
+            result = subprocess.run(
+                ["/bin/bash", str(here / "install_app.sh"), "A", str(root)],
+                env=env, capture_output=True, text=True, timeout=10)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            launcher = root / "Beat Trace Slash.app/Contents/MacOS/launcher"
+            # shell の展開を避けるため、probe 自体のパスも shell 引用する。
+            launcher.write_text(launcher.read_text().replace(
+                "/usr/bin/osascript", shlex.quote(sys.executable) + " " + shlex.quote(str(probe))))
+            result = subprocess.run([str(launcher)], env=env, input="",
+                                    capture_output=True, text=True, timeout=10)
+            self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+            code, message, error = json.loads(alert.read_text())
+            self.assertEqual(code, 0, error)
+            self.assertEqual(message, f"ゲーム本体が見つかりません: {root}/Builds/Mac/3D-Saber.app\n")
 
     def test_generated_launcher_starts_both_stations_in_utf8_locales(self):
         with tempfile.TemporaryDirectory(prefix="縁日 launcher ") as directory:
