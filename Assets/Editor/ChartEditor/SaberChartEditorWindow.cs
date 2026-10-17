@@ -110,11 +110,12 @@ namespace Saber.ChartEditor
         private bool isPlaying;
         [SerializeField] private bool showPlaybackPreview = true;
         [SerializeField] private bool expandPlaybackPreview;
-        // プレイ画面を本編に近づける表示(本編のカメラ、着地の枠、本編の小節線、当たりの円)。
+        // プレイ画面を本編に近づける表示(本編のカメラ、着地の枠、本編の小節線、当たりの円、Perfect で切る)。
         [SerializeField] private bool previewGameCamera = true;
         [SerializeField] private bool previewLandingFrame = true;
         [SerializeField] private bool previewBarLines = true;
         [SerializeField] private bool previewHitRadius;
+        [SerializeField] private bool previewPerfectCuts = true;
         private SaberChartPlaybackPreview playbackPreview;
         private string playbackPreviewError;
         private float playbackAudioStartSeconds;
@@ -578,6 +579,7 @@ namespace Saber.ChartEditor
                     playbackPreview.ShowLandingFrame = previewLandingFrame;
                     playbackPreview.ShowBarLines = previewBarLines;
                     playbackPreview.ShowHitRadius = previewHitRadius;
+                    playbackPreview.ShowPerfectCuts = previewPerfectCuts;
                     playbackPreview.Tick(document, BeatToAudioSeconds(currentBeat));
                     Texture frame = playbackPreview.Render(viewport);
                     if (frame != null) GUI.DrawTexture(viewport, frame, ScaleMode.ScaleToFit, false);
@@ -613,6 +615,9 @@ namespace Saber.ChartEditor
             previewHitRadius = GUILayout.Toggle(previewHitRadius, new GUIContent("当たりの円",
                 "判定の前後0.25秒のノーツに、刃が届けば切れる範囲（半径1.2）の円を出します"), EditorStyles.miniButtonRight);
             GUILayout.EndHorizontal();
+            previewPerfectCuts = GUILayout.Toggle(previewPerfectCuts, new GUIContent("Perfect で切る",
+                "判定時刻ちょうど（Perfect）に、本編と同じ2片・光の輪・ロングのひびと細片で切って見せます。オフにすると判定時刻で消える従来の表示です"),
+                EditorStyles.miniButton);
         }
 
         private void DisposePlaybackPreview()

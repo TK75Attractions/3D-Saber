@@ -244,10 +244,22 @@ public static class UISkinKit
 
     // ロゴ用フォント(Chakra Petch Bold Italic / OFL)。Resources の TTF からランタイム生成して共有する。
     // TTF が無い環境では null を返す(呼び出し側は TMP 既定フォント+擬似イタリックでフォールバック)。
+    // Play モードで作ったフォントは、Play モードを抜けると実行時に作った材質とアトラスだけを Unity が壊す
+    // (フォント本体は HideAndDontSave で残り、静的キャッシュも残る)。壊れたまま返すと、編集中の譜面エディターで
+    // ロングの残数が描けず、まだ無い文字を足す瞬間に TMP が例外を投げる(2026-10-17)。
+    // 材質とアトラスが生きているものだけをキャッシュとして使い、壊れていれば作り直す。
+    public static bool IsFontUsable(TMP_FontAsset asset)
+    {
+        if (asset == null || asset.material == null) return false;
+        var atlases = asset.atlasTextures;
+        return atlases != null && atlases.Length > 0 && atlases[0] != null;
+    }
+
     public static TMP_FontAsset LogoFontAsset()
     {
-        if (logoFontAsset != null) return logoFontAsset;
-        if (logoFontLoadAttempted) return null;
+        if (IsFontUsable(logoFontAsset)) return logoFontAsset;
+        // TTF が無い環境(参照が null のまま)は再試行しない。壊れただけなら作り直す。
+        if (logoFontLoadAttempted && ReferenceEquals(logoFontAsset, null)) return null;
         logoFontLoadAttempted = true;
         var ttf = Resources.Load<Font>("Fonts/ChakraPetch-BoldItalic");
         if (ttf == null)
@@ -288,8 +300,8 @@ public static class UISkinKit
     // 経緯: 曲名「揺籠」などが Oxanium/Chakra Petch(ラテン文字のみ)で描かれて□になっていた。
     public static TMP_FontAsset JapaneseFallbackFontAsset()
     {
-        if (jpFallbackFontAsset != null) return jpFallbackFontAsset;
-        if (jpFallbackLoadAttempted) return null;
+        if (IsFontUsable(jpFallbackFontAsset)) return jpFallbackFontAsset;
+        if (jpFallbackLoadAttempted && ReferenceEquals(jpFallbackFontAsset, null)) return null;
         jpFallbackLoadAttempted = true;
         var otf = LoadJapaneseFontSource();
         if (otf == null)
@@ -319,6 +331,8 @@ public static class UISkinKit
         {
             asset.fallbackFontAssetTable = new System.Collections.Generic.List<TMP_FontAsset>();
         }
+        // 前の Play モードで素材を失った日本語フォントは外し、生きているものを付け直す。
+        asset.fallbackFontAssetTable.RemoveAll(fallback => !IsFontUsable(fallback));
         if (!asset.fallbackFontAssetTable.Contains(jp)) asset.fallbackFontAssetTable.Add(jp);
     }
 
@@ -326,7 +340,8 @@ public static class UISkinKit
     // 無い場合は警告を出して null(呼び出し側は既定フォントのまま進める)。null もキャッシュして再試行しない。
     public static TMP_FontAsset FontAsset(string name)
     {
-        if (fontAssetCache.TryGetValue(name, out var cached)) return cached;
+        // 見つからなかった記録(null)は再試行しない。素材が壊れたものは下で作り直す。
+        if (fontAssetCache.TryGetValue(name, out var cached) && (ReferenceEquals(cached, null) || IsFontUsable(cached))) return cached;
         TMP_FontAsset asset = null;
         var ttf = Resources.Load<Font>("Fonts/" + name);
         if (ttf == null)

@@ -333,6 +333,32 @@ public class CuttableNote : MonoBehaviour
     }
 
     int cracksUsed;
+    // ひびの材質(白い発光)。本編と譜面エディターのプレイ画面で同じ見た目にする。
+    public static Material MakeCrackMaterial()
+    {
+        var mat = new Material(Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard"));
+        if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", Color.white);
+        else mat.color = Color.white;
+        if (mat.HasProperty("_EmissionColor")) { mat.EnableKeyword("_EMISSION"); mat.SetColor("_EmissionColor", Color.white * 1.4f); }
+        return mat;
+    }
+    // index 番目(0 始まり)のひびの位置と向き。当たった位置(ローカル)と振った方向(ローカル)から決める。
+    // 譜面エディターのプレイ画面も同じ置き方で描くので、ここだけを直せば両方がそろう。
+    public static void PlaceCrack(Transform crack, int index, Vector3 localHit, Vector3 localDirection)
+    {
+        float angle = localDirection.sqrMagnitude > .0001f
+            ? Mathf.Atan2(localDirection.y, localDirection.x) * Mathf.Rad2Deg - 90f : 0f;
+        float offset = (index % 3 - 1) * .09f;
+        crack.localPosition = new Vector3(Mathf.Clamp(localHit.x + offset, -.28f, .28f),
+            Mathf.Clamp(localHit.y - offset, -.28f, .28f), -.55f);
+        crack.localRotation = Quaternion.Euler(0, 0, angle + ((index & 1) == 1 ? 12f : -12f));
+    }
+    // 完了が近いほど(progress 0→1)既存のひびも太く長くする。
+    public static Vector3 CrackScale(int index, float progress)
+    {
+        return new Vector3(Mathf.Lerp(.025f, .055f, progress),
+            Mathf.Lerp(.38f, .88f, progress) * (1f - (index % 3) * .08f), .03f);
+    }
     internal void WarmCracks(int count)
     {
         for (int i = ownedCracks.Count; i < count; i++)
@@ -340,10 +366,7 @@ public class CuttableNote : MonoBehaviour
             var crack = new GameObject("Crack", typeof(MeshFilter), typeof(MeshRenderer));
             crack.transform.SetParent(transform, false);
             crack.GetComponent<MeshFilter>().sharedMesh = NoteFragmentPool.CubeMesh;
-            var mat = new Material(Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard"));
-            if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", Color.white);
-            else mat.color = Color.white;
-            if (mat.HasProperty("_EmissionColor")) { mat.EnableKeyword("_EMISSION"); mat.SetColor("_EmissionColor", Color.white * 1.4f); }
+            var mat = MakeCrackMaterial();
             crack.GetComponent<MeshRenderer>().sharedMaterial = mat;
             crack.SetActive(false); ownedCracks.Add((crack, mat));
         }
@@ -354,18 +377,10 @@ public class CuttableNote : MonoBehaviour
         var crack = ownedCracks[cracksUsed++].visual;
         // 当たった位置・振った方向に傷を残し、完了が近いほど既存の傷も太く長くする。
         // 成功の光は最終判定まで出さず、ノーツ本体や判定形状は動かさない。
-        Vector3 localHit = transform.InverseTransformPoint(lastHitPoint);
-        Vector3 localDirection = transform.InverseTransformDirection(lastVelocity);
-        float angle = localDirection.sqrMagnitude > .0001f
-            ? Mathf.Atan2(localDirection.y, localDirection.x) * Mathf.Rad2Deg - 90f : 0f;
-        float offset = ((cracksUsed - 1) % 3 - 1) * .09f;
-        crack.transform.localPosition = new Vector3(Mathf.Clamp(localHit.x + offset, -.28f, .28f),
-            Mathf.Clamp(localHit.y - offset, -.28f, .28f), -.55f);
-        crack.transform.localRotation = Quaternion.Euler(0, 0, angle + ((cracksUsed & 1) == 0 ? 12f : -12f));
+        PlaceCrack(crack.transform, cracksUsed - 1, transform.InverseTransformPoint(lastHitPoint),
+            transform.InverseTransformDirection(lastVelocity));
         float progress = Mathf.Clamp01(CutsAchieved / (float)Mathf.Max(1, RequiredCutCount - 1));
-        for (int i = 0; i < cracksUsed; i++)
-            ownedCracks[i].visual.transform.localScale = new Vector3(Mathf.Lerp(.025f, .055f, progress),
-                Mathf.Lerp(.38f, .88f, progress) * (1f - (i % 3) * .08f), .03f);
+        for (int i = 0; i < cracksUsed; i++) ownedCracks[i].visual.transform.localScale = CrackScale(i, progress);
         crack.SetActive(true);
     }
 

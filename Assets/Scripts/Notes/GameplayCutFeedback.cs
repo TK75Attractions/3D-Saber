@@ -190,6 +190,42 @@ public sealed class GameplayCutFeedback : MonoBehaviour
         RebuildMesh();
     }
 
+    // 編集中のプレビュー(譜面エディターのプレイ画面)用。切ってからの経過秒を指定して、そのフレームの演出だけを描く。
+    // 本編の時計(Tick)とは併用しない。呼ぶたびに前の内容を置き換えるので、巻き戻しても同じ絵になる。
+    public struct StaticBurst
+    {
+        public JudgmentTier tier;
+        public Vector3 position;
+        public Vector2 direction;
+        public Color color;
+        public float scale, release, age;
+    }
+
+    public void DrawBursts(IReadOnlyList<StaticBurst> items)
+    {
+        if (mesh == null) return;
+        for (int i = 0; i < bursts.Length; i++) bursts[i].active = false;
+        ActiveCount = 0;
+        for (int i = 0; items != null && i < items.Count && ActiveCount < bursts.Length; i++)
+        {
+            StaticBurst item = items[i];
+            if (!Draws(item.tier) || item.age < 0f || item.age >= BurstLifetime || !Finite(item.position)) continue;
+            Vector2 direction = item.direction.sqrMagnitude > .0001f ? item.direction.normalized : Vector2.right;
+            Color color = item.color;
+            color.a = 1f;
+            // 同時に出ている数で弱める係数は HandleCut と同じ(何番目に出たか)。
+            bursts[ActiveCount] = new Burst {
+                active = true, tier = item.tier, position = item.position, direction = direction, color = color,
+                scale = Mathf.Clamp(item.scale, .6f, 1.5f), age = item.age,
+                gain = 1f / Mathf.Sqrt(1f + .12f * ActiveCount),
+                release = item.release > 0f ? item.release : 1f,
+                hue = Mathf.Repeat(item.position.x * .37f + item.position.y * .61f + .13f, 1f)
+            };
+            ActiveCount++;
+        }
+        RebuildMesh();
+    }
+
     void RebuildMesh()
     {
         if (mesh == null) return;
