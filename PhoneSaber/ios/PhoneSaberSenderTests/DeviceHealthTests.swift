@@ -140,6 +140,20 @@ final class DeviceHealthTests: XCTestCase {
         }
     }
 
+    func test120FPSSecondReductionRequiresContinuousHeat() {
+        for interruption in [DeviceThermalLevel.normal, .elevated, .unknown] {
+            var policy = ThermalFPSPolicy()
+            XCTAssertEqual(policy.effectiveFPS(thermal: .high, at: 0, userFPS: 120), 60)
+            XCTAssertEqual(policy.effectiveFPS(thermal: .high, at: 118, userFPS: 120), 60)
+            // 冷却・不明状態を挟んだら、前回のfps変更からの経過だけで30fpsに下げない。
+            XCTAssertEqual(policy.effectiveFPS(thermal: interruption, at: 119, userFPS: 120), 60)
+            XCTAssertEqual(policy.effectiveFPS(thermal: .high, at: 120, userFPS: 120), 60)
+            XCTAssertEqual(policy.effectiveFPS(thermal: .dangerous, at: 239.999, userFPS: 120), 60)
+            XCTAssertEqual(policy.effectiveFPS(thermal: .dangerous, at: 240, userFPS: 120), 30)
+            XCTAssertEqual(policy.level, 2)
+        }
+    }
+
     func testCaptureLatencyLogRunsEveryTenSecondsOnlyWhileSending() {
         var policy = CaptureLatencyLogPolicy()
         XCTAssertFalse(policy.shouldLog(at: 0, sending: false))

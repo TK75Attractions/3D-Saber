@@ -251,6 +251,7 @@ struct ThermalFPSPolicy {
     /// 0 = 下げていない、1 = 1段下げ（120→60、60→30）、2 = 120→30。
     private(set) var level = 0
     private var coolSince: TimeInterval?
+    private var hotSince: TimeInterval?
     private var lastChange: TimeInterval?
     static let minimumInterval: TimeInterval = 120
 
@@ -264,6 +265,11 @@ struct ThermalFPSPolicy {
     mutating func effectiveFPS(thermal: DeviceThermalLevel, at time: TimeInterval, userFPS: Int) -> Int {
         let hot = thermal == .high || thermal == .dangerous
         let cool = thermal == .normal || thermal == .elevated
+        if hot {
+            if hotSince == nil { hotSince = time }
+        } else {
+            hotSince = nil
+        }
         if cool {
             if coolSince == nil { coolSince = time }
         } else {
@@ -273,7 +279,10 @@ struct ThermalFPSPolicy {
         let maximumLevel = userFPS == 120 ? 2 : 1
         if level > maximumLevel { level = maximumLevel }
         let canChange = lastChange.map { time - $0 >= Self.minimumInterval } ?? true
-        if level < maximumLevel && hot && (canChange || (userFPS == 120 && level == 0)) {
+        // 2段目は連続した発熱を待ち、冷却・不明状態を発熱時間に含めない。
+        let sustainedHeat = hotSince.map { time - $0 >= Self.minimumInterval } ?? false
+        if level < maximumLevel && hot && (canChange || (userFPS == 120 && level == 0)) &&
+            (level == 0 || sustainedHeat) {
             level += 1
             lastChange = time
         } else if level > 0 && cool, let coolSince,
