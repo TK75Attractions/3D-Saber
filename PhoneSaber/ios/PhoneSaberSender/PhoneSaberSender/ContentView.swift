@@ -13,6 +13,45 @@ struct ContentView: View {
 #endif
 
     var body: some View {
+        // 低発熱表示の間は、操作画面と preview を表示から外して黒い画面だけにする。
+        // scenePhase・onAppear などの modifier は外側に置き、切り替えで再実行させない。
+        ZStack {
+            if model.lowHeatDisplayActive {
+                LowHeatScreen(line: model.lowHeatStatusLine, wake: { model.lowHeatTouch() })
+            } else {
+                mainScreen
+            }
+        }
+        .background(TouchActivityObserver { model.lowHeatTouch() })
+        .statusBarHidden(model.lowHeatDisplayActive)
+        .persistentSystemOverlays(model.lowHeatDisplayActive ? .hidden : .automatic)
+        .task { model.refreshDebugRecordingSessions() }
+        .onAppear { model.sceneDidChange(isActive: scenePhase == .active) }
+        .confirmationDialog(
+            "古い録画sessionを整理しますか？",
+            isPresented: $showRecordingCleanupConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("古いsessionを整理（最新は保持）", role: .destructive) {
+                model.cleanupOlderDebugRecordingSessions()
+            }
+            Button("キャンセル", role: .cancel) {}
+        } message: {
+            let older = Array(model.debugRecordingSessions.dropFirst())
+            let reclaimable = older.reduce(Int64(0)) { $0 + $1.diskUsageBytes }
+            let firstOlder = older.last?.sessionID ?? "なし"
+            let latest = model.debugRecordingSessions.first?.sessionID ?? "なし"
+            Text("対象: \(older.count)件（最古 \(firstOlder)、約\(ByteCountFormatter.string(fromByteCount: reclaimable, countStyle: .file))）。最新 \(latest) は保持します。")
+        }
+        .onChange(of: scenePhase) { phase in
+            model.sceneDidChange(isActive: phase == .active)
+        }
+        .onChange(of: recordingPreviewURL) { url in
+            model.setLowHeatInhibitedByUI(url != nil)
+        }
+    }
+
+    @ViewBuilder private var mainScreen: some View {
         let pathDetail = model.pathInterface.isEmpty ? "" : " (\(model.pathInterface))"
         NavigationStack {
             ScrollView {
@@ -133,7 +172,8 @@ struct ContentView: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
-                    CameraDisplay(session: model.session, red: model.redEndpoints, blue: model.blueEndpoints,
+                    CameraDisplay(session: model.session, previewView: model.lowHeatDisplay.previewView,
+                                  red: model.redEndpoints, blue: model.blueEndpoints,
                                   width: model.sourceDimensions.width, height: model.sourceDimensions.height)
                         .equatable()
                     Text(model.deviceHealthLine)
@@ -417,6 +457,12 @@ struct ContentView: View {
                             .disabled(!model.cameraExposureExperimentEditable)
                             Text("既定OFF。HDR・歪み補正を無効化するため画像が変わる場合があります。アプリ終了でOFFに戻ります。")
                                 .font(.caption).foregroundStyle(.secondary)
+                            Toggle("低発熱表示（送信中に\(Int(LowHeatDisplayPolicy.idleSeconds))秒触れなければ画面を暗くする）", isOn: Binding(
+                                get: { model.lowHeatDisplayEnabled },
+                                set: { model.setLowHeatDisplayEnabled($0) }
+                            ))
+                            Text("既定ON。カメラ映像の表示を止めて画面を暗くし、発熱を抑えて60 fpsを保ちやすくします。認識と送信は変わりません。画面に触れると元に戻ります。")
+                                .font(.caption).foregroundStyle(.secondary)
                             Text(model.supports60FPS
                                  ? "60 fpsは撮影から送信までが約13ms短い（2026-10-07実測）。発熱や処理落ちが続くときだけ30 fpsにします。"
                                  : "この端末のカメラは60 fpsに対応していないため、30 fpsで動きます。")
@@ -477,47 +523,27 @@ struct ContentView: View {
                                        cancel: { model.cancelGuidedRecording() })
             }
         }
-        .task { model.refreshDebugRecordingSessions() }
-        .onAppear { model.sceneDidChange(isActive: scenePhase == .active) }
-        .confirmationDialog(
-            "古い録画sessionを整理しますか？",
-            isPresented: $showRecordingCleanupConfirmation,
-            titleVisibility: .visible
-        ) {
-            Button("古いsessionを整理（最新は保持）", role: .destructive) {
-                model.cleanupOlderDebugRecordingSessions()
-            }
-            Button("キャンセル", role: .cancel) {}
-        } message: {
-            let older = Array(model.debugRecordingSessions.dropFirst())
-            let reclaimable = older.reduce(Int64(0)) { $0 + $1.diskUsageBytes }
-            let firstOlder = older.last?.sessionID ?? "なし"
-            let latest = model.debugRecordingSessions.first?.sessionID ?? "なし"
-            Text("対象: \(older.count)件（最古 \(firstOlder)、約\(ByteCountFormatter.string(fromByteCount: reclaimable, countStyle: .file))）。最新 \(latest) は保持します。")
-        }
-        .onChange(of: scenePhase) { phase in
-            model.sceneDidChange(isActive: phase == .active)
-        }
     }
 }
 
 // カウンタ・接続状態の更新では preview の再設定や同じ overlay の描画を繰り返さない。
 private struct CameraDisplay: View, Equatable {
     let session: AVCaptureSession
+    let previewView: PreviewView
     let red: (PixelPoint, PixelPoint)?
     let blue: (PixelPoint, PixelPoint)?
     let width: Int
     let height: Int
 
     static func == (lhs: Self, rhs: Self) -> Bool {
-        lhs.session === rhs.session && lhs.width == rhs.width && lhs.height == rhs.height
+        lhs.session === rhs.session && lhs.previewView === rhs.previewView && lhs.width == rhs.width && lhs.height == rhs.height
             && lhs.red?.0 == rhs.red?.0 && lhs.red?.1 == rhs.red?.1
             && lhs.blue?.0 == rhs.blue?.0 && lhs.blue?.1 == rhs.blue?.1
     }
 
     var body: some View {
         ZStack {
-            CameraPreview(session: session).frame(height: 280)
+            CameraPreview(session: session, view: previewView).frame(height: 280)
             Canvas { context, size in
                 draw(red, color: .red, context: &context, size: size)
                 draw(blue, color: .blue, context: &context, size: size)

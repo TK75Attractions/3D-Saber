@@ -39,6 +39,9 @@
 		A0000000000000000000B014 /* MetricsDatagramTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000B014 /* MetricsDatagramTests.swift */; };
 		A0000000000000000000A005 /* EventRecovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000A005 /* EventRecovery.swift */; };
 		A0000000000000000000A006 /* EventRecoveryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000A006 /* EventRecoveryTests.swift */; };
+		A0000000000000000000A007 /* LowHeatDisplayPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000A007 /* LowHeatDisplayPolicy.swift */; };
+		A0000000000000000000A008 /* LowHeatDisplay.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000A008 /* LowHeatDisplay.swift */; };
+		A0000000000000000000A009 /* LowHeatDisplayTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000A009 /* LowHeatDisplayTests.swift */; };
 		A0000000000000000000B015 /* protocol_metrics.tsv in Resources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000B015 /* protocol_metrics.tsv */; };
 		A0000000000000000000B017 /* HighSpeedCaptureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000B017 /* HighSpeedCaptureTests.swift */; };
 /* End PBXBuildFile section */
@@ -88,6 +91,9 @@
 		B1000000000000000000B014 /* MetricsDatagramTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricsDatagramTests.swift; sourceTree = "<group>"; };
 		B1000000000000000000A005 /* EventRecovery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventRecovery.swift; sourceTree = "<group>"; };
 		B1000000000000000000A006 /* EventRecoveryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventRecoveryTests.swift; sourceTree = "<group>"; };
+		B1000000000000000000A007 /* LowHeatDisplayPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LowHeatDisplayPolicy.swift; sourceTree = "<group>"; };
+		B1000000000000000000A008 /* LowHeatDisplay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LowHeatDisplay.swift; sourceTree = "<group>"; };
+		B1000000000000000000A009 /* LowHeatDisplayTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LowHeatDisplayTests.swift; sourceTree = "<group>"; };
 		B1000000000000000000B015 /* protocol_metrics.tsv */ = {isa = PBXFileReference; lastKnownFileType = text; path = ../../tools/fixtures/protocol_metrics.tsv; sourceTree = "<group>"; };
 		B1000000000000000000B017 /* HighSpeedCaptureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HighSpeedCaptureTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -131,6 +137,8 @@
 				B1000000000000000000A003 /* DeviceHealth.swift */,
 				B1000000000000000000B013 /* MetricsDatagram.swift */,
 				B1000000000000000000A005 /* EventRecovery.swift */,
+				B1000000000000000000A007 /* LowHeatDisplayPolicy.swift */,
+				B1000000000000000000A008 /* LowHeatDisplay.swift */,
 				B10000000000000000000016 /* DebugBundleTransfer.swift */,
 				B10000000000000000000008 /* UDPSender.swift */,
 				B10000000000000000000017 /* P2PProtocol.swift */,
@@ -155,6 +163,7 @@
 				B1000000000000000000B014 /* MetricsDatagramTests.swift */,
 				B1000000000000000000B015 /* protocol_metrics.tsv */,
 				B1000000000000000000A006 /* EventRecoveryTests.swift */,
+				B1000000000000000000A009 /* LowHeatDisplayTests.swift */,
 				D00000000000000000000004 /* Fixtures */,
 			);
 			path = ../PhoneSaberSenderTests;
@@ -298,6 +307,8 @@
 				A0000000000000000000A003 /* DeviceHealth.swift in Sources */,
 				A0000000000000000000B013 /* MetricsDatagram.swift in Sources */,
 				A0000000000000000000A005 /* EventRecovery.swift in Sources */,
+				A0000000000000000000A007 /* LowHeatDisplayPolicy.swift in Sources */,
+				A0000000000000000000A008 /* LowHeatDisplay.swift in Sources */,
 				A00000000000000000000016 /* DebugBundleTransfer.swift in Sources */,
 				A00000000000000000000008 /* UDPSender.swift in Sources */,
 				A00000000000000000000017 /* P2PProtocol.swift in Sources */,
@@ -321,6 +332,7 @@
 				A0000000000000000000A004 /* DeviceHealthTests.swift in Sources */,
 				A0000000000000000000B014 /* MetricsDatagramTests.swift in Sources */,
 				A0000000000000000000A006 /* EventRecoveryTests.swift in Sources */,
+				A0000000000000000000A009 /* LowHeatDisplayTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -3,10 +3,14 @@ import SwiftUI
 
 struct CameraPreview: UIViewRepresentable {
     let session: AVCaptureSession
+    /// 表示を離れても使い続ける view（LowHeatDisplayController が持つ）。
+    /// 作り直すと running 中の session に preview layer を足し引きすることになるため。
+    let view: PreviewView
 
     func makeUIView(context: Context) -> PreviewView {
-        let view = PreviewView()
-        view.videoPreviewLayer.session = session
+        if view.videoPreviewLayer.session !== session {
+            view.videoPreviewLayer.session = session
+        }
         view.videoPreviewLayer.videoGravity = .resizeAspectFill
         return view
     }

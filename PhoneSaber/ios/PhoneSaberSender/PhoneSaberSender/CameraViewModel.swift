@@ -733,6 +733,12 @@ final class CameraViewModel: NSObject, ObservableObject {
     @Published private(set) var cameraState: CameraLifecycleState = .stopped
     @Published private(set) var lastCameraFrameAge: TimeInterval?
     @Published private(set) var screenSleepPreventionActive = false
+    /// 低発熱表示（送信中に20秒触れなければ preview を止めて暗くする）。表示だけで、認識・送信は変えない。
+    let lowHeatDisplay: LowHeatDisplayController
+    @Published private(set) var lowHeatDisplayActive = false
+    @Published private(set) var lowHeatDisplayEnabled = true
+    @Published private(set) var lowHeatStatusLine = ""
+    private var lowHeatInhibitedByUI = false
     @Published private(set) var pathStatus = "判定中"
     @Published private(set) var pathInterface = ""
     @Published private(set) var host = ""
@@ -804,7 +810,7 @@ final class CameraViewModel: NSObject, ObservableObject {
     /// Colors whose absence and anomalies count as diagnostic failures. Recognition
     /// and UDP output always cover both colors.
     @Published var debugDiagnosticColors: DebugDiagnosticColors = .both
-    @Published private(set) var debugRecordingActive = false
+    @Published private(set) var debugRecordingActive = false { didSet { updateLowHeatDisplay() } }
     /// Operator ground truth for the current part of a Debug Recording
     /// (metadata only). Reset to unlabeled at every Start.
     @Published var debugSegmentLabel: DebugSegmentLabel = .unlabeled {
@@ -821,7 +827,7 @@ final class CameraViewModel: NSObject, ObservableObject {
     @Published private(set) var debugRecordingCleanupStatus = ""
     /// Opt-in guided recording (ガイド付き録画). Manual recording is unchanged
     /// and stays the default; these are only set by `startGuidedRecording`.
-    @Published private(set) var guidedRecordingRunning = false
+    @Published private(set) var guidedRecordingRunning = false { didSet { updateLowHeatDisplay() } }
     @Published private(set) var guidedRecordingStatus: GuidedRecordingStatus?
     /// The full plan shown in the UI; `startGuidedRecording(script:)` may run another one.
     let guidedRecordingScript = GuidedRecordingScript.shootingPlanV3
@@ -927,7 +933,8 @@ final class CameraViewModel: NSObject, ObservableObject {
         requestAccess: @escaping (@escaping (Bool) -> Void) -> Void = { completion in AVCaptureDevice.requestAccess(for: .video, completionHandler: completion) },
         idleTimerUpdater: @escaping @MainActor (Bool) -> Void = { disabled in
             UIApplication.shared.isIdleTimerDisabled = disabled
-        }
+        },
+        lowHeatDisplay: LowHeatDisplayController? = nil
     ) {
         self.processor = processor
         self.sender = sender
@@ -964,7 +971,16 @@ final class CameraViewModel: NSObject, ObservableObject {
         self.authorizationStatus = authorizationStatus
         self.requestAccess = requestAccess
         self.idleTimerUpdater = idleTimerUpdater
+        // 既定 ON。起動引数 `-PhoneSaber.lowHeatDisplay NO` でもその起動だけ OFF（文字列の NO も bool(forKey:) で読む）。
+        // XCTest は画面輝度に触れないよう、注入しない限り OFF・保存なし。
+        let lowHeatStored = UserDefaults.standard.object(forKey: LowHeatDisplayPolicy.preferenceKey) == nil
+            || UserDefaults.standard.bool(forKey: LowHeatDisplayPolicy.preferenceKey)
+        self.lowHeatDisplay = lowHeatDisplay ?? LowHeatDisplayController(
+            enabled: !underTest && lowHeatStored, now: ProcessInfo.processInfo.systemUptime,
+            defaults: underTest ? nil : .standard, observeApplication: !underTest)
+        self.lowHeatDisplayEnabled = self.lowHeatDisplay.isEnabled
         super.init()
+        self.lowHeatDisplay.onDimmedChange = { [weak self] dimmed in self?.lowHeatDimmedChanged(dimmed) }
         if !underTest {
             let manual = UserDefaults.standard.string(forKey: "PhoneSaber.manualHost") ?? ""
             self.hostSelection.setManual(manual, resolvedHost: "", serviceName: "")
@@ -1366,6 +1382,13 @@ final class CameraViewModel: NSObject, ObservableObject {
         }
         let line = "発熱 \(thermal.title) / \(DeviceHealthText.battery(level: battery.level, state: battery.title))\n" + DeviceHealthText.timing(rates)
         assignIfChanged(\.deviceHealthLine, line)
+        updateLowHeatDisplay(at: time)
+        lowHeatDisplay.tick(at: time)
+        if lowHeatDisplayActive {
+            // 暗い画面の1行はこの1秒ごとの更新でだけ書き換える。
+            assignIfChanged(\.lowHeatStatusLine, LowHeatDisplayPolicy.statusLine(
+                state: lowHeatStateLabel, cameraFPS: rates.cameraFPS, thermal: thermal.title))
+        }
         assignIfChanged(\.deviceHealthWarning, DeviceHealthText.warning(thermal: thermal, rates: rates,
                                                        requestedFPS: requestedHealthFPS, running: running,
                                                        batteryLevel: battery.level, batteryState: battery.state,
@@ -1417,6 +1440,7 @@ final class CameraViewModel: NSObject, ObservableObject {
     }
 
     private func updateIdleTimerPolicy() {
+        updateLowHeatDisplay()
         let shouldPreventSleep = (running || resumePolicy.wantsSending) && sceneIsActive
         guard screenSleepPreventionActive != shouldPreventSleep else { return }
         screenSleepPreventionActive = shouldPreventSleep
@@ -1456,6 +1480,52 @@ final class CameraViewModel: NSObject, ObservableObject {
             }
         default: fail("設定アプリでカメラ権限を許可してください")
         }
+    }
+
+    // MARK: 低発熱表示
+
+    private var lowHeatStateLabel: String {
+        guard running else { return "停止中" }
+        if cameraState != .live { return cameraState.displayLabel }
+        return pcReplyMissing ? "送信中・PC応答なし" : "送信中"
+    }
+
+    private func updateLowHeatDisplay(at time: TimeInterval = ProcessInfo.processInfo.systemUptime) {
+        lowHeatDisplay.update(sending: running, foreground: sceneIsActive,
+                              inhibited: debugRecordingActive || guidedRecordingRunning || lowHeatInhibitedByUI,
+                              at: time)
+    }
+
+    private func lowHeatDimmedChanged(_ dimmed: Bool) {
+        assignIfChanged(\.lowHeatDisplayActive, dimmed)
+        if !dimmed { assignIfChanged(\.lowHeatStatusLine, "") }
+    }
+
+    /// 画面のどこかに触れた（window 全体の touch）。暗い間なら元に戻す。
+    func lowHeatTouch(at time: TimeInterval = ProcessInfo.processInfo.systemUptime) {
+        lowHeatDisplay.touch(at: time)
+    }
+
+    func setLowHeatDisplayEnabled(_ enabled: Bool) {
+        guard enabled != lowHeatDisplayEnabled else { return }
+        lowHeatDisplayEnabled = enabled
+        if NSClassFromString("XCTestCase") == nil {
+            UserDefaults.standard.set(enabled, forKey: LowHeatDisplayPolicy.preferenceKey)
+        }
+        lowHeatDisplay.setEnabled(enabled, at: ProcessInfo.processInfo.systemUptime)
+    }
+
+    /// 録画の再生（QuickLook）など、画面を見ている間は暗くしない。
+    func setLowHeatInhibitedByUI(_ inhibited: Bool) {
+        guard inhibited != lowHeatInhibitedByUI else { return }
+        lowHeatInhibitedByUI = inhibited
+        updateLowHeatDisplay()
+    }
+
+    /// 1秒ごとの更新と同じ判定を、注入した時刻で行う。
+    func lowHeatTickForTesting(at time: TimeInterval) {
+        updateLowHeatDisplay(at: time)
+        lowHeatDisplay.tick(at: time)
     }
 
     func retryDiscovery() {
@@ -1824,6 +1894,8 @@ final class CameraViewModel: NSObject, ObservableObject {
             }
         }
         session.commitConfiguration()
+        // 再設定で preview の connection は作り直される。低発熱表示の間は止めたままにする。
+        lowHeatDisplay.reapplyPreviewState()
         // After the format is committed: a format change resets the device's
         // activeMaxExposureDuration, so the experiment is (re)applied here.
         // With the default auto setting this does not touch the device.
