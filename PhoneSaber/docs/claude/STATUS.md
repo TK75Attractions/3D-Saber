@@ -2,6 +2,12 @@
 
 資料の索引と、実行ファイル・道具の場所は [README.md](README.md)。
 
+## 2026-10-18 未明: 遅延対策（10-18 に実機で比較する）
+
+- 10-17 のプロジェクター実プレイ（`play_report.py --since 07:46Z --until 07:50Z`）: iPhone がテザリング親機（送信元 172.20.10.1）で thermal=serious のまま 30 fps、c2s 49 ms・座標 30/s。通信 3〜5 ms、PC 5 ms、Mac 負荷 2.6。判定は固定補正 120 ms で当たりの中央 −31 ms（早め）、最適値の推定 89 ms。
+- 入れたもの: 判定補正の自動化 `PhoneSaberJudgeLatency`（推定の合計＋台ごとの調整、予測 ON 時は先読み分を差し引く、F8 で「ゲームの設定」に戻せる、「当たりの中央に合わせる」ボタン、`event=judge-latency`）／判定ごとの記録 `event=judge-timing`／メニューと F8 にスマホの発熱・30fps・テザリング親機の注意／iPhone の低発熱表示（送信中 20 秒無操作で preview 停止・明るさ 0.05）／`PhoneSaber/tools/play_report.py`（1回のプレイの要約・`--compare`）／build-mac の smoke を流れだけの失敗で1回再試行。メニューは画面と同じ fps、本編は 2 倍。
+- 未検証（実機）: 低発熱表示で 60 fps が保てるか、自動補正で当たりが中央に来るか、プロジェクターの処理遅延（F9 は投影の赤を認識できず測れない → 当たりの中央で合わせる）。比較候補: ネット（ルーター／別端末の親機／USB テザリング）、P2P 予備 ON/OFF（LAN 中も 0.25 秒ごとに ping する）、予測 OFF/自動。
+
 ## 2026-10-16 flaky_p2p-1016 最終監査・未検証変更の撤去
 
 - 対象: `git log --oneline -5`、`git diff main...HEAD`、8a510ae の前回メモ。開始時 clean。commit/push・GUI起動なし。
