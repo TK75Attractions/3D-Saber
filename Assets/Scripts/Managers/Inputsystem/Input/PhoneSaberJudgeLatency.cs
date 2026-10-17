@@ -55,8 +55,16 @@ public static class PhoneSaberJudgeLatencySettings
     {
         if (Clamp(mode) == GameDefault || !automaticMs.HasValue) return gameSeconds;
         double lead = double.IsNaN(predictionLeadMs) || predictionLeadMs < 0 ? 0 : predictionLeadMs;
-        double ms = automaticMs.Value + ClampOffset(offsetMs) - lead;
-        return Mathf.Clamp((float)ms, MinimumMs, MaximumMs) / 1000.0;
+        // 下限で切るのは先読みを引く前だけ。自動予測の先読みは同じ推定から作られるので、引いた後は 0 近くになり得る。
+        double before = Mathf.Clamp((float)(automaticMs.Value + ClampOffset(offsetMs)), MinimumMs, MaximumMs);
+        return Mathf.Clamp((float)(before - lead), 0, MaximumMs) / 1000.0;
+    }
+
+    // 予測の先読み（赤・青）。0 の色（来ていない・予測なし）は平均に入れない。
+    public static double PredictionLead(int red, int blue)
+    {
+        if (red > 0 && blue > 0) return (red + blue) / 2.0;
+        return System.Math.Max(0, System.Math.Max(red, blue));
     }
 }
 
@@ -87,6 +95,7 @@ public sealed class PhoneSaberJudgeLatency : MonoBehaviour
         offsetMs = PhoneSaberJudgeLatencySettings.ClampOffset(offsetMs);
         if (mode == Mode && offsetMs == OffsetMs) return;
         Mode = mode; OffsetMs = offsetMs;
+        PhoneSaberJudgeTimingStats.Clear(); // 補正を変えたら、それ以前の当たりのずれは使わない
         string station = PhoneSaberStation.Read();
         PhoneSaberJudgeLatencySettings.Save(station, mode, offsetMs);
         PhoneSaberEventLog.Record(station, "SYSTEM", "judge-latency-setting",
@@ -112,18 +121,21 @@ public sealed class PhoneSaberJudgeLatency : MonoBehaviour
             // シーンごとに作り直される。最初に見た値がゲームの設定（Inspector／コード既定）。
             gameSeconds = manager.cameraJudgeLatencySeconds;
             GameMs = gameSeconds * 1000;
+            nextTick = now; // 見つけたその場で適用する（曲の最初の数秒を 120 ms のままにしない）
         }
         if (now < nextTick) return;
         nextTick = now + 2;
         Refresh();
         var input = InputPoint.Instance;
-        PredictionLeadMs = input == null ? 0 : (input.PredictionLead(false) + input.PredictionLead(true)) / 2.0;
+        PredictionLeadMs = input == null ? 0 : PhoneSaberJudgeLatencySettings.PredictionLead(input.PredictionLead(false), input.PredictionLead(true));
         double seconds = PhoneSaberJudgeLatencySettings.SecondsToApply(Mode, AutomaticMs, OffsetMs, gameSeconds, PredictionLeadMs);
         if (!(seconds >= 0)) return;
         manager.cameraJudgeLatencySeconds = (float)seconds;
         AppliedMs = seconds * 1000;
         if (Mode != lastLoggedMode || double.IsNaN(lastLoggedMs) || System.Math.Abs(AppliedMs.Value - lastLoggedMs) >= 5)
         {
+            // 補正が 5 ms 以上動いたら、前の補正で集めた当たりのずれは「中央に合わせる」に使わない。
+            if (!double.IsNaN(lastLoggedMs)) PhoneSaberJudgeTimingStats.Clear();
             lastLoggedMode = Mode; lastLoggedMs = AppliedMs.Value;
             PhoneSaberEventLog.Record(PhoneSaberStation.Read(), "SYSTEM", "judge-latency", string.Format(
                 System.Globalization.CultureInfo.InvariantCulture,

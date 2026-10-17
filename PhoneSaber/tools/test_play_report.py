@@ -243,6 +243,21 @@ class CliTests(unittest.TestCase):
             if os.path.exists(out_json):
                 os.unlink(out_json)
 
+    def test_by_trial_numbers_restarted_marks_and_does_not_share_boundary_lines(self):
+        marks = [f"{ts(5)} station=A colour=SYSTEM event=trial-mark n=1 judge=game",
+                 f"{ts(205)} station=A colour=SYSTEM event=trial-mark n=1 judge=auto"]
+        boundary = judge(205, "Perfect", 0)
+        with open(self.path, encoding="utf-8") as handle:
+            lines = handle.read().splitlines()
+        path = write_log(sorted(lines + marks + [boundary]))
+        try:
+            trials = play_report.build_trials(play_report.load_events(path), None, None)
+            self.assertEqual([t["n"] for t in trials], ["1", "2（印1）"])
+            counts = [t["report"]["overall"]["judge"]["n"] for t in trials]
+            self.assertEqual(counts, [3, 4])  # 印と同じ時刻の判定は後ろの試行だけに入る
+        finally:
+            os.unlink(path)
+
     def test_by_trial_without_marks_says_so(self):
         code, text = run(["--events", self.path, "--by-trial"])
         self.assertEqual(code, 0)

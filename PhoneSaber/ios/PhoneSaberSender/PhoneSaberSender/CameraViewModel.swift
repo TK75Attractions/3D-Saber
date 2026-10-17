@@ -1490,8 +1490,10 @@ final class CameraViewModel: NSObject, ObservableObject {
         return pcReplyMissing ? "送信中・PC応答なし" : "送信中"
     }
 
+    private var reconfiguringCamera = false
+
     private func updateLowHeatDisplay(at time: TimeInterval = ProcessInfo.processInfo.systemUptime) {
-        lowHeatDisplay.update(sending: running, foreground: sceneIsActive,
+        lowHeatDisplay.update(sending: running || reconfiguringCamera, foreground: sceneIsActive,
                               inhibited: debugRecordingActive || guidedRecordingRunning || lowHeatInhibitedByUI,
                               at: time)
     }
@@ -1674,8 +1676,12 @@ final class CameraViewModel: NSObject, ObservableObject {
         ConnectivityLog.sendGapMonitor.context("camera stop/reconfigure/start requested-fps=\(cameraFPS)")
         // 内部再設定も送信の意思が続く一つの区間として診断する。
         ConnectivityLog.sendGapMonitor.beginReconfiguration()
+        // 発熱による fps 切替などの内部再設定では、低発熱表示を「送信停止」とみなして明るく戻さない。
+        reconfiguringCamera = true
         stop()
         start()
+        reconfiguringCamera = false
+        updateLowHeatDisplay()
         ConnectivityLog.sendGapMonitor.endReconfiguration()
     }
 

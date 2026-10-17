@@ -10,6 +10,13 @@ public class PhoneSaberJudgeLatencyTests
         Assert.AreEqual(.105, PhoneSaberJudgeLatencySettings.SecondsToApply(PhoneSaberJudgeLatencySettings.Automatic, 85, 20, .12), 1e-6);
         // 予測で先読みした分は差し引く（二重補正しない）。
         Assert.AreEqual(.045, PhoneSaberJudgeLatencySettings.SecondsToApply(PhoneSaberJudgeLatencySettings.Automatic, 85, 0, .12, 40), 1e-6);
+        // 自動予測は同じ推定から先読みを作る。引いた後は 0 近くまで下がってよい（30 ms に張り付かない）。
+        Assert.AreEqual(.005, PhoneSaberJudgeLatencySettings.SecondsToApply(PhoneSaberJudgeLatencySettings.Automatic, 85, 0, .12, 80), 1e-6);
+        Assert.AreEqual(0, PhoneSaberJudgeLatencySettings.SecondsToApply(PhoneSaberJudgeLatencySettings.Automatic, 85, -20, .12, 85), 1e-6);
+        Assert.AreEqual(.025, PhoneSaberJudgeLatencySettings.SecondsToApply(PhoneSaberJudgeLatencySettings.Automatic, 85, 20, .12, 80), 1e-6);
+        Assert.AreEqual(60, PhoneSaberJudgeLatencySettings.PredictionLead(60, 0), 1e-9);
+        Assert.AreEqual(50, PhoneSaberJudgeLatencySettings.PredictionLead(60, 40), 1e-9);
+        Assert.AreEqual(0, PhoneSaberJudgeLatencySettings.PredictionLead(0, 0), 1e-9);
         Assert.AreEqual(.085, PhoneSaberJudgeLatencySettings.SecondsToApply(PhoneSaberJudgeLatencySettings.Automatic, 85, 0, .12, double.NaN), 1e-6);
         // 測定値が無い・ゲームの設定を選んだときはゲームの値のまま。
         Assert.AreEqual(.12, PhoneSaberJudgeLatencySettings.SecondsToApply(PhoneSaberJudgeLatencySettings.Automatic, null, 30, .12), 1e-6);

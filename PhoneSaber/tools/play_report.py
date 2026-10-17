@@ -683,8 +683,11 @@ def trial_segments(events, since, until):
     end_of_window = until or window[-1]["time"]
     segments = []
     for i, mark in enumerate(marks):
-        end = marks[i + 1]["time"] if i + 1 < len(marks) else end_of_window
-        segments.append((mark["fields"].get("n", str(i + 1)), mark["fields"], mark["time"], end))
+        # 次の印と同じ時刻の行を両方の試行に入れない（区間の終わりは次の印の直前）。
+        end = marks[i + 1]["time"] - timedelta(milliseconds=1) if i + 1 < len(marks) else end_of_window
+        # アプリを起動し直すと印の番号は 1 に戻るので、通し番号を前に付ける。
+        n = mark["fields"].get("n", "?")
+        segments.append((f"{i + 1}" if n == str(i + 1) else f"{i + 1}（印{n}）", mark["fields"], mark["time"], end))
     return segments
 
 

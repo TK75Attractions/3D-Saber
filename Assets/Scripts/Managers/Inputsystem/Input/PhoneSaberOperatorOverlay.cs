@@ -303,7 +303,8 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         if (GUILayout.Button("調整 +10", buttonStyle)) PhoneSaberJudgeLatency.Set(PhoneSaberJudgeLatency.Mode, offset + 10);
         GUILayout.EndHorizontal();
         double? median = PhoneSaberJudgeTimingStats.Median();
-        if (median.HasValue && PhoneSaberJudgeTimingStats.Count >= PhoneSaberJudgeLatencySettings.MinimumHitsToCentre
+        // 「ゲームの設定」で集めた当たりは自動の補正と基準が違うので、自動のときだけ出す。
+        if (auto && median.HasValue && PhoneSaberJudgeTimingStats.Count >= PhoneSaberJudgeLatencySettings.MinimumHitsToCentre
             && GUILayout.Button($"当たりの中央に合わせる（調整 {offset:+0;-0;0} → {PhoneSaberJudgeLatencySettings.CentredOffset(offset, median.Value):+0;-0;0} ms）", buttonStyle))
         {
             PhoneSaberJudgeLatency.Set(PhoneSaberJudgeLatencySettings.Automatic, PhoneSaberJudgeLatencySettings.CentredOffset(offset, median.Value));

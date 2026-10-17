@@ -195,6 +195,8 @@ struct Transport { func stop() {} }
     var running = true, sceneIsActive = true, permissionPending = false
     var automaticResumePending = false, cameraRecoveryInProgress = false
     var cameraLifecycleEnabled = true, debugRecordingActive = false
+    var reconfiguringCamera = false
+    func updateLowHeatDisplay() {}
     var lanConfigured = true, supports120FPS = false, supports60FPS = true
     var cameraFPS = 30, starts = 0, lifecycleGeneration = 1, cameraRecoveryGeneration = 0
     var automaticResumeMessage = "", cameraRecoveryMessage = "", activeDestination = "", status = ""
