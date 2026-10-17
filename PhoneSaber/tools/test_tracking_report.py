@@ -149,6 +149,19 @@ class TrackingReportTests(unittest.TestCase):
 
 
 class LatencyMatrixTests(unittest.TestCase):
+    def test_ios_discovery_skips_disconnected_and_unavailable_devices(self):
+        for offline in ('disconnected', 'unavailable'):
+            for online in ('connected', 'available', None):
+                with self.subTest(offline=offline, online=online):
+                    listing = ('Name       Hostname            Identifier                  State          Model\n'
+                               f'Old phone  old.coredevice     00008101-0000000000000001   {offline}   iPhone 13\n')
+                    if online:
+                        listing += (f'New phone  new.coredevice     00008101-0000000000000002   {online}   iPhone 13\n')
+                    with mock.patch.object(latency_matrix.subprocess, 'run',
+                                           return_value=mock.Mock(stdout=listing)):
+                        self.assertEqual(latency_matrix.device_id(),
+                                         '00008101-0000000000000002' if online else None)
+
     def test_mac_probe_keeps_only_this_runs_events_across_rotation(self):
         fresh = ['event=latency-block block=0 n=15 median-ms=120',
                  'event=latency-block block=1 n=15 median-ms=130',

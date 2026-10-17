@@ -57,10 +57,10 @@ def device_id():
     listing = subprocess.run(["xcrun", "devicectl", "list", "devices"], capture_output=True, text=True).stdout
     for line in listing.splitlines():
         # Xcode 27 の一覧には "physical" の列が無い。実機の UDID（8桁-16桁）はシミュレーター（UUID）と形で区別できる。
-        if "connected" in line or "available" in line:
-            match = re.search(r"([0-9A-Fa-f]{8}-[0-9A-Fa-f]{16})", line)
-            if match:
-                return match.group(1)
+        # UDID 直後の状態を確認し、disconnected / unavailable や端末名の一部を接続済みと誤認しない。
+        match = re.search(r"([0-9A-Fa-f]{8}-[0-9A-Fa-f]{16})\s+(?:connected|available)\b", line)
+        if match:
+            return match.group(1)
     return None
 
 
