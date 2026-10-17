@@ -110,13 +110,15 @@ def main():
     limit = args.seconds * 5 + 90
     while player.poll() is None and time.monotonic() - started < limit:
         now = time.monotonic() - started
-        sweep = 600 + (frame * 7) % 500
+        # 画面の左下の隅で小さく揺らすだけにする。大きく振るとメニューの「剣で切って選ぶ」操作を
+        # 切ってしまい、smoke の画面遷移が失敗する（2026-10-18: タイトルへ戻れなかった）。
+        wiggle = (frame * 3) % 40
         try:
             if now >= next_metrics:
                 next_metrics = now + 5
                 sender.sendto(METRICS.encode("ascii"), (address, 5007))
-            sender.sendto(f"{sweep},300,{sweep + 300},700".encode("ascii"), (address, 5005))
-            sender.sendto(f"{1500 - sweep},300,{1200 - sweep},700".encode("ascii"), (address, 5006))
+            sender.sendto(f"{40 + wiggle},960,{80 + wiggle},1040".encode("ascii"), (address, 5005))
+            sender.sendto(f"{1880 - wiggle},960,{1840 - wiggle},1040".encode("ascii"), (address, 5006))
         except OSError:
             pass  # 受信開始前や一時的な通信断でも、次の送信を続ける。
         frame += 1
@@ -139,15 +141,16 @@ def main():
             r"\[PhoneSaberSmoke\] done exceptions=0 errors=0 input=ok cuts=[1-9][0-9]* flow=ok", completions[0]):
         print(f"Player の正常完了を確認できません (exit={code}): {log}")
         return 1
-    lines = []
+    lines, judge_lines = [], []
     for generation in range(4, -1, -1):
         path = Path(str(EVENTS) + (f".{generation}" if generation else ""))
         try:
             with path.open("rb") as handle:
                 stat = os.fstat(handle.fileno())
                 handle.seek(offsets.get((stat.st_dev, stat.st_ino), 0))
-                lines.extend(line for line in handle.read().decode("utf-8", "replace").splitlines()
-                             if "event=latency-estimate" in line)
+                text = handle.read().decode("utf-8", "replace").splitlines()
+                lines.extend(line for line in text if "event=latency-estimate" in line)
+                judge_lines.extend(line for line in text if "event=judge-latency " in line)
         except FileNotFoundError:
             pass
     if not lines:
@@ -170,6 +173,18 @@ def main():
         print("NG: 4項目そろった行(status=estimate)がありません")
         return 1
     print("OK: 4項目そろった目安が記録されました")
+    # 本編では、その目安が判定の遅れ補正（自動）に入る（PhoneSaberJudgeLatency）。
+    totals = [float(field(line, "total-ms")) for line in estimates if (field(line, "total-ms") or "").replace(".", "", 1).isdigit()]
+    applied = [line for line in judge_lines if field(line, "mode") == "auto" and field(line, "auto-ms") not in (None, "unknown")]
+    if not applied:
+        print("NG: 判定の遅れ補正（event=judge-latency mode=auto）に目安が入っていません")
+        return 1
+    value = float(field(applied[-1], "applied-ms"))
+    print(f"  判定の遅れ補正: applied-ms={value:.0f}（目安 {min(totals):.0f}〜{max(totals):.0f} ms、ゲーム既定 {field(applied[-1], 'game-ms')} ms）")
+    if totals and not (min(totals) - 25 <= value <= max(totals) + 25):
+        print("NG: 判定の遅れ補正が目安から離れています")
+        return 1
+    print("OK: 判定の遅れ補正に目安が入りました")
     return 0
 
 
