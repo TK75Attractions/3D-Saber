@@ -108,8 +108,9 @@ InitTestScene*.unity*
 # Auto-generated scenes by play mode tests
 /[Aa]ssets/[Ii]nit[Tt]est[Ss]cene*.unity*
 
-# Rush E: the permission is for the school festival; the recording stays local.
-/Assets/StreamingAssets/Songs/RushE/audio.*
+# Rush E: the recording is committed with permission until the school festival ends.
+# On 2026-11-05 restore the ignore below and run: git rm --cached Assets/StreamingAssets/Songs/RushE/audio.wav*
+# /Assets/StreamingAssets/Songs/RushE/audio.*
 
 # PhoneSaber subtree outputs (its nested .gitignore files also apply)
 /PhoneSaber/.verify-logs/
