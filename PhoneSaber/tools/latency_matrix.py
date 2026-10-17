@@ -56,7 +56,8 @@ def number(text):
 def device_id():
     listing = subprocess.run(["xcrun", "devicectl", "list", "devices"], capture_output=True, text=True).stdout
     for line in listing.splitlines():
-        if "physical" in line and ("connected" in line or "available" in line):
+        # Xcode 27 の一覧には "physical" の列が無い。実機の UDID（8桁-16桁）はシミュレーター（UUID）と形で区別できる。
+        if "connected" in line or "available" in line:
             match = re.search(r"([0-9A-Fa-f]{8}-[0-9A-Fa-f]{16})", line)
             if match:
                 return match.group(1)
