@@ -201,7 +201,15 @@ build-mac)
         echo "build-mac: ビルド成功。ゲームが起動中なので差し替えていません: $COPY/Builds/Mac/3D-Saber.app"; exit 3
     fi
     # 差し替える前に、作った Player を実際に起動して確かめる(Editor では動くのに Player だけ落ちる不具合を止める)。
-    smoke_player "$COPY/Builds/Mac/3D-Saber.app" || { echo "build-mac: 動作確認に失敗したので差し替えていません"; exit 4; }
+    if ! smoke_player "$COPY/Builds/Mac/3D-Saber.app"; then
+        # 例外・Error・入力は正常で、画面の流れ（判定調整の実カットなど）だけ失敗したときは1回だけやり直す。
+        # 2026-10-17: 並行の xcodebuild で負荷 68 のとき、判定調整のカットが 0 になった（再実行で 6 回）。
+        grep -qE '^[[]PhoneSaberSmoke[]] done exceptions=0 errors=0 input=ok cuts=[1-9][0-9]* flow=FAILED$' "$OUT/smoke.log" 2>/dev/null \
+            || { echo "build-mac: 動作確認に失敗したので差し替えていません"; exit 4; }
+        cp "$OUT/smoke.log" "$OUT/smoke-first-try.log" 2>/dev/null
+        echo "build-mac: 画面の流れだけ失敗（負荷: $(sysctl -n vm.loadavg 2>/dev/null)）。1回だけやり直します"
+        smoke_player "$COPY/Builds/Mac/3D-Saber.app" || { echo "build-mac: 動作確認に失敗したので差し替えていません"; exit 4; }
+    fi
     mkdir -p "$ROOT/Builds/Mac" "$OUT/previous-app" || exit 1
     # コピー失敗・容量不足でも旧 Player は起動できる場所に残す。完成後だけ同じ volume 内で差し替える。
     staged="$ROOT/Builds/Mac/.3D-Saber-new.app"

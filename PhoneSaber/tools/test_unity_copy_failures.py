@@ -10,7 +10,8 @@ SOURCE = Path(__file__).with_name("unity_copy.sh")
 
 
 class UnityCopyFailureTests(unittest.TestCase):
-    def run_branch(self, mode, cleanup_failure=False, copy_failure=False, promotion_failure=False, game_starts=False):
+    def run_branch(self, mode, cleanup_failure=False, copy_failure=False, promotion_failure=False, game_starts=False,
+                   smoke_results=None):
         source = SOURCE.read_text()
         smoke = "smoke_player() {" + source.split("smoke_player() {", 1)[1].split("\n}\n", 1)[0] + "\n}\n"
         branch = source.split(mode + ")\n", 1)[1].split("\n    ;;", 1)[0]
@@ -41,7 +42,17 @@ if [[ "$CLEANUP_FAILURE" == 1 ]]; then rm() { return 1; }; fi
 '''
             if mode == "build-mac":
                 stubs += '''
-smoke_player() { return 0; }
+smoke_calls=0
+smoke_player() {
+    # SMOKE_RESULTS: 呼び出しごとの結果。flow = 画面の流れだけ失敗、fail = 例外など、ok = 成功。
+    smoke_calls=$((smoke_calls + 1)); echo "$smoke_calls" > "$OUT/smoke-calls"
+    local result; result=$(echo "${SMOKE_RESULTS:-ok}" | cut -d, -f"$smoke_calls"); result=${result:-ok}
+    case "$result" in
+        flow) printf '[PhoneSaberSmoke] done exceptions=0 errors=0 input=ok cuts=3 flow=FAILED\\n' > "$OUT/smoke.log"; return 1 ;;
+        fail) printf '[PhoneSaberSmoke] done exceptions=1 errors=0 input=ok cuts=3 flow=ok\\n' > "$OUT/smoke.log"; return 1 ;;
+        *) return 0 ;;
+    esac
+}
 run_hidden() { touch "$CALLED"; mkdir -p "$COPY/Builds/Mac/3D-Saber.app"; printf 'Result: Success\\n' > "$OUT/build-mac.log"; }
 ditto() {
     mkdir -p "$2"
@@ -58,8 +69,23 @@ fi
                                              CALLED=str(called), CLEANUP_FAILURE=str(int(cleanup_failure)),
                                              COPY_FAILURE=str(int(copy_failure)),
                                              PROMOTION_FAILURE=str(int(promotion_failure)),
-                                             GAME_STARTS=str(int(game_starts))))
+                                             GAME_STARTS=str(int(game_starts)),
+                                             SMOKE_RESULTS=smoke_results or "ok"))
+            self.smoke_calls = int((out / "smoke-calls").read_text()) if (out / "smoke-calls").exists() else 0
             return result, called.exists(), (app / "previous-player").is_file()
+
+    def test_flow_only_smoke_failure_is_retried_once(self):
+        result, _, _ = self.run_branch("build-mac", smoke_results="flow,ok")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(self.smoke_calls, 2)
+        self.assertIn("1回だけやり直します", result.stdout)
+
+    def test_repeated_flow_failure_or_exception_does_not_replace_the_player(self):
+        for results, calls in (("flow,flow", 2), ("fail,ok", 1)):
+            result, _, previous = self.run_branch("build-mac", smoke_results=results)
+            self.assertEqual(result.returncode, 4, results)
+            self.assertEqual(self.smoke_calls, calls, results)
+            self.assertTrue(previous, results)
 
     def test_smoke_cleanup_failure_never_reuses_old_success(self):
         result, launched, _ = self.run_branch("smoke", cleanup_failure=True)
