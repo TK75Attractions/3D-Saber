@@ -56,6 +56,41 @@ public class GameplayCutFeedbackTests
         Assert.False(renderer.enabled);
     }
 
+    // 譜面エディターのプレイ画面用: 経過秒を指定して描き、呼ぶたびに置き換える(本編の Tick は使わない)。
+    [Test]
+    public void DrawBursts_DrawsTheGivenAgeAndReplacesThePreviousFrame()
+    {
+        DisplaySettings.SetReducedEffectsForTest(false);
+        var renderer = feedback.GetComponent<MeshRenderer>();
+        var mesh = feedback.GetComponent<MeshFilter>().sharedMesh;
+        var item = new GameplayCutFeedback.StaticBurst
+        {
+            tier = JudgmentTier.Perfect, position = Vector3.zero, direction = Vector2.right, color = Color.red,
+            scale = 1f, release = 1f, age = .05f,
+        };
+        feedback.DrawBursts(new[] { item });
+        Assert.AreEqual(1, feedback.ActiveCount);
+        Assert.True(renderer.enabled);
+        int young = mesh.vertexCount;
+        Assert.Greater(young, 0);
+        item.age = .2f;
+        feedback.DrawBursts(new[] { item });
+        Assert.AreEqual(1, feedback.ActiveCount);
+        Assert.AreNotEqual(young, mesh.vertexCount, "経過秒で絵が変わる(帯と中心のフラッシュは消え、2本目の輪が遅れて出る)");
+        item.age = GameplayCutFeedback.BurstLifetime;
+        feedback.DrawBursts(new[] { item });
+        Assert.AreEqual(0, feedback.ActiveCount, "寿命を過ぎた演出は描かない");
+        Assert.False(renderer.enabled);
+        item.age = .05f; item.tier = JudgmentTier.Miss;
+        feedback.DrawBursts(new[] { item, item });
+        Assert.AreEqual(0, feedback.ActiveCount, "Miss は描かない");
+        item.tier = JudgmentTier.Great;
+        feedback.DrawBursts(new[] { item, item });
+        Assert.AreEqual(2, feedback.ActiveCount, "指定したぶんだけ描く");
+        feedback.Tick(.3f);
+        Assert.AreEqual(0, feedback.ActiveCount, "本編の時計で進めても壊れない");
+    }
+
     // ScoreManager を通さず、確定判定だけを通知する(方向降格後の最終判定と同じ入口)。
     void Judge(CuttableNote note, JudgmentTier tier)
     {

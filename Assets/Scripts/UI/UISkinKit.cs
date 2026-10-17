@@ -257,7 +257,7 @@ public static class UISkinKit
 
     public static TMP_FontAsset LogoFontAsset()
     {
-        if (IsFontUsable(logoFontAsset)) return logoFontAsset;
+        if (IsFontUsable(logoFontAsset)) { AttachJapaneseFallback(logoFontAsset); return logoFontAsset; }
         // TTF が無い環境(参照が null のまま)は再試行しない。壊れただけなら作り直す。
         if (logoFontLoadAttempted && ReferenceEquals(logoFontAsset, null)) return null;
         logoFontLoadAttempted = true;
@@ -341,7 +341,12 @@ public static class UISkinKit
     public static TMP_FontAsset FontAsset(string name)
     {
         // 見つからなかった記録(null)は再試行しない。素材が壊れたものは下で作り直す。
-        if (fontAssetCache.TryGetValue(name, out var cached) && (ReferenceEquals(cached, null) || IsFontUsable(cached))) return cached;
+        if (fontAssetCache.TryGetValue(name, out var cached) && (ReferenceEquals(cached, null) || IsFontUsable(cached)))
+        {
+            // 日本語フォールバックだけが壊れていることもあるので、生きているものを付け直す。
+            if (!ReferenceEquals(cached, null)) AttachJapaneseFallback(cached);
+            return cached;
+        }
         TMP_FontAsset asset = null;
         var ttf = Resources.Load<Font>("Fonts/" + name);
         if (ttf == null)

@@ -90,7 +90,9 @@ public class ChartPlaybackPreviewTests
         Assert.AreEqual(3, note.RemainingCuts);
         Assert.AreEqual(10, note.transform.localPosition.z, .001);
         preview.Tick(document, 5.8);
-        Assert.AreEqual(0, preview.VisibleNoteCount);
+        Assert.AreEqual(1, preview.VisibleCutCount, "最後の振り(5.65秒)のあとは2片が飛んでいる");
+        preview.Tick(document, 6.8);
+        Assert.AreEqual(0, preview.VisibleNoteCount, "2片の寿命(本編と同じ1.1秒)が過ぎたら消える");
     }
 
     [Test]
@@ -153,6 +155,125 @@ public class ChartPlaybackPreviewTests
             }
         }
         finally { Object.DestroyImmediate(first); Object.DestroyImmediate(second); }
+    }
+
+    // ---- Perfect で切る(判定時刻ちょうどで本編と同じ2片・光の輪・ひび) ----
+
+    CuttableNote Body(SaberHand hand) =>
+        preview.WorldRoot.GetComponentsInChildren<CuttableNote>(true).Single(n => n.RequiredHand == hand);
+
+    SlicePieceDecay[] Pieces(string name) =>
+        preview.WorldRoot.GetComponentsInChildren<SlicePieceDecay>(true).Where(p => p.name == name && p.gameObject.activeSelf).ToArray();
+
+    static int ActiveCracks(CuttableNote note) =>
+        note.GetComponentsInChildren<Transform>(true).Count(t => t.name == "Crack" && t.gameObject.activeSelf);
+
+    [Test]
+    public void PerfectCutSlicesTheNoteAtTheHitTimeAndSeekingBackRestoresIt()
+    {
+        preview.Tick(document, 2.2);
+        var red = Body(SaberHand.Right);
+        Assert.True(red.gameObject.activeSelf);
+        Assert.AreEqual(0, Pieces("PreviewSlice").Length);
+        Assert.AreEqual(0, preview.VisibleCutCount);
+
+        preview.Tick(document, 2.3);
+        Assert.AreEqual(2, preview.VisibleCutCount, "赤と青は同時刻(2.25秒)なので両方切れる");
+        Assert.False(red.gameObject.activeSelf, "切った瞬間から本体は隠す");
+        var slices = Pieces("PreviewSlice");
+        Assert.AreEqual(4, slices.Length);
+        var redSlices = slices.Where(s => Vector3.Distance(s.transform.position, new Vector3(-2, 1, 0)) < 1.5f).ToArray();
+        Assert.AreEqual(2, redSlices.Length, "赤の2片は赤の着地点の近くにある");
+        Assert.Greater(Vector3.Distance(redSlices[0].transform.position, redSlices[1].transform.position), .05f, "2片は切断面から逆向きに開く");
+        Assert.True(redSlices.All(s => s.GetComponent<MeshFilter>().sharedMesh.vertexCount > 0));
+        Assert.True(redSlices.All(s => s.IsFlashing), "Perfect は切断片の縁が光る");
+        var feedback = preview.WorldRoot.GetComponentInChildren<GameplayCutFeedback>();
+        Assert.AreEqual(2, feedback.ActiveCount, "Perfect の光の輪");
+        Assert.Greater(feedback.GetComponent<MeshFilter>().sharedMesh.vertexCount, 0);
+
+        preview.Tick(document, 2.2);
+        Assert.True(red.gameObject.activeSelf, "巻き戻せば本体に戻る");
+        Assert.AreEqual(0, Pieces("PreviewSlice").Length);
+        Assert.AreEqual(0, feedback.ActiveCount);
+        preview.Tick(document, 3.4);
+        Assert.True(red == null, "2片の寿命 1.1 秒が過ぎたらノーツごと消える");
+        Assert.AreEqual(0, preview.VisibleCutCount);
+    }
+
+    [Test]
+    public void PerfectCutLooksTheSameAfterSeekingAwayAndBack()
+    {
+        preview.Tick(document, 2.6);
+        var before = Pieces("PreviewSlice").Select(p => (p.transform.position, p.transform.rotation)).ToArray();
+        Assert.AreEqual(4, before.Length);
+        preview.Tick(document, 1.25);
+        preview.Tick(document, 3.0);
+        preview.Tick(document, 2.6);
+        var after = Pieces("PreviewSlice").Select(p => (p.transform.position, p.transform.rotation)).ToArray();
+        Assert.AreEqual(before.Length, after.Length);
+        for (int i = 0; i < before.Length; i++)
+        {
+            Assert.Less(Vector3.Distance(before[i].position, after[i].position), .0005f, "同じ時刻なら同じ場所");
+            Assert.Less(Quaternion.Angle(before[i].rotation, after[i].rotation), .05f, "同じ時刻なら同じ向き");
+        }
+    }
+
+    [Test]
+    public void LongNoteCracksEachCutAndShattersOnTheLastOne()
+    {
+        preview.Tick(document, 4.3);   // 判定 4.25 秒・3回・1.4 秒のロング: 1打目のあと
+        var note = Notes().Single();
+        Assert.AreEqual(2, note.RemainingCuts);
+        Assert.AreEqual(1, ActiveCracks(note), "1打目のひび");
+        preview.Tick(document, 5.0);   // 2打目(4.95 秒)のあと
+        Assert.AreEqual(2, ActiveCracks(note), "2打目でひびが増える");
+        Assert.True(note.gameObject.activeSelf);
+        preview.Tick(document, 5.7);   // 最後の振り(5.65 秒)のあと
+        Assert.False(note.gameObject.activeSelf, "最後の振りで本体は砕ける");
+        Assert.AreEqual(2, Pieces("PreviewSlice").Length);
+        Assert.AreEqual(6, Pieces("PreviewDebris").Length, "ロングの最後は細片も散る(本編と同じ6つ)");
+        Assert.False(preview.WorldRoot.GetComponentInChildren<TMPro.TextMeshPro>(true).gameObject.activeSelf, "残数は消える");
+        preview.Tick(document, 4.3);
+        Assert.True(note.gameObject.activeSelf, "巻き戻せば本体とひびに戻る");
+        Assert.AreEqual(1, ActiveCracks(note));
+        Assert.AreEqual(0, Pieces("PreviewDebris").Length);
+    }
+
+    [Test]
+    public void TurningOffPerfectCutsKeepsTheOldFadeOut()
+    {
+        preview.ShowPerfectCuts = false;
+        preview.Tick(document, 2.3);
+        var red = Body(SaberHand.Right);
+        Assert.True(red.gameObject.activeSelf);
+        Assert.Less(red.transform.localScale.x, .8f, "判定時刻のあとは縮んで消える(従来)");
+        Assert.AreEqual(0, Pieces("PreviewSlice").Length);
+        Assert.AreEqual(0, preview.VisibleCutCount);
+        Assert.AreEqual(0, ActiveCracks(red));
+        preview.Tick(document, 2.4);
+        Assert.AreEqual(0, Notes().Count(n => n.RequiredHand == SaberHand.Right), "0.12 秒で消える");
+    }
+
+    [Test]
+    public void DisposalReleasesSliceDebrisAndAccentResources()
+    {
+        preview.Tick(document, 5.7);
+        var pieces = preview.WorldRoot.GetComponentsInChildren<SlicePieceDecay>(true);
+        Assert.AreEqual(8, pieces.Length, "2片 + 細片6つ");
+        var materials = pieces.Select(p => p.GetComponent<MeshRenderer>().sharedMaterial).Where(m => m != null).Distinct().ToArray();
+        var meshes = pieces.Select(p => p.GetComponent<MeshFilter>().sharedMesh)
+            .Where(m => m != null && !EditorUtility.IsPersistent(m) && (m.hideFlags & HideFlags.DontSave) != 0).Distinct().ToArray();
+        Assert.AreEqual(8, materials.Length, "片ごとに本体の材質を複製する");
+        Assert.AreEqual(2, meshes.Length, "生成するのは2片のメッシュだけ(細片は組み込みの立方体)");
+        var feedback = preview.WorldRoot.GetComponentInChildren<GameplayCutFeedback>();
+        var accentMaterial = feedback.GetComponent<MeshRenderer>().sharedMaterial;
+        var accentMesh = feedback.GetComponent<MeshFilter>().sharedMesh;
+        Assert.NotNull(accentMaterial);
+        Assert.NotNull(accentMesh);
+        preview.Dispose();
+        Assert.True(materials.All(m => m == null), "片の材質が残っている");
+        Assert.True(meshes.All(m => m == null), "片のメッシュが残っている");
+        Assert.True(accentMaterial == null && accentMesh == null, "光の輪の素材が残っている");
     }
 
     Texture2D Capture(double time)

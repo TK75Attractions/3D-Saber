@@ -47,6 +47,42 @@ public class UISkinKitTests
         finally { JapaneseFontTestFixture.Install(); }
     }
 
+    // Play モードを抜けたときに Unity が壊すのは、実行時に作った材質とアトラスだけ(フォント本体と静的キャッシュは残る)。
+    // 壊れたものを返し続けると、譜面エディターのプレイ画面でロングの残数が描けず、新しい字を足す瞬間に例外になる(2026-10-17)。
+    [Test]
+    public void FontAsset_RemakesTheFontWhenItsRuntimeMaterialOrAtlasWasDestroyed()
+    {
+        var broken = UISkinKit.FontAsset("Oxanium-ExtraBold");
+        Assert.NotNull(broken);
+        Assert.True(UISkinKit.IsFontUsable(broken));
+        Object.DestroyImmediate(broken.material);
+        Object.DestroyImmediate(broken.atlasTexture);
+        Assert.False(UISkinKit.IsFontUsable(broken));
+        var remade = UISkinKit.FontAsset("Oxanium-ExtraBold");
+        Assert.AreNotSame(broken, remade);
+        Assert.True(UISkinKit.IsFontUsable(remade));
+        Assert.True(remade.HasCharacter('7', searchFallbacks: false, tryAddCharacter: true), "新しい字をアトラスに足せる");
+        Assert.AreSame(remade, UISkinKit.FontAsset("Oxanium-ExtraBold"), "生きていれば同じものを返す");
+        Assert.True(remade.fallbackFontAssetTable.Contains(UISkinKit.JapaneseFallbackFontAsset()), "作り直したフォントにも日本語フォールバックが付く");
+    }
+
+    [Test]
+    public void JapaneseFallback_IsRemadeAndReattachedWhenBroken()
+    {
+        var broken = UISkinKit.JapaneseFallbackFontAsset();
+        Assert.NotNull(broken);
+        var font = UISkinKit.FontAsset("Oxanium-Bold");
+        Assert.True(font.fallbackFontAssetTable.Contains(broken));
+        Object.DestroyImmediate(broken.material);
+        Object.DestroyImmediate(broken.atlasTexture);
+        var remade = UISkinKit.JapaneseFallbackFontAsset();
+        Assert.AreNotSame(broken, remade);
+        Assert.True(UISkinKit.IsFontUsable(remade));
+        Assert.AreSame(font, UISkinKit.FontAsset("Oxanium-Bold"), "本体が生きていれば作り直さない");
+        Assert.True(font.fallbackFontAssetTable.Contains(remade), "生きている日本語フォントを付け直す");
+        Assert.False(font.fallbackFontAssetTable.Contains(broken), "壊れた日本語フォントは外す");
+    }
+
     // ---- スプライト生成 ----
 
     [Test]

@@ -17,19 +17,29 @@ namespace Saber.ChartEditor
             public TextMeshPro label;
             public Vector3 scale;
             public readonly HashSet<Object> resources = new HashSet<Object>();
+            // 「Perfect で切る」の部品。切る時刻になって初めて作り、巻き戻したら隠して使い回す。
+            public SlicePieceDecay[] slices;
+            public SlicePieceDecay[] debris;
+            public readonly List<Transform> cracks = new List<Transform>();
+            public Vector3 swing;
+            public int seed;
         }
 
         private readonly PreviewRenderUtility renderer;
         private readonly GameObject root;
         private readonly FloorRenderer floor;
         private readonly NoteSpawner motion;
+        private readonly GameplayCutFeedback cutFeedback;
         private readonly Dictionary<SaberChartNote, Entry> entries = new Dictionary<SaberChartNote, Entry>();
         private readonly HashSet<SaberChartNote> visible = new HashSet<SaberChartNote>();
         private readonly List<SaberChartNote> expired = new List<SaberChartNote>();
         private readonly List<SimultaneousNoteLink> links = new List<SimultaneousNoteLink>();
+        private readonly List<GameplayCutFeedback.StaticBurst> bursts = new List<GameplayCutFeedback.StaticBurst>();
         private readonly HashSet<Object> stageResources = new HashSet<Object>();
+        private Material crackMaterial;
         private bool projectorMode;
         private bool disposed;
+        private bool labelWarned;
 
         // 本編の視点(Game.unity の useSlightTopDownView と GamePlayManager の既定値)。
         public static readonly Vector3 GameCameraPosition = new Vector3(0f, 2.35f, -7f);
@@ -40,11 +50,19 @@ namespace Saber.ChartEditor
         // 刃の太さ 0.32 + ノーツの当たり 0.88(本編の既定値)。この距離まで刃が近づけば切れる。
         public const float GameHitRange = 1.2f;
         private const float HitRingSeconds = .25f;
+        // 「Perfect で切る」: 判定時刻ちょうどに中心を切ったときの本編の見た目(2片・細片・ひび・光の輪)を、
+        // 切ってからの経過秒だけから作る(巻き戻しても、飛ばしても同じ絵になる)。
+        // 振りの速さ(m/s)は破片の飛び方にだけ使う。本編の判定(SaberCutJudge)は使わない。
+        public const float SwingSpeed = 6f;
+        // 本編は毎フレーム SlicePieceDecay.Step で進めるので、同じ細かさで刻んで同じ軌道にする。
+        private const float PieceStepSeconds = 1f / 60f;
 
         public bool UseGameCamera { get; set; } = true;
         public bool ShowLandingFrame { get; set; } = true;
         public bool ShowBarLines { get; set; } = true;
         public bool ShowHitRadius { get; set; }
+        // 判定時刻ちょうど(Perfect)で切って見せる。オフなら判定時刻のあと 0.12 秒で縮んで消える従来の表示。
+        public bool ShowPerfectCuts { get; set; } = true;
 
         private readonly GameObject guideRoot;
         private readonly Transform[] frameBars = new Transform[4];
@@ -56,6 +74,8 @@ namespace Saber.ChartEditor
 
         public GameObject WorldRoot => root;
         public int VisibleNoteCount => entries.Count;
+        // いま2片で描いている(切ったあとの)ノーツの数。
+        public int VisibleCutCount { get; private set; }
         public double DisplayedSongTime { get; private set; }
         public int VisibleBarLineCount { get; private set; }
         public int VisibleHitRingCount { get; private set; }
@@ -85,6 +105,9 @@ namespace Saber.ChartEditor
                 CollectGeometry(root, stageResources);
                 motion = root.AddComponent<NoteSpawner>();
                 motion.enabled = false;
+                // 本編の切断の演出(光の輪・火花・光片)。切ってからの経過秒を渡して描くので、本編の時計は使わない。
+                cutFeedback = GameplayCutFeedback.Create(motion);
+                CollectGeometry(cutFeedback.gameObject, stageResources);
                 projectorMode = DisplaySettings.ProjectorMode;
                 guideRoot = new GameObject("PreviewGuides");
                 guideRoot.transform.SetParent(root.transform, false);
@@ -115,14 +138,18 @@ namespace Saber.ChartEditor
             bool modeChanged = projectorMode != DisplaySettings.ProjectorMode;
             projectorMode = DisplaySettings.ProjectorMode;
             motion.approachTime = Mathf.Clamp(ApproachTimeOverride ?? GameSession.NoteApproachTime, .5f, 5f);
+            // 切ったあと2片が飛んでいる間(本編の破片の寿命)はノーツを残す。切る演出を使わないときは従来の 0.12 秒で消す。
+            double tail = ShowPerfectCuts ? CuttableNote.FlowPieceLife : .12;
             visible.Clear();
+            bursts.Clear();
+            int cutting = 0;
             foreach (var data in document.notes)
             {
                 if (data == null) continue;
                 double hit = data.time / 1000.0 + document.offsetMs / 1000.0;
                 double elapsed = songTime - hit;
                 double linger = data.count > 1 ? data.lengthMs > 0 ? data.lengthMs / 1000.0 : (data.count - 1) * motion.secondsPerLongCut : 0;
-                if (elapsed < -motion.approachTime || elapsed >= linger + .12) continue;
+                if (elapsed < -motion.approachTime || elapsed >= linger + tail) continue;
                 visible.Add(data);
                 if (entries.TryGetValue(data, out var entry) && (modeChanged || !SameAppearance(data, entry.snapshot)))
                 {
@@ -140,18 +167,32 @@ namespace Saber.ChartEditor
                 entry.note.HitTime = hit;
                 entry.note.transform.localPosition = new Vector3(data.x * document.coordScale, data.y * document.coordScale,
                     motion.ComputeNoteZ(entry.note, -elapsed, motion.Speed));
-                int remaining = elapsed < 0 ? Math.Max(1, data.count) : data.count <= 1 ? 0 :
-                    Math.Max(0, data.count - 1 - (int)Math.Floor((elapsed + .000001) / Math.Max(.001, linger / (data.count - 1))));
+                int count = Math.Max(1, data.count);
+                int remaining = elapsed < 0 ? count : count <= 1 ? 0 :
+                    Math.Max(0, count - 1 - (int)Math.Floor((elapsed + .000001) / Math.Max(.001, linger / (count - 1))));
                 entry.note.RemainingCuts = remaining;
-                float shrink = elapsed > linger ? Mathf.Clamp01(1 - (float)((elapsed - linger) / .12)) : 1;
-                entry.note.transform.localScale = entry.scale * Mathf.Max(.001f, shrink);
+                if (ShowPerfectCuts && elapsed >= linger)
+                {
+                    // 最後の1振り(タップは判定時刻、ロングは滞留の終わり)からは本体を隠し、本編と同じ2片を飛ばす。
+                    cutting++;
+                    ShowCut(entry, (float)(elapsed - linger), linger);
+                }
+                else
+                {
+                    HideCut(entry);
+                    if (!entry.note.gameObject.activeSelf) entry.note.gameObject.SetActive(true);
+                    float shrink = !ShowPerfectCuts && elapsed > linger ? Mathf.Clamp01(1 - (float)((elapsed - linger) / .12)) : 1;
+                    entry.note.transform.localScale = entry.scale * Mathf.Max(.001f, shrink);
+                    // ロングの途中の振り: 切った回数ぶん、本編と同じ場所にひびを残す。
+                    UpdateCracks(entry, ShowPerfectCuts && elapsed >= 0 ? count - remaining : 0, count);
+                }
                 if (entry.label != null)
                 {
                     entry.label.transform.position = entry.note.transform.position + LongNoteCountStyle.WorldOffset;
                     entry.label.text = remaining.ToString();
                     entry.label.gameObject.SetActive(remaining > 0);
                     // PreviewSceneは通常の描画ループ外なので、数字も同じフレームで更新する。
-                    if (remaining > 0) entry.label.ForceMeshUpdate();
+                    if (remaining > 0) RefreshLabel(entry);
                 }
             }
             expired.Clear();
@@ -159,6 +200,8 @@ namespace Saber.ChartEditor
             foreach (var key in expired) { DestroyEntry(entries[key]); entries.Remove(key); rebuildLinks = true; }
             if (rebuildLinks) RebuildLinks();
             foreach (var link in links) link.Refresh();
+            VisibleCutCount = cutting;
+            cutFeedback.DrawBursts(bursts);
             floor.Tick(songTime, 0);
             ApplyCamera();
             UpdateLandingFrame(document.coordScale);
@@ -326,7 +369,9 @@ namespace Saber.ChartEditor
             visuals.Initialize();
             visuals.ResetForReuse();
             visuals.enabled = false;
-            var entry = new Entry { snapshot = data.Clone(), note = note };
+            var entry = new Entry { snapshot = data.Clone(), note = note, swing = Swing(note) };
+            // 細片の散り方の種。巻き戻しても同じ散り方になるよう、ノーツの時刻と位置から決める。
+            entry.seed = data.time.GetHashCode() ^ (data.x.GetHashCode() << 7) ^ (data.y.GetHashCode() << 13) ^ data.count;
             entry.scale = new Vector3(.8f, .8f, .8f * Mathf.Clamp(1 + linger / motion.secondsPerLongCut, 1, motion.longMaxVisualZScale));
             if (projectorMode) { entry.scale.x *= ProjectorMode.NoteScale; entry.scale.y *= ProjectorMode.NoteScale; }
             body.transform.localScale = entry.scale;
@@ -340,8 +385,8 @@ namespace Saber.ChartEditor
                 var label = new GameObject("PreviewLongCount");
                 label.transform.SetParent(root.transform, false);
                 entry.label = label.AddComponent<TextMeshPro>();
-                LongNoteCountStyle.Apply(entry.label);
                 HideHierarchy(label);
+                StyleLabel(entry);
             }
             // 矢印などの本編描画部品が追加したColliderも、プレビューでは不要。
             foreach (var collider in body.GetComponentsInChildren<Collider>(true)) Object.DestroyImmediate(collider);
@@ -353,6 +398,241 @@ namespace Saber.ChartEditor
         private static bool SameAppearance(SaberChartNote a, SaberChartNote b) =>
             a.count == b.count && a.lengthMs == b.lengthMs && a.type == b.type && a.color == b.color && a.direction == b.direction;
 
+        // 切る向きと速さ。向きノーツは矢印の向き。向きのないノーツはその手の自然な振り下ろし
+        // (右手=赤は右上から左下へ、左手=青は左上から右下へ、どちらでも=金は真下)。
+        private static Vector3 Swing(CuttableNote note)
+        {
+            Vector2 direction = note.RequiredDirection != CutDirection.None ? CutDirectionHelper.ToVector(note.RequiredDirection)
+                : note.RequiredHand == SaberHand.Right ? new Vector2(-.7071068f, -.7071068f)
+                : note.RequiredHand == SaberHand.Left ? new Vector2(.7071068f, -.7071068f) : Vector2.down;
+            return new Vector3(direction.x, direction.y, 0f) * SwingSpeed;
+        }
+
+        // 演出の色(本編 GameplayCutFeedback.HandleCut と同じ: ノーツの色、金は金)。
+        private static Color Accent(CuttableNote note)
+        {
+            var visuals = note.GetComponent<NoteVisuals>();
+            Color accent = visuals != null ? visuals.baseColor : UISkinPalette.NoteFlick;
+            if (note.IsGold) accent = UISkinPalette.NoteGold;
+            accent.a = 1f;
+            return accent;
+        }
+
+        // 本編は Random.insideUnitSphere を使う。プレビューはノーツごとの種で固定し、巻き戻しても同じ散り方にする。
+        private static Vector3 Jitter(System.Random random) => new Vector3(
+            (float)random.NextDouble() * 2f - 1f, (float)random.NextDouble() * 2f - 1f, (float)random.NextDouble() * 2f - 1f);
+
+        // 切ってから t 秒後の2片(ロングは細片も)を、本編 CuttableNote.TrySpawnSlices / SpawnDebris と同じ初速で置き、
+        // Perfect の光の輪を予約する。本体は隠す。
+        private void ShowCut(Entry entry, float t, double linger)
+        {
+            CuttableNote note = entry.note;
+            if (note.gameObject.activeSelf) note.gameObject.SetActive(false);
+            if (entry.slices == null) BuildPieces(entry);
+            if (entry.slices == null) return;
+            bool alive = t < CuttableNote.FlowPieceLife;
+            Vector3 origin = note.transform.localPosition;
+            origin.z = motion.ComputeNoteZ(note, -linger, motion.Speed);
+            var body = note.GetComponent<MeshRenderer>();
+            Material source = body != null ? body.sharedMaterial : null;
+            Vector3 motionDir = new Vector3(entry.swing.x, entry.swing.y, 0f).normalized;
+            Vector3 cutNormal = Vector3.Cross(motionDir, Vector3.forward).normalized;
+            Vector3 carry = Vector3.ClampMagnitude(entry.swing, 14f) * note.saberVelocityScale;
+            Vector3 separation = cutNormal * (note.sliceSeparationImpulse * (note.RequiredCutCount > 1 ? 1.22f : 1f));
+            // 本編の「流れる破片」: タップはノーツの前進の勢いを残し、ロングは判定面に留まるので勢いなし。
+            Vector3 flow = note.RequiredCutCount > 1 ? Vector3.zero : new Vector3(0f, 0f, -motion.Speed);
+            Color accent = Accent(note);
+            Color flash = Color.Lerp(accent, Color.white, .55f);
+            var random = new System.Random(entry.seed);
+            for (int i = 0; i < entry.slices.Length; i++)
+            {
+                SlicePieceDecay piece = entry.slices[i];
+                Vector3 spin = cutNormal * CuttableNote.FlowSpin + Jitter(random) * (note.pieceAngularImpulse * .25f);
+                if (!alive) { piece.gameObject.SetActive(false); continue; }
+                piece.transform.localPosition = origin;
+                piece.transform.localRotation = Quaternion.identity;
+                piece.transform.localScale = entry.scale;
+                Drive(piece, source, (i == 0 ? separation : -separation) + carry, spin, .1f, flow, flash, t);
+            }
+            if (entry.debris != null)
+            {
+                // ロングの最後の1振りは細片も散る(本編 SpawnDebris)。乱数の順番を固定し、巻き戻しても同じ散り方にする。
+                Vector3 normal = Vector3.Cross(motionDir, Vector3.forward);
+                Vector3 debrisCarry = Vector3.ClampMagnitude(entry.swing, 14f) * .15f;
+                for (int i = 0; i < entry.debris.Length; i++)
+                {
+                    SlicePieceDecay piece = entry.debris[i];
+                    Vector3 offset = Jitter(random) * .3f;
+                    Quaternion rotation = Quaternion.Euler(Jitter(random) * 180f);
+                    float size = Mathf.Lerp(.06f, .14f, (float)random.NextDouble());
+                    float side = (i & 1) == 0 ? 1f : -1f;
+                    Vector3 fan = (motionDir * .6f + normal * (side * (.55f + (i % 3) * .3f))
+                        + Vector3.forward * Mathf.Lerp(-.18f, .18f, (float)random.NextDouble())).normalized;
+                    Vector3 spin = Jitter(random) * (note.pieceAngularImpulse * 1.5f);
+                    if (!alive) { piece.gameObject.SetActive(false); continue; }
+                    piece.transform.localPosition = origin + offset;
+                    piece.transform.localRotation = rotation;
+                    piece.transform.localScale = Vector3.one * size;
+                    Drive(piece, source, fan * note.shatterDebrisSpeed + debrisCarry, spin, 0f, Vector3.zero, null, t);
+                }
+            }
+            if (alive && t < GameplayCutFeedback.BurstLifetime)
+            {
+                // 本編 GameplayCutFeedback.HandleCut と同じ場所(切った点を正面へ少し出す)に Perfect の演出を出す。
+                bursts.Add(new GameplayCutFeedback.StaticBurst
+                {
+                    tier = JudgmentTier.Perfect,
+                    position = new Vector3(origin.x, origin.y, origin.z - entry.scale.z * .5f - .035f),
+                    direction = new Vector2(entry.swing.x, entry.swing.y),
+                    color = accent,
+                    scale = Mathf.Clamp(Mathf.Max(Mathf.Abs(entry.scale.x), Mathf.Abs(entry.scale.y)), .6f, 1.5f),
+                    release = note.RequiredCutCount > 1 ? 1.18f : 1f,
+                    age = t,
+                });
+            }
+        }
+
+        private static void HideCut(Entry entry)
+        {
+            foreach (var piece in AllPieces(entry)) if (piece.gameObject.activeSelf) piece.gameObject.SetActive(false);
+        }
+
+        private static IEnumerable<SlicePieceDecay> AllPieces(Entry entry)
+        {
+            if (entry.slices != null) foreach (var piece in entry.slices) if (piece != null) yield return piece;
+            if (entry.debris != null) foreach (var piece in entry.debris) if (piece != null) yield return piece;
+        }
+
+        // 本体のメッシュを本編 TrySpawnSlices と同じ平面で2片に分ける。Perfect は中心に当たるので、切断面はノーツの中心を通る。
+        // ロングは細片(本編 SpawnDebris と同じ数)も用意する。片の材質は本体の複製で、消すときに一緒に解放する。
+        private void BuildPieces(Entry entry)
+        {
+            CuttableNote note = entry.note;
+            var filter = note.GetComponent<MeshFilter>();
+            var body = note.GetComponent<MeshRenderer>();
+            if (filter == null || body == null || filter.sharedMesh == null || body.sharedMaterial == null) return;
+            Vector3 motionDir = new Vector3(entry.swing.x, entry.swing.y, 0f);
+            if (motionDir.sqrMagnitude < .0001f) return;
+            Vector3 cutNormal = Vector3.Cross(motionDir.normalized, Vector3.forward).normalized;
+            Vector3 normalLocal = note.transform.InverseTransformDirection(cutNormal).normalized;
+            var plane = new Plane(normalLocal, filter.sharedMesh.bounds.center);
+            SlicePieceDecay first = MakePiece("PreviewSlice", null), second = MakePiece("PreviewSlice", null);
+            first.GetComponent<MeshFilter>().sharedMesh = first.ReusableMesh;
+            second.GetComponent<MeshFilter>().sharedMesh = second.ReusableMesh;
+            if (!MeshSlicer.SliceInto(filter.sharedMesh, plane, first.ReusableMesh, second.ReusableMesh))
+            {
+                DiscardPiece(first);
+                DiscardPiece(second);
+                return;
+            }
+            entry.slices = new[] { first, second };
+            if (note.RequiredCutCount > 1)
+            {
+                entry.debris = new SlicePieceDecay[Mathf.Max(0, note.shatterDebrisCount)];
+                for (int i = 0; i < entry.debris.Length; i++) entry.debris[i] = MakePiece("PreviewDebris", NoteFragmentPool.CubeMesh);
+            }
+            foreach (var piece in AllPieces(entry))
+            {
+                piece.SetOwnedMaterial(new Material(body.sharedMaterial));
+                CollectGeometry(piece.gameObject, entry.resources);
+            }
+        }
+
+        private SlicePieceDecay MakePiece(string name, Mesh mesh)
+        {
+            var go = new GameObject(name, typeof(MeshFilter), typeof(MeshRenderer), typeof(SlicePieceDecay));
+            go.transform.SetParent(root.transform, false);
+            if (mesh != null) go.GetComponent<MeshFilter>().sharedMesh = mesh;
+            go.SetActive(false);
+            HideHierarchy(go);
+            return go.GetComponent<SlicePieceDecay>();
+        }
+
+        private static void DiscardPiece(SlicePieceDecay piece)
+        {
+            Mesh mesh = piece.GetComponent<MeshFilter>().sharedMesh;
+            if (mesh != null && !EditorUtility.IsPersistent(mesh)) Object.DestroyImmediate(mesh);
+            Object.DestroyImmediate(piece.gameObject);
+        }
+
+        // 本編の SlicePieceDecay をそのまま使い、切った瞬間の状態から t 秒ぶん同じ刻みで進める(位置・回転・薄れ・Perfect の縁の光)。
+        // 編集モードでは Update が回らないので、毎フレーム打ち上げ直して刻む。
+        private static void Drive(SlicePieceDecay piece, Material source, Vector3 velocity, Vector3 spin, float drag,
+            Vector3 flow, Color? flash, float t)
+        {
+            Material material = piece.GetComponent<MeshRenderer>().sharedMaterial;
+            if (material != null && source != null)
+            {
+                // 前のフレームで薄くした色・発光を本体の値へ戻してから進める。
+                material.CopyPropertiesFromMaterial(source);
+                piece.SetOwnedMaterial(material);
+            }
+            piece.Launch(null, velocity, spin, false, CuttableNote.FlowPieceLife, CuttableNote.FlowFadeStart, drag);
+            piece.Flow(flow * CuttableNote.FlowMomentumKeep, CuttableNote.FlowGravityScale);
+            if (flash.HasValue) piece.Flash(flash.Value, GameplayCutFeedback.SliceFlashSeconds);
+            // 寿命に達した片は自分を消すので、その手前で止める。
+            float remaining = Mathf.Min(t, CuttableNote.FlowPieceLife - .002f);
+            while (remaining > 0f)
+            {
+                float step = Mathf.Min(PieceStepSeconds, remaining);
+                piece.Step(step);
+                remaining -= step;
+            }
+        }
+
+        // ロングの途中の振りで入るひび。本編 CuttableNote.AddCrack と同じ位置・向き・太さ(Perfect は中心に当たる)。
+        private void UpdateCracks(Entry entry, int achieved, int count)
+        {
+            while (entry.cracks.Count < achieved)
+            {
+                var crack = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                crack.name = "Crack";
+                Object.DestroyImmediate(crack.GetComponent<Collider>());
+                crack.transform.SetParent(entry.note.transform, false);
+                crack.GetComponent<MeshRenderer>().sharedMaterial = crackMaterial ??= CuttableNote.MakeCrackMaterial();
+                CuttableNote.PlaceCrack(crack.transform, entry.cracks.Count, Vector3.zero,
+                    entry.note.transform.InverseTransformDirection(entry.swing));
+                HideHierarchy(crack);
+                entry.cracks.Add(crack.transform);
+            }
+            float progress = Mathf.Clamp01(achieved / (float)Mathf.Max(1, count - 1));
+            for (int i = 0; i < entry.cracks.Count; i++)
+            {
+                bool shown = i < achieved;
+                if (entry.cracks[i].gameObject.activeSelf != shown) entry.cracks[i].gameObject.SetActive(shown);
+                if (shown) entry.cracks[i].localScale = CuttableNote.CrackScale(i, progress);
+            }
+        }
+
+        // 残数の数字の書式。Play モードを抜けた直後はフォントの素材が壊れていることがあり(UISkinKit が作り直す)、
+        // それでも数字を作れないときは数字だけを省いて、プレイ画面全体は止めない。
+        private void StyleLabel(Entry entry)
+        {
+            try { LongNoteCountStyle.Apply(entry.label); }
+            catch (Exception exception) { DropLabel(entry, exception); }
+        }
+
+        private void RefreshLabel(Entry entry)
+        {
+            try
+            {
+                if (!UISkinKit.IsFontUsable(entry.label.font)) LongNoteCountStyle.Apply(entry.label);
+                entry.label.ForceMeshUpdate();
+            }
+            catch (Exception exception) { DropLabel(entry, exception); }
+        }
+
+        private void DropLabel(Entry entry, Exception exception)
+        {
+            if (!labelWarned)
+            {
+                labelWarned = true;
+                Debug.LogWarning("プレイ画面: ロングの残数の数字を描けないので、数字だけ省きます。" + exception.Message);
+            }
+            if (entry.label != null) Object.DestroyImmediate(entry.label.gameObject);
+            entry.label = null;
+        }
+
         private void RebuildLinks()
         {
             ClearLinks();
@@ -362,6 +642,7 @@ namespace Saber.ChartEditor
                     if (Math.Abs(notes[i].note.HitTime - notes[j].note.HitTime) <= NoteSpawner.SimultaneousEpsilonSeconds)
                     {
                         var link = SimultaneousNoteLink.Create(notes[i].note, notes[j].note, root.transform);
+                        if (link == null) continue;
                         link.enabled = false;
                         HideHierarchy(link.gameObject);
                         links.Add(link);
@@ -377,6 +658,7 @@ namespace Saber.ChartEditor
         {
             if (entry.note != null) Object.DestroyImmediate(entry.note.gameObject);
             if (entry.label != null) Object.DestroyImmediate(entry.label.gameObject);
+            foreach (var piece in AllPieces(entry)) Object.DestroyImmediate(piece.gameObject);
             ReleaseGeometry(entry.resources);
         }
 
@@ -419,8 +701,8 @@ namespace Saber.ChartEditor
             entries.Clear();
             renderer.Cleanup();
             ReleaseGeometry(stageResources);
-            // 目印の線や円の素材は、このプレビューだけが作って持つ。
-            foreach (Material material in new[] { frameMaterial, barMaterial, ringMaterial })
+            // 目印の線や円、ひびの素材は、このプレビューだけが作って持つ。
+            foreach (Material material in new[] { frameMaterial, barMaterial, ringMaterial, crackMaterial })
                 if (material != null) Object.DestroyImmediate(material);
         }
     }

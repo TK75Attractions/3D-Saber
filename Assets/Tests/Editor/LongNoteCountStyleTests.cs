@@ -60,6 +60,23 @@ public class LongNoteCountStyleTests
         Assert.IsNotNull(font.material);
     }
 
+    // Play モードを抜けた直後の状態(フォント本体は残り、材質とアトラスだけ壊れている)でも残数を描ける。
+    // 2026-10-17: 譜面エディターのプレイ画面で、ロングの残数が出ない・まだ無い数字で例外になっていた不具合。
+    [Test]
+    public void Apply_RecoversWhenTheSharedFontLostItsMaterialAndAtlas()
+    {
+        var stale = UISkinKit.FontAsset(LongNoteCountStyle.FontName);
+        Object.DestroyImmediate(stale.material);
+        Object.DestroyImmediate(stale.atlasTexture);
+        var text = MakeText("7");
+        Assert.AreNotSame(stale, text.font);
+        Assert.True(UISkinKit.IsFontUsable(text.font));
+        Assert.NotNull(text.fontSharedMaterial);
+        Assert.DoesNotThrow(() => text.ForceMeshUpdate(true, true));
+        Assert.AreEqual(1, text.textInfo.characterCount);
+        Assert.IsTrue(text.textInfo.characterInfo[0].isVisible);
+    }
+
     [Test]
     public void Spawner_LabelIsUnscaledAndCountBehaviorIsUnchanged()
     {
