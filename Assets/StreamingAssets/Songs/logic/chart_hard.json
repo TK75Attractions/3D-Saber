@@ -1,5 +1,5 @@
 {
-  "_comment": "拍を支えるまとまりと歌・楽器への応答を曲別に編集。beat-pickup-design.json参照。Hard→Normal→Easyで時刻・手・位置を包含。",
+  "_comment": "拍の土台と主旋律への応答。melody-priority-design.json参照。下位は時刻・担当手・位置を包含。",
   "bpm": 160,
   "coordScale": 1,
   "offsetMs": 0,
@@ -2000,6 +2000,28 @@
       "lengthMs": 0
     },
     {
+      "time": 70389.1,
+      "beat": 175.9722,
+      "x": -1.5,
+      "y": -0.45,
+      "color": "blue",
+      "direction": "none",
+      "type": "tap",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "time": 70633.6,
+      "beat": 176.4612,
+      "x": 1.5,
+      "y": -0.285,
+      "color": "red",
+      "direction": "none",
+      "type": "tap",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 177.0,
       "time": 70903.0,
       "x": 1.9,
@@ -2028,17 +2050,6 @@
       "y": -0.6,
       "type": "tap",
       "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 178.5,
-      "time": 71653.0,
-      "x": -1.9,
-      "y": -0.6,
-      "type": "tap",
-      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -2088,6 +2099,17 @@
       "lengthMs": 0
     },
     {
+      "time": 73636.7,
+      "beat": 182.4674,
+      "x": 1.05,
+      "y": 0.1,
+      "color": "red",
+      "direction": "none",
+      "type": "tap",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 183.0,
       "time": 73903.0,
       "x": -1.9,
@@ -2095,6 +2117,17 @@
       "type": "tap",
       "color": "blue",
       "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "time": 74390.0,
+      "beat": 183.974,
+      "x": 1.5,
+      "y": -0.065,
+      "color": "red",
+      "direction": "none",
+      "type": "tap",
       "count": 1,
       "lengthMs": 0
     },
@@ -2121,13 +2154,13 @@
       "lengthMs": 0
     },
     {
-      "beat": 186.5,
-      "time": 75653.0,
-      "x": 1.9,
-      "y": -0.6,
-      "type": "tap",
+      "time": 75352.8,
+      "beat": 185.8996,
+      "x": 1.5,
+      "y": 0.21,
       "color": "red",
       "direction": "none",
+      "type": "tap",
       "count": 1,
       "lengthMs": 0
     },
@@ -2143,13 +2176,13 @@
       "lengthMs": 0
     },
     {
-      "beat": 187.5,
-      "time": 76153.0,
-      "x": 1.9,
-      "y": 0.3,
-      "type": "tap",
+      "time": 76305.7,
+      "beat": 187.8054,
+      "x": 1.05,
+      "y": -0.285,
       "color": "red",
       "direction": "none",
+      "type": "tap",
       "count": 1,
       "lengthMs": 0
     },
@@ -2418,6 +2451,28 @@
       "lengthMs": 0
     },
     {
+      "time": 86347.8,
+      "beat": 207.8896,
+      "x": 1.5,
+      "y": -0.45,
+      "color": "red",
+      "direction": "none",
+      "type": "tap",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "time": 86602.3,
+      "beat": 208.3986,
+      "x": -1.5,
+      "y": -0.285,
+      "color": "blue",
+      "direction": "none",
+      "type": "tap",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 209.0,
       "time": 86903.0,
       "x": -0.6,
@@ -2429,13 +2484,13 @@
       "lengthMs": 0
     },
     {
-      "beat": 210.0,
-      "time": 87403.0,
-      "x": -1.9,
-      "y": 0.3,
-      "type": "tap",
+      "time": 87315.6,
+      "beat": 209.8252,
+      "x": -1.5,
+      "y": -0.065,
       "color": "blue",
       "direction": "none",
+      "type": "tap",
       "count": 1,
       "lengthMs": 0
     },
@@ -2458,6 +2513,17 @@
       "type": "tap",
       "color": "blue",
       "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "time": 87934.2,
+      "beat": 211.0624,
+      "x": 1.5,
+      "y": -0.285,
+      "color": "red",
+      "direction": "none",
+      "type": "tap",
       "count": 1,
       "lengthMs": 0
     },
@@ -2473,17 +2539,6 @@
       "lengthMs": 0
     },
     {
-      "beat": 212.5,
-      "time": 88653.0,
-      "x": -0.6,
-      "y": -0.6,
-      "type": "tap",
-      "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
       "beat": 213.0,
       "time": 88903.0,
       "x": 1.9,
@@ -2491,6 +2546,17 @@
       "type": "tap",
       "color": "red",
       "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "time": 89435.8,
+      "beat": 214.0656,
+      "x": -1.05,
+      "y": -0.175,
+      "color": "blue",
+      "direction": "none",
+      "type": "tap",
       "count": 1,
       "lengthMs": 0
     },
@@ -2517,6 +2583,17 @@
       "lengthMs": 0
     },
     {
+      "time": 90473.5,
+      "beat": 216.141,
+      "x": 1.5,
+      "y": -0.065,
+      "color": "red",
+      "direction": "none",
+      "type": "tap",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 216.5,
       "time": 90653.0,
       "x": -0.6,
@@ -2535,6 +2612,17 @@
       "type": "tap",
       "color": "red",
       "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "time": 91341.5,
+      "beat": 217.877,
+      "x": -1.5,
+      "y": 0.21,
+      "color": "blue",
+      "direction": "none",
+      "type": "tap",
       "count": 1,
       "lengthMs": 0
     },
@@ -2568,6 +2656,17 @@
       "type": "tap",
       "color": "blue",
       "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "time": 92798.2,
+      "beat": 220.7904,
+      "x": -0.85,
+      "y": -0.175,
+      "color": "blue",
+      "direction": "none",
+      "type": "tap",
       "count": 1,
       "lengthMs": 0
     },
@@ -4756,5 +4855,6 @@
   "hierarchyDesignVersion": 1,
   "rhythmContrastDesignVersion": 1,
   "styleDesignVersion": 1,
-  "grooveDesignVersion": 1
+  "grooveDesignVersion": 1,
+  "melodyDesignVersion": 2
 }

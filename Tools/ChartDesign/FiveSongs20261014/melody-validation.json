@@ -1,0 +1,41 @@
+{
+  "revision": "Melody20261016-1450",
+  "completedAt": "2026-10-17T22:22:39.831445+00:00",
+  "scope": [
+    "escapade",
+    "logic"
+  ],
+  "newMaterials": 0,
+  "newConversions": 0,
+  "newMaterialApplications": 0,
+  "materialTotals": {
+    "converted": 118,
+    "applied": 94,
+    "pending": 24
+  },
+  "hardLevels": {
+    "escapade": 9,
+    "logic": 7
+  },
+  "humanMarkerTimesPreserved": 24,
+  "logicMelodyAttacks": 40,
+  "logicAddedAttacks": 14,
+  "humanListeningVerified": false,
+  "physicalPlayVerified": false,
+  "verification": {
+    "unityPassed": 64,
+    "regressionPassed": 19,
+    "browserCharts": 6,
+    "browserPhrasePlaybacks": 12,
+    "protectedWebCharts": 37,
+    "videoLinks": 236,
+    "lowerChartRegenerationChecks": 10
+  },
+  "evidence": "melody-priority-design.json version 2; rhythm-contrast-design.json version 4",
+  "priorConcurrentUpdatesPreserved": [
+    "Assets/StreamingAssets/Songs/2_23_AM/chart_hard.json",
+    "Assets/StreamingAssets/Songs/BenkyouRemaster/chart_hard.json",
+    "Assets/StreamingAssets/Songs/RushE/chart_hard.json",
+    "Assets/StreamingAssets/Songs/製作中/chart_hard.json"
+  ]
+}
