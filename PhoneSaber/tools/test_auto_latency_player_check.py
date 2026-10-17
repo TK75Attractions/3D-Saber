@@ -23,6 +23,9 @@ def launch_player(player, log_text=SUCCESS):
     return launch
 
 
+# 本編で目安が判定の遅れ補正に入った記録（PhoneSaberJudgeLatency）。
+JUDGE = " event=judge-latency mode=auto applied-ms=65 auto-ms=65 offset-ms=0 game-ms=120 prediction-lead-ms=0\n"
+
 class AutoLatencyPlayerLogTests(unittest.TestCase):
     def test_sender_setup_failure_does_not_launch_an_unmonitored_player(self):
         for stage in ("socket", "bind"):
@@ -59,13 +62,20 @@ class AutoLatencyPlayerLogTests(unittest.TestCase):
             sender.bind.assert_called_once_with(("192.0.2.2", 0))
             sender.close.assert_called_once_with()
 
-    def run_completed_check(self, tmp, log_text, exit_code=0):
+    def test_missing_judge_compensation_fails(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            result, launched = self.run_completed_check(tmp, SUCCESS, judge=False)
+        self.assertTrue(launched)
+        self.assertEqual(result, 1)
+
+    def run_completed_check(self, tmp, log_text, exit_code=0, judge=True):
         events = Path(tmp) / "events.log"
         player = mock.Mock()
         player.poll.return_value = exit_code
 
         def launch(command):
-            events.write_text("event=latency-estimate sender=192.0.2.2 status=estimate c2s-median-ms=36.9\n")
+            events.write_text("event=latency-estimate sender=192.0.2.2 status=estimate c2s-median-ms=36.9\n"
+                              + (JUDGE if judge else ""))
             return launch_player(player, log_text)(command)
 
         with mock.patch.object(check, "EVENTS", events), \
@@ -129,7 +139,7 @@ class AutoLatencyPlayerLogTests(unittest.TestCase):
                         raise OSError(errno.ENETUNREACH, "Network is unreachable")
                     if destination[1] == 5007:
                         events.write_text("event=latency-estimate sender=192.0.2.2 "
-                                          "status=estimate c2s-median-ms=36.9\n")
+                                          "status=estimate c2s-median-ms=36.9\n" + JUDGE)
 
                 sender.sendto.side_effect = receive
                 with mock.patch.object(check, "EVENTS", events), \
@@ -163,7 +173,7 @@ class AutoLatencyPlayerLogTests(unittest.TestCase):
                     if destination[1] != 5007:
                         return
                     timestamp = (datetime.now(timezone.utc) + timedelta(seconds=1)).isoformat(timespec="milliseconds").replace("+00:00", "Z")
-                    line = timestamp + " event=latency-estimate sender=192.0.2.2 status=estimate c2s-median-ms=36.9\n"
+                    line = timestamp + " event=latency-estimate sender=192.0.2.2 status=estimate c2s-median-ms=36.9\n" + timestamp + JUDGE
                     if rotate_after_estimate:
                         with events.open("a") as handle:
                             handle.write(line)

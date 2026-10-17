@@ -180,7 +180,8 @@ def main():
         print("NG: 判定の遅れ補正（event=judge-latency mode=auto）に目安が入っていません")
         return 1
     value = float(field(applied[-1], "applied-ms"))
-    print(f"  判定の遅れ補正: applied-ms={value:.0f}（目安 {min(totals):.0f}〜{max(totals):.0f} ms、ゲーム既定 {field(applied[-1], 'game-ms')} ms）")
+    span = f"{min(totals):.0f}〜{max(totals):.0f}" if totals else "不明"
+    print(f"  判定の遅れ補正: applied-ms={value:.0f}（目安 {span} ms、ゲーム既定 {field(applied[-1], 'game-ms')} ms）")
     if totals and not (min(totals) - 25 <= value <= max(totals) + 25):
         print("NG: 判定の遅れ補正が目安から離れています")
         return 1
