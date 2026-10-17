@@ -945,6 +945,29 @@ final class P2PTransportTests: XCTestCase {
         await fulfillment(of: [rejected], timeout: 2)
     }
 
+    func testReleasingSenderWithoutStopCancelsTheConnection() async throws {
+        let bridge = try FakeBridge()
+        defer { bridge.stop() }
+        let port = try await bridge.ready()
+        var sender: P2PSender? = P2PSender(timing: fastTiming(),
+                                          endpointOverride: .hostPort(host: "127.0.0.1", port: port))
+        sender?.start()
+        let connected = await waitFor { sender?.isUsable == true }
+        XCTAssertTrue(connected)
+        let connection = try XCTUnwrap(sender?.connectionForTesting)
+        // 所有側が破棄されても、Network は cancel まで接続を保持する。
+        defer { connection.cancel() }
+        weak var released = sender
+        sender = nil
+        let deallocated = await waitFor { released == nil }
+        XCTAssertTrue(deallocated)
+        let cancelled = await waitFor {
+            if case .cancelled = connection.state { return true }
+            return false
+        }
+        XCTAssertTrue(cancelled, "破棄された sender の接続を残さない")
+    }
+
     func testCoordinateHookCompletesInlineAndFromAnotherQueue() async throws {
         for background in [false, true] {
             let bridge = try FakeBridge()

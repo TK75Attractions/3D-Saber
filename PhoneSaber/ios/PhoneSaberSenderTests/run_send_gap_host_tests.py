@@ -17,7 +17,12 @@ def main():
 
     def source(name):
         if args.revision:
-            return subprocess.check_output(["git", "show", f"{args.revision}:{(SOURCE / name).relative_to(ROOT)}"], cwd=ROOT, text=True)
+            previous = subprocess.check_output(["git", "show", f"{args.revision}:{(SOURCE / name).relative_to(ROOT)}"], cwd=ROOT, text=True)
+            if name == "P2PSender.swift" and "var connectionForTesting:" not in previous:
+                # 旧実装にも観測用 getter だけを足し、解放処理は変更せず検証する。
+                getter = block((SOURCE / name).read_text(), "var connectionForTesting:")
+                previous = previous.replace("    var stateForTesting:", "    " + getter + "\n    var stateForTesting:")
+            return previous
         current = (SOURCE / name).read_text()
         if args.before_gap_fixes and name in {"UDPSender.swift", "P2PSender.swift", "DebugBundleTransfer.swift", "CameraViewModel.swift"}:
             old = subprocess.check_output(["git", "show", f"440e818^:{(SOURCE / name).relative_to(ROOT)}"], cwd=ROOT, text=True)
@@ -113,7 +118,8 @@ final class DebugBundleTransfer {
     for marker in ["final class LockedBox", "final class FakeBridge", "final class FakeUnityDiscovery"]:
         support += block(tests, marker) + "\n"
     focused = "import XCTest\nimport Network\nimport Foundation\nfinal class SendGapNetworkTests: XCTestCase {\n"
-    for name in ["testFailedBrowserReplacesPendingWaitingRetry",
+    for name in ["testReleasingSenderWithoutStopCancelsTheConnection",
+                 "testFailedBrowserReplacesPendingWaitingRetry",
                  "testLANProbeDoesNotQueueRequestsBeforeReadyAndRecoversAfterHostChange",
                  "testLANLivenessProbeRebuildsTheConnectionAfterAReceiveError",
                  "testLANLivenessProbeAcceptsOnlyRepliesForTheVersionAndPortsThisPhoneUses",

@@ -382,6 +382,15 @@ final class P2PSender {
                                            maximum: timing.reconnectMaximumDelay)
     }
 
+    deinit {
+        // 所有側の破棄でも、稼働中の接続・探索・タイマーを残さない。
+        ticker?.cancel()
+        browserRestart?.cancel()
+        browser?.cancel()
+        connection?.cancel()
+        sendWatchdogs.values.forEach { $0.cancel() }
+    }
+
     /// Cheap, thread-safe: whether coordinates should take the P2P link now.
     var isUsable: Bool {
         usableLock.lock(); defer { usableLock.unlock() }
@@ -890,6 +899,7 @@ final class P2PSender {
     }
 
     var stateForTesting: P2PLinkState { queue.sync { state } }
+    var connectionForTesting: NWConnection? { queue.sync { connection } }
     var roundTripSummaryForTesting: P2PRoundTripStats.Summary? { queue.sync { roundTrips.summary } }
     var supersededCountForTesting: Int { queue.sync { supersededCount } }
     var stalledSendCountForTesting: Int { queue.sync { stalledSendCount } }
