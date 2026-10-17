@@ -116,12 +116,27 @@ final class DeviceHealthTests: XCTestCase {
         for hot in [DeviceThermalLevel.high, .dangerous] {
             var policy = ThermalFPSPolicy()
             XCTAssertEqual(policy.effectiveFPS(thermal: .normal, at: 0, userFPS: 120), 120)
-            XCTAssertEqual(policy.effectiveFPS(thermal: hot, at: 1, userFPS: 120), 30)
-            XCTAssertEqual(policy.effectiveFPS(thermal: .elevated, at: 2, userFPS: 120), 30)
-            XCTAssertEqual(policy.effectiveFPS(thermal: .normal, at: 121.999, userFPS: 120), 30)
+            // 熱くなったら、まず60fpsへ（以前は一気に30fps）。
+            XCTAssertEqual(policy.effectiveFPS(thermal: hot, at: 1, userFPS: 120), 60)
+            XCTAssertEqual(policy.effectiveFPS(thermal: .elevated, at: 2, userFPS: 120), 60)
+            XCTAssertEqual(policy.effectiveFPS(thermal: .normal, at: 121.999, userFPS: 120), 60)
             XCTAssertEqual(policy.effectiveFPS(thermal: .normal, at: 122, userFPS: 120), 120)
-            // 120fps は復帰直後でも serious/critical になったら即座に30へ退避する。
-            XCTAssertEqual(policy.effectiveFPS(thermal: hot, at: 123, userFPS: 120), 30)
+            // 120fps は復帰直後でも serious/critical になったら即座に60へ退避する。
+            XCTAssertEqual(policy.effectiveFPS(thermal: hot, at: 123, userFPS: 120), 60)
+            // 60fpsでも2分以上熱いままなら30fpsへ。
+            XCTAssertEqual(policy.effectiveFPS(thermal: hot, at: 242.999, userFPS: 120), 60)
+            XCTAssertEqual(policy.effectiveFPS(thermal: hot, at: 243, userFPS: 120), 30)
+            XCTAssertEqual(policy.level, 2)
+            // 冷えたら2分ごとに1段ずつ戻る（30→60→120）。
+            XCTAssertEqual(policy.effectiveFPS(thermal: .normal, at: 300, userFPS: 120), 30)
+            XCTAssertEqual(policy.effectiveFPS(thermal: .normal, at: 420, userFPS: 120), 60)
+            XCTAssertEqual(policy.effectiveFPS(thermal: .normal, at: 539.999, userFPS: 120), 60)
+            XCTAssertEqual(policy.effectiveFPS(thermal: .normal, at: 540, userFPS: 120), 120)
+            XCTAssertFalse(policy.reduced)
+            // 120→60 で下げた後に 60fps の選択へ変えても、60からさらに30へ1段だけ。
+            var switched = ThermalFPSPolicy()
+            XCTAssertEqual(switched.effectiveFPS(thermal: hot, at: 0, userFPS: 120), 60)
+            XCTAssertEqual(switched.effectiveFPS(thermal: hot, at: 1, userFPS: 60), 30)
         }
     }
 

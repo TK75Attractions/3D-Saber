@@ -248,6 +248,8 @@ final class DeviceHealthMeter: @unchecked Sendable {
 // 単調時計で冷却の継続時間と切替間隔を判定する。保存済み fps は変更しない。
 struct ThermalFPSPolicy {
     private(set) var reduced = false
+    /// 0 = 下げていない、1 = 1段下げ（120→60、60→30）、2 = 120→30。
+    private(set) var level = 0
     private var coolSince: TimeInterval?
     private var lastChange: TimeInterval?
     static let minimumInterval: TimeInterval = 120
@@ -257,6 +259,8 @@ struct ThermalFPSPolicy {
         sending && foreground && cameraLive && !recovering && currentFPS != Double(effectiveFPS)
     }
 
+    // 2026-10-18: 120fps で熱くなると、まず60fpsへ下げて粘る（以前は一気に30fps）。
+    // 60fpsでも2分以上熱いままなら30fpsへ。冷えたら2分ごとに1段ずつ戻す。60fps選択時の動きは従来どおり。
     mutating func effectiveFPS(thermal: DeviceThermalLevel, at time: TimeInterval, userFPS: Int) -> Int {
         let hot = thermal == .high || thermal == .dangerous
         let cool = thermal == .normal || thermal == .elevated
@@ -266,16 +270,23 @@ struct ThermalFPSPolicy {
             coolSince = nil
         }
         guard userFPS == 60 || userFPS == 120 else { return userFPS }
+        let maximumLevel = userFPS == 120 ? 2 : 1
+        if level > maximumLevel { level = maximumLevel }
         let canChange = lastChange.map { time - $0 >= Self.minimumInterval } ?? true
-        if !reduced && hot && (canChange || userFPS == 120) {
-            reduced = true
+        if level < maximumLevel && hot && (canChange || (userFPS == 120 && level == 0)) {
+            level += 1
             lastChange = time
-        } else if reduced && cool, let coolSince,
+        } else if level > 0 && cool, let coolSince,
                   time - coolSince >= Self.minimumInterval && canChange {
-            reduced = false
+            level -= 1
             lastChange = time
         }
-        return reduced ? 30 : userFPS
+        reduced = level > 0
+        switch level {
+        case 0: return userFPS
+        case 1: return userFPS == 120 ? 60 : 30
+        default: return 30
+        }
     }
 }
 
