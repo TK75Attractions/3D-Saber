@@ -674,6 +674,55 @@ def render_compare(report_a, report_b, rows):
     return "\n".join(out)
 
 
+def trial_segments(events, since, until):
+    """F10 の印（event=trial-mark）ごとに [(n, 設定の dict, start, end)] を返す。印が無ければ空。"""
+    window = in_window(events, since, until)
+    marks = [e for e in window if e["event"] == "trial-mark"]
+    if not marks:
+        return []
+    end_of_window = until or window[-1]["time"]
+    segments = []
+    for i, mark in enumerate(marks):
+        end = marks[i + 1]["time"] if i + 1 < len(marks) else end_of_window
+        segments.append((mark["fields"].get("n", str(i + 1)), mark["fields"], mark["time"], end))
+    return segments
+
+
+def build_trials(events, since, until):
+    return [{"n": n, "settings": {k: v for k, v in fields.items()
+                                   if k in ("judge", "offset-ms", "applied-ms", "prediction-red-ms", "prediction-blue-ms", "frame-cap")},
+             "report": build_report(events, start, end)}
+            for n, fields, start, end in trial_segments(events, since, until)]
+
+
+def render_trials(trials):
+    if not trials:
+        return "この時間に F10 の印（trial-mark）がありません。--since / --last-session だけで見てください。"
+    out = [f"PhoneSaber 試行ごとの比較  {len(trials)} 試行"]
+    for t in trials:
+        settings = " ".join(f"{k}={v}" for k, v in t["settings"].items())
+        rep = t["report"]
+        out.append(f"試行 {t['n']}: {fmt_local(rep['since'])}〜{fmt_local(rep['until'])}  {settings}")
+    out.append("")
+    size = max(width(name) for name, _ in COMPARE_ROWS) + 2
+    out.append(pad_left("項目", size) + "".join(pad_right(f"試行{t['n']}", 10) for t in trials))
+    for name, getter in COMPARE_ROWS:
+        cells = []
+        for t in trials:
+            rep = t["report"]
+            try:
+                value = getter(rep) if rep["overall"] is not None or name == "曲数" else None
+            except (KeyError, TypeError, AttributeError):
+                value = None
+            cells.append(fmt(value))
+        out.append(pad_left(name, size) + "".join(pad_right(c, 10) for c in cells))
+    for t in trials:
+        probs = t["report"]["overall"]["problems"] if t["report"]["overall"] else []
+        out.append(f"\n試行 {t['n']} の問題:" + (" なし" if not probs else ""))
+        out += [f"  - {p}" for p in probs]
+    return "\n".join(out)
+
+
 # ---------------------------------------------------------------- CLI
 
 def main(argv=None):
@@ -684,6 +733,8 @@ def main(argv=None):
     parser.add_argument("--last-session", action="store_true", help="最後の session-start から終わりまで")
     parser.add_argument("--compare", nargs=2, metavar=("A", "B"),
                         help="'SINCE..UNTIL' を2つ並べて比較（例 16:30..16:40 16:46..16:50）")
+    parser.add_argument("--by-trial", action="store_true",
+                        help="F10 の印（trial-mark）ごとに分けて並べる（--since / --last-session と併用可）")
     parser.add_argument("--json", metavar="OUT", help="結果を JSON で保存")
     args = parser.parse_args(argv)
 
@@ -710,6 +761,9 @@ def main(argv=None):
         rows = compare(*reports)
         print(render_compare(reports[0], reports[1], rows))
         result = {"a": reports[0], "b": reports[1], "compare": rows}
+    elif args.by_trial:
+        result = {"trials": build_trials(events, since, until)}
+        print(render_trials(result["trials"]))
     else:
         result = build_report(events, since, until)
         print(render_report(result))

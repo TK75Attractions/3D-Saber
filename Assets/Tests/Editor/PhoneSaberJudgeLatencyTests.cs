@@ -77,4 +77,13 @@ public class PhoneSaberJudgeLatencyTests
         }
         finally { PhoneSaberJudgeTimingStats.Clear(); }
     }
+
+    [Test]
+    public void TrialMarkRecordsTheSettingsInEffect()
+    {
+        Assert.AreEqual("n=3 judge=auto offset-ms=20 applied-ms=105 prediction-red-ms=40 prediction-blue-ms=0 frame-cap=2",
+            PhoneSaberTrialMark.Detail(3, PhoneSaberJudgeLatencySettings.Automatic, 20, 104.6, 40, 0, 2));
+        StringAssert.Contains("judge=game", PhoneSaberTrialMark.Detail(1, PhoneSaberJudgeLatencySettings.GameDefault, 0, null, 0, 0, 0));
+        StringAssert.Contains("applied-ms=unknown", PhoneSaberTrialMark.Detail(1, PhoneSaberJudgeLatencySettings.GameDefault, 0, null, 0, 0, 0));
+    }
 }

@@ -217,6 +217,37 @@ class CliTests(unittest.TestCase):
     def tearDown(self):
         os.unlink(self.path)
 
+    def test_by_trial_splits_at_f10_marks_and_keeps_the_settings(self):
+        marks = [f"{ts(5)} station=A colour=SYSTEM event=trial-mark n=1 judge=game offset-ms=0 applied-ms=120 "
+                 "prediction-red-ms=0 prediction-blue-ms=0 frame-cap=2",
+                 f"{ts(205)} station=A colour=SYSTEM event=trial-mark n=2 judge=auto offset-ms=0 applied-ms=75 "
+                 "prediction-red-ms=0 prediction-blue-ms=0 frame-cap=2"]
+        with open(self.path, encoding="utf-8") as handle:
+            lines = handle.read().splitlines()
+        path = write_log(sorted(lines + marks))
+        out_json = path + ".json"
+        try:
+            code, text = run(["--events", path, "--by-trial", "--json", out_json])
+            self.assertEqual(code, 0)
+            self.assertIn("試行 1:", text)
+            self.assertIn("judge=game", text)
+            self.assertIn("試行 2:", text)
+            with open(out_json, encoding="utf-8") as handle:
+                trials = json.load(handle)["trials"]
+            self.assertEqual([t["n"] for t in trials], ["1", "2"])
+            self.assertEqual(trials[1]["settings"]["applied-ms"], "75")
+            self.assertEqual(trials[0]["report"]["overall"]["judge"]["judge_ms_median"], -50)
+            self.assertEqual(trials[1]["report"]["overall"]["judge"]["judge_ms_median"], -5)
+        finally:
+            os.unlink(path)
+            if os.path.exists(out_json):
+                os.unlink(out_json)
+
+    def test_by_trial_without_marks_says_so(self):
+        code, text = run(["--events", self.path, "--by-trial"])
+        self.assertEqual(code, 0)
+        self.assertIn("F10 の印", text)
+
     def test_compare_mode(self):
         out_json = self.path + ".json"
         try:
