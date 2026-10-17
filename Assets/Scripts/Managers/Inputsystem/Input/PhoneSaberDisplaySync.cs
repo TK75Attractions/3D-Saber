@@ -136,10 +136,11 @@ public sealed class PhoneSaberDisplaySync : MonoBehaviour
         double now = Time.realtimeSinceStartupAsDouble;
         if (notice == null || now < nextNoticeCheck) return;
         nextNoticeCheck = now + 1;
-        notice.Text = PhoneSaberDisplayNotice.TextFor(
+        string sceneName = SceneManager.GetActiveScene().name;
+        notice.Text = PhoneSaberDisplayNotice.Join(PhoneSaberDisplayNotice.TextFor(
             PhoneSaberStatsDisplay.DisplayWarning(RefreshHzOverride > 0
                 ? RefreshHzOverride : Screen.currentResolution.refreshRateRatio.value),
-            SceneManager.GetActiveScene().name);
+            sceneName), sceneName == PhoneSaberDisplayNotice.GameSceneName ? "" : PhoneSaberDisplayNotice.PhoneWarning);
         notice.enabled = notice.Text.Length > 0;
     }
 }
@@ -151,6 +152,25 @@ public sealed class PhoneSaberDisplayNotice : MonoBehaviour
     public const string GameSceneName = "Game";
     public string Text = "";
     GUIStyle style;
+
+    // スマホの発熱・テザリング親機など（PhoneSaberJudgeLatency が数秒ごとに更新）。メニュー画面だけに出す。
+    public static string PhoneWarning = "";
+
+    public static string Join(string a, string b) =>
+        string.IsNullOrEmpty(a) ? b ?? "" : string.IsNullOrEmpty(b) ? a : a + "\n" + b;
+
+    // 2026-10-17 実測: iPhone がテザリングの親機（172.20.10.1）のまま thermal=serious になり、ずっと 30 fps だった。
+    public static string PhoneWarningFor(string sender, string thermal, double fpsMode)
+    {
+        string text = "";
+        if (thermal == "serious" || thermal == "critical")
+            text = Join(text, $"スマホが熱い（{thermal}）: カメラが30fpsに落ちて遅れが増えます。ケースを外す・充電を外す・風を当てて冷ましてください。");
+        else if (fpsMode > 0 && fpsMode < 50)
+            text = Join(text, "スマホのカメラが30fpsです（60fpsより遅れが約15ms増）。発熱か設定を確認してください。");
+        if (sender == "172.20.10.1")
+            text = Join(text, "スマホがテザリングの親機です。Wi-Fi で親機をすると発熱します。Wi-Fiルーター・別の端末を親機にするか、USBケーブルでつないでください。");
+        return text;
+    }
 
     public static string TextFor(string displayWarning, string sceneName) =>
         string.IsNullOrEmpty(displayWarning) || sceneName == GameSceneName ? "" :
@@ -167,7 +187,9 @@ public sealed class PhoneSaberDisplayNotice : MonoBehaviour
             style.normal.textColor = Color.yellow;
         }
         style.fontSize = Mathf.Max(14, Screen.height / 40);
-        float height = style.fontSize * 3.6f;
+        int lines = 1;
+        foreach (char c in Text) if (c == '\n') lines++;
+        float height = style.fontSize * (1.2f + 1.3f * lines);
         GUI.Box(new Rect(Screen.width * 0.1f, 8, Screen.width * 0.8f, height), Text, style);
     }
 }

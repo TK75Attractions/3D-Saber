@@ -286,6 +286,37 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
             "ゲームの設定のままへ戻すと次の曲から反映されます。", textStyle);
     }
 
+    void DrawJudgeLatency()
+    {
+        bool auto = PhoneSaberJudgeLatency.Mode == PhoneSaberJudgeLatencySettings.Automatic;
+        int offset = PhoneSaberJudgeLatency.OffsetMs;
+        string applied = PhoneSaberJudgeLatency.AppliedMs.HasValue ? $"{PhoneSaberJudgeLatency.AppliedMs.Value:0} ms" : "未適用（本編で反映）";
+        string measured = PhoneSaberJudgeLatency.AutomaticMs.HasValue ? $"{PhoneSaberJudgeLatency.AutomaticMs.Value:0} ms" : "未測定";
+        string game = PhoneSaberJudgeLatency.GameMs.HasValue ? $"{PhoneSaberJudgeLatency.GameMs.Value:0} ms" : "120 ms";
+        GUILayout.Label($"判定の遅れ補正: {(auto ? "自動（測った遅れ）" : "ゲームの設定")}  いま {applied}（測定 {measured}・調整 {offset:+0;-0;0} ms・ゲーム {game}{(PhoneSaberJudgeLatency.PredictionLeadMs > 0 && auto ? $"・予測の先読み −{PhoneSaberJudgeLatency.PredictionLeadMs:0} ms" : "")}）（この台に保存）", textStyle);
+        GUILayout.BeginHorizontal();
+        if (GUILayout.Button((auto ? "" : "● ") + "ゲームの設定", buttonStyle) && auto)
+            PhoneSaberJudgeLatency.Set(PhoneSaberJudgeLatencySettings.GameDefault, offset);
+        if (GUILayout.Button((auto ? "● " : "") + "自動", buttonStyle) && !auto)
+            PhoneSaberJudgeLatency.Set(PhoneSaberJudgeLatencySettings.Automatic, offset);
+        if (GUILayout.Button("調整 −10", buttonStyle)) PhoneSaberJudgeLatency.Set(PhoneSaberJudgeLatency.Mode, offset - 10);
+        if (GUILayout.Button("調整 +10", buttonStyle)) PhoneSaberJudgeLatency.Set(PhoneSaberJudgeLatency.Mode, offset + 10);
+        GUILayout.EndHorizontal();
+        double? median = PhoneSaberJudgeTimingStats.Median();
+        if (median.HasValue && PhoneSaberJudgeTimingStats.Count >= PhoneSaberJudgeLatencySettings.MinimumHitsToCentre
+            && GUILayout.Button($"当たりの中央に合わせる（調整 {offset:+0;-0;0} → {PhoneSaberJudgeLatencySettings.CentredOffset(offset, median.Value):+0;-0;0} ms）", buttonStyle))
+        {
+            PhoneSaberJudgeLatency.Set(PhoneSaberJudgeLatencySettings.Automatic, PhoneSaberJudgeLatencySettings.CentredOffset(offset, median.Value));
+            PhoneSaberJudgeTimingStats.Clear(); // 合わせた後のずれだけを見る
+        }
+        GUILayout.Label(median.HasValue
+            ? $"直近 {PhoneSaberJudgeTimingStats.Count} 回の当たりのずれ（中央）: {median.Value:+0;-0;0} ms（＋は遅め・−は早め）。" +
+              "±20 ms を超えて偏るなら、調整をその向きへ動かす（遅めなら＋）。"
+            : "当たりのずれ: まだ記録なし（本編で切ると出ます）。", textStyle);
+        if (!string.IsNullOrEmpty(PhoneSaberDisplayNotice.PhoneWarning))
+            GUILayout.Label(PhoneSaberDisplayNotice.PhoneWarning, warningStyle);
+    }
+
     void DrawFilter()
     {
         var input = InputPoint.Instance;
@@ -382,6 +413,8 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         DrawPrediction();
         GUILayout.Space(8);
         DrawDisplaySync();
+        GUILayout.Space(8);
+        DrawJudgeLatency();
         GUILayout.Space(8);
         DrawCalibration();
         GUILayout.Space(8);

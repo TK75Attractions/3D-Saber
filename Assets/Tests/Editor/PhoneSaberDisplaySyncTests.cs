@@ -129,4 +129,18 @@ public class PhoneSaberDisplaySyncTests
         }
         finally { PlayerPrefs.DeleteKey(key); }
     }
+
+    [Test]
+    public void PhoneWarningsNameHeatThirtyFpsAndTetheringHost()
+    {
+        Assert.IsEmpty(PhoneSaberDisplayNotice.PhoneWarningFor("192.168.1.20", "nominal", 60));
+        StringAssert.Contains("熱い", PhoneSaberDisplayNotice.PhoneWarningFor("192.168.1.20", "serious", 30));
+        StringAssert.Contains("30fps", PhoneSaberDisplayNotice.PhoneWarningFor("192.168.1.20", "fair", 30));
+        string both = PhoneSaberDisplayNotice.PhoneWarningFor("172.20.10.1", "critical", 30);
+        StringAssert.Contains("テザリング", both);
+        StringAssert.Contains("熱い", both);
+        Assert.AreEqual("a\nb", PhoneSaberDisplayNotice.Join("a", "b"));
+        Assert.AreEqual("b", PhoneSaberDisplayNotice.Join("", "b"));
+        Assert.AreEqual("a", PhoneSaberDisplayNotice.Join("a", null));
+    }
 }

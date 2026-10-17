@@ -75,6 +75,8 @@ public sealed class PhoneSaberJudgeTimingLog : MonoBehaviour
     void Record(CuttableNote note, string tier)
     {
         if (note == null || manager == null || manager.songPlayer == null || spawner == null) return;
+        if (tier != "Miss")
+            PhoneSaberJudgeTimingStats.AddHit((spawner.JudgeClock(manager.songPlayer.SongTime) - note.HitTime) * 1000.0);
         PhoneSaberEventLog.Record(station, "SYSTEM", "judge-timing",
             Detail(tier, note.HitTime, manager.songPlayer.SongTime, spawner.JudgeLatencySeconds, note.RequiredHand.ToString()));
     }

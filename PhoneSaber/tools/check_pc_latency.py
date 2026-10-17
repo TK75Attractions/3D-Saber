@@ -58,6 +58,13 @@ public static class DisplaySettings { public static bool ProjectorMode; }
 public static class SaberCutJudge { public static float DistPointToSegment(Vector2 p,Vector2 a,Vector2 b,out Vector2 q){q=a;return 0;} }
 public enum CameraSaberColor { Red, Blue }
 public static class ProjectorMode { public const float BladeWidthScale=1,BladeOutlineScale=1,BladeOutlineZOffset=0; public static Color BladeOutlineColor; }
+// 判定の記録・補正（PhoneSaberJudgeTimingLog / PhoneSaberJudgeLatency）が読むゲーム本体の型の代役。
+public enum JudgmentTier { Perfect, Great, Good, Bad }
+public enum SaberHand { Any, Left, Right }
+public class SongPlayer : MonoBehaviour { public double SongTime; }
+public class CuttableNote : MonoBehaviour { public double HitTime; public SaberHand RequiredHand; public event System.Action<CuttableNote, JudgmentTier, Vector3, Vector3> OnJudged; }
+public class NoteSpawner : MonoBehaviour { public double JudgeLatencySeconds; public double JudgeClock(double t) => t - JudgeLatencySeconds; public event System.Action<CuttableNote> OnNoteSpawned, OnNoteMissed; }
+public class GamePlayManager : MonoBehaviour { public NoteSpawner noteSpawner; public SongPlayer songPlayer; public float cameraJudgeLatencySeconds = .12f; }
 ''')
         refs = ['/r:' + str(p) for p in (editor / 'Resources/Scripting/Managed/UnityEngine').glob('*.dll')]
         refs += ['/r:' + str(template / 'Unity.InputSystem.dll'), '/r:' + str(mono / 'lib/mono/4.5/Facades/netstandard.dll')]
