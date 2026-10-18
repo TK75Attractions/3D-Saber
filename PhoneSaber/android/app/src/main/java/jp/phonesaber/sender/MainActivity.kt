@@ -419,8 +419,9 @@ class MainActivity : ComponentActivity() {
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         // 送信中は Wi-Fi の省電力（ビーコン待ちの送信まとめ）を止め、遅延とばらつきを減らす。
         // 低遅延モードは前面・画面点灯中だけ有効になる（Android 10+ / minSdk 29）。
-        if (!lowLatencyWifi.isHeld) lowLatencyWifi.acquire()
-        if (!highPerformanceWifi.isHeld) highPerformanceWifi.acquire()
+        // lockのRPC失敗でも送信を開始し、片方の失敗でももう片方は取得を試す。
+        try { if (!lowLatencyWifi.isHeld) lowLatencyWifi.acquire() } catch (_: RuntimeException) { }
+        try { if (!highPerformanceWifi.isHeld) highPerformanceWifi.acquire() } catch (_: RuntimeException) { }
         latencyLog.start(System.nanoTime() / 1e9)
         startCamera()
         updateRecoveryStatus()
@@ -497,8 +498,9 @@ class MainActivity : ComponentActivity() {
         fps60Switch.isEnabled = true
         lowLatencyCameraSwitch.isEnabled = true
         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        if (lowLatencyWifi.isHeld) lowLatencyWifi.release()
-        if (highPerformanceWifi.isHeld) highPerformanceWifi.release()
+        // 解放RPCの失敗で他方の解放・停止を中断しない。保持中なら次の停止で再試行する。
+        try { if (lowLatencyWifi.isHeld) lowLatencyWifi.release() } catch (_: RuntimeException) { }
+        try { if (highPerformanceWifi.isHeld) highPerformanceWifi.release() } catch (_: RuntimeException) { }
         detection.text = "停止中\n赤: 未検出 / 送信 0 fps\n青: 未検出 / 送信 0 fps"
         updateRecoveryStatus()
         updateHealth()
