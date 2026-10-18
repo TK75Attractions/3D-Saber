@@ -443,18 +443,21 @@ def main():
     kinds = ("hold", "conservative", "linear", "linear+age", "linear3+age", "quadratic+age")
     results = evaluate(frames, times, values, scale, offset, kinds, LEADS[1:], coefficients)
     hold = next(item for item in results if item["kind"] == "hold")
+    # 短い計測では静止区間がないため、未測定値は数値として整形しない。
+    def jitter(value):
+        return "-" if value is None else f"{value:.2f}%"
     print(f"\n表示のずれ(移動幅に対する %、小さいほど良い)。先読みなし: 動いている間 RMS {hold['rms_moving']:.1f}% / "
-          f"95% 点 {hold['p95_moving']:.1f}% / 静止時の揺れ {hold['jitter_still']:.2f}%")
+          f"95% 点 {hold['p95_moving']:.1f}% / 静止時の揺れ {jitter(hold['jitter_still'])}")
     print(f"{'方式':16}" + "".join(f"{lead:>7}" for lead in LEADS[1:]) + "  ms 先読み")
     for kind in kinds[1:]:
         row = {item["lead_ms"]: item for item in results if item["kind"] == kind}
         print(f"{kind:16}" + "".join(f"{row[lead]['rms_moving']:7.1f}" if lead in row else "      -" for lead in LEADS[1:])
               + "  動 RMS")
-        print(f"{'':16}" + "".join(f"{row[lead]['jitter_still']:7.2f}" if lead in row else "      -" for lead in LEADS[1:])
+        print(f"{'':16}" + "".join(f"{row[lead]['jitter_still']:7.2f}" if lead in row and row[lead]['jitter_still'] is not None else "      -" for lead in LEADS[1:])
               + "  静止の揺れ")
     best = min((item for item in results if item["kind"] != "hold"), key=lambda item: item["rms_moving"])
     print(f"\n最小: {best['kind']} {best['lead_ms']} ms → 動 RMS {best['rms_moving']:.1f}%(先読みなし {hold['rms_moving']:.1f}%)、"
-          f"静止の揺れ {best['jitter_still']:.2f}%(先読みなし {hold['jitter_still']:.2f}%)")
+          f"静止の揺れ {jitter(best['jitter_still'])}(先読みなし {jitter(hold['jitter_still'])})")
     if args.json:
         Path(args.json).write_text(json.dumps({
             "file": path.name, "lag_ms": lag_ms, "correlation": correlation, "by_frequency": by_frequency,

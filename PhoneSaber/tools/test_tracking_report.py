@@ -1,5 +1,6 @@
 import contextlib
 import io
+import json
 import math
 from pathlib import Path
 import tempfile
@@ -123,6 +124,23 @@ class TrackingReportTests(unittest.TestCase):
             predicted = next(item for item in results if item["kind"] == "linear3+age")
             # 2 Hz 以上の往復も含む全体の値なので差は小さいが、雑音なしなら先読みのほうが必ず小さい。
             self.assertLess(predicted["rms_moving"], hold["rms_moving"] * 0.9)
+
+    def test_ten_second_report_without_still_segment_succeeds(self):
+        # probe の最短10秒は、最初の静止区間（16秒〜）より前に終わる。
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "tracking-short.csv"
+            output_path = Path(directory) / "report.json"
+            synthetic(path, lag=0.100, seconds=10.0)
+            output = io.StringIO()
+            with contextlib.redirect_stdout(output), mock.patch("sys.argv", [
+                    "tracking_report.py", str(path), "--json", str(output_path)]):
+                self.assertEqual(tracking_report.main(), 0)
+            self.assertIn("静止時の揺れ -", output.getvalue())
+            self.assertIn("静止の揺れ -", output.getvalue())
+            report = json.loads(output_path.read_text())
+            self.assertEqual(report["lag_ms"], 100)
+            self.assertIsNone(report["by_frequency"]["0"]["jitter_percent"])
+            self.assertTrue(all(item["jitter_still"] is None for item in report["results"]))
 
     def test_perspective_fit_removes_distortion_without_fitting_away_lag(self):
         frames = np.array([(t, target(t)) for t in np.arange(0, 64, 1 / 120)])
