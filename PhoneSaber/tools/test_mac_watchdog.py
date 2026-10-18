@@ -131,6 +131,54 @@ fi
 
 
 class MacLauncherAppTests(unittest.TestCase):
+    def test_partial_generated_file_preserves_the_installed_launcher(self):
+        for marker in ("<plist", "#!/bin/bash"):
+            with self.subTest(marker=marker), tempfile.TemporaryDirectory(prefix="縁日 launcher ") as directory:
+                root = Path(directory).resolve()
+                here = root / "PhoneSaber/mac/app"
+                here.mkdir(parents=True)
+                installer = (SOURCE / "app/install_app.sh").read_text().replace(
+                    "/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister",
+                    "true")
+                (here / "install_app.sh").write_text(installer)
+                (here / "icon.icns").write_bytes((SOURCE / "app/icon.icns").read_bytes())
+                destination = root / "Applications"
+                app = destination / "Beat Trace Slash.app"
+                app.mkdir(parents=True)
+                original = app / "old-launcher"
+                original.write_text("working launcher\n")
+                original_inode = original.stat().st_ino
+                tools = root / "bin"
+                tools.mkdir()
+                for name, script in {
+                    "codesign": "#!/bin/bash\nexit 0\n",
+                    # 容量不足で生成ファイルの一部だけを書き、cat が失敗する状況を再現する。
+                    "cat": '''#!/bin/bash
+contents="$(/bin/cat)"
+if [[ "$contents" == *"$LAUNCHER_TEST_FAIL"* ]]; then
+    printf 'partial file\\n'
+    printf 'cat: stdout: No space left on device\\n' >&2
+    exit 1
+fi
+printf '%s\\n' "$contents"
+''',
+                }.items():
+                    executable = tools / name
+                    executable.write_text(script)
+                    executable.chmod(0o755)
+                env = dict(os.environ, TMPDIR=directory,
+                           PATH=str(tools) + os.pathsep + os.environ["PATH"],
+                           LAUNCHER_TEST_FAIL=marker)
+                result = subprocess.run(
+                    ["/bin/bash", str(here / "install_app.sh"), "A", str(destination)],
+                    env=env, capture_output=True, text=True, timeout=10)
+                self.assertIn("No space left on device", result.stderr)
+                self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assertTrue(original.is_file(), "partial generation replaced the working launcher")
+                self.assertEqual(original.read_text(), "working launcher\n")
+                self.assertEqual(original.stat().st_ino, original_inode)
+                self.assertEqual(list(destination.glob(".phonesaber-launcher.*")), [])
+
     def test_failed_replacement_preserves_the_installed_launcher(self):
         with tempfile.TemporaryDirectory(prefix="縁日 launcher ") as directory:
             root = Path(directory).resolve()

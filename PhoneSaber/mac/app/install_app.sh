@@ -30,7 +30,7 @@ cleanup() {
 trap cleanup EXIT
 mkdir -p "$staged/Contents/MacOS" "$staged/Contents/Resources" || exit 1
 cp "$HERE/icon.icns" "$staged/Contents/Resources/icon.icns" || exit 1
-cat > "$staged/Contents/Info.plist" <<PLIST
+cat > "$staged/Contents/Info.plist" <<PLIST || exit 1
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
@@ -52,7 +52,7 @@ REPO_LITERAL="$(
     LC_ALL=C
     printf '%q' "$REPO"
 )"
-cat > "$staged/Contents/MacOS/launcher" <<SCRIPT
+cat > "$staged/Contents/MacOS/launcher" <<SCRIPT || exit 1
 #!/bin/bash
 REPO=$REPO_LITERAL
 LOG="\$HOME/Library/Logs/PhoneSaber/launcher.log"

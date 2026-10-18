@@ -1,20 +1,14 @@
 {
   "passed": true,
-  "protectedCharts": 37,
+  "protectedCharts": 28,
   "allowedSongs": [
+    "Aobasou",
+    "BenkyouRemaster",
+    "ManicSonic",
     "escapade",
     "logic"
   ],
   "protectedHashes": {
-    "songs/s-620eb5b792/chart_easy.json": "d549144a939319f057695e79bae16c08e321874aa55eb24f0e5a377df8028899",
-    "songs/s-620eb5b792/chart_normal.json": "13d3c5bd95c9c727c047f35f6b27c3bb99367afe4ef8fc4a86193075fd6ae71a",
-    "songs/s-620eb5b792/chart_hard.json": "9f7e17838121c65336a8635b3a33b0917cc5b5bfff60e3455e77821b61fc6f24",
-    "songs/s-8cf4cc290a/chart_easy.json": "83deccc711de5cf689b13a0036dbe039efb12fb4c29ae75bb69c8ad0afb2e4ab",
-    "songs/s-8cf4cc290a/chart_normal.json": "77613718f5e7d3e9a27dc4510ad1be284bbf14deccc436e270bf1ccf8b607dc0",
-    "songs/s-8cf4cc290a/chart_hard.json": "61ac2a75c9722eb3e2d5b0c3b4a6f90061cc93d61b80dd727b78d55d01fd4ac8",
-    "songs/s-2a3f1f3134/chart_easy.json": "74fb7afc160ace13e04b4a67b48e80518318a39a49489096d24a639a879e7c64",
-    "songs/s-2a3f1f3134/chart_normal.json": "0a184746f8a81e57c1609f495937d40aba4d40e19b37d8e25f0e41592f1e9556",
-    "songs/s-2a3f1f3134/chart_hard.json": "a254c508886f6a0282a6321413b9f77c698cb55432e3b9b4068197ac12b07821",
     "songs/s-d9dd086588/chart_easy.json": "76d37090c1f473ff2bba494ec52542892aa193e91a0b1cb989021ac6ab810731",
     "songs/s-d9dd086588/chart_normal.json": "bb3f0c4ab05dee81cff710ac9f35856f01a0fb09ea3b2d75fc13e217f702c40c",
     "songs/s-d9dd086588/chart_hard.json": "34650e3f959fde6f8463ae457fa7e743ffea8b31baf072e699849b469bd5f86e",
