@@ -70,4 +70,85 @@ public class SongSelectAimTrackerTests
         Assert.True(t.Tick(start, area, point, .1f, true, 2)); Assert.True(t.NeedsRelease);
         for (int i = 0; i < 30; i++) Assert.False(t.Tick(start, area, point, .1f, true, 2));
     }
+    // 認識の揺れ・数フレームの検出切れ: 的の外(どの的でもない)へ短く出ただけなら、同じ的のためを保つ。
+    static void Away(SongSelectAimTracker t, int frames, float dt = .1f)
+    { for (int i = 0; i < frames; i++) Assert.False(t.Tick(null, default, Vector2.zero, dt, false)); }
+    [Test] public void BriefExitUnderGraceKeepsChargeWithoutCountingTimeOutside()
+    {
+        var t = new SongSelectAimTracker(); var key = new object();
+        Hold(t, key, area, point, 5); Away(t, 2);
+        Assert.That(t.Progress01, Is.EqualTo(.5f).Within(.001f), "外にいた .2 秒は数えない");
+        Assert.True(t.IsCharging(key));
+        Hold(t, key, area, point, 4); Assert.True(t.Tick(key, area, point, .1f, true));
+    }
+    [Test] public void RepeatedBriefExitsEachGetTheirOwnGrace()
+    {
+        var t = new SongSelectAimTracker(); var key = new object();
+        for (int i = 0; i < 4; i++) { Hold(t, key, area, point, 2); Away(t, 2); }
+        Assert.That(t.Progress01, Is.EqualTo(.8f).Within(.001f));
+        Hold(t, key, area, point, 1); Assert.True(t.Tick(key, area, point, .1f, true));
+    }
+    [Test] public void ExitOfGraceSecondsOrLongerCancelsCharge()
+    {
+        Assert.AreEqual(.25f, SongSelectAimTracker.LeaveGraceSeconds);
+        var t = new SongSelectAimTracker(); var key = new object();
+        Hold(t, key, area, point, 5); Away(t, 4, .05f);
+        Assert.That(t.Progress01, Is.EqualTo(.5f).Within(.001f), ".2 秒はまだ猶予内");
+        Away(t, 1, .05f); Assert.Zero(t.Progress01, ".25 秒で取り消す"); Assert.False(t.IsCharging(key));
+        Hold(t, key, area, point, 9); Assert.True(t.Tick(key, area, point, .1f, true));
+    }
+    [Test] public void DifferentTargetAfterBriefExitRestartsCharge()
+    {
+        var t = new SongSelectAimTracker(); object a = new object(), b = new object();
+        Hold(t, a, area, point, 8); Away(t, 1); Hold(t, b, area, point, 1);
+        Assert.That(t.Progress01, Is.EqualTo(.1f).Within(.001f), "別の的は必ずため直す");
+        Away(t, 1); Hold(t, a, area, point, 1);
+        Assert.That(t.Progress01, Is.EqualTo(.1f).Within(.001f), "元の的へ戻ってもため直す");
+        Hold(t, a, area, point, 8); Assert.True(t.Tick(a, area, point, .1f, true));
+    }
+    [Test] public void GraceDoesNotAffectReleaseLock()
+    {
+        var t = new SongSelectAimTracker(); var key = new object();
+        Hold(t, key, area, point, 9); Assert.True(t.Tick(key, area, point, .1f, true)); Assert.True(t.NeedsRelease);
+        // 外へ .12 秒出ると解除。そのあと戻っても、残りの猶予で古いためを再開しない。
+        t.Tick(null, default, Vector2.zero, .1f, false); Assert.True(t.NeedsRelease);
+        t.Tick(null, default, Vector2.zero, .1f, false); Assert.False(t.NeedsRelease);
+        Assert.False(t.IsCharging(key)); Assert.Zero(t.Progress01);
+        Hold(t, key, area, point, 9); Assert.True(t.Tick(key, area, point, .1f, true));
+        // 猶予中に通常クリックで塞いだら、戻っても発射しない。
+        var u = new SongSelectAimTracker(); Hold(u, key, area, point, 5); Away(u, 1);
+        u.BlockUntilExit(area); Assert.False(u.IsCharging(key));
+        Hold(u, key, area, point, 30); Assert.True(u.NeedsRelease);
+    }
+    [Test] public void LongFrameDuringGraceStillCancels()
+    {
+        var t = new SongSelectAimTracker(); var key = new object();
+        Hold(t, key, area, point, 5); Away(t, 1);
+        Assert.False(t.Tick(null, default, Vector2.zero, .3f, false)); Assert.Zero(t.Progress01);
+        Hold(t, key, area, point, 5); Away(t, 1);
+        Assert.False(t.Tick(null, default, Vector2.zero, float.NaN, false)); Assert.Zero(t.Progress01);
+        Hold(t, key, area, point, 9); Assert.True(t.Tick(key, area, point, .1f, true));
+    }
+    [Test] public void DisabledSameTargetStillCancelsImmediately()
+    {
+        var t = new SongSelectAimTracker(); var key = new object();
+        Hold(t, key, area, point, 5); Assert.False(t.Tick(key, area, point, .1f, false));
+        Assert.Zero(t.Progress01); Assert.False(t.IsCharging(key));
+    }
+    [Test] public void RepeatTargetKeepsChargeThroughBriefExit()
+    {
+        var t = new SongSelectAimTracker(); var key = new object();
+        for (int i = 0; i < 5; i++) Assert.False(Repeat(t, key));
+        Away(t, 2);
+        for (int i = 0; i < 4; i++) Assert.False(Repeat(t, key));
+        Assert.True(Repeat(t, key)); Assert.False(t.NeedsRelease); Assert.Zero(t.Progress01);
+    }
+    [Test] public void SaberGapSettingsKeepSourceThroughShortDropouts()
+    {
+        // 0.5 秒未満の途切れではマウスへ切り替えない(入場扱いのリセットをしない)。
+        Assert.AreEqual(.5f, SongSelectAimPointer.SaberActiveSeconds);
+        Assert.AreEqual(.08f, SongSelectAimPointer.SaberSmoothingSeconds);
+        // 止まった座標でのためは、切り替えより先に猶予切れで取り消される。
+        Assert.Less(SongSelectAimPointer.SaberFreshSeconds + SongSelectAimTracker.LeaveGraceSeconds, SongSelectAimPointer.SaberActiveSeconds);
+    }
 }
