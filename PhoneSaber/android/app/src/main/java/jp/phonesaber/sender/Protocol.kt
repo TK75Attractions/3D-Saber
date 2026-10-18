@@ -44,19 +44,29 @@ object DiscoveryProtocol {
 /**
  * PC（Unity の F8）からの指示。探索応答（PHONESABER_UNITY）の直後に、別の datagram で 10 秒間届く。
  *   "PHONESABER_COMMAND 1 id=<番号> ignore=red|blue" / "PHONESABER_COMMAND 1 id=<番号> clear-ignore=1"
- * iPhone の LANLivenessProbe.parseCommand（7c5a1c1）と同じ規則: 版は 1 だけ、id 必須、ignore は red/blue だけ、
- * 知らない項目は無視、同じ項目は後のものが有効。同じ id は受け手が一度だけ実行する。
+ *   "PHONESABER_COMMAND 1 id=<番号> learn-area=<秒 1..60>" / "... clear-area=1"（プレイ範囲、2026-10-18）
+ *   "PHONESABER_COMMAND 1 id=<番号> exposure-bias=0|-1|-2"（露出補正 EV、2026-10-18）
+ * iPhone の LANLivenessProbe.parseCommand と同じ規則: 版は 1 だけ、id 必須、ignore は red/blue だけ、
+ * 知らない項目は無視、同じ項目は後のものが有効、範囲外の値はその項目が無いのと同じ。同じ id は受け手が一度だけ実行する。
+ * 1つの指示は1つの操作だけ: learn-area / clear-area / exposure-bias は他の操作と一緒なら指示ごと捨てる
+ * （ignore と clear-ignore の組は 7c5a1c1 からの受け付けを変えない）。
  */
-data class PcCommand(val id: Int, val ignore: String?, val clearIgnore: Boolean)
+data class PcCommand(val id: Int, val ignore: String?, val clearIgnore: Boolean,
+                     val learnAreaSeconds: Int? = null, val clearArea: Boolean = false,
+                     val exposureBias: Int? = null)
 
 object PcCommandProtocol {
     const val PREFIX = "PHONESABER_COMMAND 1 "
+    const val MAXIMUM_LEARN_SECONDS = 60
 
     fun parse(text: String): PcCommand? {
         if (!text.startsWith(PREFIX)) return null
         var id: Int? = null
         var ignore: String? = null
         var clear = false
+        var learn: Int? = null
+        var clearArea = false
+        var exposure: Int? = null
         // Swift の split(separator:) と同じく空の項目は数えない。
         for (field in text.substring(PREFIX.length).split(' ').filter { it.isNotEmpty() }) {
             val parts = field.split('=', limit = 2).filter { it.isNotEmpty() }
@@ -65,10 +75,15 @@ object PcCommandProtocol {
                 "id" -> id = parts[1].toIntOrNull()
                 "ignore" -> ignore = parts[1].takeIf { it == "red" || it == "blue" }
                 "clear-ignore" -> clear = parts[1] == "1"
+                "learn-area" -> learn = parts[1].toIntOrNull()?.takeIf { it in 1..MAXIMUM_LEARN_SECONDS }
+                "clear-area" -> clearArea = parts[1] == "1"
+                "exposure-bias" -> exposure = parts[1].toIntOrNull()?.takeIf { ExposureBias.valid(it) }
             }
         }
-        if (id == null || (ignore == null && !clear)) return null
-        return PcCommand(id, ignore, clear)
+        val legacy = (if (ignore != null) 1 else 0) + (if (clear) 1 else 0)
+        val added = (if (learn != null) 1 else 0) + (if (clearArea) 1 else 0) + (if (exposure != null) 1 else 0)
+        if (id == null || legacy + added == 0 || (added > 0 && legacy + added != 1)) return null
+        return PcCommand(id, ignore, clear, learn, clearArea, exposure)
     }
 }
 

@@ -25,7 +25,16 @@ public sealed class PhoneSaberDiscoveryResponder : IDisposable
 
     public static string BuildCommand(int id, string fields) => CommandPrefix + " id=" + id + " " + fields;
 
-    // fields: "ignore=red" / "ignore=blue" / "clear-ignore=1"
+    // プレイ範囲（2026-10-18、赤い服の人など動く物の対策）: スマホが LearnAreaSeconds 秒間の winner の範囲を覚え、
+    // 以後その外（両端の中点）の候補を選ばない。指示は CommandSeconds 送り直すが、スマホは同じ id を一度だけ実行する。
+    public const int LearnAreaSeconds = 10;
+    public static readonly string LearnAreaCommand = "learn-area=" + LearnAreaSeconds;
+    public const string ClearAreaCommand = "clear-area=1";
+    // 露出補正（EV、0 = OFF・既定、-1、-2）。光らない服などを暗くする試験スイッチ。スマホが保存する。
+    public static readonly int[] ExposureBiasChoices = { 0, -1, -2 };
+    public static string ExposureBiasCommand(int ev) => "exposure-bias=" + ev.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+    // fields: "ignore=red" / "ignore=blue" / "clear-ignore=1" / LearnAreaCommand / ClearAreaCommand / ExposureBiasCommand(ev)
     public static int QueueCommand(string fields)
     {
         int id = System.Threading.Interlocked.Increment(ref commandId) + (int)(DateTime.UtcNow.Ticks % 100000) * 1000;

@@ -106,6 +106,23 @@ final class FrameProcessor: @unchecked Sendable {
     func setIgnoreZones(_ zones: [SaberColor: [SaberIgnoreZone]]) {
         pendingLock.lock(); ignoreZones = zones; pendingLock.unlock()
     }
+    /// プレイ範囲（SaberPlayArea）と、その学習。main から設定し、検出スレッドで読む（pendingLock で保護）。
+    /// 学習中は範囲で絞らない（前の範囲より広く覚えられるように）。無視範囲は学習中も効く。
+    private var playArea: SaberPlayArea?
+    private var playAreaLearner: SaberPlayAreaLearner?
+    func setPlayArea(_ area: SaberPlayArea?) {
+        pendingLock.lock(); playArea = area; pendingLock.unlock()
+    }
+    func startPlayAreaLearning() {
+        pendingLock.lock(); playAreaLearner = SaberPlayAreaLearner(); pendingLock.unlock()
+    }
+    /// 学習を終えて結果を返す。学習していなければ nil。
+    func finishPlayAreaLearning() -> SaberPlayAreaLearner? {
+        pendingLock.lock(); defer { pendingLock.unlock() }
+        let learner = playAreaLearner
+        playAreaLearner = nil
+        return learner
+    }
     private struct PendingFrame {
         let sampleBuffer: CMSampleBuffer
         let sequence: UInt64
@@ -523,6 +540,8 @@ final class FrameProcessor: @unchecked Sendable {
         let bytes = UnsafePointer(base.assumingMemoryBound(to: UInt8.self))
         pendingLock.lock()
         let zones = ignoreZones
+        let learningArea = playAreaLearner != nil
+        let area = learningArea ? nil : playArea
         pendingLock.unlock()
 #if DEBUG
         let accessMs = (ProcessInfo.processInfo.systemUptime - accessStart) * 1000
@@ -535,7 +554,7 @@ final class FrameProcessor: @unchecked Sendable {
                                      bytesPerRow: bytesPerRow, redThreshold: redThreshold,
                                      blueThreshold: blueThreshold, collectProfile: collectProfile,
                                      collectPipelineDiagnostics: debugVideoRecorder != nil,
-                                     ignoreZones: zones)
+                                     ignoreZones: zones, playArea: area)
         let sabers = analysis.selected
 #else
         let analysis: SaberFrameAnalysis?
@@ -545,7 +564,7 @@ final class FrameProcessor: @unchecked Sendable {
                 baseAddress: bytes, width: width, height: height,
                 bytesPerRow: bytesPerRow, redThreshold: redThreshold,
                 blueThreshold: blueThreshold, collectProfile: false,
-                collectPipelineDiagnostics: true, ignoreZones: zones
+                collectPipelineDiagnostics: true, ignoreZones: zones, playArea: area
             )
             analysis = recordedAnalysis
             sabers = recordedAnalysis.selected
@@ -554,13 +573,18 @@ final class FrameProcessor: @unchecked Sendable {
             sabers = detectSabers(baseAddress: bytes, width: width, height: height,
                                   bytesPerRow: bytesPerRow,
                                   redThreshold: redThreshold, blueThreshold: blueThreshold,
-                                  ignoreZones: zones)
+                                  ignoreZones: zones, playArea: area)
         }
 #endif
         let detected: [(SaberColor, (PixelPoint, PixelPoint)?)] = [
             (.red, sabers[.red]),
             (.blue, sabers[.blue])
         ]
+        if learningArea {
+            pendingLock.lock()
+            for (_, endpoints) in detected { if let endpoints { playAreaLearner?.add(endpoints, width: width, height: height) } }
+            pendingLock.unlock()
+        }
         let detectionEnd = clock()
         // Detection has finished reading BGRA. Keep the lock only when a
         // requested recording or raw save still needs the pixel buffer.

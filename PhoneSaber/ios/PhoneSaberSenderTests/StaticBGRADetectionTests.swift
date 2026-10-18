@@ -820,6 +820,69 @@ enum StaticBGRADetectionTests {
             }
             print("Ignore zone: the ignored candidate is skipped and the other bar is selected")
         }
+        // プレイ範囲（2026-10-18、赤い服の人など動く物の対策）: 両端の中点が範囲外の候補は選ばず、同じコマの
+        // 範囲内の候補を選ぶ。範囲が無ければ従来と同じ。C++ core_test の play_area_tests と同じ場面・同じ数値。
+        do {
+            var scene = StaticImage(width: 200, height: 120)
+            scene.bar(from: PixelPoint(x: 150, y: 15), to: PixelPoint(x: 150, y: 105), color: .red, thickness: 4)
+            scene.bar(from: PixelPoint(x: 30, y: 35), to: PixelPoint(x: 45, y: 105), color: .red, thickness: 4)
+            let threshold = ColorThreshold(brightness: 140, dominance: 20)
+            func analyze(_ area: SaberPlayArea?) -> SaberFrameAnalysis {
+                analyzeSabers(in: scene.bytes, width: scene.width, height: scene.height,
+                              bytesPerRow: scene.bytesPerRow, redThreshold: threshold,
+                              blueThreshold: threshold, playArea: area)
+            }
+            let legacy = analyzeSabers(in: scene.bytes, width: scene.width, height: scene.height,
+                                       bytesPerRow: scene.bytesPerRow, redThreshold: threshold, blueThreshold: threshold)
+            let plain = analyze(nil)
+            guard let first = plain.selected[.red], let legacyFirst = legacy.selected[.red],
+                  endpointDistance(first, legacyFirst) == 0 else { fatalError("play area: nil area changed the selection") }
+            func sameCandidates(_ a: SaberFrameAnalysis, _ b: SaberFrameAnalysis) -> Bool {
+                let x = a.candidates[.red] ?? [], y = b.candidates[.red] ?? []
+                return x.count == y.count && zip(x, y).allSatisfy {
+                    $0.score == $1.score && $0.isEmitterEligible == $1.isEmitterEligible && endpointDistance($0.endpoints, $1.endpoints) == 0
+                }
+            }
+            let midX = (Double(first.0.x) + Double(first.1.x)) / 2 / Double(scene.width)
+            let other = midX > 0.5 ? SaberPlayArea(minX: 0, minY: 0, maxX: 0.5, maxY: 1)
+                                   : SaberPlayArea(minX: 0.5, minY: 0, maxX: 1, maxY: 1)
+            let inside = analyze(other)
+            guard sameCandidates(plain, inside), sameCandidates(plain, legacy),
+                  let second = inside.selected[.red], endpointDistance(second, first) > 40,
+                  other.containsMidpoint(second, width: scene.width, height: scene.height) else {
+                fatalError("play area: the bar inside the area was not selected")
+            }
+            guard let whole = analyze(SaberPlayArea(minX: 0, minY: 0, maxX: 1, maxY: 1)).selected[.red],
+                  endpointDistance(whole, first) == 0 else { fatalError("play area: the whole frame changed the selection") }
+            guard analyze(SaberPlayArea(minX: 0.9, minY: 0.9, maxX: 1, maxY: 1)).selected[.red] == nil else {
+                fatalError("play area: a candidate outside the area was selected")
+            }
+            // 中点の規則: 片端がはみ出しても中点が範囲内なら使う。境界上は範囲内。
+            let left = SaberPlayArea(minX: 0, minY: 0, maxX: 0.5, maxY: 1)
+            guard left.containsMidpoint((PixelPoint(x: 10, y: 10), PixelPoint(x: 150, y: 10)), width: 200, height: 120),
+                  !left.containsMidpoint((PixelPoint(x: 90, y: 10), PixelPoint(x: 150, y: 10)), width: 200, height: 120),
+                  left.containsMidpoint((PixelPoint(x: 100, y: 10), PixelPoint(x: 100, y: 100)), width: 200, height: 120) else {
+                fatalError("play area: midpoint rule")
+            }
+            // 学習: 30 未満は使わない。両端の min/max + 0.08、最小 0.3、0..1 に収める。
+            var learner = SaberPlayAreaLearner()
+            for _ in 0..<29 { learner.add((PixelPoint(x: 40, y: 24), PixelPoint(x: 120, y: 96)), width: 200, height: 120) }
+            guard learner.area() == nil else { fatalError("play area: learned from too few samples") }
+            learner.add((PixelPoint(x: 40, y: 24), PixelPoint(x: 120, y: 96)), width: 200, height: 120)
+            guard let learned = learner.area(), learner.samples == 30,
+                  abs(learned.minX - 0.12) < 1e-12, abs(learned.maxX - 0.68) < 1e-12,
+                  abs(learned.minY - 0.12) < 1e-12, abs(learned.maxY - 0.88) < 1e-12 else {
+                fatalError("play area: learned area \(String(describing: learner.area()))")
+            }
+            let small = SaberPlayArea.around(minX: 0.5, minY: 0.5, maxX: 0.52, maxY: 0.5)
+            let edge = SaberPlayArea.around(minX: 0.95, minY: 0, maxX: 1, maxY: 0.02)
+            guard abs((small.maxX - small.minX) - 0.3) < 1e-12, abs(small.minX - 0.36) < 1e-12,
+                  edge.maxX == 1, abs(edge.minX - 0.7) < 1e-12, edge.minY == 0, abs(edge.maxY - 0.3) < 1e-12,
+                  SaberPlayArea.around(minX: 0, minY: 0, maxX: 1, maxY: 1) == SaberPlayArea(minX: 0, minY: 0, maxX: 1, maxY: 1) else {
+                fatalError("play area: margin / minimum size / clamp")
+            }
+            print("Play area: the candidate whose midpoint is outside is skipped and the inside bar is selected")
+        }
         print("Static BGRA detection tests passed")
     }
 }

@@ -591,17 +591,28 @@ final class LANLivenessProbe {
 
     /// PC（Unity の F8）からの指示。生存確認の応答と一緒に届く別の datagram（応答の形式は変えない）。
     ///   "PHONESABER_COMMAND 1 id=<番号> ignore=red|blue" / "PHONESABER_COMMAND 1 id=<番号> clear-ignore=1"
+    ///   "PHONESABER_COMMAND 1 id=<番号> learn-area=<秒 1..60>" / "... clear-area=1"（プレイ範囲、2026-10-18）
+    ///   "PHONESABER_COMMAND 1 id=<番号> exposure-bias=0|-1|-2"（露出補正 EV、2026-10-18）
     /// 2026-10-18: 会場のコーンを無視する範囲を、iPhone に触らず Mac から登録するため。
+    /// 規則（Android の PcCommandProtocol と同じ）: 版は 1 だけ、id 必須、知らない項目は無視、同じ項目は後のものが有効、
+    /// 範囲外の値はその項目が無いのと同じ。1つの指示は1つの操作だけ: learn-area / clear-area / exposure-bias は
+    /// 他の操作と一緒なら指示ごと捨てる（ignore と clear-ignore の組は 7c5a1c1 からの受け付けを変えない）。
     struct PCCommand: Equatable {
         let id: Int
         /// "red" / "blue"（検出の型に依存させない）。
         let ignore: String?
         let clearIgnore: Bool
+        var learnAreaSeconds: Int? = nil
+        var clearArea = false
+        var exposureBias: Int? = nil
     }
     static let commandPrefix = "PHONESABER_COMMAND 1 "
+    static let maximumLearnAreaSeconds = 60
+    static let exposureBiasChoices = [0, -1, -2]
     static func parseCommand(_ text: String) -> PCCommand? {
         guard text.hasPrefix(commandPrefix) else { return nil }
         var id: Int?, ignore: String?, clear = false
+        var learn: Int?, clearArea = false, exposure: Int?
         for field in text.dropFirst(commandPrefix.count).split(separator: " ") {
             let parts = field.split(separator: "=", maxSplits: 1).map(String.init)
             guard parts.count == 2 else { continue }
@@ -609,11 +620,17 @@ final class LANLivenessProbe {
             case "id": id = Int(parts[1])
             case "ignore": ignore = parts[1] == "red" || parts[1] == "blue" ? parts[1] : nil
             case "clear-ignore": clear = parts[1] == "1"
+            case "learn-area": learn = Int(parts[1]).flatMap { (1...maximumLearnAreaSeconds).contains($0) ? $0 : nil }
+            case "clear-area": clearArea = parts[1] == "1"
+            case "exposure-bias": exposure = Int(parts[1]).flatMap { exposureBiasChoices.contains($0) ? $0 : nil }
             default: break
             }
         }
-        guard let id, ignore != nil || clear else { return nil }
-        return PCCommand(id: id, ignore: ignore, clearIgnore: clear)
+        let legacy = (ignore != nil ? 1 : 0) + (clear ? 1 : 0)
+        let added = (learn != nil ? 1 : 0) + (clearArea ? 1 : 0) + (exposure != nil ? 1 : 0)
+        guard let id, legacy + added > 0, added == 0 || legacy + added == 1 else { return nil }
+        return PCCommand(id: id, ignore: ignore, clearIgnore: clear,
+                         learnAreaSeconds: learn, clearArea: clearArea, exposureBias: exposure)
     }
     /// 受信キューから呼ぶ。受け手は main で同じ id を一度だけ実行する。
     var onCommand: ((PCCommand) -> Void)?

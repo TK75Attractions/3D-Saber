@@ -526,11 +526,73 @@ func saberIgnored(_ endpoints: (PixelPoint, PixelPoint), width: Int, height: Int
     zones.contains { $0.contains(endpoints.0, width: width, height: height) && $0.contains(endpoints.1, width: width, height: height) }
 }
 
+/// プレイ範囲（剣を振る場所。色に依らず1つ）。座標は SaberIgnoreZone と同じフレームの 0..1。
+/// 2026-10-18: 赤い服の人など動く赤・青の物は無視範囲では外せない。範囲を設定すると、両端の中点（midpoint）が
+/// 範囲の外にある候補は選ばず、同じコマの次の eligible 候補を選ぶ（無視範囲と同じ場所。候補の一覧・順位・
+/// score・eligible は変えない）。中点で判定するのは、剣の先が範囲から少しはみ出す振りを捨てないため。
+/// 境界上は範囲内。範囲が無ければ選び方は従来と同じ。Android の phonesaber::PlayArea と同じ意味・同じ数値。
+struct SaberPlayArea: Equatable, Codable {
+    var minX: Double, minY: Double, maxX: Double, maxY: Double
+    /// 覚えた範囲 = 選ばれた両端の min/max + 各辺 margin、各辺は最小 minimumSize、フレームの 0..1 に収める。
+    static let margin = 0.08, minimumSize = 0.3
+    /// これより少ない winner しか見えなかった学習は使わない（前の範囲を残す）。
+    static let minimumSamples = 30
+
+    init(minX: Double, minY: Double, maxX: Double, maxY: Double) {
+        self.minX = minX; self.minY = minY; self.maxX = maxX; self.maxY = maxY
+    }
+
+    /// 0..1 の箱（両端の min/max）に margin・minimumSize・0..1 への収めを適用した範囲。
+    static func around(minX: Double, minY: Double, maxX: Double, maxY: Double) -> SaberPlayArea {
+        func fit(_ lowValue: Double, _ highValue: Double) -> (Double, Double) {
+            var low = lowValue - margin, high = highValue + margin
+            if high - low < minimumSize { let c = (low + high) / 2; low = c - minimumSize / 2; high = c + minimumSize / 2 }
+            if low < 0 { high -= low; low = 0 }
+            if high > 1 { low -= high - 1; high = 1 }
+            return (max(low, 0), min(high, 1))
+        }
+        let x = fit(minX, maxX), y = fit(minY, maxY)
+        return SaberPlayArea(minX: x.0, minY: y.0, maxX: x.1, maxY: y.1)
+    }
+
+    var isValid: Bool {
+        [minX, minY, maxX, maxY].allSatisfy(\.isFinite) && minX < maxX && minY < maxY
+    }
+
+    func containsMidpoint(_ endpoints: (PixelPoint, PixelPoint), width: Int, height: Int) -> Bool {
+        let x = (Double(endpoints.0.x) + Double(endpoints.1.x)) / 2 / Double(max(width, 1))
+        let y = (Double(endpoints.0.y) + Double(endpoints.1.y)) / 2 / Double(max(height, 1))
+        return x >= minX && x <= maxX && y >= minY && y <= maxY
+    }
+}
+
+/// プレイ範囲の学習: 期間中に選ばれた winner（両色）の両端の min/max を数える（フレームの 0..1）。
+struct SaberPlayAreaLearner: Equatable {
+    private(set) var samples = 0
+    private(set) var minX = 1.0, minY = 1.0, maxX = 0.0, maxY = 0.0
+
+    mutating func add(_ endpoints: (PixelPoint, PixelPoint), width: Int, height: Int) {
+        let w = Double(max(width, 1)), h = Double(max(height, 1))
+        for point in [endpoints.0, endpoints.1] {
+            let x = Double(point.x) / w, y = Double(point.y) / h
+            minX = min(minX, x); maxX = max(maxX, x); minY = min(minY, y); maxY = max(maxY, y)
+        }
+        samples += 1
+    }
+
+    /// samples が minimumSamples 未満なら nil。
+    func area(minimumSamples: Int = SaberPlayArea.minimumSamples) -> SaberPlayArea? {
+        guard samples >= minimumSamples, samples > 0 else { return nil }
+        return SaberPlayArea.around(minX: minX, minY: minY, maxX: maxX, maxY: maxY)
+    }
+}
+
 func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, bytesPerRow: Int,
                    redThreshold: ColorThreshold, blueThreshold: ColorThreshold,
                    sampleStep: Int = 2, collectProfile: Bool = false,
                    collectPipelineDiagnostics: Bool = false,
-                   ignoreZones: [SaberColor: [SaberIgnoreZone]] = [:]) -> SaberFrameAnalysis {
+                   ignoreZones: [SaberColor: [SaberIgnoreZone]] = [:],
+                   playArea: SaberPlayArea? = nil) -> SaberFrameAnalysis {
     let totalStart = collectProfile ? ProcessInfo.processInfo.systemUptime : 0
     var profile = SaberDetectionProfile()
     let candidateStageProfile = collectProfile ? SaberCandidateStageProfile() : nil
@@ -1297,8 +1359,10 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
             )
         }
         let zones = ignoreZones[color] ?? []
+        // 無視範囲に両端が入る候補と、中点がプレイ範囲の外の候補は飛ばし、次の eligible 候補を選ぶ。
         if let winner = scaled.first(where: {
             $0.isEmitterEligible && (zones.isEmpty || !saberIgnored($0.endpoints, width: width, height: height, zones: zones))
+                && (playArea?.containsMidpoint($0.endpoints, width: width, height: height) ?? true)
         }) {
             selected[color] = winner.endpoints
         }
@@ -1330,10 +1394,11 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
 func detectSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, bytesPerRow: Int,
                   redThreshold: ColorThreshold, blueThreshold: ColorThreshold,
                   sampleStep: Int = 2,
-                  ignoreZones: [SaberColor: [SaberIgnoreZone]] = [:]) -> [SaberColor: (PixelPoint, PixelPoint)] {
+                  ignoreZones: [SaberColor: [SaberIgnoreZone]] = [:],
+                  playArea: SaberPlayArea? = nil) -> [SaberColor: (PixelPoint, PixelPoint)] {
     analyzeSabers(baseAddress: baseAddress, width: width, height: height, bytesPerRow: bytesPerRow,
                   redThreshold: redThreshold, blueThreshold: blueThreshold,
-                  sampleStep: sampleStep, ignoreZones: ignoreZones).selected
+                  sampleStep: sampleStep, ignoreZones: ignoreZones, playArea: playArea).selected
 }
 
 /// Array wrapper retained for pure Swift/static tests. Production passes the
@@ -1356,7 +1421,8 @@ func analyzeSabers(in bgra: [UInt8], width: Int, height: Int, bytesPerRow: Int,
                    redThreshold: ColorThreshold, blueThreshold: ColorThreshold,
                    sampleStep: Int = 2, collectProfile: Bool = false,
                    collectPipelineDiagnostics: Bool = false,
-                   ignoreZones: [SaberColor: [SaberIgnoreZone]] = [:]) -> SaberFrameAnalysis {
+                   ignoreZones: [SaberColor: [SaberIgnoreZone]] = [:],
+                   playArea: SaberPlayArea? = nil) -> SaberFrameAnalysis {
     guard width > 0, height > 0, bytesPerRow >= width * 4,
           bgra.count >= bytesPerRow * height else {
         return SaberFrameAnalysis(candidates: [:], selected: [:])
@@ -1369,6 +1435,7 @@ func analyzeSabers(in bgra: [UInt8], width: Int, height: Int, bytesPerRow: Int,
                              bytesPerRow: bytesPerRow, redThreshold: redThreshold,
                              blueThreshold: blueThreshold, sampleStep: sampleStep,
                              collectProfile: collectProfile,
-                             collectPipelineDiagnostics: collectPipelineDiagnostics, ignoreZones: ignoreZones)
+                             collectPipelineDiagnostics: collectPipelineDiagnostics, ignoreZones: ignoreZones,
+                             playArea: playArea)
     }
 }

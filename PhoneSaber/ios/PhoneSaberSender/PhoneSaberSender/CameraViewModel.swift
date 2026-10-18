@@ -1566,6 +1566,150 @@ final class CameraViewModel: NSObject, ObservableObject {
             let done = ignoreCurrentDetection(name == "blue" ? .blue : .red)
             if !done { ConnectivityLog.shared.record("IGNORE_ZONE", "pc command id=\(command.id): no current detection") }
         }
+        if let seconds = command.learnAreaSeconds { learnPlayArea(seconds: seconds, commandID: command.id) }
+        if command.clearArea { clearPlayArea(commandID: command.id) }
+        if let bias = command.exposureBias { setExposureBias(bias, commandID: command.id) }
+    }
+
+    // MARK: プレイ範囲（剣を振る場所。SaberPlayArea）
+
+    /// 保存キーと定数（actor に属さない。nonisolated の読み込みから使う）。
+    enum PlayAreaSettings {
+        static let playAreaKey = "PhoneSaber.playArea.v1"
+        static let exposureBiasKey = "PhoneSaber.exposureBias.v1"
+        static let learnSeconds = 10
+    }
+
+    @Published private(set) var playArea: SaberPlayArea? = CameraViewModel.storedPlayArea()
+    @Published private(set) var playAreaLearning = false
+    private var playAreaLearningTask: Task<Void, Never>?
+    static let playAreaLearnSeconds = PlayAreaSettings.learnSeconds
+
+    nonisolated private static func storedPlayArea() -> SaberPlayArea? {
+        guard NSClassFromString("XCTestCase") == nil,
+              let data = UserDefaults.standard.data(forKey: PlayAreaSettings.playAreaKey),
+              let area = try? JSONDecoder().decode(SaberPlayArea.self, from: data), area.isValid else { return nil }
+        return area
+    }
+
+    var playAreaSummary: String {
+        let area = playArea.map {
+            String(format: "x %.0f〜%.0f%% / y %.0f〜%.0f%%", $0.minX * 100, $0.maxX * 100, $0.minY * 100, $0.maxY * 100)
+        } ?? "なし（全体）"
+        return playAreaLearning ? "\(area)　覚えています…（\(Self.playAreaLearnSeconds)秒、範囲いっぱいに振る）" : area
+    }
+
+    /// 送信中に [seconds] 秒、選ばれた winner（赤・青）の両端を数え、足りれば（30 コマ以上）範囲にして保存する。
+    /// 足りなければ前の範囲を残す。学習中は範囲で絞らない（無視範囲は効く）。
+    func learnPlayArea(seconds: Int = PlayAreaSettings.learnSeconds, commandID: Int? = nil) {
+        let id = commandID.map(String.init) ?? "-"
+        guard running else {
+            ConnectivityLog.shared.record("PLAY_AREA", "learn id=\(id): not sending")
+            return
+        }
+        playAreaLearningTask?.cancel()
+        processor.startPlayAreaLearning()
+        playAreaLearning = true
+        ConnectivityLog.shared.record("PLAY_AREA", "learn start id=\(id) seconds=\(seconds)")
+        playAreaLearningTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: UInt64(seconds) * 1_000_000_000)
+            guard let self, !Task.isCancelled else { return }
+            self.finishPlayAreaLearning(id: id)
+        }
+    }
+
+    private func finishPlayAreaLearning(id: String) {
+        playAreaLearningTask = nil
+        playAreaLearning = false
+        let previous = playArea.map { "\($0.minX),\($0.minY),\($0.maxX),\($0.maxY)" } ?? "none"
+        guard let learner = processor.finishPlayAreaLearning() else {
+            ConnectivityLog.shared.record("PLAY_AREA", "learn id=\(id): not learning; kept \(previous)")
+            return
+        }
+        guard let area = learner.area() else {
+            ConnectivityLog.shared.record("PLAY_AREA", "learn id=\(id): only \(learner.samples) samples (< \(SaberPlayArea.minimumSamples)); kept \(previous)")
+            return
+        }
+        applyPlayArea(area)
+        ConnectivityLog.shared.record("PLAY_AREA", "learn id=\(id) samples=\(learner.samples) area=\(area.minX),\(area.minY),\(area.maxX),\(area.maxY)")
+    }
+
+    func clearPlayArea(commandID: Int? = nil) {
+        if playAreaLearningTask != nil {
+            playAreaLearningTask?.cancel(); playAreaLearningTask = nil
+            playAreaLearning = false
+            _ = processor.finishPlayAreaLearning()
+        }
+        applyPlayArea(nil)
+        ConnectivityLog.shared.record("PLAY_AREA", "clear id=\(commandID.map(String.init) ?? "-")")
+    }
+
+    private func applyPlayArea(_ area: SaberPlayArea?) {
+        playArea = area
+        processor.setPlayArea(area)
+        guard NSClassFromString("XCTestCase") == nil else { return }
+        if let area, let data = try? JSONEncoder().encode(area) {
+            UserDefaults.standard.set(data, forKey: PlayAreaSettings.playAreaKey)
+        } else {
+            UserDefaults.standard.removeObject(forKey: PlayAreaSettings.playAreaKey)
+        }
+    }
+
+    // MARK: 露出補正（光らない物を暗くする試験スイッチ）
+
+    /// 既定 0 = OFF で、0 の間はカメラの露出に一切触れない。シャッター上限（CameraExposureExperiment）だけでは
+    /// 自動露出が ISO を上げて戻すため、負の露出補正（setExposureTargetBias）で服などを暗くし、自発光の LED 剣だけを
+    /// 明るく残す狙い。0 以外では認識への入力（画素）が変わる。閾値は変えない。実機で比べるための試験設定。
+    static let exposureBiasChoices = LANLivenessProbe.exposureBiasChoices
+    @Published private(set) var exposureBias: Int = CameraViewModel.storedExposureBias()
+    @Published private(set) var exposureBiasStatus = "露出補正: 0（OFF）"
+    private weak var exposureBiasCamera: AVCaptureDevice?
+    /// このアプリが 0 以外を設定したか（0 に戻すときだけ 0 を書き込む）。
+    private var exposureBiasTouched = false
+
+    nonisolated private static func storedExposureBias() -> Int {
+        guard NSClassFromString("XCTestCase") == nil else { return 0 }
+        let value = UserDefaults.standard.integer(forKey: PlayAreaSettings.exposureBiasKey)
+        return LANLivenessProbe.exposureBiasChoices.contains(value) ? value : 0
+    }
+
+    static func exposureBiasLabel(_ ev: Int) -> String { ev == 0 ? "0（OFF）" : "−\(-ev) EV" }
+
+    func setExposureBias(_ ev: Int, commandID: Int? = nil) {
+        guard Self.exposureBiasChoices.contains(ev) else { return }
+        exposureBias = ev
+        if NSClassFromString("XCTestCase") == nil { UserDefaults.standard.set(ev, forKey: PlayAreaSettings.exposureBiasKey) }
+        ConnectivityLog.shared.record("EXPOSURE_BIAS", "set ev=\(ev) id=\(commandID.map(String.init) ?? "-")")
+        if let camera = exposureBiasCamera {
+            applyExposureBias(to: camera, reason: "set")
+        } else {
+            exposureBiasStatus = "露出補正: \(Self.exposureBiasLabel(ev))" + (ev == 0 ? "" : "（送信開始時に適用）")
+        }
+    }
+
+    /// カメラ設定の後（形式変更・熱による fps 変更・復旧のたび）と、値の変更時に呼ぶ。カメラは止めない。
+    private func applyExposureBias(to camera: AVCaptureDevice, reason: String) {
+        if exposureBiasCamera !== camera { exposureBiasTouched = false }
+        exposureBiasCamera = camera
+        let ev = exposureBias
+        guard ev != 0 || exposureBiasTouched else {
+            exposureBiasStatus = "露出補正: \(Self.exposureBiasLabel(0))"
+            return
+        }
+        let low = Double(camera.minExposureTargetBias), high = Double(camera.maxExposureTargetBias)
+        let bias = Float(min(max(Double(ev), low), high))
+        do {
+            try camera.lockForConfiguration()
+            defer { camera.unlockForConfiguration() }
+            camera.setExposureTargetBias(bias, completionHandler: nil)
+            exposureBiasTouched = ev != 0
+            exposureBiasStatus = String(format: "露出補正: %@（適用 %+.1f EV、範囲 %.1f〜%.1f）",
+                                        Self.exposureBiasLabel(ev), Double(bias), low, high)
+            ConnectivityLog.shared.record("EXPOSURE_BIAS", "applied ev=\(ev) bias=\(bias) range=\(low)...\(high) reason=\(reason)")
+        } catch {
+            exposureBiasStatus = "露出補正: \(Self.exposureBiasLabel(ev)) を適用できません（\(error.localizedDescription)）"
+            ConnectivityLog.shared.record("EXPOSURE_BIAS", "failed ev=\(ev) reason=\(reason) error=\(error.localizedDescription)")
+        }
     }
 
     private func applyIgnoreZones() {
@@ -1869,6 +2013,7 @@ final class CameraViewModel: NSObject, ObservableObject {
 
     private func configureAndStart(isRecovery: Bool = false, recoveryGeneration: Int? = nil) {
         processor.setIgnoreZones(ignoreZones)
+        processor.setPlayArea(playArea)
         let configuredHost = host.trimmingCharacters(in: .whitespacesAndNewlines)
         cameraErrorMessage = nil
         connectionErrorMessage = nil
@@ -1984,6 +2129,8 @@ final class CameraViewModel: NSObject, ObservableObject {
         // activeMaxExposureDuration, so the experiment is (re)applied here.
         // With the default auto setting this does not touch the device.
         applyCameraExposureExperiment(to: camera)
+        // 露出補正（既定 0 では触れない）。形式の再設定・熱による fps 変更はここを通るので毎回かけ直す。
+        applyExposureBias(to: camera, reason: isRecovery ? "recovery" : "configure")
         let actualDuration = CMTimeGetSeconds(camera.activeVideoMaxFrameDuration)
         let actualFPS = actualDuration > 0 && actualDuration.isFinite ? Int((1 / actualDuration).rounded()) : 0
         activeCaptureFPS = Double(actualFPS)

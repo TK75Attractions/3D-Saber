@@ -16,6 +16,10 @@ struct Session {
     // 直近に選ばれた候補の範囲を IgnoreZone にしたものと、その処理時刻（解析スレッドだけが読み書き）。
     std::array<std::optional<phonesaber::IgnoreZone>, 2> winner_zone;
     std::array<double, 2> winner_time{};
+    // プレイ範囲（剣を振る場所）と、その学習。どちらも解析スレッドだけが読み書きする。
+    // 学習中は範囲で絞らない（新しい範囲を前の範囲より広く覚えられるように）。無視範囲は学習中も効く。
+    std::optional<phonesaber::PlayArea> play_area;
+    std::optional<phonesaber::PlayAreaLearner> learner;
 };
 Session* session(jlong handle) { return reinterpret_cast<Session*>(handle); }
 phonesaber::FrameProcessor* processor(jlong handle) { return &session(handle)->processor; }
@@ -57,7 +61,11 @@ jobjectArray process_pixels(JNIEnv* env, jlong handle, const phonesaber::PixelBu
     output.measurement_mode = measurement_mode == JNI_TRUE;
     Session* current = session(handle);
     // FrameProcessor::process(pixels, ...) と同じ analyze → process。範囲が無ければ従来と同じ結果。
-    const auto analysis = phonesaber::analyze(pixels, threshold, threshold, 2, current->ignore_zones);
+    const std::optional<phonesaber::PlayArea> area = current->learner ? std::optional<phonesaber::PlayArea>{}
+                                                                      : current->play_area;
+    const auto analysis = phonesaber::analyze(pixels, threshold, threshold, 2, current->ignore_zones, area);
+    if (current->learner) for (int color = 0; color < 2; ++color) if (analysis.selected[color])
+        current->learner->add(*analysis.selected[color], pixels.width, pixels.height);
     for (int color = 0; color < 2; ++color) if (analysis.selected_extent[color]) {
         current->winner_zone[color] = phonesaber::ignore_zone_around(*analysis.selected_extent[color],
             pixels.width, pixels.height);
@@ -173,4 +181,36 @@ Java_jp_phonesaber_sender_NativeCore_winnerZone(JNIEnv* env, jobject, jlong hand
     const jdouble values[4] = {zone->min_x, zone->min_y, zone->max_x, zone->max_y};
     env->SetDoubleArrayRegion(out, 0, 4, values);
     return env->ExceptionCheck() ? JNI_FALSE : JNI_TRUE;
+}
+// プレイ範囲 [min_x, min_y, max_x, max_y]（0..1、解析フレーム）。null は範囲なし（従来と同じ選び方）。
+extern "C" JNIEXPORT void JNICALL
+Java_jp_phonesaber_sender_NativeCore_setPlayArea(JNIEnv* env, jobject, jlong handle, jdoubleArray area) {
+    if (!handle) { fail(env, "java/lang/IllegalStateException", "Closed core"); return; }
+    if (!area) { session(handle)->play_area.reset(); return; }
+    if (env->GetArrayLength(area) != 4) { fail(env, "java/lang/IllegalArgumentException", "Invalid play area"); return; }
+    jdouble values[4];
+    env->GetDoubleArrayRegion(area, 0, 4, values);
+    if (env->ExceptionCheck()) return;
+    session(handle)->play_area = phonesaber::PlayArea{values[0], values[1], values[2], values[3]};
+}
+// 学習を始める（前の学習は捨てる）。解析スレッドから呼ぶ。
+extern "C" JNIEXPORT void JNICALL
+Java_jp_phonesaber_sender_NativeCore_startAreaLearning(JNIEnv* env, jobject, jlong handle) {
+    if (!handle) { fail(env, "java/lang/IllegalStateException", "Closed core"); return; }
+    session(handle)->learner = phonesaber::PlayAreaLearner{};
+}
+// 学習を終える。学習していなければ -1。数えた winner の数を返し、足りていれば out[4] に範囲を書く。
+extern "C" JNIEXPORT jint JNICALL
+Java_jp_phonesaber_sender_NativeCore_finishAreaLearning(JNIEnv* env, jobject, jlong handle, jdoubleArray out) {
+    if (!handle || !out || env->GetArrayLength(out) < 4) return -1;
+    Session* current = session(handle);
+    if (!current->learner) return -1;
+    const auto learner = *current->learner;
+    current->learner.reset();
+    if (const auto area = learner.result()) {
+        const jdouble values[4] = {area->min_x, area->min_y, area->max_x, area->max_y};
+        env->SetDoubleArrayRegion(out, 0, 4, values);
+        if (env->ExceptionCheck()) return -1;
+    }
+    return static_cast<jint>(learner.samples);
 }

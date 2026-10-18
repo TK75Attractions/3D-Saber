@@ -10,6 +10,7 @@ import android.os.Handler
 import android.os.Looper
 import android.os.Process
 import android.os.SystemClock
+import android.util.Log
 import android.util.Range
 import android.view.Surface
 import androidx.camera.camera2.interop.Camera2CameraInfo
@@ -48,6 +49,16 @@ class CameraSession(private val owner: LifecycleOwner, private val previewView: 
     // 解析フレーム（縦向きに回転後）の寸法。プレビュー上に無視範囲を描くため。
     @Volatile var frameSize: Pair<Int, Int>? = null
         private set
+    // プレイ範囲（main で差し替え、解析スレッドが毎フレーム読む不変オブジェクト）。null = 範囲なし（従来と同じ）。
+    @Volatile var playArea: PlayArea? = null
+    // 露出補正（EV、0/-1/-2）。0 の間はカメラの露出に触れない。boundCamera・exposureTouched は main だけが触る。
+    @Volatile var exposureBiasEv = 0
+        private set
+    @Volatile var exposureStatus = "露出補正: ${ExposureBias.label(0)}"
+        private set
+    private var boundCamera: androidx.camera.core.Camera? = null
+    // この CameraSession で 0 以外を一度でも設定したか（0 に戻すときだけ 0 を書き込む）。
+    private var exposureTouched = false
     private val executor = analysisExecutor {
         Process.setThreadPriority(Process.THREAD_PRIORITY_MORE_FAVORABLE)
     }
@@ -164,7 +175,8 @@ class CameraSession(private val owner: LifecycleOwner, private val previewView: 
                                     "ois=${result.get(CaptureResult.LENS_OPTICAL_STABILIZATION_MODE)} " +
                                     "exposure_ns=${result.get(CaptureResult.SENSOR_EXPOSURE_TIME)} " +
                                     "frame_duration_ns=${result.get(CaptureResult.SENSOR_FRAME_DURATION)} " +
-                                    "ae_fps=${result.get(CaptureResult.CONTROL_AE_TARGET_FPS_RANGE)}"
+                                    "ae_fps=${result.get(CaptureResult.CONTROL_AE_TARGET_FPS_RANGE)} " +
+                                    "ae_compensation=${result.get(CaptureResult.CONTROL_AE_EXPOSURE_COMPENSATION)}"
                             }
                         }
                     }
@@ -183,7 +195,7 @@ class CameraSession(private val owner: LifecycleOwner, private val previewView: 
                             val degrees = image.imageInfo.rotationDegrees
                             val results = processor.processCamera(plane.buffer, image.width, image.height,
                                 plane.rowStride, plane.pixelStride, degrees, started / 1e9, brightness, dominance,
-                                ignoreZones)
+                                ignoreZones, playArea)
                             val jniEnded = System.nanoTime()
                             val jniEndedNs = SystemClock.elapsedRealtimeNanos()
                             val capturedNs = CaptureClock.timestamp(image.imageInfo.timestamp, realtimeSensorClock)
@@ -221,6 +233,9 @@ class CameraSession(private val owner: LifecycleOwner, private val previewView: 
                         "analysis_yuv_min_frame_ns=$analysisDuration " +
                         "preview_size=$previewSize preview_private_min_frame_ns=$previewDuration"
                 }
+                // 再 bind（送信の開始・カメラ復旧）のたびに露出補正をかけ直す。0 で未変更なら何もしない。
+                boundCamera = camera
+                applyExposureBias("bind")
                 cameraState = camera.cameraInfo.cameraState
                 cameraState?.observe(owner) { state ->
                     state.error?.let { fail(token, CameraErrorText.describe(it.code, fps)) }
@@ -242,6 +257,70 @@ class CameraSession(private val owner: LifecycleOwner, private val previewView: 
                 main.post { callback(zone) }
             }
         } catch (_: java.util.concurrent.RejectedExecutionException) { main.post { callback(null) } }
+    }
+
+    /** プレイ範囲の学習を始める（解析スレッド上で）。送信中でなければ何もしない（終わりに null が返る）。 */
+    fun startAreaLearning() {
+        val token = generation
+        try {
+            executor.execute { if (running && token == generation) core?.startAreaLearning() }
+        } catch (_: java.util.concurrent.RejectedExecutionException) { }
+    }
+
+    /** 学習を終えて結果を main へ返す。学習していなかった（送信停止・カメラ再起動）なら null。 */
+    fun finishAreaLearning(callback: (NativeCore.AreaLearning?) -> Unit) {
+        try {
+            executor.execute {
+                val result = core?.finishAreaLearning()
+                main.post { callback(result) }
+            }
+        } catch (_: java.util.concurrent.RejectedExecutionException) { main.post { callback(null) } }
+    }
+
+    /**
+     * 露出補正を変える（main から）。カメラの再起動なしで次のフレームから効く。0 の間は露出に触れない
+     * （0 以外を設定した後に 0 へ戻すときだけ index 0 を書き込む）。0 以外では認識に入る画素が変わる試験設定。
+     */
+    fun setExposureBias(ev: Int) {
+        if (!ExposureBias.valid(ev)) return
+        exposureBiasEv = ev
+        applyExposureBias("set")
+    }
+
+    private fun applyExposureBias(reason: String) {
+        val ev = exposureBiasEv
+        val camera = boundCamera
+        if (camera == null) {
+            exposureStatus = "露出補正: ${ExposureBias.label(ev)}" + if (ev != 0) "（送信開始時に適用）" else ""
+            return
+        }
+        if (ev == 0 && !exposureTouched) {
+            exposureStatus = "露出補正: ${ExposureBias.label(0)}"
+            return
+        }
+        val state = camera.cameraInfo.exposureState
+        val step = state.exposureCompensationStep
+        val range = state.exposureCompensationRange
+        val index = if (state.isExposureCompensationSupported)
+            ExposureBias.index(ev, step.numerator, step.denominator, range.lower, range.upper) else null
+        if (index == null) {
+            exposureStatus = "露出補正: この端末は非対応（${ExposureBias.label(ev)} を適用できません）"
+            Log.i(EXPOSURE_TAG, "ev=$ev reason=$reason unsupported range=$range step=$step")
+            return
+        }
+        if (ev != 0) exposureTouched = true
+        val future = camera.cameraControl.setExposureCompensationIndex(index)
+        future.addListener({
+            if (boundCamera !== camera) return@addListener
+            val applied = try { future.get() } catch (e: Exception) { null }
+            if (applied != null && ev == 0) exposureTouched = false
+            val appliedEv = applied?.let { it.toDouble() * step.numerator / step.denominator }
+            exposureStatus = if (applied == null) "露出補正: ${ExposureBias.label(ev)} を適用できませんでした"
+                else String.format(java.util.Locale.US, "露出補正: %s（適用 %+.2f EV = index %d × %s、範囲 %d〜%d）",
+                    ExposureBias.label(ev), appliedEv, applied, step, range.lower, range.upper)
+            Log.i(EXPOSURE_TAG, "ev=$ev reason=$reason requested_index=$index applied_index=$applied " +
+                "applied_ev=$appliedEv step=$step range=$range")
+        }, ContextCompat.getMainExecutor(previewView.context))
     }
 
     private fun describe(results: Array<NativeResult>, dimensions: String): Status {
@@ -281,6 +360,8 @@ class CameraSession(private val owner: LifecycleOwner, private val previewView: 
             status = Status()
         }
         cameraState?.removeObservers(owner); cameraState = null
+        boundCamera = null
+        applyExposureBias("stop") // カメラが無いので表示だけ戻す（露出には触れない）
         analysis?.clearAnalyzer(); analysis = null
         provider?.unbindAll()
         executor.execute {
@@ -289,7 +370,10 @@ class CameraSession(private val owner: LifecycleOwner, private val previewView: 
         }
     }
 
-    companion object { const val WINNER_MAX_AGE = 0.25 }
+    companion object {
+        const val WINNER_MAX_AGE = 0.25
+        const val EXPOSURE_TAG = "PhoneSaberExposure"
+    }
 
     fun close() {
         stop()

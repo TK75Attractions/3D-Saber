@@ -88,5 +88,36 @@ final class MetricsDatagramTests: XCTestCase {
         XCTAssertNil(LANLivenessProbe.parseCommand("PHONESABER_COMMAND 1 id=3 ignore=green")) // 知らない色
         XCTAssertNil(LANLivenessProbe.parseCommand("PHONESABER_UNITY 1 red=5005 blue=5006 name=Mac"))
         XCTAssertNil(LANLivenessProbe.parseCommand("PHONESABER_COMMAND 2 id=1 ignore=red"))  // 別の版
+        // 古い組み合わせ（ignore と clear-ignore）の受け付けは変えない。
+        XCTAssertEqual(LANLivenessProbe.parseCommand("PHONESABER_COMMAND 1 id=6 clear-ignore=1 ignore=blue"),
+                       LANLivenessProbe.PCCommand(id: 6, ignore: "blue", clearIgnore: true))
+    }
+
+    // プレイ範囲・露出補正（2026-10-18）。Android の PlayAreaTest と同じ例。
+    func testPCCommandParsingPlayAreaAndExposure() {
+        typealias C = LANLivenessProbe.PCCommand
+        func parse(_ text: String) -> C? { LANLivenessProbe.parseCommand(text) }
+        XCTAssertEqual(parse("PHONESABER_COMMAND 1 id=11 learn-area=10"), C(id: 11, ignore: nil, clearIgnore: false, learnAreaSeconds: 10))
+        XCTAssertEqual(parse("PHONESABER_COMMAND 1 id=12 clear-area=1"), C(id: 12, ignore: nil, clearIgnore: false, clearArea: true))
+        XCTAssertEqual(parse("PHONESABER_COMMAND 1 id=13 exposure-bias=-1"), C(id: 13, ignore: nil, clearIgnore: false, exposureBias: -1))
+        XCTAssertEqual(parse("PHONESABER_COMMAND 1 id=14 exposure-bias=-2"), C(id: 14, ignore: nil, clearIgnore: false, exposureBias: -2))
+        XCTAssertEqual(parse("PHONESABER_COMMAND 1 id=15 exposure-bias=0"), C(id: 15, ignore: nil, clearIgnore: false, exposureBias: 0))
+        XCTAssertEqual(parse("PHONESABER_COMMAND 1 id=16 x=1 learn-area=5"), C(id: 16, ignore: nil, clearIgnore: false, learnAreaSeconds: 5))
+        XCTAssertNil(parse("PHONESABER_COMMAND 1 learn-area=10"))         // id なし
+        XCTAssertNil(parse("PHONESABER_COMMAND 2 id=1 learn-area=10"))    // 別の版
+        XCTAssertNil(parse("PHONESABER_COMMAND 1 id=1 learn-area=0"))
+        XCTAssertNil(parse("PHONESABER_COMMAND 1 id=1 learn-area=61"))
+        XCTAssertNil(parse("PHONESABER_COMMAND 1 id=1 learn-area=x"))
+        XCTAssertNil(parse("PHONESABER_COMMAND 1 id=1 clear-area=0"))
+        XCTAssertNil(parse("PHONESABER_COMMAND 1 id=1 exposure-bias=-3"))
+        XCTAssertNil(parse("PHONESABER_COMMAND 1 id=1 exposure-bias=1"))
+        XCTAssertNil(parse("PHONESABER_COMMAND 1 id=1 exposure-bias=-1.5"))
+        // 1つの指示は1つの操作だけ。
+        XCTAssertNil(parse("PHONESABER_COMMAND 1 id=1 learn-area=10 clear-area=1"))
+        XCTAssertNil(parse("PHONESABER_COMMAND 1 id=1 exposure-bias=-1 ignore=red"))
+        XCTAssertNil(parse("PHONESABER_COMMAND 1 id=1 clear-ignore=1 learn-area=10"))
+        // 同じ項目は後のものが有効。
+        XCTAssertEqual(parse("PHONESABER_COMMAND 1 id=1 exposure-bias=-1 exposure-bias=-2")?.exposureBias, -2)
+        XCTAssertNil(parse("PHONESABER_COMMAND 1 id=1 learn-area=10 learn-area=x"))
     }
 }

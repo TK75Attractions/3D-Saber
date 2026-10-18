@@ -107,9 +107,34 @@ using IgnoreZones = std::array<std::vector<IgnoreZone>, 2>;
 bool saber_ignored(const Endpoints& endpoints, int width, int height, const std::vector<IgnoreZone>& zones);
 // 選ばれた候補の範囲（selected_extent）を、各辺 margin 広げ、最小 minimum_size にした範囲。
 IgnoreZone ignore_zone_around(const BoundingBox& extent, int width, int height);
+// プレイ範囲（剣を振る場所。色に依らず1つ）。2026-10-18: 赤い服の人など、動く赤・青の物は無視範囲で
+// 外せない。範囲を設定すると、両端の中点（midpoint）が範囲の外にある候補は選ばず、次の eligible 候補を
+// 選ぶ（無視範囲と同じ場所・同じ考え方。候補の一覧・順位・score・eligible は変えない）。
+// 中点で判定するのは、剣の先が範囲から少しはみ出す振りを捨てないため。境界上は範囲内とみなす。
+// 座標は IgnoreZone と同じ（analyze() に渡した解析フレームの 0..1）。未設定なら選び方は bit 単位で同じ。
+// iPhone の SaberPlayArea（BGRADetection.swift）と同じ意味・同じ数値。
+struct PlayArea {
+    double min_x = 0, min_y = 0, max_x = 1, max_y = 1;
+    // 覚えた範囲 = 選ばれた両端の min/max + 各辺 margin、各辺は最小 minimum_size、フレーム 0..1 に収める。
+    static constexpr double margin = 0.08, minimum_size = 0.3;
+    // これより少ない winner しか見えなかった学習は使わない（前の範囲を残す）。
+    static constexpr int minimum_samples = 30;
+    bool contains_midpoint(const Endpoints& endpoints, int width, int height) const;
+    // 0..1 の min/max（両端の箱）から margin・minimum_size・0..1 への収めを適用した範囲。
+    static PlayArea around(double min_x, double min_y, double max_x, double max_y);
+};
+// 学習: 期間中に選ばれた winner（両色）の両端の min/max を数える。解析フレームの 0..1。
+struct PlayAreaLearner {
+    int samples = 0;
+    double min_x = 1, min_y = 1, max_x = 0, max_y = 0;
+    void add(const Endpoints& endpoints, int width, int height);
+    // samples < minimum_samples なら nullopt。
+    std::optional<PlayArea> result(int minimum_samples = PlayArea::minimum_samples) const;
+};
 FrameAnalysis analyze(const PixelBuffer& pixels, ColorThreshold red = {},
                       ColorThreshold blue = {}, int sample_step = 2,
-                      const IgnoreZones& ignore_zones = {});
+                      const IgnoreZones& ignore_zones = {},
+                      const std::optional<PlayArea>& play_area = std::nullopt);
 std::optional<Endpoints> principal_axis_endpoints(const std::vector<PixelPoint>& points);
 PixelPoint scaled_point(PixelPoint point, int source_width, int source_height,
                         int output_width, int output_height, bool mirror_x, bool mirror_y);
@@ -141,7 +166,8 @@ public:
                                    const OutputConfig& output = {},
                                    const std::array<double, 2>& send_epochs = {},
                                    ColorThreshold red = {}, ColorThreshold blue = {},
-                                   const IgnoreZones& ignore_zones = {});
+                                   const IgnoreZones& ignore_zones = {},
+                                   const std::optional<PlayArea>& play_area = std::nullopt);
     // Call at the scheduled lastSeen + 0.18 deadline (iPhone expiry callback).
     // Returned results are preview-only and never contain datagrams.
     std::vector<FrameResult> expire(double now);

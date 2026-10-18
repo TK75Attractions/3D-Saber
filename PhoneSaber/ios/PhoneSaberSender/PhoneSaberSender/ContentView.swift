@@ -174,7 +174,8 @@ struct ContentView: View {
                     }
                     CameraDisplay(session: model.session, previewView: model.lowHeatDisplay.previewView,
                                   red: model.redEndpoints, blue: model.blueEndpoints,
-                                  width: model.sourceDimensions.width, height: model.sourceDimensions.height)
+                                  width: model.sourceDimensions.width, height: model.sourceDimensions.height,
+                                  area: model.playArea)
                         .equatable()
                     Text(model.deviceHealthLine)
                         .font(.footnote.monospacedDigit())
@@ -468,6 +469,28 @@ struct ContentView: View {
                             .buttonStyle(.bordered)
                             Text("会場のコーンなど、剣ではない赤・青の物が認識されるとき用。剣の電源を切るかカメラの外に出し、その物だけが枠で囲まれている状態で押します。以後その場所の候補は選ばず、同じコマの剣を選びます。カメラや物を動かしたら押し直してください。")
                                 .font(.caption).foregroundStyle(.secondary)
+                            Text("プレイ範囲: \(model.playAreaSummary)")
+                            HStack {
+                                Button("プレイ範囲を覚える（\(CameraViewModel.playAreaLearnSeconds)秒振る）") { model.learnPlayArea() }
+                                    .disabled(!model.running || model.playAreaLearning)
+                                Button("プレイ範囲を消す", role: .destructive) { model.clearPlayArea() }
+                                    .disabled(model.playArea == nil && !model.playAreaLearning)
+                            }
+                            .buttonStyle(.bordered)
+                            Text("赤い服の人など、動く赤・青の物の対策。送信中に押し、\(CameraViewModel.playAreaLearnSeconds)秒間、遊ぶ範囲いっぱいに剣（赤・青）を振ります。以後、中心がその範囲（緑の枠）の外にある候補は選びません。カメラを動かしたら覚え直してください。Mac の F8 からも操作できます。")
+                                .font(.caption).foregroundStyle(.secondary)
+                            Text(model.exposureBiasStatus)
+                            Picker("露出補正", selection: Binding(
+                                get: { model.exposureBias },
+                                set: { model.setExposureBias($0) }
+                            )) {
+                                ForEach(CameraViewModel.exposureBiasChoices, id: \.self) { ev in
+                                    Text(ev == 0 ? "露出 0（OFF）" : "露出 −\(-ev)").tag(ev)
+                                }
+                            }
+                            .pickerStyle(.segmented)
+                            Text("既定 0（OFF、カメラの露出に触れない）。−1・−2 EV は光らない服などを暗くする試験設定で、認識に入る画像が変わります。送信中もそのまま切り替わり、保存されます。")
+                                .font(.caption).foregroundStyle(.secondary)
                             Toggle("低発熱表示（送信中に\(Int(LowHeatDisplayPolicy.idleSeconds))秒触れなければ画面を暗くする）", isOn: Binding(
                                 get: { model.lowHeatDisplayEnabled },
                                 set: { model.setLowHeatDisplayEnabled($0) }
@@ -545,9 +568,12 @@ private struct CameraDisplay: View, Equatable {
     let blue: (PixelPoint, PixelPoint)?
     let width: Int
     let height: Int
+    /// プレイ範囲（緑の枠）。nil なら描かない。
+    var area: SaberPlayArea? = nil
 
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.session === rhs.session && lhs.previewView === rhs.previewView && lhs.width == rhs.width && lhs.height == rhs.height
+            && lhs.area == rhs.area
             && lhs.red?.0 == rhs.red?.0 && lhs.red?.1 == rhs.red?.1
             && lhs.blue?.0 == rhs.blue?.0 && lhs.blue?.1 == rhs.blue?.1
     }
@@ -556,10 +582,23 @@ private struct CameraDisplay: View, Equatable {
         ZStack {
             CameraPreview(session: session, view: previewView).frame(height: 280)
             Canvas { context, size in
+                drawArea(context: &context, size: size)
                 draw(red, color: .red, context: &context, size: size)
                 draw(blue, color: .blue, context: &context, size: size)
             }.frame(height: 280)
         }.clipped()
+    }
+
+    private func drawArea(context: inout GraphicsContext, size: CGSize) {
+        guard let area, width > 0, height > 0 else { return }
+        func point(_ x: Double, _ y: Double) -> CGPoint {
+            aspectFillPoint(PixelPoint(x: Int((min(max(x, 0), 1) * Double(width)).rounded()),
+                                       y: Int((min(max(y, 0), 1) * Double(height)).rounded())),
+                            source: (width, height), view: (size.width, size.height))
+        }
+        let topLeft = point(area.minX, area.minY), bottomRight = point(area.maxX, area.maxY)
+        let rect = CGRect(x: topLeft.x, y: topLeft.y, width: bottomRight.x - topLeft.x, height: bottomRight.y - topLeft.y)
+        context.stroke(Path(rect), with: .color(.green), lineWidth: 3)
     }
 
     private func draw(_ endpoints: (PixelPoint, PixelPoint)?, color: Color, context: inout GraphicsContext, size: CGSize) {

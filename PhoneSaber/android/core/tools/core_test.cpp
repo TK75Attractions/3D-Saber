@@ -337,7 +337,89 @@ static void ignore_zone_tests() {
     assert(!saber_ignored({{10,10},{150,10}},width,height,{left}));
     assert(saber_ignored({{10,10},{99,10}},width,height,{left}));
 }
+// プレイ範囲（2026-10-18、赤い服の人など動く物の対策）: 両端の中点が範囲外の候補は選ばず、同じコマの
+// 範囲内の候補を選ぶ。範囲が無ければ従来と同じ。iPhone StaticBGRADetectionTests と同じ場面。
+static void play_area_tests() {
+    constexpr int width = 200, height = 120, stride = width*4;
+    std::vector<uint8_t> scene(stride*height,0);
+    auto bar = [&](PixelPoint start, PixelPoint end, int thickness) {
+        int steps = std::max(std::abs(end.x-start.x),std::abs(end.y-start.y));
+        for (int step = 0; step <= steps; ++step) {
+            double t = steps == 0 ? 0.0 : double(step)/double(steps);
+            int x = int(std::round(double(start.x)+double(end.x-start.x)*t));
+            int y = int(std::round(double(start.y)+double(end.y-start.y)*t));
+            for (int dy = -thickness; dy <= thickness; ++dy) for (int dx = -thickness; dx <= thickness; ++dx) {
+                if (dx*dx+dy*dy > thickness*thickness || x+dx < 0 || x+dx >= width || y+dy < 0 || y+dy >= height) continue;
+                auto* pixel = scene.data()+(y+dy)*stride+(x+dx)*4;
+                pixel[0] = 30; pixel[1] = 45; pixel[2] = 245; pixel[3] = 255;
+            }
+        }
+    };
+    bar({150,15},{150,105},4);
+    bar({30,35},{45,105},4);
+    const ColorThreshold threshold{140,20,30};
+    const PixelBuffer pixels{scene.data(),width,height,stride,scene.size(),PixelFormat::bgra};
+    auto run = [&](const std::optional<PlayArea>& area) { return analyze(pixels,threshold,threshold,2,{},area); };
+    auto distance = [](const Endpoints& a, const Endpoints& b) {
+        auto d = [](PixelPoint p, PixelPoint q) { return std::hypot(double(p.x-q.x),double(p.y-q.y)); };
+        return std::min(d(a.first,b.first)+d(a.second,b.second),d(a.first,b.second)+d(a.second,b.first));
+    };
+    auto same_candidates = [](const FrameAnalysis& a, const FrameAnalysis& b) {
+        for (int color = 0; color < 2; ++color) {
+            assert(a.candidates[color].size() == b.candidates[color].size());
+            for (std::size_t i = 0; i < a.candidates[color].size(); ++i) {
+                const auto &x = a.candidates[color][i], &y = b.candidates[color][i];
+                assert(x.source == y.source && x.score == y.score && x.eligible == y.eligible);
+                assert(x.endpoints.first.x == y.endpoints.first.x && x.endpoints.second.y == y.endpoints.second.y);
+            }
+        }
+    };
+    const auto legacy = analyze(pixels,threshold,threshold);
+    const auto plain = run(std::nullopt);
+    same_candidates(plain,legacy);
+    assert(plain.selected[0] && legacy.selected[0]);
+    const auto first = *plain.selected[0];
+    assert(distance(first,*legacy.selected[0]) == 0);
+    // 選ばれた棒の中点が入らない半分だけを範囲にすると、もう一方の棒が選ばれる。
+    const double mid_x = (double(first.first.x)+double(first.second.x))/2.0/width;
+    const PlayArea other = mid_x > 0.5 ? PlayArea{0,0,0.5,1} : PlayArea{0.5,0,1,1};
+    assert(!other.contains_midpoint(first,width,height));
+    const auto inside = run(other);
+    same_candidates(plain,inside);
+    assert(inside.selected[0] && distance(*inside.selected[0],first) > 40);
+    assert(other.contains_midpoint(*inside.selected[0],width,height));
+    // 全体を含む範囲は選択を変えない。どちらも入らない範囲では選ばない。青には影響しない（青は無い）。
+    const auto whole = run(PlayArea{0,0,1,1});
+    assert(whole.selected[0] && distance(*whole.selected[0],first) == 0);
+    assert(!run(PlayArea{0.9,0.9,1,1}).selected[0]);
+    // FrameProcessor 経由でも同じ範囲が効く。
+    FrameProcessor processor;
+    auto sent = processor.process(pixels,1.0,{},{},threshold,threshold,{},other);
+    assert(sent.size() == 1 && sent[0].endpoints.first.x == inside.selected[0]->first.x);
+    // 中点の規則: 片端がはみ出しても中点が範囲内なら使う。境界上は範囲内。
+    const PlayArea left{0,0,0.5,1};
+    assert(left.contains_midpoint({{10,10},{150,10}},width,height));   // 中点 x=80/200=0.4
+    assert(!left.contains_midpoint({{90,10},{150,10}},width,height));  // 中点 x=120/200=0.6
+    assert(left.contains_midpoint({{100,10},{100,100}},width,height)); // 中点 x=0.5（境界）
+    // 学習: 30 未満は使わない。両端の min/max + 0.08、最小 0.3、0..1 に収める。
+    PlayAreaLearner learner;
+    for (int i = 0; i < 29; ++i) learner.add({{40,24},{120,96}},width,height); // x 0.2..0.6, y 0.2..0.8
+    assert(!learner.result());
+    learner.add({{40,24},{120,96}},width,height);
+    const auto learned = learner.result();
+    assert(learner.samples == 30 && learned);
+    assert(std::abs(learned->min_x-0.12) < 1e-12 && std::abs(learned->max_x-0.68) < 1e-12);
+    assert(std::abs(learned->min_y-0.12) < 1e-12 && std::abs(learned->max_y-0.88) < 1e-12);
+    const auto small = PlayArea::around(0.5,0.5,0.52,0.5);
+    assert(std::abs((small.max_x-small.min_x)-0.3) < 1e-12 && std::abs(small.min_x-0.36) < 1e-12);
+    const auto edge = PlayArea::around(0.95,0.0,1.0,0.02);
+    assert(edge.max_x == 1 && std::abs(edge.min_x-0.7) < 1e-12 && edge.min_y == 0 && std::abs(edge.max_y-0.3) < 1e-12);
+    const auto everything = PlayArea::around(0.0,0.0,1.0,1.0);
+    assert(everything.min_x == 0 && everything.max_x == 1 && everything.min_y == 0 && everything.max_y == 1);
+    assert(!PlayAreaLearner{}.result(0));
+}
 int main() {
+    play_area_tests();
     ignore_zone_tests();
     core_line_guard_tests();
     rotation_tests();

@@ -337,8 +337,39 @@ IgnoreZone ignore_zone_around(const BoundingBox& box, int width, int height) {
     widen(zone.min_x,zone.max_x); widen(zone.min_y,zone.max_y);
     return zone;
 }
+bool PlayArea::contains_midpoint(const Endpoints& e, int width, int height) const {
+    double x = (double(e.first.x)+double(e.second.x))/2.0/double(std::max(width,1));
+    double y = (double(e.first.y)+double(e.second.y))/2.0/double(std::max(height,1));
+    return x >= min_x && x <= max_x && y >= min_y && y <= max_y;
+}
+PlayArea PlayArea::around(double low_x, double low_y, double high_x, double high_y) {
+    // 各辺 margin 広げ、minimum_size 未満の辺は中心から広げ、0..1 からはみ出した分は内側へずらしてから切る。
+    auto fit = [](double low, double high) {
+        low -= margin; high += margin;
+        if (high-low < minimum_size) { double center = (low+high)/2; low = center-minimum_size/2; high = center+minimum_size/2; }
+        if (low < 0) { high -= low; low = 0; }
+        if (high > 1) { low -= high-1; high = 1; }
+        return std::pair<double,double>{std::max(low,0.0),std::min(high,1.0)};
+    };
+    auto [min_x, max_x] = fit(low_x,high_x);
+    auto [min_y, max_y] = fit(low_y,high_y);
+    return PlayArea{min_x,min_y,max_x,max_y};
+}
+void PlayAreaLearner::add(const Endpoints& e, int width, int height) {
+    double w = double(std::max(width,1)), h = double(std::max(height,1));
+    for (auto end : {e.first,e.second}) {
+        double x = double(end.x)/w, y = double(end.y)/h;
+        min_x = std::min(min_x,x); max_x = std::max(max_x,x);
+        min_y = std::min(min_y,y); max_y = std::max(max_y,y);
+    }
+    ++samples;
+}
+std::optional<PlayArea> PlayAreaLearner::result(int minimum) const {
+    if (samples < minimum || samples <= 0) return std::nullopt;
+    return PlayArea::around(min_x,min_y,max_x,max_y);
+}
 FrameAnalysis analyze(const PixelBuffer& p, ColorThreshold red, ColorThreshold blue, int sample_step,
-                      const IgnoreZones& ignore_zones) {
+                      const IgnoreZones& ignore_zones, const std::optional<PlayArea>& play_area) {
     using namespace detail;
     FrameAnalysis analysis;
     // Reject invalid buffers without reading them. Limit dimensions so Swift Int
@@ -549,9 +580,11 @@ FrameAnalysis analyze(const PixelBuffer& p, ColorThreshold red, ColorThreshold b
             if (c.robust_interval_endpoints) c.robust_interval_endpoints = Endpoints{scale(c.robust_interval_endpoints->first),scale(c.robust_interval_endpoints->second)};
             c.robust_body_length *= double(step); c.axial_density /= double(std::max(step,1));
             c.component_area = c.component_area*step*step;
-            // 無視範囲に両端が入る候補は飛ばし、次の eligible 候補を選ぶ。候補の一覧・順位・eligible は変えない。
+            // 無視範囲に両端が入る候補と、中点がプレイ範囲の外の候補は飛ばし、次の eligible 候補を選ぶ。
+            // 候補の一覧・順位・eligible は変えない。
             if (c.eligible && !analysis.selected[color_index]
-                && !saber_ignored(c.endpoints,p.width,p.height,ignore_zones[color_index])) {
+                && !saber_ignored(c.endpoints,p.width,p.height,ignore_zones[color_index])
+                && (!play_area || play_area->contains_midpoint(c.endpoints,p.width,p.height))) {
                 analysis.selected[color_index] = c.endpoints;
                 BoundingBox extent = c.bounding_box;
                 for (auto end : {c.endpoints.first,c.endpoints.second}) {

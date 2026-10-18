@@ -373,6 +373,20 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         if (GUILayout.Button("スマホ: 今の青を無視", buttonStyle)) PhoneSaberDiscoveryResponder.QueueCommand("ignore=blue");
         if (GUILayout.Button("スマホ: 無視をすべて消す", buttonStyle)) PhoneSaberDiscoveryResponder.QueueCommand("clear-ignore=1");
         GUILayout.EndHorizontal();
+        // プレイ範囲（2026-10-18）: 赤い服の人など動く物は無視範囲では外せないので、剣を振る範囲の外の候補を選ばせない。
+        GUILayout.Label("スマホのプレイ範囲（赤い服の人など、動く赤・青の物の対策。押してから10秒、遊ぶ範囲いっぱいに剣を振る）", textStyle);
+        GUILayout.BeginHorizontal();
+        if (GUILayout.Button("スマホ: プレイ範囲を覚える（10秒、範囲いっぱいに剣を振る）", buttonStyle))
+            PhoneSaberDiscoveryResponder.QueueCommand(PhoneSaberDiscoveryResponder.LearnAreaCommand);
+        if (GUILayout.Button("スマホ: プレイ範囲を消す", buttonStyle))
+            PhoneSaberDiscoveryResponder.QueueCommand(PhoneSaberDiscoveryResponder.ClearAreaCommand);
+        GUILayout.EndHorizontal();
+        // 露出補正（試験、既定 0 = OFF）。−1・−2 で光らない服などが暗くなる。認識に入る画像が変わるので比べて使う。
+        GUILayout.BeginHorizontal();
+        foreach (int ev in PhoneSaberDiscoveryResponder.ExposureBiasChoices)
+            if (GUILayout.Button(ev == 0 ? "スマホ露出: 0" : $"スマホ露出: −{-ev}", buttonStyle))
+                PhoneSaberDiscoveryResponder.QueueCommand(PhoneSaberDiscoveryResponder.ExposureBiasCommand(ev));
+        GUILayout.EndHorizontal();
         GUILayout.Label($"PC 側で無視（予備）: {count} か所（この台に保存）{ignored}", textStyle);
         string warning = input != null ? IgnoreDominanceWarning(input) : "";
         if (warning.Length > 0) GUILayout.Label(warning, warningStyle);

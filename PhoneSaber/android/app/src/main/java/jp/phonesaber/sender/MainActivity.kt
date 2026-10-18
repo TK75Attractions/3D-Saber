@@ -41,6 +41,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 
 private const val IGNORE_TAG = "PhoneSaberIgnore"
+private const val AREA_TAG = "PhoneSaberArea"
 
 class MainActivity : ComponentActivity() {
     private val main = Handler(Looper.getMainLooper())
@@ -111,6 +112,13 @@ class MainActivity : ComponentActivity() {
     private lateinit var ignoreSummary: TextView
     private lateinit var zoneOverlay: IgnoreZoneOverlay
     private var lastPcCommandId: Int? = null
+    // プレイ範囲（剣を振る場所）と露出補正。main だけが変更し、CameraSession へ渡す。
+    private var playArea: PlayArea? = null
+    private lateinit var areaSummary: TextView
+    private var areaLearningUntil = 0.0
+    private var areaLearningToken = 0
+    private lateinit var exposureSummary: TextView
+    private var exposureBias = 0
     private val permission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         permissionPending = false
         if (granted && foreground && resumePolicy.wantsSending) startSending()
@@ -171,7 +179,9 @@ class MainActivity : ComponentActivity() {
                 Log.i(LatencyLog.TAG, line)
                 latencyLog.append(seconds, line)
             }
-            zoneOverlay.update(ignoreZones, camera.frameSize)
+            zoneOverlay.update(ignoreZones, camera.frameSize, playArea)
+            updateAreaSummary()
+            exposureSummary.text = camera.exposureStatus
             val status = camera.status
             detection.text = if (sending) String.format(Locale.JAPAN,
                 "赤: %s / 送信 %.1f fps\n青: %s / 送信 %.1f fps\n%s\n%s",
@@ -310,6 +320,31 @@ class MainActivity : ComponentActivity() {
         label("送信中に、剣の電源を切るかカメラの外に出し、コーンなどだけが認識されている状態で押します。" +
             "以後その範囲の候補は選ばず、同じコマの剣を選びます。カメラや物を動かしたら押し直してください（色ごとに最大4つ）。")
             .apply { textSize = 13f }
+        // プレイ範囲（赤い服の人など、動く赤・青の物の対策。iPhone と同じ。PC の F8 からも操作できる）。
+        areaSummary = label("")
+        val areaRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        fun areaButton(title: String, action: () -> Unit) = Button(this).apply {
+            text = title; isAllCaps = false
+            setOnClickListener { action() }
+            areaRow.addView(this, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        }
+        areaButton("プレイ範囲を覚える（${PlayArea.LEARN_SECONDS}秒振る）") { learnPlayArea(PlayArea.LEARN_SECONDS, null) }
+        areaButton("プレイ範囲を消す") { clearPlayArea(null) }
+        panel.addView(areaRow)
+        label("送信中に押し、${PlayArea.LEARN_SECONDS}秒間、遊ぶ範囲いっぱいに剣（赤・青）を振ります。" +
+            "以後、中心がその範囲（緑の枠）の外にある候補は選びません。カメラを動かしたら覚え直してください。")
+            .apply { textSize = 13f }
+        // 露出補正（試験。既定 0 = OFF）。負にすると光らない服などが暗くなる。
+        exposureSummary = label("")
+        val exposureRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        for (ev in ExposureBias.CHOICES) Button(this).apply {
+            text = "露出 ${if (ev == 0) "0" else "−${-ev}"}"; isAllCaps = false
+            setOnClickListener { setExposureBias(ev, null) }
+            exposureRow.addView(this, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        }
+        panel.addView(exposureRow)
+        label("既定 0（OFF、カメラの露出に触れない）。−1・−2 は光らない服などを暗くする試験設定で、認識に入る画像が変わります。" +
+            "送信中もそのまま切り替わり、保存されます。").apply { textSize = 13f }
         if (BuildConfig.DEBUG) {
             Switch(this).apply {
                 text = "開発用: 非Wi-Fiで送信を許可（手入力IP必須）"
@@ -379,6 +414,9 @@ class MainActivity : ComponentActivity() {
         label("ノイズ低減・輪郭強調を対応端末で OFF にします。画質と認識結果が変わる可能性があります。既定 OFF。変更は停止中のみ。")
         camera = CameraSession(this, preview, sender) { message -> recoverCamera(message) }
         setIgnoreZones(IgnoreZones.decode(prefs.getString(IgnoreZones.PREFERENCE_KEY, null)), persist = false)
+        setPlayArea(PlayArea.decode(prefs.getString(PlayArea.PREFERENCE_KEY, null)), persist = false)
+        setExposureBias(prefs.getInt(ExposureBias.PREFERENCE_KEY, 0).takeIf { ExposureBias.valid(it) } ?: 0, null,
+            persist = false)
         discovery = PcDiscovery(this, onReply = { address, now ->
             address.hostAddress?.let { pcReplyWatch.received(it, now) }
             updateRecoveryStatus()
@@ -604,6 +642,85 @@ class MainActivity : ComponentActivity() {
         lastPcCommandId = command.id
         if (command.clearIgnore) clearIgnoreZones(command.id)
         command.ignore?.let { ignoreCurrent(if (it == "blue") 1 else 0, command.id) }
+        command.learnAreaSeconds?.let { learnPlayArea(it, command.id) }
+        if (command.clearArea) clearPlayArea(command.id)
+        command.exposureBias?.let { setExposureBias(it, command.id) }
+    }
+
+    /**
+     * プレイ範囲を覚える。[seconds] 秒の間に選ばれた winner（赤・青）の両端を数え、
+     * 足りれば（${PlayArea.MINIMUM_SAMPLES} コマ以上）範囲にして保存する。足りなければ前の範囲を残す。
+     */
+    private fun learnPlayArea(seconds: Int, commandId: Int?) {
+        if (!sending) {
+            Log.i(AREA_TAG, "learn id=$commandId: not sending")
+            toast("送信中に押してください（プレイ範囲は送信中の認識から覚えます）")
+            return
+        }
+        val token = ++areaLearningToken
+        areaLearningUntil = System.nanoTime() / 1e9 + seconds
+        camera.startAreaLearning()
+        Log.i(AREA_TAG, "learn start id=$commandId seconds=$seconds")
+        updateAreaSummary()
+        main.postDelayed({
+            if (token != areaLearningToken) return@postDelayed
+            camera.finishAreaLearning { result ->
+                if (token != areaLearningToken) return@finishAreaLearning
+                areaLearningUntil = 0.0
+                val area = result?.area
+                when {
+                    result == null -> {
+                        Log.i(AREA_TAG, "learn id=$commandId: not learning (sending stopped or camera restarted); kept $playArea")
+                        toast("プレイ範囲を覚えられませんでした（途中で送信・カメラが止まりました）。前の範囲のままです")
+                    }
+                    area == null -> {
+                        Log.i(AREA_TAG, "learn id=$commandId: only ${result.samples} samples (< ${PlayArea.MINIMUM_SAMPLES}); kept $playArea")
+                        toast("剣がほとんど見えませんでした（${result.samples} コマ）。前の範囲のままです")
+                    }
+                    else -> {
+                        setPlayArea(area)
+                        Log.i(AREA_TAG, "learn id=$commandId samples=${result.samples} area=${area.encode()}")
+                        toast("プレイ範囲を覚えました（${area.summary}）")
+                    }
+                }
+                updateAreaSummary()
+            }
+        }, seconds * 1000L)
+    }
+
+    private fun clearPlayArea(commandId: Int?) {
+        if (areaLearningUntil > 0) {
+            ++areaLearningToken; areaLearningUntil = 0.0
+            camera.finishAreaLearning { }
+        }
+        setPlayArea(null)
+        Log.i(AREA_TAG, "clear id=$commandId")
+    }
+
+    private fun setPlayArea(area: PlayArea?, persist: Boolean = true) {
+        playArea = area
+        camera.playArea = area // 次のフレームから効く（カメラの再起動なし）
+        if (persist) prefs.edit().apply {
+            if (area == null) remove(PlayArea.PREFERENCE_KEY) else putString(PlayArea.PREFERENCE_KEY, area.encode())
+        }.apply()
+        updateAreaSummary()
+        zoneOverlay.update(ignoreZones, camera.frameSize, area)
+    }
+
+    private fun updateAreaSummary() {
+        val left = areaLearningUntil - System.nanoTime() / 1e9
+        areaSummary.text = "プレイ範囲: " + (playArea?.summary ?: "なし（全体）") +
+            if (areaLearningUntil > 0) String.format(Locale.JAPAN, "　覚えています… あと %.0f 秒", maxOf(0.0, left)) else ""
+    }
+
+    /** 露出補正（EV）。保存し、送信中ならそのまま適用する。 */
+    private fun setExposureBias(ev: Int, commandId: Int?, persist: Boolean = true) {
+        if (!ExposureBias.valid(ev)) return
+        exposureBias = ev
+        if (persist) prefs.edit().putInt(ExposureBias.PREFERENCE_KEY, ev).apply()
+        camera.setExposureBias(ev)
+        exposureSummary.text = camera.exposureStatus
+        Log.i(CameraSession.EXPOSURE_TAG, "set ev=$ev id=$commandId")
     }
 
     private fun toast(message: String) { Toast.makeText(this, message, Toast.LENGTH_LONG).show() }
