@@ -42,6 +42,14 @@ class Frames
             System.Runtime.InteropServices.RuntimeInformation.OSDescription + " / " +
             System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture);
         var tests = new PhoneSaberReceiverStateReadTests();
+        // 旧版比較の入力には無視範囲がないため、この回帰は現行入力で実行する。
+        if (args.Length == 0 || args[0] == "0")
+        {
+            foreach (bool ignoredBlue in new[] { false, true })
+                foreach (bool published in new[] { false, true })
+                    tests.IgnoredPacketDoesNotPublishSenderOrResetCoordinateTiming(ignoredBlue, published);
+            Console.WriteLine("Ignored packet source regression: 4 PASS");
+        }
         foreach (string gate in new[] { "lockObj", "lockObj2" })
         {
             CheckRegression(() => tests.IdleCoordinatesDoNotWaitForReceiverLock(gate),

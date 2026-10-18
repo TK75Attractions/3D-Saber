@@ -76,6 +76,68 @@ public class PhoneSaberReceiverStateReadTests
 #endif
     }
 
+    [TestCase(false, false)]
+    [TestCase(false, true)]
+    [TestCase(true, false)]
+    [TestCase(true, true)]
+    public void IgnoredPacketDoesNotPublishSenderOrResetCoordinateTiming(bool blue, bool published)
+    {
+        var input = CreateIdleInput();
+        bool previousEnabled = PhoneSaberIgnoreZones.Enabled;
+        try
+        {
+            PhoneSaberIgnoreZones.Enabled = false;
+            Action read = BindIdleRead(input), packet = BindPacket(input, blue);
+            BindPacket(input, !blue)();
+            if (published) packet();
+            read();
+            var timing = blue ? input.BlueCoordinateTiming : input.RedCoordinateTiming;
+            var otherTiming = blue ? input.RedCoordinateTiming : input.BlueCoordinateTiming;
+            string sender = blue ? input.BlueCoordinateSender : input.RedCoordinateSender;
+            double received = blue ? input.LastReceivedMonotonicTime2 : input.LastReceivedMonotonicTime;
+            Vector2 raw = blue ? input.LastRaw2 : input.LastRaw;
+            int revision = timing.SourceRevision, otherRevision = otherTiming.SourceRevision;
+            int samples = timing.Apply.Count, otherSamples = otherTiming.Apply.Count;
+            SetField(input, "ignoreZones", new System.Collections.Generic.List<Rect> { new Rect(.02f, .1f, .1f, .2f) });
+            SetField(input, "ignoreZonesRevision", PhoneSaberIgnoreZones.Revision);
+            SetField(input, "ignoreZonesStation", input.StationLabel);
+            PhoneSaberIgnoreZones.Enabled = true;
+
+            packet();
+            SetField(input, blue ? "rawSender2" : "rawSender", "ignored-phone");
+            string prefix = blue ? "rawX2" : "rawX1";
+            SetField(input, prefix + "a", 100f); SetField(input, prefix + "b", 120f);
+            prefix = blue ? "rawY2" : "rawY1";
+            SetField(input, prefix + "a", 200f); SetField(input, prefix + "b", 240f);
+            SetField(input, blue ? "rawX2" : "rawX", 110f);
+            SetField(input, blue ? "rawY2" : "rawY", 220f);
+            read();
+
+            Assert.AreEqual(1, blue ? input.IgnoredSamples2 : input.IgnoredSamples);
+            Assert.AreEqual(sender, blue ? input.BlueCoordinateSender : input.RedCoordinateSender,
+                "無視した受信の送信元を公開中の座標へ結び付けない");
+            Assert.AreEqual(revision, timing.SourceRevision);
+            Assert.AreEqual(samples, timing.Apply.Count);
+            Assert.AreEqual(received, blue ? input.LastReceivedMonotonicTime2 : input.LastReceivedMonotonicTime);
+            Assert.AreEqual(raw, blue ? input.LastRaw2 : input.LastRaw);
+            Assert.AreEqual(published, blue ? input.HasValidStickEndpoints2 : input.HasValidStickEndpoints);
+            Assert.AreEqual(new Vector2(100f / 1920, 200f / 1080), blue ? input.LastRawEndsA2 : input.LastRawEndsA,
+                "F8 用の生の端点は無視した受信でも更新する");
+            Assert.AreEqual(otherRevision, otherTiming.SourceRevision);
+            Assert.AreEqual(otherSamples, otherTiming.Apply.Count);
+
+            // 無視範囲の外へ戻れば、新しい送信元と座標を一緒に公開する。
+            packet();
+            SetField(input, blue ? "rawSender2" : "rawSender", "replacement-phone");
+            read();
+            Assert.AreEqual("replacement-phone", blue ? input.BlueCoordinateSender : input.RedCoordinateSender);
+            Assert.AreEqual(revision + 1, timing.SourceRevision);
+            Assert.AreEqual(1, timing.Apply.Count);
+            Assert.IsTrue(blue ? input.HasValidStickEndpoints2 : input.HasValidStickEndpoints);
+        }
+        finally { PhoneSaberIgnoreZones.Enabled = previousEnabled; DestroyIdleInput(input); }
+    }
+
     [TestCase(false)]
     [TestCase(true)]
     public void AutomaticPredictionExpiresBeforeTheNextPeriodicRefresh(bool blue)

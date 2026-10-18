@@ -741,11 +741,13 @@ public class InputPoint : MonoBehaviour
         bool updatedStick = false;
         float x1a = 0, y1a = 0, x1b = 0, y1b = 0;
         long receiveTimestampTicks = 0;
+        string sender = null;
         float x2 = 0, y2 = 0;
         bool updated2 = false;
         bool updatedStick2 = false;
         float x2a = 0, y2a = 0, x2b = 0, y2b = 0;
         long receiveTimestampTicks2 = 0;
+        string sender2 = null;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         string freezeReceiveLog1 = null;
         string freezeReceiveLog2 = null;
@@ -768,8 +770,7 @@ public class InputPoint : MonoBehaviour
                 y = rawY;
                 hasNewData = false;
                 receiveTimestampTicks = rawReceiveTimestampTicks;
-                if (RedCoordinateSender != rawSender) RedCoordinateTiming.ResetSource();
-                RedCoordinateSender = rawSender;
+                sender = rawSender;
                 updated = true;
                 updatedStick = hasStickData;
                 if (updatedStick)
@@ -798,8 +799,7 @@ public class InputPoint : MonoBehaviour
                 y2 = rawY2;
                 hasNewData2 = false;
                 receiveTimestampTicks2 = rawReceiveTimestampTicks2;
-                if (BlueCoordinateSender != rawSender2) BlueCoordinateTiming.ResetSource();
-                BlueCoordinateSender = rawSender2;
+                sender2 = rawSender2;
                 updated2 = true;
                 updatedStick2 = hasStickData2;
                 if (updatedStick2)
@@ -860,6 +860,9 @@ public class InputPoint : MonoBehaviour
         bool calibrated = PositionCalibrationEnabled;
         if (updated)
         {
+            // 無視した受信の送信元を、保持中の座標や遅延統計へ結び付けない。
+            if (RedCoordinateSender != sender) RedCoordinateTiming.ResetSource();
+            RedCoordinateSender = sender;
             LastRaw = new Vector2(x, y);
             if (calibrated) CalibrateCoordinates(ref x, ref y, ref x1a, ref y1a, ref x1b, ref y1b, updatedStick);
             // 中点: 正規化/ピクセルの判別と単位揃えは棒1・棒2共通の純関数で行う
@@ -910,6 +913,8 @@ public class InputPoint : MonoBehaviour
 
         if (updated2)
         {
+            if (BlueCoordinateSender != sender2) BlueCoordinateTiming.ResetSource();
+            BlueCoordinateSender = sender2;
             LastRaw2 = new Vector2(x2, y2);
             if (calibrated) CalibrateCoordinates(ref x2, ref y2, ref x2a, ref y2a, ref x2b, ref y2b, updatedStick2);
             // 棒2も棒1と同一の純関数で変換する。

@@ -34,6 +34,7 @@ public class PhoneSaberReceiverStateReadTests {
  public static Action BindIdleRead(InputPoint input) => () => {};
  public static Action BindPacket(InputPoint input, bool blue) => () => {};
  public static void DestroyIdleInput(InputPoint input) {}
+ public void IgnoredPacketDoesNotPublishSenderOrResetCoordinateTiming(bool blue, bool published) {}
  public void IdleCoordinatesDoNotWaitForReceiverLock(string field) {
   string failure = Environment.GetEnvironmentVariable("FRAME_GATE_FAILURE");
   if (field != (failure == "blue" ? "lockObj2" : "lockObj")) return;
