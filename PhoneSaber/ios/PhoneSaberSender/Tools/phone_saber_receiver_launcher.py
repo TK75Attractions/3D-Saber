@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import errno
 import fcntl
+import http.client
 import json
 import os
 import re
@@ -346,7 +347,7 @@ def fetch_receiver_health(port: int = DEFAULT_PORT,
             if response.status != 200:
                 return None
             payload = json.loads(response.read(65536).decode("utf-8", "replace"))
-    except (OSError, ValueError, urllib.error.URLError):
+    except (OSError, ValueError, urllib.error.URLError, http.client.HTTPException):
         return None
     if not isinstance(payload, dict) or payload.get("service") != "phonesaber-triage":
         return None

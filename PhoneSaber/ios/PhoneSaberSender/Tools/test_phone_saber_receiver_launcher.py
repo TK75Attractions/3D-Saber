@@ -16,6 +16,8 @@ import tempfile
 import time
 import unittest
 from pathlib import Path
+from socketserver import BaseRequestHandler, ThreadingTCPServer
+from threading import Thread
 from types import SimpleNamespace
 from unittest import mock
 
@@ -787,6 +789,53 @@ class StaleReceiverTests(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertIn("古いコード", output.getvalue())
         self.assertIn("再起動しない", output.getvalue())
+
+    def test_interrupted_health_response_does_not_abort_launcher_or_stop_receiver(self) -> None:
+        healthy = stale_health(4242)
+        body = json.dumps(healthy).encode("utf-8")
+        replies = iter((
+            b"HTTP/1.",
+            b"HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n20\r\n{",
+            b"HTTP/1.1 200 OK\r\nContent-Length: %d\r\n\r\n" % len(body) + body,
+        ))
+
+        class Receiver(BaseRequestHandler):
+            def handle(self):
+                self.request.settimeout(3)
+                request = b""
+                while b"\r\n\r\n" not in request:
+                    chunk = self.request.recv(4096)
+                    if not chunk:
+                        return
+                    request += chunk
+                self.request.sendall(next(replies))
+
+        with ThreadingTCPServer(("127.0.0.1", 0), Receiver) as server:
+            thread = Thread(target=server.serve_forever, kwargs={"poll_interval": 0.05})
+            thread.start()
+            try:
+                port = server.server_address[1]
+                log_dir = self.repo.parent / "logs"
+                log_dir.mkdir()
+                lock, _ = launcher._acquire_single_instance_lock(log_dir)
+                self.assertIsNotNone(lock)
+                self.addCleanup(lock.close)
+                launcher._write_lock_metadata(lock, pid=4242, repo_root=self.repo,
+                                               log_path=log_dir / "active.log")
+                # 停止中の受信側が status 行 / body の途中で切断する順序を実 TCP で再現する。
+                for phase in ("status", "body"):
+                    with self.subTest(phase=phase), contextlib.redirect_stdout(io.StringIO()) as output:
+                        code = launcher.run_receiver(
+                            self.repo, snapshot_for(self.repo), log_dir,
+                            health_fetcher=lambda _port: launcher.fetch_receiver_health(port),
+                            stopper=lambda _pid: self.fail("unconfirmed receiver must not be stopped"),
+                            listener_finder=lambda _port: self.fail("must not start another receiver"))
+                        self.assertEqual(code, 0)
+                        self.assertIn("応答がない", output.getvalue())
+                self.assertEqual(launcher.fetch_receiver_health(port), healthy)
+            finally:
+                server.shutdown()
+                thread.join(timeout=3)
 
     def test_idle_stale_receiver_is_stopped_and_replaced(self) -> None:
         if not hasattr(signal, "SIGINT"):
