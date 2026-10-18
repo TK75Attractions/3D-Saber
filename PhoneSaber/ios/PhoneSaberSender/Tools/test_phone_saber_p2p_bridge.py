@@ -550,6 +550,7 @@ class P2PBridgeLauncherTests(unittest.TestCase):
             return min(len(pids), len(buffer))
 
         libproc = mock.Mock()
+        libproc.proc_listallpids.return_value = 0
         libproc.proc_listchildpids.side_effect = children
         with mock.patch.object(launcher.ctypes, "CDLL", return_value=libproc), \
                 mock.patch.object(launcher.os, "kill") as kill:
@@ -574,6 +575,7 @@ class P2PBridgeLauncherTests(unittest.TestCase):
             return min(len(pids), len(buffer))
 
         libproc = mock.Mock()
+        libproc.proc_listallpids.return_value = 0
         libproc.proc_listchildpids.side_effect = children
         with mock.patch.object(launcher.ctypes, "CDLL", return_value=libproc), \
                 mock.patch.object(launcher.os, "kill") as kill:
@@ -583,12 +585,36 @@ class P2PBridgeLauncherTests(unittest.TestCase):
         self.assertEqual([call.args[0] for call in kill.call_args_list
                           if call.args[1] == signal.SIGKILL], [105, 104, 103, 102, 101, 100])
 
+    def test_compiler_cleanup_leaves_other_sessions_alone(self):
+        def processes(buffer, size):
+            if buffer is None:
+                return 4
+            self.assertEqual(size, launcher.ctypes.sizeof(buffer))
+            buffer[:3] = [100, 101, 200]
+            return 3
+
+        libproc = mock.Mock()
+        libproc.proc_listallpids.side_effect = processes
+        libproc.proc_listchildpids.return_value = 0
+        for parent_exited in (False, True):
+            with self.subTest(parent_exited=parent_exited), \
+                    mock.patch.object(launcher.ctypes, "CDLL", return_value=libproc), \
+                    mock.patch.object(launcher.os, "getsid", side_effect=lambda pid: 100 if pid == 101 else 200), \
+                    mock.patch.object(launcher.os, "kill") as kill:
+                launcher._kill_compiler_tree(100, parent_exited=parent_exited)
+            pids = [101] if parent_exited else [100, 101]
+            self.assertEqual(kill.call_args_list,
+                             [mock.call(pid, signal.SIGSTOP) for pid in pids]
+                             + [mock.call(pid, signal.SIGKILL) for pid in reversed(pids)])
+
     @unittest.skipUnless(sys.platform == "darwin", "requires macOS libproc")
     def test_interrupted_build_stops_compiler_descendants(self):
-        for signum in (signal.SIGTERM, signal.SIGINT):
-            with self.subTest(signal=signum), tempfile.TemporaryDirectory() as directory:
+        cases = [(sig, exited) for sig in (signal.SIGTERM, signal.SIGINT) for exited in (False, True)]
+        for signum, driver_exits in cases:
+            with self.subTest(signal=signum, driver_exits=driver_exits), tempfile.TemporaryDirectory() as directory:
                 root = Path(directory)
                 ready = root / "frontend-ready"
+                communicating = root / "communicating"
                 driver_pid = root / "driver-pid"
                 frontend = root / "frontend.py"
                 frontend.write_text(
@@ -610,7 +636,8 @@ class P2PBridgeLauncherTests(unittest.TestCase):
                     f"pathlib.Path({str(driver_pid)!r}).write_text(str(os.getpid()))\n"
                     "pathlib.Path(sys.argv[1]).write_bytes(b'partial compiler output')\n"
                     f"subprocess.Popen([sys.executable, {str(frontend)!r}])\n"
-                    "time.sleep(60)\n")
+                    f"while not pathlib.Path({str(ready)!r}).exists(): time.sleep(0.01)\n"
+                    + ("sys.exit(1)\n" if driver_exits else "time.sleep(60)\n"))
                 harness = root / "build.py"
                 harness.write_text(
                     "import pathlib, subprocess, sys\n"
@@ -618,15 +645,23 @@ class P2PBridgeLauncherTests(unittest.TestCase):
                     "import phone_saber_p2p_bridge as launcher\n"
                     "popen = subprocess.Popen\n"
                     "def compile(command, **kwargs):\n"
-                    f"    return popen([sys.executable, {str(driver)!r}, command[-1]], **kwargs)\n"
+                    f"    compiler = popen([sys.executable, {str(driver)!r}, command[-1]], **kwargs)\n"
+                    + ("    compiler.wait(timeout=10)\n" if driver_exits else "") +
+                    "    communicate = compiler.communicate\n"
+                    "    def wait_output():\n"
+                    f"        pathlib.Path({str(communicating)!r}).touch()\n"
+                    "        return communicate()\n"
+                    "    compiler.communicate = wait_output\n"
+                    "    return compiler\n"
                     "launcher.subprocess.Popen = compile\n"
                     f"launcher.build(pathlib.Path({str(root / 'cache')!r}))\n")
                 process = subprocess.Popen([sys.executable, "-B", str(harness)],
                                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 try:
                     deadline = time.monotonic() + 10
-                    while not ready.exists() and process.poll() is None and time.monotonic() < deadline:
+                    while (not ready.exists() or not communicating.exists()) and process.poll() is None and time.monotonic() < deadline:
                         time.sleep(0.02)
+                    self.assertTrue(communicating.exists(), "launcher did not start waiting for compiler output")
                     self.assertTrue(ready.exists(), "compiler frontend did not start")
                     _, port = map(int, ready.read_text().split())
                     with socket.create_connection(("127.0.0.1", port), timeout=3) as client:

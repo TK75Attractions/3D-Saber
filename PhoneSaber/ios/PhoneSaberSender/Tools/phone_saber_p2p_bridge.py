@@ -35,14 +35,33 @@ DEFAULT_CACHE = Path.home() / "Library" / "Caches" / "PhoneSaber" / "p2p-bridge"
 BINARY_NAME = "PhoneSaberP2PBridge"
 
 
-def _kill_compiler_tree(pid: int) -> None:
+def _kill_compiler_tree(pid: int, *, parent_exited: bool = False) -> None:
     # swift-frontend creates its own process group. Freeze each parent before
     # enumerating children so cancellation cannot race with another compiler job.
     libproc = ctypes.CDLL("/usr/lib/libproc.dylib")
-    pending = [pid]
+    # 回収済みの親 PID は再利用され得るので、直接は止めない。
+    pending = [] if parent_exited else [pid]
+    # swiftc 終了後は frontend が親から切り離される。専用 session の残存 process も回収する。
+    capacity = libproc.proc_listallpids(None, 0)
+    while capacity > 0:
+        processes = (ctypes.c_int * capacity)()
+        count = libproc.proc_listallpids(processes, ctypes.sizeof(processes))
+        if count < capacity:
+            for current in processes[:max(0, count)]:
+                if current <= 0 or current == pid:
+                    continue
+                try:
+                    if os.getsid(current) == pid:
+                        pending.append(current)
+                except OSError:
+                    pass
+            break
+        capacity *= 2
     stopped = []
     try:
         for current in pending:
+            if current in stopped:
+                continue
             try:
                 os.kill(current, signal.SIGSTOP)
             except ProcessLookupError:
@@ -95,8 +114,7 @@ def build(cache_dir: Path = DEFAULT_CACHE, *, force: bool = False) -> Path:
     def stop_compiler(signum, _frame):
         # Unity stopping Play during the first build: stop swiftc and its frontend children.
         try:
-            if compiler.poll() is None:
-                _kill_compiler_tree(compiler.pid)
+            _kill_compiler_tree(compiler.pid, parent_exited=compiler.poll() is not None)
         finally:
             compiler.wait()
             temporary.unlink(missing_ok=True)
