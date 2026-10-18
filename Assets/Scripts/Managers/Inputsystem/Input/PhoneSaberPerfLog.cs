@@ -89,6 +89,8 @@ public sealed class PhoneSaberPerfLog : MonoBehaviour
         if (!window.Started || !currentContext.Equals(context))
         {
             context = currentContext;
+            // 計測窓と一緒に、切替前の描画条件で作った表示用の推定も無効にする。
+            estimateInput = null;
             window.Start(now);
             input?.RedCoordinateTiming.ClearWindow();
             input?.BlueCoordinateTiming.ClearWindow();

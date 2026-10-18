@@ -37,6 +37,68 @@ public class AutoLatencyWindowTests
 {
     static void Invoke(PhoneSaberPerfLog log, string method) => typeof(PhoneSaberPerfLog)
         .GetMethod(method, BindingFlags.Instance | BindingFlags.NonPublic).Invoke(log, null);
+
+    [TestCase("scene")]
+    [TestCase("vsync")]
+    [TestCase("target")]
+    [TestCase("refresh")]
+    [TestCase("size")]
+    public void ChangedRenderingConditionsInvalidateBothCachedEstimatesUntilRemeasured(string change)
+    {
+        var previousInput = InputPoint.Instance;
+        var previousScene = SceneManager.Active;
+        int previousVsync = QualitySettings.vSyncCount, previousTarget = Application.targetFrameRate;
+        int previousWidth = Screen.width;
+        var previousResolution = Screen.currentResolution;
+        Time.realtimeSinceStartupAsDouble = 0;
+        var log = new PhoneSaberPerfLog();
+        var input = new InputPoint { RedCoordinateSender="red", BlueCoordinateSender="blue", StationLabel="A" };
+        InputPoint.Instance = input;
+        Invoke(log, "OnEnable"); Invoke(log, "Update");
+        try
+        {
+            var text = System.IO.File.ReadAllLines("PhoneSaber/tools/fixtures/protocol_metrics.tsv")[1].Split('\t')[1];
+            var metrics = System.Text.Encoding.ASCII.GetBytes(text);
+            input.Metrics.Receive(metrics, metrics.Length, "red", 5);
+            input.Metrics.Receive(metrics, metrics.Length, "blue", 5);
+            input.LastReceivedMonotonicTime = input.LastReceivedMonotonicTime2 = 9.993;
+            foreach (var timing in new[] { input.RedCoordinateTiming, input.BlueCoordinateTiming })
+            { timing.Applied(9.993, 9.998); timing.BeforeRender(10, 1); }
+            Time.realtimeSinceStartupAsDouble = 10; Invoke(log, "Update");
+            foreach (bool blue in new[] { false, true })
+                StringAssert.Contains("約62 ms", PhoneSaberPerfLog.LatencyLine(blue, 10));
+
+            if (change == "scene") SceneManager.Active = new Scene { name="Game", handle=previousScene.handle + 1 };
+            if (change == "vsync") QualitySettings.vSyncCount = previousVsync == 0 ? 1 : 0;
+            if (change == "target") Application.targetFrameRate = previousTarget == 30 ? 60 : 30;
+            if (change == "refresh") Screen.currentResolution = new Resolution { refreshRateRatio=new Rate { value=120 } };
+            if (change == "size") Screen.width = previousWidth + 1;
+            input.LastReceivedMonotonicTime = input.LastReceivedMonotonicTime2 = 10.993;
+            Time.realtimeSinceStartupAsDouble = 11; Invoke(log, "Update");
+            foreach (bool blue in new[] { false, true })
+                StringAssert.Contains("計測不足", PhoneSaberPerfLog.LatencyLine(blue, 11),
+                    "条件変更で捨てたPC計測の推定値をF8に残さない");
+
+            // 条件変更で10秒周期を延期せず、新しい窓の標本が揃えば表示へ復帰する。
+            input.Metrics.Receive(metrics, metrics.Length, "red", 19);
+            input.Metrics.Receive(metrics, metrics.Length, "blue", 19);
+            input.LastReceivedMonotonicTime = input.LastReceivedMonotonicTime2 = 19.993;
+            foreach (var timing in new[] { input.RedCoordinateTiming, input.BlueCoordinateTiming })
+            { timing.Applied(19.993, 19.998); timing.BeforeRender(20, 2); }
+            Time.realtimeSinceStartupAsDouble = 20; Invoke(log, "Update");
+            foreach (bool blue in new[] { false, true })
+                StringAssert.Contains(change == "refresh" ? "約58 ms" : "約62 ms",
+                    PhoneSaberPerfLog.LatencyLine(blue, 20));
+        }
+        finally
+        {
+            Invoke(log, "OnDisable"); InputPoint.Instance = previousInput;
+            SceneManager.Active = previousScene; QualitySettings.vSyncCount = previousVsync;
+            Application.targetFrameRate = previousTarget; Screen.width = previousWidth;
+            Screen.currentResolution = previousResolution;
+        }
+    }
+
     [TestCase(false, false)]
     [TestCase(true, false)]
     [TestCase(false, true)]
