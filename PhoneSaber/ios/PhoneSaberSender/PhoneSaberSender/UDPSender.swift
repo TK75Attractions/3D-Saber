@@ -608,6 +608,11 @@ final class LANLivenessProbe {
         self.clock = clock
     }
 
+    deinit {
+        // 所有側の破棄でも、探索・メトリクス用の接続と周期タイマーを残さない。
+        stop()
+    }
+
     /// 同じ host なら何もしない（応答履歴を保つ）。
     func start(host: String) {
         lock.lock()
@@ -664,6 +669,11 @@ final class LANLivenessProbe {
     var createdConnectionCountForTesting: Int {
         lock.lock(); defer { lock.unlock() }
         return createdConnectionCount
+    }
+
+    var resourcesForTesting: (connection: NWConnection?, timer: DispatchSourceTimer?) {
+        lock.lock(); defer { lock.unlock() }
+        return (connection, timer)
     }
 
     var sentRequestCountForTesting: Int {

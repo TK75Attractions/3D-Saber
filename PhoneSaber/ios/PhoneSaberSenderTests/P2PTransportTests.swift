@@ -968,6 +968,30 @@ final class P2PTransportTests: XCTestCase {
         XCTAssertTrue(cancelled, "所有側の破棄後に両色の LAN 接続を残さない")
     }
 
+    func testReleasingLANProbeWithoutStopCancelsConnectionAndTimer() async throws {
+        let unity = try FakeUnityDiscovery()
+        defer { unity.stop() }
+        let port = try await unity.ready()
+        var probe: LANLivenessProbe? = LANLivenessProbe(port: port.rawValue)
+        probe?.start(host: "127.0.0.1")
+        let alive = await waitFor { probe?.isAlive == true }
+        XCTAssertTrue(alive)
+        let resources = try XCTUnwrap(probe?.resourcesForTesting)
+        let connection = try XCTUnwrap(resources.connection)
+        let timer = try XCTUnwrap(resources.timer)
+        defer { connection.cancel(); timer.cancel() }
+        weak var released = probe
+        probe = nil
+        let deallocated = await waitFor { released == nil }
+        XCTAssertTrue(deallocated)
+        XCTAssertTrue(timer.isCancelled, "所有側の破棄後に探索タイマーを残さない")
+        let cancelled = await waitFor {
+            if case .cancelled = connection.state { return true }
+            return false
+        }
+        XCTAssertTrue(cancelled, "所有側の破棄後に探索・メトリクス用の LAN 接続を残さない")
+    }
+
     func testReleasingSenderWithoutStopCancelsTheConnection() async throws {
         let bridge = try FakeBridge()
         defer { bridge.stop() }

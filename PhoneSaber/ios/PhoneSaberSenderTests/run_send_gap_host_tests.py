@@ -21,6 +21,10 @@ def main():
             if name == "UDPSender.swift" and "var connectionsForTesting:" not in previous:
                 getter = block((SOURCE / name).read_text(), "var connectionsForTesting:")
                 previous = previous.replace("    var rejectedCompletionCountForTesting:", "    " + getter + "\n    var rejectedCompletionCountForTesting:")
+            if name == "UDPSender.swift" and "var resourcesForTesting:" not in previous:
+                # 観測用 getter だけを補い、旧版の解放漏れをアサーションで検証する。
+                getter = block((SOURCE / name).read_text(), "var resourcesForTesting:")
+                previous = previous.replace("    var sentRequestCountForTesting:", "    " + getter + "\n    var sentRequestCountForTesting:")
             if name == "P2PSender.swift" and "var connectionForTesting:" not in previous:
                 # 旧実装にも観測用 getter だけを足し、解放処理は変更せず検証する。
                 getter = block((SOURCE / name).read_text(), "var connectionForTesting:")
@@ -122,6 +126,7 @@ final class DebugBundleTransfer {
         support += block(tests, marker) + "\n"
     focused = "import XCTest\nimport Network\nimport Foundation\nfinal class SendGapNetworkTests: XCTestCase {\n"
     for name in ["testReleasingUDPSenderWithoutStopCancelsBothConnections",
+                 "testReleasingLANProbeWithoutStopCancelsConnectionAndTimer",
                  "testReleasingSenderWithoutStopCancelsTheConnection",
                  "testFailedBrowserReplacesPendingWaitingRetry",
                  "testLANProbeDoesNotQueueRequestsBeforeReadyAndRecoversAfterHostChange",
