@@ -8,6 +8,65 @@ using UnityEngine;
 
 public class PhoneSaberReceiverLifecycleTests
 {
+    [TestCase("receiver", 1)]
+    [TestCase("receiver", 2)]
+    [TestCase("stick", 1)]
+    [TestCase("stick", 2)]
+    [TestCase("calibration", 1)]
+    [TestCase("calibration", 2)]
+    public void StabilizerDoesNotReuseBladeAcrossInputSources(string change, int stick)
+    {
+        var go = new GameObject("揺れ止めの入力源切替テスト");
+        go.SetActive(false);
+        var input = go.AddComponent<InputPoint>();
+        var replacementObject = new GameObject("再生成した受信機");
+        replacementObject.SetActive(false);
+        var replacement = replacementObject.AddComponent<InputPoint>();
+        var bridge = go.AddComponent<SaberInputBridge>();
+        bridge.stickIndex = stick;
+        const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
+        var resolve = typeof(SaberInputBridge).GetMethod("ResolveStabilizer", flags);
+        var stabilize = typeof(SaberInputBridge).GetMethod("StabilizeEndpoints", flags);
+        string station = "stab-" + System.Guid.NewGuid().ToString("N").Substring(0, 8);
+        try
+        {
+            foreach (var receiver in new[] { input, replacement })
+            {
+                Set(receiver, "phoneSaberStation", station);
+                foreach (string property in new[] { "RedCoordinateSender", "BlueCoordinateSender" })
+                    typeof(InputPoint).GetProperty(property).SetValue(receiver, "192.168.1.10");
+                typeof(InputPoint).GetProperty("LastReceivedMonotonicTime").SetValue(receiver, 10.0);
+                typeof(InputPoint).GetProperty("LastReceivedMonotonicTime2").SetValue(receiver, 10.0);
+            }
+            var a = new Vector2(0, -.5f); var b = new Vector2(0, .5f);
+            Assert.IsTrue((bool)resolve.Invoke(bridge, new object[] { input }));
+            stabilize.Invoke(bridge, new object[] { input, a, b });
+
+            if (change == "receiver") input = replacement;
+            if (change == "stick") bridge.stickIndex = stick == 1 ? 2 : 1;
+            if (change == "calibration")
+                typeof(InputPoint).GetProperty("PredictionRevision").SetValue(input, input.PredictionRevision + 1);
+            // 同じ台・IPでも、受信機・色・座標補正が変われば別の端点履歴になる。
+            typeof(InputPoint).GetProperty(bridge.stickIndex == 2
+                ? "LastReceivedMonotonicTime2" : "LastReceivedMonotonicTime").SetValue(input, 10.01);
+            resolve.Invoke(bridge, new object[] { input });
+            Vector2 shift = new Vector2(3, 0);
+            object[] moved = { input, a + shift, b + shift };
+            stabilize.Invoke(bridge, moved);
+            Assert.AreEqual(a + shift, moved[1], "新しい入力源の初回端点を前の刃へ戻さない");
+            Assert.AreEqual(b + shift, moved[2]);
+
+            // 同じ入力源の次の単発の跳びは、従来どおり抑える。
+            typeof(InputPoint).GetProperty(bridge.stickIndex == 2
+                ? "LastReceivedMonotonicTime2" : "LastReceivedMonotonicTime").SetValue(input, 10.02);
+            resolve.Invoke(bridge, new object[] { input });
+            object[] jumped = { input, a, b };
+            stabilize.Invoke(bridge, jumped);
+            Assert.AreEqual(moved[1], jumped[1]); Assert.AreEqual(moved[2], jumped[2]);
+        }
+        finally { Object.DestroyImmediate(go); Object.DestroyImmediate(replacementObject); }
+    }
+
     [TestCase(false, false)]
     [TestCase(false, true)]
     [TestCase(true, false)]

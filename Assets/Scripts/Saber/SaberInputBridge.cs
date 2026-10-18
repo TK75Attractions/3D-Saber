@@ -82,6 +82,8 @@ public class SaberInputBridge : MonoBehaviour
     readonly PhoneSaberBladeStabilizer bladeStabilizer = new PhoneSaberBladeStabilizer();
     bool stabilizerEnabled = true;
     int stabilizerRevision = -1;
+    InputPoint stabilizerInput;
+    int stabilizerStickIndex, stabilizerInputRevision;
     string stabilizerStation, stabilizerSender;
     double stabilizerLogAt;
     InputPoint filterInput;
@@ -214,8 +216,12 @@ public class SaberInputBridge : MonoBehaviour
             stabilizerRevision = PhoneSaberBladeStabilizerSettings.Revision;
             bladeStabilizer.Reset();
         }
-        // 台・送信元が変わったら、前の刃の履歴を混ぜない。
-        if (stabilizerStation != station || stabilizerSender != sender) bladeStabilizer.Reset();
+        // 台・入力源・送信元・位置補正が変わったら、前の刃の履歴を混ぜない。
+        if (stabilizerInput != input || stabilizerStickIndex != stickIndex ||
+            stabilizerInputRevision != input.PredictionRevision ||
+            stabilizerStation != station || stabilizerSender != sender) bladeStabilizer.Reset();
+        stabilizerInput = input; stabilizerStickIndex = stickIndex;
+        stabilizerInputRevision = input.PredictionRevision;
         stabilizerStation = station; stabilizerSender = sender;
         return stabilizerEnabled;
     }
