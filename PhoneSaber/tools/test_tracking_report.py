@@ -165,6 +165,30 @@ class TrackingReportTests(unittest.TestCase):
             with contextlib.redirect_stdout(io.StringIO()), mock.patch("sys.argv", ["tracking_report.py", str(path)]):
                 self.assertEqual(tracking_report.main(), 1)
 
+    def test_incomplete_rows_do_not_break_loading_complete_records(self):
+        complete = "F,0.0,0.5\nF,0.1,0.6\nR,0.1,1,2,3,4\nR,0.2,5,6,7,8\n"
+        for row in ("F,0.2,0.7", "R,0.3,9,10,11,12"):
+            parts = row.split(",")
+            for count in range(1, len(parts)):
+                truncated = ",".join(parts[:count])
+                with self.subTest(truncated=truncated), tempfile.TemporaryDirectory() as directory:
+                    path = Path(directory) / "tracking-interrupted.csv"
+                    path.write_text(complete + truncated, encoding="utf-8")
+                    frames, packets = tracking_report.load(path)
+                    np.testing.assert_array_equal(frames, [[0.0, 0.5], [0.1, 0.6]])
+                    np.testing.assert_array_equal(packets, [[0.1, 1, 2, 3, 4], [0.2, 5, 6, 7, 8]])
+
+    def test_report_runs_with_a_truncated_final_packet(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "tracking-interrupted.csv"
+            synthetic(path, lag=0.100, seconds=10.0)
+            with path.open("a", encoding="utf-8") as handle:
+                handle.write("R,10.0,0.1,0.2,0.3")
+            output = io.StringIO()
+            with contextlib.redirect_stdout(output), mock.patch("sys.argv", ["tracking_report.py", str(path)]):
+                self.assertEqual(tracking_report.main(), 0)
+            self.assertIn("見た目の遅れ: 100 ms", output.getvalue())
+
 
 class LatencyMatrixTests(unittest.TestCase):
     def test_ios_discovery_skips_disconnected_and_unavailable_devices(self):

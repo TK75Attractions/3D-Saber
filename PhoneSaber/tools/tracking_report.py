@@ -36,7 +36,7 @@ def load(path):
             if parts[0] == "F":
                 frames.append((float(parts[1]), float(parts[2])))
             elif parts[0] == "R":
-                packets.append(tuple(float(value) for value in parts[1:6]))
+                packets.append(tuple(float(parts[index]) for index in range(1, 6)))
         except (ValueError, IndexError):
             continue
     return np.array(frames), np.array(packets)
