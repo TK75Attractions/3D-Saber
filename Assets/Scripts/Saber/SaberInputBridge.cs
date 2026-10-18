@@ -78,6 +78,12 @@ public class SaberInputBridge : MonoBehaviour
     Transform SaberTransform => saberTransform ?? (saberTransform = transform);
     PhoneSaberEndpointPredictor endpointPredictor;
     readonly PhoneSaberEndpointFilter endpointFilter = new PhoneSaberEndpointFilter();
+    // 剣の揺れ止め（長さの急変と誤認識の跳びだけを抑える。PhoneSaberBladeStabilizer）。フィルタ・予測より前に掛ける。
+    readonly PhoneSaberBladeStabilizer bladeStabilizer = new PhoneSaberBladeStabilizer();
+    bool stabilizerEnabled = true;
+    int stabilizerRevision = -1;
+    string stabilizerStation, stabilizerSender;
+    double stabilizerLogAt;
     InputPoint filterInput;
     int filterStickIndex, filterInputRevision, filterSettingsRevision, filterMode;
     string filterStation, filterSender;
@@ -165,6 +171,7 @@ public class SaberInputBridge : MonoBehaviour
 
     void ResetEndpointProcessing()
     {
+        bladeStabilizer.Reset();
         endpointFilter.Reset();
         filterInput = null;
         ResetPrediction();
@@ -195,6 +202,37 @@ public class SaberInputBridge : MonoBehaviour
             filterMode = mode;
         }
         return mode;
+    }
+
+    bool ResolveStabilizer(InputPoint input)
+    {
+        string station = input.StationLabel;
+        string sender = stickIndex == 2 ? input.BlueCoordinateSender : input.RedCoordinateSender;
+        if (stabilizerRevision != PhoneSaberBladeStabilizerSettings.Revision || stabilizerStation != station)
+        {
+            stabilizerEnabled = PhoneSaberBladeStabilizerSettings.Load(station);
+            stabilizerRevision = PhoneSaberBladeStabilizerSettings.Revision;
+            bladeStabilizer.Reset();
+        }
+        // 台・送信元が変わったら、前の刃の履歴を混ぜない。
+        if (stabilizerStation != station || stabilizerSender != sender) bladeStabilizer.Reset();
+        stabilizerStation = station; stabilizerSender = sender;
+        return stabilizerEnabled;
+    }
+
+    void StabilizeEndpoints(InputPoint input, ref Vector2 a, ref Vector2 b)
+    {
+        double stamp = stickIndex == 2 ? input.LastReceivedMonotonicTime2 : input.LastReceivedMonotonicTime;
+        bladeStabilizer.Apply(stamp, a, b, out a, out b);
+        // 効き具合を 10 秒ごとに残す（play_report・比較用）。
+        double now = Time.realtimeSinceStartupAsDouble;
+        if (now < stabilizerLogAt) return;
+        if (stabilizerLogAt > 0 && bladeStabilizer.Samples > 0)
+            PhoneSaberEventLog.Record(input.StationLabel, stickIndex == 2 ? "BLUE" : "RED", "blade-stability",
+                "samples=" + bladeStabilizer.Samples + " rejected-jumps=" + bladeStabilizer.RejectedJumps +
+                " limited-lengths=" + bladeStabilizer.LimitedLengths);
+        bladeStabilizer.ResetCounters();
+        stabilizerLogAt = now + 10;
     }
 
     void FilterEndpoints(InputPoint input, int mode, ref Vector2 a, ref Vector2 b)
@@ -394,12 +432,15 @@ public class SaberInputBridge : MonoBehaviour
                 Vector2 endA = stickIndex == 2 ? ip.LocalStickRawA2 : ip.LocalStickRawA;
                 Vector2 endB = stickIndex == 2 ? ip.LocalStickRawB2 : ip.LocalStickRawB;
                 int mode = ResolveFilterMode(ip);
+                bool stabilizing = ResolveStabilizer(ip);
                 bool filtering = mode != PhoneSaberEndpointFilter.Off;
                 bool predicting = ip.PredictionLead(stickIndex == 2) > 0;
-                bool processing = filtering || predicting;
+                bool processing = stabilizing || filtering || predicting;
                 Vector3 observedA = new Vector3(endA.x, endA.y, fixedZ);
                 Vector3 observedB = new Vector3(endB.x, endB.y, fixedZ);
-                // フィルタ→予測の順。両方 OFF は元の端点・演算順のまま。
+                // 揺れ止め→フィルタ→予測の順。すべて OFF は元の端点・演算順のまま。
+                if (stabilizing) StabilizeEndpoints(ip, ref endA, ref endB);
+                else bladeStabilizer.Reset();
                 if (filtering) FilterEndpoints(ip, mode, ref endA, ref endB);
                 if (predicting) PredictEndpoints(ip, ref endA, ref endB);
                 else ResetPrediction();

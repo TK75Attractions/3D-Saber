@@ -330,6 +330,13 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
                 PhoneSaberFilterSettings.Save(name, value);
         GUILayout.EndHorizontal();
         GUILayout.Label("初期値はOFF。静止時の揺れを少し抑えます。速い振りにも小さな遅れが加わります。", textStyle);
+        bool stable = PhoneSaberBladeStabilizerSettings.Load(name);
+        GUILayout.Label($"剣の揺れ止め（伸び縮み・誤認識の跳び）: {(stable ? "ON" : "OFF")}（この台に保存）", textStyle);
+        GUILayout.BeginHorizontal();
+        if (GUILayout.Button((stable ? "" : "● ") + "OFF", buttonStyle) && stable) PhoneSaberBladeStabilizerSettings.Save(name, false);
+        if (GUILayout.Button((stable ? "● " : "") + "ON", buttonStyle) && !stable) PhoneSaberBladeStabilizerSettings.Save(name, true);
+        GUILayout.EndHorizontal();
+        GUILayout.Label("既定ON。剣の中心と向きはそのまま（遅れなし）、急な伸び縮みと一瞬の跳びだけを抑えて、勝手に切れるのを減らします。", textStyle);
     }
 
     void Refresh(double now)
