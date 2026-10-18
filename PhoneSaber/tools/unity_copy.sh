@@ -218,7 +218,9 @@ build-mac)
     # ゲーム本体のアイコン（PhoneSaber/mac/app/icon.icns）を入れて、ad-hoc 署名をやり直す。ProjectSettings は変えない。
     if [[ -f "$ROOT/PhoneSaber/mac/app/icon.icns" && -f "$staged/Contents/Resources/PlayerIcon.icns" ]]; then
         cp "$ROOT/PhoneSaber/mac/app/icon.icns" "$staged/Contents/Resources/PlayerIcon.icns" &&
-            codesign --force --deep --sign - "$staged" >/dev/null 2>&1 || echo "build-mac: アイコンの差し替えに失敗（ゲームは元のアイコンのまま）"
+            codesign --force --deep --sign - "$staged" >/dev/null 2>&1 || {
+                echo "build-mac: アイコンの差し替え・再署名に失敗したので差し替えていません"; exit 1;
+            }
     fi
     # smoke / コピーの待ち時間に運営側が起動した場合も、稼働中の app は差し替えない。
     if pgrep -f "/3D-Saber.app/Contents/MacOS/" >/dev/null; then

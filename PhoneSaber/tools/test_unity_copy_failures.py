@@ -11,7 +11,7 @@ SOURCE = Path(__file__).with_name("unity_copy.sh")
 
 class UnityCopyFailureTests(unittest.TestCase):
     def run_branch(self, mode, cleanup_failure=False, copy_failure=False, promotion_failure=False, game_starts=False,
-                   smoke_results=None):
+                   smoke_results=None, icon_result=None):
         source = SOURCE.read_text()
         smoke = "smoke_player() {" + source.split("smoke_player() {", 1)[1].split("\n}\n", 1)[0] + "\n}\n"
         branch = source.split(mode + ")\n", 1)[1].split("\n    ;;", 1)[0]
@@ -20,6 +20,10 @@ class UnityCopyFailureTests(unittest.TestCase):
             app = root / "Builds/Mac/3D-Saber.app"
             app.mkdir(parents=True)
             (app / "previous-player").write_text("working player")
+            if icon_result is not None:
+                icon = root / "PhoneSaber/mac/app/icon.icns"
+                icon.parent.mkdir(parents=True)
+                icon.write_text("new icon")
             out = root / "out"
             out.mkdir()
             copy = root / "copy"
@@ -58,7 +62,13 @@ ditto() {
     mkdir -p "$2"
     if [[ "$COPY_FAILURE" == 1 ]]; then printf partial > "$2/incomplete"; return 1; fi
     printf complete > "$2/new-player"
+    if [[ -n "$ICON_RESULT" ]]; then
+        mkdir -p "$2/Contents/Resources"
+        printf original > "$2/Contents/Resources/PlayerIcon.icns"
+    fi
 }
+codesign() { touch "$OUT/signed"; [[ "$ICON_RESULT" != sign ]]; }
+if [[ "$ICON_RESULT" == copy ]]; then cp() { return 1; }; fi
 if [[ "$PROMOTION_FAILURE" == 1 ]]; then
     mv() { [[ "$1" == */.3D-Saber-new.app ]] && return 1; command mv "$@"; }
 fi
@@ -70,8 +80,11 @@ fi
                                              COPY_FAILURE=str(int(copy_failure)),
                                              PROMOTION_FAILURE=str(int(promotion_failure)),
                                              GAME_STARTS=str(int(game_starts)),
-                                             SMOKE_RESULTS=smoke_results or "ok"))
+                                             SMOKE_RESULTS=smoke_results or "ok", ICON_RESULT=icon_result or ""))
             self.smoke_calls = int((out / "smoke-calls").read_text()) if (out / "smoke-calls").exists() else 0
+            self.signed = (out / "signed").exists()
+            icon = app / "Contents/Resources/PlayerIcon.icns"
+            self.distributed_icon = icon.read_text() if icon.exists() else None
             return result, called.exists(), (app / "previous-player").is_file()
 
     def test_flow_only_smoke_failure_is_retried_once(self):
@@ -113,6 +126,21 @@ fi
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertTrue(launched)
         self.assertFalse(previous)
+
+    def test_failed_icon_copy_or_signing_keeps_the_previous_player(self):
+        for failure in ("copy", "sign"):
+            with self.subTest(failure=failure):
+                result, _, previous = self.run_branch("build-mac", icon_result=failure)
+                self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assertTrue(previous, "アイコン差し替え・再署名に失敗した Player を配布しない")
+                self.assertEqual(self.signed, failure == "sign")
+
+    def test_successful_icon_signing_distributes_the_new_player(self):
+        result, _, previous = self.run_branch("build-mac", icon_result="ok")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertFalse(previous)
+        self.assertTrue(self.signed)
+        self.assertEqual(self.distributed_icon, "new icon")
 
     def test_failed_promotion_restores_the_previous_player(self):
         result, _, previous = self.run_branch("build-mac", promotion_failure=True)
