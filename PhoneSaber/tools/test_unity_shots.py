@@ -10,7 +10,7 @@ SUCCESS = 'done exceptions=0 errors=0 input=ok cuts=3 flow=ok'
 
 class UnityShotsTests(unittest.TestCase):
     def run_shots(self, scenes=" ".join(SCENES), completion=SUCCESS, empty="",
-                  stale=False, launch_failure=False, cleanup_failure=False):
+                  stale=False, launch_failure=False, cleanup_failure=False, launch_exit=0):
         source = Path(__file__).with_name("unity_copy.sh").read_text()
         function = "shots_player() {" + source.split("shots_player() {", 1)[1].split("\n}\n", 1)[0] + "\n}\n"
         # 起動だけ置き換え、リポジトリの判定処理はそのまま実行する。
@@ -22,6 +22,7 @@ run_hidden() {
     done
     if [[ -n "$MOCK_EMPTY" ]]; then : > "$OUT/shots/$MOCK_EMPTY.png"; fi
     printf '[PhoneSaberSmoke] %s\n' "$MOCK_COMPLETION" > "$OUT/shots.log"
+    return "$MOCK_LAUNCH_EXIT"
 }
 pgrep() { return 1; }
 if [[ "$MOCK_CLEANUP_FAILURE" == 1 ]]; then rm() { return 1; }; fi
@@ -43,12 +44,25 @@ if [[ "$MOCK_CLEANUP_FAILURE" == 1 ]]; then rm() { return 1; }; fi
                 env=dict(os.environ, OUT=tmp, APP=str(app), MOCK_SCENES=scenes,
                          MOCK_COMPLETION=completion, MOCK_EMPTY=empty,
                          MOCK_LAUNCH_FAILURE=str(int(launch_failure)),
-                         MOCK_CLEANUP_FAILURE=str(int(cleanup_failure))),
+                         MOCK_CLEANUP_FAILURE=str(int(cleanup_failure)), MOCK_LAUNCH_EXIT=str(launch_exit)),
                 text=True, capture_output=True, timeout=10)
 
     def test_all_scenes_and_successful_completion_pass(self):
         result = self.run_shots()
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_exception_after_successful_completion_fails(self):
+        # 終了処理の例外は、既に出力された done の件数には入らない。open はそれでも 0 を返す。
+        for exception in ("NullReferenceException: shutdown failed", "System.IO.IOException: shutdown failed"):
+            with self.subTest(exception=exception):
+                result = self.run_shots(completion=SUCCESS + "\n" + exception)
+                self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_nonzero_exit_after_successful_completion_fails(self):
+        for code in (1, 137):
+            with self.subTest(code=code):
+                result = self.run_shots(launch_exit=code)
+                self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_missing_scene_fails(self):
         for missing in SCENES:

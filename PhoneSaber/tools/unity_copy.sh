@@ -116,6 +116,11 @@ shots_player() {
         fi
         sleep 0.5; waited=$((waited + 1))
     done
+    wait "$pid"; local code=$?
+    # done の後の終了処理で起きた例外も確認する。open 経由では終了コードだけでは分からない。
+    if [[ "$code" -ne 0 ]] || grep -qE '^[A-Za-z.]*Exception' "$log" 2>/dev/null; then
+        echo "shots: 異常終了または例外がありました (exit=$code, $log)"; return 1
+    fi
     grep "PhoneSaberSmoke\] \(shot\|done\)" "$log" 2>/dev/null
     # 途中終了やResult/調整の撮影失敗も成功にしない。openの終了コードではPlayerの成否は分からない。
     local scene
