@@ -2,7 +2,8 @@
 # Unity の作業はプロジェクトの「複製」で行う（ユーザーが Editor で開いている checkout には触れない）。
 #
 #   PhoneSaber/tools/unity_copy.sh sync                 複製を現在の checkout に合わせる
-#   PhoneSaber/tools/unity_copy.sh editmode [filter]    EditMode テスト（filter は -testFilter の正規表現）
+#   PhoneSaber/tools/unity_copy.sh editmode [filter]    EditMode テスト（filter は Assets/Tests/Editor のファイル名に当てる正規表現。
+#                                                        一致したクラスだけを流す。譜面エディタ・プレビューのテストは除く）
 #   PhoneSaber/tools/unity_copy.sh build-mac            macOS Player をビルドし、起動して確かめてから Builds/Mac/3D-Saber.app を差し替える
 #   PhoneSaber/tools/unity_copy.sh shots [app]          ビルド済み Player を隠して起動し、各 scene の画面を _out/shots/*.png に残す
 #   PhoneSaber/tools/unity_copy.sh smoke [app]          ビルド済み Player を窓なしで起動し、入力・切断・画面遷移を確認
@@ -186,7 +187,16 @@ editmode)
     sync_copy || exit 1
     rm -f "$OUT/editmode.xml" "$OUT/editmode.log" || { echo "editmode: 結果を初期化できません ($OUT)"; exit 1; }
     args=(-batchmode -projectPath "$COPY" -runTests -testPlatform EditMode -testResults "$OUT/editmode.xml" -logFile "$OUT/editmode.log")
-    [[ -n "${2:-}" ]] && args+=(-testFilter "$2")
+    # 絞り込み（$2 は正規表現）は、Unity の -testFilter に正規表現のまま渡すと上位の名前でも一致して
+    # 2288 件中 約 1500 件（譜面エディタのテストを含む）が流れ、譜面エディタの窓が開いていた（2026-10-18 ユーザー指摘）。
+    # Assets/Tests/Editor のファイル名（= テストのクラス名）が $2 に一致するものだけを、クラス名の並びで渡す。
+    if [[ -n "${2:-}" ]]; then
+        # 「;」区切りの並びは効かなかった（同じ 1527 件が流れた）。unity_playmode_batches.py と同じく、
+        # 「^(クラス1|クラス2|…)\.」と先頭から一致させる（NUnit の名前は「クラス.テスト」で名前空間なし）。
+        classes="$(cd "$ROOT/Assets/Tests/Editor" && ls *.cs 2>/dev/null | sed 's/\.cs$//' | grep -E -- "$2" | grep -v -E 'Chart|Playback' | paste -sd '|' -)"
+        [[ -n "$classes" ]] || { echo "editmode: '$2' に一致するテストのクラスがありません"; exit 1; }
+        args+=(-testFilter "^($classes)\.")
+    fi
     run_hidden "$UNITY" "${args[@]}"
     unity_exit=$?
     result_args=("$OUT/editmode.xml" "$OUT/editmode.log")
