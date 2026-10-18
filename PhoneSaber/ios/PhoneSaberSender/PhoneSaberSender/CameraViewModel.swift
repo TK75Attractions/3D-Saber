@@ -1692,12 +1692,14 @@ final class CameraViewModel: NSObject, ObservableObject {
     }
 
     private func effectiveCameraFPS(at time: TimeInterval) -> Int {
+        // 保存値が端末の対応 fps を超える場合も、実際の撮影 fps を基準に熱対策する。
+        let supportedFPS = cameraFPS == 120 && supports120FPS ? 120
+            : cameraFPS >= 60 && supports60FPS ? 60 : 30
         let effectiveFPS = thermalFPSPolicy.effectiveFPS(
-            thermal: DeviceThermalLevel(state: ProcessInfo.processInfo.thermalState), at: time, userFPS: cameraFPS)
-        thermalFPSMessage = effectiveFPS < cameraFPS
+            thermal: DeviceThermalLevel(state: ProcessInfo.processInfo.thermalState), at: time, userFPS: supportedFPS)
+        thermalFPSMessage = effectiveFPS < supportedFPS
             ? "発熱のため \(effectiveFPS)fps に下げています。箱を開けて通風を確認" : ""
-        if effectiveFPS == 120 && supports120FPS { return 120 }
-        return effectiveFPS >= 60 && supports60FPS ? 60 : 30
+        return effectiveFPS
     }
 
 #if DEBUG

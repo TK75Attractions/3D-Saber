@@ -57,6 +57,14 @@ class IOSCrashLivenessTests(unittest.TestCase):
         end = recorder.index("            let presentationTime", start)
         self.run_swift(OVERLAY_HEAD + recorder[start:end] + OVERLAY_TAIL)
 
+    def test_thermal_fps_uses_supported_capture_rate_after_restoring_settings(self):
+        camera = (SOURCE / "CameraViewModel.swift").read_text()
+        start = camera.index("    private func effectiveCameraFPS(")
+        end = camera.index("#if DEBUG", start)
+        method = camera[start:end].replace("private func effective", "func effective")
+        health = (SOURCE / "DeviceHealth.swift").read_text()
+        self.run_swift(health + THERMAL_FPS_HEAD + method + THERMAL_FPS_TAIL)
+
     def test_camera_configuration_lock_failure_preserves_default_and_experimental_modes(self):
         camera = (SOURCE / "CameraViewModel.swift").read_text()
         lifecycle = camera[camera.index("enum CameraLifecycleState:"):
@@ -102,6 +110,58 @@ class IOSCrashLivenessTests(unittest.TestCase):
         self.run_swift(recovery + lifecycle + STOP_CONFIGURATION_HEAD + runner +
                        STOP_CONFIGURATION_MODEL + method + STOP_CONFIGURATION_TAIL)
 
+
+THERMAL_FPS_HEAD = r'''
+// 端末間の設定復元と発熱通知を再現する。熱対策と対応 fps の決定は実装のまま。
+enum ProcessInfo {
+ typealias ThermalState = Foundation.ProcessInfo.ThermalState
+ struct State { var thermalState = ThermalState.nominal }
+ static var processInfo = State()
+}
+final class CameraViewModel {
+ var cameraFPS = 120, supports60FPS = true, supports120FPS = false
+ var thermalFPSPolicy = ThermalFPSPolicy()
+ var thermalFPSMessage = ""
+'''
+
+THERMAL_FPS_TAIL = r'''
+}
+@main struct Audit {
+ static func main() {
+  var failures = 0
+  for (savedFPS, supports60, supports120, supportedFPS) in [
+   (120, true, false, 60), (120, false, false, 30),
+   (120, true, true, 120), (60, true, false, 60), (30, true, true, 30)
+  ] {
+   for hot in [ProcessInfo.ThermalState.serious, .critical] {
+    let model = CameraViewModel()
+    model.cameraFPS = savedFPS
+    model.supports60FPS = supports60
+    model.supports120FPS = supports120
+    func check(_ time: Double, _ expected: Int, reduced: Bool) {
+     let actual = model.effectiveCameraFPS(at: time)
+     let passed = actual == expected && model.thermalFPSMessage.isEmpty == !reduced &&
+      model.cameraFPS == savedFPS
+     print("thermal fps", savedFPS, supports60, supports120, time, actual,
+           passed ? "PASS" : "FAIL: supported rate or thermal warning mismatch")
+     if !passed { failures += 1 }
+    }
+    ProcessInfo.processInfo.thermalState = .nominal
+    check(0, supportedFPS, reduced: false)
+    ProcessInfo.processInfo.thermalState = hot
+    let firstStep = supportedFPS == 120 ? 60 : 30
+    check(1, firstStep, reduced: supportedFPS > 30)
+    check(121, 30, reduced: supportedFPS > 30)
+    ProcessInfo.processInfo.thermalState = .nominal
+    check(122, 30, reduced: supportedFPS > 30)
+    check(242, min(60, supportedFPS), reduced: supportedFPS == 120)
+    check(362, supportedFPS, reduced: false)
+   }
+  }
+  exit(failures == 0 ? 0 : 1)
+ }
+}
+'''
 
 NOTIFICATION_HEAD = r'''import Foundation
 import Darwin
