@@ -400,6 +400,75 @@ class DiagnosticsRelayTests(unittest.TestCase):
         self.assertIn("diag relay: listening", self.log_path.read_text())
         return relay_port
 
+    def test_a_listener_constructor_error_during_restart_is_retried(self):
+        with tempfile.TemporaryDirectory(prefix="phonesaber-relay-retry-") as directory:
+            root = Path(directory)
+            source = root / "PhoneSaberP2PBridge.swift"
+            original = launcher.SOURCES[1].read_text()
+            marker = "        let listener = try NWListener(using: parameters,\n                                      on: NWEndpoint.Port(rawValue: options.diagnosticsListenPort) ?? .any)"
+            self.assertEqual(original.count(marker), 1)
+            # 最初は実際のポート競合、再試行だけは一時的な OS 資源不足を固定する。
+            source.write_text(original.replace(marker, "        try RelayConstructionFailure.check()\n" + marker) + '''
+private enum RelayConstructionFailure {
+    static var attempts = 0
+    static func check() throws {
+        attempts += 1
+        if attempts == 2 { throw NWError.posix(.EMFILE) }
+    }
+}
+''')
+            sources = (launcher.SOURCES[0], source)
+            digest = launcher.source_digest
+            with mock.patch.object(launcher, "SOURCES", sources), \
+                    mock.patch.object(launcher, "source_digest", side_effect=lambda: digest(sources)):
+                binary = launcher.build(root / "build")
+            with socket.socket() as occupied, socket.socket() as receiver:
+                occupied.bind(("127.0.0.1", 0))
+                occupied.listen()
+                relay_port = occupied.getsockname()[1]
+                receiver.bind(("127.0.0.1", 0))
+                receiver.listen()
+                receiver.settimeout(5)
+                log_path = root / "bridge.log"
+                with log_path.open("w") as log:
+                    bridge = subprocess.Popen(
+                        [str(binary), "--no-bonjour", "--loopback-only", "--listen-port", "0",
+                         "--diag-port", str(receiver.getsockname()[1]),
+                         "--diag-listen-port", str(relay_port)], stdout=log, stderr=subprocess.STDOUT)
+                try:
+                    deadline = time.monotonic() + 10
+                    while "diag relay: listener failed" not in log_path.read_text() and time.monotonic() < deadline:
+                        time.sleep(0.02)
+                    self.assertIn("diag relay: listener failed", log_path.read_text())
+                    occupied.close()
+                    deadline = time.monotonic() + 10
+                    while "diag relay: listening" not in log_path.read_text() and time.monotonic() < deadline:
+                        time.sleep(0.02)
+                    self.assertIn("diag relay: listening", log_path.read_text(),
+                                  "a transient constructor error must not stop all future retries")
+                    self.assertEqual(log_path.read_text().count("diag relay: listener failed"), 2)
+                    # 復旧後の新しい接続で、録画要求と受領応答の両方向を確認する。
+                    with socket.create_connection(("127.0.0.1", relay_port), timeout=5) as client:
+                        client.sendall(b"recording retry")
+                        client.shutdown(socket.SHUT_WR)
+                        connection, _ = receiver.accept()
+                        with connection:
+                            connection.settimeout(5)
+                            request = b""
+                            while chunk := connection.recv(64):
+                                request += chunk
+                            self.assertEqual(request, b"recording retry")
+                            connection.sendall(b"accepted")
+                            connection.shutdown(socket.SHUT_WR)
+                            reply = b""
+                            while chunk := client.recv(64):
+                                reply += chunk
+                            self.assertEqual(reply, b"accepted")
+                finally:
+                    if bridge.poll() is None:
+                        bridge.terminate()
+                    bridge.wait(timeout=5)
+
     def test_an_http_upload_is_piped_to_the_receiver_and_the_reply_comes_back(self):
         from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
         import threading

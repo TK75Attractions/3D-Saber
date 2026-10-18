@@ -138,15 +138,7 @@ final class DiagnosticsRelay {
                 self.restartAttempts = 0
                 self.log("listening on TCP \(listener.port?.rawValue ?? 0) → 127.0.0.1:\(self.options.diagnosticsPort)")
             case .failed(let error):
-                listener.cancel()
-                self.listener = nil
-                self.restartAttempts += 1
-                let delay = min(30, pow(2, Double(min(self.restartAttempts - 1, 5))))
-                self.log("listener failed: \(error); restarting in \(Int(delay))s")
-                self.queue.asyncAfter(deadline: .now() + delay) { [weak self] in
-                    guard let self, !self.stopped, self.listener == nil else { return }
-                    try? self.start()
-                }
+                self.listenerFailed("\(error)")
             default:
                 break
             }
@@ -154,6 +146,23 @@ final class DiagnosticsRelay {
         listener.newConnectionHandler = { [weak self] inbound in self?.relay(inbound) }
         self.listener = listener
         listener.start(queue: queue)
+    }
+
+    private func listenerFailed(_ reason: String) {
+        listener?.cancel()
+        listener = nil
+        restartAttempts += 1
+        let delay = min(30, pow(2, Double(min(restartAttempts - 1, 5))))
+        log("listener failed: \(reason); restarting in \(Int(delay))s")
+        queue.asyncAfter(deadline: .now() + delay) { [weak self] in
+            guard let self, !self.stopped, self.listener == nil else { return }
+            do {
+                try self.start()
+            } catch {
+                // 再作成が同期的に失敗した場合も、次の試行を予約する。
+                self.listenerFailed("\(error)")
+            }
+        }
     }
 
     func stop() {
