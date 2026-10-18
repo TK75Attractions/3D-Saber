@@ -100,6 +100,25 @@ final class EventRecoveryTests: XCTestCase {
         XCTAssertEqual(retry.nextDelay(at: 14), 1)
     }
 
+    func testSeparatedFramesDoNotResetFailureBudget() {
+        let gaps: [TimeInterval] = [CameraLifecycleStateMachine.frameStallTimeout, 10, 8 * 60 * 60]
+        for gap in gaps {
+            var retry = RecoveryBackoff(limit: 20)
+            XCTAssertEqual(retry.nextDelay(at: 0), 1)
+            retry.receivedFrame(at: 1)
+            // UI通知の一括処理では、watchdogより先に途切れた前後のフレームが届く。
+            retry.receivedFrame(at: 1 + gap)
+            for time in 1...9 { retry.receivedFrame(at: 1 + gap + Double(time)) }
+            XCTAssertEqual(retry.attempts, 1, "途切れた時間を安定稼働に含めない")
+            let expired = max(20, 10 + gap)
+            XCTAssertEqual(retry.nextDelay(at: expired), 60)
+            // その後10秒間安定して届けば、通常の再試行間隔へ戻せる。
+            for time in 1...11 { retry.receivedFrame(at: expired + Double(time)) }
+            XCTAssertEqual(retry.attempts, 0)
+            XCTAssertEqual(retry.nextDelay(at: expired + 12), 1)
+        }
+    }
+
     func testLateInitialStartDoesNotOverwriteRecoveryOrHideItsFailure() {
         var camera = CameraLifecycleStateMachine()
         camera.requestStart(at: 0)

@@ -26,12 +26,14 @@ struct RecoveryBackoff {
     private(set) var attempts = 0
     private var failedSince: TimeInterval?
     private var healthySince: TimeInterval?
+    private var lastFrameAt: TimeInterval?
     let limit: TimeInterval
 
     init(limit: TimeInterval = 15 * 60) { self.limit = limit }
 
     mutating func nextDelay(at time: TimeInterval) -> TimeInterval? {
         healthySince = nil
+        lastFrameAt = nil
         if failedSince == nil { failedSince = time }
         let remaining = limit - (time - failedSince!)
         guard remaining > 0 else { return 60 }
@@ -42,11 +44,16 @@ struct RecoveryBackoff {
 
     // 1フレームだけの復帰では失敗期間をリセットしない。
     mutating func receivedFrame(at time: TimeInterval) {
+        // watchdogの処理が遅れても、フレームの途切れを安定稼働に含めない。
+        if let lastFrameAt, time - lastFrameAt >= CameraLifecycleStateMachine.frameStallTimeout {
+            healthySince = nil
+        }
+        lastFrameAt = time
         if healthySince == nil { healthySince = time }
         if time - healthySince! >= 10 { reset() }
     }
 
-    mutating func reset() { attempts = 0; failedSince = nil; healthySince = nil }
+    mutating func reset() { attempts = 0; failedSince = nil; healthySince = nil; lastFrameAt = nil }
 }
 
 /// 古い startRunning の完了通知の扱い。停止→即再開や fps 切替では、前回の start が
