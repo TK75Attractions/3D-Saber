@@ -135,6 +135,7 @@ final class DebugBundleTransfer {
                  "testLANLivenessProbeRequiresARecentUnityReply",
                  "testExpiredPongsBeforeTheTimerDoNotRestoreTheLinkOrCountAsSuccessful",
                  "testDuplicatePongsDoNotRestoreAStaleLink",
+                 "testReceiveErrorRebuildsP2PBeforePongTimeoutAndRecovers",
                  "testUnchangedBonjourAndPathRefreshPreserveBothLANConnections",
                  "testP2PConnectedNotificationPreservesPendingVerifiedLANCoordinates",
                  "testCoordinateSendFailureInvalidatesP2PAndFallsBackToLAN",

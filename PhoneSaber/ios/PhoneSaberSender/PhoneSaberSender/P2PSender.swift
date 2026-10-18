@@ -713,7 +713,13 @@ final class P2PSender {
                     if self.monitor.isUsable(at: now) { self.rotation.reset() }
                     self.refreshUsability()
                 }
-                if error == nil { self.receive(on: connection, generation: generation) }
+                if let error {
+                    // 受信待ちが終了した接続では pong が戻らない。期限切れを待たず LAN へ退避する。
+                    self.log("receive failed: \(error)")
+                    self.dropConnection(reason: "receive failed")
+                } else {
+                    self.receive(on: connection, generation: generation)
+                }
             }
         }
     }

@@ -1078,6 +1078,36 @@ final class P2PTransportTests: XCTestCase {
         XCTAssertEqual(sender.stalledSendCountForTesting, 1)
     }
 
+    func testReceiveErrorRebuildsP2PBeforePongTimeoutAndRecovers() async throws {
+        let bridge = try FakeBridge()
+        defer { bridge.stop() }
+        let port = try await bridge.ready()
+        var timing = fastTiming()
+        timing.liveness.staleAfter = 10
+        timing.liveness.reconnectAfter = 20
+        timing.liveness.connectTimeout = 20
+        let sender = P2PSender(timing: timing,
+                               endpointOverride: .hostPort(host: "127.0.0.1", port: port))
+        defer { sender.stop() }
+        sender.start()
+        let connected = await waitFor { sender.isUsable }
+        XCTAssertTrue(connected)
+        let connection = try XCTUnwrap(sender.connectionForTesting)
+        let attempts = sender.connectCountForTesting
+        // 実接続の cancel で受信待ちへエラーを返す。pong の期限切れを待たず復旧する。
+        connection.cancel()
+        let recovered = await waitFor(timeout: 2) {
+            sender.connectCountForTesting > attempts && sender.isUsable
+        }
+        XCTAssertTrue(recovered, "受信待ちが終了した接続を使い続けず、次の接続で pong を受け取る")
+        XCTAssertFalse(sender.connectionForTesting === connection)
+        for port in [5005, 5006] {
+            sender.send("1,2,3,4", to: port) { _ in }
+        }
+        let delivered = await waitFor { Set(bridge.coordinates.map(\.color)) == Set([.red, .blue]) }
+        XCTAssertTrue(delivered, "受信エラーからの復旧後も両色の座標を送る")
+    }
+
     func testForegroundRecoveryRebuildsAStaleLinkAndOnlyPingsALiveOne() async throws {
         let bridge = try FakeBridge()
         defer { bridge.stop() }
