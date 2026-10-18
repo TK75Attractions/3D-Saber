@@ -286,7 +286,8 @@ enum ConnectivityLog {
 }
 final class SessionRunner {
     var stops = 0
-    func stopSynchronously() { stops += 1 }
+    var onStop: (() -> Void)?
+    func stopSynchronously() { stops += 1; onStop?() }
 }
 struct Transport { func stop() {} }
 @MainActor final class CameraViewModel {
@@ -310,8 +311,13 @@ struct Transport { func stop() {} }
     var fpsComparisonPolicy = FPSComparisonPolicy()
     var debugComparisonHighFPS = 60
     var debugAlternateFPS = true { didSet { scheduleFPSAlternation() } }
-    func start() { starts += 1; running = true; resumePolicy.start() }
-    func persistSendingIntent() {}
+    var persistedIntent = true
+    var intentWrites: [Bool] = []
+    func start() { starts += 1; running = true; resumePolicy.start(); persistSendingIntent() }
+    func persistSendingIntent() {
+        persistedIntent = resumePolicy.wantsSending
+        intentWrites.append(persistedIntent)
+    }
     func stopDebugRecording() {}
     func refreshConnectivityStatus() {}
     func publishDeviceHealth(at time: TimeInterval, force: Bool) {}
@@ -340,6 +346,29 @@ STOP_COMPARISON_MAIN = r'''
             print("stop comparison expired=\(expired):", passed ? "PASS" : "FAIL: starts=\(model.starts), stops=\(model.sessionRunner.stops)")
             if !passed { failures += 1 }
         }
+        // 熱対策などの内部再設定で、stopRunning の途中に終了しても再起動時の送信意思を失わない。
+        let reconfiguring = CameraViewModel()
+        var retainedIntentDuringStop = false
+        reconfiguring.sessionRunner.onStop = { [weak reconfiguring] in
+            guard let model = reconfiguring else { return }
+            var relaunched = SendingResumePolicy(wasSending: model.persistedIntent)
+            retainedIntentDuringStop = model.resumePolicy.wantsSending
+                && relaunched.foreground(autoStart: false)
+        }
+        reconfiguring.selectCameraFPS(60, persist: false)
+        var intentPassed = retainedIntentDuringStop && reconfiguring.running
+            && reconfiguring.starts == 1 && reconfiguring.sessionRunner.stops == 1
+            && reconfiguring.resumePolicy.wantsSending && reconfiguring.persistedIntent
+            && !reconfiguring.intentWrites.contains(false)
+        print("internal reconfiguration retains intent:", intentPassed ? "PASS" : "FAIL: intent writes=\(reconfiguring.intentWrites)")
+        if !intentPassed { failures += 1 }
+        // 内部再設定の完了後にスタッフが停止した場合は、従来どおり自動再開を無効にする。
+        reconfiguring.sessionRunner.onStop = nil
+        reconfiguring.stop()
+        intentPassed = !reconfiguring.running && !reconfiguring.resumePolicy.wantsSending
+            && !reconfiguring.persistedIntent && reconfiguring.intentWrites.last == false
+        print("manual stop after reconfiguration clears intent:", intentPassed ? "PASS" : "FAIL")
+        if !intentPassed { failures += 1 }
 #if DEBUG
         // 送信を続けている通常のUI更新では、期限切れ時に保存値へ戻して再設定する。
         let model = CameraViewModel()

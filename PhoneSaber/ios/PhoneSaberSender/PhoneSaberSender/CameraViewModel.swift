@@ -1840,7 +1840,8 @@ final class CameraViewModel: NSObject, ObservableObject {
         // 表示の最終集計でfps比較が期限切れになっても、停止中のカメラを再起動させない。
         running = false
         publishPendingUI()
-        resumePolicy.stop()
+        // 内部再設定の途中で終了しても、次回起動時の送信再開を失わない。
+        if !reconfiguringCamera { resumePolicy.stop() }
         ConnectivityLog.sendGapMonitor.setIntent(false)
         persistSendingIntent()
         permissionPending = false
