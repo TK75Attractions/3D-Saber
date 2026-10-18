@@ -143,10 +143,14 @@ class PcDiscovery(context: Context,
             main.postDelayed({ if (!active && retrySession == lifecycle) start() }, 30_000)
             return
         }
-        if (allowNonWifi) {
-            connectivity.activeNetwork?.let(::switchNetwork)
-        } else {
-            availableWifi.addAll(connectivity.allNetworks.filter(::isWifi))
+        // 初期スナップショットのRPC失敗時も、登録済みcallbackの接続通知を待つ。
+        val initialNetworks = try {
+            if (allowNonWifi) listOfNotNull(connectivity.activeNetwork)
+            else connectivity.allNetworks.filter(::isWifi)
+        } catch (_: RuntimeException) { emptyList() }
+        if (allowNonWifi) initialNetworks.firstOrNull()?.let(::switchNetwork)
+        else {
+            availableWifi.addAll(initialNetworks)
             availableWifi.firstOrNull()?.let(::switchNetwork)
         }
         publish()

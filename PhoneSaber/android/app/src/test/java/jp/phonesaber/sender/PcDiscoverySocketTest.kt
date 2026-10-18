@@ -126,6 +126,76 @@ class PcDiscoverySocketTest {
         }
     }
 
+    @Test fun initialNetworkListFailureWaitsForCallbackAndAllowsRestart() = checkInitialSnapshotFailure("allNetworks")
+
+    @Test fun initialCapabilitiesFailureWaitsForCallbackAndAllowsRestart() = checkInitialSnapshotFailure("capabilities")
+
+    @Test fun initialDefaultNetworkFailureWaitsForCallbackAndAllowsRestart() = checkInitialSnapshotFailure("activeNetwork")
+
+    private fun checkInitialSnapshotFailure(failure: String) {
+        val developerOverride = failure == "activeNetwork"
+        org.junit.Assume.assumeTrue(!developerOverride || BuildConfig.DEBUG)
+        val connectivity = mock(ConnectivityManager::class.java)
+        val nsd = mock(NsdManager::class.java)
+        val wifi = mock(Network::class.java)
+        val capabilities = mock(NetworkCapabilities::class.java)
+        `when`(capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)).thenReturn(true)
+        `when`(connectivity.allNetworks).thenReturn(arrayOf(wifi))
+        `when`(connectivity.activeNetwork).thenReturn(wifi)
+        `when`(connectivity.getNetworkCapabilities(wifi)).thenReturn(capabilities)
+        // 登録成功後の初期スナップショットRPCだけを失敗させる。
+        val error = RuntimeException("$failure failed")
+        when (failure) {
+            "allNetworks" -> `when`(connectivity.allNetworks).thenThrow(error).thenReturn(arrayOf(wifi))
+            "capabilities" -> `when`(connectivity.getNetworkCapabilities(wifi)).thenThrow(error).thenReturn(capabilities)
+            else -> `when`(connectivity.activeNetwork).thenThrow(error).thenReturn(wifi)
+        }
+        val request = mock(NetworkRequest::class.java)
+        mockConstruction(NetworkRequest.Builder::class.java, withSettings().defaultAnswer(RETURNS_SELF)) { builder, _ ->
+            `when`(builder.build()).thenReturn(request)
+        }.use {
+            mockConstruction(DatagramSocket::class.java) { socket, _ ->
+                `when`(socket.isClosed).thenReturn(true)
+            }.use { sockets ->
+                val networks = mutableListOf<Network?>()
+                val messages = mutableListOf<String>()
+                withDiscovery(nsd, runPosts = true, connectivity = connectivity,
+                    onUpdate = { _, network, message -> networks.add(network); messages.add(message) }) { discovery ->
+                    try {
+                        discovery.setDeveloperNetworkOverride(developerOverride)
+                        discovery.start()
+                        assertNull(networks.last())
+                        assertTrue(messages.last().contains("Wi-Fi"))
+                        assertTrue(sockets.constructed().isEmpty())
+                        verifyNoInteractions(nsd)
+                        val events = ArgumentCaptor.forClass(ConnectivityManager.NetworkCallback::class.java)
+                        if (developerOverride) verify(connectivity).registerDefaultNetworkCallback(events.capture())
+                        else verify(connectivity).registerNetworkCallback(eq(request), events.capture())
+                        verify(connectivity, never()).unregisterNetworkCallback(any(ConnectivityManager.NetworkCallback::class.java))
+                        // 登録は生かし、後続の接続通知から探索を開始する。
+                        events.value.onAvailable(wifi)
+                        assertEquals(wifi, networks.last())
+                        assertTrue(messages.last().contains("PCを探索中"))
+                        assertEquals(1, sockets.constructed().size)
+                        verify(wifi).bindSocket(sockets.constructed().single())
+                        verify(nsd).discoverServices(eq("_phonesaber._udp."), eq(NsdManager.PROTOCOL_DNS_SD),
+                            any(NsdManager.DiscoveryListener::class.java))
+                        discovery.stop()
+                        verify(connectivity).unregisterNetworkCallback(events.value)
+                        verify(sockets.constructed().single(), atLeastOnce()).close()
+                        verify(nsd).stopServiceDiscovery(any(NsdManager.DiscoveryListener::class.java))
+                        discovery.start()
+                        val updates = networks.size
+                        events.value.onLost(wifi)
+                        assertEquals("旧callbackを次の開始へ持ち越さない", updates, networks.size)
+                        assertEquals(wifi, networks.last())
+                        assertEquals(2, sockets.constructed().size)
+                    } finally { discovery.stop() }
+                }
+            }
+        }
+    }
+
     @Test fun unregisterFailureStillReleasesDiscoveryAndAllowsRestart() {
         val connectivity = mock(ConnectivityManager::class.java)
         val nsd = mock(NsdManager::class.java)
