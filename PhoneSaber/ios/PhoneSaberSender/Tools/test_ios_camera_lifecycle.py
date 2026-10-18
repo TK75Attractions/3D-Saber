@@ -22,6 +22,32 @@ def block(source, marker):
 
 @unittest.skipUnless(sys.platform == "darwin" and shutil.which("xcrun"), "macOS/Swift required")
 class IOSCameraLifecycleTests(unittest.TestCase):
+    def test_interruption_during_recovery_wait_does_not_discard_successful_restart(self):
+        camera = (SOURCE / "CameraViewModel.swift").read_text()
+        fixture = "import Foundation\nimport Darwin\n"
+        for marker in ["enum CameraLifecycleState:", "struct CameraLifecycleStateMachine"]:
+            fixture += block(camera, marker) + "\n"
+        fixture += RECOVERY_INTERRUPTION_MODEL
+        for marker in ["private func scheduleCameraRecovery(", "private func finishCameraStart("]:
+            fixture += block(camera, marker) + "\n"
+        fixture += "}\n" + RECOVERY_INTERRUPTION_MAIN
+        with tempfile.TemporaryDirectory(prefix="phonesaber-recovery-interruption-") as temporary:
+            directory = Path(temporary)
+            source = directory / "Fixture.swift"
+            source.write_text(fixture)
+            for flags in ([], ["-D", "DEBUG"]):
+                with self.subTest(flags=flags):
+                    binary = directory / "fixture"
+                    compiled = subprocess.run(
+                        ["xcrun", "swiftc", "-O", "-parse-as-library", *flags,
+                         "-module-cache-path", str(directory / "cache"),
+                         str(SOURCE / "EventRecovery.swift"), str(source), "-o", str(binary)],
+                        capture_output=True, text=True, timeout=90,
+                    )
+                    self.assertEqual(compiled.returncode, 0, compiled.stderr)
+                    run = subprocess.run([str(binary)], capture_output=True, text=True, timeout=10)
+                    self.assertEqual(run.returncode, 0, run.stdout + run.stderr)
+
     def test_persistent_fps_configuration_failure_does_not_repeat_restarts(self):
         camera = (SOURCE / "CameraViewModel.swift").read_text()
         health = block(camera, "private func publishDeviceHealth(")
@@ -105,6 +131,79 @@ class IOSCameraLifecycleTests(unittest.TestCase):
                     run = subprocess.run([str(binary)], capture_output=True, text=True, timeout=10)
                     self.assertEqual(run.returncode, 0, run.stdout + run.stderr)
 
+
+RECOVERY_INTERRUPTION_MODEL = r'''
+enum ConnectivityLog {
+    static let sendGapMonitor = Monitor()
+    struct Monitor { func context(_ value: String) {} }
+}
+@MainActor final class SessionRunner {
+    var completion: (@MainActor @Sendable () -> Void)?
+    func stop(completion: @escaping @MainActor @Sendable () -> Void) { self.completion = completion }
+    func stopSynchronously() {}
+}
+// 再試行間隔のポリシーは既存テストで検証する。ここでは待機だけを省く。
+struct ImmediateBackoff { mutating func nextDelay(at time: TimeInterval) -> TimeInterval? { 0 } }
+@MainActor final class CameraViewModel {
+    var running = true, sceneIsActive = true, cameraLifecycleEnabled = true
+    var cameraRecoveryInProgress = false, debugRecordingActive = false
+    var cameraRecoveryGeneration = 0, lifecycleGeneration = 1, configurations = 0
+    var cameraRecoveryMessage = ""
+    var cameraErrorMessage: String?
+    var cameraLifecycle = CameraLifecycleStateMachine()
+    var cameraBackoff = ImmediateBackoff()
+    var resumePolicy = SendingResumePolicy(wasSending: true)
+    var cameraRecoveryTask: Task<Void, Never>?
+    let sessionRunner = SessionRunner()
+    enum FinishReason { case runtimeFailure }
+    func stopDebugRecording(reason: FinishReason) {}
+    func resetProcessor() {}
+    func publishCameraLifecycle(at time: TimeInterval) {}
+    func recomputeErrorMessage() {}
+    func schedule() { scheduleCameraRecovery(alreadyMarkedRecovering: false) }
+    // 実カメラの設定・起動だけを代用し、完了時の状態更新は本番実装を呼ぶ。
+    var startSucceeds = true, interruptDuringStart = false
+    func configureAndStart(isRecovery: Bool, recoveryGeneration: Int?) {
+        configurations += 1
+        if interruptDuringStart { cameraLifecycle.interruptionBegan(reason: "new interruption") }
+        finishCameraStart(succeeded: startSucceeds, lifecycle: lifecycleGeneration,
+                          recovery: recoveryGeneration, isRecovery: isRecovery)
+    }
+'''
+
+RECOVERY_INTERRUPTION_MAIN = r'''
+@main struct Check {
+    @MainActor static func main() async {
+        var failures = 0
+        // backoff 待ちと非同期 stop 待ちの両方で中断通知を挟む。
+        for phase in 0...2 {
+            for outcome in 0...2 {
+                let model = CameraViewModel()
+                model.startSucceeds = outcome != 1
+                model.interruptDuringStart = outcome == 2
+                model.cameraLifecycle.requestStart(at: 0)
+                model.schedule()
+                if phase == 1 { model.cameraLifecycle.interruptionBegan(reason: "during backoff") }
+                for _ in 0..<100 where model.sessionRunner.completion == nil {
+                    try? await Task.sleep(for: .milliseconds(1))
+                }
+                guard let complete = model.sessionRunner.completion else { exit(2) }
+                if phase == 2 { model.cameraLifecycle.interruptionBegan(reason: "during stop") }
+                complete()
+                model.cameraLifecycle.receivedFrame(at: ProcessInfo.processInfo.systemUptime + 0.1)
+                let expected: CameraLifecycleState = outcome == 1
+                    ? .failed("capture sessionを再開できませんでした")
+                    : outcome == 2 ? .interrupted("new interruption") : .live
+                let passed = model.configurations == 1 && !model.cameraRecoveryInProgress
+                    && model.cameraLifecycle.state == expected
+                print("recovery interruption phase=\(phase) outcome=\(outcome):", passed ? "PASS" : "FAIL: \(model.cameraLifecycle.state)")
+                if !passed { failures += 1 }
+            }
+        }
+        exit(failures == 0 ? 0 : 1)
+    }
+}
+'''
 
 THERMAL_RETRY_MODEL = r'''
 final class CameraViewModel {

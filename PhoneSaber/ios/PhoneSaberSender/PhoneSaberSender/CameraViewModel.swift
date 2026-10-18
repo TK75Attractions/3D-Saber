@@ -1272,6 +1272,8 @@ final class CameraViewModel: NSObject, ObservableObject {
                     self.publishCameraLifecycle(at: ProcessInfo.processInfo.systemUptime)
                     return
                 }
+                // 待機中の中断通知で状態が変わっても、今回の再起動の完了を受理できるようにする。
+                _ = self.cameraLifecycle.beginRecovery(at: ProcessInfo.processInfo.systemUptime)
                 self.configureAndStart(isRecovery: true, recoveryGeneration: recoveryGeneration)
             }
         }
