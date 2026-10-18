@@ -10,7 +10,10 @@ public static class PhoneSaberJudgeLatencySettings
     public const int GameDefault = 0;
     public const int Automatic = 1;
     public const int MinimumMs = 30, MaximumMs = 250;
-    public const int MinimumOffsetMs = -100, MaximumOffsetMs = 150;
+    // 予測 ON で先読みを引いた後の下限。判定の時計を曲の時計より先へ進めてよい範囲。
+    // 2026-10-18 実測: 予測 ON（先読み 61〜80 ms）で補正 0 ms のとき、当たりの中央が −51 ms（早め）だった。
+    public const int MinimumAfterPredictionMs = -150;
+    public const int MinimumOffsetMs = -250, MaximumOffsetMs = 150;
 
     public static string Key(string station) => "PhoneSaber.JudgeLatency." + PhoneSaberStation.Normalize(station) + ".v1";
     public static string OffsetKey(string station) => Key(station) + ".Offset";
@@ -55,9 +58,10 @@ public static class PhoneSaberJudgeLatencySettings
     {
         if (Clamp(mode) == GameDefault || !automaticMs.HasValue) return gameSeconds;
         double lead = double.IsNaN(predictionLeadMs) || predictionLeadMs < 0 ? 0 : predictionLeadMs;
-        // 下限で切るのは先読みを引く前だけ。自動予測の先読みは同じ推定から作られるので、引いた後は 0 近くになり得る。
-        double before = Mathf.Clamp((float)(automaticMs.Value + ClampOffset(offsetMs)), MinimumMs, MaximumMs);
-        return Mathf.Clamp((float)(before - lead), 0, MaximumMs) / 1000.0;
+        // 予測なし: 30〜250 ms。予測あり: 判定は先読みした刃で切るので先読み分を引き、−150 ms まで許す
+        // （自動予測の先読みは同じ推定から作られるので、引いた後は 0 付近〜負になり得る）。
+        double ms = automaticMs.Value + ClampOffset(offsetMs) - lead;
+        return Mathf.Clamp((float)ms, lead > 0 ? MinimumAfterPredictionMs : MinimumMs, MaximumMs) / 1000.0;
     }
 
     // 予測の先読み（赤・青）。0 の色（来ていない・予測なし）は平均に入れない。
@@ -129,7 +133,7 @@ public sealed class PhoneSaberJudgeLatency : MonoBehaviour
         var input = InputPoint.Instance;
         PredictionLeadMs = input == null ? 0 : PhoneSaberJudgeLatencySettings.PredictionLead(input.PredictionLead(false), input.PredictionLead(true));
         double seconds = PhoneSaberJudgeLatencySettings.SecondsToApply(Mode, AutomaticMs, OffsetMs, gameSeconds, PredictionLeadMs);
-        if (!(seconds >= 0)) return;
+        if (double.IsNaN(seconds) || double.IsInfinity(seconds)) return;
         manager.cameraJudgeLatencySeconds = (float)seconds;
         AppliedMs = seconds * 1000;
         if (Mode != lastLoggedMode || double.IsNaN(lastLoggedMs) || System.Math.Abs(AppliedMs.Value - lastLoggedMs) >= 5)

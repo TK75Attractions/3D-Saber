@@ -12,7 +12,11 @@ public class PhoneSaberJudgeLatencyTests
         Assert.AreEqual(.045, PhoneSaberJudgeLatencySettings.SecondsToApply(PhoneSaberJudgeLatencySettings.Automatic, 85, 0, .12, 40), 1e-6);
         // 自動予測は同じ推定から先読みを作る。引いた後は 0 近くまで下がってよい（30 ms に張り付かない）。
         Assert.AreEqual(.005, PhoneSaberJudgeLatencySettings.SecondsToApply(PhoneSaberJudgeLatencySettings.Automatic, 85, 0, .12, 80), 1e-6);
-        Assert.AreEqual(0, PhoneSaberJudgeLatencySettings.SecondsToApply(PhoneSaberJudgeLatencySettings.Automatic, 85, -20, .12, 85), 1e-6);
+        // 予測ありでは負（判定の時計を先へ）まで下げられる。10-18 実測: 先読み 80 ms・補正 0 で当たりが −51 ms。
+        Assert.AreEqual(-.02, PhoneSaberJudgeLatencySettings.SecondsToApply(PhoneSaberJudgeLatencySettings.Automatic, 85, -20, .12, 85), 1e-6);
+        Assert.AreEqual(-.05, PhoneSaberJudgeLatencySettings.SecondsToApply(PhoneSaberJudgeLatencySettings.Automatic, 80, -50, .12, 80), 1e-6);
+        Assert.AreEqual(PhoneSaberJudgeLatencySettings.MinimumAfterPredictionMs / 1000.0,
+            PhoneSaberJudgeLatencySettings.SecondsToApply(PhoneSaberJudgeLatencySettings.Automatic, 80, -250, .12, 80), 1e-6);
         Assert.AreEqual(.025, PhoneSaberJudgeLatencySettings.SecondsToApply(PhoneSaberJudgeLatencySettings.Automatic, 85, 20, .12, 80), 1e-6);
         Assert.AreEqual(60, PhoneSaberJudgeLatencySettings.PredictionLead(60, 0), 1e-9);
         Assert.AreEqual(50, PhoneSaberJudgeLatencySettings.PredictionLead(60, 40), 1e-9);
@@ -26,6 +30,9 @@ public class PhoneSaberJudgeLatencyTests
             PhoneSaberJudgeLatencySettings.SecondsToApply(PhoneSaberJudgeLatencySettings.Automatic, 900, 0, .12), 1e-6);
         Assert.AreEqual(PhoneSaberJudgeLatencySettings.MinimumMs / 1000.0,
             PhoneSaberJudgeLatencySettings.SecondsToApply(PhoneSaberJudgeLatencySettings.Automatic, 5, -100, .12), 1e-6);
+        // 予測なしでは 30 ms より下げない（従来どおり）。
+        Assert.AreEqual(PhoneSaberJudgeLatencySettings.MinimumMs / 1000.0,
+            PhoneSaberJudgeLatencySettings.SecondsToApply(PhoneSaberJudgeLatencySettings.Automatic, 85, -250, .12), 1e-6);
     }
 
     [Test]
@@ -52,6 +59,8 @@ public class PhoneSaberJudgeLatencyTests
             PhoneSaberJudgeLatencySettings.Save("jlat-a", PhoneSaberJudgeLatencySettings.GameDefault, 400);
             Assert.AreEqual(PhoneSaberJudgeLatencySettings.GameDefault, PhoneSaberJudgeLatencySettings.Load("jlat-a"));
             Assert.AreEqual(PhoneSaberJudgeLatencySettings.MaximumOffsetMs, PhoneSaberJudgeLatencySettings.LoadOffset("jlat-a"));
+            PhoneSaberJudgeLatencySettings.Save("jlat-a", PhoneSaberJudgeLatencySettings.Automatic, -400);
+            Assert.AreEqual(PhoneSaberJudgeLatencySettings.MinimumOffsetMs, PhoneSaberJudgeLatencySettings.LoadOffset("jlat-a"));
             Assert.AreEqual(PhoneSaberJudgeLatencySettings.Automatic, PhoneSaberJudgeLatencySettings.Load("jlat-b"));
         }
         finally
