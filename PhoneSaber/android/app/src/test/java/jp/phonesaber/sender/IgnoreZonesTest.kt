@@ -10,6 +10,7 @@ class IgnoreZonesTest {
         assertEquals(PcCommand(8, "blue", false), PcCommandProtocol.parse("PHONESABER_COMMAND 1 id=8 ignore=blue"))
         assertEquals(PcCommand(9, null, true), PcCommandProtocol.parse("PHONESABER_COMMAND 1 id=9 clear-ignore=1"))
         assertNull(PcCommandProtocol.parse("PHONESABER_COMMAND 1 ignore=red"))        // id なし
+        assertEquals("both", PcCommandProtocol.parse("PHONESABER_COMMAND 1 id=11 ignore=both")?.ignore) // 赤と青をまとめて
         assertNull(PcCommandProtocol.parse("PHONESABER_COMMAND 1 id=3 ignore=green")) // 知らない色
         assertNull(PcCommandProtocol.parse("PHONESABER_UNITY 1 red=5005 blue=5006 name=Mac"))
         assertNull(PcCommandProtocol.parse("PHONESABER_COMMAND 2 id=1 ignore=red"))   // 別の版

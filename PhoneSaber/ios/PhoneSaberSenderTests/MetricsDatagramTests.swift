@@ -86,6 +86,7 @@ final class MetricsDatagramTests: XCTestCase {
                        LANLivenessProbe.PCCommand(id: 9, ignore: nil, clearIgnore: true))
         XCTAssertNil(LANLivenessProbe.parseCommand("PHONESABER_COMMAND 1 ignore=red"))       // id なし
         XCTAssertNil(LANLivenessProbe.parseCommand("PHONESABER_COMMAND 1 id=3 ignore=green")) // 知らない色
+        XCTAssertEqual(LANLivenessProbe.parseCommand("PHONESABER_COMMAND 1 id=11 ignore=both")?.ignore, "both") // 赤と青をまとめて
         XCTAssertNil(LANLivenessProbe.parseCommand("PHONESABER_UNITY 1 red=5005 blue=5006 name=Mac"))
         XCTAssertNil(LANLivenessProbe.parseCommand("PHONESABER_COMMAND 2 id=1 ignore=red"))  // 別の版
         // 古い組み合わせ（ignore と clear-ignore）の受け付けは変えない。

@@ -1563,8 +1563,10 @@ final class CameraViewModel: NSObject, ObservableObject {
         lastPCCommandID = command.id
         if command.clearIgnore { clearIgnoreZones() }
         if let name = command.ignore {
-            let done = ignoreCurrentDetection(name == "blue" ? .blue : .red)
-            if !done { ConnectivityLog.shared.record("IGNORE_ZONE", "pc command id=\(command.id): no current detection") }
+            let colors: [SaberColor] = name == "both" ? [.red, .blue] : [name == "blue" ? .blue : .red]
+            for color in colors where !ignoreCurrentDetection(color) {
+                ConnectivityLog.shared.record("IGNORE_ZONE", "pc command id=\(command.id): no current \(color == .red ? "red" : "blue") detection")
+            }
         }
         if let seconds = command.learnAreaSeconds { learnPlayArea(seconds: seconds, commandID: command.id) }
         if command.clearArea { clearPlayArea(commandID: command.id) }

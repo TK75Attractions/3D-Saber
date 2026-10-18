@@ -101,7 +101,9 @@ public class PhoneSaberEndpointPredictorTests
         typeof(InputPoint).GetField("phoneSaberStation", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(input, station);
         try
         {
-            Assert.IsFalse(PhoneSaberPredictionSettings.LoadAutomatic(station));
+            Assert.IsTrue(PhoneSaberPredictionSettings.LoadAutomatic(station)); // 未保存の台は自動（10-18）
+            input.SetPredictionHorizonMilliseconds(0);
+            Assert.IsFalse(PhoneSaberPredictionSettings.LoadAutomatic(station)); // OFF を選べば保存される
             input.SetPredictionAutomatic();
             Assert.IsTrue(input.PredictionAutomatic);
             Assert.IsTrue(PhoneSaberPredictionSettings.LoadAutomatic(station));

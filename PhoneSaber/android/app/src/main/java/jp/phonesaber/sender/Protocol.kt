@@ -73,7 +73,8 @@ object PcCommandProtocol {
             if (parts.size != 2) continue
             when (parts[0]) {
                 "id" -> id = parts[1].toIntOrNull()
-                "ignore" -> ignore = parts[1].takeIf { it == "red" || it == "blue" }
+                // "both" = 赤と青をまとめて（2026-10-18、運営のキー操作 Ctrl+Shift+I）。
+                "ignore" -> ignore = parts[1].takeIf { it == "red" || it == "blue" || it == "both" }
                 "clear-ignore" -> clear = parts[1] == "1"
                 "learn-area" -> learn = parts[1].toIntOrNull()?.takeIf { it in 1..MAXIMUM_LEARN_SECONDS }
                 "clear-area" -> clearArea = parts[1] == "1"

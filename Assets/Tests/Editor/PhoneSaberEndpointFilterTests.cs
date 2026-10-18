@@ -89,14 +89,14 @@ public class PhoneSaberEndpointFilterTests
     }
 
     [Test]
-    public void SettingsDefaultOffAndAreIndependentPerStation()
+    public void SettingsDefaultMediumAndAreIndependentPerStation()
     {
         string first = "filter-" + Guid.NewGuid().ToString("N").Substring(0, 8), second = "filter-" + Guid.NewGuid().ToString("N").Substring(0, 8);
         try
         {
-            Assert.AreEqual(0, PhoneSaberFilterSettings.Load(first));
+            Assert.AreEqual(PhoneSaberEndpointFilter.Medium, PhoneSaberFilterSettings.Load(first));
             PhoneSaberFilterSettings.Save(first, 1);
-            Assert.AreEqual(1, PhoneSaberFilterSettings.Load(first)); Assert.AreEqual(0, PhoneSaberFilterSettings.Load(second));
+            Assert.AreEqual(1, PhoneSaberFilterSettings.Load(first)); Assert.AreEqual(PhoneSaberEndpointFilter.Medium, PhoneSaberFilterSettings.Load(second));
             PhoneSaberFilterSettings.Save(second, 99);
             Assert.AreEqual(2, PhoneSaberFilterSettings.Load(second));
             PhoneSaberFilterSettings.Save(first, -1);
@@ -288,6 +288,8 @@ public class PhoneSaberEndpointFilterTests
         var predictor = (PhoneSaberEndpointPredictor)predictorField.GetValue(bridge);
         try
         {
+            // 未設定の台の既定は「中」（10-18）。このテストは OFF から切り替える動きを見るので、OFF を保存してから始める。
+            PhoneSaberFilterSettings.Save(station, PhoneSaberEndpointFilter.Off);
             Assert.AreEqual(0, resolve.Invoke(bridge, new object[] { input }));
             predictor.AddSample(0, Vector2.zero, Vector2.one);
             predictor.AddSample(.03, Vector2.right, Vector2.one + Vector2.right);

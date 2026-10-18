@@ -256,7 +256,7 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         }
         GUILayout.EndHorizontal();
         GUI.enabled = previousEnabled;
-        GUILayout.Label("初期値はOFF。20 msから試してください。折り返しでは行き過ぎが増えます。\n" +
+        GUILayout.Label("初期値は自動（未設定の台）。手動なら20 msから試してください。折り返しでは行き過ぎが増えます。\n" +
             $"手動: 最大{PhoneSaberEndpointPredictor.MaximumManualHorizonMilliseconds} ms・移動上限{PhoneSaberEndpointPredictor.DefaultMaximumDisplacement} world。\n" +
             $"自動: 最大{PhoneSaberEndpointPredictor.MaximumHorizonMilliseconds} ms・移動上限{PhoneSaberEndpointPredictor.AutomaticMaximumDisplacement} world。受信が100 ms止まると予測量はゼロに戻ります。", textStyle);
         GUILayout.Label("自動: スマホ＋通信＋PC＋画面＋露光の目安。未計測時はOFF。\n" +
@@ -329,7 +329,7 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
             if (GUILayout.Button((mode == value ? "● " : "") + PhoneSaberFilterSettings.Label(value), buttonStyle) && mode != value)
                 PhoneSaberFilterSettings.Save(name, value);
         GUILayout.EndHorizontal();
-        GUILayout.Label("初期値はOFF。静止時の揺れを少し抑えます。速い振りにも小さな遅れが加わります。", textStyle);
+        GUILayout.Label("初期値は「中」（未設定の台）。静止時の揺れを少し抑えます。速い振りにも小さな遅れが加わります。", textStyle);
         bool stable = PhoneSaberBladeStabilizerSettings.Load(name);
         GUILayout.Label($"剣の揺れ止め（伸び縮み・誤認識の跳び）: {(stable ? "ON" : "OFF")}（この台に保存）", textStyle);
         GUILayout.BeginHorizontal();
@@ -366,11 +366,14 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         string ignored = input != null ? $"・無視した受信 赤 {input.IgnoredSamples} / 青 {input.IgnoredSamples2}" : "";
         // 本命は iPhone 側（候補を選ぶ前に外すので、同じコマの剣が選ばれる）。PC 側はその予備。
         double left = PhoneSaberDiscoveryResponder.CommandSecondsLeft(SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp));
+        GUILayout.Label("キーでも操作できます（F8 を開かずに）: Ctrl+Shift+R 赤を無視 / B 青を無視 / I 赤と青を無視 / C 無視を消す / " +
+            "P プレイ範囲を覚える / X プレイ範囲を消す / E 露出 0→−1→−2", textStyle);
         GUILayout.Label("スマホに無視させる（iPhone・Android。剣の電源を切り、コーンなどだけが映っている状態で押す）" +
             (left > 0 ? $"　送信中 あと {left:0} 秒" : ""), textStyle);
         GUILayout.BeginHorizontal();
         if (GUILayout.Button("スマホ: 今の赤を無視", buttonStyle)) PhoneSaberDiscoveryResponder.QueueCommand("ignore=red");
         if (GUILayout.Button("スマホ: 今の青を無視", buttonStyle)) PhoneSaberDiscoveryResponder.QueueCommand("ignore=blue");
+        if (GUILayout.Button("スマホ: 赤と青を無視", buttonStyle)) PhoneSaberDiscoveryResponder.QueueCommand("ignore=both");
         if (GUILayout.Button("スマホ: 無視をすべて消す", buttonStyle)) PhoneSaberDiscoveryResponder.QueueCommand("clear-ignore=1");
         GUILayout.EndHorizontal();
         // プレイ範囲（2026-10-18）: 赤い服の人など動く物は無視範囲では外せないので、剣を振る範囲の外の候補を選ばせない。

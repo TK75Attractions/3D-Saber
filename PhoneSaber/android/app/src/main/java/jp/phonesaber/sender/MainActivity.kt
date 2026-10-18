@@ -641,7 +641,10 @@ class MainActivity : ComponentActivity() {
         if (destination?.address != from || command.id == lastPcCommandId) return
         lastPcCommandId = command.id
         if (command.clearIgnore) clearIgnoreZones(command.id)
-        command.ignore?.let { ignoreCurrent(if (it == "blue") 1 else 0, command.id) }
+        command.ignore?.let {
+            if (it == "both") { ignoreCurrent(0, command.id); ignoreCurrent(1, command.id) }
+            else ignoreCurrent(if (it == "blue") 1 else 0, command.id)
+        }
         command.learnAreaSeconds?.let { learnPlayArea(it, command.id) }
         if (command.clearArea) clearPlayArea(command.id)
         command.exposureBias?.let { setExposureBias(it, command.id) }

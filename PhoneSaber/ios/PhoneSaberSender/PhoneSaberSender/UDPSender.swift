@@ -618,7 +618,8 @@ final class LANLivenessProbe {
             guard parts.count == 2 else { continue }
             switch parts[0] {
             case "id": id = Int(parts[1])
-            case "ignore": ignore = parts[1] == "red" || parts[1] == "blue" ? parts[1] : nil
+            // "both" = 赤と青をまとめて（2026-10-18、運営のキー操作 Ctrl+Shift+I）。
+            case "ignore": ignore = ["red", "blue", "both"].contains(parts[1]) ? parts[1] : nil
             case "clear-ignore": clear = parts[1] == "1"
             case "learn-area": learn = Int(parts[1]).flatMap { (1...maximumLearnAreaSeconds).contains($0) ? $0 : nil }
             case "clear-area": clearArea = parts[1] == "1"

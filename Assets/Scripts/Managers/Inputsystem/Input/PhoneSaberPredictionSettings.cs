@@ -11,7 +11,8 @@ public static class PhoneSaberPredictionSettings
     // 自動も明示選択した台だけで有効。時計差は片道遅延の測定値として使わない。
     public const int AutomaticFallbackMilliseconds = 0;
     public static string AutomaticKey(string station) => Key(station) + ".Auto";
-    public static bool LoadAutomatic(string station) => PlayerPrefs.GetInt(AutomaticKey(station), 0) == 1;
+    // 未保存の台は「自動」（2026-10-18 ユーザー: 予測なしは遅延がひどい。既定 ON を指示）。手動・OFF を選ぶと保存される。
+    public static bool LoadAutomatic(string station) => PlayerPrefs.GetInt(AutomaticKey(station), 1) == 1;
 
     public static void SaveAutomatic(string station, bool automatic)
     {
