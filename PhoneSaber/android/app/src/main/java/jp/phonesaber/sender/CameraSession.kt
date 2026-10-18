@@ -74,7 +74,9 @@ class CameraSession(private val owner: LifecycleOwner, private val previewView: 
                 catch (e: Exception) { fail(token, "コア初期化失敗: ${e.localizedMessage}") }
             }
         }
-        val future = ProcessCameraProvider.getInstance(previewView.context)
+        // Futureを返す前の初期化・RPC失敗も、同じ世代の自動復旧へ渡す。
+        val future = try { ProcessCameraProvider.getInstance(previewView.context) }
+        catch (e: Exception) { fail(token, "カメラ開始失敗: ${e.localizedMessage}"); return }
         future.addListener({
             if (!running || token != generation) return@addListener
             try {
