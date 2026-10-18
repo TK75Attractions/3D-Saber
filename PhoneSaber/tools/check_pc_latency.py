@@ -62,7 +62,7 @@ public static class ProjectorMode { public const float BladeWidthScale=1,BladeOu
 public enum JudgmentTier { Perfect, Great, Good, Bad }
 public enum SaberHand { Any, Left, Right }
 public class SongPlayer : MonoBehaviour { public double SongTime; }
-public class CuttableNote : MonoBehaviour { public double HitTime; public SaberHand RequiredHand; public event System.Action<CuttableNote, JudgmentTier, Vector3, Vector3> OnJudged; }
+public class CuttableNote : MonoBehaviour { public double HitTime; public double? LastCutSongTime; public int RequiredCutCount = 1; public SaberHand RequiredHand; public event System.Action<CuttableNote, JudgmentTier, Vector3, Vector3> OnJudged; }
 public class NoteSpawner : MonoBehaviour { public double JudgeLatencySeconds; public double JudgeClock(double t) => t - JudgeLatencySeconds; public event System.Action<CuttableNote> OnNoteSpawned, OnNoteMissed; }
 public class GamePlayManager : MonoBehaviour { public NoteSpawner noteSpawner; public SongPlayer songPlayer; public float cameraJudgeLatencySeconds = .12f; }
 ''')

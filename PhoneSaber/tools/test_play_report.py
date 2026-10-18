@@ -34,7 +34,7 @@ def estimate(t, colour="RED", sender="192.168.1.20", fps="60.0", thermal="nomina
 
 def judge(t, tier, judge_ms, latency=120, hit=1.0):
     return (f"{ts(t)} station=A colour=SYSTEM event=judge-timing tier={tier} hand=Right "
-            f"judge-ms={judge_ms} song-ms={judge_ms + latency} latency-ms={latency} hit-s={hit}")
+            f"judge-ms={judge_ms} decided-ms={judge_ms} song-ms={judge_ms + latency} latency-ms={latency} hit-s={hit}")
 
 
 def write_log(lines):
@@ -257,6 +257,27 @@ class CliTests(unittest.TestCase):
             self.assertEqual(counts, [3, 4])  # 印と同じ時刻の判定は後ろの試行だけに入る
         finally:
             os.unlink(path)
+
+    def test_legacy_judge_lines_are_not_used_for_the_error(self):
+        legacy = f"{ts(11)} station=A colour=SYSTEM event=judge-timing tier=Great hand=Right judge-ms=-90 song-ms=30 latency-ms=120 hit-s=1.0"
+        path = write_log([perf(10), perf(20), legacy, judge(12, "Perfect", 5)])
+        try:
+            report = play_report.build_report(play_report.load_events(path), None, None)
+            self.assertEqual(report["overall"]["judge"]["judge_ms_median"], 5)
+            self.assertEqual(report["overall"]["judge"]["n"], 2)
+        finally:
+            os.unlink(path)
+
+    def test_rotated_logs_are_read_oldest_first(self):
+        path = write_log([perf(20)])
+        try:
+            with open(path + ".1", "w", encoding="utf-8") as handle:
+                handle.write(perf(10) + "\n" + judge(11, "Perfect", 3) + "\n")
+            events = play_report.load_events(path)
+            self.assertEqual([e["event"] for e in events], ["perf", "judge-timing", "perf"])
+        finally:
+            os.unlink(path)
+            os.unlink(path + ".1")
 
     def test_by_trial_without_marks_says_so(self):
         code, text = run(["--events", self.path, "--by-trial"])

@@ -79,12 +79,15 @@ def parse_line(line):
 
 
 def load_events(path):
+    """path と、ゲームが 1 MB ごとに回した path.1〜path.9（古い順）も読む。"""
     events = []
-    with open(path, "r", encoding="utf-8", errors="replace") as handle:
-        for line in handle:
-            row = parse_line(line)
-            if row is not None:
-                events.append(row)
+    rotated = [f"{path}.{n}" for n in range(9, 0, -1) if os.path.exists(f"{path}.{n}")]
+    for name in rotated + [path]:
+        with open(name, "r", encoding="utf-8", errors="replace") as handle:
+            for line in handle:
+                row = parse_line(line)
+                if row is not None:
+                    events.append(row)
     events.sort(key=lambda r: r["time"])  # sort は安定なので同時刻は書かれた順
     return events
 
@@ -314,7 +317,8 @@ def summarize(all_events, start, end, label=""):
         tier = text(f.get("tier")) or "unknown"
         tiers[tier] = tiers.get(tier, 0) + 1
     hits = [f for f in judges if text(f.get("tier")) not in (None, "Miss")]
-    hit_ms = [num(f.get("judge-ms")) for f in hits]
+    # 10-18 昼より前の judge-ms は「確定したフレーム」の時刻で、ゲームの誤差と一致しない（decided-ms 列が無い行）。
+    hit_ms = [num(f.get("judge-ms")) for f in hits if "decided-ms" in f]
     hit_ms = [v for v in hit_ms if v is not None]
     song_ms = [num(f.get("song-ms")) for f in hits]
     comps = [num(f.get("latency-ms")) for f in judges]
