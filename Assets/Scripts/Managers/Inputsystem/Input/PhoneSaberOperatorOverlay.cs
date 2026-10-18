@@ -366,7 +366,7 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         string ignored = input != null ? $"・無視した受信 赤 {input.IgnoredSamples} / 青 {input.IgnoredSamples2}" : "";
         // 本命は iPhone 側（候補を選ぶ前に外すので、同じコマの剣が選ばれる）。PC 側はその予備。
         double left = PhoneSaberDiscoveryResponder.CommandSecondsLeft(SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp));
-        GUILayout.Label("キーでも操作できます（F8 を開かずに）: Ctrl+Shift+R 赤を無視 / B 青を無視 / I 赤と青を無視 / C 無視を消す / " +
+        GUILayout.Label("キーでも操作できます（F8 を開かずに）: Ctrl+Shift+R 赤を無視 / B 青を無視 / I 赤と青を無視 / C 無視を消す / K 今の場面を保存（iPhone） / " +
             "P プレイ範囲を覚える / X プレイ範囲を消す / E 露出 0→−1→−2", textStyle);
         GUILayout.Label("スマホに無視させる（iPhone・Android。剣の電源を切り、コーンなどだけが映っている状態で押す）" +
             (left > 0 ? $"　送信中 あと {left:0} 秒" : ""), textStyle);

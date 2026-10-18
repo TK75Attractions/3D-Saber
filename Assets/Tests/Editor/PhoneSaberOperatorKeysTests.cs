@@ -10,6 +10,7 @@ public class PhoneSaberOperatorKeysTests
         Assert.AreEqual("ignore=blue", PhoneSaberOperatorKeys.CommandFor(Key.B, 0, out _).Value.command);
         Assert.AreEqual("ignore=both", PhoneSaberOperatorKeys.CommandFor(Key.I, 0, out _).Value.command);
         Assert.AreEqual("clear-ignore=1", PhoneSaberOperatorKeys.CommandFor(Key.C, 0, out _).Value.command);
+        Assert.AreEqual("clip=1", PhoneSaberOperatorKeys.CommandFor(Key.K, 0, out _).Value.command);
         Assert.AreEqual(PhoneSaberDiscoveryResponder.LearnAreaCommand, PhoneSaberOperatorKeys.CommandFor(Key.P, 0, out _).Value.command);
         Assert.AreEqual(PhoneSaberDiscoveryResponder.ClearAreaCommand, PhoneSaberOperatorKeys.CommandFor(Key.X, 0, out _).Value.command);
         // ゲームが使うキーは割り当てない。

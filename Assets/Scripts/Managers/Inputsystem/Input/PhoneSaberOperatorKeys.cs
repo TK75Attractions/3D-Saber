@@ -28,6 +28,8 @@ public sealed class PhoneSaberOperatorKeys : MonoBehaviour
             case Key.B: return ("ignore=blue", "スマホ: 今の青を無視");
             case Key.I: return ("ignore=both", "スマホ: 今の赤と青をまとめて無視");
             case Key.C: return ("clear-ignore=1", "スマホ: 無視をすべて消す");
+            // iPhone の自動クリップ（c81113d）: 今の前後数秒を保存し、曲の合間に Mac の diagnostics-inbox/autoclips へ送る。
+            case Key.K: return ("clip=1", "スマホ: 今の場面を切り抜いて保存");
             case Key.P: return (PhoneSaberDiscoveryResponder.LearnAreaCommand,
                 $"スマホ: プレイ範囲を覚える（{PhoneSaberDiscoveryResponder.LearnAreaSeconds}秒、範囲いっぱいに振る）");
             case Key.X: return (PhoneSaberDiscoveryResponder.ClearAreaCommand, "スマホ: プレイ範囲を消す");
@@ -40,7 +42,7 @@ public sealed class PhoneSaberOperatorKeys : MonoBehaviour
         }
     }
 
-    static readonly Key[] Keys = { Key.R, Key.B, Key.I, Key.C, Key.P, Key.X, Key.E };
+    static readonly Key[] Keys = { Key.R, Key.B, Key.I, Key.C, Key.K, Key.P, Key.X, Key.E };
 
     void Update()
     {
