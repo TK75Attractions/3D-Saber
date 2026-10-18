@@ -52,14 +52,26 @@ public class PhoneSaberBladeStabilizerTests
         Step(s, 6, a, b, out ra, out rb);
         Assert.AreEqual(a, ra);
         Assert.AreEqual(1, s.RejectedJumps);
-        // 同じ所へ続けて跳ぶ（本当に動いた）なら、最大 2 回捨てた後に受け入れる。
+        // 同じ所へ続けて跳ぶ（本当に動いた）なら、1 回捨てた後に受け入れる（固まるのは最大 1 コマ）。
         Step(s, 7, a + far, b + far, out ra, out _);
         Assert.AreEqual(a, ra);
-        Step(s, 8, a + far, b + far, out ra, out _);
-        Assert.AreEqual(a, ra);
-        Step(s, 9, a + far, b + far, out ra, out rb);
+        Step(s, 8, a + far, b + far, out ra, out rb);
         Assert.AreEqual(a + far, ra); Assert.AreEqual(b + far, rb);
-        Assert.AreEqual(3, s.RejectedJumps);
+        Assert.AreEqual(2, s.RejectedJumps);
+    }
+
+    [Test]
+    public void ThirtyFpsFastSwingIsNotRejected()
+    {
+        // 2026-10-18: 30 fps で本物の振りを捨てて剣が固まった。1 受信で刃の長さの 2.5 倍動く速い振りでも捨てない。
+        var s = new PhoneSaberBladeStabilizer();
+        const double thirty = 1.0 / 30;
+        Vector2 half = new Vector2(0, .5f);
+        for (int i = 0; i < 4; i++) s.Apply(10 + i * thirty, -half, half, out _, out _);
+        Vector2 moved = new Vector2(2.5f, 0);
+        s.Apply(10 + 4 * thirty, moved - half, moved + half, out Vector2 ra, out _);
+        Assert.AreEqual(moved - half, ra);
+        Assert.AreEqual(0, s.RejectedJumps);
     }
 
     [Test]

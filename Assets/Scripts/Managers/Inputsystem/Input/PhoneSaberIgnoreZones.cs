@@ -96,10 +96,10 @@ public static class PhoneSaberIgnoreZones
 }
 
 // 照準（メニューの狙いの点）の跳び止め。刃の揺れ止めと同じ考え方で、前の点から screenFraction 以上
-// 離れた受信を最大2回だけ捨てる。同じ受信時刻は一度だけ処理する。
+// 離れた受信を 1 回だけ捨てる。同じ受信時刻は一度だけ処理する。
 public sealed class PhoneSaberPointJumpGate
 {
-    public const int MaximumRejectedSamples = 2;
+    public const int MaximumRejectedSamples = 1; // 固まるのは最大 1 受信（刃の揺れ止めと同じ）
     Vector2 last;
     double lastTime = double.NaN;
     bool has;

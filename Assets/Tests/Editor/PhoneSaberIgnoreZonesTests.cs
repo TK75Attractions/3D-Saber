@@ -52,7 +52,7 @@ public class PhoneSaberIgnoreZonesTests
     }
 
     [Test]
-    public void PointJumpGateDropsUpToTwoFarSamples()
+    public void PointJumpGateDropsOneFarSample()
     {
         var gate = new PhoneSaberPointJumpGate();
         Vector2 right = new Vector2(1500, 200), left = new Vector2(150, 150);
@@ -61,8 +61,7 @@ public class PhoneSaberIgnoreZonesTests
         Assert.AreEqual(right, gate.Apply(2, left, 270));   // 同じ受信は一度だけ数える
         Assert.AreEqual(right, gate.Apply(3, right + Vector2.one, 270) - Vector2.one); // 戻れば受け入れ
         Assert.AreEqual(right + Vector2.one, gate.Apply(4, left, 270));
-        Assert.AreEqual(right + Vector2.one, gate.Apply(5, left, 270));
-        Assert.AreEqual(left, gate.Apply(6, left, 270));    // 3回続けば本当の移動
+        Assert.AreEqual(left, gate.Apply(5, left, 270));    // 2回続けば本当の移動
         gate.Reset();
         Assert.AreEqual(right, gate.Apply(7, right, 270));
     }

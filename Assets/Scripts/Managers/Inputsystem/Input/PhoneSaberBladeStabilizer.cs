@@ -5,16 +5,20 @@ using UnityEngine;
 // 判定は両端を結んだ線分で切るので、その揺れがノーツに触れて勝手に切れる。
 // 遅れを足さないよう、中心と向きはそのまま使い、次の2つだけを抑える。
 //  1. 長さの急な変化: 1 受信あたり ±MaximumLengthChange まで（実際の傾き＝見かけの長さの変化は数コマかけて起きる）。
-//  2. ありえない跳び: 直前の速さから外挿した中心から、ふだんの刃の長さ × JumpBladeLengths 以上離れた受信は、
-//     最大 MaximumRejectedSamples 回だけ捨てて前の刃を保つ。続けば本当の動きとして受け入れる。
+//  2. ありえない跳び: 直前の速さから外挿した中心から、ふだんの刃の長さ × JumpBladeLengths（60 fps 換算、受信の間隔に比例）
+//     以上離れた受信は、MaximumRejectedSamples 回だけ捨てて前の刃を保つ。続けば本当の動きとして受け入れる。
 //     実際の振りは 3 m 先で 2 m/s でも 1 コマ（16 ms）で刃の長さの数 % しか動かないので、本物の振りは捨てない。
 //     座標の単位（直結の world 写像か画面経由か）に左右されないよう、基準は刃の長さにする。
 // 端の順序（丸い剣で A/B が入れ替わる）は前の刃に近い方へそろえる。F8 で台ごとに OFF にできる（既定 ON）。
 public sealed class PhoneSaberBladeStabilizer
 {
     public const float MaximumLengthChange = .15f;
-    public const float JumpBladeLengths = 1f;
-    public const int MaximumRejectedSamples = 2;
+    // 2026-10-18 午後: 基準が刃の長さ 1 本・最大 2 回だと、iPhone が 30 fps に落ちたとき本物の振りを
+    // 13〜24 % 捨て、剣が頻繁に固まった。基準を 60 fps 換算で刃の長さ 2 本にし、受信の間隔に比例して広げ、捨てるのは 1 回まで。
+    // 置きっぱなしの赤い物は F8 の「無視」（PhoneSaberIgnoreZones）で消す。ここは本当の一瞬の誤認識だけを拾う。
+    public const float JumpBladeLengths = 2f;
+    public const double ReferenceInterval = 1.0 / 60;
+    public const int MaximumRejectedSamples = 1;
     public const double MaximumGapSeconds = .25;
 
     Vector2 lastA, lastB, lastMid, velocity;
@@ -50,7 +54,8 @@ public sealed class PhoneSaberBladeStabilizer
         Vector2 mid = (a + b) * .5f;
         double sinceAccepted = receiveTime - acceptedTime;
         Vector2 expected = lastMid + velocity * (float)sinceAccepted;
-        float jump = Mathf.Max(lastLength, typicalLength * .5f) * JumpBladeLengths;
+        float jump = Mathf.Max(typicalLength, lastLength) * JumpBladeLengths
+            * (float)System.Math.Max(1.0, sinceAccepted / ReferenceInterval);
         if (jump > 1e-5f && (mid - expected).sqrMagnitude > jump * jump && rejected < MaximumRejectedSamples)
         {
             rejected++;
