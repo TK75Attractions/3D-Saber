@@ -33,6 +33,16 @@ if [[ -f "$BRIDGE_SCRIPT" ]]; then
     OPEN_ENV=(--env "PHONESABER_P2P_BRIDGE_SCRIPT=$BRIDGE_SCRIPT")
     BRIDGE_STATE=yes
 fi
+# iPhone の自動クリップ（c81113d）を受け取る受信機を、窓なし・Codex なしで裏に立てる（無ければ）。
+# 届いたクリップは ~/Library/Application Support/PhoneSaber/diagnostics-inbox/autoclips/ に入り、まとめ（.report.md・.contact.png）が横に書かれる。
+# PHONESABER_TRIAGE_RECEIVER=0 で立てない。
+TRIAGE_RECEIVER="$SCRIPT_DIR/../ios/PhoneSaberSender/Tools/phone_saber_triage_receiver.py"
+start_triage_receiver() {
+    [[ "${PHONESABER_TRIAGE_RECEIVER:-1}" == 0 || ! -f "$TRIAGE_RECEIVER" ]] && return 0
+    pgrep -f "phone_saber_triage_receiver.py" >/dev/null 2>&1 && return 0
+    mkdir -p "$HOME/Library/Logs/PhoneSaber"
+    nohup python3 "$TRIAGE_RECEIVER" --no-codex >> "$HOME/Library/Logs/PhoneSaber/triage-receiver.log" 2>&1 < /dev/null &
+}
 log() { printf '[%s] station=%s %s restart=%s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" "$STATION" "$*" "$RESTART_COUNT" >> "$LOG_FILE"; }
 stop_file() {
     if [[ -e "$STOP_FILE" ]]; then printf '%s\n' "$STOP_FILE"; return 0; fi
@@ -204,6 +214,7 @@ while ! stopped; do
     rm -f "$QUIT_MARKER" "$MARKER_DIR"/heartbeat-*
     HEARTBEAT="$MARKER_DIR/heartbeat-$RESTART_COUNT"
     HANG_DETECTED=0
+    start_triage_receiver
     log "launch p2p-bridge=$BRIDGE_STATE hang-seconds=$HANG_SECONDS"
     printf '台 %s を起動します。再起動回数: %s [Ctrl+C: 監視終了]\n' "$STATION" "$RESTART_COUNT"
     /usr/bin/open -W -n ${OPEN_ENV[@]+"${OPEN_ENV[@]}"} --env "PHONESABER_LOW_POWER_MODE=$LOW_POWER_STATE" "$GAME_APP" --args -phonesaberStation "$STATION" -phonesaberQuitMarker "$QUIT_MARKER" -phonesaberHeartbeat "$HEARTBEAT" &

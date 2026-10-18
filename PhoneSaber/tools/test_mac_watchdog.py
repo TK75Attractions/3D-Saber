@@ -42,7 +42,8 @@ exit 2
             (self.mac / source.name).write_text(source.read_text())
         script = (SOURCE / "saber-watchdog.sh").read_text()
         (self.mac / "saber-watchdog.sh").write_text(script.replace("/usr/bin/open", '"' + str(fake_open) + '"'))
-        self.env = {**os.environ, "CDPATH": ".", "WATCHDOG_TEST_CALLS": str(self.calls),
+        # 試験の中で本物の受信機（iPhone の自動クリップ用）を立てない。
+        self.env = {**os.environ, "PHONESABER_TRIAGE_RECEIVER": "0", "CDPATH": ".", "WATCHDOG_TEST_CALLS": str(self.calls),
                     "WATCHDOG_TEST_ARGUMENTS": str(self.arguments),
                     "PHONESABER_P2P_BRIDGE_SCRIPT": str(self.root / "missing-bridge.py")}
 
@@ -166,7 +167,7 @@ printf '%s\\n' "$contents"
                     executable = tools / name
                     executable.write_text(script)
                     executable.chmod(0o755)
-                env = dict(os.environ, TMPDIR=directory,
+                env = dict(os.environ, TMPDIR=directory, PHONESABER_TRIAGE_RECEIVER="0",
                            PATH=str(tools) + os.pathsep + os.environ["PATH"],
                            LAUNCHER_TEST_FAIL=marker)
                 result = subprocess.run(
