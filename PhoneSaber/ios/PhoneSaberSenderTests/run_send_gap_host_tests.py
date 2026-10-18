@@ -18,6 +18,9 @@ def main():
     def source(name):
         if args.revision:
             previous = subprocess.check_output(["git", "show", f"{args.revision}:{(SOURCE / name).relative_to(ROOT)}"], cwd=ROOT, text=True)
+            if name == "UDPSender.swift" and "var connectionsForTesting:" not in previous:
+                getter = block((SOURCE / name).read_text(), "var connectionsForTesting:")
+                previous = previous.replace("    var rejectedCompletionCountForTesting:", "    " + getter + "\n    var rejectedCompletionCountForTesting:")
             if name == "P2PSender.swift" and "var connectionForTesting:" not in previous:
                 # 旧実装にも観測用 getter だけを足し、解放処理は変更せず検証する。
                 getter = block((SOURCE / name).read_text(), "var connectionForTesting:")
@@ -118,7 +121,8 @@ final class DebugBundleTransfer {
     for marker in ["final class LockedBox", "final class FakeBridge", "final class FakeUnityDiscovery"]:
         support += block(tests, marker) + "\n"
     focused = "import XCTest\nimport Network\nimport Foundation\nfinal class SendGapNetworkTests: XCTestCase {\n"
-    for name in ["testReleasingSenderWithoutStopCancelsTheConnection",
+    for name in ["testReleasingUDPSenderWithoutStopCancelsBothConnections",
+                 "testReleasingSenderWithoutStopCancelsTheConnection",
                  "testFailedBrowserReplacesPendingWaitingRetry",
                  "testLANProbeDoesNotQueueRequestsBeforeReadyAndRecoversAfterHostChange",
                  "testLANLivenessProbeRebuildsTheConnectionAfterAReceiveError",

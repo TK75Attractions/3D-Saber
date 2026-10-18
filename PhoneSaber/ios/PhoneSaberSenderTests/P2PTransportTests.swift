@@ -945,6 +945,29 @@ final class P2PTransportTests: XCTestCase {
         await fulfillment(of: [rejected], timeout: 2)
     }
 
+    func testReleasingUDPSenderWithoutStopCancelsBothConnections() async throws {
+        let red = try FakeBridge(), blue = try FakeBridge()
+        defer { red.stop(); blue.stop() }
+        let redPort = try await red.ready(), bluePort = try await blue.ready()
+        var sender: UDPSender? = UDPSender()
+        sender?.configure(host: "127.0.0.1", ports: [Int(redPort.rawValue), Int(bluePort.rawValue)])
+        let connections = try XCTUnwrap(sender?.connectionsForTesting)
+        defer { connections.values.forEach { $0.cancel() } }
+        XCTAssertEqual(connections.count, 2)
+        let ready = await waitFor {
+            connections.values.allSatisfy { if case .ready = $0.state { return true }; return false }
+        }
+        XCTAssertTrue(ready)
+        weak var released = sender
+        sender = nil
+        let deallocated = await waitFor { released == nil }
+        XCTAssertTrue(deallocated)
+        let cancelled = await waitFor {
+            connections.values.allSatisfy { if case .cancelled = $0.state { return true }; return false }
+        }
+        XCTAssertTrue(cancelled, "所有側の破棄後に両色の LAN 接続を残さない")
+    }
+
     func testReleasingSenderWithoutStopCancelsTheConnection() async throws {
         let bridge = try FakeBridge()
         defer { bridge.stop() }

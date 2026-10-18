@@ -105,6 +105,11 @@ final class UDPSender {
         self.timing = timing
     }
 
+    deinit {
+        // 所有側の破棄でも、両色の接続と再接続・監視予約を残さない。
+        stopLocked(clearHandler: true)
+    }
+
     func configure(host: String, ports: [Int] = [5005, 5006],
                    onUpdate: (([Int: String], [Int: String], String?) -> Void)? = nil) {
         queue.sync {
@@ -548,6 +553,7 @@ final class UDPSender {
 
 #if DEBUG
     var updateHandlerHistoryCountForTesting: Int { queue.sync { updateHandlersForTesting.values.count } }
+    var connectionsForTesting: [Int: NWConnection] { queue.sync { connections } }
 #endif
 
     var rejectedCompletionCountForTesting: Int { queue.sync { rejectedCompletionCount } }
