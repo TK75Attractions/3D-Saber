@@ -1,0 +1,236 @@
+{
+  "passed": true,
+  "melody": {
+    "escapade": {
+      "humanTimingMarkersPreserved": 24,
+      "protectedHardHitsPreserved": 59,
+      "hardRhythmOutsideMelodyRangesPreserved": true,
+      "routeCorrections": 4,
+      "melodySelections": 24,
+      "hardLevel": 9,
+      "lowerInheritancePercent": 100
+    },
+    "logic": {
+      "humanTimingMarkersPreserved": 0,
+      "protectedHardHitsPreserved": 84,
+      "hardRhythmOutsideMelodyRangesPreserved": true,
+      "routeCorrections": 0,
+      "melodySelections": 40,
+      "hardLevel": 7,
+      "lowerInheritancePercent": 100
+    }
+  },
+  "charts": {
+    "escapade": {
+      "hard": {
+        "notes": 287,
+        "pairs": 31,
+        "pairNotePercent": 21.6,
+        "movementOver1_2Within1s": 35.71,
+        "movementWithin1sDenominator": 238,
+        "movementOver1_2AllGaps": 35.44,
+        "fastSameHandUnder250ms": 32,
+        "sameHandSingleTransitionPercent": 33.04,
+        "identicalBarRepeatPercent": 0.0,
+        "inheritedTimeHandPositionPercent": null,
+        "sharedAccents": 5
+      },
+      "normal": {
+        "notes": 154,
+        "pairs": 9,
+        "pairNotePercent": 11.69,
+        "movementOver1_2Within1s": 39.77,
+        "movementWithin1sDenominator": 88,
+        "movementOver1_2AllGaps": 38.16,
+        "fastSameHandUnder250ms": 0,
+        "sameHandSingleTransitionPercent": 15.56,
+        "identicalBarRepeatPercent": 7.58,
+        "inheritedTimeHandPositionPercent": 100,
+        "sharedAccents": 5
+      },
+      "easy": {
+        "notes": 89,
+        "pairs": 6,
+        "pairNotePercent": 13.48,
+        "movementOver1_2Within1s": 5.56,
+        "movementWithin1sDenominator": 18,
+        "movementOver1_2AllGaps": 27.59,
+        "fastSameHandUnder250ms": 0,
+        "sameHandSingleTransitionPercent": 22.37,
+        "identicalBarRepeatPercent": 16.98,
+        "inheritedTimeHandPositionPercent": 100,
+        "sharedAccents": 5
+      }
+    },
+    "logic": {
+      "hard": {
+        "notes": 425,
+        "pairs": 42,
+        "pairNotePercent": 19.76,
+        "movementOver1_2Within1s": 49.69,
+        "movementWithin1sDenominator": 318,
+        "movementOver1_2AllGaps": 49.88,
+        "fastSameHandUnder250ms": 9,
+        "sameHandSingleTransitionPercent": 36.76,
+        "identicalBarRepeatPercent": 2.75,
+        "inheritedTimeHandPositionPercent": null,
+        "sharedAccents": 6
+      },
+      "normal": {
+        "notes": 242,
+        "pairs": 28,
+        "pairNotePercent": 23.14,
+        "movementOver1_2Within1s": 50.38,
+        "movementWithin1sDenominator": 133,
+        "movementOver1_2AllGaps": 51.25,
+        "fastSameHandUnder250ms": 0,
+        "sameHandSingleTransitionPercent": 37.3,
+        "identicalBarRepeatPercent": 8.16,
+        "inheritedTimeHandPositionPercent": 100,
+        "sharedAccents": 6
+      },
+      "easy": {
+        "notes": 143,
+        "pairs": 17,
+        "pairNotePercent": 23.78,
+        "movementOver1_2Within1s": 39.47,
+        "movementWithin1sDenominator": 38,
+        "movementOver1_2AllGaps": 42.55,
+        "fastSameHandUnder250ms": 0,
+        "sameHandSingleTransitionPercent": 46.3,
+        "identicalBarRepeatPercent": 17.5,
+        "inheritedTimeHandPositionPercent": 100,
+        "sharedAccents": 6
+      }
+    }
+  },
+  "physicalPlayTest": false,
+  "unity": {
+    "passed": true,
+    "tests": 64,
+    "results": [
+      {
+        "result": "Passed",
+        "total": "63",
+        "passed": "63",
+        "failed": "0"
+      },
+      {
+        "result": "Passed",
+        "total": "1",
+        "passed": "1",
+        "failed": "0"
+      }
+    ],
+    "testedChartHashes": {
+      "Assets/StreamingAssets/Songs/escapade/chart.json": "d5bcac52433dbd5bf16279ba5f447ee15c1c128a47ea012a697b00b2bf60c45f",
+      "Assets/StreamingAssets/Songs/escapade/chart_easy.json": "3c476dfff87593d7514f67ec4eca9da2c31e47c61b136451acfdc0038ec1ed21",
+      "Assets/StreamingAssets/Songs/escapade/chart_normal.json": "d5bcac52433dbd5bf16279ba5f447ee15c1c128a47ea012a697b00b2bf60c45f",
+      "Assets/StreamingAssets/Songs/escapade/chart_hard.json": "472e4f9d5a9037e33a7a44f26718ec82013491c482d0ff6c91c70cb6cef54dd3",
+      "Assets/StreamingAssets/Songs/logic/chart.json": "4eaf6491016bd64248225bd5ef329c87fef25d665b21bc3d9d4703a9761107f0",
+      "Assets/StreamingAssets/Songs/logic/chart_easy.json": "1520fd51b3e44039f1f7a9aa840688a5c120675c8040ffe52a0af4a9ab585995",
+      "Assets/StreamingAssets/Songs/logic/chart_normal.json": "4eaf6491016bd64248225bd5ef329c87fef25d665b21bc3d9d4703a9761107f0",
+      "Assets/StreamingAssets/Songs/logic/chart_hard.json": "97021bcfab8fd26c962bc69f86888f9c576d8d0c43037d35d4840274ec19b59a"
+    }
+  },
+  "browser": {
+    "passed": true,
+    "viewport": "390x844",
+    "songCharts": 6,
+    "phrasePlaybacks": [
+      {
+        "sid": "escapade",
+        "diff": "easy",
+        "t": 14.5,
+        "audioPlayed": true,
+        "downloadMatched": true
+      },
+      {
+        "sid": "escapade",
+        "diff": "easy",
+        "t": 46.5,
+        "audioPlayed": true,
+        "downloadMatched": true
+      },
+      {
+        "sid": "escapade",
+        "diff": "normal",
+        "t": 14.5,
+        "audioPlayed": true,
+        "downloadMatched": true
+      },
+      {
+        "sid": "escapade",
+        "diff": "normal",
+        "t": 46.5,
+        "audioPlayed": true,
+        "downloadMatched": true
+      },
+      {
+        "sid": "escapade",
+        "diff": "hard",
+        "t": 14.5,
+        "audioPlayed": true,
+        "downloadMatched": true
+      },
+      {
+        "sid": "escapade",
+        "diff": "hard",
+        "t": 46.5,
+        "audioPlayed": true,
+        "downloadMatched": true
+      },
+      {
+        "sid": "logic",
+        "diff": "easy",
+        "t": 69,
+        "audioPlayed": true,
+        "downloadMatched": true
+      },
+      {
+        "sid": "logic",
+        "diff": "easy",
+        "t": 85.8,
+        "audioPlayed": true,
+        "downloadMatched": true
+      },
+      {
+        "sid": "logic",
+        "diff": "normal",
+        "t": 69,
+        "audioPlayed": true,
+        "downloadMatched": true
+      },
+      {
+        "sid": "logic",
+        "diff": "normal",
+        "t": 85.8,
+        "audioPlayed": true,
+        "downloadMatched": true
+      },
+      {
+        "sid": "logic",
+        "diff": "hard",
+        "t": 69,
+        "audioPlayed": true,
+        "downloadMatched": true
+      },
+      {
+        "sid": "logic",
+        "diff": "hard",
+        "t": 85.8,
+        "audioPlayed": true,
+        "downloadMatched": true
+      }
+    ],
+    "appliedPreviews": 2,
+    "videoLinks": 236,
+    "protectedCharts": 37,
+    "unchangedMedia": 354,
+    "zipMembers": 375,
+    "errors": []
+  },
+  "regressionTestsPassed": 19,
+  "lowerChartRegenerationChecks": 10,
+  "checkedAt": "2026-10-17T22:21:49.865198+00:00"
+}

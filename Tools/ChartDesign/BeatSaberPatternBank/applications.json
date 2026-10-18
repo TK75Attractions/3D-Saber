@@ -25,16 +25,16 @@
       "sourceUrl": "https://www.youtube.com/watch?v=5aLDCKQ63P4&t=54",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=hard&t=126.65",
       "noteIndices": [
-        278,
-        279,
-        280,
-        281,
-        282,
-        283,
-        284,
-        285,
-        286,
-        287
+        287,
+        288,
+        289,
+        290,
+        291,
+        292,
+        293,
+        294,
+        295,
+        296
       ],
       "appliedNotes": [
         {
@@ -1146,7 +1146,120 @@
           "lengthMs": 0
         }
       ],
-      "beatPickupEdited": true
+      "beatPickupEdited": true,
+      "preMelodyAppliedNotes": [
+        {
+          "beat": 288.5,
+          "time": 128403.0,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 289,
+          "time": 128653.0,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 289.5,
+          "time": 128903.0,
+          "x": -1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 290.5,
+          "time": 129403.0,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 290.5,
+          "time": 129403.0,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 292.5,
+          "time": 130403.0,
+          "x": 0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 293.5,
+          "time": 130903.0,
+          "x": 0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 294,
+          "time": 131153.0,
+          "x": -1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 294.5,
+          "time": 131403.0,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 294.5,
+          "time": 131403.0,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ],
+      "melodyEdited": true
     },
     {
       "patternId": "shut-up-dance-3",
@@ -3296,14 +3409,14 @@
       "sourceUrl": "https://www.youtube.com/watch?v=5aLDCKQ63P4&t=24",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=hard&t=110.65",
       "noteIndices": [
-        249,
-        250,
-        251,
-        252,
-        253,
-        254,
-        255,
-        256
+        258,
+        259,
+        260,
+        261,
+        262,
+        263,
+        264,
+        265
       ],
       "appliedNotes": [
         {
@@ -4107,7 +4220,98 @@
           "lengthMs": 0
         }
       ],
-      "beatPickupEdited": true
+      "beatPickupEdited": true,
+      "preMelodyAppliedNotes": [
+        {
+          "beat": 256.5,
+          "time": 112403.0,
+          "x": -1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 257.5,
+          "time": 112903.0,
+          "x": 0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 258.5,
+          "time": 113403.0,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 258.5,
+          "time": 113403.0,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 260.5,
+          "time": 114403.0,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 261.5,
+          "time": 114903.0,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 262.5,
+          "time": 115403.0,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 262.5,
+          "time": 115403.0,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ],
+      "melodyEdited": true
     },
     {
       "patternId": "lvl-expert-4",
@@ -5903,151 +6107,151 @@
       "sourceUrl": "https://www.youtube.com/watch?v=mgGaqZ20Scw&t=311",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=escapade&difficulty=hard&t=69.26",
       "noteIndices": [
-        214,
-        215,
-        216,
-        217,
-        218,
-        219,
-        220,
-        221,
-        222,
-        223,
-        224,
-        225
+        202,
+        203,
+        204,
+        205,
+        206,
+        207,
+        208,
+        209,
+        210,
+        211,
+        212,
+        213
       ],
       "appliedNotes": [
         {
           "beat": 225.0,
-          "time": 71072.6316,
-          "x": 1.9,
-          "y": 0.3,
+          "time": 71072.6328125,
+          "x": 1.899999976158142,
+          "y": 0.30000001192092896,
           "type": "tap",
           "color": "red",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 225.5,
-          "time": 71230.5263,
-          "x": 1.9,
-          "y": 0.3,
+          "time": 71230.5234375,
+          "x": 1.899999976158142,
+          "y": 0.30000001192092896,
           "type": "tap",
           "color": "red",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 225.5,
-          "time": 71230.5263,
-          "x": -1.9,
-          "y": -0.6,
+          "time": 71230.5234375,
+          "x": -1.899999976158142,
+          "y": -0.6000000238418579,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 226.5,
-          "time": 71546.3158,
-          "x": 0.6,
-          "y": 0.3,
+          "time": 71546.3125,
+          "x": 0.6000000238418579,
+          "y": 0.30000001192092896,
           "type": "tap",
           "color": "red",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 227.0,
-          "time": 71704.2105,
-          "x": -0.6,
-          "y": 0.3,
+          "time": 71704.2109375,
+          "x": -0.6000000238418579,
+          "y": 0.30000001192092896,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 228.0,
           "time": 72020.0,
-          "x": 0.6,
-          "y": -0.6,
+          "x": 0.6000000238418579,
+          "y": -0.6000000238418579,
           "type": "tap",
           "color": "red",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 229.0,
-          "time": 72335.7895,
-          "x": -1.9,
-          "y": -0.6,
+          "time": 72335.7890625,
+          "x": -1.899999976158142,
+          "y": -0.6000000238418579,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 229.5,
-          "time": 72493.6842,
-          "x": 1.9,
-          "y": -0.6,
+          "time": 72493.6875,
+          "x": 1.899999976158142,
+          "y": -0.6000000238418579,
           "type": "tap",
           "color": "red",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 229.5,
-          "time": 72493.6842,
-          "x": -1.9,
-          "y": -0.6,
+          "time": 72493.6875,
+          "x": -1.899999976158142,
+          "y": -0.6000000238418579,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 230.5,
-          "time": 72809.4737,
-          "x": 1.9,
-          "y": -0.6,
+          "time": 72809.4765625,
+          "x": 1.899999976158142,
+          "y": -0.6000000238418579,
           "type": "tap",
           "color": "red",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 231.0,
-          "time": 72967.3684,
-          "x": -1.9,
-          "y": -0.6,
+          "time": 72967.3671875,
+          "x": -1.899999976158142,
+          "y": -0.6000000238418579,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 231.5,
-          "time": 73125.2632,
-          "x": 0.6,
-          "y": -0.6,
+          "time": 73125.265625,
+          "x": 0.6000000238418579,
+          "y": -0.6000000238418579,
           "type": "tap",
           "color": "red",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         }
       ],
       "spatialLayout": "Hard: 広い横幅・高低差と短い技",
@@ -6828,7 +7032,142 @@
           "lengthMs": 0
         }
       ],
-      "beatPickupEdited": true
+      "beatPickupEdited": true,
+      "preMelodyAppliedNotes": [
+        {
+          "beat": 225.0,
+          "time": 71072.6316,
+          "x": 1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 225.5,
+          "time": 71230.5263,
+          "x": 1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 225.5,
+          "time": 71230.5263,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 226.5,
+          "time": 71546.3158,
+          "x": 0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 227.0,
+          "time": 71704.2105,
+          "x": -0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 228.0,
+          "time": 72020.0,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 229.0,
+          "time": 72335.7895,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 229.5,
+          "time": 72493.6842,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 229.5,
+          "time": 72493.6842,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 230.5,
+          "time": 72809.4737,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 231.0,
+          "time": 72967.3684,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 231.5,
+          "time": 73125.2632,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ],
+      "melodyEdited": true
     },
     {
       "patternId": "bring-it-on-3",
@@ -9466,109 +9805,97 @@
       "secondBar": "担当手を入れ替えた応答。画面軸は曲の展開に従う。",
       "section": "主題の回帰",
       "removedNotes": 12,
-      "addedNotes": 8,
+      "addedNotes": 7,
       "sourceCategory": "good",
       "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=VfRyM0-jCSs&t=91",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=escapade&difficulty=hard&t=89.47",
       "noteIndices": [
-        261,
-        262,
-        263,
-        264,
-        265,
-        266,
-        267,
-        268
+        248,
+        249,
+        250,
+        251,
+        252,
+        253,
+        254
       ],
       "appliedNotes": [
         {
-          "beat": 288.5,
-          "time": 91125.2632,
-          "x": 0.6,
-          "y": 0.3,
+          "beat": 288.95733642578125,
+          "time": 91269.6796875,
+          "x": 0.5703539252281189,
+          "y": -0.6000000238418579,
           "type": "tap",
           "color": "red",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
-          "beat": 289.5,
-          "time": 91441.0526,
-          "x": 0.6,
-          "y": -0.6,
-          "type": "tap",
-          "color": "red",
-          "direction": "none",
-          "count": 1,
-          "lengthMs": 0
-        },
-        {
-          "beat": 290.5,
-          "time": 91756.8421,
-          "x": -0.6,
-          "y": 0.3,
+          "beat": 290.0487976074219,
+          "time": 91614.3515625,
+          "x": -0.5110617280006409,
+          "y": 0.30000001192092896,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 292.5,
-          "time": 92388.4211,
-          "x": -0.6,
-          "y": -0.6,
+          "time": 92388.421875,
+          "x": -0.6000000238418579,
+          "y": -0.6000000238418579,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 293.5,
-          "time": 92704.2105,
-          "x": 1.9,
-          "y": 0.3,
+          "time": 92704.2109375,
+          "x": 1.899999976158142,
+          "y": 0.30000001192092896,
           "type": "tap",
           "color": "red",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 294.5,
           "time": 93020.0,
-          "x": 1.9,
-          "y": 0.3,
+          "x": 1.899999976158142,
+          "y": 0.30000001192092896,
           "type": "tap",
           "color": "red",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 294.5,
           "time": 93020.0,
-          "x": -1.9,
-          "y": -0.6,
+          "x": -1.899999976158142,
+          "y": -0.6000000238418579,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 295.5,
-          "time": 93335.7895,
-          "x": 0.6,
-          "y": 0.3,
+          "time": 93335.7890625,
+          "x": 0.6000000238418579,
+          "y": 0.30000001192092896,
           "type": "tap",
           "color": "red",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         }
       ],
       "spatialLayout": "Hard: 広い横幅・高低差と短い技",
@@ -10294,7 +10621,98 @@
           "lengthMs": 0
         }
       ],
-      "beatPickupEdited": true
+      "beatPickupEdited": true,
+      "preMelodyAppliedNotes": [
+        {
+          "beat": 288.5,
+          "time": 91125.2632,
+          "x": 0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 289.5,
+          "time": 91441.0526,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 290.5,
+          "time": 91756.8421,
+          "x": -0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 292.5,
+          "time": 92388.4211,
+          "x": -0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 293.5,
+          "time": 92704.2105,
+          "x": 1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 294.5,
+          "time": 93020.0,
+          "x": 1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 294.5,
+          "time": 93020.0,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 295.5,
+          "time": 93335.7895,
+          "x": 0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ],
+      "melodyEdited": true
     },
     {
       "patternId": "lvl-expert-2",
@@ -11199,175 +11617,175 @@
       "sourceUrl": "https://www.youtube.com/watch?v=pykGEBUtJeE&t=67",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=escapade&difficulty=hard&t=65.47",
       "noteIndices": [
+        180,
+        181,
+        182,
+        183,
+        184,
+        185,
+        186,
+        187,
+        188,
+        189,
+        190,
+        191,
         192,
-        193,
-        194,
-        195,
-        196,
-        197,
-        198,
-        199,
-        200,
-        201,
-        202,
-        203,
-        204,
-        205
+        193
       ],
       "appliedNotes": [
         {
           "beat": 212.0,
-          "time": 66967.3684,
-          "x": 1.9,
-          "y": -0.6,
+          "time": 66967.3671875,
+          "x": 1.899999976158142,
+          "y": -0.6000000238418579,
           "type": "tap",
           "color": "red",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 213.0,
-          "time": 67283.1579,
-          "x": -0.6,
-          "y": 0.3,
+          "time": 67283.15625,
+          "x": -0.6000000238418579,
+          "y": 0.30000001192092896,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 213.5,
-          "time": 67441.0526,
-          "x": 0.6,
-          "y": -0.6,
+          "time": 67441.0546875,
+          "x": 0.6000000238418579,
+          "y": -0.6000000238418579,
           "type": "tap",
           "color": "red",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 214.25,
-          "time": 67677.8947,
-          "x": -1.9,
-          "y": -0.6,
+          "time": 67677.8984375,
+          "x": -1.899999976158142,
+          "y": -0.6000000238418579,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 214.5,
-          "time": 67756.8421,
-          "x": 1.9,
-          "y": -0.6,
+          "time": 67756.84375,
+          "x": 1.899999976158142,
+          "y": -0.6000000238418579,
           "type": "tap",
           "color": "red",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 215.0,
-          "time": 67914.7368,
-          "x": 1.9,
-          "y": -0.6,
+          "time": 67914.734375,
+          "x": 1.899999976158142,
+          "y": -0.6000000238418579,
           "type": "tap",
           "color": "red",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 215.0,
-          "time": 67914.7368,
-          "x": -1.9,
-          "y": -0.6,
+          "time": 67914.734375,
+          "x": -1.899999976158142,
+          "y": -0.6000000238418579,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 216.0,
-          "time": 68230.5263,
-          "x": -1.9,
-          "y": -0.6,
+          "time": 68230.5234375,
+          "x": -1.899999976158142,
+          "y": -0.6000000238418579,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 216.5,
-          "time": 68388.4211,
-          "x": 1.9,
-          "y": -0.6,
+          "time": 68388.421875,
+          "x": 1.899999976158142,
+          "y": -0.6000000238418579,
           "type": "tap",
           "color": "red",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 217.0,
-          "time": 68546.3158,
-          "x": -0.6,
-          "y": -0.6,
+          "time": 68546.3125,
+          "x": -0.6000000238418579,
+          "y": -0.6000000238418579,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 217.5,
-          "time": 68704.2105,
-          "x": 0.6,
-          "y": -0.6,
+          "time": 68704.2109375,
+          "x": 0.6000000238418579,
+          "y": -0.6000000238418579,
           "type": "tap",
           "color": "red",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 218.25,
-          "time": 68941.0526,
-          "x": -1.9,
-          "y": -0.6,
+          "time": 68941.0546875,
+          "x": -1.899999976158142,
+          "y": -0.6000000238418579,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 218.5,
           "time": 69020.0,
-          "x": 0.6,
-          "y": -0.6,
+          "x": 0.6000000238418579,
+          "y": -0.6000000238418579,
           "type": "tap",
           "color": "red",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 219.0,
-          "time": 69177.8947,
-          "x": -1.9,
-          "y": 0.3,
+          "time": 69177.8984375,
+          "x": -1.899999976158142,
+          "y": 0.30000001192092896,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         }
       ],
       "spatialLayout": "Hard: 広い横幅・高低差と短い技",
@@ -11991,7 +12409,164 @@
           "lengthMs": 0
         }
       ],
-      "beatPickupEdited": true
+      "beatPickupEdited": true,
+      "preMelodyAppliedNotes": [
+        {
+          "beat": 212.0,
+          "time": 66967.3684,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 213.0,
+          "time": 67283.1579,
+          "x": -0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 213.5,
+          "time": 67441.0526,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 214.25,
+          "time": 67677.8947,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 214.5,
+          "time": 67756.8421,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 215.0,
+          "time": 67914.7368,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 215.0,
+          "time": 67914.7368,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 216.0,
+          "time": 68230.5263,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 216.5,
+          "time": 68388.4211,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 217.0,
+          "time": 68546.3158,
+          "x": -0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 217.5,
+          "time": 68704.2105,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 218.25,
+          "time": 68941.0526,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 218.5,
+          "time": 69020.0,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 219.0,
+          "time": 69177.8947,
+          "x": -1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ],
+      "melodyEdited": true
     },
     {
       "patternId": "unlimited-hard-4",
@@ -14107,7 +14682,87 @@
           "lengthMs": 0
         }
       ],
-      "beatPickupEdited": true
+      "beatPickupEdited": true,
+      "preMelodyAppliedNotes": [
+        {
+          "beat": 116.5,
+          "time": 43715.5,
+          "x": 1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 119.0,
+          "time": 44653.0,
+          "x": -1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 119.75,
+          "time": 44934.25,
+          "x": 1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 120.5,
+          "time": 45215.5,
+          "x": -0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 121.5,
+          "time": 45590.5,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 123.0,
+          "time": 46153.0,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 123.0,
+          "time": 46153.0,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ],
+      "melodyEdited": true
     },
     {
       "patternId": "avoid-vision-block",
@@ -14507,103 +15162,103 @@
       "sourceUrl": "https://www.youtube.com/watch?v=QcaBh6KS7_E&t=24",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=escapade&difficulty=normal&t=66.73",
       "noteIndices": [
-        104,
         105,
         106,
         107,
         108,
         109,
         110,
-        111
+        111,
+        112
       ],
       "appliedNotes": [
         {
           "beat": 216.0,
-          "time": 68230.5263,
-          "x": -1.9,
-          "y": -0.6,
+          "time": 68230.5234375,
+          "x": -1.899999976158142,
+          "y": -0.6000000238418579,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 218.25,
-          "time": 68941.0526,
-          "x": -1.9,
-          "y": -0.6,
+          "time": 68941.0546875,
+          "x": -1.899999976158142,
+          "y": -0.6000000238418579,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 218.5,
           "time": 69020.0,
-          "x": 0.6,
-          "y": -0.6,
+          "x": 0.6000000238418579,
+          "y": -0.6000000238418579,
           "type": "tap",
           "color": "red",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 220.0,
-          "time": 69493.6842,
-          "x": -1.9,
-          "y": -0.6,
+          "time": 69493.6875,
+          "x": -1.899999976158142,
+          "y": -0.6000000238418579,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 221.0,
-          "time": 69809.4737,
-          "x": 1.9,
-          "y": -0.6,
+          "time": 69809.4765625,
+          "x": 1.899999976158142,
+          "y": -0.6000000238418579,
           "type": "tap",
           "color": "red",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 221.5,
-          "time": 69967.3684,
-          "x": -0.6,
-          "y": 0.3,
+          "time": 69967.3671875,
+          "x": -0.6000000238418579,
+          "y": 0.30000001192092896,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 223.0,
-          "time": 70441.0526,
-          "x": 0.6,
-          "y": -0.6,
+          "time": 70441.0546875,
+          "x": 0.6000000238418579,
+          "y": -0.6000000238418579,
           "type": "tap",
           "color": "red",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 223.5,
-          "time": 70598.9474,
-          "x": -1.9,
-          "y": 0.3,
+          "time": 70598.9453125,
+          "x": -1.899999976158142,
+          "y": 0.30000001192092896,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         }
       ],
       "spatialLayout": "通常の左右配置",
@@ -14892,7 +15547,98 @@
           "lengthMs": 0
         }
       ],
-      "beatPickupEdited": true
+      "beatPickupEdited": true,
+      "preMelodyAppliedNotes": [
+        {
+          "beat": 216.0,
+          "time": 68230.5263,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 218.25,
+          "time": 68941.0526,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 218.5,
+          "time": 69020.0,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 220.0,
+          "time": 69493.6842,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 221.0,
+          "time": 69809.4737,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 221.5,
+          "time": 69967.3684,
+          "x": -0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 223.0,
+          "time": 70441.0526,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 223.5,
+          "time": 70598.9474,
+          "x": -1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ],
+      "melodyEdited": true
     },
     {
       "patternId": "burning-hard-3",
@@ -15651,49 +16397,37 @@
       "secondBar": "担当手を入れ替えた応答。画面軸は曲の展開に従う。",
       "section": "主題の応答",
       "removedNotes": 8,
-      "addedNotes": 3,
+      "addedNotes": 2,
       "sourceCategory": "conditional",
       "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=VfRyM0-jCSs&t=158",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=escapade&difficulty=normal&t=38.94",
       "noteIndices": [
-        56,
-        57,
-        58
+        58,
+        59
       ],
       "appliedNotes": [
         {
           "beat": 128.5,
-          "time": 40598.9474,
-          "x": 1.9,
-          "y": 0.3,
+          "time": 40598.94921875,
+          "x": 1.899999976158142,
+          "y": 0.30000001192092896,
           "type": "tap",
           "color": "red",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
-          "beat": 131.5,
-          "time": 41546.3158,
-          "x": -1.9,
-          "y": 0.3,
+          "beat": 130.96951293945312,
+          "time": 41378.79296875,
+          "x": -1.833296298980713,
+          "y": 0.30000001192092896,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
-        },
-        {
-          "beat": 134.5,
-          "time": 42493.6842,
-          "x": 1.9,
-          "y": -0.6,
-          "type": "tap",
-          "color": "red",
-          "direction": "none",
-          "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         }
       ],
       "spatialLayout": "通常の左右配置",
@@ -15952,7 +16686,43 @@
           "lengthMs": 0
         }
       ],
-      "beatPickupEdited": true
+      "beatPickupEdited": true,
+      "preMelodyAppliedNotes": [
+        {
+          "beat": 128.5,
+          "time": 40598.9474,
+          "x": 1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 131.5,
+          "time": 41546.3158,
+          "x": -1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 134.5,
+          "time": 42493.6842,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ],
+      "melodyEdited": true
     },
     {
       "patternId": "dream-normal-2",
@@ -16168,7 +16938,32 @@
           "lengthMs": 0
         }
       ],
-      "beatPickupEdited": true
+      "beatPickupEdited": true,
+      "preMelodyAppliedNotes": [
+        {
+          "beat": 33.5,
+          "time": 12590.5,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "direction",
+          "color": "red",
+          "direction": "upleft",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 38.5,
+          "time": 14465.5,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ],
+      "melodyEdited": true
     },
     {
       "patternId": "lvl-expert-1",
@@ -16795,7 +17590,32 @@
           "lengthMs": 0
         }
       ],
-      "beatPickupEdited": true
+      "beatPickupEdited": true,
+      "preMelodyAppliedNotes": [
+        {
+          "beat": 69.5,
+          "time": 26090.5,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 70.0,
+          "time": 26278.0,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ],
+      "melodyEdited": true
     },
     {
       "patternId": "unlimited-hard-1",
@@ -16819,43 +17639,43 @@
       "sourceUrl": "https://www.youtube.com/watch?v=pykGEBUtJeE&t=14",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=escapade&difficulty=normal&t=28.84",
       "noteIndices": [
-        40,
-        41,
-        42
+        42,
+        43,
+        44
       ],
       "appliedNotes": [
         {
           "beat": 98.5,
-          "time": 31125.2632,
-          "x": -0.6,
-          "y": 0.3,
+          "time": 31125.263671875,
+          "x": -0.6000000238418579,
+          "y": 0.30000001192092896,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 100.5,
-          "time": 31756.8421,
-          "x": 1.9,
-          "y": -0.6,
+          "time": 31756.841796875,
+          "x": 1.899999976158142,
+          "y": -0.6000000238418579,
           "type": "tap",
           "color": "red",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 102.5,
-          "time": 32388.4211,
-          "x": -1.9,
-          "y": -0.6,
+          "time": 32388.421875,
+          "x": -1.899999976158142,
+          "y": -0.6000000238418579,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         }
       ],
       "spatialLayout": "通常の左右配置",
@@ -17070,7 +17890,43 @@
           "lengthMs": 0
         }
       ],
-      "beatPickupEdited": true
+      "beatPickupEdited": true,
+      "preMelodyAppliedNotes": [
+        {
+          "beat": 98.5,
+          "time": 31125.2632,
+          "x": -0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 100.5,
+          "time": 31756.8421,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 102.5,
+          "time": 32388.4211,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ],
+      "melodyEdited": true
     },
     {
       "patternId": "unlimited-hard-2",
@@ -18132,36 +18988,36 @@
       "appliedNotes": [
         {
           "beat": 322.5,
-          "time": 101862.1053,
-          "x": 1.9,
-          "y": -0.6,
+          "time": 101862.1015625,
+          "x": 1.899999976158142,
+          "y": -0.6000000238418579,
           "type": "tap",
           "color": "red",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 322.5,
-          "time": 101862.1053,
-          "x": -1.9,
-          "y": -0.6,
+          "time": 101862.1015625,
+          "x": -1.899999976158142,
+          "y": -0.6000000238418579,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 326.5,
-          "time": 103125.2632,
-          "x": -0.6,
-          "y": -0.6,
+          "time": 103125.265625,
+          "x": -0.6000000238418579,
+          "y": -0.6000000238418579,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         }
       ],
       "spatialLayout": "通常の左右配置",
@@ -18285,7 +19141,43 @@
           "lengthMs": 0
         }
       ],
-      "beatPickupEdited": true
+      "beatPickupEdited": true,
+      "preMelodyAppliedNotes": [
+        {
+          "beat": 322.5,
+          "time": 101862.1053,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 322.5,
+          "time": 101862.1053,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 326.5,
+          "time": 103125.2632,
+          "x": -0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ],
+      "melodyEdited": true
     },
     {
       "patternId": "dream-normal-4",
@@ -19104,7 +19996,87 @@
           "lengthMs": 0
         }
       ],
-      "beatPickupEdited": true
+      "beatPickupEdited": true,
+      "preMelodyAppliedNotes": [
+        {
+          "beat": 161.0,
+          "time": 62903.0,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 163.0,
+          "time": 63903.0,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 165.0,
+          "time": 64903.0,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 165.0,
+          "time": 64903.0,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 165.5,
+          "time": 65153.0,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 167.0,
+          "time": 65903.0,
+          "x": -0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 167.5,
+          "time": 66153.0,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ],
+      "melodyEdited": true
     },
     {
       "patternId": "elixia-hard-3",
@@ -19737,7 +20709,87 @@
           "lengthMs": 0
         }
       ],
-      "beatPickupEdited": true
+      "beatPickupEdited": true,
+      "preMelodyAppliedNotes": [
+        {
+          "beat": 145.0,
+          "time": 54903.0,
+          "x": -0.6,
+          "y": -0.6,
+          "type": "direction",
+          "color": "blue",
+          "direction": "right",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 147.0,
+          "time": 55903.0,
+          "x": -0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 147.5,
+          "time": 56153.0,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 149.5,
+          "time": 57153.0,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 150.5,
+          "time": 57653.0,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 151.0,
+          "time": 57903.0,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 151.5,
+          "time": 58153.0,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ],
+      "melodyEdited": true
     },
     {
       "patternId": "elixia-hard-1",
@@ -20123,7 +21175,54 @@
           "lengthMs": 0
         }
       ],
-      "beatPickupEdited": true
+      "beatPickupEdited": true,
+      "preMelodyAppliedNotes": [
+        {
+          "beat": 163.0,
+          "time": 63903.0,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 165.0,
+          "time": 64903.0,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 165.0,
+          "time": 64903.0,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 167.0,
+          "time": 65903.0,
+          "x": -0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ],
+      "melodyEdited": true
     },
     {
       "patternId": "there-normal-2",
@@ -20582,9 +21681,9 @@
       "sourceUrl": "https://www.youtube.com/watch?v=WR5PG2IMFmg&t=89",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=easy&t=174.65",
       "noteIndices": [
-        126,
-        127,
-        128
+        132,
+        133,
+        134
       ],
       "appliedNotes": [
         {
@@ -20811,7 +21910,43 @@
           "lengthMs": 0
         }
       ],
-      "beatPickupEdited": true
+      "beatPickupEdited": true,
+      "preMelodyAppliedNotes": [
+        {
+          "beat": 384.5,
+          "time": 176403.0,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 386.5,
+          "time": 177403.0,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 387.5,
+          "time": 177903.0,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ],
+      "melodyEdited": true
     },
     {
       "patternId": "there-normal-1",
@@ -22660,37 +23795,25 @@
       "secondBar": "担当手を入れ替えた応答。画面の出現位置は色から独立。",
       "section": "余韻",
       "removedNotes": 4,
-      "addedNotes": 2,
+      "addedNotes": 1,
       "sourceCategory": "good",
       "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "sourceUrl": "https://www.youtube.com/watch?v=WAgUzLuNO64&t=57",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=escapade&difficulty=easy&t=94.52",
       "noteIndices": [
-        78,
         79
       ],
       "appliedNotes": [
         {
-          "beat": 309.5,
-          "time": 97756.8421,
-          "x": 1.9,
-          "y": 0.3,
-          "type": "tap",
-          "color": "red",
-          "direction": "none",
-          "count": 1,
-          "lengthMs": 0
-        },
-        {
           "beat": 310.5,
-          "time": 98072.6316,
-          "x": -1.9,
-          "y": -0.6,
+          "time": 98072.6328125,
+          "x": -1.899999976158142,
+          "y": -0.6000000238418579,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         }
       ],
       "spatialLayout": "左右反転した交互",
@@ -22813,7 +23936,32 @@
           "lengthMs": 0
         }
       ],
-      "beatPickupEdited": true
+      "beatPickupEdited": true,
+      "preMelodyAppliedNotes": [
+        {
+          "beat": 309.5,
+          "time": 97756.8421,
+          "x": 1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 310.5,
+          "time": 98072.6316,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ],
+      "melodyEdited": true
     },
     {
       "patternId": "escape-normal-3",
@@ -23204,14 +24352,14 @@
       "sourceUrl": "https://www.youtube.com/watch?v=Y8dPnG2YCz0&t=41",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=normal&t=76.90",
       "noteIndices": [
+        101,
+        102,
+        103,
         104,
         105,
         106,
         107,
-        108,
-        109,
-        110,
-        111
+        108
       ],
       "appliedNotes": [
         {
@@ -23676,7 +24824,98 @@
           "lengthMs": 0
         }
       ],
-      "beatPickupEdited": true
+      "beatPickupEdited": true,
+      "preMelodyAppliedNotes": [
+        {
+          "beat": 192.5,
+          "time": 78653.0,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 192.5,
+          "time": 78653.0,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 194.5,
+          "time": 79653.0,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 196.5,
+          "time": 80653.0,
+          "x": 1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 197.0,
+          "time": 80903.0,
+          "x": -1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 197.5,
+          "time": 81153.0,
+          "x": 0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 199.0,
+          "time": 81903.0,
+          "x": 0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 199.5,
+          "time": 82153.0,
+          "x": -0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ],
+      "melodyEdited": true
     },
     {
       "patternId": "rum-normal-2",
@@ -24007,55 +25246,55 @@
       "sourceUrl": "https://www.youtube.com/watch?v=Y8dPnG2YCz0&t=24",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=escapade&difficulty=normal&t=99.57",
       "noteIndices": [
+        148,
+        149,
         150,
-        151,
-        152,
-        153
+        151
       ],
       "appliedNotes": [
         {
           "beat": 322.5,
-          "time": 101862.1053,
-          "x": 1.9,
-          "y": -0.6,
+          "time": 101862.1015625,
+          "x": 1.899999976158142,
+          "y": -0.6000000238418579,
           "type": "tap",
           "color": "red",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 322.5,
-          "time": 101862.1053,
-          "x": -1.9,
-          "y": -0.6,
+          "time": 101862.1015625,
+          "x": -1.899999976158142,
+          "y": -0.6000000238418579,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 325.5,
-          "time": 102809.4737,
-          "x": 1.9,
-          "y": 0.3,
+          "time": 102809.4765625,
+          "x": 1.899999976158142,
+          "y": 0.30000001192092896,
           "type": "tap",
           "color": "red",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 326.5,
-          "time": 103125.2632,
-          "x": -0.6,
-          "y": -0.6,
+          "time": 103125.265625,
+          "x": -0.6000000238418579,
+          "y": -0.6000000238418579,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         }
       ],
       "spatialLayout": "左手の小さな上下から右へ",
@@ -24222,7 +25461,54 @@
           "lengthMs": 0
         }
       ],
-      "beatPickupEdited": true
+      "beatPickupEdited": true,
+      "preMelodyAppliedNotes": [
+        {
+          "beat": 322.5,
+          "time": 101862.1053,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 322.5,
+          "time": 101862.1053,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 325.5,
+          "time": 102809.4737,
+          "x": 1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 326.5,
+          "time": 103125.2632,
+          "x": -0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ],
+      "melodyEdited": true
     },
     {
       "patternId": "rum-normal-1",
@@ -24792,7 +26078,54 @@
           "lengthMs": 0
         }
       ],
-      "beatPickupEdited": true
+      "beatPickupEdited": true,
+      "preMelodyAppliedNotes": [
+        {
+          "beat": 163.0,
+          "time": 63903.0,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 165.0,
+          "time": 64903.0,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 165.0,
+          "time": 64903.0,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 167.0,
+          "time": 65903.0,
+          "x": -0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ],
+      "melodyEdited": true
     },
     {
       "patternId": "need-normal-3",
@@ -27407,7 +28740,76 @@
           "lengthMs": 0
         }
       ],
-      "beatPickupEdited": true
+      "beatPickupEdited": true,
+      "preMelodyAppliedNotes": [
+        {
+          "beat": 256.5,
+          "time": 112403.0,
+          "x": -1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 258.5,
+          "time": 113403.0,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 258.5,
+          "time": 113403.0,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 260.5,
+          "time": 114403.0,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 262.5,
+          "time": 115403.0,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 262.5,
+          "time": 115403.0,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ],
+      "melodyEdited": true
     },
     {
       "patternId": "crab-normal-3",
@@ -29730,115 +31132,115 @@
       "sourceUrl": "https://www.youtube.com/watch?v=CFfJH5zFTec&t=13",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=escapade&difficulty=hard&t=59.15",
       "noteIndices": [
-        165,
-        166,
-        167,
-        168,
-        169,
-        170,
-        171,
-        172,
-        173
+        153,
+        154,
+        155,
+        156,
+        157,
+        158,
+        159,
+        160,
+        161
       ],
       "appliedNotes": [
         {
           "beat": 193.0,
-          "time": 60967.3684,
-          "x": 1.9,
-          "y": -0.6,
+          "time": 60967.3671875,
+          "x": 1.899999976158142,
+          "y": -0.6000000238418579,
           "type": "tap",
           "color": "red",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 193.0,
-          "time": 60967.3684,
-          "x": -1.9,
-          "y": -0.6,
+          "time": 60967.3671875,
+          "x": -1.899999976158142,
+          "y": -0.6000000238418579,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
-          "beat": 194,
-          "time": 61283.1579,
-          "x": 0.6,
-          "y": -0.6,
+          "beat": 194.0,
+          "time": 61283.15625,
+          "x": 0.6000000238418579,
+          "y": -0.6000000238418579,
           "type": "tap",
           "color": "red",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 195.25,
-          "time": 61677.8947,
-          "x": 1.9,
-          "y": 0.3,
+          "time": 61677.89453125,
+          "x": 1.899999976158142,
+          "y": 0.30000001192092896,
           "type": "tap",
           "color": "red",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
-          "beat": 195.5,
-          "time": 61756.8421,
-          "x": -0.6,
-          "y": 0.3,
+          "beat": 195.92684936523438,
+          "time": 61891.6328125,
+          "x": -0.5295905470848083,
+          "y": 0.30000001192092896,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 197.5,
-          "time": 62388.4211,
-          "x": -0.6,
-          "y": -0.6,
+          "time": 62388.421875,
+          "x": -0.6000000238418579,
+          "y": -0.6000000238418579,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
-          "beat": 198,
-          "time": 62546.3158,
-          "x": 1.9,
-          "y": -0.6,
+          "beat": 198.0,
+          "time": 62546.31640625,
+          "x": 1.899999976158142,
+          "y": -0.6000000238418579,
           "type": "tap",
           "color": "red",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 198.25,
-          "time": 62625.2632,
-          "x": -0.6,
-          "y": 0.3,
+          "time": 62625.26171875,
+          "x": -0.6000000238418579,
+          "y": 0.30000001192092896,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 199.5,
           "time": 63020.0,
-          "x": 0.6,
-          "y": 0.3,
+          "x": 0.6000000238418579,
+          "y": 0.30000001192092896,
           "type": "tap",
           "color": "red",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         }
       ],
       "spatialLayout": "Hard: 広い横幅・高低差と短い技",
@@ -30341,7 +31743,109 @@
           "lengthMs": 0
         }
       ],
-      "beatPickupEdited": true
+      "beatPickupEdited": true,
+      "preMelodyAppliedNotes": [
+        {
+          "beat": 193.0,
+          "time": 60967.3684,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 193.0,
+          "time": 60967.3684,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 194,
+          "time": 61283.1579,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 195.25,
+          "time": 61677.8947,
+          "x": 1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 195.5,
+          "time": 61756.8421,
+          "x": -0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 197.5,
+          "time": 62388.4211,
+          "x": -0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 198,
+          "time": 62546.3158,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 198.25,
+          "time": 62625.2632,
+          "x": -0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 199.5,
+          "time": 63020.0,
+          "x": 0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ],
+      "melodyEdited": true
     },
     {
       "patternId": "misa-expertplus-2",
@@ -30365,103 +31869,103 @@
       "sourceUrl": "https://www.youtube.com/watch?v=CFfJH5zFTec&t=54",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=escapade&difficulty=hard&t=8.63",
       "noteIndices": [
+        14,
+        15,
+        16,
+        17,
+        18,
         19,
         20,
-        21,
-        22,
-        23,
-        24,
-        25,
-        26
+        21
       ],
       "appliedNotes": [
         {
+          "beat": 32.07462692260742,
+          "time": 10148.8291015625,
+          "x": -1.9529367685317993,
+          "y": -0.2142857015132904,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0.0
+        },
+        {
           "beat": 32.5,
-          "time": 10283.1579,
-          "x": 1.9,
-          "y": -0.6,
+          "time": 10283.158203125,
+          "x": 1.899999976158142,
+          "y": -0.6000000238418579,
           "type": "tap",
           "color": "red",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
+        },
+        {
+          "beat": 32.6295051574707,
+          "time": 10324.0537109375,
+          "x": -1.6646,
+          "y": -0.1114,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0.0
         },
         {
           "beat": 33.5,
-          "time": 10598.9474,
-          "x": -0.6,
-          "y": 0.3,
+          "time": 10598.947265625,
+          "x": -0.6000000238418579,
+          "y": 0.30000001192092896,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 34.5,
-          "time": 10914.7368,
-          "x": -0.6,
-          "y": -0.6,
+          "time": 10914.736328125,
+          "x": -0.6000000238418579,
+          "y": -0.6000000238418579,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 35.5,
-          "time": 11230.5263,
-          "x": 0.6,
-          "y": 0.3,
+          "time": 11230.5263671875,
+          "x": 0.6000000238418579,
+          "y": 0.30000001192092896,
           "type": "tap",
           "color": "red",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 36.5,
-          "time": 11546.3158,
-          "x": 0.6,
-          "y": -0.6,
+          "time": 11546.3154296875,
+          "x": 0.6000000238418579,
+          "y": -0.6000000238418579,
           "type": "direction",
           "color": "red",
           "direction": "downright",
           "count": 1,
-          "lengthMs": 0
-        },
-        {
-          "beat": 37.5,
-          "time": 11862.1053,
-          "x": -1.9,
-          "y": 0.3,
-          "type": "tap",
-          "color": "blue",
-          "direction": "none",
-          "count": 1,
-          "lengthMs": 0
-        },
-        {
-          "beat": 38.5,
-          "time": 12177.8947,
-          "x": -1.9,
-          "y": -0.6,
-          "type": "tap",
-          "color": "blue",
-          "direction": "none",
-          "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 39.5,
-          "time": 12493.6842,
-          "x": 1.9,
-          "y": 0.3,
+          "time": 12493.6845703125,
+          "x": 1.899999976158142,
+          "y": 0.30000001192092896,
           "type": "tap",
           "color": "red",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         }
       ],
       "spatialLayout": "Hard: 広い横幅・高低差と短い技",
@@ -30942,7 +32446,98 @@
           "lengthMs": 0
         }
       ],
-      "beatPickupEdited": true
+      "beatPickupEdited": true,
+      "preMelodyAppliedNotes": [
+        {
+          "beat": 32.5,
+          "time": 10283.1579,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 33.5,
+          "time": 10598.9474,
+          "x": -0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 34.5,
+          "time": 10914.7368,
+          "x": -0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 35.5,
+          "time": 11230.5263,
+          "x": 0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 36.5,
+          "time": 11546.3158,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "direction",
+          "color": "red",
+          "direction": "downright",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 37.5,
+          "time": 11862.1053,
+          "x": -1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 38.5,
+          "time": 12177.8947,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 39.5,
+          "time": 12493.6842,
+          "x": 1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ],
+      "melodyEdited": true
     },
     {
       "patternId": "crystal-normal-2",
@@ -31748,7 +33343,7 @@
       "secondBar": "担当手・リズムを保持して動きを続ける。機械的な左右反転はしない。",
       "section": "中盤の展開",
       "removedNotes": 0,
-      "addedNotes": 9,
+      "addedNotes": 11,
       "newNotes": 0,
       "positionChangedNotes": 15,
       "sourceCategory": "good",
@@ -31982,7 +33577,6 @@
       "sourceUrl": "https://www.youtube.com/watch?v=qG20h1eSPQY&t=23",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=hard&t=68.90",
       "noteIndices": [
-        166,
         167,
         168,
         169,
@@ -31990,9 +33584,23 @@
         171,
         172,
         173,
-        174
+        174,
+        175,
+        176,
+        177
       ],
       "appliedNotes": [
+        {
+          "time": 70633.6,
+          "beat": 176.4612,
+          "x": 1.5,
+          "y": -0.285,
+          "color": "red",
+          "direction": "none",
+          "type": "tap",
+          "count": 1,
+          "lengthMs": 0
+        },
         {
           "beat": 177.0,
           "time": 70903.0,
@@ -32022,17 +33630,6 @@
           "y": -0.6,
           "type": "tap",
           "color": "red",
-          "direction": "none",
-          "count": 1,
-          "lengthMs": 0
-        },
-        {
-          "beat": 178.5,
-          "time": 71653.0,
-          "x": -1.9,
-          "y": -0.6,
-          "type": "tap",
-          "color": "blue",
           "direction": "none",
           "count": 1,
           "lengthMs": 0
@@ -32082,6 +33679,17 @@
           "lengthMs": 0
         },
         {
+          "time": 73636.7,
+          "beat": 182.4674,
+          "x": 1.05,
+          "y": 0.1,
+          "color": "red",
+          "direction": "none",
+          "type": "tap",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
           "beat": 183.0,
           "time": 73903.0,
           "x": -1.9,
@@ -32089,6 +33697,17 @@
           "type": "tap",
           "color": "blue",
           "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "time": 74390.0,
+          "beat": 183.974,
+          "x": 1.5,
+          "y": -0.065,
+          "color": "red",
+          "direction": "none",
+          "type": "tap",
           "count": 1,
           "lengthMs": 0
         }
@@ -32721,7 +34340,109 @@
           "lengthMs": 0
         }
       ],
-      "beatPickupEdited": true
+      "beatPickupEdited": true,
+      "preMelodyAppliedNotes": [
+        {
+          "beat": 177.0,
+          "time": 70903.0,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 177.0,
+          "time": 70903.0,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 178.0,
+          "time": 71403.0,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 178.5,
+          "time": 71653.0,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 179.0,
+          "time": 71903.0,
+          "x": 1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 180.0,
+          "time": 72403.0,
+          "x": -1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 181.0,
+          "time": 72903.0,
+          "x": -0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 182.0,
+          "time": 73403.0,
+          "x": -0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 183.0,
+          "time": 73903.0,
+          "x": -1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ],
+      "melodyEdited": true
     },
     {
       "patternId": "full-charge-normal-2",
@@ -32741,7 +34462,7 @@
       "secondBar": "担当手・リズムを保持して動きを続ける。機械的な左右反転はしない。",
       "section": "中盤の展開",
       "removedNotes": 0,
-      "addedNotes": 8,
+      "addedNotes": 10,
       "newNotes": 0,
       "positionChangedNotes": 14,
       "sourceCategory": "conditional",
@@ -32952,14 +34673,16 @@
       "sourceUrl": "https://www.youtube.com/watch?v=qG20h1eSPQY&t=81",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=hard&t=86.90",
       "noteIndices": [
-        208,
-        209,
-        210,
-        211,
-        212,
-        213,
         214,
-        215
+        215,
+        216,
+        217,
+        218,
+        219,
+        220,
+        221,
+        222,
+        223
       ],
       "appliedNotes": [
         {
@@ -32974,17 +34697,6 @@
           "lengthMs": 0
         },
         {
-          "beat": 212.5,
-          "time": 88653.0,
-          "x": -0.6,
-          "y": -0.6,
-          "type": "tap",
-          "color": "blue",
-          "direction": "none",
-          "count": 1,
-          "lengthMs": 0
-        },
-        {
           "beat": 213.0,
           "time": 88903.0,
           "x": 1.9,
@@ -32992,6 +34704,17 @@
           "type": "tap",
           "color": "red",
           "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "time": 89435.8,
+          "beat": 214.0656,
+          "x": -1.05,
+          "y": -0.175,
+          "color": "blue",
+          "direction": "none",
+          "type": "tap",
           "count": 1,
           "lengthMs": 0
         },
@@ -33018,6 +34741,17 @@
           "lengthMs": 0
         },
         {
+          "time": 90473.5,
+          "beat": 216.141,
+          "x": 1.5,
+          "y": -0.065,
+          "color": "red",
+          "direction": "none",
+          "type": "tap",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
           "beat": 216.5,
           "time": 90653.0,
           "x": -0.6,
@@ -33036,6 +34770,17 @@
           "type": "tap",
           "color": "red",
           "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "time": 91341.5,
+          "beat": 217.877,
+          "x": -1.5,
+          "y": 0.21,
+          "color": "blue",
+          "direction": "none",
+          "type": "tap",
           "count": 1,
           "lengthMs": 0
         },
@@ -33602,7 +35347,98 @@
           "lengthMs": 0
         }
       ],
-      "beatPickupEdited": true
+      "beatPickupEdited": true,
+      "preMelodyAppliedNotes": [
+        {
+          "beat": 212.0,
+          "time": 88403.0,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 212.5,
+          "time": 88653.0,
+          "x": -0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 213.0,
+          "time": 88903.0,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 214.5,
+          "time": 89653.0,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 215.0,
+          "time": 89903.0,
+          "x": 1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 216.5,
+          "time": 90653.0,
+          "x": -0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 217.0,
+          "time": 90903.0,
+          "x": 0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 219.0,
+          "time": 91903.0,
+          "x": 0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ],
+      "melodyEdited": true
     },
     {
       "patternId": "little-love-hard-1",
@@ -37037,94 +38873,82 @@
       "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=escapade&difficulty=hard&t=20.49",
       "noteIndices": [
-        57,
-        58,
-        59,
-        60,
-        61,
-        62,
-        63
+        47,
+        48,
+        49,
+        50,
+        51,
+        52
       ],
       "appliedNotes": [
         {
           "beat": 68.5,
-          "time": 21651.5789,
-          "x": 0.6,
-          "y": 0.3,
+          "time": 21651.578125,
+          "x": 0.6000000238418579,
+          "y": 0.30000001192092896,
           "type": "direction",
           "color": "red",
           "direction": "left",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
-          "beat": 69.5,
-          "time": 21967.3684,
-          "x": 0.6,
-          "y": -0.6,
-          "type": "tap",
-          "color": "red",
-          "direction": "none",
-          "count": 1,
-          "lengthMs": 0
-        },
-        {
-          "beat": 70.5,
-          "time": 22283.1579,
-          "x": -1.9,
-          "y": 0.3,
-          "type": "tap",
+          "time": 21813.095703125,
+          "beat": 69.011474609375,
+          "x": -1.6,
+          "y": -0.091,
           "color": "blue",
           "direction": "none",
+          "type": "tap",
           "count": 1,
           "lengthMs": 0
         },
         {
-          "beat": 71.5,
-          "time": 22598.9474,
-          "x": -1.9,
-          "y": -0.6,
-          "type": "tap",
+          "time": 22151.994140625,
+          "beat": 70.08464813232422,
+          "x": -1.05,
+          "y": 0.25,
           "color": "blue",
           "direction": "none",
+          "type": "tap",
           "count": 1,
           "lengthMs": 0
         },
         {
-          "beat": 72.5,
-          "time": 22914.7368,
-          "x": 1.9,
-          "y": 0.3,
-          "type": "tap",
+          "time": 22444.67578125,
+          "beat": 71.011474609375,
+          "x": 1.05,
+          "y": -0.091,
           "color": "red",
           "direction": "none",
+          "type": "tap",
           "count": 1,
           "lengthMs": 0
         },
         {
-          "beat": 73.5,
-          "time": 23230.5263,
-          "x": 1.9,
-          "y": -0.6,
-          "type": "tap",
-          "color": "red",
-          "direction": "none",
-          "count": 1,
-          "lengthMs": 0
-        },
-        {
-          "beat": 74.5,
-          "time": 23546.3158,
-          "x": -0.6,
-          "y": 0.3,
-          "type": "tap",
+          "time": 22742.953125,
+          "beat": 71.95602416992188,
+          "x": -1.05,
+          "y": -0.332,
           "color": "blue",
           "direction": "none",
+          "type": "tap",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "time": 23357.154296875,
+          "beat": 73.90099334716797,
+          "x": 1.6,
+          "y": 0.021,
+          "color": "red",
+          "direction": "none",
+          "type": "tap",
           "count": 1,
           "lengthMs": 0
         }
       ],
-      "addedNotes": 7,
+      "addedNotes": 6,
       "preHierarchyAppliedNotes": [
         {
           "beat": 68.0,
@@ -37517,7 +39341,87 @@
           "lengthMs": 0
         }
       ],
-      "beatPickupEdited": true
+      "beatPickupEdited": true,
+      "preMelodyAppliedNotes": [
+        {
+          "beat": 68.5,
+          "time": 21651.5789,
+          "x": 0.6,
+          "y": 0.3,
+          "type": "direction",
+          "color": "red",
+          "direction": "left",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 69.5,
+          "time": 21967.3684,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 70.5,
+          "time": 22283.1579,
+          "x": -1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 71.5,
+          "time": 22598.9474,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 72.5,
+          "time": 22914.7368,
+          "x": 1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 73.5,
+          "time": 23230.5263,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 74.5,
+          "time": 23546.3158,
+          "x": -0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ],
+      "melodyEdited": true
     },
     {
       "patternId": "unlimited-noarrows-normal-2",
@@ -37542,115 +39446,115 @@
       "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=escapade&difficulty=hard&t=33.13",
       "noteIndices": [
-        96,
-        97,
-        98,
-        99,
-        100,
-        101,
-        102,
-        103,
-        104
+        84,
+        85,
+        86,
+        87,
+        88,
+        89,
+        90,
+        91,
+        92
       ],
       "appliedNotes": [
         {
           "beat": 108.5,
-          "time": 34283.1579,
-          "x": -0.6,
-          "y": 0.3,
+          "time": 34283.15625,
+          "x": -0.6000000238418579,
+          "y": 0.30000001192092896,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 109.5,
-          "time": 34598.9474,
-          "x": 1.9,
-          "y": -0.6,
+          "time": 34598.94921875,
+          "x": 1.899999976158142,
+          "y": -0.6000000238418579,
           "type": "tap",
           "color": "red",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 110.5,
-          "time": 34914.7368,
-          "x": 1.9,
-          "y": -0.6,
+          "time": 34914.73828125,
+          "x": 1.899999976158142,
+          "y": -0.6000000238418579,
           "type": "tap",
           "color": "red",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 110.5,
-          "time": 34914.7368,
-          "x": -1.9,
-          "y": -0.6,
+          "time": 34914.73828125,
+          "x": -1.899999976158142,
+          "y": -0.6000000238418579,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 111.5,
-          "time": 35230.5263,
-          "x": 0.6,
-          "y": -0.6,
+          "time": 35230.52734375,
+          "x": 0.6000000238418579,
+          "y": -0.6000000238418579,
           "type": "tap",
           "color": "red",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
-          "time": 35388.4211,
           "beat": 112.0,
-          "x": -1.9,
-          "y": -0.6,
+          "time": 35388.421875,
+          "x": -1.899999976158142,
+          "y": -0.6000000238418579,
+          "type": "tap",
           "color": "blue",
           "direction": "none",
-          "type": "tap",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 113.5,
-          "time": 35862.1053,
-          "x": -1.9,
-          "y": -0.6,
+          "time": 35862.10546875,
+          "x": -1.899999976158142,
+          "y": -0.6000000238418579,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
-          "time": 36020.0,
           "beat": 114.0,
-          "x": 0.6,
-          "y": -0.6,
+          "time": 36020.0,
+          "x": 0.6000000238418579,
+          "y": -0.6000000238418579,
+          "type": "tap",
           "color": "red",
           "direction": "none",
-          "type": "tap",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 114.5,
-          "time": 36177.8947,
-          "x": -0.6,
-          "y": -0.6,
+          "time": 36177.89453125,
+          "x": -0.6000000238418579,
+          "y": -0.6000000238418579,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         }
       ],
       "addedNotes": 9,
@@ -38046,7 +39950,109 @@
           "lengthMs": 0
         }
       ],
-      "beatPickupEdited": true
+      "beatPickupEdited": true,
+      "preMelodyAppliedNotes": [
+        {
+          "beat": 108.5,
+          "time": 34283.1579,
+          "x": -0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 109.5,
+          "time": 34598.9474,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 110.5,
+          "time": 34914.7368,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 110.5,
+          "time": 34914.7368,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 111.5,
+          "time": 35230.5263,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "time": 35388.4211,
+          "beat": 112.0,
+          "x": -1.9,
+          "y": -0.6,
+          "color": "blue",
+          "direction": "none",
+          "type": "tap",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 113.5,
+          "time": 35862.1053,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "time": 36020.0,
+          "beat": 114.0,
+          "x": 0.6,
+          "y": -0.6,
+          "color": "red",
+          "direction": "none",
+          "type": "tap",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 114.5,
+          "time": 36177.8947,
+          "x": -0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ],
+      "melodyEdited": true
     },
     {
       "patternId": "angel-hard-1",
@@ -39412,7 +41418,76 @@
           "lengthMs": 0
         }
       ],
-      "beatPickupEdited": true
+      "beatPickupEdited": true,
+      "preMelodyAppliedNotes": [
+        {
+          "beat": 61.5,
+          "time": 23090.5,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 62.5,
+          "time": 23465.5,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 64.5,
+          "time": 24215.5,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 65.0,
+          "time": 24403.0,
+          "x": -0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 66.5,
+          "time": 24965.5,
+          "x": -0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 67.5,
+          "time": 25340.5,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ],
+      "melodyEdited": true
     },
     {
       "patternId": "exit-hard-2",
@@ -39945,14 +42020,14 @@
       "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=hard&t=157.15",
       "noteIndices": [
-        339,
-        340,
-        341,
-        342,
-        343,
-        344,
-        345,
-        346
+        348,
+        349,
+        350,
+        351,
+        352,
+        353,
+        354,
+        355
       ],
       "appliedNotes": [
         {
@@ -40405,7 +42480,98 @@
           "lengthMs": 0
         }
       ],
-      "beatPickupEdited": true
+      "beatPickupEdited": true,
+      "preMelodyAppliedNotes": [
+        {
+          "time": 158153.0,
+          "beat": 348.0,
+          "x": 1.9,
+          "y": -0.6,
+          "color": "red",
+          "direction": "none",
+          "type": "tap",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "time": 158653.0,
+          "beat": 349.0,
+          "x": -0.6,
+          "y": 0.3,
+          "color": "blue",
+          "direction": "none",
+          "type": "tap",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "time": 159153.0,
+          "beat": 350.0,
+          "x": 1.9,
+          "y": -0.6,
+          "color": "red",
+          "direction": "none",
+          "type": "tap",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "time": 159653.0,
+          "beat": 351.0,
+          "x": -0.6,
+          "y": 0.3,
+          "color": "blue",
+          "direction": "none",
+          "type": "tap",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 352.5,
+          "time": 160403.0,
+          "x": 0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 353.5,
+          "time": 160903.0,
+          "x": 1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 354.5,
+          "time": 161403.0,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 355.5,
+          "time": 161903.0,
+          "x": -1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ],
+      "melodyEdited": true
     },
     {
       "patternId": "onehope-normal-1",
@@ -45862,43 +48028,18 @@
       "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=escapade&difficulty=hard&t=15.44",
       "noteIndices": [
-        42,
-        43,
-        44,
-        45,
-        46,
-        47,
-        48,
-        49
+        36,
+        37,
+        38,
+        39,
+        40
       ],
       "appliedNotes": [
         {
-          "beat": 52.5,
-          "time": 16598.9474,
-          "x": -1.9,
-          "y": 0.3,
-          "type": "tap",
-          "color": "blue",
-          "direction": "none",
-          "count": 1,
-          "lengthMs": 0
-        },
-        {
-          "beat": 53.5,
-          "time": 16914.7368,
-          "x": -1.9,
-          "y": -0.6,
-          "type": "tap",
-          "color": "blue",
-          "direction": "none",
-          "count": 1,
-          "lengthMs": 0
-        },
-        {
-          "time": 17072.6316,
-          "beat": 54.0,
-          "x": 1.9,
-          "y": 0.3,
+          "time": 16757.169921875,
+          "beat": 53.00103759765625,
+          "x": 1.6,
+          "y": -0.091,
           "color": "red",
           "direction": "none",
           "type": "tap",
@@ -45906,62 +48047,51 @@
           "lengthMs": 0
         },
         {
-          "beat": 54.5,
-          "time": 17230.5263,
-          "x": 1.9,
-          "y": 0.3,
-          "type": "tap",
-          "color": "red",
-          "direction": "none",
-          "count": 1,
-          "lengthMs": 0
-        },
-        {
-          "beat": 55.5,
-          "time": 17546.3158,
-          "x": 1.9,
-          "y": -0.6,
-          "type": "tap",
-          "color": "red",
-          "direction": "none",
-          "count": 1,
-          "lengthMs": 0
-        },
-        {
-          "beat": 56.5,
-          "time": 17862.1053,
-          "x": -0.6,
-          "y": 0.3,
-          "type": "tap",
+          "time": 17090.2890625,
+          "beat": 54.05591583251953,
+          "x": -1.05,
+          "y": 0.25,
           "color": "blue",
           "direction": "none",
+          "type": "tap",
           "count": 1,
           "lengthMs": 0
         },
         {
-          "beat": 58.5,
-          "time": 18493.6842,
-          "x": -0.6,
-          "y": -0.6,
-          "type": "tap",
-          "color": "blue",
-          "direction": "none",
-          "count": 1,
-          "lengthMs": 0
-        },
-        {
-          "beat": 59.5,
-          "time": 18809.4737,
-          "x": 0.6,
-          "y": 0.3,
-          "type": "tap",
+          "time": 17386.822265625,
+          "beat": 54.994937896728516,
+          "x": 1.05,
+          "y": -0.091,
           "color": "red",
           "direction": "none",
+          "type": "tap",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "time": 17716.69921875,
+          "beat": 56.03955078125,
+          "x": -1.05,
+          "y": 0.021,
+          "color": "blue",
+          "direction": "none",
+          "type": "tap",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "time": 18340.119140625,
+          "beat": 58.013710021972656,
+          "x": 1.6,
+          "y": 0.028,
+          "color": "red",
+          "direction": "none",
+          "type": "tap",
           "count": 1,
           "lengthMs": 0
         }
       ],
-      "addedNotes": 8,
+      "addedNotes": 5,
       "preSongStyleAppliedNotes": [
         {
           "beat": 52.0,
@@ -46255,7 +48385,98 @@
           "lengthMs": 0
         }
       ],
-      "beatPickupEdited": true
+      "beatPickupEdited": true,
+      "preMelodyAppliedNotes": [
+        {
+          "beat": 52.5,
+          "time": 16598.9474,
+          "x": -1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 53.5,
+          "time": 16914.7368,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "time": 17072.6316,
+          "beat": 54.0,
+          "x": 1.9,
+          "y": 0.3,
+          "color": "red",
+          "direction": "none",
+          "type": "tap",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 54.5,
+          "time": 17230.5263,
+          "x": 1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 55.5,
+          "time": 17546.3158,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 56.5,
+          "time": 17862.1053,
+          "x": -0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 58.5,
+          "time": 18493.6842,
+          "x": -0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 59.5,
+          "time": 18809.4737,
+          "x": 0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ],
+      "melodyEdited": true
     },
     {
       "patternId": "178-hard-2",
@@ -46280,103 +48501,103 @@
       "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=escapade&difficulty=hard&t=35.65",
       "noteIndices": [
-        105,
-        106,
-        107,
-        108,
-        109,
-        110,
-        111,
-        112
+        93,
+        94,
+        95,
+        96,
+        97,
+        98,
+        99,
+        100
       ],
       "appliedNotes": [
         {
-          "time": 36651.5789,
           "beat": 116.0,
-          "x": -0.6,
-          "y": -0.6,
+          "time": 36651.578125,
+          "x": -0.6000000238418579,
+          "y": -0.6000000238418579,
+          "type": "tap",
           "color": "blue",
           "direction": "none",
-          "type": "tap",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 116.5,
-          "time": 36809.4737,
-          "x": 0.6,
-          "y": 0.3,
+          "time": 36809.47265625,
+          "x": 0.6000000238418579,
+          "y": 0.30000001192092896,
           "type": "tap",
           "color": "red",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
-          "time": 37283.1579,
           "beat": 118.0,
-          "x": -0.6,
-          "y": -0.6,
+          "time": 37283.15625,
+          "x": -0.6000000238418579,
+          "y": -0.6000000238418579,
+          "type": "tap",
           "color": "blue",
           "direction": "none",
-          "type": "tap",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 118.5,
-          "time": 37441.0526,
-          "x": 1.9,
-          "y": -0.6,
+          "time": 37441.05078125,
+          "x": 1.899999976158142,
+          "y": -0.6000000238418579,
           "type": "tap",
           "color": "red",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 119.5,
-          "time": 37756.8421,
-          "x": -0.6,
-          "y": -0.6,
+          "time": 37756.84375,
+          "x": -0.6000000238418579,
+          "y": -0.6000000238418579,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 120.5,
-          "time": 38072.6316,
-          "x": -1.9,
-          "y": -0.6,
+          "time": 38072.6328125,
+          "x": -1.899999976158142,
+          "y": -0.6000000238418579,
           "type": "tap",
           "color": "blue",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 122.5,
-          "time": 38704.2105,
-          "x": 1.9,
-          "y": -0.6,
+          "time": 38704.2109375,
+          "x": 1.899999976158142,
+          "y": -0.6000000238418579,
           "type": "tap",
           "color": "red",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         },
         {
           "beat": 123.5,
           "time": 39020.0,
-          "x": 0.6,
-          "y": -0.6,
+          "x": 0.6000000238418579,
+          "y": -0.6000000238418579,
           "type": "tap",
           "color": "red",
           "direction": "none",
           "count": 1,
-          "lengthMs": 0
+          "lengthMs": 0.0
         }
       ],
       "addedNotes": 8,
@@ -46651,7 +48872,98 @@
           "lengthMs": 0
         }
       ],
-      "beatPickupEdited": true
+      "beatPickupEdited": true,
+      "preMelodyAppliedNotes": [
+        {
+          "time": 36651.5789,
+          "beat": 116.0,
+          "x": -0.6,
+          "y": -0.6,
+          "color": "blue",
+          "direction": "none",
+          "type": "tap",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 116.5,
+          "time": 36809.4737,
+          "x": 0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "time": 37283.1579,
+          "beat": 118.0,
+          "x": -0.6,
+          "y": -0.6,
+          "color": "blue",
+          "direction": "none",
+          "type": "tap",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 118.5,
+          "time": 37441.0526,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 119.5,
+          "time": 37756.8421,
+          "x": -0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 120.5,
+          "time": 38072.6316,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 122.5,
+          "time": 38704.2105,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 123.5,
+          "time": 39020.0,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ],
+      "melodyEdited": true
     },
     {
       "patternId": "178-hard-3",
@@ -47263,15 +49575,15 @@
       "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=hard&t=135.15",
       "noteIndices": [
-        294,
-        295,
-        296,
-        297,
-        298,
-        299,
-        300,
-        301,
-        302
+        303,
+        304,
+        305,
+        306,
+        307,
+        308,
+        309,
+        310,
+        311
       ],
       "appliedNotes": [
         {
@@ -47690,7 +50002,109 @@
           "lengthMs": 0
         }
       ],
-      "beatPickupEdited": true
+      "beatPickupEdited": true,
+      "preMelodyAppliedNotes": [
+        {
+          "beat": 304.0,
+          "time": 136153.0,
+          "x": 0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 304.5,
+          "time": 136403.0,
+          "x": -0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 305.5,
+          "time": 136903.0,
+          "x": 0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 307.0,
+          "time": 137653.0,
+          "x": 1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 307.5,
+          "time": 137903.0,
+          "x": -0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 308.5,
+          "time": 138403.0,
+          "x": -1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 309.5,
+          "time": 138903.0,
+          "x": -0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 310.5,
+          "time": 139403.0,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 311.5,
+          "time": 139903.0,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ],
+      "melodyEdited": true
     },
     {
       "patternId": "bethere-hard-3",
@@ -47715,13 +50129,13 @@
       "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=hard&t=107.15",
       "noteIndices": [
-        242,
-        243,
-        244,
-        245,
-        246,
-        247,
-        248
+        251,
+        252,
+        253,
+        254,
+        255,
+        256,
+        257
       ],
       "appliedNotes": [
         {
@@ -48052,7 +50466,87 @@
           "lengthMs": 0
         }
       ],
-      "beatPickupEdited": true
+      "beatPickupEdited": true,
+      "preMelodyAppliedNotes": [
+        {
+          "beat": 248.5,
+          "time": 108403.0,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 250.5,
+          "time": 109403.0,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 250.5,
+          "time": 109403.0,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 252.5,
+          "time": 110403.0,
+          "x": -1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 254.5,
+          "time": 111403.0,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 254.5,
+          "time": 111403.0,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 255.5,
+          "time": 111903.0,
+          "x": -0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ],
+      "melodyEdited": true
     },
     {
       "patternId": "bring-it-on-1",
@@ -49037,15 +51531,15 @@
       "fidelity": "映像の配置を参照した区間。現在は拍の土台・音の応答・曲別動線・下位包含を優先した設計で、元の翻案そのものとは同一ではない。旧適用は履歴に保持。",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=hard&t=151.15",
       "noteIndices": [
-        326,
-        327,
-        328,
-        329,
-        330,
-        331,
-        332,
-        333,
-        334
+        335,
+        336,
+        337,
+        338,
+        339,
+        340,
+        341,
+        342,
+        343
       ],
       "appliedNotes": [
         {
@@ -49249,7 +51743,109 @@
           "count": 1,
           "lengthMs": 0
         }
-      ]
+      ],
+      "preMelodyAppliedNotes": [
+        {
+          "beat": 336.0,
+          "time": 152153.0,
+          "x": -0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 336.5,
+          "time": 152403.0,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 337.5,
+          "time": 152903.0,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 338.5,
+          "time": 153403.0,
+          "x": 0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 339.5,
+          "time": 153903.0,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 340.5,
+          "time": 154403.0,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 341.5,
+          "time": 154903.0,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 342.5,
+          "time": 155403.0,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 342.5,
+          "time": 155403.0,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ],
+      "melodyEdited": true
     }
   ],
   "inputChartHashes": {

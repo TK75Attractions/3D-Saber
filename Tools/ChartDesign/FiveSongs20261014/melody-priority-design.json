@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "request": "音を拾う区間ではメロディーを拾ってほしい。",
   "priority": "2026-10-16のユーザーによる意味の明確化。歌・主旋律の発音とフレーズを優先し、混合音の発音強度だけを旋律一致の根拠としない。",
   "allowedSongIds": [
@@ -25,8 +25,8 @@
     "下位も旋律の特徴的な入り・応答を残し、Hardの時刻・担当手・位置の部分列とする。",
     "5曲共通テンプレートや曲全体の4分・8分列へ戻さず、曲別スタイルと確定休符を保持する。"
   ],
-  "status": "analysis_in_progress_not_applied",
-  "currentChartStatus": "この回はメロディー再採譜による譜面変更を行っていない。beat-pickup-design.json第1版/リズム第3版は既存譜面の履歴・保護として残す。旋律照合を終えた候補だけ人間の今回指示による改修として次版に反映する。",
+  "status": "selected_phrases_applied",
+  "currentChartStatus": "escapadeの採譜目印24打点を使った旋律応答とlogicの原音倍音列で照合した主旋律の入りを候補へ反映。全曲の正確な採譜とは表示しない。",
   "survey": [
     {
       "songId": "ManicSonic",
@@ -105,8 +105,10 @@
     }
   ],
   "concurrentEditing": {
-    "excludedSong": "escapade",
-    "reason": "実Hardに並行の手編集を検出。この回は実ファイルも公開ファイルも置換しない。"
+    "baselineCommit": "556cfb5c24fceef5ede5938f937e14913581d7f7",
+    "manualCommit": "36c8767a51f09843b3a207908b62a605ed24c4cb",
+    "humanClarification": "採譜用の目印。時刻を生かして赤青に振り分けてよい",
+    "timingMarkersPreserved": true
   },
   "physicalPlayTest": false,
   "pitchSurvey": {
@@ -197,5 +199,7742 @@
     ]
   },
   "scopeUpdated": "2026-10-16",
-  "scopeReason": "最新のユーザー指示により今後の編集はescapadeとlogicのみ。他3曲のsurveyは過去の調査資料として保持し、譜面へ適用しない。"
+  "scopeReason": "最新のユーザー指示により今後の編集はescapadeとlogicのみ。他3曲のsurveyは過去の調査資料として保持し、譜面へ適用しない。",
+  "editReport": {
+    "version": 2,
+    "request": "escapadeとlogicだけ、拍に乗る短い土台と主旋律をなぞる応答を組み合わせる。",
+    "songs": {
+      "escapade": {
+        "changes": {
+          "markers": 24,
+          "requests": [
+            {
+              "time": 15171.1279296875,
+              "beat": 47.978572845458984,
+              "pitch": 78.77,
+              "contourEvidence": {
+                "time": 15171.1279296875,
+                "midi": 78.77,
+                "frequencyHz": 773.44,
+                "method": "Original mix lead register after human marker; contour only, not onset selection or exact pitch transcription."
+              },
+              "previousMelodyGapSeconds": 1,
+              "humanMarker": true,
+              "reason": "ユーザーが採譜用の主旋律の目印と確認。時刻をそのまま赤青へ割当。",
+              "source": "committed manual chart + user confirmation",
+              "action": "added",
+              "applied": {
+                "time": 15171.1279296875,
+                "beat": 47.978572845458984,
+                "x": -0.6000000238418579,
+                "y": -0.6000000238418579,
+                "color": "blue",
+                "direction": "none",
+                "type": "tap",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 15822.21484375,
+              "beat": 50.040348052978516,
+              "pitch": 79.15,
+              "contourEvidence": {
+                "time": 15822.21484375,
+                "midi": 79.15,
+                "frequencyHz": 791.02,
+                "method": "Original mix lead register after human marker; contour only, not onset selection or exact pitch transcription."
+              },
+              "previousMelodyGapSeconds": 0.6510869140625,
+              "humanMarker": true,
+              "reason": "ユーザーが採譜用の主旋律の目印と確認。時刻をそのまま赤青へ割当。",
+              "source": "committed manual chart + user confirmation",
+              "action": "added",
+              "applied": {
+                "time": 15822.21484375,
+                "beat": 50.040348052978516,
+                "x": -1.6,
+                "y": 0.028,
+                "color": "blue",
+                "direction": "none",
+                "type": "tap",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 16757.169921875,
+              "beat": 53.00103759765625,
+              "pitch": 78.16,
+              "contourEvidence": {
+                "time": 16757.169921875,
+                "midi": 78.16,
+                "frequencyHz": 747.07,
+                "method": "Original mix lead register after human marker; contour only, not onset selection or exact pitch transcription."
+              },
+              "previousMelodyGapSeconds": 0.934955078125,
+              "humanMarker": true,
+              "reason": "ユーザーが採譜用の主旋律の目印と確認。時刻をそのまま赤青へ割当。",
+              "source": "committed manual chart + user confirmation",
+              "action": "added",
+              "applied": {
+                "time": 16757.169921875,
+                "beat": 53.00103759765625,
+                "x": 1.6,
+                "y": -0.091,
+                "color": "red",
+                "direction": "none",
+                "type": "tap",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 17090.2890625,
+              "beat": 54.05591583251953,
+              "pitch": 81.09,
+              "contourEvidence": {
+                "time": 17090.2890625,
+                "midi": 81.09,
+                "frequencyHz": 884.77,
+                "method": "Original mix lead register after human marker; contour only, not onset selection or exact pitch transcription."
+              },
+              "previousMelodyGapSeconds": 0.333119140625,
+              "humanMarker": true,
+              "reason": "ユーザーが採譜用の主旋律の目印と確認。時刻をそのまま赤青へ割当。",
+              "source": "committed manual chart + user confirmation",
+              "action": "added",
+              "applied": {
+                "time": 17090.2890625,
+                "beat": 54.05591583251953,
+                "x": -1.05,
+                "y": 0.25,
+                "color": "blue",
+                "direction": "none",
+                "type": "tap",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 17386.822265625,
+              "beat": 54.994937896728516,
+              "pitch": 78.16,
+              "contourEvidence": {
+                "time": 17386.822265625,
+                "midi": 78.16,
+                "frequencyHz": 747.07,
+                "method": "Original mix lead register after human marker; contour only, not onset selection or exact pitch transcription."
+              },
+              "previousMelodyGapSeconds": 0.296533203125,
+              "humanMarker": true,
+              "reason": "ユーザーが採譜用の主旋律の目印と確認。時刻をそのまま赤青へ割当。",
+              "source": "committed manual chart + user confirmation",
+              "action": "added",
+              "applied": {
+                "time": 17386.822265625,
+                "beat": 54.994937896728516,
+                "x": 1.05,
+                "y": -0.091,
+                "color": "red",
+                "direction": "none",
+                "type": "tap",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 17716.69921875,
+              "beat": 56.03955078125,
+              "pitch": 79.09,
+              "contourEvidence": {
+                "time": 17716.69921875,
+                "midi": 79.09,
+                "frequencyHz": 788.09,
+                "method": "Original mix lead register after human marker; contour only, not onset selection or exact pitch transcription."
+              },
+              "previousMelodyGapSeconds": 0.329876953125,
+              "humanMarker": true,
+              "reason": "ユーザーが採譜用の主旋律の目印と確認。時刻をそのまま赤青へ割当。",
+              "source": "committed manual chart + user confirmation",
+              "action": "added",
+              "applied": {
+                "time": 17716.69921875,
+                "beat": 56.03955078125,
+                "x": -1.05,
+                "y": 0.021,
+                "color": "blue",
+                "direction": "none",
+                "type": "tap",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 18340.119140625,
+              "beat": 58.013710021972656,
+              "pitch": 79.15,
+              "contourEvidence": {
+                "time": 18340.119140625,
+                "midi": 79.15,
+                "frequencyHz": 791.02,
+                "method": "Original mix lead register after human marker; contour only, not onset selection or exact pitch transcription."
+              },
+              "previousMelodyGapSeconds": 0.623419921875,
+              "humanMarker": true,
+              "reason": "ユーザーが採譜用の主旋律の目印と確認。時刻をそのまま赤青へ割当。",
+              "source": "committed manual chart + user confirmation",
+              "action": "added",
+              "applied": {
+                "time": 18340.119140625,
+                "beat": 58.013710021972656,
+                "x": 1.6,
+                "y": 0.028,
+                "color": "red",
+                "direction": "none",
+                "type": "tap",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 19276.138671875,
+              "beat": 60.97777557373047,
+              "pitch": 78.16,
+              "contourEvidence": {
+                "time": 19276.138671875,
+                "midi": 78.16,
+                "frequencyHz": 747.07,
+                "method": "Original mix lead register after human marker; contour only, not onset selection or exact pitch transcription."
+              },
+              "previousMelodyGapSeconds": 0.93601953125,
+              "humanMarker": true,
+              "reason": "ユーザーが採譜用の主旋律の目印と確認。時刻をそのまま赤青へ割当。",
+              "source": "committed manual chart + user confirmation",
+              "action": "added",
+              "applied": {
+                "time": 19276.138671875,
+                "beat": 60.97777557373047,
+                "x": -1.6,
+                "y": -0.091,
+                "color": "blue",
+                "direction": "none",
+                "type": "tap",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 19616.9609375,
+              "beat": 62.057044982910156,
+              "pitch": 81.15,
+              "contourEvidence": {
+                "time": 19616.9609375,
+                "midi": 81.15,
+                "frequencyHz": 887.7,
+                "method": "Original mix lead register after human marker; contour only, not onset selection or exact pitch transcription."
+              },
+              "previousMelodyGapSeconds": 0.340822265625,
+              "humanMarker": true,
+              "reason": "ユーザーが採譜用の主旋律の目印と確認。時刻をそのまま赤青へ割当。",
+              "source": "committed manual chart + user confirmation",
+              "action": "added",
+              "applied": {
+                "time": 19616.9609375,
+                "beat": 62.057044982910156,
+                "x": 1.05,
+                "y": 0.25,
+                "color": "red",
+                "direction": "none",
+                "type": "tap",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 19913.49609375,
+              "beat": 62.996070861816406,
+              "pitch": 78.16,
+              "contourEvidence": {
+                "time": 19913.49609375,
+                "midi": 78.16,
+                "frequencyHz": 747.07,
+                "method": "Original mix lead register after human marker; contour only, not onset selection or exact pitch transcription."
+              },
+              "previousMelodyGapSeconds": 0.29653515625,
+              "humanMarker": true,
+              "reason": "ユーザーが採譜用の主旋律の目印と確認。時刻をそのまま赤青へ割当。",
+              "source": "committed manual chart + user confirmation",
+              "action": "added",
+              "applied": {
+                "time": 19913.49609375,
+                "beat": 62.996070861816406,
+                "x": -1.05,
+                "y": -0.091,
+                "color": "blue",
+                "direction": "none",
+                "type": "tap",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 20231.208984375,
+              "beat": 64.00216674804688,
+              "pitch": 76.15,
+              "contourEvidence": {
+                "time": 20231.208984375,
+                "midi": 76.15,
+                "frequencyHz": 665.04,
+                "method": "Original mix lead register after human marker; contour only, not onset selection or exact pitch transcription."
+              },
+              "previousMelodyGapSeconds": 0.317712890625,
+              "humanMarker": true,
+              "reason": "ユーザーが採譜用の主旋律の目印と確認。時刻をそのまま赤青へ割当。",
+              "source": "committed manual chart + user confirmation",
+              "action": "added",
+              "applied": {
+                "time": 20231.208984375,
+                "beat": 64.00216674804688,
+                "x": -1.05,
+                "y": -0.332,
+                "color": "blue",
+                "direction": "none",
+                "type": "tap",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 20866.43359375,
+              "beat": 66.01371002197266,
+              "pitch": 79.15,
+              "contourEvidence": {
+                "time": 20866.43359375,
+                "midi": 79.15,
+                "frequencyHz": 791.02,
+                "method": "Original mix lead register after human marker; contour only, not onset selection or exact pitch transcription."
+              },
+              "previousMelodyGapSeconds": 0.635224609375,
+              "humanMarker": true,
+              "reason": "ユーザーが採譜用の主旋律の目印と確認。時刻をそのまま赤青へ割当。",
+              "source": "committed manual chart + user confirmation",
+              "action": "added",
+              "applied": {
+                "time": 20866.43359375,
+                "beat": 66.01371002197266,
+                "x": -1.6,
+                "y": 0.028,
+                "color": "blue",
+                "direction": "none",
+                "type": "tap",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 21813.095703125,
+              "beat": 69.011474609375,
+              "pitch": 78.16,
+              "contourEvidence": {
+                "time": 21813.095703125,
+                "midi": 78.16,
+                "frequencyHz": 747.07,
+                "method": "Original mix lead register after human marker; contour only, not onset selection or exact pitch transcription."
+              },
+              "previousMelodyGapSeconds": 0.946662109375,
+              "humanMarker": true,
+              "reason": "ユーザーが採譜用の主旋律の目印と確認。時刻をそのまま赤青へ割当。",
+              "source": "committed manual chart + user confirmation",
+              "action": "added",
+              "applied": {
+                "time": 21813.095703125,
+                "beat": 69.011474609375,
+                "x": -1.6,
+                "y": -0.091,
+                "color": "blue",
+                "direction": "none",
+                "type": "tap",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 22151.994140625,
+              "beat": 70.08464813232422,
+              "pitch": 81.15,
+              "contourEvidence": {
+                "time": 22151.994140625,
+                "midi": 81.15,
+                "frequencyHz": 887.7,
+                "method": "Original mix lead register after human marker; contour only, not onset selection or exact pitch transcription."
+              },
+              "previousMelodyGapSeconds": 0.3388984375,
+              "humanMarker": true,
+              "reason": "ユーザーが採譜用の主旋律の目印と確認。時刻をそのまま赤青へ割当。",
+              "source": "committed manual chart + user confirmation",
+              "action": "added",
+              "applied": {
+                "time": 22151.994140625,
+                "beat": 70.08464813232422,
+                "x": -1.05,
+                "y": 0.25,
+                "color": "blue",
+                "direction": "none",
+                "type": "tap",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 22444.67578125,
+              "beat": 71.011474609375,
+              "pitch": 78.16,
+              "contourEvidence": {
+                "time": 22444.67578125,
+                "midi": 78.16,
+                "frequencyHz": 747.07,
+                "method": "Original mix lead register after human marker; contour only, not onset selection or exact pitch transcription."
+              },
+              "previousMelodyGapSeconds": 0.292681640625,
+              "humanMarker": true,
+              "reason": "ユーザーが採譜用の主旋律の目印と確認。時刻をそのまま赤青へ割当。",
+              "source": "committed manual chart + user confirmation",
+              "action": "added",
+              "applied": {
+                "time": 22444.67578125,
+                "beat": 71.011474609375,
+                "x": 1.05,
+                "y": -0.091,
+                "color": "red",
+                "direction": "none",
+                "type": "tap",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 22742.953125,
+              "beat": 71.95602416992188,
+              "pitch": 76.15,
+              "contourEvidence": {
+                "time": 22742.953125,
+                "midi": 76.15,
+                "frequencyHz": 665.04,
+                "method": "Original mix lead register after human marker; contour only, not onset selection or exact pitch transcription."
+              },
+              "previousMelodyGapSeconds": 0.29827734375,
+              "humanMarker": true,
+              "reason": "ユーザーが採譜用の主旋律の目印と確認。時刻をそのまま赤青へ割当。",
+              "source": "committed manual chart + user confirmation",
+              "action": "added",
+              "applied": {
+                "time": 22742.953125,
+                "beat": 71.95602416992188,
+                "x": -1.05,
+                "y": -0.332,
+                "color": "blue",
+                "direction": "none",
+                "type": "tap",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 23357.154296875,
+              "beat": 73.90099334716797,
+              "pitch": 79.09,
+              "contourEvidence": {
+                "time": 23357.154296875,
+                "midi": 79.09,
+                "frequencyHz": 788.09,
+                "method": "Original mix lead register after human marker; contour only, not onset selection or exact pitch transcription."
+              },
+              "previousMelodyGapSeconds": 0.614201171875,
+              "humanMarker": true,
+              "reason": "ユーザーが採譜用の主旋律の目印と確認。時刻をそのまま赤青へ割当。",
+              "source": "committed manual chart + user confirmation",
+              "action": "added",
+              "applied": {
+                "time": 23357.154296875,
+                "beat": 73.90099334716797,
+                "x": 1.6,
+                "y": 0.021,
+                "color": "red",
+                "direction": "none",
+                "type": "tap",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 24347.806640625,
+              "beat": 77.03805541992188,
+              "pitch": 78.16,
+              "contourEvidence": {
+                "time": 24347.806640625,
+                "midi": 78.16,
+                "frequencyHz": 747.07,
+                "method": "Original mix lead register after human marker; contour only, not onset selection or exact pitch transcription."
+              },
+              "previousMelodyGapSeconds": 0.99065234375,
+              "humanMarker": true,
+              "reason": "ユーザーが採譜用の主旋律の目印と確認。時刻をそのまま赤青へ割当。",
+              "source": "committed manual chart + user confirmation",
+              "action": "added",
+              "applied": {
+                "time": 24347.806640625,
+                "beat": 77.03805541992188,
+                "x": -1.6,
+                "y": -0.091,
+                "color": "blue",
+                "direction": "none",
+                "type": "tap",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 24650.1171875,
+              "beat": 77.99537658691406,
+              "pitch": 79.15,
+              "contourEvidence": {
+                "time": 24650.1171875,
+                "midi": 79.15,
+                "frequencyHz": 791.02,
+                "method": "Original mix lead register after human marker; contour only, not onset selection or exact pitch transcription."
+              },
+              "previousMelodyGapSeconds": 0.302310546875,
+              "humanMarker": true,
+              "reason": "ユーザーが採譜用の主旋律の目印と確認。時刻をそのまま赤青へ割当。",
+              "source": "committed manual chart + user confirmation",
+              "action": "added",
+              "applied": {
+                "time": 24650.1171875,
+                "beat": 77.99537658691406,
+                "x": 1.6,
+                "y": 0.028,
+                "color": "red",
+                "direction": "none",
+                "type": "tap",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 24985.162109375,
+              "beat": 79.05635070800781,
+              "pitch": 78.16,
+              "contourEvidence": {
+                "time": 24985.162109375,
+                "midi": 78.16,
+                "frequencyHz": 747.07,
+                "method": "Original mix lead register after human marker; contour only, not onset selection or exact pitch transcription."
+              },
+              "previousMelodyGapSeconds": 0.335044921875,
+              "humanMarker": true,
+              "reason": "ユーザーが採譜用の主旋律の目印と確認。時刻をそのまま赤青へ割当。",
+              "source": "committed manual chart + user confirmation",
+              "action": "added",
+              "applied": {
+                "time": 24985.162109375,
+                "beat": 79.05635070800781,
+                "x": -1.6,
+                "y": -0.091,
+                "color": "blue",
+                "direction": "none",
+                "type": "tap",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 47246.01953125,
+              "beat": 149.549072265625,
+              "pitch": 79.15,
+              "contourEvidence": {
+                "time": 47246.01953125,
+                "midi": 79.15,
+                "frequencyHz": 791.02,
+                "method": "Original mix lead register after human marker; contour only, not onset selection or exact pitch transcription."
+              },
+              "previousMelodyGapSeconds": 22.260857421875,
+              "humanMarker": true,
+              "reason": "ユーザーが採譜用の主旋律の目印と確認。時刻をそのまま赤青へ割当。",
+              "source": "committed manual chart + user confirmation",
+              "action": "added",
+              "applied": {
+                "time": 47246.01953125,
+                "beat": 149.549072265625,
+                "x": 1.6,
+                "y": 0.028,
+                "color": "red",
+                "direction": "none",
+                "type": "tap",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 47823.68359375,
+              "beat": 151.3783416748047,
+              "pitch": 81.09,
+              "contourEvidence": {
+                "time": 47823.68359375,
+                "midi": 81.09,
+                "frequencyHz": 884.77,
+                "method": "Original mix lead register after human marker; contour only, not onset selection or exact pitch transcription."
+              },
+              "previousMelodyGapSeconds": 0.5776640625,
+              "humanMarker": true,
+              "reason": "ユーザーが採譜用の主旋律の目印と確認。時刻をそのまま赤青へ割当。",
+              "source": "committed manual chart + user confirmation",
+              "action": "added",
+              "applied": {
+                "time": 47823.68359375,
+                "beat": 151.3783416748047,
+                "x": -1.6,
+                "y": 0.25,
+                "color": "blue",
+                "direction": "none",
+                "type": "tap",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 49767.609375,
+              "beat": 157.5341033935547,
+              "pitch": 81.15,
+              "contourEvidence": {
+                "time": 49767.609375,
+                "midi": 81.15,
+                "frequencyHz": 887.7,
+                "method": "Original mix lead register after human marker; contour only, not onset selection or exact pitch transcription."
+              },
+              "previousMelodyGapSeconds": 1.94392578125,
+              "humanMarker": true,
+              "reason": "ユーザーが採譜用の主旋律の目印と確認。時刻をそのまま赤青へ割当。",
+              "source": "committed manual chart + user confirmation",
+              "action": "added",
+              "applied": {
+                "time": 49767.609375,
+                "beat": 157.5341033935547,
+                "x": 1.6,
+                "y": 0.25,
+                "color": "red",
+                "direction": "none",
+                "type": "tap",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 50216.26171875,
+              "beat": 158.954833984375,
+              "pitch": 79.15,
+              "contourEvidence": {
+                "time": 50216.26171875,
+                "midi": 79.15,
+                "frequencyHz": 791.02,
+                "method": "Original mix lead register after human marker; contour only, not onset selection or exact pitch transcription."
+              },
+              "previousMelodyGapSeconds": 0.44865234375,
+              "humanMarker": true,
+              "reason": "ユーザーが採譜用の主旋律の目印と確認。時刻をそのまま赤青へ割当。",
+              "source": "committed manual chart + user confirmation",
+              "action": "added",
+              "applied": {
+                "time": 50216.26171875,
+                "beat": 158.954833984375,
+                "x": 1.899999976158142,
+                "y": -0.6000000238418579,
+                "color": "red",
+                "direction": "none",
+                "type": "tap",
+                "count": 1,
+                "lengthMs": 0
+              }
+            }
+          ],
+          "removed": [
+            {
+              "note": {
+                "beat": 50.99390411376953,
+                "time": 16123.337890625,
+                "x": 0.681526780128479,
+                "y": -0.6000000238418579,
+                "type": "tap",
+                "color": "red",
+                "direction": "none",
+                "count": 1,
+                "lengthMs": 0.0
+              },
+              "reason": "主旋律の音価を見せるため、この応答区間の伴奏の接続打点を整理。"
+            },
+            {
+              "note": {
+                "beat": 52.5,
+                "time": 16598.947265625,
+                "x": -1.899999976158142,
+                "y": 0.30000001192092896,
+                "type": "tap",
+                "color": "blue",
+                "direction": "none",
+                "count": 1,
+                "lengthMs": 0.0
+              },
+              "reason": "主旋律の音価を見せるため、この応答区間の伴奏の接続打点を整理。"
+            },
+            {
+              "note": {
+                "beat": 53.5,
+                "time": 16914.736328125,
+                "x": -1.899999976158142,
+                "y": -0.6000000238418579,
+                "type": "tap",
+                "color": "blue",
+                "direction": "none",
+                "count": 1,
+                "lengthMs": 0.0
+              },
+              "reason": "主旋律の音価を見せるため、この応答区間の伴奏の接続打点を整理。"
+            },
+            {
+              "note": {
+                "beat": 54.0,
+                "time": 17072.630859375,
+                "x": 1.899999976158142,
+                "y": 0.30000001192092896,
+                "type": "tap",
+                "color": "red",
+                "direction": "none",
+                "count": 1,
+                "lengthMs": 0.0
+              },
+              "reason": "主旋律の音価を見せるため、この応答区間の伴奏の接続打点を整理。"
+            },
+            {
+              "note": {
+                "beat": 54.5,
+                "time": 17230.525390625,
+                "x": 1.899999976158142,
+                "y": 0.30000001192092896,
+                "type": "tap",
+                "color": "red",
+                "direction": "none",
+                "count": 1,
+                "lengthMs": 0.0
+              },
+              "reason": "主旋律の音価を見せるため、この応答区間の伴奏の接続打点を整理。"
+            },
+            {
+              "note": {
+                "beat": 55.5,
+                "time": 17546.31640625,
+                "x": 1.899999976158142,
+                "y": -0.6000000238418579,
+                "type": "tap",
+                "color": "red",
+                "direction": "none",
+                "count": 1,
+                "lengthMs": 0.0
+              },
+              "reason": "主旋律の音価を見せるため、この応答区間の伴奏の接続打点を整理。"
+            },
+            {
+              "note": {
+                "beat": 56.5,
+                "time": 17862.10546875,
+                "x": -0.6000000238418579,
+                "y": 0.30000001192092896,
+                "type": "tap",
+                "color": "blue",
+                "direction": "none",
+                "count": 1,
+                "lengthMs": 0.0
+              },
+              "reason": "主旋律の音価を見せるため、この応答区間の伴奏の接続打点を整理。"
+            },
+            {
+              "note": {
+                "beat": 59.5,
+                "time": 18809.474609375,
+                "x": 0.6000000238418579,
+                "y": 0.30000001192092896,
+                "type": "tap",
+                "color": "red",
+                "direction": "none",
+                "count": 1,
+                "lengthMs": 0.0
+              },
+              "reason": "主旋律の音価を見せるため、この応答区間の伴奏の接続打点を整理。"
+            },
+            {
+              "note": {
+                "beat": 60.5,
+                "time": 19125.263671875,
+                "x": 0.6000000238418579,
+                "y": -0.6000000238418579,
+                "type": "tap",
+                "color": "red",
+                "direction": "none",
+                "count": 1,
+                "lengthMs": 0.0
+              },
+              "reason": "主旋律の音価を見せるため、この応答区間の伴奏の接続打点を整理。"
+            },
+            {
+              "note": {
+                "beat": 61.5,
+                "time": 19441.052734375,
+                "x": -1.899999976158142,
+                "y": 0.30000001192092896,
+                "type": "tap",
+                "color": "blue",
+                "direction": "none",
+                "count": 1,
+                "lengthMs": 0.0
+              },
+              "reason": "主旋律の音価を見せるため、この応答区間の伴奏の接続打点を整理。"
+            },
+            {
+              "note": {
+                "beat": 62.5,
+                "time": 19756.841796875,
+                "x": -1.899999976158142,
+                "y": -0.6000000238418579,
+                "type": "tap",
+                "color": "blue",
+                "direction": "none",
+                "count": 1,
+                "lengthMs": 0.0
+              },
+              "reason": "主旋律の音価を見せるため、この応答区間の伴奏の接続打点を整理。"
+            },
+            {
+              "note": {
+                "beat": 63.5,
+                "time": 20072.630859375,
+                "x": 1.899999976158142,
+                "y": 0.30000001192092896,
+                "type": "tap",
+                "color": "red",
+                "direction": "none",
+                "count": 1,
+                "lengthMs": 0.0
+              },
+              "reason": "主旋律の音価を見せるため、この応答区間の伴奏の接続打点を整理。"
+            },
+            {
+              "note": {
+                "beat": 65.5,
+                "time": 20704.2109375,
+                "x": -0.6000000238418579,
+                "y": 0.30000001192092896,
+                "type": "tap",
+                "color": "blue",
+                "direction": "none",
+                "count": 1,
+                "lengthMs": 0.0
+              },
+              "reason": "主旋律の音価を見せるため、この応答区間の伴奏の接続打点を整理。"
+            },
+            {
+              "note": {
+                "beat": 66.5,
+                "time": 21020.0,
+                "x": -0.6000000238418579,
+                "y": -0.6000000238418579,
+                "type": "tap",
+                "color": "blue",
+                "direction": "none",
+                "count": 1,
+                "lengthMs": 0.0
+              },
+              "reason": "主旋律の音価を見せるため、この応答区間の伴奏の接続打点を整理。"
+            },
+            {
+              "note": {
+                "beat": 69.5,
+                "time": 21967.369140625,
+                "x": 0.6000000238418579,
+                "y": -0.6000000238418579,
+                "type": "tap",
+                "color": "red",
+                "direction": "none",
+                "count": 1,
+                "lengthMs": 0.0
+              },
+              "reason": "主旋律の音価を見せるため、この応答区間の伴奏の接続打点を整理。"
+            },
+            {
+              "note": {
+                "beat": 70.5,
+                "time": 22283.158203125,
+                "x": -1.899999976158142,
+                "y": 0.30000001192092896,
+                "type": "tap",
+                "color": "blue",
+                "direction": "none",
+                "count": 1,
+                "lengthMs": 0.0
+              },
+              "reason": "主旋律の音価を見せるため、この応答区間の伴奏の接続打点を整理。"
+            },
+            {
+              "note": {
+                "beat": 71.5,
+                "time": 22598.947265625,
+                "x": -1.899999976158142,
+                "y": -0.6000000238418579,
+                "type": "tap",
+                "color": "blue",
+                "direction": "none",
+                "count": 1,
+                "lengthMs": 0.0
+              },
+              "reason": "主旋律の音価を見せるため、この応答区間の伴奏の接続打点を整理。"
+            },
+            {
+              "note": {
+                "beat": 72.5,
+                "time": 22914.736328125,
+                "x": 1.899999976158142,
+                "y": 0.30000001192092896,
+                "type": "tap",
+                "color": "red",
+                "direction": "none",
+                "count": 1,
+                "lengthMs": 0.0
+              },
+              "reason": "主旋律の音価を見せるため、この応答区間の伴奏の接続打点を整理。"
+            },
+            {
+              "note": {
+                "beat": 73.5,
+                "time": 23230.525390625,
+                "x": 1.899999976158142,
+                "y": -0.6000000238418579,
+                "type": "tap",
+                "color": "red",
+                "direction": "none",
+                "count": 1,
+                "lengthMs": 0.0
+              },
+              "reason": "主旋律の音価を見せるため、この応答区間の伴奏の接続打点を整理。"
+            },
+            {
+              "note": {
+                "beat": 74.5,
+                "time": 23546.31640625,
+                "x": -0.6000000238418579,
+                "y": 0.30000001192092896,
+                "type": "tap",
+                "color": "blue",
+                "direction": "none",
+                "count": 1,
+                "lengthMs": 0.0
+              },
+              "reason": "主旋律の音価を見せるため、この応答区間の伴奏の接続打点を整理。"
+            },
+            {
+              "note": {
+                "beat": 76.5,
+                "time": 24177.89453125,
+                "x": -0.6000000238418579,
+                "y": -0.6000000238418579,
+                "type": "tap",
+                "color": "blue",
+                "direction": "none",
+                "count": 1,
+                "lengthMs": 0.0
+              },
+              "reason": "主旋律の音価を見せるため、この応答区間の伴奏の接続打点を整理。"
+            },
+            {
+              "note": {
+                "beat": 77.5,
+                "time": 24493.68359375,
+                "x": 0.6000000238418579,
+                "y": 0.30000001192092896,
+                "type": "tap",
+                "color": "red",
+                "direction": "none",
+                "count": 1,
+                "lengthMs": 0.0
+              },
+              "reason": "主旋律の音価を見せるため、この応答区間の伴奏の接続打点を整理。"
+            },
+            {
+              "note": {
+                "beat": 79.5,
+                "time": 25125.263671875,
+                "x": 1.899999976158142,
+                "y": 0.30000001192092896,
+                "type": "tap",
+                "color": "red",
+                "direction": "none",
+                "count": 1,
+                "lengthMs": 0.0
+              },
+              "reason": "主旋律の音価を見せるため、この応答区間の伴奏の接続打点を整理。"
+            }
+          ],
+          "routeCorrections": [
+            {
+              "seconds": 89.684953125,
+              "hand": 0,
+              "before": [
+                1.877765417098999,
+                -0.6000000238418579
+              ],
+              "after": [
+                1.8154,
+                -0.6
+              ],
+              "reason": "手編集の時刻を保持し、前後の移動時間とカット経路に合う最小限の座標補正"
+            },
+            {
+              "seconds": 10.3240537109375,
+              "hand": 1,
+              "before": [
+                -1.9307022094726562,
+                -0.2142857015132904
+              ],
+              "after": [
+                -1.6646,
+                -0.1114
+              ],
+              "reason": "手編集の時刻を保持し、前後の移動時間とカット経路に合う最小限の座標補正"
+            },
+            {
+              "seconds": 27.780591796875,
+              "hand": 1,
+              "before": [
+                -0.7259959578514099,
+                0.30000001192092896
+              ],
+              "after": [
+                -0.9608,
+                0.12
+              ],
+              "reason": "手編集の時刻を保持し、前後の移動時間とカット経路に合う最小限の座標補正"
+            },
+            {
+              "seconds": 89.0572265625,
+              "hand": 1,
+              "before": [
+                -1.803650140762329,
+                -0.6000000238418579
+              ],
+              "after": [
+                -1.3222,
+                -0.6
+              ],
+              "reason": "手編集の時刻を保持し、前後の移動時間とカット経路に合う最小限の座標補正"
+            }
+          ],
+          "strongThreshold": 1.4823
+        },
+        "editedSeconds": [
+          [
+            15.1,
+            25.27
+          ],
+          [
+            47.2,
+            50.25
+          ]
+        ],
+        "charts": {
+          "hard": {
+            "before": {
+              "score": 9.465,
+              "rounded": 9,
+              "averageNps": 3.108,
+              "peakNps": 6.5,
+              "flicks": 4,
+              "pairs": 34,
+              "longs": 4
+            },
+            "after": {
+              "score": 9.255,
+              "rounded": 9,
+              "averageNps": 2.88,
+              "peakNps": 6.5,
+              "flicks": 4,
+              "pairs": 34,
+              "longs": 4
+            },
+            "notesBefore": 310,
+            "notesAfter": 287,
+            "melodyHits": 24,
+            "retainedHits": [
+              [
+                5072.6318359375,
+                "red"
+              ],
+              [
+                5072.6318359375,
+                "blue"
+              ],
+              [
+                5862.10546875,
+                "red"
+              ],
+              [
+                6967.3681640625,
+                "blue"
+              ],
+              [
+                7441.052734375,
+                "red"
+              ],
+              [
+                7598.947265625,
+                "red"
+              ],
+              [
+                7598.947265625,
+                "blue"
+              ],
+              [
+                7756.84228515625,
+                "red"
+              ],
+              [
+                8072.6318359375,
+                "blue"
+              ],
+              [
+                8388.4208984375,
+                "red"
+              ],
+              [
+                8838.9990234375,
+                "red"
+              ],
+              [
+                9168.267578125,
+                "blue"
+              ],
+              [
+                9967.3681640625,
+                "red"
+              ],
+              [
+                9985.158203125,
+                "blue"
+              ],
+              [
+                10148.8291015625,
+                "blue"
+              ],
+              [
+                10283.158203125,
+                "red"
+              ],
+              [
+                10324.0537109375,
+                "blue"
+              ],
+              [
+                10598.947265625,
+                "blue"
+              ],
+              [
+                10914.736328125,
+                "blue"
+              ],
+              [
+                11230.5263671875,
+                "red"
+              ],
+              [
+                11546.3154296875,
+                "red"
+              ],
+              [
+                12493.6845703125,
+                "red"
+              ],
+              [
+                12651.5791015625,
+                "red"
+              ],
+              [
+                12651.5791015625,
+                "blue"
+              ],
+              [
+                12809.4736328125,
+                "red"
+              ],
+              [
+                13125.263671875,
+                "blue"
+              ],
+              [
+                13441.052734375,
+                "blue"
+              ],
+              [
+                13756.841796875,
+                "red"
+              ],
+              [
+                13914.736328125,
+                "red"
+              ],
+              [
+                13914.736328125,
+                "blue"
+              ],
+              [
+                14072.6318359375,
+                "red"
+              ],
+              [
+                14388.4208984375,
+                "red"
+              ],
+              [
+                14704.2109375,
+                "blue"
+              ],
+              [
+                15020.0,
+                "blue"
+              ],
+              [
+                15171.1279296875,
+                "blue"
+              ],
+              [
+                15822.21484375,
+                "blue"
+              ],
+              [
+                16757.169921875,
+                "red"
+              ],
+              [
+                17090.2890625,
+                "blue"
+              ],
+              [
+                17386.822265625,
+                "red"
+              ],
+              [
+                17716.69921875,
+                "blue"
+              ],
+              [
+                18340.119140625,
+                "red"
+              ],
+              [
+                19276.138671875,
+                "blue"
+              ],
+              [
+                19616.9609375,
+                "red"
+              ],
+              [
+                19913.49609375,
+                "blue"
+              ],
+              [
+                20231.208984375,
+                "blue"
+              ],
+              [
+                20388.421875,
+                "red"
+              ],
+              [
+                20866.43359375,
+                "blue"
+              ],
+              [
+                21651.578125,
+                "red"
+              ],
+              [
+                21813.095703125,
+                "blue"
+              ],
+              [
+                22151.994140625,
+                "blue"
+              ],
+              [
+                22444.67578125,
+                "red"
+              ],
+              [
+                22742.953125,
+                "blue"
+              ],
+              [
+                23357.154296875,
+                "red"
+              ],
+              [
+                24347.806640625,
+                "blue"
+              ],
+              [
+                24650.1171875,
+                "red"
+              ],
+              [
+                24809.474609375,
+                "red"
+              ],
+              [
+                24809.474609375,
+                "blue"
+              ],
+              [
+                24985.162109375,
+                "blue"
+              ],
+              [
+                25283.158203125,
+                "blue"
+              ],
+              [
+                25604.724609375,
+                "red"
+              ],
+              [
+                25920.513671875,
+                "blue"
+              ],
+              [
+                26546.31640625,
+                "red"
+              ],
+              [
+                26704.2109375,
+                "blue"
+              ],
+              [
+                27020.0,
+                "blue"
+              ],
+              [
+                27177.89453125,
+                "red"
+              ],
+              [
+                27335.7890625,
+                "red"
+              ],
+              [
+                27493.68359375,
+                "red"
+              ],
+              [
+                27493.68359375,
+                "blue"
+              ],
+              [
+                27651.578125,
+                "red"
+              ],
+              [
+                27780.591796875,
+                "blue"
+              ],
+              [
+                28914.736328125,
+                "blue"
+              ],
+              [
+                29230.525390625,
+                "red"
+              ],
+              [
+                29230.525390625,
+                "blue"
+              ],
+              [
+                29546.31640625,
+                "red"
+              ],
+              [
+                29862.10546875,
+                "red"
+              ],
+              [
+                30014.220703125,
+                "blue"
+              ],
+              [
+                31125.263671875,
+                "blue"
+              ],
+              [
+                31756.841796875,
+                "red"
+              ],
+              [
+                32072.630859375,
+                "red"
+              ],
+              [
+                32388.421875,
+                "blue"
+              ],
+              [
+                33020.0,
+                "blue"
+              ],
+              [
+                33335.7890625,
+                "red"
+              ],
+              [
+                33651.578125,
+                "red"
+              ],
+              [
+                33967.3671875,
+                "blue"
+              ],
+              [
+                34283.15625,
+                "blue"
+              ],
+              [
+                34598.94921875,
+                "red"
+              ],
+              [
+                34914.73828125,
+                "red"
+              ],
+              [
+                34914.73828125,
+                "blue"
+              ],
+              [
+                35230.52734375,
+                "red"
+              ],
+              [
+                35388.421875,
+                "blue"
+              ],
+              [
+                35862.10546875,
+                "blue"
+              ],
+              [
+                36020.0,
+                "red"
+              ],
+              [
+                36177.89453125,
+                "blue"
+              ],
+              [
+                36651.578125,
+                "blue"
+              ],
+              [
+                36809.47265625,
+                "red"
+              ],
+              [
+                37283.15625,
+                "blue"
+              ],
+              [
+                37441.05078125,
+                "red"
+              ],
+              [
+                37756.84375,
+                "blue"
+              ],
+              [
+                38072.6328125,
+                "blue"
+              ],
+              [
+                38704.2109375,
+                "red"
+              ],
+              [
+                39020.0,
+                "red"
+              ],
+              [
+                39335.7890625,
+                "red"
+              ],
+              [
+                39335.7890625,
+                "blue"
+              ],
+              [
+                39651.578125,
+                "blue"
+              ],
+              [
+                39967.3671875,
+                "blue"
+              ],
+              [
+                40283.15625,
+                "red"
+              ],
+              [
+                40598.94921875,
+                "red"
+              ],
+              [
+                41082.26171875,
+                "blue"
+              ],
+              [
+                41378.79296875,
+                "blue"
+              ],
+              [
+                41702.28125,
+                "blue"
+              ],
+              [
+                41704.20703125,
+                "red"
+              ],
+              [
+                42341.56640625,
+                "red"
+              ],
+              [
+                42636.171875,
+                "red"
+              ],
+              [
+                42978.921875,
+                "blue"
+              ],
+              [
+                43756.84375,
+                "blue"
+              ],
+              [
+                44072.6328125,
+                "red"
+              ],
+              [
+                44388.421875,
+                "red"
+              ],
+              [
+                44388.421875,
+                "blue"
+              ],
+              [
+                44704.2109375,
+                "red"
+              ],
+              [
+                45020.0,
+                "blue"
+              ],
+              [
+                45335.7890625,
+                "blue"
+              ],
+              [
+                47246.01953125,
+                "red"
+              ],
+              [
+                47823.68359375,
+                "blue"
+              ],
+              [
+                49767.609375,
+                "red"
+              ],
+              [
+                50072.6328125,
+                "red"
+              ],
+              [
+                50072.6328125,
+                "blue"
+              ],
+              [
+                50216.26171875,
+                "red"
+              ],
+              [
+                50388.421875,
+                "blue"
+              ],
+              [
+                50546.31640625,
+                "red"
+              ],
+              [
+                50862.10546875,
+                "blue"
+              ],
+              [
+                51177.89453125,
+                "red"
+              ],
+              [
+                51809.47265625,
+                "blue"
+              ],
+              [
+                52125.26171875,
+                "red"
+              ],
+              [
+                52441.05078125,
+                "red"
+              ],
+              [
+                52441.05078125,
+                "blue"
+              ],
+              [
+                53230.52734375,
+                "blue"
+              ],
+              [
+                54177.89453125,
+                "red"
+              ],
+              [
+                54493.68359375,
+                "red"
+              ],
+              [
+                55283.15625,
+                "red"
+              ],
+              [
+                55283.15625,
+                "blue"
+              ],
+              [
+                55598.94921875,
+                "red"
+              ],
+              [
+                56230.52734375,
+                "red"
+              ],
+              [
+                56704.2109375,
+                "blue"
+              ],
+              [
+                56862.10546875,
+                "red"
+              ],
+              [
+                56862.10546875,
+                "blue"
+              ],
+              [
+                57335.7890625,
+                "red"
+              ],
+              [
+                57493.68359375,
+                "blue"
+              ],
+              [
+                58283.15625,
+                "blue"
+              ],
+              [
+                58756.84375,
+                "red"
+              ],
+              [
+                58756.84375,
+                "blue"
+              ],
+              [
+                59230.52734375,
+                "red"
+              ],
+              [
+                59546.31640625,
+                "red"
+              ],
+              [
+                59862.10546875,
+                "blue"
+              ],
+              [
+                60967.3671875,
+                "red"
+              ],
+              [
+                60967.3671875,
+                "blue"
+              ],
+              [
+                61283.15625,
+                "red"
+              ],
+              [
+                61677.89453125,
+                "red"
+              ],
+              [
+                61891.6328125,
+                "blue"
+              ],
+              [
+                62388.421875,
+                "blue"
+              ],
+              [
+                62546.31640625,
+                "red"
+              ],
+              [
+                62625.26171875,
+                "blue"
+              ],
+              [
+                63020.0,
+                "red"
+              ],
+              [
+                63335.7890625,
+                "blue"
+              ],
+              [
+                63493.68359375,
+                "red"
+              ],
+              [
+                63809.47265625,
+                "red"
+              ],
+              [
+                63809.47265625,
+                "blue"
+              ],
+              [
+                63967.3671875,
+                "red"
+              ],
+              [
+                64441.05078125,
+                "blue"
+              ],
+              [
+                64756.84375,
+                "red"
+              ],
+              [
+                64914.73828125,
+                "blue"
+              ],
+              [
+                65072.6328125,
+                "red"
+              ],
+              [
+                65388.421875,
+                "red"
+              ],
+              [
+                65388.421875,
+                "blue"
+              ],
+              [
+                65704.2109375,
+                "blue"
+              ],
+              [
+                66020.0,
+                "red"
+              ],
+              [
+                66177.8984375,
+                "blue"
+              ],
+              [
+                66414.734375,
+                "red"
+              ],
+              [
+                66493.6875,
+                "blue"
+              ],
+              [
+                66651.578125,
+                "red"
+              ],
+              [
+                66651.578125,
+                "blue"
+              ],
+              [
+                66967.3671875,
+                "red"
+              ],
+              [
+                67283.15625,
+                "blue"
+              ],
+              [
+                67441.0546875,
+                "red"
+              ],
+              [
+                67677.8984375,
+                "blue"
+              ],
+              [
+                67756.84375,
+                "red"
+              ],
+              [
+                67914.734375,
+                "red"
+              ],
+              [
+                67914.734375,
+                "blue"
+              ],
+              [
+                68230.5234375,
+                "blue"
+              ],
+              [
+                68388.421875,
+                "red"
+              ],
+              [
+                68546.3125,
+                "blue"
+              ],
+              [
+                68704.2109375,
+                "red"
+              ],
+              [
+                68941.0546875,
+                "blue"
+              ],
+              [
+                69020.0,
+                "red"
+              ],
+              [
+                69177.8984375,
+                "blue"
+              ],
+              [
+                69493.6875,
+                "red"
+              ],
+              [
+                69493.6875,
+                "blue"
+              ],
+              [
+                69809.4765625,
+                "red"
+              ],
+              [
+                69967.3671875,
+                "blue"
+              ],
+              [
+                70204.2109375,
+                "red"
+              ],
+              [
+                70283.15625,
+                "blue"
+              ],
+              [
+                70441.0546875,
+                "red"
+              ],
+              [
+                70598.9453125,
+                "blue"
+              ],
+              [
+                71072.6328125,
+                "red"
+              ],
+              [
+                71230.5234375,
+                "red"
+              ],
+              [
+                71230.5234375,
+                "blue"
+              ],
+              [
+                71546.3125,
+                "red"
+              ],
+              [
+                71704.2109375,
+                "blue"
+              ],
+              [
+                72020.0,
+                "red"
+              ],
+              [
+                72335.7890625,
+                "blue"
+              ],
+              [
+                72493.6875,
+                "red"
+              ],
+              [
+                72493.6875,
+                "blue"
+              ],
+              [
+                72809.4765625,
+                "red"
+              ],
+              [
+                72967.3671875,
+                "blue"
+              ],
+              [
+                73125.265625,
+                "red"
+              ],
+              [
+                73283.15625,
+                "blue"
+              ],
+              [
+                73598.9453125,
+                "red"
+              ],
+              [
+                73756.84375,
+                "red"
+              ],
+              [
+                73756.84375,
+                "blue"
+              ],
+              [
+                73993.6875,
+                "red"
+              ],
+              [
+                74072.6328125,
+                "blue"
+              ],
+              [
+                74230.5234375,
+                "red"
+              ],
+              [
+                74546.3125,
+                "blue"
+              ],
+              [
+                74862.1015625,
+                "red"
+              ],
+              [
+                75020.0,
+                "blue"
+              ],
+              [
+                75177.8984375,
+                "red"
+              ],
+              [
+                75177.8984375,
+                "blue"
+              ],
+              [
+                75335.7890625,
+                "red"
+              ],
+              [
+                75651.578125,
+                "red"
+              ],
+              [
+                80704.2109375,
+                "red"
+              ],
+              [
+                85914.734375,
+                "blue"
+              ],
+              [
+                85922.4453125,
+                "red"
+              ],
+              [
+                86244.0078125,
+                "red"
+              ],
+              [
+                86546.3125,
+                "blue"
+              ],
+              [
+                87177.890625,
+                "blue"
+              ],
+              [
+                87181.7421875,
+                "red"
+              ],
+              [
+                87651.578125,
+                "blue"
+              ],
+              [
+                87817.1796875,
+                "red"
+              ],
+              [
+                88115.6328125,
+                "blue"
+              ],
+              [
+                88598.9453125,
+                "red"
+              ],
+              [
+                89057.2265625,
+                "blue"
+              ],
+              [
+                89230.5234375,
+                "blue"
+              ],
+              [
+                89399.96875,
+                "red"
+              ],
+              [
+                89684.953125,
+                "red"
+              ],
+              [
+                89709.9765625,
+                "blue"
+              ],
+              [
+                90177.8984375,
+                "red"
+              ],
+              [
+                90493.6875,
+                "blue"
+              ],
+              [
+                90809.4765625,
+                "blue"
+              ],
+              [
+                90961.6015625,
+                "red"
+              ],
+              [
+                91269.6796875,
+                "red"
+              ],
+              [
+                91614.3515625,
+                "blue"
+              ],
+              [
+                92388.421875,
+                "blue"
+              ],
+              [
+                92704.2109375,
+                "red"
+              ],
+              [
+                93020.0,
+                "red"
+              ],
+              [
+                93020.0,
+                "blue"
+              ],
+              [
+                93335.7890625,
+                "red"
+              ],
+              [
+                93651.578125,
+                "blue"
+              ],
+              [
+                94283.15625,
+                "blue"
+              ],
+              [
+                94914.734375,
+                "red"
+              ],
+              [
+                94914.734375,
+                "blue"
+              ],
+              [
+                95230.5234375,
+                "blue"
+              ],
+              [
+                95546.3125,
+                "red"
+              ],
+              [
+                95862.1015625,
+                "red"
+              ],
+              [
+                97256.2109375,
+                "red"
+              ],
+              [
+                97575.84375,
+                "red"
+              ],
+              [
+                98072.6328125,
+                "blue"
+              ],
+              [
+                98388.421875,
+                "blue"
+              ],
+              [
+                98704.2109375,
+                "red"
+              ],
+              [
+                99651.578125,
+                "red"
+              ],
+              [
+                99967.3671875,
+                "red"
+              ],
+              [
+                99967.3671875,
+                "blue"
+              ],
+              [
+                100598.9453125,
+                "red"
+              ],
+              [
+                100598.9453125,
+                "blue"
+              ],
+              [
+                100914.734375,
+                "blue"
+              ],
+              [
+                101230.5234375,
+                "blue"
+              ],
+              [
+                101862.1015625,
+                "red"
+              ],
+              [
+                101862.1015625,
+                "blue"
+              ],
+              [
+                102493.6875,
+                "red"
+              ],
+              [
+                102809.4765625,
+                "red"
+              ],
+              [
+                103125.265625,
+                "blue"
+              ],
+              [
+                103441.0546875,
+                "blue"
+              ],
+              [
+                103756.84375,
+                "red"
+              ],
+              [
+                104704.2109375,
+                "red"
+              ],
+              [
+                105020.0,
+                "red"
+              ],
+              [
+                105020.0,
+                "blue"
+              ],
+              [
+                105335.7890625,
+                "blue"
+              ],
+              [
+                105782.515625,
+                "red"
+              ],
+              [
+                106106.0,
+                "red"
+              ]
+            ]
+          },
+          "normal": {
+            "before": {
+              "score": 5.885,
+              "rounded": 6,
+              "averageNps": 1.586,
+              "peakNps": 4.0,
+              "flicks": 3,
+              "pairs": 10,
+              "longs": 3
+            },
+            "after": {
+              "score": 5.849,
+              "rounded": 6,
+              "averageNps": 1.571,
+              "peakNps": 4.0,
+              "flicks": 3,
+              "pairs": 9,
+              "longs": 3
+            },
+            "notesBefore": 157,
+            "notesAfter": 154,
+            "melodyHits": 20,
+            "retainedHits": [
+              [
+                5072.6318359375,
+                "red"
+              ],
+              [
+                5072.6318359375,
+                "blue"
+              ],
+              [
+                6967.3681640625,
+                "blue"
+              ],
+              [
+                7756.84228515625,
+                "red"
+              ],
+              [
+                8072.6318359375,
+                "blue"
+              ],
+              [
+                8388.4208984375,
+                "red"
+              ],
+              [
+                9168.267578125,
+                "blue"
+              ],
+              [
+                10148.8291015625,
+                "blue"
+              ],
+              [
+                10283.158203125,
+                "red"
+              ],
+              [
+                11230.5263671875,
+                "red"
+              ],
+              [
+                12493.6845703125,
+                "red"
+              ],
+              [
+                13441.052734375,
+                "blue"
+              ],
+              [
+                13914.736328125,
+                "red"
+              ],
+              [
+                13914.736328125,
+                "blue"
+              ],
+              [
+                14388.4208984375,
+                "red"
+              ],
+              [
+                14704.2109375,
+                "blue"
+              ],
+              [
+                15171.1279296875,
+                "blue"
+              ],
+              [
+                15822.21484375,
+                "blue"
+              ],
+              [
+                16757.169921875,
+                "red"
+              ],
+              [
+                17090.2890625,
+                "blue"
+              ],
+              [
+                17386.822265625,
+                "red"
+              ],
+              [
+                17716.69921875,
+                "blue"
+              ],
+              [
+                18340.119140625,
+                "red"
+              ],
+              [
+                19276.138671875,
+                "blue"
+              ],
+              [
+                19616.9609375,
+                "red"
+              ],
+              [
+                20231.208984375,
+                "blue"
+              ],
+              [
+                20388.421875,
+                "red"
+              ],
+              [
+                20866.43359375,
+                "blue"
+              ],
+              [
+                21651.578125,
+                "red"
+              ],
+              [
+                21813.095703125,
+                "blue"
+              ],
+              [
+                22151.994140625,
+                "blue"
+              ],
+              [
+                22444.67578125,
+                "red"
+              ],
+              [
+                22742.953125,
+                "blue"
+              ],
+              [
+                23357.154296875,
+                "red"
+              ],
+              [
+                24347.806640625,
+                "blue"
+              ],
+              [
+                24650.1171875,
+                "red"
+              ],
+              [
+                25283.158203125,
+                "blue"
+              ],
+              [
+                27177.89453125,
+                "red"
+              ],
+              [
+                27651.578125,
+                "red"
+              ],
+              [
+                27780.591796875,
+                "blue"
+              ],
+              [
+                28914.736328125,
+                "blue"
+              ],
+              [
+                29862.10546875,
+                "red"
+              ],
+              [
+                31125.263671875,
+                "blue"
+              ],
+              [
+                31756.841796875,
+                "red"
+              ],
+              [
+                32388.421875,
+                "blue"
+              ],
+              [
+                33651.578125,
+                "red"
+              ],
+              [
+                34283.15625,
+                "blue"
+              ],
+              [
+                34598.94921875,
+                "red"
+              ],
+              [
+                34914.73828125,
+                "blue"
+              ],
+              [
+                35230.52734375,
+                "red"
+              ],
+              [
+                35388.421875,
+                "blue"
+              ],
+              [
+                36020.0,
+                "red"
+              ],
+              [
+                36177.89453125,
+                "blue"
+              ],
+              [
+                36651.578125,
+                "blue"
+              ],
+              [
+                36809.47265625,
+                "red"
+              ],
+              [
+                37283.15625,
+                "blue"
+              ],
+              [
+                38704.2109375,
+                "red"
+              ],
+              [
+                39651.578125,
+                "blue"
+              ],
+              [
+                40598.94921875,
+                "red"
+              ],
+              [
+                41378.79296875,
+                "blue"
+              ],
+              [
+                43756.84375,
+                "blue"
+              ],
+              [
+                44388.421875,
+                "blue"
+              ],
+              [
+                44704.2109375,
+                "red"
+              ],
+              [
+                45335.7890625,
+                "blue"
+              ],
+              [
+                47246.01953125,
+                "red"
+              ],
+              [
+                47823.68359375,
+                "blue"
+              ],
+              [
+                50072.6328125,
+                "red"
+              ],
+              [
+                50072.6328125,
+                "blue"
+              ],
+              [
+                50546.31640625,
+                "red"
+              ],
+              [
+                50862.10546875,
+                "blue"
+              ],
+              [
+                51177.89453125,
+                "red"
+              ],
+              [
+                51809.47265625,
+                "blue"
+              ],
+              [
+                52125.26171875,
+                "red"
+              ],
+              [
+                52441.05078125,
+                "blue"
+              ],
+              [
+                53230.52734375,
+                "blue"
+              ],
+              [
+                54177.89453125,
+                "red"
+              ],
+              [
+                55283.15625,
+                "red"
+              ],
+              [
+                56230.52734375,
+                "red"
+              ],
+              [
+                56704.2109375,
+                "blue"
+              ],
+              [
+                56862.10546875,
+                "red"
+              ],
+              [
+                57493.68359375,
+                "blue"
+              ],
+              [
+                58756.84375,
+                "red"
+              ],
+              [
+                58756.84375,
+                "blue"
+              ],
+              [
+                59230.52734375,
+                "red"
+              ],
+              [
+                59862.10546875,
+                "blue"
+              ],
+              [
+                60967.3671875,
+                "blue"
+              ],
+              [
+                61283.15625,
+                "red"
+              ],
+              [
+                62388.421875,
+                "blue"
+              ],
+              [
+                62546.31640625,
+                "red"
+              ],
+              [
+                63020.0,
+                "red"
+              ],
+              [
+                63335.7890625,
+                "blue"
+              ],
+              [
+                63493.68359375,
+                "red"
+              ],
+              [
+                63809.47265625,
+                "blue"
+              ],
+              [
+                64441.05078125,
+                "blue"
+              ],
+              [
+                64756.84375,
+                "red"
+              ],
+              [
+                64914.73828125,
+                "blue"
+              ],
+              [
+                65388.421875,
+                "red"
+              ],
+              [
+                65704.2109375,
+                "blue"
+              ],
+              [
+                66020.0,
+                "red"
+              ],
+              [
+                66177.8984375,
+                "blue"
+              ],
+              [
+                66651.578125,
+                "red"
+              ],
+              [
+                66651.578125,
+                "blue"
+              ],
+              [
+                67441.0546875,
+                "red"
+              ],
+              [
+                67677.8984375,
+                "blue"
+              ],
+              [
+                67914.734375,
+                "red"
+              ],
+              [
+                68230.5234375,
+                "blue"
+              ],
+              [
+                68941.0546875,
+                "blue"
+              ],
+              [
+                69020.0,
+                "red"
+              ],
+              [
+                69493.6875,
+                "blue"
+              ],
+              [
+                69809.4765625,
+                "red"
+              ],
+              [
+                69967.3671875,
+                "blue"
+              ],
+              [
+                70441.0546875,
+                "red"
+              ],
+              [
+                70598.9453125,
+                "blue"
+              ],
+              [
+                71072.6328125,
+                "red"
+              ],
+              [
+                71230.5234375,
+                "blue"
+              ],
+              [
+                71546.3125,
+                "red"
+              ],
+              [
+                71704.2109375,
+                "blue"
+              ],
+              [
+                72020.0,
+                "red"
+              ],
+              [
+                72335.7890625,
+                "blue"
+              ],
+              [
+                72809.4765625,
+                "red"
+              ],
+              [
+                72967.3671875,
+                "blue"
+              ],
+              [
+                73598.9453125,
+                "red"
+              ],
+              [
+                73756.84375,
+                "blue"
+              ],
+              [
+                73993.6875,
+                "red"
+              ],
+              [
+                74546.3125,
+                "blue"
+              ],
+              [
+                74862.1015625,
+                "red"
+              ],
+              [
+                75020.0,
+                "blue"
+              ],
+              [
+                75651.578125,
+                "red"
+              ],
+              [
+                85914.734375,
+                "blue"
+              ],
+              [
+                86546.3125,
+                "blue"
+              ],
+              [
+                87651.578125,
+                "blue"
+              ],
+              [
+                87817.1796875,
+                "red"
+              ],
+              [
+                89057.2265625,
+                "blue"
+              ],
+              [
+                90177.8984375,
+                "red"
+              ],
+              [
+                90809.4765625,
+                "blue"
+              ],
+              [
+                90961.6015625,
+                "red"
+              ],
+              [
+                91614.3515625,
+                "blue"
+              ],
+              [
+                92388.421875,
+                "blue"
+              ],
+              [
+                92704.2109375,
+                "red"
+              ],
+              [
+                94283.15625,
+                "blue"
+              ],
+              [
+                94914.734375,
+                "red"
+              ],
+              [
+                95230.5234375,
+                "blue"
+              ],
+              [
+                95546.3125,
+                "red"
+              ],
+              [
+                98072.6328125,
+                "blue"
+              ],
+              [
+                99967.3671875,
+                "red"
+              ],
+              [
+                99967.3671875,
+                "blue"
+              ],
+              [
+                100598.9453125,
+                "red"
+              ],
+              [
+                100598.9453125,
+                "blue"
+              ],
+              [
+                101862.1015625,
+                "red"
+              ],
+              [
+                101862.1015625,
+                "blue"
+              ],
+              [
+                102809.4765625,
+                "red"
+              ],
+              [
+                103125.265625,
+                "blue"
+              ],
+              [
+                105020.0,
+                "red"
+              ],
+              [
+                105020.0,
+                "blue"
+              ]
+            ]
+          },
+          "easy": {
+            "before": {
+              "score": 4.431,
+              "rounded": 4,
+              "averageNps": 0.922,
+              "peakNps": 3.0,
+              "flicks": 0,
+              "pairs": 6,
+              "longs": 3
+            },
+            "after": {
+              "score": 4.433,
+              "rounded": 4,
+              "averageNps": 0.92,
+              "peakNps": 3.0,
+              "flicks": 0,
+              "pairs": 6,
+              "longs": 3
+            },
+            "notesBefore": 90,
+            "notesAfter": 89,
+            "melodyHits": 13,
+            "retainedHits": [
+              [
+                5072.6318359375,
+                "red"
+              ],
+              [
+                5072.6318359375,
+                "blue"
+              ],
+              [
+                8388.4208984375,
+                "red"
+              ],
+              [
+                10283.158203125,
+                "red"
+              ],
+              [
+                13441.052734375,
+                "blue"
+              ],
+              [
+                14388.4208984375,
+                "red"
+              ],
+              [
+                15171.1279296875,
+                "blue"
+              ],
+              [
+                17716.69921875,
+                "blue"
+              ],
+              [
+                18340.119140625,
+                "red"
+              ],
+              [
+                19276.138671875,
+                "blue"
+              ],
+              [
+                19616.9609375,
+                "red"
+              ],
+              [
+                20231.208984375,
+                "blue"
+              ],
+              [
+                20866.43359375,
+                "blue"
+              ],
+              [
+                21651.578125,
+                "red"
+              ],
+              [
+                22151.994140625,
+                "blue"
+              ],
+              [
+                22742.953125,
+                "blue"
+              ],
+              [
+                23357.154296875,
+                "red"
+              ],
+              [
+                24347.806640625,
+                "blue"
+              ],
+              [
+                24650.1171875,
+                "red"
+              ],
+              [
+                25283.158203125,
+                "blue"
+              ],
+              [
+                27177.89453125,
+                "red"
+              ],
+              [
+                28914.736328125,
+                "blue"
+              ],
+              [
+                29862.10546875,
+                "red"
+              ],
+              [
+                31756.841796875,
+                "red"
+              ],
+              [
+                32388.421875,
+                "blue"
+              ],
+              [
+                33651.578125,
+                "red"
+              ],
+              [
+                34283.15625,
+                "blue"
+              ],
+              [
+                35388.421875,
+                "blue"
+              ],
+              [
+                36020.0,
+                "red"
+              ],
+              [
+                36809.47265625,
+                "red"
+              ],
+              [
+                37283.15625,
+                "blue"
+              ],
+              [
+                38704.2109375,
+                "red"
+              ],
+              [
+                40598.94921875,
+                "red"
+              ],
+              [
+                41378.79296875,
+                "blue"
+              ],
+              [
+                44704.2109375,
+                "red"
+              ],
+              [
+                45335.7890625,
+                "blue"
+              ],
+              [
+                47823.68359375,
+                "blue"
+              ],
+              [
+                50072.6328125,
+                "red"
+              ],
+              [
+                50072.6328125,
+                "blue"
+              ],
+              [
+                51177.89453125,
+                "red"
+              ],
+              [
+                51809.47265625,
+                "blue"
+              ],
+              [
+                55283.15625,
+                "red"
+              ],
+              [
+                56230.52734375,
+                "red"
+              ],
+              [
+                56704.2109375,
+                "blue"
+              ],
+              [
+                56862.10546875,
+                "red"
+              ],
+              [
+                57493.68359375,
+                "blue"
+              ],
+              [
+                58756.84375,
+                "red"
+              ],
+              [
+                59862.10546875,
+                "blue"
+              ],
+              [
+                62546.31640625,
+                "red"
+              ],
+              [
+                63335.7890625,
+                "blue"
+              ],
+              [
+                63493.68359375,
+                "red"
+              ],
+              [
+                64441.05078125,
+                "blue"
+              ],
+              [
+                64756.84375,
+                "red"
+              ],
+              [
+                65704.2109375,
+                "blue"
+              ],
+              [
+                66020.0,
+                "red"
+              ],
+              [
+                67441.0546875,
+                "red"
+              ],
+              [
+                67677.8984375,
+                "blue"
+              ],
+              [
+                68230.5234375,
+                "blue"
+              ],
+              [
+                68941.0546875,
+                "blue"
+              ],
+              [
+                69020.0,
+                "red"
+              ],
+              [
+                69493.6875,
+                "blue"
+              ],
+              [
+                70441.0546875,
+                "red"
+              ],
+              [
+                70598.9453125,
+                "blue"
+              ],
+              [
+                71230.5234375,
+                "blue"
+              ],
+              [
+                71546.3125,
+                "red"
+              ],
+              [
+                72335.7890625,
+                "blue"
+              ],
+              [
+                72809.4765625,
+                "red"
+              ],
+              [
+                72967.3671875,
+                "blue"
+              ],
+              [
+                73756.84375,
+                "blue"
+              ],
+              [
+                73993.6875,
+                "red"
+              ],
+              [
+                74546.3125,
+                "blue"
+              ],
+              [
+                75651.578125,
+                "red"
+              ],
+              [
+                85914.734375,
+                "blue"
+              ],
+              [
+                87817.1796875,
+                "red"
+              ],
+              [
+                90809.4765625,
+                "blue"
+              ],
+              [
+                92388.421875,
+                "blue"
+              ],
+              [
+                92704.2109375,
+                "red"
+              ],
+              [
+                95230.5234375,
+                "blue"
+              ],
+              [
+                95546.3125,
+                "red"
+              ],
+              [
+                98072.6328125,
+                "blue"
+              ],
+              [
+                99967.3671875,
+                "red"
+              ],
+              [
+                99967.3671875,
+                "blue"
+              ],
+              [
+                100598.9453125,
+                "red"
+              ],
+              [
+                100598.9453125,
+                "blue"
+              ],
+              [
+                101862.1015625,
+                "red"
+              ],
+              [
+                101862.1015625,
+                "blue"
+              ],
+              [
+                103125.265625,
+                "blue"
+              ],
+              [
+                105020.0,
+                "red"
+              ],
+              [
+                105020.0,
+                "blue"
+              ]
+            ]
+          }
+        }
+      },
+      "logic": {
+        "changes": {
+          "markers": 0,
+          "requests": [
+            {
+              "time": 70389.1,
+              "beat": 175.9722,
+              "pitch": 60,
+              "source": "original harmonic image + estimated vocals",
+              "analysisEvent": {
+                "seconds": 70.3891,
+                "strength": 0.802,
+                "midi": 59.89,
+                "previousMidi": 59.94,
+                "pitchConfidence": 0.119,
+                "rms": 0.74
+              },
+              "reason": "原音の前景倍音列の段階的な入り／独立した再発音。低音成分と区別し、滑らかな音程の揺れは新打点にしない。",
+              "action": "added",
+              "applied": {
+                "time": 70389.1,
+                "beat": 175.9722,
+                "x": -1.5,
+                "y": -0.45,
+                "color": "blue",
+                "direction": "none",
+                "type": "tap",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 70633.6,
+              "beat": 176.4612,
+              "pitch": 63,
+              "source": "original harmonic image + estimated vocals",
+              "analysisEvent": {
+                "seconds": 70.6336,
+                "strength": 1.003,
+                "midi": 62.44,
+                "previousMidi": 59.89,
+                "pitchConfidence": 0.032,
+                "rms": 0.164
+              },
+              "reason": "原音の前景倍音列の段階的な入り／独立した再発音。低音成分と区別し、滑らかな音程の揺れは新打点にしない。",
+              "action": "added",
+              "applied": {
+                "time": 70633.6,
+                "beat": 176.4612,
+                "x": 1.5,
+                "y": -0.285,
+                "color": "red",
+                "direction": "none",
+                "type": "tap",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 70883.0,
+              "beat": 176.96,
+              "pitch": 65,
+              "source": "original harmonic image + estimated vocals",
+              "analysisEvent": {
+                "seconds": 70.883,
+                "strength": 2.225,
+                "midi": 64.99,
+                "previousMidi": 62.84,
+                "pitchConfidence": 0.01,
+                "rms": 0.077
+              },
+              "reason": "原音の前景倍音列の段階的な入り／独立した再発音。低音成分と区別し、滑らかな音程の揺れは新打点にしない。",
+              "action": "matched",
+              "applied": {
+                "beat": 177.0,
+                "time": 70903.0,
+                "x": 1.9,
+                "y": -0.6,
+                "type": "tap",
+                "color": "red",
+                "direction": "none",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 71371.9,
+              "beat": 177.9378,
+              "pitch": 67,
+              "source": "original harmonic image + estimated vocals",
+              "analysisEvent": {
+                "seconds": 71.3719,
+                "strength": 0.736,
+                "midi": 64.99,
+                "previousMidi": 65.09,
+                "pitchConfidence": 0.01,
+                "rms": 0.253
+              },
+              "reason": "原音の前景倍音列の段階的な入り／独立した再発音。低音成分と区別し、滑らかな音程の揺れは新打点にしない。",
+              "action": "matched",
+              "applied": {
+                "beat": 178.0,
+                "time": 71403.0,
+                "x": 1.9,
+                "y": -0.6,
+                "type": "tap",
+                "color": "red",
+                "direction": "none",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 71925.6,
+              "beat": 179.0452,
+              "pitch": 63,
+              "source": "original harmonic image + estimated vocals",
+              "analysisEvent": {
+                "seconds": 71.9256,
+                "strength": 0.817,
+                "midi": 62.99,
+                "previousMidi": 64.99,
+                "pitchConfidence": 0.216,
+                "rms": 0.283
+              },
+              "reason": "原音の前景倍音列の段階的な入り／独立した再発音。低音成分と区別し、滑らかな音程の揺れは新打点にしない。",
+              "action": "matched",
+              "applied": {
+                "beat": 179.0,
+                "time": 71903.0,
+                "x": 1.9,
+                "y": 0.3,
+                "type": "tap",
+                "color": "red",
+                "direction": "none",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 72389.6,
+              "beat": 179.9732,
+              "pitch": 67,
+              "source": "original harmonic image + estimated vocals",
+              "analysisEvent": {
+                "seconds": 72.3896,
+                "strength": 1.515,
+                "midi": 66.79,
+                "previousMidi": 62.89,
+                "pitchConfidence": 0.016,
+                "rms": 0.217
+              },
+              "reason": "原音の前景倍音列の段階的な入り／独立した再発音。低音成分と区別し、滑らかな音程の揺れは新打点にしない。",
+              "action": "matched",
+              "applied": {
+                "beat": 180.0,
+                "time": 72403.0,
+                "x": -1.9,
+                "y": 0.3,
+                "type": "tap",
+                "color": "blue",
+                "direction": "none",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 72908.4,
+              "beat": 181.0108,
+              "pitch": 65,
+              "source": "original harmonic image + estimated vocals",
+              "analysisEvent": {
+                "seconds": 72.9084,
+                "strength": 0.927,
+                "midi": 64.94,
+                "previousMidi": 62.99,
+                "pitchConfidence": 0.116,
+                "rms": 0.179
+              },
+              "reason": "原音の前景倍音列の段階的な入り／独立した再発音。低音成分と区別し、滑らかな音程の揺れは新打点にしない。",
+              "action": "matched",
+              "applied": {
+                "beat": 181.0,
+                "time": 72903.0,
+                "x": -0.6,
+                "y": 0.3,
+                "type": "tap",
+                "color": "blue",
+                "direction": "none",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 73432.2,
+              "beat": 182.0584,
+              "pitch": 65,
+              "source": "original harmonic image + estimated vocals",
+              "analysisEvent": {
+                "seconds": 73.4322,
+                "strength": 0.871,
+                "midi": 64.89,
+                "previousMidi": 64.89,
+                "pitchConfidence": 0.032,
+                "rms": 0.264
+              },
+              "reason": "原音の前景倍音列の段階的な入り／独立した再発音。低音成分と区別し、滑らかな音程の揺れは新打点にしない。",
+              "action": "matched",
+              "applied": {
+                "beat": 182.0,
+                "time": 73403.0,
+                "x": -0.6,
+                "y": 0.3,
+                "type": "tap",
+                "color": "blue",
+                "direction": "none",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 73636.7,
+              "beat": 182.4674,
+              "pitch": 70,
+              "source": "original harmonic image + estimated vocals",
+              "analysisEvent": {
+                "seconds": 73.6367,
+                "strength": 1.65,
+                "midi": 69.89,
+                "previousMidi": 70.09,
+                "pitchConfidence": 0.146,
+                "rms": 0.215
+              },
+              "reason": "原音の前景倍音列の段階的な入り／独立した再発音。低音成分と区別し、滑らかな音程の揺れは新打点にしない。",
+              "action": "added",
+              "applied": {
+                "time": 73636.7,
+                "beat": 182.4674,
+                "x": 1.05,
+                "y": 0.1,
+                "color": "red",
+                "direction": "none",
+                "type": "tap",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 73851.2,
+              "beat": 182.8964,
+              "pitch": 67,
+              "source": "original harmonic image + estimated vocals",
+              "analysisEvent": {
+                "seconds": 73.8512,
+                "strength": 0.956,
+                "midi": 68.19,
+                "previousMidi": 70.09,
+                "pitchConfidence": 0.021,
+                "rms": 0.36
+              },
+              "reason": "原音の前景倍音列の段階的な入り／独立した再発音。低音成分と区別し、滑らかな音程の揺れは新打点にしない。",
+              "action": "matched",
+              "applied": {
+                "beat": 183.0,
+                "time": 73903.0,
+                "x": -1.9,
+                "y": 0.3,
+                "type": "tap",
+                "color": "blue",
+                "direction": "none",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 74390.0,
+              "beat": 183.974,
+              "pitch": 67,
+              "source": "original harmonic image + estimated vocals",
+              "analysisEvent": {
+                "seconds": 74.39,
+                "strength": 0.972,
+                "midi": 66.89,
+                "previousMidi": 66.99,
+                "pitchConfidence": 0.18,
+                "rms": 0.199
+              },
+              "reason": "原音の前景倍音列の段階的な入り／独立した再発音。低音成分と区別し、滑らかな音程の揺れは新打点にしない。",
+              "action": "added",
+              "applied": {
+                "time": 74390.0,
+                "beat": 183.974,
+                "x": 1.5,
+                "y": -0.065,
+                "color": "red",
+                "direction": "none",
+                "type": "tap",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 74629.5,
+              "beat": 184.453,
+              "pitch": 70,
+              "source": "original harmonic image + estimated vocals",
+              "analysisEvent": {
+                "seconds": 74.6295,
+                "strength": 2.374,
+                "midi": 66.89,
+                "previousMidi": 67.09,
+                "pitchConfidence": 0.011,
+                "rms": 0.167
+              },
+              "reason": "原音の前景倍音列の段階的な入り／独立した再発音。低音成分と区別し、滑らかな音程の揺れは新打点にしない。",
+              "action": "matched",
+              "applied": {
+                "beat": 184.5,
+                "time": 74653.0,
+                "x": -0.6,
+                "y": -0.6,
+                "type": "tap",
+                "color": "blue",
+                "direction": "none",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 74903.9,
+              "beat": 185.0018,
+              "pitch": 72,
+              "source": "original harmonic image + estimated vocals",
+              "analysisEvent": {
+                "seconds": 74.9039,
+                "strength": 0.868,
+                "midi": 71.89,
+                "previousMidi": 69.89,
+                "pitchConfidence": 0.111,
+                "rms": 0.172
+              },
+              "reason": "原音の前景倍音列の段階的な入り／独立した再発音。低音成分と区別し、滑らかな音程の揺れは新打点にしない。",
+              "action": "matched",
+              "applied": {
+                "beat": 185.0,
+                "time": 74903.0,
+                "x": 0.6,
+                "y": -0.6,
+                "type": "tap",
+                "color": "red",
+                "direction": "none",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 75352.8,
+              "beat": 185.8996,
+              "pitch": 72,
+              "source": "original harmonic image + estimated vocals",
+              "analysisEvent": {
+                "seconds": 75.3528,
+                "strength": 0.855,
+                "midi": 72.09,
+                "previousMidi": 72.09,
+                "pitchConfidence": 0.253,
+                "rms": 0.321
+              },
+              "reason": "原音の前景倍音列の段階的な入り／独立した再発音。低音成分と区別し、滑らかな音程の揺れは新打点にしない。",
+              "action": "added",
+              "applied": {
+                "time": 75352.8,
+                "beat": 185.8996,
+                "x": 1.5,
+                "y": 0.21,
+                "color": "red",
+                "direction": "none",
+                "type": "tap",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 75881.6,
+              "beat": 186.9572,
+              "pitch": 70,
+              "source": "original harmonic image + estimated vocals",
+              "analysisEvent": {
+                "seconds": 75.8816,
+                "strength": 0.77,
+                "midi": null,
+                "previousMidi": null,
+                "pitchConfidence": 0.015,
+                "rms": 0.759
+              },
+              "reason": "原音の前景倍音列の段階的な入り／独立した再発音。低音成分と区別し、滑らかな音程の揺れは新打点にしない。",
+              "action": "matched",
+              "applied": {
+                "beat": 187.0,
+                "time": 75903.0,
+                "x": -1.9,
+                "y": -0.6,
+                "type": "tap",
+                "color": "blue",
+                "direction": "none",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 76305.7,
+              "beat": 187.8054,
+              "pitch": 63,
+              "source": "original harmonic image + estimated vocals",
+              "analysisEvent": {
+                "seconds": 76.3057,
+                "strength": 0.856,
+                "midi": 69.84,
+                "previousMidi": 69.89,
+                "pitchConfidence": 0.031,
+                "rms": 0.299
+              },
+              "reason": "原音の前景倍音列の段階的な入り／独立した再発音。低音成分と区別し、滑らかな音程の揺れは新打点にしない。",
+              "action": "added",
+              "applied": {
+                "time": 76305.7,
+                "beat": 187.8054,
+                "x": 1.05,
+                "y": -0.285,
+                "color": "red",
+                "direction": "none",
+                "type": "tap",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 76610.0,
+              "beat": 188.414,
+              "pitch": 67,
+              "source": "original harmonic image + estimated vocals",
+              "analysisEvent": {
+                "seconds": 76.61,
+                "strength": 1.244,
+                "midi": null,
+                "previousMidi": 70.09,
+                "pitchConfidence": 0.011,
+                "rms": 0.29
+              },
+              "reason": "原音の前景倍音列の段階的な入り／独立した再発音。低音成分と区別し、滑らかな音程の揺れは新打点にしない。",
+              "action": "matched",
+              "applied": {
+                "beat": 188.5,
+                "time": 76653.0,
+                "x": -1.9,
+                "y": 0.3,
+                "type": "tap",
+                "color": "blue",
+                "direction": "none",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 76854.4,
+              "beat": 188.9028,
+              "pitch": 65,
+              "source": "original harmonic image + estimated vocals",
+              "analysisEvent": {
+                "seconds": 76.8544,
+                "strength": 0.702,
+                "midi": 70.09,
+                "previousMidi": null,
+                "pitchConfidence": 0.022,
+                "rms": 0.298
+              },
+              "reason": "原音の前景倍音列の段階的な入り／独立した再発音。低音成分と区別し、滑らかな音程の揺れは新打点にしない。",
+              "action": "matched",
+              "applied": {
+                "beat": 189.0,
+                "time": 76903.0,
+                "x": 0.6,
+                "y": -0.6,
+                "type": "long",
+                "color": "red",
+                "direction": "none",
+                "count": 2,
+                "lengthMs": 1090.0
+              }
+            },
+            {
+              "time": 77358.3,
+              "beat": 189.9106,
+              "pitch": 67,
+              "source": "original harmonic image + estimated vocals",
+              "analysisEvent": {
+                "seconds": 77.3583,
+                "strength": 1.185,
+                "midi": 66.99,
+                "previousMidi": 63.09,
+                "pitchConfidence": 0.013,
+                "rms": 0.225
+              },
+              "reason": "原音の前景倍音列の段階的な入り／独立した再発音。低音成分と区別し、滑らかな音程の揺れは新打点にしない。",
+              "action": "matched",
+              "applied": {
+                "beat": 190.0,
+                "time": 77403.0,
+                "x": -0.6,
+                "y": 0.3,
+                "type": "tap",
+                "color": "blue",
+                "direction": "none",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 77862.1,
+              "beat": 190.9182,
+              "pitch": 65,
+              "source": "original harmonic image + estimated vocals",
+              "analysisEvent": {
+                "seconds": 77.8621,
+                "strength": 0.876,
+                "midi": 65.74,
+                "previousMidi": 66.89,
+                "pitchConfidence": 0.012,
+                "rms": 0.172
+              },
+              "reason": "原音の前景倍音列の段階的な入り／独立した再発音。低音成分と区別し、滑らかな音程の揺れは新打点にしない。",
+              "action": "matched",
+              "applied": {
+                "beat": 191.0,
+                "time": 77903.0,
+                "x": -0.6,
+                "y": 0.3,
+                "type": "tap",
+                "color": "blue",
+                "direction": "none",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 86347.8,
+              "beat": 207.8896,
+              "pitch": 60,
+              "source": "original harmonic image + estimated vocals",
+              "analysisEvent": {
+                "seconds": 86.3478,
+                "strength": 0.765,
+                "midi": 62.99,
+                "previousMidi": 59.39,
+                "pitchConfidence": 0.01,
+                "rms": 0.915
+              },
+              "reason": "原音の前景倍音列の段階的な入り／独立した再発音。低音成分と区別し、滑らかな音程の揺れは新打点にしない。",
+              "action": "added",
+              "applied": {
+                "time": 86347.8,
+                "beat": 207.8896,
+                "x": 1.5,
+                "y": -0.45,
+                "color": "red",
+                "direction": "none",
+                "type": "tap",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 86602.3,
+              "beat": 208.3986,
+              "pitch": 63,
+              "source": "original harmonic image + estimated vocals",
+              "analysisEvent": {
+                "seconds": 86.6023,
+                "strength": 1.004,
+                "midi": 62.99,
+                "previousMidi": null,
+                "pitchConfidence": 0.016,
+                "rms": 0.272
+              },
+              "reason": "原音の前景倍音列の段階的な入り／独立した再発音。低音成分と区別し、滑らかな音程の揺れは新打点にしない。",
+              "action": "added",
+              "applied": {
+                "time": 86602.3,
+                "beat": 208.3986,
+                "x": -1.5,
+                "y": -0.285,
+                "color": "blue",
+                "direction": "none",
+                "type": "tap",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 86886.6,
+              "beat": 208.9672,
+              "pitch": 65,
+              "source": "original harmonic image + estimated vocals",
+              "analysisEvent": {
+                "seconds": 86.8866,
+                "strength": 1.842,
+                "midi": 62.79,
+                "previousMidi": 63.19,
+                "pitchConfidence": 0.01,
+                "rms": 0.158
+              },
+              "reason": "原音の前景倍音列の段階的な入り／独立した再発音。低音成分と区別し、滑らかな音程の揺れは新打点にしない。",
+              "action": "matched",
+              "applied": {
+                "beat": 209.0,
+                "time": 86903.0,
+                "x": -0.6,
+                "y": 0.3,
+                "type": "tap",
+                "color": "blue",
+                "direction": "none",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 87315.6,
+              "beat": 209.8252,
+              "pitch": 67,
+              "source": "original harmonic image + estimated vocals",
+              "analysisEvent": {
+                "seconds": 87.3156,
+                "strength": 0.692,
+                "midi": 64.99,
+                "previousMidi": 65.09,
+                "pitchConfidence": 0.01,
+                "rms": 0.321
+              },
+              "reason": "原音の前景倍音列の段階的な入り／独立した再発音。低音成分と区別し、滑らかな音程の揺れは新打点にしない。",
+              "action": "added",
+              "applied": {
+                "time": 87315.6,
+                "beat": 209.8252,
+                "x": -1.5,
+                "y": -0.065,
+                "color": "blue",
+                "direction": "none",
+                "type": "tap",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 87934.2,
+              "beat": 211.0624,
+              "pitch": 63,
+              "source": "original harmonic image + estimated vocals",
+              "analysisEvent": {
+                "seconds": 87.9342,
+                "strength": 0.829,
+                "midi": 62.99,
+                "previousMidi": 64.99,
+                "pitchConfidence": 0.199,
+                "rms": 0.299
+              },
+              "reason": "原音の前景倍音列の段階的な入り／独立した再発音。低音成分と区別し、滑らかな音程の揺れは新打点にしない。",
+              "action": "added",
+              "applied": {
+                "time": 87934.2,
+                "beat": 211.0624,
+                "x": 1.5,
+                "y": -0.285,
+                "color": "red",
+                "direction": "none",
+                "type": "tap",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 88388.2,
+              "beat": 211.9704,
+              "pitch": 67,
+              "source": "original harmonic image + estimated vocals",
+              "analysisEvent": {
+                "seconds": 88.3882,
+                "strength": 1.464,
+                "midi": 66.79,
+                "previousMidi": 62.89,
+                "pitchConfidence": 0.016,
+                "rms": 0.213
+              },
+              "reason": "原音の前景倍音列の段階的な入り／独立した再発音。低音成分と区別し、滑らかな音程の揺れは新打点にしない。",
+              "action": "matched",
+              "applied": {
+                "beat": 212.0,
+                "time": 88403.0,
+                "x": 0.6,
+                "y": -0.6,
+                "type": "tap",
+                "color": "red",
+                "direction": "none",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 88892.1,
+              "beat": 212.9782,
+              "pitch": 65,
+              "source": "original harmonic image + estimated vocals",
+              "analysisEvent": {
+                "seconds": 88.8921,
+                "strength": 0.933,
+                "midi": 64.89,
+                "previousMidi": 62.99,
+                "pitchConfidence": 0.079,
+                "rms": 0.141
+              },
+              "reason": "原音の前景倍音列の段階的な入り／独立した再発音。低音成分と区別し、滑らかな音程の揺れは新打点にしない。",
+              "action": "matched",
+              "applied": {
+                "beat": 213.0,
+                "time": 88903.0,
+                "x": 1.9,
+                "y": -0.6,
+                "type": "tap",
+                "color": "red",
+                "direction": "none",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 89435.8,
+              "beat": 214.0656,
+              "pitch": 65,
+              "source": "original harmonic image + estimated vocals",
+              "analysisEvent": {
+                "seconds": 89.4358,
+                "strength": 0.775,
+                "midi": 64.99,
+                "previousMidi": 64.89,
+                "pitchConfidence": 0.017,
+                "rms": 0.244
+              },
+              "reason": "原音の前景倍音列の段階的な入り／独立した再発音。低音成分と区別し、滑らかな音程の揺れは新打点にしない。",
+              "action": "added",
+              "applied": {
+                "time": 89435.8,
+                "beat": 214.0656,
+                "x": -1.05,
+                "y": -0.175,
+                "color": "blue",
+                "direction": "none",
+                "type": "tap",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 89635.4,
+              "beat": 214.4648,
+              "pitch": 70,
+              "source": "original harmonic image + estimated vocals",
+              "analysisEvent": {
+                "seconds": 89.6354,
+                "strength": 1.568,
+                "midi": 69.89,
+                "previousMidi": 70.09,
+                "pitchConfidence": 0.147,
+                "rms": 0.216
+              },
+              "reason": "原音の前景倍音列の段階的な入り／独立した再発音。低音成分と区別し、滑らかな音程の揺れは新打点にしない。",
+              "action": "matched",
+              "applied": {
+                "beat": 214.5,
+                "time": 89653.0,
+                "x": -1.9,
+                "y": -0.6,
+                "type": "tap",
+                "color": "blue",
+                "direction": "none",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 89849.9,
+              "beat": 214.8938,
+              "pitch": 67,
+              "source": "original harmonic image + estimated vocals",
+              "analysisEvent": {
+                "seconds": 89.8499,
+                "strength": 0.958,
+                "midi": 68.19,
+                "previousMidi": 70.09,
+                "pitchConfidence": 0.017,
+                "rms": 0.369
+              },
+              "reason": "原音の前景倍音列の段階的な入り／独立した再発音。低音成分と区別し、滑らかな音程の揺れは新打点にしない。",
+              "action": "matched",
+              "applied": {
+                "beat": 215.0,
+                "time": 89903.0,
+                "x": 1.9,
+                "y": 0.3,
+                "type": "tap",
+                "color": "red",
+                "direction": "none",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 90473.5,
+              "beat": 216.141,
+              "pitch": 67,
+              "source": "original harmonic image + estimated vocals",
+              "analysisEvent": {
+                "seconds": 90.4735,
+                "strength": 0.735,
+                "midi": 67.09,
+                "previousMidi": 67.04,
+                "pitchConfidence": 0.254,
+                "rms": 0.256
+              },
+              "reason": "原音の前景倍音列の段階的な入り／独立した再発音。低音成分と区別し、滑らかな音程の揺れは新打点にしない。",
+              "action": "added",
+              "applied": {
+                "time": 90473.5,
+                "beat": 216.141,
+                "x": 1.5,
+                "y": -0.065,
+                "color": "red",
+                "direction": "none",
+                "type": "tap",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 90633.1,
+              "beat": 216.4602,
+              "pitch": 70,
+              "source": "original harmonic image + estimated vocals",
+              "analysisEvent": {
+                "seconds": 90.6331,
+                "strength": 2.226,
+                "midi": 66.89,
+                "previousMidi": 67.09,
+                "pitchConfidence": 0.012,
+                "rms": 0.171
+              },
+              "reason": "原音の前景倍音列の段階的な入り／独立した再発音。低音成分と区別し、滑らかな音程の揺れは新打点にしない。",
+              "action": "matched",
+              "applied": {
+                "beat": 216.5,
+                "time": 90653.0,
+                "x": -0.6,
+                "y": 0.3,
+                "type": "tap",
+                "color": "blue",
+                "direction": "none",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 90862.6,
+              "beat": 216.9192,
+              "pitch": 72,
+              "source": "original harmonic image + estimated vocals",
+              "analysisEvent": {
+                "seconds": 90.8626,
+                "strength": 0.81,
+                "midi": 71.69,
+                "previousMidi": 69.89,
+                "pitchConfidence": 0.013,
+                "rms": 0.179
+              },
+              "reason": "原音の前景倍音列の段階的な入り／独立した再発音。低音成分と区別し、滑らかな音程の揺れは新打点にしない。",
+              "action": "matched",
+              "applied": {
+                "beat": 217.0,
+                "time": 90903.0,
+                "x": 0.6,
+                "y": 0.3,
+                "type": "tap",
+                "color": "red",
+                "direction": "none",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 91341.5,
+              "beat": 217.877,
+              "pitch": 72,
+              "source": "original harmonic image + estimated vocals",
+              "analysisEvent": {
+                "seconds": 91.3415,
+                "strength": 1.099,
+                "midi": 72.09,
+                "previousMidi": 72.09,
+                "pitchConfidence": 0.171,
+                "rms": 0.316
+              },
+              "reason": "原音の前景倍音列の段階的な入り／独立した再発音。低音成分と区別し、滑らかな音程の揺れは新打点にしない。",
+              "action": "added",
+              "applied": {
+                "time": 91341.5,
+                "beat": 217.877,
+                "x": -1.5,
+                "y": 0.21,
+                "color": "blue",
+                "direction": "none",
+                "type": "tap",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 91880.3,
+              "beat": 218.9546,
+              "pitch": 70,
+              "source": "original harmonic image + estimated vocals",
+              "analysisEvent": {
+                "seconds": 91.8803,
+                "strength": 0.739,
+                "midi": null,
+                "previousMidi": null,
+                "pitchConfidence": 0.014,
+                "rms": 0.757
+              },
+              "reason": "原音の前景倍音列の段階的な入り／独立した再発音。低音成分と区別し、滑らかな音程の揺れは新打点にしない。",
+              "action": "matched",
+              "applied": {
+                "beat": 219.0,
+                "time": 91903.0,
+                "x": 0.6,
+                "y": 0.3,
+                "type": "tap",
+                "color": "red",
+                "direction": "none",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 92374.1,
+              "beat": 219.9422,
+              "pitch": 63,
+              "source": "original harmonic image + estimated vocals",
+              "analysisEvent": {
+                "seconds": 92.3741,
+                "strength": 1.162,
+                "midi": null,
+                "previousMidi": null,
+                "pitchConfidence": 0.022,
+                "rms": 0.276
+              },
+              "reason": "原音の前景倍音列の段階的な入り／独立した再発音。低音成分と区別し、滑らかな音程の揺れは新打点にしない。",
+              "action": "matched",
+              "applied": {
+                "beat": 220.0,
+                "time": 92403.0,
+                "x": 1.9,
+                "y": 0.3,
+                "type": "tap",
+                "color": "red",
+                "direction": "none",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 92608.6,
+              "beat": 220.4112,
+              "pitch": 67,
+              "source": "original harmonic image + estimated vocals",
+              "analysisEvent": {
+                "seconds": 92.6086,
+                "strength": 1.308,
+                "midi": null,
+                "previousMidi": null,
+                "pitchConfidence": 0.01,
+                "rms": 0.271
+              },
+              "reason": "原音の前景倍音列の段階的な入り／独立した再発音。低音成分と区別し、滑らかな音程の揺れは新打点にしない。",
+              "action": "matched",
+              "applied": {
+                "beat": 220.5,
+                "time": 92653.0,
+                "x": -0.6,
+                "y": 0.3,
+                "type": "tap",
+                "color": "blue",
+                "direction": "none",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 92798.2,
+              "beat": 220.7904,
+              "pitch": 65,
+              "source": "original harmonic image + estimated vocals",
+              "analysisEvent": {
+                "seconds": 92.7982,
+                "strength": 0.7,
+                "midi": 70.19,
+                "previousMidi": null,
+                "pitchConfidence": 0.02,
+                "rms": 0.341
+              },
+              "reason": "原音の前景倍音列の段階的な入り／独立した再発音。低音成分と区別し、滑らかな音程の揺れは新打点にしない。",
+              "action": "added",
+              "applied": {
+                "time": 92798.2,
+                "beat": 220.7904,
+                "x": -0.85,
+                "y": -0.175,
+                "color": "blue",
+                "direction": "none",
+                "type": "tap",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 93401.8,
+              "beat": 221.9976,
+              "pitch": 67,
+              "source": "original harmonic image + estimated vocals",
+              "analysisEvent": {
+                "seconds": 93.4018,
+                "strength": 0.87,
+                "midi": 66.99,
+                "previousMidi": 62.84,
+                "pitchConfidence": 0.031,
+                "rms": 0.278
+              },
+              "reason": "原音の前景倍音列の段階的な入り／独立した再発音。低音成分と区別し、滑らかな音程の揺れは新打点にしない。",
+              "action": "matched",
+              "applied": {
+                "beat": 222.0,
+                "time": 93403.0,
+                "x": -1.9,
+                "y": 0.3,
+                "type": "tap",
+                "color": "blue",
+                "direction": "none",
+                "count": 1,
+                "lengthMs": 0
+              }
+            },
+            {
+              "time": 93860.8,
+              "beat": 222.9156,
+              "pitch": 65,
+              "source": "original harmonic image + estimated vocals",
+              "analysisEvent": {
+                "seconds": 93.8608,
+                "strength": 1.017,
+                "midi": 67.09,
+                "previousMidi": 66.99,
+                "pitchConfidence": 0.012,
+                "rms": 0.206
+              },
+              "reason": "原音の前景倍音列の段階的な入り／独立した再発音。低音成分と区別し、滑らかな音程の揺れは新打点にしない。",
+              "action": "matched",
+              "applied": {
+                "beat": 223.0,
+                "time": 93903.0,
+                "x": -0.6,
+                "y": -0.6,
+                "type": "tap",
+                "color": "blue",
+                "direction": "none",
+                "count": 1,
+                "lengthMs": 0
+              }
+            }
+          ],
+          "removed": [
+            {
+              "note": {
+                "beat": 178.5,
+                "time": 71653.0,
+                "x": -1.9,
+                "y": -0.6,
+                "type": "tap",
+                "color": "blue",
+                "direction": "none",
+                "count": 1,
+                "lengthMs": 0
+              },
+              "reason": "主旋律の音価を見せるため、この応答区間の伴奏の接続打点を整理。"
+            },
+            {
+              "note": {
+                "beat": 186.5,
+                "time": 75653.0,
+                "x": 1.9,
+                "y": -0.6,
+                "type": "tap",
+                "color": "red",
+                "direction": "none",
+                "count": 1,
+                "lengthMs": 0
+              },
+              "reason": "主旋律の音価を見せるため、この応答区間の伴奏の接続打点を整理。"
+            },
+            {
+              "note": {
+                "beat": 187.5,
+                "time": 76153.0,
+                "x": 1.9,
+                "y": 0.3,
+                "type": "tap",
+                "color": "red",
+                "direction": "none",
+                "count": 1,
+                "lengthMs": 0
+              },
+              "reason": "主旋律の音価を見せるため、この応答区間の伴奏の接続打点を整理。"
+            },
+            {
+              "note": {
+                "beat": 210.0,
+                "time": 87403.0,
+                "x": -1.9,
+                "y": 0.3,
+                "type": "tap",
+                "color": "blue",
+                "direction": "none",
+                "count": 1,
+                "lengthMs": 0
+              },
+              "reason": "主旋律の音価を見せるため、この応答区間の伴奏の接続打点を整理。"
+            },
+            {
+              "note": {
+                "beat": 212.5,
+                "time": 88653.0,
+                "x": -0.6,
+                "y": -0.6,
+                "type": "tap",
+                "color": "blue",
+                "direction": "none",
+                "count": 1,
+                "lengthMs": 0
+              },
+              "reason": "主旋律の音価を見せるため、この応答区間の伴奏の接続打点を整理。"
+            }
+          ],
+          "routeCorrections": [],
+          "strongThreshold": 1.431775
+        },
+        "editedSeconds": [
+          [
+            70.35,
+            78.0
+          ],
+          [
+            86.34,
+            93.95
+          ]
+        ],
+        "charts": {
+          "hard": {
+            "before": {
+              "score": 6.945,
+              "rounded": 7,
+              "averageNps": 2.098,
+              "peakNps": 4.5,
+              "flicks": 6,
+              "pairs": 42,
+              "longs": 11
+            },
+            "after": {
+              "score": 6.983,
+              "rounded": 7,
+              "averageNps": 2.143,
+              "peakNps": 4.5,
+              "flicks": 6,
+              "pairs": 42,
+              "longs": 11
+            },
+            "notesBefore": 416,
+            "notesAfter": 425,
+            "melodyHits": 40,
+            "retainedHits": [
+              [
+                1153.0,
+                "red"
+              ],
+              [
+                1153.0,
+                "blue"
+              ],
+              [
+                1528.0,
+                "red"
+              ],
+              [
+                1715.5,
+                "blue"
+              ],
+              [
+                1903.0,
+                "red"
+              ],
+              [
+                2278.0,
+                "blue"
+              ],
+              [
+                2465.5,
+                "red"
+              ],
+              [
+                2653.0,
+                "blue"
+              ],
+              [
+                3028.0,
+                "blue"
+              ],
+              [
+                3215.5,
+                "red"
+              ],
+              [
+                3590.5,
+                "red"
+              ],
+              [
+                3965.5,
+                "red"
+              ],
+              [
+                4340.5,
+                "blue"
+              ],
+              [
+                4528.0,
+                "red"
+              ],
+              [
+                8090.5,
+                "red"
+              ],
+              [
+                8840.5,
+                "red"
+              ],
+              [
+                9215.5,
+                "blue"
+              ],
+              [
+                9965.5,
+                "blue"
+              ],
+              [
+                11653.0,
+                "red"
+              ],
+              [
+                11653.0,
+                "blue"
+              ],
+              [
+                12215.5,
+                "red"
+              ],
+              [
+                12590.5,
+                "red"
+              ],
+              [
+                12965.5,
+                "blue"
+              ],
+              [
+                13528.0,
+                "red"
+              ],
+              [
+                13528.0,
+                "blue"
+              ],
+              [
+                13715.5,
+                "red"
+              ],
+              [
+                14090.5,
+                "red"
+              ],
+              [
+                14465.5,
+                "red"
+              ],
+              [
+                15215.5,
+                "blue"
+              ],
+              [
+                15590.5,
+                "blue"
+              ],
+              [
+                15965.5,
+                "red"
+              ],
+              [
+                16340.5,
+                "red"
+              ],
+              [
+                16528.0,
+                "blue"
+              ],
+              [
+                17090.5,
+                "red"
+              ],
+              [
+                17465.5,
+                "blue"
+              ],
+              [
+                18403.0,
+                "red"
+              ],
+              [
+                18590.5,
+                "blue"
+              ],
+              [
+                19340.5,
+                "blue"
+              ],
+              [
+                19528.0,
+                "red"
+              ],
+              [
+                19528.0,
+                "blue"
+              ],
+              [
+                20090.5,
+                "red"
+              ],
+              [
+                20465.5,
+                "red"
+              ],
+              [
+                20840.5,
+                "blue"
+              ],
+              [
+                21403.0,
+                "blue"
+              ],
+              [
+                21590.5,
+                "red"
+              ],
+              [
+                22340.5,
+                "red"
+              ],
+              [
+                23090.5,
+                "blue"
+              ],
+              [
+                23465.5,
+                "blue"
+              ],
+              [
+                24215.5,
+                "red"
+              ],
+              [
+                24403.0,
+                "blue"
+              ],
+              [
+                24965.5,
+                "blue"
+              ],
+              [
+                25340.5,
+                "blue"
+              ],
+              [
+                25715.5,
+                "red"
+              ],
+              [
+                26090.5,
+                "red"
+              ],
+              [
+                26278.0,
+                "blue"
+              ],
+              [
+                26840.5,
+                "blue"
+              ],
+              [
+                28903.0,
+                "blue"
+              ],
+              [
+                30496.75,
+                "red"
+              ],
+              [
+                30496.75,
+                "blue"
+              ],
+              [
+                30965.5,
+                "red"
+              ],
+              [
+                31153.0,
+                "blue"
+              ],
+              [
+                31434.25,
+                "red"
+              ],
+              [
+                31715.5,
+                "blue"
+              ],
+              [
+                32090.5,
+                "red"
+              ],
+              [
+                32090.5,
+                "blue"
+              ],
+              [
+                32465.5,
+                "red"
+              ],
+              [
+                32653.0,
+                "blue"
+              ],
+              [
+                32934.25,
+                "red"
+              ],
+              [
+                33215.5,
+                "blue"
+              ],
+              [
+                33590.5,
+                "red"
+              ],
+              [
+                33965.5,
+                "red"
+              ],
+              [
+                34153.0,
+                "blue"
+              ],
+              [
+                34434.25,
+                "red"
+              ],
+              [
+                34434.25,
+                "blue"
+              ],
+              [
+                34715.5,
+                "red"
+              ],
+              [
+                35090.5,
+                "red"
+              ],
+              [
+                35465.5,
+                "red"
+              ],
+              [
+                35653.0,
+                "blue"
+              ],
+              [
+                35934.25,
+                "red"
+              ],
+              [
+                36215.5,
+                "red"
+              ],
+              [
+                36215.5,
+                "blue"
+              ],
+              [
+                36590.5,
+                "red"
+              ],
+              [
+                36965.5,
+                "red"
+              ],
+              [
+                37340.5,
+                "blue"
+              ],
+              [
+                37715.5,
+                "red"
+              ],
+              [
+                37715.5,
+                "blue"
+              ],
+              [
+                37903.0,
+                "red"
+              ],
+              [
+                38090.5,
+                "blue"
+              ],
+              [
+                38653.0,
+                "red"
+              ],
+              [
+                38840.5,
+                "blue"
+              ],
+              [
+                39215.5,
+                "blue"
+              ],
+              [
+                39403.0,
+                "red"
+              ],
+              [
+                39778.0,
+                "red"
+              ],
+              [
+                39965.5,
+                "blue"
+              ],
+              [
+                40153.0,
+                "red"
+              ],
+              [
+                40153.0,
+                "blue"
+              ],
+              [
+                40434.25,
+                "red"
+              ],
+              [
+                40715.5,
+                "blue"
+              ],
+              [
+                41090.5,
+                "blue"
+              ],
+              [
+                42215.5,
+                "blue"
+              ],
+              [
+                42590.5,
+                "blue"
+              ],
+              [
+                42778.0,
+                "red"
+              ],
+              [
+                42965.5,
+                "blue"
+              ],
+              [
+                43153.0,
+                "red"
+              ],
+              [
+                43434.25,
+                "red"
+              ],
+              [
+                43434.25,
+                "blue"
+              ],
+              [
+                43715.5,
+                "red"
+              ],
+              [
+                44090.5,
+                "red"
+              ],
+              [
+                44465.5,
+                "red"
+              ],
+              [
+                44653.0,
+                "blue"
+              ],
+              [
+                44934.25,
+                "red"
+              ],
+              [
+                45215.5,
+                "blue"
+              ],
+              [
+                45590.5,
+                "red"
+              ],
+              [
+                45965.5,
+                "blue"
+              ],
+              [
+                46153.0,
+                "red"
+              ],
+              [
+                46153.0,
+                "blue"
+              ],
+              [
+                46434.25,
+                "red"
+              ],
+              [
+                46715.5,
+                "blue"
+              ],
+              [
+                47090.5,
+                "red"
+              ],
+              [
+                47465.5,
+                "red"
+              ],
+              [
+                47465.5,
+                "blue"
+              ],
+              [
+                47653.0,
+                "red"
+              ],
+              [
+                48215.5,
+                "blue"
+              ],
+              [
+                48590.5,
+                "red"
+              ],
+              [
+                49340.5,
+                "red"
+              ],
+              [
+                49715.5,
+                "blue"
+              ],
+              [
+                49903.0,
+                "red"
+              ],
+              [
+                50090.5,
+                "blue"
+              ],
+              [
+                50653.0,
+                "red"
+              ],
+              [
+                51215.5,
+                "blue"
+              ],
+              [
+                51403.0,
+                "red"
+              ],
+              [
+                51590.5,
+                "blue"
+              ],
+              [
+                51965.5,
+                "red"
+              ],
+              [
+                52153.0,
+                "red"
+              ],
+              [
+                52153.0,
+                "blue"
+              ],
+              [
+                52434.25,
+                "red"
+              ],
+              [
+                52715.5,
+                "blue"
+              ],
+              [
+                53403.0,
+                "red"
+              ],
+              [
+                53903.0,
+                "red"
+              ],
+              [
+                54366.44,
+                "red"
+              ],
+              [
+                54366.44,
+                "blue"
+              ],
+              [
+                54903.0,
+                "blue"
+              ],
+              [
+                55903.0,
+                "blue"
+              ],
+              [
+                56153.0,
+                "red"
+              ],
+              [
+                57153.0,
+                "red"
+              ],
+              [
+                57653.0,
+                "blue"
+              ],
+              [
+                57903.0,
+                "red"
+              ],
+              [
+                58153.0,
+                "blue"
+              ],
+              [
+                58403.0,
+                "red"
+              ],
+              [
+                59653.0,
+                "blue"
+              ],
+              [
+                59903.0,
+                "red"
+              ],
+              [
+                60903.0,
+                "red"
+              ],
+              [
+                61903.0,
+                "red"
+              ],
+              [
+                61903.0,
+                "blue"
+              ],
+              [
+                62903.0,
+                "blue"
+              ],
+              [
+                63903.0,
+                "red"
+              ],
+              [
+                64903.0,
+                "red"
+              ],
+              [
+                64903.0,
+                "blue"
+              ],
+              [
+                65153.0,
+                "red"
+              ],
+              [
+                65903.0,
+                "blue"
+              ],
+              [
+                66153.0,
+                "red"
+              ],
+              [
+                66403.0,
+                "blue"
+              ],
+              [
+                66653.0,
+                "red"
+              ],
+              [
+                66903.0,
+                "blue"
+              ],
+              [
+                67403.0,
+                "blue"
+              ],
+              [
+                70153.0,
+                "red"
+              ],
+              [
+                70389.1,
+                "blue"
+              ],
+              [
+                70633.6,
+                "red"
+              ],
+              [
+                70903.0,
+                "red"
+              ],
+              [
+                70903.0,
+                "blue"
+              ],
+              [
+                71403.0,
+                "red"
+              ],
+              [
+                71903.0,
+                "red"
+              ],
+              [
+                72403.0,
+                "blue"
+              ],
+              [
+                72903.0,
+                "blue"
+              ],
+              [
+                73403.0,
+                "blue"
+              ],
+              [
+                73636.7,
+                "red"
+              ],
+              [
+                73903.0,
+                "blue"
+              ],
+              [
+                74390.0,
+                "red"
+              ],
+              [
+                74653.0,
+                "blue"
+              ],
+              [
+                74903.0,
+                "red"
+              ],
+              [
+                75352.8,
+                "red"
+              ],
+              [
+                75903.0,
+                "blue"
+              ],
+              [
+                76305.7,
+                "red"
+              ],
+              [
+                76653.0,
+                "blue"
+              ],
+              [
+                76903.0,
+                "red"
+              ],
+              [
+                77403.0,
+                "blue"
+              ],
+              [
+                77903.0,
+                "blue"
+              ],
+              [
+                78153.0,
+                "red"
+              ],
+              [
+                78653.0,
+                "red"
+              ],
+              [
+                78653.0,
+                "blue"
+              ],
+              [
+                79653.0,
+                "red"
+              ],
+              [
+                79903.0,
+                "blue"
+              ],
+              [
+                80403.0,
+                "blue"
+              ],
+              [
+                80653.0,
+                "red"
+              ],
+              [
+                80903.0,
+                "blue"
+              ],
+              [
+                81153.0,
+                "red"
+              ],
+              [
+                81403.0,
+                "blue"
+              ],
+              [
+                81903.0,
+                "red"
+              ],
+              [
+                82153.0,
+                "blue"
+              ],
+              [
+                83403.0,
+                "blue"
+              ],
+              [
+                83653.0,
+                "red"
+              ],
+              [
+                84403.0,
+                "red"
+              ],
+              [
+                84653.0,
+                "blue"
+              ],
+              [
+                84903.0,
+                "red"
+              ],
+              [
+                85403.0,
+                "red"
+              ],
+              [
+                85403.0,
+                "blue"
+              ],
+              [
+                86278.0,
+                "blue"
+              ],
+              [
+                86347.8,
+                "red"
+              ],
+              [
+                86602.3,
+                "blue"
+              ],
+              [
+                86903.0,
+                "blue"
+              ],
+              [
+                87315.6,
+                "blue"
+              ],
+              [
+                87653.0,
+                "red"
+              ],
+              [
+                87653.0,
+                "blue"
+              ],
+              [
+                87934.2,
+                "red"
+              ],
+              [
+                88403.0,
+                "red"
+              ],
+              [
+                88903.0,
+                "red"
+              ],
+              [
+                89435.8,
+                "blue"
+              ],
+              [
+                89653.0,
+                "blue"
+              ],
+              [
+                89903.0,
+                "red"
+              ],
+              [
+                90473.5,
+                "red"
+              ],
+              [
+                90653.0,
+                "blue"
+              ],
+              [
+                90903.0,
+                "red"
+              ],
+              [
+                91341.5,
+                "blue"
+              ],
+              [
+                91903.0,
+                "red"
+              ],
+              [
+                92403.0,
+                "red"
+              ],
+              [
+                92653.0,
+                "blue"
+              ],
+              [
+                92798.2,
+                "blue"
+              ],
+              [
+                92903.0,
+                "red"
+              ],
+              [
+                93403.0,
+                "blue"
+              ],
+              [
+                93903.0,
+                "blue"
+              ],
+              [
+                94153.0,
+                "red"
+              ],
+              [
+                94903.0,
+                "red"
+              ],
+              [
+                95653.0,
+                "red"
+              ],
+              [
+                95903.0,
+                "blue"
+              ],
+              [
+                97053.0,
+                "blue"
+              ],
+              [
+                97428.0,
+                "red"
+              ],
+              [
+                98553.0,
+                "red"
+              ],
+              [
+                103153.0,
+                "red"
+              ],
+              [
+                103403.0,
+                "blue"
+              ],
+              [
+                103903.0,
+                "red"
+              ],
+              [
+                104403.0,
+                "blue"
+              ],
+              [
+                104903.0,
+                "blue"
+              ],
+              [
+                105403.0,
+                "blue"
+              ],
+              [
+                105903.0,
+                "red"
+              ],
+              [
+                105903.0,
+                "blue"
+              ],
+              [
+                106403.0,
+                "red"
+              ],
+              [
+                106903.0,
+                "red"
+              ],
+              [
+                106903.0,
+                "blue"
+              ],
+              [
+                107403.0,
+                "red"
+              ],
+              [
+                107903.0,
+                "red"
+              ],
+              [
+                107903.0,
+                "blue"
+              ],
+              [
+                108403.0,
+                "red"
+              ],
+              [
+                109403.0,
+                "red"
+              ],
+              [
+                109403.0,
+                "blue"
+              ],
+              [
+                110403.0,
+                "blue"
+              ],
+              [
+                111403.0,
+                "red"
+              ],
+              [
+                111403.0,
+                "blue"
+              ],
+              [
+                111903.0,
+                "blue"
+              ],
+              [
+                112403.0,
+                "blue"
+              ],
+              [
+                112903.0,
+                "red"
+              ],
+              [
+                113403.0,
+                "red"
+              ],
+              [
+                113403.0,
+                "blue"
+              ],
+              [
+                114403.0,
+                "red"
+              ],
+              [
+                114903.0,
+                "red"
+              ],
+              [
+                115403.0,
+                "red"
+              ],
+              [
+                115403.0,
+                "blue"
+              ],
+              [
+                116403.0,
+                "blue"
+              ],
+              [
+                117403.0,
+                "blue"
+              ],
+              [
+                118403.0,
+                "blue"
+              ],
+              [
+                119403.0,
+                "red"
+              ],
+              [
+                119403.0,
+                "blue"
+              ],
+              [
+                119903.0,
+                "red"
+              ],
+              [
+                120403.0,
+                "red"
+              ],
+              [
+                121403.0,
+                "red"
+              ],
+              [
+                121403.0,
+                "blue"
+              ],
+              [
+                122403.0,
+                "red"
+              ],
+              [
+                122903.0,
+                "blue"
+              ],
+              [
+                123403.0,
+                "blue"
+              ],
+              [
+                123903.0,
+                "blue"
+              ],
+              [
+                124403.0,
+                "red"
+              ],
+              [
+                125403.0,
+                "red"
+              ],
+              [
+                125403.0,
+                "blue"
+              ],
+              [
+                126403.0,
+                "red"
+              ],
+              [
+                126903.0,
+                "red"
+              ],
+              [
+                126903.0,
+                "blue"
+              ],
+              [
+                127403.0,
+                "red"
+              ],
+              [
+                127903.0,
+                "blue"
+              ],
+              [
+                128403.0,
+                "blue"
+              ],
+              [
+                128653.0,
+                "red"
+              ],
+              [
+                128903.0,
+                "blue"
+              ],
+              [
+                129403.0,
+                "red"
+              ],
+              [
+                129403.0,
+                "blue"
+              ],
+              [
+                130403.0,
+                "red"
+              ],
+              [
+                130903.0,
+                "red"
+              ],
+              [
+                131153.0,
+                "blue"
+              ],
+              [
+                131403.0,
+                "red"
+              ],
+              [
+                131403.0,
+                "blue"
+              ],
+              [
+                132403.0,
+                "blue"
+              ],
+              [
+                132903.0,
+                "blue"
+              ],
+              [
+                133403.0,
+                "red"
+              ],
+              [
+                134403.0,
+                "red"
+              ],
+              [
+                135403.0,
+                "red"
+              ],
+              [
+                135903.0,
+                "blue"
+              ],
+              [
+                136153.0,
+                "red"
+              ],
+              [
+                136403.0,
+                "blue"
+              ],
+              [
+                136903.0,
+                "red"
+              ],
+              [
+                137653.0,
+                "red"
+              ],
+              [
+                137903.0,
+                "blue"
+              ],
+              [
+                138403.0,
+                "blue"
+              ],
+              [
+                138903.0,
+                "blue"
+              ],
+              [
+                139403.0,
+                "blue"
+              ],
+              [
+                139903.0,
+                "red"
+              ],
+              [
+                140403.0,
+                "blue"
+              ],
+              [
+                142903.0,
+                "red"
+              ],
+              [
+                143403.0,
+                "blue"
+              ],
+              [
+                144153.0,
+                "red"
+              ],
+              [
+                144153.0,
+                "blue"
+              ],
+              [
+                144403.0,
+                "red"
+              ],
+              [
+                144903.0,
+                "red"
+              ],
+              [
+                145403.0,
+                "red"
+              ],
+              [
+                145903.0,
+                "blue"
+              ],
+              [
+                146153.0,
+                "red"
+              ],
+              [
+                146903.0,
+                "blue"
+              ],
+              [
+                147403.0,
+                "red"
+              ],
+              [
+                147403.0,
+                "blue"
+              ],
+              [
+                147903.0,
+                "red"
+              ],
+              [
+                148153.0,
+                "blue"
+              ],
+              [
+                148403.0,
+                "red"
+              ],
+              [
+                148903.0,
+                "blue"
+              ],
+              [
+                149153.0,
+                "red"
+              ],
+              [
+                149403.0,
+                "blue"
+              ],
+              [
+                150403.0,
+                "blue"
+              ],
+              [
+                150903.0,
+                "red"
+              ],
+              [
+                151153.0,
+                "blue"
+              ],
+              [
+                151403.0,
+                "blue"
+              ],
+              [
+                152153.0,
+                "blue"
+              ],
+              [
+                152403.0,
+                "red"
+              ],
+              [
+                152903.0,
+                "blue"
+              ],
+              [
+                153403.0,
+                "red"
+              ],
+              [
+                153903.0,
+                "red"
+              ],
+              [
+                154403.0,
+                "red"
+              ],
+              [
+                154903.0,
+                "blue"
+              ],
+              [
+                155403.0,
+                "red"
+              ],
+              [
+                155403.0,
+                "blue"
+              ],
+              [
+                156153.0,
+                "red"
+              ],
+              [
+                156653.0,
+                "blue"
+              ],
+              [
+                157153.0,
+                "red"
+              ],
+              [
+                157653.0,
+                "blue"
+              ],
+              [
+                158153.0,
+                "red"
+              ],
+              [
+                158653.0,
+                "blue"
+              ],
+              [
+                159153.0,
+                "red"
+              ],
+              [
+                159653.0,
+                "blue"
+              ],
+              [
+                160403.0,
+                "red"
+              ],
+              [
+                160903.0,
+                "red"
+              ],
+              [
+                161403.0,
+                "red"
+              ],
+              [
+                161903.0,
+                "blue"
+              ],
+              [
+                162153.0,
+                "red"
+              ],
+              [
+                162903.0,
+                "blue"
+              ],
+              [
+                163403.0,
+                "red"
+              ],
+              [
+                163403.0,
+                "blue"
+              ],
+              [
+                163903.0,
+                "red"
+              ],
+              [
+                164403.0,
+                "red"
+              ],
+              [
+                164903.0,
+                "red"
+              ],
+              [
+                165403.0,
+                "blue"
+              ],
+              [
+                165903.0,
+                "blue"
+              ],
+              [
+                166403.0,
+                "blue"
+              ],
+              [
+                166903.0,
+                "red"
+              ],
+              [
+                167403.0,
+                "blue"
+              ],
+              [
+                168403.0,
+                "red"
+              ],
+              [
+                169403.0,
+                "blue"
+              ],
+              [
+                169903.0,
+                "blue"
+              ],
+              [
+                170403.0,
+                "blue"
+              ],
+              [
+                170903.0,
+                "red"
+              ],
+              [
+                171403.0,
+                "red"
+              ],
+              [
+                171403.0,
+                "blue"
+              ],
+              [
+                172403.0,
+                "red"
+              ],
+              [
+                172653.0,
+                "blue"
+              ],
+              [
+                173403.0,
+                "blue"
+              ],
+              [
+                173903.0,
+                "blue"
+              ],
+              [
+                174403.0,
+                "blue"
+              ],
+              [
+                174903.0,
+                "red"
+              ],
+              [
+                175403.0,
+                "red"
+              ],
+              [
+                176403.0,
+                "red"
+              ],
+              [
+                177403.0,
+                "red"
+              ],
+              [
+                177903.0,
+                "blue"
+              ],
+              [
+                178403.0,
+                "blue"
+              ],
+              [
+                182653.0,
+                "red"
+              ],
+              [
+                185153.0,
+                "red"
+              ],
+              [
+                185153.0,
+                "blue"
+              ],
+              [
+                185903.0,
+                "red"
+              ],
+              [
+                186090.5,
+                "blue"
+              ],
+              [
+                187028.0,
+                "red"
+              ],
+              [
+                187028.0,
+                "blue"
+              ],
+              [
+                187965.5,
+                "blue"
+              ],
+              [
+                188903.0,
+                "red"
+              ],
+              [
+                189278.0,
+                "red"
+              ],
+              [
+                189465.5,
+                "blue"
+              ],
+              [
+                190028.0,
+                "red"
+              ],
+              [
+                190965.5,
+                "blue"
+              ],
+              [
+                191903.0,
+                "red"
+              ],
+              [
+                193028.0,
+                "red"
+              ],
+              [
+                193028.0,
+                "blue"
+              ],
+              [
+                193778.0,
+                "red"
+              ],
+              [
+                193965.5,
+                "blue"
+              ],
+              [
+                194153.0,
+                "red"
+              ],
+              [
+                194528.0,
+                "blue"
+              ],
+              [
+                194903.0,
+                "red"
+              ],
+              [
+                195278.0,
+                "red"
+              ],
+              [
+                195653.0,
+                "blue"
+              ],
+              [
+                195840.5,
+                "red"
+              ],
+              [
+                196028.0,
+                "blue"
+              ],
+              [
+                196403.0,
+                "red"
+              ],
+              [
+                196590.5,
+                "blue"
+              ],
+              [
+                196778.0,
+                "red"
+              ],
+              [
+                196965.5,
+                "blue"
+              ],
+              [
+                197153.0,
+                "red"
+              ],
+              [
+                197528.0,
+                "blue"
+              ],
+              [
+                197903.0,
+                "blue"
+              ],
+              [
+                198278.0,
+                "red"
+              ],
+              [
+                198653.0,
+                "red"
+              ],
+              [
+                198840.5,
+                "blue"
+              ],
+              [
+                199403.0,
+                "red"
+              ],
+              [
+                199778.0,
+                "red"
+              ],
+              [
+                202403.0,
+                "blue"
+              ],
+              [
+                204653.0,
+                "blue"
+              ]
+            ]
+          },
+          "normal": {
+            "before": {
+              "score": 5.72,
+              "rounded": 6,
+              "averageNps": 1.241,
+              "peakNps": 4.0,
+              "flicks": 6,
+              "pairs": 28,
+              "longs": 3
+            },
+            "after": {
+              "score": 5.72,
+              "rounded": 6,
+              "averageNps": 1.241,
+              "peakNps": 4.0,
+              "flicks": 6,
+              "pairs": 28,
+              "longs": 3
+            },
+            "notesBefore": 242,
+            "notesAfter": 242,
+            "melodyHits": 19,
+            "retainedHits": [
+              [
+                1153.0,
+                "red"
+              ],
+              [
+                1153.0,
+                "blue"
+              ],
+              [
+                1903.0,
+                "red"
+              ],
+              [
+                2278.0,
+                "blue"
+              ],
+              [
+                2465.5,
+                "red"
+              ],
+              [
+                3590.5,
+                "red"
+              ],
+              [
+                4340.5,
+                "blue"
+              ],
+              [
+                4528.0,
+                "red"
+              ],
+              [
+                11653.0,
+                "red"
+              ],
+              [
+                11653.0,
+                "blue"
+              ],
+              [
+                12590.5,
+                "red"
+              ],
+              [
+                14465.5,
+                "red"
+              ],
+              [
+                15215.5,
+                "blue"
+              ],
+              [
+                16528.0,
+                "blue"
+              ],
+              [
+                17465.5,
+                "blue"
+              ],
+              [
+                18403.0,
+                "red"
+              ],
+              [
+                19528.0,
+                "red"
+              ],
+              [
+                22340.5,
+                "red"
+              ],
+              [
+                23465.5,
+                "blue"
+              ],
+              [
+                26090.5,
+                "red"
+              ],
+              [
+                26278.0,
+                "blue"
+              ],
+              [
+                28903.0,
+                "blue"
+              ],
+              [
+                30496.75,
+                "red"
+              ],
+              [
+                30496.75,
+                "blue"
+              ],
+              [
+                30965.5,
+                "red"
+              ],
+              [
+                31153.0,
+                "blue"
+              ],
+              [
+                31434.25,
+                "red"
+              ],
+              [
+                31715.5,
+                "blue"
+              ],
+              [
+                32090.5,
+                "blue"
+              ],
+              [
+                32465.5,
+                "red"
+              ],
+              [
+                32653.0,
+                "blue"
+              ],
+              [
+                32934.25,
+                "red"
+              ],
+              [
+                33215.5,
+                "blue"
+              ],
+              [
+                33590.5,
+                "red"
+              ],
+              [
+                34434.25,
+                "red"
+              ],
+              [
+                34434.25,
+                "blue"
+              ],
+              [
+                35090.5,
+                "red"
+              ],
+              [
+                35653.0,
+                "blue"
+              ],
+              [
+                35934.25,
+                "red"
+              ],
+              [
+                36590.5,
+                "red"
+              ],
+              [
+                37715.5,
+                "red"
+              ],
+              [
+                38090.5,
+                "blue"
+              ],
+              [
+                38840.5,
+                "blue"
+              ],
+              [
+                39215.5,
+                "blue"
+              ],
+              [
+                39778.0,
+                "red"
+              ],
+              [
+                39965.5,
+                "blue"
+              ],
+              [
+                40434.25,
+                "red"
+              ],
+              [
+                40715.5,
+                "blue"
+              ],
+              [
+                42778.0,
+                "red"
+              ],
+              [
+                42965.5,
+                "blue"
+              ],
+              [
+                43153.0,
+                "red"
+              ],
+              [
+                43434.25,
+                "blue"
+              ],
+              [
+                43715.5,
+                "red"
+              ],
+              [
+                44653.0,
+                "blue"
+              ],
+              [
+                44934.25,
+                "red"
+              ],
+              [
+                45215.5,
+                "blue"
+              ],
+              [
+                45590.5,
+                "red"
+              ],
+              [
+                46153.0,
+                "red"
+              ],
+              [
+                46153.0,
+                "blue"
+              ],
+              [
+                46715.5,
+                "blue"
+              ],
+              [
+                47090.5,
+                "red"
+              ],
+              [
+                47465.5,
+                "blue"
+              ],
+              [
+                47653.0,
+                "red"
+              ],
+              [
+                48215.5,
+                "blue"
+              ],
+              [
+                48590.5,
+                "red"
+              ],
+              [
+                49340.5,
+                "red"
+              ],
+              [
+                49903.0,
+                "red"
+              ],
+              [
+                50090.5,
+                "blue"
+              ],
+              [
+                50653.0,
+                "red"
+              ],
+              [
+                51403.0,
+                "red"
+              ],
+              [
+                51590.5,
+                "blue"
+              ],
+              [
+                52434.25,
+                "red"
+              ],
+              [
+                52715.5,
+                "blue"
+              ],
+              [
+                53403.0,
+                "red"
+              ],
+              [
+                53903.0,
+                "red"
+              ],
+              [
+                54366.44,
+                "red"
+              ],
+              [
+                54366.44,
+                "blue"
+              ],
+              [
+                54903.0,
+                "blue"
+              ],
+              [
+                55903.0,
+                "blue"
+              ],
+              [
+                58403.0,
+                "red"
+              ],
+              [
+                59903.0,
+                "red"
+              ],
+              [
+                60903.0,
+                "red"
+              ],
+              [
+                61903.0,
+                "red"
+              ],
+              [
+                61903.0,
+                "blue"
+              ],
+              [
+                63903.0,
+                "red"
+              ],
+              [
+                64903.0,
+                "red"
+              ],
+              [
+                64903.0,
+                "blue"
+              ],
+              [
+                65903.0,
+                "blue"
+              ],
+              [
+                66403.0,
+                "blue"
+              ],
+              [
+                70153.0,
+                "red"
+              ],
+              [
+                70389.1,
+                "blue"
+              ],
+              [
+                70903.0,
+                "red"
+              ],
+              [
+                70903.0,
+                "blue"
+              ],
+              [
+                73636.7,
+                "red"
+              ],
+              [
+                73903.0,
+                "blue"
+              ],
+              [
+                74390.0,
+                "red"
+              ],
+              [
+                74653.0,
+                "blue"
+              ],
+              [
+                75352.8,
+                "red"
+              ],
+              [
+                76305.7,
+                "red"
+              ],
+              [
+                76653.0,
+                "blue"
+              ],
+              [
+                76903.0,
+                "red"
+              ],
+              [
+                78653.0,
+                "red"
+              ],
+              [
+                78653.0,
+                "blue"
+              ],
+              [
+                79653.0,
+                "red"
+              ],
+              [
+                80653.0,
+                "red"
+              ],
+              [
+                80903.0,
+                "blue"
+              ],
+              [
+                81153.0,
+                "red"
+              ],
+              [
+                81903.0,
+                "red"
+              ],
+              [
+                82153.0,
+                "blue"
+              ],
+              [
+                83403.0,
+                "blue"
+              ],
+              [
+                83653.0,
+                "red"
+              ],
+              [
+                84403.0,
+                "red"
+              ],
+              [
+                84653.0,
+                "blue"
+              ],
+              [
+                84903.0,
+                "red"
+              ],
+              [
+                85403.0,
+                "red"
+              ],
+              [
+                85403.0,
+                "blue"
+              ],
+              [
+                86278.0,
+                "blue"
+              ],
+              [
+                86347.8,
+                "red"
+              ],
+              [
+                86903.0,
+                "blue"
+              ],
+              [
+                87315.6,
+                "blue"
+              ],
+              [
+                87653.0,
+                "red"
+              ],
+              [
+                88903.0,
+                "red"
+              ],
+              [
+                89653.0,
+                "blue"
+              ],
+              [
+                90473.5,
+                "red"
+              ],
+              [
+                90653.0,
+                "blue"
+              ],
+              [
+                91341.5,
+                "blue"
+              ],
+              [
+                92653.0,
+                "blue"
+              ],
+              [
+                92903.0,
+                "red"
+              ],
+              [
+                94903.0,
+                "red"
+              ],
+              [
+                97053.0,
+                "blue"
+              ],
+              [
+                97428.0,
+                "red"
+              ],
+              [
+                98553.0,
+                "red"
+              ],
+              [
+                104903.0,
+                "blue"
+              ],
+              [
+                105403.0,
+                "blue"
+              ],
+              [
+                105903.0,
+                "red"
+              ],
+              [
+                105903.0,
+                "blue"
+              ],
+              [
+                106403.0,
+                "red"
+              ],
+              [
+                106903.0,
+                "red"
+              ],
+              [
+                106903.0,
+                "blue"
+              ],
+              [
+                107403.0,
+                "red"
+              ],
+              [
+                107903.0,
+                "red"
+              ],
+              [
+                107903.0,
+                "blue"
+              ],
+              [
+                108403.0,
+                "red"
+              ],
+              [
+                109403.0,
+                "red"
+              ],
+              [
+                109403.0,
+                "blue"
+              ],
+              [
+                110403.0,
+                "blue"
+              ],
+              [
+                111403.0,
+                "red"
+              ],
+              [
+                111403.0,
+                "blue"
+              ],
+              [
+                112403.0,
+                "blue"
+              ],
+              [
+                113403.0,
+                "red"
+              ],
+              [
+                113403.0,
+                "blue"
+              ],
+              [
+                114403.0,
+                "red"
+              ],
+              [
+                115403.0,
+                "red"
+              ],
+              [
+                115403.0,
+                "blue"
+              ],
+              [
+                116403.0,
+                "blue"
+              ],
+              [
+                117403.0,
+                "blue"
+              ],
+              [
+                118403.0,
+                "blue"
+              ],
+              [
+                119403.0,
+                "red"
+              ],
+              [
+                119403.0,
+                "blue"
+              ],
+              [
+                120403.0,
+                "red"
+              ],
+              [
+                121403.0,
+                "red"
+              ],
+              [
+                121403.0,
+                "blue"
+              ],
+              [
+                123403.0,
+                "blue"
+              ],
+              [
+                124403.0,
+                "red"
+              ],
+              [
+                125403.0,
+                "red"
+              ],
+              [
+                125403.0,
+                "blue"
+              ],
+              [
+                126403.0,
+                "red"
+              ],
+              [
+                127403.0,
+                "red"
+              ],
+              [
+                127903.0,
+                "blue"
+              ],
+              [
+                128403.0,
+                "blue"
+              ],
+              [
+                128653.0,
+                "red"
+              ],
+              [
+                128903.0,
+                "blue"
+              ],
+              [
+                129403.0,
+                "red"
+              ],
+              [
+                129403.0,
+                "blue"
+              ],
+              [
+                130403.0,
+                "red"
+              ],
+              [
+                131403.0,
+                "red"
+              ],
+              [
+                131403.0,
+                "blue"
+              ],
+              [
+                132403.0,
+                "blue"
+              ],
+              [
+                132903.0,
+                "blue"
+              ],
+              [
+                133403.0,
+                "red"
+              ],
+              [
+                134403.0,
+                "red"
+              ],
+              [
+                135403.0,
+                "red"
+              ],
+              [
+                136153.0,
+                "red"
+              ],
+              [
+                136403.0,
+                "blue"
+              ],
+              [
+                136903.0,
+                "red"
+              ],
+              [
+                137903.0,
+                "blue"
+              ],
+              [
+                138403.0,
+                "blue"
+              ],
+              [
+                138903.0,
+                "blue"
+              ],
+              [
+                139403.0,
+                "blue"
+              ],
+              [
+                142903.0,
+                "red"
+              ],
+              [
+                144153.0,
+                "red"
+              ],
+              [
+                144153.0,
+                "blue"
+              ],
+              [
+                146153.0,
+                "red"
+              ],
+              [
+                147403.0,
+                "red"
+              ],
+              [
+                147403.0,
+                "blue"
+              ],
+              [
+                148153.0,
+                "blue"
+              ],
+              [
+                149153.0,
+                "red"
+              ],
+              [
+                150403.0,
+                "blue"
+              ],
+              [
+                151153.0,
+                "blue"
+              ],
+              [
+                153903.0,
+                "red"
+              ],
+              [
+                154403.0,
+                "red"
+              ],
+              [
+                154903.0,
+                "blue"
+              ],
+              [
+                155403.0,
+                "red"
+              ],
+              [
+                155403.0,
+                "blue"
+              ],
+              [
+                156153.0,
+                "red"
+              ],
+              [
+                156653.0,
+                "blue"
+              ],
+              [
+                157153.0,
+                "red"
+              ],
+              [
+                157653.0,
+                "blue"
+              ],
+              [
+                158153.0,
+                "red"
+              ],
+              [
+                158653.0,
+                "blue"
+              ],
+              [
+                159153.0,
+                "red"
+              ],
+              [
+                160403.0,
+                "red"
+              ],
+              [
+                161403.0,
+                "red"
+              ],
+              [
+                161903.0,
+                "blue"
+              ],
+              [
+                163403.0,
+                "red"
+              ],
+              [
+                163903.0,
+                "red"
+              ],
+              [
+                165403.0,
+                "blue"
+              ],
+              [
+                166403.0,
+                "blue"
+              ],
+              [
+                167403.0,
+                "blue"
+              ],
+              [
+                169403.0,
+                "blue"
+              ],
+              [
+                170403.0,
+                "blue"
+              ],
+              [
+                173903.0,
+                "blue"
+              ],
+              [
+                174403.0,
+                "blue"
+              ],
+              [
+                175403.0,
+                "red"
+              ],
+              [
+                176403.0,
+                "red"
+              ],
+              [
+                177403.0,
+                "red"
+              ],
+              [
+                177903.0,
+                "blue"
+              ],
+              [
+                178403.0,
+                "blue"
+              ],
+              [
+                185153.0,
+                "red"
+              ],
+              [
+                185153.0,
+                "blue"
+              ],
+              [
+                186090.5,
+                "blue"
+              ],
+              [
+                187965.5,
+                "blue"
+              ],
+              [
+                188903.0,
+                "red"
+              ],
+              [
+                190028.0,
+                "red"
+              ],
+              [
+                190965.5,
+                "blue"
+              ],
+              [
+                191903.0,
+                "red"
+              ],
+              [
+                193028.0,
+                "red"
+              ],
+              [
+                193028.0,
+                "blue"
+              ],
+              [
+                193965.5,
+                "blue"
+              ],
+              [
+                196403.0,
+                "red"
+              ],
+              [
+                196965.5,
+                "blue"
+              ],
+              [
+                198653.0,
+                "red"
+              ]
+            ]
+          },
+          "easy": {
+            "before": {
+              "score": 4.049,
+              "rounded": 4,
+              "averageNps": 0.71,
+              "peakNps": 2.5,
+              "flicks": 0,
+              "pairs": 17,
+              "longs": 2
+            },
+            "after": {
+              "score": 4.061,
+              "rounded": 4,
+              "averageNps": 0.741,
+              "peakNps": 2.5,
+              "flicks": 0,
+              "pairs": 17,
+              "longs": 2
+            },
+            "notesBefore": 137,
+            "notesAfter": 143,
+            "melodyHits": 14,
+            "retainedHits": [
+              [
+                1153.0,
+                "red"
+              ],
+              [
+                1153.0,
+                "blue"
+              ],
+              [
+                2278.0,
+                "blue"
+              ],
+              [
+                2465.5,
+                "red"
+              ],
+              [
+                3590.5,
+                "red"
+              ],
+              [
+                4340.5,
+                "blue"
+              ],
+              [
+                4528.0,
+                "red"
+              ],
+              [
+                11653.0,
+                "red"
+              ],
+              [
+                11653.0,
+                "blue"
+              ],
+              [
+                12590.5,
+                "red"
+              ],
+              [
+                14465.5,
+                "red"
+              ],
+              [
+                16528.0,
+                "blue"
+              ],
+              [
+                19528.0,
+                "red"
+              ],
+              [
+                23465.5,
+                "blue"
+              ],
+              [
+                26278.0,
+                "blue"
+              ],
+              [
+                30496.75,
+                "red"
+              ],
+              [
+                30496.75,
+                "blue"
+              ],
+              [
+                31153.0,
+                "blue"
+              ],
+              [
+                31434.25,
+                "red"
+              ],
+              [
+                31715.5,
+                "blue"
+              ],
+              [
+                32653.0,
+                "blue"
+              ],
+              [
+                33590.5,
+                "red"
+              ],
+              [
+                35090.5,
+                "red"
+              ],
+              [
+                36590.5,
+                "red"
+              ],
+              [
+                37715.5,
+                "red"
+              ],
+              [
+                38090.5,
+                "blue"
+              ],
+              [
+                39215.5,
+                "blue"
+              ],
+              [
+                39965.5,
+                "blue"
+              ],
+              [
+                40434.25,
+                "red"
+              ],
+              [
+                40715.5,
+                "blue"
+              ],
+              [
+                42965.5,
+                "blue"
+              ],
+              [
+                43153.0,
+                "red"
+              ],
+              [
+                43715.5,
+                "red"
+              ],
+              [
+                44934.25,
+                "red"
+              ],
+              [
+                45215.5,
+                "blue"
+              ],
+              [
+                46153.0,
+                "red"
+              ],
+              [
+                46153.0,
+                "blue"
+              ],
+              [
+                47090.5,
+                "red"
+              ],
+              [
+                47465.5,
+                "blue"
+              ],
+              [
+                48215.5,
+                "blue"
+              ],
+              [
+                48590.5,
+                "red"
+              ],
+              [
+                49903.0,
+                "red"
+              ],
+              [
+                50090.5,
+                "blue"
+              ],
+              [
+                51403.0,
+                "red"
+              ],
+              [
+                51590.5,
+                "blue"
+              ],
+              [
+                52434.25,
+                "red"
+              ],
+              [
+                52715.5,
+                "blue"
+              ],
+              [
+                54366.44,
+                "red"
+              ],
+              [
+                54366.44,
+                "blue"
+              ],
+              [
+                55903.0,
+                "blue"
+              ],
+              [
+                58403.0,
+                "red"
+              ],
+              [
+                60903.0,
+                "red"
+              ],
+              [
+                61903.0,
+                "red"
+              ],
+              [
+                61903.0,
+                "blue"
+              ],
+              [
+                63903.0,
+                "red"
+              ],
+              [
+                64903.0,
+                "red"
+              ],
+              [
+                64903.0,
+                "blue"
+              ],
+              [
+                65903.0,
+                "blue"
+              ],
+              [
+                70389.1,
+                "blue"
+              ],
+              [
+                70903.0,
+                "red"
+              ],
+              [
+                73636.7,
+                "red"
+              ],
+              [
+                74653.0,
+                "blue"
+              ],
+              [
+                75352.8,
+                "red"
+              ],
+              [
+                76305.7,
+                "red"
+              ],
+              [
+                76653.0,
+                "blue"
+              ],
+              [
+                76903.0,
+                "red"
+              ],
+              [
+                79653.0,
+                "red"
+              ],
+              [
+                80653.0,
+                "red"
+              ],
+              [
+                80903.0,
+                "blue"
+              ],
+              [
+                81903.0,
+                "red"
+              ],
+              [
+                83403.0,
+                "blue"
+              ],
+              [
+                84403.0,
+                "red"
+              ],
+              [
+                84653.0,
+                "blue"
+              ],
+              [
+                86278.0,
+                "blue"
+              ],
+              [
+                86347.8,
+                "red"
+              ],
+              [
+                87653.0,
+                "red"
+              ],
+              [
+                89653.0,
+                "blue"
+              ],
+              [
+                90473.5,
+                "red"
+              ],
+              [
+                90653.0,
+                "blue"
+              ],
+              [
+                91341.5,
+                "blue"
+              ],
+              [
+                92653.0,
+                "blue"
+              ],
+              [
+                92903.0,
+                "red"
+              ],
+              [
+                104903.0,
+                "blue"
+              ],
+              [
+                105903.0,
+                "red"
+              ],
+              [
+                105903.0,
+                "blue"
+              ],
+              [
+                107903.0,
+                "red"
+              ],
+              [
+                107903.0,
+                "blue"
+              ],
+              [
+                111403.0,
+                "red"
+              ],
+              [
+                111403.0,
+                "blue"
+              ],
+              [
+                113403.0,
+                "red"
+              ],
+              [
+                113403.0,
+                "blue"
+              ],
+              [
+                114403.0,
+                "red"
+              ],
+              [
+                115403.0,
+                "red"
+              ],
+              [
+                115403.0,
+                "blue"
+              ],
+              [
+                116403.0,
+                "blue"
+              ],
+              [
+                117403.0,
+                "blue"
+              ],
+              [
+                121403.0,
+                "red"
+              ],
+              [
+                121403.0,
+                "blue"
+              ],
+              [
+                126403.0,
+                "red"
+              ],
+              [
+                127403.0,
+                "red"
+              ],
+              [
+                128653.0,
+                "red"
+              ],
+              [
+                128903.0,
+                "blue"
+              ],
+              [
+                130403.0,
+                "red"
+              ],
+              [
+                131403.0,
+                "red"
+              ],
+              [
+                131403.0,
+                "blue"
+              ],
+              [
+                132903.0,
+                "blue"
+              ],
+              [
+                133403.0,
+                "red"
+              ],
+              [
+                134403.0,
+                "red"
+              ],
+              [
+                135403.0,
+                "red"
+              ],
+              [
+                136403.0,
+                "blue"
+              ],
+              [
+                136903.0,
+                "red"
+              ],
+              [
+                138403.0,
+                "blue"
+              ],
+              [
+                144153.0,
+                "red"
+              ],
+              [
+                144153.0,
+                "blue"
+              ],
+              [
+                146153.0,
+                "red"
+              ],
+              [
+                147403.0,
+                "red"
+              ],
+              [
+                147403.0,
+                "blue"
+              ],
+              [
+                149153.0,
+                "red"
+              ],
+              [
+                150403.0,
+                "blue"
+              ],
+              [
+                154403.0,
+                "red"
+              ],
+              [
+                155403.0,
+                "red"
+              ],
+              [
+                156153.0,
+                "red"
+              ],
+              [
+                157153.0,
+                "red"
+              ],
+              [
+                158153.0,
+                "red"
+              ],
+              [
+                159153.0,
+                "red"
+              ],
+              [
+                160403.0,
+                "red"
+              ],
+              [
+                161903.0,
+                "blue"
+              ],
+              [
+                165403.0,
+                "blue"
+              ],
+              [
+                166403.0,
+                "blue"
+              ],
+              [
+                169403.0,
+                "blue"
+              ],
+              [
+                170403.0,
+                "blue"
+              ],
+              [
+                174403.0,
+                "blue"
+              ],
+              [
+                176403.0,
+                "red"
+              ],
+              [
+                177403.0,
+                "red"
+              ],
+              [
+                177903.0,
+                "blue"
+              ],
+              [
+                185153.0,
+                "red"
+              ],
+              [
+                185153.0,
+                "blue"
+              ],
+              [
+                186090.5,
+                "blue"
+              ],
+              [
+                187965.5,
+                "blue"
+              ],
+              [
+                190028.0,
+                "red"
+              ],
+              [
+                191903.0,
+                "red"
+              ],
+              [
+                193965.5,
+                "blue"
+              ],
+              [
+                196965.5,
+                "blue"
+              ]
+            ]
+          }
+        }
+      }
+    },
+    "humanListeningVerified": false,
+    "physicalPlayTest": false
+  }
 }
