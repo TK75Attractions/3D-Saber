@@ -8,6 +8,7 @@ using UnityEngine.UI;
 [DefaultExecutionOrder(100)]
 public sealed class SongSelectAimPointer : MonoBehaviour
 {
+    readonly PhoneSaberPointJumpGate pointJumpGate = new PhoneSaberPointJumpGate();
     readonly SongSelectAimTracker tracker = new SongSelectAimTracker();
     readonly List<RaycastResult> hits = new List<RaycastResult>();
     SongSelectController controller;
@@ -97,6 +98,9 @@ public sealed class SongSelectAimPointer : MonoBehaviour
         }
         if (mouseNeedsMove && Vector2.Distance(lastMouse, mousePoint) > 3) mouseNeedsMove = false;
         Vector2 point = kind == 1 ? Vector2.Scale(input.NormalizedPosition, new Vector2(Screen.width, Screen.height)) : mousePoint;
+        // 誤認識（会場の赤い物など）で照準が一瞬遠くへ飛ぶのを、最大2受信だけ無視する（PhoneSaberPointJumpGate）。
+        if (kind == 1) point = pointJumpGate.Apply(input.LastReceivedMonotonicTime, point, Screen.height * .25f);
+        else pointJumpGate.Reset();
         bool valid = focused && kind != 0 && !mouseNeedsMove && new Rect(0, 0, Screen.width, Screen.height).Contains(point);
         if (!hasPoint) smoothed = point;
         else if (kind == 1) smoothed = Vector2.Lerp(smoothed, point, 1 - Mathf.Exp(-Time.unscaledDeltaTime / SaberSmoothingSeconds));

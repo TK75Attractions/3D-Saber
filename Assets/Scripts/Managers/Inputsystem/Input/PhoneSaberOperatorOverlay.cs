@@ -337,6 +337,25 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         if (GUILayout.Button((stable ? "● " : "") + "ON", buttonStyle) && !stable) PhoneSaberBladeStabilizerSettings.Save(name, true);
         GUILayout.EndHorizontal();
         GUILayout.Label("既定ON。剣の中心と向きはそのまま（遅れなし）、急な伸び縮みと一瞬の跳びだけを抑えて、勝手に切れるのを減らします。", textStyle);
+        DrawIgnoreZones(input, name);
+    }
+
+    void DrawIgnoreZones(InputPoint input, string name)
+    {
+        int count = PhoneSaberIgnoreZones.Load(name).Count;
+        string ignored = input != null ? $"・無視した受信 赤 {input.IgnoredSamples} / 青 {input.IgnoredSamples2}" : "";
+        GUILayout.Label($"無視する赤い物: {count} か所（この台に保存）{ignored}", textStyle);
+        GUILayout.BeginHorizontal();
+        bool red = input != null && input.IsRecentlyActive(.5f);
+        bool blue = input != null && input.IsRecentlyActive2(.5f);
+        if (GUILayout.Button("今「赤」に映っている物を無視", buttonStyle) && red)
+            PhoneSaberIgnoreZones.Add(name, input.LastRawEndsA, input.LastRawEndsB);
+        if (GUILayout.Button("今「青」に映っている物を無視", buttonStyle) && blue)
+            PhoneSaberIgnoreZones.Add(name, input.LastRawEndsA2, input.LastRawEndsB2);
+        if (GUILayout.Button("無視をすべて消す", buttonStyle) && count > 0) PhoneSaberIgnoreZones.Clear(name);
+        GUILayout.EndHorizontal();
+        GUILayout.Label("剣をカメラの外に出し（電源OFF）、コーンなど赤い物だけが認識されている状態で押します。" +
+            "その物を囲む範囲に両端とも入った受信は使いません。剣がそこを横切るだけなら影響しません。", textStyle);
     }
 
     void Refresh(double now)

@@ -69,6 +69,27 @@ public class InputPoint : MonoBehaviour
 
     // 他スクリプトが読む用（正規化済み）
     public Vector2 NormalizedPosition { get; private set; }
+    // 「この赤を無視する」用: 最後に届いた生の両端（カメラ画像の 0..1、位置補正前）と、無視した受信の数。
+    public Vector2 LastRawEndsA { get; private set; }
+    public Vector2 LastRawEndsB { get; private set; }
+    public Vector2 LastRawEndsA2 { get; private set; }
+    public Vector2 LastRawEndsB2 { get; private set; }
+    public int IgnoredSamples { get; private set; }
+    public int IgnoredSamples2 { get; private set; }
+    System.Collections.Generic.List<Rect> ignoreZones;
+    int ignoreZonesRevision = -1;
+    string ignoreZonesStation;
+    System.Collections.Generic.List<Rect> IgnoreZones()
+    {
+        string station = StationLabel;
+        if (ignoreZones == null || ignoreZonesRevision != PhoneSaberIgnoreZones.Revision || ignoreZonesStation != station)
+        {
+            ignoreZones = PhoneSaberIgnoreZones.Load(station);
+            ignoreZonesRevision = PhoneSaberIgnoreZones.Revision;
+            ignoreZonesStation = station;
+        }
+        return ignoreZones;
+    }
     public Vector2 NormalizedPosition2 { get; private set; }
     public float LocalAngleDeg { get; private set; }
     public float LocalAngleDeg2 { get; private set; }
@@ -816,6 +837,21 @@ public class InputPoint : MonoBehaviour
                 Debug.Log($"[InputPoint] recv rate: port {port}={hz1:F1}Hz ({c1} pkt/{dt:F2}s), port {port2}={hz2:F1}Hz ({c2} pkt/{dt:F2}s)");
                 lastRateLogTime = now;
             }
+        }
+
+        // 「この赤を無視する」（PhoneSaberIgnoreZones）。両端とも同じ範囲に入る受信は使わない（前の位置を保つ）。
+        // 範囲を覚えるために、捨てる前の生の両端（カメラ画像の 0..1）を残す。
+        if (updated && updatedStick)
+        {
+            LastRawEndsA = Normalized01(x1a, y1a, camWidth, camHeight);
+            LastRawEndsB = Normalized01(x1b, y1b, camWidth, camHeight);
+            if (PhoneSaberIgnoreZones.Enabled && PhoneSaberIgnoreZones.Covers(IgnoreZones(), LastRawEndsA, LastRawEndsB)) { updated = false; IgnoredSamples++; }
+        }
+        if (updated2 && updatedStick2)
+        {
+            LastRawEndsA2 = Normalized01(x2a, y2a, camWidth, camHeight);
+            LastRawEndsB2 = Normalized01(x2b, y2b, camWidth, camHeight);
+            if (PhoneSaberIgnoreZones.Enabled && PhoneSaberIgnoreZones.Covers(IgnoreZones(), LastRawEndsA2, LastRawEndsB2)) { updated2 = false; IgnoredSamples2++; }
         }
 
         // 両色とも更新がなく IMU も使わない場合、座標処理へ進む必要がない。

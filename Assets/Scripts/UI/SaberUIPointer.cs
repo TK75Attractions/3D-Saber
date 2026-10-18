@@ -11,6 +11,7 @@ using UnityEngine.UI;
 // 3Dノーツ・カメラ切替を使わないため、曲選択のUIをそのまま操作できる(旧3Dメニュー方式の代替)。
 public class SaberUIPointer : MonoBehaviour
 {
+    readonly PhoneSaberPointJumpGate pointJumpGate = new PhoneSaberPointJumpGate();
     public const float DwellSeconds = 0.45f;
     public const float CooldownSeconds = 0.4f;
     public const float StaleSeconds = 0.6f;
@@ -165,6 +166,9 @@ public class SaberUIPointer : MonoBehaviour
         if (mouseNeedsMove && Vector2.Distance(lastMouse, mousePoint) > 3) mouseNeedsMove = false;
         // 選曲と同じ入力座標。ゲーム内のセーバーの可動域や表示位置は変えない。
         Vector2 point = source == 1 ? Vector2.Scale(input.NormalizedPosition, new Vector2(Screen.width, Screen.height)) : mousePoint;
+        // 誤認識（会場の赤い物など）で照準が一瞬遠くへ飛ぶのを、最大2受信だけ無視する（PhoneSaberPointJumpGate）。
+        if (source == 1) point = pointJumpGate.Apply(input.LastReceivedMonotonicTime, point, Screen.height * .25f);
+        else pointJumpGate.Reset();
         bool valid = (Application.isFocused || Application.isBatchMode) && source != 0 && !mouseNeedsMove;
         if (!hasAimPosition || source != 1) aimPosition = point;
         else aimPosition = Vector2.Lerp(aimPosition, point, 1 - Mathf.Exp(-Time.unscaledDeltaTime / SongSelectAimPointer.SaberSmoothingSeconds));
