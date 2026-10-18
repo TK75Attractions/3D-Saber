@@ -702,6 +702,7 @@ final class CameraViewModel: NSObject, ObservableObject {
     /// only while the bridge answers pings; otherwise the LAN `sender` is used.
     private let p2pSender: P2PSender
     private static let p2pEnabledKey = "PhoneSaber.p2pEnabled"
+    private static let ignoreZonesKey = "PhoneSaber.ignoreZones.v1"
     private static let mirrorXKey = "PhoneSaber.mirrorX"
     private static let mirrorYKey = "PhoneSaber.mirrorY"
     /// True once `sender` has a LAN destination for the current run.
@@ -1025,6 +1026,9 @@ final class CameraViewModel: NSObject, ObservableObject {
             }
         }
         pathMonitor.start(queue: DispatchQueue(label: "PhoneSaberSender.path"))
+        lanProbe.onCommand = { [weak self] command in
+            Task { @MainActor in self?.applyPCCommand(command) }
+        }
         bonjourDiscovery.onUpdate = { [weak self] update in
             Task { @MainActor in
                 self?.receiveBonjourUpdate(update)
@@ -1508,6 +1512,70 @@ final class CameraViewModel: NSObject, ObservableObject {
         lowHeatDisplay.touch(at: time)
     }
 
+    // MARK: 無視する赤・青の物（会場のコーンなど。SaberIgnoreZone）
+
+    private var ignoreZones: [SaberColor: [SaberIgnoreZone]] = CameraViewModel.storedIgnoreZones()
+    @Published private(set) var ignoreZoneSummary = CameraViewModel.summary(CameraViewModel.storedIgnoreZones())
+    static let maximumIgnoreZones = 4
+
+    nonisolated private static func storedIgnoreZones() -> [SaberColor: [SaberIgnoreZone]] {
+        guard NSClassFromString("XCTestCase") == nil,
+              let data = UserDefaults.standard.data(forKey: ignoreZonesKey),
+              let stored = try? JSONDecoder().decode([String: [SaberIgnoreZone]].self, from: data) else { return [:] }
+        var zones: [SaberColor: [SaberIgnoreZone]] = [:]
+        if let red = stored["red"], !red.isEmpty { zones[.red] = Array(red.suffix(maximumIgnoreZones)) }
+        if let blue = stored["blue"], !blue.isEmpty { zones[.blue] = Array(blue.suffix(maximumIgnoreZones)) }
+        return zones
+    }
+
+    nonisolated private static func summary(_ zones: [SaberColor: [SaberIgnoreZone]]) -> String {
+        let red = zones[.red]?.count ?? 0, blue = zones[.blue]?.count ?? 0
+        return red + blue == 0 ? "なし" : "赤 \(red) か所・青 \(blue) か所"
+    }
+
+    /// 剣を消し（カメラの外・電源 OFF）、コーンなど置きっぱなしの物だけが検出されている状態で押す。
+    /// 今その色で選ばれている候補の両端を囲む範囲を覚え、以後その範囲の候補は選ばない（次の候補を選ぶ）。
+    @discardableResult
+    func ignoreCurrentDetection(_ color: SaberColor) -> Bool {
+        guard let endpoints = color == .red ? redEndpoints : blueEndpoints else { return false }
+        let zone = SaberIgnoreZone(around: endpoints, width: sourceDimensions.width, height: sourceDimensions.height)
+        var list = ignoreZones[color] ?? []
+        list.append(zone)
+        ignoreZones[color] = Array(list.suffix(Self.maximumIgnoreZones))
+        applyIgnoreZones()
+        ConnectivityLog.shared.record("IGNORE_ZONE", "add color=\(color == .red ? "red" : "blue") zone=\(zone.minX),\(zone.minY),\(zone.maxX),\(zone.maxY)")
+        return true
+    }
+
+    func clearIgnoreZones() {
+        ignoreZones = [:]
+        applyIgnoreZones()
+        ConnectivityLog.shared.record("IGNORE_ZONE", "clear")
+    }
+
+    private var lastPCCommandID: Int?
+
+    /// Mac の F8 から届いた指示（同じ id は一度だけ）。
+    func applyPCCommand(_ command: LANLivenessProbe.PCCommand) {
+        guard command.id != lastPCCommandID else { return }
+        lastPCCommandID = command.id
+        if command.clearIgnore { clearIgnoreZones() }
+        if let name = command.ignore {
+            let done = ignoreCurrentDetection(name == "blue" ? .blue : .red)
+            if !done { ConnectivityLog.shared.record("IGNORE_ZONE", "pc command id=\(command.id): no current detection") }
+        }
+    }
+
+    private func applyIgnoreZones() {
+        processor.setIgnoreZones(ignoreZones)
+        ignoreZoneSummary = Self.summary(ignoreZones)
+        guard NSClassFromString("XCTestCase") == nil else { return }
+        var stored: [String: [SaberIgnoreZone]] = [:]
+        if let red = ignoreZones[.red] { stored["red"] = red }
+        if let blue = ignoreZones[.blue] { stored["blue"] = blue }
+        if let data = try? JSONEncoder().encode(stored) { UserDefaults.standard.set(data, forKey: Self.ignoreZonesKey) }
+    }
+
     func setLowHeatDisplayEnabled(_ enabled: Bool) {
         guard enabled != lowHeatDisplayEnabled else { return }
         lowHeatDisplayEnabled = enabled
@@ -1740,6 +1808,10 @@ final class CameraViewModel: NSObject, ObservableObject {
     }
 
     func receiveNetworkPathUpdate(status: String, interface: String) {
+        // 2026-10-18: iPhone がテザリングの親機のとき、中身が同じ経路の通知が 3〜6 秒おきに届く。
+        // そのたびに Bonjour の探索と P2P の復旧をやり直すと電波を取り合い、座標が 0.2〜1 秒届かなかった。
+        // 状態も経路も変わっていない通知では何もしない。
+        guard status != pathStatus || interface != pathInterface else { return }
         pathStatus = status; pathInterface = interface
         // NWConnection が経路変更を追う。広告の再解決中も既知の LAN 宛先を失わない。
         if running { sender.recoverIfNeeded() }
@@ -1793,6 +1865,7 @@ final class CameraViewModel: NSObject, ObservableObject {
     }
 
     private func configureAndStart(isRecovery: Bool = false, recoveryGeneration: Int? = nil) {
+        processor.setIgnoreZones(ignoreZones)
         let configuredHost = host.trimmingCharacters(in: .whitespacesAndNewlines)
         cameraErrorMessage = nil
         connectionErrorMessage = nil

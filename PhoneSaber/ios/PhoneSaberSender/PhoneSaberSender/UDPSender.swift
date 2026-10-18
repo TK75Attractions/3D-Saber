@@ -589,6 +589,35 @@ final class LANLivenessProbe {
     static let replyPrefix = "PHONESABER_UNITY 1"
     static let aliveWindow: TimeInterval = 1.5
 
+    /// PC（Unity の F8）からの指示。生存確認の応答と一緒に届く別の datagram（応答の形式は変えない）。
+    ///   "PHONESABER_COMMAND 1 id=<番号> ignore=red|blue" / "PHONESABER_COMMAND 1 id=<番号> clear-ignore=1"
+    /// 2026-10-18: 会場のコーンを無視する範囲を、iPhone に触らず Mac から登録するため。
+    struct PCCommand: Equatable {
+        let id: Int
+        /// "red" / "blue"（検出の型に依存させない）。
+        let ignore: String?
+        let clearIgnore: Bool
+    }
+    static let commandPrefix = "PHONESABER_COMMAND 1 "
+    static func parseCommand(_ text: String) -> PCCommand? {
+        guard text.hasPrefix(commandPrefix) else { return nil }
+        var id: Int?, ignore: String?, clear = false
+        for field in text.dropFirst(commandPrefix.count).split(separator: " ") {
+            let parts = field.split(separator: "=", maxSplits: 1).map(String.init)
+            guard parts.count == 2 else { continue }
+            switch parts[0] {
+            case "id": id = Int(parts[1])
+            case "ignore": ignore = parts[1] == "red" || parts[1] == "blue" ? parts[1] : nil
+            case "clear-ignore": clear = parts[1] == "1"
+            default: break
+            }
+        }
+        guard let id, ignore != nil || clear else { return nil }
+        return PCCommand(id: id, ignore: ignore, clearIgnore: clear)
+    }
+    /// 受信キューから呼ぶ。受け手は main で同じ id を一度だけ実行する。
+    var onCommand: ((PCCommand) -> Void)?
+
     private let queue = DispatchQueue(label: "PhoneSaberSender.lanProbe")
     private let lock = NSLock()
     private let clock: () -> TimeInterval
@@ -764,7 +793,13 @@ final class LANLivenessProbe {
     }
 
     private func handle(_ data: Data, from connection: NWConnection?) {
-        guard let text = String(data: data, encoding: .ascii), Self.isCompatibleReply(text) else { return }
+        guard let text = String(data: data, encoding: .ascii) else { return }
+        if let command = Self.parseCommand(text) {
+            lock.lock(); let fromCurrent = connection == nil || self.connection === connection; lock.unlock()
+            if fromCurrent { onCommand?(command) }
+            return
+        }
+        guard Self.isCompatibleReply(text) else { return }
         lock.lock()
         if connection == nil || self.connection === connection {
             lastReply = clock()

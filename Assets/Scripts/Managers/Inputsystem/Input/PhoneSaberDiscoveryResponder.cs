@@ -14,6 +14,36 @@ public sealed class PhoneSaberDiscoveryResponder : IDisposable
     public const int Port = 5007;
     public const string Request = "PHONESABER_DISCOVER 1";
     public const string ReplyPrefix = "PHONESABER_UNITY 1";
+    // F8 から iPhone への指示（2026-10-18: 会場のコーンを iPhone に触らず無視させる）。応答の形式は変えず、
+    // 応答の直後に別の datagram として同じ相手へ送る。CommandSeconds の間、探索要求が来るたびに送り直し、
+    // iPhone は同じ id を一度だけ実行する。古いアプリや Android は知らない datagram として捨てる。
+    public const string CommandPrefix = "PHONESABER_COMMAND 1";
+    public const double CommandSeconds = 10;
+    static string pendingCommand;
+    static double pendingUntil;
+    static int commandId;
+
+    public static string BuildCommand(int id, string fields) => CommandPrefix + " id=" + id + " " + fields;
+
+    // fields: "ignore=red" / "ignore=blue" / "clear-ignore=1"
+    public static int QueueCommand(string fields)
+    {
+        int id = System.Threading.Interlocked.Increment(ref commandId) + (int)(DateTime.UtcNow.Ticks % 100000) * 1000;
+        Volatile.Write(ref pendingCommand, BuildCommand(id, fields));
+        Volatile.Write(ref pendingUntil, SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp) + CommandSeconds);
+        return id;
+    }
+
+    public static double CommandSecondsLeft(double now) =>
+        Volatile.Read(ref pendingCommand) == null ? 0 : Math.Max(0, Volatile.Read(ref pendingUntil) - now);
+
+    static byte[] CurrentCommand()
+    {
+        string command = Volatile.Read(ref pendingCommand);
+        if (command == null) return null;
+        if (SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp) > Volatile.Read(ref pendingUntil)) return null;
+        return Encoding.ASCII.GetBytes(command);
+    }
 
     public PhoneSaberMetricsStore Metrics { get; } = new PhoneSaberMetricsStore();
 
@@ -96,7 +126,12 @@ public sealed class PhoneSaberDiscoveryResponder : IDisposable
             try
             {
                 int length = client.Client.ReceiveFrom(data, ref remote);
-                if (IsRequest(data, length)) client.Send(reply, reply.Length, (IPEndPoint)remote);
+                if (IsRequest(data, length))
+                {
+                    client.Send(reply, reply.Length, (IPEndPoint)remote);
+                    byte[] command = CurrentCommand();
+                    if (command != null) client.Send(command, command.Length, (IPEndPoint)remote);
+                }
                 else if (length <= PhoneSaberMetrics.MaximumBytes)
                     Metrics.Receive(data, length, ((IPEndPoint)remote).Address,
                         SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp));

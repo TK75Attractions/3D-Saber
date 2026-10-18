@@ -344,7 +344,16 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
     {
         int count = PhoneSaberIgnoreZones.Load(name).Count;
         string ignored = input != null ? $"・無視した受信 赤 {input.IgnoredSamples} / 青 {input.IgnoredSamples2}" : "";
-        GUILayout.Label($"無視する赤い物: {count} か所（この台に保存）{ignored}", textStyle);
+        // 本命は iPhone 側（候補を選ぶ前に外すので、同じコマの剣が選ばれる）。PC 側はその予備。
+        double left = PhoneSaberDiscoveryResponder.CommandSecondsLeft(SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp));
+        GUILayout.Label("iPhone に無視させる（剣の電源を切り、コーンなどだけが映っている状態で押す）" +
+            (left > 0 ? $"　送信中 あと {left:0} 秒" : ""), textStyle);
+        GUILayout.BeginHorizontal();
+        if (GUILayout.Button("iPhone: 今の赤を無視", buttonStyle)) PhoneSaberDiscoveryResponder.QueueCommand("ignore=red");
+        if (GUILayout.Button("iPhone: 今の青を無視", buttonStyle)) PhoneSaberDiscoveryResponder.QueueCommand("ignore=blue");
+        if (GUILayout.Button("iPhone: 無視をすべて消す", buttonStyle)) PhoneSaberDiscoveryResponder.QueueCommand("clear-ignore=1");
+        GUILayout.EndHorizontal();
+        GUILayout.Label($"PC 側で無視（予備）: {count} か所（この台に保存）{ignored}", textStyle);
         GUILayout.BeginHorizontal();
         bool red = input != null && input.IsRecentlyActive(.5f);
         bool blue = input != null && input.IsRecentlyActive2(.5f);

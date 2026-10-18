@@ -492,10 +492,45 @@ func blueNoDeepSupport(points: [PixelPoint], baseAddress: UnsafePointer<UInt8>,
 
 /// Scan BGRA once for both colors, then clean and score the two compact masks.
 /// Coordinates remain in the source image's coordinate system.
+/// 会場に置かれたままの赤・青の物（コーンなど）を「無視する範囲」に登録したもの。座標はフレームの 0..1。
+/// 2026-10-18: 実験場所の赤いコーンが剣より選ばれるコマがあり、そのコマは本物の剣が送られなかった。
+/// 選ぶ前に外せば、同じコマで次の候補（本物の剣）が選ばれる。範囲が無ければ選び方は従来と同じ。
+struct SaberIgnoreZone: Equatable, Codable {
+    var minX: Double, minY: Double, maxX: Double, maxY: Double
+    static let margin = 0.04, minimumSize = 0.06
+
+    /// 両端（フレームのピクセル）を囲み、少し広げた範囲。
+    init(around endpoints: (PixelPoint, PixelPoint), width: Int, height: Int) {
+        let w = Double(max(width, 1)), h = Double(max(height, 1))
+        var lowX = Double(min(endpoints.0.x, endpoints.1.x)) / w - Self.margin
+        var highX = Double(max(endpoints.0.x, endpoints.1.x)) / w + Self.margin
+        var lowY = Double(min(endpoints.0.y, endpoints.1.y)) / h - Self.margin
+        var highY = Double(max(endpoints.0.y, endpoints.1.y)) / h + Self.margin
+        if highX - lowX < Self.minimumSize { let c = (lowX + highX) / 2; lowX = c - Self.minimumSize / 2; highX = c + Self.minimumSize / 2 }
+        if highY - lowY < Self.minimumSize { let c = (lowY + highY) / 2; lowY = c - Self.minimumSize / 2; highY = c + Self.minimumSize / 2 }
+        minX = lowX; maxX = highX; minY = lowY; maxY = highY
+    }
+
+    init(minX: Double, minY: Double, maxX: Double, maxY: Double) {
+        self.minX = minX; self.minY = minY; self.maxX = maxX; self.maxY = maxY
+    }
+
+    func contains(_ point: PixelPoint, width: Int, height: Int) -> Bool {
+        let x = Double(point.x) / Double(max(width, 1)), y = Double(point.y) / Double(max(height, 1))
+        return x >= minX && x <= maxX && y >= minY && y <= maxY
+    }
+}
+
+/// 両端とも同じ範囲に入る候補は使わない（剣がそこを横切るだけなら使う）。
+func saberIgnored(_ endpoints: (PixelPoint, PixelPoint), width: Int, height: Int, zones: [SaberIgnoreZone]) -> Bool {
+    zones.contains { $0.contains(endpoints.0, width: width, height: height) && $0.contains(endpoints.1, width: width, height: height) }
+}
+
 func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, bytesPerRow: Int,
                    redThreshold: ColorThreshold, blueThreshold: ColorThreshold,
                    sampleStep: Int = 2, collectProfile: Bool = false,
-                   collectPipelineDiagnostics: Bool = false) -> SaberFrameAnalysis {
+                   collectPipelineDiagnostics: Bool = false,
+                   ignoreZones: [SaberColor: [SaberIgnoreZone]] = [:]) -> SaberFrameAnalysis {
     let totalStart = collectProfile ? ProcessInfo.processInfo.systemUptime : 0
     var profile = SaberDetectionProfile()
     let candidateStageProfile = collectProfile ? SaberCandidateStageProfile() : nil
@@ -1261,7 +1296,10 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
                 connectedComponentCount: connectedComponentCount
             )
         }
-        if let winner = scaled.first(where: \.isEmitterEligible) {
+        let zones = ignoreZones[color] ?? []
+        if let winner = scaled.first(where: {
+            $0.isEmitterEligible && (zones.isEmpty || !saberIgnored($0.endpoints, width: width, height: height, zones: zones))
+        }) {
             selected[color] = winner.endpoints
         }
         if collectProfile {
@@ -1291,10 +1329,11 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
 
 func detectSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, bytesPerRow: Int,
                   redThreshold: ColorThreshold, blueThreshold: ColorThreshold,
-                  sampleStep: Int = 2) -> [SaberColor: (PixelPoint, PixelPoint)] {
+                  sampleStep: Int = 2,
+                  ignoreZones: [SaberColor: [SaberIgnoreZone]] = [:]) -> [SaberColor: (PixelPoint, PixelPoint)] {
     analyzeSabers(baseAddress: baseAddress, width: width, height: height, bytesPerRow: bytesPerRow,
                   redThreshold: redThreshold, blueThreshold: blueThreshold,
-                  sampleStep: sampleStep).selected
+                  sampleStep: sampleStep, ignoreZones: ignoreZones).selected
 }
 
 /// Array wrapper retained for pure Swift/static tests. Production passes the
@@ -1316,7 +1355,8 @@ func detectSaber(in bgra: [UInt8], width: Int, height: Int, bytesPerRow: Int,
 func analyzeSabers(in bgra: [UInt8], width: Int, height: Int, bytesPerRow: Int,
                    redThreshold: ColorThreshold, blueThreshold: ColorThreshold,
                    sampleStep: Int = 2, collectProfile: Bool = false,
-                   collectPipelineDiagnostics: Bool = false) -> SaberFrameAnalysis {
+                   collectPipelineDiagnostics: Bool = false,
+                   ignoreZones: [SaberColor: [SaberIgnoreZone]] = [:]) -> SaberFrameAnalysis {
     guard width > 0, height > 0, bytesPerRow >= width * 4,
           bgra.count >= bytesPerRow * height else {
         return SaberFrameAnalysis(candidates: [:], selected: [:])
@@ -1329,6 +1369,6 @@ func analyzeSabers(in bgra: [UInt8], width: Int, height: Int, bytesPerRow: Int,
                              bytesPerRow: bytesPerRow, redThreshold: redThreshold,
                              blueThreshold: blueThreshold, sampleStep: sampleStep,
                              collectProfile: collectProfile,
-                             collectPipelineDiagnostics: collectPipelineDiagnostics)
+                             collectPipelineDiagnostics: collectPipelineDiagnostics, ignoreZones: ignoreZones)
     }
 }

@@ -75,4 +75,18 @@ final class MetricsDatagramTests: XCTestCase {
         m.fpsMode = 60; m.median = 2.25; m.p95 = 2.25
         XCTAssertTrue(m.line()!.contains("c2s-median-ms=2.3"))
     }
+
+    // Mac の F8 から届く指示（2026-10-18）。Unity の PhoneSaberDiscoveryResponder.BuildCommand と同じ形式。
+    func testPCCommandParsing() {
+        XCTAssertEqual(LANLivenessProbe.parseCommand("PHONESABER_COMMAND 1 id=7 ignore=red"),
+                       LANLivenessProbe.PCCommand(id: 7, ignore: "red", clearIgnore: false))
+        XCTAssertEqual(LANLivenessProbe.parseCommand("PHONESABER_COMMAND 1 id=8 ignore=blue"),
+                       LANLivenessProbe.PCCommand(id: 8, ignore: "blue", clearIgnore: false))
+        XCTAssertEqual(LANLivenessProbe.parseCommand("PHONESABER_COMMAND 1 id=9 clear-ignore=1"),
+                       LANLivenessProbe.PCCommand(id: 9, ignore: nil, clearIgnore: true))
+        XCTAssertNil(LANLivenessProbe.parseCommand("PHONESABER_COMMAND 1 ignore=red"))       // id なし
+        XCTAssertNil(LANLivenessProbe.parseCommand("PHONESABER_COMMAND 1 id=3 ignore=green")) // 知らない色
+        XCTAssertNil(LANLivenessProbe.parseCommand("PHONESABER_UNITY 1 red=5005 blue=5006 name=Mac"))
+        XCTAssertNil(LANLivenessProbe.parseCommand("PHONESABER_COMMAND 2 id=1 ignore=red"))  // 別の版
+    }
 }

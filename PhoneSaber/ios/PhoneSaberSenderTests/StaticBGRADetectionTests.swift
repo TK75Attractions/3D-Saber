@@ -793,6 +793,33 @@ enum StaticBGRADetectionTests {
         print("Fast movement: 10 frames, immediate single-frame detection passed")
         // sampleStep=2 quantizes coordinates by two pixels; this tolerance covers
         // three samples plus the five-pixel cap. 0.20 radians rejects a 90-degree error.
+        // 会場の赤いコーン（2026-10-18）: 無視する範囲に両端が入る候補は選ばず、同じコマの別の候補を選ぶ。
+        do {
+            var scene = StaticImage(width: 200, height: 120)
+            scene.bar(from: PixelPoint(x: 150, y: 15), to: PixelPoint(x: 150, y: 105), color: .red, thickness: 4)
+            scene.bar(from: PixelPoint(x: 30, y: 35), to: PixelPoint(x: 45, y: 105), color: .red, thickness: 4)
+            let threshold = ColorThreshold(brightness: 140, dominance: 20)
+            func select(_ zones: [SaberColor: [SaberIgnoreZone]]) -> (PixelPoint, PixelPoint)? {
+                analyzeSabers(in: scene.bytes, width: scene.width, height: scene.height,
+                              bytesPerRow: scene.bytesPerRow, redThreshold: threshold,
+                              blueThreshold: threshold, ignoreZones: zones).selected[.red]
+            }
+            guard let first = select([:]) else { fatalError("ignore zone: nothing detected") }
+            let zone = SaberIgnoreZone(around: first, width: scene.width, height: scene.height)
+            guard let second = select([.red: [zone]]) else { fatalError("ignore zone: the other bar was not selected") }
+            guard endpointDistance(second, first) > 40,
+                  !saberIgnored(second, width: scene.width, height: scene.height, zones: [zone]) else {
+                fatalError("ignore zone: selected the ignored candidate again \(second)")
+            }
+            let far = SaberIgnoreZone(minX: 0.9, minY: 0.9, maxX: 1, maxY: 1)
+            guard let same = select([.red: [far]]), endpointDistance(same, first) < 1 else {
+                fatalError("ignore zone: an unrelated zone changed the selection")
+            }
+            guard select([.blue: [zone]]).map({ endpointDistance($0, first) < 1 }) == true else {
+                fatalError("ignore zone: a blue zone changed the red selection")
+            }
+            print("Ignore zone: the ignored candidate is skipped and the other bar is selected")
+        }
         print("Static BGRA detection tests passed")
     }
 }

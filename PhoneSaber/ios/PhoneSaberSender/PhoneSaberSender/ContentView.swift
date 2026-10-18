@@ -457,6 +457,17 @@ struct ContentView: View {
                             .disabled(!model.cameraExposureExperimentEditable)
                             Text("既定OFF。HDR・歪み補正を無効化するため画像が変わる場合があります。アプリ終了でOFFに戻ります。")
                                 .font(.caption).foregroundStyle(.secondary)
+                            Text("無視する赤・青の物: \(model.ignoreZoneSummary)")
+                            HStack {
+                                Button("今の赤を無視") { model.ignoreCurrentDetection(.red) }
+                                    .disabled(model.redEndpoints == nil)
+                                Button("今の青を無視") { model.ignoreCurrentDetection(.blue) }
+                                    .disabled(model.blueEndpoints == nil)
+                                Button("無視をすべて消す", role: .destructive) { model.clearIgnoreZones() }
+                            }
+                            .buttonStyle(.bordered)
+                            Text("会場のコーンなど、剣ではない赤・青の物が認識されるとき用。剣の電源を切るかカメラの外に出し、その物だけが枠で囲まれている状態で押します。以後その場所の候補は選ばず、同じコマの剣を選びます。カメラや物を動かしたら押し直してください。")
+                                .font(.caption).foregroundStyle(.secondary)
                             Toggle("低発熱表示（送信中に\(Int(LowHeatDisplayPolicy.idleSeconds))秒触れなければ画面を暗くする）", isOn: Binding(
                                 get: { model.lowHeatDisplayEnabled },
                                 set: { model.setLowHeatDisplayEnabled($0) }

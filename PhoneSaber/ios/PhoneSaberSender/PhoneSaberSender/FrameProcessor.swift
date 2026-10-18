@@ -101,6 +101,11 @@ final class FrameProcessor: @unchecked Sendable {
     // for the detector queue just to reject an obsolete generation.
     private var generationSnapshot = 0
     private let pendingLock = NSLock()
+    /// 無視する範囲（SaberIgnoreZone）。main から設定し、検出スレッドで読む（pendingLock で保護）。
+    private var ignoreZones: [SaberColor: [SaberIgnoreZone]] = [:]
+    func setIgnoreZones(_ zones: [SaberColor: [SaberIgnoreZone]]) {
+        pendingLock.lock(); ignoreZones = zones; pendingLock.unlock()
+    }
     private struct PendingFrame {
         let sampleBuffer: CMSampleBuffer
         let sequence: UInt64
@@ -516,6 +521,9 @@ final class FrameProcessor: @unchecked Sendable {
         }
         let bytesPerRow = CVPixelBufferGetBytesPerRow(pixelBuffer)
         let bytes = UnsafePointer(base.assumingMemoryBound(to: UInt8.self))
+        pendingLock.lock()
+        let zones = ignoreZones
+        pendingLock.unlock()
 #if DEBUG
         let accessMs = (ProcessInfo.processInfo.systemUptime - accessStart) * 1000
         pendingLock.lock()
@@ -526,7 +534,8 @@ final class FrameProcessor: @unchecked Sendable {
         let analysis = analyzeSabers(baseAddress: bytes, width: width, height: height,
                                      bytesPerRow: bytesPerRow, redThreshold: redThreshold,
                                      blueThreshold: blueThreshold, collectProfile: collectProfile,
-                                     collectPipelineDiagnostics: debugVideoRecorder != nil)
+                                     collectPipelineDiagnostics: debugVideoRecorder != nil,
+                                     ignoreZones: zones)
         let sabers = analysis.selected
 #else
         let analysis: SaberFrameAnalysis?
@@ -536,7 +545,7 @@ final class FrameProcessor: @unchecked Sendable {
                 baseAddress: bytes, width: width, height: height,
                 bytesPerRow: bytesPerRow, redThreshold: redThreshold,
                 blueThreshold: blueThreshold, collectProfile: false,
-                collectPipelineDiagnostics: true
+                collectPipelineDiagnostics: true, ignoreZones: zones
             )
             analysis = recordedAnalysis
             sabers = recordedAnalysis.selected
@@ -544,7 +553,8 @@ final class FrameProcessor: @unchecked Sendable {
             analysis = nil
             sabers = detectSabers(baseAddress: bytes, width: width, height: height,
                                   bytesPerRow: bytesPerRow,
-                                  redThreshold: redThreshold, blueThreshold: blueThreshold)
+                                  redThreshold: redThreshold, blueThreshold: blueThreshold,
+                                  ignoreZones: zones)
         }
 #endif
         let detected: [(SaberColor, (PixelPoint, PixelPoint)?)] = [
