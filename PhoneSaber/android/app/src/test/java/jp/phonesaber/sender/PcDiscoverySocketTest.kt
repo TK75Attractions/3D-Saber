@@ -132,6 +132,88 @@ class PcDiscoverySocketTest {
 
     @Test fun initialDefaultNetworkFailureWaitsForCallbackAndAllowsRestart() = checkInitialSnapshotFailure("activeNetwork")
 
+    @Test fun initialLinkPropertiesFailureStillStartsDiscovery() = checkLinkPropertiesFailure("initial")
+
+    @Test fun connectedLinkPropertiesFailureStillStartsDiscovery() = checkLinkPropertiesFailure("connected")
+
+    @Test fun stationLinkPropertiesFailureStillRestartsDiscovery() = checkLinkPropertiesFailure("station")
+
+    @Test fun refreshLinkPropertiesFailureStillRestartsDiscovery() = checkLinkPropertiesFailure("refresh")
+
+    private fun checkLinkPropertiesFailure(trigger: String) {
+        val connectivity = mock(ConnectivityManager::class.java)
+        val nsd = mock(NsdManager::class.java)
+        val wifi = mock(Network::class.java)
+        val capabilities = mock(NetworkCapabilities::class.java)
+        `when`(capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)).thenReturn(true)
+        `when`(connectivity.getNetworkCapabilities(wifi)).thenReturn(capabilities)
+        `when`(connectivity.allNetworks).thenReturn(if (trigger == "connected") emptyArray() else arrayOf(wifi))
+        val address = mock(LinkAddress::class.java)
+        `when`(address.address).thenReturn(InetAddress.getByName("192.168.1.50"))
+        `when`(address.prefixLength).thenReturn(24)
+        val properties = mock(LinkProperties::class.java)
+        `when`(properties.linkAddresses).thenReturn(listOf(address))
+        `when`(connectivity.getLinkProperties(wifi)).thenReturn(properties)
+        val request = mock(NetworkRequest::class.java)
+        mockConstruction(NetworkRequest.Builder::class.java, withSettings().defaultAnswer(RETURNS_SELF)) { builder, _ ->
+            `when`(builder.build()).thenReturn(request)
+        }.use {
+            mockConstruction(DatagramSocket::class.java) { socket, _ ->
+                `when`(socket.isClosed).thenReturn(true)
+            }.use { sockets ->
+                val delayed = mutableListOf<Pair<Runnable, Long>>()
+                val networks = mutableListOf<Network?>()
+                withDiscovery(nsd, runPosts = true, connectivity = connectivity, delayed = delayed,
+                    onUpdate = { _, network, _ -> networks.add(network) }) { discovery ->
+                    try {
+                        if (trigger !in listOf("initial", "connected")) discovery.start()
+                        // 接続情報のRPCだけを一度失敗させる。Wi-Fiとcallbackは有効なまま。
+                        `when`(connectivity.getLinkProperties(wifi))
+                            .thenThrow(RuntimeException("getLinkProperties failed")).thenReturn(properties)
+                        when (trigger) {
+                            "initial" -> discovery.start()
+                            "connected" -> {
+                                discovery.start()
+                                val events = ArgumentCaptor.forClass(ConnectivityManager.NetworkCallback::class.java)
+                                verify(connectivity).registerNetworkCallback(eq(request), events.capture())
+                                events.value.onAvailable(wifi)
+                            }
+                            "station" -> discovery.setStation("B")
+                            "refresh" -> {
+                                PcDiscovery::class.java.getDeclaredField("lastRefresh").apply { isAccessible = true }
+                                    .setLong(discovery, System.nanoTime() - 30_000_000_000L)
+                                delayed.last { it.second == 1000L }.first.run()
+                            }
+                        }
+                        val count = if (trigger in listOf("initial", "connected")) 1 else 2
+                        assertEquals("RPC失敗でも探索を開始・再生成する", count, sockets.constructed().size)
+                        assertEquals(wifi, networks.last())
+                        verify(wifi).bindSocket(sockets.constructed().last())
+                        verify(nsd, times(count)).discoverServices(eq("_phonesaber._udp."),
+                            eq(NsdManager.PROTOCOL_DNS_SD), any(NsdManager.DiscoveryListener::class.java))
+                        assertTrue("次の定期探索を予約する", delayed.count { it.second == 1000L } >= count)
+                        // 後続の接続情報通知でdirected broadcastも復帰し、同じ通知では再生成しない。
+                        val events = ArgumentCaptor.forClass(ConnectivityManager.NetworkCallback::class.java)
+                        verify(connectivity).registerNetworkCallback(eq(request), events.capture())
+                        events.value.onLinkPropertiesChanged(wifi, properties)
+                        events.value.onLinkPropertiesChanged(wifi, properties)
+                        assertEquals(count + 1, sockets.constructed().size)
+                        discovery.stop()
+                        sockets.constructed().forEach { verify(it, atLeastOnce()).close() }
+                        val updates = networks.size
+                        events.value.onAvailable(wifi)
+                        assertEquals("停止前のcallbackで再開しない", updates, networks.size)
+                        `when`(connectivity.allNetworks).thenReturn(arrayOf(wifi))
+                        discovery.start()
+                        assertEquals(count + 2, sockets.constructed().size)
+                        assertEquals(wifi, networks.last())
+                    } finally { discovery.stop() }
+                    sockets.constructed().forEach { verify(it, atLeastOnce()).close() }
+                }
+            }
+        }
+    }
+
     private fun checkInitialSnapshotFailure(failure: String) {
         val developerOverride = failure == "activeNetwork"
         org.junit.Assume.assumeTrue(!developerOverride || BuildConfig.DEBUG)

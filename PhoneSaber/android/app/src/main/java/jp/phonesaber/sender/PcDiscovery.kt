@@ -88,7 +88,7 @@ class PcDiscovery(context: Context,
     fun setStation(value: String) {
         if (station == value) return
         station = value
-        if (active) restartDiscovery(network?.let(connectivity::getLinkProperties))
+        if (active) restartDiscovery(currentLinkProperties())
         else { found.clear(); selectedKey = null; publish() }
     }
 
@@ -160,7 +160,14 @@ class PcDiscovery(context: Context,
     private fun switchNetwork(wifi: Network?) {
         if (network == wifi) return
         network = wifi
-        restartDiscovery(wifi?.let(connectivity::getLinkProperties))
+        restartDiscovery(currentLinkProperties())
+    }
+
+    private fun currentLinkProperties(): LinkProperties? = try {
+        network?.let(connectivity::getLinkProperties)
+    } catch (_: RuntimeException) {
+        // RPC失敗時も情報未取得と同様に探索を続け、後続の接続情報通知で補う。
+        null
     }
 
     private fun broadcastsFor(properties: LinkProperties?): Set<InetAddress> = DiscoveryBroadcasts.addresses(
@@ -207,7 +214,7 @@ class PcDiscovery(context: Context,
                 }
                 // 探索socket/NSDの失敗・古いDNS解決からも自動復帰する。
                 if (now - lastRefresh >= 30_000_000_000L) {
-                    restartDiscovery(network?.let(connectivity::getLinkProperties), preserveSelection = true)
+                    restartDiscovery(currentLinkProperties(), preserveSelection = true)
                     return
                 }
                 publish()
