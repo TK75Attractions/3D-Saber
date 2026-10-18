@@ -65,4 +65,15 @@ public class PhoneSaberIgnoreZonesTests
         gate.Reset();
         Assert.AreEqual(right, gate.Apply(7, right, 270));
     }
+
+    [Test]
+    public void DominanceWarningAppearsOnlyWhenAlmostEverythingIsIgnored()
+    {
+        Assert.IsEmpty(PhoneSaberIgnoreZones.DominanceWarning(0, 60, 0, 60));
+        Assert.IsEmpty(PhoneSaberIgnoreZones.DominanceWarning(10, 12, 0, 0)); // 少なすぎる受信では出さない
+        Assert.IsEmpty(PhoneSaberIgnoreZones.DominanceWarning(40, 60, 0, 60)); // 2/3 では出さない
+        StringAssert.Contains("赤", PhoneSaberIgnoreZones.DominanceWarning(58, 60, 0, 60));
+        StringAssert.Contains("赤・青", PhoneSaberIgnoreZones.DominanceWarning(58, 60, 55, 60));
+        StringAssert.Contains("今の青", PhoneSaberIgnoreZones.DominanceWarning(0, 60, 55, 60));
+    }
 }

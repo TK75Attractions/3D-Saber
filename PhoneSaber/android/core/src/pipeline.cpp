@@ -315,7 +315,30 @@ static bool any(const Mask& mask) { return std::find(mask.begin(),mask.end(),1) 
 } // namespace phonesaber::detail
 
 namespace phonesaber {
-FrameAnalysis analyze(const PixelBuffer& p, ColorThreshold red, ColorThreshold blue, int sample_step) {
+bool IgnoreZone::contains(PixelPoint point, int width, int height) const {
+    double x = double(point.x)/double(std::max(width,1)), y = double(point.y)/double(std::max(height,1));
+    return x >= min_x && x <= max_x && y >= min_y && y <= max_y;
+}
+bool saber_ignored(const Endpoints& e, int width, int height, const std::vector<IgnoreZone>& zones) {
+    return std::any_of(zones.begin(),zones.end(),[&](const IgnoreZone& zone){
+        return zone.contains(e.first,width,height) && zone.contains(e.second,width,height);
+    });
+}
+IgnoreZone ignore_zone_around(const BoundingBox& box, int width, int height) {
+    // コーンの両端はコマごとに大きく動く（台Bで押すたびに x 0.39〜0.80）。両端の線分より、
+    // 成分全体の箱を広げた範囲のほうが安定する。押すたびに範囲が増え、最大4つまで残す（アプリ側）。
+    double w = double(std::max(width,1)), h = double(std::max(height,1));
+    IgnoreZone zone{double(box.min_x)/w-IgnoreZone::margin, double(box.min_y)/h-IgnoreZone::margin,
+                    double(box.max_x)/w+IgnoreZone::margin, double(box.max_y)/h+IgnoreZone::margin};
+    auto widen = [](double& low, double& high) {
+        if (high-low >= IgnoreZone::minimum_size) return;
+        double center = (low+high)/2; low = center-IgnoreZone::minimum_size/2; high = center+IgnoreZone::minimum_size/2;
+    };
+    widen(zone.min_x,zone.max_x); widen(zone.min_y,zone.max_y);
+    return zone;
+}
+FrameAnalysis analyze(const PixelBuffer& p, ColorThreshold red, ColorThreshold blue, int sample_step,
+                      const IgnoreZones& ignore_zones) {
     using namespace detail;
     FrameAnalysis analysis;
     // Reject invalid buffers without reading them. Limit dimensions so Swift Int
@@ -526,7 +549,17 @@ FrameAnalysis analyze(const PixelBuffer& p, ColorThreshold red, ColorThreshold b
             if (c.robust_interval_endpoints) c.robust_interval_endpoints = Endpoints{scale(c.robust_interval_endpoints->first),scale(c.robust_interval_endpoints->second)};
             c.robust_body_length *= double(step); c.axial_density /= double(std::max(step,1));
             c.component_area = c.component_area*step*step;
-            if (c.eligible && !analysis.selected[color_index]) analysis.selected[color_index] = c.endpoints;
+            // 無視範囲に両端が入る候補は飛ばし、次の eligible 候補を選ぶ。候補の一覧・順位・eligible は変えない。
+            if (c.eligible && !analysis.selected[color_index]
+                && !saber_ignored(c.endpoints,p.width,p.height,ignore_zones[color_index])) {
+                analysis.selected[color_index] = c.endpoints;
+                BoundingBox extent = c.bounding_box;
+                for (auto end : {c.endpoints.first,c.endpoints.second}) {
+                    extent.min_x = std::min(extent.min_x,end.x); extent.max_x = std::max(extent.max_x,end.x);
+                    extent.min_y = std::min(extent.min_y,end.y); extent.max_y = std::max(extent.max_y,end.y);
+                }
+                analysis.selected_extent[color_index] = extent;
+            }
             analysis.candidates[color_index].push_back(std::move(c));
         }
     }

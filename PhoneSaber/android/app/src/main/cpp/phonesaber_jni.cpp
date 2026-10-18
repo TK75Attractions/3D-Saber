@@ -2,13 +2,20 @@
 #include <phonesaber/core.hpp>
 #include <exception>
 #include <new>
+#include <array>
 #include <chrono>
+#include <optional>
 #include "rgba_rotation.hpp"
 
 namespace {
 struct Session {
     phonesaber::FrameProcessor processor;
     phonesaber::android::RgbaRotation rotation;
+    // 無視範囲（会場のコーンなど）。Kotlin が変更時だけ解析スレッドから設定する。
+    phonesaber::IgnoreZones ignore_zones;
+    // 直近に選ばれた候補の範囲を IgnoreZone にしたものと、その処理時刻（解析スレッドだけが読み書き）。
+    std::array<std::optional<phonesaber::IgnoreZone>, 2> winner_zone;
+    std::array<double, 2> winner_time{};
 };
 Session* session(jlong handle) { return reinterpret_cast<Session*>(handle); }
 phonesaber::FrameProcessor* processor(jlong handle) { return &session(handle)->processor; }
@@ -48,14 +55,21 @@ jobjectArray process_pixels(JNIEnv* env, jlong handle, const phonesaber::PixelBu
     output.mirror_x = mirror_x == JNI_TRUE;
     output.mirror_y = mirror_y == JNI_TRUE;
     output.measurement_mode = measurement_mode == JNI_TRUE;
+    Session* current = session(handle);
+    // FrameProcessor::process(pixels, ...) と同じ analyze → process。範囲が無ければ従来と同じ結果。
+    const auto analysis = phonesaber::analyze(pixels, threshold, threshold, 2, current->ignore_zones);
+    for (int color = 0; color < 2; ++color) if (analysis.selected_extent[color]) {
+        current->winner_zone[color] = phonesaber::ignore_zone_around(*analysis.selected_extent[color],
+            pixels.width, pixels.height);
+        current->winner_time[color] = time;
+    }
     if (output.measurement_mode) {
-        const auto analysis = phonesaber::analyze(pixels, threshold, threshold);
         // iPhone と同じく検出後・文字列生成直前の Unix epoch。カメラ時刻ではない。
         const double epoch = std::chrono::duration<double>(
             std::chrono::system_clock::now().time_since_epoch()).count();
-        return results(env, processor(handle)->process(analysis, pixels.width, pixels.height, time, output, {epoch, epoch}));
+        return results(env, current->processor.process(analysis, pixels.width, pixels.height, time, output, {epoch, epoch}));
     }
-    return results(env, processor(handle)->process(pixels, time, output, {}, threshold, threshold));
+    return results(env, current->processor.process(analysis, pixels.width, pixels.height, time, output));
 }
 
 }
@@ -125,4 +139,38 @@ Java_jp_phonesaber_sender_NativeCore_processRotated(JNIEnv* env, jobject, jlong 
     } catch (const std::exception& error) {
         fail(env, "java/lang/IllegalStateException", error.what()); return nullptr;
     }
+}
+
+// zones: 色ごとに [min_x, min_y, max_x, max_y] × n（0..1、解析フレーム）。null は範囲なし。
+extern "C" JNIEXPORT void JNICALL
+Java_jp_phonesaber_sender_NativeCore_setIgnoreZones(JNIEnv* env, jobject, jlong handle,
+    jdoubleArray red, jdoubleArray blue) {
+    if (!handle) { fail(env, "java/lang/IllegalStateException", "Closed core"); return; }
+    phonesaber::IgnoreZones zones;
+    jdoubleArray arrays[2] = {red, blue};
+    for (int color = 0; color < 2; ++color) {
+        if (!arrays[color]) continue;
+        const jsize length = env->GetArrayLength(arrays[color]);
+        if (length % 4 != 0 || length > 4 * 64) {
+            fail(env, "java/lang/IllegalArgumentException", "Invalid ignore zones"); return;
+        }
+        std::vector<jdouble> values(static_cast<std::size_t>(length));
+        if (length > 0) env->GetDoubleArrayRegion(arrays[color], 0, length, values.data());
+        if (env->ExceptionCheck()) return;
+        for (jsize i = 0; i < length; i += 4)
+            zones[color].push_back({values[i], values[i + 1], values[i + 2], values[i + 3]});
+    }
+    session(handle)->ignore_zones = std::move(zones);
+}
+// 直近 max_age 秒以内に選ばれた候補の範囲（余白込み）を out[4] に書く。無ければ false。
+extern "C" JNIEXPORT jboolean JNICALL
+Java_jp_phonesaber_sender_NativeCore_winnerZone(JNIEnv* env, jobject, jlong handle, jint color,
+    jdouble now, jdouble max_age, jdoubleArray out) {
+    if (!handle || color < 0 || color > 1 || !out || env->GetArrayLength(out) < 4) return JNI_FALSE;
+    const Session* current = session(handle);
+    const auto& zone = current->winner_zone[color];
+    if (!zone || now - current->winner_time[color] > max_age) return JNI_FALSE;
+    const jdouble values[4] = {zone->min_x, zone->min_y, zone->max_x, zone->max_y};
+    env->SetDoubleArrayRegion(out, 0, 4, values);
+    return env->ExceptionCheck() ? JNI_FALSE : JNI_TRUE;
 }

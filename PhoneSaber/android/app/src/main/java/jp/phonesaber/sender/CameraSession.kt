@@ -43,6 +43,11 @@ class CameraSession(private val owner: LifecycleOwner, private val previewView: 
         private set
     @Volatile var diagnostics = "camera=starting"
         private set
+    // 無視範囲（main で差し替え、解析スレッドが毎フレーム読む不変オブジェクト）。カメラの再起動は不要。
+    @Volatile var ignoreZones: IgnoreZones = IgnoreZones.NONE
+    // 解析フレーム（縦向きに回転後）の寸法。プレビュー上に無視範囲を描くため。
+    @Volatile var frameSize: Pair<Int, Int>? = null
+        private set
     private val executor = analysisExecutor {
         Process.setThreadPriority(Process.THREAD_PRIORITY_MORE_FAVORABLE)
     }
@@ -177,7 +182,8 @@ class CameraSession(private val owner: LifecycleOwner, private val previewView: 
                             val jniStarted = System.nanoTime()
                             val degrees = image.imageInfo.rotationDegrees
                             val results = processor.processCamera(plane.buffer, image.width, image.height,
-                                plane.rowStride, plane.pixelStride, degrees, started / 1e9, brightness, dominance)
+                                plane.rowStride, plane.pixelStride, degrees, started / 1e9, brightness, dominance,
+                                ignoreZones)
                             val jniEnded = System.nanoTime()
                             val jniEndedNs = SystemClock.elapsedRealtimeNanos()
                             val capturedNs = CaptureClock.timestamp(image.imageInfo.timestamp, realtimeSensorClock)
@@ -189,6 +195,8 @@ class CameraSession(private val owner: LifecycleOwner, private val previewView: 
                                     val width = if (degrees % 180 == 0) image.width else image.height
                                     val height = if (degrees % 180 == 0) image.height else image.width
                                     status = describe(results, "${width}×${height} / $fps fps要求")
+                                    if (frameSize?.let { it.first != width || it.second != height } != false)
+                                        frameSize = width to height
                                 }
                             }
                             scheduleExpiry(token)
@@ -219,6 +227,21 @@ class CameraSession(private val owner: LifecycleOwner, private val previewView: 
                 }
             } catch (e: Exception) { fail(token, "カメラ開始失敗: ${e.localizedMessage}") }
         }, ContextCompat.getMainExecutor(previewView.context))
+    }
+
+    /**
+     * 今その色で選ばれている候補の範囲（直近 [WINNER_MAX_AGE] 秒以内）を、解析スレッドで読んで main へ返す。
+     * 送信中でなければ null。コーンはほぼ毎コマ選ばれるので、押した瞬間のコマが欠けても拾えるよう少し幅を持たせる。
+     */
+    fun captureWinnerZone(color: Int, callback: (IgnoreZone?) -> Unit) {
+        val token = generation
+        try {
+            executor.execute {
+                val zone = if (running && token == generation)
+                    core?.winnerZone(color, System.nanoTime() / 1e9, WINNER_MAX_AGE) else null
+                main.post { callback(zone) }
+            }
+        } catch (_: java.util.concurrent.RejectedExecutionException) { main.post { callback(null) } }
     }
 
     private fun describe(results: Array<NativeResult>, dimensions: String): Status {
@@ -265,6 +288,8 @@ class CameraSession(private val owner: LifecycleOwner, private val previewView: 
             core?.close(); core = null
         }
     }
+
+    companion object { const val WINNER_MAX_AGE = 0.25 }
 
     fun close() {
         stop()

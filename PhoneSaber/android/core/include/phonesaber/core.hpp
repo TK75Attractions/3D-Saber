@@ -86,9 +86,30 @@ struct FrameAnalysis {
     // Fixed red/blue order, including when a color is absent.
     std::array<std::vector<Candidate>, 2> candidates;
     std::array<std::optional<Endpoints>, 2> selected;
+    // 選ばれた候補の範囲（解析フレームの px）。成分の bounding_box と両端を囲む箱。
+    // 無視範囲（IgnoreZone）を作るためだけに使い、選択・送信には使わない。
+    std::array<std::optional<BoundingBox>, 2> selected_extent;
 };
+// 会場に置かれたままの赤・青の物（コーンなど）を選ばないための範囲。iPhone の SaberIgnoreZone
+// （7c5a1c1）と同じ意味。2026-10-18: 台B（AQUOS）で背後の赤いコーンがほぼ毎コマ赤の winner になり、
+// 本物の剣が送られなかった。選ぶ前に外すので、同じコマで次の eligible 候補（剣）が選ばれる。
+// 座標: analyze() に渡した PixelBuffer（解析フレーム）を 0..1 にしたもの。x = px / width,
+// y = px / height（Candidate.endpoints と同じ空間）。Android では JNI が縦向きへ回転した後で、
+// payload の 1920x1080 への拡大・左右/上下反転より前。反転設定を変えても範囲は動かない。
+struct IgnoreZone {
+    double min_x = 0, min_y = 0, max_x = 0, max_y = 0;
+    static constexpr double margin = 0.04, minimum_size = 0.06;
+    bool contains(PixelPoint point, int width, int height) const;
+};
+// 色ごと（red=0, blue=1）。範囲が無ければ選び方は従来と bit 単位で同じ。
+using IgnoreZones = std::array<std::vector<IgnoreZone>, 2>;
+// 両端とも同じ範囲に入る候補は使わない（剣がその範囲を横切るだけなら使う）。
+bool saber_ignored(const Endpoints& endpoints, int width, int height, const std::vector<IgnoreZone>& zones);
+// 選ばれた候補の範囲（selected_extent）を、各辺 margin 広げ、最小 minimum_size にした範囲。
+IgnoreZone ignore_zone_around(const BoundingBox& extent, int width, int height);
 FrameAnalysis analyze(const PixelBuffer& pixels, ColorThreshold red = {},
-                      ColorThreshold blue = {}, int sample_step = 2);
+                      ColorThreshold blue = {}, int sample_step = 2,
+                      const IgnoreZones& ignore_zones = {});
 std::optional<Endpoints> principal_axis_endpoints(const std::vector<PixelPoint>& points);
 PixelPoint scaled_point(PixelPoint point, int source_width, int source_height,
                         int output_width, int output_height, bool mirror_x, bool mirror_y);
@@ -119,7 +140,8 @@ public:
     std::vector<FrameResult> process(const PixelBuffer& pixels, double processing_time,
                                    const OutputConfig& output = {},
                                    const std::array<double, 2>& send_epochs = {},
-                                   ColorThreshold red = {}, ColorThreshold blue = {});
+                                   ColorThreshold red = {}, ColorThreshold blue = {},
+                                   const IgnoreZones& ignore_zones = {});
     // Call at the scheduled lastSeen + 0.18 deadline (iPhone expiry callback).
     // Returned results are preview-only and never contain datagrams.
     std::vector<FrameResult> expire(double now);

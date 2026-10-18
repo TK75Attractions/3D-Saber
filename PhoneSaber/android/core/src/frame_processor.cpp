@@ -68,8 +68,9 @@ std::vector<FrameResult> FrameProcessor::process(const FrameAnalysis& analysis, 
     return results;
 }
 std::vector<FrameResult> FrameProcessor::process(const PixelBuffer& p, double now, const OutputConfig& output,
-                                               const std::array<double,2>& epochs, ColorThreshold red, ColorThreshold blue) {
-    return process(analyze(p,red,blue),p.width,p.height,now,output,epochs);
+                                               const std::array<double,2>& epochs, ColorThreshold red, ColorThreshold blue,
+                                               const IgnoreZones& ignore_zones) {
+    return process(analyze(p,red,blue,2,ignore_zones),p.width,p.height,now,output,epochs);
 }
 std::vector<FrameResult> FrameProcessor::expire(double now) {
     std::vector<FrameResult> held;

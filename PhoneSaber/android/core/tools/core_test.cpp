@@ -265,7 +265,80 @@ static void core_line_guard_tests() {
     assert(run(line,body)[0].candidate.eligible);
 }
 
+// 会場の赤いコーン（2026-10-18、iPhone StaticBGRADetectionTests と同じ場面）: 無視範囲に両端が入る
+// 候補は選ばず、同じコマの別の候補を選ぶ。候補の一覧・score・eligible は変えない。
+static void ignore_zone_tests() {
+    constexpr int width = 200, height = 120, stride = width*4;
+    std::vector<uint8_t> scene(stride*height,0);
+    auto bar = [&](PixelPoint start, PixelPoint end, int thickness) {
+        int steps = std::max(std::abs(end.x-start.x),std::abs(end.y-start.y));
+        for (int step = 0; step <= steps; ++step) {
+            double t = steps == 0 ? 0.0 : double(step)/double(steps);
+            int x = int(std::round(double(start.x)+double(end.x-start.x)*t));
+            int y = int(std::round(double(start.y)+double(end.y-start.y)*t));
+            for (int dy = -thickness; dy <= thickness; ++dy) for (int dx = -thickness; dx <= thickness; ++dx) {
+                if (dx*dx+dy*dy > thickness*thickness || x+dx < 0 || x+dx >= width || y+dy < 0 || y+dy >= height) continue;
+                auto* pixel = scene.data()+(y+dy)*stride+(x+dx)*4;
+                pixel[0] = 30; pixel[1] = 45; pixel[2] = 245; pixel[3] = 255; // BGRA の赤
+            }
+        }
+    };
+    bar({150,15},{150,105},4);
+    bar({30,35},{45,105},4);
+    const ColorThreshold threshold{140,20,30};
+    const PixelBuffer pixels{scene.data(),width,height,stride,scene.size(),PixelFormat::bgra};
+    auto run = [&](const IgnoreZones& zones) { return analyze(pixels,threshold,threshold,2,zones); };
+    auto distance = [](const Endpoints& a, const Endpoints& b) {
+        auto d = [](PixelPoint p, PixelPoint q) { return std::hypot(double(p.x-q.x),double(p.y-q.y)); };
+        return std::min(d(a.first,b.first)+d(a.second,b.second),d(a.first,b.second)+d(a.second,b.first));
+    };
+    auto same_candidates = [](const FrameAnalysis& a, const FrameAnalysis& b) {
+        for (int color = 0; color < 2; ++color) {
+            assert(a.candidates[color].size() == b.candidates[color].size());
+            for (std::size_t i = 0; i < a.candidates[color].size(); ++i) {
+                const auto &x = a.candidates[color][i], &y = b.candidates[color][i];
+                assert(x.source == y.source && x.score == y.score && x.eligible == y.eligible);
+                assert(x.endpoints.first.x == y.endpoints.first.x && x.endpoints.second.y == y.endpoints.second.y);
+            }
+        }
+    };
+    const auto plain = run({});
+    const auto legacy = analyze(pixels,threshold,threshold);
+    same_candidates(plain,legacy);
+    assert(plain.selected[0] && plain.selected_extent[0] && !plain.selected[1]);
+    const auto first = *plain.selected[0];
+    const auto zone = ignore_zone_around(*plain.selected_extent[0],width,height);
+    assert(saber_ignored(first,width,height,{zone}));
+    IgnoreZones red_zone; red_zone[0] = {zone};
+    const auto skipped = run(red_zone);
+    same_candidates(plain,skipped);
+    assert(skipped.selected[0] && distance(*skipped.selected[0],first) > 40);
+    assert(!saber_ignored(*skipped.selected[0],width,height,{zone}));
+    IgnoreZones far; far[0] = {IgnoreZone{0.9,0.9,1,1}};
+    const auto unrelated = run(far);
+    assert(unrelated.selected[0] && distance(*unrelated.selected[0],first) < 1);
+    IgnoreZones blue_zone; blue_zone[1] = {zone};
+    const auto blue = run(blue_zone);
+    assert(blue.selected[0] && distance(*blue.selected[0],first) < 1);
+    // 両方を無視すると赤は選ばれない（剣だけを残すため、範囲は色ごと・最大4つ）。
+    IgnoreZones both; both[0] = {zone,ignore_zone_around(*skipped.selected_extent[0],width,height)};
+    assert(!run(both).selected[0]);
+    // FrameProcessor 経由でも同じ範囲が効く。
+    FrameProcessor processor;
+    auto sent = processor.process(pixels,1.0,{},{},threshold,threshold,red_zone);
+    assert(sent.size() == 1 && sent[0].endpoints.first.x == skipped.selected[0]->first.x);
+    // 範囲の作り方: 各辺 0.04 広げ、0.06 未満の辺は中心から 0.06 にする。片端だけ入る線分は使う。
+    auto tiny = ignore_zone_around(BoundingBox{100,60,100,60},width,height);
+    assert(std::abs((tiny.max_x-tiny.min_x)-0.08) < 1e-12 && std::abs(tiny.min_x-0.46) < 1e-12);
+    auto line = ignore_zone_around(BoundingBox{20,10,22,110},width,height);
+    assert(std::abs((line.max_x-line.min_x)-0.09) < 1e-9);
+    assert(std::abs(line.min_y-(10.0/120-0.04)) < 1e-9 && std::abs(line.max_y-(110.0/120+0.04)) < 1e-9);
+    IgnoreZone left{0,0,0.5,1};
+    assert(!saber_ignored({{10,10},{150,10}},width,height,{left}));
+    assert(saber_ignored({{10,10},{99,10}},width,height,{left}));
+}
 int main() {
+    ignore_zone_tests();
     core_line_guard_tests();
     rotation_tests();
     morphology_tests();

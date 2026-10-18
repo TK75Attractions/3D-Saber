@@ -93,6 +93,17 @@ public static class PhoneSaberIgnoreZones
     }
 
     static bool Finite(Vector2 v) => !float.IsNaN(v.x) && !float.IsInfinity(v.x) && !float.IsNaN(v.y) && !float.IsInfinity(v.y);
+
+    // 直近の受信のうち PC 側で捨てた割合が 80 % 以上（20 件以上届いた色）なら、スマホがほぼ無視範囲の物しか
+    // 送っていない。PC 側で捨てても剣は届かないので、スマホ側の無視を案内する。
+    public static string DominanceWarning(int ignoredRed, int receivedRed, int ignoredBlue, int receivedBlue)
+    {
+        string colours = (Dominated(ignoredRed, receivedRed) ? "赤" : "") + (Dominated(ignoredBlue, receivedBlue) ? (Dominated(ignoredRed, receivedRed) ? "・青" : "青") : "");
+        return colours.Length == 0 ? "" :
+            $"スマホが無視範囲の物（{colours}）しか送っていません。剣が届かないので、上の「スマホ: 今の{(colours.StartsWith("赤") ? "赤" : "青")}を無視」を使ってください。";
+    }
+
+    static bool Dominated(int ignored, int received) => received >= 20 && ignored >= received * .8;
 }
 
 // 照準（メニューの狙いの点）の跳び止め。刃の揺れ止めと同じ考え方で、前の点から screenFraction 以上

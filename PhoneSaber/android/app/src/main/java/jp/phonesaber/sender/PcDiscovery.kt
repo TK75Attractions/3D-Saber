@@ -21,7 +21,8 @@ import java.util.ArrayDeque
 /** Main-thread lifecycle/selection, one independent broadcast receive thread per generation. */
 class PcDiscovery(context: Context,
                   private val onReply: (InetAddress, Double) -> Unit,
-                  private val onUpdate: (Destination?, Network?, String) -> Unit) {
+                  private val onUpdate: (Destination?, Network?, String) -> Unit,
+                  private val onCommand: (InetAddress, PcCommand) -> Unit = { _, _ -> }) {
     private val mainExecutor = androidx.core.content.ContextCompat.getMainExecutor(context)
     private var resolveBusy = false
     private var resolveRequest = 0
@@ -243,7 +244,18 @@ class PcDiscovery(context: Context,
                 }
                 val packet = DatagramPacket(bytes, bytes.size)
                 udp.receive(packet)
-                val reply = DiscoveryProtocol.parse(String(bytes, 0, packet.length, Charsets.UTF_8)) ?: continue
+                val text = String(bytes, 0, packet.length, Charsets.UTF_8)
+                // PC からの指示（応答とは別の datagram）。どの PC からかは受け手が送信先と照合する。
+                val command = PcCommandProtocol.parse(text)
+                if (command != null) {
+                    if (packet.port == Ports.DISCOVERY && !packet.address.isAnyLocalAddress &&
+                        !packet.address.isMulticastAddress) {
+                        val from = packet.address
+                        main.post { if (active && token == generation) onCommand(from, command) }
+                    }
+                    continue
+                }
+                val reply = DiscoveryProtocol.parse(text) ?: continue
                 if (!reply.compatible || packet.port != Ports.DISCOVERY ||
                     packet.address.isAnyLocalAddress || packet.address.isMulticastAddress) continue
                 val receivedAt = System.nanoTime() / 1e9

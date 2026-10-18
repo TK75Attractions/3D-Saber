@@ -40,6 +40,8 @@ import java.util.Locale
 import java.text.SimpleDateFormat
 import java.util.Date
 
+private const val IGNORE_TAG = "PhoneSaberIgnore"
+
 class MainActivity : ComponentActivity() {
     private val main = Handler(Looper.getMainLooper())
     private lateinit var sender: LatestUdpSender
@@ -104,6 +106,11 @@ class MainActivity : ComponentActivity() {
     private var brightness = 145
     private var dominance = 25
     private var lastStats = 0L
+    // 無視範囲（会場のコーンなど）。main だけが変更し、CameraSession へ不変オブジェクトで渡す。
+    private var ignoreZones = IgnoreZones.NONE
+    private lateinit var ignoreSummary: TextView
+    private lateinit var zoneOverlay: IgnoreZoneOverlay
+    private var lastPcCommandId: Int? = null
     private val permission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         permissionPending = false
         if (granted && foreground && resumePolicy.wantsSending) startSending()
@@ -164,6 +171,7 @@ class MainActivity : ComponentActivity() {
                 Log.i(LatencyLog.TAG, line)
                 latencyLog.append(seconds, line)
             }
+            zoneOverlay.update(ignoreZones, camera.frameSize)
             val status = camera.status
             detection.text = if (sending) String.format(Locale.JAPAN,
                 "赤: %s / 送信 %.1f fps\n青: %s / 送信 %.1f fps\n%s\n%s",
@@ -206,7 +214,15 @@ class MainActivity : ComponentActivity() {
         }
         label("PhoneSaber — PCへ送信").apply { textSize = 23f; gravity = Gravity.CENTER_HORIZONTAL }
         val preview = PreviewView(this).apply { scaleType = PreviewView.ScaleType.FIT_CENTER }
-        panel.addView(preview, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(250)))
+        // プレビューの上に無視範囲の枠を重ねる（プレビューの実装・表示方法は変えない）。
+        zoneOverlay = IgnoreZoneOverlay(this)
+        val previewFrame = android.widget.FrameLayout(this).apply {
+            addView(preview, android.widget.FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT))
+            addView(zoneOverlay, android.widget.FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT))
+        }
+        panel.addView(previewFrame, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(250)))
         health = label("端末状態を確認中")
         Button(this).apply {
             text = "ログをコピー"
@@ -279,6 +295,21 @@ class MainActivity : ComponentActivity() {
             }
         }
         detection = label("停止中")
+        // 会場のコーンなど、剣ではない赤・青の物を無視する（iPhone と同じ。PC の F8 からも操作できる）。
+        ignoreSummary = label("")
+        val ignoreRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        fun ignoreButton(title: String, action: () -> Unit) = Button(this).apply {
+            text = title; isAllCaps = false
+            setOnClickListener { action() }
+            ignoreRow.addView(this, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        }
+        ignoreButton("今の赤を無視（剣を消して押す）") { ignoreCurrent(0, null) }
+        ignoreButton("今の青を無視") { ignoreCurrent(1, null) }
+        ignoreButton("すべて消す") { clearIgnoreZones(null) }
+        panel.addView(ignoreRow)
+        label("送信中に、剣の電源を切るかカメラの外に出し、コーンなどだけが認識されている状態で押します。" +
+            "以後その範囲の候補は選ばず、同じコマの剣を選びます。カメラや物を動かしたら押し直してください（色ごとに最大4つ）。")
+            .apply { textSize = 13f }
         if (BuildConfig.DEBUG) {
             Switch(this).apply {
                 text = "開発用: 非Wi-Fiで送信を許可（手入力IP必須）"
@@ -347,16 +378,17 @@ class MainActivity : ComponentActivity() {
         }
         label("ノイズ低減・輪郭強調を対応端末で OFF にします。画質と認識結果が変わる可能性があります。既定 OFF。変更は停止中のみ。")
         camera = CameraSession(this, preview, sender) { message -> recoverCamera(message) }
+        setIgnoreZones(IgnoreZones.decode(prefs.getString(IgnoreZones.PREFERENCE_KEY, null)), persist = false)
         discovery = PcDiscovery(this, onReply = { address, now ->
             address.hostAddress?.let { pcReplyWatch.received(it, now) }
             updateRecoveryStatus()
-        }) { pc, network, message ->
+        }, onUpdate = { pc, network, message ->
             destination = pc; wifi = network
             updateSendingDestination()
             pcStatus.text = if (pc == null) "PC: 未設定\n$message" else
                 "PC: ${pc.name}\n${pc.address.hostAddress}（${pc.source}）\n$message"
             updateRecoveryStatus()
-        }
+        }, onCommand = { from, command -> applyPcCommand(from, command) })
         discovery.setStation(prefs.getString("station", "")?.takeIf { it in stations } ?: "")
         stationGroup.setOnCheckedChangeListener { group, id ->
             if (id == View.NO_ID) return@setOnCheckedChangeListener
@@ -536,6 +568,42 @@ class MainActivity : ComponentActivity() {
         health.text = "発熱 ${level.title} / ${DeviceHealthText.battery(percent, DeviceHealthText.batteryState(state))}\n" +
             DeviceHealthText.timing(rates) + (warning?.let { "\n$it" } ?: "")
         return rates
+    }
+
+    /** 今その色で選ばれている候補（剣を消していればコーンなど）の範囲を無視範囲に加える。 */
+    private fun ignoreCurrent(color: Int, commandId: Int?) {
+        val name = if (color == 0) "赤" else "青"
+        camera.captureWinnerZone(color) { zone ->
+            if (zone == null) {
+                Log.i(IGNORE_TAG, "add color=$color id=$commandId: no current detection")
+                toast(if (sending) "今の${name}が認識されていません" else "送信中に押してください（今の${name}を認識中のときだけ）")
+                return@captureWinnerZone
+            }
+            setIgnoreZones(ignoreZones.adding(color, zone))
+            Log.i(IGNORE_TAG, "add color=$color id=$commandId zone=$zone")
+            toast("${name}の範囲を無視します（${ignoreZones.summary}）")
+        }
+    }
+
+    private fun clearIgnoreZones(commandId: Int?) {
+        setIgnoreZones(IgnoreZones.NONE)
+        Log.i(IGNORE_TAG, "clear id=$commandId")
+    }
+
+    private fun setIgnoreZones(zones: IgnoreZones, persist: Boolean = true) {
+        ignoreZones = zones
+        camera.ignoreZones = zones // 次のフレームから効く（カメラの再起動なし）
+        if (persist) prefs.edit().putString(IgnoreZones.PREFERENCE_KEY, zones.encode()).apply()
+        ignoreSummary.text = "無視する範囲: ${zones.summary}"
+        zoneOverlay.update(zones, camera.frameSize)
+    }
+
+    /** PC の F8 から届いた指示。今送っている PC からのものだけ、同じ id は一度だけ実行する。 */
+    private fun applyPcCommand(from: java.net.InetAddress, command: PcCommand) {
+        if (destination?.address != from || command.id == lastPcCommandId) return
+        lastPcCommandId = command.id
+        if (command.clearIgnore) clearIgnoreZones(command.id)
+        command.ignore?.let { ignoreCurrent(if (it == "blue") 1 else 0, command.id) }
     }
 
     private fun toast(message: String) { Toast.makeText(this, message, Toast.LENGTH_LONG).show() }

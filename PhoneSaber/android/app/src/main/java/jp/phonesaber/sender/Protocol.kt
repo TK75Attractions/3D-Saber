@@ -41,6 +41,37 @@ object DiscoveryProtocol {
     }
 }
 
+/**
+ * PC（Unity の F8）からの指示。探索応答（PHONESABER_UNITY）の直後に、別の datagram で 10 秒間届く。
+ *   "PHONESABER_COMMAND 1 id=<番号> ignore=red|blue" / "PHONESABER_COMMAND 1 id=<番号> clear-ignore=1"
+ * iPhone の LANLivenessProbe.parseCommand（7c5a1c1）と同じ規則: 版は 1 だけ、id 必須、ignore は red/blue だけ、
+ * 知らない項目は無視、同じ項目は後のものが有効。同じ id は受け手が一度だけ実行する。
+ */
+data class PcCommand(val id: Int, val ignore: String?, val clearIgnore: Boolean)
+
+object PcCommandProtocol {
+    const val PREFIX = "PHONESABER_COMMAND 1 "
+
+    fun parse(text: String): PcCommand? {
+        if (!text.startsWith(PREFIX)) return null
+        var id: Int? = null
+        var ignore: String? = null
+        var clear = false
+        // Swift の split(separator:) と同じく空の項目は数えない。
+        for (field in text.substring(PREFIX.length).split(' ').filter { it.isNotEmpty() }) {
+            val parts = field.split('=', limit = 2).filter { it.isNotEmpty() }
+            if (parts.size != 2) continue
+            when (parts[0]) {
+                "id" -> id = parts[1].toIntOrNull()
+                "ignore" -> ignore = parts[1].takeIf { it == "red" || it == "blue" }
+                "clear-ignore" -> clear = parts[1] == "1"
+            }
+        }
+        if (id == null || (ignore == null && !clear)) return null
+        return PcCommand(id, ignore, clear)
+    }
+}
+
 data class Destination(val address: InetAddress, val name: String, val source: String)
 
 // Only native text is routed: Kotlin never scales coordinates or formats numbers.
