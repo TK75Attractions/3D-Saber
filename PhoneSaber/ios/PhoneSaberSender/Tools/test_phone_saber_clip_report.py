@@ -1,0 +1,254 @@
+#!/usr/bin/env python3
+"""Tests for the auto clip summary helper and the receiver's auto clip routing."""
+
+from __future__ import annotations
+
+import json
+import struct
+import sys
+import tempfile
+import unittest
+import zlib
+from http.client import HTTPConnection
+from pathlib import Path
+from threading import Thread
+from unittest import mock
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+import phone_saber_clip_report as report  # noqa: E402
+import phone_saber_triage_protocol as protocol  # noqa: E402
+from phone_saber_triage_receiver import TriageHTTPServer  # noqa: E402
+from phone_saber_test_isolation import isolate_codex_logs as setUpModule  # noqa: F401,E402
+from phone_saber_test_isolation import restore_codex_logs as tearDownModule  # noqa: F401,E402
+
+COLUMNS = ["rank", "x1", "y1", "x2", "y2", "minX", "minY", "maxX", "maxY", "score", "flags", "source"]
+
+
+def filtered_png(width: int, height: int, rgba: bytes, filters: list[int]) -> bytes:
+    """PNG writer using the given filter per row (to test the decoder)."""
+    channels, stride = 4, width * 4
+    out, previous = bytearray(), bytearray(stride)
+    for row in range(height):
+        line = rgba[row * stride:(row + 1) * stride]
+        kind = filters[row % len(filters)]
+        encoded = bytearray(stride)
+        for i in range(stride):
+            a = line[i - channels] if i >= channels else 0
+            b = previous[i]
+            c = previous[i - channels] if i >= channels else 0
+            if kind == 0:
+                predictor = 0
+            elif kind == 1:
+                predictor = a
+            elif kind == 2:
+                predictor = b
+            elif kind == 3:
+                predictor = (a + b) >> 1
+            else:
+                p = a + b - c
+                pa, pb, pc = abs(p - a), abs(p - b), abs(p - c)
+                predictor = a if pa <= pb and pa <= pc else (b if pb <= pc else c)
+            encoded[i] = (line[i] - predictor) & 255
+        out += bytes((kind,)) + encoded
+        previous = bytearray(line)
+
+    def chunk(kind: bytes, body: bytes) -> bytes:
+        return struct.pack(">I", len(body)) + kind + body + struct.pack(">I", zlib.crc32(kind + body) & 0xFFFFFFFF)
+
+    return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0))
+            + chunk(b"IDAT", zlib.compress(bytes(out))) + chunk(b"IEND", b""))
+
+
+def solid_png(path: Path, width: int, height: int, rgb: tuple[int, int, int]) -> None:
+    report.write_png(path, width, height, bytes(rgb) * (width * height))
+
+
+def make_clip(root: Path, clip_id: str = "autoclip_20261019_120000_000_confusion_red", *,
+              kind: str = "confusion") -> Path:
+    """A small bundle in the iPhone auto clip format (80×120 frames)."""
+    bundle = root / f"phone_saber_triage_{clip_id}"
+    (bundle / "images").mkdir(parents=True)
+    (bundle / "frames").mkdir()
+    saber = [0, 10, 20, 10, 60, 7, 17, 13, 63, 120.5, 1 | 2 | 4, 0]
+    cone = [3, 60, 100, 70, 110, 57, 97, 73, 113, 90.0, 1 | 2 | 8, 1]
+    dim = [1, 40, 20, 44, 50, 37, 17, 47, 53, 70.0, 0, 0]
+    frames = []
+    for index in range(30):
+        frame_id = 100 + index
+        competitor = index >= 10
+        frames.append({"f": frame_id, "t": 10 + index / 60, "ms": 9.5,
+                       "red": {"n": 5, "e": 2 if competitor else 1, "k": 1 if competitor else 0,
+                               "sel": [10, 20, 10, 60], "c": [saber, dim] + ([cone] if competitor else [])},
+                       "blue": {"n": 0, "e": 0, "k": 0, "sel": None, "c": []}})
+    images = []
+    plan = [("context", 105, 0.5), ("event", 112, 1.0), ("event", 113, 1.0), ("context", 120, 0.5)]
+    for number, (role, frame_id, scale) in enumerate(plan, 1):
+        path = f"images/image_{number:02d}_{role}_{frame_id}.png"
+        size = (80, 120) if scale == 1.0 else (40, 60)
+        solid_png(bundle / path, *size, (30, 30, 30))
+        context = f"frames/frame_{frame_id}_{number}.json"
+        (bundle / context).write_text(json.dumps({
+            "sessionID": clip_id, "selectedFrameID": frame_id, "frames": [
+                {"frameID": frame_id, "timestamp": 10 + (frame_id - 100) / 60,
+                 "red": {"detected": True}, "blue": {"detected": False}}]}))
+        images.append({"path": path, "frameContextPath": context, "frameID": frame_id, "color": "red",
+                       "failureType": f"autoclip_{kind}", "reason": "test", "role": role, "scale": scale,
+                       "offsetSeconds": round((frame_id - 112) / 60, 3), "timestamp": 10 + (frame_id - 100) / 60})
+    trigger = {"kind": kind, "color": "red", "frameID": 112, "timestamp": 10.2, "reason": "test trigger",
+               "competitorCount": 1, "winner": [10, 20, 10, 60], "competitor": [60, 100, 70, 110],
+               "previousWinner": [10, 20, 10, 60] if kind == "jump" else None,
+               "jumpDistancePx": 150.0 if kind == "jump" else None, "jumpThresholdPx": 120.0 if kind == "jump" else None,
+               "typicalLengthPx": 40.0, "note": None}
+    summary = {
+        "formatVersion": 1, "sessionID": clip_id, "summaryScope": "autoClip", "activeColors": ["red", "blue"],
+        "selectedImageCount": len(images), "images": images, "incidentCount": 1, "recordedFrameCount": len(frames),
+        "redBlueDetectionSummary": {"red": {"frames": 30}, "blue": {"frames": 30}},
+        "dropoutSummary": {"red": {"dropoutStarts": 0}, "blue": {"dropoutStarts": 0}},
+        "autoClip": {"formatVersion": 1, "trigger": trigger, "window": {"preSeconds": 3, "postSeconds": 2},
+                     "frameSize": {"width": 80, "height": 120}, "camera": {"captureFPS": 60, "measuredFPS": 59.9,
+                                                                         "thermalAtTrigger": "nominal",
+                                                                         "thermalAtSave": "fair", "exposureBias": 0},
+                     "ignoreZones": {"red": [], "blue": []}, "playArea": None,
+                     "candidateColumns": COLUMNS, "sources": ["color-mask", "core-halo"], "frames": frames,
+                     "thinning": 0},
+    }
+    (bundle / "summary.json").write_text(json.dumps(summary))
+    (bundle / "prompt.md").write_text("auto clip")
+    return bundle
+
+
+class PNGTests(unittest.TestCase):
+    def test_decoder_handles_every_filter_and_alpha(self) -> None:
+        width, height = 7, 10
+        rgba = bytes((x * 37 + y * 11 + c * 5) & 255 for y in range(height) for x in range(width) for c in range(4))
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "f.png"
+            path.write_bytes(filtered_png(width, height, rgba, [0, 1, 2, 3, 4]))
+            w, h, rgb = report.read_png(path)
+            self.assertEqual((w, h), (width, height))
+            expected = bytes(v for i, v in enumerate(rgba) if i % 4 != 3)
+            self.assertEqual(bytes(rgb), expected)
+            report.write_png(path, w, h, rgb)
+            self.assertEqual(report.read_png(path)[2], rgb)
+
+
+class ClipReportTests(unittest.TestCase):
+    def test_confusion_summary_lists_competing_candidates(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            bundle = make_clip(Path(directory))
+            info = report.describe(bundle)
+            self.assertEqual(info["trigger"]["kind"], "confusion")
+            candidates = info["triggerFrameCandidates"]["red"]
+            winner = next(c for c in candidates if c["selected"])
+            competitor = next(c for c in candidates if c["competitor"])
+            self.assertEqual(winner["mid"], [10.0, 40.0])
+            self.assertEqual(competitor["source"], "core-halo")
+            self.assertEqual(competitor["mid"], [65.0, 105.0])
+            self.assertEqual(competitor["boxSize"], [16, 16])
+            self.assertEqual(competitor["score"], 90.0)
+            self.assertEqual(info["competition"]["framesWithCompetitor"], 20)
+            self.assertEqual(info["competition"]["winnerNearTriggerWinner"], 30)
+            text = report.render_text(info)
+            self.assertIn("COMPETITOR", text)
+            self.assertIn("WINNER", text)
+            self.assertIn("core-halo score 90.0", text)
+
+    def test_jump_summary(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            bundle = make_clip(Path(directory), "autoclip_x_jump_red", kind="jump")
+            text = report.render_text(report.describe(bundle))
+            self.assertIn("jump: 150.0 px (threshold 120.0 px", text)
+
+    def test_contact_sheet_draws_boxes_and_report_stays_outside_the_bundle(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            bundle = make_clip(root)
+            before = sorted(p.relative_to(bundle) for p in bundle.rglob("*"))
+            path = report.write_clip_report(bundle)
+            self.assertEqual(path, root / f"{bundle.name}.report.md")
+            self.assertEqual(sorted(p.relative_to(bundle) for p in bundle.rglob("*")), before)
+            sheet = root / f"{bundle.name}.contact.png"
+            width, height, rgb = report.read_png(sheet)
+            # 4 tiles of 40×60 in 3 columns → 2 rows, with 4 px gaps and 6 px bars.
+            self.assertEqual((width, height), (3 * 40 + 4 * 4, 2 * (60 + 6) + 3 * 4))
+            colors = {bytes(rgb[i:i + 3]) for i in range(0, len(rgb), 3)}
+            self.assertIn(bytes(report.COMPETITOR), colors)
+            self.assertIn(bytes(report.SELECTED), colors)
+            self.assertIn(bytes(report.TRIGGER_BAR), colors)
+            # The competitor box (bbox 57..73 × 97..113 → half 28..36 × 48..56) on the
+            # first event tile (second tile, column 1): its top-left corner is magenta.
+            left, top = 4 + 1 * (40 + 4), 4 + 6
+            corner = ((top + 48) * width + left + 28) * 3
+            self.assertEqual(bytes(rgb[corner:corner + 3]), bytes(report.COMPETITOR))
+            self.assertIn("Contact sheet", path.read_text())
+
+    def test_find_clips_and_cli(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            make_clip(root, "autoclip_a_confusion_red")
+            make_clip(root, "autoclip_b_jump_red", kind="jump")
+            other = root / "phone_saber_triage_phonesaber_x"
+            other.mkdir()
+            (other / "summary.json").write_text(json.dumps({"sessionID": "phonesaber_x"}))
+            self.assertEqual([p.name for p in report.find_clips([root])],
+                             ["phone_saber_triage_autoclip_a_confusion_red", "phone_saber_triage_autoclip_b_jump_red"])
+            with mock.patch("sys.stdout") as stdout:
+                self.assertEqual(report.main([str(root), "--json"]), 0)
+            printed = "".join(call.args[0] for call in stdout.write.call_args_list)
+            self.assertEqual(len(json.loads(printed)), 2)
+            self.assertEqual(report.main([str(other)]), 1)
+
+
+class ReceiverRoutingTests(unittest.TestCase):
+    def test_auto_clip_is_stored_in_autoclips_reported_and_not_analysed(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            bundle = make_clip(root / "phone")
+            package = root / "clip.psbt"
+            protocol.pack_bundle(bundle, package)
+            server = TriageHTTPServer(("127.0.0.1", 0), root / "inbox", analysis_mode="disabled")
+            thread = Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            try:
+                with mock.patch.object(server, "enqueue_analysis") as enqueue, \
+                        mock.patch.object(server, "request_overview") as overview:
+                    connection = HTTPConnection("127.0.0.1", server.server_port, timeout=10)
+                    connection.request("POST", "/v1/bundle", body=package.read_bytes(),
+                                       headers={"Content-Type": protocol.CONTENT_TYPE})
+                    response = connection.getresponse()
+                    self.assertEqual(response.status, 201)
+                    response.read()
+                    connection.close()
+                    stored = root / "inbox/autoclips" / bundle.name
+                    for _ in range(100):   # the report is written after the reply
+                        if (root / "inbox/autoclips" / f"{bundle.name}.report.md").exists():
+                            break
+                        thread.join(0.05)
+                    self.assertTrue((stored / "summary.json").is_file())
+                    self.assertTrue((root / "inbox/autoclips" / f"{bundle.name}.report.md").is_file())
+                    self.assertTrue((root / "inbox/autoclips" / f"{bundle.name}.contact.png").is_file())
+                    self.assertFalse((root / "inbox" / bundle.name).exists())
+                    enqueue.assert_not_called()
+                    overview.assert_not_called()
+                    # A retry of the same clip is acknowledged as a duplicate.
+                    connection = HTTPConnection("127.0.0.1", server.server_port, timeout=10)
+                    connection.request("POST", "/v1/bundle", body=package.read_bytes(),
+                                       headers={"Content-Type": protocol.CONTENT_TYPE})
+                    self.assertEqual(connection.getresponse().status, 200)
+                    connection.close()
+            finally:
+                server.shutdown()
+                server.server_close()
+                thread.join(timeout=2)
+
+    def test_destination_only_changes_for_auto_clips(self) -> None:
+        inbox = Path("/tmp/inbox")
+        route = protocol.auto_clip_destination(inbox)
+        self.assertEqual(route({"summaryScope": "autoClip"}), inbox / "autoclips")
+        self.assertEqual(route({"summaryScope": "1 retained incident"}), inbox)
+        self.assertEqual(route({}), inbox)
+
+
+if __name__ == "__main__":
+    unittest.main()

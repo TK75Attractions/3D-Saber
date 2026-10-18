@@ -52,6 +52,9 @@ struct DebugBundleOutbox: Codable {
         var nextAttemptAt = Date.distantPast
         var receivedAt: Date?
         var automatic = true
+        /// Auto clips (2026-10-19): not started while coordinates are being sent, so
+        /// an upload never competes with gameplay traffic. nil in older outboxes.
+        var deferDuringPlay: Bool? = nil
 
         var isPending: Bool { state != .received }
         func bundleURL(in directory: URL) -> URL {
@@ -76,9 +79,11 @@ struct DebugBundleOutbox: Codable {
     var pendingCount: Int { entries.filter(\.isPending).count }
     var latest: Entry? { entries.max { $0.createdAt < $1.createdAt } }
 
-    mutating func register(sessionID: String, bundlePath: String, now: Date, automatic: Bool = true) {
+    mutating func register(sessionID: String, bundlePath: String, now: Date, automatic: Bool = true,
+                           deferDuringPlay: Bool = false) {
         guard now > prunedBefore, !entries.contains(where: { $0.sessionID == sessionID }) else { return }
-        entries.append(Entry(sessionID: sessionID, bundlePath: bundlePath, createdAt: now, automatic: automatic))
+        entries.append(Entry(sessionID: sessionID, bundlePath: bundlePath, createdAt: now, automatic: automatic,
+                             deferDuringPlay: deferDuringPlay ? true : nil))
     }
 
     mutating func recover(exists: (String) -> Bool) -> [String] {
@@ -92,10 +97,11 @@ struct DebugBundleOutbox: Codable {
     }
 
     mutating func beginNext(now: Date, recording: Bool, automatic: Bool,
-                            manualIDs: Set<String> = []) -> Entry? {
+                            manualIDs: Set<String> = [], liveTraffic: Bool = false) -> Entry? {
         guard !recording, !entries.contains(where: { $0.state == .uploading }),
               let index = entries.indices.first(where: {
                   entries[$0].isPending && entries[$0].nextAttemptAt <= now
+                      && !(liveTraffic && entries[$0].deferDuringPlay == true)
                       && ((automatic && entries[$0].automatic) || manualIDs.contains(entries[$0].sessionID))
               }) else { return nil }
         entries[index].state = .uploading
@@ -170,6 +176,7 @@ final class DebugBundleTransfer: NSObject, NetServiceBrowserDelegate, NetService
     private var storeURL: URL { directory.appendingPathComponent("debug-bundle-outbox.json") }
     private(set) var outbox = DebugBundleOutbox()
     private var recordingActive = false
+    private var liveTrafficActive = false
     private var manualIDs: Set<String> = []
     private var retryWake: DispatchWorkItem?
     private let pathMonitor = NWPathMonitor()
@@ -262,6 +269,15 @@ final class DebugBundleTransfer: NSObject, NetServiceBrowserDelegate, NetService
         } else if !active { startNextBundleIfNeeded() }
     }
 
+    /// True while the phone is sending coordinates (a saber was sent recently).
+    /// Deferred entries (auto clips) wait; an upload already running continues.
+    func setLiveTrafficActive(_ active: Bool) {
+        precondition(Thread.isMainThread)
+        guard active != liveTrafficActive else { return }
+        liveTrafficActive = active
+        if !active { startNextBundleIfNeeded() }
+    }
+
     func retryPending(immediately: Bool = false) {
         precondition(Thread.isMainThread)
         if !isBusy { recoverBundles() }
@@ -277,15 +293,14 @@ final class DebugBundleTransfer: NSObject, NetServiceBrowserDelegate, NetService
         return UserDefaults.standard.object(forKey: preferenceKey) as? Bool ?? true
     }
 
-    func enqueue(bundleURL: URL, automatic: Bool = true) {
+    func enqueue(bundleURL: URL, automatic: Bool = true, deferDuringPlay: Bool = false) {
         DispatchQueue.main.async { [weak self] in
             guard let self,
                   let data = try? Data(contentsOf: bundleURL.appendingPathComponent("summary.json")),
                   let summary = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                   let id = summary["sessionID"] as? String else { return }
-            let path = bundleURL.deletingLastPathComponent().standardizedFileURL == self.directory.standardizedFileURL
-                ? bundleURL.lastPathComponent : bundleURL.path
-            self.outbox.register(sessionID: id, bundlePath: path, now: Date(), automatic: automatic)
+            self.outbox.register(sessionID: id, bundlePath: Self.storedPath(for: bundleURL, in: self.directory),
+                                 now: Date(), automatic: automatic, deferDuringPlay: deferDuringPlay)
             self.persist()
             self.startNextBundleIfNeeded()
         }
@@ -297,9 +312,12 @@ final class DebugBundleTransfer: NSObject, NetServiceBrowserDelegate, NetService
         retryWake = nil
         guard !isBusy, !recordingActive else { return }
         guard let entry = outbox.beginNext(now: Date(), recording: recordingActive,
-                                          automatic: Self.automaticTransferEnabled, manualIDs: manualIDs) else {
+                                          automatic: Self.automaticTransferEnabled, manualIDs: manualIDs,
+                                          liveTraffic: liveTrafficActive) else {
             if Self.automaticTransferEnabled,
-               let next = outbox.entries.filter({ $0.isPending && $0.automatic }).map(\.nextAttemptAt).min() {
+               let next = outbox.entries.filter({
+                   $0.isPending && $0.automatic && !(liveTrafficActive && $0.deferDuringPlay == true)
+               }).map(\.nextAttemptAt).min() {
                 let wake = DispatchWorkItem { [weak self] in self?.retryPending() }
                 retryWake = wake
                 DispatchQueue.main.asyncAfter(deadline: .now() + max(1, next.timeIntervalSinceNow), execute: wake)
@@ -537,6 +555,15 @@ final class DebugBundleTransfer: NSObject, NetServiceBrowserDelegate, NetService
         components.port = port
         components.path = "/v1/bundle"
         return components.url
+    }
+
+    /// Relative to Documents when inside it (also in a subfolder such as AutoClips/),
+    /// so a container move after relaunch keeps the entry valid.
+    static func storedPath(for bundleURL: URL, in directory: URL) -> String {
+        let base = directory.standardizedFileURL.path
+        let path = bundleURL.standardizedFileURL.path
+        guard path.hasPrefix(base + "/") else { return bundleURL.path }
+        return String(path.dropFirst(base.count + 1))
     }
 
     static func makePackage(for bundleURL: URL) throws -> URL {

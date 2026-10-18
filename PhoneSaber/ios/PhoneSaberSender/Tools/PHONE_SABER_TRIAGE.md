@@ -182,3 +182,32 @@ Recordings shorter than about one second (fewer than 30 frames, e.g. Stop presse
 right after Start) keep their triage bundle on the phone and are not uploaded:
 they cannot contain a temporal event and would only fail the analysis precheck
 (2026-10-03: a one-frame recording reached the receiver and failed precheck).
+
+## iPhone auto clips (2026-10-19)
+
+While sending, the iPhone keeps a small rolling record (every frame's winner and up
+to 8 candidates per colour; a half-resolution point-sampled frame every 0.3 s) and
+saves a clip only when a colour has a second separated, eligible, selectable
+candidate for 3 frames in a row (cone / clothes / reflection confusion), when the
+winner's midpoint jumps farther than max(typical blade length, 0.15 × frame diagonal)
+between consecutive frames, or on the PC command `PHONESABER_COMMAND 1 id=N clip=1`
+(`auto-clip=0|1` toggles the feature; 詳細設定 → 自動クリップ, default ON). At most one
+automatic clip per 20 s and 6 per sending session; capture pauses while hot, while the
+heat policy lowers the fps and during Debug Recording. Recognition, thresholds and UDP
+are unchanged.
+
+A clip is an ordinary triage bundle (`summaryScope: "autoClip"`): 3 full-resolution
+lossless frames from the trigger on, up to 17 half-resolution context frames from 3 s
+before to 2 s after, and `summary.json → autoClip.frames` with every frame of the
+window. The phone keeps the newest 12 clips (160 MiB) in `Documents/AutoClips/` and
+uploads them only after 5 s without coordinate sends (between songs or after Stop).
+The receiver stores them in `diagnostics-inbox/autoclips/`, writes
+`<clip>.report.md` and `<clip>.contact.png` beside each one, and never runs Codex on
+them. Summarise by hand:
+
+```sh
+python3 ios/PhoneSaberSender/Tools/phone_saber_clip_report.py            # all clips in the inbox
+python3 ios/PhoneSaberSender/Tools/phone_saber_clip_report.py <clip> --write
+```
+
+Host cost measurement: `python3 tools/ios-hot-path/autoclip.py [--fixture <png>]`.

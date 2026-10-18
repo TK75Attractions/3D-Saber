@@ -35,8 +35,10 @@
 		A0000000000000000000A002 /* GuidedRecordingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000A002 /* GuidedRecordingTests.swift */; };
 		A0000000000000000000A003 /* DeviceHealth.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000A003 /* DeviceHealth.swift */; };
 		A0000000000000000000B013 /* MetricsDatagram.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000B013 /* MetricsDatagram.swift */; };
+		A0000000000000000000C201 /* AutoClip.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000C201 /* AutoClip.swift */; };
 		A0000000000000000000A004 /* DeviceHealthTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000A004 /* DeviceHealthTests.swift */; };
 		A0000000000000000000B014 /* MetricsDatagramTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000B014 /* MetricsDatagramTests.swift */; };
+		A0000000000000000000C202 /* AutoClipTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000C202 /* AutoClipTests.swift */; };
 		A0000000000000000000A005 /* EventRecovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000A005 /* EventRecovery.swift */; };
 		A0000000000000000000A006 /* EventRecoveryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000A006 /* EventRecoveryTests.swift */; };
 		A0000000000000000000A007 /* LowHeatDisplayPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000A007 /* LowHeatDisplayPolicy.swift */; };
@@ -87,8 +89,10 @@
 		B1000000000000000000A002 /* GuidedRecordingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GuidedRecordingTests.swift; sourceTree = "<group>"; };
 		B1000000000000000000A003 /* DeviceHealth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceHealth.swift; sourceTree = "<group>"; };
 		B1000000000000000000B013 /* MetricsDatagram.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricsDatagram.swift; sourceTree = "<group>"; };
+		B1000000000000000000C201 /* AutoClip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoClip.swift; sourceTree = "<group>"; };
 		B1000000000000000000A004 /* DeviceHealthTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceHealthTests.swift; sourceTree = "<group>"; };
 		B1000000000000000000B014 /* MetricsDatagramTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricsDatagramTests.swift; sourceTree = "<group>"; };
+		B1000000000000000000C202 /* AutoClipTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoClipTests.swift; sourceTree = "<group>"; };
 		B1000000000000000000A005 /* EventRecovery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventRecovery.swift; sourceTree = "<group>"; };
 		B1000000000000000000A006 /* EventRecoveryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventRecoveryTests.swift; sourceTree = "<group>"; };
 		B1000000000000000000A007 /* LowHeatDisplayPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LowHeatDisplayPolicy.swift; sourceTree = "<group>"; };
@@ -136,6 +140,7 @@
 				B1000000000000000000A001 /* GuidedRecording.swift */,
 				B1000000000000000000A003 /* DeviceHealth.swift */,
 				B1000000000000000000B013 /* MetricsDatagram.swift */,
+				B1000000000000000000C201 /* AutoClip.swift */,
 				B1000000000000000000A005 /* EventRecovery.swift */,
 				B1000000000000000000A007 /* LowHeatDisplayPolicy.swift */,
 				B1000000000000000000A008 /* LowHeatDisplay.swift */,
@@ -161,6 +166,7 @@
 				B1000000000000000000A002 /* GuidedRecordingTests.swift */,
 				B1000000000000000000A004 /* DeviceHealthTests.swift */,
 				B1000000000000000000B014 /* MetricsDatagramTests.swift */,
+				B1000000000000000000C202 /* AutoClipTests.swift */,
 				B1000000000000000000B015 /* protocol_metrics.tsv */,
 				B1000000000000000000A006 /* EventRecoveryTests.swift */,
 				B1000000000000000000A009 /* LowHeatDisplayTests.swift */,
@@ -306,6 +312,7 @@
 				A0000000000000000000A001 /* GuidedRecording.swift in Sources */,
 				A0000000000000000000A003 /* DeviceHealth.swift in Sources */,
 				A0000000000000000000B013 /* MetricsDatagram.swift in Sources */,
+				A0000000000000000000C201 /* AutoClip.swift in Sources */,
 				A0000000000000000000A005 /* EventRecovery.swift in Sources */,
 				A0000000000000000000A007 /* LowHeatDisplayPolicy.swift in Sources */,
 				A0000000000000000000A008 /* LowHeatDisplay.swift in Sources */,
@@ -331,6 +338,7 @@
 				A0000000000000000000A002 /* GuidedRecordingTests.swift in Sources */,
 				A0000000000000000000A004 /* DeviceHealthTests.swift in Sources */,
 				A0000000000000000000B014 /* MetricsDatagramTests.swift in Sources */,
+				A0000000000000000000C202 /* AutoClipTests.swift in Sources */,
 				A0000000000000000000A006 /* EventRecoveryTests.swift in Sources */,
 				A0000000000000000000A009 /* LowHeatDisplayTests.swift in Sources */,
 			);

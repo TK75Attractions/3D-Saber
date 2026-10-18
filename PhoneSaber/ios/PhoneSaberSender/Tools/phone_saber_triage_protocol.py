@@ -12,7 +12,7 @@ import struct
 import tempfile
 from pathlib import Path, PurePosixPath
 from threading import Lock
-from typing import BinaryIO, Any
+from typing import BinaryIO, Any, Callable
 
 
 MAGIC = b"PSBT"
@@ -31,6 +31,18 @@ PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 SESSION_RE = re.compile(r"^[A-Za-z0-9_-]{1,100}$")
 FRAME_RE = re.compile(r"^frames/frame_[0-9]+_[0-9]+\.json$")
 _publish_lock = Lock()
+# iPhone auto clips (summaryScope "autoClip", 2026-10-19) are ordinary triage
+# bundles; the receiver stores them in this inbox subfolder and does not analyse them.
+AUTOCLIP_SUBDIR = "autoclips"
+
+
+def is_auto_clip_summary(summary: Any) -> bool:
+    return isinstance(summary, dict) and summary.get("summaryScope") == "autoClip"
+
+
+def auto_clip_destination(inbox: Path) -> Callable[[dict[str, Any]], Path]:
+    """Route auto clips to ``inbox/autoclips``; every other bundle stays in ``inbox``."""
+    return lambda summary: inbox / AUTOCLIP_SUBDIR if is_auto_clip_summary(summary) else inbox
 
 
 class BundleError(ValueError):
@@ -144,8 +156,12 @@ def pack_bundle(bundle_dir: Path, destination: Path) -> dict[str, Any]:
     return {"sessionID": session_id, "fileCount": len(entries), "byteCount": total}
 
 
-def receive_bundle(source: BinaryIO, content_length: int, inbox: Path) -> Path:
-    """Read and validate one bounded envelope into an atomic inbox directory."""
+def receive_bundle(source: BinaryIO, content_length: int, inbox: Path,
+                   destination_for: Callable[[dict[str, Any]], Path] | None = None) -> Path:
+    """Read and validate one bounded envelope into an atomic inbox directory.
+
+    ``destination_for`` may pick another directory on the same volume from the
+    validated summary (auto clips); by default the bundle is published in ``inbox``."""
     if content_length < 8 or content_length > MAX_BUNDLE_BYTES:
         raise BundleError("request size is outside the permitted range")
     if _read_exact(source, 4) != MAGIC:
@@ -242,7 +258,12 @@ def receive_bundle(source: BinaryIO, content_length: int, inbox: Path) -> Path:
         _validate_summary_file_set(temporary, seen)
         _validate_context_files(temporary, seen)
 
-        final = inbox / f"phone_saber_triage_{session_id}"
+        target = destination_for(summary) if destination_for else inbox
+        if target != inbox:
+            target.mkdir(parents=True, exist_ok=True)
+            if target.is_symlink() or not target.is_dir():
+                raise BundleError("destination must be a real directory")
+        final = target / f"phone_saber_triage_{session_id}"
         # Serialize publication, including two simultaneous POSTs of one session.
         with _publish_lock:
             if final.exists():

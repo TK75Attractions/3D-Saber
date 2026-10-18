@@ -503,6 +503,16 @@ struct ContentView: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                         }
+                        GroupBox("自動クリップ") {
+                            Toggle("問題らしい瞬間だけ前後5秒を保存してMacへ送る", isOn: Binding(
+                                get: { model.autoClipEnabled },
+                                set: { model.setAutoClipEnabled($0) }
+                            ))
+                            Text(model.autoClipStatusLine)
+                                .font(.caption)
+                            Text("既定ON。送信中、同じ色の候補が2つ以上残る（コーン・服・反射との取り違え）か、剣の位置が1コマで大きく飛んだときだけ、前3秒・後2秒の画像と認識データを保存します（20秒に1回まで、1回の送信で6件まで）。転送は座標を送っていない間（曲の合間・停止後）に行います。発熱中・fps を下げている間・Debug Recording 中は止まります。認識と送信は変わりません。PC（Unity）からの指示でも ON/OFF・今すぐ保存ができます。")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
                         GroupBox("接続・出力") {
                             Toggle("遅延計測モード", isOn: $model.measurementMode)
                                 .disabled(model.running)

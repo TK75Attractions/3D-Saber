@@ -77,8 +77,38 @@ struct LatestCameraFrameMailbox<Frame> {
     mutating func clearPending() { pending = nil }
 }
 
+/// One processed camera frame, handed to a `FrameAnalysisObserver` on the frame
+/// queue after the results were emitted (sent). The BGRA pixels stay locked for
+/// the duration of the call only; observers must not keep `baseAddress`.
+struct ObservedFrame {
+    let baseAddress: UnsafePointer<UInt8>
+    let width: Int
+    let height: Int
+    let bytesPerRow: Int
+    let sequence: UInt64
+    /// Camera presentation time in seconds (same clock as Debug Recording timestamps).
+    let timestamp: Double
+    let processingSeconds: Double
+    let analysis: SaberFrameAnalysis
+    let ignoreZones: [SaberColor: [SaberIgnoreZone]]
+    let playArea: SaberPlayArea?
+    let captureFPS: Int
+}
+
+/// Read-only consumer of production analysis results (the auto clip recorder,
+/// AutoClip.swift). Declared here so host builds of FrameProcessor need no new file.
+/// It never changes detection, selection or what is sent.
+protocol FrameAnalysisObserver: AnyObject {
+    func observe(_ frame: ObservedFrame)
+}
+
 final class FrameProcessor: @unchecked Sendable {
     let queue = DispatchQueue(label: "PhoneSaberSender.frames", qos: .userInteractive)
+    /// Accessed only on `queue`. Skipped while a Debug Recording runs.
+    private var analysisObserver: FrameAnalysisObserver?
+    func setAnalysisObserver(_ observer: FrameAnalysisObserver?) {
+        queue.async { [weak self] in self?.analysisObserver = observer }
+    }
     var onProcessingActivity: ((Bool) -> Void)?
     var onResult: (([DetectedSaber], Int, Int, TimeInterval, Int, FrameTrace?) -> Void)?
     /// (time, detection ms, generation, capture→detection-end ms). The last value is nil when
@@ -542,9 +572,11 @@ final class FrameProcessor: @unchecked Sendable {
         let zones = ignoreZones
         let learningArea = playAreaLearner != nil
         let area = learningArea ? nil : playArea
+        let frameCaptureFPS = captureFPS
         pendingLock.unlock()
 #if DEBUG
         let accessMs = (ProcessInfo.processInfo.systemUptime - accessStart) * 1000
+        let observer = debugVideoRecorder == nil ? analysisObserver : nil
         pendingLock.lock()
         let collectProfile = detailedProfilingEnabled || freezeDiagnosticsEnabled
         let collectFreeze = freezeDiagnosticsEnabled
@@ -556,10 +588,22 @@ final class FrameProcessor: @unchecked Sendable {
                                      collectPipelineDiagnostics: debugVideoRecorder != nil,
                                      ignoreZones: zones, playArea: area)
         let sabers = analysis.selected
+        let observedAnalysis: SaberFrameAnalysis? = analysis
 #else
+        let observer = debugVideoRecorder == nil ? analysisObserver : nil
         let analysis: SaberFrameAnalysis?
         let sabers: [SaberColor: (PixelPoint, PixelPoint)]
-        if debugVideoRecorder != nil {
+        if debugVideoRecorder == nil, observer != nil {
+            // detectSabers is analyzeSabers(...).selected; keep the analysis
+            // (candidates) for the observer. Selection is identical.
+            let result = analyzeSabers(
+                baseAddress: bytes, width: width, height: height,
+                bytesPerRow: bytesPerRow, redThreshold: redThreshold,
+                blueThreshold: blueThreshold, ignoreZones: zones, playArea: area
+            )
+            analysis = result
+            sabers = result.selected
+        } else if debugVideoRecorder != nil {
             let recordedAnalysis = analyzeSabers(
                 baseAddress: bytes, width: width, height: height,
                 bytesPerRow: bytesPerRow, redThreshold: redThreshold,
@@ -575,6 +619,7 @@ final class FrameProcessor: @unchecked Sendable {
                                   redThreshold: redThreshold, blueThreshold: blueThreshold,
                                   ignoreZones: zones, playArea: area)
         }
+        let observedAnalysis = analysis
 #endif
         let detected: [(SaberColor, (PixelPoint, PixelPoint)?)] = [
             (.red, sabers[.red]),
@@ -591,7 +636,7 @@ final class FrameProcessor: @unchecked Sendable {
 #if DEBUG
         var lockHoldMs = 0.0
 #endif
-        if debugVideoRecorder == nil && !saveRequestedRawFrame {
+        if debugVideoRecorder == nil && !saveRequestedRawFrame && observer == nil {
 #if DEBUG
             lockHoldMs = (clock() - lockStart) * 1000
 #endif
@@ -622,6 +667,16 @@ final class FrameProcessor: @unchecked Sendable {
         // 統計ロックを待つ前に座標を送信する。従来の撮影→認識完了の測定終点は維持。
         onHealthSample?(ProcessInfo.processInfo.systemUptime, max(0, (detectionEnd - processingStart) * 1000), generation,
                         captureHostTime.map { (detectionEnd - $0) * 1000 })
+        // After the coordinates were handed to the sender: the observer only
+        // reads this frame's analysis and (rarely) copies pixels.
+        if let observer, let observedAnalysis {
+            observer.observe(ObservedFrame(
+                baseAddress: bytes, width: width, height: height, bytesPerRow: bytesPerRow,
+                sequence: sequence,
+                timestamp: CMSampleBufferGetPresentationTimeStamp(sampleBuffer).seconds,
+                processingSeconds: max(0, detectionEnd - processingStart),
+                analysis: observedAnalysis, ignoreZones: zones, playArea: area, captureFPS: frameCaptureFPS))
+        }
         if let debugVideoRecorder = debugVideoRecorder {
             let processingTimeSeconds = max(0, clock() - processingStart)
             // Recording only: this frame's Exif attachment plus the newest

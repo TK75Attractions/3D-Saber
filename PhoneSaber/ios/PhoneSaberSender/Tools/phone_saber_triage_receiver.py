@@ -20,6 +20,7 @@ from pathlib import Path
 from threading import Lock, Thread
 from typing import Any
 
+from phone_saber_clip_report import write_clip_report
 from phone_saber_precheck_text import explain_precheck
 from phone_saber_session_log import log_fields, session_log_context
 from phone_saber_session_report import write_session_report
@@ -42,6 +43,8 @@ from phone_saber_triage_protocol import (
     MAX_IMAGES,
     BundleError,
     DuplicateBundle,
+    auto_clip_destination,
+    is_auto_clip_summary,
     receive_bundle,
 )
 
@@ -156,6 +159,16 @@ class TriageHTTPServer(ThreadingHTTPServer):
                   f"{type(exc).__name__}: {exc}; bundle preserved, analysis continues", flush=True)
             return None
         print(f"[PHONE_SABER][REPORT] {log_fields()} path={path}", flush=True)
+        return path
+
+    def write_clip_report(self, bundle: Path) -> Path | None:
+        """iPhone auto clip: free local summary + contact sheet; never analysed by Codex."""
+        try:
+            path = write_clip_report(bundle)
+        except Exception as exc:  # noqa: BLE001 - receiving must continue
+            print(f"[autoclip] report FAIL {bundle.name} {type(exc).__name__}: {exc}; bundle preserved", flush=True)
+            return None
+        print(f"[autoclip] report {path}", flush=True)
         return path
 
     def request_overview(self, reason: str) -> None:
@@ -339,7 +352,8 @@ class TriageRequestHandler(BaseHTTPRequestHandler):
 
     def _receive(self, length: int) -> None:
         try:
-            bundle = receive_bundle(self.rfile, length, self.server.inbox)
+            bundle = receive_bundle(self.rfile, length, self.server.inbox,
+                                    destination_for=auto_clip_destination(self.server.inbox))
         except DuplicateBundle as exc:
             print(f"[triage] confirmed duplicate from {self.client_address[0]}: {exc.session_id}", flush=True)
             self._reply(200, {"status": "duplicate", "sessionID": exc.session_id})
@@ -351,6 +365,13 @@ class TriageRequestHandler(BaseHTTPRequestHandler):
         except (BundleError, OSError) as exc:
             print(f"[triage] rejected upload from {self.client_address[0]} (400): {exc}", flush=True)
             self._reply(400, {"error": str(exc)})
+            return
+        if _is_auto_clip(bundle):
+            # Auto clips go to <inbox>/autoclips/, get a local report and contact
+            # sheet, and never enter the Codex analysis / repair queue or the overview.
+            print(f"[autoclip] received {bundle.name} from {self.client_address[0]} → {bundle}", flush=True)
+            self._reply(201, {"accepted": True, "bundle": bundle.name})
+            self.server.write_clip_report(bundle)   # after the reply: the phone does not wait for it
             return
         with session_log_context(bundle, source="new_upload"):
             print(f"[PHONE_SABER][SESSION] {log_fields()}", flush=True)
@@ -375,6 +396,13 @@ class TriageRequestHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
         self.close_connection = True
+
+
+def _is_auto_clip(bundle: Path) -> bool:
+    try:
+        return is_auto_clip_summary(json.loads((bundle / "summary.json").read_text(encoding="utf-8")))
+    except (OSError, ValueError):
+        return False
 
 
 def _is_local_peer(value: str) -> bool:

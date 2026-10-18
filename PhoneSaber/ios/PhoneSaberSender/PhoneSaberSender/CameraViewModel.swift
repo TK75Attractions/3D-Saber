@@ -694,6 +694,12 @@ final class CameraUIPendingState: @unchecked Sendable {
 final class CameraViewModel: NSObject, ObservableObject {
     let session = AVCaptureSession()
     nonisolated let processor: FrameProcessor
+    /// 自動クリップ（AutoClip.swift）。送信中、問題らしい瞬間の前後だけを保存して Mac へ送る。
+    nonisolated let autoClip: AutoClipRecorder
+    @Published private(set) var autoClipEnabled = false
+    @Published private(set) var autoClipStatusLine = ""
+    /// 最後に座標を送っていた時刻（自動クリップの転送を遊んでいる間は待たせる）。
+    private var lastLiveTrafficAt: TimeInterval?
     private let output = AVCaptureVideoDataOutput()
     private let captureQueue = DispatchQueue(label: "PhoneSaberSender.capture", qos: .userInteractive)
     private lazy var sessionRunner = CaptureSessionRunner(session: session)
@@ -980,6 +986,13 @@ final class CameraViewModel: NSObject, ObservableObject {
             enabled: !underTest && lowHeatStored, now: ProcessInfo.processInfo.systemUptime,
             defaults: underTest ? nil : .standard, observeApplication: !underTest)
         self.lowHeatDisplayEnabled = self.lowHeatDisplay.isEnabled
+        // 既定 ON。XCTest では保存値を読まず OFF（端末に clip を書かない）。
+        let autoClipOn = !underTest && AutoClipSettings.storedEnabled()
+        self.autoClip = AutoClipRecorder(
+            directory: FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
+                ?? FileManager.default.temporaryDirectory,
+            enabled: autoClipOn)
+        self.autoClipEnabled = autoClipOn
         super.init()
         self.lowHeatDisplay.onDimmedChange = { [weak self] dimmed in self?.lowHeatDimmedChanged(dimmed) }
         if !underTest {
@@ -1075,6 +1088,12 @@ final class CameraViewModel: NSObject, ObservableObject {
                 }
             }
         }
+        autoClip.onLog = { line in ConnectivityLog.shared.record("AUTOCLIP", line) }
+        autoClip.onClipSaved = { [weak self] result in
+            Task { @MainActor in self?.autoClipSaved(result) }
+        }
+        processor.setAnalysisObserver(autoClip)
+        refreshAutoClipStatus()
         refreshDebugTransferStatus()
         sessionObserverTokens.append(NotificationCenter.default.addObserver(
             forName: DebugBundleTransfer.didChange, object: nil, queue: .main
@@ -1399,6 +1418,8 @@ final class CameraViewModel: NSObject, ObservableObject {
                                                        requestedFPS: requestedHealthFPS, running: running,
                                                        batteryLevel: battery.level, batteryState: battery.state,
                                                        lowPowerMode: ProcessInfo.processInfo.isLowPowerModeEnabled))
+        // 自動クリップ: 発熱・fps 低下（前回の判定）で止め、転送はプレイの合間に回す。
+        updateAutoClipPolicy(thermalState: state, thermal: thermal, rates: rates, at: time)
         let effectiveFPS = effectiveCameraFPS(at: time)
         // 復旧中の停止・再設定を割り込まず、live になってから fps を反映する。
         if cameraLifecycleEnabled && ThermalFPSPolicy.shouldReconfigure(
@@ -1464,6 +1485,7 @@ final class CameraViewModel: NSObject, ObservableObject {
     func start() {
         guard !running, !permissionPending else { return }
         DebugBundleTransfer.shared.retryPending()
+        autoClip.beginSession()
         resumePolicy.start()
         ConnectivityLog.sendGapMonitor.setIntent(true)
         persistSendingIntent()
@@ -1571,6 +1593,81 @@ final class CameraViewModel: NSObject, ObservableObject {
         if let seconds = command.learnAreaSeconds { learnPlayArea(seconds: seconds, commandID: command.id) }
         if command.clearArea { clearPlayArea(commandID: command.id) }
         if let bias = command.exposureBias { setExposureBias(bias, commandID: command.id) }
+        if let enabled = command.autoClip { setAutoClipEnabled(enabled, commandID: command.id) }
+        if command.clip { requestAutoClip(commandID: command.id) }
+    }
+
+    // MARK: 自動クリップ（AutoClip.swift）
+
+    func setAutoClipEnabled(_ enabled: Bool, commandID: Int? = nil) {
+        autoClipEnabled = enabled
+        if NSClassFromString("XCTestCase") == nil { UserDefaults.standard.set(enabled, forKey: AutoClipSettings.enabledKey) }
+        autoClip.setEnabled(enabled)
+        ConnectivityLog.shared.record("AUTOCLIP", "\(enabled ? "on" : "off") id=\(commandID.map(String.init) ?? "-")")
+        refreshAutoClipStatus()
+    }
+
+    /// PC の clip=1。送信中だけ、次のコマの前後を保存する。
+    func requestAutoClip(commandID: Int? = nil) {
+        let request = commandID.map { "pc-command id=\($0)" } ?? "manual"
+        guard running else {
+            ConnectivityLog.shared.record("AUTOCLIP", "clip skipped reason=notSending request=\(request)")
+            return
+        }
+        autoClip.requestClip(reason: request)
+    }
+
+    private func autoClipSaved(_ result: Result<URL, Error>) {
+        switch result {
+        case .success(let url):
+            ConnectivityLog.shared.record("AUTOCLIP", "saved \(url.lastPathComponent)")
+            // 座標を送っている間は転送を始めない（DebugBundleTransfer の deferDuringPlay）。
+            DebugBundleTransfer.shared.enqueue(bundleURL: url, automatic: true, deferDuringPlay: true)
+        case .failure(let error):
+            ConnectivityLog.shared.record("AUTOCLIP", "save failed: \(error.localizedDescription)")
+        }
+        refreshAutoClipStatus()
+    }
+
+    /// 1秒ごと（publishDeviceHealth）。発熱・fps 低下・Debug Recording 中は止め、転送はプレイの合間に回す。
+    private func updateAutoClipPolicy(thermalState: ProcessInfo.ThermalState, thermal: DeviceThermalLevel,
+                                      rates: DeviceHealthRates, at time: TimeInterval) {
+        autoClip.updateEnvironment(AutoClipEnvironment(
+            thermal: thermal.metadataValue, exposureBias: exposureBias,
+            appVersion: (Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String) ?? "unknown"))
+        autoClip.setSuspended(AutoClipSuspendPolicy.reason(
+            thermal: thermalState, fpsReduced: thermalFPSPolicy.reduced,
+            debugRecording: debugRecordingActive || debugRecordingFinalizing))
+        if running && (rates.redSendFPS > 0 || rates.blueSendFPS > 0) { lastLiveTrafficAt = time }
+        let live = running && lastLiveTrafficAt.map { time - $0 < Self.autoClipQuietSeconds } ?? false
+        DebugBundleTransfer.shared.setLiveTrafficActive(live)
+        refreshAutoClipStatus()
+    }
+
+    /// 座標の送信がこの秒数止まったら（曲の合間・停止後）、保存した clip を転送する。
+    static let autoClipQuietSeconds: TimeInterval = 5
+
+    private func refreshAutoClipStatus() {
+        let status = autoClip.statusSnapshot
+        var line: String
+        if !status.enabled {
+            line = "自動クリップ: OFF"
+        } else if let reason = status.suspendedReason {
+            line = "自動クリップ: 一時停止（\(Self.autoClipSuspendText(reason))）"
+        } else {
+            line = "自動クリップ: ON（この送信で \(status.savedThisSession) 件保存）"
+        }
+        if let error = status.lastError { line += " / 保存失敗: \(error)" }
+        assignIfChanged(\.autoClipStatusLine, line)
+    }
+
+    private static func autoClipSuspendText(_ reason: String) -> String {
+        switch reason {
+        case "debugRecording": return "Debug Recording 中"
+        case "thermalSerious", "thermalCritical", "thermalUnknown": return "発熱"
+        case "fpsReduced": return "発熱で fps を下げている間"
+        default: return reason
+        }
     }
 
     // MARK: プレイ範囲（剣を振る場所。SaberPlayArea）
