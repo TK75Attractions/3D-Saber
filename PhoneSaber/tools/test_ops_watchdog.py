@@ -178,6 +178,53 @@ class WindowsSourceContractTests(unittest.TestCase):
             self.assertIn(contract, text)
 
 
+@unittest.skipUnless(os.name == 'nt' or shutil.which('pwsh'), 'PowerShell が必要')
+class WindowsWatchdogPrelaunchTests(unittest.TestCase):
+    def run_watchdog(self, folder, probe, stop_name=None):
+        wrapper = folder / 'test.ps1'
+        wrapper.write_text("""[Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
+function powercfg {
+    if ($env:STOP_TO_CREATE) { [IO.File]::WriteAllText($env:STOP_TO_CREATE, '') }
+    'test power plan'
+}
+function Get-ItemProperty { [PSCustomObject]@{ AutoGameModeEnabled = 1 } }
+function Add-Type { throw 'test display unavailable' }
+& $env:WATCHDOG_SCRIPT -Mode Run -Probe $env:WATCHDOG_TEST_PROBE -ProbeCount ([int]$env:WATCHDOG_TEST_COUNT)
+exit $LASTEXITCODE
+""", encoding='utf-8-sig')
+        shell = 'powershell.exe' if os.name == 'nt' else 'pwsh'
+        env = dict(os.environ, WATCHDOG_SCRIPT=str(ROOT / 'PhoneSaber/windows/saber-watchdog.ps1'),
+                   WATCHDOG_TEST_PROBE=probe, WATCHDOG_TEST_COUNT='10' if probe == 'Tracking' else '8',
+                   PHONESABER_STATION='B', RESTART_COUNT='0', TEMP=str(folder),
+                   STOP_FILE=str(folder / 'Start-Saber-B.STOP'), LOG_FILE=str(folder / 'watchdog.log'),
+                   STOP_TO_CREATE=str(folder / stop_name) if stop_name else '',
+                   GAME_EXE=sys.executable, PHONESABER_HANG_SECONDS='0')
+        # Python は Player 引数を拒否して code=2 で終了する。GUI を開かず実際の起動経路を検出する。
+        return subprocess.run([shell, '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', str(wrapper)],
+                              env=env, cwd=folder, capture_output=True, text=True, encoding='utf-8', timeout=15)
+
+    def test_stop_during_presentation_check_prevents_normal_and_probe_launches(self):
+        for probe in ('None', 'Latency', 'Tracking'):
+            for stop_name in ('Start-Saber-B.STOP', 'STOP'):
+                with self.subTest(probe=probe, stop=stop_name), tempfile.TemporaryDirectory() as temporary:
+                    folder = Path(temporary)
+                    result = self.run_watchdog(folder, probe, stop_name)
+                    self.assertTrue((folder / stop_name).is_file(), '電源確認中に STOP を作成した')
+                    log = (folder / 'watchdog.log').read_text(encoding='utf-8-sig')
+                    self.assertIn('test display unavailable', log)
+                    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                    self.assertIn('not-started STOP-file', log)
+                    self.assertEqual(list(folder.glob('phonesaber-heartbeat-*')), [])
+
+    def test_without_stop_the_player_launch_path_is_reached(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            folder = Path(temporary)
+            result = self.run_watchdog(folder, 'None')
+            self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+            self.assertIn('Unknown option: -p', result.stderr)
+            self.assertNotIn('not-started STOP-file', (folder / 'watchdog.log').read_text(encoding='utf-8-sig'))
+
+
 @unittest.skipUnless(os.name == 'nt', 'cmd.exe / PowerShell 5.1 は Windows 実機でのみ実行')
 class WindowsWatchdogIntegrationTests(unittest.TestCase):
     def setUp(self):

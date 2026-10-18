@@ -156,9 +156,14 @@ try {
         $info.Arguments += ' ' + $argument + ' ' + $ProbeCount
         if ($env:PHONESABER_PROBE_LOG) { $info.Arguments += ' -logFile "' + $env:PHONESABER_PROBE_LOG + '"' }
     }
+    # 電源・画面確認中に置かれた STOP も、通常起動・計測の両方で起動直前に確認する。
+    $commonStop = Join-Path ([IO.Path]::GetDirectoryName($env:STOP_FILE)) 'STOP'
+    if ((Test-Path -LiteralPath $env:STOP_FILE) -or (Test-Path -LiteralPath $commonStop)) {
+        Write-WatchdogLog 'not-started STOP-file'
+        exit 0
+    }
     # Start が返す実際の Player の handle で監視する。名前で他の process を kill しない。
     $game = [Diagnostics.Process]::Start($info)
-    $commonStop = Join-Path ([IO.Path]::GetDirectoryName($env:STOP_FILE)) 'STOP'
     $lastTick = [DateTime]::UtcNow
     $graceUntil = [DateTime]::MinValue
     while (-not $game.WaitForExit(1000)) {
