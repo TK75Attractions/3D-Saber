@@ -8,7 +8,8 @@ using UnityEngine;
 public sealed class TutorialController : MonoBehaviour
 {
     public const string MusicResourcePath = "Audio/Tutorial_Loop120";
-    public const float MusicVolume = .65f;
+    // 音源を曲と同じ -18 LUFS に作ってあるので、曲(SongPlayer の音量 1 × 曲別補正)と同じく 1 で鳴らす。
+    public const float MusicVolume = 1f;
     public struct TutorialStepRecord { public string Id; public double Seconds; public string Reason; }
 
     public TutorialOverlay Overlay { get; private set; }
