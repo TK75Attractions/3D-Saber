@@ -5,6 +5,39 @@ import XCTest
 #endif
 
 final class MetricsDatagramTests: XCTestCase {
+    // Android の IgnoreZonesTest と同じ例。
+    func testAckFormatMatchesAndroid() {
+        XCTAssertEqual(LANLivenessProbe.formatAck(id: 7, station: "A", platform: "ios", result: "ignored", detail: "red1-blue1"),
+                       "PHONESABER_ACK 1 id=7 station=A platform=ios result=ignored detail=red1-blue1")
+        XCTAssertEqual(LANLivenessProbe.formatAck(id: 8, station: "", platform: "android", result: "nothing", detail: "red0-blue0"),
+                       "PHONESABER_ACK 1 id=8 station=none platform=android result=nothing detail=red0-blue0")
+        XCTAssertEqual(LANLivenessProbe.formatAck(id: 9, station: "B", platform: "ios", result: "cleared", detail: "ignore"),
+                       "PHONESABER_ACK 1 id=9 station=B platform=ios result=cleared detail=ignore")
+        XCTAssertEqual(LANLivenessProbe.formatAck(id: 10, station: "A", platform: "android", result: "learning", detail: "10s"),
+                       "PHONESABER_ACK 1 id=10 station=A platform=android result=learning detail=10s")
+        XCTAssertEqual(LANLivenessProbe.formatAck(id: 10, station: "A", platform: "android", result: "learned", detail: "samples42"),
+                       "PHONESABER_ACK 1 id=10 station=A platform=android result=learned detail=samples42")
+        XCTAssertEqual(LANLivenessProbe.formatAck(id: 11, station: "A", platform: "ios", result: "failed", detail: "samples2"),
+                       "PHONESABER_ACK 1 id=11 station=A platform=ios result=failed detail=samples2")
+        XCTAssertEqual(LANLivenessProbe.formatAck(id: 12, station: "B", platform: "android", result: "cleared", detail: "area"),
+                       "PHONESABER_ACK 1 id=12 station=B platform=android result=cleared detail=area")
+        XCTAssertEqual(LANLivenessProbe.formatAck(id: 13, station: "A", platform: "ios", result: "exposure", detail: "ev-2"),
+                       "PHONESABER_ACK 1 id=13 station=A platform=ios result=exposure detail=ev-2")
+        XCTAssertEqual(LANLivenessProbe.formatAck(id: 14, station: "B", platform: "android", result: "tracklock", detail: "off"),
+                       "PHONESABER_ACK 1 id=14 station=B platform=android result=tracklock detail=off")
+        XCTAssertEqual(LANLivenessProbe.formatAck(id: 15, station: "A", platform: "ios", result: "clip-saved", detail: "saved"),
+                       "PHONESABER_ACK 1 id=15 station=A platform=ios result=clip-saved detail=saved")
+        XCTAssertEqual(LANLivenessProbe.formatAck(id: 16, station: "A", platform: "android", result: "clip-off", detail: "off"),
+                       "PHONESABER_ACK 1 id=16 station=A platform=android result=clip-off detail=off")
+        XCTAssertEqual(LANLivenessProbe.formatAck(id: 17, station: "B", platform: "ios", result: "autoclip", detail: "on"),
+                       "PHONESABER_ACK 1 id=17 station=B platform=ios result=autoclip detail=on")
+        for atom in ["", "red blue", "赤", "x\n", "x=y", String(repeating: "x", count: 200)] {
+            XCTAssertNil(LANLivenessProbe.formatAck(id: 1, station: "A", platform: "ios", result: "ignored", detail: atom))
+        }
+        XCTAssertNil(LANLivenessProbe.formatAck(id: -1, station: "A", platform: "ios", result: "cleared", detail: "ignore"))
+        XCTAssertNil(LANLivenessProbe.formatAck(id: 1, station: "A", platform: "other", result: "cleared", detail: "ignore"))
+    }
+
     func testSharedFormatVectors() throws {
         var root = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
         while !FileManager.default.fileExists(atPath: root.appendingPathComponent("PhoneSaber/tools/fixtures/protocol_metrics.tsv").path) && root.path != "/" {
@@ -77,6 +110,26 @@ final class MetricsDatagramTests: XCTestCase {
     }
 
     // Mac の F8 から届く指示（2026-10-18）。Unity の PhoneSaberDiscoveryResponder.BuildCommand と同じ形式。
+    func testPCCommandParsingDefaults() {
+        typealias C = LANLivenessProbe.PCCommand
+        func parse(_ text: String) -> C? { LANLivenessProbe.parseCommand(text) }
+        XCTAssertEqual(parse("PHONESABER_COMMAND 1 id=81 defaults=1 x=ignored"),
+                       C(id: 81, ignore: nil, clearIgnore: false, defaults: true))
+        XCTAssertEqual(parse("PHONESABER_COMMAND 1 id=81 defaults=0 defaults=1")?.defaults, true)
+        for text in ["PHONESABER_COMMAND 2 id=1 defaults=1", "PHONESABER_COMMAND 1 defaults=1",
+                     "PHONESABER_COMMAND 1 id=x defaults=1", "PHONESABER_COMMAND 1 id=1 defaults=0",
+                     "PHONESABER_COMMAND 1 id=1 defaults=2", "PHONESABER_COMMAND 1 id=1 defaults=true",
+                     "PHONESABER_COMMAND 1 id=1 defaults=01", "PHONESABER_COMMAND 1 id=1 defaults=1 defaults=bad"] {
+            XCTAssertNil(parse(text), text)
+        }
+        for other in ["ignore=red", "clear-ignore=1", "learn-area=10", "clear-area=1", "exposure-bias=-1",
+                      "track-lock=0", "clip=1", "auto-clip=0"] {
+            XCTAssertNil(parse("PHONESABER_COMMAND 1 id=1 defaults=1 " + other), other)
+        }
+        XCTAssertEqual(LANLivenessProbe.formatAck(id: 81, station: "", platform: "ios", result: "defaults", detail: "tracklock-on-ev-2"),
+                       "PHONESABER_ACK 1 id=81 station=none platform=ios result=defaults detail=tracklock-on-ev-2")
+    }
+
     func testPCCommandParsingTrackLock() {
         typealias C = LANLivenessProbe.PCCommand
         func parse(_ text: String) -> C? { LANLivenessProbe.parseCommand(text) }

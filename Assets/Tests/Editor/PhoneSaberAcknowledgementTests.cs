@@ -1,0 +1,161 @@
+using System;
+using System.Text;
+using System.Threading.Tasks;
+using NUnit.Framework;
+
+public class PhoneSaberAcknowledgementTests
+{
+    static PhoneSaberAcknowledgement Ack(int id, string result, string detail, string platform = "ios", string station = "none") =>
+        new PhoneSaberAcknowledgement(id, station, platform, result, detail);
+
+    [Test]
+    public void SharedPhoneExamplesParseAndUnknownFieldsAreIgnored()
+    {
+        foreach (string line in new[] {
+            "PHONESABER_ACK 1 id=7 station=A platform=ios result=ignored detail=red1-blue1",
+            "PHONESABER_ACK 1 id=8 station=none platform=android result=nothing detail=red0-blue0",
+            "PHONESABER_ACK 1 id=9 station=B platform=ios result=cleared detail=ignore",
+            "PHONESABER_ACK 1 id=10 station=A platform=android result=learning detail=10s",
+            "PHONESABER_ACK 1 id=10 station=A platform=android result=learned detail=samples42",
+            "PHONESABER_ACK 1 id=11 station=A platform=ios result=failed detail=samples2",
+            "PHONESABER_ACK 1 id=12 station=B platform=android result=cleared detail=area",
+            "PHONESABER_ACK 1 id=13 station=A platform=ios result=exposure detail=ev-2",
+            "PHONESABER_ACK 1 id=14 station=B platform=android result=tracklock detail=off",
+            "PHONESABER_ACK 1 id=15 station=A platform=ios result=clip-saved detail=saved",
+            "PHONESABER_ACK 1 id=16 station=A platform=android result=clip-off detail=off",
+            "PHONESABER_ACK 1 id=17 station=B platform=ios result=autoclip detail=on",
+            "PHONESABER_ACK 1 id=81 station=none platform=ios result=defaults detail=tracklock-on-ev-2",
+        })
+        {
+            Assert.IsTrue(PhoneSaberAcknowledgement.TryParse(line + " future=value future=next", out var parsed), line);
+            var bytes = Encoding.ASCII.GetBytes(line);
+            Assert.IsTrue(PhoneSaberAcknowledgement.TryParse(bytes, bytes.Length, out var binary));
+            Assert.AreEqual(parsed.Detail, binary.Detail);
+        }
+    }
+
+    [Test]
+    public void MalformedPacketsAreIgnored()
+    {
+        const string good = "PHONESABER_ACK 1 id=7 station=A platform=ios result=ignored detail=red1-blue1";
+        foreach (string line in new[] {
+            "", good.Replace("ACK 1", "ACK 2"), good.Replace("id=7 ", ""), good.Replace("id=7", "id=x"),
+            good.Replace("id=7", "id=-1"), good.Replace("id=7", "id=9999999999"), good.Replace("station=A", "station="),
+            good.Replace("station=A", "station=台"), good.Replace("platform=ios", "platform=other"),
+            good.Replace("result=ignored", "result=unknown"), good.Replace("detail=red1-blue1", "detail=bad"),
+            good + " id=8", good + "\n", good + " bad", good + " future=bad=value", good + new string('x', 200)
+        }) Assert.IsFalse(PhoneSaberAcknowledgement.TryParse(line, out _), line);
+        Assert.IsFalse(PhoneSaberAcknowledgement.TryParse(null, 10, out _));
+        Assert.IsFalse(PhoneSaberAcknowledgement.TryParse(new byte[] { 255 }, 1, out _));
+        Assert.IsFalse(PhoneSaberAcknowledgement.TryParse(new byte[1], 20, out _));
+    }
+
+    [Test]
+    public void StoreKeepsEachPhoneAndCompletesLearningWithoutRegressingOnRetries()
+    {
+        var store = new PhoneSaberAcknowledgementStore();
+        Assert.IsFalse(store.Receive(Ack(7, "learning", "10s"), "10.0.0.1"));
+        store.Queue(7, "learn-area=10", 20);
+        Assert.IsTrue(store.Receive(Ack(7, "learning", "10s"), "10.0.0.1"));
+        Assert.IsTrue(store.Receive(Ack(7, "learning", "10s", "android", "B"), "10.0.0.2"));
+        Assert.IsTrue(store.Receive(Ack(7, "learned", "samples42"), "10.0.0.1"));
+        store.Receive(Ack(7, "learning", "10s"), "10.0.0.1");
+        Assert.AreEqual(2, store.Read(7).Length);
+        Assert.AreEqual("learned", store.Read(7)[0].Result);
+        string text = PhoneSaberOperatorKeys.StatusText(store, 40);
+        StringAssert.Contains("iPhone: プレイ範囲を覚えました（42回分）", text);
+        StringAssert.Contains("Android（台B）: プレイ範囲を覚えています（10秒、範囲いっぱいに振る）", text);
+        for (int i = 8; i < 40; i++) store.Queue(i, "ignore=both", 40);
+        Assert.IsFalse(store.Receive(Ack(7, "failed", "samples0"), "10.0.0.1"));
+        Assert.IsEmpty(store.Read(7));
+    }
+
+    [Test]
+    public void StoreIsBoundedAndCanBeReadWhileReceiving()
+    {
+        var store = new PhoneSaberAcknowledgementStore();
+        store.Queue(1, "ignore=both", 0);
+        Parallel.For(0, 100, i => { store.Receive(Ack(1, "nothing", "red0-blue0"), "phone" + i); store.Read(1); });
+        Assert.AreEqual(8, store.Read(1).Length);
+    }
+
+    [Test]
+    public void AutomaticDefaultsNeverToastButRemainVisibleInStatus()
+    {
+        var store = new PhoneSaberAcknowledgementStore();
+        store.Queue(81, PhoneSaberDiscoveryResponder.DefaultsCommand, 10, automatic: true);
+        Assert.IsEmpty(PhoneSaberOperatorKeys.ToastText(store, 11));
+        Assert.IsEmpty(PhoneSaberOperatorKeys.ToastText(store, 100));
+        store.Receive(Ack(81, "defaults", "tracklock-on-ev-2"), "10.0.0.1");
+        Assert.IsEmpty(PhoneSaberOperatorKeys.ToastText(store, 101));
+        Assert.AreEqual("iPhone: 既定に戻しました（剣を追いかける ON・露出 −2）",
+            PhoneSaberOperatorKeys.StatusText(store, 101));
+        store.Queue(82, PhoneSaberDiscoveryResponder.DefaultsCommand, 102);
+        store.Receive(Ack(82, "defaults", "tracklock-on-ev-2"), "10.0.0.1");
+        Assert.AreEqual(PhoneSaberOperatorKeys.StatusText(store, 103), PhoneSaberOperatorKeys.ToastText(store, 103));
+    }
+
+    [Test]
+    public void ToastRefreshOnlyRecomputesOnRevisionOrTimeout()
+    {
+        var store = new PhoneSaberAcknowledgementStore();
+        int initial = store.Revision;
+        store.Queue(81, "ignore=red", 10);
+        Assert.AreNotEqual(initial, store.Revision);
+        int queued = store.Revision;
+        Assert.IsTrue(PhoneSaberOperatorKeys.ShouldRefreshToast(queued, initial, 11, double.PositiveInfinity));
+        Assert.IsFalse(PhoneSaberOperatorKeys.ShouldRefreshToast(queued, queued, 11, 13));
+        Assert.IsFalse(PhoneSaberOperatorKeys.ShouldRefreshToast(queued, queued, 12.99, 13));
+        Assert.IsTrue(PhoneSaberOperatorKeys.ShouldRefreshToast(queued, queued, 13, 13));
+        Assert.IsFalse(PhoneSaberOperatorKeys.ShouldRefreshToast(queued, queued, 1000, double.PositiveInfinity));
+        store.Receive(Ack(81, "nothing", "red0-blue0"), "10.0.0.1");
+        Assert.AreNotEqual(queued, store.Revision);
+        Assert.IsTrue(PhoneSaberOperatorKeys.ShouldRefreshToast(store.Revision, queued, 1000, double.PositiveInfinity));
+        Assert.IsFalse(PhoneSaberOperatorKeys.ShouldRefreshToast(store.Revision, store.Revision, 1000, double.PositiveInfinity));
+    }
+
+    [Test]
+    public void PendingTimeoutPersistsUntilNextCommandAndLateRepliesReplaceIt()
+    {
+        var store = new PhoneSaberAcknowledgementStore();
+        Assert.AreEqual("", PhoneSaberOperatorKeys.StatusText(store, 0));
+        store.Queue(7, "ignore=both", 10);
+        Assert.AreEqual("スマホ: 今の赤と青をまとめて無視（送信中）", PhoneSaberOperatorKeys.StatusText(store, 12.99));
+        const string timeout = "スマホから返事がありません（送信中か・同じネットワークか確認）";
+        Assert.AreEqual(timeout, PhoneSaberOperatorKeys.StatusText(store, 13));
+        Assert.AreEqual(timeout, PhoneSaberOperatorKeys.StatusText(store, 999));
+        store.Receive(Ack(7, "nothing", "red0-blue0"), "10.0.0.1");
+        Assert.AreEqual("iPhone: 今は赤も青も映っていないので無視するものがありません", PhoneSaberOperatorKeys.StatusText(store, 999));
+        store.Queue(8, "learn-area=10", 1000);
+        StringAssert.EndsWith("（送信中）", PhoneSaberOperatorKeys.StatusText(store, 1001));
+        store.Receive(Ack(7, "ignored", "red1-blue1"), "10.0.0.1");
+        StringAssert.EndsWith("（送信中）", PhoneSaberOperatorKeys.StatusText(store, 1001));
+    }
+
+    [TestCase("ignored", "red1-blue1", "赤と青を無視しました（赤1・青1）")]
+    [TestCase("ignored", "red1-blue0", "赤を無視しました（赤1・青0）")]
+    [TestCase("ignored", "red0-blue1", "青を無視しました（赤0・青1）")]
+    [TestCase("cleared", "ignore", "無視をすべて消しました")]
+    [TestCase("cleared", "area", "プレイ範囲を消しました")]
+    [TestCase("learning", "10s", "プレイ範囲を覚えています（10秒、範囲いっぱいに振る）")]
+    [TestCase("learned", "samples42", "プレイ範囲を覚えました（42回分）")]
+    [TestCase("failed", "samples2", "覚えられませんでした（振りが足りません）")]
+    [TestCase("exposure", "ev-2", "露出を -2 EV にしました")]
+    [TestCase("tracklock", "off", "剣を追いかける OFF")]
+    [TestCase("defaults", "tracklock-on-ev-2", "既定に戻しました（剣を追いかける ON・露出 −2）")]
+    [TestCase("autoclip", "on", "自動クリップ ON")]
+    [TestCase("clip-saved", "saved", "今の場面を保存しました")]
+    [TestCase("clip-off", "off", "今の場面を保存できませんでした（クリップOFF・停止中・保存不可）")]
+    public void JapaneseResultStringsArePure(string result, string detail, string expected)
+    {
+        Assert.AreEqual("iPhone: " + expected, PhoneSaberOperatorKeys.ResultText(Ack(7, result, detail), "ignore=both"));
+    }
+
+    [TestCase("ignore=red", "赤が")]
+    [TestCase("ignore=blue", "青が")]
+    public void NothingUsesTheRequestedColour(string command, string colour)
+    {
+        Assert.AreEqual("iPhone: 今は" + colour + "映っていないので無視するものがありません",
+            PhoneSaberOperatorKeys.ResultText(Ack(7, "nothing", "red0-blue0"), command));
+    }
+}

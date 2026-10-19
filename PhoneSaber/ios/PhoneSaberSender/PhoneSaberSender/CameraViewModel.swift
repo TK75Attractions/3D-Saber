@@ -958,7 +958,7 @@ final class CameraViewModel: NSObject, ObservableObject {
         let underTest = NSClassFromString("XCTestCase") != nil
         // 単体テストの送信先は applyBonjourForTesting で明示する。実 Unity の広告を拾わない。
         self.automaticLANDiscoveryEnabled = !underTest
-        self.autoStartSending = !underTest && UserDefaults.standard.bool(forKey: SendingResumePolicy.autoStartKey)
+        self.autoStartSending = !underTest && (UserDefaults.standard.object(forKey: SendingResumePolicy.autoStartKey) as? Bool ?? true)
         self.resumePolicy = SendingResumePolicy(wasSending: !underTest && UserDefaults.standard.bool(forKey: SendingResumePolicy.wasSendingKey))
         // 無人の比較計測用: 起動引数 `-PhoneSaber.experiment.lowLatencyCamera YES` のときだけ試験設定を ON で始める。
         // アプリはこの鍵を保存しないので、引数なしの通常起動では必ず OFF。
@@ -1089,6 +1089,11 @@ final class CameraViewModel: NSObject, ObservableObject {
             }
         }
         autoClip.onLog = { line in ConnectivityLog.shared.record("AUTOCLIP", line) }
+        autoClip.onManualClipResult = { [weak self] reason, saved in
+            Task { @MainActor in
+                self?.clipAcknowledgements.removeValue(forKey: reason)?(saved ? "clip-saved" : "clip-off", saved ? "saved" : "off")
+            }
+        }
         autoClip.onClipSaved = { [weak self] result in
             Task { @MainActor in self?.autoClipSaved(result) }
         }
@@ -1577,9 +1582,9 @@ final class CameraViewModel: NSObject, ObservableObject {
         ConnectivityLog.shared.record("IGNORE_ZONE", "clear")
     }
 
-    private static let trackLockKey = "PhoneSaber.trackLock.v1"
+    private static let trackLockKey = "PhoneSaber.trackLock.v2"
     @Published private(set) var trackLockEnabled = NSClassFromString("XCTestCase") == nil
-        && UserDefaults.standard.bool(forKey: CameraViewModel.trackLockKey)
+        && (UserDefaults.standard.object(forKey: CameraViewModel.trackLockKey) as? Bool ?? true)
 
     func setTrackLockEnabled(_ enabled: Bool) {
         trackLockEnabled = enabled
@@ -1592,20 +1597,51 @@ final class CameraViewModel: NSObject, ObservableObject {
     /// Mac の F8 から届いた指示（同じ id は一度だけ）。
     func applyPCCommand(_ command: LANLivenessProbe.PCCommand) {
         guard seenPCCommandIDs.insert(command.id).inserted else { return }
-        if command.clearIgnore { clearIgnoreZones() }
+        let replyStation = station
+        let ack: (String, String) -> Void = { [weak self] result, detail in
+            guard let self, let host = command.sourceHost,
+                  let line = LANLivenessProbe.formatAck(id: command.id, station: replyStation, platform: "ios", result: result, detail: detail) else { return }
+            self.lanProbe.sendAck(to: host, line: line)
+        }
+        if command.defaults {
+            setTrackLockEnabled(true)
+            setExposureBias(-2, commandID: command.id)
+            ack("defaults", "tracklock-on-ev-2")
+        }
+        if command.clearIgnore { clearIgnoreZones(); ack("cleared", "ignore") }
         if let name = command.ignore {
-            let colors: [SaberColor] = name == "both" ? [.red, .blue] : [name == "blue" ? .blue : .red]
-            for color in colors where !ignoreCurrentDetection(color) {
-                ConnectivityLog.shared.record("IGNORE_ZONE", "pc command id=\(command.id): no current \(color == .red ? "red" : "blue") detection")
+            let red = name != "blue" && ignoreCurrentDetection(.red) ? 1 : 0
+            let blue = name != "red" && ignoreCurrentDetection(.blue) ? 1 : 0
+            for color in ["red", "blue"] where (color == "red" ? name != "blue" && red == 0 : name != "red" && blue == 0) {
+                ConnectivityLog.shared.record("IGNORE_ZONE", "pc command id=\(command.id): no current \(color) detection")
+            }
+            ack(red + blue > 0 ? "ignored" : "nothing", "red\(red)-blue\(blue)")
+        }
+        if let seconds = command.learnAreaSeconds {
+            ack("learning", "\(seconds)s")
+            learnPlayArea(seconds: seconds, commandID: command.id) { samples, learned in
+                ack(learned ? "learned" : "failed", "samples\(samples)")
             }
         }
-        if let seconds = command.learnAreaSeconds { learnPlayArea(seconds: seconds, commandID: command.id) }
-        if command.clearArea { clearPlayArea(commandID: command.id) }
-        if let enabled = command.trackLock { setTrackLockEnabled(enabled) }
-        if let bias = command.exposureBias { setExposureBias(bias, commandID: command.id) }
-        if let enabled = command.autoClip { setAutoClipEnabled(enabled, commandID: command.id) }
-        if command.clip { requestAutoClip(commandID: command.id) }
+        if command.clearArea { clearPlayArea(commandID: command.id); ack("cleared", "area") }
+        if let enabled = command.trackLock { setTrackLockEnabled(enabled); ack("tracklock", enabled ? "on" : "off") }
+        if let bias = command.exposureBias { setExposureBias(bias, commandID: command.id); ack("exposure", "ev\(bias)") }
+        if let enabled = command.autoClip { setAutoClipEnabled(enabled, commandID: command.id); ack("autoclip", enabled ? "on" : "off") }
+        if command.clip {
+            if running && autoClipEnabled {
+                let reason = "pc-command id=\(command.id)"
+                clipAcknowledgements[reason] = ack
+                requestAutoClip(commandID: command.id)
+                // コマが来ない場合も返事を終える。保存成功は writer の完了からだけ返す。
+                Task { @MainActor [weak self] in
+                    try? await Task.sleep(nanoseconds: 15_000_000_000)
+                    self?.clipAcknowledgements.removeValue(forKey: reason)?("clip-off", "off")
+                }
+            } else { ack("clip-off", "off") }
+        }
     }
+
+    private var clipAcknowledgements: [String: (String, String) -> Void] = [:]
 
     // MARK: 自動クリップ（AutoClip.swift）
 
@@ -1685,13 +1721,14 @@ final class CameraViewModel: NSObject, ObservableObject {
     /// 保存キーと定数（actor に属さない。nonisolated の読み込みから使う）。
     enum PlayAreaSettings {
         static let playAreaKey = "PhoneSaber.playArea.v1"
-        static let exposureBiasKey = "PhoneSaber.exposureBias.v1"
+        static let exposureBiasKey = "PhoneSaber.exposureBias.v2"
         static let learnSeconds = 10
     }
 
     @Published private(set) var playArea: SaberPlayArea? = CameraViewModel.storedPlayArea()
     @Published private(set) var playAreaLearning = false
     private var playAreaLearningTask: Task<Void, Never>?
+    private var playAreaAcknowledgement: ((Int, Bool) -> Void)?
     static let playAreaLearnSeconds = PlayAreaSettings.learnSeconds
 
     nonisolated private static func storedPlayArea() -> SaberPlayArea? {
@@ -1710,13 +1747,16 @@ final class CameraViewModel: NSObject, ObservableObject {
 
     /// 送信中に [seconds] 秒、選ばれた winner（赤・青）の両端を数え、足りれば（30 コマ以上）範囲にして保存する。
     /// 足りなければ前の範囲を残す。学習中は範囲で絞らない（無視範囲は効く）。
-    func learnPlayArea(seconds: Int = PlayAreaSettings.learnSeconds, commandID: Int? = nil) {
+    func learnPlayArea(seconds: Int = PlayAreaSettings.learnSeconds, commandID: Int? = nil, completion: ((Int, Bool) -> Void)? = nil) {
         let id = commandID.map(String.init) ?? "-"
         guard running else {
             ConnectivityLog.shared.record("PLAY_AREA", "learn id=\(id): not sending")
+            completion?(0, false)
             return
         }
         playAreaLearningTask?.cancel()
+        playAreaAcknowledgement?(0, false)
+        playAreaAcknowledgement = completion
         processor.startPlayAreaLearning()
         playAreaLearning = true
         ConnectivityLog.shared.record("PLAY_AREA", "learn start id=\(id) seconds=\(seconds)")
@@ -1730,22 +1770,28 @@ final class CameraViewModel: NSObject, ObservableObject {
     private func finishPlayAreaLearning(id: String) {
         playAreaLearningTask = nil
         playAreaLearning = false
+        let completion = playAreaAcknowledgement
+        playAreaAcknowledgement = nil
         let previous = playArea.map { "\($0.minX),\($0.minY),\($0.maxX),\($0.maxY)" } ?? "none"
         guard let learner = processor.finishPlayAreaLearning() else {
             ConnectivityLog.shared.record("PLAY_AREA", "learn id=\(id): not learning; kept \(previous)")
+            completion?(0, false)
             return
         }
         guard let area = learner.area() else {
             ConnectivityLog.shared.record("PLAY_AREA", "learn id=\(id): only \(learner.samples) samples (< \(SaberPlayArea.minimumSamples)); kept \(previous)")
+            completion?(learner.samples, false)
             return
         }
         applyPlayArea(area)
+        completion?(learner.samples, true)
         ConnectivityLog.shared.record("PLAY_AREA", "learn id=\(id) samples=\(learner.samples) area=\(area.minX),\(area.minY),\(area.maxX),\(area.maxY)")
     }
 
     func clearPlayArea(commandID: Int? = nil) {
         if playAreaLearningTask != nil {
             playAreaLearningTask?.cancel(); playAreaLearningTask = nil
+            playAreaAcknowledgement?(0, false); playAreaAcknowledgement = nil
             playAreaLearning = false
             _ = processor.finishPlayAreaLearning()
         }
@@ -1766,20 +1812,20 @@ final class CameraViewModel: NSObject, ObservableObject {
 
     // MARK: 露出補正（光らない物を暗くする試験スイッチ）
 
-    /// 既定 0 = OFF で、0 の間はカメラの露出に一切触れない。シャッター上限（CameraExposureExperiment）だけでは
+    /// 既定 −2 EV。0 = OFF で、0 の間はカメラの露出に一切触れない。シャッター上限（CameraExposureExperiment）だけでは
     /// 自動露出が ISO を上げて戻すため、負の露出補正（setExposureTargetBias）で服などを暗くし、自発光の LED 剣だけを
     /// 明るく残す狙い。0 以外では認識への入力（画素）が変わる。閾値は変えない。実機で比べるための試験設定。
     static let exposureBiasChoices = LANLivenessProbe.exposureBiasChoices
     @Published private(set) var exposureBias: Int = CameraViewModel.storedExposureBias()
-    @Published private(set) var exposureBiasStatus = "露出補正: 0（OFF）"
+    @Published private(set) var exposureBiasStatus = "露出補正: " + CameraViewModel.exposureBiasLabel(CameraViewModel.storedExposureBias())
     private weak var exposureBiasCamera: AVCaptureDevice?
     /// このアプリが 0 以外を設定したか（0 に戻すときだけ 0 を書き込む）。
     private var exposureBiasTouched = false
 
     nonisolated private static func storedExposureBias() -> Int {
         guard NSClassFromString("XCTestCase") == nil else { return 0 }
-        let value = UserDefaults.standard.integer(forKey: PlayAreaSettings.exposureBiasKey)
-        return LANLivenessProbe.exposureBiasChoices.contains(value) ? value : 0
+        let value = UserDefaults.standard.object(forKey: PlayAreaSettings.exposureBiasKey) as? Int ?? -2
+        return LANLivenessProbe.exposureBiasChoices.contains(value) ? value : -2
     }
 
     static func exposureBiasLabel(_ ev: Int) -> String { ev == 0 ? "0（OFF）" : "−\(-ev) EV" }

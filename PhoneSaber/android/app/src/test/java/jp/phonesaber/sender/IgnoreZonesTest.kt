@@ -4,7 +4,58 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class IgnoreZonesTest {
+    // iOS の MetricsDatagramTests と同じ例。
+    @Test fun ackFormatMatchesIPhone() {
+        assertEquals("PHONESABER_ACK 1 id=7 station=A platform=ios result=ignored detail=red1-blue1",
+            PcAckProtocol.format(7, "A", "ios", "ignored", "red1-blue1"))
+        assertEquals("PHONESABER_ACK 1 id=8 station=none platform=android result=nothing detail=red0-blue0",
+            PcAckProtocol.format(8, "", "android", "nothing", "red0-blue0"))
+        assertEquals("PHONESABER_ACK 1 id=9 station=B platform=ios result=cleared detail=ignore",
+            PcAckProtocol.format(9, "B", "ios", "cleared", "ignore"))
+        assertEquals("PHONESABER_ACK 1 id=10 station=A platform=android result=learning detail=10s",
+            PcAckProtocol.format(10, "A", "android", "learning", "10s"))
+        assertEquals("PHONESABER_ACK 1 id=10 station=A platform=android result=learned detail=samples42",
+            PcAckProtocol.format(10, "A", "android", "learned", "samples42"))
+        assertEquals("PHONESABER_ACK 1 id=11 station=A platform=ios result=failed detail=samples2",
+            PcAckProtocol.format(11, "A", "ios", "failed", "samples2"))
+        assertEquals("PHONESABER_ACK 1 id=12 station=B platform=android result=cleared detail=area",
+            PcAckProtocol.format(12, "B", "android", "cleared", "area"))
+        assertEquals("PHONESABER_ACK 1 id=13 station=A platform=ios result=exposure detail=ev-2",
+            PcAckProtocol.format(13, "A", "ios", "exposure", "ev-2"))
+        assertEquals("PHONESABER_ACK 1 id=14 station=B platform=android result=tracklock detail=off",
+            PcAckProtocol.format(14, "B", "android", "tracklock", "off"))
+        assertEquals("PHONESABER_ACK 1 id=15 station=A platform=ios result=clip-saved detail=saved",
+            PcAckProtocol.format(15, "A", "ios", "clip-saved", "saved"))
+        assertEquals("PHONESABER_ACK 1 id=16 station=A platform=android result=clip-off detail=off",
+            PcAckProtocol.format(16, "A", "android", "clip-off", "off"))
+        assertEquals("PHONESABER_ACK 1 id=17 station=B platform=ios result=autoclip detail=on",
+            PcAckProtocol.format(17, "B", "ios", "autoclip", "on"))
+        for (atom in listOf("", "red blue", "赤", "x\n", "x=y", "x".repeat(200)))
+            assertNull(PcAckProtocol.format(1, "A", "android", "ignored", atom))
+        assertNull(PcAckProtocol.format(-1, "A", "android", "cleared", "ignore"))
+        assertNull(PcAckProtocol.format(1, "A", "other", "cleared", "ignore"))
+        assertTrue(PcCommandProtocol.parse("PHONESABER_COMMAND 1 id=16 clip=1")!!.clip)
+        assertEquals(true, PcCommandProtocol.parse("PHONESABER_COMMAND 1 id=17 auto-clip=1")?.autoClip)
+        assertNull(PcCommandProtocol.parse("PHONESABER_COMMAND 1 id=17 auto-clip=1 ignore=red"))
+    }
+
     // Unity の PhoneSaberDiscoveryResponder.BuildCommand と同じ形式。iPhone の testPCCommandParsing と同じ例。
+    @Test fun defaultsCommands() {
+        assertEquals(PcCommand(81, null, false, defaults = true),
+            PcCommandProtocol.parse("PHONESABER_COMMAND 1 id=81 defaults=1 x=ignored"))
+        assertEquals(true, PcCommandProtocol.parse("PHONESABER_COMMAND 1 id=81 defaults=0 defaults=1")?.defaults)
+        for (text in listOf("PHONESABER_COMMAND 2 id=1 defaults=1", "PHONESABER_COMMAND 1 defaults=1",
+            "PHONESABER_COMMAND 1 id=x defaults=1", "PHONESABER_COMMAND 1 id=1 defaults=0",
+            "PHONESABER_COMMAND 1 id=1 defaults=2", "PHONESABER_COMMAND 1 id=1 defaults=true",
+            "PHONESABER_COMMAND 1 id=1 defaults=01", "PHONESABER_COMMAND 1 id=1 defaults=1 defaults=bad"))
+            assertNull(text, PcCommandProtocol.parse(text))
+        for (other in listOf("ignore=red", "clear-ignore=1", "learn-area=10", "clear-area=1", "exposure-bias=-1",
+            "track-lock=0", "clip=1", "auto-clip=0"))
+            assertNull(other, PcCommandProtocol.parse("PHONESABER_COMMAND 1 id=1 defaults=1 $other"))
+        assertEquals("PHONESABER_ACK 1 id=81 station=none platform=android result=defaults detail=tracklock-on-ev-2",
+            PcAckProtocol.format(81, "", "android", "defaults", "tracklock-on-ev-2"))
+    }
+
     @Test fun trackLockCommands() {
         assertEquals(PcCommand(71, null, false, trackLock = true),
             PcCommandProtocol.parse("PHONESABER_COMMAND 1 id=71 track-lock=1 x=ignored"))

@@ -53,6 +53,20 @@ class PcDiscovery(context: Context,
     private var lastRefresh = 0L
     private val rttGate = Any()
     private val roundTrips = linkedMapOf<String, ProbeRoundTrip>()
+    private data class AckSend(val address: InetAddress, val bytes: ByteArray, val due: Long)
+    private val ackGate = Any()
+    private val pendingAcks = mutableListOf<AckSend>()
+
+    fun sendAck(address: InetAddress, line: String) {
+        if (line.length >= 200 || line.any { it.code !in 32..126 }) return
+        val bytes = line.toByteArray(Charsets.US_ASCII)
+        synchronized(ackGate) {
+            if (pendingAcks.size > 90) return
+            val now = System.nanoTime()
+            repeat(3) { pendingAcks.add(AckSend(address, bytes, now + it * 300_000_000L)) }
+        }
+    }
+
     @Volatile private var pendingMetrics: Pair<InetAddress, ByteArray>? = null
 
     fun metricsRoundTrip(address: InetAddress?, now: Double): Triple<Double?, Int, Double?> = synchronized(rttGate) {
@@ -195,7 +209,7 @@ class PcDiscovery(context: Context,
                     wifi.bindSocket(this)
                     bind(java.net.InetSocketAddress(0))
                     broadcast = true
-                    soTimeout = 500
+                    soTimeout = 100
                 } catch (e: Exception) { close(); throw e }
             }
             socket = udp
@@ -234,6 +248,13 @@ class PcDiscovery(context: Context,
         while (token == generation && !udp.isClosed) {
             try {
                 val now = System.nanoTime()
+                val due = synchronized(ackGate) {
+                    pendingAcks.filter { it.due <= now }.also { ready -> pendingAcks.removeAll(ready.toSet()) }
+                }
+                for (ack in due) {
+                    try { udp.send(DatagramPacket(ack.bytes, ack.bytes.size, ack.address, Ports.DISCOVERY)) }
+                    catch (_: Exception) { /* ACK の失敗は座標へ影響させない。 */ }
+                }
                 pendingMetrics?.let { metrics ->
                     pendingMetrics = null
                     try { udp.send(DatagramPacket(metrics.second, metrics.second.size, metrics.first, Ports.DISCOVERY)) }

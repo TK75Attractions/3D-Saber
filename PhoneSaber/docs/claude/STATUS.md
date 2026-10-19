@@ -1,8 +1,28 @@
 # PhoneSaber STATUS
 
-- ユーザー待ち: 実機の追跡 ON/OFF 比較（剣の後ろを赤・青の服で横切る／速く振る／一度隠して再出現）。iPhone は Xcode の再サインイン後に入れ直し。
-- 現在の仮説と確度: 遠方の高得点候補への瞬間的なすり替えに対する、既定 OFF の track lock を実装。合成フレームで検証済み、実会場での効果は未確認。
-- 次にやること: 実機で ON/OFF を比べ、効果があれば既定を検討する。
+- ユーザー待ち: operator による verify・Gradle・Unity EditMode、および両スマホの実機確認（ゲーム再起動・60秒不在後の再接続・運営コマンド優先・自動設定の無トースト）。既存ACK・追跡 ON/OFF の実会場比較も未確認。
+- 現在の仮説と確度: 起動・新規端末の探索時に defaults=1 で追跡 ON・露出 −2 EV を再保存し、Mac側のT/E状態も同期する。認識アルゴリズム不変、formal 40/40 と C++/Swift parity は PASS。実機の設定反映・UDP ACK 往復は未確認。
+- 次にやること: operator が差分をレビューし、Unity EditMode・実機を確認してコミットする。この作業では commit / push / merge しない。
+
+## 2026-10-19 起動・新規端末の既定値再同期（未コミット）
+
+- iOS / Android に `defaults=1` を追加。version 1・id必須・単独操作・未知フィールド無視・重複は後勝ちという既存規則を維持し、既存setterで追跡ON・露出−2を保存する。ACKは `result=defaults detail=tracklock-on-ev-2`。
+- UnityはAutoStartEnabled時のresponder起動ごとに1回と、直近60秒に探索が無いIPからのprobeで自動投入。新規IP時はpendingが0の場合だけ受信threadがフラグを立て、main threadでもpendingを再確認するので運営指示を上書きしない。投入時にT/Eの静的状態をON / index 2へ戻し、値だけで `phone-defaults` を記録する。
+- 自動指示は送信中・ACK・無応答のいずれもトースト非表示。F8には状態を表示できる。defaults ACKの表示は「iPhone: 既定に戻しました（剣を追いかける ON・露出 −2）」。ACK storeのVolatileなRevisionと3秒の無応答期限だけでRefreshToastを再計算し、変更のないフレームでは文字列・LINQ配列を生成しない。
+- PASS: `bash PhoneSaber/ios/PhoneSaberSender/run-static-tests.sh`（Static BGRA + DeviceHealth20件）、`python3 PhoneSaber/ios/PhoneSaberSenderTests/run_latency_host_tests.py`（35+6件）、`make -C PhoneSaber/android/core test parity BUILD=$TMPDIR/core-build`（Python6件、formal40件、325 PNG / 541遷移 / 27合成で不一致0）。sandbox-exec等の警告はあったが、上記3コマンドはいずれもexit 0。
+- 追加PASS: 実UDPSender等をmacOSでcompileしたMetricsDatagramTests9件、キャッシュ済みKotlin compiler / JUnitによるIgnoreZonesTest + PlayAreaTest12件、Unity実DLL参照のC# compileと純粋部分28件（defaults文字列・新規IP規則・静的状態reset・自動toast抑制・revision/期限判定を含む）。ホスト側の時計・自動起動フラグの代役を使用し、Unity Editorは実行していない。
+- 今回のverify・Gradle・Unityはユーザー指定でoperator担当、未実行。新規変更は認識・閾値・座標UDPに触れていない。既存未コミット差分を保持し、commit / pushはしない。
+
+## 2026-10-19 defaults / PC command ACK（レビュー待ち、未コミット）
+
+- 既定: iOS `PhoneSaber.trackLock.v2` / Android `trackLock.v2` は ON、iOS `PhoneSaber.exposureBias.v2` / Android `exposureBias.v2` は −2 EV。v1 の値は移さず、以後のトグル・PC 指示は v2 に保存。自動送信の既存キーは未保存だけ ON（保存済み OFF・XCTest/underTest は従来どおり）。Ctrl+Shift+T は最初 OFF、E は最初 0、その後 −1→−2→0。認識閾値・scoring・ranking・eligibility・座標 UDP は変更なし。
+- ACK: 指示を受けた PC の UDP 5007 に `PHONESABER_ACK 1 id=N station=<atom> platform=ios|android result=<atom> detail=<atom>` を専用探索キュー/threadで約0.3秒間隔3回送信。200 bytes未満、atom は `[A-Za-z0-9_.-]`、台未指定は `none`。同じ指示IDの再受信では再実行しない。
+- result/detail: `ignored/red1-blue1`（色別追加数、片色0も可）、`nothing/red0-blue0`、`cleared/ignore|area`、`learning/10s`、`learned/samplesN`、`failed/samplesN`、`exposure/ev0|ev-1|ev-2`、`tracklock/on|off`、`clip-saved/saved`、`clip-off/off`、`autoclip/on|off`。学習は開始と完了を同じIDで返す。iOSのclip成功はwriter完了時だけ。Androidは既存clip機能未対応のためclip-off/autoclip offを返す。
+- Unity: 最大32指示×8送信元のlock付きstore。未発行ID・不正ACKは無視、未知フィールドは無視。学習完了後に遅いlearning再送が来ても表示を戻さない。全ACKを `phone-ack` に記録し、トーストとF8で同じ日本語結果を表示（複数台は複数行、3秒無応答の表示は自動消去しない）。
+- PASS: `make -C PhoneSaber/android/core test parity BUILD=$TMPDIR/core-build`（Python6件、formal40件、325 PNG / 541遷移 / 27合成で不一致0）、`run-static-tests.sh`（Static BGRA / DeviceHealth20件）、`run_latency_host_tests.py`（35+6件）。書込み可能なCLANG/SWIFTキャッシュを指定した `run_lossless_regression.py` は40/40（positive23/23、negative誤検出0/17）。
+- 追加検証: 実ソースから抽出したLANLivenessProbeと既存MetricsDatagramTestsのhost実行8件PASS、Android全Kotlin型検査＋IgnoreZonesTest/PlayAreaTestの直接JUnit実行11件PASS。C#は実ソース＋Unity API代役による純粋テスト27件PASS（正式EditModeの代わりにはしない）。iOSはContentView/Appを除く全ソースのiOS16/Swift5型検査PASS。実Unity DLL参照でMac/WindowsのEditor/Player計4構成のcompile PASS（Editor/Playerは実行しない）。
+- 指定の総合 `verify_phone_saber.sh` は実行したが全PASSではない。Simulatorサービス/UDP bind/既定Swiftキャッシュ/Git LFS共有領域がEPERM、ReleaseはSwiftUIマクロのnested sandbox起動失敗。Toolsは448件中failure15/error36/skip1（socket・キャッシュ等の制限）。既定cacheのlossless失敗は上記tmp指定で解消。変更範囲の `git diff --check` はLFS filterを無効化してPASS。
+- 指定Gradle `:app:testDebugUnitTest :app:assembleDebug` はホームのwrapper lock書込み禁止。GRADLE_USER_HOMEをtmpにした再試行もFileLockContentionHandlerのsocket作成EPERMで停止。APK未生成。Unityは指示に従い起動・テスト実行なし。新規C#テストのmetaは既存形式＋新規ランダムGUID。
 
 ## 2026-10-19 track lock（iOS / Android、既定 OFF）
 

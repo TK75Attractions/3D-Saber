@@ -46,7 +46,8 @@ object DiscoveryProtocol {
  *   "PHONESABER_COMMAND 1 id=<番号> ignore=red|blue" / "PHONESABER_COMMAND 1 id=<番号> clear-ignore=1"
  *   "PHONESABER_COMMAND 1 id=<番号> learn-area=<秒 1..60>" / "... clear-area=1"（プレイ範囲、2026-10-18）
  *   "PHONESABER_COMMAND 1 id=<番号> exposure-bias=0|-1|-2"（露出補正 EV、2026-10-18）
- *   "PHONESABER_COMMAND 1 id=<番号> track-lock=0|1"（剣を追いかける。既定 OFF、端末に保存）
+ *   "PHONESABER_COMMAND 1 id=<番号> track-lock=0|1"（剣を追いかける。既定 ON、端末に保存）
+ *   "PHONESABER_COMMAND 1 id=<番号> defaults=1"（剣を追いかける ON・露出 -2 に戻して保存）
  * iPhone の LANLivenessProbe.parseCommand と同じ規則: 版は 1 だけ、id 必須、ignore は red/blue だけ、
  * 知らない項目は無視、同じ項目は後のものが有効、範囲外の値はその項目が無いのと同じ。同じ id は受け手が一度だけ実行する。
  * 1つの指示は1つの操作だけ: learn-area / clear-area / exposure-bias / track-lock は他の操作と一緒なら指示ごと捨てる
@@ -54,7 +55,8 @@ object DiscoveryProtocol {
  */
 data class PcCommand(val id: Int, val ignore: String?, val clearIgnore: Boolean,
                      val learnAreaSeconds: Int? = null, val clearArea: Boolean = false,
-                     val exposureBias: Int? = null, val trackLock: Boolean? = null)
+                     val exposureBias: Int? = null, val trackLock: Boolean? = null,
+                     val clip: Boolean = false, val autoClip: Boolean? = null, val defaults: Boolean = false)
 
 object PcCommandProtocol {
     const val PREFIX = "PHONESABER_COMMAND 1 "
@@ -69,6 +71,9 @@ object PcCommandProtocol {
         var clearArea = false
         var exposure: Int? = null
         var trackLock: Boolean? = null
+        var clip = false
+        var autoClip: Boolean? = null
+        var defaults = false
         // Swift の split(separator:) と同じく空の項目は数えない。
         for (field in text.substring(PREFIX.length).split(' ').filter { it.isNotEmpty() }) {
             val parts = field.split('=', limit = 2).filter { it.isNotEmpty() }
@@ -80,14 +85,17 @@ object PcCommandProtocol {
                 "clear-ignore" -> clear = parts[1] == "1"
                 "learn-area" -> learn = parts[1].toIntOrNull()?.takeIf { it in 1..MAXIMUM_LEARN_SECONDS }
                 "clear-area" -> clearArea = parts[1] == "1"
+                "defaults" -> defaults = parts[1] == "1"
+                "clip" -> clip = parts[1] == "1"
+                "auto-clip" -> autoClip = when (parts[1]) { "0" -> false; "1" -> true; else -> null }
                 "track-lock" -> trackLock = when (parts[1]) { "0" -> false; "1" -> true; else -> null }
                 "exposure-bias" -> exposure = parts[1].toIntOrNull()?.takeIf { ExposureBias.valid(it) }
             }
         }
         val legacy = (if (ignore != null) 1 else 0) + (if (clear) 1 else 0)
-        val added = (if (learn != null) 1 else 0) + (if (clearArea) 1 else 0) + (if (exposure != null) 1 else 0) + (if (trackLock != null) 1 else 0)
+        val added = (if (learn != null) 1 else 0) + (if (clearArea) 1 else 0) + (if (exposure != null) 1 else 0) + (if (trackLock != null) 1 else 0) + (if (clip) 1 else 0) + (if (autoClip != null) 1 else 0) + (if (defaults) 1 else 0)
         if (id == null || legacy + added == 0 || (added > 0 && legacy + added != 1)) return null
-        return PcCommand(id, ignore, clear, learn, clearArea, exposure, trackLock)
+        return PcCommand(id, ignore, clear, learn, clearArea, exposure, trackLock, clip, autoClip, defaults)
     }
 }
 
@@ -118,5 +126,15 @@ object ManualAddress {
         val address = InetAddress.getByAddress(octets.map { it.toByte() }.toByteArray())
         return address.takeUnless { it.isAnyLocalAddress || it.isMulticastAddress ||
             it.isLoopbackAddress || octets == listOf(255, 255, 255, 255) }
+    }
+}
+
+// iOS の LANLivenessProbe.formatAck と同じ ASCII 形式。
+object PcAckProtocol {
+    fun format(id: Int, station: String, platform: String, result: String, detail: String): String? {
+        val label = station.ifEmpty { "none" }
+        val atom = Regex("[A-Za-z0-9_.-]+")
+        if (id < 0 || platform !in listOf("ios", "android") || !listOf(label, result, detail).all { atom.matches(it) }) return null
+        return "PHONESABER_ACK 1 id=$id station=$label platform=$platform result=$result detail=$detail".takeIf { it.length < 200 }
     }
 }

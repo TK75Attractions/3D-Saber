@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -19,9 +21,15 @@ public sealed class PhoneSaberDiscoveryResponder : IDisposable
     // iPhone は同じ id を一度だけ実行する。古いアプリや Android は知らない datagram として捨てる。
     public const string CommandPrefix = "PHONESABER_COMMAND 1";
     public const double CommandSeconds = 10;
+    public const string DefaultsCommand = "defaults=1";
+    const double NewSenderSeconds = 60;
+    static readonly object commandGate = new object();
+    static int automaticDefaultsRequested;
+    static string commandStation = "";
     static string pendingCommand;
     static double pendingUntil;
-    static int commandId;
+    static int commandId = (int)(DateTime.UtcNow.Ticks % 1000000) * 1000;
+    public static readonly PhoneSaberAcknowledgementStore Acknowledgements = new PhoneSaberAcknowledgementStore();
 
     public static string BuildCommand(int id, string fields) => CommandPrefix + " id=" + id + " " + fields;
 
@@ -30,18 +38,44 @@ public sealed class PhoneSaberDiscoveryResponder : IDisposable
     public const int LearnAreaSeconds = 10;
     public static readonly string LearnAreaCommand = "learn-area=" + LearnAreaSeconds;
     public const string ClearAreaCommand = "clear-area=1";
-    // 露出補正（EV、0 = OFF・既定、-1、-2）。光らない服などを暗くする試験スイッチ。スマホが保存する。
+    // 露出補正（EV、0 = OFF、-1、-2 = 既定）。光らない服などを暗くする試験スイッチ。スマホが保存する。
     public static readonly int[] ExposureBiasChoices = { 0, -1, -2 };
     public static string ExposureBiasCommand(int ev) => "exposure-bias=" + ev.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
     // fields: "ignore=red" / "ignore=blue" / "clear-ignore=1" / LearnAreaCommand / ClearAreaCommand / ExposureBiasCommand(ev)
-    public static int QueueCommand(string fields)
+    public static int QueueCommand(string fields, bool automatic = false)
     {
-        int id = System.Threading.Interlocked.Increment(ref commandId) + (int)(DateTime.UtcNow.Ticks % 100000) * 1000;
-        Volatile.Write(ref pendingCommand, BuildCommand(id, fields));
-        Volatile.Write(ref pendingUntil, SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp) + CommandSeconds);
-        return id;
+        lock (commandGate)
+        {
+            int id = Interlocked.Increment(ref commandId);
+            double now = SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp);
+            Acknowledgements.Queue(id, fields, now, automatic);
+            Volatile.Write(ref pendingCommand, BuildCommand(id, fields));
+            Volatile.Write(ref pendingUntil, now + CommandSeconds);
+            if (fields == DefaultsCommand)
+            {
+                PhoneSaberOperatorKeys.ResetDefaultsState();
+                // 受信 thread からも安全な値だけを渡す。PlayerPrefs は読まない。
+                PhoneSaberEventLog.Record(Volatile.Read(ref commandStation), "SYSTEM", "phone-defaults", "id=" + id);
+            }
+            return id;
+        }
     }
+
+    // 受信側は要求フラグだけを立て、実際の自動指示は運営キーの main thread で送る。
+    public static void ProcessAutomaticDefaults()
+    {
+        if (Interlocked.Exchange(ref automaticDefaultsRequested, 0) == 0 ||
+            !PhoneSaberP2PBridgeProcess.AutoStartEnabled) return;
+        lock (commandGate)
+            if (CommandSecondsLeft(SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp)) == 0)
+                QueueCommand(DefaultsCommand, automatic: true);
+    }
+
+    // 判定は時刻と値だけ。送信元 port が変わっても同じ IP は同じ端末として扱う。
+    public static bool ShouldQueueDefaults(IReadOnlyDictionary<string, double> lastSeen, string sender,
+        double now, double pendingSeconds) => pendingSeconds == 0 &&
+        (!lastSeen.TryGetValue(sender, out double seen) || now - seen >= NewSenderSeconds);
 
     public static double CommandSecondsLeft(double now) =>
         Volatile.Read(ref pendingCommand) == null ? 0 : Math.Max(0, Volatile.Read(ref pendingUntil) - now);
@@ -106,6 +140,8 @@ public sealed class PhoneSaberDiscoveryResponder : IDisposable
 #endif
                 client.Client.Bind(new IPEndPoint(IPAddress.Any, listenPort));
                 client.Client.ReceiveTimeout = 500;
+                Volatile.Write(ref commandStation, station);
+                QueueCommand(DefaultsCommand, automatic: true);
                 running = true;
                 byte[] reply = Encoding.ASCII.GetBytes(BuildReply(redPort, bluePort, Environment.MachineName, station));
                 thread = new Thread(() => Loop(client, reply)) { IsBackground = true, Name = "PhoneSaberDiscovery" };
@@ -129,6 +165,7 @@ public sealed class PhoneSaberDiscoveryResponder : IDisposable
     {
         EndPoint remote = new IPEndPoint(IPAddress.Any, 0);
         var data = new byte[PhoneSaberMetrics.MaximumBytes + 1];
+        var lastSeen = new Dictionary<string, double>();
         // Stop の Join 時間切れ後に再起動しても、閉じた旧 socket で例外を繰り返さない。
         while (running && ReferenceEquals(Volatile.Read(ref socket), client))
         {
@@ -137,9 +174,21 @@ public sealed class PhoneSaberDiscoveryResponder : IDisposable
                 int length = client.Client.ReceiveFrom(data, ref remote);
                 if (IsRequest(data, length))
                 {
+                    string sender = ((IPEndPoint)remote).Address.ToString();
+                    double now = SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp);
+                    if (ShouldQueueDefaults(lastSeen, sender, now, CommandSecondsLeft(now)))
+                        Interlocked.Exchange(ref automaticDefaultsRequested, 1);
+                    lastSeen[sender] = now;
                     client.Send(reply, reply.Length, (IPEndPoint)remote);
                     byte[] command = CurrentCommand();
                     if (command != null) client.Send(command, command.Length, (IPEndPoint)remote);
+                }
+                else if (PhoneSaberAcknowledgement.TryParse(data, length, out var ack))
+                {
+                    string from = ((IPEndPoint)remote).Address.ToString();
+                    if (Acknowledgements.Receive(ack, from))
+                        PhoneSaberEventLog.Record(ack.Station, "SYSTEM", "phone-ack",
+                            $"id={ack.Id} result={ack.Result} detail={ack.Detail} from={from}");
                 }
                 else if (length <= PhoneSaberMetrics.MaximumBytes)
                     Metrics.Receive(data, length, ((IPEndPoint)remote).Address,
@@ -159,6 +208,7 @@ public sealed class PhoneSaberDiscoveryResponder : IDisposable
         lock (gate)
         {
             running = false;
+            Interlocked.Exchange(ref automaticDefaultsRequested, 0);
             socket?.Close();
             socket = null;
             active = thread;
@@ -175,6 +225,135 @@ public sealed class PhoneSaberDiscoveryResponder : IDisposable
             disposed = true;
         }
         Stop();
+    }
+}
+
+// ACK は短い ASCII token だけ。Unity API を使わずテストできる解析・保存部分。
+public sealed class PhoneSaberAcknowledgement
+{
+    public int Id { get; }
+    public string Station { get; }
+    public string Platform { get; }
+    public string Result { get; }
+    public string Detail { get; }
+    public string Sender { get; }
+
+    public PhoneSaberAcknowledgement(int id, string station, string platform, string result, string detail, string sender = "")
+    { Id = id; Station = station; Platform = platform; Result = result; Detail = detail; Sender = sender; }
+
+    static bool Atom(string value) => !string.IsNullOrEmpty(value) && value.All(c =>
+        c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z' || c >= '0' && c <= '9' || c == '_' || c == '.' || c == '-');
+    static bool Number(string value) => !string.IsNullOrEmpty(value) && value.All(c => c >= '0' && c <= '9') && int.TryParse(value, out _);
+    static bool DetailValid(string result, string detail)
+    {
+        switch (result)
+        {
+            case "ignored": return detail == "red1-blue1" || detail == "red1-blue0" || detail == "red0-blue1";
+            case "nothing": return detail == "red0-blue0";
+            case "cleared": return detail == "ignore" || detail == "area";
+            case "learning": return detail.EndsWith("s") && Number(detail.Substring(0, detail.Length - 1)) &&
+                int.Parse(detail.Substring(0, detail.Length - 1)) >= 1 && int.Parse(detail.Substring(0, detail.Length - 1)) <= 60;
+            case "learned": case "failed": return detail.StartsWith("samples") && Number(detail.Substring(7));
+            case "exposure": return detail == "ev0" || detail == "ev-1" || detail == "ev-2";
+            case "defaults": return detail == "tracklock-on-ev-2";
+            case "tracklock": case "autoclip": return detail == "on" || detail == "off";
+            case "clip-saved": return detail == "saved";
+            case "clip-off": return detail == "off";
+            default: return false;
+        }
+    }
+
+    public static bool TryParse(byte[] data, int length, out PhoneSaberAcknowledgement ack)
+    {
+        ack = null;
+        if (data == null || length <= 0 || length >= 200 || length > data.Length) return false;
+        for (int i = 0; i < length; i++) if (data[i] < 32 || data[i] > 126) return false;
+        return TryParse(Encoding.ASCII.GetString(data, 0, length), out ack);
+    }
+
+    public static bool TryParse(string line, out PhoneSaberAcknowledgement ack)
+    {
+        ack = null;
+        if (line == null || line.Length >= 200 || !line.StartsWith("PHONESABER_ACK 1 ")) return false;
+        var fields = new Dictionary<string, string>();
+        foreach (string token in line.Substring("PHONESABER_ACK 1 ".Length).Split(' '))
+        {
+            int equal = token.IndexOf('=');
+            if (equal <= 0 || !Atom(token.Substring(0, equal)) || !Atom(token.Substring(equal + 1))) return false;
+            string key = token.Substring(0, equal);
+            if (key != "id" && key != "station" && key != "platform" && key != "result" && key != "detail") continue;
+            if (fields.ContainsKey(key)) return false;
+            fields.Add(key, token.Substring(equal + 1));
+        }
+        if (!fields.TryGetValue("id", out string id) || !Number(id) ||
+            !fields.TryGetValue("station", out string station) ||
+            !fields.TryGetValue("platform", out string platform) || (platform != "ios" && platform != "android") ||
+            !fields.TryGetValue("result", out string result) || !fields.TryGetValue("detail", out string detail) ||
+            !DetailValid(result, detail)) return false;
+        ack = new PhoneSaberAcknowledgement(int.Parse(id), station, platform, result, detail);
+        return true;
+    }
+}
+
+public sealed class PhoneSaberAcknowledgementStore
+{
+    sealed class Command
+    {
+        public int Id;
+        public string Fields;
+        public double QueuedAt;
+        public bool Automatic;
+        public readonly Dictionary<string, PhoneSaberAcknowledgement> Phones = new Dictionary<string, PhoneSaberAcknowledgement>();
+    }
+    readonly object gate = new object();
+    readonly List<Command> commands = new List<Command>();
+    int revision;
+    public int Revision => Volatile.Read(ref revision);
+
+    public void Queue(int id, string fields, double now, bool automatic = false)
+    {
+        lock (gate)
+        {
+            commands.RemoveAll(c => c.Id == id);
+            commands.Add(new Command { Id = id, Fields = fields, QueuedAt = now, Automatic = automatic });
+            if (commands.Count > 32) commands.RemoveAt(0);
+            Interlocked.Increment(ref revision);
+        }
+    }
+
+    public bool Receive(PhoneSaberAcknowledgement ack, string sender)
+    {
+        lock (gate)
+        {
+            var command = commands.Find(c => c.Id == ack.Id);
+            if (command == null) return false;
+            if (!command.Phones.TryGetValue(sender, out var previous) && command.Phones.Count >= 8) return false;
+            // 開始の再送が完了より遅れて届いても、学習中へ戻さない。
+            if (previous != null && (previous.Result == "learned" || previous.Result == "failed") && ack.Result == "learning") return true;
+            command.Phones[sender] = new PhoneSaberAcknowledgement(ack.Id, ack.Station, ack.Platform, ack.Result, ack.Detail, sender);
+            Interlocked.Increment(ref revision);
+            return true;
+        }
+    }
+
+    public PhoneSaberAcknowledgement[] Read(int id)
+    {
+        lock (gate) return commands.Find(c => c.Id == id)?.Phones.Values.OrderBy(a => a.Sender, StringComparer.Ordinal).ToArray()
+            ?? Array.Empty<PhoneSaberAcknowledgement>();
+    }
+
+    public bool Latest(out int id, out string fields, out double queuedAt)
+        => Latest(out id, out fields, out queuedAt, out _);
+
+    public bool Latest(out int id, out string fields, out double queuedAt, out bool automatic)
+    {
+        lock (gate)
+        {
+            var command = commands.LastOrDefault();
+            id = command?.Id ?? 0; fields = command?.Fields ?? ""; queuedAt = command?.QueuedAt ?? 0;
+            automatic = command?.Automatic ?? false;
+            return command != null;
+        }
     }
 }
 

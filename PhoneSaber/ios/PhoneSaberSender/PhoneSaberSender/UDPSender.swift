@@ -594,6 +594,7 @@ final class LANLivenessProbe {
     ///   "PHONESABER_COMMAND 1 id=<番号> learn-area=<秒 1..60>" / "... clear-area=1"（プレイ範囲、2026-10-18）
     ///   "PHONESABER_COMMAND 1 id=<番号> exposure-bias=0|-1|-2"（露出補正 EV、2026-10-18）
     ///   "PHONESABER_COMMAND 1 id=<番号> clip=1" / "... auto-clip=0|1"（自動クリップの今すぐ保存・ON/OFF、2026-10-19）
+    ///   "PHONESABER_COMMAND 1 id=<番号> defaults=1"（剣を追いかける ON・露出 -2 に戻して保存）
     /// 2026-10-18: 会場のコーンを無視する範囲を、iPhone に触らず Mac から登録するため。
     /// 規則（Android の PcCommandProtocol と同じ）: 版は 1 だけ、id 必須、知らない項目は無視、同じ項目は後のものが有効、
     /// 範囲外の値はその項目が無いのと同じ。1つの指示は1つの操作だけ: learn-area / clear-area / exposure-bias は
@@ -610,8 +611,11 @@ final class LANLivenessProbe {
         var clip = false
         /// auto-clip=0|1: 自動クリップの ON/OFF（端末に保存）。
         var autoClip: Bool? = nil
-        /// track-lock=0|1: 剣を追いかける（既定 OFF、端末に保存）。
+        /// track-lock=0|1: 剣を追いかける（既定 ON、端末に保存）。
         var trackLock: Bool? = nil
+        /// defaults=1: 本番の既定（追跡 ON・露出 -2）に戻し、端末に保存する。
+        var defaults = false
+        var sourceHost: String? = nil
     }
     static let commandPrefix = "PHONESABER_COMMAND 1 "
     static let maximumLearnAreaSeconds = 60
@@ -620,7 +624,7 @@ final class LANLivenessProbe {
         guard text.hasPrefix(commandPrefix) else { return nil }
         var id: Int?, ignore: String?, clear = false
         var learn: Int?, clearArea = false, exposure: Int?
-        var clip = false, autoClip: Bool?, trackLock: Bool?
+        var clip = false, autoClip: Bool?, trackLock: Bool?, defaults = false
         for field in text.dropFirst(commandPrefix.count).split(separator: " ") {
             let parts = field.split(separator: "=", maxSplits: 1).map(String.init)
             guard parts.count == 2 else { continue }
@@ -631,6 +635,7 @@ final class LANLivenessProbe {
             case "clear-ignore": clear = parts[1] == "1"
             case "learn-area": learn = Int(parts[1]).flatMap { (1...maximumLearnAreaSeconds).contains($0) ? $0 : nil }
             case "clear-area": clearArea = parts[1] == "1"
+            case "defaults": defaults = parts[1] == "1"
             case "exposure-bias": exposure = Int(parts[1]).flatMap { exposureBiasChoices.contains($0) ? $0 : nil }
             case "clip": clip = parts[1] == "1"
             case "track-lock": trackLock = parts[1] == "1" ? true : parts[1] == "0" ? false : nil
@@ -640,12 +645,42 @@ final class LANLivenessProbe {
         }
         let legacy = (ignore != nil ? 1 : 0) + (clear ? 1 : 0)
         let added = (learn != nil ? 1 : 0) + (clearArea ? 1 : 0) + (exposure != nil ? 1 : 0)
-            + (clip ? 1 : 0) + (autoClip != nil ? 1 : 0) + (trackLock != nil ? 1 : 0)
+            + (clip ? 1 : 0) + (autoClip != nil ? 1 : 0) + (trackLock != nil ? 1 : 0) + (defaults ? 1 : 0)
         guard let id, legacy + added > 0, added == 0 || legacy + added == 1 else { return nil }
         return PCCommand(id: id, ignore: ignore, clearIgnore: clear,
                          learnAreaSeconds: learn, clearArea: clearArea, exposureBias: exposure,
-                         clip: clip, autoClip: autoClip, trackLock: trackLock)
+                         clip: clip, autoClip: autoClip, trackLock: trackLock, defaults: defaults)
     }
+    static func formatAck(id: Int, station: String, platform: String, result: String, detail: String) -> String? {
+        func atom(_ value: String) -> Bool {
+            !value.isEmpty && value.utf8.allSatisfy {
+                (65...90).contains($0) || (97...122).contains($0) || (48...57).contains($0) || [45, 46, 95].contains($0)
+            }
+        }
+        let station = station.isEmpty ? "none" : station
+        guard id >= 0, ["ios", "android"].contains(platform), [station, result, detail].allSatisfy(atom) else { return nil }
+        let line = "PHONESABER_ACK 1 id=\(id) station=\(station) platform=\(platform) result=\(result) detail=\(detail)"
+        return line.utf8.count < 200 ? line : nil
+    }
+
+    // 探索キューで送る。指示を受けた接続の宛先を固定し、後で選択PCが変わっても誤送信しない。
+    func sendAck(to host: String, line: String) {
+        guard line.utf8.count < 200, let data = line.data(using: .ascii), !host.isEmpty else { return }
+        queue.async {
+            let reply = NWConnection(host: NWEndpoint.Host(host), port: NWEndpoint.Port(rawValue: Self.port)!, using: .udp)
+            reply.stateUpdateHandler = { [weak reply] state in
+                guard case .ready = state, let reply else { return }
+                for attempt in 0..<3 {
+                    self.queue.asyncAfter(deadline: .now() + Double(attempt) * 0.3) {
+                        reply.send(content: data, completion: .idempotent)
+                    }
+                }
+            }
+            reply.start(queue: self.queue)
+            self.queue.asyncAfter(deadline: .now() + 2) { reply.cancel() }
+        }
+    }
+
     /// 受信キューから呼ぶ。受け手は main で同じ id を一度だけ実行する。
     var onCommand: ((PCCommand) -> Void)?
 
@@ -825,8 +860,9 @@ final class LANLivenessProbe {
 
     private func handle(_ data: Data, from connection: NWConnection?) {
         guard let text = String(data: data, encoding: .ascii) else { return }
-        if let command = Self.parseCommand(text) {
+        if var command = Self.parseCommand(text) {
             lock.lock(); let fromCurrent = connection == nil || self.connection === connection; lock.unlock()
+            if let connection, case .hostPort(let host, _) = connection.endpoint { command.sourceHost = "\(host)" }
             if fromCurrent { onCommand?(command) }
             return
         }

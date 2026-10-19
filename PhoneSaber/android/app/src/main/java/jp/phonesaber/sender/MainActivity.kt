@@ -299,7 +299,7 @@ class MainActivity : ComponentActivity() {
         recoveryStatus = label("")
         Switch(this).apply {
             text = "起動時に送信を自動開始"
-            isChecked = launchSettings.autoStart(prefs.getBoolean(SendingResumePolicy.AUTO_START_KEY, false))
+            isChecked = launchSettings.autoStart(prefs.getBoolean(SendingResumePolicy.AUTO_START_KEY, true))
             panel.addView(this)
             setOnCheckedChangeListener { _, enabled ->
                 prefs.edit().putBoolean(SendingResumePolicy.AUTO_START_KEY, enabled).apply()
@@ -320,7 +320,7 @@ class MainActivity : ComponentActivity() {
         panel.addView(ignoreRow)
         trackLockSwitch = Switch(this).apply {
             text = "剣を追いかける（通行人対策・試験）"
-            isChecked = prefs.getBoolean("trackLock.v1", false)
+            isChecked = prefs.getBoolean("trackLock.v2", true)
             setOnCheckedChangeListener { _, enabled -> setTrackLockEnabled(enabled) }
             panel.addView(this)
         }
@@ -423,7 +423,7 @@ class MainActivity : ComponentActivity() {
         camera.trackLockEnabled = trackLockSwitch.isChecked
         setIgnoreZones(IgnoreZones.decode(prefs.getString(IgnoreZones.PREFERENCE_KEY, null)), persist = false)
         setPlayArea(PlayArea.decode(prefs.getString(PlayArea.PREFERENCE_KEY, null)), persist = false)
-        setExposureBias(prefs.getInt(ExposureBias.PREFERENCE_KEY, 0).takeIf { ExposureBias.valid(it) } ?: 0, null,
+        setExposureBias(prefs.getInt(ExposureBias.PREFERENCE_KEY, -2).takeIf { ExposureBias.valid(it) } ?: -2, null,
             persist = false)
         discovery = PcDiscovery(this, onReply = { address, now ->
             address.hostAddress?.let { pcReplyWatch.received(it, now) }
@@ -456,7 +456,7 @@ class MainActivity : ComponentActivity() {
         thermalStatus = power.currentThermalStatus
         power.addThermalStatusListener(ContextCompat.getMainExecutor(this), thermalListener)
         updateHealth()
-        if (resumePolicy.foreground(launchSettings.autoStart(prefs.getBoolean(SendingResumePolicy.AUTO_START_KEY, false)))) {
+        if (resumePolicy.foreground(launchSettings.autoStart(prefs.getBoolean(SendingResumePolicy.AUTO_START_KEY, true)))) {
             automaticResumePending = true
             if (launchSettings.persistAutomaticResume) persistSendingIntent()
             cameraBackoff.reset()
@@ -617,15 +617,17 @@ class MainActivity : ComponentActivity() {
     }
 
     /** 今その色で選ばれている候補（剣を消していればコーンなど）の範囲を無視範囲に加える。 */
-    private fun ignoreCurrent(color: Int, commandId: Int?) {
+    private fun ignoreCurrent(color: Int, commandId: Int?, completion: (Boolean) -> Unit = {}) {
         val name = if (color == 0) "赤" else "青"
         camera.captureWinnerZone(color) { zone ->
             if (zone == null) {
                 Log.i(IGNORE_TAG, "add color=$color id=$commandId: no current detection")
                 toast(if (sending) "今の${name}が認識されていません" else "送信中に押してください（今の${name}を認識中のときだけ）")
+                completion(false)
                 return@captureWinnerZone
             }
             setIgnoreZones(ignoreZones.adding(color, zone))
+            completion(true)
             Log.i(IGNORE_TAG, "add color=$color id=$commandId zone=$zone")
             toast("${name}の範囲を無視します（${ignoreZones.summary}）")
         }
@@ -646,34 +648,59 @@ class MainActivity : ComponentActivity() {
 
     private fun setTrackLockEnabled(enabled: Boolean) {
         camera.trackLockEnabled = enabled
-        prefs.edit().putBoolean("trackLock.v1", enabled).apply()
+        prefs.edit().putBoolean("trackLock.v2", enabled).apply()
         if (trackLockSwitch.isChecked != enabled) trackLockSwitch.isChecked = enabled
     }
 
     /** PC の F8 から届いた指示。今送っている PC からのものだけ、同じ id は一度だけ実行する。 */
     private fun applyPcCommand(from: java.net.InetAddress, command: PcCommand) {
         if (destination?.address != from || !seenPcCommandIds.add(command.id)) return
-        if (command.clearIgnore) clearIgnoreZones(command.id)
-        command.ignore?.let {
-            if (it == "both") { ignoreCurrent(0, command.id); ignoreCurrent(1, command.id) }
-            else ignoreCurrent(if (it == "blue") 1 else 0, command.id)
+        val station = prefs.getString("station", "") ?: ""
+        val ack: (String, String) -> Unit = { result, detail ->
+            PcAckProtocol.format(command.id, station, "android", result, detail)?.let { discovery.sendAck(from, it) }
         }
-        command.learnAreaSeconds?.let { learnPlayArea(it, command.id) }
-        if (command.clearArea) clearPlayArea(command.id)
-        command.exposureBias?.let { setExposureBias(it, command.id) }
-        command.trackLock?.let { setTrackLockEnabled(it) }
+        if (command.defaults) {
+            setTrackLockEnabled(true)
+            setExposureBias(-2, command.id)
+            ack("defaults", "tracklock-on-ev-2")
+        }
+        if (command.clearIgnore) { clearIgnoreZones(command.id); ack("cleared", "ignore") }
+        command.ignore?.let { name ->
+            val colors = if (name == "both") listOf(0, 1) else listOf(if (name == "blue") 1 else 0)
+            var remaining = colors.size
+            val added = intArrayOf(0, 0)
+            for (color in colors) ignoreCurrent(color, command.id) { success ->
+                if (success) added[color] = 1
+                if (--remaining == 0) ack(if (added.sum() > 0) "ignored" else "nothing", "red${added[0]}-blue${added[1]}")
+            }
+        }
+        command.learnAreaSeconds?.let { seconds ->
+            ack("learning", "${seconds}s")
+            learnPlayArea(seconds, command.id) { samples, learned -> ack(if (learned) "learned" else "failed", "samples$samples") }
+        }
+        if (command.clearArea) { clearPlayArea(command.id); ack("cleared", "area") }
+        command.exposureBias?.let { setExposureBias(it, command.id); ack("exposure", "ev$it") }
+        command.trackLock?.let { setTrackLockEnabled(it); ack("tracklock", if (it) "on" else "off") }
+        // Android は自動クリップ未対応。保存したと誤表示せず OFF を返す。
+        if (command.clip) ack("clip-off", "off")
+        command.autoClip?.let { ack("autoclip", "off") }
     }
 
     /**
      * プレイ範囲を覚える。[seconds] 秒の間に選ばれた winner（赤・青）の両端を数え、
      * 足りれば（${PlayArea.MINIMUM_SAMPLES} コマ以上）範囲にして保存する。足りなければ前の範囲を残す。
      */
-    private fun learnPlayArea(seconds: Int, commandId: Int?) {
+    private var areaAcknowledgement: ((Int, Boolean) -> Unit)? = null
+
+    private fun learnPlayArea(seconds: Int, commandId: Int?, completion: ((Int, Boolean) -> Unit)? = null) {
         if (!sending) {
+            completion?.invoke(0, false)
             Log.i(AREA_TAG, "learn id=$commandId: not sending")
             toast("送信中に押してください（プレイ範囲は送信中の認識から覚えます）")
             return
         }
+        areaAcknowledgement?.invoke(0, false)
+        areaAcknowledgement = completion
         val token = ++areaLearningToken
         areaLearningUntil = System.nanoTime() / 1e9 + seconds
         camera.startAreaLearning()
@@ -700,6 +727,8 @@ class MainActivity : ComponentActivity() {
                         toast("プレイ範囲を覚えました（${area.summary}）")
                     }
                 }
+                areaAcknowledgement?.invoke(result?.samples ?: 0, area != null)
+                areaAcknowledgement = null
                 updateAreaSummary()
             }
         }, seconds * 1000L)
@@ -708,6 +737,7 @@ class MainActivity : ComponentActivity() {
     private fun clearPlayArea(commandId: Int?) {
         if (areaLearningUntil > 0) {
             ++areaLearningToken; areaLearningUntil = 0.0
+            areaAcknowledgement?.invoke(0, false); areaAcknowledgement = null
             camera.finishAreaLearning { }
         }
         setPlayArea(null)

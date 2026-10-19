@@ -579,6 +579,8 @@ final class AutoClipRecorder: FrameAnalysisObserver {
 
     /// Called on the writer queue after a clip bundle was published (or failed).
     var onClipSaved: ((Result<URL, Error>) -> Void)?
+    /// 手動指示ごとの完了。検出・writer のキューを待たせない通知だけを行う。
+    var onManualClipResult: ((String, Bool) -> Void)?
     /// Short log lines (trigger accepted/rejected, suspend changes); any thread.
     var onLog: ((String) -> Void)?
 
@@ -625,7 +627,8 @@ final class AutoClipRecorder: FrameAnalysisObserver {
 
     /// Save a clip around the next frame (PC command).
     func requestClip(reason: String) {
-        lock.lock(); manualRequest = reason; lock.unlock()
+        lock.lock(); let previous = manualRequest; manualRequest = reason; lock.unlock()
+        if let previous { onManualClipResult?(previous, false) }
     }
 
     var statusSnapshot: AutoClipStatus {
@@ -653,6 +656,7 @@ final class AutoClipRecorder: FrameAnalysisObserver {
             if buffers != nil || pending != nil { dropState() }
             if let manual {
                 onLog?("clip skipped reason=\(!isEnabled ? "disabled" : suspended ?? "invalidTimestamp") request=\(manual)")
+                onManualClipResult?(manual, false)
             }
             return
         }
@@ -704,7 +708,10 @@ final class AutoClipRecorder: FrameAnalysisObserver {
             if manualEvent != nil || redEvent != nil || blueEvent != nil {
                 for event in [manualEvent, redEvent, blueEvent].compactMap({ $0 }) {
                     _ = limiter.admit(event, busy: true, width: frame.width, height: frame.height)
-                    if event.kind == .manual { onLog?("clip skipped reason=busy request=\(event.note ?? "")") }
+                    if event.kind == .manual {
+                        onLog?("clip skipped reason=busy request=\(event.note ?? "")")
+                        onManualClipResult?(event.note ?? "", false)
+                    }
                 }
             }
             if frame.timestamp >= current.end { finalize(current, buffers: buffers, environmentNow: environmentNow) }
@@ -712,7 +719,10 @@ final class AutoClipRecorder: FrameAnalysisObserver {
             for event in [manualEvent, redEvent, blueEvent].compactMap({ $0 }) {
                 let decision = limiter.admit(event, busy: writerBusy, width: frame.width, height: frame.height)
                 if case .reject(let reason) = decision {
-                    if event.kind == .manual { onLog?("clip skipped reason=\(reason) request=\(event.note ?? "")") }
+                    if event.kind == .manual {
+                        onLog?("clip skipped reason=\(reason) request=\(event.note ?? "")")
+                        onManualClipResult?(event.note ?? "", false)
+                    }
                     continue
                 }
                 pending = Pending(event: event, end: frame.timestamp + AutoClipLimits.postSeconds,
@@ -730,7 +740,10 @@ final class AutoClipRecorder: FrameAnalysisObserver {
     }
 
     private func dropState() {
-        if let pending { onLog?("clip dropped kind=\(pending.event.kind.rawValue) (suspended, format change or time gap)") }
+        if let pending {
+            onLog?("clip dropped kind=\(pending.event.kind.rawValue) (suspended, format change or time gap)")
+            if pending.event.kind == .manual { onManualClipResult?(pending.event.note ?? "", false) }
+        }
         pending = nil
         buffers = nil
         lastTimestamp = nil
@@ -764,6 +777,10 @@ final class AutoClipRecorder: FrameAnalysisObserver {
             }
             self.lock.unlock()
             self.onClipSaved?(result)
+            if current.event.kind == .manual {
+                if case .success = result { self.onManualClipResult?(current.event.note ?? "", true) }
+                else { self.onManualClipResult?(current.event.note ?? "", false) }
+            }
         }
     }
 

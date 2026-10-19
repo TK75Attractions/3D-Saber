@@ -41,13 +41,13 @@ data class PlayArea(val minX: Double, val minY: Double, val maxX: Double, val ma
 }
 
 /**
- * 露出補正（光らない物を暗くする試験スイッチ）。既定 0 = OFF で、0 の間はカメラの露出に一切触れない。
+ * 露出補正（光らない物を暗くする試験スイッチ）。既定 −2 EV。0 = OFF で、0 の間はカメラの露出に一切触れない。
  * シャッターだけ短くしても自動露出が ISO を上げて戻すので、露出補正を負にして服などを暗くし、
  * 自発光の LED 剣だけを明るく残す狙い。0 以外では認識への入力（画素）が変わる。閾値は変えない。
  */
 object ExposureBias {
     val CHOICES = listOf(0, -1, -2)
-    const val PREFERENCE_KEY = "exposureBias.v1"
+    const val PREFERENCE_KEY = "exposureBias.v2"
 
     fun valid(ev: Int) = ev in CHOICES
 

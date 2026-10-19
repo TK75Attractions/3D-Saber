@@ -1,27 +1,36 @@
+using System.Linq;
+using System.Threading;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 // 運営のキーボード操作（2026-10-18 ユーザー: スマホに無視させる操作は F8 の画面ではなくキーで直接）。
 // Ctrl+Shift+文字。ゲームが使う A/S/D/W・数字・矢印・Space・Enter・Esc・N とは重ねない。
-// 押すと PhoneSaberDiscoveryResponder.QueueCommand で、探索応答と一緒にスマホへ 10 秒送り、3 秒だけ画面に出す。
+// 押すと PhoneSaberDiscoveryResponder.QueueCommand で、探索応答と一緒にスマホへ 10 秒送り、返事を画面に出す。
 public sealed class PhoneSaberOperatorKeys : MonoBehaviour
 {
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     static void CreateAtStartup()
     {
         if (!PhoneSaberP2PBridgeProcess.AutoStartEnabled) return; // テスト中は作らない
-        lastSentTrackLock = false;
+        ResetDefaultsState();
         var go = new GameObject("PhoneSaber Operator Keys");
         go.AddComponent<PhoneSaberOperatorKeys>().toast = go.AddComponent<PhoneSaberOperatorToast>();
         DontDestroyOnLoad(go);
     }
 
     PhoneSaberOperatorToast toast;
-    static bool lastSentTrackLock; // PC から最後に送った値。開始時 OFF。
-    static int exposureIndex; // 0 → -1 → -2 → 0（PC から最後に送った値。スマホ側が保存する）
+    static bool lastSentTrackLock = true; // スマホの新しい既定 ON に合わせる。
+    static int exposureIndex = 2; // 開始時 -2、次に 0 → -1 → -2（スマホ側が保存する）
+
+    // Unity API を使わず、defaults のキュー投入と一緒に Mac 側も既定に戻す。
+    public static void ResetDefaultsState()
+    {
+        Volatile.Write(ref lastSentTrackLock, true);
+        Volatile.Write(ref exposureIndex, 2);
+    }
 
     // 押されたキーに対応する指示と表示。対応しないキーは null。
-    public static (string command, string label)? CommandFor(Key key, int currentExposureIndex, out int nextExposureIndex, bool currentTrackLock = false)
+    public static (string command, string label)? CommandFor(Key key, int currentExposureIndex, out int nextExposureIndex, bool currentTrackLock = true)
     {
         nextExposureIndex = currentExposureIndex;
         switch (key)
@@ -53,8 +62,106 @@ public sealed class PhoneSaberOperatorKeys : MonoBehaviour
 
     static readonly Key[] Keys = { Key.R, Key.B, Key.I, Key.C, Key.K, Key.P, Key.X, Key.E, Key.T };
 
+    string displayed = "";
+    int displayedId;
+    int toastRevision = -1;
+    double nextToastRefresh = double.PositiveInfinity;
+    public const string NoReplyMessage = "スマホから返事がありません（送信中か・同じネットワークか確認）";
+    public static string LastResultText => StatusText(PhoneSaberDiscoveryResponder.Acknowledgements,
+        SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp));
+
+    public static string PendingLabel(string fields)
+    {
+        switch (fields)
+        {
+            case "ignore=red": return "スマホ: 今の赤を無視";
+            case "ignore=blue": return "スマホ: 今の青を無視";
+            case "ignore=both": return "スマホ: 今の赤と青をまとめて無視";
+            case "clear-ignore=1": return "スマホ: 無視をすべて消す";
+            case "clear-area=1": return "スマホ: プレイ範囲を消す";
+            case "clip=1": return "スマホ: 今の場面を切り抜いて保存";
+            case PhoneSaberDiscoveryResponder.DefaultsCommand: return "スマホ: 既定に戻す（剣を追いかける ON・露出 −2）";
+            default:
+                if (fields.StartsWith("learn-area=")) return "スマホ: プレイ範囲を覚える（" + fields.Substring(11) + "秒、範囲いっぱいに振る）";
+                if (fields.StartsWith("exposure-bias=")) return "スマホ露出: " + (fields.Substring(14) == "0" ? "0（OFF）" : fields.Substring(14));
+                if (fields.StartsWith("track-lock=")) return "スマホ: 剣を追いかける " + (fields.EndsWith("1") ? "ON" : "OFF");
+                if (fields.StartsWith("auto-clip=")) return "スマホ: 自動クリップ " + (fields.EndsWith("1") ? "ON" : "OFF");
+                return "スマホ: " + fields;
+        }
+    }
+
+    // GUI・時計・通信に依存しない表示。F8 とトーストは同じ文字列を読む。
+    public static string StatusText(PhoneSaberAcknowledgementStore store, double now)
+    {
+        if (!store.Latest(out int id, out string fields, out double queuedAt)) return "";
+        var replies = store.Read(id);
+        if (replies.Length > 0) return string.Join("\n", replies.Select(a => ResultText(a, fields)));
+        return now - queuedAt >= 3 ? NoReplyMessage
+            : PendingLabel(fields) + "（送信中）";
+    }
+
+    public static string ResultText(PhoneSaberAcknowledgement ack, string command)
+    {
+        string phone = ack.Platform == "ios" ? "iPhone" : "Android";
+        if (ack.Station != "none") phone += "（台" + ack.Station + "）";
+        string result;
+        switch (ack.Result)
+        {
+            case "ignored":
+                bool red = ack.Detail.StartsWith("red1"), blue = ack.Detail.EndsWith("blue1");
+                result = (red && blue ? "赤と青" : red ? "赤" : "青") + "を無視しました（赤" + (red ? 1 : 0) + "・青" + (blue ? 1 : 0) + "）";
+                break;
+            case "nothing":
+                string color = command == "ignore=red" ? "赤が" : command == "ignore=blue" ? "青が" : "赤も青も";
+                result = "今は" + color + "映っていないので無視するものがありません";
+                break;
+            case "cleared": result = ack.Detail == "area" ? "プレイ範囲を消しました" : "無視をすべて消しました"; break;
+            case "learning": result = "プレイ範囲を覚えています（" + ack.Detail.TrimEnd('s') + "秒、範囲いっぱいに振る）"; break;
+            case "learned": result = "プレイ範囲を覚えました（" + ack.Detail.Substring(7) + "回分）"; break;
+            case "failed": result = "覚えられませんでした（振りが足りません）"; break;
+            case "exposure": result = "露出を " + ack.Detail.Substring(2) + " EV にしました"; break;
+            case "tracklock": result = "剣を追いかける " + (ack.Detail == "on" ? "ON" : "OFF"); break;
+            case "defaults": result = "既定に戻しました（剣を追いかける ON・露出 −2）"; break;
+            case "clip-saved": result = "今の場面を保存しました"; break;
+            case "clip-off": result = "今の場面を保存できませんでした（クリップOFF・停止中・保存不可）"; break;
+            case "autoclip": result = "自動クリップ " + (ack.Detail == "on" ? "ON" : "OFF"); break;
+            default: result = "返事: " + ack.Result; break;
+        }
+        return phone + ": " + result;
+    }
+
+    // 自動設定は送信中・成功・無応答ともトーストを出さない。F8 の状態欄には残す。
+    public static string ToastText(PhoneSaberAcknowledgementStore store, double now)
+    {
+        if (!store.Latest(out _, out _, out _, out bool automatic) || automatic) return "";
+        return StatusText(store, now);
+    }
+
+    public static bool ShouldRefreshToast(int revision, int previousRevision, double now, double nextRefresh)
+        => revision != previousRevision || now >= nextRefresh;
+
+    void RefreshToast()
+    {
+        var store = PhoneSaberDiscoveryResponder.Acknowledgements;
+        int revision = store.Revision;
+        double now = SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp);
+        // 変更なしのフレームは文字列・LINQ・配列を作らない。時計だけの変化は3秒の無応答判定時だけ。
+        if (!ShouldRefreshToast(revision, toastRevision, now, nextToastRefresh)) return;
+        toastRevision = revision;
+        bool latest = store.Latest(out int id, out _, out double queuedAt, out bool automatic);
+        nextToastRefresh = latest && !automatic && now < queuedAt + 3 ? queuedAt + 3 : double.PositiveInfinity;
+        string message = ToastText(store, now);
+        if (message == displayed && id == displayedId) return;
+        displayed = message; displayedId = id;
+        if (toast != null && message.Length == 0) toast.enabled = false;
+        if (toast != null && message.Length > 0)
+            toast.Show(message, message == NoReplyMessage || PhoneSaberDiscoveryResponder.Acknowledgements.Read(id).Any(a => a.Result == "learning"));
+    }
+
     void Update()
     {
+        PhoneSaberDiscoveryResponder.ProcessAutomaticDefaults();
+        RefreshToast();
         var keyboard = Keyboard.current;
         if (keyboard == null) return;
         bool ctrl = keyboard.leftCtrlKey.isPressed || keyboard.rightCtrlKey.isPressed;
@@ -63,18 +170,18 @@ public sealed class PhoneSaberOperatorKeys : MonoBehaviour
         foreach (var key in Keys)
         {
             if (!keyboard[key].wasPressedThisFrame) continue;
-            var command = CommandFor(key, exposureIndex, out int next, lastSentTrackLock);
+            var command = CommandFor(key, Volatile.Read(ref exposureIndex), out int next, Volatile.Read(ref lastSentTrackLock));
             if (command == null) continue;
             exposureIndex = next;
             if (key == Key.T) lastSentTrackLock = !lastSentTrackLock;
             PhoneSaberDiscoveryResponder.QueueCommand(command.Value.command);
             PhoneSaberEventLog.Record(PhoneSaberStation.Read(), "SYSTEM", "operator-key", "key=" + key + " command=" + command.Value.command);
-            if (toast != null) toast.Show(command.Value.label + "（送信中）");
+            RefreshToast();
         }
     }
 }
 
-// 操作の確認を 3 秒だけ出す。普段は無効（OnGUI の毎フレームの負荷を出さない）。
+// 結果は3秒。学習中と無応答は次の結果・操作まで残す。普段は無効。
 public sealed class PhoneSaberOperatorToast : MonoBehaviour
 {
     double until;
@@ -83,7 +190,8 @@ public sealed class PhoneSaberOperatorToast : MonoBehaviour
 
     void Awake() => enabled = false;
 
-    public void Show(string message) { text = message; until = Time.realtimeSinceStartupAsDouble + 3; enabled = true; }
+    public void Show(string message, bool persistent = false)
+    { text = message; until = persistent ? double.PositiveInfinity : Time.realtimeSinceStartupAsDouble + 3; enabled = true; }
 
     void Update() { if (Time.realtimeSinceStartupAsDouble > until) enabled = false; }
 
@@ -95,6 +203,6 @@ public sealed class PhoneSaberOperatorToast : MonoBehaviour
             style.normal.textColor = Color.yellow;
         }
         style.fontSize = Mathf.Max(16, Screen.height / 32);
-        GUI.Box(new Rect(Screen.width * 0.2f, Screen.height * 0.16f, Screen.width * 0.6f, style.fontSize * 2.4f), text, style);
+        GUI.Box(new Rect(Screen.width * 0.2f, Screen.height * 0.16f, Screen.width * 0.6f, style.fontSize * (text.Count(c => c == '\n') + 1) * 2.4f), text, style);
     }
 }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Reflection;
 using System.Runtime.Serialization;
@@ -12,6 +13,20 @@ using UnityEngine.TestTools;
 // 5007 を占有せず、bind 失敗後の socket 解放を確認する。
 public class PhoneSaberDiscoveryResponderTests
 {
+    [Test]
+    public void DefaultsCommandAndNewSenderRule()
+    {
+        Assert.AreEqual("PHONESABER_COMMAND 1 id=81 defaults=1",
+            PhoneSaberDiscoveryResponder.BuildCommand(81, PhoneSaberDiscoveryResponder.DefaultsCommand));
+        var seen = new Dictionary<string, double> { ["10.0.0.1"] = 100 };
+        Assert.IsTrue(PhoneSaberDiscoveryResponder.ShouldQueueDefaults(seen, "10.0.0.2", 101, 0));
+        Assert.IsFalse(PhoneSaberDiscoveryResponder.ShouldQueueDefaults(seen, "10.0.0.1", 159.999, 0));
+        Assert.IsTrue(PhoneSaberDiscoveryResponder.ShouldQueueDefaults(seen, "10.0.0.1", 160, 0));
+        Assert.IsFalse(PhoneSaberDiscoveryResponder.ShouldQueueDefaults(seen, "10.0.0.2", 101, 0.001));
+        Assert.IsFalse(PhoneSaberDiscoveryResponder.ShouldQueueDefaults(seen, "10.0.0.1", 200, 10));
+        Assert.AreEqual(1, seen.Count, "判定だけでは最終探索時刻を更新しない");
+    }
+
     [Test]
     public void RetiredLoopExitsWhileReplacementIsRunning()
     {
