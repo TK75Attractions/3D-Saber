@@ -47,9 +47,10 @@ public sealed class TutorialOverlay : MonoBehaviour
     public void Bind(TutorialController controller, ScoreManager scoring)
     {
         ctl = controller;
-        if (score != null) score.OnJudgmentEx -= OnJudgment;
+        if (score != null) { score.OnJudgmentEx -= OnJudgment; score.OnLongCut -= OnJudgment; }
         score = scoring;
-        if (score != null) score.OnJudgmentEx += OnJudgment;
+        // ロングは1回切るごとに判定1つなので、途中の回も判定の文字を出す(本編の HUD と同じ)。
+        if (score != null) { score.OnJudgmentEx += OnJudgment; score.OnLongCut += OnJudgment; }
     }
 
     RectTransform Rect(Transform p, string name, float x, float y, float w, float h) =>
@@ -227,6 +228,6 @@ public sealed class TutorialOverlay : MonoBehaviour
 
     void OnDestroy()
     {
-        if (score != null) score.OnJudgmentEx -= OnJudgment;
+        if (score != null) { score.OnJudgmentEx -= OnJudgment; score.OnLongCut -= OnJudgment; }
     }
 }

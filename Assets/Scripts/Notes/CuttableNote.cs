@@ -40,7 +40,7 @@ public class CuttableNote : MonoBehaviour
         IsCut = IsMissed = IsFinalized = judgeable = false;
         JudgmentOwner = null;
         MinimumCutSpeed = 0; RequireJudgeableOnCut = DirectionVisualOnly = false;
-        LastCutCorrectDirection = true; LastCutterHand = SaberHand.Any;
+        LastCutCorrectDirection = LatestCutCorrectDirection = true; LastCutterHand = SaberHand.Any;
         LastCutSongTime = null;
         firstPiece = secondPiece = null;
         hasPendingFlash = false;
@@ -103,6 +103,8 @@ public class CuttableNote : MonoBehaviour
     public bool DirectionVisualOnly = false;
     // 通算で1回でも誤方向に切ったら false。
     public bool LastCutCorrectDirection { get; private set; } = true;
+    // 直前の1カットだけの向き。ロングは1回ごとに採点するので、その回の降格に使う。
+    public bool LatestCutCorrectDirection { get; private set; } = true;
     // 最後に「受理された」カットを行った手。ハプティクスの宛先ルーティング等に使う。
     public SaberHand LastCutterHand { get; private set; } = SaberHand.Any;
     // 何回切れたか（達成数）。
@@ -165,7 +167,7 @@ public class CuttableNote : MonoBehaviour
         if (firstPiece != null) firstPiece.Flash(color, seconds);
         if (secondPiece != null) secondPiece.Flash(color, seconds);
     }
-    // 0回も切れずタイムアウトしたときに発火。部分達成のロングは OnCut（達成率付き）で扱う。
+    // 0回も切れずタイムアウトしたときに発火。部分達成のロングは OnCut（IsMissed 付き）で扱う。
     public event System.Action<CuttableNote> OnMiss;
     // 1カットごとに発火（cutIndex は 0 から始まる達成番号、total は必要回数）。
     // ロングの上行音 SFX 等、各打鍵に紐づく演出に使う。
@@ -257,6 +259,7 @@ public class CuttableNote : MonoBehaviour
             : CutDirectionHelper.MatchesWithHint(RequiredDirection, vXY, imuHint, directionTolerance));
         if (CutsAchieved == 0) LastCutCorrectDirection = dirOk;
         else LastCutCorrectDirection = LastCutCorrectDirection && dirOk;
+        LatestCutCorrectDirection = dirOk;
 
         LastCutterHand = cutterHand;
         LastCutSongTime = swingSongTime ?? judgedSongTime;
@@ -283,7 +286,7 @@ public class CuttableNote : MonoBehaviour
     }
 
     // 判定窓を逃した時のフラグ。
-    // 部分達成があった場合はスコア用に OnCut を発火（達成率は ScoreManager 側が読む）。
+    // 部分達成があった場合はスコア用に OnCut を発火（残り回数は ScoreManager 側が読む）。
     public void MarkMiss()
     {
         if (IsCut || IsMissed || IsFinalized) return;
@@ -295,7 +298,7 @@ public class CuttableNote : MonoBehaviour
 
         if (CutsAchieved > 0)
         {
-            // 部分達成 → ScoreManager で完了率を見て tier を下げる
+            // 部分達成 → ScoreManager が残りの回を MISS にする(切った回は1回ごとに採点済み)
             OnCut?.Invoke(this, lastHitPoint, lastVelocity);
         }
         else

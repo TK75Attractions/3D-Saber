@@ -34,10 +34,12 @@ public static class DailyRankingStore
     }
 
     // 長さを含め、曲IDや難易度内の区切り文字によるキー衝突を防ぐ。
+    // 2026-10-20 に満点を 100000 にそろえたので保存先を v2 に分ける(中身の形式 version は 1 のまま)。
+    // 旧 "dailyRanking_v1_" の記録は消さずに残す。
     public static string Key(string song, string difficulty)
     {
         string diff = string.IsNullOrWhiteSpace(difficulty) ? "normal" : difficulty.Trim().ToLowerInvariant();
-        return "dailyRanking_v1_" + (song ?? "").Length + ":" + song + ":" + diff;
+        return "dailyRanking_v2_" + (song ?? "").Length + ":" + song + ":" + diff;
     }
 
     public static string DayKey(DateTime localTime) => localTime.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);

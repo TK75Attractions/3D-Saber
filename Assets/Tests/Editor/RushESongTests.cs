@@ -111,9 +111,11 @@ public class RushESongTests
                     hand, seconds, .866f), difficulty + " / " + cut.index);
             }
             spawner.Tick(cuts.Last().time / 1000.0 + 5);
-            Assert.AreEqual(chart.notes.Count, score.PerfectCount);
+            // ロングは1回切るごとに判定1つ・コンボ +1(2026-10-20)。全部 Perfect ならノーツ分の満点 90000。
+            Assert.AreEqual(cuts.Length, score.PerfectCount);
             Assert.AreEqual(0, score.MissCount);
-            Assert.AreEqual(chart.notes.Count, score.MaxCombo);
+            Assert.AreEqual(cuts.Length, score.MaxCombo);
+            Assert.AreEqual(ScoreManager.NoteScore, score.Score);
         }
         finally { UnityEngine.Object.DestroyImmediate(root); UnityEngine.Random.state = random; }
     }

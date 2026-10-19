@@ -154,11 +154,20 @@ public class JudgmentSfxTests
         if (timeOut) note.MarkMiss();
 
         Assert.IsTrue(judged);
-        Assert.AreEqual(count, score.LastCutCount);
-        Assert.AreEqual(CutDirectionHelper.Parse(direction), score.LastCutDirection);
-        Assert.AreEqual(timeOut, score.LastCutTimedOut);
-        if (expectedName == null) Assert.IsNull(received, "時間切れで完了音を出さない");
-        else Assert.AreSame(Resources.Load<AudioClip>("Audio/SFX/" + expectedName), received);
+        if (timeOut)
+        {
+            // 2026-10-20 から、途中で残したロングは残りの回が MISS。完了音ではなく MISS の音にする。
+            Assert.AreEqual(JudgmentTier.Miss, score.LastTier);
+            Assert.IsFalse(score.LastCutTimedOut);
+            Assert.AreSame(sfx.ClipFor(JudgmentTier.Miss), received, "時間切れで完了音を出さない");
+        }
+        else
+        {
+            Assert.AreEqual(count, score.LastCutCount);
+            Assert.AreEqual(CutDirectionHelper.Parse(direction), score.LastCutDirection);
+            Assert.IsFalse(score.LastCutTimedOut);
+            Assert.AreSame(Resources.Load<AudioClip>("Audio/SFX/" + expectedName), received);
+        }
 
         score.Reset();
         Assert.AreEqual(1, score.LastCutCount);

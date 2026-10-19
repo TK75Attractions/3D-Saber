@@ -109,8 +109,9 @@ public class TutorialProgramTests
         Assert.IsFalse(TutorialProgram.CountsAsSuccess(tap, JudgmentTier.Miss, true, 1, 0));
         Assert.IsFalse(TutorialProgram.CountsAsSuccess(arrow, JudgmentTier.Great, false, 1, 1), "矢印は向きが違えば数えない");
         Assert.IsTrue(TutorialProgram.CountsAsSuccess(arrow, JudgmentTier.Great, true, 1, 1));
-        Assert.IsTrue(TutorialProgram.CountsAsSuccess(longStep, JudgmentTier.Good, true, 3, 2), "2/3 は 60% 以上");
-        Assert.IsFalse(TutorialProgram.CountsAsSuccess(longStep, JudgmentTier.Bad, true, 3, 1));
+        // 本編は 2026-10-20 から、ロングを1回でも残すと残りが MISS。練習も全部切ったら成功。
+        Assert.IsFalse(TutorialProgram.CountsAsSuccess(longStep, JudgmentTier.Miss, true, 3, 2), "2/3 は残しがあるので数えない");
+        Assert.IsFalse(TutorialProgram.CountsAsSuccess(longStep, JudgmentTier.Miss, true, 3, 1));
         Assert.IsTrue(TutorialProgram.CountsAsSuccess(longStep, JudgmentTier.Miss, true, 3, 3), "ロングは達成率だけを見る");
         Assert.IsFalse(TutorialProgram.CountsAsSuccess(hands, JudgmentTier.Perfect, true, 1, 1));
         Assert.IsFalse(TutorialProgram.CountsAsSuccess(null, JudgmentTier.Perfect, true, 1, 1));

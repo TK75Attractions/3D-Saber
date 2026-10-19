@@ -189,7 +189,7 @@ public class AndalusiaChartTests
         foreach (string difficulty in new[] { "Easy", "Normal", "Hard" })
         {
             string key = HighScoreStore.Key(SongId, difficulty);
-            Assert.AreEqual("hiscore_Andalusia_" + difficulty.ToLowerInvariant(), key);
+            Assert.AreEqual("hiscore_v2_Andalusia_" + difficulty.ToLowerInvariant(), key);
             Assert.AreNotEqual(HighScoreStore.Key("アンダルシア", difficulty), key);
             Assert.AreNotEqual(HighScoreStore.Key("ElDorado", difficulty), key);
         }

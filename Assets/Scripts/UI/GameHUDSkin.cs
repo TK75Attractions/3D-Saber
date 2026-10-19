@@ -80,7 +80,6 @@ public class GameHUDSkin : MonoBehaviour
 
     private ScoreManager score;
     private SongPlayer songPlayer;
-    private NoteSpawner noteSpawner;
 
     private TextMeshProUGUI scoreValue;
     private TextMeshProUGUI comboValue;
@@ -132,7 +131,7 @@ public class GameHUDSkin : MonoBehaviour
 
     void OnDestroy()
     {
-        if (score != null) score.OnJudgmentEx -= OnJudgmentEx;
+        if (score != null) { score.OnJudgmentEx -= OnJudgmentEx; score.OnLongCut -= OnJudgmentEx; }
     }
 
     // ---------------------------------------------------------------
@@ -145,8 +144,8 @@ public class GameHUDSkin : MonoBehaviour
 
         score = Object.FindFirstObjectByType<ScoreManager>();
         songPlayer = Object.FindFirstObjectByType<SongPlayer>();
-        noteSpawner = Object.FindFirstObjectByType<NoteSpawner>();
-        if (score != null) score.OnJudgmentEx += OnJudgmentEx;
+        // ロングは1回切るごとに判定1つなので、途中の回も判定の文字を出す。
+        if (score != null) { score.OnJudgmentEx += OnJudgmentEx; score.OnLongCut += OnJudgmentEx; }
 
         DisableLegacyHud();
 
@@ -468,21 +467,16 @@ public class GameHUDSkin : MonoBehaviour
         UpdateRank();
     }
 
-    // 現在の判定カウントからランクを計算して左上の表示を更新する。
-    // 曲中は「曲全体に対する合計割合」(分母=総ノーツ数固定)なので 0 から始まり
-    // ヒットするほど単調に上がっていく。曲終了時は従来の精度と同じ値に収束する。
-    // 総ノーツ数が取れない環境(テスト等)では従来のその時点精度にフォールバック。
+    // 点数(コンボ点込み)からランクを計算して左上の表示を更新する。結果画面と同じく点数で決める。
+    // 曲中は「今の最大コンボで終わったときの点」(分母=譜面全体)なので 0 から始まり
+    // 切るほど単調に上がっていく。曲終了時は結果画面の点と同じ値になる。
     // バッジの色と文字の更新はランクが変わった時だけ。
     private void UpdateRank()
     {
         if (score == null) return;
-        int totalNotes = noteSpawner != null ? noteSpawner.TotalNoteCount : 0;
-        float acc = totalNotes > 0
-            ? PlayRankHelper.TotalAccuracy(
-                score.PerfectCount, score.GreatCount, score.GoodCount, score.BadCount, totalNotes)
-            : PlayRankHelper.Accuracy(
-                score.PerfectCount, score.GreatCount, score.GoodCount, score.BadCount, score.MissCount);
-        PlayRank rank = PlayRankHelper.FromAccuracy(acc);
+        int points = score.ScoreWithCombo;
+        float acc = PlayRankHelper.ScoreFraction(points);
+        PlayRank rank = PlayRankHelper.FromScore(points);
         // 色はリザルト画面の六角バッジと同じマップに統一する
         Color c = ResultSkin.RankAccentColor(PlayRankHelper.Label(rank));
 

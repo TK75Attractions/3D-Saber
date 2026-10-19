@@ -89,7 +89,8 @@ public class HighScoreStoreTests
     public void Key_NormalizesDifficulty()
     {
         Assert.AreEqual(HighScoreStore.Key("Song", "Normal"), HighScoreStore.Key("Song", "normal"));
-        Assert.AreEqual("hiscore_Song_normal", HighScoreStore.Key("Song", null), "難易度未指定は normal");
+        // 2026-10-20 に満点を 100000 にそろえたので v2 に分けた(旧 "hiscore_" は残す)。
+        Assert.AreEqual("hiscore_v2_Song_normal", HighScoreStore.Key("Song", null), "難易度未指定は normal");
     }
 
     [Test]

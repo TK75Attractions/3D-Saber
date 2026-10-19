@@ -22,7 +22,9 @@ public static class SongAchievementStore
             case "normal": value = "Normal"; break;
             case "hard": value = "Hard"; break;
         }
-        return "songAchievements_v1_" + song + "::" + value;
+        // 2026-10-20 に満点を 100000 にそろえ、ランクを点数で・ロングを1回ごとに数えるようにしたので保存先を v2 に分ける。
+        // 旧 "songAchievements_v1_" の回数は消さずに残す。
+        return "songAchievements_v2_" + song + "::" + value;
     }
     public static Counts Load(string song, string difficulty)
     {
@@ -38,14 +40,14 @@ public static class SongAchievementStore
         }
         catch (ArgumentException) { return new Counts(); }
     }
-    public static bool Record(string song, string difficulty, string runId, int perfect, int great, int good, int bad, int miss)
+    public static bool Record(string song, string difficulty, string runId, int perfect, int great, int good, int bad, int miss, int score)
     {
         if (string.IsNullOrEmpty(song) || string.IsNullOrEmpty(difficulty) || string.IsNullOrEmpty(runId)) return false;
         if (perfect < 0 || great < 0 || good < 0 || bad < 0 || miss < 0) return false;
         if ((long)perfect + great + good + bad + miss == 0) return false;
         var value = Load(song, difficulty);
         if (value.recentRunIds.Contains(runId)) return false;
-        var rank = PlayRankHelper.FromAccuracy(PlayRankHelper.Accuracy(perfect, great, good, bad, miss));
+        var rank = PlayRankHelper.FromScore(score);
         bool fullCombo = (long)perfect + great + good + bad > 0 && bad == 0 && miss == 0;
         bool allPerfect = fullCombo && great == 0 && good == 0;
         if (rank >= PlayRank.S) value.s = Increment(value.s);

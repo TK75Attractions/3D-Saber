@@ -71,7 +71,7 @@ public class ResultSkin : MonoBehaviour
         float accuracy = PlayRankHelper.Accuracy(
             GameSession.FinalPerfect, GameSession.FinalGreat, GameSession.FinalGood,
             GameSession.FinalBad, GameSession.FinalMiss);
-        PlayRank rank = PlayRankHelper.FromAccuracy(accuracy);
+        PlayRank rank = PlayRankHelper.FromScore(GameSession.FinalScore);
         Color rankColor = RankAccentColor(PlayRankHelper.Label(rank));
 
         BuildTitleRow(root.transform);
@@ -439,7 +439,7 @@ public class ResultSkin : MonoBehaviour
         HighScoreStore.Record(songId, GameSession.SelectedDifficulty, new HighScoreEntry
         {
             score = GameSession.FinalScore,
-            rank = PlayRankHelper.Label(PlayRankHelper.FromAccuracy(accuracy)),
+            rank = PlayRankHelper.Label(PlayRankHelper.FromScore(GameSession.FinalScore)),
             accuracy = accuracy,
             date = System.DateTime.Now.ToString("yyyy/MM/dd"),
         }, out _);

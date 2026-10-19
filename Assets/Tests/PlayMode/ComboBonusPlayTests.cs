@@ -71,27 +71,30 @@ public class ComboBonusPlayTests
         Assert.AreEqual("", hud.transform.Find("ComboValue").GetComponent<TMP_Text>().text);
         Capture("hud-after-miss.png");
         typeof(GamePlayManager).GetMethod("FinishGame", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(manager, null);
-        Assert.AreEqual(36000, score.Score);
+        // 譜面を渡していないので、判定した 121 回が満点の分母(ノーツ 90000 と コンボ 10000 を 120/121 ずつ)。
+        const int notes = 90000 * 120 / 121, bonus = 10000 * 120 / 121;
+        Assert.AreEqual(notes, score.Score);
         Assert.False(score.IsFinalized);
         float landingDeadline = Time.realtimeSinceStartup + 3;
         while (!score.IsFinalized && Time.realtimeSinceStartup < landingDeadline) yield return null;
         Assert.True(score.IsFinalized);
-        Assert.AreEqual(48000, score.Score);
+        Assert.AreEqual(notes + bonus, score.Score);
         float deadline = Time.realtimeSinceStartup + 10;
         while (SceneManager.GetActiveScene().name != "Result" && Time.realtimeSinceStartup < deadline) yield return null;
         Assert.AreEqual("Result", SceneManager.GetActiveScene().name);
         yield return null;
-        Assert.AreEqual(48000, GameSession.FinalScore);
+        Assert.AreEqual(notes + bonus, GameSession.FinalScore);
         Assert.AreEqual(120, GameSession.FinalMaxCombo);
-        Assert.AreEqual(12000, GameSession.FinalComboBonus);
+        Assert.AreEqual(bonus, GameSession.FinalComboBonus);
         var block = GameObject.Find("ResultStats").transform.Find("ScoreBlock");
         // 2026-10-03(爽快感カタログ 山4): スコアは 0 から約1.5秒でカウントアップする。止まった値を確かめる。
         var scoreText = block.Find("ScoreValue").GetComponent<TMP_Text>();
+        string shown = (notes + bonus).ToString("N0");
         float countDeadline = Time.realtimeSinceStartup + 4;
-        while (scoreText.text != "48,000" && Time.realtimeSinceStartup < countDeadline) yield return null;
-        Assert.AreEqual("48,000", scoreText.text);
+        while (scoreText.text != shown && Time.realtimeSinceStartup < countDeadline) yield return null;
+        Assert.AreEqual(shown, scoreText.text);
         Assert.AreEqual("120", block.Find("MaxComboValue").GetComponent<TMP_Text>().text);
-        Assert.AreEqual(48000, HighScoreStore.Load(songId, "Normal").entries[0].score);
+        Assert.AreEqual(notes + bonus, HighScoreStore.Load(songId, "Normal").entries[0].score);
         Assert.AreEqual(1, HighScoreStore.Load(songId, "Normal").entries.Count);
         var reveal = Object.FindFirstObjectByType<ResultReveal>();
         reveal.enabled = false;

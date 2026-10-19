@@ -70,7 +70,8 @@ public class DailyRankingPlayTests
         while (SceneManager.GetActiveScene().name != "Result" && Time.realtimeSinceStartup < deadline) yield return null;
         yield return null;
         Assert.AreEqual("Result", SceneManager.GetActiveScene().name);
-        Assert.AreEqual(1200, GameSession.FinalScore, "コンボ精算後の得点をランキングへ登録");
+        // 譜面を渡していないので、判定した 4 回が満点の分母(ノーツ 90000×3/4 + コンボ 10000×3/4)。
+        Assert.AreEqual(67500 + 7500, GameSession.FinalScore, "コンボ精算後の得点をランキングへ登録");
         Assert.AreEqual(1, GameSession.FinalDailyRanking.Rank);
         Assert.AreEqual(2, GameSession.FinalDailyRanking.TotalPlays);
         var snapshot = GameSession.FinalDailyRanking;

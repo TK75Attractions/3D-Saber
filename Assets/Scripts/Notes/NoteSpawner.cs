@@ -140,8 +140,10 @@ public class NoteSpawner : MonoBehaviour
     // 判定に使う曲時計(曲の時計から遅れを引いた時刻)。
     public double JudgeClock(double songTime) => songTime - JudgeLatencySeconds;
     public int NextIndex => nextIndex;
-    // 譜面の総ノーツ数(ランクの合計割合計算用)。譜面未設定なら 0。
+    // 譜面の総ノーツ数(曲の終わりの確認用)。譜面未設定なら 0。
     public int TotalNoteCount => chart != null && chart.notes != null ? chart.notes.Count : 0;
+    // 今流している譜面(音源の長さで切り詰めた後)。ScoreManager が満点の配分に使う。
+    public ChartData CurrentChart => chart;
 
     public event System.Action<CuttableNote> OnNoteSpawned;
     public event System.Action<CuttableNote> OnNoteMissed;

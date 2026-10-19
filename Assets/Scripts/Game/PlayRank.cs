@@ -1,8 +1,8 @@
 using UnityEngine;
 
 // プレイ全体の成績ランク(S+ / S / A / B / C)。
-// 精度 = 獲得基礎点 ÷ 理論最大基礎点(コンボボーナスは含めない)で決める。
-// しきい値は暫定(docs/DECISIONS.md 参照)。ランクバッジは暫定で文字表示、画像素材の導入予定あり。
+// 2026-10-20 から点数(満点 100000、コンボ点込み)で決める(FromScore)。しきい値の割合は精度で決めていたときと同じ。
+// 精度 = 獲得基礎点 ÷ 理論最大基礎点(コンボ点は含めない)は、結果画面の ACCURACY の表示に使う。
 public enum PlayRank
 {
     C,
@@ -62,6 +62,21 @@ public static class PlayRankHelper
         if (accuracy >= ThresholdB) return PlayRank.B;
         return PlayRank.C;
     }
+
+    // 点数 → ランク。S+ 90000 / S 80000 / A 60000 / B 40000 以上。
+    public static PlayRank FromScore(int score)
+    {
+        if (score >= ScoreLowerBound(PlayRank.SPlus)) return PlayRank.SPlus;
+        if (score >= ScoreLowerBound(PlayRank.S)) return PlayRank.S;
+        if (score >= ScoreLowerBound(PlayRank.A)) return PlayRank.A;
+        if (score >= ScoreLowerBound(PlayRank.B)) return PlayRank.B;
+        return PlayRank.C;
+    }
+
+    public static int ScoreLowerBound(PlayRank rank) => Mathf.RoundToInt(LowerBound(rank) * ScoreManager.MaxScore);
+
+    // 満点に対する点数の割合(0..1)。HUD のランクの進み具合に使う。
+    public static float ScoreFraction(int score) => Mathf.Clamp01(score / (float)ScoreManager.MaxScore);
 
     public static string Label(PlayRank rank)
     {

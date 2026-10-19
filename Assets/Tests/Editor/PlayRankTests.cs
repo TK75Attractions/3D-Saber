@@ -86,6 +86,30 @@ public class PlayRankTests
         Assert.AreEqual(0.80f, PlayRankHelper.ThresholdS); Assert.AreEqual(0.90f, PlayRankHelper.ThresholdSPlus);
     }
 
+    // ---- FromScore(2026-10-20 から結果・HUD・実績のランクは点数で決める) ----
+
+    [Test]
+    public void FromScore_Boundaries()
+    {
+        Assert.AreEqual(PlayRank.SPlus, PlayRankHelper.FromScore(ScoreManager.MaxScore));
+        Assert.AreEqual(PlayRank.SPlus, PlayRankHelper.FromScore(90000));
+        Assert.AreEqual(PlayRank.S, PlayRankHelper.FromScore(89999));
+        Assert.AreEqual(PlayRank.S, PlayRankHelper.FromScore(80000));
+        Assert.AreEqual(PlayRank.A, PlayRankHelper.FromScore(79999));
+        Assert.AreEqual(PlayRank.A, PlayRankHelper.FromScore(60000));
+        Assert.AreEqual(PlayRank.B, PlayRankHelper.FromScore(59999));
+        Assert.AreEqual(PlayRank.B, PlayRankHelper.FromScore(40000));
+        Assert.AreEqual(PlayRank.C, PlayRankHelper.FromScore(39999));
+        Assert.AreEqual(PlayRank.C, PlayRankHelper.FromScore(0));
+        Assert.AreEqual(90000, PlayRankHelper.ScoreLowerBound(PlayRank.SPlus));
+        Assert.AreEqual(0, PlayRankHelper.ScoreLowerBound(PlayRank.C));
+        // HUD の進み具合は点数の割合で見るので、点数のランクと境目が一致する。
+        foreach (int score in new[] { 0, 39999, 40000, 59999, 60000, 79999, 80000, 89999, 90000, 100000 })
+            Assert.AreEqual(PlayRankHelper.FromScore(score), PlayRankHelper.FromAccuracy(PlayRankHelper.ScoreFraction(score)), score.ToString());
+        Assert.AreEqual(1f, PlayRankHelper.ScoreFraction(150000));
+        Assert.AreEqual(0f, PlayRankHelper.ScoreFraction(-5));
+    }
+
     // ---- Label / NextRank / Progress ----
 
     [Test]

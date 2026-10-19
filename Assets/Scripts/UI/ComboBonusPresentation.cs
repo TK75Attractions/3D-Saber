@@ -27,7 +27,7 @@ public class ComboBonusPresentation : MonoBehaviour
         return new VertexGradient(Color.white, Color.white, Accent(combo), Accent(combo));
     }
 
-    int maximum, bonus;
+    int maximum, possible, bonus;
     RectTransform lettering;
     CanvasGroup letteringAlpha;
     ComboBonusBurstGraphic burst;
@@ -36,19 +36,22 @@ public class ComboBonusPresentation : MonoBehaviour
     AudioClip impact;
     bool landed, continueFromDim;
 
-    public static ComboBonusPresentation Create(int maxCombo, bool continueFromDim = false)
+    // possibleCombo は満コンボ(ScoreManager.ComboUnits)、bonusPoints はコンボ点(ScoreManager.ComboBonus)。
+    // 省略したとき(演出の確認など)は満コンボを達成した扱いにする。
+    public static ComboBonusPresentation Create(int maxCombo, bool continueFromDim = false, int possibleCombo = 0, int bonusPoints = -1)
     {
         var root = new GameObject("ComboBonusPresentation", typeof(RectTransform));
         var presentation = root.AddComponent<ComboBonusPresentation>();
         presentation.continueFromDim = continueFromDim;
-        presentation.Build(maxCombo);
+        presentation.Build(maxCombo, possibleCombo, bonusPoints);
         return presentation;
     }
 
-    void Build(int maxCombo)
+    void Build(int maxCombo, int possibleCombo, int bonusPoints)
     {
         maximum = Mathf.Max(0, maxCombo);
-        bonus = maximum * ScoreManager.ComboBonusPerNote;
+        possible = Mathf.Max(maximum, possibleCombo);
+        bonus = bonusPoints >= 0 ? bonusPoints : maximum > 0 ? ScoreManager.ComboScore : 0;
         var canvas = gameObject.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
         canvas.sortingOrder = 800;
@@ -76,7 +79,8 @@ public class ComboBonusPresentation : MonoBehaviour
         float level = Tier(maximum);
         PrizeText("Headline", "COMBO BONUS!", 88 + level * 9, 160, new Vector2(1500, 170));
         var font = UISkinKit.FontAsset("Oxanium-Bold");
-        var formula = UISkinKit.MakeTMP(lettering, "Formula", $"100 × {maximum:N0}", 65 + level * 3,
+        // コンボ点は 最大コンボ ÷ 満コンボ × 10000。
+        var formula = UISkinKit.MakeTMP(lettering, "Formula", $"{maximum:N0} / {possible:N0} COMBO", 65 + level * 3,
             Color.white, TextAlignmentOptions.Center, new Vector2(0, 16), new Vector2(1400, 110), FontStyles.Normal, 2, font);
         formula.outlineColor = new Color32(10, 15, 36, 255);
         formula.outlineWidth = .2f;

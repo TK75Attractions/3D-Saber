@@ -35,7 +35,7 @@ public static class GameSession
     {
         if (IsCalibrationMode) return;
         SongAchievementStore.Record(SelectedSongId, SelectedDifficulty, AchievementRunId,
-            FinalPerfect, FinalGreat, FinalGood, FinalBad, FinalMiss);
+            FinalPerfect, FinalGreat, FinalGood, FinalBad, FinalMiss, FinalScore);
     }
 
     // キャリブレーション（判定調整）モード。SongSelect から該当ボタンで true にして

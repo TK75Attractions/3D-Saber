@@ -8,7 +8,7 @@
 
 従来の `SaberCutJudge` は速度を満たす棒の進入と退出を確認する。Cameraの2端点を使う線分モードと中点を使う点モードがある。`CuttableNote` は逆方向を拒否し、その他の方向違いは `ScoreManager` で降格する。従来経路には `Swing8DirectionLogger` の方向ヒントもある。
 
-`ScoreManager` の段階は Perfect / Great / Good / Bad / Miss。タップは時刻誤差、ロングは最終達成率で評価する。赤ノーツは `SaberHand.Right`、青は `Left`、金・無色は `Any`。
+`ScoreManager` の段階は Perfect / Great / Good / Bad / Miss。タップは時刻誤差で評価する。ロングは2026-10-20から1回切るごとに判定1つ・コンボ +1（切れたら Perfect、その回の向き違いは1段降格）で、1回でも残すと残りの回が Miss になりコンボが切れる。赤ノーツは `SaberHand.Right`、青は `Left`、金・無色は `Any`。
 
 ## 新しい流れ
 
@@ -20,7 +20,7 @@
 6. 前後のブレード線分が掃く四辺形を2つの三角形と外周線分で近似し、ノーツXYとの交差を確認する。入力端点の順序反転を補正する。Z位置はSwingの曲時刻から再計算する。
 7. 複数候補なら譜面時刻がSwing時刻に最も近いノーツを選び、1つのSwingを1回のカットに消費する。左右は独立。ロングも各カットに別のSwingが必要。
 8. 方向指定時はSwing後60msまでのCamera軌跡が届くのを待ち、連続サンプルの中点移動で方向を求める。既存 `CutDirectionHelper.ToVector/Matches` と同じ8方向を使用。許容角度は既定30度。逆方向も拒否せず1段階降格する。
-9. `CuttableNote.LastCutSongTime` を採点へ渡し、カメラ待ちの時間をタイミング誤差に加算しない。ノーツ再利用時にこの値をリセットする。方向降格とロング達成率の評価は既存 `ScoreManager` に任せる。
+9. `CuttableNote.LastCutSongTime` を採点へ渡し、カメラ待ちの時間をタイミング誤差に加算しない。ノーツ再利用時にこの値をリセットする。方向降格とロングの1回ごとの採点は既存 `ScoreManager` に任せる。
 10. `NoteSpawner` は元の判定窓内にある未解決Swingがあるノーツだけ、Miss確定を最大pending期限まで待つ。判定窓自体は延長しない。
 
 曲停止・時刻ジャンプ・譜面リセット・入力セッションリセット・モード/左右設定の変更時は、古い未解決入力を破棄する。通常ループは既存 `GamePlayManager.Update` に統合し、独立した判定Updateは追加しない。

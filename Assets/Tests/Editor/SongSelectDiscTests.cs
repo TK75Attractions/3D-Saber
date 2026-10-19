@@ -114,17 +114,18 @@ public class SongAchievementStoreTests
     [TearDown] public void Cleanup() { foreach(var difficulty in new[]{"Easy","Hard"}) PlayerPrefs.DeleteKey(SongAchievementStore.Key(song,difficulty)); PlayerPrefs.Save(); }
     [Test] public void AllPerfectIncludesAllFourCountersAndDuplicateResultIsIgnored()
     {
-        Assert.True(SongAchievementStore.Record(song,"Easy","run1",10,0,0,0,0));
-        Assert.False(SongAchievementStore.Record(song,"Easy","run1",10,0,0,0,0));
+        Assert.True(SongAchievementStore.Record(song,"Easy","run1",10,0,0,0,0,ScoreManager.MaxScore));
+        Assert.False(SongAchievementStore.Record(song,"Easy","run1",10,0,0,0,0,ScoreManager.MaxScore));
         var c=SongAchievementStore.Load(song,"Easy"); Assert.AreEqual(1,c.s); Assert.AreEqual(1,c.sPlus); Assert.AreEqual(1,c.fc); Assert.AreEqual(1,c.ap);
-        Assert.True(SongAchievementStore.Record(song,"Easy","run2",10,0,0,0,0));
+        Assert.True(SongAchievementStore.Record(song,"Easy","run2",10,0,0,0,0,ScoreManager.MaxScore));
         Assert.AreEqual(2,SongAchievementStore.Load(song,"Easy").ap);
         Assert.AreEqual(0,SongAchievementStore.Load(song,"Hard").ap);
     }
     [Test] public void RankAndFullComboAreIndependentAndEmptyResultDoesNotCount()
     {
-        Assert.False(SongAchievementStore.Record(song,"Easy","empty",0,0,0,0,0));
-        Assert.True(SongAchievementStore.Record(song,"Easy","rank",99,0,0,0,1));
+        Assert.False(SongAchievementStore.Record(song,"Easy","empty",0,0,0,0,0,0));
+        // ランクは点数で決める(99000 は S+)。MISS があるので FC・AP は数えない。
+        Assert.True(SongAchievementStore.Record(song,"Easy","rank",99,0,0,0,1,99000));
         var c=SongAchievementStore.Load(song,"Easy"); Assert.AreEqual(1,c.s); Assert.AreEqual(1,c.sPlus); Assert.Zero(c.fc); Assert.Zero(c.ap);
     }
     [Test] public void CalibrationDoesNotSaveAchievements()

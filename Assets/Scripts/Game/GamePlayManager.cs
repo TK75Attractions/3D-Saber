@@ -868,7 +868,8 @@ public class GamePlayManager : MonoBehaviour
                 if (achievement != null) Destroy(achievement.gameObject);
             }
         }
-        var bonus = ComboBonusPresentation.Create(scoreManager.MaxCombo, scoreManager.IsFullCombo);
+        var bonus = ComboBonusPresentation.Create(scoreManager.MaxCombo, scoreManager.IsFullCombo,
+            scoreManager.ComboUnits, scoreManager.ComboBonus);
         // アニメと精算を同じ終了経路で管理し、途中の入力では再加算しない。
         float elapsed = 0f;
         while (elapsed < bonus.Duration)

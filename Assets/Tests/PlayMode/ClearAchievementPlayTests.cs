@@ -149,8 +149,9 @@ public class ClearAchievementPlayTests
         while (SceneManager.GetActiveScene().name != "Result" && Time.realtimeSinceStartup < deadline) yield return null;
         Assert.AreEqual("Result", SceneManager.GetActiveScene().name);
         yield return null;
-        Assert.AreEqual(perfect ? 1200 : 1000, GameSession.FinalScore);
-        Assert.AreEqual(300, GameSession.FinalComboBonus);
+        // 譜面を渡していないので、判定した 3 回が満点の分母。Good は 100/300、コンボは 3/3 で満点。
+        Assert.AreEqual(perfect ? ScoreManager.MaxScore : 70000 + ScoreManager.ComboScore, GameSession.FinalScore);
+        Assert.AreEqual(ScoreManager.ComboScore, GameSession.FinalComboBonus);
         Assert.AreEqual(3, GameSession.FinalMaxCombo);
         Assert.AreEqual(1, HighScoreStore.Load(id, "Normal").entries.Count);
         Assert.IsNull(Object.FindFirstObjectByType<ClearAchievementPresentation>());

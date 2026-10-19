@@ -169,8 +169,10 @@ public class GameplayReliabilityTests
         score.Bind(spawner);
         note.Cut(Vector3.zero, Vector3.right * 5);
         note.Cut(Vector3.zero, Vector3.right * 5);
-        Assert.AreEqual(1, score.PerfectCount);
-        Assert.AreEqual(300, score.Score);
+        // 2回切るロングは1回ごとに判定1つ(2026-10-20)。二重に購読しても1回分ずつだけ数える。
+        Assert.AreEqual(2, score.PerfectCount);
+        Assert.AreEqual(2, score.Combo);
+        Assert.AreEqual(ScoreManager.NoteScore, score.Score, "この譜面のノーツ分の満点");
     }
 
     [Test]
@@ -293,18 +295,18 @@ public class GameplayReliabilityTests
     [Test]
     public void AchievementDifficultyAliasesUseTheExistingStandardKey()
     {
-        Assert.AreEqual("songAchievements_v1_" + song + "::Hard", SongAchievementStore.Key(song, " HARD "));
-        Assert.True(SongAchievementStore.Record(song, "Hard", "same", 5, 0, 0, 0, 0));
-        Assert.False(SongAchievementStore.Record(song, "hard", "same", 5, 0, 0, 0, 0));
+        Assert.AreEqual("songAchievements_v2_" + song + "::Hard", SongAchievementStore.Key(song, " HARD "));
+        Assert.True(SongAchievementStore.Record(song, "Hard", "same", 5, 0, 0, 0, 0, ScoreManager.MaxScore));
+        Assert.False(SongAchievementStore.Record(song, "hard", "same", 5, 0, 0, 0, 0, ScoreManager.MaxScore));
         Assert.AreEqual(1, SongAchievementStore.Load(song, " HARD ").ap);
     }
 
     [Test]
     public void RedisplayingAnEarlierRunDoesNotCountItAsAnotherPlayer()
     {
-        Assert.True(SongAchievementStore.Record(song, "Hard", "first", 5, 0, 0, 0, 0));
-        Assert.True(SongAchievementStore.Record(song, "Hard", "second", 5, 0, 0, 0, 0));
-        Assert.False(SongAchievementStore.Record(song, "Hard", "first", 5, 0, 0, 0, 0));
+        Assert.True(SongAchievementStore.Record(song, "Hard", "first", 5, 0, 0, 0, 0, ScoreManager.MaxScore));
+        Assert.True(SongAchievementStore.Record(song, "Hard", "second", 5, 0, 0, 0, 0, ScoreManager.MaxScore));
+        Assert.False(SongAchievementStore.Record(song, "Hard", "first", 5, 0, 0, 0, 0, ScoreManager.MaxScore));
         Assert.AreEqual(2, SongAchievementStore.Load(song, "Hard").ap);
     }
 
@@ -312,8 +314,8 @@ public class GameplayReliabilityTests
     public void ExistingAchievementCountsAndLastRunSurviveTheNewHistoryFormat()
     {
         PlayerPrefs.SetString(SongAchievementStore.Key(song, "Hard"), "{\"s\":12,\"ap\":7,\"lastRunId\":\"legacy\"}");
-        Assert.False(SongAchievementStore.Record(song, "hard", "legacy", 5, 0, 0, 0, 0));
-        Assert.True(SongAchievementStore.Record(song, "Hard", "new", 5, 0, 0, 0, 0));
+        Assert.False(SongAchievementStore.Record(song, "hard", "legacy", 5, 0, 0, 0, 0, ScoreManager.MaxScore));
+        Assert.True(SongAchievementStore.Record(song, "Hard", "new", 5, 0, 0, 0, 0, ScoreManager.MaxScore));
         Assert.AreEqual(13, SongAchievementStore.Load(song, "Hard").s);
         Assert.AreEqual(8, SongAchievementStore.Load(song, "Hard").ap);
     }

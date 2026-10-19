@@ -279,12 +279,14 @@ public class CameraImuJudgmentTests
     }
 
     [Test]
-    public void PartialLongTimeoutPreservesCompletionScoreAndDoesNotDoubleMiss()
+    public void PartialLongTimeoutKeepsTheCutAndMissesOnlyTheRest()
     {
         Create(count: 3); Swing(); Path(); Advance(.17);
         Advance(1); Advance(2);
-        Assert.That(score.LastTier, Is.EqualTo(JudgmentTier.Bad));
-        Assert.That(score.HitCount, Is.EqualTo(1)); Assert.That(score.MissCount, Is.Zero);
+        // 2026-10-20 から、切った回は残し、残りの回を MISS にしてコンボを切る(期限切れの通知で二重に数えない)。
+        Assert.That(score.LastTier, Is.EqualTo(JudgmentTier.Miss));
+        Assert.That(score.HitCount, Is.EqualTo(1)); Assert.That(score.MissCount, Is.EqualTo(2));
+        Assert.That(score.Combo, Is.Zero);
     }
 
     [TestCase(CameraImuMode.Auto)]

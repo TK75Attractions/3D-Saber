@@ -33,7 +33,7 @@ public sealed class TutorialStep
     public double PeriodSeconds;                      // 型を繰り返す間隔(秒)
     public int Goal;                                  // 成功回数
     public bool NeedDirection;                        // 向きが合った切りだけを数える
-    public float LongRate;                            // ロングの合格達成率(0 なら 0.6)
+    public float LongRate;                            // ロングの合格達成率(0 なら 1 = 全部切る)
     public bool Simultaneous;
     public double PatternLengthSeconds => Pattern.Length == 0 ? 0 : Pattern[Pattern.Length - 1].dt;
 }
@@ -52,7 +52,8 @@ public static class TutorialProgram
     public const float HandsTimeoutSeconds = 6f;
     public const float ReadyTimeoutSeconds = 1.4f;
     public const float SwingSpeedToAdvance = 2.5f;    // 持ち方の説明を抜ける振りの速さ(タイトルの開始ノーツと同じ)
-    public const float DefaultLongRate = .6f;
+    // 本編は 2026-10-20 から、ロングを1回でも残すと残りが MISS でコンボが切れる。練習でも全部切ったら成功にする。
+    public const float DefaultLongRate = 1f;
     public const float RightX = 1.65f, LeftX = -1.65f, BaseY = .5f, LowY = -.4f;
 
     // 難易度を選ぶ前に挟まるので、Easy / Normal に共通の型。左右・斜めの矢印は曲の中で覚える。
@@ -105,7 +106,7 @@ public static class TutorialProgram
     }
 
     // 1 回の判定が「成功」に数えられるか。向きの違いは 1 段降格で切れるが、矢印の練習では数えない。
-    // ロングは達成率で判定する(本編と同じ割合判定)。
+    // ロングは達成率で判定する(既定は全部切ったら成功。本編も1回でも残すと MISS)。
     public static bool CountsAsSuccess(TutorialStep step, JudgmentTier tier, bool correctDirection, int requiredCuts, int achievedCuts)
     {
         if (step == null || step.Kind != TutorialStepKind.Practice) return false;

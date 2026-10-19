@@ -27,7 +27,8 @@ public static class HighScoreStore
     public static string Key(string songId, string difficulty)
     {
         string diff = string.IsNullOrWhiteSpace(difficulty) ? "normal" : difficulty.Trim().ToLowerInvariant();
-        return "hiscore_" + songId + "_" + diff;
+        // 2026-10-20 に満点を 100000 にそろえたので保存先を分ける。旧 "hiscore_" の記録は消さずに残す。
+        return "hiscore_v2_" + songId + "_" + diff;
     }
 
     public static HighScoreTable Load(string songId, string difficulty)

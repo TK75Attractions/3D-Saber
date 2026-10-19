@@ -47,7 +47,8 @@ public sealed class GameplayFeedbackPresenter : MonoBehaviour
         milestone = Text(transform, "ComboMilestone", "", 25, new Vector2(300, 36), Vector2.zero, TextAlignmentOptions.TopRight);
         TopRight(milestone.rectTransform, new Vector2(-74, -414));
         BuildFlame();
-        if (score != null) score.OnJudgment += Scored;
+        // ロングは途中の1回ごとにコンボが増えるので、その回の通知でも節目を確かめる。
+        if (score != null) { score.OnJudgment += Scored; score.OnLongCut += LongCut; }
     }
 
     // 炎は HUD(sortingOrder 500)のコンボ数字の下に描く。数字の右端(-70)と下端(約-292)に矩形の右下を合わせる。
@@ -84,6 +85,8 @@ public sealed class GameplayFeedbackPresenter : MonoBehaviour
     public static bool CanEnd(double time, double duration, double lastNote, int total, int judged, int spawned)
         => total > 0 && judged >= total && spawned >= total && duration > 0 && time >= System.Math.Max(duration, lastNote);
 
+    void LongCut(JudgmentTier tier, int award, bool wasWrongFlick) => Scored(tier, award);
+
     void Scored(JudgmentTier tier, int award)
     {
         if (score == null || !isActiveAndEnabled) return;
@@ -100,8 +103,9 @@ public sealed class GameplayFeedbackPresenter : MonoBehaviour
         milestoneAge += delta;
         milestone.color = new Color(.79f, .9f, .93f, 1 - Mathf.InverseLerp(.6f, 1.1f, milestoneAge));
         milestone.rectTransform.localScale = Vector3.one * (1 + (DisplaySettings.ReducedEffects ? 0 : .12f) * Mathf.Clamp01(1 - milestoneAge / .22f));
+        // 判定の数はロングの回ごとに増えるので、判定し終えたノーツの数で比べる。
         if (!OutroStarted && score != null && spawner != null && CanEnd(songTime, duration, lastNote, spawner.TotalNoteCount,
-            score.HitCount + score.MissCount, spawner.NextIndex)) BeginOutro();
+            score.JudgedNoteCount, spawner.NextIndex)) BeginOutro();
     }
     public void BeginOutro()
     {
@@ -123,7 +127,7 @@ public sealed class GameplayFeedbackPresenter : MonoBehaviour
     }
     void OnDestroy()
     {
-        if (score != null) score.OnJudgment -= Scored;
+        if (score != null) { score.OnJudgment -= Scored; score.OnLongCut -= LongCut; }
         UISkinKit.SafeDestroy(outroClip);
     }
     static RectTransform Rect(Transform parent, string name, Vector2 size, Vector2 position)
