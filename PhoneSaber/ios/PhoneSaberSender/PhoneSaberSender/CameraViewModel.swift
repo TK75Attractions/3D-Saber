@@ -1577,12 +1577,21 @@ final class CameraViewModel: NSObject, ObservableObject {
         ConnectivityLog.shared.record("IGNORE_ZONE", "clear")
     }
 
-    private var lastPCCommandID: Int?
+    private static let trackLockKey = "PhoneSaber.trackLock.v1"
+    @Published private(set) var trackLockEnabled = NSClassFromString("XCTestCase") == nil
+        && UserDefaults.standard.bool(forKey: CameraViewModel.trackLockKey)
+
+    func setTrackLockEnabled(_ enabled: Bool) {
+        trackLockEnabled = enabled
+        processor.setTrackLockEnabled(enabled)
+        if NSClassFromString("XCTestCase") == nil { UserDefaults.standard.set(enabled, forKey: Self.trackLockKey) }
+    }
+
+    private var seenPCCommandIDs: Set<Int> = []
 
     /// Mac の F8 から届いた指示（同じ id は一度だけ）。
     func applyPCCommand(_ command: LANLivenessProbe.PCCommand) {
-        guard command.id != lastPCCommandID else { return }
-        lastPCCommandID = command.id
+        guard seenPCCommandIDs.insert(command.id).inserted else { return }
         if command.clearIgnore { clearIgnoreZones() }
         if let name = command.ignore {
             let colors: [SaberColor] = name == "both" ? [.red, .blue] : [name == "blue" ? .blue : .red]
@@ -1592,6 +1601,7 @@ final class CameraViewModel: NSObject, ObservableObject {
         }
         if let seconds = command.learnAreaSeconds { learnPlayArea(seconds: seconds, commandID: command.id) }
         if command.clearArea { clearPlayArea(commandID: command.id) }
+        if let enabled = command.trackLock { setTrackLockEnabled(enabled) }
         if let bias = command.exposureBias { setExposureBias(bias, commandID: command.id) }
         if let enabled = command.autoClip { setAutoClipEnabled(enabled, commandID: command.id) }
         if command.clip { requestAutoClip(commandID: command.id) }
@@ -2113,6 +2123,7 @@ final class CameraViewModel: NSObject, ObservableObject {
     private func configureAndStart(isRecovery: Bool = false, recoveryGeneration: Int? = nil) {
         processor.setIgnoreZones(ignoreZones)
         processor.setPlayArea(playArea)
+        processor.setTrackLockEnabled(trackLockEnabled)
         let configuredHost = host.trimmingCharacters(in: .whitespacesAndNewlines)
         cameraErrorMessage = nil
         connectionErrorMessage = nil

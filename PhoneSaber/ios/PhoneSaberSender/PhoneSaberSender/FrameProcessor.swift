@@ -121,6 +121,11 @@ final class FrameProcessor: @unchecked Sendable {
     var redThreshold = ColorThreshold()
     var blueThreshold = ColorThreshold()
     private var tracks: [SaberColor: Track] = [.red: Track(), .blue: Track()]
+    private let selectionTrack = SaberTrackLock() // フレームキューだけで読み書き。
+    private var trackLockEnabled = false // pendingLock で保護。
+    func setTrackLockEnabled(_ enabled: Bool) {
+        pendingLock.lock(); trackLockEnabled = enabled; pendingLock.unlock()
+    }
     private let holdDuration: TimeInterval = 0.18
     private let clock: () -> TimeInterval
     private let expiryScheduler: ((DispatchQueue, TimeInterval, DispatchWorkItem) -> Void)?
@@ -260,6 +265,7 @@ final class FrameProcessor: @unchecked Sendable {
             expiryWorkItem?.cancel()
             expiryWorkItem = nil
             tracks = [.red: Track(), .blue: Track()]
+            selectionTrack.reset()
             lastDimensions = nil
 #if DEBUG
             freezeWindow.reset()
@@ -569,11 +575,14 @@ final class FrameProcessor: @unchecked Sendable {
         let bytesPerRow = CVPixelBufferGetBytesPerRow(pixelBuffer)
         let bytes = UnsafePointer(base.assumingMemoryBound(to: UInt8.self))
         pendingLock.lock()
+        let lockEnabled = trackLockEnabled
         let zones = ignoreZones
         let learningArea = playAreaLearner != nil
         let area = learningArea ? nil : playArea
         let frameCaptureFPS = captureFPS
         pendingLock.unlock()
+        if !lockEnabled { selectionTrack.reset() }
+        let lockState = lockEnabled ? selectionTrack : nil
 #if DEBUG
         let accessMs = (ProcessInfo.processInfo.systemUptime - accessStart) * 1000
         let observer = debugVideoRecorder == nil ? analysisObserver : nil
@@ -586,7 +595,7 @@ final class FrameProcessor: @unchecked Sendable {
                                      bytesPerRow: bytesPerRow, redThreshold: redThreshold,
                                      blueThreshold: blueThreshold, collectProfile: collectProfile,
                                      collectPipelineDiagnostics: debugVideoRecorder != nil,
-                                     ignoreZones: zones, playArea: area)
+                                     ignoreZones: zones, playArea: area, trackLock: lockState, now: processingStart)
         let sabers = analysis.selected
         let observedAnalysis: SaberFrameAnalysis? = analysis
 #else
@@ -599,7 +608,7 @@ final class FrameProcessor: @unchecked Sendable {
             let result = analyzeSabers(
                 baseAddress: bytes, width: width, height: height,
                 bytesPerRow: bytesPerRow, redThreshold: redThreshold,
-                blueThreshold: blueThreshold, ignoreZones: zones, playArea: area
+                blueThreshold: blueThreshold, ignoreZones: zones, playArea: area, trackLock: lockState, now: processingStart
             )
             analysis = result
             sabers = result.selected
@@ -608,7 +617,7 @@ final class FrameProcessor: @unchecked Sendable {
                 baseAddress: bytes, width: width, height: height,
                 bytesPerRow: bytesPerRow, redThreshold: redThreshold,
                 blueThreshold: blueThreshold, collectProfile: false,
-                collectPipelineDiagnostics: true, ignoreZones: zones, playArea: area
+                collectPipelineDiagnostics: true, ignoreZones: zones, playArea: area, trackLock: lockState, now: processingStart
             )
             analysis = recordedAnalysis
             sabers = recordedAnalysis.selected
@@ -617,7 +626,7 @@ final class FrameProcessor: @unchecked Sendable {
             sabers = detectSabers(baseAddress: bytes, width: width, height: height,
                                   bytesPerRow: bytesPerRow,
                                   redThreshold: redThreshold, blueThreshold: blueThreshold,
-                                  ignoreZones: zones, playArea: area)
+                                  ignoreZones: zones, playArea: area, trackLock: lockState, now: processingStart)
         }
         let observedAnalysis = analysis
 #endif
@@ -760,6 +769,8 @@ final class FrameProcessor: @unchecked Sendable {
 
     @discardableResult
     private func emitResults(_ detected: [(SaberColor, (PixelPoint, PixelPoint)?)], width: Int, height: Int, processingStart: TimeInterval, generation: Int, trace: FrameTrace? = nil, recordingFrameID: UInt64? = nil) -> [DetectedSaber] {
+        // ゲート待ちでは補間を送らず、PC に直前位置を保持させる。
+        for color in selectionTrack.suppressed { tracks[color]?.previousEndpoints = nil }
         var results = detected.compactMap { color, current -> DetectedSaber? in
             var track = tracks[color, default: Track()]
             if let current {

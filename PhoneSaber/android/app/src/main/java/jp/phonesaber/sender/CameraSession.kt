@@ -45,6 +45,7 @@ class CameraSession(private val owner: LifecycleOwner, private val previewView: 
     @Volatile var diagnostics = "camera=starting"
         private set
     // 無視範囲（main で差し替え、解析スレッドが毎フレーム読む不変オブジェクト）。カメラの再起動は不要。
+    @Volatile var trackLockEnabled = false
     @Volatile var ignoreZones: IgnoreZones = IgnoreZones.NONE
     // 解析フレーム（縦向きに回転後）の寸法。プレビュー上に無視範囲を描くため。
     @Volatile var frameSize: Pair<Int, Int>? = null
@@ -195,7 +196,7 @@ class CameraSession(private val owner: LifecycleOwner, private val previewView: 
                             val degrees = image.imageInfo.rotationDegrees
                             val results = processor.processCamera(plane.buffer, image.width, image.height,
                                 plane.rowStride, plane.pixelStride, degrees, started / 1e9, brightness, dominance,
-                                ignoreZones, playArea)
+                                ignoreZones, playArea, trackLockEnabled)
                             val jniEnded = System.nanoTime()
                             val jniEndedNs = SystemClock.elapsedRealtimeNanos()
                             val capturedNs = CaptureClock.timestamp(image.imageInfo.timestamp, realtimeSensorClock)

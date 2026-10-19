@@ -21,7 +21,7 @@ std::string timestamped_payload(const std::string& coordinates, double epoch) {
     out << "ts=" << std::fixed << std::setprecision(6) << epoch << ";" << coordinates;
     return out.str();
 }
-void FrameProcessor::reset() { tracks_ = {}; width_ = 0; height_ = 0; }
+void FrameProcessor::reset() { tracks_ = {}; track_lock_.reset(); width_ = 0; height_ = 0; }
 static double distance(PixelPoint a, PixelPoint b) { return std::hypot(double(a.x-b.x),double(a.y-b.y)); }
 std::vector<FrameResult> FrameProcessor::process(const FrameAnalysis& analysis, int width, int height,
                                                double now, const OutputConfig& config,
@@ -45,7 +45,7 @@ std::vector<FrameResult> FrameProcessor::process(const FrameAnalysis& analysis, 
             endpoints = current; fresh = true;
         } else {
             ++track.missing;
-            if (track.missing <= 3 && track.previous && track.endpoints) {
+            if (!analysis.track_lock_suppressed[color] && track.missing <= 3 && track.previous && track.endpoints) {
                 auto extrapolate = [&](PixelPoint previous, PixelPoint latest) -> PixelPoint {
                     int x = latest.x+(latest.x-previous.x)*track.missing;
                     int y = latest.y+(latest.y-previous.y)*track.missing;
@@ -69,8 +69,14 @@ std::vector<FrameResult> FrameProcessor::process(const FrameAnalysis& analysis, 
 }
 std::vector<FrameResult> FrameProcessor::process(const PixelBuffer& p, double now, const OutputConfig& output,
                                                const std::array<double,2>& epochs, ColorThreshold red, ColorThreshold blue,
-                                               const IgnoreZones& ignore_zones, const std::optional<PlayArea>& play_area) {
-    return process(analyze(p,red,blue,2,ignore_zones,play_area),p.width,p.height,now,output,epochs);
+                                               const IgnoreZones& ignore_zones, const std::optional<PlayArea>& play_area, bool track_lock) {
+    return process(analyze_frame(p,now,red,blue,ignore_zones,play_area,track_lock),p.width,p.height,now,output,epochs);
+}
+FrameAnalysis FrameProcessor::analyze_frame(const PixelBuffer& p, double now, ColorThreshold red,
+                                             ColorThreshold blue, const IgnoreZones& zones,
+                                             const std::optional<PlayArea>& area, bool track_lock) {
+    if (!track_lock) track_lock_.reset();
+    return analyze(p,red,blue,2,zones,area,track_lock ? &track_lock_ : nullptr,now);
 }
 std::vector<FrameResult> FrameProcessor::expire(double now) {
     std::vector<FrameResult> held;

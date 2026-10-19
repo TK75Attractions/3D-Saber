@@ -77,6 +77,24 @@ final class MetricsDatagramTests: XCTestCase {
     }
 
     // Mac の F8 から届く指示（2026-10-18）。Unity の PhoneSaberDiscoveryResponder.BuildCommand と同じ形式。
+    func testPCCommandParsingTrackLock() {
+        typealias C = LANLivenessProbe.PCCommand
+        func parse(_ text: String) -> C? { LANLivenessProbe.parseCommand(text) }
+        XCTAssertEqual(parse("PHONESABER_COMMAND 1 id=71 track-lock=1 x=ignored"),
+                       C(id: 71, ignore: nil, clearIgnore: false, trackLock: true))
+        XCTAssertEqual(parse("PHONESABER_COMMAND 1 id=72 track-lock=0")?.trackLock, false)
+        XCTAssertEqual(parse("PHONESABER_COMMAND 1 id=73 track-lock=1 track-lock=0")?.trackLock, false)
+        for text in ["PHONESABER_COMMAND 2 id=1 track-lock=1", "PHONESABER_COMMAND 1 track-lock=1",
+                     "PHONESABER_COMMAND 1 id=x track-lock=1", "PHONESABER_COMMAND 1 id=1 track-lock=2",
+                     "PHONESABER_COMMAND 1 id=1 track-lock=true", "PHONESABER_COMMAND 1 id=1 track-lock=01",
+                     "PHONESABER_COMMAND 1 id=1 track-lock=1 track-lock=bad"] {
+            XCTAssertNil(parse(text), text)
+        }
+        for other in ["ignore=red", "clear-ignore=1", "learn-area=10", "clear-area=1", "exposure-bias=-1", "clip=1", "auto-clip=0"] {
+            XCTAssertNil(parse("PHONESABER_COMMAND 1 id=1 track-lock=0 " + other), other)
+        }
+    }
+
     func testPCCommandParsing() {
         XCTAssertEqual(LANLivenessProbe.parseCommand("PHONESABER_COMMAND 1 id=7 ignore=red"),
                        LANLivenessProbe.PCCommand(id: 7, ignore: "red", clearIgnore: false))

@@ -10,6 +10,7 @@
 namespace {
 struct Session {
     phonesaber::FrameProcessor processor;
+    bool track_lock = false;
     phonesaber::android::RgbaRotation rotation;
     // 無視範囲（会場のコーンなど）。Kotlin が変更時だけ解析スレッドから設定する。
     phonesaber::IgnoreZones ignore_zones;
@@ -63,7 +64,7 @@ jobjectArray process_pixels(JNIEnv* env, jlong handle, const phonesaber::PixelBu
     // FrameProcessor::process(pixels, ...) と同じ analyze → process。範囲が無ければ従来と同じ結果。
     const std::optional<phonesaber::PlayArea> area = current->learner ? std::optional<phonesaber::PlayArea>{}
                                                                       : current->play_area;
-    const auto analysis = phonesaber::analyze(pixels, threshold, threshold, 2, current->ignore_zones, area);
+    const auto analysis = current->processor.analyze_frame(pixels, time, threshold, threshold, current->ignore_zones, area, current->track_lock);
     if (current->learner) for (int color = 0; color < 2; ++color) if (analysis.selected[color])
         current->learner->add(*analysis.selected[color], pixels.width, pixels.height);
     for (int color = 0; color < 2; ++color) if (analysis.selected_extent[color]) {
@@ -213,4 +214,9 @@ Java_jp_phonesaber_sender_NativeCore_finishAreaLearning(JNIEnv* env, jobject, jl
         if (env->ExceptionCheck()) return -1;
     }
     return static_cast<jint>(learner.samples);
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_jp_phonesaber_sender_NativeCore_setTrackLock(JNIEnv*, jobject, jlong handle, jboolean enabled) {
+    session(handle)->track_lock = enabled == JNI_TRUE;
 }

@@ -368,8 +368,42 @@ std::optional<PlayArea> PlayAreaLearner::result(int minimum) const {
     if (samples < minimum || samples <= 0) return std::nullopt;
     return PlayArea::around(min_x,min_y,max_x,max_y);
 }
+const Candidate* TrackLock::select(int color, const std::vector<const Candidate*>& eligible,
+                                   int width, int height, double now, bool& suppressed) {
+    if (width_ != width || height_ != height) { reset(); width_ = width; height_ = height; }
+    auto& t = tracks_[color];
+    const double dt = now-t.updated;
+    if (t.exists && (dt < 0 || dt > 0.25)) t = {};
+    const Candidate* winner = eligible.empty() ? nullptr : eligible.front();
+    suppressed = winner == nullptr; // ON の未選択では過去座標の補間を送らない。
+    if (t.exists) {
+        const double x = t.x+t.vx*dt, y = t.y+t.vy*dt;
+        const double radius = std::max(1.5*t.length,0.12*std::hypot(double(width),double(height)));
+        winner = nullptr;
+        for (const auto* c : eligible) {
+            const auto& e = c->endpoints;
+            if (std::hypot((double(e.first.x)+e.second.x)/2-x,
+                           (double(e.first.y)+e.second.y)/2-y) <= radius) { winner = c; break; }
+        }
+        if (!winner) {
+            // 3コマ目で履歴を捨てる。このコマは送らず、次のコマは通常選択。
+            if (++t.misses >= 3) t = {};
+            suppressed = true;
+            return nullptr;
+        }
+    }
+    if (winner) {
+        const auto& e = winner->endpoints;
+        const double x = (double(e.first.x)+e.second.x)/2, y = (double(e.first.y)+e.second.y)/2;
+        const double vx = t.exists && dt > 0 ? (x-t.x)/dt : 0;
+        const double vy = t.exists && dt > 0 ? (y-t.y)/dt : 0;
+        t = {true,x,y,std::hypot(double(e.first.x-e.second.x),double(e.first.y-e.second.y)),now,vx,vy,0};
+    }
+    return winner;
+}
 FrameAnalysis analyze(const PixelBuffer& p, ColorThreshold red, ColorThreshold blue, int sample_step,
-                      const IgnoreZones& ignore_zones, const std::optional<PlayArea>& play_area) {
+                      const IgnoreZones& ignore_zones, const std::optional<PlayArea>& play_area,
+                      TrackLock* track_lock, double now) {
     using namespace detail;
     FrameAnalysis analysis;
     // Reject invalid buffers without reading them. Limit dimensions so Swift Int
@@ -408,7 +442,10 @@ FrameAnalysis analyze(const PixelBuffer& p, ColorThreshold red, ColorThreshold b
     int close_radius = std::min(w,h) >= 16 ? 2 : 1;
     for (int color_index = 0; color_index < 2; ++color_index) {
         const Mask& raw = masks[color_index]; const Mask& emitter = emitters[color_index];
-        if (!any(raw)) continue;
+        if (!any(raw)) {
+            if (track_lock) track_lock->select(color_index,{},p.width,p.height,now,analysis.track_lock_suppressed[color_index]);
+            continue;
+        }
         SaberColor color = static_cast<SaberColor>(color_index);
         Mask neighborhood = dilate(raw,w,h,2), core(w*h);
         for (int i = 0; i < w*h; ++i) if (bright[i] && neighborhood[i]) core[i] = 1;
@@ -582,7 +619,7 @@ FrameAnalysis analyze(const PixelBuffer& p, ColorThreshold red, ColorThreshold b
             c.component_area = c.component_area*step*step;
             // 無視範囲に両端が入る候補と、中点がプレイ範囲の外の候補は飛ばし、次の eligible 候補を選ぶ。
             // 候補の一覧・順位・eligible は変えない。
-            if (c.eligible && !analysis.selected[color_index]
+            if (!track_lock && c.eligible && !analysis.selected[color_index]
                 && !saber_ignored(c.endpoints,p.width,p.height,ignore_zones[color_index])
                 && (!play_area || play_area->contains_midpoint(c.endpoints,p.width,p.height))) {
                 analysis.selected[color_index] = c.endpoints;
@@ -594,6 +631,22 @@ FrameAnalysis analyze(const PixelBuffer& p, ColorThreshold red, ColorThreshold b
                 analysis.selected_extent[color_index] = extent;
             }
             analysis.candidates[color_index].push_back(std::move(c));
+        }
+        if (track_lock) {
+            std::vector<const Candidate*> eligible;
+            for (const auto& c : analysis.candidates[color_index])
+                if (c.eligible && !saber_ignored(c.endpoints,p.width,p.height,ignore_zones[color_index])
+                    && (!play_area || play_area->contains_midpoint(c.endpoints,p.width,p.height))) eligible.push_back(&c);
+            if (const auto* winner = track_lock->select(color_index,eligible,p.width,p.height,now,
+                                                       analysis.track_lock_suppressed[color_index])) {
+                analysis.selected[color_index] = winner->endpoints;
+                BoundingBox extent = winner->bounding_box;
+                for (auto end : {winner->endpoints.first,winner->endpoints.second}) {
+                    extent.min_x = std::min(extent.min_x,end.x); extent.max_x = std::max(extent.max_x,end.x);
+                    extent.min_y = std::min(extent.min_y,end.y); extent.max_y = std::max(extent.max_y,end.y);
+                }
+                analysis.selected_extent[color_index] = extent;
+            }
         }
     }
     return analysis;

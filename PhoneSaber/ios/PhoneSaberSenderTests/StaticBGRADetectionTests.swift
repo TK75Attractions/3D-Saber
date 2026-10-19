@@ -793,6 +793,64 @@ enum StaticBGRADetectionTests {
         print("Fast movement: 10 frames, immediate single-frame detection passed")
         // sampleStep=2 quantizes coordinates by two pixels; this tolerance covers
         // three samples plus the five-pixel cap. 0.20 radians rejects a 90-degree error.
+        // C++ core_test と同じ2本の棒・時刻。赤青とも、遠い高得点へ飛ばない。
+        for color in [SaberColor.red, .blue] {
+            func image(_ near: Bool, _ far: Bool, nearX: Int = 80) -> StaticImage {
+                var result = StaticImage(width: 640, height: 480)
+                func bar(_ x: Int, _ y1: Int, _ y2: Int) {
+                    for y in y1...y2 { for dx in -4...4 {
+                        result.pixel(x + dx, y, red: color == .red ? 245 : 30, green: 45,
+                                     blue: color == .blue ? 245 : 30)
+                    } }
+                }
+                if near { bar(nearX, 200, 270) }
+                if far { bar(540, 160, 270) }
+                return result
+            }
+            let state = SaberTrackLock()
+            let threshold = ColorThreshold(brightness: 140, dominance: 20)
+            func analyze(_ scene: StaticImage, _ now: Double, _ lock: SaberTrackLock?,
+                         zones: [SaberColor: [SaberIgnoreZone]] = [:], area: SaberPlayArea? = nil,
+                         width: Int = 640) -> SaberFrameAnalysis {
+                analyzeSabers(in: scene.bytes, width: width, height: scene.height, bytesPerRow: scene.bytesPerRow,
+                              redThreshold: threshold, blueThreshold: threshold, ignoreZones: zones, playArea: area,
+                              trackLock: lock, now: now)
+            }
+            let near = image(true, false), both = image(true, true), far = image(false, true)
+            precondition(analyze(near, 1, state).selected[color]!.0.x < 100)
+            let legacy = analyze(both, 1.02, nil), kept = analyze(both, 1.02, state)
+            precondition(legacy.selected[color]!.0.x > 500 && kept.selected[color]!.0.x < 100)
+            precondition(losslessSignature(legacy.candidates) == losslessSignature(kept.candidates))
+            let off = analyzeSabers(in: both.bytes, width: both.width, height: both.height,
+                                    bytesPerRow: both.bytesPerRow, redThreshold: threshold, blueThreshold: threshold)
+            precondition(frameSignature(off) == frameSignature(legacy))
+            for missing in 1...3 {
+                let absent = analyze(far, 1.02 + Double(missing) * 0.02, state)
+                precondition(absent.selected[color] == nil && state.suppressed.contains(color))
+            }
+            precondition(analyze(far, 1.10, state).selected[color]!.0.x > 500)
+            state.reset(); _ = analyze(near, 1, state)
+            for missing in 1...3 {
+                precondition(analyze(image(false, false), 1 + Double(missing) * 0.02, state).selected[color] == nil)
+                precondition(state.suppressed.contains(color))
+            }
+            precondition(analyze(both, 1.08, state).selected[color]!.0.x > 500)
+            state.reset(); _ = analyze(near, 2, state)
+            precondition(analyze(both, 2.251, state).selected[color]!.0.x > 500)
+            state.reset(); _ = analyze(near, 3, state)
+            precondition(analyze(both, 3.02, state, width: 639).selected[color]!.0.x > 500)
+            state.reset(); _ = analyze(near, 4, state); state.reset()
+            precondition(analyze(both, 4.02, state).selected[color]!.0.x > 500)
+            state.reset(); let seed = analyze(near, 5, state).selected[color]!
+            let zone = SaberIgnoreZone(around: seed, width: 640, height: 480)
+            precondition(analyze(both, 5.02, state, zones: [color: [zone]]).selected[color] == nil)
+            state.reset(); _ = analyze(near, 6, state)
+            precondition(analyze(both, 6.02, state, area: SaberPlayArea(minX: 0.7, minY: 0, maxX: 1, maxY: 1)).selected[color] == nil)
+            state.reset(); _ = analyze(near, 7, state)
+            _ = analyze(image(true, false, nearX: 100), 7.02, state)
+            precondition(analyze(image(true, false, nearX: 220), 7.14, state).selected[color] != nil)
+        }
+        print("Track lock: both colors, gating, 3 misses, resets, filters and velocity passed")
         // 会場の赤いコーン（2026-10-18）: 無視する範囲に両端が入る候補は選ばず、同じコマの別の候補を選ぶ。
         do {
             var scene = StaticImage(width: 200, height: 120)

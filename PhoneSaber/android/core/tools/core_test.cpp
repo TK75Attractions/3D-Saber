@@ -418,7 +418,95 @@ static void play_area_tests() {
     assert(everything.min_x == 0 && everything.max_x == 1 && everything.min_y == 0 && everything.max_y == 1);
     assert(!PlayAreaLearner{}.result(0));
 }
+// Swift の StaticBGRADetectionTests と同じ2本の棒・時刻で確認する。
+static void track_lock_tests() {
+    constexpr int width = 640, height = 480, stride = width*4;
+    const ColorThreshold threshold{140,20,30};
+    for (int color = 0; color < 2; ++color) {
+        auto image = [&](bool near, bool far, int near_x = 80) {
+            std::vector<uint8_t> pixels(stride*height,0);
+            auto bar = [&](int x, int y1, int y2) {
+                for (int y = y1; y <= y2; ++y) for (int dx = -4; dx <= 4; ++dx) {
+                    auto* p = pixels.data()+y*stride+(x+dx)*4;
+                    p[0] = color == 1 ? 245 : 30; p[1] = 45; p[2] = color == 0 ? 245 : 30; p[3] = 255;
+                }
+            };
+            if (near) bar(near_x,200,270);
+            if (far) bar(540,160,270);
+            return pixels;
+        };
+        TrackLock lock;
+        auto analyze_image = [&](const std::vector<uint8_t>& data, double now, TrackLock* state,
+                                 const IgnoreZones& zones = IgnoreZones{}, const std::optional<PlayArea>& area = std::nullopt,
+                                 int w = width) {
+            return analyze({data.data(),w,height,stride,data.size(),PixelFormat::bgra},threshold,threshold,2,zones,area,state,now);
+        };
+        const auto near = image(true,false), both = image(true,true), far = image(false,true);
+        assert(analyze_image(near,1,&lock).selected[color]->first.x < 100);
+        auto legacy = analyze_image(both,1.02,nullptr);
+        assert(legacy.selected[color] && legacy.selected[color]->first.x > 500);
+        auto kept = analyze_image(both,1.02,&lock);
+        assert(kept.selected[color] && kept.selected[color]->first.x < 100);
+        for (int c = 0; c < 2; ++c) {
+            assert(kept.candidates[c].size() == legacy.candidates[c].size());
+            for (std::size_t i = 0; i < kept.candidates[c].size(); ++i) {
+                const auto& a = kept.candidates[c][i]; const auto& b = legacy.candidates[c][i];
+                assert(a.score == b.score && a.eligible == b.eligible && a.source == b.source);
+                assert(a.endpoints.first.x == b.endpoints.first.x && a.endpoints.second.y == b.endpoints.second.y);
+            }
+        }
+        FrameProcessor output;
+        output.process(kept,width,height,1.02);
+        output.process(kept,width,height,1.025); // 補間できる履歴を2回作る。
+        for (int missing = 1; missing <= 3; ++missing) {
+            auto absent = analyze_image(far,1.02+missing*0.02,&lock);
+            assert(!absent.selected[color] && absent.track_lock_suppressed[color] && !absent.selected_extent[color]);
+            for (const auto& r : output.process(absent,width,height,1.02+missing*0.02))
+                assert(!r.fresh && !r.predicted && !r.text);
+        }
+        assert(analyze_image(far,1.10,&lock).selected[color]->first.x > 500);
+        // 完全に色が消えたフレームも3回の待ちに数える。
+        lock.reset(); analyze_image(near,1,&lock);
+        for (int missing = 1; missing <= 3; ++missing) {
+            auto empty = analyze_image(image(false,false),1+missing*0.02,&lock);
+            assert(!empty.selected[color] && empty.track_lock_suppressed[color]);
+        }
+        assert(analyze_image(both,1.08,&lock).selected[color]->first.x > 500);
+        // 期限切れ、サイズ変更、カメラ再開で即座に通常選択へ戻る。
+        lock.reset(); analyze_image(near,2,&lock);
+        assert(analyze_image(both,2.251,&lock).selected[color]->first.x > 500);
+        lock.reset(); analyze_image(near,3,&lock);
+        assert(analyze_image(both,3.02,&lock,{},std::nullopt,width-1).selected[color]->first.x > 500);
+        lock.reset(); analyze_image(near,4,&lock); lock.reset();
+        assert(analyze_image(both,4.02,&lock).selected[color]->first.x > 500);
+        // 無視・プレイ範囲は追跡より先に効く（近い候補を復活させない）。
+        lock.reset(); auto seed = analyze_image(near,5,&lock);
+        IgnoreZones zones; zones[color] = {ignore_zone_around(*seed.selected_extent[color],width,height)};
+        assert(!analyze_image(both,5.02,&lock,zones).selected[color]);
+        lock.reset(); analyze_image(near,6,&lock);
+        assert(!analyze_image(both,6.02,&lock,{},PlayArea{0.7,0,1,1}).selected[color]);
+        // 速度予測: 80→100 px / 0.02 s の次は、0.14 s 時点で220 pxを予測する。
+        lock.reset(); analyze_image(near,7,&lock);
+        analyze_image(image(true,false,100),7.02,&lock);
+        assert(analyze_image(image(true,false,220),7.14,&lock).selected[color]);
+        // FrameProcessor 所有の履歴も reset と OFF→ON で消える。
+        FrameProcessor processor;
+        auto process = [&](const std::vector<uint8_t>& data, double now, bool enabled) {
+            return processor.process({data.data(),width,height,stride,data.size(),PixelFormat::bgra},now,
+                                     {},{},threshold,threshold,{},std::nullopt,enabled);
+        };
+        process(near,8,true); processor.reset();
+        assert(process(both,8.02,true).front().endpoints.first.x > 500);
+        processor.reset(); process(near,9,true);
+        assert(process(both,9.02,false).front().endpoints.first.x > 500);
+        assert(process(both,9.04,true).front().endpoints.first.x > 500);
+        // 0.25秒を越えて色を失っても、古い履歴から補間 UDP を作らない。
+        for (const auto& r : process(image(false,false),9.31,true)) assert(!r.fresh && !r.text);
+    }
+    std::cout << "track lock: both colors, gating, 3 misses, resets, filters, velocity and UDP suppression passed\n";
+}
 int main() {
+    track_lock_tests();
     play_area_tests();
     ignore_zone_tests();
     core_line_guard_tests();

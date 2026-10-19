@@ -610,6 +610,8 @@ final class LANLivenessProbe {
         var clip = false
         /// auto-clip=0|1: 自動クリップの ON/OFF（端末に保存）。
         var autoClip: Bool? = nil
+        /// track-lock=0|1: 剣を追いかける（既定 OFF、端末に保存）。
+        var trackLock: Bool? = nil
     }
     static let commandPrefix = "PHONESABER_COMMAND 1 "
     static let maximumLearnAreaSeconds = 60
@@ -618,7 +620,7 @@ final class LANLivenessProbe {
         guard text.hasPrefix(commandPrefix) else { return nil }
         var id: Int?, ignore: String?, clear = false
         var learn: Int?, clearArea = false, exposure: Int?
-        var clip = false, autoClip: Bool?
+        var clip = false, autoClip: Bool?, trackLock: Bool?
         for field in text.dropFirst(commandPrefix.count).split(separator: " ") {
             let parts = field.split(separator: "=", maxSplits: 1).map(String.init)
             guard parts.count == 2 else { continue }
@@ -631,17 +633,18 @@ final class LANLivenessProbe {
             case "clear-area": clearArea = parts[1] == "1"
             case "exposure-bias": exposure = Int(parts[1]).flatMap { exposureBiasChoices.contains($0) ? $0 : nil }
             case "clip": clip = parts[1] == "1"
+            case "track-lock": trackLock = parts[1] == "1" ? true : parts[1] == "0" ? false : nil
             case "auto-clip": autoClip = parts[1] == "1" ? true : parts[1] == "0" ? false : nil
             default: break
             }
         }
         let legacy = (ignore != nil ? 1 : 0) + (clear ? 1 : 0)
         let added = (learn != nil ? 1 : 0) + (clearArea ? 1 : 0) + (exposure != nil ? 1 : 0)
-            + (clip ? 1 : 0) + (autoClip != nil ? 1 : 0)
+            + (clip ? 1 : 0) + (autoClip != nil ? 1 : 0) + (trackLock != nil ? 1 : 0)
         guard let id, legacy + added > 0, added == 0 || legacy + added == 1 else { return nil }
         return PCCommand(id: id, ignore: ignore, clearIgnore: clear,
                          learnAreaSeconds: learn, clearArea: clearArea, exposureBias: exposure,
-                         clip: clip, autoClip: autoClip)
+                         clip: clip, autoClip: autoClip, trackLock: trackLock)
     }
     /// 受信キューから呼ぶ。受け手は main で同じ id を一度だけ実行する。
     var onCommand: ((PCCommand) -> Void)?

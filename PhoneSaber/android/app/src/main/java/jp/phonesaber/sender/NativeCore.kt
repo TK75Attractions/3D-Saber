@@ -13,10 +13,11 @@ class NativeCore(private val mirrors: MirrorSettings, private val measurementMod
     fun processCamera(buffer: ByteBuffer, width: Int, height: Int, rowStride: Int,
                       pixelStride: Int, degrees: Int, time: Double, brightness: Int,
                       dominance: Int, ignoreZones: IgnoreZones = IgnoreZones.NONE,
-                      playArea: PlayArea? = null): Array<NativeResult> {
+                      playArea: PlayArea? = null, trackLock: Boolean = false): Array<NativeResult> {
         require(pixelStride == 4)
         applyIgnoreZones(ignoreZones)
         applyPlayArea(playArea)
+        setTrackLock(handle, trackLock)
         return processRotated(handle, buffer, buffer.position(), buffer.remaining(), width, height,
             rowStride, degrees, time, brightness, dominance,
             mirrors.mirrorX, mirrors.mirrorY, measurementMode)
@@ -57,6 +58,7 @@ class NativeCore(private val mirrors: MirrorSettings, private val measurementMod
         if (samples < 0) return null
         return AreaLearning(samples, PlayArea(out[0], out[1], out[2], out[3]).takeIf { it.valid })
     }
+    private external fun setTrackLock(handle: Long, enabled: Boolean)
     private external fun setPlayArea(handle: Long, area: DoubleArray?)
     private external fun startAreaLearning(handle: Long)
     private external fun finishAreaLearning(handle: Long, out: DoubleArray): Int

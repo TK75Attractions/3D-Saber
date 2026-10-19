@@ -587,12 +587,67 @@ struct SaberPlayAreaLearner: Equatable {
     }
 }
 
+/// FrameProcessor がフレームキュー上で所有する色別の選択履歴。補間・プレビューの Track とは別の寿命。
+final class SaberTrackLock {
+    private struct Track {
+        var x: Double, y: Double, length: Double, updated: Double
+        var vx = 0.0, vy = 0.0, misses = 0
+    }
+    private var tracks: [SaberColor: Track] = [:]
+    private var dimensions: (Int, Int)?
+    private(set) var suppressed: Set<SaberColor> = []
+
+    func reset() { tracks = [:]; dimensions = nil; suppressed = [] }
+
+    func select(_ eligible: [SaberCandidate], color: SaberColor,
+                width: Int, height: Int, now: Double) -> SaberCandidate? {
+        if dimensions.map({ $0 != (width, height) }) ?? true {
+            reset(); dimensions = (width, height)
+        }
+        suppressed.remove(color)
+        var track = tracks[color]
+        if let t = track, now - t.updated < 0 || now - t.updated > 0.25 { track = nil }
+        var winner = eligible.first
+        if var t = track {
+            let dt = now - t.updated
+            let x = t.x + t.vx * dt, y = t.y + t.vy * dt
+            let radius = max(1.5 * t.length, 0.12 * hypot(Double(width), Double(height)))
+            winner = eligible.first {
+                let e = $0.endpoints
+                return hypot((Double(e.0.x) + Double(e.1.x)) / 2 - x,
+                             (Double(e.0.y) + Double(e.1.y)) / 2 - y) <= radius
+            }
+            if winner == nil {
+                // 3コマ目で履歴を捨てる。このコマは送らず、次のコマは通常選択。
+                t.misses += 1
+                tracks[color] = t.misses >= 3 ? nil : t
+                suppressed.insert(color)
+                return nil
+            }
+        }
+        if let winner {
+            let e = winner.endpoints
+            let x = (Double(e.0.x) + Double(e.1.x)) / 2, y = (Double(e.0.y) + Double(e.1.y)) / 2
+            var next = Track(x: x, y: y, length: hypot(Double(e.0.x - e.1.x), Double(e.0.y - e.1.y)), updated: now)
+            if let t = track, now > t.updated {
+                // 直前2回の実測中点の差分。未選択・予測では更新しない。
+                next.vx = (x - t.x) / (now - t.updated); next.vy = (y - t.y) / (now - t.updated)
+            }
+            track = next
+        }
+        tracks[color] = track
+        if winner == nil { suppressed.insert(color) } // ON の未選択では過去座標の補間を送らない。
+        return winner
+    }
+}
+
 func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, bytesPerRow: Int,
                    redThreshold: ColorThreshold, blueThreshold: ColorThreshold,
                    sampleStep: Int = 2, collectProfile: Bool = false,
                    collectPipelineDiagnostics: Bool = false,
                    ignoreZones: [SaberColor: [SaberIgnoreZone]] = [:],
-                   playArea: SaberPlayArea? = nil) -> SaberFrameAnalysis {
+                   playArea: SaberPlayArea? = nil,
+                  trackLock: SaberTrackLock? = nil, now: Double = 0) -> SaberFrameAnalysis {
     let totalStart = collectProfile ? ProcessInfo.processInfo.systemUptime : 0
     var profile = SaberDetectionProfile()
     let candidateStageProfile = collectProfile ? SaberCandidateStageProfile() : nil
@@ -720,6 +775,7 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
         // full-mask morphology/component passes for an absent color; this is
         // an exact empty-mask fast path and does not alter candidate scoring.
         guard rawMask.contains(1) else {
+            _ = trackLock?.select([], color: color, width: width, height: height, now: now)
             allCandidates[color] = []
             if collectPipelineDiagnostics {
                 pipelineDiagnostics[color] = SaberColorPipelineDiagnostics(
@@ -1360,10 +1416,17 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
         }
         let zones = ignoreZones[color] ?? []
         // 無視範囲に両端が入る候補と、中点がプレイ範囲の外の候補は飛ばし、次の eligible 候補を選ぶ。
-        if let winner = scaled.first(where: {
+        let allowed: (SaberCandidate) -> Bool = {
             $0.isEmitterEligible && (zones.isEmpty || !saberIgnored($0.endpoints, width: width, height: height, zones: zones))
                 && (playArea?.containsMidpoint($0.endpoints, width: width, height: height) ?? true)
-        }) {
+        }
+        let winner: SaberCandidate?
+        if let trackLock {
+            winner = trackLock.select(scaled.filter(allowed), color: color, width: width, height: height, now: now)
+        } else {
+            winner = scaled.first(where: allowed)
+        }
+        if let winner {
             selected[color] = winner.endpoints
         }
         if collectProfile {
@@ -1395,10 +1458,11 @@ func detectSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, by
                   redThreshold: ColorThreshold, blueThreshold: ColorThreshold,
                   sampleStep: Int = 2,
                   ignoreZones: [SaberColor: [SaberIgnoreZone]] = [:],
-                  playArea: SaberPlayArea? = nil) -> [SaberColor: (PixelPoint, PixelPoint)] {
+                  playArea: SaberPlayArea? = nil,
+                   trackLock: SaberTrackLock? = nil, now: Double = 0) -> [SaberColor: (PixelPoint, PixelPoint)] {
     analyzeSabers(baseAddress: baseAddress, width: width, height: height, bytesPerRow: bytesPerRow,
                   redThreshold: redThreshold, blueThreshold: blueThreshold,
-                  sampleStep: sampleStep, ignoreZones: ignoreZones, playArea: playArea).selected
+                  sampleStep: sampleStep, ignoreZones: ignoreZones, playArea: playArea, trackLock: trackLock, now: now).selected
 }
 
 /// Array wrapper retained for pure Swift/static tests. Production passes the
@@ -1422,7 +1486,8 @@ func analyzeSabers(in bgra: [UInt8], width: Int, height: Int, bytesPerRow: Int,
                    sampleStep: Int = 2, collectProfile: Bool = false,
                    collectPipelineDiagnostics: Bool = false,
                    ignoreZones: [SaberColor: [SaberIgnoreZone]] = [:],
-                   playArea: SaberPlayArea? = nil) -> SaberFrameAnalysis {
+                   playArea: SaberPlayArea? = nil,
+                   trackLock: SaberTrackLock? = nil, now: Double = 0) -> SaberFrameAnalysis {
     guard width > 0, height > 0, bytesPerRow >= width * 4,
           bgra.count >= bytesPerRow * height else {
         return SaberFrameAnalysis(candidates: [:], selected: [:])
@@ -1436,6 +1501,6 @@ func analyzeSabers(in bgra: [UInt8], width: Int, height: Int, bytesPerRow: Int,
                              blueThreshold: blueThreshold, sampleStep: sampleStep,
                              collectProfile: collectProfile,
                              collectPipelineDiagnostics: collectPipelineDiagnostics, ignoreZones: ignoreZones,
-                             playArea: playArea)
+                             playArea: playArea, trackLock: trackLock, now: now)
     }
 }

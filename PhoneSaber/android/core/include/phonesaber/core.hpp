@@ -86,6 +86,7 @@ struct FrameAnalysis {
     // Fixed red/blue order, including when a color is absent.
     std::array<std::vector<Candidate>, 2> candidates;
     std::array<std::optional<Endpoints>, 2> selected;
+    std::array<bool, 2> track_lock_suppressed{}; // ゲート待ちの間は補間 UDP も送らない。
     // 選ばれた候補の範囲（解析フレームの px）。成分の bounding_box と両端を囲む箱。
     // 無視範囲（IgnoreZone）を作るためだけに使い、選択・送信には使わない。
     std::array<std::optional<BoundingBox>, 2> selected_extent;
@@ -131,10 +132,26 @@ struct PlayAreaLearner {
     // samples < minimum_samples なら nullopt。
     std::optional<PlayArea> result(int minimum_samples = PlayArea::minimum_samples) const;
 };
+// カメラセッションが所有する色別の選択履歴。出力補間の Track とは寿命を分ける。
+class TrackLock {
+public:
+    void reset() { tracks_ = {}; width_ = height_ = 0; }
+    const Candidate* select(int color, const std::vector<const Candidate*>& eligible,
+                            int width, int height, double now, bool& suppressed);
+private:
+    struct Track {
+        bool exists = false;
+        double x = 0, y = 0, length = 0, updated = 0, vx = 0, vy = 0;
+        int misses = 0;
+    };
+    std::array<Track, 2> tracks_{};
+    int width_ = 0, height_ = 0;
+};
 FrameAnalysis analyze(const PixelBuffer& pixels, ColorThreshold red = {},
                       ColorThreshold blue = {}, int sample_step = 2,
                       const IgnoreZones& ignore_zones = {},
-                      const std::optional<PlayArea>& play_area = std::nullopt);
+                      const std::optional<PlayArea>& play_area = std::nullopt,
+                      TrackLock* track_lock = nullptr, double now = 0);
 std::optional<Endpoints> principal_axis_endpoints(const std::vector<PixelPoint>& points);
 PixelPoint scaled_point(PixelPoint point, int source_width, int source_height,
                         int output_width, int output_height, bool mirror_x, bool mirror_y);
@@ -159,6 +176,9 @@ struct FrameResult {
 class FrameProcessor {
 public:
     void reset();
+    FrameAnalysis analyze_frame(const PixelBuffer& pixels, double now, ColorThreshold red = {},
+                                ColorThreshold blue = {}, const IgnoreZones& zones = {},
+                                const std::optional<PlayArea>& area = std::nullopt, bool track_lock = false);
     std::vector<FrameResult> process(const FrameAnalysis& analysis, int width, int height,
                                    double processing_time, const OutputConfig& output = {},
                                    const std::array<double, 2>& send_epochs = {});
@@ -167,7 +187,7 @@ public:
                                    const std::array<double, 2>& send_epochs = {},
                                    ColorThreshold red = {}, ColorThreshold blue = {},
                                    const IgnoreZones& ignore_zones = {},
-                                   const std::optional<PlayArea>& play_area = std::nullopt);
+                                   const std::optional<PlayArea>& play_area = std::nullopt, bool track_lock = false);
     // Call at the scheduled lastSeen + 0.18 deadline (iPhone expiry callback).
     // Returned results are preview-only and never contain datagrams.
     std::vector<FrameResult> expire(double now);
@@ -179,6 +199,7 @@ private:
         int missing = 0;
     };
     std::array<Track, 2> tracks_{};
+    TrackLock track_lock_;
     int width_ = 0, height_ = 0;
 };
 } // namespace phonesaber

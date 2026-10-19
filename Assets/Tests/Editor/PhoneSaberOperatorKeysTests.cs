@@ -27,4 +27,19 @@ public class PhoneSaberOperatorKeysTests
         Assert.AreEqual("exposure-bias=0", PhoneSaberOperatorKeys.CommandFor(Key.E, index, out index).Value.command);
         Assert.AreEqual(0, index);
     }
+    [Test]
+    public void TrackLockKeyAlternatesFromOffWithoutChangingExposure()
+    {
+        bool lastSent = false;
+        foreach (bool enabled in new[] { true, false, true, false })
+        {
+            var action = PhoneSaberOperatorKeys.CommandFor(Key.T, 2, out int exposure, lastSent).Value;
+            Assert.AreEqual("track-lock=" + (enabled ? "1" : "0"), action.command);
+            Assert.AreEqual("スマホ: 剣を追いかける " + (enabled ? "ON" : "OFF"), action.label);
+            Assert.AreEqual(2, exposure);
+            lastSent = enabled;
+        }
+        Assert.AreEqual("ignore=red", PhoneSaberOperatorKeys.CommandFor(Key.R, 0, out _, true).Value.command);
+    }
+
 }

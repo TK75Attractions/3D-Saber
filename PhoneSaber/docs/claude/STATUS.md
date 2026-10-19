@@ -1,5 +1,24 @@
 # PhoneSaber STATUS
 
+- ユーザー待ち: 実機の追跡 ON/OFF 比較（剣の後ろを赤・青の服で横切る／速く振る／一度隠して再出現）。iPhone は Xcode の再サインイン後に入れ直し。
+- 現在の仮説と確度: 遠方の高得点候補への瞬間的なすり替えに対する、既定 OFF の track lock を実装。合成フレームで検証済み、実会場での効果は未確認。
+- 次にやること: 実機で ON/OFF を比べ、効果があれば既定を検討する。
+
+## 2026-10-19 track lock（iOS / Android、既定 OFF）
+
+- 実装: eligibility・無視範囲・プレイ範囲を通る現フレームの候補だけを対象とする。色別に実測 winner の中点・長さ・更新時刻と、直前2回の実測中点の差分速度を保存する。更新から 0.25 秒以内なら `中点 + 速度 × dt` を予測し、`R = max(1.5 × 前回長さ, 0.12 × フレーム対角長)` 以下で最高得点の候補を選ぶ（同点は元の順序）。
+- ゲート内候補が無ければ3フレームは選択・補間 UDP なし。3回目に追跡を捨て、4フレーム目は通常の最高得点から再取得する。完全に色が無いフレームも数える。0.25 秒超の消失・サイズ変更・カメラ再起動でも履歴を消す。追跡用の履歴は FrameProcessor が所有し、0.18 秒のプレビュー保持用履歴とは分けた。
+- 操作: 両スマホの無視範囲付近に「剣を追いかける（通行人対策・試験）」を追加。UserDefaults / SharedPreferences に保存し、未設定なら OFF。`PHONESABER_COMMAND 1 id=N track-lock=0|1`、未知項目無視・同一項目の後勝ち・新操作の混在拒否に対応し、再送 id は別指示の後でも実行しない。Unity の Ctrl+Shift+T は静的な最後の送信値（開始 OFF）を反転し、ON/OFF のトーストを出す。
+- OFF 不変性: threshold / scoring / ranking / eligibility / 候補一覧 / PCA / UDP 形式を変更していない。HEAD `b693f67` の検出 core と変更後 OFF を同じ静的 signature runner・module 名で比較し、325 PNG と runner 内の合成入力で全候補属性・選択座標・診断の `Double.bitPattern` が一致（SHA256 `16293d8cac0915bb1f023328f91624df5e48c7f553b900366730405cb4a28f22`）。
+- `make -C PhoneSaber/android/core test parity BUILD=$TMPDIR/core-build`: C++ 合成テスト・Python 6件 PASS。parity は 325 PNG / 541 状態遷移 / 27 合成ケースで不一致0、formal fixture 40件の失敗0。
+- `bash PhoneSaber/ios/PhoneSaberSender/run-static-tests.sh`: 合成検出（赤青の近傍維持・3回消失・4回目の再取得・空フレーム・期限・寸法・範囲・速度）と DeviceHealth 20件 PASS。
+- `CLANG_MODULE_CACHE_PATH=$TMPDIR/track-lock-clang SWIFT_MODULECACHE_PATH=$TMPDIR/track-lock-swift python3 PhoneSaber/ios/PhoneSaberSender/Tools/run_lossless_regression.py --json $TMPDIR/track-lock-lossless.json`: formal 40/40 PASS、positive 23/23、negative 誤検出0/17。最初のキャッシュ既定パスへの書込み拒否は tmp の cache 指定で解消。
+- `python3 PhoneSaber/ios/PhoneSaberSenderTests/run_latency_host_tests.py`: 35件 + 経路6件 PASS（本番 FrameProcessor の実 BGRA フレームを使う追跡・補間 UDP 抑止・カメラ再開・OFF テストを含む）。Python のソースは変更していない。
+- 補助ホスト検証: 実 UDPSender + MetricsDatagramTests 7件、実 Protocol.kt + IgnoreZonesTest / PlayAreaTest 10件、実 Unity/InputSystem DLL + PhoneSaberOperatorKeysTests 3件 PASS。Android 全 Kotlin ソースも既存 AndroidX と SDK 37 で単独 compile PASS（BuildConfig のみ stub、APK の代用ではない）。NDK arm64/API29 で core + JNI の共有ライブラリ compile/link PASS。補助 runner・ログ・生成物は TMPDIR のみ。
+- 2026-10-19 取り込み時に Claude が sandbox 外で再検証: verify_phone_saber.sh 全 PASS、core test+parity 不一致0、Gradle testDebugUnitTest+assembleDebug PASS、Unity EditMode（PhoneSaber）318/318 PASS。
+- （Codex sandbox 内では未実行だった）指定 Gradle `--stop` / `--no-daemon :app:testDebugUnitTest :app:assembleDebug` は指定 JAVA_HOME でも FileLockContentionHandler の socket 作成が EPERM で起動不可。`xcodebuild ... -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' ... CODE_SIGNING_ALLOWED=NO build` は sandbox の SwiftUI マクロ用プロセス起動失敗（malformed response、CoreSimulator も接続不可）で停止。Unity Editor 経由の Test Runner は未実行。iOS の CameraViewModel を含む id 再送 XCTest は全 XCTest 実行時に要確認。
+- 自己レビュー: 既存の候補生成・点数・順位・範囲条件・送信ペイロードは維持。Unity の変更は指定3ファイルだけ。正式 corpus・期待値・scene/prefab/meta・ProjectSettings は変更していない。`git diff --check` PASS。
+
 資料の索引と、実行ファイル・道具の場所は [README.md](README.md)。
 
 ## 2026-10-18 実機実験のまとめ（台A Mac+iPhone 13、台B Windows+AQUOS sense9、プロジェクター）

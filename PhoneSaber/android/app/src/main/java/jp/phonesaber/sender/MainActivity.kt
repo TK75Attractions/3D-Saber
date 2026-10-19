@@ -111,7 +111,8 @@ class MainActivity : ComponentActivity() {
     private var ignoreZones = IgnoreZones.NONE
     private lateinit var ignoreSummary: TextView
     private lateinit var zoneOverlay: IgnoreZoneOverlay
-    private var lastPcCommandId: Int? = null
+    private val seenPcCommandIds = mutableSetOf<Int>()
+    private lateinit var trackLockSwitch: Switch
     // プレイ範囲（剣を振る場所）と露出補正。main だけが変更し、CameraSession へ渡す。
     private var playArea: PlayArea? = null
     private lateinit var areaSummary: TextView
@@ -317,6 +318,12 @@ class MainActivity : ComponentActivity() {
         ignoreButton("今の青を無視") { ignoreCurrent(1, null) }
         ignoreButton("すべて消す") { clearIgnoreZones(null) }
         panel.addView(ignoreRow)
+        trackLockSwitch = Switch(this).apply {
+            text = "剣を追いかける（通行人対策・試験）"
+            isChecked = prefs.getBoolean("trackLock.v1", false)
+            setOnCheckedChangeListener { _, enabled -> setTrackLockEnabled(enabled) }
+            panel.addView(this)
+        }
         label("送信中に、剣の電源を切るかカメラの外に出し、コーンなどだけが認識されている状態で押します。" +
             "以後その範囲の候補は選ばず、同じコマの剣を選びます。カメラや物を動かしたら押し直してください（色ごとに最大4つ）。")
             .apply { textSize = 13f }
@@ -413,6 +420,7 @@ class MainActivity : ComponentActivity() {
         }
         label("ノイズ低減・輪郭強調を対応端末で OFF にします。画質と認識結果が変わる可能性があります。既定 OFF。変更は停止中のみ。")
         camera = CameraSession(this, preview, sender) { message -> recoverCamera(message) }
+        camera.trackLockEnabled = trackLockSwitch.isChecked
         setIgnoreZones(IgnoreZones.decode(prefs.getString(IgnoreZones.PREFERENCE_KEY, null)), persist = false)
         setPlayArea(PlayArea.decode(prefs.getString(PlayArea.PREFERENCE_KEY, null)), persist = false)
         setExposureBias(prefs.getInt(ExposureBias.PREFERENCE_KEY, 0).takeIf { ExposureBias.valid(it) } ?: 0, null,
@@ -636,10 +644,15 @@ class MainActivity : ComponentActivity() {
         zoneOverlay.update(zones, camera.frameSize)
     }
 
+    private fun setTrackLockEnabled(enabled: Boolean) {
+        camera.trackLockEnabled = enabled
+        prefs.edit().putBoolean("trackLock.v1", enabled).apply()
+        if (trackLockSwitch.isChecked != enabled) trackLockSwitch.isChecked = enabled
+    }
+
     /** PC の F8 から届いた指示。今送っている PC からのものだけ、同じ id は一度だけ実行する。 */
     private fun applyPcCommand(from: java.net.InetAddress, command: PcCommand) {
-        if (destination?.address != from || command.id == lastPcCommandId) return
-        lastPcCommandId = command.id
+        if (destination?.address != from || !seenPcCommandIds.add(command.id)) return
         if (command.clearIgnore) clearIgnoreZones(command.id)
         command.ignore?.let {
             if (it == "both") { ignoreCurrent(0, command.id); ignoreCurrent(1, command.id) }
@@ -648,6 +661,7 @@ class MainActivity : ComponentActivity() {
         command.learnAreaSeconds?.let { learnPlayArea(it, command.id) }
         if (command.clearArea) clearPlayArea(command.id)
         command.exposureBias?.let { setExposureBias(it, command.id) }
+        command.trackLock?.let { setTrackLockEnabled(it) }
     }
 
     /**

@@ -260,6 +260,66 @@ final class DetectionCoreTests: XCTestCase {
     }
 #endif
 
+    func testFrameSendPrecedesHealthStatisticsWithTrackLock() {
+        var now = 1.0
+        let processor = FrameProcessor(clock: { now }, expiryScheduler: nil)
+        processor.setTrackLockEnabled(true)
+        var results: [DetectedSaber] = []
+        processor.onResult = { current, _, _, _, _, _ in results = current }
+        func frame(_ near: Bool, _ far: Bool) -> CMSampleBuffer {
+            sampleBuffer(width: 640, height: 480) { base, stride in
+                let pixels = base.assumingMemoryBound(to: UInt8.self)
+                func bar(_ x: Int, _ y1: Int, _ y2: Int) {
+                    for y in y1...y2 { for dx in -4...4 {
+                        let i = y * stride + (x + dx) * 4
+                        pixels[i] = 30; pixels[i + 1] = 45; pixels[i + 2] = 245
+                    } }
+                }
+                if near { bar(80, 200, 270) }
+                if far { bar(540, 160, 270) }
+            }
+        }
+        func process(_ near: Bool, _ far: Bool, at time: Double) {
+            now = time
+            processor.queue.sync { processor.process(frame(near, far)) }
+        }
+        process(true, false, at: 1)
+        process(true, true, at: 1.02)
+        XCTAssertLessThan(results.first!.endpoints.0.x, 100)
+        for missing in 1...3 {
+            process(false, true, at: 1.02 + Double(missing) * 0.02)
+            XCTAssertTrue(results.allSatisfy { !$0.isFresh && !$0.isPredicted }, "ゲート待ちで補間 UDP を送らない")
+        }
+        process(false, true, at: 1.10)
+        XCTAssertTrue(results.first!.isFresh)
+        XCTAssertGreaterThan(results.first!.endpoints.0.x, 500)
+        _ = processor.reset()
+        process(true, false, at: 2)
+        _ = processor.reset()
+        process(true, true, at: 2.02)
+        XCTAssertGreaterThan(results.first!.endpoints.0.x, 500, "カメラ再開で追跡を消す")
+        _ = processor.reset()
+        process(true, false, at: 3)
+        processor.setTrackLockEnabled(false)
+        process(true, true, at: 3.02)
+        XCTAssertGreaterThan(results.first!.endpoints.0.x, 500, "OFF なら通常選択")
+        processor.setTrackLockEnabled(true)
+        process(false, false, at: 3.31)
+        XCTAssertTrue(results.allSatisfy { !$0.isFresh && !$0.isPredicted })
+    }
+
+    @MainActor
+    func testPCTrackLockCommandsExecuteEachIDOnce() {
+        let model = CameraViewModel(processor: FrameProcessor(expiryScheduler: nil))
+        XCTAssertFalse(model.trackLockEnabled)
+        model.applyPCCommand(.init(id: 71, ignore: nil, clearIgnore: false, trackLock: true))
+        XCTAssertTrue(model.trackLockEnabled)
+        model.applyPCCommand(.init(id: 72, ignore: nil, clearIgnore: false, trackLock: false))
+        XCTAssertFalse(model.trackLockEnabled)
+        model.applyPCCommand(.init(id: 71, ignore: nil, clearIgnore: false, trackLock: true))
+        XCTAssertFalse(model.trackLockEnabled, "別の指示の後で再送された id も実行しない")
+    }
+
     func testFrameSendPrecedesHealthStatistics() {
         let processor = FrameProcessor(expiryScheduler: nil)
         let frame = sampleBuffer(width: 16, height: 16) { _, _ in }

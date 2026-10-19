@@ -10,16 +10,18 @@ public sealed class PhoneSaberOperatorKeys : MonoBehaviour
     static void CreateAtStartup()
     {
         if (!PhoneSaberP2PBridgeProcess.AutoStartEnabled) return; // テスト中は作らない
+        lastSentTrackLock = false;
         var go = new GameObject("PhoneSaber Operator Keys");
         go.AddComponent<PhoneSaberOperatorKeys>().toast = go.AddComponent<PhoneSaberOperatorToast>();
         DontDestroyOnLoad(go);
     }
 
     PhoneSaberOperatorToast toast;
+    static bool lastSentTrackLock; // PC から最後に送った値。開始時 OFF。
     static int exposureIndex; // 0 → -1 → -2 → 0（PC から最後に送った値。スマホ側が保存する）
 
     // 押されたキーに対応する指示と表示。対応しないキーは null。
-    public static (string command, string label)? CommandFor(Key key, int currentExposureIndex, out int nextExposureIndex)
+    public static (string command, string label)? CommandFor(Key key, int currentExposureIndex, out int nextExposureIndex, bool currentTrackLock = false)
     {
         nextExposureIndex = currentExposureIndex;
         switch (key)
@@ -33,6 +35,7 @@ public sealed class PhoneSaberOperatorKeys : MonoBehaviour
             case Key.P: return (PhoneSaberDiscoveryResponder.LearnAreaCommand,
                 $"スマホ: プレイ範囲を覚える（{PhoneSaberDiscoveryResponder.LearnAreaSeconds}秒、範囲いっぱいに振る）");
             case Key.X: return (PhoneSaberDiscoveryResponder.ClearAreaCommand, "スマホ: プレイ範囲を消す");
+            case Key.T: return TrackLockCommand(currentTrackLock);
             case Key.E:
                 var choices = PhoneSaberDiscoveryResponder.ExposureBiasChoices;
                 nextExposureIndex = (currentExposureIndex + 1) % choices.Length;
@@ -42,7 +45,13 @@ public sealed class PhoneSaberOperatorKeys : MonoBehaviour
         }
     }
 
-    static readonly Key[] Keys = { Key.R, Key.B, Key.I, Key.C, Key.K, Key.P, Key.X, Key.E };
+    public static (string command, string label) TrackLockCommand(bool lastSent)
+    {
+        bool enabled = !lastSent;
+        return ("track-lock=" + (enabled ? "1" : "0"), "スマホ: 剣を追いかける " + (enabled ? "ON" : "OFF"));
+    }
+
+    static readonly Key[] Keys = { Key.R, Key.B, Key.I, Key.C, Key.K, Key.P, Key.X, Key.E, Key.T };
 
     void Update()
     {
@@ -54,9 +63,10 @@ public sealed class PhoneSaberOperatorKeys : MonoBehaviour
         foreach (var key in Keys)
         {
             if (!keyboard[key].wasPressedThisFrame) continue;
-            var command = CommandFor(key, exposureIndex, out int next);
+            var command = CommandFor(key, exposureIndex, out int next, lastSentTrackLock);
             if (command == null) continue;
             exposureIndex = next;
+            if (key == Key.T) lastSentTrackLock = !lastSentTrackLock;
             PhoneSaberDiscoveryResponder.QueueCommand(command.Value.command);
             PhoneSaberEventLog.Record(PhoneSaberStation.Read(), "SYSTEM", "operator-key", "key=" + key + " command=" + command.Value.command);
             if (toast != null) toast.Show(command.Value.label + "（送信中）");

@@ -5,6 +5,19 @@ import org.junit.Test
 
 class IgnoreZonesTest {
     // Unity の PhoneSaberDiscoveryResponder.BuildCommand と同じ形式。iPhone の testPCCommandParsing と同じ例。
+    @Test fun trackLockCommands() {
+        assertEquals(PcCommand(71, null, false, trackLock = true),
+            PcCommandProtocol.parse("PHONESABER_COMMAND 1 id=71 track-lock=1 x=ignored"))
+        assertEquals(false, PcCommandProtocol.parse("PHONESABER_COMMAND 1 id=72 track-lock=0")?.trackLock)
+        assertEquals(false, PcCommandProtocol.parse("PHONESABER_COMMAND 1 id=73 track-lock=1 track-lock=0")?.trackLock)
+        for (text in listOf("PHONESABER_COMMAND 2 id=1 track-lock=1", "PHONESABER_COMMAND 1 track-lock=1",
+            "PHONESABER_COMMAND 1 id=x track-lock=1", "PHONESABER_COMMAND 1 id=1 track-lock=2",
+            "PHONESABER_COMMAND 1 id=1 track-lock=true", "PHONESABER_COMMAND 1 id=1 track-lock=01",
+            "PHONESABER_COMMAND 1 id=1 track-lock=1 track-lock=bad")) assertNull(PcCommandProtocol.parse(text))
+        for (other in listOf("ignore=red", "clear-ignore=1", "learn-area=10", "clear-area=1", "exposure-bias=-1"))
+            assertNull(PcCommandProtocol.parse("PHONESABER_COMMAND 1 id=1 track-lock=0 $other"))
+    }
+
     @Test fun pcCommandParsingMatchesIPhone() {
         assertEquals(PcCommand(7, "red", false), PcCommandProtocol.parse("PHONESABER_COMMAND 1 id=7 ignore=red"))
         assertEquals(PcCommand(8, "blue", false), PcCommandProtocol.parse("PHONESABER_COMMAND 1 id=8 ignore=blue"))

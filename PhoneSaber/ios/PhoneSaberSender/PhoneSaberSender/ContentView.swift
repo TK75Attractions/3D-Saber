@@ -458,6 +458,10 @@ struct ContentView: View {
                             .disabled(!model.cameraExposureExperimentEditable)
                             Text("既定OFF。HDR・歪み補正を無効化するため画像が変わる場合があります。アプリ終了でOFFに戻ります。")
                                 .font(.caption).foregroundStyle(.secondary)
+                            Toggle("剣を追いかける（通行人対策・試験）", isOn: Binding(
+                                get: { model.trackLockEnabled },
+                                set: { model.setTrackLockEnabled($0) }
+                            ))
                             Text("無視する赤・青の物: \(model.ignoreZoneSummary)")
                             HStack {
                                 Button("今の赤を無視") { model.ignoreCurrentDetection(.red) }
