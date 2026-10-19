@@ -2352,6 +2352,116 @@ final class DetectionCoreTests: XCTestCase {
         XCTAssertEqual(down.x, origin.x, accuracy: 0.001)
     }
 
+    func testPlayAreaGrowthFrameQueueNotifiesMainAtMostEveryFiveSeconds() {
+        var now = 100.0
+        let processor = FrameProcessor(clock: { now }, expiryScheduler: nil)
+        let initial = SaberPlayArea(minX: 0, minY: 0, maxX: 0.3, maxY: 1)
+        processor.setPlayArea(initial)
+        processor.setTrackLockEnabled(true)
+        var grown: [SaberPlayArea] = []
+        var fresh = false
+        processor.onResult = { results, _, _, _, _, _ in fresh = results.contains { $0.color == .red && $0.isFresh } }
+        processor.onPlayAreaGrown = { area in
+            XCTAssertTrue(Thread.isMainThread)
+            grown.append(area)
+        }
+        func frame(_ x: Int) -> CMSampleBuffer {
+            sampleBuffer(width: 200, height: 120) { base, stride in
+                let p = base.assumingMemoryBound(to: UInt8.self)
+                for y in 30...90 { for dx in -4...4 {
+                    let i = y * stride + (x + dx) * 4
+                    p[i] = 30; p[i + 1] = 45; p[i + 2] = 245; p[i + 3] = 255
+                } }
+            }
+        }
+        func process(_ i: Int) {
+            now = 100 + Double(i) * 0.05
+            let buffer = frame(min(175, 30 + i * 5))
+            processor.queue.sync { processor.process(buffer) }
+        }
+        func drainMain() {
+            let done = expectation(description: "main notifications drained")
+            DispatchQueue.main.async { done.fulfill() }
+            wait(for: [done], timeout: 2)
+        }
+        for i in 0..<10 { process(i) }
+        drainMain()
+        XCTAssertTrue(grown.isEmpty)
+        process(10)
+        drainMain()
+        XCTAssertEqual(grown.count, 1)
+        XCTAssertGreaterThan(grown.first?.maxX ?? 0, initial.maxX)
+        for i in 11...30 { process(i) }
+        _ = processor.reset()
+        process(31)
+        XCTAssertTrue(fresh, "通知待ちの作業用範囲でも新規取得できる")
+        for i in 32..<110 { process(i) }
+        drainMain()
+        XCTAssertEqual(grown.count, 1)
+        process(110)
+        drainMain()
+        XCTAssertEqual(grown.count, 2)
+        XCTAssertGreaterThan(grown.last?.maxX ?? 0, grown.first?.maxX ?? 0)
+    }
+
+    func testPlayAreaGrowthCoalescesWhileMainIsBusyAndThrottlesActualDelivery() {
+        var now = 400.0
+        let processor = FrameProcessor(clock: { now }, expiryScheduler: nil)
+        processor.setPlayArea(SaberPlayArea(minX: 0, minY: 0, maxX: 0.3, maxY: 1))
+        processor.setTrackLockEnabled(true)
+        var grown: [SaberPlayArea] = []
+        processor.onPlayAreaGrown = { grown.append($0) }
+        func process(_ i: Int) {
+            now = 400 + Double(i) * 0.05
+            let buffer = sampleBuffer(width: 640, height: 120) { base, stride in
+                let p = base.assumingMemoryBound(to: UInt8.self)
+                for y in 30...90 { for x in (76 + i * 2)...(84 + i * 2) {
+                    let offset = y * stride + x * 4
+                    p[offset] = 30; p[offset + 1] = 45; p[offset + 2] = 245; p[offset + 3] = 255
+                } }
+            }
+            processor.queue.sync { processor.process(buffer) }
+        }
+        func drainMain() {
+            let done = expectation(description: "coalesced growth notification")
+            DispatchQueue.main.async { done.fulfill() }
+            wait(for: [done], timeout: 2)
+        }
+        // main を10秒分進めず、フレーム側だけで拡張を続ける。
+        for i in 0...200 { process(i) }
+        drainMain()
+        XCTAssertEqual(grown.count, 1)
+        XCTAssertGreaterThan(grown.first?.maxX ?? 0, 0.85, "予約時ではなく通知時の最新範囲")
+        for i in 201...210 { process(i) }
+        drainMain()
+        XCTAssertEqual(grown.count, 1, "実通知から5秒未満は再通知しない")
+    }
+
+    func testPlayAreaGrowthQueuedNotificationCannotRestoreClearedArea() {
+        var now = 200.0
+        let processor = FrameProcessor(clock: { now }, expiryScheduler: nil)
+        processor.setPlayArea(SaberPlayArea(minX: 0, minY: 0, maxX: 0.4, maxY: 1))
+        processor.setTrackLockEnabled(true)
+        var notifications = 0
+        processor.onPlayAreaGrown = { _ in notifications += 1 }
+        for i in 0...10 {
+            now = 200 + Double(i) * 0.05
+            let buffer = sampleBuffer(width: 200, height: 120) { base, stride in
+                let p = base.assumingMemoryBound(to: UInt8.self)
+                for y in 30...90 { for x in (26 + i * 5)...(34 + i * 5) {
+                    let offset = y * stride + x * 4
+                    p[offset] = 30; p[offset + 1] = 45; p[offset + 2] = 245; p[offset + 3] = 255
+                } }
+            }
+            processor.queue.sync { processor.process(buffer) }
+        }
+        processor.setPlayArea(nil)
+        let drained = expectation(description: "stale notification discarded")
+        DispatchQueue.main.async { drained.fulfill() }
+        wait(for: [drained], timeout: 2)
+        XCTAssertEqual(notifications, 0)
+    }
+
     func testHoldReportsStaleEndpointWithManualClockWithoutSchedulingATimer() {
         let clock = ManualClock(100)
         let processor = FrameProcessor(clock: { clock.now }, expiryScheduler: nil)

@@ -115,6 +115,8 @@ final class FrameProcessor: @unchecked Sendable {
     /// AVCapture's clock could not be converted to the host clock.
     var onHealthSample: ((TimeInterval, Double, Int, Double?) -> Void)?
     var onRawFrameSaved: ((Result<URL, Error>) -> Void)?
+    /// main で通知。保存結果を setPlayArea で戻さず、フレーム側の作業用範囲を維持する。
+    var onPlayAreaGrown: (@MainActor (SaberPlayArea) -> Void)?
 #if DEBUG
     var onPerformance: ((FramePerformanceSample) -> Void)?
 #endif
@@ -122,9 +124,14 @@ final class FrameProcessor: @unchecked Sendable {
     var blueThreshold = ColorThreshold()
     private var tracks: [SaberColor: Track] = [.red: Track(), .blue: Track()]
     private let selectionTrack = SaberTrackLock() // フレームキューだけで読み書き。
+    private var selectionTrackRevision: UInt64 = 0 // フレームキューのみ。
+    private var trackLockRevision: UInt64 = 0 // pendingLock で保護。
     private var trackLockEnabled = false // pendingLock で保護。
     func setTrackLockEnabled(_ enabled: Bool) {
-        pendingLock.lock(); trackLockEnabled = enabled; pendingLock.unlock()
+        pendingLock.lock()
+        if trackLockEnabled != enabled { playAreaRevision &+= 1; trackLockRevision &+= 1 }
+        trackLockEnabled = enabled
+        pendingLock.unlock()
     }
     private let holdDuration: TimeInterval = 0.18
     private let clock: () -> TimeInterval
@@ -145,11 +152,19 @@ final class FrameProcessor: @unchecked Sendable {
     /// 学習中は範囲で絞らない（前の範囲より広く覚えられるように）。無視範囲は学習中も効く。
     private var playArea: SaberPlayArea?
     private var playAreaLearner: SaberPlayAreaLearner?
+    private var playAreaRevision: UInt64 = 0 // 設定変更前のフレーム・main通知を破棄する。
+    private var playAreaGrowthPending = false // pendingLock で保護。
+    private var playAreaGrowthNotificationQueued = false // main 停滞中も通知を1つにまとめる。
+    private var lastPlayAreaGrowthNotification = -Double.infinity // 実通知時刻。pendingLock で保護。
     func setPlayArea(_ area: SaberPlayArea?) {
-        pendingLock.lock(); playArea = area; pendingLock.unlock()
+        pendingLock.lock()
+        playArea = area; playAreaRevision &+= 1; playAreaGrowthPending = false
+        pendingLock.unlock()
     }
     func startPlayAreaLearning() {
-        pendingLock.lock(); playAreaLearner = SaberPlayAreaLearner(); pendingLock.unlock()
+        pendingLock.lock()
+        playAreaLearner = SaberPlayAreaLearner(); playAreaRevision &+= 1
+        pendingLock.unlock()
     }
     /// 学習を終えて結果を返す。学習していなければ nil。
     func finishPlayAreaLearning() -> SaberPlayAreaLearner? {
@@ -576,12 +591,15 @@ final class FrameProcessor: @unchecked Sendable {
         let bytes = UnsafePointer(base.assumingMemoryBound(to: UInt8.self))
         pendingLock.lock()
         let lockEnabled = trackLockEnabled
+        let lockRevision = trackLockRevision
         let zones = ignoreZones
         let learningArea = playAreaLearner != nil
         let area = learningArea ? nil : playArea
+        let areaRevision = playAreaRevision
         let frameCaptureFPS = captureFPS
         pendingLock.unlock()
-        if !lockEnabled { selectionTrack.reset() }
+        if !lockEnabled || selectionTrackRevision != lockRevision { selectionTrack.reset() }
+        selectionTrackRevision = lockRevision
         let lockState = lockEnabled ? selectionTrack : nil
 #if DEBUG
         let accessMs = (ProcessInfo.processInfo.systemUptime - accessStart) * 1000
@@ -639,6 +657,32 @@ final class FrameProcessor: @unchecked Sendable {
             for (_, endpoints) in detected { if let endpoints { playAreaLearner?.add(endpoints, width: width, height: height) } }
             pendingLock.unlock()
         }
+        // ゲートを通った実winnerだけで拡張。補間・holdした座標は使わない。
+        let grownArea = lockState?.grownPlayArea(area, selected: sabers, width: width, height: height, now: processingStart)
+        pendingLock.lock()
+        if lockEnabled, trackLockEnabled, !learningArea, playAreaLearner == nil, areaRevision == playAreaRevision {
+            if let grownArea, grownArea != playArea {
+                playArea = grownArea
+                playAreaGrowthPending = true
+            }
+            if playAreaGrowthPending, !playAreaGrowthNotificationQueued, processingStart - lastPlayAreaGrowthNotification >= 5 {
+                playAreaGrowthNotificationQueued = true
+                DispatchQueue.main.async { [weak self] in
+                    guard let self else { return }
+                    self.pendingLock.lock()
+                    self.playAreaGrowthNotificationQueued = false
+                    let valid = self.playAreaRevision == areaRevision && self.trackLockEnabled && self.playAreaLearner == nil
+                    let latest = valid ? self.playArea : nil
+                    if latest != nil {
+                        self.playAreaGrowthPending = false
+                        self.lastPlayAreaGrowthNotification = self.clock()
+                    }
+                    self.pendingLock.unlock()
+                    if let latest { self.onPlayAreaGrown?(latest) }
+                }
+            }
+        }
+        pendingLock.unlock()
         let detectionEnd = clock()
         // Detection has finished reading BGRA. Keep the lock only when a
         // requested recording or raw save still needs the pixel buffer.

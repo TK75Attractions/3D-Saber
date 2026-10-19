@@ -31,6 +31,16 @@ final class AutoClipTests: XCTestCase {
 
     // MARK: Competition
 
+    func testObjectIgnoreZoneSelectableKeepsCrossingSaber() {
+        let cone = Self.candidate((150, 100), (400, 350))
+        let crossing = Self.candidate((170, 320), (380, 130))
+        let zone = SaberIgnoreZone(around: cone.endpoints, width: 640, height: 480)
+        let old = SaberIgnoreZone(minX: zone.minX, minY: zone.minY, maxX: zone.maxX, maxY: zone.maxY)
+        XCTAssertFalse(AutoClipCompetition.selectable(cone, width: 640, height: 480, zones: [zone], playArea: nil))
+        XCTAssertTrue(AutoClipCompetition.selectable(crossing, width: 640, height: 480, zones: [zone], playArea: nil))
+        XCTAssertFalse(AutoClipCompetition.selectable(crossing, width: 640, height: 480, zones: [old], playArea: nil))
+    }
+
     func testCompetitionCountsOnlySeparatedSelectableEligibleCandidates() {
         let saber = Self.candidate((100, 100), (100, 300))
         let duplicate = Self.candidate((102, 120), (101, 280), source: "core-line")   // same blade

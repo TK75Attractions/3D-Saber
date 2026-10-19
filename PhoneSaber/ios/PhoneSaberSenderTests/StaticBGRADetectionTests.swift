@@ -795,7 +795,7 @@ enum StaticBGRADetectionTests {
         // three samples plus the five-pixel cap. 0.20 radians rejects a 90-degree error.
         // C++ core_test と同じ2本の棒・時刻。赤青とも、遠い高得点へ飛ばない。
         for color in [SaberColor.red, .blue] {
-            func image(_ near: Bool, _ far: Bool, nearX: Int = 80) -> StaticImage {
+            func image(_ near: Bool, _ far: Bool, nearX: Int = 80, nearY: Int = 200) -> StaticImage {
                 var result = StaticImage(width: 640, height: 480)
                 func bar(_ x: Int, _ y1: Int, _ y2: Int) {
                     for y in y1...y2 { for dx in -4...4 {
@@ -803,7 +803,7 @@ enum StaticBGRADetectionTests {
                                      blue: color == .blue ? 245 : 30)
                     } }
                 }
-                if near { bar(nearX, 200, 270) }
+                if near { bar(nearX, nearY, nearY + 70) }
                 if far { bar(540, 160, 270) }
                 return result
             }
@@ -845,12 +845,143 @@ enum StaticBGRADetectionTests {
             let zone = SaberIgnoreZone(around: seed, width: 640, height: 480)
             precondition(analyze(both, 5.02, state, zones: [color: [zone]]).selected[color] == nil)
             state.reset(); _ = analyze(near, 6, state)
-            precondition(analyze(both, 6.02, state, area: SaberPlayArea(minX: 0.7, minY: 0, maxX: 1, maxY: 1)).selected[color] == nil)
+            precondition(analyze(both, 6.02, state, area: SaberPlayArea(minX: 0.7, minY: 0, maxX: 1, maxY: 1)).selected[color]!.0.x < 100)
             state.reset(); _ = analyze(near, 7, state)
             _ = analyze(image(true, false, nearX: 100), 7.02, state)
             precondition(analyze(image(true, false, nearX: 220), 7.14, state).selected[color] != nil)
+            // 上80%で取得して約0.9まで下げても追跡し、OFFでは従来通り範囲外を選ばない。
+            let area = SaberPlayArea(minX: 0, minY: 0, maxX: 1, maxY: 0.8)
+            state.reset()
+            for (index, y) in [330, 350, 370, 390, 410, 430].enumerated() {
+                let scene = image(true, false, nearY: y - 35), now = 8 + Double(index) * 0.02
+                let unrestricted = analyze(scene, now, nil)
+                let tracked = analyze(scene, now, state, area: area)
+                precondition(tracked.selected[color] != nil && !state.suppressed.contains(color))
+                precondition(endpointDistance(tracked.selected[color]!, unrestricted.selected[color]!) == 0)
+                precondition(losslessSignature(tracked.candidates) == losslessSignature(unrestricted.candidates))
+                let off = analyze(scene, now, nil, area: area)
+                if area.containsMidpoint(unrestricted.selected[color]!, width: 640, height: 480) {
+                    precondition(frameSignature(off) == frameSignature(unrestricted))
+                } else {
+                    precondition(off.selected[color] == nil)
+                    precondition(losslessSignature(off.candidates) == losslessSignature(unrestricted.candidates))
+                }
+            }
+            let outside = image(true, false, nearY: 395)
+            let outsideSeed = analyze(outside, 8.1, nil).selected[color]!
+            let outsideZone = SaberIgnoreZone(around: outsideSeed, width: 640, height: 480)
+            precondition(analyze(outside, 8.12, state, zones: [color: [outsideZone]], area: area).selected[color] == nil)
+            // 期限切れ・3ミス・reset後の再取得にも範囲を適用する。
+            for now in [8.4, 8.42] {
+                precondition(analyze(outside, now, state, area: area).selected[color] == nil)
+                precondition(state.suppressed.contains(color))
+            }
+            state.reset(); _ = analyze(near, 9, state, area: area)
+            for missing in 1...3 {
+                precondition(analyze(image(false, false), 9 + Double(missing) * 0.02, state, area: area).selected[color] == nil)
+            }
+            precondition(analyze(outside, 9.08, state, area: area).selected[color] == nil)
+            state.reset()
+            precondition(analyze(outside, 10, state, area: area).selected[color] == nil)
+            // 取得時は範囲内の最高得点。範囲外の高得点候補へ飛ばない。
+            precondition(analyze(both, 10.02, state, area: SaberPlayArea(minX: 0, minY: 0, maxX: 0.3, maxY: 1)).selected[color]!.0.x < 100)
         }
-        print("Track lock: both colors, gating, 3 misses, resets, filters and velocity passed")
+        print("Track lock: both colors, gating, 3 misses, resets, ignore zones, acquisition-only play area and velocity passed")
+        // 追跡が0.5秒続いてから拡張。取得条件・候補一覧には手を加えない。
+        for color in [SaberColor.red, .blue] {
+            let initial = SaberPlayArea(minX: 0.05, minY: 0.1, maxX: 0.3, maxY: 0.7)
+            func scene(_ x: Int) -> StaticImage {
+                var image = StaticImage(width: 640, height: 480)
+                image.bar(from: PixelPoint(x: x, y: 200), to: PixelPoint(x: x, y: 270), color: color)
+                return image
+            }
+            let threshold = ColorThreshold(brightness: 140, dominance: 20)
+            func step(_ image: StaticImage, _ now: Double, _ lock: SaberTrackLock?, _ area: inout SaberPlayArea?) -> SaberFrameAnalysis {
+                let analysis = analyzeSabers(in: image.bytes, width: 640, height: 480, bytesPerRow: image.bytesPerRow,
+                                             redThreshold: threshold, blueThreshold: threshold,
+                                             playArea: area, trackLock: lock, now: now)
+                if let lock { area = lock.grownPlayArea(area, selected: analysis.selected, width: 640, height: 480, now: now) }
+                return analysis
+            }
+            let lock = SaberTrackLock()
+            var area: SaberPlayArea? = initial
+            for i in 0...20 {
+                let before = area!
+                let result = step(scene(80 + i * 16), 20 + Double(i) * 0.05, lock, &area)
+                precondition(result.selected[color] != nil)
+                if i < 10 { precondition(area == initial) }
+                else {
+                    precondition(area!.minX <= before.minX && area!.minY <= before.minY)
+                    precondition(area!.maxX >= before.maxX && area!.maxY >= before.maxY)
+                    let e = result.selected[color]!
+                    precondition(area!.maxX >= Double(max(e.0.x, e.1.x)) / 640)
+                }
+            }
+            precondition(area!.maxX > initial.maxX && area!.minX >= 0 && area!.maxX <= 1)
+            let grown = area
+            lock.reset()
+            precondition(step(scene(580), 22, lock, &area).selected[color] == nil && area == grown)
+            // 再取得・1ミスで連続選択の計時をやり直す。
+            _ = step(scene(400), 23, lock, &area)
+            _ = step(scene(400), 23.2, lock, &area)
+            let empty = StaticImage(width: 640, height: 480)
+            _ = step(empty, 23.3, lock, &area)
+            _ = step(scene(440), 23.4, lock, &area)
+            _ = step(scene(480), 23.6, lock, &area)
+            _ = step(scene(520), 23.8, lock, &area)
+            precondition(area == grown)
+            lock.reset()
+            var unset: SaberPlayArea?
+            var off: SaberPlayArea? = initial
+            for i in 0...20 {
+                _ = step(scene(80 + i * 16), 30 + Double(i) * 0.05, lock, &unset)
+                _ = step(scene(80 + i * 16), 30 + Double(i) * 0.05, nil, &off)
+            }
+            precondition(unset == nil && off == initial)
+            // 画面端でも作成時と同じ margin / minimumSize / clamp。
+            var edge: SaberFrameAnalysis?
+            for i in 21...35 { edge = step(scene(min(635, 80 + i * 16)), 30 + Double(i) * 0.05, lock, &unset) }
+            precondition(edge!.selected[color] != nil)
+            let bounded = lock.grownPlayArea(grown, selected: edge!.selected, width: 640, height: 480, now: 31.75)!
+            precondition(bounded.maxX == 1 && bounded.minX >= 0)
+        }
+        print("Play area growth: both colors, 0.5s continuity, misses, expand-only, acquisition, OFF and unset passed")
+        // 新しい無視範囲は矩形だけでなく登録物体の両端も照合。旧JSONは従来の矩形判定。
+        for color in [SaberColor.red, .blue] {
+            let threshold = ColorThreshold(brightness: 140, dominance: 20)
+            var original = StaticImage(width: 640, height: 480)
+            original.bar(from: PixelPoint(x: 150, y: 100), to: PixelPoint(x: 400, y: 350), color: color)
+            func analyze(_ image: StaticImage, _ zone: SaberIgnoreZone?, lock: SaberTrackLock? = nil) -> SaberFrameAnalysis {
+                analyzeSabers(in: image.bytes, width: 640, height: 480, bytesPerRow: image.bytesPerRow,
+                              redThreshold: threshold, blueThreshold: threshold,
+                              ignoreZones: zone.map { [color: [$0]] } ?? [:], trackLock: lock, now: 1)
+            }
+            let endpoints = analyze(original, nil).selected[color]!
+            let zone = SaberIgnoreZone(around: endpoints, width: 640, height: 480)
+            let oldData = Data("{\"minX\":\(zone.minX),\"minY\":\(zone.minY),\"maxX\":\(zone.maxX),\"maxY\":\(zone.maxY)}".utf8)
+            let old = try! JSONDecoder().decode(SaberIgnoreZone.self, from: oldData)
+            let restored = try! JSONDecoder().decode(SaberIgnoreZone.self, from: JSONEncoder().encode(zone))
+            precondition(restored == zone && restored.objectEndpoints != nil && old.objectEndpoints == nil)
+            precondition(try! JSONDecoder().decode(SaberIgnoreZone.self, from: JSONEncoder().encode(old)) == old)
+            precondition(saberIgnored((endpoints.1, endpoints.0), width: 640, height: 480, zones: [restored]))
+            var crossing = StaticImage(width: 640, height: 480)
+            crossing.bar(from: PixelPoint(x: 170, y: 320), to: PixelPoint(x: 380, y: 130), color: color)
+            let crossingEndpoints = analyze(crossing, nil).selected[color]!
+            precondition(zone.contains(crossingEndpoints.0, width: 640, height: 480)
+                         && zone.contains(crossingEndpoints.1, width: 640, height: 480))
+            for lock in [nil, SaberTrackLock()] as [SaberTrackLock?] {
+                precondition(analyze(original, restored, lock: lock).selected[color] == nil)
+                lock?.reset()
+                precondition(analyze(crossing, restored, lock: lock).selected[color] != nil)
+                lock?.reset()
+                precondition(analyze(crossing, old, lock: lock).selected[color] == nil)
+            }
+            // 正規化距離の許容値境界と、矩形条件を別々に確認する。
+            let short = SaberIgnoreZone(around: (PixelPoint(x: 500, y: 500), PixelPoint(x: 550, y: 500)), width: 1000, height: 1000)
+            precondition(saberIgnored((PixelPoint(x: 500, y: 529), PixelPoint(x: 550, y: 529)), width: 1000, height: 1000, zones: [short]))
+            precondition(!saberIgnored((PixelPoint(x: 500, y: 531), PixelPoint(x: 550, y: 531)), width: 1000, height: 1000, zones: [short]))
+        }
+        print("Object ignore zones: both colors, same/reversed object, crossing saber, ON/OFF and Codable old/new passed")
         // 会場の赤いコーン（2026-10-18）: 無視する範囲に両端が入る候補は選ばず、同じコマの別の候補を選ぶ。
         do {
             var scene = StaticImage(width: 200, height: 120)

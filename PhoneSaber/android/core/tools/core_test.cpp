@@ -425,8 +425,12 @@ static void play_area_tests() {
 static void track_lock_tests() {
     constexpr int width = 640, height = 480, stride = width*4;
     const ColorThreshold threshold{140,20,30};
+    auto same_endpoints = [](const Endpoints& a, const Endpoints& b) {
+        return a.first.x == b.first.x && a.first.y == b.first.y
+            && a.second.x == b.second.x && a.second.y == b.second.y;
+    };
     for (int color = 0; color < 2; ++color) {
-        auto image = [&](bool near, bool far, int near_x = 80) {
+        auto image = [&](bool near, bool far, int near_x = 80, int near_y = 200) {
             std::vector<uint8_t> pixels(stride*height,0);
             auto bar = [&](int x, int y1, int y2) {
                 for (int y = y1; y <= y2; ++y) for (int dx = -4; dx <= 4; ++dx) {
@@ -434,7 +438,7 @@ static void track_lock_tests() {
                     p[0] = color == 1 ? 245 : 30; p[1] = 45; p[2] = color == 0 ? 245 : 30; p[3] = 255;
                 }
             };
-            if (near) bar(near_x,200,270);
+            if (near) bar(near_x,near_y,near_y+70);
             if (far) bar(540,160,270);
             return pixels;
         };
@@ -483,16 +487,52 @@ static void track_lock_tests() {
         assert(analyze_image(both,3.02,&lock,{},std::nullopt,width-1).selected[color]->first.x > 500);
         lock.reset(); analyze_image(near,4,&lock); lock.reset();
         assert(analyze_image(both,4.02,&lock).selected[color]->first.x > 500);
-        // 無視・プレイ範囲は追跡より先に効く（近い候補を復活させない）。
+        // 無視範囲は追跡より先に効き、プレイ範囲は取得時だけに適用する。
         lock.reset(); auto seed = analyze_image(near,5,&lock);
         IgnoreZones zones; zones[color] = {ignore_zone_around(*seed.selected_extent[color],width,height)};
         assert(!analyze_image(both,5.02,&lock,zones).selected[color]);
         lock.reset(); analyze_image(near,6,&lock);
-        assert(!analyze_image(both,6.02,&lock,{},PlayArea{0.7,0,1,1}).selected[color]);
+        assert(analyze_image(both,6.02,&lock,{},PlayArea{0.7,0,1,1}).selected[color]->first.x < 100);
         // 速度予測: 80→100 px / 0.02 s の次は、0.14 s 時点で220 pxを予測する。
         lock.reset(); analyze_image(near,7,&lock);
         analyze_image(image(true,false,100),7.02,&lock);
         assert(analyze_image(image(true,false,220),7.14,&lock).selected[color]);
+        // Swift と同じ上80%→約0.9のフレーム。OFFでは従来通り範囲外を選ばない。
+        const PlayArea area{0,0,1,0.8};
+        lock.reset();
+        int index = 0;
+        for (int y : {330,350,370,390,410,430}) {
+            const auto scene = image(true,false,80,y-35);
+            double now = 8+index++*0.02;
+            auto unrestricted = analyze_image(scene,now,nullptr);
+            auto tracked = analyze_image(scene,now,&lock,{},area);
+            assert(tracked.selected[color] && !tracked.track_lock_suppressed[color] && tracked.selected_extent[color]);
+            assert(same_endpoints(*tracked.selected[color],*unrestricted.selected[color]));
+            auto off = analyze_image(scene,now,nullptr,{},area);
+            bool inside = area.contains_midpoint(*unrestricted.selected[color],width,height);
+            assert(bool(off.selected[color]) == inside && bool(off.selected_extent[color]) == inside);
+            if (inside) assert(same_endpoints(*off.selected[color],*unrestricted.selected[color]));
+            assert(tracked.candidates[color].size() == unrestricted.candidates[color].size());
+            assert(off.candidates[color].size() == unrestricted.candidates[color].size());
+        }
+        const auto outside = image(true,false,80,395);
+        auto outside_seed = analyze_image(outside,8.1,nullptr);
+        IgnoreZones outside_zones;
+        outside_zones[color] = {ignore_zone_around(*outside_seed.selected_extent[color],width,height)};
+        assert(!analyze_image(outside,8.12,&lock,outside_zones,area).selected[color]);
+        // 期限切れ・3ミス・reset後の再取得にも範囲を適用する。
+        for (double now : {8.4,8.42}) {
+            auto expired = analyze_image(outside,now,&lock,{},area);
+            assert(!expired.selected[color] && expired.track_lock_suppressed[color]);
+        }
+        lock.reset(); analyze_image(near,9,&lock,{},area);
+        for (int missing = 1; missing <= 3; ++missing)
+            assert(!analyze_image(image(false,false),9+missing*0.02,&lock,{},area).selected[color]);
+        assert(!analyze_image(outside,9.08,&lock,{},area).selected[color]);
+        lock.reset();
+        assert(!analyze_image(outside,10,&lock,{},area).selected[color]);
+        // 取得時は範囲内の最高得点。範囲外の高得点候補へ飛ばない。
+        assert(analyze_image(both,10.02,&lock,{},PlayArea{0,0,0.3,1}).selected[color]->first.x < 100);
         // FrameProcessor 所有の履歴も reset と OFF→ON で消える。
         FrameProcessor processor;
         auto process = [&](const std::vector<uint8_t>& data, double now, bool enabled) {

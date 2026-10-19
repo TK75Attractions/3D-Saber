@@ -497,11 +497,19 @@ func blueNoDeepSupport(points: [PixelPoint], baseAddress: UnsafePointer<UInt8>,
 /// 選ぶ前に外せば、同じコマで次の候補（本物の剣）が選ばれる。範囲が無ければ選び方は従来と同じ。
 struct SaberIgnoreZone: Equatable, Codable {
     var minX: Double, minY: Double, maxX: Double, maxY: Double
+    struct ObjectEndpoints: Equatable, Codable {
+        var x1: Double, y1: Double, x2: Double, y2: Double
+    }
+    // optional の合成 Codable により、両端のない旧保存形式もそのまま読める。
+    var objectEndpoints: ObjectEndpoints?
     static let margin = 0.04, minimumSize = 0.06
 
     /// 両端（フレームのピクセル）を囲み、少し広げた範囲。
     init(around endpoints: (PixelPoint, PixelPoint), width: Int, height: Int) {
         let w = Double(max(width, 1)), h = Double(max(height, 1))
+        objectEndpoints = ObjectEndpoints(
+            x1: min(1, max(0, Double(endpoints.0.x) / w)), y1: min(1, max(0, Double(endpoints.0.y) / h)),
+            x2: min(1, max(0, Double(endpoints.1.x) / w)), y2: min(1, max(0, Double(endpoints.1.y) / h)))
         var lowX = Double(min(endpoints.0.x, endpoints.1.x)) / w - Self.margin
         var highX = Double(max(endpoints.0.x, endpoints.1.x)) / w + Self.margin
         var lowY = Double(min(endpoints.0.y, endpoints.1.y)) / h - Self.margin
@@ -519,11 +527,25 @@ struct SaberIgnoreZone: Equatable, Codable {
         let x = Double(point.x) / Double(max(width, 1)), y = Double(point.y) / Double(max(height, 1))
         return x >= minX && x <= maxX && y >= minY && y <= maxY
     }
+
+    func ignores(_ endpoints: (PixelPoint, PixelPoint), width: Int, height: Int) -> Bool {
+        guard contains(endpoints.0, width: width, height: height),
+              contains(endpoints.1, width: width, height: height) else { return false }
+        guard let object = objectEndpoints else { return true }
+        let w = Double(max(width, 1)), h = Double(max(height, 1))
+        let x1 = Double(endpoints.0.x) / w, y1 = Double(endpoints.0.y) / h
+        let x2 = Double(endpoints.1.x) / w, y2 = Double(endpoints.1.y) / h
+        let tolerance = max(0.03, 0.25 * hypot(object.x2 - object.x1, object.y2 - object.y1))
+        return (hypot(x1 - object.x1, y1 - object.y1) <= tolerance
+                && hypot(x2 - object.x2, y2 - object.y2) <= tolerance)
+            || (hypot(x1 - object.x2, y1 - object.y2) <= tolerance
+                && hypot(x2 - object.x1, y2 - object.y1) <= tolerance)
+    }
 }
 
-/// 両端とも同じ範囲に入る候補は使わない（剣がそこを横切るだけなら使う）。
+/// 矩形内かつ登録物体と両端が近い候補だけ無視。両端のない旧範囲は矩形だけで判定する。
 func saberIgnored(_ endpoints: (PixelPoint, PixelPoint), width: Int, height: Int, zones: [SaberIgnoreZone]) -> Bool {
-    zones.contains { $0.contains(endpoints.0, width: width, height: height) && $0.contains(endpoints.1, width: width, height: height) }
+    zones.contains { $0.ignores(endpoints, width: width, height: height) }
 }
 
 /// プレイ範囲（剣を振る場所。色に依らず1つ）。座標は SaberIgnoreZone と同じフレームの 0..1。
@@ -591,6 +613,7 @@ struct SaberPlayAreaLearner: Equatable {
 final class SaberTrackLock {
     private struct Track {
         var x: Double, y: Double, length: Double, updated: Double
+        var selectedSince: Double?
         var vx = 0.0, vy = 0.0, misses = 0
     }
     private var tracks: [SaberColor: Track] = [:]
@@ -599,15 +622,39 @@ final class SaberTrackLock {
 
     func reset() { tracks = [:]; dimensions = nil; suppressed = [] }
 
+    /// 選択が途切れず0.5秒続いた色の当該フレームのwinnerだけで、既存範囲を広げる。
+    /// FrameProcessor の作業用範囲に適用する。未設定なら新しく作らない。
+    func grownPlayArea(_ area: SaberPlayArea?, selected: [SaberColor: (PixelPoint, PixelPoint)],
+                       width: Int, height: Int, now: Double) -> SaberPlayArea? {
+        guard var area else { return nil }
+        for color in [SaberColor.red, .blue] {
+            guard let track = tracks[color], track.updated == now,
+                  let since = track.selectedSince, now - since >= 0.5,
+                  let endpoints = selected[color] else { continue }
+            let w = Double(max(width, 1)), h = Double(max(height, 1))
+            let bounds = SaberPlayArea.around(
+                minX: Double(min(endpoints.0.x, endpoints.1.x)) / w,
+                minY: Double(min(endpoints.0.y, endpoints.1.y)) / h,
+                maxX: Double(max(endpoints.0.x, endpoints.1.x)) / w,
+                maxY: Double(max(endpoints.0.y, endpoints.1.y)) / h)
+            area.minX = max(0, min(area.minX, bounds.minX)); area.minY = max(0, min(area.minY, bounds.minY))
+            area.maxX = min(1, max(area.maxX, bounds.maxX)); area.maxY = min(1, max(area.maxY, bounds.maxY))
+        }
+        return area
+    }
+
     func select(_ eligible: [SaberCandidate], color: SaberColor,
-                width: Int, height: Int, now: Double) -> SaberCandidate? {
+                width: Int, height: Int, now: Double, playArea: SaberPlayArea? = nil) -> SaberCandidate? {
         if dimensions.map({ $0 != (width, height) }) ?? true {
             reset(); dimensions = (width, height)
         }
         suppressed.remove(color)
         var track = tracks[color]
         if let t = track, now - t.updated < 0 || now - t.updated > 0.25 { track = nil }
-        var winner = eligible.first
+        // プレイ範囲は取得時だけに適用し、追跡中は範囲外でもゲート内の候補を選ぶ。
+        var winner = track == nil ? eligible.first {
+            playArea?.containsMidpoint($0.endpoints, width: width, height: height) ?? true
+        } : nil
         if var t = track {
             let dt = now - t.updated
             let x = t.x + t.vx * dt, y = t.y + t.vy * dt
@@ -620,6 +667,7 @@ final class SaberTrackLock {
             if winner == nil {
                 // 3コマ目で履歴を捨てる。このコマは送らず、次のコマは通常選択。
                 t.misses += 1
+                t.selectedSince = nil
                 tracks[color] = t.misses >= 3 ? nil : t
                 suppressed.insert(color)
                 return nil
@@ -629,6 +677,7 @@ final class SaberTrackLock {
             let e = winner.endpoints
             let x = (Double(e.0.x) + Double(e.1.x)) / 2, y = (Double(e.0.y) + Double(e.1.y)) / 2
             var next = Track(x: x, y: y, length: hypot(Double(e.0.x - e.1.x), Double(e.0.y - e.1.y)), updated: now)
+            next.selectedSince = track?.selectedSince ?? now
             if let t = track, now > t.updated {
                 // 直前2回の実測中点の差分。未選択・予測では更新しない。
                 next.vx = (x - t.x) / (now - t.updated); next.vy = (y - t.y) / (now - t.updated)
@@ -1415,16 +1464,17 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
             )
         }
         let zones = ignoreZones[color] ?? []
-        // 無視範囲に両端が入る候補と、中点がプレイ範囲の外の候補は飛ばし、次の eligible 候補を選ぶ。
+        // 無視範囲は常に適用する。追跡ONのプレイ範囲は取得時だけに適用する。
         let allowed: (SaberCandidate) -> Bool = {
             $0.isEmitterEligible && (zones.isEmpty || !saberIgnored($0.endpoints, width: width, height: height, zones: zones))
-                && (playArea?.containsMidpoint($0.endpoints, width: width, height: height) ?? true)
         }
         let winner: SaberCandidate?
         if let trackLock {
-            winner = trackLock.select(scaled.filter(allowed), color: color, width: width, height: height, now: now)
+            winner = trackLock.select(scaled.filter(allowed), color: color, width: width, height: height, now: now, playArea: playArea)
         } else {
-            winner = scaled.first(where: allowed)
+            winner = scaled.first {
+                allowed($0) && (playArea?.containsMidpoint($0.endpoints, width: width, height: height) ?? true)
+            }
         }
         if let winner {
             selected[color] = winner.endpoints

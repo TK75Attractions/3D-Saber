@@ -4,6 +4,10 @@
 - 現在の仮説と確度: F8 を loopback Web パネルにするとゲームの投影先と操作先を分離できる。共通表示・操作表と HTTP 検証を実装し、純粋テスト91件・Unity DLL参照4構成compile・JS DOM検証はPASS。実ソケットは sandbox の bind EPERM、実ブラウザ・2画面表示は未確認。
 - 次にやること: operator が上記検証後にレビュー・コミットする。この作業では commit / push / merge しない。
 
+- 2026-10-20: iOSのみ、追跡ON・既存プレイ範囲ありで色別winnerの連続選択0.5秒後から両端＋既存margin/minimumSizeで拡張のみ（0..1、新規取得は拡張済み範囲内限定、OFF/未設定は拡張なし）。FrameProcessor作業用範囲を即時更新、mainへの保存・要約更新・PLAY_AREA growログは5秒に1回以下（既存PhoneSaber.playArea.v1、古い通知は設定revisionで破棄）。無視範囲に正規化両端を保存し、両端とも矩形内かつ各端がmax(0.03,登録長×0.25)以内（端の順序不問）の物体だけ無視、旧保存形式は矩形判定を維持、AutoClip selectableも同じ判定。static＋DeviceHealth20件、latency host38+6件（main停滞時の通知集約も確認）、AutoClip追加XCTest1件、formal lossless40/40、Android core test/parity（325 PNG・541遷移・27合成、不一致0）、iOS16/Swift5型検査（ContentView/App除外、既存警告あり）、diff --checkがPASS。既存未コミット差分を保持、Android/Unity編集・閾値/採点/順位/eligibility/候補一覧/UDP変更・commit/pushなし。実機のコーン横切り・自動拡張、正式Simulator XCTest/アプリbuildは未実施。
+
+- 2026-10-20: 10/19 17:40実機（iPhone 13、追跡ON・露出−2、学習範囲y=0.11..0.805）の autoclip_20261019_174032_190 で、eligibleあり未送信192フレーム（赤71・青121）は中点y=0.81..0.99の範囲外だけが原因（無視範囲・追跡ゲート拒否なし）。iOS/Androidとも追跡ONではプレイ範囲を取得・再取得時だけに適用し、生きた追跡は範囲外でもゲート内最高得点を選択（0.25秒・3ミス、無視範囲、閾値・採点・順位・eligibility・候補一覧・学習・UDP・追跡ON/露出−2設定は維持）。両色の合成テスト、static（DeviceHealth20件）、latency host（35+6件）、core test/parity（325 PNG・541遷移・27合成、不一致0）、formal lossless40/40がPASS。OFF変更前後の325 PNG＋120合成/範囲設定ケースの全候補・選択・診断署名もビット一致（SHA256 f3fa76dffdcc03e9089c87b7ceb221b2111d63113da424819af50d37ad4313c5）。実機再試験は未実施。変更はPhoneSaber内のみ、commit/pushなし。
+
 ## 2026-10-20 F8 の別画面Web操作パネル（未コミット）
 
 - `PhoneSaberControlPanelServer` を追加。`TcpListener` を 127.0.0.1:5010 に bind、使用中なら5011〜5019。起動ごとの暗号学的乱数128-bit hex tokenが全要求に必須。Host は選択ポートの `127.0.0.1:<port>` / `localhost:<port>` のみ。URL・tokenはログに記録しない。

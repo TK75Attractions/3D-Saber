@@ -1054,6 +1054,11 @@ final class CameraViewModel: NSObject, ObservableObject {
         processor.onProcessingActivity = { active in
             ConnectivityLog.sendGapMonitor.processing(active: active)
         }
+        processor.onPlayAreaGrown = { [weak self] area in
+            guard let self else { return }
+            self.persistPlayArea(area)
+            ConnectivityLog.shared.record("PLAY_AREA", "grow area=\(area.minX),\(area.minY),\(area.maxX),\(area.maxY)")
+        }
         processor.onHealthSample = { [healthMeter] time, milliseconds, generation, captureToSendMs in
             healthMeter.processed(at: time, milliseconds: milliseconds, generation: generation,
                                   captureToSendMs: captureToSendMs)
@@ -1563,7 +1568,7 @@ final class CameraViewModel: NSObject, ObservableObject {
     }
 
     /// 剣を消し（カメラの外・電源 OFF）、コーンなど置きっぱなしの物だけが検出されている状態で押す。
-    /// 今その色で選ばれている候補の両端を囲む範囲を覚え、以後その範囲の候補は選ばない（次の候補を選ぶ）。
+    /// 今その色で選ばれている物体の両端と範囲を覚え、矩形内でも異なる剣は残す。
     @discardableResult
     func ignoreCurrentDetection(_ color: SaberColor) -> Bool {
         guard let endpoints = color == .red ? redEndpoints : blueEndpoints else { return false }
@@ -1800,8 +1805,12 @@ final class CameraViewModel: NSObject, ObservableObject {
     }
 
     private func applyPlayArea(_ area: SaberPlayArea?) {
-        playArea = area
         processor.setPlayArea(area)
+        persistPlayArea(area)
+    }
+
+    private func persistPlayArea(_ area: SaberPlayArea?) {
+        playArea = area
         guard NSClassFromString("XCTestCase") == nil else { return }
         if let area, let data = try? JSONEncoder().encode(area) {
             UserDefaults.standard.set(data, forKey: PlayAreaSettings.playAreaKey)

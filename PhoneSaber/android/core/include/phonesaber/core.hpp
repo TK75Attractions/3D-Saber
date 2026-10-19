@@ -137,7 +137,8 @@ class TrackLock {
 public:
     void reset() { tracks_ = {}; width_ = height_ = 0; }
     const Candidate* select(int color, const std::vector<const Candidate*>& eligible,
-                            int width, int height, double now, bool& suppressed);
+                            int width, int height, double now, bool& suppressed,
+                            const std::optional<PlayArea>& play_area = std::nullopt);
 private:
     struct Track {
         bool exists = false;
