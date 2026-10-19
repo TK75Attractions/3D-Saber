@@ -438,7 +438,8 @@ static void track_lock_tests() {
         TrackLock lock;
         auto analyze_image = [&](const std::vector<uint8_t>& data, double now, TrackLock* state,
                                  const IgnoreZones& zones = IgnoreZones{}, const std::optional<PlayArea>& area = std::nullopt,
-                                 int w = width) {
+                                 int w = 0) {
+            if (w == 0) w = width;
             return analyze({data.data(),w,height,stride,data.size(),PixelFormat::bgra},threshold,threshold,2,zones,area,state,now);
         };
         const auto near = image(true,false), both = image(true,true), far = image(false,true);
