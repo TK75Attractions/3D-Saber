@@ -16,6 +16,9 @@ void* operator new(std::size_t size) {
 void* operator new[](std::size_t size) { return ::operator new(size); }
 void operator delete(void* p) noexcept { std::free(p); }
 void operator delete[](void* p) noexcept { std::free(p); }
+// GCC の最適化後も、計測用 new と対応する解放関数の境界を保つ。
+[[gnu::noinline]] void operator delete(void* p, std::size_t) noexcept { ::operator delete(p); }
+[[gnu::noinline]] void operator delete[](void* p, std::size_t) noexcept { ::operator delete[](p); }
 
 // 面積 gate で落ちる大成分でも、小容量からの FIFO 成長を繰り返さない。
 static void component_allocation_tests() {
