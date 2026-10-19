@@ -12,7 +12,7 @@
     "bpm": 160.0,
     "coordScale": 1.0,
     "offsetMs": 0.0,
-    "displayLevel": 8,
+    "displayLevel": 9,
     "beatZeroMs": 24.0,
     "timeSignatures": [
         {

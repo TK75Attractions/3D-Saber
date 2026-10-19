@@ -3,6 +3,7 @@
   "bpm": 57.333333333333336,
   "coordScale": 1.0,
   "offsetMs": 12,
+  "displayLevel": 1,
   "notes": [
     {
       "beat": 1.0,

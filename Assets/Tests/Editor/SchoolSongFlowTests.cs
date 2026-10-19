@@ -5,9 +5,9 @@ using UnityEngine;
 // 校歌v2の実データを読み、上下/左右の分布と複合の成立条件を確認する。
 public class SchoolSongFlowTests
 {
-    [TestCase("easy", 2, 1)]
+    [TestCase("easy", 1, 1)]
     [TestCase("normal", 5, 2)]
-    [TestCase("hard", 10, 3)]
+    [TestCase("hard", 8, 3)]
     public void AuthoredSpreadHasThreeHeightsAndIntentionalTypes(string difficulty, int level, int maxSimultaneous)
     {
         var chart = ChartLoader.LoadFromStreamingAssets("Epilogue", difficulty);

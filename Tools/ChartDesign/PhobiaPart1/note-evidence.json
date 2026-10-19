@@ -1417,20 +1417,6 @@
       ]
     },
     {
-      "beat": 5.5,
-      "region": "intro",
-      "role": "single",
-      "peakSeconds": 3.457143,
-      "distanceMs": 3.643,
-      "strength": 0.3228,
-      "bands": [
-        0.2058,
-        0.5378,
-        0.8996,
-        0.4743
-      ]
-    },
-    {
       "beat": 7,
       "region": "intro",
       "role": "single",
@@ -1501,20 +1487,6 @@
       ]
     },
     {
-      "beat": 15.5,
-      "region": "intro",
-      "role": "single",
-      "peakSeconds": 9.712925,
-      "distanceMs": 9.425,
-      "strength": 0.2507,
-      "bands": [
-        0.3796,
-        0.4841,
-        0.593,
-        0.3796
-      ]
-    },
-    {
       "beat": 16,
       "region": "intro",
       "role": "single",
@@ -1529,34 +1501,6 @@
       ]
     },
     {
-      "beat": 17,
-      "region": "intro",
-      "role": "single",
-      "peakSeconds": 10.660771,
-      "distanceMs": 19.771,
-      "strength": 0.4354,
-      "bands": [
-        0.9168,
-        0.445,
-        0.7418,
-        0.3592
-      ]
-    },
-    {
-      "beat": 18.5,
-      "region": "intro",
-      "role": "single",
-      "peakSeconds": 11.598639,
-      "distanceMs": 20.139,
-      "strength": 0.5326,
-      "bands": [
-        1.0382,
-        0.5498,
-        1.1714,
-        0.3087
-      ]
-    },
-    {
       "beat": 20,
       "region": "intro",
       "role": "single",
@@ -1568,34 +1512,6 @@
         0.6181,
         0.5191,
         0.3247
-      ]
-    },
-    {
-      "beat": 21.5,
-      "region": "intro",
-      "role": "single",
-      "peakSeconds": 13.454422,
-      "distanceMs": 0.922,
-      "strength": 0.3695,
-      "bands": [
-        0.5425,
-        0.7875,
-        0.5557,
-        0.4866
-      ]
-    },
-    {
-      "beat": 23,
-      "region": "intro",
-      "role": "single",
-      "peakSeconds": 14.39229,
-      "distanceMs": 1.29,
-      "strength": 0.408,
-      "bands": [
-        0.4764,
-        1.2323,
-        0.6577,
-        0.3933
       ]
     },
     {
@@ -1697,20 +1613,6 @@
       ]
     },
     {
-      "beat": 34.5,
-      "region": "intro",
-      "role": "single",
-      "peakSeconds": 21.556009,
-      "distanceMs": -22.491,
-      "strength": 0.2672,
-      "bands": [
-        0.1226,
-        0.652,
-        0.9174,
-        0.3745
-      ]
-    },
-    {
       "beat": 36,
       "region": "intro",
       "role": "single",
@@ -1722,20 +1624,6 @@
         0.3277,
         0.3755,
         0.1677
-      ]
-    },
-    {
-      "beat": 37.5,
-      "region": "intro",
-      "role": "single",
-      "peakSeconds": 23.471655,
-      "distanceMs": 18.155,
-      "strength": 0.4629,
-      "bands": [
-        1.1103,
-        0.5691,
-        0.5546,
-        0.2929
       ]
     },
     {
@@ -1778,20 +1666,6 @@
         0.8113,
         1.1801,
         0.5021
-      ]
-    },
-    {
-      "beat": 42,
-      "region": "intro",
-      "role": "single",
-      "peakSeconds": 26.275283,
-      "distanceMs": 9.283,
-      "strength": 0.5538,
-      "bands": [
-        0.704,
-        0.7185,
-        1.1758,
-        0.5135
       ]
     },
     {
@@ -1851,20 +1725,6 @@
       ]
     },
     {
-      "beat": 47.5,
-      "region": "intro",
-      "role": "single",
-      "peakSeconds": 29.722449,
-      "distanceMs": 18.949,
-      "strength": 0.3101,
-      "bands": [
-        0.4488,
-        0.5133,
-        0.5005,
-        0.596
-      ]
-    },
-    {
       "beat": 48,
       "region": "intro",
       "role": "single",
@@ -1893,20 +1753,6 @@
       ]
     },
     {
-      "beat": 50.5,
-      "region": "intro",
-      "role": "single",
-      "peakSeconds": 31.598186,
-      "distanceMs": 19.686,
-      "strength": 0.3509,
-      "bands": [
-        0.3784,
-        1.1909,
-        0.679,
-        0.2957
-      ]
-    },
-    {
       "beat": 52,
       "region": "intro",
       "role": "single",
@@ -1918,34 +1764,6 @@
         0.7032,
         0.3953,
         0.3388
-      ]
-    },
-    {
-      "beat": 53.5,
-      "region": "intro",
-      "role": "single",
-      "peakSeconds": 33.439002,
-      "distanceMs": -14.498,
-      "strength": 0.3304,
-      "bands": [
-        0.6275,
-        0.619,
-        0.6448,
-        0.3089
-      ]
-    },
-    {
-      "beat": 55,
-      "region": "intro",
-      "role": "single",
-      "peakSeconds": 34.401814,
-      "distanceMs": 10.814,
-      "strength": 0.3694,
-      "bands": [
-        0.7361,
-        0.5925,
-        0.5337,
-        0.3747
       ]
     },
     {
@@ -2243,20 +2061,6 @@
       ]
     },
     {
-      "beat": 85.5,
-      "region": "main",
-      "role": "single",
-      "peakSeconds": 49.791837,
-      "distanceMs": 3.109,
-      "strength": 1.1865,
-      "bands": [
-        2.5234,
-        0.5065,
-        0.9176,
-        1.1391
-      ]
-    },
-    {
       "beat": 86,
       "region": "main",
       "role": "single",
@@ -2296,20 +2100,6 @@
         3.0385,
         1.741,
         2.4377
-      ]
-    },
-    {
-      "beat": 88.5,
-      "region": "main",
-      "role": "single",
-      "peakSeconds": 51.15873,
-      "distanceMs": 6.367,
-      "strength": 0.9896,
-      "bands": [
-        2.7777,
-        0.2428,
-        0.7711,
-        0.7522
       ]
     },
     {
@@ -2369,20 +2159,6 @@
       ]
     },
     {
-      "beat": 93.5,
-      "region": "main",
-      "role": "single",
-      "peakSeconds": 53.428571,
-      "distanceMs": 3.481,
-      "strength": 1.5893,
-      "bands": [
-        0.7441,
-        1.6928,
-        2.4269,
-        2.6225
-      ]
-    },
-    {
       "beat": 95,
       "region": "main",
       "role": "single",
@@ -2394,20 +2170,6 @@
         1.8618,
         2.4581,
         2.4383
-      ]
-    },
-    {
-      "beat": 95.5,
-      "region": "main",
-      "role": "single",
-      "peakSeconds": 54.341497,
-      "distanceMs": 7.315,
-      "strength": 1.0043,
-      "bands": [
-        2.6046,
-        0.6996,
-        0.7557,
-        0.6398
       ]
     },
     {
@@ -2509,20 +2271,6 @@
       ]
     },
     {
-      "beat": 101.5,
-      "region": "main",
-      "role": "single",
-      "peakSeconds": 57.065306,
-      "distanceMs": 3.852,
-      "strength": 1.9222,
-      "bands": [
-        0.6581,
-        2.2409,
-        2.9487,
-        3.0725
-      ]
-    },
-    {
       "beat": 102,
       "region": "main",
       "role": "single",
@@ -2562,20 +2310,6 @@
         1.3287,
         2.4196,
         2.5995
-      ]
-    },
-    {
-      "beat": 104.5,
-      "region": "main",
-      "role": "single",
-      "peakSeconds": 58.437188,
-      "distanceMs": 12.097,
-      "strength": 0.3319,
-      "bands": [
-        0.1911,
-        0.9855,
-        0.6889,
-        0.6214
       ]
     },
     {
@@ -2635,20 +2369,6 @@
       ]
     },
     {
-      "beat": 109.5,
-      "region": "main",
-      "role": "single",
-      "peakSeconds": 60.702041,
-      "distanceMs": 4.223,
-      "strength": 1.9666,
-      "bands": [
-        0.4659,
-        2.6792,
-        3.3677,
-        2.8511
-      ]
-    },
-    {
       "beat": 111,
       "region": "main",
       "role": "single",
@@ -2660,20 +2380,6 @@
         2.1224,
         2.9192,
         2.5417
-      ]
-    },
-    {
-      "beat": 111.5,
-      "region": "main",
-      "role": "single",
-      "peakSeconds": 61.614966,
-      "distanceMs": 8.057,
-      "strength": 1.0563,
-      "bands": [
-        2.7825,
-        0.6327,
-        0.7082,
-        0.5838
       ]
     },
     {
@@ -2775,20 +2481,6 @@
       ]
     },
     {
-      "beat": 117.5,
-      "region": "main",
-      "role": "single",
-      "peakSeconds": 64.338776,
-      "distanceMs": 4.594,
-      "strength": 1.7828,
-      "bands": [
-        0.3864,
-        2.4065,
-        3.2815,
-        2.5206
-      ]
-    },
-    {
       "beat": 118,
       "region": "main",
       "role": "single",
@@ -2828,20 +2520,6 @@
         1.9289,
         3.3981,
         3.3303
-      ]
-    },
-    {
-      "beat": 120.5,
-      "region": "main",
-      "role": "single",
-      "peakSeconds": 65.705669,
-      "distanceMs": 7.851,
-      "strength": 0.604,
-      "bands": [
-        0.3271,
-        0.4015,
-        1.0844,
-        1.3513
       ]
     },
     {
@@ -2901,20 +2579,6 @@
       ]
     },
     {
-      "beat": 125.5,
-      "region": "main",
-      "role": "single",
-      "peakSeconds": 67.97551,
-      "distanceMs": 4.965,
-      "strength": 1.9429,
-      "bands": [
-        0.82,
-        2.3609,
-        3.3809,
-        2.5981
-      ]
-    },
-    {
       "beat": 127,
       "region": "main",
       "role": "single",
@@ -2926,20 +2590,6 @@
         1.7628,
         2.2436,
         2.1422
-      ]
-    },
-    {
-      "beat": 127.5,
-      "region": "main",
-      "role": "single",
-      "peakSeconds": 68.883447,
-      "distanceMs": 3.81,
-      "strength": 1.0465,
-      "bands": [
-        2.4516,
-        1.1718,
-        0.5713,
-        0.6042
       ]
     },
     {
@@ -3041,20 +2691,6 @@
       ]
     },
     {
-      "beat": 133.5,
-      "region": "main",
-      "role": "single",
-      "peakSeconds": 71.607256,
-      "distanceMs": 0.347,
-      "strength": 2.3733,
-      "bands": [
-        0.7084,
-        2.6089,
-        4.9326,
-        2.9342
-      ]
-    },
-    {
       "beat": 134,
       "region": "main",
       "role": "single",
@@ -3094,20 +2730,6 @@
         2.0704,
         3.2413,
         3.3062
-      ]
-    },
-    {
-      "beat": 136.5,
-      "region": "main",
-      "role": "single",
-      "peakSeconds": 72.964172,
-      "distanceMs": -6.373,
-      "strength": 0.4411,
-      "bands": [
-        1.1163,
-        0.3337,
-        0.4603,
-        0.5479
       ]
     },
     {
@@ -3559,20 +3181,6 @@
       ]
     },
     {
-      "beat": 172.5,
-      "region": "final",
-      "role": "single",
-      "peakSeconds": 89.34195,
-      "distanceMs": 7.768,
-      "strength": 0.7756,
-      "bands": [
-        1.5263,
-        0.8403,
-        1.1543,
-        0.8228
-      ]
-    },
-    {
       "beat": 173.5,
       "region": "final",
       "role": "single",
@@ -3615,20 +3223,6 @@
       ]
     },
     {
-      "beat": 177.5,
-      "region": "final",
-      "role": "single",
-      "peakSeconds": 91.611791,
-      "distanceMs": 4.882,
-      "strength": 1.2183,
-      "bands": [
-        0.7727,
-        2.1304,
-        1.842,
-        1.83
-      ]
-    },
-    {
       "beat": 179,
       "region": "final",
       "role": "single",
@@ -3640,20 +3234,6 @@
         1.0017,
         1.2954,
         0.8026
-      ]
-    },
-    {
-      "beat": 179.5,
-      "region": "final",
-      "role": "single",
-      "peakSeconds": 92.504762,
-      "distanceMs": -11.238,
-      "strength": 0.5227,
-      "bands": [
-        0.7076,
-        1.0972,
-        0.773,
-        0.8378
       ]
     },
     {
@@ -3741,20 +3321,6 @@
       ]
     },
     {
-      "beat": 185.5,
-      "region": "final",
-      "role": "single",
-      "peakSeconds": 95.253515,
-      "distanceMs": 10.242,
-      "strength": 0.5715,
-      "bands": [
-        0.477,
-        1.8399,
-        0.6511,
-        0.9294
-      ]
-    },
-    {
       "beat": 186,
       "region": "final",
       "role": "single",
@@ -3794,20 +3360,6 @@
         1.074,
         3.1027,
         1.5194
-      ]
-    },
-    {
-      "beat": 188.5,
-      "region": "final",
-      "role": "single",
-      "peakSeconds": 96.610431,
-      "distanceMs": 3.522,
-      "strength": 0.8989,
-      "bands": [
-        2.3949,
-        0.7565,
-        0.6024,
-        0.757
       ]
     },
     {
@@ -3853,20 +3405,6 @@
       ]
     },
     {
-      "beat": 193.5,
-      "region": "final",
-      "role": "single",
-      "peakSeconds": 98.885261,
-      "distanceMs": 5.624,
-      "strength": 1.6219,
-      "bands": [
-        1.0489,
-        2.2166,
-        2.1655,
-        2.3047
-      ]
-    },
-    {
       "beat": 195,
       "region": "final",
       "role": "single",
@@ -3878,20 +3416,6 @@
         0.6898,
         0.9712,
         0.7488
-      ]
-    },
-    {
-      "beat": 195.5,
-      "region": "final",
-      "role": "single",
-      "peakSeconds": 99.808163,
-      "distanceMs": 19.436,
-      "strength": 0.5587,
-      "bands": [
-        0.0,
-        0.7559,
-        1.3972,
-        1.1601
       ]
     },
     {
@@ -3990,20 +3514,6 @@
         1.5476,
         2.2994,
         1.9245
-      ]
-    },
-    {
-      "beat": 201.5,
-      "region": "final",
-      "role": "single",
-      "peakSeconds": 102.521995,
-      "distanceMs": 5.995,
-      "strength": 1.8847,
-      "bands": [
-        2.2373,
-        1.6485,
-        2.0799,
-        2.5546
       ]
     },
     {

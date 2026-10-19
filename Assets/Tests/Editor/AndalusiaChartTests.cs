@@ -20,8 +20,8 @@ public class AndalusiaChartTests
     }
 
     [TestCase("easy", 3)]
-    [TestCase("normal", 5)]
-    [TestCase("hard", 7)]
+    [TestCase("normal", 6)]
+    [TestCase("hard", 8)]
     public void DedicatedChartsHaveAuthoredLevelsAndUseTheProvidedAudioTimeline(string difficulty, int level)
     {
         Assert.IsTrue(File.Exists(Path.Combine(DirectoryPath, "chart_" + difficulty + ".json")));
@@ -62,8 +62,8 @@ public class AndalusiaChartTests
     }
 
     [TestCase("easy", 3)]
-    [TestCase("normal", 5)]
-    [TestCase("hard", 7)]
+    [TestCase("normal", 6)]
+    [TestCase("hard", 8)]
     public void EditorRoundTripAndGridTempoChangePreserveEveryAudioTimestamp(string difficulty, int level)
     {
         var document = SaberChartUtility.FromJson(File.ReadAllText(Path.Combine(DirectoryPath, "chart_" + difficulty + ".json")));

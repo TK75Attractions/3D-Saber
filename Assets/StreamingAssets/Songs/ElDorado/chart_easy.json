@@ -2,6 +2,7 @@
     "bpm": 100.0,
     "coordScale": 1.0,
     "offsetMs": 0.0,
+    "displayLevel": 1,
     "notes": [
         {
             "beat": 2.0,

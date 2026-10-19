@@ -151,7 +151,7 @@ public class AndalusiaSongFlowPlayTests
         Assert.AreEqual("アンダルシア", Object.FindObjectsByType<TextMeshProUGUI>(FindObjectsSortMode.None)
             .Single(t => t.name == "PanelSongTitle").text);
         var names = new[] { "Easy", "Normal", "Hard" };
-        var levels = new[] { 3, 5, 7 };
+        var levels = new[] { 3, 6, 8 };
         for (int i = 0; i < names.Length; i++)
         {
             controller.SetDifficulty(i);

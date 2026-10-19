@@ -4,7 +4,7 @@
     "coordScale": 1.0,
     "offsetMs": 0,
     "beatZeroMs": 524,
-    "displayLevel": 6,
+    "displayLevel": 5,
     "notes": [
         { "beat": 8, "time": 4591.797, "x": 1.071429, "y": -0.642857, "type": "tap", "color": "red", "direction": "none", "count": 1 },
         { "beat": 10, "time": 5608.746, "x": -1.071429, "y": -0.642857, "type": "tap", "color": "blue", "direction": "none", "count": 1 },

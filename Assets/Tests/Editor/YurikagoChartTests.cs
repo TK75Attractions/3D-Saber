@@ -71,9 +71,9 @@ public class YurikagoChartTests
             }
             Assert.GreaterOrEqual(yurikago, 0);
             Assert.GreaterOrEqual(elDorado, 0);
-            Assert.AreEqual(9, controller.DisplayLevelFor(yurikago, 2));
-            Assert.AreEqual(6, controller.DisplayLevelFor(yurikago, 1));
-            Assert.AreEqual(4, controller.DisplayLevelFor(yurikago, 0));
+            Assert.AreEqual(8, controller.DisplayLevelFor(yurikago, 2));
+            Assert.AreEqual(4, controller.DisplayLevelFor(yurikago, 1));
+            Assert.AreEqual(1, controller.DisplayLevelFor(yurikago, 0));
             Assert.AreEqual(8, controller.DisplayLevelFor(elDorado, 2));
             CollectionAssert.AreEqual(new[] { 4, 6, 8 }, controller.difficultyDisplayLevels);
         }
@@ -85,10 +85,10 @@ public class YurikagoChartTests
     {
         string path = Path.Combine(Application.streamingAssetsPath, "Songs", "揺籠", "chart_hard.json");
         var document = Saber.ChartEditor.SaberChartUtility.FromJson(File.ReadAllText(path));
-        Assert.AreEqual(9, document.displayLevel);
+        Assert.AreEqual(8, document.displayLevel);
         var clone = Saber.ChartEditor.SaberChartUtility.Clone(document);
         var runtime = ChartLoader.Parse(Saber.ChartEditor.SaberChartUtility.ToJson(clone));
-        Assert.AreEqual(9, runtime.displayLevel, "エディターで開いて保存してもLv.9が消えない");
+        Assert.AreEqual(8, runtime.displayLevel, "エディターで開いて保存してもLv.8が消えない");
         Assert.AreEqual(document.notes.Count, runtime.notes.Count);
     }
 

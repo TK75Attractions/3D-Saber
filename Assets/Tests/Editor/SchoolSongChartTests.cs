@@ -32,9 +32,9 @@ public class SchoolSongChartTests
         Assert.IsTrue(font.HasCharacter('歌', searchFallbacks: true, tryAddCharacter: true));
     }
 
-    [TestCase("easy", 2)]
+    [TestCase("easy", 1)]
     [TestCase("normal", 5)]
-    [TestCase("hard", 10)]
+    [TestCase("hard", 8)]
     public void DedicatedChartLoadsWithRequestedLevel(string difficulty, int level)
     {
         string path = Path.Combine(Application.streamingAssetsPath, "Songs", "Epilogue", "chart_" + difficulty + ".json");
@@ -80,16 +80,16 @@ public class SchoolSongChartTests
             var controller = go.AddComponent<SongSelectController>();
             controller.Populate();
             int index = Enumerable.Range(0, controller.SongCount).First(i => controller.SongIdAt(i) == "Epilogue");
-            Assert.AreEqual(2, controller.DisplayLevelFor(index, 0));
+            Assert.AreEqual(1, controller.DisplayLevelFor(index, 0));
             Assert.AreEqual(5, controller.DisplayLevelFor(index, 1));
-            Assert.AreEqual(10, controller.DisplayLevelFor(index, 2));
+            Assert.AreEqual(8, controller.DisplayLevelFor(index, 2));
         }
         finally { Object.DestroyImmediate(go); }
     }
 
-    [TestCase("easy", 2)]
+    [TestCase("easy", 1)]
     [TestCase("normal", 5)]
-    [TestCase("hard", 10)]
+    [TestCase("hard", 8)]
     public void EditorSavePreservesAuthoredLevelAndTiming(string difficulty, int level)
     {
         string path = Path.Combine(Application.streamingAssetsPath, "Songs", "Epilogue", "chart_" + difficulty + ".json");

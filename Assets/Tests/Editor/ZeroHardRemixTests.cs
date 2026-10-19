@@ -28,7 +28,7 @@ public class ZeroHardRemixTests
         Assert.AreEqual(original.bpm, current.bpm);
         Assert.AreEqual(original.offsetMs, current.offsetMs);
         Assert.AreEqual(original.beatZeroMs, current.beatZeroMs);
-        Assert.AreEqual(original.displayLevel, current.displayLevel);
+        Assert.AreEqual(9, current.displayLevel, "表示レベルは 2026-10-19 の見直しの値。改作の元データ(0=未指定)は引き継がない");
     }
 
     [Test]
