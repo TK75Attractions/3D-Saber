@@ -246,6 +246,8 @@ public class SongSelectKeyboardPlayTests
         InputSystem.QueueStateEvent(mouse, new MouseState { position = pixel });
         var normalized = typeof(InputPoint).GetProperty("NormalizedPosition");
         var received = typeof(InputPoint).GetProperty("LastReceivedTime");
+        // 照準の跳び止めは同じ受信時刻を一度しか処理しない。実際の受信と同じく、受信ごとに単調時刻も進める。
+        var stamped = typeof(InputPoint).GetProperty("LastReceivedMonotonicTime");
         IEnumerator Track(Vector2 point, float seconds)
         {
             double until = Time.realtimeSinceStartupAsDouble + seconds;
@@ -253,6 +255,7 @@ public class SongSelectKeyboardPlayTests
             {
                 normalized.SetValue(input, new Vector2(point.x / Screen.width, point.y / Screen.height));
                 received.SetValue(input, Time.realtimeSinceStartupAsDouble);
+                stamped.SetValue(input, SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp));
                 yield return null;
             }
         }
