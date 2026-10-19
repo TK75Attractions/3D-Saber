@@ -1,8 +1,20 @@
 # PhoneSaber STATUS
 
-- ユーザー待ち: operator による verify・Gradle・Unity EditMode、および両スマホの実機確認（ゲーム再起動・60秒不在後の再接続・運営コマンド優先・自動設定の無トースト）。既存ACK・追跡 ON/OFF の実会場比較も未確認。
-- 現在の仮説と確度: 起動・新規端末の探索時に defaults=1 で追跡 ON・露出 −2 EV を再保存し、Mac側のT/E状態も同期する。認識アルゴリズム不変、formal 40/40 と C++/Swift parity は PASS。実機の設定反映・UDP ACK 往復は未確認。
-- 次にやること: operator が差分をレビューし、Unity EditMode・実機を確認してコミットする。この作業では commit / push / merge しない。
+- ユーザー待ち: operator の差分レビュー、Unity EditMode（PhoneSaberControlPanelTests を含む）、`bash PhoneSaber/tools/verify_phone_saber.sh`、Mac Player build。内蔵画面＋プロジェクターで F8 / Shift+F8 / F7・全Web操作・スマホACKを確認。既存スマホ関連の実機確認も継続。
+- 現在の仮説と確度: F8 を loopback Web パネルにするとゲームの投影先と操作先を分離できる。共通表示・操作表と HTTP 検証を実装し、純粋テスト91件・Unity DLL参照4構成compile・JS DOM検証はPASS。実ソケットは sandbox の bind EPERM、実ブラウザ・2画面表示は未確認。
+- 次にやること: operator が上記検証後にレビュー・コミットする。この作業では commit / push / merge しない。
+
+## 2026-10-20 F8 の別画面Web操作パネル（未コミット）
+
+- `PhoneSaberControlPanelServer` を追加。`TcpListener` を 127.0.0.1:5010 に bind、使用中なら5011〜5019。起動ごとの暗号学的乱数128-bit hex tokenが全要求に必須。Host は選択ポートの `127.0.0.1:<port>` / `localhost:<port>` のみ。URL・tokenはログに記録しない。
+- endpoint: `GET /?t=...`（日本語・外部リソースなしのHTML）、`GET /state?t=...`（JSON、ページが500msごとpoll）、`POST /action?t=...&name=...&value=...`（許可した操作だけenqueue、202）。未知操作・不正値400、token/Host不一致403、未知path404、不正method405、サイズ超過413、32件queue満杯503。HTTP/1.1・8KiB request / 2KiB target・body/chunked/重複header/query拒否・短いread/write期限・Connection: close・no-store・no-referrer・CSP。
+- main thread の `BuildPanel` が両色受信・スマホ計測/遅延・判定遅延・予測・filter/stabilizer・表示同期/上限・位置補正・PC無視・送信中/最後のACK（`LastResultText`）・サービス/ログを構築し、同じモデルをIMGUIとJSONで使用する。両UIのボタンは同じ24種類のhandlerへ送る。Web操作はOverlay.Updateで最大8件/frame実行。socket threadはUnity API / PlayerPrefs / event logを呼ばない。
+- 操作名（値）: `calibration-start/advance/cancel/reset`（空）、`calibration-blue/enabled`（0/1）、`prediction`（auto/0/20/40/60）、`display-sync`（0/1）、`frame-cap`（0=ゲーム/1=4倍/2=2倍）、`judge-mode`（0=ゲーム/1=自動）、`judge-adjust`（-10/10）、`judge-centre`（空）、`filter`（0/1/2）、`stabilizer`（0/1）、`phone-ignore`（red/blue/both）、`phone-clear-ignore/learn-area/clear-area/track-lock/clip`（空）、`phone-exposure`（0/-1/-2）、`pc-ignore`（red/blue）、`pc-clear-ignore`（空）、`clocks-synchronized`（0/1）。各 `calibration-*` / `phone-*` は接頭辞を含む完全な名前で送る。
+- F8: default browserにtoken付きURLを開き、旧パネルは非表示、ゲーム上に「操作画面をMacの画面に開きました」を3秒。Shift+F8はIMGUIの開閉、server起動失敗時のF8もIMGUI。F7は従来の採取を進め、Web利用時は位置補正目印のみ投影する。Web利用不可なら従来どおり予備画面も開く。測定中の再Openでは採取を維持、キャンセルは専用操作または予備画面の閉操作。start/open/actionをmain threadから `event=control-panel` に記録。
+- `Application.isPlaying && !Application.isBatchMode && PhoneSaberP2PBridgeProcess.AutoStartEnabled` のときだけ起動。disable/destroy/quit/セッション再初期化でlistener・接続をcloseしてthreadをjoin。Keysは変更許可外のため、Tの反転状態だけ既存private static fieldをcached reflectionで共用し、キーボードとdefaultsの同期を維持する（EditModeでfield存在も確認）。
+- PASS（補助ホスト検証）: 新規EditModeテストの純粋部分91件（request解析/認証/Host/method/size/action全選択肢/JSON/F8）、実Unity DLLを参照して全runtime scriptsをMac/Windows×Editor/Player計4構成でcompile、新規テストもcompile。既存2件のwarningのみ。Nodeでinline JS構文、500ms poll、token付きPOST、ACK文字列のtextContent表示、disabled/selected、DOM維持、接続失敗表示を確認。
+- 制限: port 0のソケットテストは `SocketException` で失敗し、Pythonでも127.0.0.1 bindが `PermissionError errno=1 (EPERM)` と確認。純粋部分の再実行ではこの1件とUnity GameObjectが必要なhandler対応テスト1件を除外。利用可能なブラウザsurfaceが無く実画面プレビュー不可。正式Unity Test Runner・verify_phone_saber.sh・Player build・2画面/スマホ実機はoperator実行待ち。ホストcompileはPlayer build成功の代用ではない。
+- 範囲: 指定Overlay・新規ControlPanel 3ファイルとmeta・新規Editorテストとmeta・本STATUSだけ。新規metaは既存形式＋ランダム32hex GUID。認識/判定実装/UDP形式、Scene/Prefab/ProjectSettings/既存metaは不変。作業前からのフォント8ファイルの差分は触れていない。変更対象の `git diff --check` と新規source/metaの空白検査、全Assets内の新規GUID一意性、24 handlerと許可表の一致を確認してPASS。commit / push / mergeなし。
 
 ## 2026-10-19 起動・新規端末の既定値再同期（未コミット）
 

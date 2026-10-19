@@ -1,0 +1,212 @@
+using System;
+using System.Collections.Generic;
+using System.Net;
+using System.Net.Sockets;
+using System.Reflection;
+using System.Text;
+using NUnit.Framework;
+using UnityEngine;
+
+public class PhoneSaberControlPanelTests
+{
+    const string Token = "0123456789abcdef0123456789abcdef";
+    static byte[] Request(string method = "GET", string target = "/?t=" + Token, string headers = "Host: 127.0.0.1:5010\r\n")
+        => Encoding.ASCII.GetBytes(method + " " + target + " HTTP/1.1\r\n" + headers + "\r\n");
+    static int Parse(byte[] bytes) => PhoneSaberControlPanelServer.ParseRequest(bytes, 5010, Token, out _);
+
+    [Test]
+    public void ParsesMethodPathQueryAndEncodedValues()
+    {
+        Assert.AreEqual(200, PhoneSaberControlPanelServer.ParseRequest(Request("POST",
+            "/action?t=" + Token + "&name=phone-exposure&value=%2D1"), 5010, Token, out var request));
+        Assert.AreEqual("POST", request.Method);
+        Assert.AreEqual("/action", request.Path);
+        Assert.AreEqual(Token, request.Query["t"]);
+        Assert.AreEqual("phone-exposure", request.Name);
+        Assert.AreEqual("-1", request.Value);
+        Assert.AreEqual(200, Parse(Request(target: "/state?t=" + Token)));
+    }
+
+    [TestCase("/")]
+    [TestCase("/?t=wrong")]
+    [TestCase("/state")]
+    [TestCase("/action?name=phone-clip")]
+    public void EveryEndpointRequiresToken(string target) => Assert.AreEqual(403, Parse(Request(target: target)));
+
+    [TestCase("127.0.0.1:5010", 200)]
+    [TestCase("localhost:5010", 200)]
+    [TestCase("LOCALHOST:5010", 200)]
+    [TestCase("localhost", 403)]
+    [TestCase("127.0.0.1:5011", 403)]
+    [TestCase("attacker.example:5010", 403)]
+    [TestCase("127.0.0.1.attacker.example:5010", 403)]
+    [TestCase("127.0.0.1:5010@attacker.example", 403)]
+    public void RejectsRebindingHosts(string host, int expected) => Assert.AreEqual(expected, Parse(Request(headers: "Host: " + host + "\r\n")));
+
+    [TestCase("POST", "/", 405)]
+    [TestCase("POST", "/state", 405)]
+    [TestCase("GET", "/action", 405)]
+    [TestCase("PUT", "/action", 405)]
+    [TestCase("DELETE", "/", 405)]
+    [TestCase("GET", "/missing", 404)]
+    public void EnforcesMethodsAndRoutes(string method, string path, int expected) => Assert.AreEqual(expected,
+        Parse(Request(method, path + "?t=" + Token + "&name=phone-clip")));
+
+    [TestCase("Host: localhost:5010\r\nHost: localhost:5010\r\n", 400)]
+    [TestCase("", 403)]
+    [TestCase("Host: localhost:5010\r\nContent-Length: 1\r\n", 400)]
+    [TestCase("Host: localhost:5010\r\nContent-Length: -1\r\n", 400)]
+    [TestCase("Host: localhost:5010\r\nTransfer-Encoding: chunked\r\n", 400)]
+    [TestCase("Host: localhost:5010\r\nContent-Length: 0\r\n", 200)]
+    [TestCase("Host: localhost:5010\r\n folded\r\n", 400)]
+    [TestCase("Host: localhost:5010\r\nX-Test: a\nb\r\n", 400)]
+    public void RejectsAmbiguousHeadersAndBodies(string headers, int expected) => Assert.AreEqual(expected, Parse(Request(headers: headers)));
+
+    [TestCase("&t=duplicate")]
+    [TestCase("&name=x&name=y")]
+    [TestCase("&value=%")]
+    [TestCase("&value=%GG")]
+    [TestCase("&value=%1")]
+    [TestCase("&value=a\nb")]
+    [TestCase("&value=\t")]
+    [TestCase("&value=#fragment")]
+    public void RejectsMalformedOrDuplicateQuery(string suffix) => Assert.AreEqual(400, Parse(Request(target: "/?t=" + Token + suffix)));
+
+    [Test]
+    public void EnforcesSizeAndFramingLimits()
+    {
+        Assert.AreEqual(413, Parse(new byte[PhoneSaberControlPanelServer.MaximumRequestBytes + 1]));
+        Assert.AreEqual(413, Parse(Request(target: "/?t=" + Token + "&padding=" + new string('a', PhoneSaberControlPanelServer.MaximumTargetBytes))));
+        Assert.AreEqual(400, Parse(Encoding.ASCII.GetBytes("GET / HTTP/1.1\r\nHost: localhost:5010\r\n")));
+        Assert.AreEqual(400, Parse(Encoding.ASCII.GetBytes("GET / HTTP/1.0\r\n\r\n")));
+        Assert.AreEqual(400, Parse(Encoding.ASCII.GetBytes("GET /?t=" + Token + " HTTP/1.1\r\nHost: localhost:5010\r\n\r\nbody")));
+        Assert.AreEqual(400, Parse(null));
+        Assert.AreEqual(403, PhoneSaberControlPanelServer.ParseRequest(Request(), 5010, "", out _));
+    }
+
+    // 個々の選択肢を列挙し、削除・値の対応漏れを検出する。
+    public static IEnumerable<TestCaseData> ActionCases()
+    {
+        var expected = new Dictionary<string, string[]>
+        {
+            { "calibration-start", new[] { "" } }, { "calibration-advance", new[] { "" } },
+            { "calibration-cancel", new[] { "" } }, { "calibration-reset", new[] { "" } },
+            { "calibration-blue", new[] { "0", "1" } }, { "calibration-enabled", new[] { "0", "1" } },
+            { "prediction", new[] { "auto", "0", "20", "40", "60" } },
+            { "display-sync", new[] { "0", "1" } }, { "frame-cap", new[] { "0", "1", "2" } },
+            { "judge-mode", new[] { "0", "1" } }, { "judge-adjust", new[] { "-10", "10" } }, { "judge-centre", new[] { "" } },
+            { "filter", new[] { "0", "1", "2" } }, { "stabilizer", new[] { "0", "1" } },
+            { "phone-ignore", new[] { "red", "blue", "both" } }, { "phone-clear-ignore", new[] { "" } },
+            { "phone-learn-area", new[] { "" } }, { "phone-clear-area", new[] { "" } },
+            { "phone-exposure", new[] { "0", "-1", "-2" } }, { "phone-track-lock", new[] { "" } }, { "phone-clip", new[] { "" } },
+            { "pc-ignore", new[] { "red", "blue" } }, { "pc-clear-ignore", new[] { "" } }, { "clocks-synchronized", new[] { "0", "1" } }
+        };
+        foreach (var pair in expected)
+            foreach (string value in pair.Value) yield return new TestCaseData(pair.Key, value);
+    }
+
+    [TestCaseSource(nameof(ActionCases))]
+    public void EveryChoiceRoutesToItsHandler(string name, string value)
+    {
+        string seen = null;
+        var handlers = new Dictionary<string, Action<string>> { { name, v => seen = v } };
+        Assert.IsTrue(PhoneSaberControlPanelActions.Dispatch(name, value, handlers));
+        Assert.AreEqual(value, seen);
+        Assert.AreEqual(200, Parse(Request("POST", "/action?t=" + Token + "&name=" + name + "&value=" + Uri.EscapeDataString(value))));
+    }
+
+    [TestCase("unknown", "")]
+    [TestCase("prediction", "1000")]
+    [TestCase("filter", "-1")]
+    [TestCase("phone-ignore", "red&clip=1")]
+    [TestCase("phone-clip", "1")]
+    [TestCase(null, "")]
+    public void RejectsUnknownActionsAndValues(string name, string value)
+    {
+        Assert.IsFalse(PhoneSaberControlPanelActions.Dispatch(name, value, new Dictionary<string, Action<string>>()));
+        Assert.AreEqual(400, Parse(Request("POST", "/action?t=" + Token + "&name=" + Uri.EscapeDataString(name ?? "") + "&value=" + Uri.EscapeDataString(value))));
+    }
+
+    [Test]
+    public void OverlayHasExactlyTheApprovedHandlersWithoutStartingSockets()
+    {
+        var go = new GameObject("control panel test");
+        try
+        {
+            var overlay = go.AddComponent<PhoneSaberOperatorOverlay>();
+            CollectionAssert.AreEquivalent(PhoneSaberControlPanelActions.Names, overlay.ControlPanelHandlers.Keys);
+            Assert.IsNull(typeof(PhoneSaberOperatorOverlay).GetField("controlPanel", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(overlay));
+            Assert.NotNull(typeof(PhoneSaberOperatorKeys).GetField("lastSentTrackLock", BindingFlags.NonPublic | BindingFlags.Static));
+        }
+        finally { UnityEngine.Object.DestroyImmediate(go); }
+    }
+
+    [TestCase(false, true, true)]
+    [TestCase(true, true, false)]
+    [TestCase(false, false, false)]
+    [TestCase(true, false, false)]
+    public void F8BrowserDecision(bool shift, bool serverRunning, bool browser)
+        => Assert.AreEqual(browser, PhoneSaberControlPanelActions.ShouldOpenBrowser(shift, serverRunning));
+
+    [Test]
+    public void JsonEscapesQuotesBackslashesControlsAndUnicode()
+    {
+        Assert.AreEqual("\"台\\\"\\\\\\n\\r\\t\\u0000\\u001f\\u2028\\ud800\"",
+            PhoneSaberControlPanelState.Quote("台\"\\\n\r\t\0\u001f\u2028\ud800"));
+        Assert.AreEqual("null", PhoneSaberControlPanelState.Quote(null));
+        var state = new PhoneSaberControlPanelState();
+        state.BeginSection("台\"A");
+        state.Label("スマホ\n返事", true);
+        state.Button("20ms", "prediction", "20", false, true);
+        string json = state.ToJson();
+        StringAssert.Contains("\"title\":\"台\\\"A\"", json);
+        StringAssert.Contains("\"text\":\"スマホ\\n返事\"", json);
+        StringAssert.Contains("\"enabled\":false,\"selected\":true", json);
+        StringAssert.Contains("\"warning\":true", json);
+        Assert.Throws<ArgumentException>(() => state.Button("bad", "unknown"));
+    }
+
+    // ソケットはこの1件のみ。固定ポートを使用せず、終了時に停止・破棄する。
+    [Test]
+    public void LoopbackSocketServesStateQueuesActionsAndStops()
+    {
+        using (var server = new PhoneSaberControlPanelServer())
+        {
+            Assert.IsTrue(server.Start(0, 0), server.Error);
+            Assert.That(server.Port, Is.GreaterThan(0));
+            Assert.That(server.Token, Does.Match("^[0-9a-f]{32}$"));
+            server.Publish("{\"test\":true}");
+            string response = Exchange(server, "GET", "/state?t=" + server.Token);
+            StringAssert.StartsWith("HTTP/1.1 200", response);
+            StringAssert.EndsWith("{\"test\":true}", response);
+            StringAssert.Contains("Connection: close", response);
+            StringAssert.Contains("PhoneSaber 操作画面", Exchange(server, "GET", "/?t=" + server.Token));
+            StringAssert.StartsWith("HTTP/1.1 400", Exchange(server, "POST", "/action?t=" + server.Token + "&name=unknown"));
+            StringAssert.StartsWith("HTTP/1.1 403", Exchange(server, "GET", "/state"));
+            StringAssert.StartsWith("HTTP/1.1 202", Exchange(server, "POST", "/action?t=" + server.Token + "&name=phone-clip"));
+            Assert.IsTrue(server.TryDequeue(out var action));
+            Assert.AreEqual("phone-clip", action.Name);
+            Assert.IsFalse(server.TryDequeue(out _));
+            for (int i = 0; i < PhoneSaberControlPanelServer.QueueCapacity; i++)
+                StringAssert.StartsWith("HTTP/1.1 202", Exchange(server, "POST", "/action?t=" + server.Token + "&name=phone-clip"));
+            StringAssert.StartsWith("HTTP/1.1 503", Exchange(server, "POST", "/action?t=" + server.Token + "&name=phone-clip"));
+            server.Dispose();
+            Assert.IsFalse(server.Running);
+        }
+    }
+
+    static string Exchange(PhoneSaberControlPanelServer server, string method, string target)
+    {
+        using (var client = new TcpClient())
+        {
+            client.ReceiveTimeout = 3000;
+            client.Connect(IPAddress.Loopback, server.Port);
+            using (var stream = client.GetStream())
+            {
+                byte[] bytes = Request(method, target, "Host: 127.0.0.1:" + server.Port + "\r\n");
+                stream.Write(bytes, 0, bytes.Length);
+                using (var reader = new System.IO.StreamReader(stream, Encoding.UTF8)) return reader.ReadToEnd();
+            }
+        }
+    }
+}
