@@ -9,6 +9,8 @@ public sealed class RushESecretState
     public const int RequiredHits = 10;
     public const float RevealSeconds = .82f;
     public const float TransitionSeconds = 1.85f;
+    // 前の切断からこの時間あいたら1回目から数え直す。RUSH E の上で迷う間の偶然の横切りを貯めて E を出さない。
+    public const float ResetSeconds = 3f;
     public static readonly Color Purple = new Color(.74f, .34f, 1f);
     public string SelectedSong { get; private set; }
     public int Hits { get; private set; }
@@ -25,6 +27,7 @@ public sealed class RushESecretState
     {
         if (SelectedSong != SongId || Unlocked || Transitioning || double.IsNaN(now) || double.IsInfinity(now)
             || now - lastHit < .12) return false;
+        if (now - lastHit >= ResetSeconds) Hits = 0;
         lastHit = now; Hits++;
         if (Hits == RequiredHits) Transitioning = true;
         return true;

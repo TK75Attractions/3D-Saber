@@ -167,9 +167,7 @@ public class RushESecretPlayTests
     static IEnumerator SendCameraPoint(UdpClient sender, InputPoint input, Vector2 pixels, bool blue, bool both)
     {
         double previousRed = input.LastReceivedTime, previousBlue = input.LastReceivedTime2;
-        Vector2 point = new Vector2(pixels.x / Screen.width, pixels.y / Screen.height) * 2 - Vector2.one;
-        string payload = System.FormattableString.Invariant($"{point.x - .02f},{point.y - .02f},{point.x + .02f},{point.y + .02f}");
-        byte[] bytes = Encoding.ASCII.GetBytes(payload);
+        byte[] bytes = Payload(pixels);
         if (!blue || both) sender.Send(bytes, bytes.Length, new IPEndPoint(IPAddress.Loopback, input.port));
         if (blue || both) sender.Send(bytes, bytes.Length, new IPEndPoint(IPAddress.Loopback, input.port2));
         float deadline = Time.realtimeSinceStartup + 1;
@@ -178,6 +176,13 @@ public class RushESecretPlayTests
         if (!blue || both) Assert.Greater(input.LastReceivedTime, previousRed, "赤のUDP座標がUpdateまで届く");
         if (blue || both) Assert.Greater(input.LastReceivedTime2, previousBlue, "青のUDP座標がUpdateまで届く");
         yield return null;
+    }
+
+    // 画面ピクセルを、カメラが送る4端点(短い棒)の文字列にする。
+    static byte[] Payload(Vector2 pixels)
+    {
+        Vector2 point = new Vector2(pixels.x / Screen.width, pixels.y / Screen.height) * 2 - Vector2.one;
+        return Encoding.ASCII.GetBytes(System.FormattableString.Invariant($"{point.x - .02f},{point.y - .02f},{point.x + .02f},{point.y + .02f}"));
     }
 
     [UnityTest]
@@ -224,5 +229,180 @@ public class RushESecretPlayTests
         Assert.IsTrue(ctl.difficultyButtons.All(b => b.gameObject.activeSelf));
         ctl.Select(rush); Assert.AreEqual("Hard", ctl.CurrentDifficultyName); Assert.AreEqual(0, ctl.RushESecret.Hits);
         ctl.StopPreview();
+    }
+
+    // 赤(照準)でジャケットを横切って隣の盤へ移っても、切断には数えたまま、照準をロックせず曲送りも遅らせない。
+    [UnityTest]
+    public IEnumerator RedSlashIntoTheNextDiscCountsWithoutLockingOrDelayingTheAim()
+    {
+        if (!File.Exists(Path.Combine(Application.streamingAssetsPath, "Songs", "RushE", "audio.wav"))) Assert.Ignore("文化祭用ローカル音源が必要です。");
+        var live = new LiveSabers();
+        try
+        {
+            yield return live.OpenRushE();
+            var (_, _, left, right, empty) = live.Layout();
+            Vector2 from = right.ScreenRect().center, to = left.ScreenRect().center;
+            int rush = live.ctl.SelectedIndex, next = int.Parse(left.name.Substring("SongDisc_".Length));
+            yield return live.Drive(.8f, t => empty);
+            Assert.Zero(live.aim.Progress01, "どの的にも乗らない所から始める");
+            yield return live.Drive(.6f, t => Vector2.Lerp(empty, from, t));
+            yield return live.Drive(.2f, t => from);
+            Assert.Zero(live.ctl.RushESecret.Hits);
+            bool locked = false, hidden = false;
+            System.Action watch = () => { locked |= live.aim.NeedsRelease; hidden |= !live.aim.Reticle.gameObject.activeSelf; };
+            yield return live.Drive(.35f, t => Vector2.Lerp(from, to, t), null, watch);
+            Assert.AreEqual(1, live.ctl.RushESecret.Hits, "横切りは隠し切断に数える");
+            float arrived = Time.realtimeSinceStartup;
+            while (live.ctl.SelectedIndex == rush && Time.realtimeSinceStartup < arrived + 3) yield return live.Frame(to, null, watch);
+            float elapsed = Time.realtimeSinceStartup - arrived;
+            Assert.AreEqual(next, live.ctl.SelectedIndex, "左の盤で曲送りする");
+            Assert.IsFalse(locked, "切っても照準を灰色にロックしない");
+            Assert.IsFalse(hidden, "照準を消さない");
+            Assert.Less(elapsed, 1.25f, "切らない曲と同じ約1秒で送る(入場扱いにすると約1.34秒)");
+        }
+        finally { live.Close(); }
+    }
+
+    // 青の剣でジャケットを切っても、赤(照準)のスタートのためには触れない。
+    [UnityTest]
+    public IEnumerator BlueSlashLeavesTheRedAimCharging()
+    {
+        if (!File.Exists(Path.Combine(Application.streamingAssetsPath, "Songs", "RushE", "audio.wav"))) Assert.Ignore("文化祭用ローカル音源が必要です。");
+        var live = new LiveSabers();
+        try
+        {
+            yield return live.OpenRushE();
+            var (centre, radius, _, _, empty) = live.Layout();
+            Vector2 above = centre + Vector2.up * radius * 1.3f;
+            Vector2 blueFrom = centre + Vector2.left * radius * 1.3f, blueTo = centre + Vector2.right * radius * 1.3f;
+            yield return live.Drive(.8f, t => empty);
+            yield return live.Drive(.6f, t => Vector2.Lerp(empty, above, t));
+            // 真ん中で止まるので、赤自身の動きは切断に数えない(入った所から 1.15 半径に届かない)。
+            yield return live.Drive(.3f, t => Vector2.Lerp(above, centre, t));
+            yield return live.Drive(.3f, t => centre);
+            Assert.Zero(live.ctl.RushESecret.Hits);
+            float before = live.aim.Progress01, last = before;
+            Assert.Greater(before, 0f, "赤でスタートをためている");
+            bool dropped = false, locked = false;
+            System.Action watch = () => { dropped |= live.aim.Progress01 + .0001f < last; last = live.aim.Progress01; locked |= live.aim.NeedsRelease; };
+            yield return live.Drive(.1f, t => centre, t => blueFrom, watch);
+            yield return live.Drive(.6f, t => centre, t => Vector2.Lerp(blueFrom, blueTo, t), watch);
+            yield return live.Drive(.1f, t => centre, t => blueTo, watch);
+            Assert.AreEqual(1, live.ctl.RushESecret.Hits, "青の横切りも隠し切断に数える");
+            Assert.IsFalse(dropped, "青で切っても赤のためを消さない");
+            Assert.IsFalse(locked, "青で切っても赤の照準をロックしない");
+            Assert.Greater(live.aim.Progress01, before + .3f);
+            Assert.Zero(live.aim.ShotCount); Assert.AreEqual("SongSelect", SceneManager.GetActiveScene().name);
+        }
+        finally { live.Close(); }
+    }
+
+    // 赤(照準)でジャケットを切って真ん中で止めても、スタートを約1秒ためないだけで、照準はロックしない。
+    [UnityTest]
+    public IEnumerator RedSlashEndingOnTheJacketHoldsOffStartForASecondWithoutLocking()
+    {
+        if (!File.Exists(Path.Combine(Application.streamingAssetsPath, "Songs", "RushE", "audio.wav"))) Assert.Ignore("文化祭用ローカル音源が必要です。");
+        var live = new LiveSabers();
+        try
+        {
+            yield return live.OpenRushE();
+            var (centre, radius, _, _, empty) = live.Layout();
+            // 右上から盤の右へ回り込み、右から左へ切って、真ん中の少し左で止める。
+            Vector2 from = centre + Vector2.right * radius * 1.3f, stop = centre + Vector2.left * radius * .25f;
+            yield return live.Drive(.8f, t => empty);
+            yield return live.Drive(.6f, t => Vector2.Lerp(empty, from, t));
+            yield return live.Drive(.2f, t => from);
+            Assert.Zero(live.ctl.RushESecret.Hits);
+            float cutAt = -1, peak = 0; bool locked = false;
+            yield return live.Drive(.2f, t => Vector2.Lerp(from, stop, t), null, () => { if (cutAt < 0 && live.ctl.RushESecret.Hits > 0) cutAt = Time.realtimeSinceStartup; });
+            Assert.AreEqual(1, live.ctl.RushESecret.Hits, "真ん中で止める1振りも数える"); Assert.Greater(cutAt, 0f);
+            while (Time.realtimeSinceStartup < cutAt + .7f)
+                yield return live.Frame(stop, null, () => { peak = Mathf.Max(peak, live.aim.Progress01); locked |= live.aim.NeedsRelease; });
+            Assert.Zero(peak, "切った直後はスタートをためない");
+            while (Time.realtimeSinceStartup < cutAt + 1.5f) yield return live.Frame(stop, null, () => locked |= live.aim.NeedsRelease);
+            Assert.Greater(live.aim.Progress01, 0f, "約1秒たてば、そのままかざしてスタートできる");
+            Assert.IsFalse(locked, "照準は灰色にロックしない");
+            Assert.Zero(live.aim.ShotCount);
+        }
+        finally { live.Close(); }
+    }
+
+    // 照準(赤)と青を、実際のUDP座標で約30Hzで動かす。RUSH E を中央にし、感度1・位置補正なしで送る。
+    sealed class LiveSabers
+    {
+        static readonly FieldInfo Calibration = typeof(InputPoint).GetField("positionCalibrationEnabled", BindingFlags.Instance | BindingFlags.NonPublic);
+        public SongSelectController ctl;
+        public SongSelectSkin skin;
+        public SongSelectAimPointer aim;
+        public InputPoint input;
+        readonly UdpClient sender = new UdpClient();
+        float sensitivity; bool calibration, changed;
+
+        public IEnumerator OpenRushE()
+        {
+            yield return SceneManager.LoadSceneAsync("SongSelect", LoadSceneMode.Single);
+            ctl = Object.FindFirstObjectByType<SongSelectController>(); skin = Object.FindFirstObjectByType<SongSelectSkin>();
+            float deadline = Time.realtimeSinceStartup + 15;
+            while (!skin.IsReady && Time.realtimeSinceStartup < deadline) yield return null;
+            Assert.IsTrue(skin.IsReady);
+            ctl.Select(Enumerable.Range(0, ctl.SongCount).First(i => ctl.SongIdAt(i) == "RushE")); ctl.SetDifficulty(2);
+            deadline = Time.realtimeSinceStartup + 5;
+            while ((ScreenTransition.IsBusy || !skin.DiscsSettled) && Time.realtimeSinceStartup < deadline) yield return null;
+            Assert.IsTrue(skin.DiscsSettled); Assert.IsFalse(ScreenTransition.IsBusy);
+            aim = Object.FindFirstObjectByType<SongSelectAimPointer>(); Assert.IsTrue(aim.enabled, "通常のかざす操作も動かしたまま検証する");
+            input = InputPoint.Instance;
+            sensitivity = input.sensitivity; calibration = (bool)Calibration.GetValue(input); changed = true;
+            input.sensitivity = 1; Calibration.SetValue(input, false);
+            Assert.IsTrue(input.ReceiverAlive && input.ReceiverAlive2);
+            // 放置の案内が出ていると、スタートの代わりに案内を閉じる狙いになる。
+            Object.FindFirstObjectByType<SongSelectIdleGuide>()?.RegisterActivity();
+            Canvas.ForceUpdateCanvases();
+        }
+
+        public void Close()
+        {
+            if (changed) { input.sensitivity = sensitivity; Calibration.SetValue(input, calibration); }
+            if (ctl != null) ctl.StopPreview();
+            // 残ったためで終了後にスタートし、次の試験の読み込みと重ならないようにする。
+            if (aim != null) aim.BeginArrival();
+            sender.Dispose();
+        }
+
+        // 中央の盤(ジャケット)、左右の隣の盤(2曲先より大きい方)、どの的にも乗らない右上の点。
+        public (Vector2 centre, float radius, SongSelectDiscTarget left, SongSelectDiscTarget right, Vector2 empty) Layout()
+        {
+            Rect jacket = skin.SelectedDiscScreenRect; Vector2 c = jacket.center;
+            var discs = Object.FindObjectsByType<SongSelectDiscTarget>(FindObjectsSortMode.None).Where(d => d.Available && d.RepeatWhileHeld).ToArray();
+            var left = discs.Where(d => d.ScreenRect().center.x < c.x).OrderByDescending(d => d.ScreenRect().width).First();
+            var right = discs.Where(d => d.ScreenRect().center.x > c.x).OrderByDescending(d => d.ScreenRect().width).First();
+            return (c, Mathf.Min(jacket.width, jacket.height) * .5f, left, right, new Vector2(Screen.width * .94f, Screen.height * .9f));
+        }
+
+        // seconds かけて赤・青を動かす(t は 0→1)。同じ座標を返せば、その場で構え続ける。blue が null なら青は送らない。
+        public IEnumerator Drive(float seconds, System.Func<float, Vector2> red, System.Func<float, Vector2> blue = null, System.Action watch = null)
+        {
+            int frames = Mathf.Max(1, Mathf.RoundToInt(seconds * 30));
+            for (int i = 1; i <= frames; i++)
+                yield return Frame(red(i / (float)frames), blue != null ? blue(i / (float)frames) : (Vector2?)null, watch);
+        }
+
+        // 赤・青を1回ずつ送り、届いてからカメラと同じ約30Hzの間隔まで進める。watch は毎フレーム呼ぶ。
+        public IEnumerator Frame(Vector2 red, Vector2? blue, System.Action watch = null)
+        {
+            float start = Time.realtimeSinceStartup;
+            double previousRed = input.LastReceivedTime, previousBlue = input.LastReceivedTime2;
+            Send(input.port, red);
+            if (blue.HasValue) Send(input.port2, blue.Value);
+            while ((input.LastReceivedTime <= previousRed || (blue.HasValue && input.LastReceivedTime2 <= previousBlue))
+                && Time.realtimeSinceStartup < start + 1) { watch?.Invoke(); yield return null; }
+            while (Time.realtimeSinceStartup - start < 1f / 30) { watch?.Invoke(); yield return null; }
+            watch?.Invoke();
+        }
+
+        void Send(int port, Vector2 pixels)
+        {
+            byte[] bytes = Payload(pixels);
+            sender.Send(bytes, bytes.Length, new IPEndPoint(IPAddress.Loopback, port));
+        }
     }
 }

@@ -34,6 +34,16 @@ public class RushESecretTests
         Assert.IsFalse(s.Reveal()); Assert.IsFalse(s.Finish()); Assert.IsFalse(s.Unlocked); Assert.IsFalse(s.Transitioning);
     }
     [Test]
+    public void APauseOfResetSecondsStartsTheCountOver()
+    {
+        var s = new RushESecretState(); s.Select("RushE");
+        for (int i = 0; i < 9; i++) Assert.IsTrue(s.TryHit(i * .5));
+        double t = 4 + RushESecretState.ResetSeconds;
+        Assert.IsTrue(s.TryHit(t)); Assert.AreEqual(1, s.Hits, "迷う間の横切りを貯めない"); Assert.IsFalse(s.Transitioning);
+        for (int i = 0; i < 9; i++) { t += RushESecretState.ResetSeconds - .01; Assert.IsTrue(s.TryHit(t)); }
+        Assert.AreEqual(10, s.Hits, "間が ResetSeconds 未満なら続けて数える"); Assert.IsTrue(s.Transitioning);
+    }
+    [Test]
     public void JacketCountsCrossingsNotJitterOrStaleCameraTeleports()
     {
         var stroke = new RushEJacketStroke();

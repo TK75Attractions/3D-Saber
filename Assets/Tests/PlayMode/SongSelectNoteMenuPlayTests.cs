@@ -148,6 +148,19 @@ public class SongSelectNoteMenuPlayTests
         Assert.AreEqual("SongSelect",SceneManager.GetActiveScene().name);
         yield return null;
     }
+    [UnityTest] public IEnumerator StartHoldOffPausesOnlyTheCentreWithoutLocking()
+    {
+        int start=controller.SelectedIndex, count=controller.SongCount;
+        Vector2 side=GameObject.Find("SongDisc_"+(start+1)%count).GetComponent<SongSelectDiscTarget>().ScreenRect().center;
+        Vector2 centre=controller.startButton.GetComponent<SongSelectDiscTarget>().ScreenRect().center;
+        aim.HoldOffStart();
+        Hold(side,5); Assert.AreEqual(.5f,aim.Progress01,.01f,"曲送りの盤は止めない"); Assert.False(aim.NeedsRelease);
+        Hold(centre,4); Assert.Zero(aim.Progress01,"切った直後はスタートをためない"); Assert.False(aim.NeedsRelease,"照準を灰色にロックしない");
+        Hold(centre,3); Assert.Greater(aim.Progress01,0f,"止めるのは約1秒だけ");
+        Hold(Vector2.zero,4); Assert.Zero(aim.Progress01); Assert.Zero(aim.ShotCount);
+        Assert.AreEqual("SongSelect",SceneManager.GetActiveScene().name);
+        yield return null;
+    }
     [UnityTest] public IEnumerator TimeoutStartsSelectedDifficultyAndResetsOnReturn()
     {
         var skin=Object.FindFirstObjectByType<SongSelectSkin>(); controller.SetDifficulty(2);

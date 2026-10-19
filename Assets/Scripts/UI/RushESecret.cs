@@ -36,11 +36,7 @@ public sealed class RushESecret : MonoBehaviour
     {
         var state = controller.RushESecret;
         if (state.Hits > 0 && !state.Unlocked && transitionAt < 0)
-        {
-            // 斬撃の途中で、かざす操作の2秒が成立して通常譜面を開始しない。
-            FindFirstObjectByType<SongSelectAimPointer>()?.BeginArrival();
             FindFirstObjectByType<SongSelectIdleGuide>()?.RegisterActivity();
-        }
         if (state.Transitioning && transitionAt < 0)
         {
             transitionAt = Time.unscaledTimeAsDouble;
@@ -75,16 +71,19 @@ public sealed class RushESecret : MonoBehaviour
         var input = InputPoint.Instance;
         bool r = eligible && input != null && input.IsRecentlyActive(.15), b = eligible && input != null && input.IsRecentlyActive2(.15);
         Vector2 pixels = new Vector2(Screen.width, Screen.height);
-        bool cut = red.Tick(Unit(r ? Vector2.Scale(input.NormalizedPosition, pixels) : Vector2.zero, area), r ? input.LastReceivedTime : 0, r);
-        cut |= blue.Tick(Unit(b ? Vector2.Scale(input.NormalizedPosition2, pixels) : Vector2.zero, area), b ? input.LastReceivedTime2 : 0, b);
+        bool redCut = red.Tick(Unit(r ? Vector2.Scale(input.NormalizedPosition, pixels) : Vector2.zero, area), r ? input.LastReceivedTime : 0, r);
+        bool blueCut = blue.Tick(Unit(b ? Vector2.Scale(input.NormalizedPosition2, pixels) : Vector2.zero, area), b ? input.LastReceivedTime2 : 0, b);
         var pointer = Mouse.current;
         // 本編と同じく、マウスは移動だけで切る。押下を要求するとかざす操作しかできない。
-        cut |= mouse.Tick(Unit(pointer != null ? pointer.position.ReadValue() : Vector2.zero, area), now,
+        bool mouseCut = mouse.Tick(Unit(pointer != null ? pointer.position.ReadValue() : Vector2.zero, area), now,
             eligible && !r && !b && pointer != null);
-        if (cut)
+        if (redCut || blueCut || mouseCut)
         {
             suppressClickUntil = now + .20;
             controller.TryRushEHit(now);
+            // 斬撃の途中で、かざす操作の2秒が成立して通常譜面を開始しない。照準を動かす赤・マウスで切ったときだけ、
+            // スタートのためを少し止める。入場扱いにすると照準が灰色にロックされ、隣の盤の曲送りまで遅れる。青は照準に触れない。
+            if (redCut || mouseCut) FindFirstObjectByType<SongSelectAimPointer>()?.HoldOffStart();
         }
     }
     static Vector2 Unit(Vector2 point, Rect rect) => (point - rect.center) / Mathf.Max(1, Mathf.Min(rect.width, rect.height) * .5f);

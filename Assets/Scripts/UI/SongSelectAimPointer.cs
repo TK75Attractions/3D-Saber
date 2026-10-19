@@ -28,10 +28,14 @@ public sealed class SongSelectAimPointer : MonoBehaviour
     public const float SaberFreshSeconds = .2f;
     // セーバー照準だけをならす時定数。マウスはそのまま使う。
     public const float SaberSmoothingSeconds = .08f;
+    // 照準で真ん中を切った直後(RUSH E の隠し切断)は、スタートだけこの時間ためない。
+    // 入場扱いにはしないので、照準は灰色にならず、ほかの的のためもそのまま進む。
+    public const float StartHoldOffSeconds = 1f;
     readonly SaberUIArrivalGuard arrival = new SaberUIArrivalGuard();
-    Object guideTarget; float guideHeld, guideAway;
+    Object guideTarget; float guideHeld, guideAway, startHoldOff;
     AudioSource confirmSource; AudioClip confirmClip;
     public void BeginArrival() { arrival.Reset(); guideTarget = null; guideHeld = guideAway = 0; CancelCharge(); }
+    public void HoldOffStart() { startHoldOff = StartHoldOffSeconds; }
     public float Progress01 => tracker.Progress01;
     public bool NeedsRelease => tracker.NeedsRelease;
     public int ShotCount { get; private set; }
@@ -122,6 +126,7 @@ public sealed class SongSelectAimPointer : MonoBehaviour
     public void TickAt(Vector2 point, float dt, bool inputAvailable = true, bool fresh = true)
     {
         shotAge += Mathf.Max(0, dt);
+        if (dt > 0) startHoldOff = Mathf.Max(0, startHoldOff - dt);
         if (impact != null) impact.Show(0, false, shotAge);
         if (ScreenTransition.IsBusy) BeginArrival();
         bool active = inputAvailable && !ScreenTransition.IsBusy;
@@ -150,9 +155,9 @@ public sealed class SongSelectAimPointer : MonoBehaviour
         if (arrival.CaptureTarget && next.key != null)
             tracker.BlockUntilExit(Expand(area, Padding), next.disc != null && next.disc.Circle);
         ready &= !arriving;
+        bool startDisc = next.disc != null && controller != null && next.disc.Button == controller.startButton;
         // 案内を閉じるための狙いと、スタートの2秒は分けて数える。
-        bool guideBlocksStart = idleGuide != null && idleGuide.IsVisible && next.disc != null
-            && controller != null && next.disc.Button == controller.startButton;
+        bool guideBlocksStart = idleGuide != null && idleGuide.IsVisible && startDisc;
         bool validDt = !(dt < 0 || dt > .2f || float.IsNaN(dt));
         // 案内を閉じるための狙いも、短く外れただけなら数え直さない(外れていた時間は数えない)。
         bool guideCoasting = next.key == null && guideTarget != null && guideHeld > 0 && validDt && !tracker.NeedsRelease
@@ -169,6 +174,8 @@ public sealed class SongSelectAimPointer : MonoBehaviour
             if (guideHeld >= SongSelectIdleState.AimActivitySeconds) idleGuide.RegisterActivity();
         }
         ready &= !guideBlocksStart;
+        // 切った直後はスタートのためだけを取り消して止める(ロックしない)。
+        ready &= !(startDisc && startHoldOff > 0);
         bool repeat = next.disc != null && next.disc.RepeatWhileHeld;
         bool fire = tracker.Tick(next.key, Expand(area, Padding), point, dt, ready,
             next.disc != null ? next.disc.HoldSeconds : 1, next.disc != null && next.disc.Circle, repeat);
