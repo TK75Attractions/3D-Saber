@@ -28,7 +28,8 @@ PACKAGE = 'jp.phonesaber.sender'
 
 def adb_path():
     home = os.environ.get('ANDROID_HOME')
-    candidate = Path(home) / 'platform-tools/adb' if home else None
+    executable = 'adb.exe' if sys.platform == 'win32' else 'adb'
+    candidate = Path(home) / 'platform-tools' / executable if home else None
     return str(candidate) if candidate and candidate.is_file() else 'adb'
 
 

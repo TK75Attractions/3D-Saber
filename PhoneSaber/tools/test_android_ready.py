@@ -45,13 +45,15 @@ class AndroidReadyTests(unittest.TestCase):
                 self.assertFalse(android_ready.print_logcat('adb', 'aquos'))
 
     def test_adb_prefers_android_home_and_falls_back_to_path(self):
-        with tempfile.TemporaryDirectory() as temporary:
-            adb = Path(temporary) / 'platform-tools/adb'
-            adb.parent.mkdir()
-            with mock.patch.dict(os.environ, {'ANDROID_HOME': temporary}):
-                self.assertEqual(android_ready.adb_path(), 'adb')
-                adb.touch()
-                self.assertEqual(android_ready.adb_path(), str(adb))
+        for platform, filename in (('win32', 'adb.exe'), ('linux', 'adb'), ('darwin', 'adb')):
+            with self.subTest(platform=platform), tempfile.TemporaryDirectory(prefix='android sdk ') as temporary:
+                adb = Path(temporary) / 'platform-tools' / filename
+                adb.parent.mkdir()
+                with mock.patch('android_ready.sys.platform', platform), \
+                        mock.patch.dict(os.environ, {'ANDROID_HOME': temporary}):
+                    self.assertEqual(android_ready.adb_path(), 'adb')
+                    adb.touch()
+                    self.assertEqual(android_ready.adb_path(), str(adb))
 
     def test_device_requires_exactly_one_authorized_device(self):
         for listing, expected in [('List of devices attached\naquos\tdevice\n', 'aquos'),
