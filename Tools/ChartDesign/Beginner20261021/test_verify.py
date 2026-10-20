@@ -1,5 +1,7 @@
 import unittest
-from verify import audit,hierarchy_issues
+from verify import audit,hierarchy_issues,pulse_map_hash
+import json
+from pathlib import Path
 
 def chart(times, long_at=None, flick_at=10000):
     rows=[]
@@ -12,6 +14,17 @@ def chart(times, long_at=None, flick_at=10000):
     return {"bpm":60,"notes":rows}
 
 class ValidatorRegressionTests(unittest.TestCase):
+    def test_saved_pulse_hash_accepts_line_endings_but_rejects_changed_content(self):
+        root=Path(__file__).parent
+        data=(root/"pulse-map.json").read_bytes().replace(b"\r\n", b"\n")
+        expected=json.loads((root/"design.json").read_text(encoding="utf-8"))["pulseMapSha256"]
+        self.assertEqual(expected,pulse_map_hash(data))
+        self.assertEqual(expected,pulse_map_hash(data.replace(b"\n", b"\r\n")))
+        self.assertNotEqual(expected,pulse_map_hash(data+b" "))
+        changed=data.replace(b'"pulseTimesMs"',b'"changedTimesMs"',1)
+        self.assertNotEqual(data,changed)
+        self.assertNotEqual(expected,pulse_map_hash(changed))
+
     def test_normal_keeps_at_least_easy_note_and_flick_counts(self):
         self.assertEqual([],hierarchy_issues({"notes":80,"flicks":3},{"notes":120,"flicks":3}))
         self.assertEqual(["Normal notes below Easy","Normal flicks below Easy"],

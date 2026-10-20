@@ -10,6 +10,10 @@ from pathlib import Path
 def read(path):
     return json.loads(Path(path).read_text(encoding="utf-8-sig"))
 
+def pulse_map_hash(data):
+    # Git の改行変換だけを許容し、空白・数値など内容の変更は検出する。
+    return hashlib.sha256(data.replace(b"\r\n", b"\n")).hexdigest()
+
 def cuts(chart):
     result=[]
     for i,n in enumerate(chart["notes"]):
@@ -116,7 +120,7 @@ def main():
     all_issues=[]
     frozen_path=args.candidate/"Tools/ChartDesign/Beginner20261021/pulse-map.json"
     frozen=read(frozen_path)
-    if hashlib.sha256(frozen_path.read_bytes()).hexdigest()!=design["pulseMapSha256"]:
+    if pulse_map_hash(frozen_path.read_bytes())!=design["pulseMapSha256"]:
         all_issues.append("frozen pulse map hash differs")
     for song,info in design["songs"].items():
         results[song]={}

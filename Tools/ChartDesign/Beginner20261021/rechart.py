@@ -597,8 +597,10 @@ def main():
     args=parser.parse_args()
     frozen_path=args.features.parent/"frozen-pulses.json"
     frozen=read(frozen_path)
+    # 記録するハッシュと保存する証拠を LF に揃え、Git の改行変換で不一致にしない。
+    frozen_bytes=frozen_path.read_bytes().replace(b"\r\n", b"\n")
     design={"date":"2026-10-21","songs":{},
-            "pulseMapSha256":hashlib.sha256(frozen_path.read_bytes()).hexdigest(),
+            "pulseMapSha256":hashlib.sha256(frozen_bytes).hexdigest(),
             "tailPolicy":"User: leave final silence/reverb unchanged; <5s applies to audible introduction and between musical cuts."}
     for name in PROFILES:
         song=Song(name,args.source,args.features)
@@ -626,7 +628,7 @@ def main():
                   sum(n["direction"]!="none" for n in chart["notes"]),flush=True)
         design["songs"][name]["gapRepairs"]=song.repairs
     write(args.output/"Tools/ChartDesign/Beginner20261021/design.json",design)
-    (args.output/"Tools/ChartDesign/Beginner20261021/pulse-map.json").write_bytes(frozen_path.read_bytes())
+    (args.output/"Tools/ChartDesign/Beginner20261021/pulse-map.json").write_bytes(frozen_bytes)
 
 if __name__=="__main__":
     main()

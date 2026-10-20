@@ -20634,6 +20634,6 @@
       ]
     }
   },
-  "pulseMapSha256": "44d715ee053b555f7d752a0b111b98204bada18bd7254d7d98721fb67098c472",
+  "pulseMapSha256": "e1e5cec0f6ef9ef3946bfd731e2f942013f8f79924c29156fc1e1fa1dd39938c",
   "tailPolicy": "User: leave final silence/reverb unchanged; <5s applies to audible introduction and between musical cuts."
 }
