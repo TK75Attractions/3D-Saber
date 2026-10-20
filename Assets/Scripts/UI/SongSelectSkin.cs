@@ -31,7 +31,7 @@ public class SongSelectSkin : MonoBehaviour
     TextMeshProUGUI sourceCredit, composerName, timer, timerNotice, achievementDifficulty, libraryPosition, startHint, holdHint;
     AudioSource countdownSource; AudioClip countdownClip;
     int lastBeepSecond = -1;
-    SongSelectRubyText songTitle;
+    SongSelectRubyText songTitle, highScore;
     SongSelectCorridor corridor;
     RushESecret secretView;
     RectTransform secretDifficulty;
@@ -97,6 +97,9 @@ public class SongSelectSkin : MonoBehaviour
     public static int MeterSegmentsForLevel(int level) => Mathf.Clamp(level, 0, 10);
     public static string FormatDifficultyLevel(int level) => level > 0 ? $"LEVEL {Mathf.Clamp(level, 0, 99):00}" : "LEVEL --";
     public static string FormatDifficultyCardLevel(int level) => level > 0 ? $"LV {Mathf.Clamp(level, 0, 99):00}" : "LV --";
+    // 結果画面の HI-SCORE と同じ記録(Load は高い順)の1位。まだ遊ばれていない譜面は 0点 と区別して「—」にする。
+    public static string FormatHighScore(HighScoreTable table) => table != null && table.entries != null && table.entries.Count > 0
+        ? table.entries[0].score.ToString("N0") + "<size=24>点</size>" : "—";
     public static void ApplyNeon(Button button, Color accent, float fillAlpha) => UISkinKit.RestyleButton(button, accent);
     public static void EnterCalibration()
     {
@@ -187,7 +190,7 @@ public class SongSelectSkin : MonoBehaviour
     }
     void BuildDiscs()
     {
-        libraryPosition = Label(layout, "LibraryPosition", "", 24, Position(295, 759), new Vector2(430, 34), color: SongSelectVisuals.Muted);
+        libraryPosition = Label(layout, "LibraryPosition", "", 24, Position(295, 743), new Vector2(430, 34), color: SongSelectVisuals.Muted);
         if (ctl.SongCount == 0)
         {
             Label(layout, "EmptyLibrary", "遊べる譜面がまだありません", 44, Position(960, 432), new Vector2(1200, 70), UISkinKit.JapaneseFallbackFontAsset());
@@ -293,13 +296,14 @@ public class SongSelectSkin : MonoBehaviour
     }
     void BuildAchievements()
     {
-        var panel = PanelAt("Achievements", 295, 915, 470, 250, SongSelectVisuals.Edge, 3, 22);
-        Ruby(Label(panel.transform, "AchievementHeading", "", 24, new Vector2(-163, 88), new Vector2(94, 45), UISkinKit.JapaneseFallbackFontAsset(), SongSelectVisuals.Accent), "<ruby=きろく>記録</ruby>");
-        achievementDifficulty = Label(panel.transform, "AchievementDifficulty", "EASY", 24, new Vector2(-49, 86), new Vector2(152, 36), color: SongSelectVisuals.Muted);
+        // 最下段に HI-SCORE を足した。行の間隔72はそのままで上へ16(曲数の表示も16上げた)・下へ24伸ばし、下端を曲名パネル(1064)にそろえる。
+        var panel = PanelAt("Achievements", 295, 919, 470, 290, SongSelectVisuals.Edge, 3, 22);
+        Ruby(Label(panel.transform, "AchievementHeading", "", 24, new Vector2(-163, 108), new Vector2(94, 45), UISkinKit.JapaneseFallbackFontAsset(), SongSelectVisuals.Accent), "<ruby=きろく>記録</ruby>");
+        achievementDifficulty = Label(panel.transform, "AchievementDifficulty", "EASY", 24, new Vector2(-49, 106), new Vector2(152, 36), color: SongSelectVisuals.Muted);
         string[] ranks = { "S↑", "S<color=#ff6e7a>+</color>", "FC", "AP" };
         for (int i = 0; i < 4; i++)
         {
-            float x = i % 2 == 0 ? -192 : 32, y = i < 2 ? 29 : -43;
+            float x = i % 2 == 0 ? -192 : 32, y = i < 2 ? 49 : -23;
             var rank = Label(panel.transform, "Rank" + i, ranks[i], 46, new Vector2(x + 35, y), new Vector2(100, 65), UISkinKit.LogoFontAsset(), Gold);
             rank.alignment = TextAlignmentOptions.MidlineLeft;
             if (i == 3) { rank.color = Color.white; rank.enableVertexGradient = true; rank.colorGradient = new VertexGradient(new Color(1, .5f, .5f), new Color(.65f, .5f, 1), new Color(1, .85f, .45f), new Color(.3f, .9f, 1)); }
@@ -308,6 +312,14 @@ public class SongSelectSkin : MonoBehaviour
             counts[i] = Ruby(number, "0<size=24>回</size>");
             var line = Graphic(panel.transform, "Rule", new Vector2(x + 94, y - 31), new Vector2(196, 2), SongSelectDiscGraphic.Shape.Panel, new Color(.38f, .81f, .83f, .2f)); line.Width = 0;
         }
+        // 「HI-SCORE」と6桁の点は片側の枠に入らないので2列ぶんを使い、桁数が変わっても点の右端をそろえる。
+        var best = Label(panel.transform, "HighScoreLabel", "HI-SCORE", 46, new Vector2(-97, -95), new Vector2(220, 65), UISkinKit.LogoFontAsset(), Gold);
+        best.alignment = TextAlignmentOptions.MidlineLeft;
+        var score = Label(panel.transform, "HighScore", "", 36, new Vector2(119, -97), new Vector2(206, 55), UISkinKit.LogoFontAsset());
+        score.alignment = TextAlignmentOptions.MidlineRight;
+        score.enableAutoSizing = true; score.fontSizeMin = 16; score.fontSizeMax = 36;
+        highScore = Ruby(score, FormatHighScore(null));
+        Graphic(panel.transform, "HighScoreRule", new Vector2(14, -126), new Vector2(420, 2), SongSelectDiscGraphic.Shape.Panel, new Color(.38f, .81f, .83f, .2f)).Width = 0;
     }
     void BuildActions()
     {
@@ -397,6 +409,7 @@ public class SongSelectSkin : MonoBehaviour
         var value = SongAchievementStore.Load(ctl.SongIdAt(ctl.SelectedIndex), ctl.CurrentDifficultyName);
         int[] values = { value.s, value.sPlus, value.fc, value.ap };
         for (int i = 0; i < 4; i++) counts[i].Set(values[i].ToString() + "<size=24>回</size>");
+        highScore.Set(FormatHighScore(HighScoreStore.Load(ctl.SongIdAt(ctl.SelectedIndex), ctl.CurrentDifficultyName)));
     }
     void Update()
     {

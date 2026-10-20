@@ -94,6 +94,15 @@ public class SongSelectDiscTests
         var timeline=new SongSelectBeatTimeline(new[]{chart}); Assert.False(timeline.UsesNoteTiming);
         Assert.That(timeline.TimeAt(1),Is.EqualTo(.85).Within(.00001));
     }
+    [Test] public void HighScoreShowsTheBestRecordAndADashBeforeTheFirstPlay()
+    {
+        // 記録パネルの HI-SCORE。まだ遊ばれていない譜面は「—」、記録があれば高い順の1位。
+        Assert.AreEqual("—",SongSelectSkin.FormatHighScore(null));
+        var table=new HighScoreTable(); Assert.AreEqual("—",SongSelectSkin.FormatHighScore(table));
+        foreach(int score in new[]{61234,98765,0}) HighScoreStore.Insert(table,new HighScoreEntry{score=score},HighScoreStore.MaxEntries);
+        Assert.AreEqual(98765.ToString("N0")+"<size=24>点</size>",SongSelectSkin.FormatHighScore(table));
+        table.entries.RemoveRange(0,2); Assert.AreEqual("0<size=24>点</size>",SongSelectSkin.FormatHighScore(table),"0点の記録は「—」にしない");
+    }
     [TestCase("Epilogue")]
     [TestCase("Andalusia")]
     public void ActualVariableTimingChartsProduceOrderedEvents(string id)

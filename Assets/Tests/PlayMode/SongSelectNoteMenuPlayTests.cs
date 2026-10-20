@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Linq;
 using NUnit.Framework;
+using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
@@ -172,5 +173,46 @@ public class SongSelectNoteMenuPlayTests
         yield return null; yield return null;
         skin=Object.FindFirstObjectByType<SongSelectSkin>();
         Assert.That(skin.RemainingSeconds,Is.GreaterThan(98));
+    }
+    [UnityTest] public IEnumerator RecordPanelShowsTheBestScoreOfTheSelectedChartInsideThePanel()
+    {
+        // 結果画面が保存するのと同じ曲ID・難易度名で入れた記録の1位を、記録パネルの最下段に出す。
+        string song=controller.SongIdAt(controller.SelectedIndex);
+        var keys=controller.difficultyNames.Take(2).Select(d=>HighScoreStore.Key(song,d)).ToArray();
+        var stored=keys.ToDictionary(k=>k,k=>PlayerPrefs.HasKey(k)?PlayerPrefs.GetString(k):null);
+        try
+        {
+            foreach(var key in keys) PlayerPrefs.DeleteKey(key);
+            foreach(int score in new[]{61234,ScoreManager.MaxScore})
+                HighScoreStore.Record(song,controller.CurrentDifficultyName,new HighScoreEntry{score=score,rank="S+",date="2026/10/20"},out _);
+            controller.SetDifficulty(0);
+            var panel=(RectTransform)GameObject.Find("Achievements").transform;
+            var label=panel.Find("HighScoreLabel").GetComponent<TMP_Text>();
+            var value=panel.Find("HighScore").GetComponent<TMP_Text>();
+            Assert.AreEqual(ScoreManager.MaxScore.ToString("N0")+"<size=24>点</size>",value.text);
+            yield return null; Canvas.ForceUpdateCanvases(); label.ForceMeshUpdate(); value.ForceMeshUpdate();
+            // いちばん幅を取る 100,000点 でも「HI-SCORE」に重ならず、パネルは周りの表示に重ならない。
+            Rect box=WorldRect(panel);
+            foreach(var text in new[]{label,value}) { Rect r=GlyphRect(text); Assert.Greater(r.width,0,text.name+" が描かれていない"); Assert.True(box.Contains(r.min)&&box.Contains(r.max),text.name+" がパネルからはみ出す"); }
+            Assert.Less(GlyphRect(label).xMax,GlyphRect(value).xMin,"点が HI-SCORE に重なる");
+            Rect rule=WorldRect((RectTransform)panel.Find("HighScoreRule")); Assert.True(box.Contains(rule.min)&&box.Contains(rule.max));
+            foreach(var name in new[]{"TitleShadow","DifficultyTray"}) Assert.False(box.Overlaps(WorldRect((RectTransform)GameObject.Find(name).transform)),name+" に重なる");
+            Assert.False(box.Overlaps(GlyphRect(GameObject.Find("LibraryPosition").GetComponent<TMP_Text>())),"曲数の表示に重なる");
+            Rect screen=WorldRect((RectTransform)GameObject.Find("DiscSelectLayout").transform);
+            Assert.True(screen.Contains(box.min)&&screen.Contains(box.max),"画面からはみ出す");
+            controller.SetDifficulty(1);
+            Assert.AreEqual("—",value.text,"まだ遊ばれていない難易度は 0点 と区別する");
+        }
+        finally
+        {
+            foreach(var pair in stored) { if(pair.Value==null) PlayerPrefs.DeleteKey(pair.Key); else PlayerPrefs.SetString(pair.Key,pair.Value); }
+            PlayerPrefs.Save();
+        }
+    }
+    static Rect WorldRect(RectTransform rect) { var c=new Vector3[4]; rect.GetWorldCorners(c); return Rect.MinMaxRect(c[0].x,c[0].y,c[2].x,c[2].y); }
+    static Rect GlyphRect(TMP_Text text)
+    {
+        var b=text.textBounds; Vector3 min=text.rectTransform.TransformPoint(b.min),max=text.rectTransform.TransformPoint(b.max);
+        return Rect.MinMaxRect(min.x,min.y,max.x,max.y);
     }
 }
