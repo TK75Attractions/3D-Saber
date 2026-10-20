@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Reflection;
 using NUnit.Framework;
+using TMPro;
 using UnityEngine;
 
 // 派手さカタログ(2026-10-20)のプレイ中の演出: 祭2・祭4・斬1・斬2・斬3・斬5・波1・波3。
@@ -318,20 +319,31 @@ public class FlourishGameplayTests
         Assert.IsFalse(GameplayFeedbackPresenter.IsBigMilestone(200));
     }
 
+    // 金のときだけ「+300」のような数字が出るのはそろわない(2026-10-20 ユーザー指定)。どのノーツでも点の数字は出さず、判定の文字は出す。
     [Test]
-    public void GoldPlusAppearsOnlyOnTheFinalGoldJudgment()
+    public void NoNoteShowsAPointNumberBesideTheScore()
     {
         var hudGo = new GameObject("FlourishHud"); objects.Add(hudGo);
         var hud = hudGo.AddComponent<GameHUDSkin>();
         hud.Build();
-        Spawn(N(1000, "gold"), N(2000, "red", 3));
-        Cut(0, 0, SaberHand.Left);
+        Spawn(N(1000, "gold"), N(1500, "blue"), N(2000, "red", 3));
+        CutAndCheckHud(hud, 0, "金を Perfect で切っても", SaberHand.Left);
         Assert.IsTrue(score.LastCutWasGold);
-        Assert.IsNotEmpty(hud.GoldPlusShown, "金を Perfect で切ったらスコアの横に「+点」");
-        typeof(GameHUDSkin).GetField("goldPlusAge", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(hud, 999f);
-        Cut(1);
-        Assert.IsEmpty(hud.GoldPlusShown, "次のロングの途中の1回では、前の金の印が残っていても出さない");
+        CutAndCheckHud(hud, 1, "普通のノーツでも");
+        CutAndCheckHud(hud, 2, "ロングの途中の1回でも");
         Invoke(hud, "OnDestroy");
+    }
+
+    void CutAndCheckHud(GameHUDSkin hud, int index, string when, SaberHand? hand = null)
+    {
+        TMP_Text tier = null;
+        foreach (var text in hud.GetComponentsInChildren<TMP_Text>(true)) if (text.name == "TierText") tier = text;
+        Assert.IsNotNull(tier);
+        tier.text = "";
+        Cut(index, 0, hand);
+        Assert.AreEqual("PERFECT", tier.text, when + "、判定の文字は出す");
+        foreach (var text in hud.GetComponentsInChildren<TMP_Text>(true))
+            StringAssert.DoesNotMatch(@"^\s*\+\d", text.text, when + "、スコアの横に「+点」の数字を出さない: " + text.name);
     }
 
     [Test]

@@ -120,13 +120,13 @@ public class GameHUDSkin : MonoBehaviour
     // 派手さカタログ(2026-10-20)の HUD の動き。
     //   波1: コンボの節目(30・50・100・以後50ごと)で数字を 1.7 倍に弾ませて 0.3 秒で戻し、0.6 秒だけ金に光らせる。
     //   波3: スコアは 0.25 秒で転がして変え、ランクが上がったらバッジを判子のように着地させて「ガシャン」。下がるときは静かなまま。
-    //   斬2: 金ノーツを Perfect・Great で切ったら、スコアの横に金の「+点」を出す(「チャリン」は GoldNoteSfx)。
+    //   斬2 の金の「+点」は同日ユーザーの指定でやめた(金のときだけ数字が出るのはそろわない)。どのノーツでも点の数字は出さず、
+    //   金は音(GoldNoteSfx の「キィン」と「チャリン」)と光で特別にする。
     public const float MilestonePunchScale = 1.7f;
     public const float MilestonePunchSeconds = .3f;
     public const float MilestoneGlowSeconds = .6f;
     public const float ScoreRollSeconds = .25f;
     public const float RankStampSeconds = .36f;
-    public const float GoldPlusSeconds = .7f;
     private float milestonePunchAge = 999f;
     private bool milestoneTinted;
     private int rollFrom, rollTo;
@@ -135,11 +135,8 @@ public class GameHUDSkin : MonoBehaviour
     private float rankStampAge = 999f;
     private AudioSource hudAudio;
     private AudioClip rankStampClip;
-    private TextMeshProUGUI goldPlusText;
-    private float goldPlusAge = 999f;
     public int RankStampCount { get; private set; }
     public bool MilestonePunching => milestonePunchAge < MilestonePunchSeconds;
-    public string GoldPlusShown => goldPlusText != null && goldPlusAge < GoldPlusSeconds ? goldPlusText.text : "";
     public int ShownScore => shownScore;
 
 
@@ -156,7 +153,7 @@ public class GameHUDSkin : MonoBehaviour
 
     void OnDestroy()
     {
-        if (score != null) { score.OnJudgmentEx -= OnJudgmentEx; score.OnLongCut -= OnLongCut; }
+        if (score != null) { score.OnJudgmentEx -= OnJudgmentEx; score.OnLongCut -= OnJudgmentEx; }
         UISkinKit.SafeDestroy(rankStampClip);
     }
 
@@ -171,7 +168,7 @@ public class GameHUDSkin : MonoBehaviour
         score = Object.FindFirstObjectByType<ScoreManager>();
         songPlayer = Object.FindFirstObjectByType<SongPlayer>();
         // ロングは1回切るごとに判定1つなので、途中の回も判定の文字を出す。
-        if (score != null) { score.OnJudgmentEx += OnJudgmentEx; score.OnLongCut += OnLongCut; }
+        if (score != null) { score.OnJudgmentEx += OnJudgmentEx; score.OnLongCut += OnJudgmentEx; }
 
         DisableLegacyHud();
 
@@ -205,12 +202,6 @@ public class GameHUDSkin : MonoBehaviour
         scoreValue.colorGradient = new VertexGradient(
             Color.white, Color.white, ScoreGradientBottom, ScoreGradientBottom);
 
-        // 金ノーツの「+点」(斬2)。スコアの数字の右に出し、上へ少し浮かせて消す。
-        goldPlusText = UISkinKit.MakeTMP(transform, "GoldPlus", "", 40f,
-            SongSelectSkin.Gold, TextAlignmentOptions.TopLeft,
-            Vector2.zero, new Vector2(260f, 52f), FontStyles.Normal, 0f, font);
-        AnchorTopLeft(goldPlusText.rectTransform, new Vector2(330f, -78f));
-        goldPlusText.raycastTarget = false;
         if (Application.isPlaying)
         {
             hudAudio = gameObject.AddComponent<AudioSource>();
@@ -504,7 +495,6 @@ public class GameHUDSkin : MonoBehaviour
         UpdateTierAnimation();
         UpdateProgress();
         UpdateRank();
-        UpdateGoldPlus();
     }
 
     // 転がしている途中の表示の点。from から to へ、出だしは速く最後はゆっくり。純関数。
@@ -534,15 +524,6 @@ public class GameHUDSkin : MonoBehaviour
             shownScore = value;
             scoreValue.text = value.ToString("000,000");
         }
-    }
-
-    private void UpdateGoldPlus()
-    {
-        if (goldPlusText == null) return;
-        goldPlusAge += Time.deltaTime;
-        float t = Mathf.Clamp01(goldPlusAge / GoldPlusSeconds);
-        Color c = goldPlusText.color; c.a = goldPlusAge < GoldPlusSeconds ? 1f - t * t : 0f; goldPlusText.color = c;
-        goldPlusText.rectTransform.anchoredPosition = new Vector2(330f, -78f + (DisplaySettings.ReducedEffects ? 0f : 18f * (1f - (1f - t) * (1f - t))));
     }
 
     // 点数(コンボ点込み)からランクを計算して左上の表示を更新する。結果画面と同じく点数で決める。
@@ -640,20 +621,7 @@ public class GameHUDSkin : MonoBehaviour
         return sprite;
     }
 
-    // ロングの途中の1回。判定の文字だけを出す(ScoreManager はこの通知で LastCutWasGold を更新しない)。
-    private void OnLongCut(JudgmentTier tier, int awarded, bool wasWrongFlick) => ShowJudgment(tier, wasWrongFlick);
-
     private void OnJudgmentEx(JudgmentTier tier, int awarded, bool wasWrongFlick)
-    {
-        ShowJudgment(tier, wasWrongFlick);
-        if (goldPlusText != null && score != null && score.LastCutWasGold && GoldNoteSfx.IsCritical(tier) && awarded > 0)
-        {
-            goldPlusText.text = "+" + awarded.ToString("N0");
-            goldPlusAge = 0f;
-        }
-    }
-
-    private void ShowJudgment(JudgmentTier tier, bool wasWrongFlick)
     {
         if (tierText != null)
         {
