@@ -810,16 +810,20 @@ public class SaberCutJudgeTests
         Assert.AreEqual(0, judge.PendingCount);
     }
 
-    [Test]
-    public void ScoredTimeStaysInsideTheJudgmentWindow()
+    // 2.0 秒は、窓の端に収めた誤差が丸めで -0.10000000000000009 秒になる(以前は切れたのに MISS)。
+    [TestCase(1.0)]
+    [TestCase(2.0)]
+    public void ScoredTimeStaysInsideTheJudgmentWindow(double hit)
     {
         var (judge, tracker, bridge) = GameBladeRig();
-        var note = TimedNote(Vector3.zero, 1.0);
+        var note = TimedNote(Vector3.zero, hit);
         tracker.ResetTo(new Vector3(-3f, 0f, 0f));
-        Step(judge, tracker, bridge, new Vector2(-2f, 0f), .68);
-        Step(judge, tracker, bridge, new Vector2(2f, 0f), .70); // 通り過ぎたのは .69(早めの窓の外)
+        Step(judge, tracker, bridge, new Vector2(-2f, 0f), hit - .32);
+        Step(judge, tracker, bridge, new Vector2(2f, 0f), hit - .30); // 通り過ぎたのは 0.31 秒前(早めの窓の外)
         Assert.True(note.IsCut);
-        Assert.AreEqual(1.0 - JudgmentTierHelper.EarlyBadSeconds, note.LastCutSongTime.Value, 1e-9, "切れたのに MISS と採点しない");
+        Assert.AreEqual(hit - JudgmentTierHelper.EarlyBadSeconds, note.LastCutSongTime.Value, 1e-9, "切れたのに MISS と採点しない");
+        Assert.AreEqual(JudgmentTier.Good, JudgmentTierHelper.Classify(note.LastCutSongTime.Value - note.HitTime),
+            "窓の入口で切れた早めの振りは GOOD(コンボを切らない)");
     }
 
     [Test]

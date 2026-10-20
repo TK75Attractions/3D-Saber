@@ -11,7 +11,9 @@ public static class JudgmentTierHelper
 {
     // 判定窓（秒）。2026-10-20 の追加指定: 全体は早め100ms / 遅め180ms、PERFECT は早め50ms / 遅め90ms。
     // 片側平均で全体140ms・PERFECT 70ms。合計幅は360ms → 280ms、PERFECT の割合は50%を維持する。
-    // GREAT は早め70ms / 遅め125ms、GOOD は早め85ms / 遅め155ms。同じずれでも早め側を厳しくする。
+    // GREAT は早め70ms / 遅め125ms、GOOD は遅め155ms。同じずれでも早め側を厳しくする。
+    // 同日「早めの GOOD 以上の割合を増やして」: 早めの GOOD は受付の入口(100ms)まで。早めは切れれば必ず GOOD 以上で、
+    // BAD は遅め側だけ。窓が開く前に通った振りは入口の時刻で採点される(SaberCutJudge)ので、それでもコンボを切らない。
     // カメラの遅れは従来どおり判定の時計だけで差し引く(GamePlayManager)。
     // NoteSpawner の判定可能ウィンドウは GamePlayManager がこの定数から同期する
     // （シーンに古い狭い値が焼き込まれていても、ここを変えれば全体が追従する）。
@@ -21,8 +23,12 @@ public static class JudgmentTierHelper
     public const double LateBadSeconds = 0.180;
     public const double EarlyPerfectSeconds = 0.050;
     public const double EarlyGreatSeconds = 0.070;
-    public const double EarlyGoodSeconds = 0.085;
+    public const double EarlyGoodSeconds = EarlyBadSeconds;
     public const double EarlyBadSeconds = 0.100;
+
+    // 境界は含む。窓の端に収めた時刻(SaberCutJudge.ScoreTime)は引き算の丸めで端をわずかに超えることがあるので、
+    // 0.1µs までは内側とみなす(早めの端の約4回に1回が、切れたのに MISS になっていた)。
+    const double BoundaryToleranceSeconds = 1e-7;
 
     // 判定時刻との誤差（秒）からティアを決める。
     public static JudgmentTier Classify(double errorSeconds)
@@ -30,14 +36,15 @@ public static class JudgmentTierHelper
         if (errorSeconds >= 0)
         {
             // 遅め
-            if (errorSeconds <= LatePerfectSeconds) return JudgmentTier.Perfect;
-            if (errorSeconds <= LateGreatSeconds) return JudgmentTier.Great;
-            if (errorSeconds <= LateGoodSeconds) return JudgmentTier.Good;
-            if (errorSeconds <= LateBadSeconds) return JudgmentTier.Bad;
+            double late = errorSeconds - BoundaryToleranceSeconds;
+            if (late <= LatePerfectSeconds) return JudgmentTier.Perfect;
+            if (late <= LateGreatSeconds) return JudgmentTier.Great;
+            if (late <= LateGoodSeconds) return JudgmentTier.Good;
+            if (late <= LateBadSeconds) return JudgmentTier.Bad;
             return JudgmentTier.Miss;
         }
         // 早め
-        double abs = -errorSeconds;
+        double abs = -errorSeconds - BoundaryToleranceSeconds;
         if (abs <= EarlyPerfectSeconds) return JudgmentTier.Perfect;
         if (abs <= EarlyGreatSeconds) return JudgmentTier.Great;
         if (abs <= EarlyGoodSeconds) return JudgmentTier.Good;

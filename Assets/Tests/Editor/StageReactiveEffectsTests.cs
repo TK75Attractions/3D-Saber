@@ -175,10 +175,10 @@ public class StageReactiveEffectsTests
     [TestCase(.15, JudgmentTier.Good, 1, 0)]
     [TestCase(.165, JudgmentTier.Bad, 0, 0)]
     [TestCase(.40, JudgmentTier.Miss, 0, 0)]
-    // 早め側(2026-10-20 追加指定: 遅め側より厳しい窓)
+    // 早め側(2026-10-20 追加指定: 遅め側より厳しい窓。早めは切れれば GOOD 以上)
     [TestCase(-.060, JudgmentTier.Great, 1, 0)]
     [TestCase(-.080, JudgmentTier.Good, 1, 0)]
-    [TestCase(-.095, JudgmentTier.Bad, 0, 0)]
+    [TestCase(-.095, JudgmentTier.Good, 1, 0)]
     [TestCase(-.25, JudgmentTier.Miss, 0, 0)]
     public void FloorLightsForPerfectGreatGoodButThemeMotionOnlyForPerfect(double error, JudgmentTier tier, int waves, int themed)
     {
