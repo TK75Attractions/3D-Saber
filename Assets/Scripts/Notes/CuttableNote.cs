@@ -137,6 +137,9 @@ public class CuttableNote : MonoBehaviour
     public const float FlowPieceLife = 1.1f;
     public const float FlowFadeStart = .55f;
     public const float FlowSpin = 6f;
+    // ロングを最後まで切った一振りは、割れた片と細片を一瞬ほぼ止めてから飛ばす(派手さカタログ 斬5)。本編だけ。
+    public const float LongReleaseHoldSeconds = .12f;
+    public const float LongReleaseHoldSpeed = .06f;
     [System.NonSerialized] public bool FlowDebris;
     // ノーツが流れている速度(ワールド)。ロングは判定面に留まるので 0。
     [System.NonSerialized] public Vector3 FlowNoteVelocity;
@@ -440,6 +443,7 @@ public class CuttableNote : MonoBehaviour
             piece.Launch(FragmentPool, fan * shatterDebrisSpeed + carry,
                 Random.insideUnitSphere * (pieceAngularImpulse * 1.5f), pieceUseGravity, PieceLife, PieceFadeStart, 0f);
             ApplyFlow(piece);
+            HoldLongRelease(piece);
         }
     }
     float PieceLife => FlowDebris ? Mathf.Min(pieceLife, FlowPieceLife) : pieceLife;
@@ -517,5 +521,10 @@ public class CuttableNote : MonoBehaviour
             : Random.insideUnitSphere * pieceAngularImpulse;
         piece.Launch(FragmentPool, velocity, spin, pieceUseGravity, PieceLife, PieceFadeStart, .1f);
         ApplyFlow(piece);
+        HoldLongRelease(piece);
+    }
+    void HoldLongRelease(SlicePieceDecay piece)
+    {
+        if (FlowDebris && RequiredCutCount > 1 && piece != null) piece.Hold(LongReleaseHoldSeconds, LongReleaseHoldSpeed);
     }
 }

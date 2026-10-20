@@ -26,6 +26,13 @@ public sealed class GameplayFeedbackPresenter : MonoBehaviour
     AudioClip outroClip;
     public bool OutroSoundPlayed { get; private set; }
     public AudioClip OutroClip => outroClip;
+    // コンボの節目(派手さカタログ 波1、2026-10-20)。30・50・100・以後50ごとに、G の長調の分散和音を一段ずつ上の形で鳴らし、
+    // 100 と 300 では短い歓声を足す。ゲートの外の輪は OnMilestone を聞く GateAccents が描く。
+    public event System.Action<int> OnMilestone;
+    public int MilestoneSoundCount { get; private set; }
+    AudioSource milestoneSource;
+    readonly AudioClip[] milestoneClips = new AudioClip[4];
+    AudioClip crowdClip;
 
     public static GameplayFeedbackPresenter Create(NoteSpawner spawner, ScoreManager score)
     {
@@ -47,6 +54,18 @@ public sealed class GameplayFeedbackPresenter : MonoBehaviour
         milestone = Text(transform, "ComboMilestone", "", 25, new Vector2(300, 36), Vector2.zero, TextAlignmentOptions.TopRight);
         TopRight(milestone.rectTransform, new Vector2(-74, -414));
         BuildFlame();
+        if (Application.isPlaying)
+        {
+            milestoneSource = gameObject.AddComponent<AudioSource>();
+            milestoneSource.playOnAwake = false; milestoneSource.spatialBlend = 0;
+            // 曲中に合成して処理落ちしないよう、開始前に作っておく。
+            for (int i = 0; i < milestoneClips.Length; i++)
+            {
+                int step = i;
+                milestoneClips[i] = ProceduralSfx.Clip("ComboMilestone" + i, FlourishSfx.Cached("Milestone" + i, () => FlourishSfx.Milestone(step)));
+            }
+            crowdClip = ProceduralSfx.Clip("ComboCrowd", FlourishSfx.Cached("CrowdShort", FlourishSfx.CrowdShort));
+        }
         // ロングは途中の1回ごとにコンボが増えるので、その回の通知でも節目を確かめる。
         if (score != null) { score.OnJudgment += Scored; score.OnLongCut += LongCut; }
     }
@@ -81,7 +100,12 @@ public sealed class GameplayFeedbackPresenter : MonoBehaviour
     }
 
     public static bool FullComboEligible(int hits, int bad, int miss) => hits > 0 && bad == 0 && miss == 0;
-    public static bool IsMilestone(int combo) => combo > 0 && combo % 50 == 0;
+    // 節目は 30・50・100、そのあとは50ごと。初めての人にも早めに1回目を見せる(osu! は30から)。
+    public static bool IsMilestone(int combo) => combo == 30 || combo == 50 || combo >= 100 && combo % 50 == 0;
+    // 何段目の形で鳴らすか(30=0、50=1、100=2、それ以降=3)。
+    public static int MilestoneStep(int combo) => combo < 50 ? 0 : combo < 100 ? 1 : combo < 150 ? 2 : 3;
+    // 輪を二重にし、歓声を足す節目。
+    public static bool IsBigMilestone(int combo) => combo == 100 || combo == 300;
     public static bool CanEnd(double time, double duration, double lastNote, int total, int judged, int spawned)
         => total > 0 && judged >= total && spawned >= total && duration > 0 && time >= System.Math.Max(duration, lastNote);
 
@@ -90,9 +114,22 @@ public sealed class GameplayFeedbackPresenter : MonoBehaviour
     void Scored(JudgmentTier tier, int award)
     {
         if (score == null || !isActiveAndEnabled) return;
-        if (score.Combo > 0 && IsMilestone(score.Combo))
-        { latestMilestone = score.Combo; milestoneAge = 0; milestone.text = score.Combo + " COMBO"; }
-        if (score.Combo == 0) { milestoneAge = 99; milestone.text = ""; }
+        if (score.Combo > 0 && IsMilestone(score.Combo) && score.Combo != latestMilestone)
+        {
+            latestMilestone = score.Combo; milestoneAge = 0; milestone.text = score.Combo + " COMBO";
+            PlayMilestone(score.Combo);
+            OnMilestone?.Invoke(score.Combo);
+        }
+        if (score.Combo == 0) { milestoneAge = 99; milestone.text = ""; latestMilestone = 0; }
+    }
+
+    void PlayMilestone(int combo)
+    {
+        MilestoneSoundCount++;
+        if (milestoneSource == null) return;
+        var clip = milestoneClips[MilestoneStep(combo)];
+        if (clip != null) milestoneSource.PlayOneShot(clip, 1f);
+        if (IsBigMilestone(combo) && crowdClip != null) milestoneSource.PlayOneShot(crowdClip, 1f);
     }
 
     public void Tick(float delta, double songTime, double duration, double lastNote)
@@ -129,6 +166,8 @@ public sealed class GameplayFeedbackPresenter : MonoBehaviour
     {
         if (score != null) { score.OnJudgment -= Scored; score.OnLongCut -= LongCut; }
         UISkinKit.SafeDestroy(outroClip);
+        for (int i = 0; i < milestoneClips.Length; i++) { UISkinKit.SafeDestroy(milestoneClips[i]); milestoneClips[i] = null; }
+        UISkinKit.SafeDestroy(crowdClip);
     }
     static RectTransform Rect(Transform parent, string name, Vector2 size, Vector2 position)
     {

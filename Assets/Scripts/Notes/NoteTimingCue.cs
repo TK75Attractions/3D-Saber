@@ -43,6 +43,19 @@ public class NoteTimingCue : MonoBehaviour
     public float inWindowEmissionBoost = 2.4f;
     public float missFadeSeconds = 0.25f;
 
+    // 金ノーツの予兆(派手さカタログ 斬2、2026-10-20)。判定の窓に入る OmenLeadSeconds 前に、着地枠の縁を白い光が
+    // OmenSeconds で一周する。同時に GoldOmen を知らせ、GoldNoteSfx が小さい「チリッ」を鳴らす。
+    public const float OmenLeadSeconds = .2f;
+    public const float OmenSeconds = .15f;
+    public static event System.Action<CuttableNote> GoldOmen;
+    // ロングは切るたびにノーツの光を強くする(斬5)。全部切った割合で、判定窓の明るさの (1 + LongGlowGain) 倍。
+    public const float LongGlowGain = 1.2f;
+    bool omenFired;
+    float omenAge = -1;
+    Transform omenRunner;
+    Material omenMat;
+    public bool OmenShown => omenAge >= 0;
+
     public bool InWindow { get; private set; }
     public Transform RingRoot => ringRoot;
     public GameObject GhostRoot => ghostRoot;
@@ -99,6 +112,8 @@ public class NoteTimingCue : MonoBehaviour
             ghostRoot = approachRoot = null; ghostMat = approachMat = null;
         }
         builtProjector = DisplaySettings.ProjectorMode;
+        omenFired = false; omenAge = -1;
+        if (omenRunner != null) omenRunner.gameObject.SetActive(false);
         if (buildRing && ringRoot == null) BuildRing();
         if (buildGhost && ghostRoot == null) BuildGhost(judgeZ);
         endFadeAlpha=1; InWindow=false;
@@ -137,6 +152,7 @@ public class NoteTimingCue : MonoBehaviour
         SafeDestroy(ringMat);
         SafeDestroy(ghostMat);
         SafeDestroy(approachMat);
+        SafeDestroy(omenMat);
     }
 
     // NoteSpawner.UpdateLive から毎フレーム呼ばれる。
@@ -158,9 +174,17 @@ public class NoteTimingCue : MonoBehaviour
             return;
         }
 
+        if (note != null && note.IsGold && !omenFired && dt <= earlyWindow + OmenLeadSeconds)
+        {
+            omenFired = true;
+            // 予兆の時刻を過ぎてから現れたノーツでは、窓に入ったあとに鳴らさない。
+            if (dt > earlyWindow) { omenAge = 0; GoldOmen?.Invoke(note); }
+        }
+        if (omenAge >= 0) TickOmen(elapsed);
+
         bool inWindow = IsInWindow(dt, earlyWindow, lateWindow);
         InWindow = inWindow;
-        if (visuals != null) visuals.SetEmissionBoost(inWindow ? inWindowEmissionBoost : 1f);
+        if (visuals != null) visuals.SetEmissionBoost(inWindow ? inWindowEmissionBoost * LongGlow(note) : 1f);
 
         // (オプトイン)接近リング：HitTime ちょうどで輪郭サイズに収束
         if (ringRoot != null)
@@ -191,10 +215,62 @@ public class NoteTimingCue : MonoBehaviour
         }
     }
 
+    // ロングは切った割合で光を強くする(1回目の前は 1)。純関数。
+    public static float LongGlow(CuttableNote note)
+    {
+        if (note == null || note.RequiredCutCount <= 1) return 1f;
+        return 1f + LongGlowGain * Mathf.Clamp01(note.CutsAchieved / (float)note.RequiredCutCount);
+    }
+
+    void TickOmen(float elapsed)
+    {
+        omenAge += elapsed;
+        float p = omenAge / OmenSeconds;
+        if (p >= 1f || ghostRoot == null)
+        {
+            omenAge = -1;
+            if (omenRunner != null) omenRunner.gameObject.SetActive(false);
+            return;
+        }
+        if (omenRunner == null) BuildOmenRunner();
+        omenRunner.gameObject.SetActive(true);
+        omenRunner.localPosition = OmenPoint(p);
+        ApplyColor(omenMat, Color.white, 1f - p * .5f, 3.2f);
+    }
+
+    // 半幅 .5 の枠の縁を、左上から時計回りに一周する点(p 0→1)。純関数。
+    public static Vector3 OmenPoint(float p)
+    {
+        float s = Mathf.Clamp01(p) * 4f;
+        int side = Mathf.Min(3, (int)s);
+        float k = s - side;
+        switch (side)
+        {
+            case 0: return new Vector3(-.5f + k, .5f, -.02f);
+            case 1: return new Vector3(.5f, .5f - k, -.02f);
+            case 2: return new Vector3(.5f - k, -.5f, -.02f);
+            default: return new Vector3(-.5f, -.5f + k, -.02f);
+        }
+    }
+
+    void BuildOmenRunner()
+    {
+        var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        go.name = "GoldOmen";
+        go.transform.SetParent(ghostRoot.transform, false);
+        go.transform.localScale = new Vector3(.2f, .2f, .03f);
+        StripCollider(go);
+        omenMat = MakeCueMaterial();
+        go.GetComponent<MeshRenderer>().sharedMaterial = omenMat;
+        omenRunner = go.transform;
+    }
+
     // Miss / Cut 後はすっとフェードアウトして消す（ノーツ本体は別途流れる/砕ける）。
     private void TickAfterEnd(float elapsed)
     {
         InWindow = false;
+        if (omenRunner != null) omenRunner.gameObject.SetActive(false);
+        omenAge = -1;
         if (visuals != null) visuals.SetEmissionBoost(1f);
         endFadeAlpha = Mathf.Clamp01(endFadeAlpha - elapsed / Mathf.Max(0.01f, missFadeSeconds));
         float a = endFadeAlpha;

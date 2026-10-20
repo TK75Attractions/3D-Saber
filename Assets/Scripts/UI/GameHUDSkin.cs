@@ -117,6 +117,31 @@ public class GameHUDSkin : MonoBehaviour
     private PlayRank currentRank = PlayRank.SPlus;
     private bool rankVisualInit;
 
+    // 派手さカタログ(2026-10-20)の HUD の動き。
+    //   波1: コンボの節目(30・50・100・以後50ごと)で数字を 1.7 倍に弾ませて 0.3 秒で戻し、0.6 秒だけ金に光らせる。
+    //   波3: スコアは 0.25 秒で転がして変え、ランクが上がったらバッジを判子のように着地させて「ガシャン」。下がるときは静かなまま。
+    //   斬2: 金ノーツを Perfect・Great で切ったら、スコアの横に金の「+点」を出す(「チャリン」は GoldNoteSfx)。
+    public const float MilestonePunchScale = 1.7f;
+    public const float MilestonePunchSeconds = .3f;
+    public const float MilestoneGlowSeconds = .6f;
+    public const float ScoreRollSeconds = .25f;
+    public const float RankStampSeconds = .36f;
+    public const float GoldPlusSeconds = .7f;
+    private float milestonePunchAge = 999f;
+    private bool milestoneTinted;
+    private int rollFrom, rollTo;
+    private float rollAge = 999f;
+    private RectTransform rankBadgeRT;
+    private float rankStampAge = 999f;
+    private AudioSource hudAudio;
+    private AudioClip rankStampClip;
+    private TextMeshProUGUI goldPlusText;
+    private float goldPlusAge = 999f;
+    public int RankStampCount { get; private set; }
+    public bool MilestonePunching => milestonePunchAge < MilestonePunchSeconds;
+    public string GoldPlusShown => goldPlusText != null && goldPlusAge < GoldPlusSeconds ? goldPlusText.text : "";
+    public int ShownScore => shownScore;
+
 
     // HUD を(無ければ)生成して返す。冪等。
     public static GameHUDSkin Ensure()
@@ -131,7 +156,8 @@ public class GameHUDSkin : MonoBehaviour
 
     void OnDestroy()
     {
-        if (score != null) { score.OnJudgmentEx -= OnJudgmentEx; score.OnLongCut -= OnJudgmentEx; }
+        if (score != null) { score.OnJudgmentEx -= OnJudgmentEx; score.OnLongCut -= OnLongCut; }
+        UISkinKit.SafeDestroy(rankStampClip);
     }
 
     // ---------------------------------------------------------------
@@ -145,7 +171,7 @@ public class GameHUDSkin : MonoBehaviour
         score = Object.FindFirstObjectByType<ScoreManager>();
         songPlayer = Object.FindFirstObjectByType<SongPlayer>();
         // ロングは1回切るごとに判定1つなので、途中の回も判定の文字を出す。
-        if (score != null) { score.OnJudgmentEx += OnJudgmentEx; score.OnLongCut += OnJudgmentEx; }
+        if (score != null) { score.OnJudgmentEx += OnJudgmentEx; score.OnLongCut += OnLongCut; }
 
         DisableLegacyHud();
 
@@ -178,6 +204,19 @@ public class GameHUDSkin : MonoBehaviour
         scoreValue.enableVertexGradient = true;
         scoreValue.colorGradient = new VertexGradient(
             Color.white, Color.white, ScoreGradientBottom, ScoreGradientBottom);
+
+        // 金ノーツの「+点」(斬2)。スコアの数字の右に出し、上へ少し浮かせて消す。
+        goldPlusText = UISkinKit.MakeTMP(transform, "GoldPlus", "", 40f,
+            SongSelectSkin.Gold, TextAlignmentOptions.TopLeft,
+            Vector2.zero, new Vector2(260f, 52f), FontStyles.Normal, 0f, font);
+        AnchorTopLeft(goldPlusText.rectTransform, new Vector2(330f, -78f));
+        goldPlusText.raycastTarget = false;
+        if (Application.isPlaying)
+        {
+            hudAudio = gameObject.AddComponent<AudioSource>();
+            hudAudio.playOnAwake = false; hudAudio.spatialBlend = 0;
+            rankStampClip = ProceduralSfx.Clip("RankStamp", FlourishSfx.Cached("RankStamp", FlourishSfx.RankStamp));
+        }
 
         // --- ランク(左上・スコアの下) ---
         BuildRankWidget(oxBold);
@@ -337,6 +376,10 @@ public class GameHUDSkin : MonoBehaviour
         var badgeRT = badgeGo.GetComponent<RectTransform>();
         AnchorTopLeft(badgeRT, new Vector2(70f, -152f));
         badgeRT.sizeDelta = new Vector2(84f, 92f);
+        // 判子の着地は中心を支点に拡縮する(位置は左上のまま)。
+        badgeRT.pivot = new Vector2(.5f, .5f);
+        badgeRT.anchoredPosition = new Vector2(70f + 42f, -152f - 46f);
+        rankBadgeRT = badgeRT;
 
         var glowGo = new GameObject("Glow", typeof(RectTransform), typeof(Image));
         glowGo.transform.SetParent(badgeGo.transform, false);
@@ -438,7 +481,7 @@ public class GameHUDSkin : MonoBehaviour
     {
         if (scoreValue != null && score != null)
         {
-            shownScore = score.Score;
+            shownScore = rollFrom = rollTo = score.Score;
             scoreValue.text = score.Score.ToString("000,000");
         }
     }
@@ -454,17 +497,52 @@ public class GameHUDSkin : MonoBehaviour
         if (!IsBuilt) return;
         if (score != null)
         {
-            if (scoreValue != null && score.Score != shownScore)
-            {
-                shownScore = score.Score;
-                scoreValue.text = score.Score.ToString("000,000");
-            }
+            UpdateScoreRoll();
             UpdateCombo();
             UpdateMaxCombo();
         }
         UpdateTierAnimation();
         UpdateProgress();
         UpdateRank();
+        UpdateGoldPlus();
+    }
+
+    // 転がしている途中の表示の点。from から to へ、出だしは速く最後はゆっくり。純関数。
+    public static int RolledScore(int from, int to, float age)
+    {
+        if (age >= ScoreRollSeconds || from == to) return to;
+        float p = Mathf.Clamp01(age / ScoreRollSeconds);
+        float ease = 1f - (1f - p) * (1f - p) * (1f - p);
+        return Mathf.RoundToInt(Mathf.Lerp(from, to, ease));
+    }
+
+    private void UpdateScoreRoll()
+    {
+        if (scoreValue == null) return;
+        int target = score.Score;
+        if (target != rollTo)
+        {
+            // 減ったとき(やり直し)は転がさずにそのまま合わせる。
+            rollFrom = target < rollTo || shownScore == int.MinValue ? target : shownScore;
+            rollTo = target;
+            rollAge = 0f;
+        }
+        rollAge += Time.deltaTime;
+        int value = RolledScore(rollFrom, rollTo, rollAge);
+        if (value != shownScore)
+        {
+            shownScore = value;
+            scoreValue.text = value.ToString("000,000");
+        }
+    }
+
+    private void UpdateGoldPlus()
+    {
+        if (goldPlusText == null) return;
+        goldPlusAge += Time.deltaTime;
+        float t = Mathf.Clamp01(goldPlusAge / GoldPlusSeconds);
+        Color c = goldPlusText.color; c.a = goldPlusAge < GoldPlusSeconds ? 1f - t * t : 0f; goldPlusText.color = c;
+        goldPlusText.rectTransform.anchoredPosition = new Vector2(330f, -78f + (DisplaySettings.ReducedEffects ? 0f : 18f * (1f - (1f - t) * (1f - t))));
     }
 
     // 点数(コンボ点込み)からランクを計算して左上の表示を更新する。結果画面と同じく点数で決める。
@@ -482,6 +560,13 @@ public class GameHUDSkin : MonoBehaviour
 
         if (!rankVisualInit || rank != currentRank)
         {
+            // 上がったときだけ判子のように着地させて「ガシャン」。最初の表示と下がるときは静かなまま(波3)。
+            if (rankVisualInit && rank > currentRank)
+            {
+                rankStampAge = 0f;
+                RankStampCount++;
+                if (hudAudio != null && rankStampClip != null) hudAudio.PlayOneShot(rankStampClip, 1f);
+            }
             rankVisualInit = true;
             currentRank = rank;
             if (rankHexOuter != null)
@@ -519,6 +604,21 @@ public class GameHUDSkin : MonoBehaviour
         {
             rankFill.anchorMax = new Vector2(PlayRankHelper.ProgressToNext(acc), 1f);
         }
+        if (rankBadgeRT != null)
+        {
+            rankStampAge += Time.deltaTime;
+            rankBadgeRT.localScale = Vector3.one * RankStampScale(rankStampAge, DisplaySettings.ReducedEffects);
+        }
+    }
+
+    // 判子の大きさ: 2.2 倍から 0.18 秒で着地し、残りで小さく弾んで 1 に戻る。LOW は動かさない。純関数。
+    public static float RankStampScale(float age, bool reduced)
+    {
+        if (reduced || age >= RankStampSeconds || age < 0f) return 1f;
+        const float land = .18f;
+        if (age < land) { float q = age / land; return Mathf.Lerp(2.2f, 1f, q * q); }
+        float b = (age - land) / (RankStampSeconds - land);
+        return 1f + .12f * Mathf.Sin(b * Mathf.PI) * (1f - b);
     }
 
     // ランク進捗バー用の横グラデスプライト(ランクごとに共有キャッシュ)
@@ -540,7 +640,20 @@ public class GameHUDSkin : MonoBehaviour
         return sprite;
     }
 
+    // ロングの途中の1回。判定の文字だけを出す(ScoreManager はこの通知で LastCutWasGold を更新しない)。
+    private void OnLongCut(JudgmentTier tier, int awarded, bool wasWrongFlick) => ShowJudgment(tier, wasWrongFlick);
+
     private void OnJudgmentEx(JudgmentTier tier, int awarded, bool wasWrongFlick)
+    {
+        ShowJudgment(tier, wasWrongFlick);
+        if (goldPlusText != null && score != null && score.LastCutWasGold && GoldNoteSfx.IsCritical(tier) && awarded > 0)
+        {
+            goldPlusText.text = "+" + awarded.ToString("N0");
+            goldPlusAge = 0f;
+        }
+    }
+
+    private void ShowJudgment(JudgmentTier tier, bool wasWrongFlick)
     {
         if (tierText != null)
         {
@@ -592,7 +705,11 @@ public class GameHUDSkin : MonoBehaviour
         if (comboValue == null) return;
         int combo = score.Combo;
 
-        if (combo > lastCombo) comboPunchAge = 0f;
+        if (combo > lastCombo)
+        {
+            comboPunchAge = 0f;
+            if (GameplayFeedbackPresenter.IsMilestone(combo)) milestonePunchAge = 0f;
+        }
         lastCombo = combo;
 
         if (combo <= 0)
@@ -615,7 +732,19 @@ public class GameHUDSkin : MonoBehaviour
             comboValue.colorGradient = ComboBonusPresentation.Gradient(combo);
         }
         comboValue.color = Color.white;
-        if (comboGlow != null) comboGlow.color = new Color(c.r, c.g, c.b, 0.20f * DisplaySettings.AccentScale);
+        // 節目の 0.6 秒だけ数字の上側と後ろの光を金にする(波1)。下側は最大コンボと同じ今のコンボの色のまま。
+        milestonePunchAge += Time.deltaTime;
+        bool tint = milestonePunchAge < MilestoneGlowSeconds;
+        if (tint)
+        {
+            var palette = ComboBonusPresentation.Gradient(combo);
+            comboValue.colorGradient = new VertexGradient(SongSelectSkin.Gold, SongSelectSkin.Gold, palette.bottomLeft, palette.bottomRight);
+        }
+        else if (milestoneTinted) comboValue.colorGradient = ComboBonusPresentation.Gradient(combo);
+        milestoneTinted = tint;
+        if (comboGlow != null) comboGlow.color = tint
+            ? new Color(SongSelectSkin.Gold.r, SongSelectSkin.Gold.g, SongSelectSkin.Gold.b, .45f * DisplaySettings.AccentScale)
+            : new Color(c.r, c.g, c.b, 0.20f * DisplaySettings.AccentScale);
         if (comboLabel != null)
         {
             comboLabel.text = "COMBO";
@@ -625,6 +754,11 @@ public class GameHUDSkin : MonoBehaviour
         comboPunchAge += Time.deltaTime;
         float p = Mathf.Clamp01(comboPunchAge / comboPunchDuration);
         float scale = Mathf.Lerp(DisplaySettings.ReducedEffects ? 1f : comboPunchScale, 1f, p * p * (3f - 2f * p));
+        if (milestonePunchAge < MilestonePunchSeconds && !DisplaySettings.ReducedEffects)
+        {
+            float m = Mathf.Clamp01(milestonePunchAge / MilestonePunchSeconds);
+            scale = Mathf.Lerp(MilestonePunchScale, 1f, 1f - (1f - m) * (1f - m));
+        }
         if (comboRT != null) comboRT.localScale = Vector3.one * scale;
     }
 

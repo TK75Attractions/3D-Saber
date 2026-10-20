@@ -139,6 +139,9 @@ public class GamePlayManager : MonoBehaviour
     private StageReactiveEffects stageReactions;
     // サビ入りのドロップとサビ中の強調(爽快感カタログ 山1)。
     private ChorusDrop chorusDrop;
+    // サビのフィーバーと遠景のライトショー(派手さカタログ 祭2・祭4)、ゲートまわりの手応え(斬1・斬2・斬3・斬5・波1)。
+    private StageFeverShow feverShow;
+    private GateAccents gateAccents;
 
     // --- キャリブレーション（判定調整）モード ---
     private bool inCalibration;
@@ -157,6 +160,8 @@ public class GamePlayManager : MonoBehaviour
             Debug.LogError("GamePlayManager: 依存コンポーネントが未設定です");
             yield break;
         }
+        // 派手さカタログの効果音は、幕が閉じている最初のフレームでまとめて作る(曲中や幕が開く途中に処理落ちさせない)。
+        FlourishSfx.PrewarmGameplay();
 
         // 自動探索
         if (cutJudge == null) cutJudge = Object.FindFirstObjectByType<SaberCutJudge>();
@@ -334,6 +339,8 @@ public class GamePlayManager : MonoBehaviour
         if (stageFloor != null) stageReactions = StageReactiveEffects.Create(stageFloor, noteSpawner, stagePerformance);
         chorusDrop = ChorusDrop.Create(transform, stagePerformance, songPlayer, chart.bpm,
             stageFloor != null ? stageFloor.transform : null, Object.FindFirstObjectByType<JudgmentSfx>());
+        if (stageFloor != null) feverShow = StageFeverShow.Create(stageFloor, stagePerformance, chart);
+        gateAccents = GateAccents.Create(noteSpawner, scoreManager, playFeedback);
 
         // 判定ゲートはPerfectが確定した瞬間だけ発光する。拍や単なる接触では光らせない。
         if (useOverhauledStage)
@@ -362,7 +369,14 @@ public class GamePlayManager : MonoBehaviour
         scoreManager.Reset();
         scoreManager.Bind(noteSpawner);
         if (longNoteCutSfx != null) longNoteCutSfx.Bind(noteSpawner);
-        if (goldNoteSfx != null) goldNoteSfx.Bind(noteSpawner);
+        if (goldNoteSfx != null)
+        {
+            goldNoteSfx.Bind(noteSpawner);
+            goldNoteSfx.BindScore(scoreManager);
+            // 金の会心では背景を2拍だけ金色へ寄せる(斬2)。
+            float beat = chart.bpm > 0 ? 60f / chart.bpm : .5f;
+            goldNoteSfx.OnCritical += (point, step) => { if (feverShow != null) feverShow.GoldFlash(beat); };
+        }
         // 冒頭にも通常と同じ移動時間を確保する。譜面の時刻・オフセットは変えない。
         double leadInSeconds = chart.notes.Count > 0
             ? System.Math.Max(0.0, noteSpawner.approachTime - noteSpawner.EffectiveTime(chart.notes[0]))
@@ -692,7 +706,10 @@ public class GamePlayManager : MonoBehaviour
             if (scenicStageWorld != null) scenicStageWorld.Tick(time,chorus,stagePerformance.EvaluateEclipse(time));
             if (stageReactions != null) stageReactions.Tick(time);
             if (chorusDrop != null && !inCalibration) chorusDrop.Tick(time, Time.unscaledDeltaTime);
+            if (feverShow != null) feverShow.Tick(time, Time.unscaledDeltaTime);
         }
+        // ゲートまわりの光は、曲の止まっている開始前・終了後も最後まで消えていくようにする。
+        if (gateAccents != null) gateAccents.Tick(Time.deltaTime);
 
         // 2a. キャリブレーション分岐：時計は AudioSettings.dspTime ベース、終了せずループ
         if (inCalibration)
@@ -748,6 +765,8 @@ public class GamePlayManager : MonoBehaviour
         StopAllCoroutines();
         if (songPlayer != null) songPlayer.Stop();
         if (chorusDrop != null) chorusDrop.ResetEffects();
+        if (feverShow != null) feverShow.ResetState();
+        if (gateAccents != null) gateAccents.ResetState();
         var countdown = Object.FindFirstObjectByType<GameStartCountdown>();
         if (countdown != null) Destroy(countdown.gameObject);
     }
@@ -843,6 +862,8 @@ public class GamePlayManager : MonoBehaviour
         songPlayer.Stop();
         if (stageReactions != null) stageReactions.ResetState();
         if (chorusDrop != null) chorusDrop.ResetEffects();
+        if (feverShow != null) feverShow.ResetState();
+        if (gateAccents != null) gateAccents.ResetState();
         if (playFeedback != null) playFeedback.gameObject.SetActive(false);
         StartCoroutine(FinishWithAchievements());
     }

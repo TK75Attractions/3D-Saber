@@ -40,13 +40,20 @@ public class JudgmentSfx : MonoBehaviour
     public float ChorusLevel { get; set; }
     public int SparkleCount { get; private set; }
     private AudioClip genSparkle;
+    // 左右同時の X 斬り(派手さカタログ 斬3)。2つ目の判定では普通の切断音の代わりに専用の音を鳴らし、同じ音の重なり(+6dB)をなくす。
+    public int CrossCutPlayCount { get; private set; }
+    private AudioClip genCross;
 
     void Awake()
     {
         source = GetComponent<AudioSource>();
         source.playOnAwake = false;
         LoadDefaultCutClip();
+        // 曲中に合成して処理落ちしないよう、読み込みの時点で作っておく。
+        if (Application.isPlaying) CrossCutClip();
     }
+
+    AudioClip CrossCutClip() => genCross ??= ProceduralSfx.Clip("CrossCut", FlourishSfx.Cached("CrossCut", FlourishSfx.CrossCut));
 
     void OnEnable()
     {
@@ -67,11 +74,18 @@ public class JudgmentSfx : MonoBehaviour
         UISkinKit.SafeDestroy(genBad);
         UISkinKit.SafeDestroy(genMiss);
         UISkinKit.SafeDestroy(genSparkle);
-        genPerfect = genGreat = genGood = genBad = genMiss = genSparkle = null;
+        UISkinKit.SafeDestroy(genCross);
+        genPerfect = genGreat = genGood = genBad = genMiss = genSparkle = genCross = null;
     }
 
     private void OnJudgment(JudgmentTier tier, int award)
     {
+        if (scoreManager != null && scoreManager.LastCutWasCross)
+        {
+            source.PlayOneShot(CrossCutClip(), volume);
+            CrossCutPlayCount++;
+            return;
+        }
         AudioClip clip = ClipForCurrentJudgment(tier);
         if (clip == null) return;
         source.PlayOneShot(clip, VolumeFor(tier));
@@ -99,9 +113,11 @@ public class JudgmentSfx : MonoBehaviour
 
     public AudioClip ClipForCurrentJudgment(JudgmentTier tier)
     {
-        // 金ノーツは専用の「シャン」だけを鳴らす。
+        // 金ノーツは Perfect と Great だけ専用の「キィン」(GoldNoteSfx)を鳴らす。Good と Bad は判定ごとの普通の切断音にする
+        // (派手さカタログ 斬2。Bad で豪華な音がすると何が良かったのか分からない)。
         // Longの時間切れ評価はカット成功ではないため、完了音を出さない。
-        if (scoreManager != null && (scoreManager.LastCutWasGold || scoreManager.LastCutTimedOut)) return null;
+        if (scoreManager != null && (scoreManager.LastCutTimedOut
+            || scoreManager.LastCutWasGold && GoldNoteSfx.IsCritical(tier))) return null;
         return scoreManager == null
             ? ClipFor(tier)
             : ClipForCut(tier, scoreManager.LastCutDirection, scoreManager.LastCutCount);

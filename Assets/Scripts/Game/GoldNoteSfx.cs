@@ -3,6 +3,10 @@ using UnityEngine;
 
 // 金ノーツを切った瞬間に、同梱の短い金属音「シャン」を単独で鳴らす。
 // 同梱音源が無い場合は従来の合成金属音を使用する。
+// 2026-10-20(派手さカタログ 斬2「会心の一撃」): 本編では Perfect と Great だけ、専用の「キィン」(FlourishSfx.GoldCut)を鳴らす。
+// 続けて金を切ると G → B → D と一段ずつ上がる(3段まで、間に普通のノーツの判定が入ったら戻す)。
+// 0.15秒遅れてスコアの所で「チャリン」。Good と Bad は JudgmentSfx が判定ごとの普通の切断音を鳴らす。
+// 判定の窓に入る0.2秒前の「チリッ」は NoteTimingCue.GoldOmen を受けて鳴らす。
 [RequireComponent(typeof(AudioSource))]
 public class GoldNoteSfx : MonoBehaviour
 {
@@ -17,7 +21,19 @@ public class GoldNoteSfx : MonoBehaviour
     public float secondHitDelay = 0.13f;  // 2打目(しゃん・しゃん)の間隔(秒)
     [Range(0f, 1f)] public float secondHitLevel = 0.55f;
 
-    private AudioSource source;
+    public const float CoinDelaySeconds = .15f;
+    public const int CriticalSteps = 3;
+    private AudioSource source, coinSource;
+    private readonly AudioClip[] criticalClips = new AudioClip[CriticalSteps];
+    private AudioClip coinClip, omenClip;
+    private ScoreManager boundScore;
+    private int criticalStep;
+    public int CriticalCount { get; private set; }
+    public int OmenCount { get; private set; }
+    // 次の会心の音の段(0〜2)。
+    public int CriticalStep => criticalStep;
+    // Perfect/Great で切った金ノーツ(切った位置, 段)。背景を金に寄せる・星の輪を出す演出が聞く。
+    public event System.Action<Vector3, int> OnCritical;
     private AudioClip defaultCutClip;
     private bool defaultClipLoaded;
     private NoteSpawner bound;
@@ -30,19 +46,56 @@ public class GoldNoteSfx : MonoBehaviour
         source = GetComponent<AudioSource>();
         source.playOnAwake = false;
         ResolveCutClip();
+        if (!Application.isPlaying) return;
+        // 曲中に合成して処理落ちしないよう、読み込みの時点で作っておく。
+        for (int i = 0; i < CriticalSteps; i++)
+        {
+            int step = i;
+            criticalClips[i] = ProceduralSfx.Clip("GoldCritical" + i, FlourishSfx.Cached("GoldCut" + i, () => FlourishSfx.GoldCut(step)));
+        }
+        coinClip = ProceduralSfx.Clip("GoldCoin", FlourishSfx.Cached("GoldCoin", FlourishSfx.GoldCoin));
+        omenClip = ProceduralSfx.Clip("GoldOmen", FlourishSfx.Cached("GoldOmen", FlourishSfx.GoldOmen));
+        coinSource = gameObject.AddComponent<AudioSource>();
+        coinSource.playOnAwake = false; coinSource.spatialBlend = 0; coinSource.clip = coinClip;
     }
+
+    public static bool IsCritical(JudgmentTier tier) => tier == JudgmentTier.Perfect || tier == JudgmentTier.Great;
 
     public void Bind(NoteSpawner spawner)
     {
         if (bound != null) bound.OnNoteSpawned -= HandleSpawned;
+        NoteTimingCue.GoldOmen -= HandleOmen;
         bound = spawner;
-        if (bound != null) bound.OnNoteSpawned += HandleSpawned;
+        criticalStep = 0;
+        if (bound != null)
+        {
+            bound.OnNoteSpawned += HandleSpawned;
+            NoteTimingCue.GoldOmen += HandleOmen;
+        }
+    }
+
+    // 普通のノーツの判定が間に入ったら、会心の音の段を戻す。
+    public void BindScore(ScoreManager score)
+    {
+        if (boundScore != null) boundScore.OnJudgment -= HandleAnyJudgment;
+        boundScore = score;
+        if (boundScore != null) boundScore.OnJudgment += HandleAnyJudgment;
+    }
+
+    void HandleAnyJudgment(JudgmentTier tier, int award)
+    {
+        if (boundScore != null && !boundScore.LastCutWasGold) criticalStep = 0;
     }
 
     void OnDestroy()
     {
         Bind(null);
+        BindScore(null);
         ReleaseGeneratedClips();
+        for (int i = 0; i < criticalClips.Length; i++) { UISkinKit.SafeDestroy(criticalClips[i]); criticalClips[i] = null; }
+        UISkinKit.SafeDestroy(coinClip);
+        UISkinKit.SafeDestroy(omenClip);
+        coinClip = omenClip = null;
     }
 
     private void ReleaseGeneratedClips()
@@ -55,13 +108,35 @@ public class GoldNoteSfx : MonoBehaviour
     private void HandleSpawned(CuttableNote note)
     {
         if (note == null || !note.IsGold) return;
-        note.OnCut += HandleCut;
+        note.OnJudged += HandleJudged;
     }
 
-    private void HandleCut(CuttableNote note, Vector3 point, Vector3 velocity)
+    // 方向の降格も済んだ確定判定で分ける。Perfect と Great は会心の音、それ以外は段を戻すだけ(音は JudgmentSfx)。
+    private void HandleJudged(CuttableNote note, JudgmentTier tier, Vector3 point, Vector3 velocity)
     {
-        if (note == null || note.IsMissed) return;
-        PlayLuxury();
+        if (note == null || note.IsMissed || !note.IsCut) return;
+        if (!IsCritical(tier)) { criticalStep = 0; return; }
+        PlayCritical(point);
+    }
+
+    public void PlayCritical(Vector3 point)
+    {
+        if (source == null) source = GetComponent<AudioSource>();
+        int step = Mathf.Clamp(criticalStep, 0, CriticalSteps - 1);
+        CriticalCount++;
+        AudioClip clip = cutClip != null ? cutClip : criticalClips[step];
+        if (clip != null) source.PlayOneShot(clip, volume);
+        else PlayLuxury();
+        if (coinSource != null && coinClip != null) coinSource.PlayDelayed(CoinDelaySeconds);
+        criticalStep = Mathf.Min(CriticalSteps - 1, criticalStep + 1);
+        OnCritical?.Invoke(point, step);
+    }
+
+    void HandleOmen(CuttableNote note)
+    {
+        if (note == null || bound == null || note.JudgmentOwner != bound) return;
+        OmenCount++;
+        if (source != null && omenClip != null) source.PlayOneShot(omenClip, 1f);
     }
 
     public AudioClip ResolveCutClip()

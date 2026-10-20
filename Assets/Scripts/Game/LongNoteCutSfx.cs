@@ -4,6 +4,8 @@ using UnityEngine;
 // ロングノーツの各カットで短い切断音を鳴らす。
 // NoteSpawner.OnNoteSpawned で全ノーツを購読し、ロングノーツの OnPartialCut で発火。
 // 同梱素材がない場合は従来の上行チャイムへ戻す。
+// 2026-10-20(派手さカタログ 斬5「ためて、放つ」): 刻みの音に、G の長調で一段ずつ上がる鐘を重ね、
+// 最後の一振りで「チーン」(G6 と D6 の鐘)を鳴らす。鐘は FlourishSfx で作り、鳴らす大きさまで作り込んである。
 [RequireComponent(typeof(AudioSource))]
 public class LongNoteCutSfx : MonoBehaviour
 {
@@ -26,6 +28,10 @@ public class LongNoteCutSfx : MonoBehaviour
     private static readonly int[] PentatonicSteps = { 0, 4, 7, 12, 16, 19, 24, 28, 31, 36 };
     // (周波数,長さ) で生成済みクリップをキャッシュして毎回 alloc しない。
     private readonly Dictionary<long, AudioClip> clipCache = new Dictionary<long, AudioClip>();
+    private readonly AudioClip[] stepBells = new AudioClip[FlourishSfx.LongStepCount];
+    private AudioClip finishChime;
+    public int BellCount { get; private set; }
+    public int FinishChimeCount { get; private set; }
 
     void Awake()
     {
@@ -39,6 +45,14 @@ public class LongNoteCutSfx : MonoBehaviour
             voices[i] = voice.AddComponent<AudioSource>();
             voices[i].playOnAwake = false;
         }
+        if (!Application.isPlaying) return;
+        // 曲中に合成して処理落ちしないよう、読み込みの時点で作っておく。
+        for (int i = 0; i < stepBells.Length; i++)
+        {
+            int step = i;
+            stepBells[i] = ProceduralSfx.Clip("LongStepBell" + i, FlourishSfx.Cached("LongStep" + i, () => FlourishSfx.LongStep(step)));
+        }
+        finishChime = ProceduralSfx.Clip("LongFinishChime", FlourishSfx.Cached("LongFinish", FlourishSfx.LongFinish));
     }
 
     public void Bind(NoteSpawner spawner)
@@ -63,6 +77,9 @@ public class LongNoteCutSfx : MonoBehaviour
         // キャッシュは合成音だけを所有し、外部から借りた素材は含まない。
         foreach (var clip in clipCache.Values) UISkinKit.SafeDestroy(clip);
         clipCache.Clear();
+        for (int i = 0; i < stepBells.Length; i++) { UISkinKit.SafeDestroy(stepBells[i]); stepBells[i] = null; }
+        UISkinKit.SafeDestroy(finishChime);
+        finishChime = null;
         foreach (var voice in voices) if (voice != null) UISkinKit.SafeDestroy(voice.gameObject);
     }
 
@@ -76,7 +93,16 @@ public class LongNoteCutSfx : MonoBehaviour
         note.OnCut += HandleFinished;
     }
 
-    void HandleFinished(CuttableNote note, Vector3 point, Vector3 velocity) { Untrack(note); }
+    void HandleFinished(CuttableNote note, Vector3 point, Vector3 velocity)
+    {
+        // 最後まで切れたときだけ「チーン」。時間切れ(途中まで)では鳴らさない。
+        if (note != null && note.IsCut && !note.IsMissed && isActiveAndEnabled && source != null && finishChime != null)
+        {
+            source.PlayOneShot(finishChime, 1f);
+            FinishChimeCount++;
+        }
+        Untrack(note);
+    }
 
     void Untrack(CuttableNote note)
     {
@@ -136,6 +162,9 @@ public class LongNoteCutSfx : MonoBehaviour
         voice.pitch = cutClip != null || defaultCutClip != null ? PitchForCut(cutIndex, total) : 1f;
         voice.clip = clip;
         voice.Play();
+        // 切るたびに一段ずつ上がる鐘(斬5)。刻みの音とは別に重ねる。
+        var bell = stepBells[Mathf.Clamp(cutIndex, 0, stepBells.Length - 1)];
+        if (bell != null) { source.PlayOneShot(bell, 1f); BellCount++; }
     }
 
     // 最初の打撃は原音、最後の途中打撃までに最大4半音。打数が多くても耳障りな高さにしない。

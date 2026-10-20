@@ -48,6 +48,16 @@ public class ScoreManager : MonoBehaviour
     // ロング(切れたかどうかで採点)と Miss では LastErrorValid=false になる。HUD の EARLY/LATE 表示用。
     public double LastErrorMs { get; private set; }
     public bool LastErrorValid { get; private set; }
+    // 左右同時の「X 斬り」(派手さカタログ 斬3、2026-10-20)。譜面上同時の、違う手のノーツを、両方 Great 以上で、
+    // 切った時刻の差 CrossCutWindowSeconds 以内に切ったとき、2つ目の判定で立てる(普通のノーツだけ。金・ロングは除く)。
+    // カタログの 35ms はカメラの1コマ(約33ms)の差で外れるので 50ms にした。点数・コンボには関係しない。
+    public const double CrossCutWindowSeconds = .05;
+    public bool LastCutWasCross { get; private set; }
+    public int CrossCutCount { get; private set; }
+    // (1つ目の切った位置, 2つ目の切った位置)。2つ目の OnJudgment より先に知らせる。
+    public event System.Action<Vector3, Vector3> OnCrossCut;
+    struct CrossCandidate { public bool valid; public SaberHand hand; public double hitTime, cutTime; public Vector3 point; }
+    CrossCandidate crossCandidate;
 
     public event System.Action<JudgmentTier, int> OnJudgment; // (tier, awarded score this judgment)
     public event System.Action<JudgmentTier, int, bool> OnJudgmentEx; // (tier, awarded, wasWrongFlick)
@@ -106,6 +116,8 @@ public class ScoreManager : MonoBehaviour
         totalsChart = null;
         totalsNoteCount = -1;
         LastTier = JudgmentTier.Miss;
+        crossCandidate = default;
+        CrossCutCount = 0;
         ClearLastCut();
     }
 
@@ -156,6 +168,7 @@ public class ScoreManager : MonoBehaviour
         LastCutDirection = CutDirection.None;
         LastCutCount = 1;
         LastCutTimedOut = false;
+        LastCutWasCross = false;
     }
 
     private void HandleSpawned(CuttableNote note)
@@ -196,6 +209,7 @@ public class ScoreManager : MonoBehaviour
         LastCutDirection = note.RequiredDirection;
         LastCutCount = note.RequiredCutCount;
         LastCutTimedOut = note.IsMissed;
+        LastCutWasCross = false;
         int weight = CutWeight(note.IsGold);
         JudgmentTier tier;
         bool wrongDir;
@@ -229,8 +243,29 @@ public class ScoreManager : MonoBehaviour
             tier = DowngradeTier(tier);
         }
         LastWasWrongFlick = wrongDir;
+        if (note.RequiredCutCount == 1) CheckCrossCut(note, tier, point);
         RegisterHitWithContext(tier, weight);
         note.NotifyJudgment(tier, point, velocity);
+    }
+
+    // 1つ目の候補を覚え、2つ目が条件に合えば X 斬りとして知らせる。1つの候補は1回しか使わない。
+    void CheckCrossCut(CuttableNote note, JudgmentTier tier, Vector3 point)
+    {
+        bool hand = LastCutHand == SaberHand.Left || LastCutHand == SaberHand.Right;
+        if (note.IsGold || !hand || (tier != JudgmentTier.Perfect && tier != JudgmentTier.Great)) return;
+        double cutTime = note.LastCutSongTime ?? (songPlayer != null ? songPlayer.SongTime : 0);
+        var previous = crossCandidate;
+        if (previous.valid && previous.hand != LastCutHand
+            && System.Math.Abs(previous.hitTime - note.HitTime) <= NoteSpawner.SimultaneousEpsilonSeconds
+            && System.Math.Abs(previous.cutTime - cutTime) <= CrossCutWindowSeconds)
+        {
+            crossCandidate = default;
+            LastCutWasCross = true;
+            CrossCutCount++;
+            OnCrossCut?.Invoke(previous.point, point);
+            return;
+        }
+        crossCandidate = new CrossCandidate { valid = true, hand = LastCutHand, hitTime = note.HitTime, cutTime = cutTime, point = point };
     }
 
     public static JudgmentTier DowngradeTier(JudgmentTier t)

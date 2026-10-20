@@ -5,6 +5,7 @@ using UnityEngine.Rendering;
 // サビ入りの「ドロップ」(爽快感カタログ 山1)。stage.json の強い区間(強度 .65 以上)の入口で、
 //   ・直前の1拍だけ曲を 2dB 下げ、入口で戻す
 //   ・入口ちょうどに低い一撃の音を曲の時計で予約して鳴らす
+//     (2026-10-20 派手さカタログ 祭2: 倍音型のドンにシンバルと歓声を重ねた FlourishSfx.ChorusDrop。大きさは作り込み済みで音量 1)
 //   ・ゲート枠に重ねたリングを広げ、舞台(背景)を奥へ一瞬押して戻す
 // サビの間は刃の軌跡を長くし(SaberBladeVisual.ChorusBoost)、成功したカットに明るい余韻を足す(JudgmentSfx.ChorusLevel)。
 // 成績に関係なく全員に出す。独自の Update は持たず、GamePlayManager の曲時計から Tick する。
@@ -18,7 +19,8 @@ public sealed class ChorusDrop : MonoBehaviour
     public const float RingGrow = .35f;
     public const float KickDistance = .12f;
     public const float KickSeconds = .14f;
-    public const float DonVolume = .6f;
+    public const float DonVolume = .6f;      // ProceduralSfx.UseLegacyDon のときの前のドンの音量
+    public const float DropVolume = 1f;
 
     StagePerformanceTimeline timeline;
     AudioSource songSource;
@@ -97,9 +99,11 @@ public sealed class ChorusDrop : MonoBehaviour
         }
         if (Application.isPlaying && dropSource == null)
         {
+            bool legacy = ProceduralSfx.UseLegacyDon;
             dropSource = gameObject.AddComponent<AudioSource>();
-            dropSource.playOnAwake = false; dropSource.spatialBlend = 0; dropSource.volume = DonVolume;
-            donClip = ProceduralSfx.Clip("ChorusDropDon", ProceduralSfx.Don());
+            dropSource.playOnAwake = false; dropSource.spatialBlend = 0; dropSource.volume = legacy ? DonVolume : DropVolume;
+            donClip = legacy ? ProceduralSfx.Clip("ChorusDropDon", ProceduralSfx.Don())
+                : ProceduralSfx.Clip("ChorusDropHit", FlourishSfx.Cached("ChorusDrop", FlourishSfx.ChorusDrop));
             dropSource.clip = donClip;
         }
     }
