@@ -149,6 +149,22 @@ public class SongSelectNoteMenuPlayTests
         Assert.AreEqual("SongSelect",SceneManager.GetActiveScene().name);
         yield return null;
     }
+    // 2026-10-21 ユーザー「カーソルあってるのにカウント始まんない」: 座標が途切れている間(fresh=false)は、ためを止めて保つ。
+    // 以前は外れた扱いで0.25秒後に取り消していた。戻ったら続きから溜まり、ロックもしない。
+    [UnityTest] public IEnumerator TrackingGapPausesTheChargeAndResumesWithoutLocking()
+    {
+        var action = controller.difficultyButtons[1].GetComponent<SongSelectDiscTarget>();
+        Vector2 point = action.ScreenRect().center;
+        var reticle = aim.Reticle.GetComponent<SongSelectAimGraphic>();
+        Hold(point,5); Assert.AreEqual(.5f,aim.Progress01,.01f);
+        for (int i = 0; i < 6; i++) aim.TickAt(point,.1f,true,false);
+        Assert.AreEqual(.5f,aim.Progress01,.01f,"途切れている間はためを進めず、取り消しもしない");
+        Assert.False(aim.NeedsRelease,"途切れてもロックしない"); Assert.True(reticle.Stale,"見失っている間は照準を薄くする");
+        Assert.True(aim.Reticle.gameObject.activeSelf);
+        Hold(point,4); Assert.Zero(aim.ShotCount); Assert.False(reticle.Stale);
+        Hold(point,1); Assert.AreEqual(1,aim.ShotCount,"戻ったら続きから溜まる"); Assert.AreEqual(1,controller.SelectedDifficultyIndex);
+        yield return null;
+    }
     [UnityTest] public IEnumerator StartHoldOffPausesOnlyTheCentreWithoutLocking()
     {
         int start=controller.SelectedIndex, count=controller.SongCount;

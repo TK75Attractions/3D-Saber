@@ -262,16 +262,57 @@ public class SongSelectKeyboardPlayTests
         // 入力元が変わった直後は中立位置から入る。通常のためを途中で切る試験。
         yield return Track(Vector2.zero, .65f);
         yield return Track(pixel, .5f);
-        Assert.Greater(aim.Progress01, .2f);
+        float before = aim.Progress01;
+        Assert.Greater(before, .2f);
+        // 1秒を超えて途切れたら、ためは取り消す。マウスは動かすまで使わない(古い位置で発射しない)。
         received.SetValue(input, -1000d);
         yield return new WaitForSecondsRealtime(1.4f);
         Assert.Zero(aim.ShotCount); Assert.Zero(aim.Progress01);
-        // 復帰した位置が同じボタンでも、離すまでは古い操作を再開しない。
-        yield return Track(pixel, 1.4f);
-        Assert.Zero(aim.ShotCount); Assert.True(aim.NeedsRelease);
-        yield return Track(Vector2.zero, .3f);
-        yield return Track(pixel, 1.2f);
+        Assert.False(aim.Reticle.gameObject.activeSelf, "見失ったままなら照準を隠す");
+        // 2026-10-21: 戻った位置が同じボタンでもロックしない(以前は一度外すまで溜まらず「カーソルが合っているのに始まらない」)。
+        // 古いためは続けず、0から溜め直す。
+        yield return Track(pixel, .3f);
+        Assert.False(aim.NeedsRelease); Assert.Zero(aim.ShotCount);
+        Assert.Greater(aim.Progress01, 0f); Assert.Less(aim.Progress01, before + .25f, "古いためは続けない");
+        yield return Track(pixel, 1f);
         Assert.AreEqual(1, aim.ShotCount); Assert.AreEqual(0, controller.SelectedDifficultyIndex);
+    }
+
+    // 1秒未満の途切れ(赤を見失った・通信の揺れ)では、ためを止めて保ち、戻ったら続きから溜める。ロックはしない。
+    [UnityTest]
+    public IEnumerator ShortTrackingGapKeepsTheChargeWithoutLocking()
+    {
+        var aim = Object.FindFirstObjectByType<SongSelectAimPointer>();
+        yield return new WaitForSecondsRealtime(.6f);
+        Vector2 pixel = controller.difficultyButtons[1].GetComponent<SongSelectDiscTarget>().ScreenRect().center;
+        var normalized = typeof(InputPoint).GetProperty("NormalizedPosition");
+        var received = typeof(InputPoint).GetProperty("LastReceivedTime");
+        var stamped = typeof(InputPoint).GetProperty("LastReceivedMonotonicTime");
+        IEnumerator Track(Vector2 point, float seconds)
+        {
+            double until = Time.realtimeSinceStartupAsDouble + seconds;
+            while (Time.realtimeSinceStartupAsDouble < until)
+            {
+                normalized.SetValue(input, new Vector2(point.x / Screen.width, point.y / Screen.height));
+                received.SetValue(input, Time.realtimeSinceStartupAsDouble);
+                stamped.SetValue(input, SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp));
+                yield return null;
+            }
+        }
+        yield return Track(Vector2.zero, .65f);
+        yield return Track(pixel, .5f);
+        Assert.Greater(aim.Progress01, .2f);
+        yield return new WaitForSecondsRealtime(.6f);
+        Assert.Zero(aim.ShotCount); Assert.False(aim.NeedsRelease, "途切れてもロックしない");
+        Assert.True(aim.Reticle.gameObject.activeSelf, "1秒までは照準を残す");
+        Assert.True(aim.Reticle.GetComponent<SongSelectAimGraphic>().Stale, "見失っている間は照準を薄くする");
+        float paused = aim.Progress01;
+        yield return new WaitForSecondsRealtime(.2f);
+        Assert.AreEqual(paused, aim.Progress01, 1e-4f, "途切れている間はためを進めず、取り消しもしない");
+        // 取り消していたら 0.7 秒では溜まりきらない。続きから溜まるので発射する。
+        yield return Track(pixel, .7f);
+        Assert.AreEqual(1, aim.ShotCount); Assert.AreEqual(1, controller.SelectedDifficultyIndex);
+        Assert.False(aim.Reticle.GetComponent<SongSelectAimGraphic>().Stale);
     }
 
     IEnumerator Click(Button button)

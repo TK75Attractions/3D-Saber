@@ -17,6 +17,8 @@ public sealed class SongSelectAimTracker
     public float Progress01 => Mathf.Clamp01(held / duration);
     public float HeldSeconds => held;
     public bool NeedsRelease { get; private set; }
+    // ロック中に、照準がまだロックした的の中にいるか(外へ出ている途中は false)。「いちど外して」の案内に使う。
+    public bool WaitingInside => NeedsRelease && outside <= 0;
     // 外れている間も、同じ的のためを保っているか。表示を消さないために使う。
     public bool IsCharging(object target) => target != null && ReferenceEquals(current, target);
 

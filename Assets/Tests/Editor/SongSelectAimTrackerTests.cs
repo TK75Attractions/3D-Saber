@@ -145,10 +145,23 @@ public class SongSelectAimTrackerTests
     }
     [Test] public void SaberGapSettingsKeepSourceThroughShortDropouts()
     {
-        // 0.5 秒未満の途切れではマウスへ切り替えない(入場扱いのリセットをしない)。
-        Assert.AreEqual(.5f, SongSelectAimPointer.SaberActiveSeconds);
+        // 1秒未満の途切れではマウスへ切り替えない。受信の表示(MenuSaberStatus)と同じ1秒。
+        Assert.AreEqual(1f, SongSelectAimPointer.SaberActiveSeconds);
+        Assert.AreEqual((float)MenuSaberStatus.FreshSeconds, SongSelectAimPointer.SaberActiveSeconds);
         Assert.AreEqual(.08f, SongSelectAimPointer.SaberSmoothingSeconds);
-        // 止まった座標でのためは、切り替えより先に猶予切れで取り消される。
-        Assert.Less(SongSelectAimPointer.SaberFreshSeconds + SongSelectAimTracker.LeaveGraceSeconds, SongSelectAimPointer.SaberActiveSeconds);
+        // 新しい座標が届かなくなったら、切り替えより前にためを止める(止めて保ち、取り消すのは切り替えのとき)。
+        Assert.Less(SongSelectAimPointer.SaberFreshSeconds, SongSelectAimPointer.SaberActiveSeconds);
+    }
+    [Test] public void WaitingInsideOnlyWhileTheLockedAimStaysOnTheTarget()
+    {
+        var t = new SongSelectAimTracker(); var outside = new Vector2(-50, -50);
+        Assert.False(t.WaitingInside);
+        t.BlockUntilExit(area); Assert.True(t.WaitingInside, "ロックした的の上にいる");
+        t.Tick(null, default, point, .05f, false); Assert.True(t.WaitingInside);
+        t.Tick(null, default, outside, .05f, false); Assert.False(t.WaitingInside, "外へ出ている途中は案内しない");
+        Assert.True(t.NeedsRelease);
+        t.Tick(null, default, point, .05f, false); Assert.True(t.WaitingInside, "戻ったらまた待つ");
+        for (int i = 0; i < 3; i++) t.Tick(null, default, outside, .05f, false);
+        Assert.False(t.NeedsRelease); Assert.False(t.WaitingInside);
     }
 }

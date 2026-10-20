@@ -153,11 +153,12 @@ public class SaberUIPointer : MonoBehaviour
         var input = InputPoint.Instance;
         var mouse = Mouse.current;
         Vector2 mousePoint = mouse != null ? mouse.position.ReadValue() : lastMouse;
-        // 選曲と同じく、認識の数フレームの途切れではマウスへ切り替えない(入場扱いでためを消さない)。
+        // 選曲と同じく、認識が1秒途切れるまではマウスへ切り替えない。切り替えてもためを取り消すだけで、
+        // 入場扱い(戻った最初のフレームで下のボタンをロック)にはしない。
         int source = input != null && input.IsRecentlyActive(SongSelectAimPointer.SaberActiveSeconds) ? 1 : mouse != null ? 2 : 0;
         if (source != aimSource)
         {
-            BeginArrival(); hasAimPosition = false;
+            aimTracker.Cancel(); hasAimPosition = false;
             // 追跡が途切れても、古いマウス位置で勝手に操作を始めない。
             if (aimSource == 1 && source != 1) { mouseNeedsMove = true; lastMouse = mousePoint; }
             if (source == 1) mouseNeedsMove = false;
@@ -178,7 +179,7 @@ public class SaberUIPointer : MonoBehaviour
     }
 
     // 実入力と実シーン試験で共通の入口。照準は常に表示し、試し切り中は下端のボタンだけ受け付ける。
-    // fresh=false は座標が一時的に届いていない状態。ためは進めず、短い間なら取り消しもしない。
+    // fresh=false は座標が一時的に届いていない状態。選曲と同じく、ためも外れた猶予も止めたまま保ち、照準を薄くする。
     public void TickAimAt(Vector2 point, float dt, bool inputAvailable = true, bool clicked = false, bool fresh = true)
     {
         if (aimReticle == null) return;
@@ -191,22 +192,27 @@ public class SaberUIPointer : MonoBehaviour
         bool allowed = !BottomControlsOnly || (BottomControlArea != null
             ? SongSelectAimPointer.RectOnScreen(BottomControlArea).Contains(point)
             : IsInsideBottomControls(point, Screen.width, Screen.height));
-        Button target = allowed && fresh ? RaycastButton(point) : null;
-        SetHovered(HoverWhileCharging(target));
-        Rect area = target != null ? SongSelectAimPointer.RectOnScreen((RectTransform)target.transform) : default;
-        // 通常クリックでもホールドを解除するまで同じ操作を繰り返さない。
-        if (clicked && target != null) aimTracker.BlockUntilExit(area);
-        var dwell = target != null ? target.GetComponent<SaberDwellTarget>() : null;
-        bool arriving = arrival.Tick(dt);
-        if (arrival.CaptureTarget && target != null) aimTracker.BlockUntilExit(area);
-        bool fire = aimTracker.Tick(target, area, point, dt, target != null && !SlashOnly && !arriving,
-            dwell != null ? dwell.dwellSeconds : SongSelectAimTracker.HoldSeconds);
-        SetHovered(HoverWhileCharging(target));
+        Button target = null;
+        bool fire = false;
+        if (fresh)
+        {
+            target = allowed ? RaycastButton(point) : null;
+            SetHovered(HoverWhileCharging(target));
+            Rect area = target != null ? SongSelectAimPointer.RectOnScreen((RectTransform)target.transform) : default;
+            // 通常クリックでもホールドを解除するまで同じ操作を繰り返さない。
+            if (clicked && target != null) aimTracker.BlockUntilExit(area);
+            var dwell = target != null ? target.GetComponent<SaberDwellTarget>() : null;
+            bool arriving = arrival.Tick(dt);
+            if (arrival.CaptureTarget && target != null) aimTracker.BlockUntilExit(area);
+            fire = aimTracker.Tick(target, area, point, dt, target != null && !SlashOnly && !arriving,
+                dwell != null ? dwell.dwellSeconds : SongSelectAimTracker.HoldSeconds);
+            SetHovered(HoverWhileCharging(target));
+        }
         aimReticle.gameObject.SetActive(!HideOutsideBottomControls || allowed);
         var canvasCamera = overlayCanvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : overlayCanvas.worldCamera;
         RectTransformUtility.ScreenPointToLocalPointInRectangle((RectTransform)overlayCanvas.transform, point, canvasCamera, out var local);
         aimReticle.rectTransform.anchoredPosition = local;
-        aimReticle.Show(aimTracker.Progress01, aimTracker.NeedsRelease);
+        aimReticle.Show(aimTracker.Progress01, aimTracker.NeedsRelease, 10, !fresh);
         if (fire) Click(target, point);
     }
 

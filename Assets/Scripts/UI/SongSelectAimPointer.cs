@@ -22,9 +22,12 @@ public sealed class SongSelectAimPointer : MonoBehaviour
     bool hasPoint, mouseNeedsMove;
     float shotAge = 10;
     public const float ArrivalGraceSeconds = SaberUIArrivalGuard.GraceSeconds;
-    // 認識が数フレーム途切れてもマウスへ切り替えない(切り替えると入場扱いでためが消え、外すまで受け付けない)。
-    public const float SaberActiveSeconds = .5f;
-    // ためを進めるのは新しい座標が届いている間だけ。止まった座標では進めず、的から外れた扱いにする。
+    // 赤の認識が途切れても、この時間まではマウスへ切り替えない(SaberInputBridge・MenuSaberStatus と同じ1秒)。
+    // 2026-10-21 ユーザー「カーソルあってるのにカウント始まんない」: 切り替えを入場扱いにしていたので、構えたまま見失って
+    // 戻ると照準の下の的がロックされ、一度外すまで溜まらなかった(iPhone は見失うと3コマで送信を止める)。
+    // 今は切り替えてもためを取り消すだけで、ロックはしない。入場のロックは画面に入ったときだけ(BeginArrival)。
+    public const float SaberActiveSeconds = 1f;
+    // ためを進めるのは新しい座標が届いている間だけ。止まった座標では進めず、外れた扱いにもしない(切り替えまで止めて保つ)。
     public const float SaberFreshSeconds = .2f;
     // セーバー照準だけをならす時定数。マウスはそのまま使う。
     public const float SaberSmoothingSeconds = .08f;
@@ -39,10 +42,14 @@ public sealed class SongSelectAimPointer : MonoBehaviour
     public const float ChargeFadeSeconds = .15f;
     AudioSource chargeSource; float chargeFade = -1;
     public bool ChargeSounding => chargeSource != null && chargeSource.isPlaying && chargeFade < 0;
-    public void BeginArrival() { arrival.Reset(); guideTarget = null; guideHeld = guideAway = 0; CancelCharge(); }
+    public void BeginArrival() { arrival.Reset(); SwitchSource(); }
+    // 入力元の切り替え(赤を見失った・戻った、マウスを動かした)。ためは取り消すが、入場扱いにはしない。
+    void SwitchSource() { guideTarget = null; guideHeld = guideAway = 0; CancelCharge(); }
     public void HoldOffStart() { startHoldOff = StartHoldOffSeconds; }
     public float Progress01 => tracker.Progress01;
     public bool NeedsRelease => tracker.NeedsRelease;
+    // ロックされたスタートの盤に照準が乗ったままか。スキンが「いちど はずしてから かざしてね」を出す。
+    public bool WaitingOnStart { get; private set; }
     public int ShotCount { get; private set; }
     public RectTransform Reticle => reticle.rectTransform;
 
@@ -99,7 +106,7 @@ public sealed class SongSelectAimPointer : MonoBehaviour
         int kind = input != null && input.IsRecentlyActive(SaberActiveSeconds) ? 1 : mouse != null ? 2 : 0;
         if (sourceKind != kind)
         {
-            BeginArrival(); hasPoint = false;
+            SwitchSource(); hasPoint = false;
             if (sourceKind == 1 && kind != 1) { mouseNeedsMove = true; lastMouse = mousePoint; }
             if (kind == 1) mouseNeedsMove = false;
             sourceKind = kind;
@@ -126,7 +133,8 @@ public sealed class SongSelectAimPointer : MonoBehaviour
     float Padding => 8 * (overlay != null ? overlay.GetComponent<Canvas>().scaleFactor : 1);
 
     // 実入力と検証・撮影で共通の入口。引数は画面ピクセル。
-    // fresh=false は座標が一時的に届いていない状態。ためは進めず、短い間なら取り消しもしない。
+    // fresh=false は座標が一時的に届いていない状態。ためも外れた猶予も止めたまま保ち、照準は最後の位置に薄く残す。
+    // 同じ的へ戻れば続きから溜まる。1秒(SaberActiveSeconds)を超えて途切れたら、Update が入力元の切り替えとして取り消す。
     public void TickAt(Vector2 point, float dt, bool inputAvailable = true, bool fresh = true)
     {
         shotAge += Mathf.Max(0, dt);
@@ -134,6 +142,7 @@ public sealed class SongSelectAimPointer : MonoBehaviour
         if (impact != null) impact.Show(0, false, shotAge);
         if (ScreenTransition.IsBusy) BeginArrival();
         bool active = inputAvailable && !ScreenTransition.IsBusy;
+        WaitingOnStart = false;
         if (!active)
         {
             CancelCharge(); guideTarget = null; guideHeld = 0;
@@ -141,9 +150,21 @@ public sealed class SongSelectAimPointer : MonoBehaviour
             UpdateChargeSound(false, default, dt);
             return;
         }
-        Target next = fresh ? Resolve(point) : default;
+        if (!fresh)
+        {
+            if (reticle != null)
+            {
+                reticle.gameObject.SetActive(true); Place(reticle.rectTransform, point);
+                reticle.Show(tracker.Progress01, tracker.NeedsRelease, 10, true);
+            }
+            // 曲送りをためたまま止まっている間も、試聴を始めない。
+            if (hovered.disc != null && hovered.disc.RepeatWhileHeld && tracker.Progress01 > 0 && controller != null && controller.ChartPreview != null) controller.ChartPreview.HoldOff();
+            UpdateChargeSound(false, default, dt);
+            return;
+        }
+        Target next = Resolve(point);
         // 対象の端での小さな震えは許容。他のボタンへ移ったときは必ずため直す。
-        if (fresh && next.key == null && Available(hovered) && (hovered.disc != null ? hovered.disc.ContainsPoint(point, Padding) : SongSelectAimTracker.Contains(Expand(ScreenArea(hovered), Padding), point, false)))
+        if (next.key == null && Available(hovered) && (hovered.disc != null ? hovered.disc.ContainsPoint(point, Padding) : SongSelectAimTracker.Contains(Expand(ScreenArea(hovered), Padding), point, false)))
             next = hovered;
         // 揺れで一瞬外れた間は、同じ的のためと表示を残す(ためは進めない)。取り消されたら外す。
         bool coasting = next.key == null && Available(hovered) && tracker.IsCharging(hovered.key);
@@ -185,6 +206,7 @@ public sealed class SongSelectAimPointer : MonoBehaviour
         bool fire = tracker.Tick(next.key, Expand(area, Padding), point, dt, ready,
             next.disc != null ? next.disc.HoldSeconds : 1, next.disc != null && next.disc.Circle, repeat);
         if (coasting && !tracker.IsCharging(hovered.key)) SetHovered(default);
+        WaitingOnStart = !fire && startDisc && tracker.WaitingInside;
         // 手ぶれ・持ち直し・的の横切りでは案内を止めず、同じ的を狙い続けたときに操作とみなす。
         if (idleGuide != null && (fire || tracker.HeldSeconds >= SongSelectIdleState.AimActivitySeconds)) idleGuide.RegisterActivity();
         // 曲送りをため続けている間は試聴を始めない。送るたびに鳴りかけて途切れるのを防ぐ。

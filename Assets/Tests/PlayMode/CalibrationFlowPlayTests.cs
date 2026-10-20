@@ -69,6 +69,23 @@ public class CalibrationFlowPlayTests
         yield return null;
     }
 
+    // 2026-10-21: 座標が途切れている間はためを止めて保ち、戻ったら続きから溜める(選曲と同じ)。ロックはしない。
+    [UnityTest] public IEnumerator AimPausesThroughTrackingGapsWithoutLocking()
+    {
+        var c=Object.FindFirstObjectByType<GamePlayManager>().Calibration;
+        var pointer=Object.FindFirstObjectByType<SaberUIPointer>(); pointer.enabled=false;
+        HoldAim(pointer, new Vector2(Screen.width*.5f, Screen.height*.5f), 7);
+        c.ChangeOffset(-c.Draft.OffsetMs); c.Overlay.Refresh();
+        Vector2 point=AimPoint(c,"Controls/Later");
+        HoldAim(pointer,point,5); Assert.AreEqual(.5f,pointer.AimProgress01,.001f);
+        for(int i=0;i<6;i++) pointer.TickAimAt(point,.1f,true,false,false);
+        Assert.AreEqual(.5f,pointer.AimProgress01,.001f,"途切れている間はためを進めず、取り消しもしない");
+        Assert.True(pointer.AimReticle.GetComponent<SongSelectAimGraphic>().Stale,"見失っている間は照準を薄くする");
+        HoldAim(pointer,point,4); Assert.AreEqual(0,c.Draft.OffsetMs);
+        HoldAim(pointer,point,1); Assert.AreEqual(10,c.Draft.OffsetMs,"戻ったら続きから溜まる");
+        yield return null;
+    }
+
     [UnityTest] public IEnumerator AimCancelsInterruptedHoldsAndDoesNotRepeatMouseClicks()
     {
         var c=Object.FindFirstObjectByType<GamePlayManager>().Calibration;

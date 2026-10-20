@@ -48,6 +48,10 @@ public class SongSelectSkin : MonoBehaviour
     public Rect SelectedDiscScreenRect => ctl != null && ctl.startButton != null
         ? ctl.startButton.GetComponent<SongSelectDiscTarget>().ScreenRect() : default;
     MenuSignalNoise hardNoise;
+    SongSelectAimPointer aim;
+    // スタートの盤の上の札。ためている間と、入場直後などでスタートがロックされている間(外してからかざし直す)に出す。
+    public const string HoldStartHint = "そのまま かざすと スタート";
+    public const string WaitingStartHint = "いちど はずしてから かざしてね";
     RectTransform layout, holdHintRoot;
     float animation = 1;
     bool built;
@@ -92,7 +96,7 @@ public class SongSelectSkin : MonoBehaviour
         ctl.OnSelectionChanged += SelectionChanged; ctl.OnDifficultyChanged += DifficultyChanged; ctl.OnStartProgress += AnimateStart;
         SelectionChanged(ctl.SelectedIndex); animation = 1; AnimateDiscs();
         var guide = SongSelectIdleGuide.Build(ctl, layout);
-        SongSelectAimPointer.Build(ctl, canvas, null, guide);
+        aim = SongSelectAimPointer.Build(ctl, canvas, null, guide);
         countdown.Reset(GameSession.CalibrationSelectionSeconds ?? 100);
         GameSession.CalibrationSelectionSeconds = null;
         RefreshCountdownDisplay(timer, countdown.Remaining, ref displayedSecond);
@@ -243,7 +247,7 @@ public class SongSelectSkin : MonoBehaviour
             discs.Add(d);
         }
         holdHintRoot = PanelAt("HoldStartPanel", 960, 580, 660, 68, new Color(.012f,.024f,.047f,.94f), 0, 12).rectTransform;
-        holdHint = Label(holdHintRoot, "HoldStartHint", "そのまま かざすと スタート", 36, Vector2.zero, new Vector2(640, 58), UISkinKit.JapaneseFallbackFontAsset(), White);
+        holdHint = Label(holdHintRoot, "HoldStartHint", HoldStartHint, 36, Vector2.zero, new Vector2(640, 58), UISkinKit.JapaneseFallbackFontAsset(), White);
         holdHintRoot.gameObject.SetActive(false);
         startHint = Label(layout, "StartHint", "中央の曲に２秒かざすと スタート", 26, Position(960, 743), new Vector2(750, 36), UISkinKit.JapaneseFallbackFontAsset(), White);
     }
@@ -467,7 +471,10 @@ public class SongSelectSkin : MonoBehaviour
         TickCountdown(now - lastTick); lastTick = now;
         RefreshCountdownDisplay(timer, countdown.Remaining, ref displayedSecond);
         bool charging = startAge < 0 && ctl.startButton != null && ctl.startButton.GetComponent<SongSelectDiscTarget>().Progress > 0;
-        holdHintRoot.gameObject.SetActive(charging);
+        bool waiting = !charging && startAge < 0 && aim != null && aim.WaitingOnStart;
+        holdHintRoot.gameObject.SetActive(charging || waiting);
+        string hint = waiting ? WaitingStartHint : HoldStartHint;
+        if (holdHint.text != hint) holdHint.text = hint;
         RefreshChargeDisplays();
         bool urgent = displayedSecond > 0 && displayedSecond <= 10;
         startHint.text = urgent ? "あと " + displayedSecond + "秒で この曲が はじまるよ" : "中央の曲に２秒かざすと スタート";

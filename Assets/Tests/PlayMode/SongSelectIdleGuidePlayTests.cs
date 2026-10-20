@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using NUnit.Framework;
 using TMPro;
 using UnityEngine;
@@ -20,6 +21,10 @@ public class SongSelectIdleGuidePlayTests
         float deadline = Time.realtimeSinceStartup + 15;
         while (Object.FindFirstObjectByType<SongSelectIdleGuide>() == null && Time.realtimeSinceStartup < deadline) yield return null;
         guide = Object.FindFirstObjectByType<SongSelectIdleGuide>(); Assert.NotNull(guide); guide.enabled = false;
+        // 止める前に1回だけ Update が走ると、読み込みの重いフレームの分だけ案内の時計が進む(PC が重いと0.75秒を超えて
+        // 「9.25秒後は閉じている」が崩れる)。試験は時計0から始める。
+        var state = typeof(SongSelectIdleGuide).GetField("state", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(guide);
+        typeof(SongSelectIdleState).GetField("elapsed", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(state, 0d);
         aim = Object.FindFirstObjectByType<SongSelectAimPointer>(); aim.enabled = false;
         controller = Object.FindFirstObjectByType<SongSelectController>();
         yield return ScreenTransitionPlayTests.WaitForTransition();
@@ -34,13 +39,27 @@ public class SongSelectIdleGuidePlayTests
         guide.RegisterActivity();
         aim.BeginArrival(); aim.TickAt(point,.1f);
         Assert.True(aim.NeedsRelease); Assert.Zero(aim.Progress01);
+        // ロックしたスタートに乗っている間は、外してからかざし直すことを札で伝える(灰色の照準だけでは分からない)。
+        Assert.True(aim.WaitingOnStart);
+        yield return null;
+        AssertHoldHint(SongSelectSkin.WaitingStartHint);
         yield return new WaitForSecondsRealtime(.6f);
         for(int i=0;i<25;i++) aim.TickAt(point,.1f);
-        Assert.False(ScreenTransition.IsBusy); Assert.Zero(aim.ShotCount);
+        Assert.False(ScreenTransition.IsBusy); Assert.Zero(aim.ShotCount); Assert.True(aim.WaitingOnStart);
         aim.TickAt(new Vector2(1,1),.1f); aim.TickAt(new Vector2(1,1),.1f);
-        for(int i=0;i<21;i++) aim.TickAt(point,.1f);
+        Assert.False(aim.WaitingOnStart);
+        for(int i=0;i<10;i++) aim.TickAt(point,.1f);
+        yield return null;
+        AssertHoldHint(SongSelectSkin.HoldStartHint);
+        for(int i=0;i<11;i++) aim.TickAt(point,.1f);
         Assert.True(ScreenTransition.IsBusy); Assert.AreEqual(1,aim.ShotCount);
         yield return ScreenTransitionPlayTests.WaitForTransition();
+    }
+    static void AssertHoldHint(string expected)
+    {
+        var hint = Object.FindObjectsByType<TextMeshProUGUI>(FindObjectsInactive.Include, FindObjectsSortMode.None).Single(t => t.name == "HoldStartHint");
+        Assert.True(hint.gameObject.activeInHierarchy, "スタートの盤の札を出す");
+        Assert.AreEqual(expected, hint.text);
     }
     [UnityTearDown] public IEnumerator Close()
     {

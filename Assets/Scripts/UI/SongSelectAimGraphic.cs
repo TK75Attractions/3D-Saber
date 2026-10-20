@@ -8,8 +8,11 @@ public sealed class SongSelectAimGraphic : MaskableGraphic
     float progress, shotAge = 10;
     bool locked;
     public bool ImpactOnly { get; set; }
-    public void Show(float fill, bool waiting, float age = 10)
-    { progress = fill; locked = waiting; shotAge = age; SetVerticesDirty(); }
+    // 座標が一時的に届いていない(ためを止めて保っている)間は、照準を薄くして見失っていることを見せる。
+    public bool Stale { get; private set; }
+    public const float StaleAlpha = .4f;
+    public void Show(float fill, bool waiting, float age = 10, bool stale = false)
+    { progress = fill; locked = waiting; shotAge = age; Stale = stale; SetVerticesDirty(); }
 
     // 照準の半径(1080p基準px)。投影で細い線が消えないよう、暗い縁取りの上に太い明色を重ねる。
     public const float ReticleRadius = 40f;
@@ -18,14 +21,15 @@ public sealed class SongSelectAimGraphic : MaskableGraphic
     protected override void OnPopulateMesh(VertexHelper vh)
     {
         vh.Clear();
-        Color cyan = locked ? new Color(.48f, .59f, .63f, .85f) : new Color(.55f, .94f, 1f, 1f);
-        Color dark = new Color(.01f, .03f, .05f, .94f);
+        float fade = Stale ? StaleAlpha : 1;
+        Color cyan = locked ? new Color(.48f, .59f, .63f, .85f * fade) : new Color(.55f, .94f, 1f, fade);
+        Color dark = new Color(.01f, .03f, .05f, .94f * fade);
         if (!ImpactOnly)
         {
             float r = ReticleRadius;
             Arc(vh, r, RingWidth + 4f, 1, dark);                                     // 帯全体の暗い縁取り
-            Arc(vh, r, 2.6f, 1, new Color(cyan.r, cyan.g, cyan.b, .38f));           // 薄い全周
-            Arc(vh, r, RingWidth, progress, Color.Lerp(cyan, new Color(1f, .84f, .42f), progress)); // 蓄積
+            Arc(vh, r, 2.6f, 1, new Color(cyan.r, cyan.g, cyan.b, .38f * fade));    // 薄い全周
+            Arc(vh, r, RingWidth, progress, Color.Lerp(cyan, new Color(1f, .84f, .42f, fade), progress)); // 蓄積
             for (int i = 0; i < 4; i++)
             {
                 float a = i * Mathf.PI * .5f;
@@ -35,7 +39,7 @@ public sealed class SongSelectAimGraphic : MaskableGraphic
             }
             // 中心点: 縁取り付きの塗り円(Arc の半径=幅/2 で円盤になる)。
             Arc(vh, 3.6f, 7.2f, 1, dark);
-            Arc(vh, 2.4f, 4.8f, 1, Color.Lerp(cyan, Color.white, .5f));
+            Arc(vh, 2.4f, 4.8f, 1, Color.Lerp(cyan, new Color(1, 1, 1, fade), .5f));
         }
         if (shotAge < .34f)
         {
