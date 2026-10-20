@@ -228,7 +228,8 @@ public sealed class CalibrationOverlay : MonoBehaviour
     public void TickCountdown(double deltaSeconds)
     {
         if (ctl==null||ScreenTransition.IsBusy) return;
-        bool expired=countdown.Tick(deltaSeconds,true);
+        // 選曲の残り時間と同じく、ウィンドウが裏にある間は進めない(練習も止まるので、時間だけ減らさない)。
+        bool expired=countdown.Tick(deltaSeconds,Application.isFocused||Application.isBatchMode);
         GameSession.CalibrationSelectionSeconds=countdown.Remaining; RefreshCountdown();
         if (!expired) return;
         GameSession.CalibrationSelectionSeconds=10; ctl.DiscardAndExit();

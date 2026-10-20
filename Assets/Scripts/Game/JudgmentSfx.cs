@@ -91,7 +91,7 @@ public class JudgmentSfx : MonoBehaviour
         source.PlayOneShot(clip, VolumeFor(tier));
         if (WantsChorusSparkle(tier, clip))
         {
-            genSparkle ??= ProceduralSfx.Clip("ChorusSparkle", ProceduralSfx.Sparkle());
+            genSparkle ??= ProceduralSfx.Clip("ChorusSparkle", FlourishSfx.Cached("ChorusSparkle", () => ProceduralSfx.Sparkle()));
             source.PlayOneShot(genSparkle, volume * ChorusSparkleVolume);
             SparkleCount++;
         }

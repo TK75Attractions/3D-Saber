@@ -56,6 +56,9 @@ public static class FlourishSfx
         Cached("GoldCoin", GoldCoin); Cached("GoldOmen", GoldOmen);
         for (int i = 0; i < LongStepCount; i++) { int k = i; Cached("LongStep" + k, () => LongStep(k)); }
         Cached("LongFinish", LongFinish); Cached("RankStamp", RankStamp);
+        // 曲の終わり(FULL COMBO・ALL PERFECT の幕、TRACK CLEAR)とサビの余韻も、その場で合成すると1コマ引っかかるので作り置く。
+        Cached("FullComboChord", () => ProceduralSfx.Chord(false)); Cached("AllPerfectChord", () => ProceduralSfx.Chord(true));
+        Cached("ChorusSparkle", () => ProceduralSfx.Sparkle()); Cached("TrackClearRise", () => ProceduralSfx.Rise());
     }
 
     // ---- 共通の部品 ----

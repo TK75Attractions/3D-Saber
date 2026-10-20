@@ -162,7 +162,8 @@ public class ResultReveal : MonoBehaviour
 
     private static bool SkipRequested()
     {
-        if (Keyboard.current != null && Keyboard.current.anyKey.wasPressedThisFrame) return true;
+        // 投影の切替(F4)など運営のキーでは飛ばさない。
+        if (PhoneSaberOperatorKeys.VisitorKeyPressedThisFrame(Keyboard.current)) return true;
         if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame) return true;
         return false;
     }

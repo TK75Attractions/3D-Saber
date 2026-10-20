@@ -82,6 +82,26 @@ public class SongSelectKeyboardPlayTests
         sessionValues.Clear();
     }
 
+    // 運営のキー(F キー・修飾キーだけ・Ctrl を押しながらのキー)は「何かキー」に数えない
+    // (リザルトの演出を飛ばさない・選曲の入場の案内を閉じない)。F4 は投影の切り替えでほかの試験に響くので、同じ F キーの F12 で見る。
+    [UnityTest]
+    public IEnumerator OperatorKeysAreNotCountedAsVisitorKeys()
+    {
+        bool seen = false;
+        IEnumerator Hold(params Key[] keys)
+        {
+            seen = false;
+            InputSystem.QueueStateEvent(keyboard, new KeyboardState(keys));
+            for (int i = 0; i < 3; i++) { yield return null; seen |= PhoneSaberOperatorKeys.VisitorKeyPressedThisFrame(keyboard); }
+            InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+            yield return null; yield return null;
+        }
+        yield return Hold(Key.F12); Assert.False(seen, "F キー");
+        yield return Hold(Key.LeftShift); Assert.False(seen, "修飾キーだけ");
+        yield return Hold(Key.LeftCtrl, Key.LeftShift, Key.Q); Assert.False(seen, "Ctrl を押しながらのキー");
+        yield return Hold(Key.Q); Assert.True(seen, "ほかのキーは来場者の操作として数える");
+    }
+
     IEnumerator Press(Key key)
     {
         InputSystem.QueueStateEvent(keyboard, new KeyboardState(key));

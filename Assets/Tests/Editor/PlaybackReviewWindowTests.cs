@@ -44,11 +44,27 @@ public class PlaybackReviewWindowTests
             if (shown) window.Close(); else UnityEngine.Object.DestroyImmediate(window);
         }
         if (testClip != null) UnityEngine.Object.DestroyImmediate(testClip);
-        foreach (string path in drafts) if (File.Exists(path)) File.Delete(path);
+        foreach (string path in drafts)
+            foreach (string file in new[] { path, path + ".tmp" }) if (File.Exists(file)) File.Delete(file);
         drafts.Clear();
         if (!string.IsNullOrEmpty(exported) && Directory.Exists(exported)) Directory.Delete(exported, true);
         if (Directory.Exists(folder)) Directory.Delete(folder, true);
         if (File.Exists(folder + ".meta")) File.Delete(folder + ".meta");
+    }
+    // 書いたばかりの下書きを別のプロセス(ウイルス対策など)が一瞬開いていても、置き換えをやり直して最新の内容を残す。
+    // 以前は失敗を黙って捨て、閉じて開き直すと一つ前の下書きに戻っていた(このクラスの復元の試験が毎回違う1件で落ちていた)。
+    [Test] public void DraftCommitRetriesWhileTheDraftFileIsBrieflyLocked()
+    {
+        string path = Property<string>("DraftPath"), temp = path + ".tmp";
+        Directory.CreateDirectory(Path.GetDirectoryName(path));
+        File.WriteAllText(path, "old"); File.WriteAllText(temp, "new");
+        var commit = typeof(SaberPlaybackReviewWindow).GetMethod("CommitDraftFile", BindingFlags.Static | BindingFlags.NonPublic);
+        var held = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None);
+        var release = System.Threading.Tasks.Task.Run(() => { System.Threading.Thread.Sleep(30); held.Dispose(); });
+        try { commit.Invoke(null, new object[] { temp, path }); }
+        finally { release.Wait(); held.Dispose(); }
+        Assert.AreEqual("new", File.ReadAllText(path), "置き換えをやり直して最新の下書きを残す");
+        Assert.IsFalse(File.Exists(temp), "一時ファイルを残さない");
     }
     [Test] public void ExportResumePreviewApplyAndSaveUseSameNotesAndDoNotTouchOtherDifficulty()
     {

@@ -63,6 +63,39 @@ public class SongChartAvailabilityPlayTests
         }
     }
 
+    // 決めてから本編が読むまでの間に譜面が空になっても(譜面エディターの保存と重なったときなど)、空の舞台で止まらず選曲へ戻る。
+    // 本編の Start は到着の幕の途中で走るので、以前は戻る遷移が断られ、出口のない画面に残っていた。
+    [UnityTest]
+    public IEnumerator ChartEmptiedAfterStartReturnsToSongSelect()
+    {
+        SongSelectController controller = null;
+        double deadline = Time.realtimeSinceStartupAsDouble + 15;
+        while (Time.realtimeSinceStartupAsDouble < deadline)
+        {
+            controller = Object.FindFirstObjectByType<SongSelectController>();
+            if (controller != null && Object.FindFirstObjectByType<SongSelectSkin>()?.IsReady == true) break;
+            yield return null;
+        }
+        Assert.IsNotNull(controller);
+        for (int i = 0; i < controller.SongCount; i++) if (controller.SongIdAt(i) == songId) controller.Select(i);
+        controller.SetDifficulty(2);
+        Assert.IsTrue(controller.startButton.interactable);
+        controller.StartGame();
+        Assert.IsTrue(ScreenTransition.IsBusy);
+        File.WriteAllText(Path.Combine(directory, "chart_hard.json"), "{\"bpm\":120,\"notes\":[]}");
+        bool reachedGame = false;
+        deadline = Time.realtimeSinceStartupAsDouble + 10;
+        while (Time.realtimeSinceStartupAsDouble < deadline)
+        {
+            string scene = SceneManager.GetActiveScene().name;
+            reachedGame |= scene == "Game";
+            if (reachedGame && scene == "SongSelect" && !ScreenTransition.IsBusy) break;
+            yield return null;
+        }
+        Assert.IsTrue(reachedGame, "一度は本編へ入る");
+        Assert.AreEqual("SongSelect", SceneManager.GetActiveScene().name, "空の譜面なら選曲へ戻る");
+    }
+
     [UnityTest]
     public IEnumerator UnavailableDifficultyStaysInMenuAndPlayableDifficultyStartsGame()
     {

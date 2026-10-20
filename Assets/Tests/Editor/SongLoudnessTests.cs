@@ -152,7 +152,8 @@ public class SongLoudnessTests
             Assert.That(resolved.Gain, Is.GreaterThan(0).And.LessThanOrEqualTo(1));
             count++;
         }
-        Assert.AreEqual(14, count);
+        // 同梱曲が減っていないか。RUSH E の音源を足して15、11/5 に消す約束なので14以上で見る。
+        Assert.GreaterOrEqual(count, 14);
     }
 
     [UnityTest]

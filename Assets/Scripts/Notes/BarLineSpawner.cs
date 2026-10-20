@@ -28,6 +28,8 @@ public class BarLineSpawner : MonoBehaviour
     readonly Stack<GameObject> pool = new Stack<GameObject>();
     readonly Dictionary<Material, Material> prefabAccents = new Dictionary<Material, Material>();
     MaterialPropertyBlock fadeBlock;
+    static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
+    readonly List<MeshRenderer> fadeRenderers = new List<MeshRenderer>();
     double lastSongTime = double.NaN;
     public int PooledCount => pool.Count;
     public int CreatedCount { get; private set; }
@@ -158,12 +160,14 @@ public class BarLineSpawner : MonoBehaviour
                 if (fadeBlock == null) fadeBlock = new MaterialPropertyBlock();
                 float alpha = Mathf.Clamp01((float)(approachTime - dt) / .12f)
                     * Mathf.Clamp01((float)(dt + despawnAfterSeconds) / .18f);
-                foreach (var renderer in go.GetComponentsInChildren<MeshRenderer>())
+                // 毎フレーム呼ぶので、配列を作らずに使い回しの一覧へ取り、色の名前も ID で引く(曲中に GC のごみを出さない)。
+                go.GetComponentsInChildren(fadeRenderers);
+                foreach (var renderer in fadeRenderers)
                 {
                     var mat = renderer.sharedMaterial;
-                    if (mat == null || !mat.HasProperty("_BaseColor")) continue;
-                    Color color = mat.GetColor("_BaseColor"); color.a *= alpha;
-                    fadeBlock.Clear(); fadeBlock.SetColor("_BaseColor", color);
+                    if (mat == null || !mat.HasProperty(BaseColorId)) continue;
+                    Color color = mat.GetColor(BaseColorId); color.a *= alpha;
+                    fadeBlock.Clear(); fadeBlock.SetColor(BaseColorId, color);
                     renderer.SetPropertyBlock(fadeBlock);
                 }
             }

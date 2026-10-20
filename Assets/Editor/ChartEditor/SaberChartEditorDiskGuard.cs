@@ -153,9 +153,25 @@ namespace Saber.ChartEditor
             try
             {
                 var nextDiskState = CaptureDiskState(song, difficulty);
-                SaberChartDocument next = SaberChartFileStore.Load(song, difficulty, out _);
+                SaberChartDocument next = SaberChartFileStore.Load(song, difficulty, out string loadedPath);
                 // 書き込みの途中に読んだら、次の確認で読み直す。
                 if (!DiskStateMatches(nextDiskState)) return false;
+                // 守5 と同じく、編集中の難易度のファイルが消えて Normal(chart.json)か空の譜面しか読めないときは、
+                // それを「保存済み」として読み直さない(そのまま保存すると、その中身で難易度のファイルを黙って作る)。
+                // 開いている内容を未保存として残し、保存すればファイルを作り直せるようにする。
+                bool fileMissing = loadedPath == null || difficulty != "normal" &&
+                    string.Equals(Path.GetFileName(loadedPath), "chart.json", StringComparison.OrdinalIgnoreCase);
+                if (fileMissing)
+                {
+                    RememberDiskState(song, difficulty, nextDiskState);
+                    savedJson = null;
+                    hasUnsavedChanges = true;
+                    persistentWarning = $"{EditingDifficultyLabel} の譜面ファイルがディスクから無くなりました。開いている内容は残してあります" +
+                        "（保存すると、この内容でファイルを作り直します）。";
+                    SetStatus("譜面ファイルが無くなりました（開いている内容は残しています）");
+                    Repaint();
+                    return false;
+                }
                 float keepBeat = currentBeat;
                 StopPreview(false);
                 EndNoteDrag();

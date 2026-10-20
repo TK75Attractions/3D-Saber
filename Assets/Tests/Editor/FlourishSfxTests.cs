@@ -13,6 +13,18 @@ public class FlourishSfxTests
         return (float)(l / System.Math.Max(1e-12, all));
     }
 
+    // 曲の終わり(FULL COMBO・ALL PERFECT・TRACK CLEAR)とサビの余韻も作り置く。その場で合成すると1コマ引っかかっていた。
+    // 鳴らす側(ClearAchievementPresentation・GameplayFeedbackPresenter・JudgmentSfx)と同じ名前で表に入っていること。
+    [Test]
+    public void GameplayPrewarmIncludesTheEndOfSongSounds()
+    {
+        FlourishSfx.PrewarmGameplay();
+        foreach (string key in new[] { "FullComboChord", "AllPerfectChord", "ChorusSparkle", "TrackClearRise" })
+            Assert.IsTrue(FlourishSfx.TryGetCached(key, out var samples) && samples.Length > 0, key);
+        Assert.AreSame(FlourishSfx.Cached("FullComboChord", () => ProceduralSfx.Chord(false)),
+            FlourishSfx.Cached("FullComboChord", () => throw new AssertionException("作り置きを使わずに合成した")), "2回目は作り置きを返す");
+    }
+
     [Test]
     public void NewDonKeepsItsWeightAbove150HzAndCanSwitchBack()
     {

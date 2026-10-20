@@ -65,7 +65,8 @@ public sealed class SongSelectIdleGuide : MonoBehaviour
 
     static bool HasButtonInput()
     {
-        if (Keyboard.current != null && Keyboard.current.anyKey.wasPressedThisFrame) return true;
+        // 運営のキー(F4 の投影切替・F8 など)では、来場者の操作として案内を閉じない。
+        if (PhoneSaberOperatorKeys.VisitorKeyPressedThisFrame(Keyboard.current)) return true;
         var mouse = Mouse.current;
         if (mouse != null && (mouse.leftButton.wasPressedThisFrame || mouse.rightButton.wasPressedThisFrame
             || mouse.middleButton.wasPressedThisFrame || mouse.scroll.ReadValue().sqrMagnitude > .01f)) return true;

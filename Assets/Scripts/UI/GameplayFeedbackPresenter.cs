@@ -152,7 +152,7 @@ public sealed class GameplayFeedbackPresenter : MonoBehaviour
     }
     void PlayOutroSound()
     {
-        if (outroClip == null) outroClip = ProceduralSfx.Clip("TrackClearRise", ProceduralSfx.Rise());
+        if (outroClip == null) outroClip = ProceduralSfx.Clip("TrackClearRise", FlourishSfx.Cached("TrackClearRise", () => ProceduralSfx.Rise()));
         OutroSoundPlayed = true;
         if (!Application.isPlaying) return;
         if (outroSource == null)

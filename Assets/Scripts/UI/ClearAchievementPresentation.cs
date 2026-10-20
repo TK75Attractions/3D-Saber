@@ -34,7 +34,8 @@ public sealed class ClearAchievementPresentation : MonoBehaviour
     void Build(bool allPerfect)
     {
         IsAllPerfect = allPerfect;
-        chordClip = ProceduralSfx.Clip(allPerfect ? "AllPerfectChord" : "FullComboChord", ProceduralSfx.Chord(allPerfect));
+        string chordName = allPerfect ? "AllPerfectChord" : "FullComboChord";
+        chordClip = ProceduralSfx.Clip(chordName, FlourishSfx.Cached(chordName, () => ProceduralSfx.Chord(allPerfect)));
         if (Application.isPlaying)
         {
             var source = gameObject.AddComponent<AudioSource>();

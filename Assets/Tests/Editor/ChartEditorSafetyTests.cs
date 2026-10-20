@@ -727,6 +727,29 @@ public class ChartEditorSafetyTests
         });
     }
 
+    // 編集中の難易度のファイルが外で消えても、Normal(chart.json)を「Hard・保存済み」として読み直さない。
+    // 以前はそのまま保存すると、Normal の中身で chart_hard.json を黙って作っていた。
+    [Test]
+    public void OutsideDeletionKeepsTheOpenChartUnsavedInsteadOfLoadingNormal()
+    {
+        WithChartFolder((target, folder) =>
+        {
+            File.WriteAllText(Path.Combine(folder, "chart.json"), OneNoteChart);
+            string hard = Path.Combine(folder, "chart_hard.json");
+            File.WriteAllText(hard, VariableTempoChart);
+            Load(target, 2);
+            string opened = SaberChartUtility.ToJson(Document, false);
+            Call("UpdateDirtyState"); Assert.False(window.hasUnsavedChanges);
+            File.Delete(hard);
+            Set("nextDiskCheckAt", 0d); Call("CheckDiskForExternalChanges");
+            Assert.AreEqual(opened, SaberChartUtility.ToJson(Document, false), "Normal の中身に入れ替えない");
+            Call("UpdateDirtyState");
+            Assert.True(window.hasUnsavedChanges, "ディスクに無いので未保存として残す");
+            StringAssert.Contains("無くなりました", Get<string>("persistentWarning"));
+            Assert.False(File.Exists(hard), "黙って作り直さない");
+        });
+    }
+
     [Test]
     public void FailedAutomaticRestoreKeepsAPersistentWarningAndNeverClaimsSaved()
     {

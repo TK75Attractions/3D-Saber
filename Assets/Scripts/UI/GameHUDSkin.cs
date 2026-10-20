@@ -751,7 +751,8 @@ public class GameHUDSkin : MonoBehaviour
 
     private void UpdateProgress()
     {
-        if (progressFill == null || songPlayer == null) return;
+        // 曲を止めると SongTime は 0 に戻るので、終わったあと(コンボ点の演出の間)は最後の位置のまま残す。
+        if (progressFill == null || songPlayer == null || !songPlayer.IsScheduled) return;
         float p = Progress01(songPlayer.SongTime, songPlayer.Duration);
         progressFill.anchorMax = new Vector2(p, 1f);
     }

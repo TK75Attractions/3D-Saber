@@ -29,6 +29,21 @@ public sealed class PhoneSaberOperatorKeys : MonoBehaviour
         Volatile.Write(ref exposureIndex, 2);
     }
 
+    // 運営の操作を除いて、このフレームにキーが押されたか。F1〜F12(F4 の投影切替・F7〜F10 など)と、
+    // Ctrl・Alt・Windows を押しながらのキー(Ctrl+Shift+文字)、修飾キーだけの押下は数えない。
+    // 「何かキーで演出を飛ばす・案内を閉じる」が運営の操作で起きないようにする。
+    public static bool VisitorKeyPressedThisFrame(Keyboard keyboard)
+    {
+        if (keyboard == null || !keyboard.anyKey.wasPressedThisFrame) return false;
+        if (keyboard.ctrlKey.isPressed || keyboard.altKey.isPressed || keyboard.leftMetaKey.isPressed || keyboard.rightMetaKey.isPressed) return false;
+        foreach (var key in keyboard.allKeys)
+            if (key != null && key.wasPressedThisFrame && !IsOperatorOnlyKey(key.keyCode)) return true;
+        return false;
+    }
+    static bool IsOperatorOnlyKey(Key key) => key >= Key.F1 && key <= Key.F12
+        || key == Key.LeftShift || key == Key.RightShift || key == Key.LeftCtrl || key == Key.RightCtrl
+        || key == Key.LeftAlt || key == Key.RightAlt || key == Key.LeftMeta || key == Key.RightMeta || key == Key.ContextMenu;
+
     // 押されたキーに対応する指示と表示。対応しないキーは null。
     public static (string command, string label)? CommandFor(Key key, int currentExposureIndex, out int nextExposureIndex, bool currentTrackLock = true)
     {

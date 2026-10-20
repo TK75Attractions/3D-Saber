@@ -13,8 +13,25 @@ namespace Saber.ChartEditor
         private static readonly string[] AudioNames = { "audio.ogg", "audio.wav", "audio.mp3" };
         // Keep transaction I/O behind replaceable delegates so rollback tests can inject
         // portable failures instead of relying on OS-specific open-file locking behavior.
-        private static Action<string, string> moveFileOperation = File.Move;
-        private static Action<string, string, string> replaceFileOperation = File.Replace;
+        // 書いたばかりのファイルは、ウイルス対策などが数 ms 開いていて、置き換え・移動が失敗することがある(Windows で
+        // 「置換されるファイルを削除できません」。保存は巻き戻るが、ときどき保存できなかった)。元のファイルが両方とも
+        // そのまま残っている(何も変わっていない)ときだけ、少し待ってやり直す。
+        private static Action<string, string> moveFileOperation = (source, destination) =>
+            RetryWhileUnchanged(() => File.Move(source, destination), () => File.Exists(source) && !File.Exists(destination));
+        private static Action<string, string, string> replaceFileOperation = (source, destination, backup) =>
+            RetryWhileUnchanged(() => File.Replace(source, destination, backup), () => File.Exists(source) && File.Exists(destination));
+
+        private static void RetryWhileUnchanged(Action operation, Func<bool> unchanged)
+        {
+            for (int attempt = 0; ; attempt++)
+            {
+                try { operation(); return; }
+                catch (Exception e) when ((e is IOException || e is UnauthorizedAccessException) && attempt < 5 && unchanged())
+                {
+                    System.Threading.Thread.Sleep(40);
+                }
+            }
+        }
 
         public static string SongsRootPath =>
             Path.GetFullPath(Path.Combine(Application.dataPath, "StreamingAssets", "Songs"));

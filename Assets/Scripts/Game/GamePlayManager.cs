@@ -262,7 +262,10 @@ public class GamePlayManager : MonoBehaviour
         if (chart.notes.Count == 0)
         {
             // 選曲後にファイルが変わっても、空譜面の成功結果を残さない。
+            // ここは到着の幕の途中で走る(幕の間は次の Load を断る)ので、開ききってから戻す。待つ間は Esc でも動かさない。
             Debug.LogWarning("GamePlayManager: 遊べるノーツが無いため選曲へ戻ります。");
+            finished = true;
+            while (ScreenTransition.IsBusy) yield return null;
             ScreenTransition.Load("SongSelect", ScreenTransition.Style.Back);
             yield break;
         }
@@ -609,8 +612,10 @@ public class GamePlayManager : MonoBehaviour
             // #・%・日本語・空白を含む曲フォルダーも、選曲プレビューと同じ方法で扱う。
             using (UnityWebRequest req = UnityWebRequestMultimedia.GetAudioClip(new System.Uri(full).AbsoluteUri, type))
             {
+                pendingAudioRequest = req;
                 req.timeout = 20;
                 yield return req.SendWebRequest();
+                pendingAudioRequest = null;
                 if (req.result == UnityWebRequest.Result.Success)
                 {
                     AudioClip clip = DownloadHandlerAudioClip.GetContent(req);
@@ -643,7 +648,18 @@ public class GamePlayManager : MonoBehaviour
 
     private void OnDestroy()
     {
+        AbortAudioRequest();
         ReleaseOwnedSongClip();
+    }
+
+    // 読み込み中の音源の要求。途中で抜けると(StopAllCoroutines・シーンの破棄)using の後始末が走らないので、ここで止めて手放す。
+    UnityWebRequest pendingAudioRequest;
+    void AbortAudioRequest()
+    {
+        if (pendingAudioRequest == null) return;
+        pendingAudioRequest.Abort();
+        pendingAudioRequest.Dispose();
+        pendingAudioRequest = null;
     }
 
     private AudioType GuessType(string name)
@@ -763,6 +779,7 @@ public class GamePlayManager : MonoBehaviour
         // 途中離脱は終了処理へ流さず、結果・実績を保存しない。開始待ちや終了演出も打ち切る。
         finished = true;
         StopAllCoroutines();
+        AbortAudioRequest();
         if (songPlayer != null) songPlayer.Stop();
         if (chorusDrop != null) chorusDrop.ResetEffects();
         if (feverShow != null) feverShow.ResetState();

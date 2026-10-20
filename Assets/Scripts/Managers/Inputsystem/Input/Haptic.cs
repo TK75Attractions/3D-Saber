@@ -7,7 +7,9 @@ using System.Collections;
 public static class Haptic
 {
     static bool isInitialized = false;
-    static bool isConnected = true; // 仮
+    // 送り先(SetTransport・SetUdpTransport)が決まるまでは送らない。true のままだと、IMU の受信ポートを取れず
+    // 送り先が無いときに、判定ごとに「not connected」の警告を2行ずつ出していた。
+    static bool isConnected = false;
 
     static HapticRunner runner;
     static Action<string> sender;

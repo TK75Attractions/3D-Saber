@@ -82,10 +82,40 @@ namespace Saber.ChartEditor
                 Directory.CreateDirectory(Path.GetDirectoryName(DraftPath));
                 string temp = DraftPath + ".tmp";
                 File.WriteAllText(temp, json);
-                if (File.Exists(DraftPath)) File.Replace(temp, DraftPath, null); else File.Move(temp, DraftPath);
+                CommitDraftFile(temp, DraftPath);
                 lastDraftJson = json; draftMessage = "下書き保存済み · 同じ曲・難易度を開くと復元します。";
             }
-            catch (Exception e) { draftMessage = "下書きを保存できません: " + e.Message; }
+            catch (Exception e)
+            {
+                // 閉じるとき(OnDisable)の保存は1回きりで、窓の文言は誰も見ないので Console にも出す。
+                draftMessage = "下書きを保存できません: " + e.Message;
+                Debug.LogWarning("[PlaybackReview] " + draftMessage);
+            }
+        }
+
+        // 書いたばかりの一時ファイルは、ウイルス対策などが数 ms 開いていて、置き換え・移動が失敗することがある(Windows)。
+        // 以前は失敗を黙って捨て、下書きが一つ前の内容のまま残っていた(閉じて開き直すと古い状態に戻る)。
+        // 少し待って数回やり直し、それでもだめなら上書きコピーで残す(置き換えの原子性より、最新の下書きを残すほうを優先)。
+        static void CommitDraftFile(string temp, string path)
+        {
+            for (int attempt = 0; ; attempt++)
+            {
+                try
+                {
+                    if (File.Exists(path)) File.Replace(temp, path, null); else File.Move(temp, path);
+                    return;
+                }
+                catch (Exception e) when ((e is IOException || e is UnauthorizedAccessException) && attempt < 5)
+                {
+                    System.Threading.Thread.Sleep(40);
+                }
+                catch (Exception e) when (e is IOException || e is UnauthorizedAccessException)
+                {
+                    File.Copy(temp, path, true);
+                    File.Delete(temp);
+                    return;
+                }
+            }
         }
 
         void RestoreDraft()
