@@ -112,7 +112,7 @@ public class NoteSpawnerTests
         sp.SetChart(MakeChart(1000f));
         sp.JudgeLatencySeconds = 0.12;
         sp.Tick(0.0);
-        sp.Tick(0.9); // 曲の時計で0.1秒前。判定の時計では0.22秒前で、早めの窓(0.18)の外
+        sp.Tick(0.9); // 曲の時計で0.1秒前。判定の時計では0.22秒前で、早めの窓(0.10)の外
         Assert.IsFalse(spawned[0].IsJudgeable);
         sp.Tick(1.25); // 曲の時計で0.25秒過ぎ。判定の時計では0.13秒過ぎで、まだ窓(0.15)の中
         Assert.IsTrue(spawned[0].IsJudgeable);

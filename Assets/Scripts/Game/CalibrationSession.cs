@@ -6,7 +6,7 @@ using UnityEngine;
 // 判定調整の測定条件。通常プレイの判定窓・カット形状は変更しない。
 public static class CalibrationProtocol
 {
-    // 本番と同じPERFECT幅(2026-10 から早め・遅めとも同じ幅)。調整だけ厳しい判定を表示しない。
+    // 本番と同じPERFECT幅(早め50ms / 遅め90ms)。調整画面も早め側の厳しい非対称窓に合わせる。
     public const double EarlyPerfectMs = JudgmentTierHelper.EarlyPerfectSeconds * 1000;
     public const double LatePerfectMs = JudgmentTierHelper.LatePerfectSeconds * 1000;
     public static string LiveFeedback(double errorMs) => errorMs < -EarlyPerfectMs ? "少し早め" : errorMs > LatePerfectMs ? "少し遅め" : "音に合っています";

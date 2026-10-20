@@ -172,8 +172,8 @@ public class CameraImuJudgmentTests
 
     [TestCase(1019, -.100, true)]
     [TestCase(1020, -.100, false)]
-    [TestCase(1200, -.091, false)]
-    [TestCase(1200, -.090, true)]
+    [TestCase(1200, -.051, false)]
+    [TestCase(1200, -.050, true)]
     public void FollowingNoteUsesSwingTimeForOrderProtection(float secondMs, double error, bool expected)
     {
         Create(twoNotes: true, secondTime: secondMs);

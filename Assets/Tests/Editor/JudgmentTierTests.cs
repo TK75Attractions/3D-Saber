@@ -2,8 +2,8 @@ using NUnit.Framework;
 
 public class JudgmentTierTests
 {
-    // --- 窓：±90/125/155/180ms(早め・遅めとも同じ幅) ---
-    // 2026-10-20 全体を約11%圧縮し、PERFECT の割合を約42% → 50%へ。
+    // --- 早め：50/70/85/100ms、遅め：90/125/155/180ms ---
+    // 2026-10-20 追加指定: 早め側を厳しくし、合計280msのうちPERFECTは140ms(50%)。
 
     [Test]
     public void Classify_LatePerfectWindow()
@@ -17,18 +17,26 @@ public class JudgmentTierTests
     [Test]
     public void Classify_EarlyPerfectWindow()
     {
-        // 早め 0 〜 -90ms
-        Assert.AreEqual(JudgmentTier.Perfect, JudgmentTierHelper.Classify(-0.090));
+        // 早め 0 〜 -50ms
+        Assert.AreEqual(JudgmentTier.Perfect, JudgmentTierHelper.Classify(-0.050));
         Assert.AreEqual(JudgmentTier.Perfect, JudgmentTierHelper.Classify(-0.03));
-        Assert.AreEqual(JudgmentTier.Great, JudgmentTierHelper.Classify(-0.0901));
+        Assert.AreEqual(JudgmentTier.Great, JudgmentTierHelper.Classify(-0.0501));
     }
 
-    [TestCase(0.03)] [TestCase(0.090)] [TestCase(0.10)] [TestCase(0.125)] [TestCase(0.15)]
-    [TestCase(0.155)] [TestCase(0.165)] [TestCase(0.180)] [TestCase(0.1801)]
-    public void Classify_EarlyAndLateAreSymmetric(double error)
+    [TestCase(0.050, JudgmentTier.Perfect, JudgmentTier.Perfect)]
+    [TestCase(0.060, JudgmentTier.Great, JudgmentTier.Perfect)]
+    [TestCase(0.070, JudgmentTier.Great, JudgmentTier.Perfect)]
+    [TestCase(0.0701, JudgmentTier.Good, JudgmentTier.Perfect)]
+    [TestCase(0.085, JudgmentTier.Good, JudgmentTier.Perfect)]
+    [TestCase(0.090, JudgmentTier.Bad, JudgmentTier.Perfect)]
+    [TestCase(0.100, JudgmentTier.Bad, JudgmentTier.Great)]
+    [TestCase(0.1001, JudgmentTier.Miss, JudgmentTier.Great)]
+    [TestCase(0.150, JudgmentTier.Miss, JudgmentTier.Good)]
+    [TestCase(0.180, JudgmentTier.Miss, JudgmentTier.Bad)]
+    public void Classify_SameErrorIsStricterWhenEarly(double error, JudgmentTier early, JudgmentTier late)
     {
-        // 同じずれなら、早めでも遅めでも同じ判定
-        Assert.AreEqual(JudgmentTierHelper.Classify(error), JudgmentTierHelper.Classify(-error));
+        Assert.AreEqual(early, JudgmentTierHelper.Classify(-error));
+        Assert.AreEqual(late, JudgmentTierHelper.Classify(error));
     }
 
     [Test]
@@ -41,9 +49,9 @@ public class JudgmentTierTests
     [Test]
     public void Classify_EarlyGreatWindow()
     {
-        // 早め 90 〜 125ms
-        Assert.AreEqual(JudgmentTier.Great, JudgmentTierHelper.Classify(-0.10));
-        Assert.AreEqual(JudgmentTier.Great, JudgmentTierHelper.Classify(-0.125));
+        // 早め 50 〜 70ms
+        Assert.AreEqual(JudgmentTier.Great, JudgmentTierHelper.Classify(-0.060));
+        Assert.AreEqual(JudgmentTier.Great, JudgmentTierHelper.Classify(-0.070));
     }
 
     [Test]
@@ -56,9 +64,9 @@ public class JudgmentTierTests
     [Test]
     public void Classify_EarlyGoodWindow()
     {
-        // 早め 125 〜 155ms
-        Assert.AreEqual(JudgmentTier.Good, JudgmentTierHelper.Classify(-0.15));
-        Assert.AreEqual(JudgmentTier.Good, JudgmentTierHelper.Classify(-0.155));
+        // 早め 70 〜 85ms
+        Assert.AreEqual(JudgmentTier.Good, JudgmentTierHelper.Classify(-0.080));
+        Assert.AreEqual(JudgmentTier.Good, JudgmentTierHelper.Classify(-0.085));
     }
 
     [Test]
@@ -71,9 +79,9 @@ public class JudgmentTierTests
     [Test]
     public void Classify_EarlyBadWindow()
     {
-        // 早め 155 〜 180ms
-        Assert.AreEqual(JudgmentTier.Bad, JudgmentTierHelper.Classify(-0.165));
-        Assert.AreEqual(JudgmentTier.Bad, JudgmentTierHelper.Classify(-0.180));
+        // 早め 85 〜 100ms
+        Assert.AreEqual(JudgmentTier.Bad, JudgmentTierHelper.Classify(-0.0851));
+        Assert.AreEqual(JudgmentTier.Bad, JudgmentTierHelper.Classify(-0.100));
     }
 
     [Test]
@@ -89,7 +97,7 @@ public class JudgmentTierTests
     [Test]
     public void Classify_BeyondEarlyBad_IsMiss()
     {
-        Assert.AreEqual(JudgmentTier.Miss, JudgmentTierHelper.Classify(-0.1801));
+        Assert.AreEqual(JudgmentTier.Miss, JudgmentTierHelper.Classify(-0.1001));
         Assert.AreEqual(JudgmentTier.Miss, JudgmentTierHelper.Classify(-0.19));
         Assert.AreEqual(JudgmentTier.Miss, JudgmentTierHelper.Classify(-0.30));
     }
@@ -97,15 +105,17 @@ public class JudgmentTierTests
     [Test]
     public void Windows_CompressedOverall()
     {
-        // 全体(Bad)は 202.5ms → 180ms に約11%圧縮。早め側も同じ。
+        // 全体(Bad)は早め100ms + 遅め180ms = 280ms(片側平均140ms)。
         Assert.AreEqual(0.180, JudgmentTierHelper.LateBadSeconds, 1e-9);
-        Assert.AreEqual(0.180, JudgmentTierHelper.EarlyBadSeconds, 1e-9);
+        Assert.AreEqual(0.100, JudgmentTierHelper.EarlyBadSeconds, 1e-9);
+        Assert.AreEqual(0.280, JudgmentTierHelper.EarlyBadSeconds + JudgmentTierHelper.LateBadSeconds, 1e-9);
     }
 
     [Test]
-    public void Windows_PerfectShareRaised()
+    public void Windows_PerfectKeepsHalfTheTotalWidth()
     {
-        // 遅め側 Perfect/Bad = 90/180 = 50%(旧 約42%)。早め側も同じ比率。
+        // PERFECT は早め50ms + 遅め90ms = 140ms(片側平均70ms)。全体の50%を維持。
+        Assert.AreEqual(0.140, JudgmentTierHelper.EarlyPerfectSeconds + JudgmentTierHelper.LatePerfectSeconds, 1e-9);
         double lateShare = JudgmentTierHelper.LatePerfectSeconds / JudgmentTierHelper.LateBadSeconds;
         Assert.AreEqual(0.50, lateShare, 1e-9);
         Assert.AreEqual(lateShare,
@@ -113,12 +123,15 @@ public class JudgmentTierTests
     }
 
     [Test]
-    public void Windows_EarlyEqualsLate_AndMonotonic()
+    public void Windows_EarlyIsStricter_AndBothSidesAreMonotonic()
     {
-        Assert.AreEqual(JudgmentTierHelper.LatePerfectSeconds, JudgmentTierHelper.EarlyPerfectSeconds, 1e-9);
-        Assert.AreEqual(JudgmentTierHelper.LateGreatSeconds, JudgmentTierHelper.EarlyGreatSeconds, 1e-9);
-        Assert.AreEqual(JudgmentTierHelper.LateGoodSeconds, JudgmentTierHelper.EarlyGoodSeconds, 1e-9);
-        Assert.AreEqual(JudgmentTierHelper.LateBadSeconds, JudgmentTierHelper.EarlyBadSeconds, 1e-9);
+        Assert.Less(JudgmentTierHelper.EarlyPerfectSeconds, JudgmentTierHelper.LatePerfectSeconds);
+        Assert.Less(JudgmentTierHelper.EarlyGreatSeconds, JudgmentTierHelper.LateGreatSeconds);
+        Assert.Less(JudgmentTierHelper.EarlyGoodSeconds, JudgmentTierHelper.LateGoodSeconds);
+        Assert.Less(JudgmentTierHelper.EarlyBadSeconds, JudgmentTierHelper.LateBadSeconds);
+        Assert.Less(JudgmentTierHelper.EarlyPerfectSeconds, JudgmentTierHelper.EarlyGreatSeconds);
+        Assert.Less(JudgmentTierHelper.EarlyGreatSeconds, JudgmentTierHelper.EarlyGoodSeconds);
+        Assert.Less(JudgmentTierHelper.EarlyGoodSeconds, JudgmentTierHelper.EarlyBadSeconds);
         Assert.Less(JudgmentTierHelper.LatePerfectSeconds, JudgmentTierHelper.LateGreatSeconds);
         Assert.Less(JudgmentTierHelper.LateGreatSeconds, JudgmentTierHelper.LateGoodSeconds);
         Assert.Less(JudgmentTierHelper.LateGoodSeconds, JudgmentTierHelper.LateBadSeconds);

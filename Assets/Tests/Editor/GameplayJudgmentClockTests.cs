@@ -56,7 +56,7 @@ public class GameplayJudgmentClockTests
     {
         Create(blade, secondJudge, 1);
         Set(manager, "inCalibration", calibration);
-        spawner.Tick(.76); // 早めの窓(0.18秒)の外
+        spawner.Tick(.76); // 早めの窓(0.10秒)の外
         Assert.False(note.IsJudgeable);
         tracker.ResetTo(new Vector3(-2, 0, 0));
         tracker.Tick(blade ? Vector3.zero : new Vector3(2, 0, 0), .033f);

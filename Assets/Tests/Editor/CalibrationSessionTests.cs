@@ -60,7 +60,7 @@ public class CalibrationSessionTests
     { var s=Samples(25);s[0].ErrorMs=150;s[1].ErrorMs=-90;var r=CalibrationResult.Analyze(s,60);Assert.True(r.CanRecommend,r.Message);Assert.AreEqual(2,r.Excluded);Assert.AreEqual(85,r.ProposedOffsetMs); }
     [Test] public void TooManyOutliersDoesNotRecommend()
     { var s=Samples(25);s[0].ErrorMs=150;s[1].ErrorMs=-90;s[2].ErrorMs=180;Assert.False(CalibrationResult.Analyze(s,60).CanRecommend); }
-    [TestCase(-190)] [TestCase(190)] public void EdgeCensoredSamplesDoNotRecommend(double error)
+    [TestCase(-95)] [TestCase(175)] public void EdgeCensoredSamplesDoNotRecommend(double error)
     { Assert.False(CalibrationResult.Analyze(Samples(error),60).CanRecommend); }
     [Test] public void InterruptedOrHitchPreventsProposal()
     { Assert.False(CalibrationResult.Analyze(Samples(20),60,true).CanRecommend);Assert.False(CalibrationResult.Analyze(Samples(20),60,false,1).CanRecommend); }

@@ -327,8 +327,8 @@ public class SaberCutJudgeTests
     [TestCase(.019, -.100, true)]
     [TestCase(.020, -.100, false)]
     [TestCase(.021, -.100, false)]
-    [TestCase(.200, -.090001, false)]
-    [TestCase(.200, -.090, true)]
+    [TestCase(.200, -.050001, false)]
+    [TestCase(.200, -.050, true)]
     [TestCase(.200, .100, true)]
     public void FollowingNoteWaitsForItsPerfectZone(double gap, double error, bool allowed)
     {
@@ -390,13 +390,13 @@ public class SaberCutJudgeTests
         tracker.ResetTo(Vector3.left * 2);
         tracker.Tick(new Vector3(-.2f, 0, 0), .02f);
         bridge.OverrideBlade(new Vector3(-.2f, -1, 0), new Vector3(-.2f, 1, 0));
-        judge.TryCut(1.1);
+        judge.TryCut(1.14);
         Assert.AreEqual(0, judge.PendingCount, "保護中の接触は保存しない");
         tracker.Tick(Vector3.right * 2, .02f);
         bridge.OverrideBlade(new Vector3(2, -1, 0), new Vector3(2, 1, 0));
-        judge.TryCut(1.12);
+        judge.TryCut(1.16);
         Assert.False(next.IsCut, "Perfectに入ったとき既に通り過ぎていた古い軌跡は使わない");
-        tracker.Tick(Vector3.left * 2, .08f);
+        tracker.Tick(Vector3.left * 2, .04f);
         bridge.OverrideBlade(new Vector3(-2, -1, 0), new Vector3(-2, 1, 0));
         judge.TryCut(1.2);
         Assert.True(next.IsCut, "解放後の新しい振りでは切れる");

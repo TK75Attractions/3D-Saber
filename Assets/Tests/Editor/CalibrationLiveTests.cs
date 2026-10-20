@@ -17,10 +17,10 @@ public class CalibrationLiveTests
     [Test] public void SixConsistentHitsGuideOnlyOutsideTheGamePerfectWindow()
     {
         var h = new CalibrationHistory();
-        for (int i=0;i<5;i++) h.Add(-95,i%2==0?SaberHand.Left:SaberHand.Right);
+        for (int i=0;i<5;i++) h.Add(-70,i%2==0?SaberHand.Left:SaberHand.Right);
         Assert.AreEqual("",h.Hint); Assert.Zero(h.SuggestedDirection);
-        h.Add(-95,SaberHand.Right);
-        Assert.AreEqual(-1,h.SuggestedDirection); Assert.AreEqual(-95,h.RecommendedDelta);
+        h.Add(-70,SaberHand.Right);
+        Assert.AreEqual(-1,h.SuggestedDirection); Assert.AreEqual(-70,h.RecommendedDelta);
         Assert.AreEqual("少し早め",h.Hint);
         h.Clear();
         for (int i=0;i<6;i++) h.Add(100,i%2==0?SaberHand.Left:SaberHand.Right);
@@ -47,15 +47,15 @@ public class CalibrationLiveTests
         for(int i=0;i<12;i++) h.Add(100,i%2==0?SaberHand.Left:SaberHand.Right);
         Assert.AreEqual(1,h.SuggestedDirection,"古い見逃しは回復後まで妨げない");
     }
-    [TestCase(-90.01,"少し早め")]
-    [TestCase(-90,"音に合っています")]
+    [TestCase(-50.01,"少し早め")]
+    [TestCase(-50,"音に合っています")]
     [TestCase(0,"音に合っています")]
     [TestCase(35,"音に合っています")]
     [TestCase(90,"音に合っています")]
     [TestCase(90.01,"少し遅め")]
     public void LiveFeedbackUsesActualPerfectWindow(double error,string expected)
     {Assert.AreEqual(expected,CalibrationProtocol.LiveFeedback(error));}
-    [TestCase(-190)] [TestCase(195)]
+    [TestCase(-95)] [TestCase(175)]
     public void EdgeCensoredHitsOnlySuggestSmallManualSteps(double error)
     {
         var h=new CalibrationHistory();
