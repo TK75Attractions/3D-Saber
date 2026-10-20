@@ -50,9 +50,11 @@ public class FiveSongPackTests
             Assert.Greater(chart.notes.Count,previous);previous=chart.notes.Count;
             Assert.That(chart.displayLevel,Is.InRange(1,10));
             Assert.IsTrue(chart.notes.Any(n=>n.IsLong));
-            Assert.IsTrue(chart.notes.GroupBy(n=>n.time).Any(g=>g.Count()==2 && g.All(n=>n.color=="gold")));
+            // 下位譜面は表拍・速度条件を優先し、金同時切りを義務付けない。
+            if(difficulty.Equals("hard",StringComparison.OrdinalIgnoreCase))
+                Assert.IsTrue(chart.notes.GroupBy(n=>n.time).Any(g=>g.Count()==2 && g.All(n=>n.color=="gold")));
             Assert.IsTrue(chart.notes.Any(n=>SongPreviewWindow.Intersects(chart,n,SongPreviewWindow.Resolve(timeline,Durations[index]),0)));
-            if(!difficulty.Equals("easy",StringComparison.OrdinalIgnoreCase))Assert.IsTrue(chart.notes.Any(n=>n.IsDirection));
+            Assert.IsTrue(chart.notes.Any(n=>n.IsDirection));
         }
     }
 

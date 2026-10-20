@@ -1,0 +1,2994 @@
+{
+  "song": "揺籠",
+  "difficulty": "normal",
+  "musicStartMs": 2.96598639455782,
+  "notes": [
+    {
+      "index": 0,
+      "timesMs": [
+        1046.5116
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 0,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 1,
+      "timesMs": [
+        2093.0233
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 1,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 2,
+      "timesMs": [
+        3139.5349,
+        4186.0466
+      ],
+      "directions": [
+        "down",
+        "up"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 2,
+      "sourceLong": "normal:2",
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 3,
+      "timesMs": [
+        5232.5581
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 3,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 4,
+      "timesMs": [
+        5232.5582
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 2,
+      "sourceLong": "normal:2",
+      "added": false,
+      "phaseErrorMs": 0.0001,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 5,
+      "timesMs": [
+        6279.0698
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 4,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 6,
+      "timesMs": [
+        8372.093
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 6,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 7,
+      "timesMs": [
+        9418.6047
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 7,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 8,
+      "timesMs": [
+        10465.1163
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 8,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 9,
+      "timesMs": [
+        11511.6279
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 9,
+      "sourceLong": "normal:9",
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 10,
+      "timesMs": [
+        12558.1395
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 10,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 11,
+      "timesMs": [
+        12558.1395
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 9,
+      "sourceLong": "normal:9",
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 12,
+      "timesMs": [
+        13604.6512
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 11,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 13,
+      "timesMs": [
+        14651.1628
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 12,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 14,
+      "timesMs": [
+        16744.186
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 14,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 15,
+      "timesMs": [
+        17790.6977
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 15,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 16,
+      "timesMs": [
+        18837.2093
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 16,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 17,
+      "timesMs": [
+        19883.7209
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 17,
+      "sourceLong": "normal:17",
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 18,
+      "timesMs": [
+        20930.2325
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 17,
+      "sourceLong": "normal:17",
+      "added": false,
+      "phaseErrorMs": -0.0001,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 19,
+      "timesMs": [
+        20930.2326
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 18,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 20,
+      "timesMs": [
+        21976.7442
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 19,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 21,
+      "timesMs": [
+        23023.2558
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 20,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 22,
+      "timesMs": [
+        25116.2791
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 22,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 23,
+      "timesMs": [
+        25116.2791
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 23,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 24,
+      "timesMs": [
+        26162.7907
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 24,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 25,
+      "timesMs": [
+        27209.3023
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 25,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 26,
+      "timesMs": [
+        28255.814
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 26,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 27,
+      "timesMs": [
+        29302.3256
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 27,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 28,
+      "timesMs": [
+        30348.8372
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 28,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 29,
+      "timesMs": [
+        31395.3488
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 30,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 30,
+      "timesMs": [
+        32441.8605
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 31,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 31,
+      "timesMs": [
+        33488.3721
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 32,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 32,
+      "timesMs": [
+        33488.3721
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 33,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 33,
+      "timesMs": [
+        34534.8837
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 34,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 34,
+      "timesMs": [
+        35581.3953
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 35,
+      "sourceLong": "normal:35",
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 35,
+      "timesMs": [
+        36627.9069
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 35,
+      "sourceLong": "normal:35",
+      "added": false,
+      "phaseErrorMs": -0.0001,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 36,
+      "timesMs": [
+        36627.907
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 36,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 37,
+      "timesMs": [
+        37674.4186
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 38,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 38,
+      "timesMs": [
+        39767.4419,
+        40813.9535
+      ],
+      "directions": [
+        "down",
+        "up"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 39,
+      "sourceLong": "normal:39",
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 39,
+      "timesMs": [
+        41860.4651
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 40,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 40,
+      "timesMs": [
+        41860.4652
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 39,
+      "sourceLong": "normal:39",
+      "added": false,
+      "phaseErrorMs": 0.0001,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 41,
+      "timesMs": [
+        42906.9767
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 41,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 42,
+      "timesMs": [
+        43953.4884
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 42,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 43,
+      "timesMs": [
+        45000.0
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 43,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 44,
+      "timesMs": [
+        46046.5116
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 44,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 45,
+      "timesMs": [
+        47093.0233
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 45,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 46,
+      "timesMs": [
+        48139.5349
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 46,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 47,
+      "timesMs": [
+        50232.5581
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 49,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 48,
+      "timesMs": [
+        51279.0698
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 50,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 49,
+      "timesMs": [
+        52325.5814
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 51,
+      "sourceLong": "normal:51",
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 50,
+      "timesMs": [
+        53372.093
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 51,
+      "sourceLong": "normal:51",
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 51,
+      "timesMs": [
+        53372.093
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 52,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 52,
+      "timesMs": [
+        54418.6047
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 53,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 53,
+      "timesMs": [
+        55465.1163
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 54,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 54,
+      "timesMs": [
+        56511.6279
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 55,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 55,
+      "timesMs": [
+        58604.6512
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 57,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 56,
+      "timesMs": [
+        59651.1628
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 58,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 57,
+      "timesMs": [
+        60697.6744
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 59,
+      "sourceLong": "normal:59",
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 58,
+      "timesMs": [
+        61744.186
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 59,
+      "sourceLong": "normal:59",
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 59,
+      "timesMs": [
+        61744.186
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 60,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 60,
+      "timesMs": [
+        62790.6977
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 61,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 61,
+      "timesMs": [
+        63837.2093
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 62,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 62,
+      "timesMs": [
+        64883.7209
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 63,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 63,
+      "timesMs": [
+        66976.7442
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 66,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 64,
+      "timesMs": [
+        66976.7442
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 67,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 65,
+      "timesMs": [
+        68023.2558
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 69,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 66,
+      "timesMs": [
+        69069.7674
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 70,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 67,
+      "timesMs": [
+        70116.2791
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 71,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 68,
+      "timesMs": [
+        71162.7907
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 72,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 69,
+      "timesMs": [
+        72209.3023
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 73,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 70,
+      "timesMs": [
+        73255.814
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 74,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 71,
+      "timesMs": [
+        75348.8372
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 76,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 72,
+      "timesMs": [
+        75348.8372
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 77,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 73,
+      "timesMs": [
+        76395.3488
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 78,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 74,
+      "timesMs": [
+        77441.8605
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 79,
+      "sourceLong": "normal:79",
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 75,
+      "timesMs": [
+        78488.3721
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 79,
+      "sourceLong": "normal:79",
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 76,
+      "timesMs": [
+        78488.3721
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 80,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 77,
+      "timesMs": [
+        79534.8837,
+        80581.3953
+      ],
+      "directions": [
+        "down",
+        "up"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 82,
+      "sourceLong": "normal:82",
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 78,
+      "timesMs": [
+        81627.907
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 82,
+      "sourceLong": "normal:82",
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 79,
+      "timesMs": [
+        82674.4186
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 83,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 80,
+      "timesMs": [
+        82674.4186
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 82,
+      "sourceLong": "normal:82",
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 81,
+      "timesMs": [
+        83720.9302
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 84,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 82,
+      "timesMs": [
+        83720.9302
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 85,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 83,
+      "timesMs": [
+        84767.4419
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 86,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 84,
+      "timesMs": [
+        85813.9535
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 87,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 85,
+      "timesMs": [
+        87906.9767
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 89,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 86,
+      "timesMs": [
+        87906.9767
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 90,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 87,
+      "timesMs": [
+        88953.4884
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 91,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 88,
+      "timesMs": [
+        90000.0
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 92,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 89,
+      "timesMs": [
+        91046.5116
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 93,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 90,
+      "timesMs": [
+        92093.0233,
+        93139.535
+      ],
+      "directions": [
+        "down",
+        "up"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 95,
+      "sourceLong": "normal:95",
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 91,
+      "timesMs": [
+        94186.0465
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 96,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 92,
+      "timesMs": [
+        94186.0466
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 95,
+      "sourceLong": "normal:95",
+      "added": false,
+      "phaseErrorMs": 0.0001,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 93,
+      "timesMs": [
+        96279.0698
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 98,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 94,
+      "timesMs": [
+        97325.5814
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 99,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 95,
+      "timesMs": [
+        98372.093
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 100,
+      "sourceLong": "normal:100",
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 96,
+      "timesMs": [
+        99418.6046
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 100,
+      "sourceLong": "normal:100",
+      "added": false,
+      "phaseErrorMs": -0.0001,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 97,
+      "timesMs": [
+        100465.1163
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 100,
+      "sourceLong": "normal:100",
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 98,
+      "timesMs": [
+        100465.1163
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 101,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 99,
+      "timesMs": [
+        102558.1395
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 103,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 100,
+      "timesMs": [
+        103604.6512
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 104,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 101,
+      "timesMs": [
+        104651.1628
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 105,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 102,
+      "timesMs": [
+        104651.1628
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 106,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 103,
+      "timesMs": [
+        105697.6744
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 107,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 104,
+      "timesMs": [
+        106744.186
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 108,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 105,
+      "timesMs": [
+        107790.6977
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 109,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 106,
+      "timesMs": [
+        108837.2093
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 110,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 107,
+      "timesMs": [
+        109883.7209
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 111,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 108,
+      "timesMs": [
+        110930.2326
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 112,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 109,
+      "timesMs": [
+        111976.7442
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 113,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 110,
+      "timesMs": [
+        113023.2558
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 114,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 111,
+      "timesMs": [
+        113023.2558
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 115,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 112,
+      "timesMs": [
+        114069.7674
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 116,
+      "sourceLong": "normal:116",
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 113,
+      "timesMs": [
+        115116.279
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 116,
+      "sourceLong": "normal:116",
+      "added": false,
+      "phaseErrorMs": -0.0001,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 114,
+      "timesMs": [
+        115116.2791
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 117,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 115,
+      "timesMs": [
+        117209.3023
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 120,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 116,
+      "timesMs": [
+        118255.814
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 121,
+      "sourceLong": "normal:121",
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 117,
+      "timesMs": [
+        119302.3256
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 121,
+      "sourceLong": "normal:121",
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 118,
+      "timesMs": [
+        119302.3256
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 122,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 119,
+      "timesMs": [
+        120348.8372
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 123,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 120,
+      "timesMs": [
+        121395.3488
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 124,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 121,
+      "timesMs": [
+        122441.8605
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 125,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 122,
+      "timesMs": [
+        123488.3721
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 126,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 123,
+      "timesMs": [
+        125581.3953
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 128,
+      "sourceLong": "normal:128",
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 124,
+      "timesMs": [
+        126627.9069
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 128,
+      "sourceLong": "normal:128",
+      "added": false,
+      "phaseErrorMs": -0.0001,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 125,
+      "timesMs": [
+        126627.907
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 129,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 126,
+      "timesMs": [
+        127674.4186
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 130,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 127,
+      "timesMs": [
+        128720.9302
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 131,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 128,
+      "timesMs": [
+        129767.4419
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 132,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 129,
+      "timesMs": [
+        130813.9535
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 133,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 130,
+      "timesMs": [
+        131860.4651
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 134,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 131,
+      "timesMs": [
+        133953.4884,
+        135000.0001
+      ],
+      "directions": [
+        "down",
+        "up"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 136,
+      "sourceLong": "normal:136",
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 132,
+      "timesMs": [
+        136046.5116
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 137,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 133,
+      "timesMs": [
+        136046.5117
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 136,
+      "sourceLong": "normal:136",
+      "added": false,
+      "phaseErrorMs": 0.0001,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 134,
+      "timesMs": [
+        137093.0233
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 138,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 135,
+      "timesMs": [
+        138139.5349
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 139,
+      "sourceLong": "normal:139",
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 136,
+      "timesMs": [
+        139186.0465
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 139,
+      "sourceLong": "normal:139",
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 137,
+      "timesMs": [
+        139186.0465
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 140,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 138,
+      "timesMs": [
+        140232.5581
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 142,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 139,
+      "timesMs": [
+        140232.5581
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 143,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 140,
+      "timesMs": [
+        142325.5814
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 145,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 141,
+      "timesMs": [
+        143372.093
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 146,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 142,
+      "timesMs": [
+        144418.6047
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 147,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 143,
+      "timesMs": [
+        145465.1163
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 148,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 144,
+      "timesMs": [
+        146511.6279
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 150,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 145,
+      "timesMs": [
+        146511.6279
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 151,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 146,
+      "timesMs": [
+        147558.1395
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 152,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 147,
+      "timesMs": [
+        148604.6512
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 153,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 148,
+      "timesMs": [
+        150697.6744
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 155,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 149,
+      "timesMs": [
+        151744.186
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 156,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 150,
+      "timesMs": [
+        152790.6977
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 157,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 151,
+      "timesMs": [
+        153837.2093
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 158,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 152,
+      "timesMs": [
+        154883.7209
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 160,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 153,
+      "timesMs": [
+        154883.7209
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 161,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 154,
+      "timesMs": [
+        155930.2326
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 162,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 155,
+      "timesMs": [
+        156976.7442
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 163,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 156,
+      "timesMs": [
+        159069.7674
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 165,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 157,
+      "timesMs": [
+        159069.7674
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 166,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 158,
+      "timesMs": [
+        160116.2791
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 167,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 159,
+      "timesMs": [
+        161162.7907
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 168,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 160,
+      "timesMs": [
+        162209.3023
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 169,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 161,
+      "timesMs": [
+        163255.814,
+        164302.3257
+      ],
+      "directions": [
+        "down",
+        "up"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 170,
+      "sourceLong": "normal:170",
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 162,
+      "timesMs": [
+        165348.8373
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 170,
+      "sourceLong": "normal:170",
+      "added": false,
+      "phaseErrorMs": 0.0001,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 163,
+      "timesMs": [
+        167441.8605
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 171,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 164,
+      "timesMs": [
+        167441.8605
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 172,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 165,
+      "timesMs": [
+        168488.3721
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 173,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 166,
+      "timesMs": [
+        169534.8837
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 174,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 167,
+      "timesMs": [
+        170581.3953
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 175,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 168,
+      "timesMs": [
+        171627.907
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 176,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 169,
+      "timesMs": [
+        173720.9302
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 177,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 170,
+      "timesMs": [
+        175813.9535
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 178,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 171,
+      "timesMs": [
+        176860.4651
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 179,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 172,
+      "timesMs": [
+        177906.9767
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 180,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": -0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 173,
+      "timesMs": [
+        178953.4884
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "normal",
+      "sourceIndex": 181,
+      "sourceLong": null,
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 174,
+      "timesMs": [
+        180000.0
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "normal",
+      "sourceIndex": 182,
+      "sourceLong": "normal:182",
+      "added": false,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    }
+  ]
+}

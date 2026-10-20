@@ -1,0 +1,52 @@
+{
+  "unityVersion": "6000.3.9f1",
+  "suite": {
+    "id": "2",
+    "testcasecount": "197",
+    "result": "Failed(Child)",
+    "total": "197",
+    "passed": "190",
+    "failed": "7",
+    "inconclusive": "0",
+    "skipped": "0",
+    "asserts": "0",
+    "engine-version": "3.5.0.0",
+    "clr-version": "4.0.30319.42000",
+    "start-time": "2026-10-20 17:05:23Z",
+    "end-time": "2026-10-20 17:05:43Z",
+    "duration": "19.6294019"
+  },
+  "beginnerChartCasesPassed": 56,
+  "pythonMutationTestsPassed": 11,
+  "failures": [
+    {
+      "test": "FiveSongPlayabilityTests.ConventionalLayoutsRemainTheMainStructure(\"escapade\",\"hard\")",
+      "message": "System.IndexOutOfRangeException : Index was outside the bounds of the array."
+    },
+    {
+      "test": "FiveSongPlayabilityTests.ConventionalLayoutsRemainTheMainStructure(\"BenkyouRemaster\",\"hard\")",
+      "message": "System.IndexOutOfRangeException : Index was outside the bounds of the array."
+    },
+    {
+      "test": "FiveSongPlayabilityTests.EveryPlannedCutCanCompleteWithCorrectHandAndDirection(\"escapade\",\"hard\")",
+      "message": "  Expected: 295\n  But was:  287\n"
+    },
+    {
+      "test": "FiveSongPlayabilityTests.EveryPlannedCutCanCompleteWithCorrectHandAndDirection(\"BenkyouRemaster\",\"hard\")",
+      "message": "  Expected: 335\n  But was:  333\n"
+    },
+    {
+      "test": "FiveSongPlayabilityTests.FlickAccentsStaySparseAndNeverReachTenConsecutiveNotes(\"escapade\",\"hard\")",
+      "message": "System.IndexOutOfRangeException : Index was outside the bounds of the array."
+    },
+    {
+      "test": "FiveSongPlayabilityTests.FlickAccentsStaySparseAndNeverReachTenConsecutiveNotes(\"BenkyouRemaster\",\"hard\")",
+      "message": "System.IndexOutOfRangeException : Index was outside the bounds of the array."
+    },
+    {
+      "test": "RushESongTests.EntireChartCanBeCutAndScoredWithThePlannedHands(\"hard\")",
+      "message": "  Expected: 353\n  But was:  316\n"
+    }
+  ],
+  "sourceXml": "beginner-20261021-v4-20261020-170441.xml"
+}

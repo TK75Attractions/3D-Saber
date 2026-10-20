@@ -26,7 +26,8 @@ public class FiveSongPlayabilityTests
         var chart=ChartLoader.LoadFromStreamingAssets(song,difficulty);
         var plan=LoadPlan(song,difficulty);
         var notes=chart.notes.OrderBy(n=>n.time).ToArray();
-        double limit=difficulty=="easy"?0:difficulty=="normal"?.12:.22;
+        double limit=difficulty=="easy"?.05:difficulty=="normal"?.12:.22;
+        if(difficulty!="hard") Assert.GreaterOrEqual(notes.Count(n=>n.IsDirection),1);
         Assert.LessOrEqual(notes.Count(n=>n.IsDirection)/(double)notes.Length,limit);
         Assert.LessOrEqual(LongestFlickRun(notes),4,"全体の連続数");
         foreach(var required in new[]{SaberHand.Left,SaberHand.Right})
@@ -45,11 +46,12 @@ public class FiveSongPlayabilityTests
             Assert.Less(run,10,"同時打ちの並び順によらない連続数");
         }
         for(int i=0;i+16<=notes.Length;i++)
-            Assert.LessOrEqual(notes.Skip(i).Take(16).Count(n=>n.IsDirection),(int)(16*limit),"局所的なフリック過多");
+            Assert.LessOrEqual(notes.Skip(i).Take(16).Count(n=>n.IsDirection),Math.Max(1,(int)(16*limit)),"局所的なフリック過多");
     }
 
     static CutPlan LoadPlan(string song,string difficulty) => JsonUtility.FromJson<CutPlan>(File.ReadAllText(
-        Path.Combine("Tools","ChartDesign","FiveSongs20261014",song,difficulty+"-cut-plan.json")));
+        difficulty=="hard" ? Path.Combine("Tools","ChartDesign","FiveSongs20261014",song,difficulty+"-cut-plan.json")
+        : Path.Combine("Tools","ChartDesign","Beginner20261021","plans",song,difficulty+".json")));
 
     static SaberHand HandFor(NoteData note,CutRow cut)
     {

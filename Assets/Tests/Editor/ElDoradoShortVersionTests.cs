@@ -27,8 +27,7 @@ public class ElDoradoShortVersionTests
         }
     }
 
-    [TestCase("easy", 7199f, 4200f, 5)]
-    [TestCase("easy", 117599f, 1800f, 2)]
+    // Easyは2026-10-21に表拍の2回切りへ作り直した。旧切詰めの固定値はHardで保護する。
     [TestCase("hard", 2399f, 9000f, 9)]
     [TestCase("hard", 7199f, 4200f, 8)]
     [TestCase("hard", 117599f, 1800f, 3)]

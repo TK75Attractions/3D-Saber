@@ -93,7 +93,9 @@ public class RushESongTests
             var spawned = new Dictionary<int, CuttableNote>(); int index = 0;
             spawner.OnNoteSpawned += n => { spawned[index++] = n; if (n.countLabel != null) n.countLabel.transform.SetParent(root.transform, true); };
             var chart = ChartLoader.LoadFromStreamingAssets(Id, difficulty);
-            var plan = JsonUtility.FromJson<CutPlan>(File.ReadAllText(Path.Combine("Tools", "ChartDesign", Id, difficulty + "-cut-plan.json")));
+            var plan = JsonUtility.FromJson<CutPlan>(File.ReadAllText((difficulty == "easy" || difficulty == "normal")
+                ? Path.Combine("Tools", "ChartDesign", "Beginner20261021", "plans", Id, difficulty + ".json")
+                : Path.Combine("Tools", "ChartDesign", Id, difficulty + "-cut-plan.json")));
             Assert.AreEqual(chart.notes.Count, plan.notes.Length);
             var cuts = plan.notes.SelectMany(row => row.timesMs.Select((time, k) => (row.index, time, direction: row.directions[k]))).OrderBy(c => c.time).ToArray();
             spawner.SetChart(chart);

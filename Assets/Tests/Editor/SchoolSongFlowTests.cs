@@ -26,7 +26,7 @@ public class SchoolSongFlowTests
         Assert.AreEqual(maxSimultaneous, chart.notes.GroupBy(n => n.time).Max(g => g.Count()));
     }
 
-    [TestCase("normal")]
+    // Normalの方向は初見向けの上下だけに整理。8方向の網羅はHardで維持。
     [TestCase("hard")]
     public void AllEightDirectionsAppear(string difficulty)
     {

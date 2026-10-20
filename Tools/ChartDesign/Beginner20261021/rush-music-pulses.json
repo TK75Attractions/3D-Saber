@@ -1,0 +1,2690 @@
+{
+  "song": "RushE",
+  "audioSha256": "dd8fb71abaa1760ad0d989b3668974cb1c0ffff426a54139a3340c94329a0d65",
+  "method": "Existing librosa PLP (60–240 BPM), peaks snapped within 65ms to audio-aligned E reference events; sparse intro/cadence explicit.",
+  "status": "estimated musical pulse; 120 BPM remains an editor time coordinate",
+  "analysisSha256": "0ef514238f5dff6d793596a532d5dd816936d590e3d954ba0096c123f98e2555",
+  "pulseTimesMs": [
+    93.4921,
+    4093.4921,
+    5812.2421,
+    7124.7421,
+    7687.2421,
+    8187.2421,
+    8499.7421,
+    8780.9921,
+    9062.2421,
+    13530.9921,
+    14405.9921,
+    15187.2421,
+    15937.2421,
+    16749.7421,
+    17530.9921,
+    18218.4921,
+    18905.9921,
+    19218.4921,
+    19530.9921,
+    19812.2421,
+    20124.7421,
+    20405.9921,
+    20718.4921,
+    20999.7421,
+    21312.2421,
+    21624.7421,
+    21905.9921,
+    22187.2421,
+    22468.4921,
+    22718.4921,
+    22999.7421,
+    23249.7421,
+    23530.9921,
+    23780.9921,
+    24280.9921,
+    24530.9921,
+    24999.7421,
+    25468.4921,
+    25937.2421,
+    26405.9921,
+    26843.4921,
+    27249.7421,
+    27655.9921,
+    28062.2421,
+    28468.4921,
+    28874.7421,
+    29249.7421,
+    29624.7421,
+    30030.9921,
+    30405.9921,
+    30780.9921,
+    31124.7421,
+    31468.4921,
+    31812.2421,
+    32530.9921,
+    33218.4921,
+    33562.2421,
+    33905.9921,
+    34249.7421,
+    34562.2421,
+    34874.7421,
+    35155.9921,
+    35468.4921,
+    35780.9921,
+    36062.2421,
+    36343.4921,
+    36624.7421,
+    36905.9921,
+    37187.2421,
+    37437.2421,
+    37718.4921,
+    37968.4921,
+    38218.4921,
+    38468.4921,
+    38843.4921,
+    39405.9921,
+    39749.7421,
+    40062.2421,
+    40405.9921,
+    40718.4921,
+    41187.2421,
+    41624.7421,
+    41999.7421,
+    42499.7421,
+    42874.7421,
+    43280.9921,
+    43749.7421,
+    44124.7421,
+    44905.9921,
+    45405.9921,
+    45780.9921,
+    46155.9921,
+    46655.9921,
+    47030.9921,
+    47437.2421,
+    47812.2421,
+    48177.8579,
+    48584.1079,
+    49334.1079,
+    49740.3579,
+    50021.6079,
+    50343.4921,
+    50718.4921,
+    51093.4921,
+    51374.7421,
+    51780.9921,
+    52155.9921,
+    52468.4921,
+    52843.4921,
+    53218.4921,
+    53593.4921,
+    53999.7421,
+    54280.9921,
+    55155.9921,
+    55562.2421,
+    56312.2421,
+    57093.4921,
+    57405.9921,
+    57687.2421,
+    58062.2421,
+    59030.9921,
+    59437.2421,
+    59812.2421,
+    60187.2421,
+    60499.7421,
+    60780.9921,
+    61749.7421,
+    62124.7421,
+    62905.9921,
+    63499.7421,
+    63874.7421,
+    64843.4921,
+    65437.2421,
+    65999.7421,
+    66374.7421,
+    66749.7421,
+    67124.7421,
+    67499.7421,
+    67843.4921,
+    68218.4921,
+    68530.9921,
+    68999.7421,
+    69437.2421,
+    69812.2421,
+    70187.2421,
+    70468.4921,
+    70843.4921,
+    71218.4921,
+    71562.2421,
+    71937.2421,
+    72312.2421,
+    72687.2421,
+    73062.2421,
+    73405.9921,
+    73780.9921,
+    74155.9921,
+    74530.9921,
+    74905.9921,
+    75280.9921,
+    75655.9921,
+    76030.9921,
+    76405.9921,
+    76749.7421,
+    77124.7421,
+    77499.7421,
+    77905.9921,
+    78312.2421,
+    79187.2421,
+    79530.9921,
+    79999.7421,
+    80655.9921,
+    80999.7421,
+    81312.2421,
+    81905.9921,
+    82155.9921,
+    82437.2421,
+    83437.2421,
+    83874.7421,
+    84280.9921,
+    84687.2421,
+    85124.7421,
+    85499.7421,
+    85874.7421,
+    86218.4921,
+    86562.2421,
+    86874.7421,
+    87187.2421,
+    87468.4921,
+    87718.4921,
+    88062.2421,
+    88999.7421,
+    89312.2421,
+    89718.4921,
+    90062.2421,
+    90374.7421,
+    90718.4921,
+    91093.4921,
+    91437.2421,
+    91812.2421,
+    92155.9921,
+    92499.7421,
+    92874.7421,
+    93124.7421,
+    93499.7421,
+    93874.7421,
+    94155.9921,
+    94530.9921,
+    94874.7421,
+    95187.2421,
+    95562.2421,
+    95905.9921,
+    96280.9921,
+    96562.2421,
+    96905.9921,
+    97280.9921,
+    97624.7421,
+    97905.9921,
+    98249.7421,
+    98624.7421,
+    98968.4921,
+    99249.7421,
+    99624.7421,
+    99968.4921,
+    100312.2421,
+    100593.4921,
+    100937.2421,
+    101312.2421,
+    101624.7421,
+    101937.2421,
+    102187.2421,
+    102562.2421,
+    103093.4921,
+    103812.2421,
+    104155.9921,
+    104530.9921,
+    104780.9921,
+    105062.2421,
+    105593.4921,
+    105968.4921,
+    106687.2421,
+    107218.4921,
+    107655.9921,
+    108468.4921,
+    108812.2421,
+    109187.2421,
+    109530.9921,
+    109905.9921,
+    110280.9921,
+    110968.4921,
+    111687.2421,
+    112218.4921,
+    112687.2421,
+    113218.4921,
+    113749.7421,
+    114280.9921,
+    114812.2421,
+    115405.9921,
+    115937.2421,
+    116468.4921,
+    116968.4921,
+    117530.9921,
+    118030.9921,
+    118405.9921,
+    118718.4921,
+    119093.4921,
+    119437.2421,
+    119874.7421,
+    120218.4921,
+    120655.9921,
+    120999.7421,
+    121343.4921,
+    121780.9921,
+    122124.7421,
+    122499.7421,
+    122905.9921,
+    123437.2421,
+    123937.2421,
+    124280.9921,
+    124624.7421,
+    124968.4921,
+    125312.2421,
+    125624.7421,
+    125937.2421,
+    126280.9921,
+    126593.4921,
+    126937.2421,
+    127249.7421,
+    127655.9921,
+    127968.4921,
+    128374.7421,
+    128687.2421,
+    129062.2421,
+    129405.9921,
+    129749.7421,
+    130124.7421,
+    130499.7421,
+    130812.2421,
+    131155.9921,
+    131593.4921,
+    131905.9921,
+    132187.2421,
+    132530.9921,
+    132780.9921,
+    133093.4921,
+    133343.4921,
+    133687.2421,
+    133937.2421,
+    134249.7421,
+    134530.9921,
+    134812.2421,
+    135124.7421,
+    135405.9921,
+    135718.4921,
+    135968.4921,
+    136280.9921
+  ],
+  "evidence": [
+    {
+      "timeMs": 93.4921,
+      "plpPeakMs": 113.1973,
+      "errorMs": -19.7052,
+      "strength": 0.4547
+    },
+    {
+      "timeMs": 4093.4921,
+      "plpPeakMs": 4115.737,
+      "errorMs": -22.2449,
+      "strength": 0.7464
+    },
+    {
+      "timeMs": 5812.2421,
+      "plpPeakMs": 5825.3061,
+      "errorMs": -13.064,
+      "strength": 0.8192
+    },
+    {
+      "timeMs": 7124.7421,
+      "plpPeakMs": 7128.5261,
+      "errorMs": -3.784,
+      "strength": 0.8355
+    },
+    {
+      "timeMs": 7687.2421,
+      "plpPeakMs": 7691.61,
+      "errorMs": -4.3679,
+      "strength": 0.6065
+    },
+    {
+      "timeMs": 8187.2421,
+      "plpPeakMs": 8208.254,
+      "errorMs": -21.0119,
+      "strength": 0.7719
+    },
+    {
+      "timeMs": 8499.7421,
+      "plpPeakMs": 8501.4059,
+      "errorMs": -1.6638,
+      "strength": 0.9905
+    },
+    {
+      "timeMs": 8780.9921,
+      "plpPeakMs": 8791.6553,
+      "errorMs": -10.6632,
+      "strength": 0.9376
+    },
+    {
+      "timeMs": 9062.2421,
+      "plpPeakMs": 9079.0023,
+      "errorMs": -16.7602,
+      "strength": 0.6328
+    },
+    {
+      "timeMs": 13530.9921,
+      "plpPeakMs": 13548.8435,
+      "errorMs": -17.8514,
+      "strength": 0.2962
+    },
+    {
+      "timeMs": 14405.9921,
+      "plpPeakMs": 14425.3968,
+      "errorMs": -19.4047,
+      "strength": 0.4189
+    },
+    {
+      "timeMs": 15187.2421,
+      "plpPeakMs": 15206.1678,
+      "errorMs": -18.9257,
+      "strength": 0.6969
+    },
+    {
+      "timeMs": 15937.2421,
+      "plpPeakMs": 15931.7914,
+      "errorMs": 5.4507,
+      "strength": 0.3957
+    },
+    {
+      "timeMs": 16749.7421,
+      "plpPeakMs": 16776.4172,
+      "errorMs": -26.6751,
+      "strength": 0.4085
+    },
+    {
+      "timeMs": 17530.9921,
+      "plpPeakMs": 17536.8707,
+      "errorMs": -5.8786,
+      "strength": 0.5317
+    },
+    {
+      "timeMs": 18218.4921,
+      "plpPeakMs": 18242.1769,
+      "errorMs": -23.6848,
+      "strength": 0.7577
+    },
+    {
+      "timeMs": 18905.9921,
+      "plpPeakMs": 18924.263,
+      "errorMs": -18.2709,
+      "strength": 0.975
+    },
+    {
+      "timeMs": 19218.4921,
+      "plpPeakMs": 19231.9274,
+      "errorMs": -13.4353,
+      "strength": 0.7104
+    },
+    {
+      "timeMs": 19530.9921,
+      "plpPeakMs": 19533.7868,
+      "errorMs": -2.7947,
+      "strength": 0.7585
+    },
+    {
+      "timeMs": 19812.2421,
+      "plpPeakMs": 19835.6463,
+      "errorMs": -23.4042,
+      "strength": 0.8403
+    },
+    {
+      "timeMs": 20124.7421,
+      "plpPeakMs": 20131.7007,
+      "errorMs": -6.9586,
+      "strength": 0.9124
+    },
+    {
+      "timeMs": 20405.9921,
+      "plpPeakMs": 20430.6576,
+      "errorMs": -24.6655,
+      "strength": 0.9378
+    },
+    {
+      "timeMs": 20718.4921,
+      "plpPeakMs": 20726.712,
+      "errorMs": -8.2199,
+      "strength": 0.957
+    },
+    {
+      "timeMs": 20999.7421,
+      "plpPeakMs": 21025.6689,
+      "errorMs": -25.9268,
+      "strength": 0.9871
+    },
+    {
+      "timeMs": 21312.2421,
+      "plpPeakMs": 21318.8209,
+      "errorMs": -6.5788,
+      "strength": 1.0
+    },
+    {
+      "timeMs": 21624.7421,
+      "plpPeakMs": 21611.9728,
+      "errorMs": 12.7693,
+      "strength": 0.9728
+    },
+    {
+      "timeMs": 21905.9921,
+      "plpPeakMs": 21899.3197,
+      "errorMs": 6.6724,
+      "strength": 0.9389
+    },
+    {
+      "timeMs": 22187.2421,
+      "plpPeakMs": 22186.6667,
+      "errorMs": 0.5754,
+      "strength": 0.9145
+    },
+    {
+      "timeMs": 22468.4921,
+      "plpPeakMs": 22468.2086,
+      "errorMs": 0.2835,
+      "strength": 0.8696
+    },
+    {
+      "timeMs": 22718.4921,
+      "plpPeakMs": 22743.9456,
+      "errorMs": -25.4535,
+      "strength": 0.7598
+    },
+    {
+      "timeMs": 22999.7421,
+      "plpPeakMs": 23013.8776,
+      "errorMs": -14.1355,
+      "strength": 0.6252
+    },
+    {
+      "timeMs": 23249.7421,
+      "plpPeakMs": 23278.0045,
+      "errorMs": -28.2624,
+      "strength": 0.5599
+    },
+    {
+      "timeMs": 23530.9921,
+      "plpPeakMs": 23545.034,
+      "errorMs": -14.0419,
+      "strength": 0.5114
+    },
+    {
+      "timeMs": 23780.9921,
+      "plpPeakMs": 23809.161,
+      "errorMs": -28.1689,
+      "strength": 0.3402
+    },
+    {
+      "timeMs": 24280.9921,
+      "plpPeakMs": 24288.0726,
+      "errorMs": -7.0805,
+      "strength": 0.1851
+    },
+    {
+      "timeMs": 24530.9921,
+      "plpPeakMs": 24555.102,
+      "errorMs": -24.1099,
+      "strength": 0.3497
+    },
+    {
+      "timeMs": 24999.7421,
+      "plpPeakMs": 25019.5011,
+      "errorMs": -19.759,
+      "strength": 0.2722
+    },
+    {
+      "timeMs": 25468.4921,
+      "plpPeakMs": 25466.4853,
+      "errorMs": 2.0068,
+      "strength": 0.4148
+    },
+    {
+      "timeMs": 25937.2421,
+      "plpPeakMs": 25936.6893,
+      "errorMs": 0.5528,
+      "strength": 0.5679
+    },
+    {
+      "timeMs": 26405.9921,
+      "plpPeakMs": 26398.1859,
+      "errorMs": 7.8062,
+      "strength": 0.5878
+    },
+    {
+      "timeMs": 26843.4921,
+      "plpPeakMs": 26868.39,
+      "errorMs": -24.8979,
+      "strength": 0.6738
+    },
+    {
+      "timeMs": 27249.7421,
+      "plpPeakMs": 27263.1293,
+      "errorMs": -13.3872,
+      "strength": 0.6311
+    },
+    {
+      "timeMs": 27655.9921,
+      "plpPeakMs": 27663.6735,
+      "errorMs": -7.6814,
+      "strength": 0.5597
+    },
+    {
+      "timeMs": 28062.2421,
+      "plpPeakMs": 28070.0227,
+      "errorMs": -7.7806,
+      "strength": 0.5201
+    },
+    {
+      "timeMs": 28468.4921,
+      "plpPeakMs": 28467.6644,
+      "errorMs": 0.8277,
+      "strength": 0.4845
+    },
+    {
+      "timeMs": 28874.7421,
+      "plpPeakMs": 28856.5986,
+      "errorMs": 18.1435,
+      "strength": 0.4426
+    },
+    {
+      "timeMs": 29249.7421,
+      "plpPeakMs": 29248.4354,
+      "errorMs": 1.3067,
+      "strength": 0.3905
+    },
+    {
+      "timeMs": 29624.7421,
+      "plpPeakMs": 29637.3696,
+      "errorMs": -12.6275,
+      "strength": 0.3778
+    },
+    {
+      "timeMs": 30030.9921,
+      "plpPeakMs": 30023.4014,
+      "errorMs": 7.5907,
+      "strength": 0.4277
+    },
+    {
+      "timeMs": 30405.9921,
+      "plpPeakMs": 30400.7256,
+      "errorMs": 5.2665,
+      "strength": 0.4799
+    },
+    {
+      "timeMs": 30780.9921,
+      "plpPeakMs": 30772.2449,
+      "errorMs": 8.7472,
+      "strength": 0.5588
+    },
+    {
+      "timeMs": 31124.7421,
+      "plpPeakMs": 31132.1542,
+      "errorMs": -7.4121,
+      "strength": 0.7168
+    },
+    {
+      "timeMs": 31468.4921,
+      "plpPeakMs": 31486.2585,
+      "errorMs": -17.7664,
+      "strength": 0.8433
+    },
+    {
+      "timeMs": 31812.2421,
+      "plpPeakMs": 31840.3628,
+      "errorMs": -28.1207,
+      "strength": 0.7685
+    },
+    {
+      "timeMs": 32530.9921,
+      "plpPeakMs": 32545.6689,
+      "errorMs": -14.6768,
+      "strength": 0.6128
+    },
+    {
+      "timeMs": 33218.4921,
+      "plpPeakMs": 33213.2426,
+      "errorMs": 5.2495,
+      "strength": 0.4057
+    },
+    {
+      "timeMs": 33562.2421,
+      "plpPeakMs": 33570.2494,
+      "errorMs": -8.0073,
+      "strength": 0.3
+    },
+    {
+      "timeMs": 33905.9921,
+      "plpPeakMs": 33935.9637,
+      "errorMs": -29.9716,
+      "strength": 0.414
+    },
+    {
+      "timeMs": 34249.7421,
+      "plpPeakMs": 34266.8481,
+      "errorMs": -17.106,
+      "strength": 0.5675
+    },
+    {
+      "timeMs": 34562.2421,
+      "plpPeakMs": 34571.61,
+      "errorMs": -9.3679,
+      "strength": 0.5583
+    },
+    {
+      "timeMs": 34874.7421,
+      "plpPeakMs": 34876.3719,
+      "errorMs": -1.6298,
+      "strength": 0.5319
+    },
+    {
+      "timeMs": 35155.9921,
+      "plpPeakMs": 35181.1338,
+      "errorMs": -25.1417,
+      "strength": 0.5014
+    },
+    {
+      "timeMs": 35468.4921,
+      "plpPeakMs": 35482.9932,
+      "errorMs": -14.5011,
+      "strength": 0.4807
+    },
+    {
+      "timeMs": 35780.9921,
+      "plpPeakMs": 35781.9501,
+      "errorMs": -0.958,
+      "strength": 0.4404
+    },
+    {
+      "timeMs": 36062.2421,
+      "plpPeakMs": 36075.102,
+      "errorMs": -12.8599,
+      "strength": 0.4039
+    },
+    {
+      "timeMs": 36343.4921,
+      "plpPeakMs": 36362.449,
+      "errorMs": -18.9569,
+      "strength": 0.4312
+    },
+    {
+      "timeMs": 36624.7421,
+      "plpPeakMs": 36643.9909,
+      "errorMs": -19.2488,
+      "strength": 0.4773
+    },
+    {
+      "timeMs": 36905.9921,
+      "plpPeakMs": 36919.7279,
+      "errorMs": -13.7358,
+      "strength": 0.4592
+    },
+    {
+      "timeMs": 37187.2421,
+      "plpPeakMs": 37186.7574,
+      "errorMs": 0.4847,
+      "strength": 0.43
+    },
+    {
+      "timeMs": 37437.2421,
+      "plpPeakMs": 37450.8844,
+      "errorMs": -13.6423,
+      "strength": 0.4788
+    },
+    {
+      "timeMs": 37718.4921,
+      "plpPeakMs": 37717.9138,
+      "errorMs": 0.5783,
+      "strength": 0.5359
+    },
+    {
+      "timeMs": 37968.4921,
+      "plpPeakMs": 37987.8458,
+      "errorMs": -19.3537,
+      "strength": 0.5038
+    },
+    {
+      "timeMs": 38218.4921,
+      "plpPeakMs": 38254.8753,
+      "errorMs": -36.3832,
+      "strength": 0.362
+    },
+    {
+      "timeMs": 38468.4921,
+      "plpPeakMs": 38521.9048,
+      "errorMs": -53.4127,
+      "strength": 0.1683
+    },
+    {
+      "timeMs": 40718.4921,
+      "plpPeakMs": 40730.7029,
+      "errorMs": -12.2108,
+      "strength": 0.3554
+    },
+    {
+      "timeMs": 41187.2421,
+      "plpPeakMs": 41189.2971,
+      "errorMs": -2.055,
+      "strength": 0.3438
+    },
+    {
+      "timeMs": 41624.7421,
+      "plpPeakMs": 41636.2812,
+      "errorMs": -11.5391,
+      "strength": 0.2147
+    },
+    {
+      "timeMs": 47030.9921,
+      "plpPeakMs": 47061.0431,
+      "errorMs": -30.051,
+      "strength": 0.3945
+    },
+    {
+      "timeMs": 47437.2421,
+      "plpPeakMs": 47429.6599,
+      "errorMs": 7.5822,
+      "strength": 0.5581
+    },
+    {
+      "timeMs": 47812.2421,
+      "plpPeakMs": 47798.2766,
+      "errorMs": 13.9655,
+      "strength": 0.4455
+    },
+    {
+      "timeMs": 48177.8579,
+      "plpPeakMs": 48178.5034,
+      "errorMs": -0.6455,
+      "strength": 0.243
+    },
+    {
+      "timeMs": 48584.1079,
+      "plpPeakMs": 48581.9501,
+      "errorMs": 2.1578,
+      "strength": 0.169
+    },
+    {
+      "timeMs": 49334.1079,
+      "plpPeakMs": 49385.941,
+      "errorMs": -51.8331,
+      "strength": 0.1972
+    },
+    {
+      "timeMs": 49740.3579,
+      "plpPeakMs": 49693.6054,
+      "errorMs": 46.7525,
+      "strength": 0.241
+    },
+    {
+      "timeMs": 50021.6079,
+      "plpPeakMs": 50044.8073,
+      "errorMs": -23.1994,
+      "strength": 0.1715
+    },
+    {
+      "timeMs": 52468.4921,
+      "plpPeakMs": 52503.22,
+      "errorMs": -34.7279,
+      "strength": 0.1644
+    },
+    {
+      "timeMs": 52843.4921,
+      "plpPeakMs": 52857.3243,
+      "errorMs": -13.8322,
+      "strength": 0.2018
+    },
+    {
+      "timeMs": 53218.4921,
+      "plpPeakMs": 53243.356,
+      "errorMs": -24.8639,
+      "strength": 0.385
+    },
+    {
+      "timeMs": 53593.4921,
+      "plpPeakMs": 53614.8753,
+      "errorMs": -21.3832,
+      "strength": 0.5048
+    },
+    {
+      "timeMs": 53999.7421,
+      "plpPeakMs": 53986.3946,
+      "errorMs": 13.3475,
+      "strength": 0.4332
+    },
+    {
+      "timeMs": 54280.9921,
+      "plpPeakMs": 54311.4739,
+      "errorMs": -30.4818,
+      "strength": 0.2161
+    },
+    {
+      "timeMs": 55562.2421,
+      "plpPeakMs": 55603.0839,
+      "errorMs": -40.8418,
+      "strength": 0.1601
+    },
+    {
+      "timeMs": 56312.2421,
+      "plpPeakMs": 56328.7075,
+      "errorMs": -16.4654,
+      "strength": 0.2003
+    },
+    {
+      "timeMs": 57093.4921,
+      "plpPeakMs": 57123.9909,
+      "errorMs": -30.4988,
+      "strength": 0.295
+    },
+    {
+      "timeMs": 57405.9921,
+      "plpPeakMs": 57414.2404,
+      "errorMs": -8.2483,
+      "strength": 0.2699
+    },
+    {
+      "timeMs": 57687.2421,
+      "plpPeakMs": 57695.7823,
+      "errorMs": -8.5402,
+      "strength": 0.2388
+    },
+    {
+      "timeMs": 59437.2421,
+      "plpPeakMs": 59448.8889,
+      "errorMs": -11.6468,
+      "strength": 0.2983
+    },
+    {
+      "timeMs": 59812.2421,
+      "plpPeakMs": 59817.5057,
+      "errorMs": -5.2636,
+      "strength": 0.3573
+    },
+    {
+      "timeMs": 60187.2421,
+      "plpPeakMs": 60194.8299,
+      "errorMs": -7.5878,
+      "strength": 0.2935
+    },
+    {
+      "timeMs": 60499.7421,
+      "plpPeakMs": 60508.2993,
+      "errorMs": -8.5572,
+      "strength": 0.1958
+    },
+    {
+      "timeMs": 60780.9921,
+      "plpPeakMs": 60801.4512,
+      "errorMs": -20.4591,
+      "strength": 0.1795
+    },
+    {
+      "timeMs": 61749.7421,
+      "plpPeakMs": 61782.4943,
+      "errorMs": -32.7522,
+      "strength": 0.1897
+    },
+    {
+      "timeMs": 62124.7421,
+      "plpPeakMs": 62081.4512,
+      "errorMs": 43.2909,
+      "strength": 0.1726
+    },
+    {
+      "timeMs": 62905.9921,
+      "plpPeakMs": 62914.4671,
+      "errorMs": -8.475,
+      "strength": 0.1786
+    },
+    {
+      "timeMs": 63499.7421,
+      "plpPeakMs": 63500.771,
+      "errorMs": -1.0289,
+      "strength": 0.416
+    },
+    {
+      "timeMs": 63874.7421,
+      "plpPeakMs": 63814.2404,
+      "errorMs": 60.5017,
+      "strength": 0.1803
+    },
+    {
+      "timeMs": 64062.2421,
+      "plpPeakMs": 64089.9773,
+      "errorMs": -27.7352,
+      "strength": 0.3543
+    },
+    {
+      "timeMs": 64843.4921,
+      "plpPeakMs": 64859.1383,
+      "errorMs": -15.6462,
+      "strength": 0.3465
+    },
+    {
+      "timeMs": 65437.2421,
+      "plpPeakMs": 65428.0272,
+      "errorMs": 9.2149,
+      "strength": 0.552
+    },
+    {
+      "timeMs": 65999.7421,
+      "plpPeakMs": 66011.4286,
+      "errorMs": -11.6865,
+      "strength": 0.3775
+    },
+    {
+      "timeMs": 66374.7421,
+      "plpPeakMs": 66397.4603,
+      "errorMs": -22.7182,
+      "strength": 0.302
+    },
+    {
+      "timeMs": 66749.7421,
+      "plpPeakMs": 66789.2971,
+      "errorMs": -39.555,
+      "strength": 0.2054
+    },
+    {
+      "timeMs": 68218.4921,
+      "plpPeakMs": 68208.6168,
+      "errorMs": 9.8753,
+      "strength": 0.2339
+    },
+    {
+      "timeMs": 68530.9921,
+      "plpPeakMs": 68536.5986,
+      "errorMs": -5.6065,
+      "strength": 0.1994
+    },
+    {
+      "timeMs": 68999.7421,
+      "plpPeakMs": 68977.7778,
+      "errorMs": 21.9643,
+      "strength": 0.2073
+    },
+    {
+      "timeMs": 69437.2421,
+      "plpPeakMs": 69442.1769,
+      "errorMs": -4.9348,
+      "strength": 0.1975
+    },
+    {
+      "timeMs": 71218.4921,
+      "plpPeakMs": 71212.6984,
+      "errorMs": 5.7937,
+      "strength": 0.1651
+    },
+    {
+      "timeMs": 71562.2421,
+      "plpPeakMs": 71590.0227,
+      "errorMs": -27.7806,
+      "strength": 0.4165
+    },
+    {
+      "timeMs": 71937.2421,
+      "plpPeakMs": 71955.737,
+      "errorMs": -18.4949,
+      "strength": 0.5273
+    },
+    {
+      "timeMs": 72312.2421,
+      "plpPeakMs": 72318.5488,
+      "errorMs": -6.3067,
+      "strength": 0.3896
+    },
+    {
+      "timeMs": 74530.9921,
+      "plpPeakMs": 74507.0295,
+      "errorMs": 23.9626,
+      "strength": 0.1781
+    },
+    {
+      "timeMs": 74905.9921,
+      "plpPeakMs": 74922.0862,
+      "errorMs": -16.0941,
+      "strength": 0.2608
+    },
+    {
+      "timeMs": 75280.9921,
+      "plpPeakMs": 75287.8005,
+      "errorMs": -6.8084,
+      "strength": 0.3598
+    },
+    {
+      "timeMs": 75655.9921,
+      "plpPeakMs": 75653.5147,
+      "errorMs": 2.4774,
+      "strength": 0.3686
+    },
+    {
+      "timeMs": 76030.9921,
+      "plpPeakMs": 76022.1315,
+      "errorMs": 8.8606,
+      "strength": 0.3688
+    },
+    {
+      "timeMs": 76405.9921,
+      "plpPeakMs": 76393.6508,
+      "errorMs": 12.3413,
+      "strength": 0.3748
+    },
+    {
+      "timeMs": 76749.7421,
+      "plpPeakMs": 76768.0726,
+      "errorMs": -18.3305,
+      "strength": 0.3368
+    },
+    {
+      "timeMs": 77124.7421,
+      "plpPeakMs": 77142.4943,
+      "errorMs": -17.7522,
+      "strength": 0.2962
+    },
+    {
+      "timeMs": 77499.7421,
+      "plpPeakMs": 77514.0136,
+      "errorMs": -14.2715,
+      "strength": 0.2964
+    },
+    {
+      "timeMs": 77905.9921,
+      "plpPeakMs": 77923.2653,
+      "errorMs": -17.2732,
+      "strength": 0.3557
+    },
+    {
+      "timeMs": 78312.2421,
+      "plpPeakMs": 78318.0045,
+      "errorMs": -5.7624,
+      "strength": 0.1619
+    },
+    {
+      "timeMs": 79187.2421,
+      "plpPeakMs": 79194.5578,
+      "errorMs": -7.3157,
+      "strength": 0.1874
+    },
+    {
+      "timeMs": 79530.9921,
+      "plpPeakMs": 79513.8322,
+      "errorMs": 17.1599,
+      "strength": 0.2556
+    },
+    {
+      "timeMs": 79999.7421,
+      "plpPeakMs": 80018.8662,
+      "errorMs": -19.1241,
+      "strength": 0.2466
+    },
+    {
+      "timeMs": 80655.9921,
+      "plpPeakMs": 80671.9274,
+      "errorMs": -15.9353,
+      "strength": 0.365
+    },
+    {
+      "timeMs": 80999.7421,
+      "plpPeakMs": 80970.8844,
+      "errorMs": 28.8577,
+      "strength": 0.4291
+    },
+    {
+      "timeMs": 81312.2421,
+      "plpPeakMs": 81304.6712,
+      "errorMs": 7.5709,
+      "strength": 0.3075
+    },
+    {
+      "timeMs": 81905.9921,
+      "plpPeakMs": 81888.0726,
+      "errorMs": 17.9195,
+      "strength": 0.309
+    },
+    {
+      "timeMs": 82155.9921,
+      "plpPeakMs": 82172.517,
+      "errorMs": -16.5249,
+      "strength": 0.3335
+    },
+    {
+      "timeMs": 82437.2421,
+      "plpPeakMs": 82456.9615,
+      "errorMs": -19.7194,
+      "strength": 0.2689
+    },
+    {
+      "timeMs": 83437.2421,
+      "plpPeakMs": 83484.4444,
+      "errorMs": -47.2023,
+      "strength": 0.2032
+    },
+    {
+      "timeMs": 83874.7421,
+      "plpPeakMs": 83911.1111,
+      "errorMs": -36.369,
+      "strength": 0.2114
+    },
+    {
+      "timeMs": 84280.9921,
+      "plpPeakMs": 84297.1429,
+      "errorMs": -16.1508,
+      "strength": 0.2154
+    },
+    {
+      "timeMs": 84687.2421,
+      "plpPeakMs": 84718.0045,
+      "errorMs": -30.7624,
+      "strength": 0.3385
+    },
+    {
+      "timeMs": 85124.7421,
+      "plpPeakMs": 85159.1837,
+      "errorMs": -34.4416,
+      "strength": 0.2302
+    },
+    {
+      "timeMs": 85499.7421,
+      "plpPeakMs": 85519.093,
+      "errorMs": -19.3509,
+      "strength": 0.2421
+    },
+    {
+      "timeMs": 85874.7421,
+      "plpPeakMs": 85879.0023,
+      "errorMs": -4.2602,
+      "strength": 0.3168
+    },
+    {
+      "timeMs": 86218.4921,
+      "plpPeakMs": 86241.8141,
+      "errorMs": -23.322,
+      "strength": 0.4232
+    },
+    {
+      "timeMs": 86562.2421,
+      "plpPeakMs": 86590.1134,
+      "errorMs": -27.8713,
+      "strength": 0.4474
+    },
+    {
+      "timeMs": 86874.7421,
+      "plpPeakMs": 86889.0703,
+      "errorMs": -14.3282,
+      "strength": 0.3808
+    },
+    {
+      "timeMs": 87187.2421,
+      "plpPeakMs": 87179.3197,
+      "errorMs": 7.9224,
+      "strength": 0.4596
+    },
+    {
+      "timeMs": 87468.4921,
+      "plpPeakMs": 87466.6667,
+      "errorMs": 1.8254,
+      "strength": 0.4569
+    },
+    {
+      "timeMs": 87718.4921,
+      "plpPeakMs": 87754.0136,
+      "errorMs": -35.5215,
+      "strength": 0.3534
+    },
+    {
+      "timeMs": 88062.2421,
+      "plpPeakMs": 88061.678,
+      "errorMs": 0.5641,
+      "strength": 0.2041
+    },
+    {
+      "timeMs": 88999.7421,
+      "plpPeakMs": 88975.9637,
+      "errorMs": 23.7784,
+      "strength": 0.1609
+    },
+    {
+      "timeMs": 89312.2421,
+      "plpPeakMs": 89309.7506,
+      "errorMs": 2.4915,
+      "strength": 0.1871
+    },
+    {
+      "timeMs": 89718.4921,
+      "plpPeakMs": 89678.3673,
+      "errorMs": 40.1248,
+      "strength": 0.1805
+    },
+    {
+      "timeMs": 94874.7421,
+      "plpPeakMs": 94862.2222,
+      "errorMs": 12.5199,
+      "strength": 0.1605
+    },
+    {
+      "timeMs": 95187.2421,
+      "plpPeakMs": 95216.3265,
+      "errorMs": -29.0844,
+      "strength": 0.3829
+    },
+    {
+      "timeMs": 95562.2421,
+      "plpPeakMs": 95576.2358,
+      "errorMs": -13.9937,
+      "strength": 0.5001
+    },
+    {
+      "timeMs": 95905.9921,
+      "plpPeakMs": 95907.1202,
+      "errorMs": -1.1281,
+      "strength": 0.3184
+    },
+    {
+      "timeMs": 100937.2421,
+      "plpPeakMs": 100969.0703,
+      "errorMs": -31.8282,
+      "strength": 0.2778
+    },
+    {
+      "timeMs": 101312.2421,
+      "plpPeakMs": 101311.5646,
+      "errorMs": 0.6775,
+      "strength": 0.3854
+    },
+    {
+      "timeMs": 101624.7421,
+      "plpPeakMs": 101636.644,
+      "errorMs": -11.9019,
+      "strength": 0.3491
+    },
+    {
+      "timeMs": 101937.2421,
+      "plpPeakMs": 101921.0884,
+      "errorMs": 16.1537,
+      "strength": 0.3018
+    },
+    {
+      "timeMs": 102187.2421,
+      "plpPeakMs": 102211.3379,
+      "errorMs": -24.0958,
+      "strength": 0.2866
+    },
+    {
+      "timeMs": 102562.2421,
+      "plpPeakMs": 102507.3923,
+      "errorMs": 54.8498,
+      "strength": 0.2369
+    },
+    {
+      "timeMs": 102749.7421,
+      "plpPeakMs": 102803.4467,
+      "errorMs": -53.7046,
+      "strength": 0.196
+    },
+    {
+      "timeMs": 103093.4921,
+      "plpPeakMs": 103096.5986,
+      "errorMs": -3.1065,
+      "strength": 0.2094
+    },
+    {
+      "timeMs": 103812.2421,
+      "plpPeakMs": 103819.3197,
+      "errorMs": -7.0776,
+      "strength": 0.1964
+    },
+    {
+      "timeMs": 104155.9921,
+      "plpPeakMs": 104199.5465,
+      "errorMs": -43.5544,
+      "strength": 0.2107
+    },
+    {
+      "timeMs": 104530.9921,
+      "plpPeakMs": 104518.8209,
+      "errorMs": 12.1712,
+      "strength": 0.2432
+    },
+    {
+      "timeMs": 104780.9921,
+      "plpPeakMs": 104806.1678,
+      "errorMs": -25.1757,
+      "strength": 0.2205
+    },
+    {
+      "timeMs": 105062.2421,
+      "plpPeakMs": 105084.8073,
+      "errorMs": -22.5652,
+      "strength": 0.2259
+    },
+    {
+      "timeMs": 105593.4921,
+      "plpPeakMs": 105644.9887,
+      "errorMs": -51.4966,
+      "strength": 0.2002
+    },
+    {
+      "timeMs": 105968.4921,
+      "plpPeakMs": 105938.1406,
+      "errorMs": 30.3515,
+      "strength": 0.173
+    },
+    {
+      "timeMs": 106687.2421,
+      "plpPeakMs": 106692.7891,
+      "errorMs": -5.547,
+      "strength": 0.2419
+    },
+    {
+      "timeMs": 107218.4921,
+      "plpPeakMs": 107212.3356,
+      "errorMs": 6.1565,
+      "strength": 0.2191
+    },
+    {
+      "timeMs": 108812.2421,
+      "plpPeakMs": 108846.4399,
+      "errorMs": -34.1978,
+      "strength": 0.1875
+    },
+    {
+      "timeMs": 109187.2421,
+      "plpPeakMs": 109174.4218,
+      "errorMs": 12.8203,
+      "strength": 0.1982
+    },
+    {
+      "timeMs": 109530.9921,
+      "plpPeakMs": 109557.551,
+      "errorMs": -26.5589,
+      "strength": 0.284
+    },
+    {
+      "timeMs": 109905.9921,
+      "plpPeakMs": 109917.4603,
+      "errorMs": -11.4682,
+      "strength": 0.3483
+    },
+    {
+      "timeMs": 110280.9921,
+      "plpPeakMs": 110312.1995,
+      "errorMs": -31.2074,
+      "strength": 0.2769
+    },
+    {
+      "timeMs": 110968.4921,
+      "plpPeakMs": 111014.6032,
+      "errorMs": -46.1111,
+      "strength": 0.2157
+    },
+    {
+      "timeMs": 111687.2421,
+      "plpPeakMs": 111661.8594,
+      "errorMs": 25.3827,
+      "strength": 0.2124
+    },
+    {
+      "timeMs": 112218.4921,
+      "plpPeakMs": 112259.7732,
+      "errorMs": -41.2811,
+      "strength": 0.2947
+    },
+    {
+      "timeMs": 112687.2421,
+      "plpPeakMs": 112718.3673,
+      "errorMs": -31.1252,
+      "strength": 0.1685
+    },
+    {
+      "timeMs": 113218.4921,
+      "plpPeakMs": 113174.059,
+      "errorMs": 44.4331,
+      "strength": 0.1794
+    },
+    {
+      "timeMs": 118030.9921,
+      "plpPeakMs": 118012.517,
+      "errorMs": 18.4751,
+      "strength": 0.2834
+    },
+    {
+      "timeMs": 118405.9921,
+      "plpPeakMs": 118395.6463,
+      "errorMs": 10.3458,
+      "strength": 0.4178
+    },
+    {
+      "timeMs": 118718.4921,
+      "plpPeakMs": 118741.0431,
+      "errorMs": -22.551,
+      "strength": 0.2781
+    },
+    {
+      "timeMs": 122905.9921,
+      "plpPeakMs": 122900.3175,
+      "errorMs": 5.6746,
+      "strength": 0.2501
+    },
+    {
+      "timeMs": 123437.2421,
+      "plpPeakMs": 123425.6689,
+      "errorMs": 11.5732,
+      "strength": 0.2488
+    },
+    {
+      "timeMs": 123937.2421,
+      "plpPeakMs": 123953.9229,
+      "errorMs": -16.6808,
+      "strength": 0.3814
+    },
+    {
+      "timeMs": 124280.9921,
+      "plpPeakMs": 124247.0748,
+      "errorMs": 33.9173,
+      "strength": 0.3186
+    },
+    {
+      "timeMs": 126593.4921,
+      "plpPeakMs": 126557.4603,
+      "errorMs": 36.0318,
+      "strength": 0.2391
+    },
+    {
+      "timeMs": 126937.2421,
+      "plpPeakMs": 126960.907,
+      "errorMs": -23.6649,
+      "strength": 0.1826
+    },
+    {
+      "timeMs": 131905.9921,
+      "plpPeakMs": 131918.3673,
+      "errorMs": -12.3752,
+      "strength": 0.1906
+    },
+    {
+      "timeMs": 132187.2421,
+      "plpPeakMs": 132208.6168,
+      "errorMs": -21.3747,
+      "strength": 0.2227
+    },
+    {
+      "timeMs": 132530.9921,
+      "plpPeakMs": 132495.9637,
+      "errorMs": 35.0284,
+      "strength": 0.2138
+    },
+    {
+      "timeMs": 132780.9921,
+      "plpPeakMs": 132789.1156,
+      "errorMs": -8.1235,
+      "strength": 0.1972
+    },
+    {
+      "timeMs": 134249.7421,
+      "plpPeakMs": 134263.5828,
+      "errorMs": -13.8407,
+      "strength": 0.2158
+    },
+    {
+      "timeMs": 134530.9921,
+      "plpPeakMs": 134542.2222,
+      "errorMs": -11.2301,
+      "strength": 0.2562
+    },
+    {
+      "timeMs": 134812.2421,
+      "plpPeakMs": 134823.7642,
+      "errorMs": -11.5221,
+      "strength": 0.3357
+    },
+    {
+      "timeMs": 135124.7421,
+      "plpPeakMs": 135114.0136,
+      "errorMs": 10.7285,
+      "strength": 0.3893
+    },
+    {
+      "timeMs": 135405.9921,
+      "plpPeakMs": 135410.068,
+      "errorMs": -4.0759,
+      "strength": 0.3834
+    },
+    {
+      "timeMs": 135718.4921,
+      "plpPeakMs": 135703.22,
+      "errorMs": 15.2721,
+      "strength": 0.3614
+    },
+    {
+      "timeMs": 135968.4921,
+      "plpPeakMs": 135996.3719,
+      "errorMs": -27.8798,
+      "strength": 0.4453
+    },
+    {
+      "timeMs": 136280.9921,
+      "plpPeakMs": 136298.2313,
+      "errorMs": -17.2392,
+      "strength": 0.4629
+    },
+    {
+      "timeMs": 93.4921,
+      "reason": "exposed introduction / final cadence source attack"
+    },
+    {
+      "timeMs": 4093.4921,
+      "reason": "exposed introduction / final cadence source attack"
+    },
+    {
+      "timeMs": 5812.2421,
+      "reason": "exposed introduction / final cadence source attack"
+    },
+    {
+      "timeMs": 7124.7421,
+      "reason": "exposed introduction / final cadence source attack"
+    },
+    {
+      "timeMs": 136280.9921,
+      "reason": "exposed introduction / final cadence source attack"
+    },
+    {
+      "timeMs": 38843.4921,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        38468.4921,
+        40718.4921
+      ],
+      "periodMs": 328.125,
+      "errorMs": 53.571
+    },
+    {
+      "timeMs": 39062.2421,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        38468.4921,
+        40718.4921
+      ],
+      "periodMs": 328.125,
+      "errorMs": -49.107
+    },
+    {
+      "timeMs": 39405.9921,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        38468.4921,
+        40718.4921
+      ],
+      "periodMs": 328.125,
+      "errorMs": -26.786
+    },
+    {
+      "timeMs": 39749.7421,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        38468.4921,
+        40718.4921
+      ],
+      "periodMs": 328.125,
+      "errorMs": -4.464
+    },
+    {
+      "timeMs": 40062.2421,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        38468.4921,
+        40718.4921
+      ],
+      "periodMs": 328.125,
+      "errorMs": -13.393
+    },
+    {
+      "timeMs": 40405.9921,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        38468.4921,
+        40718.4921
+      ],
+      "periodMs": 328.125,
+      "errorMs": 8.929
+    },
+    {
+      "timeMs": 41999.7421,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        41624.7421,
+        47030.9921
+      ],
+      "periodMs": 406.25,
+      "errorMs": -40.865
+    },
+    {
+      "timeMs": 42499.7421,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        41624.7421,
+        47030.9921
+      ],
+      "periodMs": 406.25,
+      "errorMs": 43.269
+    },
+    {
+      "timeMs": 42874.7421,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        41624.7421,
+        47030.9921
+      ],
+      "periodMs": 406.25,
+      "errorMs": 2.404
+    },
+    {
+      "timeMs": 43280.9921,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        41624.7421,
+        47030.9921
+      ],
+      "periodMs": 406.25,
+      "errorMs": -7.212
+    },
+    {
+      "timeMs": 43749.7421,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        41624.7421,
+        47030.9921
+      ],
+      "periodMs": 406.25,
+      "errorMs": 45.673
+    },
+    {
+      "timeMs": 44124.7421,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        41624.7421,
+        47030.9921
+      ],
+      "periodMs": 406.25,
+      "errorMs": 4.808
+    },
+    {
+      "timeMs": 44905.9921,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        41624.7421,
+        47030.9921
+      ],
+      "periodMs": 406.25,
+      "errorMs": -45.673
+    },
+    {
+      "timeMs": 45405.9921,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        41624.7421,
+        47030.9921
+      ],
+      "periodMs": 406.25,
+      "errorMs": 38.462
+    },
+    {
+      "timeMs": 45780.9921,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        41624.7421,
+        47030.9921
+      ],
+      "periodMs": 406.25,
+      "errorMs": -2.404
+    },
+    {
+      "timeMs": 46155.9921,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        41624.7421,
+        47030.9921
+      ],
+      "periodMs": 406.25,
+      "errorMs": -43.269
+    },
+    {
+      "timeMs": 46655.9921,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        41624.7421,
+        47030.9921
+      ],
+      "periodMs": 406.25,
+      "errorMs": 40.865
+    },
+    {
+      "timeMs": 50343.4921,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        50021.6079,
+        52468.4921
+      ],
+      "periodMs": 375.0,
+      "errorMs": -27.671
+    },
+    {
+      "timeMs": 50718.4921,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        50021.6079,
+        52468.4921
+      ],
+      "periodMs": 375.0,
+      "errorMs": -2.226
+    },
+    {
+      "timeMs": 51093.4921,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        50021.6079,
+        52468.4921
+      ],
+      "periodMs": 375.0,
+      "errorMs": 23.22
+    },
+    {
+      "timeMs": 51374.7421,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        50021.6079,
+        52468.4921
+      ],
+      "periodMs": 375.0,
+      "errorMs": -45.085
+    },
+    {
+      "timeMs": 51780.9921,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        50021.6079,
+        52468.4921
+      ],
+      "periodMs": 375.0,
+      "errorMs": 11.61
+    },
+    {
+      "timeMs": 52155.9921,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        50021.6079,
+        52468.4921
+      ],
+      "periodMs": 375.0,
+      "errorMs": 37.055
+    },
+    {
+      "timeMs": 55155.9921,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        54280.9921,
+        55562.2421
+      ],
+      "periodMs": 375.0,
+      "errorMs": 20.833
+    },
+    {
+      "timeMs": 58062.2421,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        57687.2421,
+        59437.2421
+      ],
+      "periodMs": 343.75,
+      "errorMs": 25.0
+    },
+    {
+      "timeMs": 59030.9921,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        57687.2421,
+        59437.2421
+      ],
+      "periodMs": 343.75,
+      "errorMs": -56.25
+    },
+    {
+      "timeMs": 67124.7421,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        66749.7421,
+        68218.4921
+      ],
+      "periodMs": 406.25,
+      "errorMs": 7.812
+    },
+    {
+      "timeMs": 67499.7421,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        66749.7421,
+        68218.4921
+      ],
+      "periodMs": 406.25,
+      "errorMs": 15.625
+    },
+    {
+      "timeMs": 67843.4921,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        66749.7421,
+        68218.4921
+      ],
+      "periodMs": 406.25,
+      "errorMs": -7.812
+    },
+    {
+      "timeMs": 69812.2421,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        69437.2421,
+        71218.4921
+      ],
+      "periodMs": 375.0,
+      "errorMs": 18.75
+    },
+    {
+      "timeMs": 70187.2421,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        69437.2421,
+        71218.4921
+      ],
+      "periodMs": 375.0,
+      "errorMs": 37.5
+    },
+    {
+      "timeMs": 70468.4921,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        69437.2421,
+        71218.4921
+      ],
+      "periodMs": 375.0,
+      "errorMs": -37.5
+    },
+    {
+      "timeMs": 70843.4921,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        69437.2421,
+        71218.4921
+      ],
+      "periodMs": 375.0,
+      "errorMs": -18.75
+    },
+    {
+      "timeMs": 72687.2421,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        72312.2421,
+        74530.9921
+      ],
+      "periodMs": 375.0,
+      "errorMs": 5.208
+    },
+    {
+      "timeMs": 73062.2421,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        72312.2421,
+        74530.9921
+      ],
+      "periodMs": 375.0,
+      "errorMs": 10.417
+    },
+    {
+      "timeMs": 73405.9921,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        72312.2421,
+        74530.9921
+      ],
+      "periodMs": 375.0,
+      "errorMs": -15.625
+    },
+    {
+      "timeMs": 73780.9921,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        72312.2421,
+        74530.9921
+      ],
+      "periodMs": 375.0,
+      "errorMs": -10.417
+    },
+    {
+      "timeMs": 74155.9921,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        72312.2421,
+        74530.9921
+      ],
+      "periodMs": 375.0,
+      "errorMs": -5.208
+    },
+    {
+      "timeMs": 90062.2421,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        89718.4921,
+        94874.7421
+      ],
+      "periodMs": 343.75,
+      "errorMs": 0.0
+    },
+    {
+      "timeMs": 90374.7421,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        89718.4921,
+        94874.7421
+      ],
+      "periodMs": 343.75,
+      "errorMs": -31.25
+    },
+    {
+      "timeMs": 90718.4921,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        89718.4921,
+        94874.7421
+      ],
+      "periodMs": 343.75,
+      "errorMs": -31.25
+    },
+    {
+      "timeMs": 91093.4921,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        89718.4921,
+        94874.7421
+      ],
+      "periodMs": 343.75,
+      "errorMs": 0.0
+    },
+    {
+      "timeMs": 91437.2421,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        89718.4921,
+        94874.7421
+      ],
+      "periodMs": 343.75,
+      "errorMs": 0.0
+    },
+    {
+      "timeMs": 91812.2421,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        89718.4921,
+        94874.7421
+      ],
+      "periodMs": 343.75,
+      "errorMs": 31.25
+    },
+    {
+      "timeMs": 92155.9921,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        89718.4921,
+        94874.7421
+      ],
+      "periodMs": 343.75,
+      "errorMs": 31.25
+    },
+    {
+      "timeMs": 92499.7421,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        89718.4921,
+        94874.7421
+      ],
+      "periodMs": 343.75,
+      "errorMs": 31.25
+    },
+    {
+      "timeMs": 92874.7421,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        89718.4921,
+        94874.7421
+      ],
+      "periodMs": 343.75,
+      "errorMs": 62.5
+    },
+    {
+      "timeMs": 93124.7421,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        89718.4921,
+        94874.7421
+      ],
+      "periodMs": 343.75,
+      "errorMs": -31.25
+    },
+    {
+      "timeMs": 93499.7421,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        89718.4921,
+        94874.7421
+      ],
+      "periodMs": 343.75,
+      "errorMs": 0.0
+    },
+    {
+      "timeMs": 93874.7421,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        89718.4921,
+        94874.7421
+      ],
+      "periodMs": 343.75,
+      "errorMs": 31.25
+    },
+    {
+      "timeMs": 94155.9921,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        89718.4921,
+        94874.7421
+      ],
+      "periodMs": 343.75,
+      "errorMs": -31.25
+    },
+    {
+      "timeMs": 94530.9921,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        89718.4921,
+        94874.7421
+      ],
+      "periodMs": 343.75,
+      "errorMs": 0.0
+    },
+    {
+      "timeMs": 96280.9921,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        95905.9921,
+        100937.2421
+      ],
+      "periodMs": 328.125,
+      "errorMs": 39.583
+    },
+    {
+      "timeMs": 96562.2421,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        95905.9921,
+        100937.2421
+      ],
+      "periodMs": 328.125,
+      "errorMs": -14.583
+    },
+    {
+      "timeMs": 96905.9921,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        95905.9921,
+        100937.2421
+      ],
+      "periodMs": 328.125,
+      "errorMs": -6.25
+    },
+    {
+      "timeMs": 97280.9921,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        95905.9921,
+        100937.2421
+      ],
+      "periodMs": 328.125,
+      "errorMs": 33.333
+    },
+    {
+      "timeMs": 97624.7421,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        95905.9921,
+        100937.2421
+      ],
+      "periodMs": 328.125,
+      "errorMs": 41.667
+    },
+    {
+      "timeMs": 97905.9921,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        95905.9921,
+        100937.2421
+      ],
+      "periodMs": 328.125,
+      "errorMs": -12.5
+    },
+    {
+      "timeMs": 98249.7421,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        95905.9921,
+        100937.2421
+      ],
+      "periodMs": 328.125,
+      "errorMs": -4.167
+    },
+    {
+      "timeMs": 98624.7421,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        95905.9921,
+        100937.2421
+      ],
+      "periodMs": 328.125,
+      "errorMs": 35.417
+    },
+    {
+      "timeMs": 98968.4921,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        95905.9921,
+        100937.2421
+      ],
+      "periodMs": 328.125,
+      "errorMs": 43.75
+    },
+    {
+      "timeMs": 99249.7421,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        95905.9921,
+        100937.2421
+      ],
+      "periodMs": 328.125,
+      "errorMs": -10.417
+    },
+    {
+      "timeMs": 99624.7421,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        95905.9921,
+        100937.2421
+      ],
+      "periodMs": 328.125,
+      "errorMs": 29.167
+    },
+    {
+      "timeMs": 99968.4921,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        95905.9921,
+        100937.2421
+      ],
+      "periodMs": 328.125,
+      "errorMs": 37.5
+    },
+    {
+      "timeMs": 100312.2421,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        95905.9921,
+        100937.2421
+      ],
+      "periodMs": 328.125,
+      "errorMs": 45.833
+    },
+    {
+      "timeMs": 100593.4921,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        95905.9921,
+        100937.2421
+      ],
+      "periodMs": 328.125,
+      "errorMs": -8.333
+    },
+    {
+      "timeMs": 107655.9921,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        107218.4921,
+        108812.2421
+      ],
+      "periodMs": 375.0,
+      "errorMs": 39.062
+    },
+    {
+      "timeMs": 108468.4921,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        107218.4921,
+        108812.2421
+      ],
+      "periodMs": 375.0,
+      "errorMs": 54.688
+    },
+    {
+      "timeMs": 113749.7421,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        113218.4921,
+        118030.9921
+      ],
+      "periodMs": 515.625,
+      "errorMs": -3.472
+    },
+    {
+      "timeMs": 114280.9921,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        113218.4921,
+        118030.9921
+      ],
+      "periodMs": 515.625,
+      "errorMs": -6.944
+    },
+    {
+      "timeMs": 114812.2421,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        113218.4921,
+        118030.9921
+      ],
+      "periodMs": 515.625,
+      "errorMs": -10.417
+    },
+    {
+      "timeMs": 115405.9921,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        113218.4921,
+        118030.9921
+      ],
+      "periodMs": 515.625,
+      "errorMs": 48.611
+    },
+    {
+      "timeMs": 115937.2421,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        113218.4921,
+        118030.9921
+      ],
+      "periodMs": 515.625,
+      "errorMs": 45.139
+    },
+    {
+      "timeMs": 116468.4921,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        113218.4921,
+        118030.9921
+      ],
+      "periodMs": 515.625,
+      "errorMs": 41.667
+    },
+    {
+      "timeMs": 116968.4921,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        113218.4921,
+        118030.9921
+      ],
+      "periodMs": 515.625,
+      "errorMs": 6.944
+    },
+    {
+      "timeMs": 117530.9921,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        113218.4921,
+        118030.9921
+      ],
+      "periodMs": 515.625,
+      "errorMs": 34.722
+    },
+    {
+      "timeMs": 119093.4921,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        118718.4921,
+        122905.9921
+      ],
+      "periodMs": 375.0,
+      "errorMs": -5.682
+    },
+    {
+      "timeMs": 119437.2421,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        118718.4921,
+        122905.9921
+      ],
+      "periodMs": 375.0,
+      "errorMs": -42.614
+    },
+    {
+      "timeMs": 119874.7421,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        118718.4921,
+        122905.9921
+      ],
+      "periodMs": 375.0,
+      "errorMs": 14.205
+    },
+    {
+      "timeMs": 120218.4921,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        118718.4921,
+        122905.9921
+      ],
+      "periodMs": 375.0,
+      "errorMs": -22.727
+    },
+    {
+      "timeMs": 120655.9921,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        118718.4921,
+        122905.9921
+      ],
+      "periodMs": 375.0,
+      "errorMs": 34.091
+    },
+    {
+      "timeMs": 120999.7421,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        118718.4921,
+        122905.9921
+      ],
+      "periodMs": 375.0,
+      "errorMs": -2.841
+    },
+    {
+      "timeMs": 121343.4921,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        118718.4921,
+        122905.9921
+      ],
+      "periodMs": 375.0,
+      "errorMs": -39.773
+    },
+    {
+      "timeMs": 121780.9921,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        118718.4921,
+        122905.9921
+      ],
+      "periodMs": 375.0,
+      "errorMs": 17.045
+    },
+    {
+      "timeMs": 122124.7421,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        118718.4921,
+        122905.9921
+      ],
+      "periodMs": 375.0,
+      "errorMs": -19.886
+    },
+    {
+      "timeMs": 122499.7421,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        118718.4921,
+        122905.9921
+      ],
+      "periodMs": 375.0,
+      "errorMs": -25.568
+    },
+    {
+      "timeMs": 124624.7421,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        124280.9921,
+        126593.4921
+      ],
+      "periodMs": 343.75,
+      "errorMs": 13.393
+    },
+    {
+      "timeMs": 124968.4921,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        124280.9921,
+        126593.4921
+      ],
+      "periodMs": 343.75,
+      "errorMs": 26.786
+    },
+    {
+      "timeMs": 125312.2421,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        124280.9921,
+        126593.4921
+      ],
+      "periodMs": 343.75,
+      "errorMs": 40.179
+    },
+    {
+      "timeMs": 125624.7421,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        124280.9921,
+        126593.4921
+      ],
+      "periodMs": 343.75,
+      "errorMs": 22.321
+    },
+    {
+      "timeMs": 125937.2421,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        124280.9921,
+        126593.4921
+      ],
+      "periodMs": 343.75,
+      "errorMs": 4.464
+    },
+    {
+      "timeMs": 126280.9921,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        124280.9921,
+        126593.4921
+      ],
+      "periodMs": 343.75,
+      "errorMs": 17.857
+    },
+    {
+      "timeMs": 127249.7421,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        126937.2421,
+        131905.9921
+      ],
+      "periodMs": 343.75,
+      "errorMs": -42.411
+    },
+    {
+      "timeMs": 127655.9921,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        126937.2421,
+        131905.9921
+      ],
+      "periodMs": 343.75,
+      "errorMs": 8.929
+    },
+    {
+      "timeMs": 127968.4921,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        126937.2421,
+        131905.9921
+      ],
+      "periodMs": 343.75,
+      "errorMs": -33.482
+    },
+    {
+      "timeMs": 128374.7421,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        126937.2421,
+        131905.9921
+      ],
+      "periodMs": 343.75,
+      "errorMs": 17.857
+    },
+    {
+      "timeMs": 128687.2421,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        126937.2421,
+        131905.9921
+      ],
+      "periodMs": 343.75,
+      "errorMs": -24.554
+    },
+    {
+      "timeMs": 129062.2421,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        126937.2421,
+        131905.9921
+      ],
+      "periodMs": 343.75,
+      "errorMs": -4.464
+    },
+    {
+      "timeMs": 129405.9921,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        126937.2421,
+        131905.9921
+      ],
+      "periodMs": 343.75,
+      "errorMs": -15.625
+    },
+    {
+      "timeMs": 129749.7421,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        126937.2421,
+        131905.9921
+      ],
+      "periodMs": 343.75,
+      "errorMs": -26.786
+    },
+    {
+      "timeMs": 130124.7421,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        126937.2421,
+        131905.9921
+      ],
+      "periodMs": 343.75,
+      "errorMs": -6.696
+    },
+    {
+      "timeMs": 130499.7421,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        126937.2421,
+        131905.9921
+      ],
+      "periodMs": 343.75,
+      "errorMs": 13.393
+    },
+    {
+      "timeMs": 130812.2421,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        126937.2421,
+        131905.9921
+      ],
+      "periodMs": 343.75,
+      "errorMs": -29.018
+    },
+    {
+      "timeMs": 131155.9921,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        126937.2421,
+        131905.9921
+      ],
+      "periodMs": 343.75,
+      "errorMs": -40.179
+    },
+    {
+      "timeMs": 131593.4921,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        126937.2421,
+        131905.9921
+      ],
+      "periodMs": 343.75,
+      "errorMs": 42.411
+    },
+    {
+      "timeMs": 133093.4921,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        132780.9921,
+        134249.7421
+      ],
+      "periodMs": 281.25,
+      "errorMs": 18.75
+    },
+    {
+      "timeMs": 133343.4921,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        132780.9921,
+        134249.7421
+      ],
+      "periodMs": 281.25,
+      "errorMs": -25.0
+    },
+    {
+      "timeMs": 133687.2421,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        132780.9921,
+        134249.7421
+      ],
+      "periodMs": 281.25,
+      "errorMs": 25.0
+    },
+    {
+      "timeMs": 133937.2421,
+      "reason": "PLP dropout; interpolate flanking pulse rate and snap to actual reference attack",
+      "flankingMs": [
+        132780.9921,
+        134249.7421
+      ],
+      "periodMs": 281.25,
+      "errorMs": -18.75
+    }
+  ]
+}
