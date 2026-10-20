@@ -156,7 +156,13 @@ public class ComboBonusPresentation : MonoBehaviour
     }
 
     // 短い低音の着地音と金属的な倍音を合成。外部音源は使わない。
-    static AudioClip BuildImpact()
+    // 2026-10-20(響1): 低音をドンと同じ倍音型にして、150Hz 未満が出ない会場のスピーカーでも聞こえるようにした。
+    // ProceduralSfx.UseLegacyDon のときは前の音に戻す(会場で聞き比べるまで)。
+    static AudioClip BuildImpact() => ProceduralSfx.UseLegacyDon ? BuildLegacyImpact()
+        : ProceduralSfx.Clip("ComboBonusImpact", FlourishSfx.Cached("ComboImpact", FlourishSfx.ComboImpact));
+
+    // 2026-10-20 までの着地音(135→55Hz の正弦が中心)。
+    static AudioClip BuildLegacyImpact()
     {
         const int rate = 44100;
         var samples = new float[(int)(rate * .65f)];

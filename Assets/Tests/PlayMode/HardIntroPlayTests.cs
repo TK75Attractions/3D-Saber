@@ -51,7 +51,9 @@ public class HardIntroPlayTests
         Assert.False(EventSystem.current != null && EventSystem.current.enabled);
         select.StartGame(); Assert.False(ScreenTransition.Load("Game"));
         Assert.AreEqual("Epilogue", GameSession.SelectedSongId);
-        Assert.False(select.previewSource.isPlaying);
+        // スタートの演出(派手さカタログ 盤3)の間は試聴を下げながら残し、幕が閉じきったときに止める。
+        yield return new WaitForSecondsRealtime(SongSelectController.StartSequenceSeconds + .1f);
+        Assert.True(select == null || select.previewSource == null || !select.previewSource.isPlaying);
         yield return WaitUntilReady(15);
         Assert.AreEqual("Game", SceneManager.GetActiveScene().name);
         Assert.IsNull(GameObject.Find("HardSongIntro"));

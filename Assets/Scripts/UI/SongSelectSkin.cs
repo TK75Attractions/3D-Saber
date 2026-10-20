@@ -29,8 +29,16 @@ public class SongSelectSkin : MonoBehaviour
     readonly TextMeshProUGUI[] difficultyLabels = new TextMeshProUGUI[3];
     readonly SongSelectRubyText[] counts = new SongSelectRubyText[4];
     TextMeshProUGUI sourceCredit, composerName, timer, timerNotice, achievementDifficulty, libraryPosition, startHint, holdHint;
-    AudioSource countdownSource; AudioClip countdownClip;
-    int lastBeepSecond = -1;
+    // 残り時間の音(盤5): 30秒で1回の知らせ、10秒から1秒ごとの刻み。鳴らすのは MenuSfx。
+    int lastBeepSecond = -1, previousSecond = -1;
+    // ためている間の表示(盤2): 難易度の円は円周、判定調整・タイトルへのボタンは下の線が満ちる。
+    readonly SongSelectDiscGraphic[] difficultyCharges = new SongSelectDiscGraphic[3];
+    readonly SongSelectDiscTarget[] difficultyTargets = new SongSelectDiscTarget[3];
+    readonly List<(SongSelectDiscTarget target, RectTransform bar, float width)> buttonCharges = new List<(SongSelectDiscTarget, RectTransform, float)>();
+    // スタートでジャケットを斬る演出(盤3)。startAge は決めてからの秒(決める前は負)。
+    SongSelectStartCut startShards, startLights;
+    float startAge = -1;
+    public float StartAge => startAge;
     SongSelectRubyText songTitle, highScore;
     SongSelectCorridor corridor;
     RushESecret secretView;
@@ -77,12 +85,11 @@ public class SongSelectSkin : MonoBehaviour
         ctl.suppressDefaultDifficultyTint = true;
         corridor = SongSelectCorridor.Build(layout, ctl);
         BuildHeader(); BuildDiscs(); BuildTitle(); BuildDifficulties(); BuildSecretDifficulty(); BuildAchievements(); BuildActions();
-        countdownSource = gameObject.AddComponent<AudioSource>();
-        countdownSource.playOnAwake = false; countdownSource.spatialBlend = 0;
-        countdownClip = JudgmentSfx.Beep(660, .045f);
+        // 選曲の音は幕の裏で作っておき、最初の操作で処理落ちしないようにする。
+        MenuSfx.PrepareSongSelect();
         hardNoise = MenuSignalNoise.BuildScreenOverlay(canvas, layout);
         secretView = RushESecret.Build(ctl, this, layout);
-        ctl.OnSelectionChanged += SelectionChanged; ctl.OnDifficultyChanged += DifficultyChanged;
+        ctl.OnSelectionChanged += SelectionChanged; ctl.OnDifficultyChanged += DifficultyChanged; ctl.OnStartProgress += AnimateStart;
         SelectionChanged(ctl.SelectedIndex); animation = 1; AnimateDiscs();
         var guide = SongSelectIdleGuide.Build(ctl, layout);
         SongSelectAimPointer.Build(ctl, canvas, null, guide);
@@ -104,6 +111,7 @@ public class SongSelectSkin : MonoBehaviour
     public static void EnterCalibration()
     {
         if (!ScreenTransition.Load("Game", ScreenTransition.Style.Calibration)) return;
+        MenuSfx.Calibration();
         var skin = Object.FindFirstObjectByType<SongSelectSkin>();
         var controller = Object.FindFirstObjectByType<SongSelectController>();
         GameSession.CalibrationSelectionSongId = controller != null ? controller.SongIdAt(controller.SelectedIndex) : null;
@@ -219,7 +227,7 @@ public class SongSelectSkin : MonoBehaviour
             d.target.ShootOverride = () =>
             {
                 if (ScreenTransition.IsBusy || ctl.RushESecret.Transitioning) return false;
-                if (d.index == ctl.SelectedIndex) ctl.StartGame(); else if (Mathf.Abs(d.offset) <= 2) ctl.Select(d.index);
+                if (d.index == ctl.SelectedIndex) ctl.StartGame(); else if (Mathf.Abs(d.offset) <= 2) StepTo(d);
                 return true;
             };
             d.button.onClick.AddListener(() =>
@@ -230,7 +238,7 @@ public class SongSelectSkin : MonoBehaviour
                     if (ctl.SongIdAt(d.index) == RushESecretState.SongId && !ctl.RushESecret.Unlocked) secretView.Click();
                     else ctl.StartGame();
                 }
-                else if (Mathf.Abs(d.offset) <= 2) ctl.Select(d.index);
+                else if (Mathf.Abs(d.offset) <= 2) StepTo(d);
             });
             discs.Add(d);
         }
@@ -238,6 +246,13 @@ public class SongSelectSkin : MonoBehaviour
         holdHint = Label(holdHintRoot, "HoldStartHint", "そのまま かざすと スタート", 36, Vector2.zero, new Vector2(640, 58), UISkinKit.JapaneseFallbackFontAsset(), White);
         holdHintRoot.gameObject.SetActive(false);
         startHint = Label(layout, "StartHint", "中央の曲に２秒かざすと スタート", 26, Position(960, 743), new Vector2(750, 36), UISkinKit.JapaneseFallbackFontAsset(), White);
+    }
+    // 隣・2曲先の盤で曲を送る。送った向き(左は低め、右は高め)の音を鳴らす(盤1)。
+    void StepTo(Disc d)
+    {
+        bool right = d.offset > 0;
+        ctl.Select(d.index);
+        if (ctl.SelectedIndex == d.index) MenuSfx.DiscMove(right);
     }
     void BuildTitle()
     {
@@ -279,10 +294,13 @@ public class SongSelectSkin : MonoBehaviour
             difficultyNumbers[i] = Label(root, "Level", "", 58, new Vector2(0, 2), new Vector2(110, 100), UISkinKit.LogoFontAsset(), DifficultyColor(i));
             difficultyLabels[i] = Label(root, "DifficultyName", DifficultyDisplayName(i, ctl.difficultyNames[i]), 28, new Vector2(0, -88), new Vector2(210, 40));
             // 円と難易度名を含め、上の開始案内は操作対象から外す。
+            difficultyCharges[i] = Graphic(root, "ChargeRing", new Vector2(0, 2), new Vector2(146, 146), SongSelectDiscGraphic.Shape.Ring, DifficultyColor(i));
+            difficultyCharges[i].Width = 6; difficultyCharges[i].Progress = 0; difficultyCharges[i].gameObject.SetActive(false);
             var hit = Graphic(root, "HitArea", new Vector2(0, -17), new Vector2(190, 162), SongSelectDiscGraphic.Shape.Panel, Color.clear); hit.Width = 0;
             ctl.difficultyButtons[i] = ButtonOn(root, hit, 1, false);
-            root.GetComponent<SongSelectDiscTarget>().HitArea = hit.rectTransform;
-            ctl.difficultyButtons[i].onClick.AddListener(() => ctl.SetDifficulty(index));
+            difficultyTargets[i] = root.GetComponent<SongSelectDiscTarget>();
+            difficultyTargets[i].HitArea = hit.rectTransform;
+            ctl.difficultyButtons[i].onClick.AddListener(() => ctl.ChooseDifficulty(index));
         }
     }
     void BuildSecretDifficulty()
@@ -325,11 +343,41 @@ public class SongSelectSkin : MonoBehaviour
     {
         var cal = PanelAt("CalibrationButton", 1630, 930, 460, 180, SongSelectVisuals.Edge, 4);
         ButtonOn(cal.rectTransform, cal, 2, false).onClick.AddListener(() => { EnterCalibration(); if (ScreenTransition.IsBusy) ctl.StopPreview(); });
+        AddChargeBar(cal, 460, 180);
         var t = Label(cal.transform, "CalibrationLabel", "", 52, new Vector2(0, -8), new Vector2(410, 106), UISkinKit.JapaneseFallbackFontAsset()); t.fontStyle = FontStyles.Bold;
         Ruby(t, "<ruby=はんてい>判定</ruby><ruby=ちょうせい>調整</ruby>");
         var back = PanelAt("BackToTitle", 1220, 92, 340, 96, SongSelectVisuals.Edge, 2, 16);
         ButtonOn(back.rectTransform, back, 2, false).onClick.AddListener(ctl.ReturnToTitle);
         Label(back.transform, "Label", "タイトルへ", 36, Vector2.zero, new Vector2(300, 76), UISkinKit.JapaneseFallbackFontAsset());
+        AddChargeBar(back, 340, 96);
+    }
+    // ボタンの下端に、ためている間だけ左から満ちる線を置く(盤2)。
+    void AddChargeBar(SongSelectDiscGraphic panel, float width, float height)
+    {
+        float length = width - 36;
+        var bar = Graphic(panel.transform, "ChargeBar", Vector2.zero, new Vector2(length, 6), SongSelectDiscGraphic.Shape.Panel, Gold);
+        bar.Width = 0; bar.Radius = 3;
+        var rect = bar.rectTransform; rect.pivot = new Vector2(0, .5f); rect.anchoredPosition = new Vector2(-length * .5f, -height * .5f + 11);
+        bar.gameObject.SetActive(false);
+        buttonCharges.Add((panel.GetComponent<SongSelectDiscTarget>(), rect, length));
+    }
+    void RefreshChargeDisplays()
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            if (difficultyCharges[i] == null || difficultyTargets[i] == null) continue;
+            float progress = difficultyTargets[i].Progress;
+            bool show = progress > 0 && startAge < 0;
+            if (difficultyCharges[i].gameObject.activeSelf != show) difficultyCharges[i].gameObject.SetActive(show);
+            if (show && difficultyCharges[i].Progress != progress) { difficultyCharges[i].Progress = progress; difficultyCharges[i].Refresh(); }
+        }
+        foreach (var (target, bar, width) in buttonCharges)
+        {
+            float progress = target != null ? target.Progress : 0;
+            bool show = progress > 0 && startAge < 0;
+            if (bar.gameObject.activeSelf != show) bar.gameObject.SetActive(show);
+            if (show) bar.sizeDelta = new Vector2(Mathf.Max(6, width * progress), bar.sizeDelta.y);
+        }
     }
     void SelectionChanged(int index)
     {
@@ -418,16 +466,21 @@ public class SongSelectSkin : MonoBehaviour
         double now = Time.realtimeSinceStartupAsDouble;
         TickCountdown(now - lastTick); lastTick = now;
         RefreshCountdownDisplay(timer, countdown.Remaining, ref displayedSecond);
-        bool charging = ctl.startButton != null && ctl.startButton.GetComponent<SongSelectDiscTarget>().Progress > 0;
+        bool charging = startAge < 0 && ctl.startButton != null && ctl.startButton.GetComponent<SongSelectDiscTarget>().Progress > 0;
         holdHintRoot.gameObject.SetActive(charging);
+        RefreshChargeDisplays();
         bool urgent = displayedSecond > 0 && displayedSecond <= 10;
         startHint.text = urgent ? "あと " + displayedSecond + "秒で この曲が はじまるよ" : "中央の曲に２秒かざすと スタート";
         startHint.color = urgent ? Gold : White;
-        if (urgent && lastBeepSecond != displayedSecond && !ScreenTransition.IsBusy && (Application.isFocused || Application.isBatchMode))
+        bool audible = !ScreenTransition.IsBusy && (Application.isFocused || Application.isBatchMode);
+        if (urgent && lastBeepSecond != displayedSecond && audible)
         {
             lastBeepSecond = displayedSecond;
-            countdownSource.PlayOneShot(countdownClip, .12f);
+            MenuSfx.TimerTick(displayedSecond);
         }
+        // 残り30秒の知らせは、31秒から30秒へ変わったときに1回だけ(判定調整から30秒以下で戻ったときは鳴らさない)。
+        if (displayedSecond == 30 && previousSecond == 31 && audible) MenuSfx.TimerChime();
+        previousSecond = displayedSecond;
         if (noticeSecond != displayedSecond)
         {
             noticeSecond = displayedSecond;
@@ -454,10 +507,14 @@ public class SongSelectSkin : MonoBehaviour
             d.root.anchoredPosition = Vector2.LerpUnclamped(d.from, d.to, t);
             d.target.Sliding = animation < 1;
             float bounce = d.offset == 0 && animation < 1 ? animation < .5f ? Mathf.Lerp(.9f, 1.05f, animation * 2) : Mathf.Lerp(1.05f, 1, animation * 2 - 1) : 1;
-            d.root.localScale = Vector3.one * Mathf.LerpUnclamped(d.fromScale, d.toScale, t) * bounce;
+            // スタートを決めた盤は 0.2 秒で 1.25 倍へ寄る(盤3)。
+            float zoom = d.offset == 0 && startAge >= 0 ? 1 + .25f * Ease(Mathf.Clamp01(startAge / .2f)) : 1;
+            d.root.localScale = Vector3.one * Mathf.LerpUnclamped(d.fromScale, d.toScale, t) * bounce * zoom;
             float brightness = d.offset == 0 ? 1 : d.target.Hovered && Mathf.Abs(d.offset) <= 2 ? .8f : Mathf.Abs(d.offset) == 1 ? .5f : .36f;
-            d.art.color = d.art.Artwork != null ? new Color(brightness, brightness, brightness) : new Color(.07f * brightness, .10f * brightness, .20f * brightness);
-            if (d.fallback != null) d.fallback.color = new Color(brightness, brightness, brightness);
+            // 割れたあとは元のジャケットを消し、4つの片だけを見せる。
+            float art = d.offset == 0 && SongSelectStartCut.IsSplit(startAge) ? 0 : 1;
+            d.art.color = d.art.Artwork != null ? new Color(brightness, brightness, brightness, art) : new Color(.07f * brightness, .10f * brightness, .20f * brightness, art);
+            if (d.fallback != null) d.fallback.color = new Color(brightness, brightness, brightness, art);
             if (d.offset == 0)
             {
                 Color accent = ctl.RushESecret.Unlocked ? RushESecretState.Purple : Cyan;
@@ -466,10 +523,34 @@ public class SongSelectSkin : MonoBehaviour
                 float spread = 24 + 40 * pulse;
                 d.halo.Width = spread; d.halo.rectTransform.sizeDelta = Vector2.one * (540 + spread * 2);
                 d.halo.color = new Color(accent.r, accent.g, accent.b, .04f + .08f * pulse);
-                d.progress.Progress = d.target.Progress; d.progress.Refresh();
+                d.progress.color = Gold; d.progress.Progress = startAge >= 0 ? 0 : d.target.Progress; d.progress.Refresh();
+            }
+            else if (Mathf.Abs(d.offset) <= 2)
+            {
+                // 隣と2曲先の盤も、ためている間は外周の弧が満ちる(盤2)。
+                bool show = d.target.Progress > 0 && startAge < 0;
+                if (d.progress.gameObject.activeSelf != show) d.progress.gameObject.SetActive(show);
+                if (show) { d.progress.color = Cyan; d.progress.Progress = d.target.Progress; d.progress.Refresh(); }
             }
             if (animation >= 1 && Mathf.Abs(d.offset) > 2) d.root.gameObject.SetActive(false);
         }
+    }
+    // スタートを決めてからの秒で、中央の盤のジャケットを斬って割る(盤3)。幕は0.3秒後から閉じる。
+    void AnimateStart(float seconds)
+    {
+        var d = discs.Find(x => x.offset == 0);
+        if (d == null) return;
+        if (startShards == null)
+        {
+            float radius = d.art.rectTransform.rect.width * .5f;
+            Color tint = d.art.Artwork != null ? Color.white : new Color(.07f, .10f, .20f);
+            startShards = SongSelectStartCut.Create(d.root, SongSelectStartCut.Layer.Shards, d.art.Artwork, tint, radius);
+            startLights = SongSelectStartCut.Create(d.root, SongSelectStartCut.Layer.Lights, null, Color.white, radius);
+        }
+        startAge = Mathf.Max(0, seconds);
+        startShards.SetAge(startAge); startLights.SetAge(startAge);
+        holdHintRoot.gameObject.SetActive(false);
+        AnimateDiscs();
     }
     static float Ease(float x)
     {
@@ -479,8 +560,7 @@ public class SongSelectSkin : MonoBehaviour
     }
     void OnDestroy()
     {
-        if (countdownClip != null) Destroy(countdownClip);
-        if (ctl != null) { ctl.OnSelectionChanged -= SelectionChanged; ctl.OnDifficultyChanged -= DifficultyChanged; }
+        if (ctl != null) { ctl.OnSelectionChanged -= SelectionChanged; ctl.OnDifficultyChanged -= DifficultyChanged; ctl.OnStartProgress -= AnimateStart; }
     }
     Sprite CoverSprite(int index) => ctl != null ? ctl.CoverSpriteAt(index) : null;
 }

@@ -97,6 +97,16 @@ public class SongSelectController : MonoBehaviour
     public int SongCount => songIds.Count;
     public event System.Action<int> OnSelectionChanged;
     public event System.Action<int> OnDifficultyChanged;
+    // スタートの演出(派手さカタログ 盤3)。決めた瞬間にジャケットを X に斬って割り、StartHoldSeconds 後に幕を閉じ始める。
+    // 試聴の曲は高い音だけを残しながら 0.4 秒で -6dB まで下げ、幕が閉じきったときに止める。照準・Enter・時間切れのどれでも同じ。
+    public const float StartHoldSeconds = .3f;
+    public const float StartPreviewFadeSeconds = .4f;
+    public static float StartSequenceSeconds => StartHoldSeconds + ScreenTransition.CloseDuration;
+    // 決めてからの秒(0〜StartSequenceSeconds)。選曲の見た目(SongSelectSkin)がジャケットを割るのに使う。
+    public event System.Action<float> OnStartProgress;
+    public bool StartAccepted { get; private set; }
+    float previewStartVolume;
+    AudioHighPassFilter previewFilter;
 
     void Start()
     {
@@ -143,11 +153,12 @@ public class SongSelectController : MonoBehaviour
                 keyboardEventSystem.sendNavigationEvents = false;
             }
         }
-        if (previousSong) Move(-1);
-        if (nextSong) Move(1);
-        if (easier) ChangeDifficulty(-1);
-        if (harder) ChangeDifficulty(1);
-        if (directDifficulty >= 0) SetDifficulty(directDifficulty);
+        // キー操作でも照準・クリックと同じ音を鳴らす(盤1)。
+        if (previousSong) MoveBy(-1);
+        if (nextSong) MoveBy(1);
+        if (easier) ChangeDifficultyBy(-1);
+        if (harder) ChangeDifficultyBy(1);
+        if (directDifficulty >= 0) ChooseDifficulty(directDifficulty);
         if (back) { ReturnToTitle(); return; }
         if (start) StartGame();
     }
@@ -156,7 +167,32 @@ public class SongSelectController : MonoBehaviour
 
     public void ReturnToTitle()
     {
-        if (ScreenTransition.Load("Title", ScreenTransition.Style.Back)) StopPreview();
+        if (!ScreenTransition.Load("Title", ScreenTransition.Style.Back)) return;
+        StopPreview();
+        MenuSfx.ToTitle();
+    }
+
+    // 利用者の操作による曲送り。選び直せたときだけ、送った向きの音を鳴らす(盤1)。
+    void MoveBy(int delta)
+    {
+        int before = selectedIndex;
+        Move(delta);
+        if (selectedIndex != before) MenuSfx.DiscMove(delta > 0);
+    }
+
+    // 利用者の操作による難易度の選択(照準・クリック・数字キー)。RUSH E の E の間は選べないので鳴らさない。
+    public void ChooseDifficulty(int idx)
+    {
+        if (RushESecret.Unlocked || RushESecret.Transitioning || difficultyNames == null || difficultyNames.Length == 0) return;
+        SetDifficulty(idx);
+        MenuSfx.Difficulty(selectedDifficulty);
+    }
+
+    void ChangeDifficultyBy(int delta)
+    {
+        int before = selectedDifficulty;
+        ChangeDifficulty(delta);
+        if (selectedDifficulty != before) MenuSfx.Difficulty(selectedDifficulty);
     }
 
     private void RestoreNavigationEvents()
@@ -552,7 +588,11 @@ public class SongSelectController : MonoBehaviour
             StartPreview(songIds[selectedIndex]);
     }
 
-    public void StopPreview() { if (chartPreview != null) chartPreview.Cancel(); else if (previewSource != null) previewSource.Stop(); }
+    public void StopPreview()
+    {
+        if (chartPreview != null) chartPreview.Cancel(); else if (previewSource != null) previewSource.Stop();
+        if (previewFilter != null) previewFilter.enabled = false;
+    }
 
     void OnDisable() { RestoreNavigationEvents(); StopPreview(); }
 
@@ -625,12 +665,50 @@ public class SongSelectController : MonoBehaviour
             OnDifficultyChanged?.Invoke(selectedDifficulty);
             return;
         }
-        if (!ScreenTransition.Load(gameSceneName)) return;
-        StopPreview();
+        float sequence = StartSequenceSeconds;
+        // 幕は Load の中ですぐ「0秒目」の StartDeparture を呼ぶので、試聴の元の音量はその前に覚える。
+        previewStartVolume = previewSource != null ? previewSource.volume : 0;
+        if (!ScreenTransition.Load(gameSceneName, ScreenTransition.Style.Forward, StartDeparture, sequence, StartHoldSeconds / sequence)) return;
+        StartAccepted = true;
+        BeginPreviewFilter();
+        MenuSfx.StartHit();
         GameSession.IsCalibrationMode = false;
         GameSession.SelectedSongId = songIds[selectedIndex];
         GameSession.SelectedSongTitle = DisplaySongTitle(songIds[selectedIndex]);
         GameSession.SelectedDifficulty = CurrentDifficultyName;
         GameSession.ResetResult();
+    }
+
+    // 幕の進み(0〜1)をスタートからの秒に直して、ジャケットの演出と試聴のフェードへ渡す。幕が閉じきったら試聴を止める。
+    void StartDeparture(float progress)
+    {
+        float seconds = progress * StartSequenceSeconds;
+        OnStartProgress?.Invoke(seconds);
+        FadePreview(seconds);
+        if (progress >= 1f) StopPreview();
+    }
+
+    void BeginPreviewFilter()
+    {
+        if (previewSource == null || !previewSource.isPlaying) return;
+        previewFilter = previewSource.GetComponent<AudioHighPassFilter>();
+        if (previewFilter == null) previewFilter = previewSource.gameObject.AddComponent<AudioHighPassFilter>();
+        previewFilter.cutoffFrequency = 10;
+        previewFilter.enabled = true;
+    }
+
+    // 0.4 秒で -6dB まで下げながら低い音を抜き(高い音だけが残る)、そこから幕が閉じきるまでに消す。純関数。
+    public static float StartPreviewGain(float seconds)
+    {
+        if (seconds <= StartPreviewFadeSeconds) return Mathf.Lerp(1f, .5f, Mathf.Clamp01(seconds / StartPreviewFadeSeconds));
+        return .5f * (1f - Mathf.Clamp01((seconds - StartPreviewFadeSeconds) / Mathf.Max(.01f, StartSequenceSeconds - StartPreviewFadeSeconds)));
+    }
+
+    void FadePreview(float seconds)
+    {
+        if (previewSource == null) return;
+        previewSource.volume = previewStartVolume * StartPreviewGain(seconds);
+        float k = Mathf.Clamp01(seconds / StartPreviewFadeSeconds);
+        if (previewFilter != null) previewFilter.cutoffFrequency = Mathf.Lerp(10f, 1400f, k * k);
     }
 }

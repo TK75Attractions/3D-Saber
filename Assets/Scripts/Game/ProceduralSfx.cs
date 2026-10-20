@@ -6,8 +6,14 @@ public static class ProceduralSfx
 {
     public const int Rate = 44100;
 
-    // サビ入り・ランクの叩きつけ用の「ドン」。重さは倍音で出し、60Hz 未満の超低音は入れない(曲のキックとぶつかるため)。
-    public static float[] Don(float seconds = .55f)
+    // サビ入り・START・ランクの叩きつけ用の「ドン」。重さは倍音で出し、60Hz 未満の超低音は入れない(曲のキックとぶつかるため)。
+    // 2026-10-20(派手さカタログ 響1): 150Hz 未満が出ない会場のスピーカー向けに、2〜6倍音を厚くした形(FlourishSfx.Don)へ替えた。
+    // 会場で聞き比べるまでは UseLegacyDon = true で前の音に戻せる。
+    public static bool UseLegacyDon;
+    public static float[] Don(float seconds = .55f) => UseLegacyDon ? LegacyDon(seconds) : FlourishSfx.Don(seconds);
+
+    // 2026-10-20 までの「ドン」(150Hz → 72Hz の基音と2・3倍音)。音の42%が150Hz 未満にある。
+    public static float[] LegacyDon(float seconds = .55f)
     {
         var s = new float[Samples(seconds)];
         double phase = 0;

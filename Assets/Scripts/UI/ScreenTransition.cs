@@ -12,6 +12,8 @@ public sealed class ScreenTransition : MonoBehaviour
     public enum Style { Forward, Back, Result, Calibration }
     public const float CloseDuration = .42f;
     public const float OpenDuration = .38f;
+    // 出発の演出(departure)があるとき、幕を閉じ始める位置(duration に対する割合)。タイトルの前進演出は最後の22%で閉じる。
+    public const float DepartureCurtainFrom = .78f;
 
     static ScreenTransition instance;
     readonly List<EventSystem> blockedSystems = new List<EventSystem>();
@@ -25,7 +27,7 @@ public sealed class ScreenTransition : MonoBehaviour
     static void ResetStatics() { instance = null; }
 
     public static bool Load(string sceneName, Style style = Style.Forward,
-        Action<float> departure = null, float duration = CloseDuration)
+        Action<float> departure = null, float duration = CloseDuration, float curtainFrom = DepartureCurtainFrom)
     {
         if (IsBusy) return false;
         if (string.IsNullOrEmpty(sceneName) || !Application.CanStreamedLevelBeLoaded(sceneName))
@@ -33,13 +35,13 @@ public sealed class ScreenTransition : MonoBehaviour
             Debug.LogWarning("画面を読み込めません: " + sceneName);
             return false;
         }
-        Ensure().Begin(sceneName, style, departure, duration);
+        Ensure().Begin(sceneName, style, departure, duration, curtainFrom);
         return true;
     }
 
     public static void Quit()
     {
-        if (!IsBusy) Ensure().Begin(null, Style.Back, null, CloseDuration);
+        if (!IsBusy) Ensure().Begin(null, Style.Back, null, CloseDuration, DepartureCurtainFrom);
     }
 
     static ScreenTransition Ensure()
@@ -67,15 +69,19 @@ public sealed class ScreenTransition : MonoBehaviour
         return instance;
     }
 
-    void Begin(string sceneName, Style style, Action<float> departure, float duration)
+    void Begin(string sceneName, Style style, Action<float> departure, float duration, float curtainFrom)
     {
         busy = true;
         arriving = false;
         gameObject.SetActive(true);
         BlockInput();
         SceneManager.sceneLoaded += OnSceneLoaded;
-        StartCoroutine(Run(sceneName, style, departure, Mathf.Max(.01f, duration)));
+        StartCoroutine(Run(sceneName, style, departure, Mathf.Max(.01f, duration), Mathf.Clamp01(curtainFrom)));
     }
+
+    // 幕が閉じ始める秒。閉じる 0.42 秒に合わせて「シュッ」を鳴らす(派手さカタログ 幕1)。
+    public static float SwishTime(bool departure, float duration)
+        => departure ? Mathf.Max(0, duration - CloseDuration) : 0;
 
     void BlockInput()
     {
@@ -90,18 +96,22 @@ public sealed class ScreenTransition : MonoBehaviour
 
     void OnSceneLoaded(Scene scene, LoadSceneMode mode) { BlockInput(); }
 
-    IEnumerator Run(string sceneName, Style style, Action<float> departure, float duration)
+    IEnumerator Run(string sceneName, Style style, Action<float> departure, float duration, float curtainFrom)
     {
         try
         {
+            float swishAt = SwishTime(departure != null, duration);
+            bool swished = sceneName == null;
             for (float elapsed = 0; elapsed < duration; elapsed += Time.unscaledDeltaTime)
             {
+                if (!swished && elapsed >= swishAt) { swished = true; MenuSfx.Curtain(style); }
                 float progress = Mathf.Clamp01(elapsed / duration);
                 departure?.Invoke(progress);
-                // タイトルの前進演出は最後まで見せ、終端だけを共通の暗転へ受け渡す。
-                curtain.SetProgress(departure == null ? progress : Mathf.InverseLerp(.78f, 1f, progress), style);
+                // タイトルの前進演出・選曲のスタートの演出は最後まで見せ、終端だけを共通の暗転へ受け渡す。
+                curtain.SetProgress(departure == null ? progress : Mathf.InverseLerp(curtainFrom, 1f, progress), style);
                 yield return null;
             }
+            if (!swished) MenuSfx.Curtain(style);
             departure?.Invoke(1f);
             curtain.SetProgress(1f, style);
             yield return null;

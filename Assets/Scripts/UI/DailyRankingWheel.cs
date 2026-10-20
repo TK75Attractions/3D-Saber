@@ -65,7 +65,10 @@ public sealed class DailyRankingWheel : MonoBehaviour
         Label("Value", stamp, rank + "<size=64> 位</size>", Vector2.zero, new Vector2(720, 240), 206, accent);
         audioSource = gameObject.AddComponent<AudioSource>();
         audioSource.playOnAwake = false; audioSource.spatialBlend = 0;
-        tickSound = Sound(false); impactSound = Sound(true);
+        // 「デン」は響1 でドンと同じ倍音型にした(FlourishSfx.DailyRankDen)。この画面の音は 22050Hz なので半分に間引く。
+        tickSound = Sound(false);
+        impactSound = ProceduralSfx.UseLegacyDon ? Sound(true)
+            : ProceduralSfx.Clip("DailyRankDEN", Halve(FlourishSfx.Cached("DailyRankDen", FlourishSfx.DailyRankDen)), 22050);
     }
 
     public void Tick(float time, bool reduced)
@@ -117,6 +120,14 @@ public sealed class DailyRankingWheel : MonoBehaviour
     {
         if (tickSound != null) Destroy(tickSound);
         if (impactSound != null) Destroy(impactSound);
+    }
+
+    // 44100Hz の波形を、隣り合う2つの平均で 22050Hz にする。
+    static float[] Halve(float[] samples)
+    {
+        var half = new float[Mathf.Max(1, samples.Length / 2)];
+        for (int i = 0; i < half.Length; i++) half[i] = (samples[2 * i] + samples[Mathf.Min(samples.Length - 1, 2 * i + 1)]) * .5f;
+        return half;
     }
 
     static AudioClip Sound(bool impact)

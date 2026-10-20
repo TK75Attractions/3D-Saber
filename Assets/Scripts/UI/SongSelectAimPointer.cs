@@ -33,7 +33,12 @@ public sealed class SongSelectAimPointer : MonoBehaviour
     public const float StartHoldOffSeconds = 1f;
     readonly SaberUIArrivalGuard arrival = new SaberUIArrivalGuard();
     Object guideTarget; float guideHeld, guideAway, startHoldOff;
-    AudioSource confirmSource; AudioClip confirmClip;
+    // ためる音(派手さカタログ 盤2)。かざし始めの0.15秒は鳴らさず、外れたら0.15秒で下げながら消す。
+    // 猶予(0.25秒)の間に同じ的へ戻れば、ためた秒の位置から続きを鳴らす。音は MenuSfx が作って持つ。
+    public const float ChargeLeadInSeconds = .15f;
+    public const float ChargeFadeSeconds = .15f;
+    AudioSource chargeSource; float chargeFade = -1;
+    public bool ChargeSounding => chargeSource != null && chargeSource.isPlaying && chargeFade < 0;
     public void BeginArrival() { arrival.Reset(); guideTarget = null; guideHeld = guideAway = 0; CancelCharge(); }
     public void HoldOffStart() { startHoldOff = StartHoldOffSeconds; }
     public float Progress01 => tracker.Progress01;
@@ -62,9 +67,8 @@ public sealed class SongSelectAimPointer : MonoBehaviour
         InputPoint.EnsureInstance();
         aim.BuildGraphics();
         aim.BeginArrival();
-        aim.confirmSource = aim.gameObject.AddComponent<AudioSource>();
-        aim.confirmSource.playOnAwake = false; aim.confirmSource.spatialBlend = 0;
-        aim.confirmClip = JudgmentSfx.Beep(880, .07f);
+        aim.chargeSource = aim.gameObject.AddComponent<AudioSource>();
+        aim.chargeSource.playOnAwake = false; aim.chargeSource.spatialBlend = 0;
         ctl.OnSelectionChanged += aim.SelectionChanged;
         ctl.OnDifficultyChanged += aim.SelectionChanged;
         return aim;
@@ -134,6 +138,7 @@ public sealed class SongSelectAimPointer : MonoBehaviour
         {
             CancelCharge(); guideTarget = null; guideHeld = 0;
             if (reticle != null) reticle.gameObject.SetActive(false);
+            UpdateChargeSound(false, default, dt);
             return;
         }
         Target next = fresh ? Resolve(point) : default;
@@ -191,18 +196,52 @@ public sealed class SongSelectAimPointer : MonoBehaviour
         }
         if (next.action != null) next.action.SetAimProgress(tracker.Progress01);
         if (next.disc != null) next.disc.SetAimProgress(tracker.Progress01);
+        UpdateChargeSound(!fire && next.key != null && tracker.IsCharging(next.key) && tracker.HeldSeconds >= ChargeLeadInSeconds, next, dt);
         if (fire)
         {
+            StopChargeSound();
             CuttableNote note = next.action != null ? next.action.Note : navigation != null ? next.up ? navigation.UpNote : navigation.DownNote : null;
             Vector2 hit = note != null ? (Vector2)Camera.main.WorldToScreenPoint(note.transform.position) : point;
             bool accepted = next.disc != null ? next.disc.TryShoot() : next.action != null ? next.action.TryShoot() : navigation != null && navigation.TryShoot(next.up);
             if (accepted)
             {
                 ShotCount++; shotAge = 0;
-                if (confirmSource != null && confirmClip != null) confirmSource.PlayOneShot(confirmClip, .3f);
+                // ためきった音(盤2)。的ごとの音(盤1)は操作の側で鳴る。スタートは StartGame が専用の決めを鳴らす。
+                if (!startDisc) MenuSfx.Fire();
                 Place(impact.rectTransform, hit); impact.Show(0, false, 0);
             }
         }
+    }
+
+    // ためている的に合わせた音を、ためた秒の位置から鳴らす。止まったら下げながら消す。
+    void UpdateChargeSound(bool charging, Target target, float dt)
+    {
+        if (chargeSource == null) return;
+        if (charging)
+        {
+            bool start = target.disc != null && controller != null && target.disc.Button == controller.startButton;
+            var clip = MenuSfx.ChargeClip(target.disc != null ? target.disc.HoldSeconds : 1, start);
+            if (clip == null) return;
+            float at = Mathf.Clamp(tracker.HeldSeconds, 0, Mathf.Max(0, clip.length - .02f));
+            if (chargeSource.clip != clip || !chargeSource.isPlaying || chargeFade >= 0 || Mathf.Abs(chargeSource.time - at) > .1f)
+            {
+                chargeSource.clip = clip; chargeSource.volume = 1; chargeSource.pitch = 1;
+                chargeSource.time = at; chargeSource.Play();
+            }
+            chargeFade = -1;
+            return;
+        }
+        if (!chargeSource.isPlaying) { chargeFade = -1; return; }
+        if (chargeFade < 0) chargeFade = 0;
+        chargeFade += Mathf.Max(0, dt);
+        float k = 1 - Mathf.Clamp01(chargeFade / ChargeFadeSeconds);
+        chargeSource.volume = k; chargeSource.pitch = Mathf.Lerp(.75f, 1f, k);
+        if (k <= 0) StopChargeSound();
+    }
+    void StopChargeSound()
+    {
+        if (chargeSource != null) { chargeSource.Stop(); chargeSource.volume = 1; chargeSource.pitch = 1; }
+        chargeFade = -1;
     }
 
     Target Resolve(Vector2 point)
@@ -271,10 +310,9 @@ public sealed class SongSelectAimPointer : MonoBehaviour
     }
     void CancelCharge() { tracker.Cancel(); SetHovered(default); }
     void OnApplicationFocus(bool focused) { if (!focused) BeginArrival(); }
-    void OnDisable() { BeginArrival(); if (reticle != null) reticle.gameObject.SetActive(false); }
+    void OnDisable() { BeginArrival(); StopChargeSound(); if (reticle != null) reticle.gameObject.SetActive(false); }
     void OnDestroy()
     {
-        if (confirmClip != null) Destroy(confirmClip);
         if (controller != null) { controller.OnSelectionChanged -= SelectionChanged; controller.OnDifficultyChanged -= SelectionChanged; }
     }
 }
