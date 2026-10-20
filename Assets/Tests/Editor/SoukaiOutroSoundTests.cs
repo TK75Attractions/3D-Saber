@@ -97,7 +97,7 @@ public class SoukaiOutroSoundTests
         reveal = canvas.AddComponent<ResultReveal>();
         var textGo = new GameObject("ScoreValue", typeof(RectTransform)); created.Add(textGo);
         text = textGo.AddComponent<TextMeshProUGUI>();
-        var view = ResultSoundtrack.Build(canvas.transform, reveal, text, 48000, .24f, 1.98f, 3.2f);
+        var view = ResultSoundtrack.Build(canvas.transform, reveal, text, 48000, .24f, ResultSkin.RankLandingTime, 3.2f);
         created.Add(view.gameObject);
         return view;
     }
@@ -112,7 +112,7 @@ public class SoukaiOutroSoundTests
         Assert.AreEqual(48000, view.ShownScore);
         int expectedTicks = Mathf.FloorToInt(ResultSoundtrack.CountSeconds / ResultSoundtrack.TickInterval);
         Assert.That(view.TickCount, Is.InRange(expectedTicks - 2, expectedTicks + 1), "数字が動く間だけ刻む");
-        Assert.IsTrue(view.DonPlayed, "ランクの衝撃波でドン");
+        Assert.IsTrue(view.FinishPlayed, "ランクバッジの着地で成績ごとの決め");
         Assert.IsTrue(view.LoopStarted, "順位の演出の後にループ曲");
     }
 
@@ -124,7 +124,7 @@ public class SoukaiOutroSoundTests
         reveal.Tick(999f);
         Assert.AreEqual("48,000", text.text);
         Assert.AreEqual(0, view.TickCount, "スキップで過ぎた刻む音をまとめて鳴らさない");
-        Assert.IsFalse(view.DonPlayed, "スキップで過ぎたドンも鳴らさない");
+        Assert.IsFalse(view.FinishPlayed, "スキップで過ぎたランクの決めも鳴らさない");
         Assert.IsTrue(view.LoopStarted, "ループ曲は始める");
     }
 

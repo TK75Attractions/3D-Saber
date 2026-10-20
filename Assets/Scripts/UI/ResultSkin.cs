@@ -25,7 +25,7 @@ public class ResultSkin : MonoBehaviour
     const float DelayRankWordmark = 1.66f;
     const float DelayRankBadge = 1.82f;
     const float DurRankBadge = 0.65f;
-    const float DelayRing = 1.98f;
+    public const float RankLandingTime = DelayRankBadge + DurRankBadge * ResultReveal.SlamLandPortion;
     const float DurRing = 0.70f;
 
     // スライド距離(px)。rvU=下から46 / rvL=左から90 / rvR=右から90。
@@ -80,8 +80,8 @@ public class ResultSkin : MonoBehaviour
         BuildJudgeList(root.transform);
         BuildDistributionBar(root.transform);
         DailyRankingPresentation.Build(root.transform, reveal, GameSession.FinalDailyRanking);
-        // スコアのカウントアップ・ランクの「ドン」・順位の演出の後の静かなループ曲。
-        ResultSoundtrack.Build(root.transform, reveal, scoreValueText, GameSession.FinalScore, DelayScoreBlock, DelayRing,
+        // スコアのカウントアップ・ランク着地の決め・順位の演出の後の静かなループ曲。
+        ResultSoundtrack.Build(root.transform, reveal, scoreValueText, GameSession.FinalScore, DelayScoreBlock, RankLandingTime,
             Mathf.Max(3f, DailyRankingPresentation.CompletionTime(GameSession.FinalDailyRanking) + .2f));
         StyleBackButton(canvas);
         var pointer = SaberUIPointer.Build();
@@ -105,6 +105,13 @@ public class ResultSkin : MonoBehaviour
     public static string FormatAccuracy(float accuracy01)
     {
         return (Mathf.Clamp01(accuracy01) * 100f).ToString("F1") + "%";
+    }
+
+    // B/C は A までの実際の点差を表示する。A 以上には出さない。
+    public static string FormatPointsToA(int score)
+    {
+        long remaining = (long)PlayRankHelper.ScoreLowerBound(PlayRank.A) - score;
+        return remaining > 0 ? "あと " + remaining.ToString("N0") + " 点で A" : "";
     }
 
     // 曲ID("ElDorado" 等)を表示タイトル("EL DORADO")へ。大文字の前に区切りを入れて全大文字化。
@@ -293,6 +300,9 @@ public class ResultSkin : MonoBehaviour
     {
         var chakra = ChakraFont();
 
+        // 放射光と紙吹雪は、文字・リング・バッジより後ろの一枚で描く。
+        ResultRankFlourishGraphic.Build(parent, reveal, rank);
+
         // RANK ワードマーク(クロームグラデ + 青グロー)
         var wordmarkRoot = new GameObject("RankWordmark", typeof(RectTransform));
         wordmarkRoot.transform.SetParent(parent, false);
@@ -316,7 +326,7 @@ public class ResultSkin : MonoBehaviour
         ringImg.sprite = UISkinKit.CircleRing();
         ringImg.color = rankColor;
         ringImg.raycastTarget = false;
-        if (reveal != null) reveal.Add(ring, DelayRing, DurRing, ResultReveal.Kind.Ring, Vector2.zero);
+        if (reveal != null) reveal.Add(ring, RankLandingTime, DurRing, ResultReveal.Kind.Ring, Vector2.zero);
 
         // 六角形バッジ(デーン)
         var badgeRoot = new GameObject("RankBadge", typeof(RectTransform));
@@ -348,9 +358,19 @@ public class ResultSkin : MonoBehaviour
             new Color(rankColor.r, rankColor.g, rankColor.b, 0.30f));
         AddGlow(badgeRoot.transform, "LetterGlow", Vector2.zero, new Vector2(360f, 360f),
             new Color(rankColor.r, rankColor.g, rankColor.b, 0.75f));
+        // B/C は文字を少し上げ、六角形の内側に A までの点差を置く。
+        bool showGap = rank == PlayRank.B || rank == PlayRank.C;
         UISkinKit.MakeTMP(badgeRoot.transform, "RankLetter", PlayRankHelper.Label(rank), 250f,
             Color.white, TextAlignmentOptions.Center,
-            Vector2.zero, new Vector2(400f, 300f), FontStyles.Normal, 0f, chakra);
+            showGap ? new Vector2(0f, 24f) : Vector2.zero,
+            showGap ? new Vector2(400f, 240f) : new Vector2(400f, 300f), FontStyles.Normal, 0f, chakra);
+        if (showGap)
+        {
+            UISkinKit.MakeTMP(badgeRoot.transform, "PointsToA", FormatPointsToA(GameSession.FinalScore), 26f,
+                UISkinPalette.OffWhite, TextAlignmentOptions.Center,
+                new Vector2(0f, -125f), new Vector2(300f, 34f), FontStyles.Normal, 0f,
+                UISkinKit.JapaneseFallbackFontAsset());
+        }
 
         if (reveal != null) reveal.Add(badgeRoot, DelayRankBadge, DurRankBadge, ResultReveal.Kind.Slam, Vector2.zero);
 

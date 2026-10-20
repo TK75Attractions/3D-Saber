@@ -1,17 +1,16 @@
 using TMPro;
 using UnityEngine;
 
-// リザルトの音(爽快感カタログ 山4)。
-//   ・スコアを 1.5 秒でカウントアップし、刻む音を鳴らす
-//   ・ランクの衝撃波(リング)に合わせて「ドン」
+// リザルトの音(爽快感カタログ 山4・賞2・賞5)。
+//   ・スコアを 1.5 秒でカウントアップし、刻む音と上昇音、止まった瞬間の「チン」
+//   ・ランクバッジの着地に合わせて、成績ごとの決めの音
 //   ・順位の演出が終わってから、静かなループ曲を小さく流す
-// ResultReveal の経過時間で動く。クリック/キーでスキップしたら最終値へ飛び、刻む音とドンは鳴らさない。
+// ResultReveal の経過時間で動く。スキップで過ぎた効果音は鳴らさず、上昇音もすぐ止める。
 public sealed class ResultSoundtrack : MonoBehaviour
 {
     public const float CountSeconds = 1.5f;
     public const float TickInterval = .07f;
-    public const float TickVolume = .14f;
-    public const float DonVolume = .55f;
+    public const float TickVolume = .3f;
     public const float LoopVolume = .13f;
     public const float LoopFadeSeconds = 2.5f;
     // これより大きく時間が飛んだらスキップとみなす。
@@ -20,47 +19,77 @@ public sealed class ResultSoundtrack : MonoBehaviour
     ResultReveal reveal;
     TMP_Text scoreText;
     int finalScore;
-    float countStart, donTime, loopStart;
+    float countStart, finishTime, loopStart;
     float lastT = -1f, nextTick;
     float loopStartedAt;
-    AudioSource oneShots, loopSource;
-    AudioClip tickClip, donClip, loopClip;
+    bool countSkipped;
+    AudioSource oneShots, swellSource, loopSource;
+    AudioClip tickClip, countSwellClip, countStopClip, finishClip, loopClip;
 
     public int TickCount { get; private set; }
-    public bool DonPlayed { get; private set; }
+    public int CountStopCount { get; private set; }
+    public bool SwellStarted { get; private set; }
+    public bool SwellActive { get; private set; }
+    public bool FinishPlayed { get; private set; }
+    public int FinishLevel { get; private set; }
     public bool LoopStarted { get; private set; }
     public int ShownScore { get; private set; }
+    public float FinishTime => finishTime;
     public float LoopStart => loopStart;
     public float LoopVolumeNow => loopSource != null ? loopSource.volume : 0f;
 
     public static ResultSoundtrack Build(Transform parent, ResultReveal reveal, TMP_Text score, int finalScore,
-        float countStart, float donTime, float loopStart)
+        float countStart, float finishTime, float loopStart)
     {
         var go = new GameObject("ResultSoundtrack");
         go.transform.SetParent(parent, false);
         var view = go.AddComponent<ResultSoundtrack>();
-        view.Setup(reveal, score, finalScore, countStart, donTime, loopStart);
+        view.Setup(reveal, score, finalScore, countStart, finishTime, loopStart);
         return view;
     }
 
-    void Setup(ResultReveal timeline, TMP_Text score, int final, float start, float don, float loop)
+    void Setup(ResultReveal timeline, TMP_Text score, int final, float start, float finish, float loop)
     {
         reveal = timeline; scoreText = score; finalScore = Mathf.Max(0, final);
-        countStart = start; donTime = don; loopStart = Mathf.Max(don + .5f, loop);
+        countStart = start; finishTime = finish; loopStart = Mathf.Max(finish + .5f, loop);
         nextTick = countStart;
-        tickClip = ProceduralSfx.Clip("ResultTick", ProceduralSfx.Tick());
-        donClip = ProceduralSfx.Clip("ResultRankDon", ProceduralSfx.Don(.6f));
-        loopClip = ProceduralSfx.Clip("ResultAmbientLoop", ProceduralSfx.AmbientLoop(), ProceduralSfx.LoopRate);
+        FinishLevel = LevelForRank(PlayRankHelper.FromScore(finalScore));
+        tickClip = ProceduralSfx.Clip("ResultTick",
+            FlourishSfx.Cached("ResultTick", () => ProceduralSfx.Tick()));
+        countSwellClip = ProceduralSfx.Clip("ResultCountSwell",
+            FlourishSfx.Cached("ResultCountSwell", () => FlourishSfx.CountSwell(CountSeconds)));
+        countStopClip = ProceduralSfx.Clip("ResultCountStop",
+            FlourishSfx.Cached("ResultCountStop", () => FlourishSfx.CountStop()));
+        finishClip = ProceduralSfx.Clip("ResultRankFinish" + FinishLevel,
+            FlourishSfx.Cached("ResultRankFinish." + FinishLevel, () => FlourishSfx.RankFinish(FinishLevel)));
+        loopClip = ProceduralSfx.Clip("ResultAmbientLoop",
+            FlourishSfx.Cached("ResultAmbientLoop", () => ProceduralSfx.AmbientLoop()), ProceduralSfx.LoopRate);
         if (Application.isPlaying)
         {
             oneShots = gameObject.AddComponent<AudioSource>();
-            oneShots.playOnAwake = false; oneShots.spatialBlend = 0;
+            oneShots.playOnAwake = false; oneShots.spatialBlend = 0; oneShots.volume = 1f;
+            // 上昇音だけを止められるよう、刻む音とは再生元を分ける。
+            swellSource = gameObject.AddComponent<AudioSource>();
+            swellSource.playOnAwake = false; swellSource.spatialBlend = 0;
+            swellSource.clip = countSwellClip; swellSource.volume = 1f; swellSource.pitch = 1f;
             loopSource = gameObject.AddComponent<AudioSource>();
             loopSource.playOnAwake = false; loopSource.spatialBlend = 0; loopSource.loop = true;
             loopSource.clip = loopClip; loopSource.volume = 0;
         }
         SetScore(0);
         if (reveal != null) reveal.TimeChanged += Tick;
+    }
+
+    static int LevelForRank(PlayRank rank)
+    {
+        switch (rank)
+        {
+            case PlayRank.SPlus: return 4;
+            case PlayRank.S: return 3;
+            case PlayRank.A: return 2;
+            case PlayRank.B: return 1;
+            default: return 0;
+        }
     }
 
     // 経過時間 t でのカウントアップの値。出だしは速く、最後はゆっくり止まる。純関数。
@@ -84,24 +113,39 @@ public sealed class ResultSoundtrack : MonoBehaviour
         int shown = CountedScore(t, finalScore, countStart, CountSeconds);
         if (shown != ShownScore) SetScore(shown);
 
+        float countEnd = countStart + CountSeconds;
         if (!skipped)
         {
-            // 数字が動いている間だけ刻む。上がるほど少し高くする。
-            while (t >= nextTick && nextTick < countStart + CountSeconds && finalScore > 0)
+            if (!countSkipped && finalScore > 0)
             {
-                if (nextTick > countStart) PlayTick((nextTick - countStart) / CountSeconds);
-                nextTick += TickInterval;
+                if (!SwellStarted && previous < countStart && t >= countStart && t < countEnd)
+                    StartSwell();
+
+                // 数字が動いている間だけ刻む。上がるほど少し高くする。
+                while (t >= nextTick && nextTick < countEnd)
+                {
+                    if (nextTick > countStart) PlayTick((nextTick - countStart) / CountSeconds);
+                    nextTick += TickInterval;
+                }
+                if (CountStopCount == 0 && previous < countEnd && t >= countEnd)
+                {
+                    StopSwell();
+                    CountStopCount++;
+                    PlayAccent(countStopClip);
+                }
             }
-            if (!DonPlayed && previous < donTime && t >= donTime)
+            if (!FinishPlayed && previous < finishTime && t >= finishTime)
             {
-                DonPlayed = true;
-                if (oneShots != null) { oneShots.pitch = 1f; oneShots.PlayOneShot(donClip, DonVolume); }
+                FinishPlayed = true;
+                PlayAccent(finishClip);
             }
         }
         else
         {
-            // スキップ: 最終値へ飛ぶ。過ぎた刻む音とドンは鳴らさない。
-            nextTick = countStart + CountSeconds;
+            // スキップ後に時計が進んでも、カウントの終止音を後追いで鳴らさない。
+            countSkipped = true;
+            nextTick = countEnd;
+            StopSwell();
         }
 
         if (!LoopStarted && t >= loopStart)
@@ -112,6 +156,26 @@ public sealed class ResultSoundtrack : MonoBehaviour
         }
         if (LoopStarted && loopSource != null)
             loopSource.volume = LoopVolume * Mathf.Clamp01((Time.unscaledTime - loopStartedAt) / LoopFadeSeconds);
+    }
+
+    void StartSwell()
+    {
+        SwellStarted = true;
+        SwellActive = true;
+        if (swellSource != null) swellSource.Play();
+    }
+
+    void StopSwell()
+    {
+        SwellActive = false;
+        if (swellSource != null) swellSource.Stop();
+    }
+
+    void PlayAccent(AudioClip clip)
+    {
+        if (oneShots == null) return;
+        oneShots.pitch = 1f;
+        oneShots.PlayOneShot(clip, 1f);
     }
 
     void PlayTick(float progress)
@@ -131,8 +195,13 @@ public sealed class ResultSoundtrack : MonoBehaviour
     void OnDestroy()
     {
         if (reveal != null) reveal.TimeChanged -= Tick;
+        StopSwell();
+        if (oneShots != null) oneShots.Stop();
+        if (loopSource != null) loopSource.Stop();
         UISkinKit.SafeDestroy(tickClip);
-        UISkinKit.SafeDestroy(donClip);
+        UISkinKit.SafeDestroy(countSwellClip);
+        UISkinKit.SafeDestroy(countStopClip);
+        UISkinKit.SafeDestroy(finishClip);
         UISkinKit.SafeDestroy(loopClip);
     }
 }
