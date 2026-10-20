@@ -10,6 +10,10 @@ using Points = std::vector<PixelPoint>;
 inline double clamp01(double x) { return std::min(std::max(x, 0.0), 1.0); }
 inline int rounded(double x) { return static_cast<int>(std::round(x)); }
 inline bool line_source(const Candidate& c) { return c.source.compare(0, 9, "core-line") == 0; }
+// 近飽和のピークも集中した core も無い青い面は LED の証拠にならない。
+inline bool is_coreless_blue_surface(const Candidate& c) {
+    return c.source == "color-emitter" && c.peak_value < 242 && c.core_support < 0.05;
+}
 struct Evidence {
     SaberColor color;
     const Mask &radiance, &value, &chroma, &color_mask, &core_mask;

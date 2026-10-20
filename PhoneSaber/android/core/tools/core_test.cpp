@@ -85,6 +85,27 @@ static void blue_support_tests() {
         break;
     }
 }
+// iOS の assertCorelessBlueSurface と同じ合成候補で確認する。
+static void coreless_blue_surface_tests() {
+    constexpr int width = 100, height = 80;
+    detail::Points points;
+    for (int y = 30; y <= 34; ++y) for (int x = 20; x <= 70; ++x) points.push_back({x,y});
+    auto candidate = [&](uint8_t peak, uint8_t core) {
+        detail::Mask radiance(width*height), values(width*height,peak), chroma(width*height,140);
+        detail::Mask color_mask(width*height,1), core_mask(width*height,core);
+        detail::Evidence evidence{SaberColor::blue,radiance,values,chroma,color_mask,core_mask};
+        auto scored = detail::score_component(points,width,height,nullptr,evidence,"color-emitter");
+        assert(scored);
+        return scored->candidate;
+    };
+    assert(detail::is_coreless_blue_surface(candidate(237,0)));
+    // 低輝度 LED の既存 connected/color 候補や、飽和した純青 LED は残す。
+    auto connected = candidate(237,0);
+    connected.source = "color-mask";
+    assert(!detail::is_coreless_blue_surface(connected));
+    assert(!detail::is_coreless_blue_surface(candidate(242,0)));
+    assert(!detail::is_coreless_blue_surface(candidate(237,1)));
+}
 // 元の菱形走査を独立した参照にして、小画像を全列挙し境界も確認する。
 static detail::Mask reference_morphology(const detail::Mask& input, int w, int h, int radius, bool erosion) {
     if (radius <= 0) return input;
@@ -559,6 +580,7 @@ int main() {
     component_order_tests();
     component_allocation_tests();
     blue_support_tests();
+    coreless_blue_surface_tests();
     FrameProcessor p;
     auto a = p.process(detection({{10,20},{30,40}}),100,100,1.0);
     assert(a.size() == 1 && a[0].fresh && !a[0].predicted && a[0].port == 5005);

@@ -520,6 +520,28 @@ private func printLosslessSignatures(paths: [String]) {
     }
 }
 
+private func assertCorelessBlueSurface() {
+    let width = 100, height = 80
+    let points = (30...34).flatMap { y in (20...70).map { PixelPoint(x: $0, y: y) } }
+    func candidate(peak: UInt8, core: UInt8) -> SaberCandidate {
+        let evidence = SaberEvidence(color: .blue, radiance: [],
+            value: Array(repeating: peak, count: width * height),
+            chroma: Array(repeating: 140, count: width * height),
+            colorMask: Array(repeating: 1, count: width * height),
+            coreMask: Array(repeating: core, count: width * height))
+        return saberCandidate(from: points, width: width, height: height,
+                              evidence: evidence, source: "color-emitter")!
+    }
+    precondition(isCorelessBlueSurface(candidate(peak: 237, core: 0)))
+    // 低輝度 LED の既存 connected/color 候補や、飽和した純青 LED は残す。
+    var connected = candidate(peak: 237, core: 0)
+    connected.source = "color-mask"
+    precondition(!isCorelessBlueSurface(connected))
+    precondition(!isCorelessBlueSurface(candidate(peak: 242, core: 0)))
+    precondition(!isCorelessBlueSurface(candidate(peak: 237, core: 1)))
+    print("Coreless blue surface: diffuse emission slice rejected; connected, clipped and supported emitters preserved")
+}
+
 @main
 enum StaticBGRADetectionTests {
     static func main() {
@@ -537,6 +559,7 @@ enum StaticBGRADetectionTests {
         assertLosslessScoringScratch()
         assertLosslessMorphology()
         assertBlueNoDeepSupport()
+        assertCorelessBlueSurface()
         let cases: [(String, SaberColor, PixelPoint, PixelPoint, Int, Int)] = [
             ("red horizontal", .red, PixelPoint(x: 12, y: 20), PixelPoint(x: 92, y: 20), 128, 64),
             ("red vertical", .red, PixelPoint(x: 24, y: 8), PixelPoint(x: 24, y: 56), 128, 64),

@@ -283,6 +283,15 @@ private struct CoreLinePeak {
     let votes: Int
 }
 
+// 反射対策（独立して取り外せる）: 色抽出で明るい面だけを切り出しても、
+// 近飽和のピークも集中した core も無い青い面は LED の証拠にならない。
+// 242 は既存の peak/mean core 判定、0.05 は既存の broad-coreless 判定と同じ。
+func isCorelessBlueSurface(_ candidate: SaberCandidate) -> Bool {
+    candidate.source == "color-emitter"
+        && candidate.peakValue < 242
+        && candidate.coreSupportRatio < 0.05
+}
+
 /// Hough-like line proposals from color-supported bright cores. This does not
 /// choose a winner; it only turns aligned, possibly disconnected LED packages
 /// into components that the common candidate scorer can compare.
@@ -1394,8 +1403,23 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
         if CoreLineGuard.enabled {
             applyCoreLineGuard(&candidates, evidence: evidence, width: maskWidth, step: step)
         }
+        if color == .blue {
+            for index in candidates.indices where candidates[index].isEmitterEligible
+                && isCorelessBlueSurface(candidates[index]) {
+                candidates[index].isEmitterEligible = false
+                if collectPipelineDiagnostics {
+                    candidates[index].diagnosticRejections += [
+                        SaberEligibilityDecision(name: "coreless-blue-surface.peak",
+                            value: Double(candidates[index].peakValue), comparison: ">=", threshold: 242),
+                        SaberEligibilityDecision(name: "coreless-blue-surface.coreSupport",
+                            value: candidates[index].coreSupportRatio, comparison: ">=", threshold: 0.05)
+                    ]
+                }
+            }
+        }
         let scaled = candidates.map { candidate in
-            SaberCandidate(
+            let endpoints = candidate.endpoints
+            return SaberCandidate(
                 source: candidate.source,
                 radiance: candidate.radiance,
                 comparisonEndpoints: (
@@ -1404,10 +1428,10 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
                     PixelPoint(x: candidate.comparisonEndpoints.1.x * step,
                                y: candidate.comparisonEndpoints.1.y * step)
                 ),
-                endpoints: (PixelPoint(x: candidate.endpoints.0.x * step,
-                                       y: candidate.endpoints.0.y * step),
-                            PixelPoint(x: candidate.endpoints.1.x * step,
-                                       y: candidate.endpoints.1.y * step)),
+                endpoints: (PixelPoint(x: endpoints.0.x * step,
+                                       y: endpoints.0.y * step),
+                            PixelPoint(x: endpoints.1.x * step,
+                                       y: endpoints.1.y * step)),
                 boundingBox: SaberBoundingBox(
                     minX: candidate.boundingBox.minX * step,
                     minY: candidate.boundingBox.minY * step,

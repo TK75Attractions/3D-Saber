@@ -611,6 +611,12 @@ FrameAnalysis analyze(const PixelBuffer& p, ColorThreshold red, ColorThreshold b
             }
         }
         if constexpr (CoreLineGuard::enabled) apply_core_line_guard(candidates,evidence,w,step);
+        if (color == SaberColor::blue) {
+            for (auto& scored : candidates) {
+                auto& c = scored.candidate;
+                if (c.eligible && is_coreless_blue_surface(c)) c.eligible = false;
+            }
+        }
         for (auto& scored : candidates) {
             auto& c = scored.candidate;
             auto scale = [step](PixelPoint p) -> PixelPoint { return {p.x*step,p.y*step}; };
