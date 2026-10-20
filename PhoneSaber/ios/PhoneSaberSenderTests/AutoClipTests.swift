@@ -233,7 +233,8 @@ final class AutoClipTests: XCTestCase {
         }
         let capture = AutoClipCapture(clipID: "test", trigger: AutoClipTriggerEvent(kind: .manual, frameID: 1, timestamp: 1),
             buffers: buffers, windowStart: 0, windowEnd: 2, captureFPS: 30,
-            environmentAtTrigger: AutoClipEnvironment(), environmentAtSave: AutoClipEnvironment(),
+            environmentAtTrigger: AutoClipEnvironment(signingExpiryRemainingHours: 49),
+            environmentAtSave: AutoClipEnvironment(signingExpiryRemainingHours: 48),
             ignoreZones: [:], playArea: nil, sessionClipIndex: 1, rejectedTriggers: [:])
         let content = AutoClipBundleContent(capture: capture, slots: [0])
         let data = try content.summaryData(images: [])
@@ -242,6 +243,7 @@ final class AutoClipTests: XCTestCase {
         XCTAssertEqual(summary["formatVersion"] as? Int, 1)
         let clip = try XCTUnwrap(summary["autoClip"] as? [String: Any])
         XCTAssertEqual(clip["formatVersion"] as? Int, 2)
+        XCTAssertEqual((clip["camera"] as? [String: Any])?["signingExpiryRemainingHours"] as? Int, 48)
         let frames = try XCTUnwrap(clip["frames"] as? [[String: Any]])
         let red = try XCTUnwrap(frames.first?["red"] as? [String: Any])
         let blue = try XCTUnwrap(frames.first?["blue"] as? [String: Any])
@@ -286,6 +288,7 @@ final class AutoClipTests: XCTestCase {
         XCTAssertLessThanOrEqual(data.count, AutoClipLimits.maximumSummaryBytes)
         let summary = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
         let clip = try XCTUnwrap(summary["autoClip"] as? [String: Any])
+        XCTAssertTrue((clip["camera"] as? [String: Any])?["signingExpiryRemainingHours"] is NSNull)
         let frames = try XCTUnwrap(clip["frames"] as? [[String: Any]])
         let trigger = try XCTUnwrap(frames.first { $0["f"] as? Int == 361 })
         for color in ["red", "blue"] {

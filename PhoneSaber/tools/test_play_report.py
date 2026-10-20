@@ -72,6 +72,55 @@ class ParsingTests(unittest.TestCase):
         finally:
             os.unlink(path)
 
+    def test_archive_file_is_read_without_live_log(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = os.path.join(directory, "events-20261017-074600.log")
+            with open(path, "w", encoding="utf-8") as handle:
+                handle.write(perf(20) + "\n" + judge(10, "Perfect", 0) + "\n")
+            events = play_report.load_events(path)
+            self.assertEqual([e["time"] for e in events], [BASE + timedelta(seconds=s) for s in (10, 20)])
+            self.assertEqual(run(["--events", path])[0], 0)
+
+    def test_directory_reads_all_files_in_event_time_order_and_deduplicates_copies(self):
+        with tempfile.TemporaryDirectory() as directory:
+            archive = os.path.join(directory, "archive")
+            os.mkdir(archive)
+            rows = {
+                "events.log": [perf(40), judge(30, "Perfect", 1)],
+                "events.log.1": [perf(20), judge(30, "Perfect", 1)],
+                "archive/events-20261017-074600.log": [perf(20), judge(30, "Perfect", 1),
+                                                       judge(30, "Perfect", 1), perf(40)],
+                # ファイル名とイベント時刻が逆でも、時刻順にする。
+                "archive/events-20261018-000000.log": [perf(10)],
+                "empty": [],
+                "broken": ["garbage"],
+            }
+            for name, lines in rows.items():
+                with open(os.path.join(directory, name), "w", encoding="utf-8") as handle:
+                    handle.write("\n".join(lines) + "\n")
+            events = play_report.load_events(directory)
+            self.assertEqual([e["time"] for e in events],
+                             [BASE + timedelta(seconds=s) for s in (10, 20, 30, 30, 40)])
+            self.assertEqual(play_report.build_report(events, None, None)["overall"]["judge"]["n"], 2)
+            self.assertEqual(len(play_report.load_events(archive)), 5)
+            self.assertEqual(run(["--events", directory])[0], 0)
+
+    def test_repeated_lines_across_rotation_are_preserved_with_or_without_a_directory(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = os.path.join(directory, "events.log")
+            for name in (path, path + ".1"):
+                with open(name, "w", encoding="utf-8") as handle:
+                    handle.write(judge(30, "Perfect", 1) + "\n")
+            self.assertEqual(len(play_report.load_events(path)), 2)
+            self.assertEqual(len(play_report.load_events(directory)), 2)
+
+    def test_empty_directory_is_valid(self):
+        with tempfile.TemporaryDirectory() as directory:
+            self.assertEqual(play_report.load_events(directory), [])
+            code, text = run(["--events", directory])
+            self.assertEqual(code, 0)
+            self.assertIn("記録がありません", text)
+
     def test_num_rejects_unknown_and_non_finite(self):
         for value in ("unknown", "", "nan", "inf", "-", None, "abc"):
             self.assertIsNone(play_report.num(value), value)
@@ -203,6 +252,98 @@ class SummaryTests(unittest.TestCase):
         self.assertEqual(s["judge_latency"]["n"], 2)
         self.assertEqual(s["judge_latency"]["last"]["applied-ms"], "95")
         self.assertIn("judge-latency 2 回", play_report.render(s))
+
+
+class BaselineTests(unittest.TestCase):
+    def events(self, lines):
+        return sorted(map(play_report.parse_line, lines), key=lambda e: e["time"])
+
+    def check(self, lines):
+        return play_report.baseline_check(self.events(lines), BASE, BASE + timedelta(seconds=30))
+
+    def good(self, **kwargs):
+        return estimate(15, c2s=40, total=65, **kwargs) + " capture-fps=58"
+
+    def test_exact_limits_are_ok(self):
+        result = self.check([perf(10, red=50, blue=50, over50=1), self.good()])
+        self.assertEqual(result["grade"], "OK")
+        self.assertTrue(all(c["grade"] == "OK" for c in result["checks"].values()))
+
+    def test_numeric_drift_is_warn_without_rounding_or_median_masking(self):
+        cases = [("capture_fps", "capture-fps=58", "capture-fps=57.99"),
+                 ("c2s_ms", "c2s-median-ms=40", "c2s-median-ms=40.01"),
+                 ("total_ms", "total-ms=65", "total-ms=65.01")]
+        for name, before, after in cases:
+            with self.subTest(name=name):
+                result = self.check([perf(10, red=55, blue=58), self.good(), self.good().replace(before, after)])
+                self.assertEqual(result["checks"][name]["grade"], "WARN")
+        result = self.check([perf(10, red=49.99, blue=49.99), perf(20, red=60, blue=60), self.good()])
+        for name in ("red_pkt_s", "blue_pkt_s"):
+            self.assertEqual(result["checks"][name]["grade"], "WARN")
+
+    def test_missing_partial_and_nonfinite_measurements_are_warn(self):
+        for lines in ([], [perf(10, red=60, blue=60)],
+                      [perf(10, red=60, blue=60), self.good().replace("capture-fps=58", "capture-fps=nan")],
+                      [perf(10, red=60, blue=60), self.good(), self.good().replace("capture-fps=58", "capture-fps=unknown")]):
+            self.assertEqual(self.check(lines)["grade"], "WARN")
+
+    def test_thermal_and_pc_bad_but_menus_do_not_count(self):
+        for thermal in ("serious", "critical"):
+            self.assertEqual(self.check([perf(10, red=60, blue=60), self.good(thermal=thermal)])["grade"], "BAD")
+        self.assertEqual(self.check([perf(10, red=60, blue=60, over50=2), self.good()])["grade"], "BAD")
+        self.assertEqual(self.check([perf(10, red=60, blue=60), perf(20, scene="Result", over50=99), self.good()])["grade"], "OK")
+        self.assertEqual(self.check([perf(10, scene="Result"), self.good()])["checks"]["pc_over50"]["grade"], "WARN")
+        self.assertEqual(self.check([perf(10, red=60, blue=60), self.good(thermal="fair")])["grade"], "WARN")
+
+    def gap(self, colour, start, end=None):
+        lines = [f"{ts(start + 1)} colour={colour} event=input-silent gap-seconds=1"]
+        if end is not None:
+            lines.append(f"{ts(end)} colour={colour} event=input-back")
+        return lines
+
+    def test_only_simultaneous_gaps_strictly_over_one_second_count(self):
+        normal = [perf(10, red=60, blue=60), self.good()]
+        separate = self.gap("RED", 2, 5) + self.gap("BLUE", 6, 9)
+        self.assertEqual(self.check(normal + separate)["checks"]["both_gaps"]["value"], 0)
+        exact = self.gap("RED", 2, 5) + self.gap("BLUE", 4, 9)
+        self.assertEqual(self.check(normal + exact)["grade"], "OK")
+        overlap = self.gap("RED", 2, 5) + self.gap("BLUE", 3, 9)
+        self.assertEqual(self.check(normal + overlap)["checks"]["both_gaps"], {"value": 1, "grade": "BAD"})
+
+    def test_open_gaps_are_clipped_to_song_and_session(self):
+        events = self.events(self.gap("RED", -5) + self.gap("BLUE", -4) +
+                             [f"{ts(5)} colour=SYSTEM event=session-quit"])
+        result = play_report.baseline_check(events, BASE, BASE + timedelta(seconds=30))
+        self.assertEqual(result["checks"]["both_gaps"]["value"], 1)
+        result = play_report.baseline_check(events, BASE + timedelta(seconds=6), BASE + timedelta(seconds=30))
+        self.assertEqual(result["checks"]["both_gaps"]["value"], 0)
+
+    def test_overall_protects_worst_song_and_pc_budget_is_per_song(self):
+        lines = [perf(10, red=60, blue=60, over50=1), self.good(), perf(30, "Result"),
+                 perf(110, red=60, blue=60, over50=1), self.good().replace(ts(15), ts(115)), perf(130, "Result")]
+        report = play_report.build_report(self.events(lines), None, None, True)
+        self.assertEqual(report["overall"]["baseline"]["grade"], "OK")
+        lines[3] = perf(110, red=60, blue=60, over50=2)
+        report = play_report.build_report(self.events(lines), None, None, True)
+        self.assertEqual([s["baseline"]["grade"] for s in report["songs"]], ["OK", "BAD"])
+        self.assertEqual(report["overall"]["baseline"]["grade"], "BAD")
+        self.assertIn("状態チェック 曲 2: BAD", play_report.render_report(report))
+
+    def test_baseline_cli_json_compare_and_trial(self):
+        path = write_log([perf(10, red=55, blue=58), self.good(),
+                          f"{ts(0)} event=trial-mark n=1"])
+        try:
+            for extra in ([], ["--baseline", "good-20261020"], ["--by-trial"],
+                          ["--compare", f"{ts(0)}..{ts(30)}", f"{ts(0)}..{ts(30)}"]):
+                code, output = run(["--events", path, "--baseline", "--json", path + ".json"] + extra)
+                self.assertEqual(code, 0)
+                self.assertIn("状態チェック 曲 1: OK", output)
+                self.assertIn("good-20261020", output)
+                with open(path + ".json", encoding="utf-8") as handle:
+                    self.assertIn('"baseline"', handle.read())
+        finally:
+            os.unlink(path)
+            os.unlink(path + ".json")
 
 
 class CliTests(unittest.TestCase):

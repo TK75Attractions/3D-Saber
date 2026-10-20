@@ -56,6 +56,17 @@ struct ContentView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 12) {
+                    TimelineView(.periodic(from: .now, by: 60)) { context in
+                        let expiry = SigningExpiry.current
+                        VStack(spacing: 2) {
+                            Text(expiry.displayText(at: context.date))
+                            if expiry.needsReinstall(at: context.date) {
+                                Text("Mac で入れ直してください")
+                            }
+                        }
+                        .font(.footnote.monospacedDigit())
+                        .foregroundStyle(expiry.needsReinstall(at: context.date) ? Color.red : Color.secondary)
+                    }
 #if DEBUG
                     if model.debugAlternateFPS {
                         Text("fps 自動比較が ON です（F9 計測用）。通常の運用では OFF にしてください")

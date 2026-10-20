@@ -10,6 +10,7 @@
 
 使い方:
   python3 play_report.py --last-session
+  python3 play_report.py --last-session --baseline           # good-20261020 の状態チェック
   python3 play_report.py --since 16:46 --until 16:50          # ローカル時刻（今日）
   python3 play_report.py --since 2026-10-17T07:46Z --until 2026-10-17T07:50Z --json out.json
   python3 play_report.py --compare 16:30..16:40 16:46..16:50  # 変更の前後を並べる
@@ -34,6 +35,9 @@ TETHERING_HOSTS = {"172.20.10.1"}
 TIERS = ("Perfect", "Great", "Good", "Bad", "Miss")
 COMP_MISMATCH_MS = 25.0
 UNKNOWN = {"", "unknown", "none", "nan", "-", "--", "n/a"}
+BASELINE = "good-20261020"
+BASELINE_LIMITS = {"capture_fps": 58, "red_pkt_s": 50, "blue_pkt_s": 50,
+                   "c2s_ms": 40, "total_ms": 65, "both_gaps": 0, "pc_over50": 1}
 
 
 # ---------------------------------------------------------------- 読み込み
@@ -79,16 +83,34 @@ def parse_line(line):
 
 
 def load_events(path):
-    """path と、ゲームが 1 MB ごとに回した path.1〜path.9（古い順）も読む。"""
+    """単一ログ＋世代、またはディレクトリ内（archive を含む）の全ファイルを時刻順で読む。"""
+    directory = os.path.isdir(path)
+    if directory:
+        names = sorted(os.path.join(root, name)
+                       for root, _, files in os.walk(path) for name in files)
+        # archive は複写元の本体ログと同じ行を持つ。それぞれを一群にして比較する。
+        groups = [[name for name in names if os.path.basename(name).startswith("events-")],
+                  [name for name in names if not os.path.basename(name).startswith("events-")]]
+    else:
+        groups = [[f"{path}.{n}" for n in range(9, 0, -1) if os.path.isfile(f"{path}.{n}")] + [path]]
     events = []
-    rotated = [f"{path}.{n}" for n in range(9, 0, -1) if os.path.exists(f"{path}.{n}")]
-    for name in rotated + [path]:
-        with open(name, "r", encoding="utf-8", errors="replace") as handle:
-            for line in handle:
-                row = parse_line(line)
-                if row is not None:
-                    events.append(row)
-    events.sort(key=lambda r: r["time"])  # sort は安定なので同時刻は書かれた順
+    seen = {}
+    for names in groups:
+        occurrences = {}
+        for name in names:
+            with open(name, "r", encoding="utf-8", errors="replace") as handle:
+                for line in handle:
+                    row = parse_line(line)
+                    if row is None:
+                        continue
+                    # 複写の二重集計だけを除く。同一群内の同じ行は、世代を跨いでも保持する。
+                    key = line.rstrip("\r\n")
+                    occurrences[key] = occurrences.get(key, 0) + 1
+                    if occurrences[key] > seen.get(key, 0):
+                        events.append(row)
+        for key, count in occurrences.items():
+            seen[key] = max(seen.get(key, 0), count)
+    events.sort(key=lambda r: r["time"])  # sort は安定なので同時刻は読んだ順
     return events
 
 
@@ -251,7 +273,7 @@ def find_songs(events):
 
 # ---------------------------------------------------------------- 集計
 
-def input_gaps(events, start, end):
+def gap_intervals(events, end):
     """input-silent から input-back までを途切れとして数える（色ごと）。"""
     open_gap = {}
     gaps = {}
@@ -268,6 +290,11 @@ def input_gaps(events, start, end):
                 gaps.setdefault(key, []).append((open_gap.pop(key), row["time"]))
     for colour, began in open_gap.items():
         gaps.setdefault(colour, []).append((began, end))
+    return gaps
+
+
+def input_gaps(events, start, end):
+    gaps = gap_intervals(events, end)
     out = {}
     for colour, items in gaps.items():
         seconds = 0.0
@@ -280,6 +307,60 @@ def input_gaps(events, start, end):
         if count:
             out[colour] = {"count": count, "seconds": round(seconds, 1)}
     return out
+
+
+def baseline_check(events, start, end):
+    """基準外は WARN、重大な発熱・両色同時停止・PC停止超過は BAD。欠測は WARN。
+
+    10秒ごとの悪化を中央値で隠さない。c2s は各標本の中央値の最大値。
+    """
+    rows = in_window(events, start, end)
+    perf = [e["fields"] for e in rows if e["event"] == "perf" and e["fields"].get("scene") in GAME_SCENES]
+    estimates = [e["fields"] for e in rows if e["event"] == "latency-estimate"]
+    checks = {}
+
+    def metric(name, fields, key, minimum=False):
+        values = [num(f.get(key)) for f in fields]
+        known = [v for v in values if v is not None and v >= 0]
+        value = (min(known) if minimum else max(known)) if known else None
+        limit = BASELINE_LIMITS[name]
+        ok = value is not None and (value >= limit if minimum else value <= limit)
+        checks[name] = {"value": value, "grade": "OK" if ok and len(known) == len(values) else "WARN"}
+
+    metric("capture_fps", estimates, "capture-fps", True)
+    metric("red_pkt_s", perf, "red-pkt-per-s", True)
+    metric("blue_pkt_s", perf, "blue-pkt-per-s", True)
+    metric("c2s_ms", estimates, "c2s-median-ms")
+    metric("total_ms", estimates, "total-ms")
+    thermal = [f.get("thermal", "unknown") for f in estimates]
+    checks["thermal"] = {"value": sorted(set(thermal)), "grade":
+        "BAD" if any(v in ("serious", "critical") for v in thermal) else
+        "OK" if thermal and all(v == "nominal" for v in thermal) else "WARN"}
+    gaps = gap_intervals(events, end)
+    both = sum((min(r1, b1, end) - max(r0, b0, start)).total_seconds() > 1
+               for r0, r1 in gaps.get("RED", []) for b0, b1 in gaps.get("BLUE", []))
+    # perf が無い曲では、途切れゼロも証明できない。
+    checks["both_gaps"] = {"value": both, "grade": "BAD" if both else "OK" if perf else "WARN"}
+    frames = [num(f.get("frames-over-50ms")) for f in perf]
+    count = sum(v for v in frames if v is not None and v >= 0)
+    checks["pc_over50"] = {"value": count if frames else None, "grade":
+        "BAD" if count > 1 else "OK" if frames and all(v is not None and v >= 0 for v in frames) else "WARN"}
+    return {"name": BASELINE, "grade": worst_grade(c["grade"] for c in checks.values()), "checks": checks}
+
+
+def worst_grade(grades):
+    return max(grades, key=("OK", "WARN", "BAD").index, default="WARN")
+
+
+def baseline_line(summary):
+    result = summary["baseline"]
+    names = {"capture_fps": "撮影fps最小", "red_pkt_s": "赤pkt/s最小", "blue_pkt_s": "青pkt/s最小",
+             "c2s_ms": "c2s中央値最大ms", "total_ms": "合計推定最大ms", "both_gaps": "両色gap>1秒",
+             "thermal": "発熱", "pc_over50": "Game中>50ms"}
+    details = " / ".join(f"{names[k]}={','.join(c['value']) if isinstance(c['value'], list) else fmt(c['value'])}"
+                         + (f"({c['grade']})" if c["grade"] != "OK" else "")
+                         for k, c in result["checks"].items())
+    return f"状態チェック {summary['label']}: {result['grade']} [{result['name']}] {details}"
 
 
 def stat(values, digits=1):
@@ -583,7 +664,7 @@ def render(s):
     return "\n".join(lines)
 
 
-def build_report(events, since, until):
+def build_report(events, since, until, baseline=False):
     window = in_window(events, since, until)
     start = since or (window[0]["time"] if window else None)
     end = until or (window[-1]["time"] if window else None)
@@ -591,6 +672,20 @@ def build_report(events, since, until):
     song_summaries = [summarize(events, max(a, start) if start else a, min(b, end) if end else b,
                                 f"曲 {i}") for i, (a, b) in enumerate(songs, 1)]
     overall = summarize(events, start, end, "全体") if start and end else None
+    if baseline and overall:
+        for song in song_summaries:
+            song["baseline"] = baseline_check(events, parse_time(song["start"]), parse_time(song["end"]))
+        # 全体は各曲の最悪値。曲間の休憩・発熱を曲中の途切れとして扱わない。
+        checks = {}
+        for key in (*BASELINE_LIMITS, "thermal"):
+            candidates = [s["baseline"]["checks"][key] for s in song_summaries]
+            def severity(check):
+                value = num(check["value"]) if not isinstance(check["value"], list) else None
+                direction = -1 if key in ("capture_fps", "red_pkt_s", "blue_pkt_s") else 1
+                return ("OK", "WARN", "BAD").index(check["grade"]), direction * value if value is not None else 0
+            checks[key] = max(candidates, key=severity) if candidates else {"value": None, "grade": "WARN"}
+        overall["baseline"] = {"name": BASELINE, "checks": checks,
+                               "grade": worst_grade(c["grade"] for c in checks.values())}
     return {"since": start.isoformat() if start else None, "until": end.isoformat() if end else None,
             "songs": song_summaries, "overall": overall}
 
@@ -599,6 +694,9 @@ def render_report(report):
     if report["overall"] is None:
         return "この時間に記録がありません。"
     out = [f"PhoneSaber プレイ報告  {len(report['songs'])} 曲"]
+    for summary in [*report["songs"], report["overall"]]:
+        if "baseline" in summary:
+            out.append(baseline_line(summary))
     for song in report["songs"]:
         out += ["", render(song)]
     out += ["", render(report["overall"])]
@@ -695,10 +793,10 @@ def trial_segments(events, since, until):
     return segments
 
 
-def build_trials(events, since, until):
+def build_trials(events, since, until, baseline=False):
     return [{"n": n, "settings": {k: v for k, v in fields.items()
                                    if k in ("judge", "offset-ms", "applied-ms", "prediction-red-ms", "prediction-blue-ms", "frame-cap")},
-             "report": build_report(events, start, end)}
+             "report": build_report(events, start, end, baseline)}
             for n, fields, start, end in trial_segments(events, since, until)]
 
 
@@ -710,6 +808,9 @@ def render_trials(trials):
         settings = " ".join(f"{k}={v}" for k, v in t["settings"].items())
         rep = t["report"]
         out.append(f"試行 {t['n']}: {fmt_local(rep['since'])}〜{fmt_local(rep['until'])}  {settings}")
+        for summary in [*rep["songs"], rep["overall"]]:
+            if summary and "baseline" in summary:
+                out.append(baseline_line(summary))
     out.append("")
     size = max(width(name) for name, _ in COMPARE_ROWS) + 2
     out.append(pad_left("項目", size) + "".join(pad_right(f"試行{t['n']}", 10) for t in trials))
@@ -734,10 +835,12 @@ def render_trials(trials):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description="events.log からプレイを曲ごとに報告する")
-    parser.add_argument("--events", default=DEFAULT_EVENTS, help="events.log の場所")
+    parser.add_argument("--events", default=DEFAULT_EVENTS, help="events.log、archive ファイル、またはログのディレクトリ")
     parser.add_argument("--since", help="開始。ISO（Z なしは UTC）かローカルの HH:MM")
     parser.add_argument("--until", help="終了。ISO かローカルの HH:MM")
     parser.add_argument("--last-session", action="store_true", help="最後の session-start から終わりまで")
+    parser.add_argument("--baseline", nargs="?", const=BASELINE, choices=[BASELINE],
+                        help="良好基準 good-20261020 で曲別・全体を OK/WARN/BAD 判定（欠測はWARN）")
     parser.add_argument("--compare", nargs=2, metavar=("A", "B"),
                         help="'SINCE..UNTIL' を2つ並べて比較（例 16:30..16:40 16:46..16:50）")
     parser.add_argument("--by-trial", action="store_true",
@@ -764,15 +867,20 @@ def main(argv=None):
         return 2
 
     if args.compare:
-        reports = [build_report(events, a, b) for a, b in windows]
+        reports = [build_report(events, a, b, args.baseline) for a, b in windows]
         rows = compare(*reports)
         print(render_compare(reports[0], reports[1], rows))
+        if args.baseline:
+            for tag, report in zip(("A", "B"), reports):
+                for summary in [*report["songs"], report["overall"]]:
+                    if summary:
+                        print(tag + " " + baseline_line(summary))
         result = {"a": reports[0], "b": reports[1], "compare": rows}
     elif args.by_trial:
-        result = {"trials": build_trials(events, since, until)}
+        result = {"trials": build_trials(events, since, until, args.baseline)}
         print(render_trials(result["trials"]))
     else:
-        result = build_report(events, since, until)
+        result = build_report(events, since, until, args.baseline)
         print(render_report(result))
 
     if args.json:

@@ -1685,7 +1685,8 @@ final class CameraViewModel: NSObject, ObservableObject {
                                       rates: DeviceHealthRates, at time: TimeInterval) {
         autoClip.updateEnvironment(AutoClipEnvironment(
             thermal: thermal.metadataValue, exposureBias: exposureBias,
-            appVersion: (Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String) ?? "unknown"))
+            appVersion: (Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String) ?? "unknown",
+            signingExpiryRemainingHours: SigningExpiry.current.remainingHours(at: Date())))
         autoClip.setSuspended(AutoClipSuspendPolicy.reason(
             thermal: thermalState, fpsReduced: thermalFPSPolicy.reduced,
             debugRecording: debugRecordingActive || debugRecordingFinalizing))

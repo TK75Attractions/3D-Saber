@@ -539,6 +539,7 @@ struct AutoClipEnvironment: Equatable {
     var thermal = "nominal"
     var exposureBias = 0
     var appVersion = ""
+    var signingExpiryRemainingHours: Int?
 }
 
 struct AutoClipStatus: Equatable {
@@ -1158,6 +1159,7 @@ struct AutoClipBundleContent {
                               "intervalSeconds": AutoClipLimits.contextInterval,
                               "sampling": "point sample of every second pixel and row (the pixels the step-2 detector mask scan reads); coordinates in metadata are full-resolution"],
             "camera": ["captureFPS": capture.captureFPS, "measuredFPS": round1(measuredFPS),
+                       "signingExpiryRemainingHours": capture.environmentAtSave.signingExpiryRemainingHours ?? NSNull(),
                        "exposureBias": capture.environmentAtTrigger.exposureBias,
                        "thermalAtTrigger": capture.environmentAtTrigger.thermal,
                        "thermalAtSave": capture.environmentAtSave.thermal,

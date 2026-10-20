@@ -65,6 +65,7 @@ IOS_XCTEST_STATUS="FAIL"
 IOS_XCTEST_CLASSIFICATION="NOT_RUN"
 DETECTION_STATUS="FAIL"
 LOSSLESS_STATUS="FAIL"
+FIELD_STATUS="SKIP"
 TOOLS_STATUS="FAIL"
 IOS_RELEASE_STATUS="FAIL"
 UNITY_EDITMODE_STATUS="FAIL"
@@ -509,6 +510,18 @@ if [[ -n "$LOSSLESS_DETAIL" ]]; then
   printf '  %s\n' "$(head -n 1 "$RUN_DIR/lossless-summary.stdout.log")"
 fi
 
+# 会場画像は各 Mac の非公開領域だけに置く。未導入の端末・CI は正常にスキップ。
+FIELD_SET="$HOME/Library/Application Support/PhoneSaber/field-regression"
+if [[ -e "$FIELD_SET" ]]; then
+  FIELD_STATUS="FAIL"
+  run_logged_command "Private field regression" field-regression \
+    python3 "$REPO_ROOT/ios/PhoneSaberSender/Tools/field_regression.py" run
+  if [[ "$LAST_EXIT" -eq 0 ]]; then FIELD_STATUS="PASS"; fi
+else
+  mark_not_run "Private field regression" field-regression SKIP "Private field set is absent on this machine."
+fi
+report_stage "Field" "$FIELD_STATUS"
+
 run_logged_command "PhoneSaber Tools unittest" tools-unittest \
   python3 -B -m unittest discover \
   -s "$REPO_ROOT/ios/PhoneSaberSender/Tools" \
@@ -684,6 +697,7 @@ else
   printf '%-20s %s\n' "Lossless" "$LOSSLESS_STATUS"
 fi
 printf '%-20s %s\n' "Tools" "$TOOLS_STATUS"
+printf '%-20s %s\n' "Field" "$FIELD_STATUS"
 printf '%-20s %s\n' "iOS Release" "$IOS_RELEASE_STATUS"
 printf '%-20s %s\n' "Unity EditMode" "$UNITY_EDITMODE_STATUS"
 printf '%-20s %s\n' "Unity PlayMode" "$UNITY_PLAYMODE_STATUS"
@@ -694,7 +708,7 @@ if [[ -n "$UNITY_BLOCK_REASON" ]]; then printf 'Unity: %s\n' "$UNITY_BLOCK_REASO
 printf 'Logs: %s\n' "$RUN_DIR"
 
 for status in \
-  "$IOS_XCTEST_STATUS" "$DETECTION_STATUS" "$LOSSLESS_STATUS" "$TOOLS_STATUS" \
+  "$IOS_XCTEST_STATUS" "$DETECTION_STATUS" "$LOSSLESS_STATUS" "$FIELD_STATUS" "$TOOLS_STATUS" \
   "$IOS_RELEASE_STATUS" "$UNITY_EDITMODE_STATUS" "$UNITY_PLAYMODE_STATUS" \
   "$UNITY_COMPILE_STATUS" "$UNITY_CAPABILITY_STATUS" "$DIFF_CHECK_STATUS"; do
   if [[ "$status" == "FAIL" ]]; then exit 1; fi

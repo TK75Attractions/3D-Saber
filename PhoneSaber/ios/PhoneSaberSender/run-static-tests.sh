@@ -31,7 +31,7 @@ xcrun swiftc -O ${guard_flags[@]+"${guard_flags[@]}"} \
     -o "$binary"
 "$binary"
 
-# シミュレータ不要で、Xcodeと同じ端末状態のXCTestを実行する。
+# シミュレータ不要で、端末状態と署名期限の XCTest を実行する。
 cat > "$build_dir/main.swift" <<'SWIFT'
 import XCTest
 import Darwin
@@ -39,12 +39,17 @@ let suite = DeviceHealthTests.defaultTestSuite
 suite.run()
 // 件数は「少なくとも」で確認する（テスト追加のたびにここを直さずに済むように。0 件実行は失敗のまま）。
 guard let run = suite.testRun, run.executionCount >= 6, run.hasSucceeded else { exit(1) }
+let signingSuite = SigningExpiryTests.defaultTestSuite
+signingSuite.run()
+guard let signingRun = signingSuite.testRun, signingRun.executionCount >= 4, signingRun.hasSucceeded else { exit(1) }
 SWIFT
 xctest_developer="$(xcode-select -p)/Platforms/MacOSX.platform/Developer"
 xctest_frameworks="$xctest_developer/Library/Frameworks"
-xcrun swiftc -O -D DEVICE_HEALTH_STANDALONE \
+xcrun swiftc -O -D DEVICE_HEALTH_STANDALONE -D SIGNING_EXPIRY_STANDALONE \
     "$source_dir/DeviceHealth.swift" \
+    "$source_dir/SigningExpiry.swift" \
     "$script_dir/../PhoneSaberSenderTests/DeviceHealthTests.swift" \
+    "$script_dir/../PhoneSaberSenderTests/SigningExpiryTests.swift" \
     "$build_dir/main.swift" \
     -I "$xctest_developer/usr/lib" -L "$xctest_developer/usr/lib" \
     -F "$xctest_frameworks" -Xlinker -rpath -Xlinker "$xctest_frameworks" \

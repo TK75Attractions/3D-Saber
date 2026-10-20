@@ -90,6 +90,196 @@ public class PhoneSaberEventLogTests
     }
 
     [Test]
+    public void RetentionBudgetCoversSevenDaysAtObservedRateIncludingTheRollingCopy()
+    {
+        const long mib = 1024 * 1024;
+        Assert.GreaterOrEqual(PhoneSaberEventLog.MaximumFileBytes, 2 * mib);
+        Assert.GreaterOrEqual(PhoneSaberEventLog.MaximumArchiveBytes, 7 * 24 * mib);
+        Assert.LessOrEqual(PhoneSaberEventLog.MaximumArchiveBytes +
+            PhoneSaberEventLog.MaximumFileBytes * PhoneSaberEventLog.FileCount, 200000000L);
+    }
+
+    [Test]
+    public void ActivityEntersIdleOnceAtSixtySecondsAndEitherColourResumesImmediately()
+    {
+        var activity = new PhoneSaberLogActivity(10);
+        Assert.IsFalse(activity.Update(69.999, double.NegativeInfinity, double.NegativeInfinity));
+        Assert.IsFalse(activity.IsIdle);
+        Assert.IsTrue(activity.Update(70, double.NegativeInfinity, double.NegativeInfinity));
+        Assert.IsTrue(activity.IsIdle);
+        Assert.IsFalse(activity.Update(100, double.NegativeInfinity, double.NegativeInfinity));
+        Assert.IsFalse(activity.Update(101, 101, double.NegativeInfinity));
+        Assert.IsFalse(activity.IsIdle);
+        Assert.IsTrue(activity.Update(161, 101, double.NegativeInfinity));
+        Assert.IsFalse(activity.Update(162, 101, 162));
+        Assert.IsFalse(activity.IsIdle);
+        // 受信停止時に InputPoint の時刻がリセットされても、最後の座標から60秒までは保持する。
+        Assert.IsFalse(activity.Update(221.999, double.NegativeInfinity, double.NegativeInfinity));
+        Assert.IsTrue(activity.Update(222, double.NegativeInfinity, double.NegativeInfinity));
+        Assert.IsTrue(PhoneSaberLogActivity.IsPeriodic("perf"));
+        Assert.IsTrue(PhoneSaberLogActivity.IsPeriodic("latency-estimate"));
+        Assert.IsFalse(PhoneSaberLogActivity.IsPeriodic("judge-timing"));
+    }
+
+    [Test]
+    public void IdleSuppressesOnlyPeriodicLinesAndKeepsTheirOriginalFormatAfterRecovery()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), "phonesaber-log-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            var log = new PhoneSaberEventLog(Path.Combine(directory, "events.log"));
+            var timestamp = DateTimeOffset.UtcNow;
+            // コンストラクタの実時計より十分先の、注入した単調時刻で検証する。
+            double now = SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp) + 100;
+            log.ObserveCoordinates(now, double.NegativeInfinity, double.NegativeInfinity, timestamp, "A");
+            log.ObserveCoordinates(now + 10, double.NegativeInfinity, double.NegativeInfinity, timestamp, "A");
+            log.Enqueue(timestamp, "A", "SYSTEM", "perf", "suppressed");
+            log.Enqueue(timestamp, "A", "RED", "latency-estimate", "suppressed");
+            log.Enqueue(timestamp, "A", "SYSTEM", "judge-timing", "kept");
+            log.Enqueue(timestamp, "A", "RED", "input-silent", "kept");
+            log.ObserveCoordinates(now + 11, double.NegativeInfinity, now + 11, timestamp, "A");
+            log.Enqueue(timestamp, "A", "SYSTEM", "perf", "scene=Game fps=60.0");
+            log.Enqueue(timestamp, "A", "BLUE", "latency-estimate", "status=estimate");
+            log.Flush();
+            var lines = File.ReadAllLines(log.LogPath);
+            Assert.AreEqual(5, lines.Length);
+            StringAssert.Contains("event=idle", lines[0]);
+            StringAssert.Contains("event=judge-timing kept", lines[1]);
+            StringAssert.Contains("event=input-silent kept", lines[2]);
+            Assert.AreEqual(PhoneSaberEventLog.Format(timestamp, "A", "SYSTEM", "perf", "scene=Game fps=60.0").TrimEnd(), lines[3]);
+            Assert.AreEqual(PhoneSaberEventLog.Format(timestamp, "A", "BLUE", "latency-estimate", "status=estimate").TrimEnd(), lines[4]);
+        }
+        finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
+    }
+
+    [Test]
+    public void ArchiveNamesUseUtcAndPruningHasStrictFourteenDayBoundary()
+    {
+        var now = new DateTimeOffset(2026, 10, 21, 12, 34, 56, TimeSpan.Zero);
+        string path = PhoneSaberEventLog.ArchivePath("logs/events.log", now.ToOffset(TimeSpan.FromHours(9)));
+        Assert.AreEqual(Path.Combine("logs", "archive", "events-20261021-123456.log"), path);
+        Assert.IsFalse(PhoneSaberEventLog.ShouldPruneArchive(path, now.AddDays(14)));
+        Assert.IsTrue(PhoneSaberEventLog.ShouldPruneArchive(path, now.AddDays(14).AddSeconds(1)));
+        Assert.IsFalse(PhoneSaberEventLog.ShouldPruneArchive(path, now.AddDays(13)));
+        foreach (string invalid in new[] { "events.log", "notes-20261001-000000.log", "events-20261301-000000.log", "events-20261001-000000.log.bak" })
+            Assert.IsFalse(PhoneSaberEventLog.ShouldPruneArchive(invalid, now));
+    }
+
+    [Test]
+    public void ArchiveBudgetPrunesOldestFinishedSessionsButProtectsSevenDaysAndActiveFile()
+    {
+        var now = new DateTimeOffset(2026, 10, 21, 0, 0, 0, TimeSpan.Zero);
+        string old = PhoneSaberEventLog.ArchivePath("logs/events.log", now.AddDays(-15));
+        string middle = PhoneSaberEventLog.ArchivePath("logs/events.log", now.AddDays(-8));
+        string recent = PhoneSaberEventLog.ArchivePath("logs/events.log", now.AddDays(-7));
+        string active = PhoneSaberEventLog.ArchivePath("logs/events.log", now.AddDays(-20));
+        long size = PhoneSaberEventLog.MaximumArchiveBytes / 2;
+        var files = new[] { (middle, size, now.AddDays(-8)), (recent, size, now.AddDays(-7)),
+            (old, size, now.AddDays(-15)), (active, size, now.AddDays(-20)), ("unrelated.log", size, now.AddDays(-30)) };
+        CollectionAssert.AreEqual(new[] { old, middle }, PhoneSaberEventLog.ArchivesToPrune(files, now, active));
+        // 容量超過があっても直近7日と書込中の1件は削除しない。
+        CollectionAssert.IsEmpty(PhoneSaberEventLog.ArchivesToPrune(new[] {
+            (recent, size * 3, now.AddDays(-7)), (active, size * 3, now.AddDays(-20)) }, now, active));
+        CollectionAssert.AreEqual(new[] { old }, PhoneSaberEventLog.ArchivesToPrune(new[] {
+            (old, 1L, now.AddDays(-15)), (middle, 1L, now.AddDays(-8)) }, now, null));
+        // 開始が古くても、直近に書かれたセッションの末尾を失わない。
+        CollectionAssert.IsEmpty(PhoneSaberEventLog.ArchivesToPrune(new[] { (old, 1L, now) }, now, null));
+    }
+
+    [Test]
+    public void ArchivesContainEachSessionAcrossRotationQuitAndRestartWithoutQuit()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), "phonesaber-log-" + Guid.NewGuid().ToString("N"));
+        string path = Path.Combine(directory, "events.log");
+        try
+        {
+            var timestamp = DateTimeOffset.UtcNow;
+            var log = new PhoneSaberEventLog(path);
+            log.Enqueue(timestamp, "A", "SYSTEM", "session-start", "first");
+            log.Flush();
+            string first = PhoneSaberEventLog.ArchivePath(path, timestamp);
+            Assert.AreEqual(File.ReadAllText(path), File.ReadAllText(first), "開始時点から複写する");
+            using (var file = new FileStream(path, FileMode.Open)) file.SetLength(PhoneSaberEventLog.MaximumFileBytes);
+            log.Enqueue(timestamp.AddSeconds(1), "A", "SYSTEM", "judge-timing", "kept-through-rotation");
+            log.Enqueue(timestamp.AddSeconds(2), "A", "SYSTEM", "session-quit", "exit-code=0");
+            log.Enqueue(timestamp.AddSeconds(3), "A", "SYSTEM", "after-quit", "not-in-first");
+            log.Flush();
+            Assert.AreEqual(3, File.ReadAllLines(first).Length);
+            StringAssert.Contains("event=session-quit", File.ReadAllText(first));
+            StringAssert.DoesNotContain("after-quit", File.ReadAllText(first));
+            // 同じ logger でも、新しい開始で前セッションを確定する。
+            log.Enqueue(timestamp.AddSeconds(4), "A", "SYSTEM", "session-start", "second");
+            log.Enqueue(timestamp.AddSeconds(5), "A", "SYSTEM", "session-start", "third");
+            log.Flush();
+            Assert.AreEqual(1, File.ReadAllLines(PhoneSaberEventLog.ArchivePath(path, timestamp.AddSeconds(4))).Length);
+            Assert.AreEqual(1, File.ReadAllLines(PhoneSaberEventLog.ArchivePath(path, timestamp.AddSeconds(5))).Length);
+            // プロセス再起動を模擬。同じ秒の archive も上書きしない。
+            var restarted = new PhoneSaberEventLog(path);
+            restarted.Enqueue(timestamp.AddSeconds(5), "A", "SYSTEM", "session-start", "fourth");
+            restarted.Flush();
+            StringAssert.Contains("third", File.ReadAllText(PhoneSaberEventLog.ArchivePath(path, timestamp.AddSeconds(5))));
+            StringAssert.Contains("fourth", File.ReadAllText(PhoneSaberEventLog.ArchivePath(path, timestamp.AddSeconds(6))));
+            Assert.AreEqual("", restarted.LastError);
+        }
+        finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
+    }
+
+    [Test]
+    public void SessionStartPrunesExpiredArchivesAndLeavesOtherFilesAlone()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), "phonesaber-log-" + Guid.NewGuid().ToString("N"));
+        string path = Path.Combine(directory, "events.log");
+        try
+        {
+            var now = DateTimeOffset.UtcNow;
+            string old = PhoneSaberEventLog.ArchivePath(path, now.AddDays(-15));
+            string recent = PhoneSaberEventLog.ArchivePath(path, now.AddDays(-13));
+            Directory.CreateDirectory(Path.GetDirectoryName(old));
+            File.WriteAllText(old, "expired");
+            File.SetLastWriteTimeUtc(old, now.AddDays(-15).UtcDateTime);
+            File.WriteAllText(recent, "kept");
+            File.SetLastWriteTimeUtc(recent, now.AddDays(-13).UtcDateTime);
+            string unrelated = Path.Combine(Path.GetDirectoryName(old), "notes.log");
+            File.WriteAllText(unrelated, "kept");
+            var log = new PhoneSaberEventLog(path);
+            log.Enqueue(now, "A", "SYSTEM", "session-start", "new");
+            log.Flush();
+            Assert.AreEqual("", log.LastError);
+            Assert.IsFalse(File.Exists(old));
+            Assert.AreEqual("kept", File.ReadAllText(recent));
+            Assert.AreEqual("kept", File.ReadAllText(unrelated));
+            Assert.IsTrue(File.Exists(PhoneSaberEventLog.ArchivePath(path, now)));
+        }
+        finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
+    }
+
+    [Test]
+    public void FailedArchiveWriteRetriesWithoutDuplicatingTheRollingLine()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), "phonesaber-log-" + Guid.NewGuid().ToString("N"));
+        string path = Path.Combine(directory, "events.log");
+        try
+        {
+            Directory.CreateDirectory(directory);
+            string blocked = Path.Combine(directory, "archive");
+            File.WriteAllText(blocked, "block archive directory");
+            var timestamp = DateTimeOffset.UtcNow;
+            var log = new PhoneSaberEventLog(path);
+            log.Enqueue(timestamp, "A", "SYSTEM", "session-start", "first");
+            log.Enqueue(timestamp, "A", "SYSTEM", "session-quit", "last");
+            log.Flush(); log.Flush();
+            Assert.IsNotEmpty(log.LastError);
+            Assert.AreEqual(1, File.ReadAllLines(path).Length);
+            File.Delete(blocked);
+            log.Flush();
+            Assert.AreEqual("", log.LastError);
+            Assert.AreEqual(File.ReadAllText(path), File.ReadAllText(PhoneSaberEventLog.ArchivePath(path, timestamp)));
+            Assert.AreEqual(2, File.ReadAllLines(path).Length);
+        }
+        finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
+    }
+
+    [Test]
     public void SilenceAndRecoveryAreIndependentAndIncludeGapsBetweenPolls()
     {
         var events = new List<string>();

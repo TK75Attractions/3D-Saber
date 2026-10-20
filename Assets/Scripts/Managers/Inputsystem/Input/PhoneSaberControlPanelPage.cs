@@ -10,6 +10,9 @@ h1{font-size:26px;margin:0}#connection{color:#a9c9ff}#message{min-height:28px;co
 main{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;align-items:start}
 section{background:#1b2332;border:1px solid #354259;border-radius:14px;padding:20px}h2{font-size:21px;margin:0 0 14px}
 p{white-space:pre-wrap;overflow-wrap:anywhere;margin:10px 0}.warning{color:#ffd080}
+section:first-child{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:4px 18px}
+section:first-child h2,section:first-child p:first-of-type{grid-column:1/-1}section:first-child p{margin:4px 0}
+.health-ok{color:#80e3a0}.health-warn{color:#ffd080}.health-bad{color:#ff8c8c}
 .controls{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0}button{font:inherit;font-weight:600;min-height:52px;padding:11px 18px;
 border:1px solid #6383af;border-radius:10px;background:#293c58;color:#fff;cursor:pointer;touch-action:manipulation}
 button:hover{background:#355377}button.selected{background:#205c58;border-color:#6de1bf}button:disabled{opacity:.4;cursor:default}
@@ -42,7 +45,7 @@ function render(state){
   }
  }
  let index=0;for(const s of state.sections)for(const i of s.items){const el=nodes[index++];el.textContent=(i.selected?'● ':'')+i.text;
-  el.className=i.name?(i.selected?'selected':''):(i.warning?'warning':'');
+  el.className=i.name?(i.selected?'selected':''):(i.grade==='OK'?'health-ok':i.grade==='WARN'?'health-warn':i.grade==='BAD'?'health-bad':i.warning?'warning':'');
   if(i.name){el.disabled=!i.enabled;el.setAttribute('aria-pressed',String(i.selected));}
  }
 }

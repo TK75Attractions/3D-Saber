@@ -25,6 +25,9 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
     Vector2 scrollPosition;
     double startedAt;
     double nextRefresh;
+    readonly PhoneSaberControlPanelRates healthRates = new PhoneSaberControlPanelRates();
+    PhoneSaberControlPanelHealth.GameWindow healthGame;
+    List<PhoneSaberControlPanelHealth.Check> healthChecks;
     string fallbackStation;
     string station;
     string services;
@@ -137,6 +140,7 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
             }
         }
         if (!visible && (controlPanel == null || !controlPanel.RecentlyPolled)) return;
+        ObserveHealthFrame(logNow);
         double now = SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp);
         if (now < nextRefresh) return;
         nextRefresh = now + 0.2;
@@ -495,6 +499,20 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         var empty = new PhoneSaberInputStats(false, 0, now - startedAt, "", false);
         var red = input != null ? input.ReadInputStats() : empty;
         var blue = input != null ? input.ReadInputStats(true) : empty;
+        healthRates.Sample(now, input != null ? input.ReceivedPacketCount : 0, input != null ? input.ReceivedPacketCount2 : 0,
+            (input != null ? input.GetInstanceID().ToString() : "none") + ":" + input?.RedCoordinateSender + ":" + input?.BlueCoordinateSender);
+        var acknowledgements = new List<PhoneSaberAcknowledgement>();
+        var store = PhoneSaberDiscoveryResponder.Acknowledgements;
+        if (store.Latest(out int latestId, out _, out _))
+            // QueueCommand の連番。store が保持する最大32指示を読み、別操作後もdefaultsのACKを探す。
+            for (int offset = 0; offset < 32 && latestId - offset > 0; offset++) acknowledgements.AddRange(store.Read(latestId - offset));
+        var scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+        if (scene.name == "Game") healthGame = PhoneSaberControlPanelHealth.ObserveGaps(healthGame, now,
+            red.SecondsSinceLastPacket, blue.SecondsSinceLastPacket);
+        healthChecks = PhoneSaberControlPanelHealth.Evaluate(now, red, blue,
+            input != null ? PhoneSaberPerfLog.Estimate(input, false, now, input.RedCoordinateTiming.Shown) : null,
+            input != null ? PhoneSaberPerfLog.Estimate(input, true, now, input.BlueCoordinateTiming.Shown) : null,
+            healthRates.Red, healthRates.Blue, acknowledgements.ToArray(), scene.name == "Game", healthGame.BothGaps, healthGame.FramesOver50, healthGame.WholeSong);
         bool mac = PhoneSaberBonjourPublisher.IsSupported;
         station = input != null ? input.StationLabel : fallbackStation;
         redText = PhoneSaberStatsDisplay.Format("RED", input != null ? input.port : 5005, red, mac, clocksSynchronized);
@@ -526,9 +544,19 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
 
     static string State(bool supported, bool running) => !supported ? "未対応" : running ? "ON" : "停止";
 
+    void ObserveHealthFrame(double now)
+    {
+        var scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+        healthGame = PhoneSaberControlPanelHealth.ObserveGame(healthGame, now, Time.frameCount, scene.handle, scene.name == "Game",
+            Time.unscaledDeltaTime * 1000);
+    }
+
     PhoneSaberControlPanelState BuildPanel(double now)
     {
         panel = new PhoneSaberControlPanelState();
+        panel.BeginSection("状態チェック · good-20261020");
+        if (healthChecks != null)
+            foreach (var check in healthChecks) panel.HealthLabel(check);
         panel.BeginSection("台: " + (string.IsNullOrEmpty(station) ? "指定なし" : station));
         panel.Label(redText);
         panel.Label(PhoneSaberPerfLog.Verdict);
@@ -608,7 +636,13 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
             GUILayout.Label(section.Title, warningStyle);
             foreach (var item in section.Items)
             {
-                if (item.Name == null) GUILayout.Label(item.Text, item.Warning ? warningStyle : textStyle);
+                if (item.Name == null)
+                {
+                    var colour = GUI.color;
+                    if (item.Grade != null) GUI.color = item.Grade == "OK" ? new Color(.5f, 1f, .6f) : item.Grade == "BAD" ? new Color(1f, .5f, .5f) : new Color(1f, .8f, .5f);
+                    GUILayout.Label(item.Text, item.Warning ? warningStyle : textStyle);
+                    GUI.color = colour;
+                }
                 else
                 {
                     bool previousEnabled = GUI.enabled;
