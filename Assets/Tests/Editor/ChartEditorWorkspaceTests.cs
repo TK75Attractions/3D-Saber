@@ -240,6 +240,39 @@ public class ChartEditorWorkspaceTests
         }
     }
 
+    [Test]
+    public void HeightButtonsPreserveHorizontalPositionAndTimingAndSupportUndo()
+    {
+        Set("selectedIndex", 0);
+        Document.notes[0].x = .123f;
+        Call("NudgeNoteHeight", 1, true);
+        Assert.AreEqual(.01f, Document.notes[0].y, .00001f);
+        Assert.AreEqual(.123f, Document.notes[0].x);
+        Assert.AreEqual(2000f, Document.notes[0].time);
+        Assert.AreEqual(4f, Document.notes[0].beat);
+        Call("Undo");
+        Assert.AreEqual(0f, Document.notes[0].y);
+        Call("Redo");
+        Assert.AreEqual(.01f, Document.notes[0].y, .00001f);
+    }
+
+    [Test]
+    public void HeightButtonsUpdatePlacementWithoutEditingChartAndClampRange()
+    {
+        string before = SaberChartUtility.ToJson(Document, false);
+        Set("paletteYLane", 3);
+        Call("NudgeNoteHeight", 1, false);
+        Assert.AreEqual(4, Get<int>("paletteYLane"));
+        Assert.AreEqual(before, SaberChartUtility.ToJson(Document, false));
+        Call("SetRange", 0f, 5000f);
+        Document.notes[0].y = 1.5f;
+        Call("NudgeNoteHeight", 1, false);
+        Assert.AreEqual(1.5f, Document.notes[0].y);
+        Assert.Greater(Document.notes[1].y, 0f);
+        Assert.AreEqual(-1f, Document.notes[0].x);
+        Assert.AreEqual(1f, Document.notes[1].x);
+    }
+
     void Section(string name) => Call("SetInspectorSection", Enum.Parse(typeof(SaberChartEditorWindow).GetNestedType("InspectorSection", BindingFlags.NonPublic), name));
     static Rect RectOf(object layout, string name) => (Rect)layout.GetType().GetField(name).GetValue(layout);
     T Get<T>(string name) => (T)typeof(SaberChartEditorWindow).GetField(name, Private).GetValue(window);

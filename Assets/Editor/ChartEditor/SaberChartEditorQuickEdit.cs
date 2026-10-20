@@ -27,6 +27,21 @@ namespace Saber.ChartEditor
             SectionLabel(SelectedNote != null ? $"選択ノーツ  {selectedIndex + 1} / {document.notes.Count}" : "ノーツ編集");
             using (new EditorGUI.DisabledScope(!CanEditAtCursor))
             {
+                // 高さは折りたたまず、右欄の先頭からいつでも操作できるようにする。
+                GUILayout.Label(HasRangeSelection ? "高さ（選択範囲）" :
+                    SelectedNote != null ? "高さ（選択ノーツ）" : "高さ（次に置くノーツ）", EditorStyles.boldLabel);
+                GUILayout.BeginHorizontal();
+                if (GUILayout.Button(new GUIContent("▼ 下げる", "高さを1段下げます。Shiftを押すと0.01ずつ微調整"), GUILayout.Height(26f)))
+                    NudgeNoteHeight(-1, Event.current.shift);
+                if (GUILayout.Button(new GUIContent("▲ 上げる", "高さを1段上げます。Shiftを押すと0.01ずつ微調整"), GUILayout.Height(26f)))
+                    NudgeNoteHeight(1, Event.current.shift);
+                GUILayout.EndHorizontal();
+                float height = SelectedNote != null ? SelectedNote.y :
+                    SaberChartUtility.CoordinateForLane(paletteYLane, LaneCount,
+                        SaberChartUtility.DefaultYMin, SaberChartUtility.DefaultYMax);
+                GUILayout.Label(HasRangeSelection ? "選択範囲のノーツをまとめて上下" :
+                    $"Y {height:0.##}  ·  低 −1.5 ～ 高 +1.5", smallMutedStyle);
+                GUILayout.Space(6f);
                 GUILayout.BeginHorizontal();
                 using (new EditorGUI.DisabledScope(AdjacentNoteIndex(-1) < 0))
                     if (GUILayout.Button(new GUIContent("◀ 前のノーツ", "同時刻のノーツも1個ずつ選びます"))) SelectAdjacentNote(-1);
@@ -68,6 +83,28 @@ namespace Saber.ChartEditor
                 }
             }
             GUILayout.Space(10f);
+        }
+
+        private void NudgeNoteHeight(int direction, bool fine)
+        {
+            if (!CanEditAtCursor) return;
+            FinishTextEditing();
+            if (SelectedNote == null && !HasRangeSelection)
+            {
+                paletteYLane = Mathf.Clamp(paletteYLane + direction, 0, LaneCount - 1);
+                Repaint();
+                return;
+            }
+            float step = fine ? .01f :
+                (SaberChartUtility.DefaultYMax - SaberChartUtility.DefaultYMin) / (LaneCount - 1);
+            ApplySelectionEdit("高さを変更しました。Ctrl+Z で戻せます", targets =>
+            {
+                foreach (SaberChartNote note in targets)
+                    note.y = Mathf.Clamp(note.y + direction * step,
+                        SaberChartUtility.DefaultYMin, SaberChartUtility.DefaultYMax);
+                return true;
+            });
+            SyncPalettePositionFromSelected();
         }
 
         // 同時刻の左右ノーツを飛ばさないように、時刻でなく一覧内の順序で移る。
