@@ -18,18 +18,18 @@ public class GameSessionTests
             previous.SelectProfile(0); previous.SetOffset(180);
             previous.SelectProfile(1); previous.SetOffset(-120); previous.SetSpeedStep(2); previous.Commit();
             GameSession.ResetPlayerSettings();
-            Assert.AreEqual(30, GameSession.JudgmentOffsetMs);
+            Assert.AreEqual(GameSession.JudgmentOffsetDefaultMs, GameSession.JudgmentOffsetMs);
             Assert.AreEqual(1f, GameSession.NoteApproachTime);
             var current = new CalibrationDraft();
             Assert.AreEqual(0, current.Profile);
-            Assert.AreEqual(30, current.OffsetMs);
+            Assert.AreEqual(GameSession.JudgmentOffsetDefaultMs, current.OffsetMs);
             current.SelectProfile(1);
-            Assert.AreEqual(30, current.OffsetMs, "出力先を切り替えても前の人の調整値が復活しない");
+            Assert.AreEqual(GameSession.JudgmentOffsetDefaultMs, current.OffsetMs, "出力先を切り替えても前の人の調整値が復活しない");
             current.SetOffset(75); current.SetSpeedStep(0); current.Commit();
             Assert.AreEqual(75, new CalibrationDraft().OffsetMs);
             Assert.AreEqual(2f, GameSession.NoteApproachTime, "同じ回の画面間では調整を維持する");
             GameSession.ResetPlayerSettings();
-            Assert.AreEqual(30, GameSession.JudgmentOffsetMs);
+            Assert.AreEqual(GameSession.JudgmentOffsetDefaultMs, GameSession.JudgmentOffsetMs);
             Assert.AreEqual(1f, GameSession.NoteApproachTime);
         }
         finally
