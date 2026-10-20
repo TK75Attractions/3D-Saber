@@ -17,6 +17,8 @@ public sealed class TutorialOverlay : MonoBehaviour
     public string JudgeText => judge != null && judge.gameObject.activeSelf ? judge.text : "";
     public bool HandsVisible => handsCard != null && handsCard.activeSelf;
 
+    public TutorialGuideModel Guide { get; private set; }
+
     TutorialController ctl;
     ScoreManager score;
     TextMeshProUGUI title, sub, hint, judge, judgeSub, timer;
@@ -113,6 +115,11 @@ public sealed class TutorialOverlay : MonoBehaviour
         Blade(handsCard.transform, "RightBlade", 180, UISkinPalette.LogoRed, -16f, "右手");
         Label(handsCard.transform, "HandsText", "来た箱を、同じ色の剣で切る", 28, 0, -148, 980, 44, Ink);
         handsCard.SetActive(false);
+        var guideRect = Rect(transform, "TutorialGuide", 760, 20, 360, 400);
+        Guide = guideRect.gameObject.AddComponent<TutorialGuideModel>();
+        Guide.raycastTarget = false;
+        Label(transform, "GuideCaption", "お手本", 28, 760, 232, 300, 44, Ink, true, true);
+        Label(transform, "GuideHands", "青は左手　赤は右手", 22, 760, -204, 360, 40, Ink);
         // 画面下の帯(本編の判定調整と同じ下 18%)。見えない枠だけ置き、照準の受付範囲にする。
         Controls = Rect(transform, "Controls", 0, -414, 1840, 236);
         SkipButton = Action(Controls, "Skip", "練習をやめて 曲をえらぶ", 575, -28, 650, 108, () => { if (ctl != null) ctl.Skip(); });
@@ -172,6 +179,7 @@ public sealed class TutorialOverlay : MonoBehaviour
     public void Tick(float frameSeconds)
     {
         if (ctl == null) return;
+        if (Guide != null) Guide.Show(ctl.DemonstrationNotes, ctl.DemonstrationTime);
         if (timer != null)
         {
             int left = ctl.Step != null ? Mathf.Max(0, ctl.Step.Goal - ctl.Successes) : 0;
@@ -180,7 +188,7 @@ public sealed class TutorialOverlay : MonoBehaviour
             if (remaining != shownRemaining || pairs != shownPairs)
             {
                 shownRemaining = remaining; shownPairs = pairs;
-                timer.text = remaining < 0 ? "" : pairs ? "あと " + ((left + 1) / 2) + " 組" : "あと " + left + " 回";
+                timer.text = remaining < 0 ? "" : ctl.Step.Id == "long" ? "あと " + left + " 種類" : pairs ? "あと " + ((left + 1) / 2) + " 組" : "あと " + left + " 回";
             }
         }
         if (ctl.Step != null && shownStep != ctl.StepIndex) { shownStep = ctl.StepIndex; RefreshDots(shownStep); }

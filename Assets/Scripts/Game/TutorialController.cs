@@ -18,6 +18,8 @@ public sealed class TutorialController : MonoBehaviour
     public int StepCount => steps != null ? steps.Length : 0;
     public int Successes { get; private set; }
     public bool StepDone { get; private set; }
+    public IReadOnlyList<NoteData> DemonstrationNotes => liveChart?.notes;
+    public double DemonstrationTime => started && song != null ? Now : 0;
     public bool IsFinished { get; private set; }
     public string FinishReason { get; private set; }
     public string Hint { get; private set; }
@@ -42,6 +44,8 @@ public sealed class TutorialController : MonoBehaviour
     readonly List<CuttableNote> watched = new List<CuttableNote>();
     readonly Dictionary<CuttableNote, int> noteSteps = new Dictionary<CuttableNote, int>();
     readonly TutorialPairProgress pairs = new TutorialPairProgress();
+    readonly HashSet<int> completedLongCounts = new HashSet<int>();
+    bool timedOutPractice;
     readonly List<TutorialStepRecord> records = new List<TutorialStepRecord>();
     double totalOffset, startChartTime, stepStart, stepEndAt, nextPatternAt;
     int stepIndex = -1, swingFrames;
@@ -121,7 +125,7 @@ public sealed class TutorialController : MonoBehaviour
                     {
                         case TutorialStepKind.Practice:
                             if (Successes >= step.Goal) Complete(now, "ok");
-                            else if (elapsed >= PracticeTimeoutSeconds) Complete(now, "timeout");
+                            else if (elapsed >= (step.TimeoutSeconds > 0 ? step.TimeoutSeconds : PracticeTimeoutSeconds)) Complete(now, "timeout");
                             break;
                         case TutorialStepKind.Explain:
                             swingFrames = AnySaberSwinging() ? swingFrames + 1 : 0;
@@ -156,9 +160,11 @@ public sealed class TutorialController : MonoBehaviour
         stepIndex = index; Successes = 0; StepDone = false; swingFrames = 0; Hint = null;
         stepStart = now;
         pairs.Clear();
+        completedLongCounts.Clear();
         var step = Step;
         nextPatternAt = TutorialProgram.NextBarAtOrAfter(now + TutorialProgram.ReadDelaySeconds + spawner.approachTime);
-        BannerTitle = step.Title; BannerSub = step.Sub;
+        BannerTitle = step.Kind == TutorialStepKind.Ready && timedOutPractice ? "曲を選びに行こう" : step.Title;
+        BannerSub = step.Sub;
         if (Overlay != null) Overlay.ShowStep(step, index, steps.Length);
     }
 
@@ -169,7 +175,7 @@ public sealed class TutorialController : MonoBehaviour
         stepEndAt = now + (reason == "timeout" ? TutorialProgram.TimeoutEndSeconds : TutorialProgram.StepEndSeconds);
         var step = Step;
         records.Add(new TutorialStepRecord { Id = step.Id, Seconds = now - stepStart, Reason = reason });
-        if (reason == "timeout") { BannerTitle = "次に進むよ"; BannerSub = "あとは曲の中で慣れよう"; }
+        if (reason == "timeout") { timedOutPractice = true; BannerTitle = "次に進むよ"; BannerSub = "あとは曲の中で慣れよう"; }
         else if (step.Kind == TutorialStepKind.Practice) { BannerTitle = "OK!"; BannerSub = ""; }
         DropUnspawnedNotes();
         if (Overlay != null) Overlay.ShowBanner(BannerTitle, BannerSub);
@@ -225,11 +231,16 @@ public sealed class TutorialController : MonoBehaviour
         if (step == null || StepDone || IsFinished || !noteSteps.TryGetValue(note, out int owner) || owner != stepIndex) return;
         if (TutorialProgram.CountsAsSuccess(step, tier, note.LastCutCorrectDirection, note.RequiredCutCount, note.CutsAchieved))
         {
-            if (!step.Simultaneous) Successes++;
+            if (step.Id == "long")
+            {
+                // 同じ回数だけ繰り返しても通過させず、2・3・4 回をそれぞれ切り切る。
+                if (completedLongCounts.Add(note.RequiredCutCount)) Successes++;
+            }
+            else if (!step.Simultaneous) Successes++;
             else if (pairs.Register(note.HitTime, note.RequiredHand)) Successes += 2;
             return;
         }
-        if (note.RequiredCutCount > 1) SetHint("止まっている間に、同じ場所を 3 回切ろう");
+        if (note.RequiredCutCount > 1) SetHint("数字がなくなるまで、同じ場所を切ろう");
         else if (step.NeedDirection && !note.LastCutCorrectDirection)
             SetHint("矢印の向きに振ろう(" + TutorialProgram.DirectionJapanese(note.RequiredDirection) + ")");
     }
@@ -239,7 +250,8 @@ public sealed class TutorialController : MonoBehaviour
         var step = Step;
         if (step == null || step.Kind != TutorialStepKind.Practice || StepDone || IsFinished
             || !noteSteps.TryGetValue(note, out int owner) || owner != stepIndex) return;
-        SetHint(TutorialProgram.MissHint(ColorName(note), note.RequiredDirection != CutDirection.None));
+        SetHint(note.RequiredCutCount > 1 ? "数字の回数だけ、同じ場所を切ろう"
+            : TutorialProgram.MissHint(ColorName(note), note.RequiredDirection != CutDirection.None));
     }
 
     static string ColorName(CuttableNote note) =>

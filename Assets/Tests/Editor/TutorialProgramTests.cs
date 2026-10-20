@@ -81,8 +81,8 @@ public class TutorialProgramTests
     {
         var longNote = TutorialProgram.Get("long").Pattern[0].ToNote(12.5);
         Assert.AreEqual(12500f, longNote.time, .001f);
-        Assert.AreEqual(3, longNote.count);
-        Assert.AreEqual(1000f, longNote.lengthMs, .001f);
+        Assert.AreEqual(2, longNote.count);
+        Assert.AreEqual(500f, longNote.lengthMs, .001f);
         Assert.AreEqual("red", longNote.color);
         Assert.IsTrue(longNote.IsLong);
 
@@ -112,7 +112,8 @@ public class TutorialProgramTests
         // 本編は 2026-10-20 から、ロングを1回でも残すと残りが MISS。練習も全部切ったら成功。
         Assert.IsFalse(TutorialProgram.CountsAsSuccess(longStep, JudgmentTier.Miss, true, 3, 2), "2/3 は残しがあるので数えない");
         Assert.IsFalse(TutorialProgram.CountsAsSuccess(longStep, JudgmentTier.Miss, true, 3, 1));
-        Assert.IsTrue(TutorialProgram.CountsAsSuccess(longStep, JudgmentTier.Miss, true, 3, 3), "ロングは達成率だけを見る");
+        Assert.IsTrue(TutorialProgram.CountsAsSuccess(longStep, JudgmentTier.Perfect, true, 3, 3), "全回数を切り切ったら成功");
+        Assert.IsFalse(TutorialProgram.CountsAsSuccess(longStep, JudgmentTier.Miss, true, 3, 3), "MISS は成功にしない");
         Assert.IsFalse(TutorialProgram.CountsAsSuccess(hands, JudgmentTier.Perfect, true, 1, 1));
         Assert.IsFalse(TutorialProgram.CountsAsSuccess(null, JudgmentTier.Perfect, true, 1, 1));
     }

@@ -28,12 +28,11 @@ public sealed class TutorialStep
 {
     public string Id, Title, Sub;
     public TutorialStepKind Kind;
-    public float TimeoutSeconds;                      // Explain / Ready の自動送り秒。Practice は TutorialProgram.DefaultStepTimeoutSeconds
+    public float TimeoutSeconds;                      // 自動送り秒。Practice の 0 は共通の制限時間
     public TutorialPatternNote[] Pattern = Array.Empty<TutorialPatternNote>();
     public double PeriodSeconds;                      // 型を繰り返す間隔(秒)
     public int Goal;                                  // 成功回数
     public bool NeedDirection;                        // 向きが合った切りだけを数える
-    public float LongRate;                            // ロングの合格達成率(0 なら 1 = 全部切る)
     public bool Simultaneous;
     public double PatternLengthSeconds => Pattern.Length == 0 ? 0 : Pattern[Pattern.Length - 1].dt;
 }
@@ -53,7 +52,7 @@ public static class TutorialProgram
     public const float ReadyTimeoutSeconds = 1.4f;
     public const float SwingSpeedToAdvance = 2.5f;    // 持ち方の説明を抜ける振りの速さ(タイトルの開始ノーツと同じ)
     // 本編は 2026-10-20 から、ロングを1回でも残すと残りが MISS でコンボが切れる。練習でも全部切ったら成功にする。
-    public const float DefaultLongRate = 1f;
+    public const float LongPracticeTimeoutSeconds = 30f;
     public const float RightX = 1.65f, LeftX = -1.65f, BaseY = .5f, LowY = -.4f;
 
     // 難易度を選ぶ前に挟まるので、Easy / Normal に共通の型。左右・斜めの矢印は曲の中で覚える。
@@ -82,8 +81,9 @@ public static class TutorialProgram
                 Pattern = new[] { Arrow(RightX, BaseY, "red", "up", 0f), Arrow(LeftX, BaseY, "blue", "down", 2f) }, PeriodSeconds = LoopSeconds, Goal = 2, NeedDirection = true };
             case "arrowNormal": return new TutorialStep { Id = id, Kind = TutorialStepKind.Practice, Title = "矢印の向きに振ろう", Sub = "上・下・左・右",
                 Pattern = new[] { Arrow(RightX, BaseY, "red", "up", 0f), Arrow(LeftX, BaseY, "blue", "down", 2f), Arrow(RightX, BaseY, "red", "left", 4f), Arrow(LeftX, BaseY, "blue", "right", 6f) }, PeriodSeconds = 2 * LoopSeconds, Goal = 3, NeedDirection = true };
-            case "long": return new TutorialStep { Id = id, Kind = TutorialStepKind.Practice, Title = "長いノーツは、止まっている間に 3 回切ろう", Sub = "上の数字が残り回数",
-                Pattern = new[] { Long(RightX, BaseY, "red", 3, 1000f, 0f) }, PeriodSeconds = LoopSeconds, Goal = 1, LongRate = DefaultLongRate };
+            case "long": return new TutorialStep { Id = id, Kind = TutorialStepKind.Practice, Title = "長いノーツは、数字の回数だけ振ろう", Sub = "数字がなくなるまで切り切ろう",
+                Pattern = new[] { Long(RightX, BaseY, "red", 2, 500f, 0f), Long(LeftX, BaseY, "blue", 3, 1000f, 3f), Long(RightX, BaseY, "red", 4, 1500f, 6f) },
+                PeriodSeconds = 3 * LoopSeconds, Goal = 3, TimeoutSeconds = LongPracticeTimeoutSeconds };
             case "gold": return new TutorialStep { Id = id, Kind = TutorialStepKind.Practice, Title = "金色はどちらの手でもOK", Sub = "大事な一撃。好きな手で",
                 Pattern = new[] { Tap(0f, BaseY, "gold", 0f) }, PeriodSeconds = LoopSeconds, Goal = 1 };
             case "simul": return new TutorialStep { Id = id, Kind = TutorialStepKind.Practice, Title = "赤と青がいっしょに来たら、両手で同時に", Sub = "青は左手、赤は右手",
@@ -106,14 +106,13 @@ public static class TutorialProgram
     }
 
     // 1 回の判定が「成功」に数えられるか。向きの違いは 1 段降格で切れるが、矢印の練習では数えない。
-    // ロングは達成率で判定する(既定は全部切ったら成功。本編も1回でも残すと MISS)。
+    // ロングは必要回数を切り切ったときだけ成功。割合による緩和はしない。
     public static bool CountsAsSuccess(TutorialStep step, JudgmentTier tier, bool correctDirection, int requiredCuts, int achievedCuts)
     {
         if (step == null || step.Kind != TutorialStepKind.Practice) return false;
         if (requiredCuts > 1)
         {
-            float rate = achievedCuts / (float)Mathf.Max(1, requiredCuts);
-            return rate >= (step.LongRate > 0f ? step.LongRate : DefaultLongRate);
+            return tier != JudgmentTier.Miss && achievedCuts >= requiredCuts;
         }
         if (tier == JudgmentTier.Miss) return false;
         return !step.NeedDirection || correctDirection;
