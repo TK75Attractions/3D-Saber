@@ -78,14 +78,25 @@ class MalformedBundleTests(unittest.TestCase):
                 manifest = b'[' * 10000 + b'0' + b']' * 10000
                 deep = b'PSBT' + struct.pack('>I', len(manifest)) + manifest
                 valid = raw_envelope(empty_bundle_files())
+                upload_finished = server.upload_finished
+                finished = threading.Event()
+
+                def finish_upload():
+                    upload_finished()
+                    finished.set()
+
                 for body, full in ((deep, False), (valid, True)):
+                    finished.clear()
                     connection = HTTPConnection('127.0.0.1', server.server_port, timeout=3)
                     try:
-                        with mock.patch.object(protocol.os, 'replace', side_effect=OSError(errno.ENOSPC, 'disk full')) if full else mock.patch.object(server, 'write_report'):
+                        with mock.patch.object(server, 'upload_finished', side_effect=finish_upload), \
+                             (mock.patch.object(protocol.os, 'replace', side_effect=OSError(errno.ENOSPC, 'disk full')) if full else mock.patch.object(server, 'write_report')):
                             connection.request('POST', '/v1/bundle', body=body, headers={'Content-Type': protocol.CONTENT_TYPE})
                             response = connection.getresponse()
                             self.assertEqual(response.status, 400)
                             response.read()
+                            # 本文の受信だけでは、ハンドラーの finally が終わった保証にならない。
+                            self.assertTrue(finished.wait(3), 'upload cleanup did not finish')
                     finally:
                         connection.close()
                     self.assertFalse(inbox.exists() and list(inbox.iterdir()))
