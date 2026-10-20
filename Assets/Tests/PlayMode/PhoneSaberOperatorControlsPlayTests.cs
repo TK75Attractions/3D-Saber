@@ -105,7 +105,10 @@ public class PhoneSaberOperatorControlsPlayTests
         if (!Application.isBatchMode) Assert.IsNotNull(Field<GUIStyle>(probe, "textStyle"), "継承した OnGUI が遅延表示へ届く");
         yield return Press(Key.F9);
         Assert.IsFalse(Field<bool>(probe, "active"));
-        Assert.IsFalse(Renderer(probe).enabled);
+        // 止めたあとは結果を20秒だけ出す(10/14 の 4ef278d から。試験はそれより前の「すぐ消える」のままだった)。
+        // 計測の間だけ変えたフレームの待ち行列は戻す。
+        Assert.IsTrue(Renderer(probe).enabled, "結果を見せる");
+        Assert.Greater(Field<double>(probe, "resultUntil"), 0d);
         Assert.AreEqual(1, QualitySettings.maxQueuedFrames);
         yield return Press(Key.F9);
         probe.enabled = false;
