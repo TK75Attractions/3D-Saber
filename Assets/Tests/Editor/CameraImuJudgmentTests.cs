@@ -112,9 +112,9 @@ public class CameraImuJudgmentTests
     [Test]
     public void LateSwingWaitsForCameraBeyondNormalMissDeadline()
     {
-        Create(); Advance(.18); Swing(.18); Advance(.19);
+        Create(); Advance(.17); Swing(.17); Advance(.19);
         Advance(.28); Assert.False(notes[0].IsMissed); Assert.False(notes[0].IsJudgeable);
-        Path(.18); Advance(.35);
+        Path(.17); Advance(.34);
         Assert.True(notes[0].IsCut); Assert.That(score.LastTier, Is.EqualTo(JudgmentTier.Bad));
         Assert.That(score.MissCount, Is.Zero);
     }
@@ -172,8 +172,8 @@ public class CameraImuJudgmentTests
 
     [TestCase(1019, -.100, true)]
     [TestCase(1020, -.100, false)]
-    [TestCase(1200, -.086, false)]
-    [TestCase(1200, -.085, true)]
+    [TestCase(1200, -.091, false)]
+    [TestCase(1200, -.090, true)]
     public void FollowingNoteUsesSwingTimeForOrderProtection(float secondMs, double error, bool expected)
     {
         Create(twoNotes: true, secondTime: secondMs);
@@ -210,7 +210,7 @@ public class CameraImuJudgmentTests
     [TestCase(.00, JudgmentTier.Great)]
     [TestCase(.10, JudgmentTier.Good)]
     [TestCase(.15, JudgmentTier.Bad)]
-    [TestCase(.19, JudgmentTier.Miss)]
+    [TestCase(.17, JudgmentTier.Miss)]
     public void WrongDirectionDropsExactlyOneExistingTier(double at, JudgmentTier expected)
     {
         Create(direction: "right"); Advance(at); Swing(at); Path(at, true); Advance(at + .17);

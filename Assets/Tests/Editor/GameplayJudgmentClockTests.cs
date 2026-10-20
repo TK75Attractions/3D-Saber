@@ -56,7 +56,7 @@ public class GameplayJudgmentClockTests
     {
         Create(blade, secondJudge, 1);
         Set(manager, "inCalibration", calibration);
-        spawner.Tick(.76); // 早めの窓(0.2025秒)の外
+        spawner.Tick(.76); // 早めの窓(0.18秒)の外
         Assert.False(note.IsJudgeable);
         tracker.ResetTo(new Vector3(-2, 0, 0));
         tracker.Tick(blade ? Vector3.zero : new Vector3(2, 0, 0), .033f);
@@ -185,7 +185,7 @@ public class GameplayJudgmentClockTests
         Create(true, false, 1);
         bridge.OverrideCameraInput(camera);
         spawner.Tick(.9);
-        TickManager(1.30); // 判定の時計では、カメラなら0.18秒過ぎ(窓の中)、なしなら0.30秒過ぎ
+        TickManager(1.29); // 判定の時計では、カメラなら0.17秒過ぎ(窓の中)、なしなら0.29秒過ぎ
         Assert.AreEqual(camera, note.IsJudgeable);
         Assert.AreEqual(!camera, note.IsMissed);
         TickManager(1.40);
@@ -215,21 +215,21 @@ public class GameplayJudgmentClockTests
         judge.bladeRadius = .32f; judge.noteHitRadiusXY = .88f; // 本編と同じ当たり(刃との距離 1.2)
         spawner.Tick(.9);
         tracker.ResetTo(new Vector3(.3f, 2f, 0));
-        StepVerticalBlade(new Vector2(.3f, 1.4f), 1.17); // 入る(判定窓の終わり近く)
-        StepVerticalBlade(new Vector2(.3f, .8f), 1.19);  // 窓の中でいちばん近づく
-        StepVerticalBlade(new Vector2(.3f, .5f), 1.27);  // 締め切り(1 + 0.2025 + 0.06)を過ぎたが、刃の先はノーツの高さまでで、まだ越えていない
+        StepVerticalBlade(new Vector2(.3f, 1.4f), 1.15); // 入る(判定窓の終わり近く)
+        StepVerticalBlade(new Vector2(.3f, .8f), 1.17);  // 窓の中でいちばん近づく
+        StepVerticalBlade(new Vector2(.3f, .5f), 1.25);  // 締め切り(1 + 0.18 + 0.06)を過ぎたが、刃の先はノーツの高さまでで、まだ越えていない
         Assert.False(note.IsMissed, "刃がノーツの上を通っている最中は Miss を待つ");
         Assert.False(note.IsCut);
         if (passes)
         {
-            StepVerticalBlade(new Vector2(.3f, -.4f), 1.30); // 刃の先がノーツより下へ
+            StepVerticalBlade(new Vector2(.3f, -.4f), 1.28); // 刃の先がノーツより下へ
             Assert.True(note.IsCut);
             Assert.False(note.IsMissed);
-            Assert.AreEqual(1.19, note.LastCutSongTime.Value, .02, "採点はいちばん近づいた時刻");
+            Assert.AreEqual(1.17, note.LastCutSongTime.Value, .02, "採点はいちばん近づいた時刻");
         }
         else
         {
-            StepVerticalBlade(new Vector2(.3f, .5f), 1.45); // 止まったまま、待つ時間(0.15秒)も過ぎた
+            StepVerticalBlade(new Vector2(.3f, .5f), 1.43); // 止まったまま、待つ時間(0.15秒)も過ぎた
             Assert.True(note.IsMissed);
             Assert.False(note.IsCut);
         }

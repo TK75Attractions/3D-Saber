@@ -47,12 +47,12 @@ public class CalibrationLiveTests
         for(int i=0;i<12;i++) h.Add(100,i%2==0?SaberHand.Left:SaberHand.Right);
         Assert.AreEqual(1,h.SuggestedDirection,"古い見逃しは回復後まで妨げない");
     }
-    [TestCase(-85.01,"少し早め")]
-    [TestCase(-85,"音に合っています")]
+    [TestCase(-90.01,"少し早め")]
+    [TestCase(-90,"音に合っています")]
     [TestCase(0,"音に合っています")]
     [TestCase(35,"音に合っています")]
-    [TestCase(85,"音に合っています")]
-    [TestCase(85.01,"少し遅め")]
+    [TestCase(90,"音に合っています")]
+    [TestCase(90.01,"少し遅め")]
     public void LiveFeedbackUsesActualPerfectWindow(double error,string expected)
     {Assert.AreEqual(expected,CalibrationProtocol.LiveFeedback(error));}
     [TestCase(-190)] [TestCase(195)]

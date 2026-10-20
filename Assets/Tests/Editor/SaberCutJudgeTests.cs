@@ -327,8 +327,8 @@ public class SaberCutJudgeTests
     [TestCase(.019, -.100, true)]
     [TestCase(.020, -.100, false)]
     [TestCase(.021, -.100, false)]
-    [TestCase(.200, -.085001, false)]
-    [TestCase(.200, -.085, true)]
+    [TestCase(.200, -.090001, false)]
+    [TestCase(.200, -.090, true)]
     [TestCase(.200, .100, true)]
     public void FollowingNoteWaitsForItsPerfectZone(double gap, double error, bool allowed)
     {
