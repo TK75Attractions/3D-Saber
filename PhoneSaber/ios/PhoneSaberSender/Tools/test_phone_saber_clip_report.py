@@ -154,6 +154,76 @@ class ClipReportTests(unittest.TestCase):
             self.assertIn("WINNER", text)
             self.assertIn("core-halo score 90.0", text)
 
+    def test_v2_real_winner_suppression_and_emitter_columns(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            bundle = make_clip(Path(directory))
+            path = bundle / "summary.json"
+            summary = json.loads(path.read_text())
+            clip = summary["autoClip"]
+            clip["formatVersion"] = 2
+            clip["candidateColumns"] += list(report.EVIDENCE_COLUMNS)
+            for frame in clip["frames"]:
+                frame["red"]["sup"] = False
+                frame["blue"]["sup"] = True
+                for row in frame["red"]["c"]:
+                    row += [255, 0.83, 0.52, 230.5, True, 0.72, 400, 8.25]
+            path.write_text(json.dumps(summary))
+            info = report.describe(bundle)
+            protocol.pack_bundle(bundle, Path(directory) / "new-format.psbt")
+            self.assertEqual(info["formatVersion"], 2)
+            self.assertEqual(info["suppressedFrames"], {"red": 0, "blue": 30})
+            self.assertEqual(info["triggerFrameOutput"]["red"],
+                             {"selected": [10, 20, 10, 60], "trackLockSuppressed": False})
+            candidates = info["triggerFrameCandidates"]["red"]
+            for c in candidates:
+                self.assertEqual([c[k] for k in report.EVIDENCE_COLUMNS],
+                                 [255, 0.83, 0.52, 230.5, True, 0.72, 400, 8.25])
+            text = report.render_text(info)
+            self.assertIn("WINNER", text)
+            self.assertIn("COMPETITOR", text)
+            self.assertIn("emitterScore=0.83", text)
+            self.assertIn("trackLockSuppressed=False", text)
+            self.assertNotIn("format v1", text)
+            # 抑制フレームには実 winner を表示しない。
+            frame = next(f for f in clip["frames"] if f["f"] == 112)
+            frame["red"]["sel"] = None
+            frame["red"]["sup"] = True
+            frame["red"]["c"][0][10] = report.FLAG_ELIGIBLE | report.FLAG_SELECTABLE
+            path.write_text(json.dumps(summary))
+            info = report.describe(bundle)
+            self.assertFalse(any(c["selected"] for c in info["triggerFrameCandidates"]["red"]))
+            self.assertIn("trackLockSuppressed=True", report.render_text(info))
+
+    def test_v1_uses_actual_sel_and_keeps_missing_evidence_unknown(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            bundle = make_clip(Path(directory))
+            path = bundle / "summary.json"
+            summary = json.loads(path.read_text())
+            frame = next(f for f in summary["autoClip"]["frames"] if f["f"] == 112)
+            frame["red"]["sel"] = [60, 100, 70, 110]  # 旧selectedフラグは先頭のまま
+            path.write_text(json.dumps(summary))
+            info = report.describe(bundle)
+            winners = [c for c in info["triggerFrameCandidates"]["red"] if c["selected"]]
+            self.assertEqual([c["rank"] for c in winners], [3])
+            self.assertEqual(info["suppressedFrames"], {"red": None, "blue": None})
+            self.assertIn("suppression and emitter evidence unknown", report.render_text(info))
+            self.assertIn("emitterScore=unknown", report.render_text(info))
+
+    def test_174032_old_flags_are_reconciled_for_2235_2247_2248(self) -> None:
+        # 旧クリップで誤記されたrank→実出力rank。画像・私的bundleはテストに取り込まない。
+        cases = [(2235, 4, 6, [276, 464, 300, 398]),
+                 (2247, 3, 5, [252, 484, 272, 404]),
+                 (2248, 2, 4, [244, 524, 260, 400])]
+        for frame_id, old_rank, actual_rank, output in cases:
+            with self.subTest(frame=frame_id):
+                stale = [old_rank, 100, 100, 100, 200, 97, 97, 103, 203, 110, 7, 0]
+                actual = [actual_rank, *output, 240, 398, 302, 526, 100, 11, 1]
+                model = {"frames": {frame_id: {"blue": {"sel": output, "c": [stale, actual]}}},
+                         "columns": COLUMNS, "sources": ["color-mask", "core-halo"]}
+                winners = [c for c in report.frame_candidates(model, frame_id, "blue") if c["selected"]]
+                self.assertEqual([c["rank"] for c in winners], [actual_rank])
+                self.assertIsNone(report.frame_output(model, frame_id, "blue")["trackLockSuppressed"])
+
     def test_jump_summary(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             bundle = make_clip(Path(directory), "autoclip_x_jump_red", kind="jump")

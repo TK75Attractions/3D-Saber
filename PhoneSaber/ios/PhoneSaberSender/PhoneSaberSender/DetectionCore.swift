@@ -431,6 +431,13 @@ struct CoreLineGuardVerdict: Codable, Equatable {
     let litCoverage: Double
     let supportingLitCoverage: Double
 }
+// observer 専用。既に求めた eligibility 入力のコピーだけで、認識には使用しない。
+struct SaberObserverEmitterInputs {
+    let emitterScore: Double
+    let nearSaturationPresent: Bool
+    let aspect: Double
+}
+
 struct SaberCandidate {
     var source: String = "color-mask"
     var radiance: Double = 0
@@ -473,6 +480,7 @@ struct SaberCandidate {
     var blueNoDeepSupport: SaberBlueNoDeepSupportVerdict? = nil
     /// Populated only for Debug Recording, at the production rejection site.
     var diagnosticRejections: [SaberEligibilityDecision] = []
+    var observerEmitterInputs: SaberObserverEmitterInputs? = nil
     var endpointDiagnosticTrace: SaberEndpointDiagnosticTrace? = nil
 }
 
@@ -518,6 +526,7 @@ struct SaberEvidence {
     let chroma: [UInt8]
     let colorMask: [UInt8]
     let coreMask: [UInt8]
+    var collectObserverEvidence = false
 
     func isValid(width: Int, height: Int) -> Bool {
         let count = width * height
@@ -1108,6 +1117,10 @@ private func scoredSaberComponent(_ points: [PixelPoint], width: Int, height: In
                           componentArea: points.count,
                           pointCount: points.count,
                           usedPointLEDFallback: usedPointLEDFallback)
+    if evidence?.collectObserverEvidence == true {
+        candidate.observerEmitterInputs = SaberObserverEmitterInputs(
+            emitterScore: emitterScore, nearSaturationPresent: clippedRatio > 0, aspect: aspect)
+    }
     if evidence != nil { candidate.supportSamplePoints = points }
     if collectEndpointDiagnostics {
         candidate.endpointDiagnosticTrace = SaberEndpointDiagnosticTrace(

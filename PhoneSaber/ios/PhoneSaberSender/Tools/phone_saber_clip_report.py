@@ -27,6 +27,8 @@ from typing import Any
 PREFIX = "phone_saber_triage_"
 DEFAULT_INBOX = Path.home() / "Library/Application Support/PhoneSaber/diagnostics-inbox"
 FLAG_ELIGIBLE, FLAG_SELECTABLE, FLAG_SELECTED, FLAG_COMPETITOR = 1, 2, 4, 8
+EVIDENCE_COLUMNS = ("peakValue", "emitterScore", "highValueRatio", "meanValue",
+                    "nearSaturationPresent", "colorPurity", "componentArea", "aspect")
 # Contact sheet colours (RGB).
 SELECTED = (0, 230, 0)
 COMPETITOR = (255, 0, 255)
@@ -140,7 +142,8 @@ def find_clips(paths: list[Path]) -> list[Path]:
 
 
 def _candidates(frame: dict, color: str, columns: list[str], sources: list[str]) -> list[dict]:
-    rows = (frame.get(color) or {}).get("c") or []
+    entry = frame.get(color) or {}
+    rows = entry.get("c") or []
     result = []
     for row in rows:
         item = dict(zip(columns, row))
@@ -154,7 +157,18 @@ def _candidates(frame: dict, color: str, columns: list[str], sources: list[str])
         item["length"] = round(math.hypot(x2 - x1, y2 - y1), 1)
         item["boxSize"] = [item.get("maxX", 0) - item.get("minX", 0), item.get("maxY", 0) - item.get("minY", 0)]
         result.append(item)
+    if "sel" in entry:
+        _reconcile_selection(result, entry["sel"])
     return result
+
+
+def _reconcile_selection(candidates: list[dict], endpoints: list[int] | None) -> None:
+    # v1 の誤ったフラグも実出力で照合。重複proposalを複数winnerとして表示しない。
+    matching = [c for c in candidates if endpoints == [c.get(k) for k in ("x1", "y1", "x2", "y2")]]
+    winner = next((c for c in matching if c.get("selected")), matching[0] if matching else None)
+    for c in candidates:
+        c["recordedSelected"] = c.get("selected", False)
+        c["selected"] = c is winner
 
 
 def load_clip(bundle: Path) -> dict[str, Any]:
@@ -196,8 +210,29 @@ def frame_candidates(model: dict, frame_id: int, color: str) -> list[dict]:
                            "mid": [(x1 + x2) / 2, (y1 + y2) / 2],
                            "length": round(math.hypot(x2 - x1, y2 - y1), 1),
                            "boxSize": [box[2] - box[0], box[3] - box[1]]})
+        if "endpoint" in entry or entry.get("detected") is False:
+            _reconcile_selection(result, entry.get("endpoint"))
+        for item, candidate in zip(result, entry.get("autoClipCandidates") or []):
+            item.update({key: candidate.get(key) for key in EVIDENCE_COLUMNS})
         return result
     return []
+
+
+def frame_output(model: dict, frame_id: int, color: str) -> dict:
+    frame = model["frames"].get(frame_id)
+    if frame is not None:
+        entry = frame.get(color) or {}
+        return {"selected": entry.get("sel"), "trackLockSuppressed": entry.get("sup")}
+    for image in model["summary"].get("images", []):
+        if image.get("frameID") != frame_id:
+            continue
+        try:
+            context = json.loads((model["bundle"] / image["frameContextPath"]).read_text(encoding="utf-8"))
+            entry = (context.get("frames") or [{}])[0].get(color) or {}
+            return {"selected": entry.get("endpoint"), "trackLockSuppressed": entry.get("trackLockSuppressed")}
+        except (OSError, ValueError, KeyError):
+            continue
+    return {"selected": None, "trackLockSuppressed": None}
 
 
 def _winner_side_counts(model: dict, color: str, saber_mid: list[float] | None,
@@ -231,6 +266,7 @@ def describe(bundle: Path) -> dict[str, Any]:
     color = trigger.get("color", "both")
     frame_id = trigger.get("frameID")
     result: dict[str, Any] = {
+        "formatVersion": clip.get("formatVersion", 1),
         "clipID": summary.get("sessionID"), "path": str(bundle),
         "trigger": {k: trigger.get(k) for k in ("kind", "color", "frameID", "timestamp", "reason",
                                                 "competitorCount", "jumpDistancePx", "jumpThresholdPx",
@@ -245,6 +281,10 @@ def describe(bundle: Path) -> dict[str, Any]:
     colors = ["red", "blue"] if color not in ("red", "blue") else [color]
     result["triggerFrameCandidates"] = {
         c: frame_candidates(model, frame_id, c) if isinstance(frame_id, int) else [] for c in colors}
+    result["triggerFrameOutput"] = {c: frame_output(model, frame_id, c) for c in colors}
+    result["suppressedFrames"] = {
+        c: sum(bool((f.get(c) or {}).get("sup")) for f in model["frames"].values())
+        if clip.get("formatVersion", 1) >= 2 else None for c in ("red", "blue")}
     if trigger.get("kind") == "confusion" and color in ("red", "blue"):
         winner, competitor = trigger.get("winner"), trigger.get("competitor")
         mid = (lambda e: [(e[0] + e[2]) / 2, (e[1] + e[3]) / 2] if e and len(e) == 4 else None)
@@ -257,10 +297,13 @@ def describe(bundle: Path) -> dict[str, Any]:
 def _fmt_candidate(c: dict) -> str:
     role = "WINNER" if c.get("selected") else "COMPETITOR" if c.get("competitor") else \
         "eligible" if c.get("eligible") else "ineligible"
-    extra = "" if c.get("selectable") or not c.get("eligible") else " (not selectable: ignore zone / outside play area)"
+    extra = "" if c.get("selectable") or not c.get("eligible") else (
+        " (actual tracked output outside acquisition area)" if c.get("selected") else
+        " (not selectable: ignore zone / outside play area)")
+    evidence = " ".join(f"{key}={c.get(key) if c.get(key) is not None else 'unknown'}" for key in EVIDENCE_COLUMNS)
     return (f"  - {role:<10} rank {c.get('rank')} {c.get('source')} score {c.get('score')} "
             f"mid ({c['mid'][0]:.0f},{c['mid'][1]:.0f}) length {c['length']:.0f}px "
-            f"box {c['boxSize'][0]}x{c['boxSize'][1]} ends [{c.get('x1')},{c.get('y1')}]-[{c.get('x2')},{c.get('y2')}]{extra}")
+            f"box {c['boxSize'][0]}x{c['boxSize'][1]} ends [{c.get('x1')},{c.get('y1')}]-[{c.get('x2')},{c.get('y2')}]{extra}\n    evidence: {evidence}")
 
 
 def render_text(info: dict[str, Any]) -> str:
@@ -269,6 +312,10 @@ def render_text(info: dict[str, Any]) -> str:
              f"- trigger: **{trigger.get('kind')}** colour={trigger.get('color')} frame={trigger.get('frameID')} "
              f"t={trigger.get('timestamp')}",
              f"- reason: {trigger.get('reason')}"]
+    legacy = info.get("formatVersion", 1) < 2
+    if legacy:
+        lines.append("- format v1: selected candidate flags may differ from actual output (track lock / play area); suppression and emitter evidence unknown. Actual output below uses sel.")
+    lines.append(f"- track lock suppressed frames (stored metadata): {info.get('suppressedFrames')}")
     camera = info.get("camera") or {}
     window = info.get("window") or {}
     lines.append(f"- window: {window.get('preSeconds')} s before / {window.get('postSeconds')} s after, "
@@ -285,7 +332,11 @@ def render_text(info: dict[str, Any]) -> str:
                      f"winner near the trigger winner {c['winnerNearTriggerWinner']}, near the competitor {c['winnerNearCompetitor']}")
     lines += ["", "## Candidates at the trigger frame (full-resolution pixels)"]
     for color, candidates in info["triggerFrameCandidates"].items():
-        lines.append(f"- {color}:" + ("" if candidates else " (none stored)"))
+        output = info.get("triggerFrameOutput", {}).get(color, {})
+        suppression = output.get("trackLockSuppressed")
+        lines.append(f"- {color}: actual winner endpoints={output.get('selected')}; "
+                     f"trackLockSuppressed={suppression if suppression is not None else 'unknown'}"
+                     + ("" if candidates else " (none stored)"))
         lines += [_fmt_candidate(c) for c in candidates]
     lines += ["", "## Images (time order)"]
     for index, image in enumerate(info["images"], 1):

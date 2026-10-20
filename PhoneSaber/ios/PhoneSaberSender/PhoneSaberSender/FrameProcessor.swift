@@ -613,6 +613,7 @@ final class FrameProcessor: @unchecked Sendable {
                                      bytesPerRow: bytesPerRow, redThreshold: redThreshold,
                                      blueThreshold: blueThreshold, collectProfile: collectProfile,
                                      collectPipelineDiagnostics: debugVideoRecorder != nil,
+                                     collectObserverEvidence: observer != nil,
                                      ignoreZones: zones, playArea: area, trackLock: lockState, now: processingStart)
         let sabers = analysis.selected
         let observedAnalysis: SaberFrameAnalysis? = analysis
@@ -626,7 +627,8 @@ final class FrameProcessor: @unchecked Sendable {
             let result = analyzeSabers(
                 baseAddress: bytes, width: width, height: height,
                 bytesPerRow: bytesPerRow, redThreshold: redThreshold,
-                blueThreshold: blueThreshold, ignoreZones: zones, playArea: area, trackLock: lockState, now: processingStart
+                blueThreshold: blueThreshold, collectObserverEvidence: true,
+                ignoreZones: zones, playArea: area, trackLock: lockState, now: processingStart
             )
             analysis = result
             sabers = result.selected

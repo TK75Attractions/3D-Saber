@@ -12,13 +12,13 @@ import ImageIO
 // the camera.
 //
 // Cost model (see tools/ios-hot-path/autoclip.py for the host measurement):
-// - every frame: a fixed-size metadata record (≤8 candidates per colour) written
+// - every frame: a fixed-size metadata record (≤12 candidates per colour) written
 //   into a preallocated ring, plus the trigger state machine. No allocation.
 // - every 0.3 s: one half-resolution point-sampled BGRA copy (the pixels the
 //   detector's step-2 mask scan reads) into a preallocated 21-slot ring.
 // - only when a clip is taken: three full-resolution copies (trigger frame and the
 //   next two), then PNG encoding on a utility queue after the 2 s post window.
-// Memory at 480×640: 21 × 300 KiB + 3 × 1.2 MiB + ≈0.5 MiB metadata ≈ 10.5 MiB.
+// Memory at 480×640: 21 × 300 KiB + 3 × 1.2 MiB + ≈1 MiB metadata ≈ 11 MiB.
 
 enum AutoClipSettings {
     static let enabledKey = "PhoneSaber.autoClip.enabled.v1"
@@ -39,7 +39,7 @@ enum AutoClipLimits {
     static let contextSlots = 21
     static let eventFrames = 3
     static let maximumImages = 20
-    static let candidatesPerColor = 8
+    static let candidatesPerColor = 12
     static let ineligibleCandidatesPerColor = 2
     static let cooldownSeconds = 20.0
     static let maximumAutomaticClipsPerSession = 6
@@ -114,7 +114,7 @@ struct AutoClipCompetition: Equatable {
         [endpoints.0.x, endpoints.0.y, endpoints.1.x, endpoints.1.y]
     }
 
-    /// Same predicate as the production winner selection in analyzeSabers.
+    /// 競合の範囲判定。追跡中の実winnerは範囲外にも出るため、ここから推定しない。
     static func selectable(_ candidate: SaberCandidate, width: Int, height: Int,
                            zones: [SaberIgnoreZone], playArea: SaberPlayArea?) -> Bool {
         candidate.isEmitterEligible
@@ -134,21 +134,22 @@ struct AutoClipCompetition: Equatable {
         return distance > (length(a.endpoints) + length(b.endpoints)) / 2
     }
 
-    static func evaluate(_ candidates: [SaberCandidate], width: Int, height: Int,
+    // winner は必ず analyzeSabers の実出力から照合する。nil は出力なし。
+    static func evaluate(_ candidates: [SaberCandidate], selected: (PixelPoint, PixelPoint)?,
+                         width: Int, height: Int,
                          zones: [SaberIgnoreZone], playArea: SaberPlayArea?) -> AutoClipCompetition {
         var result = AutoClipCompetition()
+        result.winnerIndex = selected.flatMap { endpoints in
+            candidates.firstIndex { $0.endpoints.0 == endpoints.0 && $0.endpoints.1 == endpoints.1 }
+        }
         for index in candidates.indices {
             let candidate = candidates[index]
             if candidate.isEmitterEligible { result.eligibleCount += 1 }
-            guard selectable(candidate, width: width, height: height, zones: zones, playArea: playArea) else { continue }
-            guard let winner = result.winnerIndex else {
-                result.winnerIndex = index
-                continue
-            }
-            if separated(candidates[winner], candidate) {
-                result.competitorCount += 1
-                if result.competitorIndex == nil { result.competitorIndex = index }
-            }
+            guard let winner = result.winnerIndex, index != winner,
+                  selectable(candidate, width: width, height: height, zones: zones, playArea: playArea),
+                  separated(candidates[winner], candidate) else { continue }
+            result.competitorCount += 1
+            if result.competitorIndex == nil { result.competitorIndex = index }
         }
         return result
     }
@@ -323,6 +324,12 @@ struct AutoClipCandidateRecord {
     var x1: Int32 = 0, y1: Int32 = 0, x2: Int32 = 0, y2: Int32 = 0
     var minX: Int32 = 0, minY: Int32 = 0, maxX: Int32 = 0, maxY: Int32 = 0
     var score: Float = 0
+    var peakValue: Int16 = 0
+    var emitterScore: Float? = nil
+    var highValueRatio: Float = 0, meanValue: Float = 0, colorPurity: Float = 0
+    var nearSaturationPresent: Bool? = nil
+    var componentArea: Int32 = 0
+    var aspect: Float? = nil
     var flags: UInt8 = 0
     var source = ""
 }
@@ -332,6 +339,7 @@ struct AutoClipColorRecord {
     var eligibleCount: Int16 = 0
     var competitorCount: Int16 = 0
     var stored: UInt8 = 0
+    var trackLockSuppressed = false
     var hasSelection = false
     var x1: Int32 = 0, y1: Int32 = 0, x2: Int32 = 0, y2: Int32 = 0
 }
@@ -441,6 +449,7 @@ final class AutoClipBuffers {
     private func fill(_ record: inout AutoClipColorRecord, color: SaberColor, competition: AutoClipCompetition,
                       frame: ObservedFrame, slot: Int, colorIndex: Int) {
         let list = frame.analysis.candidates[color] ?? []
+        record.trackLockSuppressed = frame.analysis.trackLockSuppressed.contains(color)
         record.candidateCount = Int16(clamping: list.count)
         record.eligibleCount = Int16(clamping: competition.eligibleCount)
         record.competitorCount = Int16(clamping: competition.competitorCount)
@@ -453,42 +462,53 @@ final class AutoClipBuffers {
         }
         let zones = frame.ignoreZones[color] ?? []
         let base = (slot * 2 + colorIndex) * AutoClipLimits.candidatesPerColor
-        var stored = 0, ineligible = 0
-        var competitorsSeen = 0
-        for index in list.indices where stored < AutoClipLimits.candidatesPerColor {
-            let candidate = list[index]
-            if !candidate.isEmitterEligible {
-                guard ineligible < AutoClipLimits.ineligibleCandidatesPerColor else { continue }
-                ineligible += 1
-            }
-            var flags: UInt8 = 0
-            if candidate.isEmitterEligible { flags |= AutoClipCandidateRecord.eligible }
-            if AutoClipCompetition.selectable(candidate, width: frame.width, height: frame.height,
-                                              zones: zones, playArea: frame.playArea) {
-                flags |= AutoClipCandidateRecord.selectable
-                if index == competition.winnerIndex {
-                    flags |= AutoClipCandidateRecord.selected
-                } else if let winner = competition.winnerIndex, index > winner,
-                          competitorsSeen < competition.competitorCount,
-                          AutoClipCompetition.separated(list[winner], candidate) {
-                    flags |= AutoClipCandidateRecord.competitor
-                    competitorsSeen += 1
+        var stored = 0
+        // 固定リングを維持し、winner → 全分離競合 → その他eligible → ineligible の順に保存。
+        // 各段内は元のrank順。競合が上限を超えた場合も k と stored 数から欠落を判別できる。
+        for priority in 0...3 {
+            var ineligible = 0
+            for index in list.indices where stored < AutoClipLimits.candidatesPerColor {
+                let candidate = list[index]
+                let selectable = AutoClipCompetition.selectable(candidate, width: frame.width, height: frame.height,
+                                                                zones: zones, playArea: frame.playArea)
+                let selected = index == competition.winnerIndex
+                let competitor = !selected && selectable && competition.winnerIndex.map {
+                    AutoClipCompetition.separated(list[$0], candidate)
+                } == true
+                let category = selected ? 0 : competitor ? 1 : candidate.isEmitterEligible ? 2 : 3
+                guard category == priority else { continue }
+                if category == 3 {
+                    guard ineligible < AutoClipLimits.ineligibleCandidatesPerColor else { continue }
+                    ineligible += 1
                 }
+                var flags: UInt8 = 0
+                if candidate.isEmitterEligible { flags |= AutoClipCandidateRecord.eligible }
+                if selectable { flags |= AutoClipCandidateRecord.selectable }
+                if selected { flags |= AutoClipCandidateRecord.selected }
+                if competitor { flags |= AutoClipCandidateRecord.competitor }
+                let target = base + stored
+                candidates[target].rank = Int16(clamping: index)
+                candidates[target].x1 = Int32(clamping: candidate.endpoints.0.x)
+                candidates[target].y1 = Int32(clamping: candidate.endpoints.0.y)
+                candidates[target].x2 = Int32(clamping: candidate.endpoints.1.x)
+                candidates[target].y2 = Int32(clamping: candidate.endpoints.1.y)
+                candidates[target].minX = Int32(clamping: candidate.boundingBox.minX)
+                candidates[target].minY = Int32(clamping: candidate.boundingBox.minY)
+                candidates[target].maxX = Int32(clamping: candidate.boundingBox.maxX)
+                candidates[target].maxY = Int32(clamping: candidate.boundingBox.maxY)
+                candidates[target].score = Float(candidate.score)
+                candidates[target].peakValue = Int16(clamping: candidate.peakValue)
+                candidates[target].emitterScore = candidate.observerEmitterInputs.map { Float($0.emitterScore) }
+                candidates[target].highValueRatio = Float(candidate.highValueRatio)
+                candidates[target].meanValue = Float(candidate.meanValue)
+                candidates[target].nearSaturationPresent = candidate.observerEmitterInputs?.nearSaturationPresent
+                candidates[target].colorPurity = Float(candidate.meanColorPurity)
+                candidates[target].componentArea = Int32(clamping: candidate.componentArea)
+                candidates[target].aspect = candidate.observerEmitterInputs.map { Float($0.aspect) }
+                candidates[target].flags = flags
+                candidates[target].source = candidate.source
+                stored += 1
             }
-            let target = base + stored
-            candidates[target].rank = Int16(clamping: index)
-            candidates[target].x1 = Int32(clamping: candidate.endpoints.0.x)
-            candidates[target].y1 = Int32(clamping: candidate.endpoints.0.y)
-            candidates[target].x2 = Int32(clamping: candidate.endpoints.1.x)
-            candidates[target].y2 = Int32(clamping: candidate.endpoints.1.y)
-            candidates[target].minX = Int32(clamping: candidate.boundingBox.minX)
-            candidates[target].minY = Int32(clamping: candidate.boundingBox.minY)
-            candidates[target].maxX = Int32(clamping: candidate.boundingBox.maxX)
-            candidates[target].maxY = Int32(clamping: candidate.boundingBox.maxY)
-            candidates[target].score = Float(candidate.score)
-            candidates[target].flags = flags
-            candidates[target].source = candidate.source
-            stored += 1
         }
         record.stored = UInt8(stored)
     }
@@ -678,9 +698,9 @@ final class AutoClipRecorder: FrameAnalysisObserver {
 
         let redCandidates = frame.analysis.candidates[.red] ?? []
         let blueCandidates = frame.analysis.candidates[.blue] ?? []
-        let red = AutoClipCompetition.evaluate(redCandidates, width: frame.width, height: frame.height,
+        let red = AutoClipCompetition.evaluate(redCandidates, selected: frame.analysis.selected[.red], width: frame.width, height: frame.height,
                                                zones: frame.ignoreZones[.red] ?? [], playArea: frame.playArea)
-        let blue = AutoClipCompetition.evaluate(blueCandidates, width: frame.width, height: frame.height,
+        let blue = AutoClipCompetition.evaluate(blueCandidates, selected: frame.analysis.selected[.blue], width: frame.width, height: frame.height,
                                                 zones: frame.ignoreZones[.blue] ?? [], playArea: frame.playArea)
         buffers.storeRecord(frame, red: red, blue: blue)
         if frame.timestamp - buffers.lastContextTime >= AutoClipLimits.contextInterval {
@@ -953,7 +973,8 @@ struct AutoClipBundleContent {
     }
 
     static let candidateColumns = ["rank", "x1", "y1", "x2", "y2", "minX", "minY", "maxX", "maxY",
-                                   "score", "flags", "source"]
+                                   "score", "flags", "source", "peakValue", "emitterScore", "highValueRatio",
+                                   "meanValue", "nearSaturationPresent", "colorPurity", "componentArea", "aspect"]
 
     let capture: AutoClipCapture
     let slots: [Int]
@@ -1017,10 +1038,14 @@ struct AutoClipBundleContent {
                 source = sources.count; sourceIndex[c.source] = source; sources.append(c.source)
             }
             rows.append([Int(c.rank), Int(c.x1), Int(c.y1), Int(c.x2), Int(c.y2), Int(c.minX), Int(c.minY),
-                         Int(c.maxX), Int(c.maxY), round1(Double(c.score)), Int(c.flags), source])
+                         Int(c.maxX), Int(c.maxY), round1(Double(c.score)), Int(c.flags), source,
+                         Int(c.peakValue), c.emitterScore.map { round4(Double($0)) } ?? NSNull(),
+                         round4(Double(c.highValueRatio)), round1(Double(c.meanValue)),
+                         c.nearSaturationPresent ?? NSNull(), round4(Double(c.colorPurity)),
+                         Int(c.componentArea), c.aspect.map { round4(Double($0)) } ?? NSNull()])
         }
         var entry: [String: Any] = ["n": Int(record.candidateCount), "e": Int(record.eligibleCount),
-                                    "k": Int(record.competitorCount), "c": rows]
+                                    "k": Int(record.competitorCount), "sup": record.trackLockSuppressed, "c": rows]
         entry["sel"] = record.hasSelection ? [Int(record.x1), Int(record.y1), Int(record.x2), Int(record.y2)] : NSNull()
         return entry
     }
@@ -1057,9 +1082,23 @@ struct AutoClipBundleContent {
             lastData = try JSONSerialization.data(withJSONObject: summary, options: [.sortedKeys])
             if lastData.count <= AutoClipLimits.maximumSummaryBytes { return lastData }
         }
-        // Last resort: drop the per-frame list, keep the bundle valid.
-        let summary = summaryObject(images: images, frames: [], sources: [], thinning: 3)
-        return try JSONSerialization.data(withJSONObject: summary, options: [.sortedKeys])
+        // 高fps・両色12候補でもトリガーの証拠は落とさない。画像contextは全て別JSONに残る。
+        var sources: [String] = []
+        let frames = frameEntries(level: 0, sources: &sources)
+        let nearest = frames.min {
+            abs(($0["t"] as? Double ?? 0) - capture.trigger.timestamp)
+                < abs(($1["t"] as? Double ?? 0) - capture.trigger.timestamp)
+        }?["f"] as? Int
+        for radius in [0.5, 0.25, 0.1, 0.0] {
+            let retained = frames.filter {
+                abs(($0["t"] as? Double ?? 0) - capture.trigger.timestamp) <= radius
+                    || ($0["f"] as? Int) == nearest
+            }
+            let summary = summaryObject(images: images, frames: retained, sources: sources, thinning: 3)
+            lastData = try JSONSerialization.data(withJSONObject: summary, options: [.sortedKeys])
+            if lastData.count <= AutoClipLimits.maximumSummaryBytes { return lastData }
+        }
+        return lastData
     }
 
     private func summaryObject(images: [[String: Any]], frames: [[String: Any]], sources: [String],
@@ -1102,10 +1141,11 @@ struct AutoClipBundleContent {
         }
         let area: Any = capture.playArea.map { [round4($0.minX), round4($0.minY), round4($0.maxX), round4($0.maxY)] } ?? NSNull()
         let autoClip: [String: Any] = [
-            "formatVersion": 1,
+            // 転送summaryのv1 envelopeを保ち、AutoClip内部のschemaを更新する。
+            "formatVersion": 2,
             "trigger": triggerEntry,
             "rules": [
-                "confusion": "same colour: the production winner plus at least one other eligible candidate that the production selection could also pick (not in an ignore zone, midpoint inside the play area), separated from the winner (boxes apart by >\(AutoClipTriggerPolicy.boxMarginPixels) px or midpoints farther than their mean length), for \(AutoClipTriggerPolicy.confusionFrames) consecutive processed frames",
+                "confusion": "same colour: the actual production winner plus at least one other eligible candidate (not in an ignore zone, midpoint inside the acquisition play area; this is a competition heuristic, not a track-lock gate replay), separated from the winner (boxes apart by >\(AutoClipTriggerPolicy.boxMarginPixels) px or midpoints farther than their mean length), for \(AutoClipTriggerPolicy.confusionFrames) consecutive processed frames",
                 "jump": "same colour: winner midpoint moves more than max(typical blade length (EMA \(AutoClipTriggerPolicy.typicalLengthAlpha)), \(AutoClipTriggerPolicy.minimumJumpDiagonalFraction) × frame diagonal) between consecutive processed frames (sequence gap ≤ \(AutoClipTriggerPolicy.maximumSequenceGap))",
                 "manual": "PC command clip=1",
                 "rateLimit": "cooldown \(Int(AutoClipLimits.cooldownSeconds)) s, ≤\(AutoClipLimits.maximumAutomaticClipsPerSession) automatic clips per sending session, confusion at a previously clipped competitor location skipped, manual ≥\(Int(AutoClipLimits.manualMinimumInterval)) s apart"
@@ -1127,6 +1167,7 @@ struct AutoClipBundleContent {
             "sessionClipIndex": capture.sessionClipIndex,
             "rejectedTriggersThisSession": capture.rejectedTriggers,
             "candidateColumns": Self.candidateColumns,
+            "candidateEvidence": "Existing DetectionCore inputs only; emitterScore, nearSaturationPresent and aspect are retained only with an analysis observer. No new pixel work. nearSaturationPresent means production clippedWhiteCount > 0; componentArea is full-resolution pixel area; aspect is the original mask PCA aspect. Missing evidence is null.",
             "candidateFlags": ["eligible": Int(AutoClipCandidateRecord.eligible),
                                "selectable": Int(AutoClipCandidateRecord.selectable),
                                "selected": Int(AutoClipCandidateRecord.selected),
@@ -1135,7 +1176,7 @@ struct AutoClipBundleContent {
                                "ineligiblePerColor": AutoClipLimits.ineligibleCandidatesPerColor],
             "frameKeys": ["f": "frameID", "t": "timestamp (s)", "ms": "detection ms",
                           "n": "candidates", "e": "eligible", "k": "separated competitors",
-                          "sel": "selected endpoints", "c": "stored candidates (candidateColumns)"],
+                          "sup": "track lock suppressed output", "sel": "actual analyzeSabers selected endpoints", "c": "stored candidates (candidateColumns)"],
             "thinning": thinning,
             "sources": sources,
             "frames": frames
@@ -1185,12 +1226,17 @@ struct AutoClipBundleContent {
                 "selected": c.flags & AutoClipCandidateRecord.selected != 0,
                 "competitor": c.flags & AutoClipCandidateRecord.competitor != 0,
                 "endpoints": [Int(c.x1), Int(c.y1), Int(c.x2), Int(c.y2)],
-                "bbox": [Int(c.minX), Int(c.minY), Int(c.maxX), Int(c.maxY)]
+                "bbox": [Int(c.minX), Int(c.minY), Int(c.maxX), Int(c.maxY)],
+                "peakValue": Int(c.peakValue), "emitterScore": c.emitterScore.map { round4(Double($0)) } ?? NSNull(),
+                "highValueRatio": round4(Double(c.highValueRatio)), "meanValue": round1(Double(c.meanValue)),
+                "nearSaturationPresent": c.nearSaturationPresent ?? NSNull(),
+                "colorPurity": round4(Double(c.colorPurity)), "componentArea": Int(c.componentArea),
+                "aspect": c.aspect.map { round4(Double($0)) } ?? NSNull()
             ])
         }
         var entry: [String: Any] = [
             "detected": record.hasSelection, "detectionSucceeded": record.hasSelection,
-            "predictionUsed": false,
+            "predictionUsed": false, "trackLockSuppressed": record.trackLockSuppressed,
             "candidateCount": Int(record.candidateCount),
             "eligibleCandidateCount": Int(record.eligibleCount),
             "competitorCount": Int(record.competitorCount),

@@ -52,3 +52,6 @@ xcrun swiftc -O -D DEVICE_HEALTH_STANDALONE \
     -module-cache-path "$module_cache" \
     -o "$build_dir/device-health-tests"
 "$build_dir/device-health-tests"
+
+# 実認識からAutoClipの記録・JSONまでをSimulatorなしで検証する。
+python3 "$script_dir/../PhoneSaberSenderTests/run_autoclip_host_tests.py"

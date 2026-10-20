@@ -3,15 +3,18 @@ import Foundation
 struct SaberFrameAnalysis {
     let candidates: [SaberColor: [SaberCandidate]]
     let selected: [SaberColor: (PixelPoint, PixelPoint)]
+    let trackLockSuppressed: Set<SaberColor>
     let profile: SaberDetectionProfile?
     let pipelineDiagnostics: [SaberColor: SaberColorPipelineDiagnostics]?
 
     init(candidates: [SaberColor: [SaberCandidate]],
          selected: [SaberColor: (PixelPoint, PixelPoint)],
+         trackLockSuppressed: Set<SaberColor> = [],
          profile: SaberDetectionProfile? = nil,
          pipelineDiagnostics: [SaberColor: SaberColorPipelineDiagnostics]? = nil) {
         self.candidates = candidates
         self.selected = selected
+        self.trackLockSuppressed = trackLockSuppressed
         self.profile = profile
         self.pipelineDiagnostics = pipelineDiagnostics
     }
@@ -694,6 +697,7 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
                    redThreshold: ColorThreshold, blueThreshold: ColorThreshold,
                    sampleStep: Int = 2, collectProfile: Bool = false,
                    collectPipelineDiagnostics: Bool = false,
+                   collectObserverEvidence: Bool = false,
                    ignoreZones: [SaberColor: [SaberIgnoreZone]] = [:],
                    playArea: SaberPlayArea? = nil,
                   trackLock: SaberTrackLock? = nil, now: Double = 0) -> SaberFrameAnalysis {
@@ -857,7 +861,8 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
         }
         let evidence = SaberEvidence(color: color, radiance: radianceMap,
                                      value: valueMap, chroma: chromaMap,
-                                     colorMask: rawMask, coreMask: associatedCore)
+                                     colorMask: rawMask, coreMask: associatedCore,
+                                     collectObserverEvidence: collectObserverEvidence)
         // A dotted or one-sample-wide LED blade can vanish under opening while
         // a smooth reflection survives it. Always score close-only components
         // as well, then discard duplicates of components already found in the
@@ -1439,6 +1444,7 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
                 warmNoDeepRed: candidate.warmNoDeepRed,
                 blueNoDeepSupport: candidate.blueNoDeepSupport,
                 diagnosticRejections: candidate.diagnosticRejections,
+                observerEmitterInputs: candidate.observerEmitterInputs,
                 endpointDiagnosticTrace: candidate.endpointDiagnosticTrace.map { trace in
                     SaberEndpointDiagnosticTrace(
                         centroidX: trace.centroidX * Double(step),
@@ -1499,6 +1505,7 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
         )
     }
     return SaberFrameAnalysis(candidates: allCandidates, selected: selected,
+                              trackLockSuppressed: trackLock?.suppressed ?? [],
                               profile: collectProfile ? profile : nil,
                               pipelineDiagnostics: collectPipelineDiagnostics
                                   ? pipelineDiagnostics : nil)
@@ -1535,6 +1542,7 @@ func analyzeSabers(in bgra: [UInt8], width: Int, height: Int, bytesPerRow: Int,
                    redThreshold: ColorThreshold, blueThreshold: ColorThreshold,
                    sampleStep: Int = 2, collectProfile: Bool = false,
                    collectPipelineDiagnostics: Bool = false,
+                   collectObserverEvidence: Bool = false,
                    ignoreZones: [SaberColor: [SaberIgnoreZone]] = [:],
                    playArea: SaberPlayArea? = nil,
                    trackLock: SaberTrackLock? = nil, now: Double = 0) -> SaberFrameAnalysis {
@@ -1550,7 +1558,8 @@ func analyzeSabers(in bgra: [UInt8], width: Int, height: Int, bytesPerRow: Int,
                              bytesPerRow: bytesPerRow, redThreshold: redThreshold,
                              blueThreshold: blueThreshold, sampleStep: sampleStep,
                              collectProfile: collectProfile,
-                             collectPipelineDiagnostics: collectPipelineDiagnostics, ignoreZones: ignoreZones,
+                             collectPipelineDiagnostics: collectPipelineDiagnostics,
+                             collectObserverEvidence: collectObserverEvidence, ignoreZones: ignoreZones,
                              playArea: playArea, trackLock: trackLock, now: now)
     }
 }
