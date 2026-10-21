@@ -298,7 +298,9 @@ public sealed class CalibrationController : MonoBehaviour
         if (IsRunning && !IsLive) return;
         Draft.Commit(); StopPlayback(); GamePlayManager.ExitCalibration();
     }
-    public void DiscardAndExit() { if (ScreenTransition.IsBusy) return; StopPlayback(); GamePlayManager.ExitCalibration(); }
+    public void DiscardAndExit() => DiscardAndExitTo("SongSelect");
+    // Esc を2回(仕様面の点検 2)はタイトルへ出る。下書きは捨て、再生を止めてから出る。
+    public void DiscardAndExitTo(string returnSceneName) { if (ScreenTransition.IsBusy) return; StopPlayback(); GamePlayManager.ExitCalibration(returnSceneName); }
     void OnApplicationFocus(bool focus)
     {
         if (!focus && IsRunning) InterruptRun("画面のフォーカスが外れたため中断しました。環境を固定して再開してください。");

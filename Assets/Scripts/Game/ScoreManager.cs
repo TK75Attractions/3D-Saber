@@ -30,6 +30,9 @@ public class ScoreManager : MonoBehaviour
     public int GreatCount { get; private set; }
     public int GoodCount { get; private set; }
     public int BadCount { get; private set; }
+    // 実際にノーツを切った回数(判定の良し悪しと別)。向き違いで MISS に下がった切り・ロングの途中の切りも数え、期限切れは数えない。
+    // 1回も切っていない回を記録に残さないために使う(仕様面の点検 1)。点数・判定・コンボには関係しない。
+    public int CutCount { get; private set; }
     // 空譜面を達成扱いにしない。Good はコンボ継続、Bad / Miss は達成対象外。
     public bool IsFullCombo => HitCount > 0 && BadCount == 0 && MissCount == 0;
     public bool IsAllPerfect => IsFullCombo && PerfectCount == HitCount;
@@ -109,6 +112,7 @@ public class ScoreManager : MonoBehaviour
         GreatCount = 0;
         GoodCount = 0;
         BadCount = 0;
+        CutCount = 0;
         JudgedNoteCount = 0;
         earnedPoints = 0;
         judgedWeight = 0;
@@ -193,6 +197,7 @@ public class ScoreManager : MonoBehaviour
     private void HandlePartialCut(CuttableNote note, int cutIndex, int total)
     {
         if (IsFinalized || note == null || total <= 1 || cutIndex >= total - 1) return;
+        CutCount++;
         bool wrongDir = note.RequiredDirection != CutDirection.None && !note.LatestCutCorrectDirection;
         JudgmentTier tier = wrongDir ? DowngradeTier(JudgmentTier.Perfect) : JudgmentTier.Perfect;
         LastErrorValid = false;
@@ -224,12 +229,14 @@ public class ScoreManager : MonoBehaviour
                 return;
             }
             // 最後の1回。途中の回と同じく、切れたら Perfect でその回の向きが違えば1段下げる。
+            CutCount++;
             tier = JudgmentTier.Perfect;
             wrongDir = note.RequiredDirection != CutDirection.None && !note.LatestCutCorrectDirection;
         }
         else
         {
             // タップ／フリックは従来通り時間誤差ベース。
+            CutCount++;
             double songTime = note.LastCutSongTime ?? (songPlayer != null ? songPlayer.SongTime : 0);
             double error = songTime - note.HitTime;
             tier = JudgmentTierHelper.Classify(error);
@@ -317,6 +324,7 @@ public class ScoreManager : MonoBehaviour
     public void RegisterHit(JudgmentTier tier)
     {
         if (IsFinalized) return;
+        if ((int)tier >= (int)JudgmentTier.Perfect && (int)tier < (int)JudgmentTier.Miss) CutCount++;
         ClearLastCut();
         RegisterHitWithContext(tier, 1);
     }

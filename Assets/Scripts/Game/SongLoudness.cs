@@ -54,6 +54,30 @@ public static class SongLoudness
 
     public static void Invalidate(string sourcePath) { cache.Remove(sourcePath); }
 
+    // 曲フォルダの元の音源(audio.ogg・audio.wav・audio.mp3 の順で最初に見つかったもの)が、記録された SHA-256 と一致するか。
+    // 曲ごとの鳴らす範囲(stage.json)を、音源を差し替えたあとに使わないための確認(仕様面の点検 7)。
+    // 同じ大きさ・更新日時のあいだは結果を覚える(本編に入るたびに読み直さない)。
+    static readonly Dictionary<string, (string stamp, string expected, bool matches)> sourceChecks =
+        new Dictionary<string, (string, string, bool)>(StringComparer.OrdinalIgnoreCase);
+    public static bool SourceMatches(string folder, string expectedSha256)
+    {
+        if (string.IsNullOrEmpty(folder) || string.IsNullOrEmpty(expectedSha256)) return false;
+        string source = null;
+        foreach (string name in audioNames)
+        {
+            string path = System.IO.Path.Combine(folder, name);
+            if (File.Exists(path)) { source = path; break; }
+        }
+        if (source == null) return false;
+        string stamp = Stamp(source);
+        if (sourceChecks.TryGetValue(source, out var cached) && cached.stamp == stamp && cached.expected == expectedSha256) return cached.matches;
+        bool matches;
+        try { matches = MatchesHash(source, expectedSha256); }
+        catch (Exception e) when (e is IOException || e is UnauthorizedAccessException) { matches = false; }
+        sourceChecks[source] = (stamp, expectedSha256, matches);
+        return matches;
+    }
+
     public static Playback Resolve(string sourcePath)
     {
         string metadataPath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(sourcePath), "loudness.json");

@@ -76,6 +76,48 @@ public class SongPlayerAudioClockPlayTests
         AssertSynchronized();
     }
 
+    // 頭の無音を飛ばす曲(仕様面の点検 7)。SongTime は音源の頭からの秒のまま、鳴らし始めた瞬間に開始位置になり、実際の音声と揃う。
+    [UnityTest]
+    public IEnumerator StartOffsetPlaysFromTheMiddleOnTheSameClock()
+    {
+        Create(6f);
+        player.PlayScheduled(AudioSettings.dspTime + .3, 2.0);
+        Assert.AreEqual(2.0, player.PlayStartSeconds, 1 / 48000.0);
+        Assert.IsFalse(player.IsPlaying, "予約中はまだ鳴っていない");
+        Assert.That(player.SongTime, Is.InRange(1.6, 1.9), "鳴らし始めまでは開始位置の手前を数える");
+        System.Threading.Thread.Sleep(350); // 開始フレームが予約時刻をまたいでも、実際の音声が進むまで開始位置で待つ。
+        yield return AwaitSamples(2.1);
+        Assert.IsTrue(player.IsPlaying);
+        for (int i = 0; i < 15; i++) { AssertSynchronized(); yield return null; }
+        player.Pause();
+        double paused = player.SongTime;
+        Assert.Greater(paused, 2.0);
+        player.Resume();
+        Assert.AreEqual(paused, player.SongTime, .02);
+        player.Stop();
+        Assert.AreEqual(0, player.PlayStartSeconds);
+        player.PlayScheduled(AudioSettings.dspTime + .1);
+        Assert.AreEqual(0, player.PlayStartSeconds, "次の再生は頭から(前の開始位置を残さない)");
+        player.PlayScheduled(AudioSettings.dspTime + .1, 5.5);
+        Assert.AreEqual(0, player.PlayStartSeconds, "最後の1秒より後ろからは鳴らさない");
+        player.PlayScheduled(AudioSettings.dspTime + .1, double.NaN);
+        Assert.AreEqual(0, player.PlayStartSeconds);
+    }
+
+    // 開始前(カウント中)に止めて再開しても、開始位置から鳴らす。
+    [UnityTest]
+    public IEnumerator PauseBeforeTheOffsetStartResumesFromTheOffset()
+    {
+        Create(6f);
+        player.PlayScheduled(AudioSettings.dspTime + .4, 1.5);
+        player.Pause();
+        Assert.Less(player.SongTime, 1.5);
+        yield return new WaitForSecondsRealtime(.2f);
+        player.Resume();
+        yield return AwaitSamples(1.6);
+        for (int i = 0; i < 10; i++) { AssertSynchronized(); yield return null; }
+    }
+
     [UnityTest]
     public IEnumerator LoopClockAndOutroContinueInsteadOfReturningToZero()
     {

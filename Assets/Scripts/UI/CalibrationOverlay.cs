@@ -206,8 +206,8 @@ public sealed class CalibrationOverlay : MonoBehaviour
         var keyboard=Keyboard.current;
         if (keyboard!=null)
         {
-            if (keyboard.escapeKey.wasPressedThisFrame)
-            { if (IsExitDialogOpen) ContinuePractice(); else OnBackClicked(); }
+            // Esc は GamePlayManager が受ける(2秒以内に2回でタイトルへ。仕様面の点検 2)。押したフレームはほかのキーも今までどおり見ない。
+            if (keyboard.escapeKey.wasPressedThisFrame) { }
             else if (keyboard.f2Key.wasPressedThisFrame&&!IsExitDialogOpen&&!IsResultOpen)
             { if (IsSettingsOpen) CloseSettings(); else OpenSettings(); }
             else if (!IsExitDialogOpen&&!IsResultOpen)

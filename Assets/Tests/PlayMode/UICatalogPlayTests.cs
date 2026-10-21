@@ -109,7 +109,7 @@ public class UICatalogPlayTests
             Assert.NotNull(Object.FindFirstObjectByType<OperatorNotice>(),
                 "escape="+keyboard.escapeKey.isPressed+", current="+(keyboard==UnityEngine.InputSystem.Keyboard.current)+
                 ", enabled="+keyboard.enabled+", finished="+typeof(GamePlayManager).GetField("finished",flags).GetValue(manager)+
-                ", calibration="+GameSession.IsCalibrationMode+", confirmation="+typeof(GamePlayManager).GetField("returnConfirmationUntil",flags).GetValue(manager));
+                ", calibration="+GameSession.IsCalibrationMode+", leaving="+typeof(GamePlayManager).GetField("leaving",flags).GetValue(manager));
             UnityEngine.InputSystem.InputSystem.QueueStateEvent(keyboard, new UnityEngine.InputSystem.LowLevel.KeyboardState());
             yield return null; yield return new WaitForSecondsRealtime(2.1f);
             UnityEngine.InputSystem.InputSystem.QueueStateEvent(keyboard, new UnityEngine.InputSystem.LowLevel.KeyboardState(UnityEngine.InputSystem.Key.Escape));

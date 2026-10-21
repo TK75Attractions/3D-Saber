@@ -69,6 +69,27 @@ public class SongLockTests
             Assert.IsFalse(SongSelectController.IsLeftoverTestSong(real, isEditor: false), real);
     }
 
+    // 曲の並びは日本語の名前順に固定(仕様面の点検 8)。PC の言語設定が英語でも、台B(日本語の Windows)と同じ順になる。
+    [Test]
+    public void SongOrderIsJapaneseNameOrderWhateverTheLanguageSetting()
+    {
+        var expected = SongSelectController.EnumerateSongIds();
+        var old = System.Globalization.CultureInfo.CurrentCulture;
+        try
+        {
+            foreach (string culture in new[] { "en-US", "ja-JP", "tr-TR" })
+            {
+                System.Globalization.CultureInfo.CurrentCulture = new System.Globalization.CultureInfo(culture);
+                CollectionAssert.AreEqual(expected, SongSelectController.EnumerateSongIds(), culture);
+            }
+        }
+        finally { System.Globalization.CultureInfo.CurrentCulture = old; }
+        var names = new System.Collections.Generic.List<string> { "揺籠", "logic", "製作中", "2_23_AM", "escapade", "ElDorado", "RushE" };
+        names.Sort(SongSelectController.SongIdOrder);
+        CollectionAssert.AreEqual(new[] { "2_23_AM", "ElDorado", "escapade", "logic", "RushE", "製作中", "揺籠" }, names,
+            "今の台B と同じ順(最初は 2_23_AM、日本語は 製作中 → 揺籠)");
+    }
+
     [Test]
     public void EnumerateSongIds_AllMode_StillSeesChartlessSongs()
     {

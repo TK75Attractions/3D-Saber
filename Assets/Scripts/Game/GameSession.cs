@@ -21,22 +21,73 @@ public static class GameSession
     public static string AchievementRunId;
     public static DailyRankingStore.Result FinalDailyRanking;
 
+    // その回に実際にノーツを切った回数(ScoreManager.CutCount)。向き違いで MISS に下がった切りや、ロングの途中の切りも数える。
+    public static int FinalCutCount;
+
+    // 記録してよい回か。1回も切っていない回(無人のまま流れた回など)は、実績・本日のランキング・HI-SCORE のどれにも残さない
+    // (仕様面の点検 1、2026-10-21)。判定調整と、数が壊れている回も残さない。
+    // 切った回数を持たない経路(結果画面だけを開くテストなど)でも、MISS 以外の判定があれば切った回とみなす。
+    public static bool ShouldRecordRun =>
+        !IsCalibrationMode && FinalPerfect >= 0 && FinalGreat >= 0 && FinalGood >= 0 && FinalBad >= 0 && FinalMiss >= 0
+        && (FinalCutCount > 0 || (long)FinalPerfect + FinalGreat + FinalGood + FinalBad > 0);
+
+    // 最後まで遊んだが、1回も切っていないので記録しなかった回(結果画面で理由を出す)。
+    public static bool CompletedWithoutRecord => !IsCalibrationMode && FinalMiss > 0 && !ShouldRecordRun;
+
+    // HI-SCORE は結果画面が残す。同じ回(AchievementRunId)の結果画面が作り直されても二重に残さず、
+    // NEW RECORD の比べる相手(残す前の最高点)も最初に読んだ値のままにする。回の ID が無いときは従来どおり毎回残す。
+    static string highScoreRunId, highScoreBestRunId;
+    static int highScoreBestBefore;
+    public static bool ClaimHighScoreRecord()
+    {
+        if (string.IsNullOrEmpty(AchievementRunId)) return true;
+        if (highScoreRunId == AchievementRunId) return false;
+        highScoreRunId = AchievementRunId;
+        return true;
+    }
+    public static int HighScoreBestBefore(int storedBest)
+    {
+        if (string.IsNullOrEmpty(AchievementRunId)) return storedBest;
+        if (highScoreBestRunId != AchievementRunId) { highScoreBestRunId = AchievementRunId; highScoreBestBefore = storedBest; }
+        return highScoreBestBefore;
+    }
+
+    // HI-SCORE を残す(結果画面と、終わりの演出を Esc 2回で抜けたとき)。同じ回は一度だけ、1回も切っていない回は残さない。
+    public static void RecordCompletedHighScore()
+    {
+        if (string.IsNullOrEmpty(SelectedSongId)) return;
+        var table = HighScoreStore.Load(SelectedSongId, SelectedDifficulty);
+        HighScoreBestBefore(table.entries.Count > 0 ? table.entries[0].score : 0);
+        if (!ShouldRecordRun || !ClaimHighScoreRecord()) return;
+        HighScoreStore.Record(SelectedSongId, SelectedDifficulty, new HighScoreEntry
+        {
+            score = FinalScore,
+            rank = PlayRankHelper.Label(PlayRankHelper.FromScore(FinalScore)),
+            accuracy = PlayRankHelper.Accuracy(FinalPerfect, FinalGreat, FinalGood, FinalBad, FinalMiss),
+            date = System.DateTime.Now.ToString("yyyy/MM/dd"),
+        }, out _);
+    }
+
     // 通常終了の確定スコアのみ登録。日付や結果UIが変わっても同じプレイを二重登録しない。
     public static void RecordCompletedDailyRanking()
     {
-        if (FinalDailyRanking != null || IsCalibrationMode) return;
-        if (FinalPerfect < 0 || FinalGreat < 0 || FinalGood < 0 || FinalBad < 0 || FinalMiss < 0) return;
-        if ((long)FinalPerfect + FinalGreat + FinalGood + FinalBad + FinalMiss == 0) return;
+        if (FinalDailyRanking != null || !ShouldRecordRun) return;
         FinalDailyRanking = DailyRankingStore.Record(SelectedSongId, SelectedDifficulty,
             AchievementRunId, FinalScore, System.DateTime.Now);
     }
 
     public static void RecordCompletedAchievements()
     {
-        if (IsCalibrationMode) return;
+        if (!ShouldRecordRun) return;
         SongAchievementStore.Record(SelectedSongId, SelectedDifficulty, AchievementRunId,
             FinalPerfect, FinalGreat, FinalGood, FinalBad, FinalMiss, FinalScore);
     }
+
+    // 選曲で来場者が操作したか(仕様面の点検 1)。新しい選曲(タイトル・練習から)で消し、判定調整との往復では保つ。
+    // 立てるのは選曲の操作(来場者のキー・マウスのボタン・ゲームパッド・照準を的に0.4秒・発射・曲や難易度の変更・RUSH E)と
+    // 判定調整に入ったとき。Esc と運営のキーは数えない。
+    // 選曲の時間切れで操作がなければ、無人とみなして曲を始めずにタイトルへ戻す(操作した人は今どおり自動で始まる)。
+    public static bool SongSelectOperated;
 
     // キャリブレーション（判定調整）モード。SongSelect から該当ボタンで true にして
     // Game シーンへ遷移する。Game シーンの GamePlayManager がこれを見て、
@@ -131,5 +182,6 @@ public static class GameSession
         FinalGreat = 0;
         FinalGood = 0;
         FinalBad = 0;
+        FinalCutCount = 0;
     }
 }

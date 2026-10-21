@@ -178,6 +178,18 @@ public class SongSelectNoteMenuPlayTests
         Assert.AreEqual("SongSelect",SceneManager.GetActiveScene().name);
         yield return null;
     }
+    // 選曲で一度も操作がなければ、時間切れで曲を始めずにタイトルへ戻る(無人のまま1曲流さない。仕様面の点検 1)。
+    [UnityTest] public IEnumerator TimeoutWithoutAnyOperationReturnsToTitle()
+    {
+        var skin=Object.FindFirstObjectByType<SongSelectSkin>();
+        GameSession.SongSelectOperated=false;
+        yield return null; yield return null;
+        StringAssert.Contains("タイトル",GameObject.Find("TimerConsequence").GetComponent<TextMeshProUGUI>().text,"行き先と同じ案内");
+        skin.TickCountdown(101); Assert.True(ScreenTransition.IsBusy);
+        Assert.False(controller.StartAccepted,"曲は始めない");
+        yield return ScreenTransitionPlayTests.WaitForTransition();
+        Assert.AreEqual("Title",SceneManager.GetActiveScene().name);
+    }
     [UnityTest] public IEnumerator TimeoutStartsSelectedDifficultyAndResetsOnReturn()
     {
         var skin=Object.FindFirstObjectByType<SongSelectSkin>(); controller.SetDifficulty(2);

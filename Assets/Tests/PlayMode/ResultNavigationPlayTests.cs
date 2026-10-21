@@ -201,6 +201,58 @@ public class ResultNavigationPlayTests
         Assert.AreEqual("Title", SceneManager.GetActiveScene().name);
     }
 
+    // 来場者の画面に共通の Esc(仕様面の点検 2)。1回目は演出を飛ばして知らせを出すだけ、2秒以内の2回目でタイトルへ。
+    [UnityTest]
+    public IEnumerator EscapeTwiceWithinTwoSecondsReturnsToTitle()
+    {
+        typeof(ResultReveal).GetField("elapsed", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(reveal, 0f);
+        reveal.enabled = true;
+        yield return Tap(Key.Escape);
+        Assert.AreEqual("Result", SceneManager.GetActiveScene().name, "1回目では戻らない");
+        Assert.NotNull(Object.FindFirstObjectByType<OperatorNotice>());
+        Assert.True(back.IsInteractable(), "1回目の Esc は今までどおり演出も飛ばす");
+        yield return Tap(Key.Escape);
+        yield return WaitForTransition();
+        Assert.AreEqual("Title", SceneManager.GetActiveScene().name);
+        Assert.AreEqual(1, HighScoreStore.Load(songId, "Normal").entries.Count, "戻る操作で二重に記録しない");
+    }
+
+    // 1回も切っていない回(無人のまま流れた回など)は、HI-SCORE・本日の順位に残さず、順位の欄に理由を出す(仕様面の点検 1)。
+    // 同じ回の結果画面を作り直しても、二重に残さない。
+    [UnityTest]
+    public IEnumerator RunWithoutAnyCutIsShownButNotRecorded()
+    {
+        GameSession.ResetResult();
+        GameSession.FinalScore = 0;
+        GameSession.FinalMiss = 120;
+        yield return SceneManager.LoadSceneAsync("Result");
+        yield return null; yield return null;
+        Assert.AreEqual(1, HighScoreStore.Load(songId, "Normal").entries.Count, "前の回の記録だけが残る");
+        Assert.IsNull(GameSession.FinalDailyRanking);
+        var status = GameObject.Find("DailyRanking").transform.Find("Details/Status").GetComponent<TMPro.TMP_Text>();
+        Assert.AreEqual(DailyRankingPresentation.UnrecordedHeadline, status.text);
+        GameSession.ResetResult();
+        GameSession.FinalScore = 23456;
+        GameSession.FinalPerfect = 20;
+        yield return SceneManager.LoadSceneAsync("Result");
+        yield return null;
+        yield return SceneManager.LoadSceneAsync("Result");
+        yield return null;
+        var table = HighScoreStore.Load(songId, "Normal");
+        Assert.AreEqual(2, table.entries.Count, "同じ回の結果画面を作り直しても一度だけ残す");
+        Assert.AreEqual(23456, table.entries[0].score);
+    }
+
+    IEnumerator Tap(Key key)
+    {
+        InputSystem.QueueStateEvent(keyboard, new KeyboardState(key));
+        yield return null;
+        yield return null;
+        InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+        yield return null;
+        yield return null;
+    }
+
     [UnityTest]
     public IEnumerator ResultOffersOneCenteredTitleButtonAndResetsTheNextPlayersSettings()
     {

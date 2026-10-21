@@ -56,6 +56,7 @@ public class SongSelectSkin : MonoBehaviour
     float animation = 1;
     bool built;
     int displayedSecond = -1, noticeSecond = -1, shownIndex = -1;
+    bool noticeOperated;
     double lastTick;
     public bool IsReady => built;
     public double RemainingSeconds => countdown.Remaining;
@@ -71,6 +72,8 @@ public class SongSelectSkin : MonoBehaviour
         yield return null;
         ctl = Object.FindFirstObjectByType<SongSelectController>();
         if (ctl == null) yield break;
+        // 判定調整から戻ったとき以外は新しい選曲。前の人の操作を引き継がない(仕様面の点検 1)。
+        if (GameSession.CalibrationSelectionSeconds == null) GameSession.SongSelectOperated = false;
         // 消音ボタンのない従来の画面へ戻すため、以前保存された試聴の消音も解除する。
         if (ctl.ChartPreview != null && ctl.ChartPreview.Muted) ctl.ChartPreview.SetMuted(false);
         var canvas = ctl.GetComponent<Canvas>() ?? ctl.GetComponentInParent<Canvas>();
@@ -109,6 +112,13 @@ public class SongSelectSkin : MonoBehaviour
     public static string FormatDifficultyLevel(int level) => level > 0 ? $"LEVEL {Mathf.Clamp(level, 0, 99):00}" : "LEVEL --";
     public static string FormatDifficultyCardLevel(int level) => level > 0 ? $"LV {Mathf.Clamp(level, 0, 99):00}" : "LV --";
     // 結果画面の HI-SCORE と同じ記録(Load は高い順)の1位。まだ遊ばれていない譜面は 0点 と区別して「—」にする。
+    // 残り時間の案内(仕様面の点検 1)。選曲で操作がなければ、時間切れでタイトルへ戻ることを書く。純関数。
+    public static string TimerNotice(int second, bool operated) => second <= 20
+        ? "あと " + second + (operated ? " 秒で自動スタート" : " 秒でタイトルへ")
+        : operated ? "この曲が自動で始まるまで" : "タイトルへ もどるまで";
+    public static string StartHint(int second, bool operated) => second > 0 && second <= 10
+        ? "あと " + second + (operated ? "秒で この曲が はじまるよ" : "秒で タイトルへ もどるよ")
+        : "中央の曲に２秒かざすと スタート";
     public static string FormatHighScore(HighScoreTable table) => table != null && table.entries != null && table.entries.Count > 0
         ? table.entries[0].score.ToString("N0") + "<size=24>点</size>" : "—";
     public static void ApplyNeon(Button button, Color accent, float fillAlpha) => UISkinKit.RestyleButton(button, accent);
@@ -124,6 +134,8 @@ public class SongSelectSkin : MonoBehaviour
             ? controller.difficultyNames[controller.SelectedDifficultyIndex] : null;
         GameSession.CalibrationSelectionSeconds = skin != null ? skin.RemainingSeconds : 100;
         GameSession.IsCalibrationMode = true;
+        // 判定調整に入ったのは来場者の操作。戻ったあとの時間切れでは今までどおり自動で始める。
+        GameSession.SongSelectOperated = true;
     }
     static Vector2 Position(float x, float y) => new Vector2(x - 960, 540 - y);
     // 盤の置き場(1920×1080 基準、画面中央が原点)。0=選択中、±1=隣、±2=2曲先。±3 より外は画面外で待機する。
@@ -467,8 +479,6 @@ public class SongSelectSkin : MonoBehaviour
     {
         if (!built) return;
         animation = Mathf.Min(1, animation + Time.unscaledDeltaTime / .5f); AnimateDiscs();
-        double now = Time.realtimeSinceStartupAsDouble;
-        TickCountdown(now - lastTick); lastTick = now;
         RefreshCountdownDisplay(timer, countdown.Remaining, ref displayedSecond);
         bool charging = startAge < 0 && ctl.startButton != null && ctl.startButton.GetComponent<SongSelectDiscTarget>().Progress > 0;
         bool waiting = !charging && startAge < 0 && aim != null && aim.WaitingOnStart;
@@ -477,7 +487,8 @@ public class SongSelectSkin : MonoBehaviour
         if (holdHint.text != hint) holdHint.text = hint;
         RefreshChargeDisplays();
         bool urgent = displayedSecond > 0 && displayedSecond <= 10;
-        startHint.text = urgent ? "あと " + displayedSecond + "秒で この曲が はじまるよ" : "中央の曲に２秒かざすと スタート";
+        bool operated = GameSession.SongSelectOperated;
+        startHint.text = StartHint(displayedSecond, operated);
         startHint.color = urgent ? Gold : White;
         bool audible = !ScreenTransition.IsBusy && (Application.isFocused || Application.isBatchMode);
         if (urgent && lastBeepSecond != displayedSecond && audible)
@@ -488,17 +499,30 @@ public class SongSelectSkin : MonoBehaviour
         // 残り30秒の知らせは、31秒から30秒へ変わったときに1回だけ(判定調整から30秒以下で戻ったときは鳴らさない)。
         if (displayedSecond == 30 && previousSecond == 31 && audible) MenuSfx.TimerChime();
         previousSecond = displayedSecond;
-        if (noticeSecond != displayedSecond)
+        if (noticeSecond != displayedSecond || noticeOperated != operated)
         {
-            noticeSecond = displayedSecond;
-            timerNotice.text = displayedSecond <= 20 ? "あと " + displayedSecond + " 秒で自動スタート" : "この曲が自動で始まるまで";
+            noticeSecond = displayedSecond; noticeOperated = operated;
+            timerNotice.text = TimerNotice(displayedSecond, operated);
             timerNotice.color = displayedSecond <= 20 ? Gold : White;
         }
     }
+    // 時間切れの行き先は、そのフレームの照準・キーの操作を受け取ったあとで決める(照準 100・案内 200 の Update より後)。
+    void LateUpdate()
+    {
+        if (!built) return;
+        double now = Time.realtimeSinceStartupAsDouble;
+        TickCountdown(now - lastTick); lastTick = now;
+    }
+
+    // 時間切れ(仕様面の点検 1)。選曲で操作した人は今の曲・難易度で始める。操作がなければ無人とみなして、曲を始めずにタイトルへ戻る。
+    // 始められなかったとき(譜面が消えた・曲が無いなど)もタイトルへ戻り、時計が止まったままにならない。
     public void TickCountdown(double deltaSeconds)
     {
-        if (built && countdown.Tick(deltaSeconds, !ScreenTransition.IsBusy && !ctl.RushESecret.Transitioning
-            && (Application.isFocused || Application.isBatchMode) && ctl.SongCount > 0 && ctl.CurrentDifficultyLevel() > 0)) ctl.StartGame();
+        if (!built) return;
+        if (!countdown.Tick(deltaSeconds, !ScreenTransition.IsBusy && !ctl.RushESecret.Transitioning
+            && (Application.isFocused || Application.isBatchMode))) return;
+        if (GameSession.SongSelectOperated) ctl.StartGame();
+        if (!ctl.StartAccepted && !ScreenTransition.IsBusy) ctl.ReturnToTitle();
     }
     void AnimateDiscs()
     {

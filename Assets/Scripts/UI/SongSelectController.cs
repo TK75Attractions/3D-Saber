@@ -107,6 +107,8 @@ public class SongSelectController : MonoBehaviour
     public bool StartAccepted { get; private set; }
     float previewStartVolume;
     AudioHighPassFilter previewFilter;
+    // Esc は2秒以内に2回でタイトルへ(来場者の画面で共通。仕様面の点検 2)。
+    readonly EscapeTwiceGate escapeGate = new EscapeTwiceGate();
 
     void Start()
     {
@@ -159,7 +161,7 @@ public class SongSelectController : MonoBehaviour
         if (easier) ChangeDifficultyBy(-1);
         if (harder) ChangeDifficultyBy(1);
         if (directDifficulty >= 0) ChooseDifficulty(directDifficulty);
-        if (back) { ReturnToTitle(); return; }
+        if (back && escapeGate.PressAndNotify(Time.unscaledTimeAsDouble, EscapeTwiceGate.ToTitleNotice)) { ReturnToTitle(); return; }
         if (start) StartGame();
     }
 
@@ -234,8 +236,19 @@ public class SongSelectController : MonoBehaviour
             if (playableOnly && !HasPlayableChart(songId, StandardDifficulties)) continue;
             result.Add(songId);
         }
-        result.Sort();
+        result.Sort(SongIdOrder);
         return result;
+    }
+
+    // 曲の並びはフォルダ名の日本語の名前順(仕様面の点検 8、2026-10-21)。PC の言語設定に任せると、
+    // 英語の設定の PC では「揺籠」と「製作中」の順が入れ替わる(Unity で確かめた)。日本語に固定して、どの台でも同じ順にする。
+    // 日本語の並べ方が使えない環境だけ、大文字小文字を区別しない文字コード順にする。
+    public static readonly System.Collections.Generic.IComparer<string> SongIdOrder = CreateSongIdOrder();
+
+    static System.Collections.Generic.IComparer<string> CreateSongIdOrder()
+    {
+        try { return System.StringComparer.Create(System.Globalization.CultureInfo.GetCultureInfo("ja-JP"), false); }
+        catch (System.Exception) { return System.StringComparer.OrdinalIgnoreCase; }
     }
 
     // テストが作る仮の曲(__ChartLoadTest_ など)。テストが途中で落ちて残っても、ビルドした本番では並べない。

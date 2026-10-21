@@ -60,6 +60,9 @@ public class GameHUDSkin : MonoBehaviour
         return Mathf.Clamp01((float)(songTime / duration));
     }
 
+    // 鳴らす範囲(start〜end、音源の頭からの秒)のうち、どこまで進んだか。頭を飛ばす曲・鳴り終わりを持つ曲も 0→1 で進む(仕様面の点検 7)。
+    public static float Progress01(double songTime, double start, double end) => Progress01(songTime - start, end - start);
+
     // 判定の時間ずれ表示(タイミング学習フィードバック)。負=早い(EARLY)、正=遅い(LATE)。
     // Perfect(調整不要)と Miss/ロング(誤差の概念が無い)では出さない。テストから直接叩く純関数。
     public static string FormatTimingHint(JudgmentTier tier, bool errorValid, double errorMs)
@@ -753,7 +756,8 @@ public class GameHUDSkin : MonoBehaviour
     {
         // 曲を止めると SongTime は 0 に戻るので、終わったあと(コンボ点の演出の間)は最後の位置のまま残す。
         if (progressFill == null || songPlayer == null || !songPlayer.IsScheduled) return;
-        float p = Progress01(songPlayer.SongTime, songPlayer.Duration);
+        double end = songPlayer.ProgressEndSeconds > 0 ? songPlayer.ProgressEndSeconds : songPlayer.Duration;
+        float p = Progress01(songPlayer.SongTime, songPlayer.PlayStartSeconds, end);
         progressFill.anchorMax = new Vector2(p, 1f);
     }
 

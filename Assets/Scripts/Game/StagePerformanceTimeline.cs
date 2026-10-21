@@ -28,6 +28,24 @@ public sealed class StagePerformanceTimeline
     public bool hideBarLines = false;
     // 提供音源に記載された作者。未提供なら空欄のままにする。
     public string artist = "";
+    // 本編で鳴らす範囲(仕様面の点検 7、2026-10-21)。音源先頭基準。playStartSeconds=頭の無音を飛ばして鳴らし始める秒、
+    // musicEndSeconds=音が鳴り終わる秒(0 以下は音源の終わり)。audioSha256 が今の音源と一致するときだけ使う。
+    public string audioSha256 = "";
+    public double playStartSeconds = 0;
+    public double musicEndSeconds = -1;
+
+    public struct PlayRange { public double Start, End; }
+
+    // clipLength=読み込んだ音源の長さ、audioMatches=audioSha256 が今の音源と一致するか。
+    // 一致しない・値がおかしいときは頭から音源の終わりまで(従来どおり)。最後の1秒より後ろからは鳴らさない。純関数。
+    public PlayRange ResolvePlayRange(double clipLength, bool audioMatches)
+    {
+        var range = new PlayRange { Start = 0, End = Finite(clipLength) && clipLength > 0 ? clipLength : 0 };
+        if (!audioMatches || !(range.End > 0)) return range;
+        if (Finite(playStartSeconds) && playStartSeconds > 0 && playStartSeconds < range.End - 1) range.Start = playStartSeconds;
+        if (Finite(musicEndSeconds) && musicEndSeconds > range.Start && musicEndSeconds < range.End) range.End = musicEndSeconds;
+        return range;
+    }
 
     public struct Presentation
     {

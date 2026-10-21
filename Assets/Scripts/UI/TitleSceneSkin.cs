@@ -76,9 +76,22 @@ public class TitleSceneSkin : MonoBehaviour
         presentationMotion.Configure(canvas, titleContainer, startTargetGroup, startNote, scenery, flashImage);
     }
 
+    // 問いかけ(と問いかけへ向かう演出)の間は、Esc を2秒以内に2回でタイトルを読み直す(来場者の画面で共通。仕様面の点検 2)。
+    readonly EscapeTwiceGate escapeGate = new EscapeTwiceGate();
+
     void Update()
     {
         if (ScreenTransition.IsBusy) return;
+        if (prompt != null && InputManager.EscapeGetDown
+            && escapeGate.PressAndNotify(Time.unscaledTimeAsDouble, EscapeTwiceGate.ToTitleNotice))
+        {
+            if (ScreenTransition.Load(SceneManager.GetActiveScene().name, ScreenTransition.Style.Back))
+            {
+                prompt.Cancel();
+                MenuSfx.ToTitle();
+            }
+            return;
+        }
         if (!transitioning && TitleConceptSelection.ReadSelectionKeys())
         {
             ScreenTransition.Load(SceneManager.GetActiveScene().name);

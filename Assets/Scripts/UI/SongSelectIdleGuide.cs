@@ -59,14 +59,18 @@ public sealed class SongSelectIdleGuide : MonoBehaviour
     void Update()
     {
         bool active = (Application.isFocused || Application.isBatchMode) && !ScreenTransition.IsBusy;
-        if (active && !state.Completed && HasButtonInput()) RegisterActivity();
+        // 選曲の時間切れで自動で始めるかは、来場者の操作があったかで決める(仕様面の点検 1)。退出の Esc は操作に数えない。
+        if (active && !GameSession.SongSelectOperated && HasButtonInput(countEscape: false)) GameSession.SongSelectOperated = true;
+        if (active && !state.Completed && HasButtonInput(countEscape: true)) { state.RegisterActivity(); Hide(); }
         Tick(Time.unscaledDeltaTime, active);
     }
 
-    static bool HasButtonInput()
+    static bool HasButtonInput(bool countEscape)
     {
         // 運営のキー(F4 の投影切替・F8 など)では、来場者の操作として案内を閉じない。
-        if (PhoneSaberOperatorKeys.VisitorKeyPressedThisFrame(Keyboard.current)) return true;
+        var keyboard = Keyboard.current;
+        if ((countEscape || keyboard == null || !keyboard.escapeKey.wasPressedThisFrame)
+            && PhoneSaberOperatorKeys.VisitorKeyPressedThisFrame(keyboard)) return true;
         var mouse = Mouse.current;
         if (mouse != null && (mouse.leftButton.wasPressedThisFrame || mouse.rightButton.wasPressedThisFrame
             || mouse.middleButton.wasPressedThisFrame || mouse.scroll.ReadValue().sqrMagnitude > .01f)) return true;
@@ -78,7 +82,8 @@ public sealed class SongSelectIdleGuide : MonoBehaviour
         return false;
     }
 
-    public void RegisterActivity() { state.RegisterActivity(); Hide(); }
+    // 照準・発射・曲や難易度の変更・RUSH E から。案内を閉じ、選曲の操作があったと覚える。
+    public void RegisterActivity() { state.RegisterActivity(); GameSession.SongSelectOperated = true; Hide(); }
     void SelectionChanged(int index) { RegisterActivity(); }
 
     // 検証・撮影も同じ時間更新を使う。音や選曲の制限時間には触れない。

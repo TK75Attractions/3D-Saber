@@ -1,6 +1,8 @@
 using System.Collections;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.LowLevel;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 
@@ -54,6 +56,50 @@ public class TitlePromptPlayTests
         Assert.IsTrue(prompt.YesNote.Note.IsJudgeable && prompt.NoNote.Note.IsJudgeable, "どちらも切れる");
         Assert.IsFalse(prompt.Answered); Assert.IsFalse(GameSession.TutorialPending);
         Assert.That(prompt.RemainingSeconds, Is.InRange(0f, TitleTutorialPrompt.DefaultTimeoutSeconds));
+    }
+
+    // 問いかけの間は、Esc を2秒以内に2回で取り消してタイトルを読み直す(来場者の画面で共通。仕様面の点検 2)。予約した答えも進めない。
+    [UnityTest] public IEnumerator EscapeTwiceCancelsThePromptAndReloadsTheTitle()
+    {
+        var oldSettings = InputSystem.settings;
+        var settings = Object.Instantiate(oldSettings);
+        InputSystem.settings = settings;
+        settings.backgroundBehavior = InputSettings.BackgroundBehavior.IgnoreFocus;
+#if UNITY_EDITOR
+        settings.editorInputBehaviorInPlayMode = InputSettings.EditorInputBehaviorInPlayMode.AllDeviceInputAlwaysGoesToGameView;
+#endif
+        var keyboard = InputSystem.AddDevice<Keyboard>();
+        try
+        {
+            yield return OpenPrompt();
+            var prompt = Object.FindFirstObjectByType<TitleTutorialPrompt>();
+            keyboard.MakeCurrent();
+            yield return Tap(keyboard, Key.Escape);
+            Assert.IsFalse(ScreenTransition.IsBusy, "1回目は知らせだけ");
+            Assert.IsFalse(prompt.Canceled);
+            Assert.NotNull(Object.FindFirstObjectByType<OperatorNotice>());
+            yield return Tap(keyboard, Key.Escape);
+            Assert.IsTrue(ScreenTransition.IsBusy);
+            Assert.IsTrue(prompt == null || prompt.Canceled, "問いかけを取り消す");
+            float deadline = Time.realtimeSinceStartup + 10f;
+            while (ScreenTransition.IsBusy && Time.realtimeSinceStartup < deadline) yield return null;
+            Assert.AreEqual("Title", SceneManager.GetActiveScene().name);
+            Assert.IsFalse(GameSession.TutorialPending, "練習へは進まない");
+            Assert.IsNull(Object.FindFirstObjectByType<TitleTutorialPrompt>(), "読み直したタイトルは問いかけの前から");
+        }
+        finally
+        {
+            if (keyboard.added) InputSystem.RemoveDevice(keyboard);
+            InputSystem.settings = oldSettings; Object.DestroyImmediate(settings);
+        }
+    }
+
+    static IEnumerator Tap(Keyboard keyboard, Key key)
+    {
+        InputSystem.QueueStateEvent(keyboard, new KeyboardState(key));
+        yield return null; yield return null;
+        InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+        yield return null; yield return null;
     }
 
     [UnityTest] public IEnumerator YesLeadsToTheTutorialInTheGameScene()

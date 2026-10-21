@@ -6,6 +6,8 @@
   "timeOrigin": "audio-file-start",
   "audioSha256": "f204714e47d8cb885d7aa899dd4098c1b79744c9f6acdc3f1e25039bff3c8ca8",
   "previewStartSeconds": 85.914737,
+  "playStartSeconds": 5.0,
+  "musicEndSeconds": 107.85,
   "sections": [
     {
       "label": "高揚部 1",

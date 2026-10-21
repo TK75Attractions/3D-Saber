@@ -2,6 +2,8 @@ using UnityEngine;
 
 // 実際に再生されたサンプル位置にDSP時計を合わせ、曲開始からの秒数を公開する。
 // 予約時刻だけでは、開始フレームが重かった場合に音声とのずれが曲末まで残る。
+// 頭の無音を飛ばして途中から鳴らすこともできる(仕様面の点検 7、2026-10-21)。そのときも SongTime は音源の頭からの秒のままで、
+// 鳴らし始めた瞬間に PlayStartSeconds になる(譜面・演出区間・判定の時刻は変えない)。
 [RequireComponent(typeof(AudioSource))]
 public class SongPlayer : MonoBehaviour
 {
@@ -16,7 +18,11 @@ public class SongPlayer : MonoBehaviour
         source.volume = loudnessBaseVolume * Mathf.Clamp01(gain);
     }
 
+    // 曲の 0 秒(音源の頭)にあたる DSP 時刻。頭を飛ばすときは、実際に鳴らし始める時刻より startOffset だけ前になる。
     private double startDspTime;
+    // 鳴らし始める位置(秒とサンプル)。0 なら従来どおり頭から。
+    private double startOffset;
+    private int startSample;
     private bool scheduled;
     private bool clockSynchronized;
     private bool paused;
@@ -33,8 +39,14 @@ public class SongPlayer : MonoBehaviour
 
     // 開始予約中も先読み時計は動く。音が鳴っている状態とは区別する。
     public bool IsScheduled => scheduled;
-    public bool IsPlaying => scheduled && !paused && AudioSettings.dspTime >= startDspTime;
+    public bool IsPlaying => scheduled && !paused && AudioSettings.dspTime >= startDspTime + startOffset;
     public bool IsPaused => paused;
+    // 鳴らし始めた位置(音源の頭からの秒)。
+    public double PlayStartSeconds => startOffset;
+    // 進行バーの終わり(音源の頭からの秒)。0 以下なら音源の長さ。本編が曲ごとの鳴り終わりを入れる。
+    public double ProgressEndSeconds { get; set; } = -1;
+    // 剣を見失って止めている間(PlayTrackingWatch)。OS の中断から戻っても、これが立っている間は再開しない。
+    public bool HeldByTracking { get; set; }
 
     // 曲開始からの秒数。再生開始前は負の値。
     public double SongTime
@@ -45,14 +57,15 @@ public class SongPlayer : MonoBehaviour
             if (paused) return pausedSongTime;
             double now = AudioSettings.dspTime;
             double elapsed = now - startDspTime;
-            if (!clockSynchronized && elapsed >= 0.0 && source != null && source.clip != null)
+            if (!clockSynchronized && elapsed >= startOffset && source != null && source.clip != null)
             {
                 int sample = source.timeSamples;
-                if (sample <= 0)
+                if (sample <= startSample)
                 {
                     // 短い音源が最初の読取前に終わった場合や再生装置が無い場合も、曲末へ進む。
-                    // 最低1秒か音源長＋余裕の長い方まで待ち、通常の開始遅延は実サンプルに同期する。
-                    if (elapsed <= System.Math.Max(1.0, source.clip.length + .25)) return 0.0;
+                    // 最低1秒か(鳴らす区間の長さ)＋余裕の長い方まで待ち、通常の開始遅延は実サンプルに同期する。
+                    // 鳴らし始めの位置から音が進むまでは、時計もその位置で待つ。
+                    if (elapsed - startOffset <= System.Math.Max(1.0, source.clip.length - startOffset + .25)) return startOffset;
                     clockSynchronized = true;
                     return elapsed;
                 }
@@ -83,17 +96,22 @@ public class SongPlayer : MonoBehaviour
     }
 
     // カウントインなど別演出と同じ DSP 時刻へ、曲開始を正確に揃える。
-    public void PlayScheduled(double dspStartTime)
+    // offsetSeconds を渡すと、音源のその位置から鳴らす(dspStartTime は音が鳴り始める時刻)。範囲外・音源なしは頭から。
+    public void PlayScheduled(double dspStartTime, double offsetSeconds = 0)
     {
         EnsureSource();
         source.Stop();
         paused = pausedByApplication = false;
+        HeldByTracking = false;
         clockSynchronized = false;
         if (double.IsNaN(dspStartTime) || double.IsInfinity(dspStartTime)) dspStartTime = AudioSettings.dspTime;
-        startDspTime = System.Math.Max(dspStartTime, AudioSettings.dspTime + 0.01);
+        double playAt = System.Math.Max(dspStartTime, AudioSettings.dspTime + 0.01);
+        SetStartOffset(offsetSeconds);
+        startDspTime = playAt - startOffset;
         if (source.clip != null)
         {
-            source.PlayScheduled(startDspTime);
+            if (startSample > 0) source.timeSamples = startSample;
+            source.PlayScheduled(playAt);
         }
         else
         {
@@ -103,12 +121,26 @@ public class SongPlayer : MonoBehaviour
         scheduled = true;
     }
 
+    // 鳴らし始める位置をサンプルにそろえる(丸めた位置を本当の開始位置にする)。最後の1秒より後ろ・音源なし・不正な値は頭から。
+    void SetStartOffset(double seconds)
+    {
+        startOffset = 0; startSample = 0;
+        var clip = source != null ? source.clip : null;
+        if (clip == null || clip.frequency <= 0 || !(seconds > 0) || double.IsInfinity(seconds)) return;
+        double sample = System.Math.Round(seconds * clip.frequency);
+        if (sample <= 0 || sample >= clip.samples - clip.frequency) return;
+        startSample = (int)sample;
+        startOffset = startSample / (double)clip.frequency;
+    }
+
     public void Stop()
     {
         if (source != null) source.Stop();
         scheduled = false;
         clockSynchronized = false;
         paused = pausedByApplication = false;
+        HeldByTracking = false;
+        startOffset = 0; startSample = 0;
     }
 
     // OSによる中断と音声を同じ時計で止め、復帰直後の大量MISSを避ける。
@@ -116,7 +148,7 @@ public class SongPlayer : MonoBehaviour
     {
         if (!scheduled || paused) return;
         pausedSongTime = SongTime;
-        pausedBeforeStart = pausedSongTime < 0;
+        pausedBeforeStart = pausedSongTime < startOffset;
         paused = true;
         if (source != null)
         {
@@ -132,7 +164,11 @@ public class SongPlayer : MonoBehaviour
         paused = false;
         if (source != null && source.clip != null)
         {
-            if (pausedBeforeStart) source.PlayScheduled(startDspTime);
+            if (pausedBeforeStart)
+            {
+                if (startSample > 0) source.timeSamples = startSample;
+                source.PlayScheduled(startDspTime + startOffset);
+            }
             else source.UnPause();
         }
     }
@@ -147,7 +183,7 @@ public class SongPlayer : MonoBehaviour
         else if (pausedByApplication)
         {
             pausedByApplication = false;
-            Resume();
+            if (!HeldByTracking) Resume();
         }
     }
 

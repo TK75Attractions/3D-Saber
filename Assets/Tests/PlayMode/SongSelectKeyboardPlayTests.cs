@@ -357,6 +357,9 @@ public class SongSelectKeyboardPlayTests
         yield return Press(Key.Digit3); Assert.AreEqual(2, controller.SelectedDifficultyIndex);
         yield return Press(Key.Digit1); Assert.AreEqual(0, controller.SelectedDifficultyIndex);
         yield return Press(Key.Digit2); Assert.AreEqual(1, controller.SelectedDifficultyIndex);
+        // Esc は来場者の画面で共通の「2秒以内に2回」(仕様面の点検 2)。1回目は知らせだけ。
+        yield return Press(Key.Escape); Assert.AreEqual("SongSelect", SceneManager.GetActiveScene().name);
+        Assert.NotNull(Object.FindFirstObjectByType<OperatorNotice>());
         yield return Press(Key.Escape); Assert.AreEqual("Title", SceneManager.GetActiveScene().name);
     }
 
@@ -440,8 +443,10 @@ public class SongSelectKeyboardPlayTests
         }
     }
 
+    // 判定調整も来場者の画面なので、Esc は2秒以内に2回でタイトルへ(仕様面の点検 2)。下書きと選曲の引き継ぎは捨てる。
+    // 選曲へ戻るのは画面の「もどる」(照準・クリック)。
     [UnityTest]
-    public IEnumerator EscapeInCalibrationKeepsTheExistingReturnToSongSelect()
+    public IEnumerator EscapeTwiceInCalibrationReturnsToTitle()
     {
         yield return Click(GameObject.Find("CalibrationButton").GetComponent<Button>());
         yield return ScreenTransitionPlayTests.WaitForTransition();
@@ -451,8 +456,76 @@ public class SongSelectKeyboardPlayTests
         Assert.NotNull(manager.Calibration);
         Assert.True(GameSession.IsCalibrationMode);
         yield return Press(Key.Escape);
-        Assert.AreEqual("SongSelect", SceneManager.GetActiveScene().name);
+        Assert.AreEqual("Game", SceneManager.GetActiveScene().name, "1回目は知らせだけ");
+        Assert.True(GameSession.IsCalibrationMode);
+        yield return Press(Key.Escape);
+        Assert.AreEqual("Title", SceneManager.GetActiveScene().name);
         Assert.False(GameSession.IsCalibrationMode);
+        Assert.IsNull(GameSession.CalibrationSelectionSeconds);
+        Assert.IsNull(GameSession.CalibrationSelectionSongId);
+    }
+
+    // 曲の途中で剣を見失ったら止め、1秒続けて戻ったら 3・2・1 のあと続きから(仕様面の点検 4)。
+    // カメラの位置が届いた台では、曲の途中でマウスを剣の代わりにしない。
+    [UnityTest]
+    public IEnumerator LosingTheSaberMidSongPausesAndResumesAfterACount()
+    {
+        using (var sender = new UdpClient())
+        {
+            byte[] packet = System.Text.Encoding.ASCII.GetBytes("-0.2,-0.6,0.2,-0.6");
+            void Send() => sender.Send(packet, packet.Length, new IPEndPoint(IPAddress.Loopback, input.port));
+            double deadline = Time.realtimeSinceStartupAsDouble + 2;
+            while (input.LastReceivedTime < 0 && Time.realtimeSinceStartupAsDouble < deadline) { Send(); yield return null; }
+            Assert.GreaterOrEqual(input.LastReceivedTime, 0, "選曲の間に赤の位置が届く(カメラで遊ぶ台)");
+            InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.Enter));
+            yield return null; yield return null;
+            InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+            var manager = Object.FindFirstObjectByType<GamePlayManager>();
+            deadline = Time.realtimeSinceStartupAsDouble + 20;
+            while ((manager == null || !manager.songPlayer.IsPlaying || manager.noteSpawner.AliveCount == 0)
+                && Time.realtimeSinceStartupAsDouble < deadline)
+            {
+                Send(); yield return null;
+                if (manager == null) manager = Object.FindFirstObjectByType<GamePlayManager>();
+            }
+            Assert.True(manager.songPlayer.IsPlaying);
+            foreach (var bridge in Object.FindObjectsByType<SaberInputBridge>(FindObjectsSortMode.None))
+                Assert.False(bridge.fallbackToMouse, "カメラの台ではマウスを剣の代わりにしない");
+            StringAssert.Contains("赤 ●", manager.TrackingView.StatusTextShown);
+            // 届かなくなって3秒で止まる(ノーツは流れ続けている)。
+            double lostAt = Time.realtimeSinceStartupAsDouble;
+            deadline = lostAt + 8;
+            while (!manager.songPlayer.IsPaused && Time.realtimeSinceStartupAsDouble < deadline) yield return null;
+            Assert.True(manager.songPlayer.IsPaused, "見失ったら曲を止める");
+            Assert.That(Time.realtimeSinceStartupAsDouble - lostAt, Is.InRange(2.8, 5.0));
+            Assert.True(manager.TrackingView.StaffShown);
+            StringAssert.Contains("一時停止中", manager.TrackingView.HeadlineShown);
+            double pausedAt = manager.songPlayer.SongTime;
+            int alive = manager.noteSpawner.AliveCount, judged = manager.scoreManager.JudgedNoteCount;
+            yield return new WaitForSecondsRealtime(.6f);
+            Assert.AreEqual(pausedAt, manager.songPlayer.SongTime, "止めている間は曲の時計も止まる");
+            Assert.AreEqual(judged, manager.scoreManager.JudgedNoteCount, "止めている間に MISS を数えない");
+            Assert.AreEqual(alive, manager.noteSpawner.AliveCount);
+            // 1秒続けて届いたら数え始め、3秒後に続きから。
+            double backAt = Time.realtimeSinceStartupAsDouble;
+            bool counted = false;
+            deadline = backAt + 8;
+            while (manager.songPlayer.IsPaused && Time.realtimeSinceStartupAsDouble < deadline)
+            {
+                Send(); yield return null;
+                counted |= manager.TrackingView.HeadlineShown.StartsWith("再開まで");
+            }
+            Assert.False(manager.songPlayer.IsPaused, "戻ったら再開する");
+            Assert.True(counted, "再開の前に 3・2・1 を出す");
+            Assert.That(Time.realtimeSinceStartupAsDouble - backAt, Is.InRange(3.9, 6.0));
+            Assert.AreEqual(pausedAt, manager.songPlayer.SongTime, .25, "止めた位置の続きから");
+            Assert.False(manager.TrackingView.PanelShown);
+            InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.Escape));
+            yield return null; yield return null;
+            InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+            yield return null; yield return null;
+            yield return Press(Key.Escape);
+        }
     }
 
     static int FreePort()

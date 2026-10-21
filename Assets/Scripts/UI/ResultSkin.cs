@@ -43,6 +43,9 @@ public class ResultSkin : MonoBehaviour
     static readonly Color GlowBlue = new Color(56f / 255f, 184f / 255f, 1f); // #38B8FF
 
     private ResultReveal reveal;
+    private ResultController controller;
+    // Esc は2秒以内に2回でタイトルへ(来場者の画面で共通。仕様面の点検 2)。1回目は今までどおり演出も飛ばす(ResultReveal)。
+    private readonly EscapeTwiceGate escapeGate = new EscapeTwiceGate();
     // スコアのカウントアップと音(爽快感カタログ 山4)が書き換える数字。
     private TextMeshProUGUI scoreValueText;
     private static Sprite backdropGradient; // 縦3停止グラデ(共有キャッシュ)
@@ -51,6 +54,7 @@ public class ResultSkin : MonoBehaviour
     {
         var ctl = Object.FindFirstObjectByType<ResultController>();
         if (ctl == null) return;
+        controller = ctl;
 
         var canvas = ctl.GetComponent<Canvas>();
         if (canvas == null) canvas = ctl.GetComponentInParent<Canvas>();
@@ -97,6 +101,13 @@ public class ResultSkin : MonoBehaviour
         };
         pointer.RemapToFullScreen = true;
         pointer.RespectRaycastBlockers = true;
+    }
+
+    void Update()
+    {
+        if (controller == null || ScreenTransition.IsBusy || !InputManager.EscapeGetDown) return;
+        // 「タイトルへ」のボタン・照準と同じ出口へ。同時に押されても幕の受付が1回にまとめる。
+        if (escapeGate.PressAndNotify(Time.unscaledTimeAsDouble, EscapeTwiceGate.ToTitleNotice)) controller.OnBackButton();
     }
 
     // ---- 純関数(テストから直接叩く) ----
@@ -447,22 +458,16 @@ public class ResultSkin : MonoBehaviour
         if (string.IsNullOrEmpty(songId)) return; // シーン直起動などは行ごと省略
 
         var table = HighScoreStore.Load(songId, GameSession.SelectedDifficulty);
-        int prevBest = table.entries.Count > 0 ? table.entries[0].score : 0;
-        bool newRecord = GameSession.FinalScore > prevBest && GameSession.FinalScore > 0;
+        // 同じ回の結果画面を作り直しても、比べる相手は最初に読んだ「残す前の最高点」のまま。
+        int prevBest = GameSession.HighScoreBestBefore(table.entries.Count > 0 ? table.entries[0].score : 0);
+        // 1回も切っていない回は残さない(仕様面の点検 1)。HI-SCORE は今までの最高点のまま見せる。
+        bool recordable = GameSession.ShouldRecordRun;
+        bool newRecord = recordable && GameSession.FinalScore > prevBest && GameSession.FinalScore > 0;
         // NEW RECORDの比較には以前の記録を使い、HI-SCOREには更新後の最高点を表示する。
-        int shownScore = Mathf.Max(prevBest, GameSession.FinalScore);
+        int shownScore = Mathf.Max(prevBest, recordable ? GameSession.FinalScore : 0);
 
-        // 今回の結果を記録(prevBest を読んだ後に保存)
-        float accuracy = PlayRankHelper.Accuracy(
-            GameSession.FinalPerfect, GameSession.FinalGreat, GameSession.FinalGood,
-            GameSession.FinalBad, GameSession.FinalMiss);
-        HighScoreStore.Record(songId, GameSession.SelectedDifficulty, new HighScoreEntry
-        {
-            score = GameSession.FinalScore,
-            rank = PlayRankHelper.Label(PlayRankHelper.FromScore(GameSession.FinalScore)),
-            accuracy = accuracy,
-            date = System.DateTime.Now.ToString("yyyy/MM/dd"),
-        }, out _);
+        // 今回の結果を記録(prevBest を読んだ後に保存)。同じ回は一度だけ。
+        GameSession.RecordCompletedHighScore();
 
         var row = new GameObject("HiScoreRow", typeof(RectTransform));
         row.transform.SetParent(parent, false);

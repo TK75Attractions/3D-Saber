@@ -54,6 +54,10 @@ public sealed class DailyRankingPresentation : MonoBehaviour
         return view;
     }
 
+    // 1回も切っていない回は記録しない(仕様面の点検 1)。そのことを順位の欄で知らせる。
+    public const string UnrecordedHeadline = "今回は記録していません";
+    public const string UnrecordedNote = "ノーツを1回も切れなかったため";
+
     public static Color Accent(int rank)
     {
         if (rank == 1) return new Color(1f, .79f, .31f);
@@ -89,14 +93,17 @@ public sealed class DailyRankingPresentation : MonoBehaviour
         details.transform.SetParent(transform, false);
         detailGroup = details.GetComponent<CanvasGroup>();
         detailGroup.interactable = detailGroup.blocksRaycasts = false;
-        string headline = !available ? (result == null ? "プレイ終了後に表示" : "本日の順位を取得できませんでした")
+        bool unrecorded = !available && result == null && GameSession.CompletedWithoutRecord;
+        string headline = unrecorded ? UnrecordedHeadline
+            : !available ? (result == null ? "プレイ終了後に表示" : "本日の順位を取得できませんでした")
             : result.TotalPlays == 1 ? "本日最初の記録！"
             : result.IsNewBest ? "本日のトップスコア更新！"
             : result.Rank == 1 ? "本日のトップスコア！"
             : result.Rank <= 3 ? "本日の TOP 3 にランクイン！" : "本日の記録";
         var status = Text("Status", headline, new Vector2(30, 19), new Vector2(500, 42), 29, accent, details.transform);
         status.alignment = TextAlignmentOptions.MidlineLeft;
-        string note = (available && result.TiedPlays > 1 ? "同率 " + result.Rank + " 位 ／ " : "") + "あそんでくれて ありがとう！";
+        string note = unrecorded ? UnrecordedNote
+            : (available && result.TiedPlays > 1 ? "同率 " + result.Rank + " 位 ／ " : "") + "あそんでくれて ありがとう！";
         var sub = Text("Next", note, new Vector2(65, -23), new Vector2(570, 34), 24, UISkinPalette.OffWhite, details.transform);
         sub.alignment = TextAlignmentOptions.MidlineLeft;
         string count = available ? result.TotalPlays.ToString("N0") + " 回中" : "DAILY RANKING";

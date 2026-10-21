@@ -6,8 +6,9 @@ public class TitleMenuController : MonoBehaviour
 
     void Awake()
     {
-        // 起動時と前の人からの交代時に、標準の判定・速度で始める。
+        // 起動時と前の人からの交代時に、標準の判定・速度で始める。選曲の操作の記録も消す(次の選曲は新しい人の選曲)。
         GameSession.ResetPlayerSettings();
+        GameSession.SongSelectOperated = false;
     }
 
     public void OnStartButton()

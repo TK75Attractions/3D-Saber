@@ -65,6 +65,9 @@ public class BarLineSpawner : MonoBehaviour
             barTimes.Add(clock.TimeAt(beat) / 1000.0 + offset);
     }
 
+    // これより前の線は出さない(音源の頭からの秒)。頭の無音を飛ばす曲で、カウントダウン中に線が流れないように本編が入れる。
+    public double FirstBarTime { get; set; } = double.NegativeInfinity;
+
     public void Tick(double songTime)
     {
         if (!isActiveAndEnabled || !Finite(songTime)) return;
@@ -86,8 +89,8 @@ public class BarLineSpawner : MonoBehaviour
         {
             double barTime = barTimes[nextBarIndex];
             if (songTime + approachTime + 1e-9 < barTime) break;
-            // 途中からの再生でも、通過済みの線を一度に大量生成しない。
-            if (barTime >= songTime - despawnAfterSeconds) SpawnBar(barTime);
+            // 途中からの再生でも、通過済みの線を一度に大量生成しない。頭を飛ばして鳴らす曲は、鳴らさない区間の線を出さない。
+            if (barTime >= songTime - despawnAfterSeconds && barTime >= FirstBarTime) SpawnBar(barTime);
             nextBarIndex++;
         }
     }

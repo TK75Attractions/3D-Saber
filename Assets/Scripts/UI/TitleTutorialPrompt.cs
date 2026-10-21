@@ -21,6 +21,7 @@ public sealed class TitleTutorialPrompt : MonoBehaviour
 
     public bool IsOpen { get; private set; }          // 問いかけが見えて、答えを受け付けている
     public bool Answered { get; private set; }
+    public bool Canceled { get; private set; }
     public bool AnswerIsTutorial { get; private set; }
     public TitleStartNote YesNote { get; private set; }
     public TitleStartNote NoNote { get; private set; }
@@ -67,6 +68,7 @@ public sealed class TitleTutorialPrompt : MonoBehaviour
 
     void Update()
     {
+        if (Canceled) return;
         float age = Time.unscaledTime - startedAt;
         if (!IsOpen)
         {
@@ -132,6 +134,16 @@ public sealed class TitleTutorialPrompt : MonoBehaviour
         var canvasCamera = canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : canvas.worldCamera;
         if (RectTransformUtility.ScreenPointToLocalPointInRectangle((RectTransform)canvas.transform, screen, canvasCamera, out var local))
             label.rectTransform.anchoredPosition = local;
+    }
+
+    // Esc を2回(仕様面の点検 2)で問いかけを取り消す。答えの受付と、予約した回答の処理(Proceed)も止める。
+    public void Cancel()
+    {
+        Canceled = Answered = true;
+        onAnswer = null;
+        StopAllCoroutines();
+        if (YesNote != null) YesNote.Note.IsJudgeable = false;
+        if (NoNote != null) NoNote.Note.IsJudgeable = false;
     }
 
     public void Choose(bool tutorial, string how)

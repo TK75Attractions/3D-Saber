@@ -153,6 +153,26 @@ public class GamePlayManager : MonoBehaviour
     private TutorialController tutorial;
     public TutorialController Tutorial => tutorial;
 
+    // --- 曲の途中で剣を見失ったとき(仕様面の点検 4、2026-10-21) ---
+    // カメラで遊ぶ台で、届いていた剣がすべて3秒止まり、ノーツが来ているときだけ曲を止め、戻ったら 3・2・1 で続きから再開する。
+    // 止めるのは本編だけ(練習は受信の表示とスタッフ向けの1行だけ。判定調整には出さない)。
+    private readonly PlayTrackingWatch trackingWatch = new PlayTrackingWatch();
+    private PlayTrackingStatus trackingView;
+    public PlayTrackingWatch TrackingWatch => trackingWatch;
+    public PlayTrackingStatus TrackingView => trackingView;
+    // カメラの位置が届いている台では、その場面でマウスを剣の代わりにしない。
+    private bool mouseFallbackLocked;
+    // この時刻(実時間)より後の受信だけを見る。場面の始まりの PlayTrackingWatch.CarryOverSeconds 前から。
+    private double trackingSince = double.NegativeInfinity;
+    // 曲ごとの音が鳴り終わる秒(仕様面の点検 7)。0 以下は音源の長さ。
+    private double musicEndSeconds = -1;
+    double MusicEnd => musicEndSeconds > 0 ? musicEndSeconds : songPlayer.Duration;
+    // Esc の2回(仕様面の点検 2)。戻ると決めたら、もう受けない。
+    private readonly EscapeTwiceGate escapeGate = new EscapeTwiceGate();
+    private bool leaving;
+    // 最後まで遊んだ(終わりの演出に入った)か、その回の結果を確定して残したか。演出の間に Esc で抜けても記録は残す。
+    private bool completing, resultCommitted;
+
     IEnumerator Start()
     {
         if (songPlayer == null || noteSpawner == null || scoreManager == null)
@@ -162,6 +182,7 @@ public class GamePlayManager : MonoBehaviour
         }
         // 派手さカタログの効果音は、幕が閉じている最初のフレームでまとめて作る(曲中や幕が開く途中に処理落ちさせない)。
         FlourishSfx.PrewarmGameplay();
+        trackingSince = Time.realtimeSinceStartupAsDouble - PlayTrackingWatch.CarryOverSeconds;
 
         // 自動探索
         if (cutJudge == null) cutJudge = Object.FindFirstObjectByType<SaberCutJudge>();
@@ -250,6 +271,8 @@ public class GamePlayManager : MonoBehaviour
         // 新HUD(スコア/コンボ/判定演出/曲名/進行バー)。旧 ScoreHUD は内部で無効化される。
         // キャリブレーション時は CalibrationOverlay が主役なので出さない(上の分岐で return 済み)。
         if (useOverhauledStage) GameHUDSkin.Ensure();
+        // 受信の表示は左上の列、RANK の下(仕様面の点検 4)。
+        trackingView = PlayTrackingStatus.Create(transform, 262);
 
         string songId = GameSession.SelectedSongId;
         if (string.IsNullOrEmpty(songId))
@@ -275,6 +298,12 @@ public class GamePlayManager : MonoBehaviour
 
         // 音源を先にロードして、譜面長を音源に合わせて切り詰められるようにする。
         yield return LoadAudio(songId);
+        // 曲ごとの鳴らす範囲(仕様面の点検 7)。頭の無音を飛ばす秒(escapade の 5 秒)と音が鳴り終わる秒。
+        // stage.json の audioSha256 が今の音源と一致するときだけ使う。譜面の切り詰めは今までどおり音源の長さで行う。
+        var playRange = stagePerformance.ResolvePlayRange(songPlayer.Duration,
+            SongLoudness.SourceMatches(Path.Combine(Application.streamingAssetsPath, "Songs", songId), stagePerformance.audioSha256));
+        musicEndSeconds = playRange.End;
+        songPlayer.ProgressEndSeconds = playRange.End;
 
         // 譜面オフセット計算：
         //   chart.offsetMs（曲固有）+ extraOffsetSeconds（Inspector）+ GameSession.JudgmentOffsetMs（プレイヤー調整）
@@ -366,6 +395,7 @@ public class GamePlayManager : MonoBehaviour
             // 小節線はノーツと同じ速度で流す(シーンに古い値が焼き込まれていても揃うように)。
             barLineSpawner.approachTime = GameSession.NoteApproachTime;
             barLineSpawner.SetChart(chart, effectiveExtraOffset);
+            barLineSpawner.FirstBarTime = playRange.Start;
         }
 
         scoreManager.songPlayer = songPlayer;
@@ -381,9 +411,9 @@ public class GamePlayManager : MonoBehaviour
             goldNoteSfx.OnCritical += (point, step) => { if (feverShow != null) feverShow.GoldFlash(beat); };
         }
         // 冒頭にも通常と同じ移動時間を確保する。譜面の時刻・オフセットは変えない。
-        double leadInSeconds = chart.notes.Count > 0
-            ? System.Math.Max(0.0, noteSpawner.approachTime - noteSpawner.EffectiveTime(chart.notes[0]))
-            : 0.0;
+        // 頭を飛ばす曲は、鳴らし始める位置から最初のノーツまでの秒で考える。
+        double firstNoteFromPlayStart = chart.notes.Count > 0 ? noteSpawner.EffectiveTime(chart.notes[0]) - playRange.Start : double.NaN;
+        double leadInSeconds = chart.notes.Count > 0 ? System.Math.Max(0.0, noteSpawner.approachTime - firstNoteFromPlayStart) : 0.0;
         // 幕が開く前に音やノーツを走らせず、カウントダウンの最初から見せる。
         while (ScreenTransition.IsBusy) yield return null;
         if (enableStartCountdown)
@@ -391,13 +421,12 @@ public class GamePlayManager : MonoBehaviour
             // START の演出が消えてから先頭ノーツを流す。移動時間と補正込みの到着時刻から
             // 楽曲開始を予約し、冒頭のノーツが文字や光に隠れたままゲートへ着くのを防ぐ。
             var countdown = GameStartCountdown.Ensure();
-            double firstNoteSeconds = chart.notes.Count > 0 ? noteSpawner.EffectiveTime(chart.notes[0]) : double.NaN;
-            double startDspTime = countdown.Begin(chart.bpm, GameSession.SelectedDifficulty, startCountdownVolume, noteSpawner.approachTime, firstNoteSeconds);
-            songPlayer.PlayScheduled(startDspTime);
+            double startDspTime = countdown.Begin(chart.bpm, GameSession.SelectedDifficulty, startCountdownVolume, noteSpawner.approachTime, firstNoteFromPlayStart);
+            songPlayer.PlayScheduled(startDspTime, playRange.Start);
         }
         else
         {
-            songPlayer.PlayScheduled(AudioSettings.dspTime + System.Math.Max(0.01, songPlayer.startDelay) + leadInSeconds);
+            songPlayer.PlayScheduled(AudioSettings.dspTime + System.Math.Max(0.01, songPlayer.startDelay) + leadInSeconds, playRange.Start);
         }
         ready = true;
     }
@@ -424,8 +453,10 @@ public class GamePlayManager : MonoBehaviour
         {
             bridge.pixelsToWorld = 1.0f;
             bridge.useInputPoint = true;
-            bridge.fallbackToMouse = bridge.stickIndex == 1; // UDP 無音時はマウスに戻る(棒1のみ)
+            // UDP 無音時はマウスに戻る(棒1のみ)。カメラの位置が届いている台(本番)では、曲の途中でマウスを剣の代わりにしない(仕様面の点検 4)。
+            bridge.fallbackToMouse = bridge.stickIndex == 1 && !CameraStation;
         }
+        mouseFallbackLocked = CameraStation;
     }
 
     private void EnsureUdpImuBridge()
@@ -671,25 +702,13 @@ public class GamePlayManager : MonoBehaviour
         return AudioType.UNKNOWN;
     }
 
-    double returnConfirmationUntil = double.NegativeInfinity;
-
     // 本編シーンで毎フレーム呼ばれる単一の Update。
-    // 順序：現在の受付窓 → 判定 → 譜面進行 → 終了チェック。
+    // 順序：Esc → 受信の見張り(止める・再開) → 現在の受付窓 → 判定 → 譜面進行 → 終了チェック。
     void Update()
     {
-        // 判定調整のEscは既存の練習停止・設定終了へ渡す。幕の間は連続して戻らない。
-        if (!finished && !inCalibration && !GameSession.IsCalibrationMode && !ScreenTransition.IsBusy && InputManager.EscapeGetDown)
-        {
-            double now = Time.unscaledTimeAsDouble;
-            if (now <= returnConfirmationUntil)
-            {
-                returnConfirmationUntil = double.NegativeInfinity;
-                ReturnToTitle();
-                return;
-            }
-            returnConfirmationUntil = now + 2;
-            OperatorNotice.Show("中断するには、２秒以内にもう一度 Esc");
-        }
+        if (HandleEscape()) return;
+        LockMouseFallbackOnceCameraSeen();
+        TickTrackingWatch();
         if (finished || !ready || (songPlayer != null && songPlayer.IsPaused)) return;
 
         // カメラの遅れは判定の時計だけで差し引く(受付窓・刃の判定・Miss の3か所。ノーツの位置と音は曲の時計のまま)。
@@ -749,10 +768,11 @@ public class GamePlayManager : MonoBehaviour
         }
 
         if (playFeedback != null)
-            playFeedback.Tick(Time.unscaledDeltaTime, songPlayer.SongTime, songPlayer.Duration, lastNoteTime);
+            playFeedback.Tick(Time.unscaledDeltaTime, songPlayer.SongTime, MusicEnd, lastNoteTime);
 
-        // 3. 終了判定：最終ノーツ通過＋余韻、かつアクティブなノーツがゼロ
-        double endThreshold = System.Math.Max(songPlayer.Duration + endWaitSeconds,
+        // 3. 終了判定：最終ノーツ通過＋余韻、かつアクティブなノーツがゼロ。
+        // 曲の終わりは「音が鳴り終わる秒」(曲ごと。無ければ音源の長さ)から待つ(仕様面の点検 7)。
+        double endThreshold = System.Math.Max(MusicEnd + endWaitSeconds,
                                               lastNoteTime + outroSeconds);
         if (songPlayer.IsPlaying && songPlayer.SongTime >= endThreshold
             && noteSpawner.AliveCount == 0 && noteSpawner.NextIndex >= noteSpawner.TotalNoteCount)
@@ -778,6 +798,7 @@ public class GamePlayManager : MonoBehaviour
         if (!ScreenTransition.Load("Title", ScreenTransition.Style.Back)) return;
         // 途中離脱は終了処理へ流さず、結果・実績を保存しない。開始待ちや終了演出も打ち切る。
         finished = true;
+        leaving = true;
         StopAllCoroutines();
         AbortAudioRequest();
         if (songPlayer != null) songPlayer.Stop();
@@ -786,6 +807,123 @@ public class GamePlayManager : MonoBehaviour
         if (gateAccents != null) gateAccents.ResetState();
         var countdown = Object.FindFirstObjectByType<GameStartCountdown>();
         if (countdown != null) Destroy(countdown.gameObject);
+    }
+
+    // 来場者の画面に共通の「Esc を2秒以内に2回でタイトルへ」(仕様面の点検 2)。本編・練習・判定調整・終わりの演出の間も、
+    // この画面ではここだけが Esc を受ける(判定調整の覆いは Esc を使わない)。幕の間と、戻ると決めたあとは受けない。
+    bool HandleEscape()
+    {
+        if (leaving || ScreenTransition.IsBusy || !InputManager.EscapeGetDown) return false;
+        bool calibrating = inCalibration || GameSession.IsCalibrationMode;
+        if (!escapeGate.PressAndNotify(Time.unscaledTimeAsDouble, calibrating ? EscapeTwiceGate.ToTitleNotice : EscapeTwiceGate.AbortNotice))
+            return false;
+        if (calibrating)
+        {
+            // 判定調整は下書きを捨て、再生を止めてからタイトルへ(選曲の残り時間・曲の引き継ぎも消える)。
+            if (calibration != null) calibration.DiscardAndExitTo("Title"); else ExitCalibration("Title");
+            if (ScreenTransition.IsBusy) leaving = true;
+        }
+        else
+        {
+            // 最後まで遊んだ回は、終わりの演出を飛ばしても点と3つの記録(実績・本日の順位・HI-SCORE)を残してから出る。
+            if (completing) { CommitFinalResult(); GameSession.RecordCompletedHighScore(); }
+            ReturnToTitle();
+        }
+        return true;
+    }
+
+    // カメラ(PhoneSaber)の位置が、この場面の始まりの少し前(30秒)から届いているか。
+    // 届いていなければ(スマホを止めている・開発用)、今までどおりマウスで遊べる。
+    bool CameraStation
+    {
+        get
+        {
+            var input = InputPoint.Instance;
+            return input != null && (input.LastReceivedTime >= trackingSince || input.LastReceivedTime2 >= trackingSince);
+        }
+    }
+
+    // 曲の途中で初めてカメラの値が届いたときも、そこからはマウスに戻さない(仕様面の点検 4)。
+    void LockMouseFallbackOnceCameraSeen()
+    {
+        if (mouseFallbackLocked || !CameraStation) return;
+        mouseFallbackLocked = true;
+        foreach (var bridge in Object.FindObjectsByType<SaberInputBridge>(FindObjectsSortMode.None)) bridge.fallbackToMouse = false;
+    }
+
+    // 受信の表示と、見失ったときの一時停止・再開(仕様面の点検 4)。曲が止まっている間も毎フレーム動かす。
+    void TickTrackingWatch()
+    {
+        if (trackingView == null) return;
+        var input = InputPoint.Instance;
+        double now = Time.realtimeSinceStartupAsDouble;
+        if (input != null)
+        {
+            if (input.LastReceivedTime >= trackingSince && input.HasValidStickEndpoints) trackingWatch.ObserveUsable(0, input.LastReceivedTime);
+            if (input.LastReceivedTime2 >= trackingSince && input.HasValidStickEndpoints2) trackingWatch.ObserveUsable(1, input.LastReceivedTime2);
+        }
+        bool canPause = !inTutorial && !inCalibration && ready && !finished && !leaving
+            && songPlayer != null && songPlayer.IsPlaying && NotesComing(songPlayer.SongTime);
+        var request = trackingWatch.Step(now, canPause);
+        if (request == PlayTrackingWatch.Request.Pause) PauseForTracking();
+        else if (request == PlayTrackingWatch.Request.Resume) ResumeAfterTracking();
+        string status = input != null ? MenuSaberStatus.Status(now, input.LastReceivedTime, input.LastReceivedTime2) : "";
+        string paused = trackingWatch.State == PlayTrackingWatch.Phase.Waiting ? PlayTrackingStatus.PausedText
+            : trackingWatch.State == PlayTrackingWatch.Phase.Countdown ? PlayTrackingStatus.ResumeText(trackingWatch.CountdownRemaining(now)) : null;
+        trackingView.Show(status, paused, trackingWatch.AllLost(now));
+    }
+
+    // ノーツが画面にあるか、1 秒以内に流れ始めるか。休みの区間で剣を下ろしているだけなら曲を止めない。
+    bool NotesComing(double songTime)
+    {
+        if (noteSpawner == null) return false;
+        if (noteSpawner.AliveCount > 0) return true;
+        var chart = noteSpawner.CurrentChart;
+        int next = noteSpawner.NextIndex;
+        if (chart == null || chart.notes == null || next < 0 || next >= chart.notes.Count) return false;
+        return noteSpawner.EffectiveTime(chart.notes[next]) - noteSpawner.approachTime - songTime <= 1.0;
+    }
+
+    void PauseForTracking()
+    {
+        if (songPlayer == null || !songPlayer.IsPlaying) return;
+        Debug.Log($"GamePlayManager: 剣の位置が届かないので一時停止 songTime={songPlayer.SongTime:F2}s");
+        songPlayer.Pause();
+        songPlayer.HeldByTracking = true;
+        // 予約したサビの音や下げた音量を戻す(再開後、まだ来ていない入口は ChorusDrop が予約し直す)。
+        if (chorusDrop != null) chorusDrop.ResetEffects();
+    }
+
+    // 止める前の刃の履歴(触れていたノーツ・振りの向き)を持ち越さず、再開してからの振りで判定する。
+    // カメラと IMU の照合は、曲の時計が止まった分のずれを見て自分で履歴を消す(CameraImuJudgment.Tick)。
+    void ResumeAfterTracking()
+    {
+        if (songPlayer == null) return;
+        foreach (var judge in new[] { cutJudge, cutJudge2 })
+            if (judge != null && judge.saber != null) judge.saber.ResetTo(judge.saber.transform.position);
+        songPlayer.HeldByTracking = false;
+        songPlayer.Resume();
+        Debug.Log($"GamePlayManager: 剣の位置が戻ったので再開 songTime={songPlayer.SongTime:F2}s");
+    }
+
+    // 最後まで遊んだ回の点と判定を確定し、実績・本日の順位を残す(一度だけ。HI-SCORE は結果画面が残す)。
+    void CommitFinalResult()
+    {
+        if (resultCommitted) return;
+        resultCommitted = true;
+        scoreManager.FinalizeScore();
+        GameSession.FinalScore = scoreManager.Score;
+        GameSession.FinalMaxCombo = scoreManager.MaxCombo;
+        GameSession.FinalComboBonus = scoreManager.ComboBonus;
+        GameSession.FinalHit = scoreManager.HitCount;
+        GameSession.FinalMiss = scoreManager.MissCount;
+        GameSession.FinalPerfect = scoreManager.PerfectCount;
+        GameSession.FinalGreat = scoreManager.GreatCount;
+        GameSession.FinalGood = scoreManager.GoodCount;
+        GameSession.FinalBad = scoreManager.BadCount;
+        GameSession.FinalCutCount = scoreManager.CutCount;
+        GameSession.RecordCompletedAchievements();
+        GameSession.RecordCompletedDailyRanking();
     }
 
     // --- キャリブレーションモード実装 ---
@@ -845,6 +983,8 @@ public class GamePlayManager : MonoBehaviour
         var sabers = new System.Collections.Generic.List<SaberTracker>();
         if (cutJudge != null && cutJudge.saber != null) sabers.Add(cutJudge.saber);
         if (cutJudge2 != null && cutJudge2.saber != null) sabers.Add(cutJudge2.saber);
+        // 練習でも受信の表示とスタッフ向けの1行は出す(曲は止めない)。左上の見出しを避けて少し下に置く。
+        trackingView = PlayTrackingStatus.Create(transform, 340);
         tutorial = gameObject.AddComponent<TutorialController>();
         tutorial.Initialize(songPlayer, noteSpawner, scoreManager, extraOffsetSeconds, sabers.ToArray(), longNoteCutSfx, goldNoteSfx);
         gatePerfectPulse = GateBeatPulse.Ensure(TutorialProgram.Bpm, 0, songPlayer, scoreManager);
@@ -876,6 +1016,7 @@ public class GamePlayManager : MonoBehaviour
         // 「なぜ今終わったか」を後から追えるように記録する(途中終了バグの診断用)
         Debug.Log($"GamePlayManager: FinishGame songTime={songPlayer.SongTime:F1}s " +
             $"duration={songPlayer.Duration:F1}s lastNote={lastNoteTime:F1}s alive={noteSpawner.AliveCount}");
+        completing = true;
         songPlayer.Stop();
         if (stageReactions != null) stageReactions.ResetState();
         if (chorusDrop != null) chorusDrop.ResetEffects();
@@ -918,18 +1059,7 @@ public class GamePlayManager : MonoBehaviour
             elapsed += Mathf.Min(Time.unscaledDeltaTime, .1f);
             if (elapsed >= ComboBonusPresentation.LandingTime) scoreManager.FinalizeScore();
         }
-        scoreManager.FinalizeScore();
-        GameSession.FinalScore = scoreManager.Score;
-        GameSession.FinalMaxCombo = scoreManager.MaxCombo;
-        GameSession.FinalComboBonus = scoreManager.ComboBonus;
-        GameSession.FinalHit = scoreManager.HitCount;
-        GameSession.FinalMiss = scoreManager.MissCount;
-        GameSession.FinalPerfect = scoreManager.PerfectCount;
-        GameSession.FinalGreat = scoreManager.GreatCount;
-        GameSession.FinalGood = scoreManager.GoodCount;
-        GameSession.FinalBad = scoreManager.BadCount;
-        GameSession.RecordCompletedAchievements();
-        GameSession.RecordCompletedDailyRanking();
+        CommitFinalResult();
         if (!string.IsNullOrEmpty(resultSceneName))
         {
             ScreenTransition.Load(resultSceneName, ScreenTransition.Style.Result);

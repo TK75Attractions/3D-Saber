@@ -123,6 +123,33 @@ public class SongLeadInPlayTests
         Assert.AreEqual("Game", SceneManager.GetActiveScene().name);
     }
 
+    // 頭の5秒が無音の escapade は、音源の5秒目から鳴らす(仕様面の点検 7)。譜面の時刻はそのまま、最初のノーツも移動時間を保つ。
+    [UnityTest]
+    public IEnumerator EscapadeStartsAtFiveSecondsWithItsNotesOnTheSameClock()
+    {
+        GameSession.SelectedSongId = "escapade";
+        GameSession.SelectedDifficulty = "Easy";
+        GameSession.NoteApproachTime = 1f;
+        // 前の試験が送った剣の位置を持ち越さない(届いていた剣が止まったとみなして曲を止めないように)。
+        foreach (var old in Object.FindObjectsByType<InputPoint>(FindObjectsSortMode.None)) Object.DestroyImmediate(old.gameObject);
+        yield return OpenGame(true);
+        var countdown = Object.FindFirstObjectByType<GameStartCountdown>();
+        double zero = (double)typeof(SongPlayer).GetField("startDspTime", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(manager.songPlayer);
+        Assert.That(zero + 5.0, Is.EqualTo(countdown.SongStartDspTime).Within(.0001), "鳴らし始めは5秒目、曲の0秒はその5秒前");
+        Assert.AreEqual(5.0, manager.songPlayer.PlayStartSeconds, 1 / 44100.0);
+        Assert.AreEqual(107.85, manager.songPlayer.ProgressEndSeconds, 1e-9, "音が鳴り終わる秒(stage.json)");
+        double deadline = Time.realtimeSinceStartupAsDouble + 12;
+        while (!manager.songPlayer.IsPlaying && Time.realtimeSinceStartupAsDouble < deadline) yield return null;
+        Assert.True(manager.songPlayer.IsPlaying);
+        Assert.That(manager.songPlayer.SongTime, Is.InRange(4.99, 5.6), "曲の時計は音源の頭からの秒のまま");
+        deadline = Time.realtimeSinceStartupAsDouble + 5;
+        while (firstNote == null && Time.realtimeSinceStartupAsDouble < deadline) yield return null;
+        Assert.NotNull(firstNote);
+        Assert.That(firstNote.HitTime - firstSpawnTime, Is.EqualTo(manager.noteSpawner.approachTime).Within(.15), "最初のノーツも移動時間を保つ");
+        Assert.That(firstNote.HitTime, Is.EqualTo(5.07 + manager.extraOffsetSeconds).Within(.02), "譜面の時刻は変更しない");
+        Assert.AreEqual(0, manager.scoreManager.MissCount);
+    }
+
     [UnityTest]
     public IEnumerator SlowNotesEnterAfterCountInWithTheirFullTravelTime()
     {
