@@ -6,7 +6,7 @@ using UnityEngine;
 public class SchoolSongFlowTests
 {
     [TestCase("easy", 1, 1)]
-    [TestCase("normal", 5, 2)]
+    [TestCase("normal", 4, 2)]
     [TestCase("hard", 8, 3)]
     public void AuthoredSpreadHasThreeHeightsAndIntentionalTypes(string difficulty, int level, int maxSimultaneous)
     {

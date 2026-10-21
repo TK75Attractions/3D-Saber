@@ -72,7 +72,7 @@ public class YurikagoChartTests
             Assert.GreaterOrEqual(yurikago, 0);
             Assert.GreaterOrEqual(elDorado, 0);
             Assert.AreEqual(8, controller.DisplayLevelFor(yurikago, 2));
-            Assert.AreEqual(4, controller.DisplayLevelFor(yurikago, 1));
+            Assert.AreEqual(2, controller.DisplayLevelFor(yurikago, 1));
             Assert.AreEqual(1, controller.DisplayLevelFor(yurikago, 0));
             Assert.AreEqual(8, controller.DisplayLevelFor(elDorado, 2));
             CollectionAssert.AreEqual(new[] { 4, 6, 8 }, controller.difficultyDisplayLevels);

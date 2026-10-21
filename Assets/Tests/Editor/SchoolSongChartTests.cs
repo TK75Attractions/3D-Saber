@@ -33,7 +33,7 @@ public class SchoolSongChartTests
     }
 
     [TestCase("easy", 1)]
-    [TestCase("normal", 5)]
+    [TestCase("normal", 4)]
     [TestCase("hard", 8)]
     public void DedicatedChartLoadsWithRequestedLevel(string difficulty, int level)
     {
@@ -81,14 +81,14 @@ public class SchoolSongChartTests
             controller.Populate();
             int index = Enumerable.Range(0, controller.SongCount).First(i => controller.SongIdAt(i) == "Epilogue");
             Assert.AreEqual(1, controller.DisplayLevelFor(index, 0));
-            Assert.AreEqual(5, controller.DisplayLevelFor(index, 1));
+            Assert.AreEqual(4, controller.DisplayLevelFor(index, 1));
             Assert.AreEqual(8, controller.DisplayLevelFor(index, 2));
         }
         finally { Object.DestroyImmediate(go); }
     }
 
     [TestCase("easy", 1)]
-    [TestCase("normal", 5)]
+    [TestCase("normal", 4)]
     [TestCase("hard", 8)]
     public void EditorSavePreservesAuthoredLevelAndTiming(string difficulty, int level)
     {
