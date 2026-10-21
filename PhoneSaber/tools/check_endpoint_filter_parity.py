@@ -16,7 +16,7 @@ from endpoint_filter_eval import EndpointFilter, prepare
 FILTER = 'Assets/Scripts/Managers/Inputsystem/Input/PhoneSaberEndpointFilter.cs'
 SETTINGS = 'Assets/Scripts/Managers/Inputsystem/Input/PhoneSaberFilterSettings.cs'
 VECTORS = Path(__file__).with_name('fixtures') / 'endpoint_filter_vectors.csv'
-PRESETS = {1: (1, 10, 10), 2: (.25, 7, 60), 3: (.25, 7, 60)}
+PRESETS = {1: (1, 10, 10), 2: (.25, 7, 60), 3: (.25, 7, 60), 4: (.25, 14, 60)}
 FIELDS = ['time', 'x1', 'y1', 'x2', 'y2', 'mode', 'bits1', 'bits2', 'bits3', 'bits4']
 
 
@@ -108,7 +108,7 @@ class Program {
             count++;
         }
         Console.WriteLine($"C#9 / Python bit parity PASS: {count} samples, {count*4} float components");
-        foreach(int mode in new[]{1,2,3}) {
+        foreach(int mode in new[]{1,2,3,4}) {
             filter.Reset(); var first=new Vector2(-1,.25f); var second=new Vector2(1,.5f);
             for(int i=0;i<120;i++) {
                 filter.Apply(i/30.0,i%2==0?first:second,i%2==0?second:first,mode,out var a,out var b);
@@ -138,9 +138,10 @@ class Program {
         PhoneSaberFilterSettings.Save("stationA",1);
         Require(PhoneSaberFilterSettings.Load("stationA")==1&&PhoneSaberFilterSettings.Load("stationB")==2,"station isolation");
         PhoneSaberFilterSettings.Save("stationB",3);Require(PhoneSaberFilterSettings.Load("stationB")==3,"opt-in steady");
+        PhoneSaberFilterSettings.Save("stationB",4);Require(PhoneSaberFilterSettings.Load("stationB")==4,"opt-in responsive");
         PhoneSaberFilterSettings.Save("stationB",99);Require(PhoneSaberFilterSettings.Load("stationB")==2,"legacy invalid clamp");
         Console.WriteLine("C#9 smoke PASS: constant, swap, step bounds, gap, invalid reset, settings (PlayerPrefs stub)");
-        Bench(-1);Bench(0);Bench(1);Bench(2);Bench(3);
+        Bench(-1);Bench(0);Bench(1);Bench(2);Bench(3);Bench(4);
     }
     static double sink;
     static void Bench(int mode) {
@@ -216,6 +217,12 @@ def main():
         generate(args.vectors)
     print(f'Python shared vectors PASS: {check_python(args.vectors)} samples')
     print(check_csharp(args.vectors, args.dotnet), end='')
+    # 旧共有ベクトルを再生成せず、新モード・往復切替を別の一時ベクトルで照合する。
+    with tempfile.TemporaryDirectory(prefix='responsive-filter-vectors-', dir='/tmp') as tmp:
+        path = Path(tmp) / 'responsive.csv'
+        generate(path, modes=(2, 4, 4, 2, 0, 4))
+        print(f'Responsive Python vectors PASS: {check_python(path)} samples')
+        print(check_csharp(path, args.dotnet), end='')
     if args.real:
         data, _ = prepare(args.real)
         with tempfile.TemporaryDirectory(prefix='jitter-filter-real-vectors-', dir='/tmp') as tmp:

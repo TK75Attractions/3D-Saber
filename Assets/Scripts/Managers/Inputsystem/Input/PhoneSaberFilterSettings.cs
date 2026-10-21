@@ -8,7 +8,7 @@ public static class PhoneSaberFilterSettings
     public static string Key(string station) =>
         "PhoneSaber.EndpointFilter." + PhoneSaberStation.Normalize(station) + ".Mode.v1";
 
-    public static int Clamp(int mode) => mode == PhoneSaberEndpointFilter.Steady ? mode :
+    public static int Clamp(int mode) => mode == PhoneSaberEndpointFilter.Steady || mode == PhoneSaberEndpointFilter.Responsive ? mode :
         Mathf.Clamp(mode, PhoneSaberEndpointFilter.Off, PhoneSaberEndpointFilter.Medium);
 
     public const int DefaultMode = PhoneSaberEndpointFilter.Medium;
@@ -22,7 +22,8 @@ public static class PhoneSaberFilterSettings
     }
 
     public static string Label(int mode) => mode == PhoneSaberEndpointFilter.Weak ? "弱" :
-        mode == PhoneSaberEndpointFilter.Medium ? "中" : mode == PhoneSaberEndpointFilter.Steady ? "形状安定" : "OFF";
+        mode == PhoneSaberEndpointFilter.Medium ? "中" : mode == PhoneSaberEndpointFilter.Steady ? "形状安定" :
+        mode == PhoneSaberEndpointFilter.Responsive ? "低遅延（試験）" : "OFF";
 
     public static void Save(string station, int mode)
     {

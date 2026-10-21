@@ -195,7 +195,7 @@ class Check { static int Main(string[] args) {
         exe = build / 'after.exe'
         # 設定間の併用制約も実ソースでcompileする。フィルタ本体は上のUnity API compileで確認済み。
         filter_modes = build / 'FilterModes.cs'
-        filter_modes.write_text('public static class PhoneSaberEndpointFilter { public const int Off=0, Weak=1, Medium=2, Steady=3; }')
+        filter_modes.write_text('public static class PhoneSaberEndpointFilter { public const int Off=0, Weak=1, Medium=2, Steady=3, Responsive=4; }')
         if run(compiler + ['/define:AFTER', '/r:' + str(nunit), '/out:' + str(exe)] + list(map(str, host_sources + [INPUT / 'PhoneSaberPerfLog.cs', INPUT / 'PhoneSaberLatencyEstimate.cs', INPUT / 'PhoneSaberPredictionSettings.cs', INPUT / 'PhoneSaberFilterSettings.cs', filter_modes, compensation]))):
             return 1
         return run([str(mono / 'bin/mono'), str(exe)], env=host_env)

@@ -3261,9 +3261,10 @@ extension CameraViewModel {
 extension CameraViewModel: AVCaptureVideoDataOutputSampleBufferDelegate {
     nonisolated func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
         let frameTime = ProcessInfo.processInfo.systemUptime
+        // 統計用ロックが混んでも、届いた画像は先に最新1枚の処理キューへ渡す。
+        processor.submit(sampleBuffer)
         ConnectivityLog.sendGapMonitor.cameraFrame()
         healthMeter.cameraFrame(at: frameTime)
-        processor.submit(sampleBuffer)
         uiPending.cameraFrame(at: frameTime)
     }
 }

@@ -11,6 +11,8 @@ public sealed class PhoneSaberEndpointFilter
     public const int Medium = 2;
     // 中点は「中」のまま、半軸だけを平滑化。回転・伸縮の遅れが増えるため明示選択専用。
     public const int Steady = 3;
+    // 明示選択用。静止時の cutoff は「中」のまま、動いている間の追従を速める。
+    public const int Responsive = 4;
 
     struct Axis
     {
@@ -41,7 +43,7 @@ public sealed class PhoneSaberEndpointFilter
     {
         resultA = a; resultB = b;
         // OFF は符号付きゼロ・NaN・順序も含めてそのまま。並べ替えも算術も行わない。
-        if (mode != Weak && mode != Medium && mode != Steady) { Reset(); lastMode = Off; return; }
+        if (mode != Weak && mode != Medium && mode != Steady && mode != Responsive) { Reset(); lastMode = Off; return; }
         if (mode != lastMode) { Reset(); lastMode = mode; }
         if (double.IsNaN(receiveTimeSeconds) || double.IsInfinity(receiveTimeSeconds) ||
             !Finite(a.x) || !Finite(a.y) || !Finite(b.x) || !Finite(b.y)) { Reset(); return; }
@@ -69,7 +71,7 @@ public sealed class PhoneSaberEndpointFilter
                 Distance(previousRawA, a) + Distance(previousRawB, b))
                 (a, b) = (b, a);
             double minimum = mode == Weak ? 1.0 : 0.25;
-            double beta = mode == Weak ? 10.0 : 7.0;
+            double beta = mode == Responsive ? 14.0 : mode == Weak ? 10.0 : 7.0;
             double derivativeAlpha = Alpha(mode == Weak ? 10.0 : 60.0, dt);
             resultA = new Vector2(ax.Apply(a.x, dt, minimum, beta, derivativeAlpha),
                 ay.Apply(a.y, dt, minimum, beta, derivativeAlpha));

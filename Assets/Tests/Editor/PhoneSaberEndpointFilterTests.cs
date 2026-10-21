@@ -28,6 +28,7 @@ public class PhoneSaberEndpointFilterTests
     [TestCase(1)]
     [TestCase(2)]
     [TestCase(3)]
+    [TestCase(4)]
     public void ConstantInputAndSwapsRemainConstant(int mode)
     {
         var filter = new PhoneSaberEndpointFilter();
@@ -41,6 +42,7 @@ public class PhoneSaberEndpointFilterTests
 
     [TestCase(1)]
     [TestCase(2)]
+    [TestCase(4)]
     public void StepResponseIsMonotonicAndBounded(int mode)
     {
         var filter = new PhoneSaberEndpointFilter();
@@ -102,6 +104,9 @@ public class PhoneSaberEndpointFilterTests
             Assert.AreEqual(2, PhoneSaberFilterSettings.Load(second));
             PhoneSaberFilterSettings.Save(second, 3);
             Assert.AreEqual(3, PhoneSaberFilterSettings.Load(second));
+            PhoneSaberFilterSettings.Save(second, PhoneSaberEndpointFilter.Responsive);
+            Assert.AreEqual(PhoneSaberEndpointFilter.Responsive, PhoneSaberFilterSettings.Load(second));
+            Assert.AreEqual(1, PhoneSaberFilterSettings.Load(first));
             PhoneSaberFilterSettings.Save(first, -1);
             Assert.AreEqual(0, PhoneSaberFilterSettings.Load(first));
         }
@@ -172,7 +177,7 @@ public class PhoneSaberEndpointFilterTests
     public void SteadyIsExplicitAndSwitchingRestartsHistory()
     {
         Assert.IsTrue(PhoneSaberControlPanelActions.IsValid("filter", "3"));
-        Assert.IsFalse(PhoneSaberControlPanelActions.IsValid("filter", "4"));
+        Assert.IsFalse(PhoneSaberControlPanelActions.IsValid("filter", "5"));
         Assert.AreEqual("形状安定", PhoneSaberFilterSettings.Label(3));
         var filter = new PhoneSaberEndpointFilter();
         filter.Apply(0, Vector2.zero, Vector2.one, 2, out _, out _);
@@ -183,6 +188,29 @@ public class PhoneSaberEndpointFilterTests
         Assert.AreEqual(a, duplicateA); Assert.AreEqual(b, duplicateB);
         filter.Apply(.2, Vector2.right, Vector2.left, 3, out a, out b);
         Assert.AreEqual(Vector2.right, a); Assert.AreEqual(Vector2.left, b);
+    }
+
+    [TestCase(30)]
+    [TestCase(60)]
+    [TestCase(120)]
+    public void ResponsiveHalvesConstantSwingLagAndResetsOnSwitch(int fps)
+    {
+        var medium = new PhoneSaberEndpointFilter();
+        var responsive = new PhoneSaberEndpointFilter();
+        Vector2 fastA = default, fastB = default, slowA = default, slowB = default;
+        for (int i = 0; i <= fps; i++)
+        {
+            float x = 4f * i / fps;
+            medium.Apply(i / (double)fps, new Vector2(x, -.5f), new Vector2(x, .5f), 2, out slowA, out slowB);
+            responsive.Apply(i / (double)fps, new Vector2(x, -.5f), new Vector2(x, .5f), 4, out fastA, out fastB);
+        }
+        Assert.Less(4 - fastA.x, (4 - slowA.x) * .51f);
+        Assert.Greater(4 - fastA.x, 0, "予測せず観測値に追従する");
+        Assert.AreEqual(1f, fastB.y - fastA.y);
+        responsive.Apply(1.01, Vector2.zero, Vector2.one, 2, out fastA, out fastB);
+        Assert.AreEqual(Vector2.zero, fastA); Assert.AreEqual(Vector2.one, fastB);
+        Assert.IsTrue(PhoneSaberControlPanelActions.IsValid("filter", "4"));
+        Assert.AreEqual(2, PhoneSaberFilterSettings.DefaultMode, "未選択の台は変えない");
     }
 
     [Test]
