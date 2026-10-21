@@ -293,57 +293,87 @@ run_unity_step "$MODE" "$LOG" -batchmode
                 self.assertNotEqual(result.returncode, 0)
                 self.assertEqual(calls, 1)
 
+    # OS の上限は変更せず、実際の子 bash / 隠しランチャーに模擬値を継承させる。
+    # setter は soft の指定だけを受け付け、hard の変更や想定外の呼び出しは失敗させる。
+    LIMIT_STUB = r'''
+export TEST_SOFT TEST_HARD TEST_LIMIT_ERROR
+ulimit() {
+    case "$*" in
+        '-S -n') [[ "$TEST_LIMIT_ERROR" != read ]] || return 1; echo "$TEST_SOFT" ;;
+        '-H -n') echo "$TEST_HARD" ;;
+        '-S -n 65536')
+            [[ "$TEST_LIMIT_ERROR" != set ]] || return 1
+            [[ "$TEST_HARD" == unlimited || "$TEST_HARD" -ge 65536 ]] || return 1
+            export TEST_SOFT=65536 ;;
+        *) echo "unexpected ulimit: $*" >&2; return 99 ;;
+    esac
+}
+export -f ulimit
+'''
+
+    def limit_bash(self, command, soft, hard, error="", **environment):
+        return self.bash(self.LIMIT_STUB + command, env=dict(
+            os.environ, TEST_SOFT=str(soft), TEST_HARD=str(hard), TEST_LIMIT_ERROR=error,
+            **environment))
+
     def test_soft_limit_is_set_only_in_child_and_hard_limit_is_preserved(self):
-        # 実際の子 bash が継承した値を読む。OS が許す場合だけ巨大上限も再現する。
-        for initial in (1024, 65536, 1048576):
-            with self.subTest(initial=initial):
-                result = self.bash(f'''
-ulimit -S -n {initial} 2>/dev/null || exit 77
-hard=$(ulimit -H -n)
+        for initial, hard, expected in ((1024, 1048576, 65536), (65536, 65536, 65536),
+                                        (1048576, 1048576, 65536), ("unlimited", "unlimited", 65536),
+                                        (1024, 16384, 1024), (16384, 16384, 16384)):
+            with self.subTest(initial=initial, hard=hard):
+                result = self.limit_bash('''
 UNITY=/bin/bash
-run_unity -c 'echo "child=$(ulimit -S -n) hard=$(ulimit -H -n)"'
-echo "parent=$(ulimit -S -n) hard=$hard"
-''')
-                if result.returncode == 77:
-                    continue
+run_unity -c 'echo "child=$(ulimit -S -n) hard=$(ulimit -H -n)"' || exit $?
+echo "parent=$(ulimit -S -n) hard=$(ulimit -H -n)"
+''', initial, hard)
                 self.assertEqual(result.returncode, 0, result.stderr)
-                lines = result.stdout.splitlines()
-                self.assertTrue(lines[0].startswith("child=65536 hard="), result.stdout)
-                self.assertEqual(lines[0].split("hard=")[1], lines[1].split("hard=")[1])
-                self.assertTrue(lines[1].startswith(f"parent={initial} "), result.stdout)
+                self.assertEqual(result.stdout.splitlines(),
+                                 [f"child={expected} hard={hard}", f"parent={initial} hard={hard}"])
+                if expected != 65536:
+                    self.assertIn("上げられません", result.stderr)
+                else:
+                    self.assertEqual(result.stderr, "")
 
     def test_low_hard_limit_is_respected(self):
-        result = self.bash('''
-ulimit -S -n 1024 && ulimit -H -n 1024 || exit 77
+        result = self.limit_bash('''
 unity_child /bin/bash -c 'echo "$(ulimit -S -n) $(ulimit -H -n)"'
-''')
-        if result.returncode == 77:
-            self.skipTest("OS が hard limit の変更を許可しません")
+''', 1024, 1024)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(result.stdout.strip(), "1024 1024")
         self.assertIn("上げられません", result.stderr)
 
+    def test_limit_read_or_unsafe_reduction_failure_prevents_launch(self):
+        for soft, error in ((1024, "read"), (1048576, "set"), ("unlimited", "set")):
+            with self.subTest(soft=soft, error=error):
+                result = self.limit_bash("unity_child /bin/echo launched", soft, "unlimited", error)
+                self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+                self.assertEqual(result.stdout, "")
+                if error == "set":
+                    self.assertIn("下げられません", result.stderr)
+
     def test_hidden_launcher_applies_limit_and_preserves_arguments_and_cleanup(self):
-        with tempfile.TemporaryDirectory(prefix="unity wrapper '") as tmp:
-            root = Path(tmp)
-            exe = root / "Unity.app/Contents/MacOS/Unity"
-            exe.parent.mkdir(parents=True)
-            exe.write_text('#!/bin/bash\necho "$(ulimit -S -n)"\nprintf "<%s>\\n" "$@"\nexit 7\n')
-            exe.chmod(0o755)
-            result = self.bash('''
-run_hidden() {
-    cp "${1%/MacOS/*}/Info.plist" "$CAPTURE"
-    printf '%s' "${1%/Unity.app/*}" > "$WRAPPER_PATH"
-    "$@"
-}
-run_unity -batchmode 'space arg' '$(literal)'
-''', env=dict(os.environ, UNITY=str(exe), TMPDIR=str(root), PHONESABER_UNITY_FOREGROUND="",
-              CAPTURE=str(root / "Info.plist"), WRAPPER_PATH=str(root / "wrapper-path")))
-            self.assertEqual(result.returncode, 7, result.stderr)
-            self.assertEqual(result.stdout.splitlines(), ["65536", "<-batchmode>", "<space arg>", "<$(literal)>"])
-            plist = plistlib.loads((root / "Info.plist").read_bytes())
-            self.assertEqual(plist["CFBundleExecutable"], "launch")
-            self.assertFalse(Path((root / "wrapper-path").read_text()).exists())
+        for hard, expected in ((1048576, 65536), (16384, 1024)):
+            with self.subTest(hard=hard):
+                with tempfile.TemporaryDirectory(prefix="unity wrapper '") as tmp:
+                    root = Path(tmp)
+                    exe = root / "Unity.app/Contents/MacOS/Unity"
+                    exe.parent.mkdir(parents=True)
+                    exe.write_text('#!/bin/bash\necho "$(ulimit -S -n)"\nprintf "<%s>\\n" "$@"\nexit 7\n')
+                    exe.chmod(0o755)
+                    result = self.limit_bash('''
+        run_hidden() {
+            cp "${1%/MacOS/*}/Info.plist" "$CAPTURE"
+            printf '%s' "${1%/Unity.app/*}" > "$WRAPPER_PATH"
+            "$@"
+        }
+        run_unity -batchmode 'space arg' '$(literal)'
+        ''', 1024, hard, UNITY=str(exe), TMPDIR=str(root), PHONESABER_UNITY_FOREGROUND="",
+                      CAPTURE=str(root / "Info.plist"), WRAPPER_PATH=str(root / "wrapper-path"))
+                    self.assertEqual(result.returncode, 7, result.stderr)
+                    self.assertEqual(result.stdout.splitlines(), [str(expected), "<-batchmode>", "<space arg>", "<$(literal)>"])
+                    plist = plistlib.loads((root / "Info.plist").read_bytes())
+                    self.assertEqual(plist["CFBundleExecutable"], "launch")
+                    self.assertFalse(Path((root / "wrapper-path").read_text()).exists())
 
 
 if __name__ == "__main__":
