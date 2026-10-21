@@ -20,7 +20,7 @@ public class AndalusiaChartTests
     }
 
     [TestCase("easy", 3)]
-    [TestCase("normal", 5)]
+    [TestCase("normal", 6)]
     [TestCase("hard", 8)]
     public void DedicatedChartsHaveAuthoredLevelsAndUseTheProvidedAudioTimeline(string difficulty, int level)
     {
@@ -62,7 +62,7 @@ public class AndalusiaChartTests
     }
 
     [TestCase("easy", 3)]
-    [TestCase("normal", 5)]
+    [TestCase("normal", 6)]
     [TestCase("hard", 8)]
     public void EditorRoundTripAndGridTempoChangePreserveEveryAudioTimestamp(string difficulty, int level)
     {
