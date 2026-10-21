@@ -9,6 +9,8 @@ public sealed class PhoneSaberEndpointFilter
     public const int Off = 0;
     public const int Weak = 1;
     public const int Medium = 2;
+    // 中点は「中」のまま、半軸だけを平滑化。回転・伸縮の遅れが増えるため明示選択専用。
+    public const int Steady = 3;
 
     struct Axis
     {
@@ -26,7 +28,7 @@ public sealed class PhoneSaberEndpointFilter
         }
     }
 
-    Axis ax, ay, bx, by;
+    Axis ax, ay, bx, by, halfX, halfY;
     Vector2 previousRawA, previousRawB, filteredA, filteredB;
     double latestTime;
     bool hasSample;
@@ -39,7 +41,7 @@ public sealed class PhoneSaberEndpointFilter
     {
         resultA = a; resultB = b;
         // OFF は符号付きゼロ・NaN・順序も含めてそのまま。並べ替えも算術も行わない。
-        if (mode != Weak && mode != Medium) { Reset(); lastMode = Off; return; }
+        if (mode != Weak && mode != Medium && mode != Steady) { Reset(); lastMode = Off; return; }
         if (mode != lastMode) { Reset(); lastMode = mode; }
         if (double.IsNaN(receiveTimeSeconds) || double.IsInfinity(receiveTimeSeconds) ||
             !Finite(a.x) || !Finite(a.y) || !Finite(b.x) || !Finite(b.y)) { Reset(); return; }
@@ -53,6 +55,11 @@ public sealed class PhoneSaberEndpointFilter
         if (!hasSample || dt > MaximumGapSeconds)
         {
             ax.Start(a.x); ay.Start(a.y); bx.Start(b.x); by.Start(b.y);
+            if (mode == Steady)
+            {
+                Vector2 half = (b - a) * .5f;
+                halfX.Start(half.x); halfY.Start(half.y);
+            }
             hasSample = true;
         }
         else
@@ -68,6 +75,16 @@ public sealed class PhoneSaberEndpointFilter
                 ay.Apply(a.y, dt, minimum, beta, derivativeAlpha));
             resultB = new Vector2(bx.Apply(b.x, dt, minimum, beta, derivativeAlpha),
                 by.Apply(b.y, dt, minimum, beta, derivativeAlpha));
+            if (mode == Steady)
+            {
+                // 予測器へ渡す中点の応答は変えず、伸縮・向きの高周波成分だけを抑える。
+                Vector2 mid = (resultA + resultB) * .5f;
+                Vector2 half = (b - a) * .5f;
+                double shapeAlpha = Alpha(2.0, dt);
+                half = new Vector2(halfX.Apply(half.x, dt, minimum, beta, shapeAlpha),
+                    halfY.Apply(half.y, dt, minimum, beta, shapeAlpha));
+                resultA = mid - half; resultB = mid + half;
+            }
         }
         previousRawA = a; previousRawB = b;
         filteredA = resultA; filteredB = resultB;

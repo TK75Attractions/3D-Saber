@@ -18,6 +18,7 @@ public static class PhoneSaberPredictionSettings
     {
         PlayerPrefs.SetInt(AutomaticKey(station), automatic ? 1 : 0);
         PlayerPrefs.Save();
+        PhoneSaberFilterSettings.PredictionModeChanged(station);
     }
 
     public static int AutomaticLead(PhoneSaberInputStats stats, bool clocksSynchronized, out bool measured)
@@ -41,6 +42,7 @@ public static class PhoneSaberPredictionSettings
     {
         PlayerPrefs.SetInt(Key(station), Clamp(milliseconds));
         PlayerPrefs.Save();
+        PhoneSaberFilterSettings.RestoreMediumForManualPrediction(station);
     }
 }
 

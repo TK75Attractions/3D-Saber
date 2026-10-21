@@ -14,7 +14,7 @@ public static class PhoneSaberControlPanelActions
         { "prediction", new[] { "auto", "0", "20", "40", "60" } },
         { "display-sync", new[] { "0", "1" } }, { "frame-cap", new[] { "0", "1", "2" } },
         { "judge-mode", new[] { "0", "1" } }, { "judge-adjust", new[] { "-10", "10" } }, { "judge-centre", new[] { "" } },
-        { "filter", new[] { "0", "1", "2" } }, { "stabilizer", new[] { "0", "1" } },
+        { "filter", new[] { "0", "1", "2", "3" } }, { "stabilizer", new[] { "0", "1" } },
         { "phone-ignore", new[] { "red", "blue", "both" } }, { "phone-clear-ignore", new[] { "" } },
         { "phone-learn-area", new[] { "" } }, { "phone-clear-area", new[] { "" } },
         { "phone-exposure", new[] { "0", "-1", "-2" } },

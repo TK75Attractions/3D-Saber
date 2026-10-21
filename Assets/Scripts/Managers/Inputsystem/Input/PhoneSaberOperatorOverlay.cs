@@ -427,8 +427,11 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         string name = input != null ? input.StationLabel : fallbackStation;
         int mode = PhoneSaberFilterSettings.Load(name);
         panel.Label($"剣の揺れ補正: {PhoneSaberFilterSettings.Label(mode)}（この台の両色に保存）");
-        for (int value = PhoneSaberEndpointFilter.Off; value <= PhoneSaberEndpointFilter.Medium; value++)
-            panel.Button(PhoneSaberFilterSettings.Label(value), "filter", value.ToString(CultureInfo.InvariantCulture), selected: mode == value);
+        panel.Label("形状安定: 中点は「中」と同じ。回転・伸縮の遅れは増えます。予測OFF／自動で使えます。");
+        for (int value = PhoneSaberEndpointFilter.Off; value <= PhoneSaberEndpointFilter.Steady; value++)
+            panel.Button(PhoneSaberFilterSettings.Label(value), "filter", value.ToString(CultureInfo.InvariantCulture),
+                enabled: value != PhoneSaberEndpointFilter.Steady || PhoneSaberFilterSettings.CanUseSteady(name), selected: mode == value);
+        panel.Label("手動予測20／40／60msへ切り替えると、形状安定は「中」に戻ります。");
         panel.Label("初期値は「中」（未設定の台）。静止時の揺れを少し抑えます。速い振りにも小さな遅れが加わります。");
         bool stable = PhoneSaberBladeStabilizerSettings.Load(name);
         panel.Label($"剣の揺れ止め（伸び縮み・誤認識の跳び）: {(stable ? "ON" : "OFF")}（この台に保存）");

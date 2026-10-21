@@ -2,6 +2,7 @@ import math
 from pathlib import Path
 import struct
 import shutil
+import tempfile
 
 import check_endpoint_filter_parity as parity
 import unittest
@@ -25,6 +26,15 @@ class EndpointFilterEvaluationTests(unittest.TestCase):
         self.assertIs(points, filt.apply(.03, points, enabled=False))
         self.assertEqual(struct.pack('d', -0.0), struct.pack('d', points[0]))
         self.assertEqual(points, filt.apply(.04, points))
+
+    def test_steady_and_switches_match_actual_csharp(self):
+        if shutil.which('dotnet') is None:
+            self.skipTest('installed .NET SDK required for actual C# parity')
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / 'steady.csv'
+            parity.generate(path, (2, 3, 3, 0, 3, 1, 2))
+            self.assertEqual(336, parity.check_python(path))
+            self.assertIn('PASS: 336 samples, 1344 float components', parity.check_csharp(path, 'dotnet'))
 
     def test_swap_matching_is_distance_sum_not_squared_distance(self):
         previous = (0, 0, 2, 0)

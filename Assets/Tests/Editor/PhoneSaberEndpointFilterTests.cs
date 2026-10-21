@@ -27,6 +27,7 @@ public class PhoneSaberEndpointFilterTests
 
     [TestCase(1)]
     [TestCase(2)]
+    [TestCase(3)]
     public void ConstantInputAndSwapsRemainConstant(int mode)
     {
         var filter = new PhoneSaberEndpointFilter();
@@ -99,6 +100,8 @@ public class PhoneSaberEndpointFilterTests
             Assert.AreEqual(1, PhoneSaberFilterSettings.Load(first)); Assert.AreEqual(PhoneSaberEndpointFilter.Medium, PhoneSaberFilterSettings.Load(second));
             PhoneSaberFilterSettings.Save(second, 99);
             Assert.AreEqual(2, PhoneSaberFilterSettings.Load(second));
+            PhoneSaberFilterSettings.Save(second, 3);
+            Assert.AreEqual(3, PhoneSaberFilterSettings.Load(second));
             PhoneSaberFilterSettings.Save(first, -1);
             Assert.AreEqual(0, PhoneSaberFilterSettings.Load(first));
         }
@@ -107,6 +110,79 @@ public class PhoneSaberEndpointFilterTests
             PlayerPrefs.DeleteKey(PhoneSaberFilterSettings.Key(first)); PlayerPrefs.DeleteKey(PhoneSaberFilterSettings.Key(second));
             PlayerPrefs.Save();
         }
+    }
+
+    [Test]
+    public void SteadyRejectsManualPredictionAndRestoresMediumWhenSwitching()
+    {
+        string station = "shape-" + Guid.NewGuid().ToString("N").Substring(0, 8);
+        try
+        {
+            PhoneSaberPredictionSettings.Save(station, 40);
+            PhoneSaberPredictionSettings.SaveAutomatic(station, false);
+            Assert.IsFalse(PhoneSaberFilterSettings.CanUseSteady(station));
+            PhoneSaberFilterSettings.Save(station, 3);
+            Assert.AreEqual(2, PhoneSaberFilterSettings.Load(station));
+            // 以前保存された併用設定でも、起動時は「中」を使う。
+            PlayerPrefs.SetInt(PhoneSaberFilterSettings.Key(station), 3);
+            Assert.AreEqual(2, PhoneSaberFilterSettings.Load(station));
+            PhoneSaberPredictionSettings.SaveAutomatic(station, true);
+            PhoneSaberFilterSettings.Save(station, 3);
+            Assert.AreEqual(3, PhoneSaberFilterSettings.Load(station));
+            int revision = PhoneSaberFilterSettings.Revision;
+            PhoneSaberPredictionSettings.SaveAutomatic(station, false);
+            Assert.AreEqual(2, PhoneSaberFilterSettings.Load(station));
+            Assert.Greater(PhoneSaberFilterSettings.Revision, revision, "稼働中のフィルタ履歴も再開する");
+            PhoneSaberPredictionSettings.Save(station, 0);
+            Assert.AreEqual(3, PhoneSaberFilterSettings.Load(station), "自動からOFFへ移る保存順でも形状安定を維持する");
+            PhoneSaberFilterSettings.Save(station, 3);
+            Assert.AreEqual(3, PhoneSaberFilterSettings.Load(station));
+            PhoneSaberPredictionSettings.Save(station, 20);
+            Assert.AreEqual(2, PhoneSaberFilterSettings.Load(station));
+        }
+        finally
+        {
+            PlayerPrefs.DeleteKey(PhoneSaberFilterSettings.Key(station));
+            PlayerPrefs.DeleteKey(PhoneSaberPredictionSettings.Key(station));
+            PlayerPrefs.DeleteKey(PhoneSaberPredictionSettings.AutomaticKey(station));
+            PlayerPrefs.Save();
+        }
+    }
+
+    [Test]
+    public void SteadyKeepsMediumMidpointAndConvergesAfterShapeChange()
+    {
+        var medium = new PhoneSaberEndpointFilter();
+        var steady = new PhoneSaberEndpointFilter();
+        Vector2 a = Vector2.zero, b = Vector2.zero;
+        for (int i = 0; i < 240; i++)
+        {
+            var rawA = i == 0 ? new Vector2(-1, -.125f) : new Vector2(0, .75f);
+            var rawB = i == 0 ? new Vector2(1, .125f) : new Vector2(2, 1.25f);
+            medium.Apply(i / 60.0, rawA, rawB, 2, out var ma, out var mb);
+            steady.Apply(i / 60.0, rawA, rawB, 3, out a, out b);
+            Assert.Less(Vector2.Distance((ma + mb) * .5f, (a + b) * .5f), 1e-6f);
+            Assert.That((b.y - a.y) * .5f, Is.InRange(.124999f, .250001f));
+        }
+        Assert.Less(Vector2.Distance(new Vector2(0, .75f), a), 1e-3f);
+        Assert.Less(Vector2.Distance(new Vector2(2, 1.25f), b), 1e-3f);
+    }
+
+    [Test]
+    public void SteadyIsExplicitAndSwitchingRestartsHistory()
+    {
+        Assert.IsTrue(PhoneSaberControlPanelActions.IsValid("filter", "3"));
+        Assert.IsFalse(PhoneSaberControlPanelActions.IsValid("filter", "4"));
+        Assert.AreEqual("形状安定", PhoneSaberFilterSettings.Label(3));
+        var filter = new PhoneSaberEndpointFilter();
+        filter.Apply(0, Vector2.zero, Vector2.one, 2, out _, out _);
+        filter.Apply(.016, Vector2.one, Vector2.zero, 3, out var a, out var b);
+        Assert.AreEqual(Vector2.one, a); Assert.AreEqual(Vector2.zero, b);
+        filter.Apply(.032, Vector2.zero, Vector2.one, 3, out a, out b);
+        filter.Apply(.032, Vector2.right, Vector2.right, 3, out var duplicateA, out var duplicateB);
+        Assert.AreEqual(a, duplicateA); Assert.AreEqual(b, duplicateB);
+        filter.Apply(.2, Vector2.right, Vector2.left, 3, out a, out b);
+        Assert.AreEqual(Vector2.right, a); Assert.AreEqual(Vector2.left, b);
     }
 
     [Test]

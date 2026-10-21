@@ -2,6 +2,7 @@
 """Actual C#9 filter / Python parity and CPU cost; does not run Unity or sockets."""
 import argparse
 import csv
+import io
 import math
 import os
 from pathlib import Path
@@ -15,7 +16,7 @@ from endpoint_filter_eval import EndpointFilter, prepare
 FILTER = 'Assets/Scripts/Managers/Inputsystem/Input/PhoneSaberEndpointFilter.cs'
 SETTINGS = 'Assets/Scripts/Managers/Inputsystem/Input/PhoneSaberFilterSettings.cs'
 VECTORS = Path(__file__).with_name('fixtures') / 'endpoint_filter_vectors.csv'
-PRESETS = {1: (1, 10, 10), 2: (.25, 7, 60)}
+PRESETS = {1: (1, 10, 10), 2: (.25, 7, 60), 3: (.25, 7, 60)}
 FIELDS = ['time', 'x1', 'y1', 'x2', 'y2', 'mode', 'bits1', 'bits2', 'bits3', 'bits4']
 
 
@@ -29,13 +30,40 @@ class PresetFilter:
             return points
         if self.mode != mode:
             self.mode, self.filter = mode, EndpointFilter(*PRESETS[mode])
-        return self.filter.apply(timestamp, points)
+            self.shape = EndpointFilter(.25, 7, 2, correction=False)
+            self.last_shape_output = points
+        if mode != 3:
+            return self.filter.apply(timestamp, points)
+        if not all(math.isfinite(v) for v in (timestamp, *points)):
+            self.filter.reset()
+            self.shape.reset()
+            return points
+        previous_time = self.filter.time
+        if previous_time is not None and timestamp <= previous_time:
+            return self.last_shape_output
+        output = self.filter.apply(timestamp, points)
+        if self.filter.time is None:
+            self.shape.reset()
+            return points
+        raw = self.filter.raw
+        half = tuple(f32(f32(raw[i+2] - raw[i]) * .5) for i in (0, 1))
+        if previous_time is None or timestamp - previous_time > .1:
+            self.shape.reset()
+            self.shape.apply(timestamp, (*half, 0, 0))
+            result = points
+        else:
+            output = tuple(f32(v) for v in output)
+            mid = tuple(f32(f32(output[i] + output[i+2]) * .5) for i in (0, 1))
+            half = tuple(f32(v) for v in self.shape.apply(timestamp, (*half, 0, 0))[:2])
+            result = tuple(f32(mid[i] - half[i]) for i in (0, 1)) + tuple(f32(mid[i] + half[i]) for i in (0, 1))
+        self.last_shape_output = result
+        return result
 
 
-def generate(path):
+def generate(path, modes=(0, 1, 2, 1, 0)):
     filt = PresetFilter()
     rows, time = [], 0
-    for mode in (0, 1, 2, 1, 0):
+    for mode in modes:
         for i in range(48):
             time += .2 if i == 17 else (0 if i == 23 else (.02, .03, .04)[i % 3])
             points = tuple(f32(v) for v in (math.sin(time * 3) - .5, .2 * math.cos(time * 2),
@@ -54,7 +82,7 @@ def generate(path):
 
 def check_python(path):
     filt, count = PresetFilter(), 0
-    for r in csv.DictReader(path.open()):
+    for r in csv.DictReader(io.StringIO(path.read_text())):
         actual = filt.apply(float(r['time']), tuple(float(r[k]) for k in FIELDS[1:5]), int(r['mode']))
         assert [f'{float_bits(v):08x}' for v in actual] == [r[k] for k in FIELDS[6:]], r
         count += 1
@@ -80,7 +108,7 @@ class Program {
             count++;
         }
         Console.WriteLine($"C#9 / Python bit parity PASS: {count} samples, {count*4} float components");
-        foreach(int mode in new[]{1,2}) {
+        foreach(int mode in new[]{1,2,3}) {
             filter.Reset(); var first=new Vector2(-1,.25f); var second=new Vector2(1,.5f);
             for(int i=0;i<120;i++) {
                 filter.Apply(i/30.0,i%2==0?first:second,i%2==0?second:first,mode,out var a,out var b);
@@ -89,7 +117,14 @@ class Program {
             filter.Reset();filter.Apply(0,first,second,mode,out var pa,out var pb);
             for(int i=1;i<90;i++) {
                 filter.Apply(i/30.0,new Vector2(0,1),new Vector2(2,1.5f),mode,out var a,out var b);
-                Require(a.x>=pa.x&&a.x<=0&&a.y>=pa.y&&a.y<=1&&b.x>=pb.x&&b.x<=2&&b.y>=pb.y&&b.y<=1.5f,"step bounds");
+                if(mode!=3)
+                    Require(a.x>=pa.x&&a.x<=0&&a.y>=pa.y&&a.y<=1&&b.x>=pb.x&&b.x<=2&&b.y>=pb.y&&b.y<=1.5f,"step bounds");
+                else {
+                    // 形状と中点は別の応答。端点単独の単調性を仮定せず、中点と半軸を検証する。
+                    var mid=(a+b)*.5f; var priorMid=(pa+pb)*.5f; var half=(b-a)*.5f; var priorHalf=(pb-pa)*.5f;
+                    Require(mid.x>=priorMid.x-1e-6f&&mid.x<=1.000001f&&mid.y>=priorMid.y-1e-6f&&mid.y<=1.250001f,"shape midpoint bounds");
+                    Require(Math.Abs(half.x-1)<1e-6f&&half.y>=priorHalf.y-1e-6f&&half.y<=.250001f,"shape half-axis bounds");
+                }
                 pa=a;pb=b;
             }
             Console.WriteLine($"step final max residual mode={mode}: {Math.Max(Math.Max(Math.Abs(pa.x),Math.Abs(pa.y-1)),Math.Max(Math.Abs(pb.x-2),Math.Abs(pb.y-1.5))):g9}");
@@ -99,12 +134,13 @@ class Program {
             filter.Apply(4.04,new Vector2(5,0),new Vector2(6,0),mode,out var invalidA,out var invalidB);
             Require(invalidA.x==5&&invalidB.x==6,"invalid resets");
         }
-        Require(PhoneSaberFilterSettings.Load("stationA")==0,"default OFF");
+        Require(PhoneSaberFilterSettings.Load("stationA")==2,"default medium");
         PhoneSaberFilterSettings.Save("stationA",1);
-        Require(PhoneSaberFilterSettings.Load("stationA")==1&&PhoneSaberFilterSettings.Load("stationB")==0,"station isolation");
-        PhoneSaberFilterSettings.Save("stationB",99);Require(PhoneSaberFilterSettings.Load("stationB")==2,"clamp");
+        Require(PhoneSaberFilterSettings.Load("stationA")==1&&PhoneSaberFilterSettings.Load("stationB")==2,"station isolation");
+        PhoneSaberFilterSettings.Save("stationB",3);Require(PhoneSaberFilterSettings.Load("stationB")==3,"opt-in steady");
+        PhoneSaberFilterSettings.Save("stationB",99);Require(PhoneSaberFilterSettings.Load("stationB")==2,"legacy invalid clamp");
         Console.WriteLine("C#9 smoke PASS: constant, swap, step bounds, gap, invalid reset, settings (PlayerPrefs stub)");
-        Bench(-1);Bench(0);Bench(1);Bench(2);
+        Bench(-1);Bench(0);Bench(1);Bench(2);Bench(3);
     }
     static double sink;
     static void Bench(int mode) {
@@ -141,6 +177,10 @@ namespace UnityEngine {
         public static void Save() {}
         public static string GetString(string k,string fallback)=>fallback;
     }
+}
+public static class PhoneSaberPredictionSettings {
+    public static bool LoadAutomatic(string station)=>true;
+    public static int Load(string station)=>0;
 }
 '''
 
