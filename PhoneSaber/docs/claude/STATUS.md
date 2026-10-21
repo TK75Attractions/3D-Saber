@@ -1,4 +1,5 @@
 # PhoneSaber STATUS
+- 2026-10-21: tools/install_iphones.sh を追加（利用可能・ペアリング済み実機iPhoneを列挙、全UDIDで1回ビルドし各端末へ再インストール、Team/Bundle環境変数・dry-run・実プロファイル署名期限・日本語対処案内）。偽PATHコマンドのbashテスト10ケース・bash構文・変更範囲diff --check PASS、verifyのToolsへ接続。実コマンドのdry-runはCoreDeviceService初期化timeoutでblocked、実機署名/build/installは未検証、総合verifyは未実行。認識/判定/UDP・Scene/Prefab/ProjectSettings/既存meta・pbxproj変更なし、commit/pushなし。
 - 2026-10-21: 非公開field_regression add/run＋合成unittest10件＋verifyのField(PASS/FAIL/未導入SKIP)を追加。10/20指定6＋10/19全9clipの原寸45画像を目視ラベルし90色判定=63PASS/27明示XFAIL（誤検出12・未検出3・端点不一致12）、終了0。指定Application Supportへの作成はsandbox EPERMのため /private/tmp/phonesaber-field-regression-20261021 に画像・ラベル・全結果を一時保存（配置待ち、既定FieldはSKIP）。formal40/40、static BGRA、DeviceHealth20、AutoClip12PASS/保存1SKIP、bash -n・diff --check PASS。総合verify/iOS Release/Unityは未実行。認識coreはgood-20261020と差分なし、認識/判定/UDP・Scene/Prefab/ProjectSettings/既存meta変更・commit/pushなし。
 
 - ユーザー待ち: operator の差分レビュー、Unity EditMode（PhoneSaberControlPanelTests を含む）、`bash PhoneSaber/tools/verify_phone_saber.sh`、Mac Player build。内蔵画面＋プロジェクターで F8 / Shift+F8 / F7・全Web操作・スマホACKを確認。既存スマホ関連の実機確認も継続。

@@ -528,6 +528,9 @@ run_logged_command "PhoneSaber Tools unittest" tools-unittest \
   -p 'test_*.py' \
   -v
 if [[ "$LAST_EXIT" -eq 0 ]]; then TOOLS_STATUS="PASS"; fi
+run_logged_command "iPhone installer bash test" tools-install-iphones \
+  bash "$SCRIPT_DIR/test_install_iphones.sh"
+if [[ "$LAST_EXIT" -ne 0 ]]; then TOOLS_STATUS="FAIL"; fi
 report_stage "Tools" "$TOOLS_STATUS"
 
 run_logged_command "iOS Release build" ios-release-build \
