@@ -624,9 +624,15 @@ struct SaberPlayAreaLearner: Equatable {
 /// FrameProcessor がフレームキュー上で所有する色別の選択履歴。補間・プレビューの Track とは別の寿命。
 final class SaberTrackLock {
     private struct Track {
-        var x: Double, y: Double, length: Double, updated: Double
+        var x: Double, y: Double, length: Double, angle: Double, updated: Double
         var selectedSince: Double?
+        var preferenceSince: Double?
+        var challenger: Challenge?
         var vx = 0.0, vy = 0.0, misses = 0
+    }
+    private struct Challenge {
+        var x: Double, y: Double, length: Double, angle: Double
+        var frames: Int
     }
     private var tracks: [SaberColor: Track] = [:]
     private var dimensions: (Int, Int)?
@@ -655,6 +661,113 @@ final class SaberTrackLock {
         return area
     }
 
+    /// 現在のゲート内だけで対応を取る純粋関数。index/sourceや発光特徴をidentityにしない。
+    /// コスト = 0.80×予測中点距離/前回長 + 0.18×軸角差/90度 + 0.02×|log2(長さ比)|。
+    /// 端点入替に不変。中点を主にし、短い/部分的な刃も長さだけで別物にしない。
+    /// 10/21 17:02の反射challengerは対応する実刃より最大21.2点高い。margin sweepの
+    /// 5/10/15/20点では反射が残り、25〜30点で消えたため25点とする（2026-10-22の全34clip評価）。
+    /// コスト0.5以下だけを対応とみなす。それを失えば現frameの順位へ即座に戻る。
+    static func continuingWinner(_ eligible: [SaberCandidate], predictedX: Double, predictedY: Double,
+                                 length: Double, angle: Double, radius: Double,
+                                 allowPreference: Bool = true) -> SaberCandidate? {
+        var ranked: SaberCandidate?, matching: SaberCandidate?
+        var bestCost = Double.infinity
+        for candidate in eligible {
+            let e = candidate.endpoints
+            let distance = hypot((Double(e.0.x) + Double(e.1.x)) / 2 - predictedX,
+                                 (Double(e.0.y) + Double(e.1.y)) / 2 - predictedY)
+            guard distance <= radius else { continue }
+            if ranked == nil { ranked = candidate }
+            guard allowPreference else { continue }
+            let dx = Double(e.1.x - e.0.x), dy = Double(e.1.y - e.0.y)
+            let candidateLength = max(hypot(dx, dy), 1), previousLength = max(length, 1)
+            let rawAngle = abs(atan2(dy, dx) - angle).truncatingRemainder(dividingBy: .pi)
+            let angleDifference = min(rawAngle, .pi - rawAngle) / (.pi / 2)
+            let cost = 0.80 * distance / previousLength + 0.18 * angleDifference
+                + 0.02 * abs(log2(candidateLength / previousLength))
+            // 同値なら既存順位を保つ。Set/Dictionaryの反復順に依存させない。
+            if cost < bestCost { bestCost = cost; matching = candidate }
+        }
+        guard let ranked, let matching, bestCost <= 0.5,
+              ranked.score - matching.score <= 25 else { return ranked }
+        return matching
+    }
+
+    /// 得点または既存の高輝度支持が連続して強い別候補だけに復帰する。履歴は色別・幾何対応。
+    /// 17:02の反射取得20→21は得点差3.8が1コマだけ。19〜25の実刃は高輝度比0.987以上、
+    /// 反射との差0.082以上が続く。高輝度比0.97・差0.06、または得点差8（輝度比の低下0.04以内）
+    /// が3コマ続けば復帰する。軸に垂直な距離が長さの0.20以上の候補だけを対象とし、
+    /// 同じ刃のsource/端点の違いを復帰にしない。34clipの窓長・得点差sweepで確認した。
+    private static func recoveringWinner(_ eligible: [SaberCandidate], winner: SaberCandidate,
+                                         predictedX: Double, predictedY: Double, radius: Double,
+                                         track: inout Track) -> SaberCandidate {
+        let e = winner.endpoints
+        let wx = Double(e.0.x + e.1.x) / 2, wy = Double(e.0.y + e.1.y) / 2
+        let length = max(hypot(Double(e.1.x - e.0.x), Double(e.1.y - e.0.y)), 1)
+        // 順位は変更せず、同じ刃の端点/sourceの違いだけでは復帰履歴を作らない。
+        let challengers = eligible.filter { candidate in
+            let c = candidate.endpoints
+            let x = Double(c.0.x + c.1.x) / 2, y = Double(c.0.y + c.1.y) / 2
+            return hypot(x - predictedX, y - predictedY) <= radius
+                && abs((x - wx) * Double(e.1.y - e.0.y)
+                    - (y - wy) * Double(e.1.x - e.0.x)) / (length * length) >= 0.20
+                && candidate.score >= winner.score - 25
+                && ((candidate.score >= winner.score + 8
+                        && candidate.highValueRatio >= winner.highValueRatio - 0.04)
+                    || (candidate.highValueRatio >= 0.97
+                        && candidate.highValueRatio >= winner.highValueRatio + 0.06))
+        }
+        let challenger: SaberCandidate?
+        if let prior = track.challenger {
+            challenger = continuingWinner(challengers, predictedX: prior.x, predictedY: prior.y,
+                length: prior.length, angle: prior.angle, radius: radius)
+        } else { challenger = challengers.first }
+        guard let challenger else { track.challenger = nil; return winner }
+        let c = challenger.endpoints
+        let x = Double(c.0.x + c.1.x) / 2, y = Double(c.0.y + c.1.y) / 2
+        let angle = atan2(Double(c.1.y - c.0.y), Double(c.1.x - c.0.x))
+        let candidateLength = max(hypot(Double(c.1.x - c.0.x), Double(c.1.y - c.0.y)), 1)
+        var count = 1
+        if let prior = track.challenger {
+            let raw = abs(angle - prior.angle).truncatingRemainder(dividingBy: .pi)
+            let cost = 0.80 * hypot(x - prior.x, y - prior.y) / max(prior.length, 1)
+                + 0.18 * min(raw, .pi - raw) / (.pi / 2)
+                + 0.02 * abs(log2(candidateLength / max(prior.length, 1)))
+            if cost <= 0.5 { count = prior.frames + 1 }
+        }
+        track.challenger = Challenge(x: x, y: y, length: candidateLength, angle: angle, frames: count)
+        guard count >= 3 else { return winner }
+        track.challenger = nil
+        track.preferenceSince = nil
+        return challenger
+    }
+
+    /// 継続・復帰ルールの入口。select内のこの呼出し1か所で適用を切り離せる。
+    /// 候補生成・得点・順位は変えず、現在のゲート内のeligibleだけから選ぶ。
+    private static func continuityWinner(_ eligible: [SaberCandidate], predictedX x: Double,
+                                         predictedY y: Double, radius: Double, now: Double,
+                                         track t: inout Track) -> SaberCandidate? {
+        var winner = Self.continuingWinner(eligible, predictedX: x, predictedY: y,
+            length: t.length, angle: t.angle, radius: radius,
+            allowPreference: t.preferenceSince.map { now - $0 < 0.25 } ?? true)
+        if let current = winner {
+            winner = Self.recoveringWinner(eligible, winner: current,
+                predictedX: x, predictedY: y, radius: radius, track: &t)
+        }
+        if let winner {
+            let ranked = eligible.first {
+                let e = $0.endpoints
+                return hypot((Double(e.0.x) + Double(e.1.x)) / 2 - x,
+                             (Double(e.0.y) + Double(e.1.y)) / 2 - y) <= radius
+            }
+            // 連続した順位overrideは既存の履歴期限と同じ0.25秒まで。overrideで期限を延ばさない。
+            t.preferenceSince = ranked.map {
+                $0.endpoints.0 == winner.endpoints.0 && $0.endpoints.1 == winner.endpoints.1
+            } == true ? nil : (t.preferenceSince ?? now)
+        }
+        return winner
+    }
+
     func select(_ eligible: [SaberCandidate], color: SaberColor,
                 width: Int, height: Int, now: Double, playArea: SaberPlayArea? = nil) -> SaberCandidate? {
         if dimensions.map({ $0 != (width, height) }) ?? true {
@@ -671,13 +784,12 @@ final class SaberTrackLock {
             let dt = now - t.updated
             let x = t.x + t.vx * dt, y = t.y + t.vy * dt
             let radius = max(1.5 * t.length, 0.12 * hypot(Double(width), Double(height)))
-            winner = eligible.first {
-                let e = $0.endpoints
-                return hypot((Double(e.0.x) + Double(e.1.x)) / 2 - x,
-                             (Double(e.0.y) + Double(e.1.y)) / 2 - y) <= radius
-            }
+            winner = Self.continuityWinner(eligible, predictedX: x, predictedY: y,
+                radius: radius, now: now, track: &t)
+            track = t
             if winner == nil {
                 // 3コマ目で履歴を捨てる。このコマは送らず、次のコマは通常選択。
+                t.challenger = nil
                 t.misses += 1
                 t.selectedSince = nil
                 tracks[color] = t.misses >= 3 ? nil : t
@@ -688,8 +800,11 @@ final class SaberTrackLock {
         if let winner {
             let e = winner.endpoints
             let x = (Double(e.0.x) + Double(e.1.x)) / 2, y = (Double(e.0.y) + Double(e.1.y)) / 2
-            var next = Track(x: x, y: y, length: hypot(Double(e.0.x - e.1.x), Double(e.0.y - e.1.y)), updated: now)
+            var next = Track(x: x, y: y, length: hypot(Double(e.0.x - e.1.x), Double(e.0.y - e.1.y)),
+                             angle: atan2(Double(e.1.y - e.0.y), Double(e.1.x - e.0.x)), updated: now)
             next.selectedSince = track?.selectedSince ?? now
+            next.preferenceSince = track?.preferenceSince
+            next.challenger = track?.challenger
             if let t = track, now > t.updated {
                 // 直前2回の実測中点の差分。未選択・予測では更新しない。
                 next.vx = (x - t.x) / (now - t.updated); next.vy = (y - t.y) / (now - t.updated)
