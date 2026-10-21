@@ -16,13 +16,14 @@ public class FiveSongPackTests
     static readonly string[] Titles = { "Manic Sonic", "escapade", "logic!!!", "勉強（Remaster）", "青葉騒 feat.初音ミク" };
     static readonly string[] Composers = { "浜Bay", "ぴくちゃ", "爆裂P", "爆裂P", "キョーカスイゲツ。" };
     static readonly double[] Durations = { 149.451938, 109.944036, 206.759184, 138.762449, 138.857052 };
+    // logic の 238→240拍(96BPM)は、到達の一打のあとの半拍を吸収する区間(10/21、旧表は 240拍から曲の拍と半拍ずれていた)。
     static readonly float[][] Beats = {
         new float[] {0,171,199,379,395,403}, new float[] {0},
-        new float[] {0,141,227.5f,229,235,236,400.5f},
+        new float[] {0,141,227.5f,229,235,236,238,240,400},
         new float[] {0,80,114,280,304},new float[] {0} };
     static readonly float[][] Tempos = {
         new float[] {180,160,180,60,180,200},new float[] {190},
-        new float[] {160,120,100,80,100,120,160},
+        new float[] {160,120,100,80,100,120,96,120,160},
         new float[] {160,100,160,70,360},new float[] {140} };
     static string Folder(string id) => Path.Combine(Application.streamingAssetsPath,"Songs",id);
     [Serializable] sealed class Source { public string audioSha256; }
