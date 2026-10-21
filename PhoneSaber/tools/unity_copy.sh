@@ -42,6 +42,94 @@ run_hidden() {   # run_hidden <実行ファイル> [引数...]
     fi
 }
 
+# 親シェルの hard limit は変えず、Unity 自身が継承する soft limit だけを設定する。
+unity_child() {
+    local limit
+    limit="$(ulimit -S -n)" || exit 1
+    if ! ulimit -S -n 65536 2>/dev/null; then
+        [[ "$limit" != unlimited && "$limit" -le 65536 ]] || {
+            echo "Unity: ファイル上限を65536に下げられません" >&2; exit 1;
+        }
+        echo "Unity: hard limit の制約で65536に上げられません。現在の上限 $limit で起動します" >&2
+    fi
+    exec "$@"
+}
+
+run_unity() (
+    local app="${UNITY%/Contents/MacOS/*}" wrapper
+    if [[ "$app" != "$UNITY" && -d "$app" && -x /usr/bin/open && -z "${PHONESABER_UNITY_FOREGROUND:-}" ]]; then
+        # LaunchServices 経由でも Unity 内で確実に設定する。隠して起動する既存の動作を維持する。
+        wrapper="$(mktemp -d "${TMPDIR:-/tmp}/phonesaber-unity.XXXXXX")" || exit 1
+        trap 'rm -rf "$wrapper"' EXIT
+        mkdir -p "$wrapper/Unity.app/Contents/MacOS" || exit 1
+        printf '%s\n' '<plist version="1.0"><dict><key>CFBundleExecutable</key><string>launch</string><key>CFBundleIdentifier</key><string>jp.phonesaber.unity-batch</string><key>CFBundlePackageType</key><string>APPL</string></dict></plist>' > "$wrapper/Unity.app/Contents/Info.plist" || exit 1
+        { printf '#!/bin/bash\n'; declare -f unity_child; printf 'unity_child "$@"\n'; } > "$wrapper/Unity.app/Contents/MacOS/launch" || exit 1
+        chmod +x "$wrapper/Unity.app/Contents/MacOS/launch" || exit 1
+        run_hidden "$wrapper/Unity.app/Contents/MacOS/launch" "$UNITY" "$@"
+    else
+        unity_child "$UNITY" "$@"
+    fi
+)
+
+unity_license_failure() {
+    # パッケージ型のコンパイルエラー単独では再試行しない。ライセンス側の証拠を必須にする。
+    grep -qiE 'Failed to acquire global mutex|Another instance.*Unity[. ]Licensing[. ]Client.*already running|Licensing initialization failed|Timed[- ]out.*waiting for Licensing|Unknown entitlement status' "$1" 2>/dev/null
+}
+
+stop_stale_licensing_client() {
+    local processes pid exe args clients=() waited
+    processes="$(ps -axww -o pid=,comm=)" || {
+        echo "Unity: プロセス一覧を確認できません。Editor とライセンスを確認してから再実行してください"; return 1;
+    }
+    while read -r pid exe; do
+        if [[ "$exe" == */Unity.app/Contents/MacOS/Unity ]]; then
+            args="$(ps -ww -p "$pid" -o args=)" || {
+                echo "Unity: Editor の起動引数を確認できないため停止します"; return 1;
+            }
+            if [[ ! "$args" =~ (^|[[:space:]])-batchmode([[:space:]]|$) ]]; then
+                echo "Unity: 対話 Editor が起動中です。Editor を終了し、Unity Hub のライセンスを確認してから再実行してください（プロセスは終了しません）"; return 1
+            fi
+        fi
+        [[ "${exe##*/}" == Unity.Licensing.Client ]] && clients+=("$pid")
+    done <<< "$processes"
+    [[ "${#clients[@]}" -gt 0 ]] || {
+        echo "Unity: 停止対象の Unity.Licensing.Client がありません。Unity Hub のライセンスを確認してください"; return 1;
+    }
+    for pid in "${clients[@]}"; do
+        # PID が別のプロセスに再利用されていたら触らない。
+        exe="$(ps -ww -p "$pid" -o comm=)" || return 1
+        [[ "${exe##*/}" == Unity.Licensing.Client ]] || return 1
+        kill -TERM "$pid" || return 1
+    done
+    for pid in "${clients[@]}"; do
+        waited=0
+        while kill -0 "$pid" 2>/dev/null; do
+            (( waited < 5 )) || { echo "Unity: ライセンスクライアントが終了しないため停止します"; return 1; }
+            sleep 1; waited=$((waited + 1))
+        done
+    done
+}
+
+run_unity_step() {
+    local mode="$1" log="$2" attempt code; shift 2
+    rm -f "$log.first-try" || return 1
+    for attempt in 0 1; do
+        # 初回の成果物・成功ログを再試行の結果として使わない。
+        rm -f "$log" || return 1
+        if [[ "$mode" == editmode ]]; then
+            rm -f "$OUT/editmode.xml" || return 1
+        else
+            rm -rf "$COPY/Builds/Mac" || return 1
+        fi
+        run_unity "$@"; code=$?
+        unity_license_failure "$log" || return "$code"
+        (( attempt == 0 )) || { echo "Unity: 再試行でもライセンス初期化に失敗しました ($log)"; return 1; }
+        cp "$log" "$log.first-try" || return 1
+        stop_stale_licensing_client || return 1
+        echo "Unity: 古いライセンスクライアントを終了しました。$mode を1回だけやり直します ($log.first-try)"
+    done
+}
+
 # Title → SongSelect → Game → Result → 判定調整 → SongSelect → Title。Error も失敗にする。
 # (PhoneSaberPlayerSmoke.cs。UDP 5005-5007 を数十秒使うので、ゲームが起動中のときは呼ばない)
 smoke_player() {
@@ -197,7 +285,7 @@ editmode)
         [[ -n "$classes" ]] || { echo "editmode: '$2' に一致するテストのクラスがありません"; exit 1; }
         args+=(-testFilter "^($classes)\.")
     fi
-    run_hidden "$UNITY" "${args[@]}"
+    run_unity_step editmode "$OUT/editmode.log" "${args[@]}"
     unity_exit=$?
     result_args=("$OUT/editmode.xml" "$OUT/editmode.log")
     [[ -n "${PHONESABER_EDITMODE_KNOWN_FAILURES:-}" ]] && result_args+=(--known-failures "$PHONESABER_EDITMODE_KNOWN_FAILURES")
@@ -207,7 +295,7 @@ build-mac)
     sync_copy || exit 1
     rm -rf "$COPY/Builds/Mac" || { echo "build-mac: 古い build を削除できません"; exit 1; }
     rm -f "$OUT/build-mac.log" || { echo "build-mac: ログを初期化できません"; exit 1; }
-    run_hidden "$UNITY" -batchmode -quit -projectPath "$COPY" -executeMethod PhoneSaberPlayerBuild.BuildMac -logFile "$OUT/build-mac.log"
+    run_unity_step build-mac "$OUT/build-mac.log" -batchmode -quit -projectPath "$COPY" -executeMethod PhoneSaberPlayerBuild.BuildMac -logFile "$OUT/build-mac.log"
     unity_exit=$?
     if [[ "$unity_exit" -ne 0 ]] || ! grep -q "Result: Success" "$OUT/build-mac.log" || [[ ! -d "$COPY/Builds/Mac/3D-Saber.app" ]]; then
         echo "build-mac: 失敗（$OUT/build-mac.log）"; exit 1

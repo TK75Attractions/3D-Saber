@@ -1,12 +1,15 @@
 """実アプリを起動せず、検証結果の初期化と Player 配布の失敗を再現する。"""
 import os
 from pathlib import Path
+import plistlib
 import subprocess
 import tempfile
 import unittest
 
 
 SOURCE = Path(__file__).with_name("unity_copy.sh")
+HELPERS = SOURCE.read_text().split("unity_child() {", 1)[1].split("# Title →", 1)[0]
+HELPERS = "set -u\nunity_child() {" + HELPERS
 
 
 class UnityCopyFailureTests(unittest.TestCase):
@@ -39,6 +42,7 @@ class UnityCopyFailureTests(unittest.TestCase):
             stubs = '''
 sync_copy() { return 0; }
 run_hidden() { touch "$CALLED"; return 0; }
+run_unity() { run_hidden "$UNITY" "$@"; }
 pgrep_calls=0
 pgrep() { pgrep_calls=$((pgrep_calls + 1)); [[ "$GAME_STARTS" == 1 && "$pgrep_calls" -gt 1 ]]; }
 python3() { [[ -f "$OUT/editmode.xml" ]]; }
@@ -73,7 +77,7 @@ if [[ "$PROMOTION_FAILURE" == 1 ]]; then
     mv() { [[ "$1" == */.3D-Saber-new.app ]] && return 1; command mv "$@"; }
 fi
 '''
-            command = smoke + stubs + (('smoke_player "$COPY/Builds/Mac/3D-Saber.app"') if mode == "smoke" else branch)
+            command = HELPERS + smoke + stubs + (('smoke_player "$COPY/Builds/Mac/3D-Saber.app"') if mode == "smoke" else branch)
             result = subprocess.run(["/bin/bash", "-c", command], capture_output=True, text=True, timeout=10,
                                     env=dict(os.environ, ROOT=str(root), COPY=str(copy), OUT=str(out), UNITY="unused",
                                              CALLED=str(called), CLEANUP_FAILURE=str(int(cleanup_failure)),
@@ -151,6 +155,195 @@ fi
         result, _, previous = self.run_branch("build-mac", game_starts=True)
         self.assertEqual(result.returncode, 3, result.stdout + result.stderr)
         self.assertTrue(previous)
+
+
+class UnityEnvironmentTests(unittest.TestCase):
+    def bash(self, command, **kwargs):
+        return subprocess.run(["/bin/bash", "-c", HELPERS + command],
+                              capture_output=True, text=True, timeout=15, **kwargs)
+
+    def test_license_log_patterns(self):
+        patterns = [
+            "[Licensing::Client] Failed to acquire global mutex. Another instance is already running",
+            "Another instance of Unity.Licensing.Client is already running",
+            "Another instance of the Unity Licensing Client is already running",
+            "Licensing initialization failed",
+            "Timed-out after 60 seconds waiting for Licensing to initialize",
+            "Timed out waiting for Licensing",
+            "[Package Manager] Unknown entitlement status",
+        ]
+        with tempfile.TemporaryDirectory() as tmp:
+            log = Path(tmp) / "unity.log"
+            for message in patterns + ["Result: Success", "License activated successfully",
+                                       "error CS0234: UnityEngine.InputSystem / TMPro / UIModule",
+                                       "Timed-out waiting for Package Manager", ""]:
+                with self.subTest(message=message):
+                    log.write_text(message)
+                    result = self.bash('unity_license_failure "$LOG"', env=dict(os.environ, LOG=str(log)))
+                    self.assertEqual(result.returncode, 0 if message in patterns else 1, result.stderr)
+            log.unlink()
+            result = self.bash('unity_license_failure "$LOG"', env=dict(os.environ, LOG=str(log)))
+            self.assertNotEqual(result.returncode, 0)
+
+    def run_step(self, mode="editmode", editor="none", messages=None, code=0, client=True,
+                 ps_failure=False, client_stuck=False, reused_pid=False, cleanup_failure=False):
+        with tempfile.TemporaryDirectory(prefix="unity-environment-") as tmp:
+            root = Path(tmp)
+            out = root / "out"
+            out.mkdir()
+            processes = root / "processes"
+            rows = ["88 /Applications/Unity Hub.app/Contents/Frameworks/UnityLicensingClient.app/Contents/MacOS/Unity.Licensing.Client"] if client else []
+            if editor != "none":
+                rows.append("42 /Applications/Unity/Unity.app/Contents/MacOS/Unity")
+            # Player や Unity Hub は対話 Editor と混同しない。
+            rows.extend(["43 /Applications/Unity Hub.app/Contents/MacOS/Unity Hub",
+                         "44 /tmp/3D-Saber.app/Contents/MacOS/3D-Saber"])
+            processes.write_text("\n".join(rows) + "\n")
+            for index, message in enumerate(messages or ["Licensing initialization failed", "Result: Success"]):
+                (root / f"log-{index}").write_text(message)
+            stubs = r'''
+calls=0
+ps() {
+    [[ "$PS_FAILURE" == 1 ]] && return 1
+    case "$*" in
+        '-axww -o pid=,comm=') cat "$ROOT/processes" ;;
+        '-ww -p 42 -o args=')
+            [[ "$EDITOR" == unknown ]] && return 1
+            printf '/Applications/Unity/Unity.app/Contents/MacOS/Unity -projectPath /tmp/copy'
+            [[ "$EDITOR" == batch ]] && printf ' -batchmode'
+            # 別の引数に含まれる文字列は batchmode フラグではない。
+            [[ "$EDITOR" == interactive ]] && printf ' -logFile /tmp/-batchmode.log'
+            printf '\n' ;;
+        '-ww -p 88 -o comm=')
+            if [[ "$REUSED_PID" == 1 ]]; then echo /Applications/Unity/Unity.app/Contents/MacOS/Unity
+            else echo /tmp/Unity.Licensing.Client; fi ;;
+        *) return 1 ;;
+    esac
+}
+kill() {
+    if [[ "$1" == -0 ]]; then [[ "$CLIENT_STUCK" == 1 ]]; return; fi
+    printf '%s\n' "$*" >> "$ROOT/signals"
+}
+sleep() { :; }
+run_unity() {
+    # 再試行前の成果物の初期化を実際に確認する。
+    [[ ! -e "$OUT/editmode.xml" && ! -e "$COPY/Builds/Mac" ]] || return 99
+    cp "$ROOT/log-$calls" "$LOG"
+    mkdir -p "$COPY/Builds/Mac"
+    printf 'old XML' > "$OUT/editmode.xml"
+    if [[ "$MODE" == editmode ]]; then rm -rf "$COPY/Builds/Mac"
+    else rm -f "$OUT/editmode.xml"; fi
+    calls=$((calls + 1)); echo "$calls" > "$ROOT/calls"
+    return "$CODE"
+}
+if [[ "$CLEANUP_FAILURE" == 1 ]]; then
+    rm() { [[ "$calls" -gt 0 ]] && return 1; command rm "$@"; }
+fi
+run_unity_step "$MODE" "$LOG" -batchmode
+'''
+            result = self.bash(stubs, env=dict(
+                os.environ, ROOT=str(root), OUT=str(out), COPY=str(root / "copy"),
+                LOG=str(out / f"{mode}.log"), MODE=mode, EDITOR=editor, CODE=str(code),
+                PS_FAILURE=str(int(ps_failure)), CLIENT_STUCK=str(int(client_stuck)),
+                REUSED_PID=str(int(reused_pid)), CLEANUP_FAILURE=str(int(cleanup_failure))))
+            calls = int((root / "calls").read_text()) if (root / "calls").exists() else 0
+            signals = (root / "signals").read_text() if (root / "signals").exists() else ""
+            first = out / f"{mode}.log.first-try"
+            return result, calls, signals, first.read_text() if first.exists() else None
+
+    def test_retry_once_with_no_interactive_editor_for_both_steps(self):
+        for mode in ("editmode", "build-mac"):
+            for editor in ("none", "batch"):
+                with self.subTest(mode=mode, editor=editor):
+                    result, calls, signals, first = self.run_step(mode=mode, editor=editor)
+                    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                    self.assertEqual(calls, 2)
+                    self.assertEqual(signals, "-TERM 88\n")
+                    self.assertEqual(first, "Licensing initialization failed")
+
+    def test_interactive_editor_or_unknown_process_state_never_sends_signal(self):
+        for options in ({"editor": "interactive"}, {"editor": "unknown"}, {"ps_failure": True},
+                        {"client": False}, {"reused_pid": True}):
+            with self.subTest(options=options):
+                result, calls, signals, _ = self.run_step(**options)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(calls, 1)
+                self.assertEqual(signals, "")
+                if options.get("editor") == "interactive":
+                    self.assertIn("対話 Editor が起動中", result.stdout)
+
+    def test_repeated_licensing_failure_stops_after_second_launch_even_with_exit_zero(self):
+        result, calls, signals, _ = self.run_step(messages=["Unknown entitlement status"] * 2)
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertEqual(calls, 2)
+        self.assertEqual(signals, "-TERM 88\n")
+
+    def test_unrelated_failure_or_success_keeps_exit_code_without_killing_or_retrying(self):
+        for code in (0, 1, 2):
+            result, calls, signals, first = self.run_step(messages=["error CS0234: UnityEngine.InputSystem"], code=code)
+            self.assertEqual(result.returncode, code, result.stdout + result.stderr)
+            self.assertEqual(calls, 1)
+            self.assertEqual(signals, "")
+            self.assertIsNone(first)
+
+    def test_stuck_client_or_failed_retry_cleanup_prevents_second_launch(self):
+        for options in ({"client_stuck": True}, {"cleanup_failure": True}):
+            with self.subTest(options=options):
+                result, calls, _, _ = self.run_step(**options)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(calls, 1)
+
+    def test_soft_limit_is_set_only_in_child_and_hard_limit_is_preserved(self):
+        # 実際の子 bash が継承した値を読む。OS が許す場合だけ巨大上限も再現する。
+        for initial in (1024, 65536, 1048576):
+            with self.subTest(initial=initial):
+                result = self.bash(f'''
+ulimit -S -n {initial} 2>/dev/null || exit 77
+hard=$(ulimit -H -n)
+UNITY=/bin/bash
+run_unity -c 'echo "child=$(ulimit -S -n) hard=$(ulimit -H -n)"'
+echo "parent=$(ulimit -S -n) hard=$hard"
+''')
+                if result.returncode == 77:
+                    continue
+                self.assertEqual(result.returncode, 0, result.stderr)
+                lines = result.stdout.splitlines()
+                self.assertTrue(lines[0].startswith("child=65536 hard="), result.stdout)
+                self.assertEqual(lines[0].split("hard=")[1], lines[1].split("hard=")[1])
+                self.assertTrue(lines[1].startswith(f"parent={initial} "), result.stdout)
+
+    def test_low_hard_limit_is_respected(self):
+        result = self.bash('''
+ulimit -S -n 1024 && ulimit -H -n 1024 || exit 77
+unity_child /bin/bash -c 'echo "$(ulimit -S -n) $(ulimit -H -n)"'
+''')
+        if result.returncode == 77:
+            self.skipTest("OS が hard limit の変更を許可しません")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.strip(), "1024 1024")
+        self.assertIn("上げられません", result.stderr)
+
+    def test_hidden_launcher_applies_limit_and_preserves_arguments_and_cleanup(self):
+        with tempfile.TemporaryDirectory(prefix="unity wrapper '") as tmp:
+            root = Path(tmp)
+            exe = root / "Unity.app/Contents/MacOS/Unity"
+            exe.parent.mkdir(parents=True)
+            exe.write_text('#!/bin/bash\necho "$(ulimit -S -n)"\nprintf "<%s>\\n" "$@"\nexit 7\n')
+            exe.chmod(0o755)
+            result = self.bash('''
+run_hidden() {
+    cp "${1%/MacOS/*}/Info.plist" "$CAPTURE"
+    printf '%s' "${1%/Unity.app/*}" > "$WRAPPER_PATH"
+    "$@"
+}
+run_unity -batchmode 'space arg' '$(literal)'
+''', env=dict(os.environ, UNITY=str(exe), TMPDIR=str(root), PHONESABER_UNITY_FOREGROUND="",
+              CAPTURE=str(root / "Info.plist"), WRAPPER_PATH=str(root / "wrapper-path")))
+            self.assertEqual(result.returncode, 7, result.stderr)
+            self.assertEqual(result.stdout.splitlines(), ["65536", "<-batchmode>", "<space arg>", "<$(literal)>"])
+            plist = plistlib.loads((root / "Info.plist").read_bytes())
+            self.assertEqual(plist["CFBundleExecutable"], "launch")
+            self.assertFalse(Path((root / "wrapper-path").read_text()).exists())
 
 
 if __name__ == "__main__":
