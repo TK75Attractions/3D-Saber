@@ -41,8 +41,10 @@ enum AutoClipLimits {
     static let maximumImages = 20
     static let candidatesPerColor = 12
     static let ineligibleCandidatesPerColor = 2
-    static let cooldownSeconds = 20.0
-    static let maximumAutomaticClipsPerSession = 6
+    // 2026-10-21: 6本では1時間で使い切り、青の誤検出の場面が残らなかった。15秒間隔で1曲（約2.5分）最大10本、
+    // 送信1回あたり60本まで（曲を続けても残る）。
+    static let cooldownSeconds = 15.0
+    static let maximumAutomaticClipsPerSession = 60
     static let manualMinimumInterval = 5.0
     /// A confusion trigger whose competitor sits where an earlier clip's competitor
     /// was (a static cone, a poster) is not saved again in the same session.

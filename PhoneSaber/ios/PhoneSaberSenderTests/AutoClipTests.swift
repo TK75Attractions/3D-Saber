@@ -463,7 +463,7 @@ final class AutoClipTests: XCTestCase {
             XCTAssertEqual(limiter.admit(event(.gap, at: Double(index) * 20 + 1), busy: false, width: 480, height: 640),
                            .reject(index == AutoClipLimits.maximumAutomaticClipsPerSession - 1 ? "sessionLimit" : "cooldown"))
         }
-        XCTAssertEqual(limiter.admit(event(.gap, at: 200), busy: false, width: 480, height: 640), .reject("sessionLimit"))
+        XCTAssertEqual(limiter.admit(event(.gap, at: Double(AutoClipLimits.maximumAutomaticClipsPerSession) * 20 + 100), busy: false, width: 480, height: 640), .reject("sessionLimit"))
     }
 
     func testRecorderGapUsesActualMissingSelectionEvenWithEligibleCandidates() throws {
@@ -510,7 +510,7 @@ final class AutoClipTests: XCTestCase {
     func testRateLimiterCooldownSessionLimitAndRepeatLocation() {
         var limiter = AutoClipRateLimiter()
         XCTAssertEqual(limiter.admit(event(.confusion, at: 10), busy: false, width: 480, height: 640), .accept)
-        XCTAssertEqual(limiter.admit(event(.jump, at: 25), busy: false, width: 480, height: 640), .reject("cooldown"))
+        XCTAssertEqual(limiter.admit(event(.jump, at: 24), busy: false, width: 480, height: 640), .reject("cooldown"))
         XCTAssertEqual(limiter.admit(event(.jump, at: 31), busy: false, width: 480, height: 640), .accept)
         // Same cone location again: skipped even after the cooldown.
         XCTAssertEqual(limiter.admit(event(.confusion, at: 60, competitor: [405, 602, 421, 628]), busy: false, width: 480, height: 640),
@@ -518,20 +518,20 @@ final class AutoClipTests: XCTestCase {
         XCTAssertEqual(limiter.admit(event(.confusion, at: 61, competitor: [100, 100, 120, 200]), busy: false, width: 480, height: 640),
                        .accept)
         XCTAssertEqual(limiter.admit(event(.jump, at: 90), busy: true, width: 480, height: 640), .reject("busy"))
-        for index in 0..<3 {
+        for index in 0..<(AutoClipLimits.maximumAutomaticClipsPerSession - 3) {
             XCTAssertEqual(limiter.admit(event(.jump, at: 100 + Double(index) * 30), busy: false, width: 480, height: 640), .accept)
         }
         XCTAssertEqual(limiter.automaticClipsThisSession, AutoClipLimits.maximumAutomaticClipsPerSession)
-        XCTAssertEqual(limiter.admit(event(.jump, at: 400), busy: false, width: 480, height: 640), .reject("sessionLimit"))
+        XCTAssertEqual(limiter.admit(event(.jump, at: Double(AutoClipLimits.maximumAutomaticClipsPerSession) * 30 + 100), busy: false, width: 480, height: 640), .reject("sessionLimit"))
         // A PC request still works, at most every 5 s.
-        XCTAssertEqual(limiter.admit(event(.manual, at: 401), busy: false, width: 480, height: 640), .accept)
-        XCTAssertEqual(limiter.admit(event(.manual, at: 403), busy: false, width: 480, height: 640), .reject("manualInterval"))
-        XCTAssertEqual(limiter.admit(event(.manual, at: 406.5), busy: false, width: 480, height: 640), .accept)
+        XCTAssertEqual(limiter.admit(event(.manual, at: Double(AutoClipLimits.maximumAutomaticClipsPerSession) * 30 + 100 + 1), busy: false, width: 480, height: 640), .accept)
+        XCTAssertEqual(limiter.admit(event(.manual, at: Double(AutoClipLimits.maximumAutomaticClipsPerSession) * 30 + 100 + 3), busy: false, width: 480, height: 640), .reject("manualInterval"))
+        XCTAssertEqual(limiter.admit(event(.manual, at: Double(AutoClipLimits.maximumAutomaticClipsPerSession) * 30 + 100 + 6.5), busy: false, width: 480, height: 640), .accept)
         XCTAssertEqual(limiter.rejected["cooldown"], 1)
         XCTAssertEqual(limiter.rejected["sessionLimit"], 1)
         limiter.beginSession()
         XCTAssertEqual(limiter.automaticClipsThisSession, 0)
-        XCTAssertEqual(limiter.admit(event(.confusion, at: 500), busy: false, width: 480, height: 640), .accept)
+        XCTAssertEqual(limiter.admit(event(.confusion, at: Double(AutoClipLimits.maximumAutomaticClipsPerSession) * 30 + 100 + 200), busy: false, width: 480, height: 640), .accept)
     }
 
     func testSuspendPolicy() {
