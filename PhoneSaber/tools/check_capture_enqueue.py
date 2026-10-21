@@ -16,7 +16,9 @@ def callback(source):
 
 def main():
     current = callback((ROOT / SOURCE).read_text())
-    before = callback(subprocess.check_output(["git", "show", f"HEAD:{SOURCE}"], cwd=ROOT, text=True))
+    # 比較元は統計処理より後に submit していた版に固定する。HEAD ではコミット後に同じ処理を比較してしまう。
+    baseline = "0d643241ba48b0e597c2f9201e382ecaab4e647a"
+    before = callback(subprocess.check_output(["git", "show", f"{baseline}:{SOURCE}"], cwd=ROOT, text=True))
     support = r'''
 import Foundation
 final class AVCaptureOutput {}
