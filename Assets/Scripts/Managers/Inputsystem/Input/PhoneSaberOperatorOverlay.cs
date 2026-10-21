@@ -110,7 +110,8 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
                 {
                     Application.OpenURL(controlPanel.Url);
                     if (browserToast == null) browserToast = gameObject.AddComponent<PhoneSaberOperatorToast>();
-                    browserToast.Show("操作画面をMacの画面に開きました");
+                    browserToast.Show(PhoneSaberControlPanelActions.BrowserOpenedNotice(
+                        Application.platform == RuntimePlatform.OSXPlayer || Application.platform == RuntimePlatform.OSXEditor));
                     LogControlPanel("open port=" + controlPanel.Port);
                 }
                 catch (Exception) { SetVisible(true); }

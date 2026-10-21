@@ -34,6 +34,11 @@ public static class PhoneSaberControlPanelActions
 
     // キーの判断を UI・ブラウザ・Unity 入力から分離する。
     public static bool ShouldOpenBrowser(bool shift, bool serverRunning) => !shift && serverRunning;
+
+    // F8 でブラウザを開いたときの知らせ。Mac は内蔵の画面に開く前提。
+    // Windows ではどの画面に出るかが台による(投影に出ることもある)ので、ゲーム内の予備画面のキーも添える。
+    public static string BrowserOpenedNotice(bool mac) => mac
+        ? "操作画面をMacの画面に開きました" : "操作画面をブラウザに開きました（ゲーム内に出すときは Shift+F8）";
 }
 
 // main thread で一度組み立てた同じ表示を、IMGUI と JSON の両方で読む。

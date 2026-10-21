@@ -172,9 +172,18 @@ public sealed class PhoneSaberDisplayNotice : MonoBehaviour
         return text;
     }
 
-    public static string TextFor(string displayWarning, string sceneName) =>
-        string.IsNullOrEmpty(displayWarning) || sceneName == GameSceneName ? "" :
-            displayWarning + "\n（Mac: システム設定 > バッテリー > 低電力モード を「しない」に）";
+    public static string TextFor(string displayWarning, string sceneName) => TextFor(displayWarning, sceneName, Application.platform);
+
+    // 直す場所は OS ごとに違う(Windows の台にも Mac の手順を出していた。2026-10-21)。
+    public static string TextFor(string displayWarning, string sceneName, RuntimePlatform platform) =>
+        string.IsNullOrEmpty(displayWarning) || sceneName == GameSceneName ? "" : displayWarning + FixHint(platform);
+
+    static string FixHint(RuntimePlatform platform) =>
+        platform == RuntimePlatform.OSXPlayer || platform == RuntimePlatform.OSXEditor
+            ? "\n（Mac: システム設定 > バッテリー > 低電力モード を「しない」に）"
+            : platform == RuntimePlatform.WindowsPlayer || platform == RuntimePlatform.WindowsEditor
+                ? "\n（Windows: 設定 > システム > ディスプレイ > ディスプレイの詳細設定 で リフレッシュレートを 60Hz に）"
+                : "";
 
     void Awake() => enabled = false;
 

@@ -148,6 +148,16 @@ public class PhoneSaberControlPanelTests
     public void F8BrowserDecision(bool shift, bool serverRunning, bool browser)
         => Assert.AreEqual(browser, PhoneSaberControlPanelActions.ShouldOpenBrowser(shift, serverRunning));
 
+    // Windows の台で「Macの画面に開きました」と出していた。
+    [Test]
+    public void F8BrowserNoticeNamesTheMacOnlyOnMac()
+    {
+        StringAssert.Contains("Mac", PhoneSaberControlPanelActions.BrowserOpenedNotice(mac: true));
+        string other = PhoneSaberControlPanelActions.BrowserOpenedNotice(mac: false);
+        StringAssert.DoesNotContain("Mac", other);
+        StringAssert.Contains("Shift+F8", other);
+    }
+
     [Test]
     public void JsonEscapesQuotesBackslashesControlsAndUnicode()
     {

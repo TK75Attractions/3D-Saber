@@ -223,6 +223,7 @@ public class SongSelectController : MonoBehaviour
                 hasChart |= File.Exists(Path.Combine(dir, "chart_" + difficulty.ToLowerInvariant() + ".json"));
             if (!hasChart) continue;
             string songId = Path.GetFileName(dir);
+            if (IsLeftoverTestSong(songId, Application.isEditor)) continue;
             // 譜面エディターの曲情報で「選曲に出す」を外した曲(制作中・権利確認待ちなど)は並べない。
             var info = SongDisplayInfo.Get(songId);
             if (!info.Listed) continue;
@@ -236,6 +237,11 @@ public class SongSelectController : MonoBehaviour
         result.Sort();
         return result;
     }
+
+    // テストが作る仮の曲(__ChartLoadTest_ など)。テストが途中で落ちて残っても、ビルドした本番では並べない。
+    // エディターではテストがこの一覧で仮の曲を確かめるので残す。
+    public static bool IsLeftoverTestSong(string songId, bool isEditor) =>
+        !isEditor && songId != null && songId.StartsWith("__", System.StringComparison.Ordinal);
 
     // 曲が1つでも実譜面(ノーツ入り)を持つか。無い曲はロック扱いで選べない。
     public static bool HasPlayableChart(string songId, string[] difficulties)

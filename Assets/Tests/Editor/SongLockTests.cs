@@ -59,6 +59,16 @@ public class SongLockTests
         CollectionAssert.DoesNotContain(listed, ChartlessSongId);
     }
 
+    // テストの仮の曲(__ で始まる)は、残ってもビルドした本番の一覧には出さない。エディターではテストが使うので出す。
+    [Test]
+    public void LeftoverTestSongsAreHiddenOnlyInBuilds()
+    {
+        Assert.IsTrue(SongSelectController.IsLeftoverTestSong("__ChartLoadTest_0123", isEditor: false));
+        Assert.IsFalse(SongSelectController.IsLeftoverTestSong("__ChartLoadTest_0123", isEditor: true));
+        foreach (string real in new[] { "2_23_AM", "RushE", "Phobia PARTⅠ", "製作中" })
+            Assert.IsFalse(SongSelectController.IsLeftoverTestSong(real, isEditor: false), real);
+    }
+
     [Test]
     public void EnumerateSongIds_AllMode_StillSeesChartlessSongs()
     {

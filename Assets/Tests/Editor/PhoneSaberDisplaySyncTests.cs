@@ -95,6 +95,18 @@ public class PhoneSaberDisplaySyncTests
         Assert.IsEmpty(PhoneSaberDisplayNotice.TextFor(null, "Title"));
     }
 
+    // 直す場所は OS ごと。Windows の台に Mac の手順を出さない。
+    [Test]
+    public void SlowDisplayNoticeGivesTheFixForThisOs()
+    {
+        string slow = PhoneSaberStatsDisplay.DisplayWarning(30);
+        StringAssert.Contains("Mac: システム設定", PhoneSaberDisplayNotice.TextFor(slow, "Title", RuntimePlatform.OSXPlayer));
+        string windows = PhoneSaberDisplayNotice.TextFor(slow, "Title", RuntimePlatform.WindowsPlayer);
+        StringAssert.Contains("リフレッシュレート", windows);
+        StringAssert.DoesNotContain("Mac", windows);
+        Assert.IsEmpty(PhoneSaberDisplayNotice.TextFor(slow, PhoneSaberDisplayNotice.GameSceneName, RuntimePlatform.WindowsPlayer));
+    }
+
     [Test]
     public void GameSceneNameMatchesTheBuildSettings()
     {
