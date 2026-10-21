@@ -142,6 +142,54 @@ class ParsingTests(unittest.TestCase):
                          (datetime(2026, 10, 17, 7, 46, tzinfo=timezone.utc), None))
 
 
+class JudgeHandTests(unittest.TestCase):
+    def summary(self, lines):
+        events = [play_report.parse_line(line) for line in lines]
+        return play_report.summarize(events, BASE, BASE + timedelta(seconds=60))
+
+    def test_station_and_required_hand_stay_separate_and_misses_do_not_bias_timing(self):
+        lines = [judge(1, "Perfect", -136).replace("hand=Right", "hand=Left"),
+                 judge(2, "Bad", -100).replace("hand=Right", "hand=Left"),
+                 judge(3, "Miss", 999).replace("hand=Right", "hand=Left"),
+                 judge(4, "Perfect", -72),
+                 judge(5, "Perfect", 20).replace("station=A", "station=B"),
+                 judge(6, "Great", -5).replace("hand=Right", "hand=Any") + " cutter-hand=Left"]
+        summary = self.summary(lines)
+        rows = {(h["station"], h["hand"]): h for h in summary["judge"]["by_hand"]}
+        left = rows[("A", "Left")]
+        self.assertEqual((left["n"], left["bad"], left["miss"], left["timed_hits"]), (3, 1, 1, 2))
+        self.assertEqual(left["median_ms"], -118)
+        self.assertEqual(rows[("A", "Right")]["median_ms"], -72)
+        self.assertEqual(rows[("B", "Right")]["median_ms"], 20)
+        self.assertEqual(rows[("A", "Any")]["median_ms"], -5)
+        self.assertEqual(left["context_rows"], 0)
+        self.assertIn("A/Left: 3 件 / Bad 1 / Miss 1", play_report.render(summary))
+
+    def test_long_timeouts_direction_and_old_format_are_observations_not_reclassified_tiers(self):
+        lines = [judge(1, "Good", -30) + " note-kind=flick direction-ok=0 timed-out=0 achieved-cuts=1",
+                 judge(2, "Miss", 0) + " note-kind=long direction-ok=1 timed-out=1 achieved-cuts=2",
+                 judge(3, "Perfect", 20) + " note-kind=long direction-ok=1 timed-out=0 achieved-cuts=4",
+                 judge(4, "Miss", 0) + " note-kind=tap direction-ok=unknown timed-out=1 achieved-cuts=0",
+                 judge(5, "Perfect", 700).replace("decided-ms=700 ", ""),
+                 judge(6, "Perfect", 0).replace("judge-ms=0", "judge-ms=nan")]
+        summary = self.summary(lines)
+        row = summary["judge"]["by_hand"][0]
+        self.assertEqual(row["n"], 6)
+        self.assertEqual(row["timed_hits"], 1)
+        self.assertEqual(row["median_ms"], -30)
+        self.assertEqual(row["wrong_direction_cuts"], 1)
+        self.assertEqual(row["partial_long_timeouts"], 1)
+        self.assertEqual(row["context_rows"], 4)
+        self.assertEqual(summary["judge"]["tiers"], {"Perfect": 3, "Good": 1, "Miss": 2})
+
+    def test_missing_hand_and_no_timed_hits_are_explicit(self):
+        summary = self.summary([judge(1, "Miss", 100).replace("hand=Right ", "")])
+        row = summary["judge"]["by_hand"][0]
+        self.assertEqual(row["hand"], "unknown")
+        self.assertEqual(row["timed_hits"], 0)
+        self.assertIsNone(row["median_ms"])
+
+
 class SongSplitTests(unittest.TestCase):
     def test_perf_runs_and_judge_bursts_become_songs(self):
         lines = [perf(0, "SongSelect")]

@@ -36,6 +36,18 @@ public sealed class PhoneSaberJudgeTimingLog : MonoBehaviour
         double.IsNaN(seconds) || double.IsInfinity(seconds) ? "unknown"
             : System.Math.Round(seconds * 1000.0).ToString(System.Globalization.CultureInfo.InvariantCulture);
 
+    // 既存の時刻列は維持し、方向降格・ロング未完了と時間ずれを分けるための観測値だけを足す。
+    // hand は要求手。Any ノーツを実際に切った手は cutter-hand（未カットは unknown）。
+    public static string NoteDetail(int requiredCuts, int achievedCuts, string direction, string cutterHand,
+        bool directionOk, bool timedOut, int calibrationOffsetMs) =>
+        " note-kind=" + (requiredCuts > 1 ? "long" : direction == "None" ? "tap" : "flick")
+        + " required-cuts=" + requiredCuts + " achieved-cuts=" + achievedCuts
+        + " required-direction=" + direction
+        + " cutter-hand=" + (achievedCuts > 0 ? cutterHand : "unknown")
+        + " direction-ok=" + (achievedCuts > 0 ? directionOk ? "1" : "0" : "unknown")
+        + " timed-out=" + (timedOut ? "1" : "0")
+        + " calibration-offset-ms=" + calibrationOffsetMs.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
     // 本編の GamePlayManager はシーンごとに作り直されるので、秒1回だけ探す（見つかったら探さない）。
     void Update()
     {
@@ -82,6 +94,9 @@ public sealed class PhoneSaberJudgeTimingLog : MonoBehaviour
         double? cut = tier != "Miss" && note.RequiredCutCount <= 1 ? note.LastCutSongTime : null;
         if (cut.HasValue) PhoneSaberJudgeTimingStats.AddHit((cut.Value - note.HitTime) * 1000.0);
         PhoneSaberEventLog.Record(station, "SYSTEM", "judge-timing",
-            Detail(tier, note.HitTime, manager.songPlayer.SongTime, cut, spawner.JudgeLatencySeconds, note.RequiredHand.ToString()));
+            Detail(tier, note.HitTime, manager.songPlayer.SongTime, cut, spawner.JudgeLatencySeconds, note.RequiredHand.ToString())
+            + NoteDetail(note.RequiredCutCount, note.CutsAchieved, note.RequiredDirection.ToString(), note.LastCutterHand.ToString(),
+                note.RequiredCutCount > 1 ? note.LatestCutCorrectDirection : note.LastCutCorrectDirection,
+                note.IsMissed, GameSession.JudgmentOffsetMs));
     }
 }

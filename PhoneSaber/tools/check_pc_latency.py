@@ -40,7 +40,7 @@ def main():
         stubs = build / 'GameDependencies.cs'
         stubs.write_text('''using UnityEngine;
 public static class UdpImuBridge { public static bool TryGetLatest(out Vector3 a,out Vector3 g,out bool c){a=g=default;c=false;return false;} }
-public static class GameSession {public static string SelectedSongId,SelectedSongTitle,SelectedDifficulty;public static bool IsCalibrationMode,TutorialPending; public static int FinalScore,FinalHit,FinalMiss,FinalMaxCombo,FinalComboBonus,FinalPerfect,FinalGreat,FinalGood,FinalBad;}
+public static class GameSession {public static string SelectedSongId,SelectedSongTitle,SelectedDifficulty;public static bool IsCalibrationMode,TutorialPending; public static int FinalScore,FinalHit,FinalMiss,FinalMaxCombo,FinalComboBonus,FinalPerfect,FinalGreat,FinalGood,FinalBad,JudgmentOffsetMs;}
 public static class HighScoreStore { public static string Key(string s,string d) => s+d; }
 public static class SongAchievementStore { public static string Key(string s,string d) => s+d; }
 public static class DailyRankingStore { public static string Key(string s,string d) => s+d; }
@@ -62,7 +62,7 @@ public static class ProjectorMode { public const float BladeWidthScale=1,BladeOu
 public enum JudgmentTier { Perfect, Great, Good, Bad }
 public enum SaberHand { Any, Left, Right }
 public class SongPlayer : MonoBehaviour { public double SongTime; }
-public class CuttableNote : MonoBehaviour { public double HitTime; public double? LastCutSongTime; public int RequiredCutCount = 1; public SaberHand RequiredHand; public event System.Action<CuttableNote, JudgmentTier, Vector3, Vector3> OnJudged; }
+public class CuttableNote : MonoBehaviour { public double HitTime; public double? LastCutSongTime; public int RequiredCutCount = 1, CutsAchieved; public string RequiredDirection = "None"; public SaberHand RequiredHand, LastCutterHand; public bool LatestCutCorrectDirection, LastCutCorrectDirection, IsMissed; public event System.Action<CuttableNote, JudgmentTier, Vector3, Vector3> OnJudged; }
 public class NoteSpawner : MonoBehaviour { public double JudgeLatencySeconds; public double JudgeClock(double t) => t - JudgeLatencySeconds; public event System.Action<CuttableNote> OnNoteSpawned, OnNoteMissed; }
 public class GamePlayManager : MonoBehaviour { public NoteSpawner noteSpawner; public SongPlayer songPlayer; public float cameraJudgeLatencySeconds = .12f; }
 ''')
@@ -148,6 +148,7 @@ class Check { static int Main(string[] args) {
             if platform.startswith('UNITY_EDITOR'):
                 tests = [ROOT / 'Assets/Tests/Editor/PhoneSaberLatencyCompensationTests.cs',
                          ROOT / 'Assets/Tests/Editor/PhoneSaberLatencyProbeTests.cs',
+                         ROOT / 'Assets/Tests/Editor/PhoneSaberJudgeTimingLogTests.cs',
                          ROOT / 'Assets/Tests/Editor/PhoneSaberEndpointPredictorTests.cs', frame_tests, stats_tests, sender_tests]
                 if run(compiler + ['/target:library', '/r:' + str(nunit),
                                    '/out:' + str(build / (platform.replace(',', '-') + '-tests.dll'))] + refs + list(map(str, sources + tests))):

@@ -389,6 +389,33 @@ def stat(values, digits=1):
             "p95": round(percentile(vals, 95), digits)}
 
 
+def judge_by_hand(events):
+    """台・要求手別の記録件数。Miss/ロング/旧形式を時刻の中央値へ混ぜない。
+
+    hand は要求手で、Any の実切り手ではない。ログはノーツ単位なのでロング各回のスコア件数とも異なる。
+    """
+    groups = {}
+    for row in events:
+        if row["event"] == "judge-timing":
+            key = (row["station"] or "unknown", text(row["fields"].get("hand")) or "unknown")
+            groups.setdefault(key, []).append(row["fields"])
+    result = []
+    for (station, hand), fields in sorted(groups.items()):
+        values = [num(f.get("judge-ms")) for f in fields if f.get("tier") in TIERS[:-1]
+                  and "decided-ms" in f and f.get("note-kind") != "long"]
+        values = [v for v in values if v is not None]
+        result.append({"station": station, "hand": hand, "n": len(fields), "timed_hits": len(values),
+                       "median_ms": r1(median(values)), "p10_ms": r1(percentile(values, 10)),
+                       "p90_ms": r1(percentile(values, 90)),
+                       "bad": sum(f.get("tier") == "Bad" for f in fields),
+                       "miss": sum(f.get("tier") == "Miss" for f in fields),
+                       "wrong_direction_cuts": sum(f.get("direction-ok") == "0" for f in fields),
+                       "partial_long_timeouts": sum(f.get("note-kind") == "long" and f.get("timed-out") == "1"
+                                                    and (num(f.get("achieved-cuts")) or 0) > 0 for f in fields),
+                       "context_rows": sum("note-kind" in f for f in fields)})
+    return result
+
+
 def summarize(all_events, start, end, label=""):
     events = in_window(all_events, start, end)
     perf = [e["fields"] for e in events if e["event"] == "perf"]
@@ -490,6 +517,7 @@ def summarize(all_events, start, end, label=""):
         "total_ms": stat([num(f.get("total-ms")) for f in est]),
         "judge": {
             "n": len(judges),
+            "by_hand": judge_by_hand(events),
             "tiers": {t: tiers.get(t, 0) for t in TIERS if tiers.get(t)} | {
                 k: v for k, v in tiers.items() if k not in TIERS},
             "hits": len(hit_ms),
@@ -671,6 +699,14 @@ def render(s):
             f"    最適な補正（推定）= 今の補正 {fmt(judge['compensation_ms'])} + 当たりの中央値"
             f" {fmt(judge['judge_ms_median'])} = {fmt(judge['best_compensation_ms'])} ms",
         ]
+        lines.append("    台/要求手別（記録件数。Left=青・Right=赤は既定配線、Any は色不明）:")
+        for h in judge["by_hand"]:
+            lines.append(f"      {h['station']}/{h['hand']}: {h['n']} 件 / Bad {h['bad']} / Miss {h['miss']}"
+                         f" / 時刻あり {h['timed_hits']} 件 中央 {fmt(h['median_ms'])} ms"
+                         f"（p10 {fmt(h['p10_ms'])} / p90 {fmt(h['p90_ms'])}）"
+                         f" / 方向不一致 {fmt(h['wrong_direction_cuts'] if h['context_rows'] else None)}"
+                         f" / ロング途中期限切れ {fmt(h['partial_long_timeouts'] if h['context_rows'] else None)}"
+                         f"（種別診断あり {h['context_rows']} 件）")
     else:
         lines.append("    判定の記録なし（event=judge-timing がない）")
     jl = s["judge_latency"]
@@ -725,7 +761,9 @@ def render_report(report):
     for song in report["songs"]:
         out += ["", render(song)]
     out += ["", render(report["overall"])]
-    out.append("\n※ 最適な補正は判定の中央値から出した推定。曲や人で変わるので、何曲か見てから決める。")
+    out.append("\n※ 補正の推定は記録済みの当たりを中央に移す仮定値。Miss の救済数やプレイヤー・機器の原因比率は求められない。"
+               "予測 ON は先読みを補正から引くため、補正≒0 と推定遅延≒先読みは両立する。"
+               "曲・人・校正値・判定窓をそろえて比較する。")
     return "\n".join(out)
 
 
