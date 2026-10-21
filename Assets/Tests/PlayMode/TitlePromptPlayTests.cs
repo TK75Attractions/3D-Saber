@@ -102,6 +102,20 @@ public class TitlePromptPlayTests
         yield return null; yield return null;
     }
 
+    // 版の表示(仕様面の点検 14)は、どの画面でも右下に1つだけ。シーンを移っても増えない。
+    [UnityTest] public IEnumerator VersionLabelStaysOnceAcrossScenes()
+    {
+        foreach (string scene in new[] { "SongSelect", "Result", "Title" })
+        {
+            yield return SceneManager.LoadSceneAsync(scene);
+            yield return null;
+            var labels = Object.FindObjectsByType<GameVersionLabel>(FindObjectsSortMode.None);
+            Assert.AreEqual(1, labels.Length, scene);
+            Assert.AreEqual(GameVersion.Label, labels[0].Text.text, scene);
+            Assert.True(labels[0].Text.isActiveAndEnabled, scene);
+        }
+    }
+
     [UnityTest] public IEnumerator YesLeadsToTheTutorialInTheGameScene()
     {
         yield return OpenPrompt();
