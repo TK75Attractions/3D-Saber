@@ -249,6 +249,8 @@ public class GamePlayManager : MonoBehaviour
             // (シーンに古い狭い窓が焼き込まれていても、甘くした定数側が常に効くように)。
             noteSpawner.judgeWindow = (float)JudgmentTierHelper.LateBadSeconds;
             noteSpawner.earlyJudgeWindow = (float)JudgmentTierHelper.EarlyBadSeconds;
+            // 背景が明るいステージ(Morning)では、青ノーツに暗い縁を付ける。ノーツを並べる前(SetChart の前)に決める。
+            noteSpawner.outlineLeftNotes = stageFloor != null && StageThemeCatalog.OutlinesLeftNotes(stageFloor.ActiveTheme);
         }
 
         // --- キャリブレーションモード ---

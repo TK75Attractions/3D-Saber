@@ -264,4 +264,46 @@ public class NoteVisualsTests
         Assert.AreEqual(expected.g, visuals.baseColor.g, 0.001f);
         Assert.AreEqual(expected.b, visuals.baseColor.b, 0.001f);
     }
+
+    // Morning(Sky Sanctuary)の明るい空で青ノーツが沈む件(2026-10-21)。縁を付けるのはこの背景だけ。
+    [Test]
+    public void OnlyTheBrightSkyStageOutlinesLeftNotes()
+    {
+        foreach (var theme in StageThemeCatalog.All)
+            Assert.AreEqual(theme == StageTheme.SkySanctuary, StageThemeCatalog.OutlinesLeftNotes(theme), theme.ToString());
+        Assert.AreEqual(StageTheme.SkySanctuary, StageThemeCatalog.ForSong("Morning"));
+    }
+
+    [Test]
+    public void ContrastOutlineFramesTheFaceBehindTheRailsAndCanBeTakenOffForReuse()
+    {
+        var note = MakeLegacyNote();
+        var cn = note.AddComponent<CuttableNote>();
+        cn.RequiredHand = SaberHand.Left;
+        cn.RequiredDirection = CutDirection.Down;
+        var visuals = AttachVisuals(note);
+        var back = visuals.FindChildByName("BackBackLight");
+        Assert.IsNotNull(back);
+        Assert.IsFalse(visuals.ContrastOutlineShown, "既定は縁なし");
+
+        visuals.SetContrastOutline(true);
+        var ring = visuals.FindChildByName("ContrastOutline");
+        Assert.IsNotNull(ring);
+        Assert.IsTrue(visuals.ContrastOutlineShown);
+        Assert.IsFalse(back.gameObject.activeSelf, "矢印ノーツの後ろの淡い光は縁を埋もれさせるので消す");
+        var bounds = ring.GetComponent<MeshFilter>().sharedMesh.bounds;
+        Assert.AreEqual(.5f + NoteVisuals.ContrastOutlineWidth, bounds.extents.x, 1e-4f, "面の外側を囲む");
+        Assert.AreEqual(.5f + NoteVisuals.ContrastOutlineWidth, bounds.extents.y, 1e-4f);
+        Assert.Less(ring.localPosition.z, -.5f, "面より手前");
+        Assert.Greater(ring.localPosition.z, -.51f, "光るレールより奥(レールが縁の上に乗る)");
+        var color = ring.GetComponent<MeshRenderer>().sharedMaterial.GetColor("_BaseColor");
+        Assert.Less(color.r + color.g + color.b, .2f, "暗い縁");
+        Assert.Greater(color.a, .8f);
+
+        visuals.SetContrastOutline(false);
+        Assert.IsFalse(visuals.ContrastOutlineShown, "使い回しで別の背景に出るときは外す");
+        Assert.IsTrue(back.gameObject.activeSelf);
+        visuals.SetContrastOutline(true);
+        Assert.AreSame(ring, visuals.FindChildByName("ContrastOutline"), "付け直しても作り直さない");
+    }
 }

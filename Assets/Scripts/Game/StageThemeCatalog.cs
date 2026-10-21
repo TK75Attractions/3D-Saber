@@ -65,6 +65,9 @@ public static class StageThemeCatalog
         theme == StageTheme.MidnightHarbor || theme == StageTheme.VerdantAtrium || theme == StageTheme.ClockworkLibrary ||
         theme == StageTheme.PracticeCourtyard;
 
+    // 明るい青灰色の空(Sky Sanctuary = Morning)では、青ノーツが空と同じ色合いに沈む。そこだけ青ノーツに暗い縁を付ける(2026-10-21)。
+    public static bool OutlinesLeftNotes(StageTheme theme) => theme == StageTheme.SkySanctuary;
+
     // 彩度は端の埋め込み灯に限定。赤/青ノーツと混同しない低輝度の環境色。
     public static Color Accent(StageTheme theme)
     {

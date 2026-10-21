@@ -144,6 +144,8 @@ public class NoteVisuals : MonoBehaviour
     {
         // ランタイム生成 Material のリーク回避
         SafeDestroyMat(runtimeBodyMat);
+        SafeDestroyMat(contrastOutlineMaterial);
+        if (contrastOutlineMesh != null) { if (Application.isPlaying) Destroy(contrastOutlineMesh); else DestroyImmediate(contrastOutlineMesh); }
         foreach (var m in ownedSubMaterials) SafeDestroyMat(m);
         ownedSubMaterials.Clear();
     }
@@ -213,6 +215,25 @@ public class NoteVisuals : MonoBehaviour
             var color=baseColor; color.a=DisplaySettings.ProjectorMode?1f:.85f; SetBaseColor(runtimeBodyMat,color);
         }
         Update();
+    }
+
+    // 背景が明るいステージで、面の外側に暗い縁を付ける(Morning の青ノーツ、2026-10-21)。
+    // 内側の光るレールと外側の暗い縁の二重の縁になり、明るい空でも暗い床でも輪郭が読める。
+    // 発光は 2D レンダラーでは画面に出ないので、形で縁を作る。縁を付けた矢印ノーツは後ろの淡い光(1.4倍)を消し、縁を埋もれさせない。
+    public const float ContrastOutlineWidth = .12f;
+    public static readonly Color ContrastOutlineColor = new Color(.018f, .023f, .05f, .92f);
+    GameObject contrastOutline;
+    Mesh contrastOutlineMesh;
+    Material contrastOutlineMaterial;
+
+    public bool ContrastOutlineShown => contrastOutline != null && contrastOutline.activeSelf;
+
+    public void SetContrastOutline(bool on)
+    {
+        if (on && contrastOutline == null) BuildContrastOutline();
+        if (contrastOutline != null && contrastOutline.activeSelf != on) contrastOutline.SetActive(on);
+        var back = FindChildByName("BackBackLight");
+        if (back != null && back.gameObject.activeSelf == on) back.gameObject.SetActive(!on);
     }
 
     // ---- public ヘルパー（テストから検査するため） ----
@@ -372,6 +393,33 @@ public class NoteVisuals : MonoBehaviour
         StampRelativeFactor(mat, emissionScale);
         back.GetComponent<Renderer>().sharedMaterial = mat;
         ownedSubMaterials.Add(mat);
+    }
+
+    // 面(半幅 0.5)の外側を ContrastOutlineWidth だけ囲む四角い枠。光るレール(z -0.51)より奥、面(z -0.5)のすぐ手前に置く。
+    private void BuildContrastOutline()
+    {
+        const float inner = .5f;
+        float outer = inner + ContrastOutlineWidth;
+        contrastOutlineMesh = new Mesh { name = "ContrastOutline" };
+        contrastOutlineMesh.vertices = new[]
+        {
+            new Vector3(-outer, -outer), new Vector3(outer, -outer), new Vector3(outer, outer), new Vector3(-outer, outer),
+            new Vector3(-inner, -inner), new Vector3(inner, -inner), new Vector3(inner, inner), new Vector3(-inner, inner)
+        };
+        contrastOutlineMesh.colors = new[] { Color.white, Color.white, Color.white, Color.white, Color.white, Color.white, Color.white, Color.white };
+        contrastOutlineMesh.triangles = new[] { 0, 1, 5, 0, 5, 4, 1, 2, 6, 1, 6, 5, 2, 3, 7, 2, 7, 6, 3, 0, 4, 3, 4, 7 };
+        contrastOutlineMesh.RecalculateBounds();
+        contrastOutline = new GameObject("ContrastOutline", typeof(MeshFilter), typeof(MeshRenderer));
+        contrastOutline.transform.SetParent(transform, false);
+        contrastOutline.transform.localPosition = new Vector3(0f, 0f, -.505f);
+        contrastOutline.GetComponent<MeshFilter>().sharedMesh = contrastOutlineMesh;
+        // 矢印の黒い縁取りと同じ NoteGuide(照明なし・両面)。矢印(3021〜)より先に描く。
+        contrastOutlineMaterial = new Material(Resources.Load<Shader>("Effects/NoteGuide")) { renderQueue = 3020 };
+        contrastOutlineMaterial.SetColor("_BaseColor", ContrastOutlineColor);
+        var renderer = contrastOutline.GetComponent<MeshRenderer>();
+        renderer.sharedMaterial = contrastOutlineMaterial;
+        renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        renderer.receiveShadows = false;
     }
 
     private void AddSegmentDivider(float localZ)

@@ -152,6 +152,8 @@ public class NoteSpawner : MonoBehaviour
     // 同時押しノーツの間の白い連結線(プロセカの同時線)。標準機能として常時有効。
     // シーンに旧 NoteSpawner がシリアライズ済みでもコード既定値(true)が使われるよう NonSerialized。
     [System.NonSerialized] public bool simultaneousGuideEnabled = true;
+    // 青(左手)ノーツの面の外側に暗い縁を付ける。背景が明るいステージだけ GamePlayManager が立てる(StageThemeCatalog.OutlinesLeftNotes)。
+    [System.NonSerialized] public bool outlineLeftNotes;
     // 「同時」とみなす時刻差(秒)。譜面上同じ拍のノーツは同一値になるので余裕を持った小さい値でよい。
     public const double SimultaneousEpsilonSeconds = 0.01;
 
@@ -314,6 +316,8 @@ public class NoteSpawner : MonoBehaviour
         // NoteVisuals 自身が冪等で、既存プレハブにも安全に被せられる。
         var visuals=go.GetComponent<NoteVisuals>() ?? go.AddComponent<NoteVisuals>();
         visuals.Initialize(); visuals.ResetForReuse();
+        // 使い回しの組は手ごとに分かれているが、縁は出現のたびに付け外しする(ステージをまたいでも残さない)。
+        visuals.SetContrastOutline(outlineLeftNotes && note.RequiredHand == SaberHand.Left);
         go.SetActive(true);
 
         // 方向指定なら矢印マーカー

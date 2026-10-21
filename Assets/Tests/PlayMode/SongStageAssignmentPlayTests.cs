@@ -28,6 +28,7 @@ public class SongStageAssignmentPlayTests
                 Assert.IsTrue(manager.songPlayer.IsScheduled,id);
                 var floor=Object.FindFirstObjectByType<FloorRenderer>(); Assert.NotNull(floor,id);
                 Assert.AreEqual(StageThemeCatalog.ForSong(id),floor.ActiveTheme,id);
+                Assert.AreEqual(id=="Morning",manager.noteSpawner.outlineLeftNotes,id+": 青ノーツの暗い縁は明るい空の背景だけ");
                 if (id=="ElDorado") Assert.NotNull(floor.GetComponentInChildren<FoundryStageMotion>());
                 if ((int)floor.ActiveTheme>=14)
                 {
