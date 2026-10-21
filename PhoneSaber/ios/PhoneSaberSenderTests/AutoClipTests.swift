@@ -368,6 +368,138 @@ final class AutoClipTests: XCTestCase {
         XCTAssertNil(observe(&detector, 8, winner: (P(x: 400, y: 100), P(x: 400, y: 140))))
     }
 
+    // MARK: Gap
+
+    private func gapObserve(_ detector: inout AutoClipTriggerDetector, _ frame: Int,
+                            color: SaberColor = .red, winner: (P, P)?, other: Bool = true,
+                            time: Double? = nil, sequence: UInt64? = nil) -> AutoClipTriggerEvent? {
+        detector.observe(color: color, sequence: sequence ?? UInt64(frame + 1),
+            timestamp: time ?? Double(frame) / 30, winner: winner, competitorCount: 0, competitor: nil,
+            width: 480, height: 640, otherSelected: other)
+    }
+
+    func testGapFiresOnEighthMissingFramePerColourAndOnlyOnce() {
+        for color in [SaberColor.red, .blue] {
+            var detector = AutoClipTriggerDetector()
+            let saber = (P(x: 100, y: 100), P(x: 100, y: 300))
+            for frame in 0...30 { XCTAssertNil(gapObserve(&detector, frame, color: color, winner: saber)) }
+            for frame in 31...37 { XCTAssertNil(gapObserve(&detector, frame, color: color, winner: nil)) }
+            let event = gapObserve(&detector, 38, color: color, winner: nil)
+            XCTAssertEqual(event?.kind, .gap)
+            XCTAssertEqual(event?.color, color)
+            XCTAssertEqual(event?.frameID, 39)
+            XCTAssertEqual(event?.previousWinner, [100, 100, 100, 300])
+            XCTAssertNil(event?.winner)
+            for frame in 39...60 { XCTAssertNil(gapObserve(&detector, frame, color: color, winner: nil)) }
+            // 再取得後にもう1秒連続選択されれば再度発火できる。
+            for frame in 61...91 { XCTAssertNil(gapObserve(&detector, frame, color: color, winner: saber)) }
+            for frame in 92...98 { XCTAssertNil(gapObserve(&detector, frame, color: color, winner: nil)) }
+            XCTAssertEqual(gapObserve(&detector, 99, color: color, winner: nil)?.kind, .gap)
+        }
+    }
+
+    func testGapNeedsOneSecondContinuousSelectionAndEightContinuousMissingFrames() {
+        let saber = (P(x: 100, y: 100), P(x: 100, y: 300))
+        var short = AutoClipTriggerDetector()
+        for frame in 0...99 {
+            XCTAssertNil(gapObserve(&short, frame, winner: saber, time: Double(frame) / 100))
+        }
+        for frame in 100...120 {
+            XCTAssertNil(gapObserve(&short, frame, winner: nil, time: Double(frame) / 100))
+        }
+        var interrupted = AutoClipTriggerDetector()
+        for frame in 0...30 { _ = gapObserve(&interrupted, frame, winner: saber) }
+        for frame in 31...37 { XCTAssertNil(gapObserve(&interrupted, frame, winner: nil)) }
+        XCTAssertNil(gapObserve(&interrupted, 38, winner: saber))
+        for frame in 39...55 { XCTAssertNil(gapObserve(&interrupted, frame, winner: nil)) }
+    }
+
+    func testGapRequiresOtherColourOrRecentEndpointMotion() {
+        let saber = (P(x: 100, y: 100), P(x: 100, y: 300))
+        for mode in ["stationary", "moving", "rotation", "swapped", "oldMotion"] {
+            var detector = AutoClipTriggerDetector()
+            for frame in 0...30 {
+                var winner = saber
+                if mode == "moving" && frame == 30 { winner = (P(x: 110, y: 100), P(x: 110, y: 300)) }
+                if mode == "rotation" && frame == 30 { winner = (P(x: 90, y: 100), P(x: 110, y: 300)) }
+                if mode == "swapped" && frame % 2 == 0 { winner = (saber.1, saber.0) }
+                if mode == "oldMotion" && frame < 10 { winner = (P(x: 110, y: 100), P(x: 110, y: 300)) }
+                XCTAssertNil(gapObserve(&detector, frame, winner: winner, other: false))
+            }
+            for frame in 31...37 { XCTAssertNil(gapObserve(&detector, frame, winner: nil, other: false)) }
+            let event = gapObserve(&detector, 38, winner: nil, other: false)
+            XCTAssertEqual(event?.kind, mode == "moving" || mode == "rotation" ? .gap : nil, mode)
+        }
+    }
+
+    func testGapDiscontinuityAndResetDisarmSelectionAndMissingRun() {
+        let saber = (P(x: 100, y: 100), P(x: 100, y: 300))
+        for mode in ["reset", "sequence", "time", "backward"] {
+            var detector = AutoClipTriggerDetector()
+            for frame in 0...30 { _ = gapObserve(&detector, frame, winner: saber) }
+            for frame in 31...37 { _ = gapObserve(&detector, frame, winner: nil) }
+            if mode == "reset" { detector.reset() }
+            let time = mode == "time" ? 3.0 : mode == "backward" ? 0.0 : 38.0 / 30
+            XCTAssertNil(gapObserve(&detector, 38, winner: nil, time: time,
+                                    sequence: mode == "sequence" ? 30 : 39))
+        }
+    }
+
+    func testGapCountsProcessedFramesEvenWhenCameraFramesAreSkipped() {
+        var detector = AutoClipTriggerDetector()
+        let saber = (P(x: 100, y: 100), P(x: 100, y: 300))
+        for frame in 0...37 {
+            XCTAssertNil(gapObserve(&detector, frame, winner: frame <= 30 ? saber : nil,
+                                    sequence: UInt64(frame * 4 + 1)))
+        }
+        XCTAssertEqual(gapObserve(&detector, 38, winner: nil, sequence: 153)?.kind, .gap)
+    }
+
+    func testGapUsesAutomaticBusyCooldownAndSessionBudget() {
+        var limiter = AutoClipRateLimiter()
+        XCTAssertEqual(limiter.admit(event(.gap, at: 0), busy: true, width: 480, height: 640), .reject("busy"))
+        for index in 0..<AutoClipLimits.maximumAutomaticClipsPerSession {
+            XCTAssertEqual(limiter.admit(event(.gap, at: Double(index) * 20), busy: false, width: 480, height: 640), .accept)
+            XCTAssertEqual(limiter.admit(event(.gap, at: Double(index) * 20 + 1), busy: false, width: 480, height: 640),
+                           .reject(index == AutoClipLimits.maximumAutomaticClipsPerSession - 1 ? "sessionLimit" : "cooldown"))
+        }
+        XCTAssertEqual(limiter.admit(event(.gap, at: 200), busy: false, width: 480, height: 640), .reject("sessionLimit"))
+    }
+
+    func testRecorderGapUsesActualMissingSelectionEvenWithEligibleCandidates() throws {
+        for color in [SaberColor.red, .blue] {
+            let recorder = AutoClipRecorder(directory: FileManager.default.temporaryDirectory, enabled: true)
+            var logs: [String] = []
+            recorder.onLog = { logs.append($0) }
+            let saber = Self.candidate((10, 10), (10, 30))
+            let other: SaberColor = color == .red ? .blue : .red
+            let pixels = [UInt8](repeating: 0, count: 48 * 64 * 4)
+            pixels.withUnsafeBufferPointer { raw in
+                for frame in 0...38 {
+                    var selected = [other: saber.endpoints]
+                    if frame <= 30 { selected[color] = saber.endpoints }
+                    recorder.observe(ObservedFrame(baseAddress: raw.baseAddress!, width: 48, height: 64,
+                        bytesPerRow: 48 * 4, sequence: UInt64(frame + 1), timestamp: Double(frame) / 30,
+                        processingSeconds: 0, analysis: SaberFrameAnalysis(candidates: [color: [saber]], selected: selected),
+                        ignoreZones: [:], playArea: nil, captureFPS: 30))
+                }
+            }
+            XCTAssertEqual(logs.filter { $0.hasPrefix("trigger") }, ["trigger kind=gap color=\(AutoClipRecorder.colorName(color)) frame=39"])
+            // post window 完了前なのでディスク保存は不要。kind/reason/rules の転送形式は同じ。
+            let buffers = AutoClipBuffers(width: 48, height: 64, captureFPS: 30)
+            let capture = AutoClipCapture(clipID: "gap", trigger: event(.gap, at: 2), buffers: buffers,
+                windowStart: -1, windowEnd: 4, captureFPS: 30, environmentAtTrigger: AutoClipEnvironment(),
+                environmentAtSave: AutoClipEnvironment(), ignoreZones: [:], playArea: nil,
+                sessionClipIndex: 1, rejectedTriggers: [:])
+            let content = AutoClipBundleContent(capture: capture, slots: [])
+            let json = try XCTUnwrap(JSONSerialization.jsonObject(with: content.summaryData(images: [])) as? [String: Any])
+            let clip = try XCTUnwrap(json["autoClip"] as? [String: Any])
+            XCTAssertEqual((clip["trigger"] as? [String: Any])?["kind"] as? String, "gap")
+            XCTAssertNotNil((clip["rules"] as? [String: Any])?["gap"])
+            XCTAssertTrue(content.reasonText.contains("8 consecutive processed frames"))
+        }
+    }
+
     // MARK: Rate limiter
 
     private func event(_ kind: AutoClipTriggerKind, at time: Double, competitor: [Int]? = [400, 600, 420, 630]) -> AutoClipTriggerEvent {

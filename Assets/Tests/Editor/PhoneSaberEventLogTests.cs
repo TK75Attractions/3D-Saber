@@ -283,7 +283,7 @@ public class PhoneSaberEventLogTests
     public void SilenceAndRecoveryAreIndependentAndIncludeGapsBetweenPolls()
     {
         var events = new List<string>();
-        var red = new PhoneSaberConnectionEvents(10, true, (kind, detail) => events.Add(kind + " " + detail));
+        var red = new PhoneSaberConnectionEvents(10, true, (kind, detail) => events.Add(kind + " " + detail), () => 0);
         var blueEvents = new List<string>();
         var blue = new PhoneSaberConnectionEvents(10, true, (kind, detail) => blueEvents.Add(kind));
         red.Poll(11); Assert.IsEmpty(events);
@@ -300,6 +300,57 @@ public class PhoneSaberEventLogTests
         StringAssert.Contains("route-from=P2P bridge route-to=LAN", events[4]);
         StringAssert.StartsWith("input-back", events[5]);
         blue.Poll(14); Assert.AreEqual(new[] { "input-silent" }, blueEvents);
+    }
+
+    [TestCase(0.249, false)]
+    [TestCase(0.25, true)]
+    [TestCase(0.5, true)]
+    [TestCase(1.0, true)]
+    [TestCase(1.001, false)]
+    public void ShortGapUsesCompletedPacketIntervalWithoutChangingSilence(double gap, bool expected)
+    {
+        var events = new List<string>();
+        var connection = new PhoneSaberConnectionEvents(0, true,
+            (kind, detail) => events.Add(kind + " " + detail), () => 1);
+        connection.Packet(0, "iphone");
+        events.Clear();
+        connection.Poll(gap); connection.Poll(gap);
+        connection.Packet(gap, "iphone");
+        if (gap > 1)
+            CollectionAssert.AreEqual(new[] { "input-silent gap-seconds=1.001", "input-back sender=iphone" }, events);
+        else if (expected)
+            CollectionAssert.AreEqual(new[] { "input-gap gap-seconds=" + gap.ToString("F3", CultureInfo.InvariantCulture) }, events);
+        else Assert.IsEmpty(events);
+        connection.Poll(gap + 0.1);
+        connection.Packet(gap + 0.1, "iphone");
+        Assert.AreEqual(gap > 1 ? 2 : expected ? 1 : 0, events.Count, "同じ途絶は再記録しない");
+    }
+
+    [Test]
+    public void ShortGapsArePerColourAndRequirePacketsInTheSameGameScene()
+    {
+        int scene = 0;
+        var redEvents = new List<string>();
+        var blueEvents = new List<string>();
+        var red = new PhoneSaberConnectionEvents(0, true, (kind, detail) => redEvents.Add(kind), () => scene);
+        var blue = new PhoneSaberConnectionEvents(0, true, (kind, detail) => blueEvents.Add(kind), () => scene);
+        red.Packet(0.5, "iphone"); // 起動から初回受信までは対象外。
+        red.Packet(1, "iphone"); // メニュー中。
+        scene = 1;
+        red.Packet(1.5, "iphone"); // 曲への入場を跨ぐ。
+        blue.Packet(1.5, "iphone");
+        redEvents.Clear(); blueEvents.Clear();
+        red.Packet(1.75, "iphone");
+        CollectionAssert.AreEqual(new[] { "input-gap" }, redEvents);
+        Assert.IsEmpty(blueEvents);
+        blue.Packet(2, "iphone");
+        CollectionAssert.AreEqual(new[] { "input-gap" }, blueEvents);
+        scene = 0;
+        red.Packet(2.25, "iphone"); // 退出後。
+        scene = 2;
+        blue.Packet(2.5, "iphone"); // 別の Game scene への遷移。
+        Assert.AreEqual(1, redEvents.Count);
+        Assert.AreEqual(1, blueEvents.Count);
     }
 
     [Test]

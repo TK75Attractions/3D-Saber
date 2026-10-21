@@ -245,6 +245,43 @@ class SummaryTests(unittest.TestCase):
         self.assertTrue(any("引っかかり" in p for p in s["problems"]))
         self.assertTrue(any("途切れ" in p for p in s["problems"]))
 
+    def test_short_gaps_are_counted_and_listed_per_song_only(self):
+        def gap(t, colour="RED", seconds="0.250", station="A"):
+            return f"{ts(t)} station={station} colour={colour} event=input-gap gap-seconds={seconds}"
+        lines = [perf(0, "Menu"), gap(2), perf(20), gap(21), gap(22, "BLUE", "1.000"),
+                 gap(23, seconds="0.249"), gap(24, seconds="1.001"), gap(25, seconds="nan"),
+                 perf(30, "Result"), gap(35), perf(60), gap(61, seconds="0.500", station="B"),
+                 perf(70, "Result"), gap(75)]
+        events = [play_report.parse_line(line) for line in lines]
+        report = play_report.build_report(events, None, None)
+        self.assertEqual(len(report["songs"]), 2)
+        first, second = [s["phone"]["short_input_gaps"] for s in report["songs"]]
+        self.assertEqual(first["RED"], {"count": 1, "events": [
+            {"time": play_report.parse_time(ts(21)).isoformat(), "gap_seconds": 0.25, "station": "A"}]})
+        self.assertEqual(first["BLUE"]["count"], 1)
+        self.assertEqual(second["RED"]["count"], 1)
+        self.assertEqual(second["RED"]["events"][0]["station"], "B")
+        self.assertEqual(report["overall"]["phone"]["short_input_gaps"]["RED"]["count"], 2)
+        self.assertEqual(report["overall"]["phone"]["input_gaps"], {})
+        rendered = play_report.render(report["songs"][0])
+        self.assertIn("RED 1 回", rendered)
+        self.assertIn("1.000秒", rendered)
+        self.assertIn(play_report.fmt_local(ts(21)), rendered)
+        # CLI の JSON も同じ件数・一覧を保持する。
+        with tempfile.TemporaryDirectory() as directory:
+            path = os.path.join(directory, "events.log")
+            output = os.path.join(directory, "report.json")
+            with open(path, "w") as handle:
+                handle.write("\n".join(lines))
+            code, _ = run(["--events", path, "--json", output])
+            self.assertEqual(code, 0)
+            with open(output) as handle:
+                self.assertEqual(json.load(handle)["songs"][0]["phone"]["short_input_gaps"], first)
+
+    def test_short_gaps_without_song_evidence_are_excluded(self):
+        s = self.summary([f"{ts(10)} colour=RED event=input-gap gap-seconds=0.500"])
+        self.assertEqual(s["phone"]["short_input_gaps"], {})
+
     def test_judge_latency_passthrough(self):
         lines = [f"{ts(1)} station=A colour=SYSTEM event=judge-latency mode=auto applied-ms=95 auto-ms=92 source=estimate",
                  f"{ts(2)} station=A colour=SYSTEM event=judge-latency mode=auto applied-ms=95 auto-ms=92 source=estimate"]

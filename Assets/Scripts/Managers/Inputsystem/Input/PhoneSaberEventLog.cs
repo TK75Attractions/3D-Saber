@@ -276,10 +276,27 @@ public sealed class PhoneSaberEventLog
 // 座標や payload 解析には触れず、不正な payload も「到着」として扱う。
 public sealed class PhoneSaberConnectionEvents
 {
+    static volatile int activeGameScene;
+#if UNITY_5_3_OR_NEWER
+    // scene の通知は main thread。受信 thread はキャッシュだけを読む。
+    [UnityEngine.RuntimeInitializeOnLoadMethod(UnityEngine.RuntimeInitializeLoadType.BeforeSceneLoad)]
+    static void TrackGameScene()
+    {
+        UnityEngine.SceneManagement.SceneManager.activeSceneChanged -= ActiveSceneChanged;
+        UnityEngine.SceneManagement.SceneManager.activeSceneChanged += ActiveSceneChanged;
+        ActiveSceneChanged(default, UnityEngine.SceneManagement.SceneManager.GetActiveScene());
+    }
+
+    static void ActiveSceneChanged(UnityEngine.SceneManagement.Scene previous, UnityEngine.SceneManagement.Scene current)
+        => activeGameScene = current.name == "Game" ? (int)current.handle : 0;
+#endif
+
     readonly object gate = new object();
     readonly Action<string, string> record;
+    readonly Func<int> gameScene;
     readonly bool mac;
     double lastPacketAt;
+    int lastPacketGameScene;
     bool silent;
     string sender = "";
     // 2台のスマホが同じ port へ送ると packet ごとに送信元が入れ替わる。記録は1秒に1行までにして
@@ -288,11 +305,12 @@ public sealed class PhoneSaberConnectionEvents
     int suppressedSenderChanges;
     string suppressedFrom = "";
 
-    public PhoneSaberConnectionEvents(double startedAt, bool mac, Action<string, string> record)
+    public PhoneSaberConnectionEvents(double startedAt, bool mac, Action<string, string> record, Func<int> gameScene = null)
     {
         lastPacketAt = startedAt;
         this.mac = mac;
         this.record = record;
+        this.gameScene = gameScene ?? (() => activeGameScene);
     }
 
     public void Poll(double now)
@@ -308,7 +326,7 @@ public sealed class PhoneSaberConnectionEvents
     {
         lock (gate)
         {
-            CheckSilence(now);
+            CheckSilence(now, resumed: true);
             FlushSenderChange(now);
             if (sender != ip)
             {
@@ -331,6 +349,7 @@ public sealed class PhoneSaberConnectionEvents
             if (silent) record("input-back", "sender=" + ip);
             silent = false;
             lastPacketAt = now;
+            lastPacketGameScene = gameScene();
         }
     }
 
@@ -346,8 +365,13 @@ public sealed class PhoneSaberConnectionEvents
         suppressedSenderChanges = 0;
     }
 
-    void CheckSilence(double now)
+    void CheckSilence(double now, bool resumed = false)
     {
+        // 復帰時に実際の間隔を確定する。起動直後・曲を跨ぐ間隔・1秒超は短い途絶に数えない。
+        double gap = now - lastPacketAt;
+        if (resumed && !silent && gap >= 0.25 && gap <= 1.0 &&
+            lastPacketGameScene != 0 && lastPacketGameScene == gameScene())
+            record("input-gap", "gap-seconds=" + gap.ToString("F3", CultureInfo.InvariantCulture));
         if (silent || now - lastPacketAt <= 1.0) return;
         silent = true;
         record("input-silent", "gap-seconds=" + (now - lastPacketAt).ToString("F3", CultureInfo.InvariantCulture));

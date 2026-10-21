@@ -74,6 +74,11 @@ enum AutoClipSuspendPolicy {
 // MARK: - Trigger rules (pure)
 
 enum AutoClipTriggerPolicy {
+    static let gapSelectedSeconds = 1.0
+    static let gapFrames = 8
+    // 消失直前0.25秒の端点移動（端の入替は除外）をプレイ継続の補助証拠にする。
+    static let gapMotionSeconds = 0.25
+    static let gapMotionDiagonalFraction = 0.01
     /// Frames in a row with a separated, eligible, selectable competitor.
     static let confusionFrames = 3
     /// The jump threshold is max(typical blade length, this × frame diagonal).
@@ -85,7 +90,7 @@ enum AutoClipTriggerPolicy {
 }
 
 enum AutoClipTriggerKind: String {
-    case confusion, jump, manual
+    case confusion, jump, gap, manual
 }
 
 struct AutoClipTriggerEvent: Equatable {
@@ -173,6 +178,13 @@ struct AutoClipTriggerDetector {
         var lastWinner: (PixelPoint, PixelPoint)?
         var lastSequence: UInt64?
         var typicalLength: Double?
+        var lastTimestamp: Double?
+        var selectedSince: Double?
+        var lastMovingAt: Double?
+        var gapArmed = false
+        var gapWasMoving = false
+        var missingRun = 0
+        var gapWinner: (PixelPoint, PixelPoint)?
     }
     private var red = ColorState()
     private var blue = ColorState()
@@ -184,11 +196,54 @@ struct AutoClipTriggerDetector {
     mutating func observe(color: SaberColor, sequence: UInt64, timestamp: Double,
                           winner: (PixelPoint, PixelPoint)?, competitorCount: Int,
                           competitor: (PixelPoint, PixelPoint)?,
-                          width: Int, height: Int) -> AutoClipTriggerEvent? {
+                          width: Int, height: Int, otherSelected: Bool = false) -> AutoClipTriggerEvent? {
         var state = color == .red ? red : blue
         defer { if color == .red { red = state } else { blue = state } }
         let consecutive = state.lastSequence.map { sequence > $0 && sequence - $0 <= AutoClipTriggerPolicy.maximumSequenceGap } ?? false
         var event: AutoClipTriggerEvent?
+
+        // gap は実選択だけを見る。候補が残っていても出力がなければ消失として扱う。
+        // camera frame の間引きでは途絶をリセットせず、処理されたフレームを数える。
+        let gapConsecutive = state.lastSequence.map { sequence > $0 } == true && timestamp.isFinite && state.lastTimestamp.map {
+            timestamp > $0 && timestamp - $0 <= 1
+        } == true
+        if !gapConsecutive {
+            state.selectedSince = nil
+            state.lastMovingAt = nil
+            state.gapArmed = false
+            state.gapWasMoving = false
+            state.missingRun = 0
+            state.gapWinner = nil
+        }
+        if let winner {
+            if gapConsecutive, let previous = state.lastWinner {
+                func distance(_ a: PixelPoint, _ b: PixelPoint) -> Double {
+                    hypot(Double(a.x - b.x), Double(a.y - b.y))
+                }
+                let movement = min(max(distance(previous.0, winner.0), distance(previous.1, winner.1)),
+                                   max(distance(previous.0, winner.1), distance(previous.1, winner.0)))
+                let threshold = AutoClipTriggerPolicy.gapMotionDiagonalFraction * hypot(Double(width), Double(height))
+                if movement >= threshold { state.lastMovingAt = timestamp }
+            }
+            state.selectedSince = state.selectedSince ?? timestamp
+            state.gapArmed = timestamp - (state.selectedSince ?? timestamp) >= AutoClipTriggerPolicy.gapSelectedSeconds
+            state.gapWasMoving = state.lastMovingAt.map { timestamp - $0 <= AutoClipTriggerPolicy.gapMotionSeconds } ?? false
+            state.gapWinner = winner
+            state.missingRun = 0
+        } else {
+            state.selectedSince = nil
+            if state.gapArmed && (otherSelected || state.gapWasMoving) {
+                state.missingRun += 1
+                if state.missingRun == AutoClipTriggerPolicy.gapFrames {
+                    event = AutoClipTriggerEvent(kind: .gap, color: color, frameID: sequence, timestamp: timestamp,
+                        previousWinner: state.gapWinner.map(AutoClipCompetition.endpointsArray))
+                    state.gapArmed = false
+                }
+            } else {
+                state.gapArmed = false
+                state.missingRun = 0
+            }
+        }
 
         if winner != nil && competitorCount > 0 && (consecutive || state.confusionRun == 0) {
             state.confusionRun += 1
@@ -235,6 +290,7 @@ struct AutoClipTriggerDetector {
             state.lastWinner = nil
         }
         state.lastSequence = sequence
+        state.lastTimestamp = timestamp
         return event
     }
 }
@@ -672,9 +728,9 @@ final class AutoClipRecorder: FrameAnalysisObserver {
         status.active = isEnabled && suspended == nil
         lock.unlock()
 
-        if resetSession { limiter.beginSession() }
+        if resetSession { limiter.beginSession(); detector.reset() }
         guard isEnabled, suspended == nil, frame.timestamp.isFinite else {
-            if buffers != nil || pending != nil { dropState() }
+            dropState()
             if let manual {
                 onLog?("clip skipped reason=\(!isEnabled ? "disabled" : suspended ?? "invalidTimestamp") request=\(manual)")
                 onManualClipResult?(manual, false)
@@ -713,12 +769,12 @@ final class AutoClipRecorder: FrameAnalysisObserver {
             color: .red, sequence: frame.sequence, timestamp: frame.timestamp,
             winner: frame.analysis.selected[.red], competitorCount: red.competitorCount,
             competitor: red.competitorIndex.map { redCandidates[$0].endpoints },
-            width: frame.width, height: frame.height)
+            width: frame.width, height: frame.height, otherSelected: frame.analysis.selected[.blue] != nil)
         let blueEvent = detector.observe(
             color: .blue, sequence: frame.sequence, timestamp: frame.timestamp,
             winner: frame.analysis.selected[.blue], competitorCount: blue.competitorCount,
             competitor: blue.competitorIndex.map { blueCandidates[$0].endpoints },
-            width: frame.width, height: frame.height)
+            width: frame.width, height: frame.height, otherSelected: frame.analysis.selected[.red] != nil)
         let manualEvent = manual.map {
             AutoClipTriggerEvent(kind: .manual, color: nil, frameID: frame.sequence,
                                  timestamp: frame.timestamp, note: $0)
@@ -1020,6 +1076,8 @@ struct AutoClipBundleContent {
         case .jump:
             return String(format: "auto clip: %@ winner midpoint jumped %.0f px (threshold %.0f px) between consecutive frames",
                           triggerColor, trigger.jumpDistance ?? 0, trigger.jumpThreshold ?? 0)
+        case .gap:
+            return "auto clip: \(triggerColor) selected for at least \(AutoClipTriggerPolicy.gapSelectedSeconds) s then absent for \(AutoClipTriggerPolicy.gapFrames) consecutive processed frames while the other colour was selected or this blade was moving"
         case .manual:
             return "auto clip: requested (\(trigger.note ?? "manual"))"
         }
@@ -1149,6 +1207,7 @@ struct AutoClipBundleContent {
                 "confusion": "same colour: the actual production winner plus at least one other eligible candidate (not in an ignore zone, midpoint inside the acquisition play area; this is a competition heuristic, not a track-lock gate replay), separated from the winner (boxes apart by >\(AutoClipTriggerPolicy.boxMarginPixels) px or midpoints farther than their mean length), for \(AutoClipTriggerPolicy.confusionFrames) consecutive processed frames",
                 "jump": "same colour: winner midpoint moves more than max(typical blade length (EMA \(AutoClipTriggerPolicy.typicalLengthAlpha)), \(AutoClipTriggerPolicy.minimumJumpDiagonalFraction) × frame diagonal) between consecutive processed frames (sequence gap ≤ \(AutoClipTriggerPolicy.maximumSequenceGap))",
                 "manual": "PC command clip=1",
+                "gap": "same colour: actual selected output continuously for ≥\(AutoClipTriggerPolicy.gapSelectedSeconds) s, then no selected output for \(AutoClipTriggerPolicy.gapFrames) consecutive processed frames; other colour selected throughout the gap or vanished blade endpoint motion ≥\(AutoClipTriggerPolicy.gapMotionDiagonalFraction) × frame diagonal within \(AutoClipTriggerPolicy.gapMotionSeconds) s before loss (endpoint order independent); increasing sequence/timestamps, camera frame skips allowed, time gap ≤1 s",
                 "rateLimit": "cooldown \(Int(AutoClipLimits.cooldownSeconds)) s, ≤\(AutoClipLimits.maximumAutomaticClipsPerSession) automatic clips per sending session, confusion at a previously clipped competitor location skipped, manual ≥\(Int(AutoClipLimits.manualMinimumInterval)) s apart"
             ],
             "window": ["startTimestamp": capture.windowStart, "endTimestamp": capture.windowEnd,

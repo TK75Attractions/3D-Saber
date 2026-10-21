@@ -6,7 +6,7 @@
   event=latency-estimate  色ごとに約10秒ごと。c2s / rtt / network / pc / display / exposure / total
   event=judge-timing      判定ごと。tier / hand / judge-ms / song-ms / latency-ms / hit-s
   event=judge-latency     補正の設定（あればそのまま要約する）
-  input-silent / input-back / sender-change / session-start / session-quit
+  input-gap / input-silent / input-back / sender-change / session-start / session-quit
 
 使い方:
   python3 play_report.py --last-session
@@ -309,6 +309,24 @@ def input_gaps(events, start, end):
     return out
 
 
+def short_input_gaps(events, start, end):
+    """曲中に復帰した 0.25〜1 秒の途絶を色別に数え、時刻と実間隔を残す。"""
+    songs = find_songs(events)
+    out = {}
+    for row in in_window(events, start, end):
+        gap = num(row["fields"].get("gap-seconds"))
+        if row["event"] != "input-gap" or gap is None or not 0.25 <= gap <= 1.0:
+            continue
+        if not any(a <= row["time"] < b for a, b in songs):
+            continue
+        colour = row["colour"] or "?"
+        group = out.setdefault(colour, {"count": 0, "events": []})
+        group["count"] += 1
+        group["events"].append({"time": row["time"].isoformat(), "gap_seconds": gap,
+                                "station": row["station"]})
+    return out
+
+
 def baseline_check(events, start, end):
     """基準外は WARN、重大な発熱・両色同時停止・PC停止超過は BAD。欠測は WARN。
 
@@ -446,6 +464,7 @@ def summarize(all_events, start, end, label=""):
             "capture_fps": stat([num(f.get("capture-fps")) for f in est]),
             "pkt_per_s": pkt,
             "input_gaps": input_gaps(all_events, start, end) if start and end else {},
+            "short_input_gaps": short_input_gaps(all_events, start, end) if start and end else {},
         },
         "network": {
             "rtt_ms": stat([num(f.get("rtt-ms")) for f in est]),
@@ -606,6 +625,11 @@ def render(s):
              f"  {fmt_utc(s['start'])} 〜 {fmt_utc(s['end'])}  {fmt(s['duration_s'])} 秒"]
     gaps = phone["input_gaps"]
     gap_text = ", ".join(f"{c} {g['count']} 回 {g['seconds']:.1f} 秒" for c, g in sorted(gaps.items())) or "なし"
+    short_gaps = phone["short_input_gaps"]
+    short_text = "; ".join(
+        f"{c} {g['count']} 回 [" + ", ".join(
+            f"{fmt_local(e['time'])} {e['gap_seconds']:.3f}秒" for e in g["events"]) + "]"
+        for c, g in sorted(short_gaps.items())) or "なし"
     pkt = phone["pkt_per_s"]
     lines += [
         "  [スマホ]",
@@ -615,6 +639,7 @@ def render(s):
         f"    受信 pkt/s  赤 {fmt(pkt['RED']['median'])}（最小 {fmt(pkt['RED']['min'])}）"
         f"  青 {fmt(pkt['BLUE']['median'])}（最小 {fmt(pkt['BLUE']['min'])}）",
         f"    入力の途切れ {gap_text}",
+        f"    曲中の短い途切れ（input-gap） {short_text}",
         "  [ネットワーク]",
         f"    rtt 中央値 {fmt(net['rtt_ms']['median'])} / p95 {fmt(net['rtt_ms']['p95'])} ms"
         f"  片道 {fmt(net['network_ms']['median'])} / p95 {fmt(net['network_ms']['p95'])} ms",
