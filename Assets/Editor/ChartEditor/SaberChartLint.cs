@@ -25,6 +25,8 @@ namespace Saber.ChartEditor
     {
         // 同時とみなす時刻の差(本編の SaberCutJudge.SimultaneousSeconds)。
         public const float SimultaneousMs = SaberCutJudge.SimultaneousSeconds * 1000f;
+        // なぞりで続けて切れる矢印の、なぞる向きからの幅(±度。本編の SaberCutJudge.DefaultDirectionToleranceDegrees)。
+        public const float SweepArrowDegrees = SaberCutJudge.DefaultDirectionToleranceDegrees;
         // 刃の線からノーツの中心まで、これ以内なら当たる(本編の刃 0.32 + ノーツ 0.88)。
         public const float HitRange = 1.2f;
         // 本編が同時押しの線(同時線)を引く時刻の差(NoteSpawner.SimultaneousEpsilonSeconds)。
@@ -296,7 +298,7 @@ namespace Saber.ChartEditor
         }
 
         // 1振りで隣へなぞって続けて切れる並びか(本編の「なぞり」と同じ考え)。
-        // 同じ位置の連打はなぞれない。矢印があれば、なぞる向きと±45°以内で合っていること。
+        // 同じ位置の連打はなぞれない。矢印があれば、なぞる向きと SweepArrowDegrees 以内で合っていること。
         static bool Sweepable(SaberChartDocument chart, List<int> from, List<int> to)
         {
             Vector2 a = Center(chart, from), b = Center(chart, to), d = b - a;
@@ -305,7 +307,7 @@ namespace Saber.ChartEditor
             foreach (int i in from.Concat(to))
             {
                 Vector2 arrow = Arrow(chart.notes[i].direction);
-                if (arrow != Vector2.zero && Vector2.Dot(arrow, d / distance) < Mathf.Cos(45f * Mathf.Deg2Rad)) return false;
+                if (arrow != Vector2.zero && Vector2.Dot(arrow, d / distance) < Mathf.Cos(SweepArrowDegrees * Mathf.Deg2Rad)) return false;
             }
             return true;
         }

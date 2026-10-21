@@ -17,6 +17,9 @@ public class SaberCutJudge : MonoBehaviour
 {
     // 同時に切れるとみなすノーツの時刻の差(秒)。譜面の同時ノーツは時刻差0で、後続のノーツは0.06秒以上離れている。
     public const float SimultaneousSeconds = .025f;
+    // 向きが合うとみなす幅の既定(±度)。これより外は向き違いで1段下げ、120°より外(逆向き)は切らない(CutDirectionHelper.ShouldRejectOpposite)。
+    // 2026-10-21 に±45°から±60°へ(1段下げの帯を、外側の120°は変えずに内側から狭めた)。譜面のチェック(SaberChartLint)も同じ値。
+    public const float DefaultDirectionToleranceDegrees = 60f;
     // 向きを刃の中心の動きで決めるのに要る最小の移動量。これより短ければ従来どおり速さの向きを使う。
     const float DirectionTravel = .5f;
     // 通り過ぎた時刻を前後の刃の値の間で割り振るのは、値の間がこれ以下のときだけ(秒)。長ければ今の値の時刻にする。
@@ -44,7 +47,7 @@ public class SaberCutJudge : MonoBehaviour
     // 手の揺れ(止めていても1フレームに最大約0.5)で切れないよう、それより大きくする。曲時計があるときだけ使う。
     public float passCutTravel = 1.0f;
     // 向きが合うとみなす幅(±度)。曲時計があるときだけ使い、時計がないタイトル等は従来の±30°のまま。
-    [Range(0f, 90f)] public float directionToleranceDegrees = 45f;
+    [Range(0f, 90f)] public float directionToleranceDegrees = DefaultDirectionToleranceDegrees;
     // iPhone カメラの値は縦が横の約1/2.4に縮んで届く(縦長480×640の映像を1920×1080へ縦横別の倍率で広げ、
     // それを判定面の±5.5×±3へ写すため。位置合わせ(4隅)を使うと変わる)。向きを比べるときだけ縦の動きをこの倍率で戻す。
     // カメラの値が届いていて曲時計があるときだけ使う。画面の刃・切り口・破片の向きは変えない。

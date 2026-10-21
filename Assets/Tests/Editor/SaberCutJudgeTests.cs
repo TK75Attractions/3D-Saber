@@ -766,10 +766,10 @@ public class SaberCutJudgeTests
     }
 
     // 画面上の振りの向き(x, y)。カメラの値は縦が約1/2.4に縮んで届くので、カメラのときは縦を2.4倍して向きを比べる。
-    [TestCase(CutDirection.Down, .819f, -.574f, true, true)]   // 画面では真下から55°。体の動きでは約31°
-    [TestCase(CutDirection.Down, .819f, -.574f, false, false)] // マウスなど(カメラ以外)は補正しない
-    [TestCase(CutDirection.Right, .766f, .643f, true, false)]  // 画面では水平から40°。体の動きでは約64°
-    [TestCase(CutDirection.Right, .766f, .643f, false, true)]
+    [TestCase(CutDirection.Down, .940f, -.342f, true, true)]   // 画面では真下から70°。体の動きでは約49°
+    [TestCase(CutDirection.Down, .940f, -.342f, false, false)] // マウスなど(カメラ以外)は補正しない
+    [TestCase(CutDirection.Right, .643f, .766f, true, false)]  // 画面では水平から50°。体の動きでは約71°
+    [TestCase(CutDirection.Right, .643f, .766f, false, true)]
     public void CameraSwingDirectionIsComparedWithTheVerticalMotionScaledBack(CutDirection required, float x, float y,
         bool camera, bool correct)
     {
@@ -893,10 +893,11 @@ public class SaberCutJudgeTests
         Assert.AreEqual(1, judge.PendingCount);
     }
 
-    [TestCase(40f, true, true)]
-    [TestCase(50f, true, false)]
+    // 2026-10-21 に±45°から±60°へ。1段下げるのは60°より外だけ(外側の120°は下の OppositeSwing… で確かめる)。
+    [TestCase(55f, true, true)]
+    [TestCase(65f, true, false)]
     [TestCase(40f, false, false)]
-    public void DirectionToleranceIs45DegreesOnlyWithTheSongClock(float degrees, bool clock, bool correct)
+    public void DirectionToleranceIs60DegreesOnlyWithTheSongClock(float degrees, bool clock, bool correct)
     {
         var (judge, tracker, bridge) = GameBladeRig();
         var note = MakeNote(Vector3.zero);
@@ -909,7 +910,25 @@ public class SaberCutJudgeTests
         Step(judge, tracker, bridge, dir * .6f, clock ? 1.0 : double.NaN, false);
         if (!clock) Step(judge, tracker, bridge, dir * 2.6f, double.NaN, false); // 時計がなければ抜けたときに切る
         Assert.True(note.IsCut);
-        Assert.AreEqual(correct, note.LastCutCorrectDirection, clock ? "曲時計があるときは ±45°" : "時計がないときは従来の ±30°");
+        Assert.AreEqual(correct, note.LastCutCorrectDirection, clock ? "曲時計があるときは ±60°" : "時計がないときは従来の ±30°");
+    }
+
+    // 1段下げの帯の外側は120°のまま。それより逆向きの振りは切らない(構えの振りで切らない)。
+    [TestCase(115f, true)]
+    [TestCase(125f, false)]
+    public void OppositeSwingBeyond120DegreesStillDoesNotCut(float degrees, bool cut)
+    {
+        var (judge, tracker, bridge) = GameBladeRig();
+        var note = MakeNote(Vector3.zero);
+        note.HitTime = 1.0;
+        note.RequiredDirection = CutDirection.Down;
+        float rad = degrees * Mathf.Deg2Rad;
+        Vector2 dir = new Vector2(Mathf.Sin(rad), -Mathf.Cos(rad)); // 真下から degrees だけ傾けた向き
+        tracker.ResetTo(-dir * 1.5f);
+        Step(judge, tracker, bridge, -dir, .98, false);
+        Step(judge, tracker, bridge, dir * .6f, 1.0, false);
+        Assert.AreEqual(cut, note.IsCut);
+        if (cut) Assert.False(note.LastCutCorrectDirection, "60°〜120°は切れて1段下げ");
     }
 
     [Test]
