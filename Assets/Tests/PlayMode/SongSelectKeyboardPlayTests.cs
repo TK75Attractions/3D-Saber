@@ -595,6 +595,58 @@ public class SongSelectKeyboardPlayTests
         }
     }
 
+    // 再開の 3・2・1 の途中で音の出力先が変わったとき、立て直し(0.5秒後にタイトルへ)を待つ間も刻みや再開の音を鳴らさない
+    // (2026-10-22 くり返し12回目、Codex の指摘)。
+    [UnityTest]
+    public IEnumerator AudioChangeDuringTheResumeCountPlaysNoMoreCues()
+    {
+        using (var sender = new UdpClient())
+        {
+            byte[] packet = System.Text.Encoding.ASCII.GetBytes("-0.2,-0.6,0.2,-0.6");
+            void Send() => sender.Send(packet, packet.Length, new IPEndPoint(IPAddress.Loopback, input.port));
+            double deadline = Time.realtimeSinceStartupAsDouble + 2;
+            while (input.LastReceivedTime < 0 && Time.realtimeSinceStartupAsDouble < deadline) { Send(); yield return null; }
+            InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.Enter));
+            yield return null; yield return null;
+            InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+            var manager = Object.FindFirstObjectByType<GamePlayManager>();
+            deadline = Time.realtimeSinceStartupAsDouble + 20;
+            while ((manager == null || !manager.songPlayer.IsPlaying || manager.noteSpawner.AliveCount == 0)
+                && Time.realtimeSinceStartupAsDouble < deadline)
+            {
+                Send(); yield return null;
+                if (manager == null) manager = Object.FindFirstObjectByType<GamePlayManager>();
+            }
+            Assert.True(manager.songPlayer.IsPlaying);
+            deadline = Time.realtimeSinceStartupAsDouble + 8;
+            while (!manager.songPlayer.IsPaused && Time.realtimeSinceStartupAsDouble < deadline) yield return null;
+            Assert.True(manager.songPlayer.IsPaused, "見失ったら曲を止める");
+            var view = manager.TrackingView;
+            deadline = Time.realtimeSinceStartupAsDouble + 6;
+            while (view.HeadlineShown != "再開まで 3" && Time.realtimeSinceStartupAsDouble < deadline) { Send(); yield return null; }
+            Assert.AreEqual("再開まで 3", view.HeadlineShown);
+            // 「3」から約0.7秒で出力先が変わる。0.5秒の立て直し待ちの間に「2」へ変わる時刻(1秒)が来る。
+            double countFrom = Time.realtimeSinceStartupAsDouble;
+            while (Time.realtimeSinceStartupAsDouble < countFrom + .7) { Send(); yield return null; }
+            int recoveries = AudioOutputRecovery.RecoveryCount;
+            int cues = view.CueCount;
+            AudioOutputRecovery.SimulateChangeForTest();
+            double heldUntil = Time.realtimeSinceStartupAsDouble;
+            deadline = countFrom + 6;
+            while (AudioOutputRecovery.RecoveryCount == recoveries && Time.realtimeSinceStartupAsDouble < deadline)
+            {
+                heldUntil = Time.realtimeSinceStartupAsDouble;
+                Send(); yield return null;
+            }
+            Assert.AreEqual(AudioOutputRecovery.Action.AbortToTitle, AudioOutputRecovery.LastAction);
+            Assert.Greater(heldUntil - countFrom, 1.05, "「2」へ変わる時刻まで立て直しを待っていた(確かめられる並び)");
+            Assert.AreEqual(cues, view.CueCount, "立て直しを待つ間は刻みも再開の音も鳴らさない");
+            Assert.True(manager.songPlayer.IsPaused || !manager.songPlayer.IsScheduled, "曲は再開しない");
+            yield return ScreenTransitionPlayTests.WaitForTransition();
+            Assert.AreEqual("Title", SceneManager.GetActiveScene().name);
+        }
+    }
+
     // 運営のシャッター切り替え(Ctrl+Shift+S、b1b7160)を選曲で押しても、難易度は変わらない(2026-10-22、点検 4)。
     // 来場者の S は今までどおり「むずかしく」。
     [UnityTest]

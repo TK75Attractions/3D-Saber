@@ -872,8 +872,9 @@ public class GamePlayManager : MonoBehaviour
     // 2026-10-22: 片方の色だけ届かないときのスタッフ向けの1行、止まっている間の「確認中」・暗い幕・3・2・1 の輪と音、再開の表示を足した。
     void TickTrackingWatch()
     {
-        // 中断・結果へ進むと決めたあと(幕が閉じる間)は、見張りも表示も止める。数えかけの 3・2・1 の刻みや再開の音を鳴らさない(Codex の点検で 2026-10-22 に追加)。
-        if (trackingView == null || leaving) return;
+        // 中断・結果へ進むと決めたあと(幕が閉じる間)と、音の出力先が変わって立て直しを待つ間(0.5秒、そのあとタイトルへ)は、
+        // 見張りも表示も止める。数えかけの 3・2・1 の刻みや再開の音を鳴らさない(Codex の点検で 2026-10-22 に追加)。
+        if (trackingView == null || leaving || audioChangeHold) return;
         var input = InputPoint.Instance;
         double now = Time.realtimeSinceStartupAsDouble;
         if (input != null)
@@ -886,8 +887,7 @@ public class GamePlayManager : MonoBehaviour
         double songTime = songPlayer != null ? songPlayer.SongTime : 0;
         bool canPause = !inTutorial && !inCalibration && ready && !finished && !leaving
             && songPlayer != null && songPlayer.IsPlaying && NotesComing(songTime);
-        // 音の出力先が変わって止めている間は、剣が戻っても再開しない(立て直しでタイトルへ戻る)。
-        var request = audioChangeHold ? PlayTrackingWatch.Request.None : trackingWatch.Step(now, canPause);
+        var request = trackingWatch.Step(now, canPause);
         if (request == PlayTrackingWatch.Request.Pause) { PauseForTracking(); trackingView.PlayPauseCue(); }
         else if (request == PlayTrackingWatch.Request.Resume)
         {
