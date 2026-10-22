@@ -13,7 +13,7 @@ import { encodeWav } from './wav.js';
 import { saveProject, listProjects, getProject, saveAudio, getAudio, saveProjectWithAudio } from './storage.js';
 const $ = id => document.getElementById(id), audio = new SongAudio();
 // 画面に出す版。sw.js のキャッシュ名(saber-tap-shell-<版>)と同じにする(tests/offline.test.js が確かめる)。
-const APP_VERSION='v10-20261022';
+const APP_VERSION='v11-20261022';
 let refinementUI, workspaceUI;
 let bpmConfirmed=true;
 let chart = blankChart(), history = new History(), project = null, selected = null;
@@ -79,11 +79,17 @@ function persist() {
   saving=true;status('保存中…');
   persistChain=persistChain.catch(()=>{}).then(()=>saveProject(value)).then(()=>{
     saving=--pendingSaves>0;if(project?.id===value.id&&revision===saveRevision&&!saveTimer){saveFailed=false;status('この端末に保存済み');}if(project?.id===value.id)preference('saber-last-project',value.id);
-  },error=>{saving=--pendingSaves>0;saveFailed=true;status(error.name==='ConflictError'?'別タブで更新 — 書き出してから再読み込み':'未保存 — 譜面を書き出してください');if(error.name==='ConflictError')throw error;throw new Error('端末に保存できませんでした。空き容量を確認し、譜面を書き出して保管してください。',{cause:error});});
+  },error=>{saving=--pendingSaves>0;saveFailed=true;status(error.name==='ConflictError'?'別タブで更新 — ここを押して書き出してから再読み込み':'未保存 — ここを押して譜面かバックアップを書き出す');if(error.name==='ConflictError')throw error;throw new Error('端末に保存できませんでした。空き容量を確認し、譜面を書き出して保管してください。',{cause:error});});
   return persistChain;
 }
-function changed() {chart.notes.sort((a,b)=>a.time-b.time);refresh();renderNotes();status('保存待ち…');clearTimeout(saveTimer);saveTimer=setTimeout(()=>persist().catch(fail),180);}
-function commit(action) {lastTake=null;history.push(chart);action();changed();}
+function changed() {chart.notes.sort((a,b)=>a.time-b.time);refresh();renderNotes();refreshTabDetails();status('保存待ち…');clearTimeout(saveTimer);saveTimer=setTimeout(()=>persist().catch(fail),180);}
+// 開いている「確かめる」の診断と「渡す」の注意を、譜面・設定・曲が変わったらその場で描き直す(タブを往復しなくてよい)。
+function refreshTabDetails() {
+  if(!project||!workspaceUI)return;
+  if(workspaceUI.active==='preview')refinementUI.report({keepPlaying:true});else if(workspaceUI.active==='export')refreshExportWarnings().catch(fail);
+}
+// 履歴には、変える前の譜面と「BPMを確定したか」を一緒に残す(元に戻すで「未設定」にも戻れる)。
+function commit(action) {lastTake=null;history.push(chart,{bpmConfirmed});action();changed();}
 function cancelTouches() {for(const touch of touches.values())touch.marker.remove();touches.clear();}
 function stop({finish=true}={}) {
   const end=Math.min(audio.time(),playbackEnd);
@@ -132,11 +138,12 @@ async function openProject(id) {
     $('difficulty').value=next.difficulty||'normal';
     restoreSettings(next.settings);resetSession();
     fillChartFields();renderNotes();drawWaveform();preference('saber-last-project',next.id);$('library').close();status('この端末に保存済み');
-  } finally {loading=false;refresh();}
+  } finally {loading=false;refresh();refreshTabDetails();}
 }
 async function showLibrary() {
   if(loading)return;
-  stop();await persist();const projects=(await listProjects()).sort((a,b)=>b.updated-a.updated);$('projectList').replaceChildren();
+  // 保存に失敗しても一覧は開く(知らせは出す)。別の下書きを開く操作は、保存できるまで止めて手元の編集を守る(openProject)。
+  stop();await persist().catch(fail);const projects=(await listProjects()).sort((a,b)=>b.updated-a.updated);$('projectList').replaceChildren();
   $('projectNameLabel').hidden=!project;$('projectName').value=project?.name||'';
   if(!projects.length){const p=document.createElement('p');p.className='hint';p.textContent='保存した曲はまだありません。';$('projectList').append(p);}
   const groups=new Map();for(const item of projects){if(!groups.has(item.audioId)){const group=document.createElement('section');group.className='project-group';const title=document.createElement('h3');title.textContent=item.name;group.append(title);$('projectList').append(group);groups.set(item.audioId,group);}}
@@ -175,6 +182,13 @@ async function refreshExportWarnings(){
   const messages=[];if(!bpmConfirmed)messages.push('BPM未設定です。JSONには互換値120が入ります。入力時刻は変えません。Unityへ渡す前に曲のBPMを確認してください。');
   if(differing.length)messages.push(differing.join('・')+'の下書きとBPM・OFFSET・拍の始まり・拍子・座標倍率のいずれかが異なります。意図した違いか設定で確認してください。');
   $('exportWarnings').textContent=messages.join(' ');$('exportWarnings').hidden=!messages.length;
+  $('exportNames').textContent=exportNames(current,$('difficulty').value);
+}
+// 渡すときの実際のファイル名と、ゲームの曲フォルダーでの名前(元の音源は名前を変える。読めない形式はWAV保存)。
+function exportNames(current,difficulty){
+  const lines=[`譜面：chart_${difficulty}.json`],name=current.audioName||'',ext=(/\.([^.]+)$/.exec(name)?.[1]||'').toLowerCase();
+  if(name)lines.push(['mp3','ogg','wav'].includes(ext)?`元の音源：${name} → PCで audio.${ext} に名前を変える`:`元の音源：${name} はゲームで読めない形式です。「音源をWAV保存」で audio.wav を作ってください`);
+  return lines.join('\n');
 }
 function downloadAudio() {
   if(!audio.buffer)return;stop();
@@ -185,13 +199,14 @@ function downloadAudio() {
 function downloadBlob(blob,name) {
   const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download=name;document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
 }
+// 端末への保存に失敗していても、手元の譜面と保存済みの音源でバックアップを作る(保存できないときこそ逃がし先が要る)。
 async function downloadBackup() {
   if(!project||loading)return;stop();const value=snapshotProject();loading=true;refresh();
   try{
-    await persist();const source=await getAudio(value.audioId);
+    let saveError=null;await persist().catch(error=>{saveError=error;});const source=await getAudio(value.audioId);
     const safeName=value.name.replace(/[<>:"/\\|?*\u0000-\u001f]/g,'_').slice(0,80)||'chart';
     downloadBlob(createBackup(value,source),`Saber-${safeName}-${value.difficulty}.saber`);
-    toast('音源・譜面・設定をバックアップしました。別の端末では「バックアップを開く」で復元できます。');
+    toast(saveError?'端末への保存は失敗しましたが、今の譜面でバックアップを作りました。ファイルを保管してください。':'音源・譜面・設定をバックアップしました。別の端末では「バックアップを開く」で復元できます。');
   }finally{loading=false;refresh();}
 }
 async function restoreBackup(file) {
@@ -204,7 +219,7 @@ async function restoreBackup(file) {
     $('difficulty').value=next.difficulty;restoreSettings(next.settings);resetSession();fillChartFields();renderNotes();drawWaveform();$('library').close();await persist();
     toast('新しい下書きとして復元しました。元の下書きも残っています。');
   }catch(error){status(project?'読み込みを中止しました。現在の下書きはそのままです。':'バックアップを読み込めませんでした。');throw error;}
-  finally{loading=false;refresh();}
+  finally{loading=false;refresh();refreshTabDetails();}
 }
 function showCopyDialog() {
   if(!project||loading)return;stop();$('library').close();$('copyName').value=project.name+' のコピー';$('copyDifficulty').value=$('difficulty').value==='normal'?'hard':'normal';$('copyContent').value='copy';$('duplicateDialog').showModal();
@@ -215,7 +230,7 @@ async function createProjectCopy() {
     const next={...snapshotProject(),id:uid(),_revision:0,lastExportedAt:null,chart:copyChart(chart,$('copyContent').value==='empty'),name:$('copyName').value.trim().slice(0,120)||project.name+' のコピー',difficulty:$('copyDifficulty').value,position:0,updated:Date.now()};
     if(!['easy','normal','hard'].includes(next.difficulty))throw new Error('難易度を選んでください。');
     await persist();await saveProject(next);project=next;chart=next.chart;history=new History();selected=null;audio.seek(0);$('difficulty').value=next.difficulty;resetSession();fillChartFields();renderNotes();await persist();toast('新しい下書きを作りました。元の譜面は「曲・保存」に残っています。');
-  }finally{loading=false;refresh();}
+  }finally{loading=false;refresh();refreshTabDetails();}
 }
 function mapWindow(){return timelineWindow(audio.duration,mapStart,Number($('mapZoom').value));}
 function paintMap() {
@@ -272,6 +287,8 @@ function renderNotes(centerTime) {
 }
 function selectNote(id) {
   stop();const note=chart.notes.find(n=>n.__editorId===id);if(!note)return;selected=id;audio.seek(Math.max(0,audioTime(note,chart)-.4));
+  // 選んだノーツがグラフの表示区間の外なら、そこを含む区間へ動かす(診断・次へで選んだとき、グラフが前の区間のままにならない)。
+  {const time=audioTime(note,chart),view=mapWindow();if(time<view.start||time>view.end)mapStart=Math.max(0,time-view.span/3);}
   $('noteTime').value=audioTime(note,chart).toFixed(3);$('noteColor').value=note.color;$('noteX').value=+(note.x*chart.coordScale).toFixed(3);$('noteY').value=+(note.y*chart.coordScale).toFixed(3);
   $('noteCuts').value=note.count;$('noteLength').value=longSeconds(note).toFixed(3);$('noteDirection').value=note.direction;renderNotes();refresh();refreshSelected();
   workspaceUI.activate('edit');if(!$('noteDialog').open)$('noteDialog').show();
@@ -341,7 +358,7 @@ function releaseTouch(event) {
 function endTouch(id,endAudio) {
   const touch=touches.get(id);if(!touch)return;touches.delete(id);touch.marker.remove();
   if(!take)return;
-  if(!take.remembered){history.push(take.before);take.remembered=true;lastTake=null;}
+  if(!take.remembered){history.push(take.before,{bpmConfirmed});take.remembered=true;lastTake=null;}
   const note=take.add(makeNote(touch,Math.min(endAudio,take.end),chart,touch.options));chart=take.compose(endAudio);selected=null;changed();flashes.push({x:touch.x,y:touch.y,color:note.color,direction:note.direction,when:performance.now()});
   const delta=Math.round(audioTime(note,chart)*1000-Math.max(0,touch.startAudio*1000-touch.options.latencyMs*touch.options.rate));
   const kind=note.count>1?`ロング ×${note.count}`:arrow(note.direction)?`${arrow(note.direction)} フリック`:'タップ';
@@ -405,7 +422,7 @@ function readRange(enabledOnly=true) {
 async function retryTake() {
   if(!lastTake||audio.playing||loading||starting)return;
   readRange();
-  const previous=lastTake;history.push(chart);chart=clone(previous.before);lastTake=null;selected=null;audio.seek(previous.start);changed();
+  const previous=lastTake;history.push(chart,{bpmConfirmed});chart=clone(previous.before);lastTake=null;selected=null;audio.seek(previous.start);changed();
   mode='record';await togglePlayback();
 }
 // 区間の画面の近道。今の位置から曲の終わりまでを置き換える録音にする(止めた所より先は残る)。
@@ -414,6 +431,13 @@ function redoFromHere() {
   if(audio.duration-from<.5){toast('曲の終わりに近すぎます。少し前へ戻してから押してください。');return;}
   $('rangeStart').value=from.toFixed(3);$('rangeEnd').value=audio.duration.toFixed(3);$('rangeEnabled').checked=true;$('replaceRange').checked=true;lastTake=null;refresh();$('rangeDialog').close();
   toast(`${formatTime(from,true)} から録り直します。止めた所までを置き換えます。`);
+}
+// 確かめるの近道。今の位置から2小節(BPM未設定・テンポが変わる曲は5秒)をくり返し再生する区間にする(録音の置き換えはしない)。
+function loopFromHere() {
+  if(!audio.buffer||audio.playing||loading)return;const from=audio.time(),span=bpmConfirmed&&!hasVariableGrid(chart)?8*60/chart.bpm:5,to=Math.min(audio.duration,from+span);
+  if(to-from<.5){toast('曲の終わりに近すぎます。少し前へ戻してから押してください。');return;}
+  $('rangeStart').value=from.toFixed(3);$('rangeEnd').value=to.toFixed(3);$('rangeEnabled').checked=true;$('replaceRange').checked=false;$('previewLoop').checked=true;lastTake=null;refresh();$('rangeDialog').close();
+  toast(`${formatTime(from,true)}〜${formatTime(to,true)} をくり返します。「再生」で始まります。`);
 }
 function clearRange() {
   $('rangeEnabled').checked=false;$('replaceRange').checked=false;lastTake=null;refresh();$('rangeDialog').close();toast('区間を解除しました。録音は曲全体へ追加に戻ります。');
@@ -432,7 +456,13 @@ $('focusButton').onclick=()=>{document.body.classList.toggle('focus');$('focusBu
 for(const b of document.querySelectorAll('[data-color]'))b.onclick=()=>{setColor(b.dataset.color);if(project){clearTimeout(saveTimer);saveTimer=setTimeout(()=>persist().catch(fail),180);}};
 $('pad').addEventListener('pointerdown',startTouch);$('pad').addEventListener('pointermove',moveTouch);$('pad').addEventListener('pointerup',releaseTouch);
 for(const event of ['pointercancel','lostpointercapture'])$('pad').addEventListener(event,e=>{touches.get(e.pointerId)?.marker.remove();touches.delete(e.pointerId);});$('pad').addEventListener('contextmenu',e=>e.preventDefault());
-$('undoButton').onclick=()=>{stop();lastTake=null;chart=history.undo(chart);selected=null;fillChartFields();changed();};$('redoButton').onclick=()=>{stop();lastTake=null;chart=history.redo(chart);selected=null;fillChartFields();changed();};
+$('undoButton').onclick=()=>{stop();lastTake=null;restoreFromHistory(history.undo(chart,{bpmConfirmed}));};$('redoButton').onclick=()=>{stop();lastTake=null;restoreFromHistory(history.redo(chart,{bpmConfirmed}));};
+// 元に戻す・やり直しのあと: BPMの確定も戻し、選んでいたノーツが残っていれば選んだまま(なければ編集パネルを閉じる)。
+function restoreFromHistory(next){
+  const keep=selected;chart=next;if(history.restored)bpmConfirmed=history.restored.bpmConfirmed!==false;
+  selected=keep&&chart.notes.some(n=>n.__editorId===keep)?keep:null;if(!selected&&$('noteDialog').open)$('noteDialog').close();
+  fillChartFields();changed();if(selected)fillSelectedFields();
+}
 $('nearestButton').onclick=()=>renderNotes(audio.time());$('updateNote').addEventListener('click',run(()=>{updateNote();toast('ノーツを変更しました。');}));$('deleteNote').onclick=deleteSelectedNote;$('noteDirection').innerHTML=$('direction').innerHTML;$('exportButton').onclick=downloadChart;
 $('noteEditorHost').append($('noteEditor'));
 $('positionPad').addEventListener('pointerdown',run(moveSelected));$('positionPad').addEventListener('contextmenu',event=>event.preventDefault());
@@ -447,10 +477,10 @@ $('retryTake').addEventListener('click',run(retryTake));
 for(const id of ['rangeStart','rangeEnd','rangeEnabled','replaceRange'])$(id).addEventListener('change',()=>{lastTake=null;refresh();});
 for(const[id,field]of[['setRangeStart','rangeStart'],['setRangeEnd','rangeEnd']])$(id).onclick=()=>{$(field).value=audio.time().toFixed(3);lastTake=null;refresh();};
 $('tapTempo').onclick=()=>{const result=tapTempo.tap(performance.now());$('tempoReadout').textContent=result.bpm?`${result.bpm} BPM · ${result.count}回`:`${result.count}回 · あと${Math.max(1,4-result.count)}回`; $('applyTempo').disabled=!result.bpm||loading;};
-$('applyTempo').onclick=()=>{const result=tapTempo.result();if(!result.bpm||loading)return;stop();bpmConfirmed=true;commit(()=>chart.bpm=result.bpm);fillChartFields();toast('BPMを設定しました。録音済みノーツの時刻はそのままです。');};
-for(const[id,field,min,max]of[['bpm','bpm',20,400],['offset','offsetMs',-600000,600000],['beatZero','beatZeroMs',-600000,600000],['level','displayLevel',0,10]])$(id).addEventListener('change',run(()=>{stop();const v=Number($(id).value);if($(id).value===''||!Number.isFinite(v)||v<min||v>max){fillChartFields();throw new Error('設定値の範囲を確認してください。');}if(id==='bpm')bpmConfirmed=true;commit(()=>{chart[field]=v;});}));
+$('applyTempo').onclick=()=>{const result=tapTempo.result();if(!result.bpm||loading)return;stop();commit(()=>{bpmConfirmed=true;chart.bpm=result.bpm;});fillChartFields();toast('BPMを設定しました。録音済みノーツの時刻はそのままです。');};
+for(const[id,field,min,max]of[['bpm','bpm',20,400],['offset','offsetMs',-600000,600000],['beatZero','beatZeroMs',-600000,600000],['level','displayLevel',0,10]])$(id).addEventListener('change',run(()=>{stop();const v=Number($(id).value);if($(id).value===''||!Number.isFinite(v)||v<min||v>max){fillChartFields();throw new Error('設定値の範囲を確認してください。');}commit(()=>{if(id==='bpm')bpmConfirmed=true;chart[field]=v;});}));
 for(const id of ['positionGrid','previewLoop','speed','snap','snapMode','snapWindowMs','flickEnabled','flickSensitivity','longCount','direction','latency','metronome','countIn','clickSound'])$(id).addEventListener('change',()=>{stop();refresh();if(['snap','snapMode'].includes(id)&&$('snapMode').value!=='off'&&hasVariableGrid(chart))toast('テンポ変化のある曲では、固定BPMへの整列でずれることがあります。');});
-$('difficulty').addEventListener('change',()=>{if(!project)return;const next=$('difficulty').value,previous=project.difficulty;if(next!==previous&&chart.notes.length&&!window.confirm(`この下書きの難易度を${previous.toUpperCase()}から${next.toUpperCase()}へ変えます。ノーツは変わりません。別の下書きを残す場合は「曲・保存」からコピーしてください。変更しますか？`)){$('difficulty').value=previous;return;}project.difficulty=next;stop();refresh();});
+$('difficulty').addEventListener('change',()=>{if(!project)return;const next=$('difficulty').value,previous=project.difficulty;if(next!==previous&&chart.notes.length&&!window.confirm(`この下書きの難易度を${previous.toUpperCase()}から${next.toUpperCase()}へ変えます。ノーツは変わりません。別の下書きを残す場合は「曲・保存」からコピーしてください。変更しますか？`)){$('difficulty').value=previous;return;}project.difficulty=next;stop();refresh();refreshTabDetails();});
 for(const id of ['songVolume','feedbackVolume'])$(id).addEventListener('input',()=>{audio.setVolumes(Number($('songVolume').value),Number($('feedbackVolume').value));if(project){clearTimeout(saveTimer);saveTimer=setTimeout(()=>persist().catch(fail),180);}});
 document.addEventListener('visibilitychange',()=>{if(document.hidden){stop();persist().catch(fail);}});window.addEventListener('pagehide',()=>{stop();persist().catch(()=>{});});window.addEventListener('beforeunload',e=>{if(saving||saveFailed||saveTimer||touches.size){e.preventDefault();e.returnValue='';}});window.addEventListener('resize',drawWaveform);
 window.addEventListener('keydown',run(async e=>{if(['INPUT','SELECT','TEXTAREA','BUTTON'].includes(e.target.tagName)||document.querySelector('dialog:modal'))return;if(e.code==='Space'){e.preventDefault();if(audio.buffer)await togglePlayback();}if((e.ctrlKey||e.metaKey)&&e.key==='z'){e.preventDefault();$(e.shiftKey?'redoButton':'undoButton').click();}}));
@@ -499,6 +529,13 @@ async function init(){
   refresh();fillChartFields();renderNotes();requestAnimationFrame(tick);setupOffline();registerTools();
   try{const projects=await listProjects(),last=preference('saber-last-project');if(projects.length){const recent=projects.find(p=>p.id===last)||projects.sort((a,b)=>b.updated-a.updated)[0];status(`前回の下書き：${recent.name}`);showResume(recent);}}catch{status('端末の保存が利用できません。ブラウザの通常モードで開いてください。');}
 }
+// 下書きを消したあと、「続きを開く」を残っている最新の下書きへ合わせる(なければ隠して「音源を開く」を主ボタンに戻す)。
+async function refreshResume(){
+  const button=$('resumeProject');if(!button||project)return;
+  const projects=await listProjects().catch(()=>[]),last=preference('saber-last-project');
+  if(!projects.length){button.hidden=true;button.onclick=null;$('audioFile').closest('label').classList.add('primary');return;}
+  showResume(projects.find(p=>p.id===last)||projects.sort((a,b)=>b.updated-a.updated)[0]);
+}
 // 最初の画面の「続きを開く」。前回の下書きを1回で開く(曲・保存を開いて探さなくてよい)。
 function showResume(recent){
   const button=$('resumeProject');if(!button||project)return;
@@ -506,8 +543,10 @@ function showResume(recent){
   $('audioFile').closest('label').classList.remove('primary');
   button.onclick=run(()=>openProject(recent.id));
 }
-refinementUI=installRefinementUI({getState:()=>({chart,project,audio,mode,loading,bpmConfirmed,difficulty:$('difficulty').value}),openPreview:()=>workspaceUI.activate('preview'),mutate:next=>commit(()=>{chart=next;selected=null;}),stop,seek,persist,run,toast,selectNote,downloadBlob,fillChartFields,showLibrary,clearProject:()=>{project=null;chart=blankChart();history=new History();selected=null;audio.seek(0);audio.buffer=null;resetSession();fillChartFields();renderNotes();drawWaveform();refresh();status('下書きを削除しました。音源を開くか別の下書きを選んでください。');}});
-workspaceUI=installWorkspace({locked:()=>starting||(audio.playing&&mode==='record'),stop,redoFromHere,clearRange,listenForTempo:run(async()=>{if(audio.playing){stop();return;}if(!audio.buffer||loading)return;tempoListening=true;mode='preview';await togglePlayback({useRange:false});}),onTab:name=>{mode=name==='record'?'record':'preview';if(name==='preview')refinementUI.report();if(name==='export')refreshExportWarnings().catch(fail);refresh();drawWaveform();},listenTake:run(async()=>{if(!lastTake)return;const saved=lastTake;stop();workspaceUI.activate('preview');mode='preview';audio.seek(saved.start);await togglePlayback({useRange:false});playbackEnd=saved.end;refresh();}),listenNote:run(async()=>{const n=chart.notes.find(n=>n.__editorId===selected);if(!n)return;stop();mode='preview';audio.seek(Math.max(0,audioTime(n,chart)-60/chart.bpm));await togglePlayback({useRange:false});playbackEnd=Math.min(audio.duration,audioTime(n,chart)+longSeconds(n)+120/chart.bpm);refresh();}),edit:(id,value)=>{try{updateNoteField(id,value);}catch(e){fail(e);}},placeNote:()=>{if(!project)return;stop();let note=makeNote({startAudio:audio.time(),x:0,y:0},audio.time(),chart,{...settings(),snapMode:'off',color:color==='auto'?'blue':color});commit(()=>chart.notes.push(note));selectNote(note.__editorId);},shareChart:run(async()=>{if(!project)return;stop();const file=new File([JSON.stringify(exportChart(chart),null,2)+'\n'],`chart_${$('difficulty').value}.json`,{type:'application/json'});if(navigator.canShare?.({files:[file]})){try{await navigator.share({files:[file],title:project.name});project.lastExportedAt=Date.now();persist().catch(fail);toast('譜面を共有しました。');}catch(e){if(e.name!=='AbortError')throw e;}}else downloadChart();})});
+refinementUI=installRefinementUI({getState:()=>({chart,project,audio,mode,loading,bpmConfirmed,difficulty:$('difficulty').value}),openPreview:()=>workspaceUI.activate('preview'),mutate:next=>commit(()=>{chart=next;selected=null;}),stop,seek,persist,run,toast,selectNote,downloadBlob,fillChartFields,showLibrary,clearProject:()=>{project=null;chart=blankChart();history=new History();selected=null;audio.seek(0);audio.buffer=null;resetSession();fillChartFields();renderNotes();drawWaveform();refresh();status('下書きを削除しました。音源を開くか別の下書きを選んでください。');},projectsChanged:()=>refreshResume()});
+workspaceUI=installWorkspace({locked:()=>starting||(audio.playing&&mode==='record'),stop,redoFromHere,loopFromHere,clearRange,listenForTempo:run(async()=>{if(audio.playing){stop();return;}if(!audio.buffer||loading)return;tempoListening=true;mode='preview';await togglePlayback({useRange:false});}),onTab:name=>{mode=name==='record'?'record':'preview';if(name==='preview')refinementUI.report();if(name==='export')refreshExportWarnings().catch(fail);refresh();drawWaveform();},listenTake:run(async()=>{if(!lastTake)return;const saved=lastTake;stop();workspaceUI.activate('preview');mode='preview';audio.seek(saved.start);await togglePlayback({useRange:false});playbackEnd=saved.end;refresh();}),listenNote:run(async()=>{const n=chart.notes.find(n=>n.__editorId===selected);if(!n)return;stop();mode='preview';audio.seek(Math.max(0,audioTime(n,chart)-60/chart.bpm));await togglePlayback({useRange:false});playbackEnd=Math.min(audio.duration,audioTime(n,chart)+longSeconds(n)+120/chart.bpm);refresh();}),edit:(id,value)=>{try{updateNoteField(id,value);}catch(e){fail(e);}},placeNote:()=>{if(!project)return;stop();let note=makeNote({startAudio:audio.time(),x:0,y:0},audio.time(),chart,{...settings(),snapMode:'off',color:color==='auto'?'blue':color});commit(()=>chart.notes.push(note));selectNote(note.__editorId);},shareChart:run(async()=>{if(!project)return;stop();const file=new File([JSON.stringify(exportChart(chart),null,2)+'\n'],`chart_${$('difficulty').value}.json`,{type:'application/json'});if(navigator.canShare?.({files:[file]})){try{await navigator.share({files:[file],title:project.name});project.lastExportedAt=Date.now();persist().catch(fail);toast('譜面を共有しました。');}catch(e){if(e.name!=='AbortError')throw e;}}else downloadChart();})});
+// 保存に失敗したら、上の「未保存」を押すと「渡す」(譜面JSONと音源入りバックアップ)へ行ける。
+$('saveStatus').addEventListener('click',()=>{if(saveFailed&&project)workspaceUI.activate('export');});
 // 「矢印の変更後に次へ」と直す画面の表示幅は、この端末で前回の選び方を覚える。
 $('autoNext').checked=preference('saber-auto-next')==='1';$('autoNext').addEventListener('change',()=>preference('saber-auto-next',$('autoNext').checked?'1':'0'));
 {const zoom=preference('saber-map-zoom');if([...$('mapZoom').options].some(option=>option.value===zoom))$('mapZoom').value=zoom;}

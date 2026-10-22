@@ -39,6 +39,14 @@ test('undo and redo restore original chart, new edits discard only redo history'
   const h=new History(),original=blankChart();h.push(original);const edited={...original,notes:[makeNote(gesture,2.05,original,options)]};
   assert.deepEqual(h.undo(edited),original);assert.deepEqual(h.redo(original),edited);h.undo(edited);h.push(original);assert.equal(h.future.length,0);
 });
+test('undo and redo also bring back state kept beside the chart, such as an unset BPM',()=>{
+  const h=new History(),unset={...blankChart()},set={...blankChart(),bpm:150};
+  h.push(unset,{bpmConfirmed:false});
+  assert.deepEqual(h.undo(set,{bpmConfirmed:true}),unset);assert.deepEqual(h.restored,{bpmConfirmed:false});
+  assert.deepEqual(h.redo(unset,{bpmConfirmed:false}),set);assert.deepEqual(h.restored,{bpmConfirmed:true});
+  h.undo(set,{bpmConfirmed:true});h.undo(unset,{bpmConfirmed:false});assert.equal(h.restored,undefined,'戻す物がなければ何も返さない');
+  const plain=new History();plain.push(unset);plain.undo(set);assert.equal(plain.restored,undefined,'state を渡さない使い方は今までどおり');
+});
 test('variable-tempo warning detects nonuniform note times',()=>{
   const c=blankChart();c.notes=Array.from({length:20},(_,i)=>({beat:i,time:1000*i}));assert.equal(hasVariableGrid(c),true);
 });

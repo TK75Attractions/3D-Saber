@@ -9,10 +9,17 @@ export function installRefinementUI(context) {
   let pending = null;
   const operationNames = {alignTime:'同時押しの時刻統一',copy:'区間コピー',mirror:'左右反転',shift:'時刻移動', height:'同時押しの高さ統一', counts:'同時ロングの回数統一', symmetry:'左右位置の対称化', snap:'近い拍へ補正', ends:'ロング終端を拍へ整列', delete:'区間削除', dedupe:'完全重複の除去', color:'色の変更', direction:'矢印の変更', longCount:'ロング回数の変更', position:'位置の移動', vertical:'上下反転'};
 
-  function clearPreview() { pending = null; $('refineApply').disabled = true; $('refineTargetCount').textContent=''; $('refinePreview').textContent = '「変更内容を確認」で対象と変更件数を確認できます。'; }
-  function showRefinement() {
-    if (!getState().project) return; stop(); $('refineStart').value=$('rangeStart').value;$('refineEnd').value=$('rangeEnd').value;clearPreview(); $('refineDialog').showModal();
+  function clearPreview() { pending = null; $('refineApply').disabled = true; $('refineApply').textContent = 'この変更を適用'; $('refineTargetCount').textContent=''; $('refinePreview').textContent = '「変更内容を確認」で対象と変更件数を確認できます。'; }
+  // 曲全体のときは A・B の欄を隠して「曲全体が対象」と書く(A・Bを書き換えても範囲が曲全体のまま、という取り違えを防ぐ)。
+  function showScope() {
+    const whole = $('refineScope').value !== 'range';
+    document.querySelector('.refine-range').hidden = whole; $('refineScopeNote').textContent = whole ? '曲全体のノーツが対象です。区間だけにするときは「A–Bの区間」を選びます。' : 'A以上・B未満に始まるノーツが対象です。';
   }
+  function showRefinement() {
+    if (!getState().project) return; stop(); $('refineStart').value=$('rangeStart').value;$('refineEnd').value=$('rangeEnd').value;clearPreview(); showScope(); $('refineDialog').showModal();
+  }
+  document.querySelector('.refine-range').before(Object.assign(document.createElement('p'), {id:'refineScopeNote', className:'hint'}));
+  $('refineScope').addEventListener('change', showScope);
   function preview() {
     stop(); const {chart, audio} = getState(), scope = {color:$('refineColor').value};
     if ($('refineScope').value === 'range') {
@@ -31,6 +38,8 @@ export function installRefinementUI(context) {
     pending = {before:JSON.stringify(chart), ...result, kind};
     $('refinePreview').textContent = `${operationNames[kind]}：対象 ${result.targetCount} 個のうち ${result.count} 個を${kind === 'delete' || kind === 'dedupe' ? '削除' : '変更'}します。${kind === 'shift' ? ` ${operation.ms}ms（${operation.ms < 0 ? '早く' : '遅く'}）` : ''}「元に戻す」で取り消せます。`;
     $('refineApply').disabled = result.count === 0;
+    // 押す前に何が起きるか分かるよう、適用ボタンにも操作と件数を書く。
+    if (result.count) $('refineApply').textContent = `${operationNames[kind]}を ${result.count} 個に適用`;
   }
   $('refineButton').onclick = showRefinement;
   $('mapRefine').onclick = showRefinement;
@@ -46,8 +55,9 @@ export function installRefinementUI(context) {
   });
   $('refineDirection').innerHTML = $('direction').innerHTML;
 
-  function reportChart() {
-    if (!getState().project) return; stop();
+  // keepPlaying: 開いている「確かめる」を、譜面や設定が変わったときに描き直す(再生は止めない)。
+  function reportChart({keepPlaying = false} = {}) {
+    if (!getState().project) return; if (!keepPlaying) stop();
     const {chart, audio, difficulty,bpmConfirmed} = getState(), report = chartReport(chart, audio.duration, bpmConfirmed===false?undefined:difficulty);
     $('reportStats').textContent = `タップ ${report.counts.tap} / フリック ${report.counts.flick} / ロング ${report.counts.long}\n青 ${report.counts.blue} / 赤 ${report.counts.red} / 金 ${report.counts.gold} / その他 ${report.counts.default}\n平均 ${report.average.toFixed(2)} 個/秒 · 最大2秒密度 ${report.peakNps.toFixed(2)} 個/秒（${formatTime(report.peakStart,true)}から）`;
     $('reportDensity').replaceChildren(); const maximum = Math.max(1, ...report.buckets.map(bucket => bucket.count));
@@ -104,6 +114,7 @@ export function installRefinementUI(context) {
     if (!window.confirm(`「${item.name}」の${(item.difficulty||'normal').toUpperCase()}下書きをこの端末から削除します。必要なら先にバックアップを保存してください。削除しますか？`)) return;
     stop(); await persist(); await deleteProject(item.id);
     if (getState().project?.id === item.id) context.clearProject();
+    await context.projectsChanged?.();
     await context.showLibrary(); toast('下書きを削除しました。他の下書きが使っている音源は残しています。');
   }
   function decorateProject(row,item) {

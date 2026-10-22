@@ -74,4 +74,62 @@ try{
   await page.locator('#resumeProject').click();await page.waitForFunction(()=>!document.querySelector('#welcome')||document.querySelector('#welcome').hidden);
   assert.equal((await stored()).chart.notes.length,28);check('the welcome screen reopens the last draft in one tap');
   assert.deepEqual(errors,[]);check('no browser runtime errors');
+  await fixesFound20261022();
 }finally{await browser.close();}
+
+// 2026-10-22 Codex の点検で見つかった食い違いの直し。新しい端末(別のブラウザの中身)で確かめる。
+async function fixesFound20261022(){
+  const ctx=await browser.newContext({viewport:{width:390,height:664},hasTouch:true}),p=await ctx.newPage(),errs=[];p.on('pageerror',e=>errs.push(e.message));p.on('dialog',d=>d.accept());
+  const wait=()=>p.waitForTimeout(300);
+  const fill=async(id,text)=>{await p.locator('#'+id).fill(String(text));await p.locator('#'+id).press('Tab');await wait();};
+  try{
+    await p.goto(site);await wait();
+    await p.locator('#audioFile').setInputFiles({name:'直し.wav',mimeType:'audio/wav',buffer:wav()});
+    await p.waitForFunction(()=>document.querySelector('#saveStatus').textContent==='この端末に保存済み');
+    // 1. BPMを決めて「元に戻す」と、未設定に戻る。やり直しで決めた値に戻る。
+    await p.locator('#settingsButton').click();await fill('bpm',150);await p.locator('#settingsDialogClose').click();await wait();
+    assert.match(await p.locator('#difficultyLabel').innerText(),/150 BPM/);
+    await p.locator('#undoButton').click();await wait();assert.match(await p.locator('#difficultyLabel').innerText(),/BPM未設定/);
+    await p.locator('#redoButton').click();await wait();assert.match(await p.locator('#difficultyLabel').innerText(),/150 BPM/);check('undoing a BPM brings back "not set"');
+    // 2. 確かめるの診断は、同じタブのまま設定を変えると描き直す。
+    await p.locator('#undoButton').click();await wait();await p.locator('#nav-preview').click();await wait();
+    assert.match(await p.locator('#reportIssueCount').innerText(),/BPM未設定/);
+    await p.locator('#settingsButton').click();await fill('bpm',140);await p.locator('#settingsDialogClose').click();await wait();
+    assert.doesNotMatch(await p.locator('#reportIssueCount').innerText(),/BPM未設定/);check('diagnostics refresh without leaving the tab');
+    // 3. 確かめるから区間・ループを決められる(録り直しの近道は出さない)。
+    assert.equal(await p.locator('#previewRangeButton').isVisible(),true);await p.locator('#previewRangeButton').click();
+    assert.equal(await p.locator('#loopHere').isVisible(),true);assert.equal(await p.locator('#redoFromHere').isVisible(),false);assert.equal(await p.locator('#replaceRange').isVisible(),false);
+    await p.locator('#loopHere').click();await wait();
+    assert.equal(await p.locator('#rangeEnabled').isChecked(),true);assert.equal(await p.locator('#previewLoop').isChecked(),true);assert.equal(await p.locator('#replaceRange').isChecked(),false);
+    assert.equal(await p.locator('#previewRangeButton').innerText(),'区間・ループ ON');await p.screenshot({path:path.join(output,'fix-preview-loop.png')});check('preview can set a loop range');
+    await p.locator('#previewRangeButton').click();await p.locator('#clearRange').click();await wait();
+    // 4. 渡すに、実際のファイル名とゲームでの名前を出す。
+    await p.locator('#nav-export').click();await wait();
+    assert.match(await p.locator('#exportNames').innerText(),/譜面：chart_normal\.json/);assert.match(await p.locator('#exportNames').innerText(),/直し\.wav → PCで audio\.wav に名前を変える/);check('export shows the saved file names');
+    // 5. 直す: 選んだノーツへグラフが追いかける。元に戻すで選んだまま値が戻り、やり直しもその場で。
+    const notes=Array.from({length:12},(_,i)=>({time:1000+i*500,beat:2+i,x:0,y:0,color:i%2?'red':'blue',direction:'none',count:1,type:'tap',lengthMs:0}));
+    await p.locator('#libraryButton').click();await p.locator('#chartFile').setInputFiles({name:'chart_normal.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify({bpm:120,offsetMs:0,beatZeroMs:0,coordScale:1,displayLevel:2,timeSignatures:[],notes}))});await wait();await p.locator('[data-close="library"]').click();
+    await p.locator('#nav-edit').click();await p.locator('#mapZoom').selectOption('2');await wait();
+    if(!await p.locator('.map-note-details').evaluate(e=>e.open))await p.locator('.map-note-details summary').click();
+    await p.locator('#mapNotes button').first().click();await wait();for(let i=0;i<4;i++){await p.locator('#nextNote').click();await wait();}
+    const range=(await p.locator('#mapRange').innerText()).match(/(\d+):(\d+\.\d+)/g).map(t=>{const[m,s]=t.split(':');return Number(m)*60+Number(s);});
+    assert.ok(range[0]<=3&&3<=range[1],`選んだ3.0秒のノーツが表示区間 ${range} に入る`);
+    await p.locator('#direction-left').click();await wait();const label=await p.locator('#selectedNoteLabel').innerText();
+    await p.locator('#editUndo').click();await wait();assert.equal(await p.locator('#noteDialog').evaluate(e=>e.open),true,'元に戻しても選んだまま');
+    assert.equal(await p.locator('#selectedNoteLabel').innerText(),label);assert.equal(await p.locator('#direction-none').getAttribute('aria-pressed'),'true');
+    await p.locator('#editRedo').click();await wait();assert.equal(await p.locator('#direction-left').getAttribute('aria-pressed'),'true');check('the graph follows the selection and undo/redo keep it');
+    // 6. まとめて直す: 曲全体のときは A・B 欄を隠す。確かめたあと、適用ボタンに操作と件数を書く。
+    await p.locator('#mapRefine').click();await p.locator('#refineDialog').waitFor({state:'visible'});
+    assert.equal(await p.locator('.refine-range').isVisible(),false);assert.match(await p.locator('#refineScopeNote').innerText(),/曲全体/);
+    await p.locator('#refineScope').selectOption('range');assert.equal(await p.locator('.refine-range').isVisible(),true);await p.locator('#refineScope').selectOption('all');
+    await p.locator('#refineKind').selectOption('shift');await p.locator('#refineCheck').click();await wait();
+    assert.match(await p.locator('#refineApply').innerText(),/時刻移動を 12 個に適用/);await p.locator('[data-close="refineDialog"]').click();check('bulk edit makes the whole-song scope and the count explicit');
+    // 7. 開いている下書きを消したら、「続きを開く」は残っている下書きを指す。
+    await p.locator('#libraryButton').click();await p.locator('#library').waitFor({state:'visible'});
+    const before=await p.locator('.project .danger').count();await p.locator('.project').filter({hasText:'編集中'}).locator('.danger').click();await wait();
+    assert.equal(await p.locator('.project .danger').count(),before-1);await p.locator('[data-close="library"]').click();await wait();
+    assert.equal(await p.locator('#resumeProject').isVisible(),true);assert.doesNotMatch(await p.locator('#resumeProject').innerText(),/編集中/);
+    await p.locator('#resumeProject').click();await p.waitForFunction(()=>document.querySelector('#welcome').hidden);check('resume points at a draft that still exists after deleting');
+    assert.deepEqual(errs,[]);check('no browser runtime errors after the fixes');
+  }finally{await ctx.close();}
+}

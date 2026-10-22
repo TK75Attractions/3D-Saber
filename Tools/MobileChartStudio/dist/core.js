@@ -87,9 +87,10 @@ export function formatTime(seconds, precise = false) {
   return `${Math.floor(ms / 60000)}:${String(Math.floor(ms / 1000) % 60).padStart(2, '0')}${precise ? '.' + String(ms % 1000).padStart(3, '0') : ''}`;
 }
 // Undoは譜面単位。音源Blobは履歴へ複製しない。
+// 譜面の外の状態(BPMを確定したか)も、state として渡されたら一緒に記録し、戻した先の値を restored に置く。
 export class History {
-  constructor() { this.past = []; this.future = []; }
-  push(chart) { this.past.push(clone(chart)); if (this.past.length > 80) this.past.shift(); this.future = []; }
-  undo(chart) { if (!this.past.length) return chart; this.future.push(clone(chart)); return this.past.pop(); }
-  redo(chart) { if (!this.future.length) return chart; this.past.push(clone(chart)); return this.future.pop(); }
+  constructor() { this.past = []; this.future = []; this.pastStates = []; this.futureStates = []; this.restored = undefined; }
+  push(chart, state) { this.past.push(clone(chart)); this.pastStates.push(state); if (this.past.length > 80) { this.past.shift(); this.pastStates.shift(); } this.future = []; this.futureStates = []; }
+  undo(chart, state) { this.restored = undefined; if (!this.past.length) return chart; this.future.push(clone(chart)); this.futureStates.push(state); this.restored = this.pastStates.pop(); return this.past.pop(); }
+  redo(chart, state) { this.restored = undefined; if (!this.future.length) return chart; this.past.push(clone(chart)); this.pastStates.push(state); this.restored = this.futureStates.pop(); return this.future.pop(); }
 }
