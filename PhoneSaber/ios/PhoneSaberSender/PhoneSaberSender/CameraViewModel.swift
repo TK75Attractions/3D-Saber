@@ -1602,6 +1602,8 @@ final class CameraViewModel: NSObject, ObservableObject {
 
     private var ignoreZones: [SaberColor: [SaberIgnoreZone]] = CameraViewModel.storedIgnoreZones()
     @Published private(set) var ignoreZoneSummary = CameraViewModel.summary(CameraViewModel.storedIgnoreZones())
+    @Published private(set) var ignoreLearning = false
+    private var ignoreLearningIDs: Set<UUID> = []
     static let maximumIgnoreZones = 8
 
     nonisolated private static func storedIgnoreZones() -> [SaberColor: [SaberIgnoreZone]] {
@@ -1619,21 +1621,38 @@ final class CameraViewModel: NSObject, ObservableObject {
         return red + blue == 0 ? "なし" : "赤 \(red) か所・青 \(blue) か所"
     }
 
-    /// 剣を消し（カメラの外・電源 OFF）、コーンなど置きっぱなしの物だけが検出されている状態で押す。
-    /// 直近の検出フレームの同色候補をまとめて覚え、矩形内でも異なる剣は残す。
-    @discardableResult
-    func ignoreCurrentDetection(_ color: SaberColor) -> Bool {
-        guard (color == .red ? redEndpoints : blueEndpoints) != nil,
-              let zone = processor.currentIgnoreZone(color) else { return false }
-        var list = ignoreZones[color] ?? []
-        list.append(zone)
-        ignoreZones[color] = Array(list.suffix(Self.maximumIgnoreZones))
-        applyIgnoreZones()
-        ConnectivityLog.shared.record("IGNORE_ZONE", "add color=\(color == .red ? "red" : "blue") zone=\(zone.minX),\(zone.minY),\(zone.maxX),\(zone.maxY)")
-        return true
+    /// 剣を消して3秒待つ。その間の同色候補をすべて覚える。
+    func ignoreCurrentDetection(_ color: SaberColor) {
+        learnIgnoreZones([color])
+    }
+
+    private func learnIgnoreZones(_ colors: [SaberColor], completion: ((Int, Int) -> Void)? = nil) {
+        let id = processor.startIgnoreLearning(colors)
+        ignoreLearningIDs.insert(id)
+        ignoreLearning = true
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: UInt64(SaberIgnoreLearner.seconds * 1_000_000_000))
+            guard let self else { return }
+            let learned = self.processor.finishIgnoreLearning(id)
+            var counts: [SaberColor: Int] = [:]
+            for color in colors {
+                let added = Array((learned[color] ?? []).suffix(Self.maximumIgnoreZones))
+                self.ignoreZones[color] = Array(((self.ignoreZones[color] ?? []) + added).suffix(Self.maximumIgnoreZones))
+                counts[color] = added.count
+            }
+            self.applyIgnoreZones()
+            self.ignoreLearningIDs.remove(id)
+            self.ignoreLearning = !self.ignoreLearningIDs.isEmpty
+            let red = counts[.red] ?? 0, blue = counts[.blue] ?? 0
+            ConnectivityLog.shared.record("IGNORE_ZONE", "learned red\(red)-blue\(blue)")
+            completion?(red, blue)
+        }
     }
 
     func clearIgnoreZones() {
+        processor.cancelIgnoreLearning()
+        ignoreLearningIDs.removeAll()
+        ignoreLearning = false
         ignoreZones = [:]
         applyIgnoreZones()
         ConnectivityLog.shared.record("IGNORE_ZONE", "clear")
@@ -1668,12 +1687,10 @@ final class CameraViewModel: NSObject, ObservableObject {
         }
         if command.clearIgnore { clearIgnoreZones(); ack("cleared", "ignore") }
         if let name = command.ignore {
-            let red = name != "blue" && ignoreCurrentDetection(.red) ? 1 : 0
-            let blue = name != "red" && ignoreCurrentDetection(.blue) ? 1 : 0
-            for color in ["red", "blue"] where (color == "red" ? name != "blue" && red == 0 : name != "red" && blue == 0) {
-                ConnectivityLog.shared.record("IGNORE_ZONE", "pc command id=\(command.id): no current \(color) detection")
+            ack("learning", "3s")
+            learnIgnoreZones(name == "both" ? [.red, .blue] : name == "red" ? [.red] : [.blue]) { red, blue in
+                ack(red + blue > 0 ? "ignored" : "nothing", "red\(red)-blue\(blue)")
             }
-            ack(red + blue > 0 ? "ignored" : "nothing", "red\(red)-blue\(blue)")
         }
         if let seconds = command.learnAreaSeconds {
             ack("learning", "\(seconds)s")

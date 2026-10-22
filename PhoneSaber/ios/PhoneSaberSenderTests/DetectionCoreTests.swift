@@ -319,9 +319,9 @@ final class DetectionCoreTests: XCTestCase {
     }
 #endif
 
-    func testIgnoreZoneSnapshotUsesOneDetectionFrameAndResets() throws {
-        let processor = FrameProcessor(expiryScheduler: nil)
-        XCTAssertNil(processor.currentIgnoreZone(.red))
+    func testIgnoreZoneSnapshotLearnsAcrossFramesAndResets() throws {
+        var now = 10.0
+        let processor = FrameProcessor(clock: { now }, expiryScheduler: nil)
         func frame(_ x: Int?) -> CMSampleBuffer {
             sampleBuffer(width: 480, height: 640) { base, stride in
                 guard let x else { return }
@@ -332,18 +332,33 @@ final class DetectionCoreTests: XCTestCase {
                 } }
             }
         }
-        processor.queue.sync { processor.process(frame(40)) }
-        let first = try XCTUnwrap(processor.currentIgnoreZone(.red))
-        XCTAssertNotNil(first.objects)
-        XCTAssertNil(processor.currentIgnoreZone(.blue))
+        // 開始前のフレームは学習しない。winnerが既存ゾーンで除外されても全候補を収集する。
+        processor.queue.sync { processor.process(frame(440)) }
+        processor.setIgnoreZones([.red: [SaberIgnoreZone(minX: 0, minY: 0, maxX: 1, maxY: 1)]])
+        let id = processor.startIgnoreLearning([.red, .blue])
+        for x in stride(from: 40, through: 160, by: 20) {
+            now += 0.1
+            processor.queue.sync { processor.process(frame(x)) }
+        }
         processor.queue.sync { processor.process(frame(nil)) }
-        XCTAssertEqual(processor.currentIgnoreZone(.red), first, "UI 更新の間に空コマが来ても直近の検出フレームを保持")
+        now = 13
         processor.queue.sync { processor.process(frame(360)) }
-        let next = try XCTUnwrap(processor.currentIgnoreZone(.red))
-        XCTAssertNotEqual(next, first)
-        XCTAssertGreaterThan(next.minX, 0.6, "別フレームの winner と候補を混ぜない")
+        let learned = processor.finishIgnoreLearning(id)
+        let zone = try XCTUnwrap(learned[.red]?.first)
+        XCTAssertEqual(learned[.red]?.count, 1)
+        XCTAssertNil(learned[.blue])
+        XCTAssertLessThan(zone.minX, 0.04)
+        XCTAssertGreaterThan(zone.maxX, 0.38)
+        XCTAssertLessThan(zone.maxX, 0.5, "3秒以降や開始前の候補を含めない")
+        XCTAssertTrue(processor.finishIgnoreLearning(id).isEmpty)
+        let cancelled = processor.startIgnoreLearning([.red])
+        processor.queue.sync { processor.process(frame(40)) }
+        processor.cancelIgnoreLearning()
+        XCTAssertTrue(processor.finishIgnoreLearning(cancelled).isEmpty)
+        let reset = processor.startIgnoreLearning([.red])
+        processor.queue.sync { processor.process(frame(40)) }
         processor.reset()
-        XCTAssertNil(processor.currentIgnoreZone(.red))
+        XCTAssertTrue(processor.finishIgnoreLearning(reset).isEmpty)
     }
 
     func testFrameSendPrecedesHealthStatisticsWithTrackLock() {

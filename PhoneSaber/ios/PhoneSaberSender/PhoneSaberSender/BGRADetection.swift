@@ -516,7 +516,7 @@ struct SaberIgnoreZone: Equatable, Codable {
     var objectEndpoints: ObjectEndpoints?
     var objects: [ObjectEndpoints]?
     static let margin = 0.05, minimumSize = 0.06
-    static let maximumObjects = 12
+    static let maximumObjects = 512
 
     /// 両端（フレームのピクセル）を囲み、少し広げた範囲。
     init(around endpoints: (PixelPoint, PixelPoint), width: Int, height: Int,
@@ -572,6 +572,45 @@ struct SaberIgnoreZone: Equatable, Codable {
                     && hypot(x2 - object.x2, y2 - object.y2) <= tolerance)
                 || (hypot(x1 - object.x2, y1 - object.y2) <= tolerance
                     && hypot(x2 - object.x1, y2 - object.y1) <= tolerance)
+        }
+    }
+}
+
+/// 3秒間、選択・eligibility に関係なく全候補を収集する。画像は保持しない。
+struct SaberIgnoreLearner {
+    static let seconds = 3.0
+    let startedAt: TimeInterval
+    let colors: [SaberColor]
+    private(set) var zones: [SaberColor: [SaberIgnoreZone]] = [:]
+
+    mutating func add(_ analysis: SaberFrameAnalysis, width: Int, height: Int, now: TimeInterval) {
+        guard now >= startedAt, now < startedAt + Self.seconds else { return }
+        for color in colors {
+            for candidate in analysis.candidates[color] ?? [] {
+                var zone = SaberIgnoreZone(around: candidate.endpoints, width: width, height: height)
+                var clusters = zones[color] ?? []
+                // 既存marginを付けた矩形が重なる候補は同じ群。結合で近付いた群も再確認する。
+                var index = 0
+                while index < clusters.count {
+                    let other = clusters[index]
+                    guard zone.minX <= other.maxX, other.minX <= zone.maxX,
+                          zone.minY <= other.maxY, other.minY <= zone.maxY else { index += 1; continue }
+                    zone.minX = min(zone.minX, other.minX); zone.maxX = max(zone.maxX, other.maxX)
+                    zone.minY = min(zone.minY, other.minY); zone.maxY = max(zone.maxY, other.maxY)
+                    var objects = other.objects ?? []
+                    for object in zone.objects ?? [] {
+                        let reversed = SaberIgnoreZone.ObjectEndpoints(x1: object.x2, y1: object.y2, x2: object.x1, y2: object.y1)
+                        if !objects.contains(object), !objects.contains(reversed) { objects.append(object) }
+                    }
+                    // 通常の3秒分を収めつつ、上限時も新しい位置を覚える。矩形は全候補の和を維持する。
+                    zone.objects = Array(objects.suffix(SaberIgnoreZone.maximumObjects))
+                    zone.objectEndpoints = zone.objects?.first
+                    clusters.remove(at: index)
+                    index = 0
+                }
+                clusters.append(zone)
+                zones[color] = clusters
+            }
         }
     }
 }

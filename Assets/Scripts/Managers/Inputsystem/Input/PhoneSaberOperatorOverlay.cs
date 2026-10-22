@@ -477,6 +477,7 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         panel.Button("スマホ: 今の赤を無視", "phone-ignore", "red");
         panel.Button("スマホ: 今の青を無視", "phone-ignore", "blue");
         panel.Button("スマホ: 赤と青を無視", "phone-ignore", "both");
+        panel.Label("剣を消して3秒待つ（学習中に映った剣も無視されます）");
         panel.Button("スマホ: 無視をすべて消す", "phone-clear-ignore");
         panel.Button("剣を追いかける ON/OFF [T]", "phone-track-lock");
         panel.Button("今の場面を保存 [K]", "phone-clip");

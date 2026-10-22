@@ -1007,6 +1007,64 @@ enum StaticBGRADetectionTests {
             precondition(!saberIgnored((PixelPoint(x: 550, y: 550), PixelPoint(x: 600, y: 550)), width: 1000, height: 1000, zones: [short]))
         }
         print("Object ignore zones: both colors, same/reversed object, crossing saber, ON/OFF and Codable old/new passed")
+        // 固定カメラの蛍光灯上を移動する色付きの光。winnerやeligibleだけでは覚え切れない。
+        for color in [SaberColor.red, .blue] {
+            let threshold = ColorThreshold(brightness: 140, dominance: 20)
+            func analyze(_ image: StaticImage, zones: [SaberIgnoreZone] = []) -> SaberFrameAnalysis {
+                analyzeSabers(in: image.bytes, width: 480, height: 640, bytesPerRow: image.bytesPerRow,
+                              redThreshold: threshold, blueThreshold: threshold, ignoreZones: [color: zones])
+            }
+            var learner = SaberIgnoreLearner(startedAt: 10, colors: [color])
+            var frames: [StaticImage] = []
+            var expectedMinX = 1.0, expectedMaxX = 0.0
+            for i in 0..<60 {
+                var image = StaticImage(width: 480, height: 640)
+                image.bar(from: PixelPoint(x: 20 + i * 3, y: 380),
+                          to: PixelPoint(x: 80 + i * 3, y: 400), color: color, thickness: 4)
+                let analysis = analyze(image)
+                precondition(!(analysis.candidates[color] ?? []).isEmpty)
+                for candidate in analysis.candidates[color]! {
+                    expectedMinX = min(expectedMinX, Double(min(candidate.endpoints.0.x, candidate.endpoints.1.x)) / 480 - SaberIgnoreZone.margin)
+                    expectedMaxX = max(expectedMaxX, Double(max(candidate.endpoints.0.x, candidate.endpoints.1.x)) / 480 + SaberIgnoreZone.margin)
+                }
+                // 非eligible・winnerなしでも同じように学習する。
+                let candidates = analysis.candidates.mapValues { $0.map { value -> SaberCandidate in
+                    var value = value; value.isEmitterEligible = false; return value
+                } }
+                learner.add(SaberFrameAnalysis(candidates: candidates, selected: [:]),
+                            width: 480, height: 640, now: 10 + Double(i) / 20)
+                frames.append(image)
+            }
+            let zones = learner.zones[color]!
+            precondition(zones.count == 1 && zones[0].objects!.count > 12)
+            precondition(abs(zones[0].minX - expectedMinX) < 1e-12 && abs(zones[0].maxX - expectedMaxX) < 1e-12)
+            let restored = try! JSONDecoder().decode([SaberIgnoreZone].self, from: JSONEncoder().encode(zones))
+            for image in frames {
+                precondition(analyze(image, zones: restored).selected[color] == nil)
+                for candidate in analyze(image).candidates[color]! {
+                    precondition(saberIgnored(candidate.endpoints, width: 480, height: 640, zones: restored))
+                }
+            }
+            var crossing = StaticImage(width: 480, height: 640)
+            crossing.bar(from: PixelPoint(x: 80, y: 426), to: PixelPoint(x: 270, y: 353), color: color)
+            precondition(analyze(crossing, zones: restored).selected[color] != nil)
+            var elsewhere = frames.last!
+            elsewhere.bar(from: PixelPoint(x: 380, y: 150), to: PixelPoint(x: 390, y: 330), color: color)
+            let selected = analyze(elsewhere, zones: restored).selected[color]!
+            precondition(min(selected.0.x, selected.1.x) > 350)
+            // 離れた物は別の群。期間外・対象外色・空コマは追加しない。
+            let far = analyze(crossing)
+            let before = learner.zones
+            learner.add(far, width: 480, height: 640, now: 9.99)
+            learner.add(far, width: 480, height: 640, now: 13)
+            precondition(learner.zones == before)
+            var separate = StaticImage(width: 480, height: 640)
+            separate.bar(from: PixelPoint(x: 400, y: 80), to: PixelPoint(x: 410, y: 180), color: color)
+            learner.add(analyze(separate), width: 480, height: 640, now: 12.99)
+            precondition(learner.zones[color]!.count == 2)
+            precondition(learner.zones[color == .red ? .blue : .red] == nil)
+        }
+        print("Ignore learning: drifting glow, all ineligible candidates, 3s boundary, clusters, crossing/elsewhere saber and Codable passed")
         // 会場の赤いコーン（2026-10-18）: 無視する範囲に両端が入る候補は選ばず、同じコマの別の候補を選ぶ。
         do {
             var scene = StaticImage(width: 200, height: 120)

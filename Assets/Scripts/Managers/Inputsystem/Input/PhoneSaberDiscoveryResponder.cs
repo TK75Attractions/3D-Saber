@@ -251,7 +251,11 @@ public sealed class PhoneSaberAcknowledgement
     {
         switch (result)
         {
-            case "ignored": return detail == "red1-blue1" || detail == "red1-blue0" || detail == "red0-blue1";
+            case "ignored":
+                var counts = detail.Split('-');
+                return counts.Length == 2 && counts[0].StartsWith("red") && counts[1].StartsWith("blue") &&
+                    Number(counts[0].Substring(3)) && Number(counts[1].Substring(4)) &&
+                    (int.Parse(counts[0].Substring(3)) > 0 || int.Parse(counts[1].Substring(4)) > 0);
             case "nothing": return detail == "red0-blue0";
             case "cleared": return detail == "ignore" || detail == "area";
             case "learning": return detail.EndsWith("s") && Number(detail.Substring(0, detail.Length - 1)) &&
@@ -333,7 +337,8 @@ public sealed class PhoneSaberAcknowledgementStore
             if (command == null) return false;
             if (!command.Phones.TryGetValue(sender, out var previous) && command.Phones.Count >= 8) return false;
             // 開始の再送が完了より遅れて届いても、学習中へ戻さない。
-            if (previous != null && (previous.Result == "learned" || previous.Result == "failed") && ack.Result == "learning") return true;
+            if (previous != null && (previous.Result == "learned" || previous.Result == "failed" ||
+                previous.Result == "ignored" || previous.Result == "nothing") && ack.Result == "learning") return true;
             command.Phones[sender] = new PhoneSaberAcknowledgement(ack.Id, ack.Station, ack.Platform, ack.Result, ack.Detail, sender);
             Interlocked.Increment(ref revision);
             return true;

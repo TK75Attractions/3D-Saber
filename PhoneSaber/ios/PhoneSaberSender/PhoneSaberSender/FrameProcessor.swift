@@ -145,13 +145,19 @@ final class FrameProcessor: @unchecked Sendable {
     private let pendingLock = NSLock()
     /// 無視する範囲（SaberIgnoreZone）。main から設定し、検出スレッドで読む（pendingLock で保護）。
     private var ignoreZones: [SaberColor: [SaberIgnoreZone]] = [:]
-    // UI の更新間隔中に空フレームが来ても、最後にその色が選ばれた1フレームを使う（画像は保持しない）。
-    private var ignoreFrames: [SaberColor: (analysis: SaberFrameAnalysis, width: Int, height: Int)] = [:]
-    func currentIgnoreZone(_ color: SaberColor) -> SaberIgnoreZone? {
-        pendingLock.lock(); let frame = ignoreFrames[color]; pendingLock.unlock()
-        guard let frame, let endpoints = frame.analysis.selected[color] else { return nil }
-        return SaberIgnoreZone(around: endpoints, width: frame.width, height: frame.height,
-                               candidates: frame.analysis.candidates[color] ?? [])
+    private var ignoreLearners: [UUID: SaberIgnoreLearner] = [:]
+    func startIgnoreLearning(_ colors: [SaberColor]) -> UUID {
+        pendingLock.lock(); defer { pendingLock.unlock() }
+        let id = UUID()
+        ignoreLearners[id] = SaberIgnoreLearner(startedAt: clock(), colors: colors)
+        return id
+    }
+    func finishIgnoreLearning(_ id: UUID) -> [SaberColor: [SaberIgnoreZone]] {
+        pendingLock.lock(); defer { pendingLock.unlock() }
+        return ignoreLearners.removeValue(forKey: id)?.zones ?? [:]
+    }
+    func cancelIgnoreLearning() {
+        pendingLock.lock(); ignoreLearners.removeAll(); pendingLock.unlock()
     }
     func setIgnoreZones(_ zones: [SaberColor: [SaberIgnoreZone]]) {
         pendingLock.lock(); ignoreZones = zones; pendingLock.unlock()
@@ -296,7 +302,7 @@ final class FrameProcessor: @unchecked Sendable {
             generation += 1
             pendingLock.lock()
             generationSnapshot = generation
-            ignoreFrames = [:]
+            ignoreLearners = [:]
             pendingLock.unlock()
             return generation
         }
@@ -673,8 +679,8 @@ final class FrameProcessor: @unchecked Sendable {
         let grownArea = lockState?.grownPlayArea(area, selected: sabers, width: width, height: height, now: processingStart)
         pendingLock.lock()
         if let frameAnalysis = observedAnalysis {
-            for color in [SaberColor.red, .blue] where frameAnalysis.selected[color] != nil {
-                ignoreFrames[color] = (frameAnalysis, width, height)
+            for id in Array(ignoreLearners.keys) {
+                ignoreLearners[id]?.add(frameAnalysis, width: width, height: height, now: processingStart)
             }
         }
         if lockEnabled, trackLockEnabled, !learningArea, playAreaLearner == nil, areaRevision == playAreaRevision {

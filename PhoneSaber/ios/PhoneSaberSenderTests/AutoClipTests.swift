@@ -64,13 +64,42 @@ final class AutoClipTests: XCTestCase {
         let seed = Self.candidate((200, 200), (400, 400))
         let reversed = Self.candidate((400, 400), (200, 200), eligible: false)
         let outside = Self.candidate((200, 200), (900, 900))
-        let many = (1...30).map { Self.candidate((200 + $0, 200), (400, 400)) }
+        let many = (1...(SaberIgnoreZone.maximumObjects + 10)).map {
+            Self.candidate((200 + $0 % 100, 200 + $0 / 100), (400, 400))
+        }
         let zone = SaberIgnoreZone(around: seed.endpoints, width: 1000, height: 1000,
                                    candidates: [seed, reversed, outside] + many)
         XCTAssertEqual(zone.objects?.count, SaberIgnoreZone.maximumObjects)
         XCTAssertEqual(zone.objects?.first, zone.objectEndpoints)
         XCTAssertEqual(zone.objects?[1].x1, 0.201)
         XCTAssertFalse(zone.ignores(outside.endpoints, width: 1000, height: 1000))
+    }
+
+    func testIgnoreLearningClustersBridgeAndBoundsObjects() throws {
+        var learner = SaberIgnoreLearner(startedAt: 1, colors: [.red])
+        func add(_ candidates: [SaberCandidate], at now: Double = 1) {
+            learner.add(SaberFrameAnalysis(candidates: [.red: candidates, .blue: candidates], selected: [:]),
+                        width: 1000, height: 1000, now: now)
+        }
+        add([])
+        XCTAssertTrue(learner.zones.isEmpty)
+        add([Self.candidate((100, 100), (150, 150)), Self.candidate((350, 100), (400, 150))])
+        XCTAssertEqual(learner.zones[.red]?.count, 2)
+        // 後で両群に接する候補が出たら1群に結合。対象外の青は収集しない。
+        add([Self.candidate((200, 100), (300, 150), eligible: false)])
+        XCTAssertEqual(learner.zones[.red]?.count, 1)
+        XCTAssertNil(learner.zones[.blue])
+        let candidates = (0...(SaberIgnoreZone.maximumObjects + 20)).map {
+            Self.candidate((100 + $0 % 200, 100 + $0 / 200), (400, 150), eligible: false)
+        }
+        add(candidates, at: 3.99)
+        let zone = try XCTUnwrap(learner.zones[.red]?.first)
+        XCTAssertEqual(zone.objects?.count, SaberIgnoreZone.maximumObjects)
+        XCTAssertEqual(zone.minX, 0.05, accuracy: 1e-12)
+        XCTAssertEqual(zone.maxX, 0.45, accuracy: 1e-12)
+        for candidate in candidates {
+            XCTAssertTrue(zone.ignores(candidate.endpoints, width: 1000, height: 1000))
+        }
     }
 
     func testSaberCrossingTubeRectangleIsStillSelected() throws {

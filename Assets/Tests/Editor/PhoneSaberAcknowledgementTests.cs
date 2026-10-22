@@ -30,6 +30,8 @@ public class PhoneSaberAcknowledgementTests
     {
         foreach (string line in new[] {
             "PHONESABER_ACK 1 id=7 station=A platform=ios result=ignored detail=red1-blue1",
+            "PHONESABER_ACK 1 id=7 station=B platform=ios result=ignored detail=red3-blue2",
+            "PHONESABER_ACK 1 id=7 station=A platform=ios result=learning detail=3s",
             "PHONESABER_ACK 1 id=8 station=none platform=android result=nothing detail=red0-blue0",
             "PHONESABER_ACK 1 id=9 station=B platform=ios result=cleared detail=ignore",
             "PHONESABER_ACK 1 id=10 station=A platform=android result=learning detail=10s",
@@ -60,6 +62,9 @@ public class PhoneSaberAcknowledgementTests
             good.Replace("id=7", "id=-1"), good.Replace("id=7", "id=9999999999"), good.Replace("station=A", "station="),
             good.Replace("station=A", "station=台"), good.Replace("platform=ios", "platform=other"),
             good.Replace("result=ignored", "result=unknown"), good.Replace("detail=red1-blue1", "detail=bad"),
+            good.Replace("detail=red1-blue1", "detail=red0-blue0"),
+            good.Replace("detail=red1-blue1", "detail=red-1-blue1"),
+            good.Replace("detail=red1-blue1", "detail=red2147483648-blue1"),
             good + " id=8", good + "\n", good + " bad", good + " future=bad=value", good + new string('x', 200)
         }) Assert.IsFalse(PhoneSaberAcknowledgement.TryParse(line, out _), line);
         Assert.IsFalse(PhoneSaberAcknowledgement.TryParse(null, 10, out _));
@@ -154,7 +159,9 @@ public class PhoneSaberAcknowledgementTests
     [TestCase("ignored", "red0-blue1", "青を無視しました（赤0・青1）")]
     [TestCase("cleared", "ignore", "無視をすべて消しました")]
     [TestCase("cleared", "area", "プレイ範囲を消しました")]
-    [TestCase("learning", "10s", "プレイ範囲を覚えています（10秒、範囲いっぱいに振る）")]
+    [TestCase("learning", "3s", "無視する物を覚えています（剣を消して3秒待つ）")]
+    [TestCase("ignored", "red3-blue2", "赤と青を無視しました（赤3・青2）")]
+    [TestCase("ignored", "red0-blue3", "青を無視しました（赤0・青3）")]
     [TestCase("learned", "samples42", "プレイ範囲を覚えました（42回分）")]
     [TestCase("failed", "samples2", "覚えられませんでした（振りが足りません）")]
     [TestCase("exposure", "ev-2", "露出を -2 EV にしました")]
@@ -174,5 +181,23 @@ public class PhoneSaberAcknowledgementTests
     {
         Assert.AreEqual("iPhone: 今は" + colour + "映っていないので無視するものがありません",
             PhoneSaberOperatorKeys.ResultText(Ack(7, "nothing", "red0-blue0"), command));
+    }
+
+    [TestCase("A", "ignored", "red3-blue2")]
+    [TestCase("B", "nothing", "red0-blue0")]
+    public void IgnoreLearningToastAndF8KeepFinalResultAfterLateStart(string station, string result, string detail)
+    {
+        var store = new PhoneSaberAcknowledgementStore();
+        store.Queue(7, "ignore=both", 0);
+        store.Receive(Ack(7, "learning", "3s", station: station), "phone");
+        string expected = "iPhone（台" + station + "）: 無視する物を覚えています（剣を消して3秒待つ）";
+        Assert.AreEqual(expected, PhoneSaberOperatorKeys.ToastText(store, 1));
+        Assert.AreEqual(expected, PhoneSaberOperatorKeys.StatusText(store, 1));
+        store.Receive(Ack(7, result, detail, station: station), "phone");
+        store.Receive(Ack(7, "learning", "3s", station: station), "phone");
+        Assert.AreEqual(result, store.Read(7)[0].Result);
+        StringAssert.DoesNotContain("覚えています", PhoneSaberOperatorKeys.StatusText(store, 4));
+        StringAssert.Contains("プレイ範囲を覚えています（10秒、範囲いっぱいに振る）",
+            PhoneSaberOperatorKeys.ResultText(Ack(8, "learning", "10s"), "learn-area=10"));
     }
 }

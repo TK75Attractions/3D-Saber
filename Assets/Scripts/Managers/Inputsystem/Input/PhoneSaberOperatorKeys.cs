@@ -145,15 +145,18 @@ public sealed class PhoneSaberOperatorKeys : MonoBehaviour
         switch (ack.Result)
         {
             case "ignored":
-                bool red = ack.Detail.StartsWith("red1"), blue = ack.Detail.EndsWith("blue1");
-                result = (red && blue ? "赤と青" : red ? "赤" : "青") + "を無視しました（赤" + (red ? 1 : 0) + "・青" + (blue ? 1 : 0) + "）";
+                string[] counts = ack.Detail.Split('-');
+                int red = int.Parse(counts[0].Substring(3)), blue = int.Parse(counts[1].Substring(4));
+                result = (red > 0 && blue > 0 ? "赤と青" : red > 0 ? "赤" : "青") + "を無視しました（赤" + red + "・青" + blue + "）";
                 break;
             case "nothing":
                 string color = command == "ignore=red" ? "赤が" : command == "ignore=blue" ? "青が" : "赤も青も";
                 result = "今は" + color + "映っていないので無視するものがありません";
                 break;
             case "cleared": result = ack.Detail == "area" ? "プレイ範囲を消しました" : "無視をすべて消しました"; break;
-            case "learning": result = "プレイ範囲を覚えています（" + ack.Detail.TrimEnd('s') + "秒、範囲いっぱいに振る）"; break;
+            case "learning": result = command.StartsWith("ignore=")
+                ? "無視する物を覚えています（剣を消して3秒待つ）"
+                : "プレイ範囲を覚えています（" + ack.Detail.TrimEnd('s') + "秒、範囲いっぱいに振る）"; break;
             case "learned": result = "プレイ範囲を覚えました（" + ack.Detail.Substring(7) + "回分）"; break;
             case "failed": result = "覚えられませんでした（振りが足りません）"; break;
             case "shutter": result = "固定シャッター " + (ack.Detail == "off" ? "OFF（自動露出）" : "1/" + ack.Detail + " 秒"); break;

@@ -474,15 +474,16 @@ struct ContentView: View {
                                 set: { model.setTrackLockEnabled($0) }
                             ))
                             Text("無視する赤・青の物: \(model.ignoreZoneSummary)")
+                            Text(model.ignoreLearning ? "学習中：剣を消して3秒待つ" : "剣を消して3秒待つ")
                             HStack {
                                 Button("今の赤を無視") { model.ignoreCurrentDetection(.red) }
-                                    .disabled(model.redEndpoints == nil)
+                                    .disabled(!model.running || model.ignoreLearning)
                                 Button("今の青を無視") { model.ignoreCurrentDetection(.blue) }
-                                    .disabled(model.blueEndpoints == nil)
+                                    .disabled(!model.running || model.ignoreLearning)
                                 Button("無視をすべて消す", role: .destructive) { model.clearIgnoreZones() }
                             }
                             .buttonStyle(.bordered)
-                            Text("会場のコーンなど、剣ではない赤・青の物が認識されるとき用。剣の電源を切るかカメラの外に出し、その物だけが枠で囲まれている状態で押します。以後その場所の候補は選ばず、同じコマの剣を選びます。カメラや物を動かしたら押し直してください。")
+                            Text("会場のコーンや蛍光灯などを3秒間覚えます。剣の電源を切るかカメラの外に出してから押してください。学習中に映った剣も無視されます。カメラや物を動かしたら押し直してください。")
                                 .font(.caption).foregroundStyle(.secondary)
                             Text("プレイ範囲: \(model.playAreaSummary)")
                             HStack {
