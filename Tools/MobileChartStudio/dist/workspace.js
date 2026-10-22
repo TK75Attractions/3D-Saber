@@ -76,6 +76,8 @@ export function installWorkspace(context) {
     const locked=context.locked();document.body.classList.toggle('is-recording',locked);document.body.classList.toggle('has-project',!!state.project);welcome.hidden=!!state.project;workspace.hidden=!state.project;nav.hidden=!state.project;
     for(const b of nav.querySelectorAll('button'))b.disabled=locked;
     for(const id of ['songSettings','settingsButton','libraryButton','rangeButton'])$(id).disabled=locked||state.loading;
+    // 設定は下書きごとに保存するので、曲を開くまでは押せない(開く前に変えても、曲を開くと消えていた)。
+    for(const id of ['songSettings','settingsButton'])$(id).disabled||=!state.project;
     $('listenTake').disabled=!state.lastTake||state.playing;$('editUndo').disabled=$('undoButton').disabled;$('shareChart').disabled=!state.project||state.loading;
     $('recordWarning').textContent=locked?'● 録音中 · 停止してから画面を切り替えられます':'区間指定なし · 入力を追加';
     if($('rangeEnabled').checked)$('recordWarning').textContent=`${$('replaceRange').checked?'⚠ 入力した区間を置き換え':'A–Bに追加'} · ${Number($('rangeStart').value).toFixed(2)}〜${Number($('rangeEnd').value).toFixed(2)}秒`;

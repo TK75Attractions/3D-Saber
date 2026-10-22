@@ -18,6 +18,7 @@ const chart={bpm:120,offsetMs:0,beatZeroMs:0,coordScale:1,displayLevel:2,timeSig
 try{
   await page.goto(site);await settle();
   assert.match(await page.locator('#appBrand').innerText(),/^Saber Tap Studio v\d+-\d{8}$/);check('the footer shows the app version');
+  assert.equal(await page.locator('#settingsButton').isDisabled(),true,'曲を開く前は設定を押せない');check('settings wait until a song is open');
   await page.locator('#audioFile').setInputFiles({name:'使いやすさ.wav',mimeType:'audio/wav',buffer:wav()});
   await page.waitForFunction(()=>document.querySelector('#saveStatus').textContent==='この端末に保存済み');
   // 1. 知らせは録音開始のボタンを隠さない(上の帯に出る)。
@@ -62,7 +63,12 @@ try{
   await page.waitForTimeout(3000);await page.screenshot({path:path.join(output,'usability-range.png')});
   await page.locator('#rangeButton').click();await page.locator('#clearRange').click();await settle();
   assert.equal(await page.locator('#rangeEnabled').isChecked(),false);assert.equal(await page.locator('#rangeButton').innerText(),'区間');check('one tap re-records from here, one tap clears the range');
-  // 7. 最初の画面から、前回の下書きを1回で開ける。
+  // 7. 「矢印の変更後に次へ」と表示幅は、この端末で覚える(読み直しても同じ)。
+  await page.locator('#nav-edit').click();await page.locator('#mapZoom').selectOption('10');await settle();
+  await page.locator('#mapNotes button').first().click();await page.locator('#autoNext').check();await settle();
+  await page.reload();await settle();await page.locator('#resumeProject').waitFor({state:'visible'});
+  assert.equal(await page.locator('#autoNext').isChecked(),true);assert.equal(await page.locator('#mapZoom').inputValue(),'10');check('arrow auto-next and the timeline zoom are remembered');
+  // 8. 最初の画面から、前回の下書きを1回で開ける。
   await page.reload();await settle();assert.equal(await page.locator('#resumeProject').isVisible(),true);
   assert.match(await page.locator('#resumeProject').innerText(),/続きを開く：.*NORMAL/);await page.screenshot({path:path.join(output,'usability-resume.png')});
   await page.locator('#resumeProject').click();await page.waitForFunction(()=>!document.querySelector('#welcome')||document.querySelector('#welcome').hidden);
