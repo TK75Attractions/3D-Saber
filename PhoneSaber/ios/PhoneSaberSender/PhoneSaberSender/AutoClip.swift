@@ -312,6 +312,8 @@ struct AutoClipRateLimiter {
 
     mutating func beginSession() {
         automaticClipsThisSession = 0
+        lastAutomaticTime = nil
+        lastManualTime = nil
         competitorLocations.removeAll(keepingCapacity: true)
         rejected.removeAll(keepingCapacity: true)
     }
@@ -706,7 +708,12 @@ final class AutoClipRecorder: FrameAnalysisObserver {
 
     /// A new sending session: per-session clip counts start again.
     func beginSession() {
-        lock.lock(); sessionResetPending = true; status.savedThisSession = 0; lock.unlock()
+        lock.lock()
+        let previous = manualRequest
+        manualRequest = nil
+        sessionResetPending = true; status.savedThisSession = 0
+        lock.unlock()
+        if let previous { onManualClipResult?(previous, false) }
     }
 
     /// Save a clip around the next frame (PC command).
@@ -735,7 +742,8 @@ final class AutoClipRecorder: FrameAnalysisObserver {
         status.active = isEnabled && suspended == nil
         lock.unlock()
 
-        if resetSession { limiter.beginSession(); detector.reset() }
+        // 停止直後の再開でも旧セッションの収集中clip・画像を持ち越さない。
+        if resetSession { dropState(); limiter.beginSession() }
         guard isEnabled, suspended == nil, frame.timestamp.isFinite else {
             dropState()
             if let manual {

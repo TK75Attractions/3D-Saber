@@ -695,6 +695,65 @@ final class AutoClipTests: XCTestCase {
 
     // MARK: End to end (synthetic frames → bundle on disk)
 
+    func testNewSessionDropsPendingClipAndAcceptsItsOwnRequest() {
+        let recorder = AutoClipRecorder(directory: FileManager.default.temporaryDirectory, enabled: true)
+        var log: [String] = []
+        var cancelled: [String] = []
+        recorder.onLog = { log.append($0) }
+        recorder.onManualClipResult = { reason, saved in
+            XCTAssertFalse(saved)
+            cancelled.append(reason)
+        }
+        let pixels = [UInt8](repeating: 0, count: 16 * 16 * 4)
+        func frame(_ time: Double, _ sequence: UInt64) {
+            pixels.withUnsafeBufferPointer { buffer in
+                recorder.observe(ObservedFrame(baseAddress: buffer.baseAddress!, width: 16, height: 16,
+                    bytesPerRow: 16 * 4, sequence: sequence, timestamp: time, processingSeconds: 0,
+                    analysis: SaberFrameAnalysis(candidates: [:], selected: [:]),
+                    ignoreZones: [:], playArea: nil, captureFPS: 60))
+            }
+        }
+        recorder.requestClip(reason: "old-session")
+        frame(100, 1)
+        // 停止後すぐ再開するとPTSの差は1秒未満。時間ギャップ任せでは旧clipが残る。
+        recorder.beginSession()
+        recorder.requestClip(reason: "new-session")
+        frame(100.2, 1)
+        XCTAssertEqual(cancelled, ["old-session"])
+        XCTAssertTrue(log.contains { $0.hasPrefix("trigger kind=manual") && $0.contains("note=new-session") })
+        XCTAssertFalse(log.contains { $0.contains("clip skipped") })
+    }
+
+    func testNewSessionDoesNotInheritClipCooldowns() {
+        var limiter = AutoClipRateLimiter()
+        XCTAssertEqual(limiter.admit(event(.jump, at: 100), busy: false, width: 480, height: 640), .accept)
+        XCTAssertEqual(limiter.admit(event(.manual, at: 100), busy: false, width: 480, height: 640), .accept)
+        limiter.beginSession()
+        XCTAssertEqual(limiter.admit(event(.jump, at: 100.2), busy: false, width: 480, height: 640), .accept)
+        XCTAssertEqual(limiter.admit(event(.manual, at: 100.2), busy: false, width: 480, height: 640), .accept)
+    }
+
+    func testNewSessionCancelsRequestStillWaitingForItsFirstFrame() {
+        let recorder = AutoClipRecorder(directory: FileManager.default.temporaryDirectory, enabled: true)
+        var cancelled: [String] = []
+        var log: [String] = []
+        recorder.onLog = { log.append($0) }
+        recorder.onManualClipResult = { reason, saved in
+            XCTAssertFalse(saved)
+            cancelled.append(reason)
+        }
+        recorder.requestClip(reason: "old-session")
+        recorder.beginSession()
+        [UInt8](repeating: 0, count: 16 * 16 * 4).withUnsafeBufferPointer { buffer in
+            recorder.observe(ObservedFrame(baseAddress: buffer.baseAddress!, width: 16, height: 16,
+                bytesPerRow: 16 * 4, sequence: 1, timestamp: 100, processingSeconds: 0,
+                analysis: SaberFrameAnalysis(candidates: [:], selected: [:]),
+                ignoreZones: [:], playArea: nil, captureFPS: 60))
+        }
+        XCTAssertEqual(cancelled, ["old-session"])
+        XCTAssertFalse(log.contains { $0.hasPrefix("trigger") })
+    }
+
     func testRecorderWritesAValidBundleAroundAConfusionTrigger() throws {
         #if AUTOCLIP_STANDALONE
         if try DebugRecordingStorageProbe.availableCapacity(at: FileManager.default.temporaryDirectory) == 0 {
