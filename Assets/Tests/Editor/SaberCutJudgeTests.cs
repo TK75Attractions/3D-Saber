@@ -248,6 +248,25 @@ public class SaberCutJudgeTests
         Assert.IsTrue(note.IsCut);
     }
 
+    // 刃が消えて点の判定に切り替わったとき(カメラの受信が途切れて HideBlade)、触れていたノーツの保留を持ち越さない。
+    // 持ち越すと、止まっている点(古い刃の中心)とノーツの距離で「抜けた」と数え、振っていないのに切れていた(2026-10-22)。
+    [Test]
+    public void Blade_LosingTheBladeMidContactDoesNotCut()
+    {
+        var (judge, tracker, bridge) = MakeBladeRig();
+        var note = MakeNote(new Vector3(0f, 0f, 0f));
+        tracker.ResetTo(new Vector3(0f, 0f, 0f));
+        tracker.Tick(new Vector3(1f, 0f, 0f), 0.05f); // Speed=20
+        bridge.OverrideBlade(new Vector3(-1f, 0f, 0f), new Vector3(1f, 0f, 0f));
+        Assert.AreEqual(0, judge.TryCut(), "刃がノーツの上にある間は保留");
+        Assert.Greater(judge.PendingCount, 0);
+        judge.bladeProvider = null;                    // 刃が消えた(点の判定へ)
+        tracker.Tick(new Vector3(1f, 0f, 0f), 0.05f);  // 位置は止まったまま(速さ0)
+        Assert.AreEqual(0, judge.TryCut());
+        Assert.IsFalse(note.IsCut, "振っていないのに切らない");
+        Assert.AreEqual(0, judge.PendingCount);
+    }
+
     [Test]
     public void Blade_NoteFarFromSegment_NoCut()
     {
