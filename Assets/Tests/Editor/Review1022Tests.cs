@@ -225,7 +225,8 @@ public class Review1022Tests
         var normal = ChartLoader.LoadFromStreamingAssets("logic", "Normal");
         var hard = ChartLoader.LoadFromStreamingAssets("logic", "Hard");
         bool Has(ChartData chart, double ms) => chart.notes.Any(n => Math.Abs(n.time - ms) < 1);
-        foreach (var (chart, from, to) in new[] { (easy, 38278.0, 38090.5), (easy, 108903.0, 108403.0), (easy, 146403.0, 146153.0), (normal, 146403.0, 146153.0) })
+        // 108.403 秒は、のちに Hard ごと音の頭の 108.347 秒へ動かした(ず13)。
+        foreach (var (chart, from, to) in new[] { (easy, 38278.0, 38090.5), (easy, 108903.0, 108347.0), (easy, 146403.0, 146153.0), (normal, 146403.0, 146153.0) })
         {
             Assert.True(Has(chart, to) && Has(hard, to), to + "ms は同じ色の Hard の音");
             Assert.False(Has(chart, from), from + "ms には音の立ち上がりが無い");
@@ -243,6 +244,30 @@ public class Review1022Tests
             Assert.AreEqual(hard.notes[hardIndex].time, normal.notes[index].time, limit, "Normal #" + index + " は Hard #" + hardIndex + " の音");
         foreach (double old in new[] { 4161.8497, 4855.4913, 16985.2344 })
             Assert.False(normal.notes.Any(n => Math.Abs(n.time - old) < 1), old + "ms(音より早い)には置かない");
+    }
+
+    // ---- ず1〜13(ユーザーの指示): 下の譜面と Hard(RUSH E は E も)が同じ時刻で音の頭からずれていた13か所を、全部の譜面で音の頭へ ----
+    [TestCase("2_23_AM", 6026.2, 6058.0, "normal,hard")]
+    [TestCase("2_23_AM", 88026.2, 88058.0, "easy,normal,hard")]
+    [TestCase("2_23_AM", 89359.53, 89385.0, "normal,hard")]
+    [TestCase("2_23_AM", 90692.87, 90732.0, "easy,hard")]
+    [TestCase("BenkyouRemaster", 12774.0, 12736.0, "easy,normal,hard")]
+    [TestCase("RushE", 15968.49, 16001.0, "normal,hard,e")]
+    [TestCase("RushE", 67843.49, 67877.0, "easy,normal,hard,e")]
+    [TestCase("RushE", 68218.49, 68244.0, "normal,hard,e")]
+    [TestCase("RushE", 94155.99, 94131.0, "easy,normal,e")]
+    [TestCase("escapade", 57493.68, 57516.0, "easy,normal,hard")]
+    [TestCase("logic", 53903.0, 53928.0, "easy,normal,hard")]
+    [TestCase("logic", 105403.0, 105431.0, "normal,hard")]
+    [TestCase("logic", 108403.0, 108347.0, "easy,hard")]
+    public void SharedNotesMovedToTheSoundInEveryChart(string song, double from, double to, string difficulties)
+    {
+        foreach (string difficulty in difficulties.Split(','))
+        {
+            var chart = ChartLoader.LoadFromStreamingAssets(song, difficulty);
+            Assert.True(chart.notes.Any(n => Math.Abs(n.time - to) < .2), song + " " + difficulty + " " + to + "ms(音の頭)");
+            Assert.False(chart.notes.Any(n => Math.Abs(n.time - from) < 1), song + " " + difficulty + " " + from + "ms には残さない");
+        }
     }
 
     // ---- くり返し9回目: 数字キーでも譜面の無い難易度は選ばない ----

@@ -1390,7 +1390,7 @@
       "index": 138,
       "hand": "red",
       "timesMs": [
-        53903.0
+        53928.0
       ],
       "directions": [
         "down"
@@ -2436,7 +2436,7 @@
       "index": 242,
       "hand": "blue",
       "timesMs": [
-        105403.0
+        105431.0
       ],
       "directions": [
         "down"
@@ -2526,7 +2526,7 @@
       "index": 251,
       "hand": "red",
       "timesMs": [
-        108403.0
+        108347.0
       ],
       "directions": [
         "up"

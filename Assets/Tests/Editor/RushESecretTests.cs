@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using NUnit.Framework;
@@ -107,6 +108,12 @@ public class RushESecretTests
         Assert.AreEqual(RushESecretState.Purple, GameHUDSkin.DifficultyColor("E"));
     }
 
+    // E の番号 → 音の頭へ動かした時刻(ms)。2026-10-22 の点検(ず6〜9)。
+    static readonly Dictionary<int, double> AudioAligned = new Dictionary<int, double>
+    {
+        [54] = 16001.0, [391] = 67877.0, [402] = 68244.0, [690] = 94131.0,
+    };
+
     [Test]
     public void EPreservesEveryBeatSaberNoteTimePositionAndNonGoldHand()
     {
@@ -120,7 +127,14 @@ public class RushESecretTests
         for (int i = 0; i < source.Length; i++)
         {
             var original = source[i]; var converted = e.notes[i];
-            Assert.AreEqual(original._time * 500.0 - 18263.0 / 11025 * 1000, converted.time, .02, "時刻 / " + i);
+            double expected = original._time * 500.0 - 18263.0 / 11025 * 1000;
+            // 2026-10-22 ユーザーの指示(点検のず6〜9): この4個だけは元の譜面から、音の頭へ動かした(Easy・Normal・Hard と同じ時刻)。
+            if (AudioAligned.TryGetValue(i, out double aligned))
+            {
+                Assert.AreEqual(aligned, converted.time, .02, "音の頭へ動かした時刻 / " + i);
+                Assert.That(converted.time - expected, Is.InRange(-40.0, 40.0), "元の譜面から40ms以内 / " + i);
+            }
+            else Assert.AreEqual(expected, converted.time, .02, "時刻 / " + i);
             Assert.AreEqual(original._lineIndex - 1.5f, converted.x, .001f, "左右配置 / " + i);
             Assert.AreEqual((original._lineLayer - 1) * .8f, converted.y, .001f, "上下配置 / " + i);
             var expectedHand = converted.color == "gold" ? SaberHand.Any : original._type == 0 ? SaberHand.Left : SaberHand.Right;

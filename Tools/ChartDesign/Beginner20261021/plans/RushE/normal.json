@@ -229,7 +229,7 @@
     {
       "index": 13,
       "timesMs": [
-        15968.4921
+        16001.0
       ],
       "directions": [
         "down"
@@ -239,7 +239,7 @@
       "sourceIndex": 18,
       "sourceLong": null,
       "added": false,
-      "phaseErrorMs": 0.0,
+      "phaseErrorMs": 32.5079,
       "cell": null,
       "handRepair": false
     },
@@ -1487,7 +1487,7 @@
     {
       "index": 87,
       "timesMs": [
-        67843.4921
+        67877.0
       ],
       "directions": [
         "down"
@@ -1497,14 +1497,14 @@
       "sourceIndex": 142,
       "sourceLong": null,
       "added": false,
-      "phaseErrorMs": 0.0,
+      "phaseErrorMs": 33.5079,
       "cell": null,
       "handRepair": false
     },
     {
       "index": 88,
       "timesMs": [
-        68218.4921
+        68244.0
       ],
       "directions": [
         "down"
@@ -1514,7 +1514,7 @@
       "sourceIndex": 143,
       "sourceLong": null,
       "added": false,
-      "phaseErrorMs": 0.0,
+      "phaseErrorMs": 25.5079,
       "cell": null,
       "handRepair": false
     },
@@ -2243,7 +2243,7 @@
     {
       "index": 131,
       "timesMs": [
-        94155.9921
+        94131.0
       ],
       "directions": [
         "down"
@@ -2253,7 +2253,7 @@
       "sourceIndex": 231,
       "sourceLong": null,
       "added": false,
-      "phaseErrorMs": 0.0,
+      "phaseErrorMs": -24.9921,
       "cell": null,
       "handRepair": false
     },
