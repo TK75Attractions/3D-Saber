@@ -75,10 +75,11 @@ public static class CalibrationProtocol
 }
 
 // 判定調整画面のノーツ速度(到着までの秒数)。2026-09-23 ユーザー指定: 1段目 2.0秒 / 2段目 1.0秒 / 3段目 0.5秒。
+// 10-22 に3段目(はやい)を 0.8秒へ(ユーザー指定)。
 // 値は GameSession.NoteApproachTime と同じ意味(小さいほど速い)。本番のプレイと小節線にも同じ値が使われる。
 public static class NoteSpeedPreset
 {
-    public static readonly float[] Seconds = { 2f, 1f, .5f };
+    public static readonly float[] Seconds = { 2f, 1f, .8f };
     public static readonly string[] Names = { "ゆっくり", "ふつう", "はやい" };
     public static int Count => Seconds.Length;
     // 保存値が段の値と一致しない場合(旧ウィジェット等)は最も近い段として表示する。

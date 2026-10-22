@@ -2,7 +2,7 @@ using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
 
-// 判定調整画面のノーツ速度3段(2.0 / 1.0 / 0.5 秒)。下書きに含め、保存で本番へ、破棄で元へ。
+// 判定調整画面のノーツ速度3段(2.0 / 1.0 / 0.8 秒。はやいは 2026-10-22 に 0.5 → 0.8)。下書きに含め、保存で本番へ、破棄で元へ。
 public class CalibrationSpeedTests
 {
     readonly string[] intKeys = { "judgmentOffsetMs", CalibrationDraft.ActiveKey, CalibrationDraft.SpeakerKey, CalibrationDraft.HeadphoneKey };
@@ -27,16 +27,18 @@ public class CalibrationSpeedTests
     }
 
     [Test]
-    public void Presets_AreTwoOneAndHalfSeconds_InOrder()
+    public void Presets_AreTwoOneAndPointEightSeconds_InOrder()
     {
-        CollectionAssert.AreEqual(new[] { 2f, 1f, .5f }, NoteSpeedPreset.Seconds, "1段目 2.0秒 / 2段目 1.0秒 / 3段目 0.5秒");
+        CollectionAssert.AreEqual(new[] { 2f, 1f, .8f }, NoteSpeedPreset.Seconds, "1段目 2.0秒 / 2段目 1.0秒 / 3段目 0.8秒");
         Assert.AreEqual(3, NoteSpeedPreset.Count);
-        Assert.AreEqual(2f, NoteSpeedPreset.SecondsFor(0)); Assert.AreEqual(1f, NoteSpeedPreset.SecondsFor(1)); Assert.AreEqual(.5f, NoteSpeedPreset.SecondsFor(2));
-        Assert.AreEqual(.5f, NoteSpeedPreset.SecondsFor(99), "範囲外は端に丸める");
+        Assert.AreEqual(2f, NoteSpeedPreset.SecondsFor(0)); Assert.AreEqual(1f, NoteSpeedPreset.SecondsFor(1)); Assert.AreEqual(.8f, NoteSpeedPreset.SecondsFor(2));
+        Assert.AreEqual(.8f, NoteSpeedPreset.SecondsFor(99), "範囲外は端に丸める");
         StringAssert.Contains("2.0秒", NoteSpeedPreset.Caption(0, false)); StringAssert.StartsWith("●", NoteSpeedPreset.Caption(1, true));
+        StringAssert.Contains("はやい  0.8秒", NoteSpeedPreset.Caption(2, false));
     }
 
-    [TestCase(2f, 0)] [TestCase(1f, 1)] [TestCase(.5f, 2)]
+    // 0.5 は前の「はやい」の保存値。いちばん近い「はやい」として表示する。
+    [TestCase(2f, 0)] [TestCase(1f, 1)] [TestCase(.8f, 2)] [TestCase(.5f, 2)]
     [TestCase(1.4f, 1)] [TestCase(3.5f, 0)] [TestCase(.7f, 2)]
     public void StepFor_PicksTheNearestPreset(float approach, int expected)
     {
@@ -60,11 +62,11 @@ public class CalibrationSpeedTests
     [Test]
     public void Draft_RestoreSaved_RevertsSpeedWithoutWriting()
     {
-        GameSession.NoteApproachTime = .5f;
+        GameSession.NoteApproachTime = .8f;
         var d = new CalibrationDraft(); d.SetSpeedStep(0);
         Assert.True(d.IsDirty);
         d.RestoreSaved();
-        Assert.AreEqual(2, d.SpeedStep); Assert.False(d.IsDirty); Assert.AreEqual(.5f, GameSession.NoteApproachTime);
+        Assert.AreEqual(2, d.SpeedStep); Assert.False(d.IsDirty); Assert.AreEqual(.8f, GameSession.NoteApproachTime);
     }
 
     [Test]

@@ -231,7 +231,7 @@ public sealed class CalibrationController : MonoBehaviour
         Overlay.Refresh();
     }
     public int SpeedStep => Draft != null ? Draft.SpeedStep : NoteSpeedPreset.StepFor(GameSession.NoteApproachTime);
-    // ノーツ速度の段(0=ゆっくり 2.0秒 / 1=ふつう 1.0秒 / 2=はやい 0.5秒)。試し切り中は即座に反映し、測定中は変えない。
+    // ノーツ速度の段(0=ゆっくり 2.0秒 / 1=ふつう 1.0秒 / 2=はやい 0.8秒)。試し切り中は即座に反映し、測定中は変えない。
     public void SetSpeedStep(int step)
     {
         if (Draft == null || (IsRunning && !IsLive)) return;
