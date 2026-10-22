@@ -232,6 +232,50 @@ public class Review1022Tests
         }
     }
 
+    // ---- くり返し6回目: アンダルシア Normal の3個を Hard の音の頭へ ----
+    // 4.16・4.86秒は拍の線(曲の頭で音より27ms早い)から +24.9ms(下位譜面の検査の25ms以内、Hard まで約2ms)、16.99秒は Hard と同じ時刻。
+    [Test]
+    public void AndalusiaNormalOpeningFollowsTheHardSounds()
+    {
+        var normal = ChartLoader.LoadFromStreamingAssets("Andalusia", "Normal");
+        var hard = ChartLoader.LoadFromStreamingAssets("Andalusia", "Hard");
+        foreach (var (index, hardIndex, limit) in new[] { (3, 5, 2.5), (4, 6, 2.5), (31, 43, .1) })
+            Assert.AreEqual(hard.notes[hardIndex].time, normal.notes[index].time, limit, "Normal #" + index + " は Hard #" + hardIndex + " の音");
+        foreach (double old in new[] { 4161.8497, 4855.4913, 16985.2344 })
+            Assert.False(normal.notes.Any(n => Math.Abs(n.time - old) < 1), old + "ms(音より早い)には置かない");
+    }
+
+    // ---- くり返し9回目: 数字キーでも譜面の無い難易度は選ばない ----
+    [Test]
+    public void NumberKeysSkipDifficultiesWithoutNotes()
+    {
+        const string song = "__TestHardOnlySong__";
+        string dir = Path.Combine(Application.streamingAssetsPath, "Songs", song);
+        var go = new GameObject("SongSelectHardOnly");
+        try
+        {
+            Directory.CreateDirectory(dir);
+            File.WriteAllText(Path.Combine(dir, "chart_hard.json"), "{ \"bpm\": 120.0, \"coordScale\": 1.0, \"offsetMs\": 0, \"notes\": [" +
+                string.Join(",", Enumerable.Range(0, 8).Select(i => "{ \"time\": " + (1000 + i * 500) + ", \"type\": \"tap\", \"color\": \"" + (i % 2 == 0 ? "red" : "blue") + "\", \"x\": " + (i % 2 == 0 ? 1 : -1) + ", \"y\": 0 }")) + "] }");
+            var ctl = go.AddComponent<SongSelectController>();
+            ctl.Populate();
+            int index = Enumerable.Range(0, ctl.SongCount).First(i => ctl.SongIdAt(i) == song);
+            ctl.Select(index);
+            Assert.AreEqual(2, ctl.SelectedDifficultyIndex, "曲を選ぶと譜面のある Hard になる");
+            Assert.AreEqual(0, ctl.DifficultyLevelAt(0));
+            ctl.ChooseDifficulty(0);
+            Assert.AreEqual(2, ctl.SelectedDifficultyIndex, "数字キーの 1 でも譜面の無い Easy は選ばない(クリック・矢印と同じ)");
+            ctl.ChooseDifficulty(1);
+            Assert.AreEqual(2, ctl.SelectedDifficultyIndex);
+        }
+        finally
+        {
+            Object.DestroyImmediate(go);
+            if (Directory.Exists(dir)) Directory.Delete(dir, true);
+            if (File.Exists(dir + ".meta")) File.Delete(dir + ".meta");
+        }
+    }
+
     static void Feed(PlayTrackingWatch watch, int color, double from, double to)
     {
         int n = (int)Math.Floor((to - from) * 30 + 1e-6);

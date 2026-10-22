@@ -200,6 +200,9 @@ public class SongSelectController : MonoBehaviour
     public void ChooseDifficulty(int idx)
     {
         if (RushESecret.Unlocked || RushESecret.Transitioning || difficultyNames == null || difficultyNames.Length == 0) return;
+        // 譜面の無い難易度(LEVEL 0)は、クリック・矢印と同じく数字キーでも選ばない(Codex の点検で 2026-10-22 に追加)。
+        idx = Mathf.Clamp(idx, 0, difficultyNames.Length - 1);
+        if (selectedIndex >= 0 && DifficultyLevelAt(idx) <= 0) return;
         SetDifficulty(idx);
         MenuSfx.Difficulty(selectedDifficulty);
     }
