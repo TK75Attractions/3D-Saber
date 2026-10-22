@@ -13,7 +13,7 @@ import { encodeWav } from './wav.js';
 import { saveProject, listProjects, getProject, saveAudio, getAudio, saveProjectWithAudio, contentOf } from './storage.js';
 const $ = id => document.getElementById(id), audio = new SongAudio();
 // 画面に出す版。sw.js のキャッシュ名(saber-tap-shell-<版>)と同じにする(tests/offline.test.js が確かめる)。
-const APP_VERSION='v20-20261022';
+const APP_VERSION='v21-20261023';
 let refinementUI, workspaceUI;
 let bpmConfirmed=true;
 let chart = blankChart(), history = new History(), project = null, selected = null;
@@ -169,7 +169,8 @@ async function importChart(file) {
   try{
   const next=parseChart(await file.text());await persist();
   const difficulty=/chart_(easy|normal|hard)/i.exec(file.name)?.[1].toLowerCase()||$('difficulty').value;
-  const replacement={...project,id:uid(),_revision:0,lastExportedAt:null,chart:next,difficulty,settings:{...settings(),bpmConfirmed:true,snapMode:'off'},position:0,updated:Date.now()};await saveProject(replacement);
+  // 今の曲の音源を使う新しい下書きなので、音源が残っているときだけ保存する(直前の保存のあとに別のタブで曲ごと消されると、開けない下書きが残っていた)。
+  const replacement={...project,id:uid(),_revision:0,lastExportedAt:null,chart:next,difficulty,settings:{...settings(),bpmConfirmed:true,snapMode:'off'},position:0,updated:Date.now()};await saveProject(replacement,{requireAudio:true});
   project=replacement;chart=next;bpmConfirmed=true;history=new History();selected=null;audio.seek(0);resetSession();$('difficulty').value=difficulty;$('snapMode').value='off';fillChartFields();changed();
   // 一覧は開く前の内容(編集中の印も前の下書き)のままなので閉じる。別の下書きを開いたときと同じ。
   $('library').close();
@@ -252,7 +253,8 @@ async function createProjectCopy() {
   try{
     const next={...snapshotProject(),id:uid(),_revision:0,lastExportedAt:null,chart:copyChart(chart,$('copyContent').value==='empty'),name:$('copyName').value.trim().slice(0,120)||project.name+' のコピー',difficulty:$('copyDifficulty').value,position:0,updated:Date.now()};
     if(!['easy','normal','hard'].includes(next.difficulty))throw new Error('難易度を選んでください。');
-    await persist();await saveProject(next);project=next;chart=next.chart;history=new History();selected=null;audio.seek(0);$('difficulty').value=next.difficulty;resetSession();fillChartFields();renderNotes();await persist();toast('新しい下書きを作りました。元の譜面は「曲・保存」に残っています。');
+    // 同じ音源を使う新しい下書きなので、createFromStored と同じく音源が残っているときだけ保存する(直前の保存のあとに別のタブで曲ごと消されることがある)。
+    await persist();await saveProject(next,{requireAudio:true});project=next;chart=next.chart;history=new History();selected=null;audio.seek(0);$('difficulty').value=next.difficulty;resetSession();fillChartFields();renderNotes();await persist();toast('新しい下書きを作りました。元の譜面は「曲・保存」に残っています。');
   }finally{loading=false;refresh();refreshTabDetails();}
 }
 async function createFromStored(source) {
@@ -589,8 +591,9 @@ window.addEventListener('resize',()=>renderMap());
 async function setupOffline(){
   if(!('serviceWorker'in navigator)||!window.isSecureContext){$('offlineStatus').textContent='オフライン機能はHTTPSで使用できます';return;}
   try{
-    const hadController=!!navigator.serviceWorker.controller;
-    navigator.serviceWorker.addEventListener('controllerchange',()=>{if(hadController){$('updateApp').hidden=false;$('updateBanner').hidden=false;}});
+    // 初回訪問の最初の制御(claim)は更新ではないので知らせない。そのあとの入れ替わりは、同じタブのままでも新しい版として知らせる。
+    let hadController=!!navigator.serviceWorker.controller;
+    navigator.serviceWorker.addEventListener('controllerchange',()=>{const controlled=!!navigator.serviceWorker.controller;if(hadController&&controlled){$('updateApp').hidden=false;$('updateBanner').hidden=false;}hadController=controlled;});
     const registration=await navigator.serviceWorker.register('./sw.js');
     $('updateApp').onclick=run(async()=>{stop();await persist();location.reload();});
     registration.update().catch(()=>{});

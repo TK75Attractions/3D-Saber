@@ -27,6 +27,9 @@ try{
   await deletedSourceSong();
   await deletedSongStaleTab();
   await restoreWhileStale();
+  await deletedBetweenSourceSaveAndNewDraft('copy');
+  await deletedBetweenSourceSaveAndNewDraft('import');
+  await newDraftSavedBeforeSourceDeletion();
 }finally{await browser.close();}
 
 // 1. 曲Aを開いたまま曲Bの「＋ EASY」の作成画面を開き、その間に別のタブが曲Bの最後の下書き(と音源)を消す。
@@ -124,5 +127,92 @@ async function restoreWhileStale(){
     await p.locator('#nav-record').click();await p.waitForTimeout(300);await p.locator('#saveStatus').click();assert.equal(await p.locator('#nav-export').getAttribute('aria-selected'),'true','押すと渡すへ');
     check('a restore stopped by a stale draft keeps the actionable status');
     assert.deepEqual(errs,[]);check('no browser runtime errors in the stale restore');
+  }finally{await ctx.close();}
+}
+
+// この後の競合試験では、手元に3ノーツのHARDを開き、同じ音源の下書きをこの1件だけにする。
+// 取り込みで自動作成された空のNORMALだけを消す。合成データの専用コンテキスト内に限る。
+async function currentSource(p){
+  await p.locator('#audioFile').setInputFiles({name:'作成中の曲.wav',mimeType:'audio/wav',buffer:wav()});await saved(p);
+  await library(p);await p.locator('#chartFile').setInputFiles({name:'chart_hard.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(chart))});
+  await p.locator('#library').waitFor({state:'hidden'});
+  await p.waitForFunction(()=>/^HARD/.test(document.querySelector('#difficultyLabel').textContent)&&!document.querySelector('#libraryButton').disabled);await saved(p);
+  const source=(await inventory(p)).projects.find(item=>item.difficulty==='hard');assert.ok(source);assert.equal(source.notes.length,3);
+  await p.evaluate(async id=>{const s=await import('./storage.js');for(const item of await s.listProjects())if(item.id!==id)await s.deleteProject(item.id);},source.id);
+  assert.equal((await inventory(p)).projects.length,1);return source;
+}
+
+// 実際のIDBトランザクションを開いた直後に、本物のdeleteProjectをキューする。
+// データや保存結果は差し替えない。同じ接続でも、別タブと同じ重複スコープの直列化で順序が決まる。
+// afterWrite=1: 元のpersist→削除→新規保存。2: 元のpersist→新規保存→削除。
+async function queueSourceDeletion(p,sourceId,afterWrite){
+  await p.evaluate(async({sourceId,afterWrite})=>{
+    const s=await import('./storage.js'),native=IDBDatabase.prototype.transaction;let writes=0;
+    window.storageRace={queued:false,done:false,error:null,notices:[]};
+    const notice=document.querySelector('#toast');
+    new MutationObserver(()=>{if(!notice.hidden&&notice.textContent)window.storageRace.notices.push(notice.textContent);}).observe(notice,{childList:true,subtree:true,attributes:true});
+    IDBDatabase.prototype.transaction=function(stores,mode,...rest){
+      const tx=native.call(this,stores,mode,...rest),names=typeof stores==='string'?[stores]:Array.from(stores);
+      if(mode==='readwrite'&&names.includes('projects')&&++writes===afterWrite){
+        IDBDatabase.prototype.transaction=native;window.storageRace.queued=true;
+        s.deleteProject(sourceId).then(()=>window.storageRace.done=true,error=>{window.storageRace.error=error.message;window.storageRace.done=true;});
+      }
+      return tx;
+    };
+  },{sourceId,afterWrite});
+}
+async function deletionFinished(p){
+  await p.waitForFunction(()=>window.storageRace?.done);
+  const race=await p.evaluate(()=>window.storageRace);assert.equal(race.queued,true);assert.equal(race.error,null);return race;
+}
+
+// 4/5. 開いている曲のコピーとJSON取り込み。最初のpersistが成功しても、その次の新規保存までに
+//      元の最後の下書きが消える順序を再現する。新IDへ切り替えず、現在の譜面はJSONで救出できる。
+async function deletedBetweenSourceSaveAndNewDraft(action){
+  const{ctx,errs,open}=await session();
+  try{
+    const p=await open(),source=await currentSource(p);
+    await library(p);
+    if(action==='copy'){
+      await p.locator('#duplicateButton').click();await p.locator('#copyName').fill('作れないコピー');await p.locator('#copyDifficulty').selectOption('easy');
+    }
+    // コピー画面を開いたstopの保存タイマーを先に終え、確定ボタンのpersistだけを狙う。
+    await p.waitForTimeout(200);await saved(p);await queueSourceDeletion(p,source.id,1);
+    const replacement={...chart,notes:[{...chart.notes[0],time:9000,beat:18,color:'gold'}]};
+    const refused=await noticeAfter(p,()=>action==='copy'?p.locator('#createCopy').click():p.locator('#chartFile').setInputFiles({name:'chart_easy.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(replacement))}));
+    const race=await deletionFinished(p);
+    assert.equal(refused,'元の曲の音源が別のタブで削除されています。「曲・保存」を開き直してください。');
+    assert.equal(race.notices.some(text=>/新しい下書き.*(?:作りました|開きました)/.test(text)),false,'失敗した新規保存を成功と案内しない');
+    assert.deepEqual(await inventory(p),{projects:[],audio:[],orphans:[]},'元の削除は完了し、新しい孤児下書きは残らない');
+    assert.equal(await p.locator('#songTitle').innerText(),source.name);assert.match(await p.locator('#difficultyLabel').innerText(),/^HARD/);
+    assert.equal(await p.locator('#noteCount').innerText(),'3 NOTES','取り込もうとした別譜面へ切り替わらない');
+    // 失敗時に残るダイアログを閉じて、手元の元HARDを救う。DBを再作成する操作ではない。
+    for(const id of ['duplicateDialog','library'])if(await p.locator('#'+id).evaluate(e=>e.open))await p.locator(`[data-close="${id}"]`).click();
+    await p.locator('#nav-export').click();await p.waitForTimeout(300);
+    const downloaded=p.waitForEvent('download');const notice=await noticeAfter(p,()=>p.locator('#exportButton').click());const file=await downloaded;
+    assert.equal(file.suggestedFilename(),'chart_hard.json');assert.deepEqual(JSON.parse(fs.readFileSync(await file.path(),'utf8')),chart,'未適用の取り込みではなく手元の全譜面を保持');
+    assert.match(notice,/^譜面を書き出しました。/);assert.equal(await p.locator('#exportAudioButton').isDisabled(),false,'音声バッファも保持');
+    assert.deepEqual(await inventory(p),{projects:[],audio:[],orphans:[]},'救出用の書き出しでも削除済み下書きを復活させない');
+    assert.match(await p.locator('#saveStatus').innerText(),/^別タブで更新/);assert.deepEqual(errs,[]);
+    await p.screenshot({path:path.join(output,`storage-race-${action}-after-source-save.png`)});
+    check(`${action} refuses audio deleted after source persistence, creates no orphan, and exports the unchanged local chart`);
+  }finally{await ctx.close();}
+}
+
+// 6. 反対の順序: コピーの保存トランザクションが削除より先なら、削除側は新しい共有参照を読み、
+//    元だけを消して音源を残す。コピーは再読み込み後にも開け、全ノーツを保持する。
+async function newDraftSavedBeforeSourceDeletion(){
+  const{ctx,errs,open}=await session();
+  try{
+    const p=await open(),source=await currentSource(p);
+    await library(p);await p.locator('#duplicateButton').click();await p.locator('#copyName').fill('先に保存されたコピー');await p.locator('#copyDifficulty').selectOption('easy');
+    await p.waitForTimeout(200);await saved(p);await queueSourceDeletion(p,source.id,2);
+    assert.match(await noticeAfter(p,()=>p.locator('#createCopy').click()),/^新しい下書きを作りました。/);await deletionFinished(p);await saved(p);
+    const stored=await inventory(p);assert.equal(stored.projects.length,1);assert.deepEqual(stored.orphans,[]);assert.deepEqual(stored.audio,[source.audioId]);
+    const copy=stored.projects[0];assert.notEqual(copy.id,source.id);assert.equal(copy.name,'先に保存されたコピー');assert.equal(copy.difficulty,'easy');
+    assert.deepEqual(copy.notes.map(({__editorId,...note})=>note),chart.notes);
+    await p.reload();await p.locator('#resumeProject').click();await p.waitForFunction(()=>document.querySelector('#songTitle').textContent==='先に保存されたコピー'&&!document.querySelector('#libraryButton').disabled);
+    assert.equal(await p.locator('#noteCount').innerText(),'3 NOTES');assert.match(await p.locator('#difficultyLabel').innerText(),/^EASY/);assert.deepEqual(errs,[]);
+    check('a copy saved before source deletion keeps shared audio and reopens with all notes');
   }finally{await ctx.close();}
 }

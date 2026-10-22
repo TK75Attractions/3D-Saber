@@ -23,8 +23,8 @@ async function request(store, mode, operation) {
   });
 }
 // 同じ下書きを別タブで更新していたら上書きしない。照合と保存は同一トランザクション。
-// requireAudio: 開いていない曲の下書きから作るときだけ、その曲の音源が残っていることも同じトランザクションで確かめ、なければ書かない
-// (一覧を開いてから作るまでの間に別タブで曲ごと消されると、開けない下書きが残っていた)。ふだんの保存は音源を見ない。
+// requireAudio: 保存済み音源を共有する新しい下書きは、音源の存在も同じトランザクションで確かめ、なければ書かない。
+// 一覧の確認中や直前の保存後に別タブで曲ごと消されても、開けないコピーや読み込み先を残さない。ふだんの保存は音源を見ない。
 export async function saveProject(project,{requireAudio=false}={}) {
   const db=await database(), expected=revisions.get(project.id)??project._revision??0;
   return new Promise((resolve,reject)=>{
