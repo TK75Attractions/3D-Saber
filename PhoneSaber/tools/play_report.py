@@ -555,7 +555,7 @@ def best_compensation(current, hit_median):
 def contributions(s):
     parts = [
         ("スマホ c2s（撮影→送信）", s["phone"]["c2s_median_ms"]["median"]),
-        ("露出（シャッター位相）", s["phone"]["exposure_ms"]["median"]),
+        ("撮影位相（半周期の推定）", s["phone"]["exposure_ms"]["median"]),
         ("ネットワーク", s["network"]["network_ms"]["median"]),
         ("PC（受信→描画）", s["pc"]["pc_median_ms"]["median"]),
         ("表示", s["display_ms"]["median"]),
@@ -663,7 +663,7 @@ def render(s):
         "  [スマホ]",
         f"    機種 {fmt_dist(phone['platform'])} / fps {fmt_dist(phone['fps_mode'])} / thermal {fmt_dist(phone['thermal'])}",
         f"    c2s 中央値 {fmt(phone['c2s_median_ms']['median'])} ms / p95 {fmt(phone['c2s_p95_ms']['median'])} ms"
-        f"（{phone['c2s_median_ms']['n']} 回）  露出 {fmt(phone['exposure_ms']['median'])} ms",
+        f"（{phone['c2s_median_ms']['n']} 回）  撮影位相の推定 {fmt(phone['exposure_ms']['median'])} ms（半周期・実露出ではない）",
         f"    受信 pkt/s  赤 {fmt(pkt['RED']['median'])}（最小 {fmt(pkt['RED']['min'])}）"
         f"  青 {fmt(pkt['BLUE']['median'])}（最小 {fmt(pkt['BLUE']['min'])}）",
         f"    入力の途切れ {gap_text}",
@@ -776,7 +776,7 @@ COMPARE_ROWS = [
                                                    lambda k: k in ("serious", "critical"))),
     ("c2s 中央値 ms", lambda r: r["overall"]["phone"]["c2s_median_ms"]["median"]),
     ("c2s p95 ms", lambda r: r["overall"]["phone"]["c2s_p95_ms"]["median"]),
-    ("露出 ms", lambda r: r["overall"]["phone"]["exposure_ms"]["median"]),
+    ("撮影位相の推定 ms", lambda r: r["overall"]["phone"]["exposure_ms"]["median"]),
     ("赤 pkt/s", lambda r: r["overall"]["phone"]["pkt_per_s"]["RED"]["median"]),
     ("青 pkt/s", lambda r: r["overall"]["phone"]["pkt_per_s"]["BLUE"]["median"]),
     ("途切れ 回", lambda r: sum(g["count"] for g in r["overall"]["phone"]["input_gaps"].values())),

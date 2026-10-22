@@ -30,7 +30,7 @@ public class PhoneSaberOperatorKeysTests
     }
 
     [Test]
-    public void ShutterCyclesAndDefaultsResetToOff()
+    public void ShutterCyclesAndDefaultsResetTo2000ThenNextPressIsOff()
     {
         int index = 0;
         foreach (int value in new[] { 500, 1000, 2000, 0, 500 })
@@ -43,9 +43,12 @@ public class PhoneSaberOperatorKeysTests
         object saved = field.GetValue(null);
         try
         {
-            field.SetValue(null, 3);
+            field.SetValue(null, 0);
             PhoneSaberDiscoveryResponder.QueueCommand(PhoneSaberDiscoveryResponder.DefaultsCommand);
-            Assert.AreEqual(0, field.GetValue(null));
+            Assert.AreEqual(3, field.GetValue(null));
+            Assert.AreEqual("shutter=0", PhoneSaberOperatorKeys.CommandFor(Key.S, 2, out _).Value.command);
+            Assert.AreEqual("shutter=0", PhoneSaberOperatorKeys.CommandFor(Key.S, 2, out _, true, (int)field.GetValue(null)).Value.command);
+            StringAssert.Contains("1/2000", PhoneSaberOperatorKeys.PendingLabel(PhoneSaberDiscoveryResponder.DefaultsCommand));
             PhoneSaberOperatorKeys.SelectShutter(1000);
             Assert.AreEqual(2, field.GetValue(null));
         }

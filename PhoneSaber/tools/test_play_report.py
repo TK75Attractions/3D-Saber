@@ -224,6 +224,13 @@ class SummaryTests(unittest.TestCase):
         events = sorted([e for e in map(play_report.parse_line, lines) if e], key=lambda e: e["time"])
         return play_report.summarize(events, BASE, BASE + timedelta(seconds=120), "t")
 
+    def test_camera_phase_is_labelled_as_estimate_not_measured_shutter(self):
+        summary = self.summary([estimate(5, exposure=8.3)])
+        self.assertEqual(summary["phone"]["exposure_ms"]["median"], 8.3)
+        self.assertIn("撮影位相の推定 8.3 ms（半周期・実露出ではない）", play_report.render(summary))
+        self.assertIn("撮影位相（半周期の推定）", [c["name"] for c in summary["contributions"]])
+        self.assertIn("撮影位相の推定 ms", [name for name, _ in play_report.COMPARE_ROWS])
+
     def test_best_compensation_math(self):
         lines = [judge(1, "Perfect", -40), judge(2, "Great", -30), judge(3, "Good", -20),
                  judge(4, "Miss", 300), judge(5, "Bad", 50)]

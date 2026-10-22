@@ -488,7 +488,7 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         // 露出補正（試験、既定 0 = OFF）。−1・−2 で光らない服などが暗くなる。認識に入る画像が変わるので比べて使う。
         foreach (int ev in PhoneSaberDiscoveryResponder.ExposureBiasChoices)
             panel.Button(ev == 0 ? "スマホ露出: 0" : $"スマホ露出: −{-ev}", "phone-exposure", ev.ToString(CultureInfo.InvariantCulture));
-        panel.Label("iPhone固定シャッター（試験）[Ctrl+Shift+S]: OFF → 1/500 → 1/1000 → 1/2000 → OFF。LED芯の明るさを確認");
+        panel.Label("iPhone固定シャッター [Ctrl+Shift+S]: 既定 1/2000 → OFF（自動露出）→ 1/500 → 1/1000 → 1/2000。起動時の既定: 追跡 ON・露出 −2・1/2000 秒");
         foreach (int value in PhoneSaberDiscoveryResponder.ShutterChoices)
             panel.Button(value == 0 ? "固定シャッター: OFF" : $"固定シャッター: 1/{value} 秒", "phone-shutter", value.ToString(CultureInfo.InvariantCulture));
         panel.Label($"PC 側で無視（予備）: {count} か所（この台に保存）{ignored}");

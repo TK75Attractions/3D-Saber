@@ -263,7 +263,7 @@ public sealed class PhoneSaberAcknowledgement
             case "learned": case "failed": return detail.StartsWith("samples") && Number(detail.Substring(7));
             case "shutter": return detail == "off" || detail == "500" || detail == "1000" || detail == "2000";
             case "exposure": return detail == "ev0" || detail == "ev-1" || detail == "ev-2";
-            case "defaults": return detail == "tracklock-on-ev-2";
+            case "defaults": return detail == "tracklock-on-ev-2" || detail == "tracklock-on-ev-2-shutter-2000";
             case "tracklock": case "autoclip": return detail == "on" || detail == "off";
             case "clip-saved": return detail == "saved";
             case "clip-off": return detail == "off";

@@ -94,15 +94,19 @@ final class DetectionCoreTests: XCTestCase {
         }
     }
 
-    func testFixedShutterStoredSettingsDefaultOffAndRejectInvalidValues() throws {
+    func testFixedShutterStoredSettingsDefault2000AndMigrateLegacyOffOnce() throws {
         let name = "PhoneSaber.shutter.tests." + UUID().uuidString
         let defaults = try XCTUnwrap(UserDefaults(suiteName: name))
         defer { defaults.removePersistentDomain(forName: name) }
-        XCTAssertEqual(CameraViewModel.storedShutter(in: defaults), 0)
+        XCTAssertEqual(CameraViewModel.storedShutter(in: defaults), 2000)
+        defaults.set(0, forKey: "PhoneSaber.shutter.v1")
+        XCTAssertEqual(CameraViewModel.storedShutter(in: defaults), 2000)
         for value in [0, 500, 1000, 2000, -1, 250, 4000] {
-            defaults.set(value, forKey: "PhoneSaber.shutter.v1")
-            XCTAssertEqual(CameraViewModel.storedShutter(in: defaults), [0, 500, 1000, 2000].contains(value) ? value : 0)
+            defaults.set(value, forKey: "PhoneSaber.shutter.v2")
+            XCTAssertEqual(CameraViewModel.storedShutter(in: defaults), [0, 500, 1000, 2000].contains(value) ? value : 2000)
         }
+        defaults.set(0, forKey: "PhoneSaber.shutter.v2")
+        XCTAssertEqual(CameraViewModel.storedShutter(in: try XCTUnwrap(UserDefaults(suiteName: name))), 0)
     }
 
     func testFixedShutterPlanClampsDurationISOAndPreservesFrameBudget() throws {
@@ -138,7 +142,7 @@ final class DetectionCoreTests: XCTestCase {
     @MainActor
     func testFixedShutterCommandsDeduplicateAndDefaultsKeepExistingTrackAndExposure() throws {
         let model = CameraViewModel(sender: UDPSender { _, _, _ in }, p2pEnabled: false)
-        XCTAssertEqual(model.shutter, 0)
+        XCTAssertEqual(model.shutter, 0, "テスト中は保存値を読まず OFF から始まる")
         model.applyPCCommand(try XCTUnwrap(LANLivenessProbe.parseCommand("PHONESABER_COMMAND 1 id=901 shutter=1000")))
         XCTAssertEqual(model.shutter, 1000)
         model.applyPCCommand(.init(id: 901, ignore: nil, clearIgnore: false, shutter: 2000))
@@ -146,7 +150,7 @@ final class DetectionCoreTests: XCTestCase {
         model.setTrackLockEnabled(false)
         model.setExposureBias(-1)
         model.applyPCCommand(.init(id: 902, ignore: nil, clearIgnore: false, defaults: true))
-        XCTAssertEqual(model.shutter, 0)
+        XCTAssertEqual(model.shutter, 2000)
         XCTAssertTrue(model.trackLockEnabled)
         XCTAssertEqual(model.exposureBias, -2)
         model.applyPCCommand(.init(id: 903, ignore: nil, clearIgnore: false, shutter: 500))

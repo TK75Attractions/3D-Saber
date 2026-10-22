@@ -150,6 +150,10 @@ final class MetricsDatagramTests: XCTestCase {
         }
         XCTAssertEqual(LANLivenessProbe.formatAck(id: 81, station: "", platform: "ios", result: "defaults", detail: "tracklock-on-ev-2"),
                        "PHONESABER_ACK 1 id=81 station=none platform=ios result=defaults detail=tracklock-on-ev-2")
+        for station in ["A", "B"] {
+            XCTAssertEqual(LANLivenessProbe.formatAck(id: 81, station: station, platform: "ios", result: "defaults", detail: "tracklock-on-ev-2-shutter-2000"),
+                           "PHONESABER_ACK 1 id=81 station=\(station) platform=ios result=defaults detail=tracklock-on-ev-2-shutter-2000")
+        }
     }
 
     func testPCCommandParsingTrackLock() {

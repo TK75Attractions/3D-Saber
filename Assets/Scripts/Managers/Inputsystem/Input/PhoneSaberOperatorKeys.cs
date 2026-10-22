@@ -20,7 +20,7 @@ public sealed class PhoneSaberOperatorKeys : MonoBehaviour
 
     PhoneSaberOperatorToast toast;
     static bool lastSentTrackLock = true; // スマホの新しい既定 ON に合わせる。
-    static int shutterIndex; // OFF → 1/500 → 1/1000 → 1/2000 → OFF
+    static int shutterIndex = 3; // 既定 1/2000 → OFF → 1/500 → 1/1000 → 1/2000
     static int exposureIndex = 2; // 開始時 -2、次に 0 → -1 → -2（スマホ側が保存する）
 
     // Unity API を使わず、defaults のキュー投入と一緒に Mac 側も既定に戻す。
@@ -28,7 +28,7 @@ public sealed class PhoneSaberOperatorKeys : MonoBehaviour
     {
         Volatile.Write(ref lastSentTrackLock, true);
         Volatile.Write(ref exposureIndex, 2);
-        Volatile.Write(ref shutterIndex, 0);
+        Volatile.Write(ref shutterIndex, 3);
     }
 
     // 運営の操作を除いて、このフレームにキーが押されたか。F1〜F12(F4 の投影切替・F7〜F10 など)と、
@@ -47,7 +47,7 @@ public sealed class PhoneSaberOperatorKeys : MonoBehaviour
         || key == Key.LeftAlt || key == Key.RightAlt || key == Key.LeftMeta || key == Key.RightMeta || key == Key.ContextMenu;
 
     // 押されたキーに対応する指示と表示。対応しないキーは null。
-    public static (string command, string label)? CommandFor(Key key, int currentExposureIndex, out int nextExposureIndex, bool currentTrackLock = true, int currentShutterIndex = 0)
+    public static (string command, string label)? CommandFor(Key key, int currentExposureIndex, out int nextExposureIndex, bool currentTrackLock = true, int currentShutterIndex = 3)
     {
         nextExposureIndex = currentExposureIndex;
         switch (key)
@@ -116,7 +116,7 @@ public sealed class PhoneSaberOperatorKeys : MonoBehaviour
             case "clear-ignore=1": return "スマホ: 無視をすべて消す";
             case "clear-area=1": return "スマホ: プレイ範囲を消す";
             case "clip=1": return "スマホ: 今の場面を切り抜いて保存";
-            case PhoneSaberDiscoveryResponder.DefaultsCommand: return "スマホ: 既定に戻す（剣を追いかける ON・露出 −2）";
+            case PhoneSaberDiscoveryResponder.DefaultsCommand: return "iPhone: 既定に戻す（剣を追いかける ON・露出 −2・固定シャッター 1/2000 秒）";
             default:
                 if (fields.StartsWith("learn-area=")) return "スマホ: プレイ範囲を覚える（" + fields.Substring(11) + "秒、範囲いっぱいに振る）";
                 if (fields.StartsWith("shutter=")) return "iPhone固定シャッター: " + (fields == "shutter=0" ? "OFF（自動露出）" : "1/" + fields.Substring(8) + " 秒");
@@ -162,7 +162,9 @@ public sealed class PhoneSaberOperatorKeys : MonoBehaviour
             case "shutter": result = "固定シャッター " + (ack.Detail == "off" ? "OFF（自動露出）" : "1/" + ack.Detail + " 秒"); break;
             case "exposure": result = "露出を " + ack.Detail.Substring(2) + " EV にしました"; break;
             case "tracklock": result = "剣を追いかける " + (ack.Detail == "on" ? "ON" : "OFF"); break;
-            case "defaults": result = "既定に戻しました（剣を追いかける ON・露出 −2）"; break;
+            case "defaults": result = ack.Detail == "tracklock-on-ev-2-shutter-2000"
+                ? "既定に戻しました（剣を追いかける ON・露出 −2・固定シャッター 1/2000 秒）"
+                : "既定に戻しました（剣を追いかける ON・露出 −2）"; break;
             case "clip-saved": result = "今の場面を保存しました"; break;
             case "clip-off": result = "今の場面を保存できませんでした（クリップOFF・停止中・保存不可）"; break;
             case "autoclip": result = "自動クリップ " + (ack.Detail == "on" ? "ON" : "OFF"); break;

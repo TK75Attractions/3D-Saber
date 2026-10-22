@@ -44,6 +44,8 @@ public class PhoneSaberAcknowledgementTests
             "PHONESABER_ACK 1 id=16 station=A platform=android result=clip-off detail=off",
             "PHONESABER_ACK 1 id=17 station=B platform=ios result=autoclip detail=on",
             "PHONESABER_ACK 1 id=81 station=none platform=ios result=defaults detail=tracklock-on-ev-2",
+            "PHONESABER_ACK 1 id=81 station=A platform=ios result=defaults detail=tracklock-on-ev-2-shutter-2000",
+            "PHONESABER_ACK 1 id=81 station=B platform=ios result=defaults detail=tracklock-on-ev-2-shutter-2000",
         })
         {
             Assert.IsTrue(PhoneSaberAcknowledgement.TryParse(line + " future=value future=next", out var parsed), line);
@@ -108,9 +110,9 @@ public class PhoneSaberAcknowledgementTests
         store.Queue(81, PhoneSaberDiscoveryResponder.DefaultsCommand, 10, automatic: true);
         Assert.IsEmpty(PhoneSaberOperatorKeys.ToastText(store, 11));
         Assert.IsEmpty(PhoneSaberOperatorKeys.ToastText(store, 100));
-        store.Receive(Ack(81, "defaults", "tracklock-on-ev-2"), "10.0.0.1");
+        store.Receive(Ack(81, "defaults", "tracklock-on-ev-2-shutter-2000"), "10.0.0.1");
         Assert.IsEmpty(PhoneSaberOperatorKeys.ToastText(store, 101));
-        Assert.AreEqual("iPhone: 既定に戻しました（剣を追いかける ON・露出 −2）",
+        Assert.AreEqual("iPhone: 既定に戻しました（剣を追いかける ON・露出 −2・固定シャッター 1/2000 秒）",
             PhoneSaberOperatorKeys.StatusText(store, 101));
         store.Queue(82, PhoneSaberDiscoveryResponder.DefaultsCommand, 102);
         store.Receive(Ack(82, "defaults", "tracklock-on-ev-2"), "10.0.0.1");
@@ -167,6 +169,7 @@ public class PhoneSaberAcknowledgementTests
     [TestCase("exposure", "ev-2", "露出を -2 EV にしました")]
     [TestCase("tracklock", "off", "剣を追いかける OFF")]
     [TestCase("defaults", "tracklock-on-ev-2", "既定に戻しました（剣を追いかける ON・露出 −2）")]
+    [TestCase("defaults", "tracklock-on-ev-2-shutter-2000", "既定に戻しました（剣を追いかける ON・露出 −2・固定シャッター 1/2000 秒）")]
     [TestCase("autoclip", "on", "自動クリップ ON")]
     [TestCase("clip-saved", "saved", "今の場面を保存しました")]
     [TestCase("clip-off", "off", "今の場面を保存できませんでした（クリップOFF・停止中・保存不可）")]

@@ -1681,10 +1681,10 @@ final class CameraViewModel: NSObject, ObservableObject {
             self.lanProbe.sendAck(to: host, line: line)
         }
         if command.defaults {
-            guard setShutter(0) else { return }
+            guard setShutter(2000) else { return }
             setTrackLockEnabled(true)
             setExposureBias(-2, commandID: command.id)
-            ack("defaults", "tracklock-on-ev-2")
+            ack("defaults", "tracklock-on-ev-2-shutter-2000")
         }
         if command.clearIgnore { clearIgnoreZones(); ack("cleared", "ignore") }
         if let name = command.ignore {
@@ -1903,15 +1903,17 @@ final class CameraViewModel: NSObject, ObservableObject {
     // MARK: 露出補正（光らない物を暗くする試験スイッチ）
 
     static let shutterChoices = LANLivenessProbe.shutterChoices
-    private static let shutterKey = "PhoneSaber.shutter.v1"
+    // 旧キーの OFF を一度だけ移行し、以後は明示的な OFF も保存する。
+    private static let shutterKey = "PhoneSaber.shutter.v2"
     @Published private(set) var shutter = NSClassFromString("XCTestCase") == nil
         ? CameraViewModel.storedShutter(in: .standard) : 0
     @Published private(set) var shutterStatus = "固定シャッター: OFF"
     private var shutterController = CameraShutterController()
 
     nonisolated static func storedShutter(in defaults: UserDefaults) -> Int {
+        guard defaults.object(forKey: shutterKey) != nil else { return 2000 }
         let value = defaults.integer(forKey: shutterKey)
-        return LANLivenessProbe.shutterChoices.contains(value) ? value : 0
+        return LANLivenessProbe.shutterChoices.contains(value) ? value : 2000
     }
 
     static func shutterLabel(_ value: Int) -> String { value == 0 ? "OFF（自動露出）" : "1/\(value) 秒" }
