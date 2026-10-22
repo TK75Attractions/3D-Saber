@@ -24,7 +24,7 @@ public static class GameSession
     // その回に実際にノーツを切った回数(ScoreManager.CutCount)。向き違いで MISS に下がった切りや、ロングの途中の切りも数える。
     public static int FinalCutCount;
 
-    // 記録してよい回か。1回も切っていない回(無人のまま流れた回など)は、実績・本日のランキング・HI-SCORE のどれにも残さない
+    // 記録してよい回か。1回も切っていない回(無人のまま流れた回など)は、実績・通算の順位・HI-SCORE のどれにも残さない
     // (仕様面の点検 1、2026-10-21)。判定調整と、数が壊れている回も残さない。
     // 切った回数を持たない経路(結果画面だけを開くテストなど)でも、MISS 以外の判定があれば切った回とみなす。
     public static bool ShouldRecordRun =>

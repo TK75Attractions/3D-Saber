@@ -72,8 +72,9 @@ public sealed class DailyRankingPresentation : MonoBehaviour
         Box("TopEdge", transform, new Vector2(0, 57), new Vector2(1520, 2), accent * new Color(1, 1, 1, .52f));
         Box("BottomEdge", transform, new Vector2(0, -57), new Vector2(1520, 2), accent * new Color(1, 1, 1, .2f));
         Box("Accent", transform, new Vector2(-757, 0), new Vector2(6, 116), accent);
-        Text("Heading", "本日", new Vector2(-652, 10), new Vector2(155, 47), 36, accent);
-        Text("Eyebrow", "DAILY RANK", new Vector2(-650, -29), new Vector2(155, 24), 17, UISkinPalette.SubtleGray);
+        // 2026-10-22: 日ごとではなく通算の順位(DailyRankingStore)。数え始めた日を右下に出す。
+        Text("Heading", "通算", new Vector2(-652, 10), new Vector2(155, 47), 36, accent);
+        Text("Eyebrow", "TOTAL RANK", new Vector2(-650, -29), new Vector2(155, 24), 17, UISkinPalette.SubtleGray);
 
         var numberRoot = new GameObject("Rank", typeof(RectTransform), typeof(CanvasGroup));
         numberRoot.transform.SetParent(transform, false);
@@ -95,21 +96,21 @@ public sealed class DailyRankingPresentation : MonoBehaviour
         detailGroup.interactable = detailGroup.blocksRaycasts = false;
         bool unrecorded = !available && result == null && GameSession.CompletedWithoutRecord;
         string headline = unrecorded ? UnrecordedHeadline
-            : !available ? (result == null ? "プレイ終了後に表示" : "本日の順位を取得できませんでした")
-            : result.TotalPlays == 1 ? "本日最初の記録！"
-            : result.IsNewBest ? "本日のトップスコア更新！"
-            : result.Rank == 1 ? "本日のトップスコア！"
-            : result.Rank <= 3 ? "本日の TOP 3 にランクイン！" : "本日の記録";
+            : !available ? (result == null ? "プレイ終了後に表示" : "順位を取得できませんでした")
+            : result.TotalPlays == 1 ? "最初の記録！"
+            : result.IsNewBest ? "トップスコア更新！"
+            : result.Rank == 1 ? "トップスコア！"
+            : result.Rank <= 3 ? "TOP 3 にランクイン！" : "通算の記録";
         var status = Text("Status", headline, new Vector2(30, 19), new Vector2(500, 42), 29, accent, details.transform);
         status.alignment = TextAlignmentOptions.MidlineLeft;
         string note = unrecorded ? UnrecordedNote
             : (available && result.TiedPlays > 1 ? "同率 " + result.Rank + " 位 ／ " : "") + "あそんでくれて ありがとう！";
         var sub = Text("Next", note, new Vector2(65, -23), new Vector2(570, 34), 24, UISkinPalette.OffWhite, details.transform);
         sub.alignment = TextAlignmentOptions.MidlineLeft;
-        string count = available ? result.TotalPlays.ToString("N0") + " 回中" : "DAILY RANKING";
+        string count = available ? result.TotalPlays.ToString("N0") + " 回中" : "TOTAL RANKING";
         var people = Text("Count", count, new Vector2(555, 12), new Vector2(350, 52), 38, UISkinPalette.OffWhite);
         people.enableAutoSizing = true; people.fontSizeMin = 22; people.fontSizeMax = 38;
-        Text("Date", available ? result.Day.Replace('-', '/') : "", new Vector2(555, -28), new Vector2(350, 26), 18, UISkinPalette.SubtleGray);
+        Text("Date", available ? result.Day.Replace('-', '/') + " から" : "", new Vector2(555, -28), new Vector2(350, 26), 18, UISkinPalette.SubtleGray);
 
         glow = Box("LandingGlow", transform, new Vector2(-425, 0), new Vector2(460, 114), Color.clear);
         glow.sprite = UISkinKit.SoftGlow();

@@ -9,6 +9,10 @@ public sealed class DailyRankingWheel : MonoBehaviour
     public const float StopTime = 6.30f;
     public const float ImpactTime = 6.48f;
     public const float EndTime = 7.65f;
+    // 何人でも、この順位から数を下げて止める(2026-10-22 ユーザーの依頼: 1人でも 100位あたりから回して1位の演出に)。
+    public const int SpinFrom = 100;
+    // 刻みの音の最短の間隔。100マスを回すと始めは1秒に約190マス進むので、唸りにならないよう間引く。
+    public const float TickInterval = .045f;
     const float CellHeight = 146;
     readonly TextMeshProUGUI[] cells = new TextMeshProUGUI[5];
     CanvasGroup group, reelGroup, stampGroup;
@@ -16,6 +20,7 @@ public sealed class DailyRankingWheel : MonoBehaviour
     Image ringImage, impactGlow;
     TextMeshProUGUI stateLabel;
     int rank, count, steps, lastCell = -1;
+    float lastTickTime = -1;
     Color accent;
     AudioSource audioSource;
     AudioClip tickSound, impactSound;
@@ -28,10 +33,16 @@ public sealed class DailyRankingWheel : MonoBehaviour
         root.GetComponent<RectTransform>().sizeDelta = new Vector2(1920, 1080);
         var view = root.AddComponent<DailyRankingWheel>();
         view.rank = rank; view.count = Mathf.Max(1, count); view.accent = accent;
-        // 少人数でも十分に回転する。人数が大きい場合も回転距離を制限して読み取り可能にする。
-        view.steps = count <= 50 ? count - rank + count * Mathf.Max(1, 20 / Mathf.Max(1, count)) : 42;
+        view.steps = Mathf.Max(1, SpinFrom - rank);
         view.Build(); view.Tick(0, false);
         return view;
+    }
+
+    // 残りのマス数 remaining のとき、上下の位置 offset(0=中央)に出す数字。1位より上(0以下)は空ける。純関数。
+    public static string CellText(int rank, int remaining, int offset)
+    {
+        int value = rank + remaining + offset;
+        return value >= 1 ? value.ToString("N0") : "";
     }
 
     void Build()
@@ -43,7 +54,7 @@ public sealed class DailyRankingWheel : MonoBehaviour
         Image("Panel", frame, Vector2.zero, new Vector2(980, 530), new Color(.026f, .043f, .095f));
         Image("Top", frame, new Vector2(0, 264), new Vector2(980, 3), accent);
         Image("Bottom", frame, new Vector2(0, -264), new Vector2(980, 3), accent);
-        Label("Heading", frame, "本日のランキング", new Vector2(0, 211), new Vector2(900, 50), 35, accent);
+        Label("Heading", frame, "通算ランキング", new Vector2(0, 211), new Vector2(900, 50), 35, accent);
         Label("Count", frame, count.ToString("N0") + " 回中", new Vector2(0, 153), new Vector2(880, 56), 43, Color.white);
         stateLabel = Label("State", frame, "RANKING", new Vector2(0, -203), new Vector2(890, 52), 32, accent);
 
@@ -82,9 +93,9 @@ public sealed class DailyRankingWheel : MonoBehaviour
         for (int i = 0; i < cells.Length; i++)
         {
             int offset = i - 2;
-            int value = 1 + ((rank - 1 + cellIndex + offset) % count + count) % count;
             float y = (offset - fraction) * CellHeight;
-            cells[i].text = value.ToString("N0");
+            string text = CellText(rank, cellIndex, offset);
+            if (cells[i].text != text) cells[i].text = text;
             cells[i].rectTransform.anchoredPosition = new Vector2(0, y);
             // 円筒状のホイールに見えるよう上下の数字をつぶして暗くする。
             float edge = Mathf.Clamp01(Mathf.Abs(y) / 190);
@@ -99,13 +110,17 @@ public sealed class DailyRankingWheel : MonoBehaviour
             : 1 + .11f * Mathf.Sin(Mathf.Clamp01(after / .32f) * Mathf.PI) * Mathf.Clamp01(1 - after / .32f);
         stamp.localScale = Vector3.one * scale;
         stamp.anchoredPosition = new Vector2(0, -12 + (time >= ImpactTime ? Mathf.Sin(after * 66) * 8 * Mathf.Clamp01(1 - after / .22f) : 0));
-        stateLabel.text = time < StopTime ? "RANKING" : rank == 1 ? "本日 第1位！" : "TOP 3  ランクイン！";
+        stateLabel.text = time < StopTime ? "RANKING" : rank == 1 ? "通算 第1位！" : "TOP 3  ランクイン！";
         float burst = time >= ImpactTime ? Mathf.Clamp01(1 - after / .6f) : 0;
         impactGlow.color = new Color(accent.r, accent.g, accent.b, burst * .6f);
         ringImage.color = new Color(accent.r, accent.g, accent.b, burst * .85f);
         ring.localScale = Vector3.one * Mathf.Lerp(.8f, 2.05f, Mathf.Clamp01(after / .6f));
-        if (visible && time < StopTime && cellIndex != lastCell)
+        if (time < lastTickTime) lastTickTime = -1;   // スキップや手動の巻き戻し
+        if (visible && time < StopTime && cellIndex != lastCell && time - lastTickTime >= TickInterval)
+        {
             audioSource.PlayOneShot(tickSound, .16f);
+            lastTickTime = time;
+        }
         lastCell = cellIndex;
         if (!impacted && time >= ImpactTime)
         {

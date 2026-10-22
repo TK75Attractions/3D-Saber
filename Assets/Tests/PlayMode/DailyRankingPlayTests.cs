@@ -231,8 +231,9 @@ public class DailyRankingPlayTests
                     if (frame / 20f > DailyRankingWheel.StartTime && frame / 20f < DailyRankingWheel.StopTime)
                         foreach (var cell in wheel.transform.Find("Frame/WheelMask/Reel").GetComponentsInChildren<TMP_Text>())
                         {
+                            if (cell.text == "") continue;   // 1位より上は空ける
                             int shown = int.Parse(cell.text.Replace(",", ""));
-                            Assert.That(shown, Is.InRange(1, table.entries.Count));
+                            Assert.That(shown, Is.InRange(1, DailyRankingWheel.SpinFrom + 2));
                         }
                     Capture("frame-" + frame.ToString("D3") + ".png", 1280, 720);
                 }
@@ -242,6 +243,50 @@ public class DailyRankingPlayTests
                 Capture("rank-1-low.png", 1280, 720);
                 DisplaySettings.SetReducedEffectsForTest(false);
             }
+        }
+    }
+
+    // 1人だけ(1回中)でも、100位あたりから回して1位で止める(2026-10-22 ユーザーの依頼)。表は通算なので「本日」と書かない。
+    [UnityTest] public IEnumerator SinglePlayerWheelSpinsDownFromAboutOneHundred()
+    {
+        Complete(84000);
+        yield return SceneManager.LoadSceneAsync("Result");
+        yield return null;
+        var reveal = Object.FindFirstObjectByType<ResultReveal>();
+        reveal.enabled = false;
+        var old = GameObject.Find("DailyRanking");
+        if (old != null) Object.Destroy(old);
+        var oldWheel = Object.FindFirstObjectByType<DailyRankingWheel>();
+        if (oldWheel != null) Object.Destroy(oldWheel.gameObject);
+        yield return null;
+        var table = new DailyRankingStore.Table { day = "2026-10-22" };
+        table.entries.Add(new DailyRankingStore.Entry { runId = "only", score = 84000 });
+        var result = DailyRankingStore.Evaluate(table, "only");
+        Assert.AreEqual(1, result.Rank); Assert.AreEqual(1, result.TotalPlays);
+        var view = DailyRankingPresentation.Build(GameObject.Find("ResultStats").transform, reveal, result);
+        var wheel = Object.FindFirstObjectByType<DailyRankingWheel>();
+        Assert.NotNull(wheel, "1人でもホイールを回す");
+        TMP_Text Cell(int i) => wheel.transform.Find("Frame/WheelMask/Reel/Cell" + i).GetComponent<TMP_Text>();
+        reveal.Tick(DailyRankingWheel.StartTime + .02f);
+        int first = int.Parse(Cell(2).text.Replace(",", ""));
+        Assert.That(first, Is.InRange(90, DailyRankingWheel.SpinFrom), "100位あたりから回し始める");
+        reveal.Tick(DailyRankingWheel.StopTime - .03f);
+        Assert.AreEqual("1", Cell(2).text, "1位で止まる");
+        Assert.AreEqual("", Cell(1).text, "1位より上は空ける");
+        Assert.AreEqual("", Cell(0).text);
+        Assert.AreEqual("2", Cell(3).text);
+        Assert.AreEqual("通算ランキング", wheel.transform.Find("Frame/Heading").GetComponent<TMP_Text>().text);
+        reveal.Tick(DailyRankingWheel.ImpactTime);
+        Assert.AreEqual("通算 第1位！", wheel.transform.Find("Frame/State").GetComponent<TMP_Text>().text);
+        reveal.Tick(999);
+        Assert.AreEqual("通算", view.transform.Find("Heading").GetComponent<TMP_Text>().text);
+        Assert.AreEqual("最初の記録！", view.transform.Find("Details/Status").GetComponent<TMP_Text>().text);
+        Assert.AreEqual("1 回中", view.transform.Find("Count").GetComponent<TMP_Text>().text);
+        Assert.AreEqual("2026/10/22 から", view.transform.Find("Date").GetComponent<TMP_Text>().text);
+        foreach (var text in view.GetComponentsInChildren<TMP_Text>())
+        {
+            text.ForceMeshUpdate();
+            Assert.False(text.isTextOverflowing, text.name + " must fit");
         }
     }
 
@@ -267,12 +312,14 @@ public class DailyRankingPlayTests
         var impact = (AudioClip)typeof(DailyRankingWheel).GetField("impactSound", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(wheel);
         int steps = (int)typeof(DailyRankingWheel).GetField("steps", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(wheel);
         int last = -1;
+        float lastTick = -1;
         for (int frame = 0; frame <= 132; frame++)
         {
             float time = frame / 20f;
             float p = Mathf.Clamp01((time - DailyRankingWheel.StartTime) / (DailyRankingWheel.StopTime - DailyRankingWheel.StartTime));
             int cell = Mathf.FloorToInt(steps * Mathf.Pow(1 - p, 3));
-            if (time > DailyRankingWheel.StartTime && time < DailyRankingWheel.StopTime && cell != last) Mix(tick, time, .16f);
+            if (time > DailyRankingWheel.StartTime && time < DailyRankingWheel.StopTime && cell != last && time - lastTick >= DailyRankingWheel.TickInterval)
+            { Mix(tick, time, .16f); lastTick = time; }
             last = cell;
         }
         Mix(impact, Mathf.Ceil(DailyRankingWheel.ImpactTime * 20) / 20, .65f);

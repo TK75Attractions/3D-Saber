@@ -842,7 +842,7 @@ public class GamePlayManager : MonoBehaviour
         }
         else
         {
-            // 最後まで遊んだ回は、終わりの演出を飛ばしても点と3つの記録(実績・本日の順位・HI-SCORE)を残してから出る。
+            // 最後まで遊んだ回は、終わりの演出を飛ばしても点と3つの記録(実績・通算の順位・HI-SCORE)を残してから出る。
             if (completing) { CommitFinalResult(); GameSession.RecordCompletedHighScore(); }
             ReturnToTitle();
         }
@@ -1001,7 +1001,7 @@ public class GamePlayManager : MonoBehaviour
                 ReturnToTitle();
                 break;
             case AudioOutputRecovery.Action.FinishToResult:
-                // 点と3つの記録(実績・本日の順位・HI-SCORE は結果画面)を一度だけ確定し、残りの演出は飛ばす。
+                // 点と3つの記録(実績・通算の順位・HI-SCORE は結果画面)を一度だけ確定し、残りの演出は飛ばす。
                 CommitFinalResult();
                 if (!string.IsNullOrEmpty(resultSceneName) && ScreenTransition.Load(resultSceneName, ScreenTransition.Style.Result))
                 {
@@ -1020,7 +1020,7 @@ public class GamePlayManager : MonoBehaviour
         return action;
     }
 
-    // 最後まで遊んだ回の点と判定を確定し、実績・本日の順位を残す(一度だけ。HI-SCORE は結果画面が残す)。
+    // 最後まで遊んだ回の点と判定を確定し、実績・通算の順位を残す(一度だけ。HI-SCORE は結果画面が残す)。
     void CommitFinalResult()
     {
         if (resultCommitted) return;

@@ -46,12 +46,27 @@ public class DailyRankingStoreTests
         Record("a", 100); var value = Record("b", 101);
         Assert.True(value.IsNewBest); Assert.AreEqual(1, value.Rank);
     }
-    [Test] public void MidnightStartsNewDayWhileSameDayReloadRetainsScores()
+    // 2026-10-22: 日付で区切らず通算で数える(ユーザーの依頼)。Day は数え始めた日のまま。
+    [Test] public void LaterDaysKeepCountingFromTheFirstDay()
     {
         Record("a", 100, day.Date.AddHours(23).AddMinutes(59));
         Assert.AreEqual(2, Record("b", 90, day.Date.AddHours(23).AddMinutes(59).AddSeconds(59)).Rank);
         var next = Record("c", 10, day.Date.AddDays(1));
-        Assert.AreEqual(1, next.Rank); Assert.AreEqual(1, next.TotalPlays); Assert.AreEqual("2026-10-01", next.Day);
+        Assert.AreEqual(3, next.Rank); Assert.AreEqual(3, next.TotalPlays); Assert.AreEqual("2026-09-30", next.Day);
+        var later = Record("d", 200, day.Date.AddDays(30));
+        Assert.AreEqual(1, later.Rank); Assert.AreEqual(4, later.TotalPlays); Assert.True(later.IsNewBest);
+        Assert.AreEqual("2026-09-30", later.Day);
+    }
+
+    // ルーレットは何人でも 100位あたりから数を下げ、1位より上は空ける。
+    [Test] public void WheelCountsDownFromAboutOneHundredAndLeavesAboveFirstEmpty()
+    {
+        Assert.AreEqual("100", DailyRankingWheel.CellText(1, DailyRankingWheel.SpinFrom - 1, 0));
+        Assert.AreEqual("1", DailyRankingWheel.CellText(1, 0, 0));
+        Assert.AreEqual("2", DailyRankingWheel.CellText(1, 0, 1));
+        Assert.AreEqual("", DailyRankingWheel.CellText(1, 0, -1));
+        Assert.AreEqual("", DailyRankingWheel.CellText(1, 0, -2));
+        Assert.AreEqual("1", DailyRankingWheel.CellText(3, 0, -2));
     }
     [Test] public void SongAndDifficultyAreSeparateAndDifficultyCaseIsNormalized()
     {
@@ -79,7 +94,7 @@ public class DailyRankingStoreTests
     public void InvalidHistoryIsPreservedWithoutClaimingFirstPlace(string json)
     {
         PlayerPrefs.SetString(DailyRankingStore.Key(song, "Normal"), json);
-        LogAssert.Expect(LogType.Warning, "DailyRankingStore: 本日の記録を読み込めないため、順位を表示しません。");
+        LogAssert.Expect(LogType.Warning, "DailyRankingStore: 順位の記録を読み込めないため、順位を表示しません。");
         Assert.False(Record("new", 100).Available);
         Assert.AreEqual(json, PlayerPrefs.GetString(DailyRankingStore.Key(song, "Normal")));
     }

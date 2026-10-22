@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Globalization;
 using UnityEngine;
 
-// この端末の当日・同じ曲/難易度の全プレイを集計。人数ではなく延べプレイ数。
-// 上位だけを切り捨てると圏外の順位が計算できないため、当日分は全件保持する。
+// この端末の同じ曲/難易度の全プレイを集計。人数ではなく延べプレイ数。
+// 上位だけを切り捨てると圏外の順位が計算できないため、全件保持する。
+// 2026-10-22: 日付で区切らず、これまでの通算で数える(ユーザーの依頼。文化祭の直前に記録を消す)。
+// 表の day は数え始めた日(結果画面に「○○ から」と出す)。日ごとに戻すなら TryRead の「日付が違えば新しい表」を戻す。
 public static class DailyRankingStore
 {
     [Serializable]
@@ -53,7 +55,7 @@ public static class DailyRankingStore
             if (!TryRead(PlayerPrefs.GetString(Key(song, difficulty), ""), day, out var table))
             {
                 // 壊れた記録を空のランキングとして上書きし、偽の1位を出さない。
-                Debug.LogWarning("DailyRankingStore: 本日の記録を読み込めないため、順位を表示しません。");
+                Debug.LogWarning("DailyRankingStore: 順位の記録を読み込めないため、順位を表示しません。");
                 return new Result();
             }
             bool exists = table.entries.Exists(e => e.runId == runId);
@@ -82,8 +84,7 @@ public static class DailyRankingStore
             var saved = JsonUtility.FromJson<Table>(json);
             if (saved == null || saved.version != 1 || !DateTime.TryParseExact(saved.day, "yyyy-MM-dd",
                 CultureInfo.InvariantCulture, DateTimeStyles.None, out _) || saved.entries == null) return false;
-            // 端末の現地日付を境に切り替える。再起動しても同日なら記録を保持。
-            if (saved.day != day) return true;
+            // 日付が変わっても同じ表に足していく(通算)。再起動しても記録を保持。
             var ids = new HashSet<string>();
             foreach (var entry in saved.entries)
                 if (entry == null || string.IsNullOrEmpty(entry.runId) || entry.score < 0 || !ids.Add(entry.runId)) return false;
