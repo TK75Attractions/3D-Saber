@@ -42,6 +42,11 @@ public sealed class RushESecretState
         if (!Transitioning || !Unlocked) return false;
         Transitioning = false; return true;
     }
+    // 音の出力先が変わって選曲を作り直したとき(AudioOutputRecovery、2026-10-22)、解除したままの状態へ戻す。演出はくり返さない。
+    public void RestoreUnlocked()
+    {
+        SelectedSong = SongId; Hits = RequiredHits; Transitioning = false; Unlocked = true; lastHit = double.NegativeInfinity;
+    }
 }
 
 // 描画フレーム間で同じカメラ座標を読み直しても、軌跡の時刻や始点を更新しない。

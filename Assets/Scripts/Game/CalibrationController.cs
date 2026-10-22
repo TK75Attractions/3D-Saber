@@ -64,10 +64,7 @@ public sealed class CalibrationController : MonoBehaviour
         source = song.GetComponent<AudioSource>();
         source.Stop(); source.playOnAwake = false; source.loop = false; source.pitch = 1; source.spatialBlend = 0;
         source.volume = ReferenceVolume;
-        var pcm = CalibrationProtocol.ClickSamples(48000);
-        clicks = AudioClip.Create("CalibrationReference100BPM", pcm.Length, 1, 48000, false); clicks.SetData(pcm, 0);
-        pcm = CalibrationProtocol.LiveClickSamples(48000);
-        liveClicks = AudioClip.Create("CalibrationLive100BPM", pcm.Length, 1, 48000, false); liveClicks.SetData(pcm, 0);
+        BuildClicks();
         // クリック音とカット音を取り違えないよう、この練習だけ判定効果音を止める。
         cutSounds = UnityEngine.Object.FindObjectsByType<JudgmentSfx>(FindObjectsSortMode.None);
         originalVolumes = new float[cutSounds.Length];
@@ -305,10 +302,23 @@ public sealed class CalibrationController : MonoBehaviour
     {
         if (!focus && IsRunning) InterruptRun("画面のフォーカスが外れたため中断しました。環境を固定して再開してください。");
     }
+    // クリック音(測定用と試し切り用)。音の出力先が変わると中身が消えるので、そのたびに作り直す(2026-10-22)。
+    void BuildClicks()
+    {
+        if (source != null && (source.clip == clicks || source.clip == liveClicks)) { source.Stop(); source.clip = null; }
+        if (clicks != null) UISkinKit.SafeDestroy(clicks);
+        if (liveClicks != null) UISkinKit.SafeDestroy(liveClicks);
+        var pcm = CalibrationProtocol.ClickSamples(48000);
+        clicks = AudioClip.Create("CalibrationReference100BPM", pcm.Length, 1, 48000, false); clicks.SetData(pcm, 0);
+        pcm = CalibrationProtocol.LiveClickSamples(48000);
+        liveClicks = AudioClip.Create("CalibrationLive100BPM", pcm.Length, 1, 48000, false); liveClicks.SetData(pcm, 0);
+    }
+
     void AudioConfigurationChanged(bool deviceChanged)
     {
         if (IsRunning) InterruptRun("音声機器の設定が変わったため中断しました。出力先を確認して測り直してください。");
         else Notice = "音声機器の設定が変わりました。出力先とプロフィールを確認してください。";
+        BuildClicks();
     }
     void InterruptRun(string message)
     {

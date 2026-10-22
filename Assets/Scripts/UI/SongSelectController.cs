@@ -92,6 +92,14 @@ public class SongSelectController : MonoBehaviour
         if (!RushESecret.Finish()) return;
         RefreshStartAvailability(); OnDifficultyChanged?.Invoke(selectedDifficulty); OnRushESecretChanged?.Invoke(); ReplayPreview();
     }
+    // 選曲を作り直したあと(音の出力先の変化)、RUSH E の E を解除したままにする。RUSH E を選んでいないときは何もしない。
+    public bool RestoreRushESecret()
+    {
+        if (!HasRushEChart) return false;
+        RushESecret.RestoreUnlocked();
+        RefreshDifficultyDisplay(); RefreshStartAvailability(); OnDifficultyChanged?.Invoke(selectedDifficulty); OnRushESecretChanged?.Invoke(); ReplayPreview();
+        return true;
+    }
     public int SelectedIndex => selectedIndex;
     public int SelectedDifficultyIndex => selectedDifficulty;
     public int SongCount => songIds.Count;
@@ -134,13 +142,16 @@ public class SongSelectController : MonoBehaviour
         if (chartPreview != null) chartPreview.Tick();
         var kb = Keyboard.current;
         if (kb == null) return;
-        bool previousSong = kb.leftArrowKey.wasPressedThisFrame || kb.aKey.wasPressedThisFrame;
-        bool nextSong = kb.rightArrowKey.wasPressedThisFrame || kb.dKey.wasPressedThisFrame;
-        bool easier = kb.upArrowKey.wasPressedThisFrame || kb.wKey.wasPressedThisFrame;
-        bool harder = kb.downArrowKey.wasPressedThisFrame || kb.sKey.wasPressedThisFrame;
-        bool back = kb.escapeKey.wasPressedThisFrame;
-        int directDifficulty = kb.digit1Key.wasPressedThisFrame ? 0 : kb.digit2Key.wasPressedThisFrame ? 1 : kb.digit3Key.wasPressedThisFrame ? 2 : -1;
-        bool start = kb.enterKey.wasPressedThisFrame || kb.numpadEnterKey.wasPressedThisFrame || kb.spaceKey.wasPressedThisFrame;
+        // 運営のキー(Ctrl+Shift+S のシャッターなど)を、曲・難易度の操作として受けない(2026-10-22)。
+        // 来場者キーの判定(PhoneSaberOperatorKeys.VisitorKeyPressedThisFrame)と同じく、Ctrl・Alt・Windows を押している間は数えない。
+        bool visitor = !OperatorChordHeld(kb);
+        bool previousSong = visitor && (kb.leftArrowKey.wasPressedThisFrame || kb.aKey.wasPressedThisFrame);
+        bool nextSong = visitor && (kb.rightArrowKey.wasPressedThisFrame || kb.dKey.wasPressedThisFrame);
+        bool easier = visitor && (kb.upArrowKey.wasPressedThisFrame || kb.wKey.wasPressedThisFrame);
+        bool harder = visitor && (kb.downArrowKey.wasPressedThisFrame || kb.sKey.wasPressedThisFrame);
+        bool back = visitor && kb.escapeKey.wasPressedThisFrame;
+        int directDifficulty = !visitor ? -1 : kb.digit1Key.wasPressedThisFrame ? 0 : kb.digit2Key.wasPressedThisFrame ? 1 : kb.digit3Key.wasPressedThisFrame ? 2 : -1;
+        bool start = visitor && (kb.enterKey.wasPressedThisFrame || kb.numpadEnterKey.wasPressedThisFrame || kb.spaceKey.wasPressedThisFrame);
         bool holdingShortcut = kb.upArrowKey.isPressed || kb.wKey.isPressed || kb.downArrowKey.isPressed || kb.sKey.isPressed
             || kb.leftArrowKey.isPressed || kb.aKey.isPressed || kb.rightArrowKey.isPressed || kb.dKey.isPressed
             || kb.enterKey.isPressed || kb.numpadEnterKey.isPressed || kb.spaceKey.isPressed;
@@ -166,6 +177,9 @@ public class SongSelectController : MonoBehaviour
     }
 
     void LateUpdate() { RestoreNavigationEvents(); }
+
+    public static bool OperatorChordHeld(Keyboard kb) =>
+        kb != null && (kb.ctrlKey.isPressed || kb.altKey.isPressed || kb.leftMetaKey.isPressed || kb.rightMetaKey.isPressed);
 
     public void ReturnToTitle()
     {

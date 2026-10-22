@@ -701,6 +701,7 @@ public class GameHUDSkin : MonoBehaviour
             comboValue.fontSize = ComboFontSize(combo);
             comboValue.enableVertexGradient = true;
             comboValue.colorGradient = ComboBonusPresentation.Gradient(combo);
+            MeasureComboDigits();
         }
         comboValue.color = Color.white;
         // 節目の 0.6 秒だけ数字の上側と後ろの光を金にする(波1)。下側は最大コンボと同じ今のコンボの色のまま。
@@ -731,7 +732,36 @@ public class GameHUDSkin : MonoBehaviour
             scale = Mathf.Lerp(MilestonePunchScale, 1f, 1f - (1f - m) * (1f - m));
         }
         if (comboRT != null) comboRT.localScale = Vector3.one * scale;
+        // 節目の拡大(最大 1.7 倍)の間も、数字の下端に合わせて「COMBO」を下げる(拡大は右上寄りの支点まわり)。
+        PlaceComboLabel();
     }
+
+    // 「COMBO」の文字の上端(右上の基準からの y)。数字は 90→128pt に育つので、描いた数字の下端より ComboLabelGap 下へ置く。
+    // 既定の位置(ComboLabelRestY)より上へは上げない(2026-10-22、3けたで数字が文字にかかっていた)。純関数。
+    public const float ComboLabelRestY = -330f, ComboLabelGap = 6f;
+    public static float ComboLabelTop(float digitsBottom) =>
+        float.IsNaN(digitsBottom) || float.IsInfinity(digitsBottom) ? ComboLabelRestY : Mathf.Min(ComboLabelRestY, digitsBottom - ComboLabelGap);
+
+    // 描いた数字の下端(数字の支点からのローカルの y、拡大前)。文字が描けない(フォントが無い)ときは NaN で、今までどおりの位置。
+    float comboDigitsMinY = float.NaN;
+    void MeasureComboDigits()
+    {
+        if (comboValue == null) return;
+        comboValue.ForceMeshUpdate();
+        var bounds = comboValue.textBounds;
+        comboDigitsMinY = bounds.size.y > 0 ? bounds.min.y : float.NaN;
+    }
+
+    void PlaceComboLabel()
+    {
+        if (comboLabel == null || comboRT == null) return;
+        comboLabel.rectTransform.anchoredPosition = new Vector2(-72f, ComboLabelTop(ComboDigitsBottom));
+    }
+
+    public float ComboLabelY => comboLabel != null ? comboLabel.rectTransform.anchoredPosition.y : ComboLabelRestY;
+    // 今の拡大を含めた、数字の下端(右上の基準からの y)。
+    public float ComboDigitsBottom => comboRT == null || float.IsNaN(comboDigitsMinY) ? float.NaN
+        : comboRT.anchoredPosition.y + comboDigitsMinY * comboRT.localScale.y;
 
     private void UpdateMaxCombo()
     {

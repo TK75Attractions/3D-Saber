@@ -48,7 +48,9 @@ public sealed class MenuSfx : MonoBehaviour
     {
         if (!Application.isPlaying) return null;
         Ensure();
-        if (clips.TryGetValue(key, out var clip) && clip != null) return clip;
+        if (clips.TryGetValue(key, out var clip) && clip != null && clip.samples > 0) return clip;
+        // 音の出力先が変わると、作った音は中身が消える(AudioOutputRecovery)。波形の作り置きから作り直す。
+        if (clip != null) UISkinKit.SafeDestroy(clip);
         clip = ProceduralSfx.Clip("Menu" + key, FlourishSfx.Cached(key, build));
         clips[key] = clip;
         return clip;

@@ -31,6 +31,8 @@ public sealed class StageFeverShow : MonoBehaviour
     readonly List<(double start, double end)> strong = new List<(double, double)>();
     StagePerformanceTimeline timeline = new StagePerformanceTimeline();
     double[] cues = new double[0];
+    // サビの終わりの音を鳴らす時刻(EndSoundTimes)。
+    double[] endTimes = new double[0];
     // 明滅させる拍。前に光らせた拍から CueSpacing 以上あいたものだけ(テンポが途中で速くなっても1秒2.2回まで)。
     Beat[] beats = new Beat[0];
     float beatSeconds = .5f;
@@ -83,6 +85,7 @@ public sealed class StageFeverShow : MonoBehaviour
                     && s.startSeconds >= 0 && s.endSeconds > s.startSeconds && s.intensity >= StagePerformanceTimeline.StrongIntensity)
                     strong.Add((s.startSeconds, s.endSeconds));
         strong.Sort((a, b) => a.start.CompareTo(b.start));
+        endTimes = EndSoundTimes(strong);
         cues = BuildCues(chart);
         BuildBeats(chart);
         if (mesh == null) Build();
@@ -110,6 +113,27 @@ public sealed class StageFeverShow : MonoBehaviour
             endSource.playOnAwake = false; endSource.spatialBlend = 0;
             endClip = ProceduralSfx.Clip("ChorusEnd", FlourishSfx.Cached("ChorusEnd", FlourishSfx.ChorusEnd));
         }
+    }
+
+    // サビの終わりの「シュー」を鳴らす時刻。フィーバーが本当に終わる時刻だけを、1ms 以内の重なりは1つにして返す(2026-10-22)。
+    // 校歌は強い区間が2つとも 145.401 秒で終わり、区間ごとに鳴らすと同じ音が同時に2回(約2倍の大きさ)鳴っていた。
+    // ほかの強い区間がまだ続いている時刻も鳴らさない(フィーバーが続いているのに終わりの音が出ないように)。純関数。
+    public static double[] EndSoundTimes(IReadOnlyList<(double start, double end)> sections)
+    {
+        var picked = new List<double>();
+        if (sections == null) return picked.ToArray();
+        var ends = new List<double>();
+        foreach (var (_, end) in sections) if (Finite(end)) ends.Add(end);
+        ends.Sort();
+        foreach (double end in ends)
+        {
+            if (picked.Count > 0 && end - picked[picked.Count - 1] <= .001) continue;
+            bool continues = false;
+            foreach (var (start, other) in sections)
+                if (start <= end && other > end + .001) { continues = true; break; }
+            if (!continues) picked.Add(end);
+        }
+        return picked.ToArray();
     }
 
     // 照明の合図。ノーツの時刻(と長いノーツの終わり)を、点滅が1秒2.2回を超えないように間引く。判定調整値は含めない。純関数。
@@ -200,8 +224,8 @@ public sealed class StageFeverShow : MonoBehaviour
         bool jumped = Finite(lastTime) && (songTime < lastTime - .05 || songTime - lastTime > .5);
         // 区間の終わりを通り過ぎたら、下がる「シュー」(シーク・巻き戻しでは鳴らさない)。
         if (Finite(lastTime) && !jumped && !DisplaySettings.ReducedEffects)
-            foreach (var section in strong)
-                if (lastTime < section.end && songTime >= section.end) PlayEnd();
+            foreach (double end in endTimes)
+                if (lastTime < end && songTime >= end) PlayEnd();
         lastTime = songTime;
         bool low = DisplaySettings.ReducedEffects;
         Fever = low ? 0 : FeverAt(songTime, strong);

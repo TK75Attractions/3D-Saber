@@ -532,11 +532,20 @@ public class GameStartCountdown : MonoBehaviour
         src.PlayScheduled(dspTime);
     }
 
+    // シーンをまたいで持つ。音の出力先が変わると中身が消えるので(AudioOutputRecovery)、空なら作り直す。
     private static void EnsureCueClips()
     {
-        if (tickClip == null) tickClip = Cached("CountInTick", ProceduralSfx.CountTick());
-        if (swishClip == null) swishClip = Cached("CountInSwish", ProceduralSfx.CountSwish());
-        if (startClip == null) startClip = Cached("CountInStart", ProceduralSfx.CountStart());
+        if (!Alive(tickClip)) tickClip = Rebuild(tickClip, "CountInTick", ProceduralSfx.CountTick());
+        if (!Alive(swishClip)) swishClip = Rebuild(swishClip, "CountInSwish", ProceduralSfx.CountSwish());
+        if (!Alive(startClip)) startClip = Rebuild(startClip, "CountInStart", ProceduralSfx.CountStart());
+    }
+
+    static bool Alive(AudioClip clip) => clip != null && clip.samples > 0;
+
+    static AudioClip Rebuild(AudioClip old, string name, float[] samples)
+    {
+        if (old != null) Destroy(old);
+        return Cached(name, samples);
     }
 
     private static AudioClip Cached(string name, float[] samples)

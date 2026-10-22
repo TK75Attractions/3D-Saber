@@ -164,6 +164,12 @@ public class GamePlayManager : MonoBehaviour
     private bool mouseFallbackLocked;
     // この時刻(実時間)より後の受信だけを見る。場面の始まりの PlayTrackingWatch.CarryOverSeconds 前から。
     private double trackingSince = double.NegativeInfinity;
+    // 曲(練習)が鳴り始めた実時間(一度も届いていない色の警告の起点)、再開の表示を消す時刻、いま出している 3・2・1 の数字。
+    private double playingSince = double.NaN, resumedShownUntil = double.NegativeInfinity;
+    private int countdownShown;
+    // 音の出力先が変わって、立て直しを待っている(HoldForAudioChange)。
+    private bool audioChangeHold;
+    public bool AudioChangeHold => audioChangeHold;
     // 曲ごとの音が鳴り終わる秒(仕様面の点検 7)。0 以下は音源の長さ。
     private double musicEndSeconds = -1;
     double MusicEnd => musicEndSeconds > 0 ? musicEndSeconds : songPlayer.Duration;
@@ -418,6 +424,8 @@ public class GamePlayManager : MonoBehaviour
         double leadInSeconds = chart.notes.Count > 0 ? System.Math.Max(0.0, noteSpawner.approachTime - firstNoteFromPlayStart) : 0.0;
         // 幕が開く前に音やノーツを走らせず、カウントダウンの最初から見せる。
         while (ScreenTransition.IsBusy) yield return null;
+        // 読み込みの間に音の出力先が変わっていたら、曲を始めない(AudioOutputRecovery がタイトルへ戻す)。
+        if (audioChangeHold) { ready = true; yield break; }
         if (enableStartCountdown)
         {
             // START の演出が消えてから先頭ノーツを流す。移動時間と補正込みの到着時刻から
@@ -652,6 +660,13 @@ public class GamePlayManager : MonoBehaviour
                 if (req.result == UnityWebRequest.Result.Success)
                 {
                     AudioClip clip = DownloadHandlerAudioClip.GetContent(req);
+                    // 中身の無い音(読み込み中に音の出力先が変わったときなど)は使わない(2026-10-22)。
+                    if (clip != null && (clip.samples <= 0 || clip.frequency <= 0))
+                    {
+                        Debug.LogWarning($"Audio has no samples {full}");
+                        Destroy(clip);
+                        clip = null;
+                    }
                     if (clip != null)
                     {
                         ReleaseOwnedSongClip();
@@ -854,6 +869,7 @@ public class GamePlayManager : MonoBehaviour
     }
 
     // 受信の表示と、見失ったときの一時停止・再開(仕様面の点検 4)。曲が止まっている間も毎フレーム動かす。
+    // 2026-10-22: 片方の色だけ届かないときのスタッフ向けの1行、止まっている間の「確認中」・暗い幕・3・2・1 の輪と音、再開の表示を足した。
     void TickTrackingWatch()
     {
         if (trackingView == null) return;
@@ -864,27 +880,76 @@ public class GamePlayManager : MonoBehaviour
             if (input.LastReceivedTime >= trackingSince && input.HasValidStickEndpoints) trackingWatch.ObserveUsable(0, input.LastReceivedTime);
             if (input.LastReceivedTime2 >= trackingSince && input.HasValidStickEndpoints2) trackingWatch.ObserveUsable(1, input.LastReceivedTime2);
         }
+        bool active = ready && !finished && !leaving && !inCalibration && songPlayer != null && songPlayer.IsScheduled;
+        if (active && double.IsNaN(playingSince) && songPlayer.IsPlaying) playingSince = now;
+        double songTime = songPlayer != null ? songPlayer.SongTime : 0;
         bool canPause = !inTutorial && !inCalibration && ready && !finished && !leaving
-            && songPlayer != null && songPlayer.IsPlaying && NotesComing(songPlayer.SongTime);
-        var request = trackingWatch.Step(now, canPause);
-        if (request == PlayTrackingWatch.Request.Pause) PauseForTracking();
-        else if (request == PlayTrackingWatch.Request.Resume) ResumeAfterTracking();
+            && songPlayer != null && songPlayer.IsPlaying && NotesComing(songTime);
+        // 音の出力先が変わって止めている間は、剣が戻っても再開しない(立て直しでタイトルへ戻る)。
+        var request = audioChangeHold ? PlayTrackingWatch.Request.None : trackingWatch.Step(now, canPause);
+        if (request == PlayTrackingWatch.Request.Pause) { PauseForTracking(); trackingView.PlayPauseCue(); }
+        else if (request == PlayTrackingWatch.Request.Resume)
+        {
+            ResumeAfterTracking(); trackingView.PlayResumeCue();
+            resumedShownUntil = now + PlayTrackingStatus.ResumedSeconds;
+        }
         string status = input != null ? MenuSaberStatus.Status(now, input.LastReceivedTime, input.LastReceivedTime2) : "";
-        string paused = trackingWatch.State == PlayTrackingWatch.Phase.Waiting ? PlayTrackingStatus.PausedText
-            : trackingWatch.State == PlayTrackingWatch.Phase.Countdown ? PlayTrackingStatus.ResumeText(trackingWatch.CountdownRemaining(now)) : null;
-        trackingView.Show(status, paused, trackingWatch.AllLost(now));
+        bool allLost = trackingWatch.AllLost(now);
+        string head = null; float ring = -1; bool dimmed = false;
+        if (trackingWatch.State == PlayTrackingWatch.Phase.Waiting)
+        {
+            head = trackingWatch.Receiving(now) ? PlayTrackingStatus.CheckingText : PlayTrackingStatus.PausedText; dimmed = true;
+        }
+        else if (trackingWatch.State == PlayTrackingWatch.Phase.Countdown)
+        {
+            double remaining = trackingWatch.CountdownRemaining(now);
+            head = PlayTrackingStatus.ResumeText(remaining); dimmed = true;
+            ring = (float)(1 - remaining / PlayTrackingWatch.ResumeCountdownSeconds);
+            // 3・2・1 の数字が変わるたびに刻みを1回(数える間にまた途切れたら、次は 3 から)。
+            int number = System.Math.Max(1, (int)System.Math.Ceiling(remaining));
+            if (number != countdownShown) { countdownShown = number; trackingView.PlayCountTick(); }
+        }
+        else if (now < resumedShownUntil) head = PlayTrackingStatus.ResumedText;
+        if (trackingWatch.State != PlayTrackingWatch.Phase.Countdown) countdownShown = 0;
+        // 片方の色の警告は、止まっていないとき・全部見失ったスタッフ向けの1行が出ていないときだけ(出ていれば上の中央にまとめる)。
+        string warning = active && !trackingWatch.Paused && !allLost ? ColorWarning(now, songTime) : null;
+        trackingView.Show(status, head, allLost, warning, ring, dimmed);
+    }
+
+    // 片方の色だけ届かないとき(2026-10-22)。その色のノーツが来ているのに 3 秒届かなければ、スタッフ向けの1行を返す(止めはしない)。
+    // 使わない手を下ろしている区間でまちがって止めないよう、止めるのは今までどおり「届いていた色がすべて届かない」ときだけ。
+    string ColorWarning(double now, double songTime)
+    {
+        bool red = false, blue = false, neverSeen = true;
+        for (int feed = 0; feed < 2; feed++)
+        {
+            var hand = FeedHand(feed);
+            if (!trackingWatch.ShouldWarn(feed, now, NotesNeed(songTime, hand), WarnNeverSeenColors, playingSince)) continue;
+            if (hand == SaberHand.Left) blue = true; else red = true;
+            neverSeen &= !trackingWatch.Seen(feed);
+        }
+        return PlayTrackingStatus.WarningText(red, blue, neverSeen);
+    }
+
+    // 受信口(0=1本目、1=2本目)と手。1本目は stick1Hand(既定は右手=赤)。
+    SaberHand FeedHand(int feed) => feed == 0 ? stick1Hand : stick1Hand == SaberHand.Left ? SaberHand.Right : SaberHand.Left;
+
+    // 一度も届いていない色も知らせるのは、会場の Player だけ(エディターはマウスで試すので出さない)。
+    static bool WarnNeverSeenColors => !Application.isEditor;
+
+    // ノーツが来ているか(まだ切られていない・MISS でもないノーツが画面にあるか、1 秒以内に流れ始めるか)。hand=Any は色を問わない。
+    // MISS のノーツは後ろへ流れて 1.5 秒残るので数えない(2026-10-22、休みの区間でまちがって止まっていた)。
+    bool NotesNeed(double songTime, SaberHand hand)
+    {
+        if (noteSpawner == null) return false;
+        if (PlayTrackingWatch.LiveNeeds(noteSpawner.LiveNotes, hand)) return true;
+        var chart = noteSpawner.CurrentChart;
+        return chart != null && PlayTrackingWatch.UpcomingNeeds(chart.notes, noteSpawner.NextIndex, noteSpawner.EffectiveTime,
+            noteSpawner.approachTime, songTime, hand);
     }
 
     // ノーツが画面にあるか、1 秒以内に流れ始めるか。休みの区間で剣を下ろしているだけなら曲を止めない。
-    bool NotesComing(double songTime)
-    {
-        if (noteSpawner == null) return false;
-        if (noteSpawner.AliveCount > 0) return true;
-        var chart = noteSpawner.CurrentChart;
-        int next = noteSpawner.NextIndex;
-        if (chart == null || chart.notes == null || next < 0 || next >= chart.notes.Count) return false;
-        return noteSpawner.EffectiveTime(chart.notes[next]) - noteSpawner.approachTime - songTime <= 1.0;
-    }
+    bool NotesComing(double songTime) => NotesNeed(songTime, SaberHand.Any);
 
     void PauseForTracking()
     {
@@ -906,6 +971,50 @@ public class GamePlayManager : MonoBehaviour
         songPlayer.HeldByTracking = false;
         songPlayer.Resume();
         Debug.Log($"GamePlayManager: 剣の位置が戻ったので再開 songTime={songPlayer.SongTime:F2}s");
+    }
+
+    // 音の出力先が変わった瞬間(AudioOutputRecovery が 0.5 秒後に立て直す)。本編の途中なら、その間に曲が終わって
+    // 「完了」と記録されたり、剣の見張りが曲を再開したりしないよう、すぐ止めておく(Codex の点検で 2026-10-22 に追加)。
+    public void HoldForAudioChange()
+    {
+        if (leaving || completing || finished || inCalibration || inTutorial || audioChangeHold) return;
+        audioChangeHold = true;
+        if (songPlayer != null && songPlayer.IsScheduled)
+        {
+            songPlayer.Pause();
+            songPlayer.HeldByTracking = true;
+        }
+    }
+
+    // 音の出力先が変わった(AudioOutputRecovery、2026-10-22)。曲の音とスクリプトで作った音は中身が消え、続きから鳴らし直せない。
+    // 本編の途中(読み込み・カウントイン・一時停止を含む)は記録せずにタイトルへ。終わりの演出の間は結果を確定して結果へ。
+    // 練習は曲えらびへ(難易度はまだ決まっていない)。判定調整は CalibrationController がその場で中断して音を作り直す。
+    public AudioOutputRecovery.Action HandleAudioOutputChanged()
+    {
+        var action = AudioOutputRecovery.PlanGame(inCalibration || GameSession.IsCalibrationMode, inTutorial, completing, finished, leaving);
+        switch (action)
+        {
+            case AudioOutputRecovery.Action.AbortToTitle:
+                ReturnToTitle();
+                break;
+            case AudioOutputRecovery.Action.FinishToResult:
+                // 点と3つの記録(実績・本日の順位・HI-SCORE は結果画面)を一度だけ確定し、残りの演出は飛ばす。
+                CommitFinalResult();
+                if (!string.IsNullOrEmpty(resultSceneName) && ScreenTransition.Load(resultSceneName, ScreenTransition.Style.Result))
+                {
+                    leaving = true;
+                    StopAllCoroutines();
+                }
+                break;
+            case AudioOutputRecovery.Action.TutorialToSongSelect:
+                if (ExitTutorial())
+                {
+                    leaving = true;
+                    if (songPlayer != null) songPlayer.Stop();
+                }
+                break;
+        }
+        return action;
     }
 
     // 最後まで遊んだ回の点と判定を確定し、実績・本日の順位を残す(一度だけ。HI-SCORE は結果画面が残す)。

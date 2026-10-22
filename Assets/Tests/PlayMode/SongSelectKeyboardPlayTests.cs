@@ -500,25 +500,40 @@ public class SongSelectKeyboardPlayTests
             Assert.That(Time.realtimeSinceStartupAsDouble - lostAt, Is.InRange(2.8, 5.0));
             Assert.True(manager.TrackingView.StaffShown);
             StringAssert.Contains("一時停止中", manager.TrackingView.HeadlineShown);
+            int cues = manager.TrackingView.CueCount;
+            Assert.GreaterOrEqual(cues, 1, "止まった瞬間に低い刻みを1回");
             double pausedAt = manager.songPlayer.SongTime;
             int alive = manager.noteSpawner.AliveCount, judged = manager.scoreManager.JudgedNoteCount;
             yield return new WaitForSecondsRealtime(.6f);
             Assert.AreEqual(pausedAt, manager.songPlayer.SongTime, "止めている間は曲の時計も止まる");
             Assert.AreEqual(judged, manager.scoreManager.JudgedNoteCount, "止めている間に MISS を数えない");
             Assert.AreEqual(alive, manager.noteSpawner.AliveCount);
-            // 1秒続けて届いたら数え始め、3秒後に続きから。
+            Assert.Greater(manager.TrackingView.DimLevel, .2f, "止まっている間は画面を少し暗くする");
+            // 1秒続けて届いたら数え始め、3秒後に続きから。届き始めた1秒は「確認中」。
             double backAt = Time.realtimeSinceStartupAsDouble;
-            bool counted = false;
+            bool counted = false, checking = false, ring = false, shotCount = false;
             deadline = backAt + 8;
             while (manager.songPlayer.IsPaused && Time.realtimeSinceStartupAsDouble < deadline)
             {
                 Send(); yield return null;
+                bool wasChecking = checking;
                 counted |= manager.TrackingView.HeadlineShown.StartsWith("再開まで");
+                checking |= manager.TrackingView.HeadlineShown == PlayTrackingStatus.CheckingText;
+                ring |= manager.TrackingView.RingShown;
+                // 環境変数 SABER_UI_CATALOG_CAPTURE_DIR があれば、確認中と 3・2・1 の画面を撮る(撮る間も送り続ける)。
+                if (checking && !wasChecking) UICatalogPlayTests.Capture("pause-checking");
+                if (!shotCount && manager.TrackingView.HeadlineShown == "再開まで 2") { shotCount = true; UICatalogPlayTests.Capture("pause-countdown"); }
             }
             Assert.False(manager.songPlayer.IsPaused, "戻ったら再開する");
             Assert.True(counted, "再開の前に 3・2・1 を出す");
+            Assert.True(checking, "剣が戻りかけたら「確認中」");
+            Assert.True(ring, "3・2・1 は輪で進み具合を見せる");
             Assert.That(Time.realtimeSinceStartupAsDouble - backAt, Is.InRange(3.9, 6.0));
             Assert.AreEqual(pausedAt, manager.songPlayer.SongTime, .25, "止めた位置の続きから");
+            Assert.AreEqual(cues + 4, manager.TrackingView.CueCount, "3・2・1 の刻み3回と再開の音1回");
+            Assert.AreEqual(PlayTrackingStatus.ResumedText, manager.TrackingView.HeadlineShown, "再開の直後は「再開！」");
+            yield return new WaitForSecondsRealtime(PlayTrackingStatus.ResumedSeconds + .15f);
+            Send(); yield return null;
             Assert.False(manager.TrackingView.PanelShown);
             InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.Escape));
             yield return null; yield return null;
@@ -526,6 +541,144 @@ public class SongSelectKeyboardPlayTests
             yield return null; yield return null;
             yield return Press(Key.Escape);
         }
+    }
+
+    // 運営のシャッター切り替え(Ctrl+Shift+S、b1b7160)を選曲で押しても、難易度は変わらない(2026-10-22、点検 4)。
+    // 来場者の S は今までどおり「むずかしく」。
+    [UnityTest]
+    public IEnumerator OperatorChordDoesNotChangeTheSongOrDifficulty()
+    {
+        int song = controller.SelectedIndex, difficulty = controller.SelectedDifficultyIndex;
+        InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.LeftCtrl, Key.LeftShift));
+        yield return null;
+        InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.LeftCtrl, Key.LeftShift, Key.S));
+        yield return null; yield return null;
+        InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.LeftCtrl, Key.LeftShift, Key.D));
+        yield return null; yield return null;
+        InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+        yield return null; yield return null;
+        Assert.AreEqual(song, controller.SelectedIndex, "Ctrl+Shift+D で曲が変わらない");
+        Assert.AreEqual(difficulty, controller.SelectedDifficultyIndex, "Ctrl+Shift+S で難易度が変わらない");
+        Assert.AreEqual("SongSelect", SceneManager.GetActiveScene().name);
+        yield return Press(Key.S);
+        Assert.AreEqual(difficulty + 1, controller.SelectedDifficultyIndex, "来場者の S は今までどおり");
+    }
+
+    // 片方の色(青)だけ届かなくなったら、青ノーツが来ている間にスタッフ向けの1行を出す。曲は止めない(2026-10-22、点検 3)。
+    [UnityTest]
+    public IEnumerator LosingOnlyBlueWarnsTheStaffWithoutPausing()
+    {
+        using (var sender = new UdpClient())
+        {
+            byte[] red = System.Text.Encoding.ASCII.GetBytes("0.3,-0.6,0.5,-0.6");
+            byte[] blue = System.Text.Encoding.ASCII.GetBytes("-0.5,-0.6,-0.3,-0.6");
+            bool sendBlue = true;
+            void Send()
+            {
+                sender.Send(red, red.Length, new IPEndPoint(IPAddress.Loopback, input.port));
+                if (sendBlue) sender.Send(blue, blue.Length, new IPEndPoint(IPAddress.Loopback, input.port2));
+            }
+            double deadline = Time.realtimeSinceStartupAsDouble + 2;
+            while ((input.LastReceivedTime < 0 || input.LastReceivedTime2 < 0) && Time.realtimeSinceStartupAsDouble < deadline) { Send(); yield return null; }
+            Assert.GreaterOrEqual(input.LastReceivedTime2, 0, "選曲の間に青の位置も届く");
+            InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.Enter));
+            yield return null; yield return null;
+            InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+            var manager = Object.FindFirstObjectByType<GamePlayManager>();
+            deadline = Time.realtimeSinceStartupAsDouble + 20;
+            while ((manager == null || !manager.songPlayer.IsPlaying || manager.noteSpawner.AliveCount == 0)
+                && Time.realtimeSinceStartupAsDouble < deadline)
+            {
+                Send(); yield return null;
+                if (manager == null) manager = Object.FindFirstObjectByType<GamePlayManager>();
+            }
+            Assert.True(manager.songPlayer.IsPlaying);
+            Assert.AreEqual("", manager.TrackingView.WarningShown, "両方届いている間は出さない");
+            sendBlue = false;
+            double lostAt = Time.realtimeSinceStartupAsDouble;
+            deadline = lostAt + 12;
+            while (manager.TrackingView.WarningShown.Length == 0 && Time.realtimeSinceStartupAsDouble < deadline) { Send(); yield return null; }
+            StringAssert.Contains("青の剣の位置が届いていません", manager.TrackingView.WarningShown);
+            UICatalogPlayTests.Capture("color-warning");
+            Assert.GreaterOrEqual(Time.realtimeSinceStartupAsDouble - lostAt, PlayTrackingWatch.LostSeconds - .1, "3秒届かなくなってから");
+            Assert.False(manager.songPlayer.IsPaused, "片方だけでは曲を止めない");
+            Assert.False(manager.TrackingView.PanelShown, "上の中央の一時停止の枠は出さない");
+            // 青が戻ったら消える。
+            sendBlue = true;
+            deadline = Time.realtimeSinceStartupAsDouble + 3;
+            while (manager.TrackingView.WarningShown.Length > 0 && Time.realtimeSinceStartupAsDouble < deadline) { Send(); yield return null; }
+            Assert.AreEqual("", manager.TrackingView.WarningShown);
+            InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.Escape));
+            yield return null; yield return null;
+            InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+            yield return null; yield return null;
+            yield return Press(Key.Escape);
+        }
+    }
+
+    // 音の出力先が変わったら(AudioSettings.Reset で起こす)、選曲は曲・難易度・残り時間を保ったまま作り直す(2026-10-22、点検 1)。
+    // 作り直したあとのメニューの音は中身がある(MenuSfx は鳴らす前に確かめて作り直す)。
+    [UnityTest]
+    public IEnumerator AudioOutputChangeRebuildsSongSelectKeepingTheChoice()
+    {
+        var skin = Object.FindFirstObjectByType<SongSelectSkin>();
+        double deadline = Time.realtimeSinceStartupAsDouble + 5;
+        while ((skin == null || !skin.IsReady) && Time.realtimeSinceStartupAsDouble < deadline) { yield return null; skin = Object.FindFirstObjectByType<SongSelectSkin>(); }
+        string song = controller.SongIdAt(controller.SelectedIndex);
+        int difficulty = controller.SelectedDifficultyIndex;
+        double remaining = skin.RemainingSeconds;
+        var before = MenuSfx.Clip("ToTitle", FlourishSfx.ToTitle);
+        Assert.Greater(before.samples, 0);
+        int recoveries = AudioOutputRecovery.RecoveryCount;
+        Assert.True(AudioSettings.Reset(AudioSettings.GetConfiguration()));
+        deadline = Time.realtimeSinceStartupAsDouble + 10;
+        while (AudioOutputRecovery.RecoveryCount == recoveries && Time.realtimeSinceStartupAsDouble < deadline) yield return null;
+        Assert.AreEqual(AudioOutputRecovery.Action.KeepSelection, AudioOutputRecovery.LastAction);
+        yield return ScreenTransitionPlayTests.WaitForTransition();
+        controller = Object.FindFirstObjectByType<SongSelectController>();
+        skin = Object.FindFirstObjectByType<SongSelectSkin>();
+        deadline = Time.realtimeSinceStartupAsDouble + 5;
+        while ((skin == null || !skin.IsReady) && Time.realtimeSinceStartupAsDouble < deadline) { yield return null; skin = Object.FindFirstObjectByType<SongSelectSkin>(); }
+        Assert.AreEqual("SongSelect", SceneManager.GetActiveScene().name);
+        Assert.AreEqual(song, controller.SongIdAt(controller.SelectedIndex));
+        Assert.AreEqual(difficulty, controller.SelectedDifficultyIndex);
+        Assert.That(skin.RemainingSeconds, Is.InRange(remaining - 5, remaining + .01), "残り時間を引き継ぐ");
+        var after = MenuSfx.Clip("ToTitle", FlourishSfx.ToTitle);
+        Assert.Greater(after.samples, 0, "メニューの音は作り直されて中身がある");
+        deadline = Time.realtimeSinceStartupAsDouble + 2;
+        while (Object.FindFirstObjectByType<OperatorNotice>() == null && Time.realtimeSinceStartupAsDouble < deadline) yield return null;
+        Assert.NotNull(Object.FindFirstObjectByType<OperatorNotice>(), "スタッフ向けに作り直したことを知らせる");
+    }
+
+    // 曲の途中で出力先が変わったら、記録せずにタイトルへ戻す(続きから鳴らし直せないため)。
+    [UnityTest]
+    public IEnumerator AudioOutputChangeMidSongReturnsToTitleWithoutRecord()
+    {
+        InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.Enter));
+        yield return null; yield return null;
+        InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+        GamePlayManager manager = null;
+        double deadline = Time.realtimeSinceStartupAsDouble + 20;
+        while ((manager == null || !manager.songPlayer.IsPlaying) && Time.realtimeSinceStartupAsDouble < deadline)
+        {
+            yield return null;
+            if (manager == null) manager = Object.FindFirstObjectByType<GamePlayManager>();
+        }
+        Assert.True(manager.songPlayer.IsPlaying);
+        string runId = GameSession.AchievementRunId;
+        var daily = GameSession.FinalDailyRanking;
+        int recoveries = AudioOutputRecovery.RecoveryCount;
+        Assert.True(AudioSettings.Reset(AudioSettings.GetConfiguration()));
+        yield return null;
+        Assert.True(manager.AudioChangeHold, "知らせが来たらすぐ止めておく(立て直すまでに曲が終わって記録されない)");
+        Assert.True(manager.songPlayer.IsPaused);
+        deadline = Time.realtimeSinceStartupAsDouble + 10;
+        while (AudioOutputRecovery.RecoveryCount == recoveries && Time.realtimeSinceStartupAsDouble < deadline) yield return null;
+        Assert.AreEqual(AudioOutputRecovery.Action.AbortToTitle, AudioOutputRecovery.LastAction);
+        yield return ScreenTransitionPlayTests.WaitForTransition();
+        Assert.AreEqual("Title", SceneManager.GetActiveScene().name);
+        Assert.AreSame(daily, GameSession.FinalDailyRanking, "中断した回は本日の順位に残さない");
+        Assert.AreEqual(runId, GameSession.AchievementRunId);
     }
 
     static int FreePort()
