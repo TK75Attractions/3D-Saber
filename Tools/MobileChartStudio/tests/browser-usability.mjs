@@ -81,7 +81,48 @@ try{
   await codexRound6();
   await round7();
   await round8();
+  await round9();
 }finally{await browser.close();}
+
+// 2026-10-22 9回目: 確かめるの候補から直すへ「点検モード」(前後の候補を順に回る)・候補への近道・最終更新は中身が変わったときだけ。
+async function round9(){
+  const ctx=await browser.newContext({viewport:{width:390,height:664},hasTouch:true}),p=await ctx.newPage(),errs=[];p.on('pageerror',e=>errs.push(e.message));
+  const wait=()=>p.waitForTimeout(300),saved=()=>p.waitForFunction(()=>document.querySelector('#saveStatus').textContent==='この端末に保存済み');
+  try{
+    await p.goto(site);await wait();
+    await p.locator('#audioFile').setInputFiles({name:'点検.wav',mimeType:'audio/wav',buffer:wav()});await saved();
+    // 1. 候補が3件(パッドの外)ある譜面。確かめるの統計の下に「見直す候補 3 件 ↓」、押すと一覧へ。
+    const notes=Array.from({length:8},(_,i)=>({time:1000+i*500,beat:2+i,x:i%3===0?3:0,y:0,color:'blue',direction:'none',count:1,type:'tap',lengthMs:0}));
+    await p.locator('#libraryButton').click();await p.locator('#chartFile').setInputFiles({name:'chart_hard.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify({bpm:120,offsetMs:0,beatZeroMs:0,coordScale:1,displayLevel:5,timeSignatures:[],notes}))});await wait();
+    await p.locator('#nav-preview').click();await wait();assert.equal(await p.locator('#reportJump').innerText(),'見直す候補 3 件 ↓');
+    await p.locator('#reportJump').click();await wait();const head=await p.locator('#reportIssueCount').boundingBox();assert.ok(head.y>=0&&head.y+head.height<=600,'一覧の見出しが画面の中へ');check('the preview shows a shortcut to the review candidates');
+    // 2. 候補を押すと点検モード: 見出しは「候補 1/3」、ボタンは「前の候補/次の候補」、理由は知らせに出る。
+    await p.locator('#reportIssues button').first().click();await wait();
+    assert.match(await p.locator('#selectedNoteLabel').innerText(),/^候補 1\/3 · 0:01\.000$/);assert.ok((await p.locator('#selectedNoteLabel').boundingBox()).height<30,'1行に収まる');assert.equal(await p.locator('#nextNote').innerText(),'次の候補');assert.equal(await p.locator('#previousNote').isDisabled(),true);
+    assert.match(await p.locator('#toast').innerText(),/候補 1\/3 · 診断したときの理由：入力パッドの外/);await p.screenshot({path:path.join(output,'round9-review.png')});
+    await p.locator('#nextNote').click();await wait();assert.match(await p.locator('#selectedNoteLabel').innerText(),/^候補 2\/3 · 0:02\.500/);
+    // 3. 点検モードで消すと、次の候補へ。最後の候補では「次の候補」を押せない。
+    await p.locator('#deleteNote').click();await wait();assert.match(await p.locator('#selectedNoteLabel').innerText(),/^候補 3\/3 · 0:04\.000/);assert.equal(await p.locator('#nextNote').isDisabled(),true);
+    // 4. パネルを閉じると点検モードを抜け、ふだんの「前へ/次へ」に戻る。
+    await p.locator('#closeNote').click();await wait();if(!await p.locator('.map-note-details').evaluate(e=>e.open))await p.locator('.map-note-details summary').click();
+    await p.locator('#mapNotes button').first().click();await wait();assert.equal(await p.locator('#nextNote').innerText(),'次へ');assert.match(await p.locator('#selectedNoteLabel').innerText(),/^\d+ \/ 7 · /);
+    check('review mode walks the candidates, survives a delete and ends when the panel closes');
+    // 5. 一覧を開くだけ・再生位置を動かすだけでは「最終更新」は変わらない。中身を変えたら進む。
+    await saved();const u1=(await storedIn(p)).updated;
+    await p.locator('#closeNote').click();await p.locator('#libraryButton').click();await p.locator('#library').waitFor({state:'visible'});await p.locator('[data-close="library"]').click();await p.waitForTimeout(500);await saved();
+    assert.equal((await storedIn(p)).updated,u1,'見ただけでは変わらない');
+    await p.locator('#mapNotes button').first().click();await wait();await p.locator('#laterNote').click();await p.waitForTimeout(500);await saved();
+    assert.ok((await storedIn(p)).updated>u1,'中身を変えたら進む');check('the last-updated time moves only when the content changes');
+    // 6. 候補が200件を超えても「続きの N 件を表示」で全部たどれる(EASY に矢印210個 → 210件)。
+    const many=Array.from({length:210},(_,i)=>({time:500+i*130,beat:1+i*.26,x:0,y:0,color:i%2?'red':'blue',direction:'up',count:1,type:'tap',lengthMs:0}));
+    await p.locator('#closeNote').click();await p.locator('#libraryButton').click();await p.locator('#chartFile').setInputFiles({name:'chart_easy.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify({bpm:120,offsetMs:0,beatZeroMs:0,coordScale:1,displayLevel:2,timeSignatures:[],notes:many}))});await wait();
+    await p.locator('#nav-preview').click();await wait();const total=Number((await p.locator('#reportJump').innerText()).match(/(\d+) 件/)[1]);assert.ok(total>200,`${total}件`);
+    assert.equal(await p.locator('#reportIssues > button').count(),201,'200件+続きのボタン');
+    for(let i=0;i<10&&/^続きの/.test(await p.locator('#reportIssues > button').last().innerText());i++){await p.locator('#reportIssues > button').last().click();await wait();}
+    assert.equal(await p.locator('#reportIssues > button').count(),total,'続きを出し切ると全部');check('more than 200 candidates can all be reached');
+    assert.deepEqual(errs,[]);check('no browser runtime errors in round 9');
+  }finally{await ctx.close();}
+}
 
 // 2026-10-22 8回目: ノーツが多い譜面で重くしない(隠れている旧ノーツ一覧を、操作のたびに作り直さない)。
 async function round8(){

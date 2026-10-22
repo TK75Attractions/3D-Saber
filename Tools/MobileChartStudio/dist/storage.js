@@ -1,7 +1,7 @@
 const DB = 'saber-tap-studio-v1';
 let connection;
 const revisions = new Map();
-const contentOf = project => {
+export const contentOf = project => {
   const {_revision,updated,position,...content}=project;
   return JSON.stringify({...content,chart:{...content.chart,notes:content.chart.notes.map(({__editorId,...note})=>note)}});
 };

@@ -4,6 +4,7 @@ import { formatTime } from './core.js';
 import { deleteProject, getAudio, listProjects } from './storage.js';
 
 export function installRefinementUI(context) {
+  let issueLimit = 200, limitFor = null;
   const {getState, mutate, stop, seek, persist, run, toast, selectNote, downloadBlob} = context;
   const $ = id => document.getElementById(id);
   let pending = null;
@@ -58,7 +59,8 @@ export function installRefinementUI(context) {
   // keepPlaying: 開いている「確かめる」を、譜面や設定が変わったときに描き直す(再生は止めない)。
   function reportChart({keepPlaying = false} = {}) {
     if (!getState().project) return; if (!keepPlaying) stop();
-    const {chart, audio, difficulty,bpmConfirmed} = getState(), report = chartReport(chart, audio.duration, bpmConfirmed===false?undefined:difficulty);
+    const {chart, audio, difficulty,bpmConfirmed,project} = getState(); if (project.id !== limitFor) { issueLimit = 200; limitFor = project.id; }
+    const report = chartReport(chart, audio.duration, bpmConfirmed===false?undefined:difficulty, issueLimit);
     $('reportStats').textContent = `タップ ${report.counts.tap} / フリック ${report.counts.flick} / ロング ${report.counts.long}\n青 ${report.counts.blue} / 赤 ${report.counts.red} / 金 ${report.counts.gold} / その他 ${report.counts.default}\n平均 ${report.average.toFixed(2)} 個/秒 · 最大2秒密度 ${report.peakNps.toFixed(2)} 個/秒（${formatTime(report.peakStart,true)}から）`;
     $('reportDensity').replaceChildren(); const maximum = Math.max(1, ...report.buckets.map(bucket => bucket.count));
     for (const bucket of report.buckets) {
@@ -70,11 +72,17 @@ export function installRefinementUI(context) {
     }
     $('reportIssueCount').textContent = (report.issueCount ? `確認候補 ${report.issueCount} 件（自動修正はしません）` : '現在の検査では見直し候補は見つかりませんでした。')+(bpmConfirmed===false?' BPM未設定のため難易度の拍間隔は診断しません。':'');
     $('reportIssues').replaceChildren();
-    for (const issue of report.issues) {
+    // 候補を押すと「点検モード」で直すへ。前へ/次へで前後の候補を順に回れる。
+    const items = report.issues.map(issue => ({id: issue.id, text: issue.text}));
+    report.issues.forEach((issue, index) => {
       const button = document.createElement('button'); button.textContent = `${formatTime(issue.time,true)} · ${issue.text}`;
-      button.onclick = () => { selectNote(issue.id); }; $('reportIssues').append(button);
-    }
-    if (report.issueCount > report.issues.length) { const text = document.createElement('p'); text.textContent = '先頭200件を表示しています。編集後に再診断すると残りを確認できます。'; $('reportIssues').append(text); }
+      button.onclick = () => { selectNote(issue.id, {review: {items, index}}); }; $('reportIssues').append(button);
+    });
+    // 多いときは重い順(音源の外・重複 → 手の重なり → 間隔 → 難易度の目安)に出し、続きは押せば200件ずつ出す(意図した配置を直さなくても残りへ行ける)。
+    if (report.issueCount > report.issues.length) { const rest = report.issueCount - report.issues.length, text = document.createElement('p'), more = document.createElement('button'); text.className = 'hint'; text.textContent = `全 ${report.issueCount} 件のうち ${report.issues.length} 件を、重い順(音源の外・重複 → 手の重なり → 間隔 → 難易度の目安)に出しています。`; more.textContent = `続きの ${Math.min(200, rest)} 件を表示`; more.onclick = () => { issueLimit += 200; reportChart({keepPlaying: true}); }; $('reportIssues').append(text, more); }
+    // 候補の一覧は下のほうにあるので、統計のすぐ下に件数と近道を出す。
+    let jump = $('reportJump'); if (!jump) { jump = document.createElement('button'); jump.id = 'reportJump'; jump.className = 'subtle report-jump'; jump.onclick = () => $('reportIssueCount').scrollIntoView({block: 'start'}); $('reportStats').after(jump); }
+    jump.textContent = `見直す候補 ${report.issueCount} 件 ↓`; jump.hidden = !report.issueCount;
     }
   $('reportButton').addEventListener('click',()=>context.openPreview());
   for (const [id, direction] of [['jumpPreviousNote',-1],['jumpNextNote',1]]) $(id).onclick = () => { const {chart,audio} = getState(); seek(noteSeek(chart,audio.time(),direction,audio.duration)); };

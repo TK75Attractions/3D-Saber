@@ -10,10 +10,10 @@ import { timelineWindow, visibleNotes, paintTimeline, timelineHit } from './time
 import { beginStroke, moveStroke, flickDirection, inputPreferences } from './gestures.js';
 import { SongAudio } from './audio.js';
 import { encodeWav } from './wav.js';
-import { saveProject, listProjects, getProject, saveAudio, getAudio, saveProjectWithAudio } from './storage.js';
+import { saveProject, listProjects, getProject, saveAudio, getAudio, saveProjectWithAudio, contentOf } from './storage.js';
 const $ = id => document.getElementById(id), audio = new SongAudio();
 // 画面に出す版。sw.js のキャッシュ名(saber-tap-shell-<版>)と同じにする(tests/offline.test.js が確かめる)。
-const APP_VERSION='v15-20261022';
+const APP_VERSION='v16-20261022';
 let refinementUI, workspaceUI;
 let bpmConfirmed=true;
 let chart = blankChart(), history = new History(), project = null, selected = null;
@@ -22,7 +22,7 @@ let saveTimer, toastTimer, persistChain = Promise.resolve(), flashes = [], lastF
 let take = null, lastTake = null, playbackEnd = Infinity, saveRevision = 0, pendingSaves = 0, loopingRange = false, tempoListening = false, copySource = null, copyCreating = false;
 const tapTempo = new TapTempo();
 const touches = new Map();
-let mapStart=0, mapBoxes=[], mapLastPaint=0, batchRange=null, mapShown=null;
+let mapStart=0, mapBoxes=[], mapLastPaint=0, batchRange=null, mapShown=null, savedContent=null, review=null;
 const uid = () => crypto.randomUUID?.() || `p${Date.now()}-${Math.random().toString(36).slice(2)}`;
 const settings = () => ({ bpmConfirmed, difficulty:$('difficulty').value, longThresholdMs:Number($('longThresholdMs')?.value)||300, positionGrid:Number($('positionGrid').value), songVolume:Number($('songVolume').value), feedbackVolume:Number($('feedbackVolume').value), previewLoop:$('previewLoop').checked, snap: Number($('snap').value), snapMode:$('snapMode').value, snapWindowMs:Number($('snapWindowMs').value), flickEnabled:$('flickEnabled').checked, flickSensitivity:$('flickSensitivity').value, rate: Number($('speed').value), longCount: $('longCount').value, direction: $('direction').value, color, latencyMs: clamp(Number($('latency').value)||0,-500,500), countIn:$('countIn').checked, clickSound:$('clickSound').checked, metronome:$('metronome').checked });
 const preference = (key, value) => { try { if (value !== undefined) localStorage.setItem(key, value); else return localStorage.getItem(key); } catch {} };
@@ -74,11 +74,15 @@ function refreshInputOptions() {
 }
 function fillChartFields() { $('bpm').value=bpmConfirmed?chart.bpm:'';$('bpm').placeholder='未設定';$('offset').value=chart.offsetMs;$('beatZero').value=chart.beatZeroMs;$('level').value=chart.displayLevel; }
 function snapshotProject() { return {...project,chart:clone(chart),difficulty:$('difficulty').value,position:audio.time(),settings:settings(),updated:Date.now()}; }
+function editedContent(value) { return contentOf({...value,lastExportedAt:null}); }
 function persist() {
   clearTimeout(saveTimer);saveTimer=null; if(!project)return Promise.resolve(); const value=snapshotProject(),revision=++saveRevision;
+  // 最終更新は中身(譜面・設定・名前・難易度)が変わったときだけ進める。再生位置だけの保存・一覧を開くだけ・書き出しの記録では前の値のまま。
+  const content=editedContent(value);if(content===savedContent&&project.updated)value.updated=project.updated;
   pendingSaves++;
   saving=true;status('保存中…');
   persistChain=persistChain.catch(()=>{}).then(()=>saveProject(value)).then(()=>{
+    if(project?.id===value.id){savedContent=content;project.updated=value.updated;}
     saving=--pendingSaves>0;if(project?.id===value.id&&revision===saveRevision&&!saveTimer){saveFailed=false;status('この端末に保存済み');}if(project?.id===value.id)preference('saber-last-project',value.id);
   },error=>{saving=--pendingSaves>0;saveFailed=true;status(error.name==='ConflictError'?'別タブで更新 — ここを押して書き出してから再読み込み':'未保存 — ここを押して譜面かバックアップを書き出す');if(error.name==='ConflictError')throw error;throw new Error('端末に保存できませんでした。空き容量を確認し、譜面を書き出して保管してください。',{cause:error});});
   return persistChain;
@@ -139,6 +143,7 @@ async function openProject(id) {
     $('difficulty').value=next.difficulty||'normal';
     restoreSettings(next.settings);resetSession();
     fillChartFields();renderNotes();drawWaveform();preference('saber-last-project',next.id);$('library').close();status('この端末に保存済み');
+    savedContent=editedContent(snapshotProject());
   } finally {loading=false;refresh();refreshTabDetails();}
 }
 async function showLibrary() {
@@ -317,8 +322,9 @@ function renderNotes(centerTime) {
   if(start+100<chart.notes.length){const next=document.createElement('button');next.textContent='次のノーツ';next.className='subtle';next.addEventListener('click',()=>renderNotes(audioTime(chart.notes[start+100],chart)));list.append(next);}
   $('noteEditor').hidden=!selected;
 }
-function selectNote(id) {
-  stop();const note=chart.notes.find(n=>n.__editorId===id);if(!note)return;selected=id;audio.seek(Math.max(0,audioTime(note,chart)-.4));
+function selectNote(id,{review:from=null}={}) {
+  stop();const note=chart.notes.find(n=>n.__editorId===id);if(!note)return;selected=id;review=from;audio.seek(Math.max(0,audioTime(note,chart)-.4));
+  if(review)toast(`候補 ${review.index+1}/${review.items.length} · 診断したときの理由：${review.items[review.index].text}`);
   // 選んだノーツがグラフの表示区間の外なら、そこを含む区間へ動かす(診断・次へで選んだとき、グラフが前の区間のままにならない)。
   {const time=audioTime(note,chart),view=mapWindow();if(time<view.start||time>view.end)mapStart=Math.max(0,time-view.span/3);}
   $('noteTime').value=audioTime(note,chart).toFixed(3);$('noteColor').value=note.color;$('noteX').value=+(note.x*chart.coordScale).toFixed(3);$('noteY').value=+(note.y*chart.coordScale).toFixed(3);
@@ -331,6 +337,8 @@ function refreshSelected() {
   // 色と回数も見出しに出す(下の欄までスクロールしなくても、何を選んだか分かる)。
   $('selectedNoteLabel').textContent=`${index+1} / ${chart.notes.length} · ${formatTime(audioTime(note,chart),true)} · ${{blue:'青',red:'赤',gold:'金'}[note.color]||'色なし'}${note.count>1?` ×${note.count}`:''}`;
   $('previousNote').disabled=index===0;$('nextNote').disabled=index===chart.notes.length-1;
+  $('previousNote').textContent=review?'前の候補':'前へ';$('nextNote').textContent=review?'次の候補':'次へ';
+  if(review){$('previousNote').disabled=review.index===0;$('nextNote').disabled=review.index>=review.items.length-1;$('selectedNoteLabel').textContent=`候補 ${review.index+1}/${review.items.length} · ${formatTime(audioTime(note,chart),true)}`;}
   $('positionMarker').style.left=`${clamp(note.x*chart.coordScale/5+.5,0,1)*100}%`;
   $('positionMarker').style.top=`${clamp(.5-note.y*chart.coordScale/3,0,1)*100}%`;
   $('positionMarker').style.background=COLORS[note.color];
@@ -361,6 +369,8 @@ function deleteSelectedNote(){
   const index=chart.notes.findIndex(n=>n.__editorId===selected);
   commit(()=>{chart.notes=chart.notes.filter(n=>n.__editorId!==selected);selected=null;});
   deleteGuardUntil=performance.now()+400;
+  // 点検モードなら次の候補へ(なければ閉じる)。ふだんは時刻の並びで次のノーツ。
+  if(review){const rest=review.items.slice(review.index+1).findIndex(item=>chart.notes.some(n=>n.__editorId===item.id));if(rest>=0){selectNote(review.items[review.index+1+rest].id,{review:{items:review.items,index:review.index+1+rest}});return;}$('noteDialog').close();toast('ノーツを削除しました。候補はこれで最後です。');return;}
   const next=chart.notes[index]||chart.notes[index-1];
   if(next)selectNote(next.__editorId);else $('noteDialog').close();
   toast('ノーツを削除しました。「元に戻す」で戻せます。');
@@ -510,7 +520,14 @@ $('snapNote').addEventListener('click',run(()=>{
   const snapped=(quantizeMs(time,chart,step)+chart.offsetMs)/1000;
   nudgeNote((snapped-Number($('noteTime').value))*1000);toast(Number($('snap').value)?'設定した拍にそろえました。':'16分音符にそろえました。');
 }));
-for(const[id,delta]of[['previousNote',-1],['nextNote',1]])$(id).onclick=()=>{const index=chart.notes.findIndex(n=>n.__editorId===selected),next=chart.notes[index+delta];if(next)selectNote(next.__editorId);};
+for(const[id,delta]of[['previousNote',-1],['nextNote',1]])$(id).onclick=()=>{if(review){stepReview(delta);return;}const index=chart.notes.findIndex(n=>n.__editorId===selected),next=chart.notes[index+delta];if(next)selectNote(next.__editorId);};
+// 点検モード: 確かめるの候補から来たら、前へ/次へは前後の候補へ(消えたノーツの候補は飛ばす)。直接ノーツを選ぶ・パネルを閉じる・別の下書きを開くと抜ける。
+function stepReview(delta){
+  let index=review.index+delta;while(index>=0&&index<review.items.length&&!chart.notes.some(n=>n.__editorId===review.items[index].id))index+=delta;
+  if(index<0||index>=review.items.length){toast(delta>0?'最後の候補です。「確かめる」で診断し直せます。':'最初の候補です。');return;}
+  selectNote(review.items[index].id,{review:{items:review.items,index}});
+}
+$('noteDialog').addEventListener('close',()=>{if(review){review=null;refresh();}});
 $('retryTake').addEventListener('click',run(retryTake));
 for(const id of ['rangeStart','rangeEnd','rangeEnabled','replaceRange'])$(id).addEventListener('change',()=>{lastTake=null;refresh();});
 for(const[id,field]of[['setRangeStart','rangeStart'],['setRangeEnd','rangeEnd']])$(id).onclick=()=>{$(field).value=audio.time().toFixed(3);lastTake=null;refresh();};

@@ -63,6 +63,12 @@ test('diagnostics exclude simultaneous 25ms pairs from rearm and do not demand b
  const held=chart([{time:0,count:3,type:'long',lengthMs:2000},{time:0,color:'red',count:3,type:'long',lengthMs:2000},{time:1000,color:'gold'}]);
  assert.ok(chartReport(held,10).issues.some(i=>i.text.includes('空いている手')));
 });
+test('diagnostics put the heavy problems first before cutting to 200, time order within a level',()=>{
+ const notes=Array.from({length:205},(_,i)=>({time:1000+i*600,direction:'up',color:i%2?'red':'blue'}));notes.push({time:200000});
+ const report=chartReport(chart(notes),150,'easy');
+ assert.equal(report.issueCount,206);assert.equal(report.issues.length,200);assert.match(report.issues[0].text,/音源の外/);
+ const times=report.issues.slice(1).map(i=>i.time);assert.deepEqual(times,[...times].sort((a,b)=>a-b));
+});
 test('difficulty rules are advisory and not applied to hard or unspecified difficulty',()=>{
  const c=chart([{time:1000,direction:'up'},{time:1200},{time:2000,color:'gold'},{time:2000,color:'red'}]);
  assert.ok(chartReport(c,10,'easy').issues.some(i=>i.text.includes('生成基準')));
