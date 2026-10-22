@@ -2023,9 +2023,9 @@
       "added": false,
       "phaseErrorMs": 250.0,
       "cell": [
-        104653.0,
         104903.0,
-        105153.0
+        105153.0,
+        105403.0
       ],
       "handRepair": true
     },
@@ -2129,9 +2129,9 @@
       "added": false,
       "phaseErrorMs": 250.0,
       "cell": [
-        111153.0,
         111403.0,
-        111653.0
+        111653.0,
+        111903.0
       ],
       "handRepair": true
     },
@@ -2490,9 +2490,9 @@
       "added": false,
       "phaseErrorMs": 250.0,
       "cell": [
-        129153.0,
         129403.0,
-        129653.0
+        129653.0,
+        129903.0
       ],
       "handRepair": false
     },
@@ -2698,9 +2698,9 @@
       "added": false,
       "phaseErrorMs": 250.0,
       "cell": [
-        138153.0,
         138403.0,
-        138653.0
+        138653.0,
+        138903.0
       ],
       "handRepair": true
     },
@@ -2826,7 +2826,7 @@
     {
       "index": 164,
       "timesMs": [
-        146403.0
+        146153.0
       ],
       "directions": [
         "down"
@@ -3144,9 +3144,9 @@
       "added": false,
       "phaseErrorMs": 250.0,
       "cell": [
-        160153.0,
         160403.0,
-        160653.0
+        160653.0,
+        160903.0
       ],
       "handRepair": true
     },
@@ -3233,9 +3233,9 @@
       "added": false,
       "phaseErrorMs": 250.0,
       "cell": [
-        163653.0,
         163903.0,
-        164153.0
+        164153.0,
+        164403.0
       ],
       "handRepair": true
     },

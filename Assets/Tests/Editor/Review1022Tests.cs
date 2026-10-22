@@ -217,6 +217,21 @@ public class Review1022Tests
         Assert.True(normal.notes.Any(n => Math.Abs(n.time - 124607.1429) < 1), "近くの Hard の音へ動かした1個");
     }
 
+    // ---- くり返し1回目: 全曲の音の取り方(Codex と合意した4か所) ----
+    [Test]
+    public void LogicLowerChartsUseTheHardSoundsNearby()
+    {
+        var easy = ChartLoader.LoadFromStreamingAssets("logic", "Easy");
+        var normal = ChartLoader.LoadFromStreamingAssets("logic", "Normal");
+        var hard = ChartLoader.LoadFromStreamingAssets("logic", "Hard");
+        bool Has(ChartData chart, double ms) => chart.notes.Any(n => Math.Abs(n.time - ms) < 1);
+        foreach (var (chart, from, to) in new[] { (easy, 38278.0, 38090.5), (easy, 108903.0, 108403.0), (easy, 146403.0, 146153.0), (normal, 146403.0, 146153.0) })
+        {
+            Assert.True(Has(chart, to) && Has(hard, to), to + "ms は同じ色の Hard の音");
+            Assert.False(Has(chart, from), from + "ms には音の立ち上がりが無い");
+        }
+    }
+
     static void Feed(PlayTrackingWatch watch, int color, double from, double to)
     {
         int n = (int)Math.Floor((to - from) * 30 + 1e-6);
