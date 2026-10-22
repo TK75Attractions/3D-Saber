@@ -192,6 +192,31 @@ public class Review1022Tests
         Assert.True(Has(easy, 34434)); Assert.False(Has(easy, 34528), "Easy も Normal と同じ時刻へ");
     }
 
+    // ---- 11: ユーザーが直すと決めた2か所 ----
+    [Test]
+    public void ElDoradoEasyStartsWhenTheMusicStarts()
+    {
+        // 音源は 2.10 秒まで無音。Easy の最初のノーツも Normal・Hard と同じ 2.399 秒から。
+        foreach (var difficulty in new[] { "Easy", "Normal", "Hard" })
+        {
+            var chart = ChartLoader.LoadFromStreamingAssets("ElDorado", difficulty);
+            Assert.GreaterOrEqual(chart.notes.Min(n => n.time + chart.offsetMs), 2100f, difficulty + " は音が鳴る前にノーツを置かない");
+        }
+    }
+
+    [Test]
+    public void AobasouLowerChartsHaveNoNotesWhereThereIsNoSound()
+    {
+        var normal = ChartLoader.LoadFromStreamingAssets("Aobasou", "Normal");
+        var easy = ChartLoader.LoadFromStreamingAssets("Aobasou", "Easy");
+        foreach (double ms in new[] { 83571.441, 87428.5844, 117428.5889, 118285.7318, 119571.4463, 135000.02, 124714.3042 })
+        {
+            Assert.False(normal.notes.Any(n => Math.Abs(n.time - ms) < 1), "Normal " + ms + "ms(音が無い)");
+            Assert.False(easy.notes.Any(n => Math.Abs(n.time - ms) < 1), "Easy " + ms + "ms(音が無い)");
+        }
+        Assert.True(normal.notes.Any(n => Math.Abs(n.time - 124607.1429) < 1), "近くの Hard の音へ動かした1個");
+    }
+
     static void Feed(PlayTrackingWatch watch, int color, double from, double to)
     {
         int n = (int)Math.Floor((to - from) * 30 + 1e-6);

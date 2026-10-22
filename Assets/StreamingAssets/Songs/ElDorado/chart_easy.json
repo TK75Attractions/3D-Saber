@@ -5,17 +5,6 @@
   "displayLevel": 1,
   "notes": [
     {
-      "beat": 2.998333,
-      "time": 1799.0,
-      "x": -0.9,
-      "y": 0.6429,
-      "type": "tap",
-      "color": "gold",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
       "beat": 3.998333,
       "time": 2399.0,
       "x": 0.9,

@@ -1342,17 +1342,6 @@
       "lengthMs": 0
     },
     {
-      "beat": 195.0,
-      "time": 83571.441,
-      "x": -1.9,
-      "y": -0.6,
-      "type": "tap",
-      "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
       "beat": 195.499971,
       "time": 83785.7143,
       "x": 1.9,
@@ -1390,17 +1379,6 @@
       "time": 85714.2984,
       "x": -0.9,
       "y": 0.3,
-      "type": "tap",
-      "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 204.0,
-      "time": 87428.5844,
-      "x": -1.9,
-      "y": -0.6,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -2024,45 +2002,12 @@
       "lengthMs": 0
     },
     {
-      "beat": 274.0,
-      "time": 117428.5889,
-      "x": 0.9,
-      "y": -0.6,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
       "beat": 275.0,
       "time": 117857.1603,
       "x": 1.9,
       "y": -0.6,
       "type": "tap",
       "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 276.0,
-      "time": 118285.7318,
-      "x": 1.9,
-      "y": -0.6,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 279.0,
-      "time": 119571.4463,
-      "x": -1.9,
-      "y": -0.6,
-      "type": "tap",
-      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -2156,8 +2101,8 @@
       "lengthMs": 0
     },
     {
-      "beat": 291.0,
-      "time": 124714.3042,
+      "beat": 290.75,
+      "time": 124607.1429,
       "x": -0.9,
       "y": -0.6,
       "type": "tap",
@@ -2327,17 +2272,6 @@
       "y": -0.6,
       "type": "tap",
       "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 315.0,
-      "time": 135000.02,
-      "x": -1.9,
-      "y": -0.6,
-      "type": "tap",
-      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
