@@ -14,6 +14,15 @@ using UnityEngine.TestTools;
 
 public class RushESecretPlayTests
 {
+    // 剣の位置を UDP で送ったテストのあと、シーンをまたいで残る受け口(InputPoint)に「位置が届いた」記録を残さない。
+    // 残ると、次のクラスの本編が「カメラの台なのに位置が来ない」とみなして曲の頭で止める(2026-10-22)。次のシーンが作り直す。
+    [UnityTearDown]
+    public IEnumerator ForgetCameraInput()
+    {
+        foreach (var input in Object.FindObjectsByType<InputPoint>(FindObjectsSortMode.None)) Object.Destroy(input.gameObject);
+        yield return null;
+    }
+
     [UnityTest]
     public IEnumerator MouseMovementWithoutAnyButtonRevealsEAfterTenCuts()
     {

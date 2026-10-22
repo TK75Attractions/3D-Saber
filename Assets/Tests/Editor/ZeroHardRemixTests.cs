@@ -51,15 +51,18 @@ public class ZeroHardRemixTests
             Assert.AreEqual(JsonUtility.ToJson(before[i]), JsonUtility.ToJson(after[i]));
         }
         var extras = current.notes.Where(n => n.time > after[0].time && n.time < after[0].time + 21677f).ToArray();
-        Assert.AreEqual(8, extras.Length);
+        // 2026-10-22 ユーザーの指示で、手直しした今の Hard に合わせた(単発は8個→13個、位置は外側寄りでばらす)。
+        Assert.AreEqual(13, extras.Length);
         Assert.IsTrue(extras.All(n => n.count == 1 && n.type == "tap" && n.direction == "none"));
-        Assert.AreEqual(2, extras.Select(n => new Vector2(n.x, n.y)).Distinct().Count());
-        Assert.IsTrue(extras.All(n => Mathf.Abs(n.x) >= 2f), "超ロング中の単発は外側の固定レーンへ置く");
+        Assert.IsTrue(extras.Any(n => n.x < 0) && extras.Any(n => n.x > 0), "左右の両側に置く");
+        Assert.IsTrue(extras.All(n => Mathf.Abs(n.x) >= 1.7f), "超ロング中の単発は外側寄りへ置く");
         Assert.IsTrue(extras.All(n => n.y == 1.5f), "配置可能域内の上段へ置く");
     }
 
+    // 2026-10-22 ユーザーの指示で、手直しした今の Hard に合わせた。ユーザーが音に合わせて手で置いたノーツは8分拍の線から外れてよい
+    // (いまは312個中25個)。拍の欄が実際の再生時刻と食い違わないこと(譜面エディターで保存し直しても動かない)は守る。
     [Test]
-    public void HardHeadsFollowTheConfirmedMetronomeInAudioTime()
+    public void HardBeatsMatchTheirAudioTimeOnTheConfirmedMetronome()
     {
         var chart = ChartLoader.LoadFromStreamingAssets("製作中", "hard");
         Assert.AreEqual(98f, chart.bpm);
@@ -68,8 +71,7 @@ public class ZeroHardRemixTests
         {
             double audioMs = note.time + (double)chart.offsetMs;
             double eighth = (audioMs - 20) * 98 / 30000;
-            Assert.That(eighth, Is.EqualTo(System.Math.Round(eighth)).Within(.00006), "実際の再生時刻が8分拍に一致: " + audioMs);
-            Assert.That(note.beat * 2, Is.EqualTo(eighth).Within(.00006));
+            Assert.That(note.beat * 2, Is.EqualTo(eighth).Within(.0002), "拍の欄が実際の再生時刻と一致: " + audioMs);
         }
     }
 
