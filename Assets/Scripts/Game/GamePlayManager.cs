@@ -872,7 +872,8 @@ public class GamePlayManager : MonoBehaviour
     // 2026-10-22: 片方の色だけ届かないときのスタッフ向けの1行、止まっている間の「確認中」・暗い幕・3・2・1 の輪と音、再開の表示を足した。
     void TickTrackingWatch()
     {
-        if (trackingView == null) return;
+        // 中断・結果へ進むと決めたあと(幕が閉じる間)は、見張りも表示も止める。数えかけの 3・2・1 の刻みや再開の音を鳴らさない(Codex の点検で 2026-10-22 に追加)。
+        if (trackingView == null || leaving) return;
         var input = InputPoint.Instance;
         double now = Time.realtimeSinceStartupAsDouble;
         if (input != null)
@@ -959,6 +960,8 @@ public class GamePlayManager : MonoBehaviour
         songPlayer.HeldByTracking = true;
         // 予約したサビの音や下げた音量を戻す(再開後、まだ来ていない入口は ChorusDrop が予約し直す)。
         if (chorusDrop != null) chorusDrop.ResetEffects();
+        // 区間の終わりで鳴り始めた「シュー」も止める(止めたあとまで鳴り続けていた。Codex の点検で 2026-10-22 に追加)。
+        if (feverShow != null) feverShow.StopEndSound();
     }
 
     // 止める前の刃の履歴(触れていたノーツ・振りの向き)を持ち越さず、再開してからの振りで判定する。

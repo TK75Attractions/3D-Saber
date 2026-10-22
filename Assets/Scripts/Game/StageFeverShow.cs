@@ -257,6 +257,11 @@ public sealed class StageFeverShow : MonoBehaviour
         if (endSource != null && endClip != null) endSource.PlayOneShot(endClip, 1f);
     }
 
+    // 剣を見失って曲を止めたとき(GamePlayManager.PauseForTracking)。鳴りかけの「シュー」だけを止める。
+    // 通り過ぎた区間の終わりは覚えたままなので、再開しても鳴らし直さない。背景の色と光はそのまま。
+    public void StopEndSound() { if (endSource != null) endSource.Stop(); }
+    public bool EndSoundPlaying => endSource != null && endSource.isPlaying;
+
     // 背景(カメラの背景色と霧の色)をブーストの色と金へ寄せる。どちらも 0 なら元の色へきっちり戻す。
     void ApplyAtmosphere()
     {

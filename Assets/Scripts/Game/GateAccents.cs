@@ -20,6 +20,8 @@ public sealed class GateAccents : MonoBehaviour
     public const float RingFrom = 2.2f, RingTo = 7.5f;
     // ゲートの筐体の分だけ、外側も「内側」として扱う(ゲートの線に重ねない)。
     public const float OutsideMargin = .3f;
+    // 演出控えめ(LOW)で残す光の強さ。
+    public const float LowGain = .35f;
     const int MaxStreaks = 12, MaxStars = 6, MaxRings = 4, RingSegments = 96, VertexBudget = 8000;
     const float Z = -.12f;
 
@@ -220,7 +222,8 @@ public sealed class GateAccents : MonoBehaviour
         crossAge += dt;
         if (crossAge >= CrossSeconds) { edgeCue.Restore(); crossAge = -1; return; }
         double restore = crossAge < CrossSeconds * .5f ? -1 : CountInGateCue.RestoreFrom + (crossAge - CrossSeconds * .5f) / (CrossSeconds * .5f) * CountInGateCue.RestoreSeconds;
-        edgeCue.Apply(2, crossAge, 0, restore, Color.white);
+        // 演出控えめでは、ほかの光と同じだけ弱める(辺だけ通常の強さで光っていた。Codex の点検で 2026-10-22 に追加)。
+        edgeCue.Apply(2, crossAge, 0, restore, Color.white, DisplaySettings.ReducedEffects ? LowGain : 1f);
     }
 
     // ロングの満ち方。上がるときはすぐ、下がるとき(取りこぼし・最後の一振り)は短くフェードする。
@@ -258,7 +261,7 @@ public sealed class GateAccents : MonoBehaviour
         if (mesh == null) return;
         vertices.Clear(); colors.Clear(); uvs.Clear(); indices.Clear();
         bool low = DisplaySettings.ReducedEffects;
-        float gain = (DisplaySettings.ProjectorMode ? .68f : 1f) * (low ? .35f : 1f);
+        float gain = (DisplaySettings.ProjectorMode ? .68f : 1f) * (low ? LowGain : 1f);
         float outerW = halfWidth + OutsideMargin, outerH = halfHeight + OutsideMargin;
 
         if (!low)

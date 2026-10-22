@@ -543,6 +543,58 @@ public class SongSelectKeyboardPlayTests
         }
     }
 
+    // 再開の 3・2・1 の途中で Esc を2回押してタイトルへ戻るとき、幕が閉じる間に刻みや再開の音を鳴らさない(2026-10-22 点検4回目)。
+    [UnityTest]
+    public IEnumerator AbortDuringTheResumeCountPlaysNoMoreCues()
+    {
+        using (var sender = new UdpClient())
+        {
+            byte[] packet = System.Text.Encoding.ASCII.GetBytes("-0.2,-0.6,0.2,-0.6");
+            void Send() => sender.Send(packet, packet.Length, new IPEndPoint(IPAddress.Loopback, input.port));
+            double deadline = Time.realtimeSinceStartupAsDouble + 2;
+            while (input.LastReceivedTime < 0 && Time.realtimeSinceStartupAsDouble < deadline) { Send(); yield return null; }
+            InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.Enter));
+            yield return null; yield return null;
+            InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+            var manager = Object.FindFirstObjectByType<GamePlayManager>();
+            deadline = Time.realtimeSinceStartupAsDouble + 20;
+            while ((manager == null || !manager.songPlayer.IsPlaying || manager.noteSpawner.AliveCount == 0)
+                && Time.realtimeSinceStartupAsDouble < deadline)
+            {
+                Send(); yield return null;
+                if (manager == null) manager = Object.FindFirstObjectByType<GamePlayManager>();
+            }
+            Assert.True(manager.songPlayer.IsPlaying);
+            deadline = Time.realtimeSinceStartupAsDouble + 8;
+            while (!manager.songPlayer.IsPaused && Time.realtimeSinceStartupAsDouble < deadline) yield return null;
+            Assert.True(manager.songPlayer.IsPaused, "見失ったら曲を止める");
+            var view = manager.TrackingView;
+            deadline = Time.realtimeSinceStartupAsDouble + 6;
+            while (view.HeadlineShown != "再開まで 3" && Time.realtimeSinceStartupAsDouble < deadline) { Send(); yield return null; }
+            Assert.AreEqual("再開まで 3", view.HeadlineShown);
+            // 「3」から約0.75秒で中断する。幕が閉じる間(約0.42秒)に「2」へ変わる時刻(1秒)が来る。
+            double countFrom = Time.realtimeSinceStartupAsDouble;
+            while (Time.realtimeSinceStartupAsDouble < countFrom + .7) { Send(); yield return null; }
+            foreach (var state in new[] { new KeyboardState(Key.Escape), new KeyboardState(), new KeyboardState(Key.Escape), new KeyboardState() })
+            {
+                InputSystem.QueueStateEvent(keyboard, state);
+                Send(); yield return null; Send(); yield return null;
+            }
+            Assert.True(ScreenTransition.IsBusy, "2回目でタイトルへ戻り始める");
+            int cues = view.CueCount;
+            double gameUntil = Time.realtimeSinceStartupAsDouble;
+            while (SceneManager.GetActiveScene().name == "Game" && Time.realtimeSinceStartupAsDouble < countFrom + 5)
+            {
+                gameUntil = Time.realtimeSinceStartupAsDouble;
+                Send(); yield return null;
+            }
+            yield return ScreenTransitionPlayTests.WaitForTransition();
+            Assert.AreEqual("Title", SceneManager.GetActiveScene().name);
+            Assert.Greater(gameUntil - countFrom, 1.02, "「2」へ変わる時刻まで本編が動いていた(確かめられる並び)");
+            Assert.AreEqual(cues, view.CueCount, "中断と決めたあとは刻みも再開の音も鳴らさない");
+        }
+    }
+
     // 運営のシャッター切り替え(Ctrl+Shift+S、b1b7160)を選曲で押しても、難易度は変わらない(2026-10-22、点検 4)。
     // 来場者の S は今までどおり「むずかしく」。
     [UnityTest]

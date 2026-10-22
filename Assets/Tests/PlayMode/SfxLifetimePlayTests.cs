@@ -182,6 +182,30 @@ public class SfxLifetimePlayTests
         Assert.True(clips.All(c => c == null), "タイトルの開始音を画面終了後に残さない");
     }
 
+    // 剣を見失って曲を止めたら、区間の終わりで鳴り始めた「シュー」も止める(2026-10-22 点検4回目)。再開しても鳴らし直さない。
+    [UnityTest]
+    public IEnumerator PausingStopsTheChorusEndSwishWithoutReplayingIt()
+    {
+        DisplaySettings.SetReducedEffectsForTest(false);
+        try
+        {
+            var show = Make<StageFeverShow>();
+            var timeline = new StagePerformanceTimeline { sections = new[] {
+                new StagePerformanceTimeline.Section { startSeconds = 1, endSeconds = 2, intensity = 1 } } };
+            show.Setup(StageTheme.AstralOrbit, 0, timeline, new ChartData { bpm = 120, notes = new List<NoteData>() });
+            show.Tick(1.95, .02f); show.Tick(2.01, .02f);
+            Assert.AreEqual(1, show.EndSoundCount, "区間の終わりで1回");
+            yield return null;
+            Assert.IsTrue(show.EndSoundPlaying);
+            show.StopEndSound();
+            yield return null;
+            Assert.IsFalse(show.EndSoundPlaying, "止めたら鳴りやむ");
+            show.Tick(2.01, .02f); show.Tick(2.05, .02f);
+            Assert.AreEqual(1, show.EndSoundCount, "再開しても鳴らし直さない");
+        }
+        finally { DisplaySettings.ResetReducedEffectsCacheForTest(); }
+    }
+
     T Make<T>() where T : Component
     {
         var go = new GameObject("SfxLifetimeTest", typeof(AudioSource));

@@ -232,6 +232,34 @@ public class FlourishGameplayTests
         Assert.IsFalse(left.HasPropertyBlock(), "0.4 秒で元の材質へ戻す");
     }
 
+    // 演出控えめでは、X 斬りの辺もほかの光と同じ 0.35 倍に弱める(2026-10-22 点検4回目。辺だけ通常の強さで光っていた)。
+    [Test]
+    public void CrossCutEdgesDimWithReducedEffects()
+    {
+        var accents = BuildGate();
+        var left = GameObject.Find("JudgeGate").transform.Find("GateLeft").GetComponent<MeshRenderer>();
+        int emission = Shader.PropertyToID("_EmissionColor");
+        if (!left.sharedMaterial.HasProperty(emission)) Assert.Ignore("ゲートの材質に発光の色がありません。");
+        Color original = left.sharedMaterial.GetColor(emission);
+        float Lift(bool low)
+        {
+            DisplaySettings.SetReducedEffectsForTest(low);
+            notes.Clear(); score.Reset();
+            Spawn(N(1000, "blue"), N(1000, "red"));
+            Cut(0); Cut(1);
+            accents.Tick(.05f);
+            Assert.IsTrue(accents.CrossLit);
+            var block = new MaterialPropertyBlock(); left.GetPropertyBlock(block);
+            float lift = ((Vector4)(block.GetColor(emission) - original)).magnitude;
+            for (int i = 0; i < 5; i++) accents.Tick(.1f);
+            Assert.IsFalse(left.HasPropertyBlock());
+            return lift;
+        }
+        float normal = Lift(false), reduced = Lift(true);
+        Assert.Greater(normal, .1f);
+        Assert.AreEqual(GateAccents.LowGain, reduced / normal, .02f, "ほかの光と同じだけ弱める");
+    }
+
     // ---- 祭2・祭4 ----
 
     [Test]

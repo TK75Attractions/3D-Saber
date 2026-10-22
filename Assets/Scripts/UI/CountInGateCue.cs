@@ -79,11 +79,14 @@ public sealed class CountInGateCue
     static float Pulse(double age, double seconds) => age < 0 ? 0f : Mathf.Max(0f, 1f - (float)(age / seconds));
 
     // step: 0〜2 は数字、3 は START。sinceFirstBeat: 「3」の拍からの秒数。startAge: START からの秒数(START 前は負)。
-    public void Apply(int step, double sinceFirstBeat, double countSeconds, double startAge, Color accent)
+    // strength: 元の見た目からどれだけ変えるか(1=そのまま。X 斬りの辺は演出控えめで弱める、GateAccents)。
+    public void Apply(int step, double sinceFirstBeat, double countSeconds, double startAge, Color accent, float strength = 1f)
     {
         if (step < 0) { Restore(); return; }
         float back = startAge > RestoreFrom ? Mathf.Clamp01((float)((startAge - RestoreFrom) / RestoreSeconds)) : 0f;
         if (back >= 1f) { Restore(); return; }
+        strength = Mathf.Clamp01(strength);
+        back = 1f - strength * (1f - back);
         Applied = true;
         float emission = GameStageSkin.GateEmission;
         for (int i = 0; i < edges.Length; i++)
@@ -125,7 +128,7 @@ public sealed class CountInGateCue
         // 床の判定線: 左半分は「3」から青、右半分は「2」から赤。START の後 0.3 秒で白へ戻す。
         if (floor != null)
         {
-            float fade = step >= 3 ? 1f - Mathf.Clamp01((float)(startAge / .3)) : 1f;
+            float fade = (step >= 3 ? 1f - Mathf.Clamp01((float)(startAge / .3)) : 1f) * strength;
             floor.SetCountTint(UISkinPalette.LogoBlue, (step >= 0 ? 1f : 0f) * fade, UISkinPalette.LogoRed, (step >= 1 ? 1f : 0f) * fade);
         }
     }
