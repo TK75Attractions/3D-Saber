@@ -188,8 +188,8 @@ func disableCameraPostProcessing(_ camera: AVCaptureDevice) -> Bool {
     return true
 }
 
-// 固定短時間露出は明示 opt-in。ISO は最低感度の2倍（+1段）を初期値にして
-// LED 芯の飽和の余裕を残しつつ、反射光を自動ISOで持ち上げない。飽和は実機で確認する。
+// 固定短時間露出は明示 opt-in。10/22午後の自動露出（−2EV）の露出積中央値は約0.87 ISO秒。
+// 1 ISO秒を維持する（1/2000ならISO2000）。最低ISO×2では約30倍暗く、実機で剣を見失った。
 struct CameraShutterPlan: Equatable {
     let duration: CMTime
     let iso: Float
@@ -203,7 +203,8 @@ struct CameraShutterPlan: Equatable {
         let ceiling = CMTimeMinimum(maximum, frameDuration)
         guard CMTimeCompare(minimum, ceiling) <= 0 else { return nil }
         let duration = CMTimeMaximum(minimum, CMTimeMinimum(CMTime(value: 1, timescale: Int32(denominator)), ceiling))
-        return Self(duration: duration, iso: min(maxISO, minISO * 2))
+        let iso = Float(1 / CMTimeGetSeconds(duration))
+        return Self(duration: duration, iso: min(maxISO, max(minISO, iso)))
     }
 }
 

@@ -116,12 +116,15 @@ final class DetectionCoreTests: XCTestCase {
         for denominator in [500, 1000, 2000] {
             let chosen = try XCTUnwrap(plan(denominator))
             XCTAssertEqual(CMTimeGetSeconds(chosen.duration), 1 / Double(denominator), accuracy: 1e-9)
-            XCTAssertEqual(chosen.iso, 64)
+            XCTAssertEqual(chosen.iso, min(1000, Float(denominator)))
             XCTAssertLessThanOrEqual(CMTimeGetSeconds(chosen.duration), 1.0 / 60)
         }
         XCTAssertEqual(CMTimeGetSeconds(try XCTUnwrap(plan(2000, minimum: 0.001)).duration), 0.001)
         XCTAssertEqual(CMTimeGetSeconds(try XCTUnwrap(plan(500, maximum: 0.001)).duration), 0.001)
         XCTAssertEqual(CMTimeGetSeconds(try XCTUnwrap(plan(500, frame: 0.001)).duration), 0.001)
+        XCTAssertEqual(plan(2000, maxISO: 6400)?.iso, 2000)
+        XCTAssertEqual(plan(500, minISO: 800, maxISO: 6400)?.iso, 800)
+        XCTAssertEqual(plan(2000, minimum: 0.001, maxISO: 6400)?.iso, 1000)
         XCTAssertEqual(plan(1000, minISO: 80, maxISO: 100)?.iso, 100)
         XCTAssertEqual(plan(1000, minISO: 80, maxISO: 80)?.iso, 80)
         XCTAssertNil(plan(0))

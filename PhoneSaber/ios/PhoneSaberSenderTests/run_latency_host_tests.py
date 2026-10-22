@@ -186,7 +186,7 @@ extension AVCaptureSession { func addOutput(_ output: AVCaptureVideoDataOutput) 
             for denominator in [500, 1000, 2000] {
                 XCTAssertTrue(try controller.apply(denominator, to: camera))
                 XCTAssertEqual(camera.exposureMode, .custom)
-                XCTAssertEqual(camera.customISO, 64)
+                XCTAssertEqual(camera.customISO, min(1000, Float(denominator)))
                 XCTAssertEqual(CMTimeGetSeconds(camera.customDuration), 1 / Double(denominator), accuracy: 1e-9)
                 XCTAssertEqual(camera.activeVideoMinFrameDuration, CMTime(value: 1, timescale: Int32(fps)))
                 XCTAssertEqual(camera.activeVideoMaxFrameDuration, camera.activeVideoMinFrameDuration)
