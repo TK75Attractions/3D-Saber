@@ -170,7 +170,8 @@ public class SaberUIPointer : MonoBehaviour
         // 誤認識（会場の赤い物など）で照準が一瞬遠くへ飛ぶのを、最大2受信だけ無視する（PhoneSaberPointJumpGate）。
         if (source == 1) point = pointJumpGate.Apply(input.LastReceivedMonotonicTime, point, Screen.height * .25f);
         else pointJumpGate.Reset();
-        bool valid = (Application.isFocused || Application.isBatchMode) && source != 0 && !mouseNeedsMove;
+        bool valid = PhoneSaberUIFocus.AllowsInput(source == 1, Application.isFocused, Application.isBatchMode)
+            && source != 0 && !mouseNeedsMove;
         if (!hasAimPosition || source != 1) aimPosition = point;
         else aimPosition = Vector2.Lerp(aimPosition, point, 1 - Mathf.Exp(-Time.unscaledDeltaTime / SongSelectAimPointer.SaberSmoothingSeconds));
         hasAimPosition = valid;
@@ -226,8 +227,10 @@ public class SaberUIPointer : MonoBehaviour
 
     private void OnApplicationFocus(bool focused)
     {
-        // 非アクティブ中にUpdateが止まる設定でも、復帰時へ進捗を持ち越さない。
-        if (!focused) OnDisable();
+        // iPhone操作のためは失焦で切らない。マウス・受信切れは従来どおり取り消す。
+        var input = InputPoint.Instance;
+        float activeSeconds = aimReticle != null ? SongSelectAimPointer.SaberActiveSeconds : StaleSeconds;
+        if (!focused && (input == null || !input.IsRecentlyActive(activeSeconds))) OnDisable();
     }
 
     private void BuildCursor()
@@ -282,7 +285,7 @@ public class SaberUIPointer : MonoBehaviour
         if (aimReticle != null) { UpdateAim(); return; }
         if (ScreenTransition.IsBusy) BeginArrival();
         var ip = InputPoint.Instance;
-        bool active = (Application.isFocused || Application.isBatchMode) && !ScreenTransition.IsBusy && ip != null && ip.IsRecentlyActive(StaleSeconds) && cam != null;
+        bool active = !ScreenTransition.IsBusy && ip != null && ip.IsRecentlyActive(StaleSeconds) && cam != null;
         if (!active)
         {
             SetCursorVisible(false);

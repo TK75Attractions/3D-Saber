@@ -99,7 +99,6 @@ public sealed class SongSelectAimPointer : MonoBehaviour
 
     void Update()
     {
-        bool focused = Application.isFocused || Application.isBatchMode;
         var input = InputPoint.Instance;
         var mouse = Mouse.current;
         Vector2 mousePoint = mouse != null ? mouse.position.ReadValue() : lastMouse;
@@ -116,7 +115,8 @@ public sealed class SongSelectAimPointer : MonoBehaviour
         // 誤認識（会場の赤い物など）で照準が一瞬遠くへ飛ぶのを、最大2受信だけ無視する（PhoneSaberPointJumpGate）。
         if (kind == 1) point = pointJumpGate.Apply(input.LastReceivedMonotonicTime, point, Screen.height * .25f);
         else pointJumpGate.Reset();
-        bool valid = focused && kind != 0 && !mouseNeedsMove && new Rect(0, 0, Screen.width, Screen.height).Contains(point);
+        bool valid = PhoneSaberUIFocus.AllowsInput(kind == 1, Application.isFocused, Application.isBatchMode)
+            && kind != 0 && !mouseNeedsMove && new Rect(0, 0, Screen.width, Screen.height).Contains(point);
         if (!hasPoint) smoothed = point;
         else if (kind == 1) smoothed = Vector2.Lerp(smoothed, point, 1 - Mathf.Exp(-Time.unscaledDeltaTime / SaberSmoothingSeconds));
         else smoothed = point;
@@ -331,7 +331,12 @@ public sealed class SongSelectAimPointer : MonoBehaviour
         foreach (var action in Object.FindObjectsByType<MenuNoteAction>(FindObjectsSortMode.None)) action.CancelPendingShot();
     }
     void CancelCharge() { tracker.Cancel(); SetHovered(default); }
-    void OnApplicationFocus(bool focused) { if (!focused) BeginArrival(); }
+    void OnApplicationFocus(bool focused)
+    {
+        // 受信中のiPhoneは失焦しても操作を続ける。マウス・受信切れのためは取り消す。
+        var input = InputPoint.Instance;
+        if (!focused && (input == null || !input.IsRecentlyActive(SaberActiveSeconds))) BeginArrival();
+    }
     void OnDisable() { BeginArrival(); StopChargeSound(); if (reticle != null) reticle.gameObject.SetActive(false); }
     void OnDestroy()
     {
