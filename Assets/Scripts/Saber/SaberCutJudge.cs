@@ -17,9 +17,10 @@ public class SaberCutJudge : MonoBehaviour
 {
     // 同時に切れるとみなすノーツの時刻の差(秒)。譜面の同時ノーツは時刻差0で、後続のノーツは0.06秒以上離れている。
     public const float SimultaneousSeconds = .025f;
-    // 向きが合うとみなす幅の既定(±度)。これより外は向き違いで1段下げ、120°より外(逆向き)は切らない(CutDirectionHelper.ShouldRejectOpposite)。
-    // 2026-10-21 に±45°から±60°へ(1段下げの帯を、外側の120°は変えずに内側から狭めた)。譜面のチェック(SaberChartLint)も同じ値。
-    public const float DefaultDirectionToleranceDegrees = 60f;
+    // 向きが合うとみなす幅の既定(±度)。これより外の振りでは、向きの決まったノーツを切らない(CuttableNote。判定もミスも出さない)。
+    // 2026-10-21 に±45°から±60°へ。10-22 に向き違いの1段下げをやめて切らないようにし、そのかわり±70°へ広げた(ユーザー指定)。
+    // 譜面のチェック(SaberChartLint)も同じ値。
+    public const float DefaultDirectionToleranceDegrees = 70f;
     // 向きを刃の中心の動きで決めるのに要る最小の移動量。これより短ければ従来どおり速さの向きを使う。
     const float DirectionTravel = .5f;
     // 通り過ぎた時刻を前後の刃の値の間で割り振るのは、値の間がこれ以下のときだけ(秒)。長ければ今の値の時刻にする。
@@ -157,7 +158,7 @@ public class SaberCutJudge : MonoBehaviour
 
     public int TryCut() => TryCut(double.NaN);
 
-    // 戻り値は、このフレームで刃が抜けた(または通り過ぎた)ノーツの数(逆方向などで切れなかったものも数える)。
+    // 戻り値は、このフレームで刃が抜けた(または通り過ぎた)ノーツの数(向き違いなどで切れなかったものも数える)。
     public int TryCut(double currentSongTime)
     {
         songTime = currentSongTime;
@@ -319,7 +320,7 @@ public class SaberCutJudge : MonoBehaviour
             }
             p = Track(note, p, distNow, closest, center);
             if (!Passed(p, a, b, center, noteXY)) continue;
-            // 通り過ぎた: 抜け切るのを待たずに切る。切れなかったら(逆向き・ロングの途中)この振りではもう切らない。
+            // 通り過ぎた: 抜け切るのを待たずに切る。切れなかったら(向き違い・ロングの途中)この振りではもう切らない。
             // 構えの振りで通り過ぎても、振り返してから入り直すので、振り下ろしの時刻で採点される。
             Vector3 swing = SwingVelocity(p, center - p.anchor);
             if (TakeTurn(note, p, swing, imuHint, a, b))
@@ -592,7 +593,7 @@ public class SaberCutJudge : MonoBehaviour
 
     // 同じ振りの続きで、後ろの時刻のノーツをなぞりとして切ってよいか(曲時計があるときだけ)。
     // 前に切ったノーツから「譜面の間隔×sweepPaceRatio」以上たって届いたか、このノーツの時刻から PERFECT の幅以内に届いたこと。
-    // 向きの決まったノーツは振りの向きが合うときだけ(なぞりの途中で、向き違いの降格カットをしない)。
+    // 向きの決まったノーツは振りの向きが合うときだけ(合わなければ、この振りでは切らずに見送る)。
     bool Sweeps(CuttableNote note, Pending p, Vector3 velocity, CutDirection imuHint)
     {
         if (!SweepActive || !Finite(strokeGroupReach)) return false;

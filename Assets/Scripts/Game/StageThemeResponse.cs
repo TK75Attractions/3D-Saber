@@ -104,7 +104,7 @@ public sealed partial class StageThemeResponse : MonoBehaviour
         return renderer;
     }
 
-    // 親は方向降格後のPerfectのみを一度通知する。手色は受け取らない。
+    // 親は確定判定のPerfectのみを一度通知する。手色は受け取らない。
     public void OnPerfect(int lane)
     {
         if (!built || !isActiveAndEnabled || lane < 0 || lane >= LaneCount) return;

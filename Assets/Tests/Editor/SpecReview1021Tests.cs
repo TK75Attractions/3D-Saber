@@ -33,7 +33,7 @@ public class SpecReview1021Tests
             Assert.False(GameSession.ShouldRecordRun, "全部 MISS で1回も切っていない回");
             Assert.True(GameSession.CompletedWithoutRecord);
             GameSession.FinalCutCount = 1;
-            Assert.True(GameSession.ShouldRecordRun, "向き違いで MISS に下がった切りも、切った回");
+            Assert.True(GameSession.ShouldRecordRun, "1回でも切った回は残す");
             GameSession.FinalCutCount = 0; GameSession.FinalBad = 1;
             Assert.True(GameSession.ShouldRecordRun, "切った回数を持たない経路でも、MISS 以外の判定があれば残す");
             Assert.False(GameSession.CompletedWithoutRecord);

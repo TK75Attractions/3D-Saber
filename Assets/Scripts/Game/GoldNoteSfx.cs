@@ -111,7 +111,7 @@ public class GoldNoteSfx : MonoBehaviour
         note.OnJudged += HandleJudged;
     }
 
-    // 方向の降格も済んだ確定判定で分ける。Perfect と Great は会心の音、それ以外は段を戻すだけ(音は JudgmentSfx)。
+    // 確定判定で分ける。Perfect と Great は会心の音、それ以外は段を戻すだけ(音は JudgmentSfx)。
     private void HandleJudged(CuttableNote note, JudgmentTier tier, Vector3 point, Vector3 velocity)
     {
         if (note == null || note.IsMissed || !note.IsCut) return;

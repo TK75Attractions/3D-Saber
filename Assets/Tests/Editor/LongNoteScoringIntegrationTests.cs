@@ -83,19 +83,21 @@ public class LongNoteScoringIntegrationTests
     }
 
     [Test]
-    public void WrongDirectionLowersOnlyThatCut()
+    public void WrongDirectionSwingDoesNotCountAsACut()
     {
         Spawn(3);
         note.RequiredDirection = CutDirection.Right;
-        // 真逆の拒否とは別に、90度違う受理可能なカットの降格を確認する。
+        // 2026-10-22 から、90度違う振りは1段下げで数えず、その回を切らない(残り回数も減らない)。
         note.Cut(Vector3.zero, Vector3.right * 5);
         note.Cut(Vector3.zero, Vector3.up * 5);
+        Assert.AreEqual(2, note.RemainingCuts);
         note.Cut(Vector3.zero, Vector3.right * 5);
-        CollectionAssert.AreEqual(new[] { JudgmentTier.Perfect, JudgmentTier.Great }, longCuts);
-        CollectionAssert.AreEqual(new[] { JudgmentTier.Perfect }, judgments, "最後の回の向きは合っている");
-        Assert.AreEqual(2, score.PerfectCount); Assert.AreEqual(1, score.GreatCount);
-        Assert.AreEqual(3, score.Combo, "Great はコンボを切らない");
-        Assert.AreEqual(90000 * 800 / 900, score.Score);
+        note.Cut(Vector3.zero, Vector3.right * 5);
+        CollectionAssert.AreEqual(new[] { JudgmentTier.Perfect, JudgmentTier.Perfect }, longCuts);
+        CollectionAssert.AreEqual(new[] { JudgmentTier.Perfect }, judgments);
+        Assert.AreEqual(3, score.PerfectCount); Assert.AreEqual(0, score.GreatCount);
+        Assert.AreEqual(3, score.Combo);
+        Assert.AreEqual(ScoreManager.NoteScore, score.Score);
     }
 
     [Test]

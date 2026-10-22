@@ -30,14 +30,13 @@ public class ScoreManager : MonoBehaviour
     public int GreatCount { get; private set; }
     public int GoodCount { get; private set; }
     public int BadCount { get; private set; }
-    // 実際にノーツを切った回数(判定の良し悪しと別)。向き違いで MISS に下がった切り・ロングの途中の切りも数え、期限切れは数えない。
+    // 実際にノーツを切った回数(判定の良し悪しと別)。ロングの途中の切りも数え、期限切れは数えない。
     // 1回も切っていない回を記録に残さないために使う(仕様面の点検 1)。点数・判定・コンボには関係しない。
     public int CutCount { get; private set; }
     // 空譜面を達成扱いにしない。Good はコンボ継続、Bad / Miss は達成対象外。
     public bool IsFullCombo => HitCount > 0 && BadCount == 0 && MissCount == 0;
     public bool IsAllPerfect => IsFullCombo && PerfectCount == HitCount;
     public JudgmentTier LastTier { get; private set; } = JudgmentTier.Miss;
-    public bool LastWasWrongFlick { get; private set; }
     // 直近判定のカットを行った手(ノーツ経由のカットのみ。Miss や直接 RegisterHit では Any)。
     // HapticFeedback が「切った手のデバイスだけ振動」させるのに使う。
     public SaberHand LastCutHand { get; private set; } = SaberHand.Any;
@@ -63,7 +62,9 @@ public class ScoreManager : MonoBehaviour
     CrossCandidate crossCandidate;
 
     public event System.Action<JudgmentTier, int> OnJudgment; // (tier, awarded score this judgment)
-    public event System.Action<JudgmentTier, int, bool> OnJudgmentEx; // (tier, awarded, wasWrongFlick)
+    // (tier, awarded, wasWrongFlick)。wasWrongFlick は向き違いの1段下げの印(HUD の ! FLICK)だったが、
+    // 2026-10-22 から向きの合わない振りでは切らないので、いつも false。
+    public event System.Action<JudgmentTier, int, bool> OnJudgmentEx;
     // ロングの途中の1回(tier, awarded, wasWrongFlick)。コンボと判定文字の表示用。
     // 効果音・光・振動はノーツの終わり(OnJudgment)だけに出す。
     public event System.Action<JudgmentTier, int, bool> OnLongCut;
@@ -164,7 +165,6 @@ public class ScoreManager : MonoBehaviour
 
     private void ClearLastCut()
     {
-        LastWasWrongFlick = false;
         LastErrorValid = false;
         LastErrorMs = 0;
         LastCutHand = SaberHand.Any;
@@ -193,17 +193,15 @@ public class ScoreManager : MonoBehaviour
     }
 
     // ロングの途中の1回を、判定1つ・コンボ +1 として数える。最後の1回は OnCut でノーツの判定として数える。
-    // ロングは時刻ではなく切れたかどうかで採点し、その回の向きが違えば1段下げる。
+    // ロングは時刻ではなく切れたかどうかで採点する(向きの合わない振りはそもそも切れない)。
     private void HandlePartialCut(CuttableNote note, int cutIndex, int total)
     {
         if (IsFinalized || note == null || total <= 1 || cutIndex >= total - 1) return;
         CutCount++;
-        bool wrongDir = note.RequiredDirection != CutDirection.None && !note.LatestCutCorrectDirection;
-        JudgmentTier tier = wrongDir ? DowngradeTier(JudgmentTier.Perfect) : JudgmentTier.Perfect;
         LastErrorValid = false;
         int before = Score;
-        AddHit(tier, CutWeight(note.IsGold));
-        OnLongCut?.Invoke(tier, Score - before, wrongDir);
+        AddHit(JudgmentTier.Perfect, CutWeight(note.IsGold));
+        OnLongCut?.Invoke(JudgmentTier.Perfect, Score - before, false);
     }
 
     private void HandleCut(CuttableNote note, Vector3 point, Vector3 velocity)
@@ -217,7 +215,6 @@ public class ScoreManager : MonoBehaviour
         LastCutWasCross = false;
         int weight = CutWeight(note.IsGold);
         JudgmentTier tier;
-        bool wrongDir;
         if (note.RequiredCutCount > 1)
         {
             LastErrorValid = false;
@@ -228,28 +225,21 @@ public class ScoreManager : MonoBehaviour
                 note.NotifyJudgment(JudgmentTier.Miss, point, velocity);
                 return;
             }
-            // 最後の1回。途中の回と同じく、切れたら Perfect でその回の向きが違えば1段下げる。
+            // 最後の1回。途中の回と同じく、切れたら Perfect。
             CutCount++;
             tier = JudgmentTier.Perfect;
-            wrongDir = note.RequiredDirection != CutDirection.None && !note.LatestCutCorrectDirection;
         }
         else
         {
-            // タップ／フリックは従来通り時間誤差ベース。
+            // タップ／フリックは時間誤差だけで決める(向きの合わない振りはそもそも切れないので、向きで下げない)。
             CutCount++;
             double songTime = note.LastCutSongTime ?? (songPlayer != null ? songPlayer.SongTime : 0);
             double error = songTime - note.HitTime;
             tier = JudgmentTierHelper.Classify(error);
             LastErrorMs = error * 1000.0;
             LastErrorValid = true;
-            wrongDir = note.RequiredDirection != CutDirection.None && !note.LastCutCorrectDirection;
         }
 
-        if (wrongDir)
-        {
-            tier = DowngradeTier(tier);
-        }
-        LastWasWrongFlick = wrongDir;
         if (note.RequiredCutCount == 1) CheckCrossCut(note, tier, point);
         RegisterHitWithContext(tier, weight);
         note.NotifyJudgment(tier, point, velocity);
@@ -273,18 +263,6 @@ public class ScoreManager : MonoBehaviour
             return;
         }
         crossCandidate = new CrossCandidate { valid = true, hand = LastCutHand, hitTime = note.HitTime, cutTime = cutTime, point = point };
-    }
-
-    public static JudgmentTier DowngradeTier(JudgmentTier t)
-    {
-        switch (t)
-        {
-            case JudgmentTier.Perfect: return JudgmentTier.Great;
-            case JudgmentTier.Great: return JudgmentTier.Good;
-            case JudgmentTier.Good: return JudgmentTier.Bad;
-            case JudgmentTier.Bad: return JudgmentTier.Miss;
-            default: return JudgmentTier.Miss;
-        }
     }
 
     // 完了率（0..1）→ tier。100% = Perfect、85%以上 = Great、60%以上 = Good、30%以上 = Bad、未満 = Miss。
@@ -344,7 +322,7 @@ public class ScoreManager : MonoBehaviour
         JudgedNoteCount++;
         int award = Score - before;
         OnJudgment?.Invoke(tier, award);
-        OnJudgmentEx?.Invoke(tier, award, LastWasWrongFlick);
+        OnJudgmentEx?.Invoke(tier, award, false);
     }
 
     // 1回分(タップは1つ、ロングは1カット)の判定を数える。通知は呼び出し側が出す。

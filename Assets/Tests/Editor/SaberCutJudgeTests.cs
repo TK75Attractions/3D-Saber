@@ -578,7 +578,7 @@ public class SaberCutJudgeTests
         var (judge, tracker, bridge, spawner, score, notes) = SweepRig(FourInARow("down"));
         SweepRight(judge, tracker, bridge, spawner, 0);
         Assert.True(notes[0].IsCut && notes[1].IsCut && notes[3].IsCut, "矢印の合うノーツはなぞりで切れる");
-        Assert.False(notes[2].IsCut, "下向きの矢印は右へのなぞりでは切らない(向き違いの降格カットもしない)");
+        Assert.False(notes[2].IsCut, "下向きの矢印は右へのなぞりでは切らない");
         Assert.True(notes[2].IsMissed);
         Assert.AreEqual(3, score.PerfectCount);
         Assert.AreEqual(1, score.MissCount);
@@ -785,12 +785,13 @@ public class SaberCutJudgeTests
     }
 
     // 画面上の振りの向き(x, y)。カメラの値は縦が約1/2.4に縮んで届くので、カメラのときは縦を2.4倍して向きを比べる。
-    [TestCase(CutDirection.Down, .940f, -.342f, true, true)]   // 画面では真下から70°。体の動きでは約49°
-    [TestCase(CutDirection.Down, .940f, -.342f, false, false)] // マウスなど(カメラ以外)は補正しない
-    [TestCase(CutDirection.Right, .643f, .766f, true, false)]  // 画面では水平から50°。体の動きでは約71°
-    [TestCase(CutDirection.Right, .643f, .766f, false, true)]
+    // 向きが合わない振りでは切らない(2026-10-22〜、幅は±70°)。
+    [TestCase(CutDirection.Down, .966f, -.259f, true, true)]   // 画面では真下から75°。体の動きでは約57°
+    [TestCase(CutDirection.Down, .966f, -.259f, false, false)] // マウスなど(カメラ以外)は補正しない
+    [TestCase(CutDirection.Right, .574f, .819f, true, false)]  // 画面では水平から55°。体の動きでは約74°
+    [TestCase(CutDirection.Right, .574f, .819f, false, true)]
     public void CameraSwingDirectionIsComparedWithTheVerticalMotionScaledBack(CutDirection required, float x, float y,
-        bool camera, bool correct)
+        bool camera, bool cut)
     {
         var (judge, tracker, bridge) = GameBladeRig();
         bridge.OverrideCameraInput(camera);
@@ -800,8 +801,8 @@ public class SaberCutJudgeTests
         tracker.ResetTo(-dir * 1.5f);
         Step(judge, tracker, bridge, -dir, .98, false);
         Step(judge, tracker, bridge, dir * .6f, 1.0, false);
-        Assert.True(note.IsCut);
-        Assert.AreEqual(correct, note.LastCutCorrectDirection);
+        Assert.AreEqual(cut, note.IsCut);
+        Assert.False(note.IsMissed);
     }
 
     [TestCase(true)]
@@ -912,11 +913,13 @@ public class SaberCutJudgeTests
         Assert.AreEqual(1, judge.PendingCount);
     }
 
-    // 2026-10-21 に±45°から±60°へ。1段下げるのは60°より外だけ(外側の120°は下の OppositeSwing… で確かめる)。
-    [TestCase(55f, true, true)]
-    [TestCase(65f, true, false)]
+    // 2026-10-21 に±45°から±60°へ、10-22 に1段下げをやめて±70°へ。それより外の振りでは切らない。
+    [TestCase(65f, true, true)]
+    [TestCase(75f, true, false)]
+    [TestCase(115f, true, false)]
+    [TestCase(25f, false, true)]
     [TestCase(40f, false, false)]
-    public void DirectionToleranceIs60DegreesOnlyWithTheSongClock(float degrees, bool clock, bool correct)
+    public void DirectionToleranceIs70DegreesOnlyWithTheSongClock(float degrees, bool clock, bool cut)
     {
         var (judge, tracker, bridge) = GameBladeRig();
         var note = MakeNote(Vector3.zero);
@@ -928,26 +931,30 @@ public class SaberCutJudgeTests
         Step(judge, tracker, bridge, -dir, clock ? .98 : double.NaN, false);
         Step(judge, tracker, bridge, dir * .6f, clock ? 1.0 : double.NaN, false);
         if (!clock) Step(judge, tracker, bridge, dir * 2.6f, double.NaN, false); // 時計がなければ抜けたときに切る
-        Assert.True(note.IsCut);
-        Assert.AreEqual(correct, note.LastCutCorrectDirection, clock ? "曲時計があるときは ±60°" : "時計がないときは従来の ±30°");
+        Assert.AreEqual(cut, note.IsCut, clock ? "曲時計があるときは ±70°" : "時計がないときは従来の ±30°");
+        Assert.False(note.IsMissed, "向きの合わない振りでもミスにはしない");
     }
 
-    // 1段下げの帯の外側は120°のまま。それより逆向きの振りは切らない(構えの振りで切らない)。
-    [TestCase(115f, true)]
-    [TestCase(125f, false)]
-    public void OppositeSwingBeyond120DegreesStillDoesNotCut(float degrees, bool cut)
+    // 向きの合わない振りでは切れないが、ノーツは残り、構え直して向きの合う次の振りで切れる。採点はその振りの時刻。
+    [Test]
+    public void WrongWaySwingLeavesTheNoteForTheNextSwing()
     {
         var (judge, tracker, bridge) = GameBladeRig();
-        var note = MakeNote(Vector3.zero);
-        note.HitTime = 1.0;
+        var note = TimedNote(Vector3.zero, 1.0);
         note.RequiredDirection = CutDirection.Down;
-        float rad = degrees * Mathf.Deg2Rad;
-        Vector2 dir = new Vector2(Mathf.Sin(rad), -Mathf.Cos(rad)); // 真下から degrees だけ傾けた向き
-        tracker.ResetTo(-dir * 1.5f);
-        Step(judge, tracker, bridge, -dir, .98, false);
-        Step(judge, tracker, bridge, dir * .6f, 1.0, false);
-        Assert.AreEqual(cut, note.IsCut);
-        if (cut) Assert.False(note.LastCutCorrectDirection, "60°〜120°は切れて1段下げ");
+        tracker.ResetTo(new Vector3(-1.5f, 0f, 0f));
+        // 右へ払う(下向きの矢印に90°)。通り過ぎても切れない。
+        Step(judge, tracker, bridge, new Vector2(-1f, 0f), .90, false, 1f);
+        Step(judge, tracker, bridge, new Vector2(.6f, 0f), .92, false, 1f);
+        Step(judge, tracker, bridge, new Vector2(1.6f, 0f), .94, false, 1f);
+        Assert.False(note.IsCut, "横に払っても切れない");
+        Assert.False(note.IsMissed);
+        // 上へ構え直して、振り下ろす。
+        Step(judge, tracker, bridge, new Vector2(0f, 1.6f), .96, false, 1f);
+        Step(judge, tracker, bridge, new Vector2(0f, 1f), .98, false, 1f);
+        Step(judge, tracker, bridge, new Vector2(0f, -.6f), 1.0, false, 1f);
+        Assert.True(note.IsCut, "向きの合う振りで切れる");
+        Assert.AreEqual(.98 + .02 * (1.0 / 1.6), note.LastCutSongTime.Value, 1e-6, "採点は振り下ろしでノーツを通り過ぎた時刻");
     }
 
     [Test]

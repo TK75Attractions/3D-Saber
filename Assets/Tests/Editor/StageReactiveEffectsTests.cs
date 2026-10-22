@@ -210,14 +210,20 @@ public class StageReactiveEffectsTests
         Assert.Greater(good, 0f, "Good でも光る");
     }
 
-    [TestCase(1)] [TestCase(3)]
-    public void DirectionDowngradeBlocksBothAccentsEvenAfterLongCompletion(int cuts)
+    // 2026-10-22 から向きの合わない振りでは切らない(1段下げはやめた)。その振りでは何も光らせず、
+    // 矢印のノーツの Great は時刻のずれだけで出て、床の帯を Great の強さで出す。背景の Perfect 反応は出ない。
+    [Test]
+    public void WrongWaySwingLightsNothingAndAGreatArrowLightsOnlyTheFloor()
     {
-        var n = N(1000, "blue", cuts); n.direction = "right";
-        Spawn(n); for (int i = 0; i < cuts; i++) Cut(0);
+        var n = N(1000, "blue"); n.direction = "up";
+        Spawn(n);
+        notes[0].Cut(notes[0].transform.position, Vector3.right * 8, CutDirection.None, notes[0].RequiredHand);
+        Assert.False(notes[0].IsCut, "向きの合わない振りでは切らない");
+        Assert.AreEqual(0, effects.ActiveWaveCount);
+        Assert.AreEqual(0, spawner.GetComponentInChildren<GameplayCutFeedback>().ActiveCount);
+        Cut(0, .10);
         Assert.AreEqual(JudgmentTier.Great, score.LastTier);
-        // 方向降格後の Great は、床の帯を Great の強さで出す。背景の Perfect 反応は出ない。
-        Assert.AreEqual(1, effects.ActiveWaveCount); Assert.AreEqual(cuts > 1 ? 1 : 0, effects.ReleaseCount);
+        Assert.AreEqual(1, effects.ActiveWaveCount); Assert.AreEqual(0, effects.ReleaseCount);
         Assert.AreEqual(1, spawner.GetComponentInChildren<GameplayCutFeedback>().ActiveCount);
         Assert.AreEqual(0, effects.GetComponentInChildren<StageThemeResponse>().ActiveResponseCount);
     }

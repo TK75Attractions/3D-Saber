@@ -187,27 +187,28 @@ public class GameplayReliabilityTests
         Assert.Zero(score.Score);
     }
 
-    void MakeWrongFlick(ScoreManager score)
+    void MakeGoldFlick(ScoreManager score)
     {
         var spawner = Spawn(out var note);
         note.RequiredDirection = CutDirection.Right;
         note.IsGold = true;
         score.Bind(spawner);
-        note.Cut(Vector3.zero, Vector3.up * 5, CutDirection.None, SaberHand.Left);
-        note.Cut(Vector3.zero, Vector3.up * 5, CutDirection.None, SaberHand.Left);
-        Assert.True(score.LastWasWrongFlick);
+        note.Cut(Vector3.zero, Vector3.right * 5, CutDirection.None, SaberHand.Left);
+        note.Cut(Vector3.zero, Vector3.right * 5, CutDirection.None, SaberHand.Left);
         Assert.True(score.LastCutWasGold);
+        Assert.AreEqual(CutDirection.Right, score.LastCutDirection);
+        Assert.AreEqual(SaberHand.Left, score.LastCutHand);
     }
 
     [Test]
-    public void ReplayResetClearsWrongFlickAndThePreviousHand()
+    public void ReplayResetClearsTheLastCutAndThePreviousHand()
     {
         var score = Own("ResetScore").AddComponent<ScoreManager>();
-        MakeWrongFlick(score);
+        MakeGoldFlick(score);
         score.Reset();
-        Assert.False(score.LastWasWrongFlick);
         Assert.False(score.LastErrorValid);
         Assert.False(score.LastCutWasGold);
+        Assert.AreEqual(CutDirection.None, score.LastCutDirection);
         Assert.AreEqual(SaberHand.Any, score.LastCutHand);
     }
 
@@ -215,14 +216,13 @@ public class GameplayReliabilityTests
     public void DirectJudgmentsDoNotReuseThePreviousCutSfxOrHapticContext()
     {
         var score = Own("DirectScore").AddComponent<ScoreManager>();
-        MakeWrongFlick(score);
+        MakeGoldFlick(score);
         score.RegisterHit(JudgmentTier.Perfect);
-        Assert.False(score.LastWasWrongFlick);
         Assert.False(score.LastCutWasGold);
         Assert.AreEqual(CutDirection.None, score.LastCutDirection);
         Assert.AreEqual(SaberHand.Any, score.LastCutHand);
         score.RegisterMiss();
-        Assert.False(score.LastWasWrongFlick);
+        Assert.False(score.LastCutWasGold);
     }
 
     [Test]

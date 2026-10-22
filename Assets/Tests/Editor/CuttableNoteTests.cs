@@ -103,7 +103,7 @@ public class CuttableNoteTests
     }
 
     [Test]
-    public void Cut_PerpendicularDirection_StillCuts()
+    public void Cut_PerpendicularDirection_DoesNotCutUntilTheRightSwing()
     {
         var n = Make();
         n.RequiredDirection = CutDirection.Right;
@@ -112,11 +112,15 @@ public class CuttableNoteTests
         int onCut = 0;
         n.OnCut += (_, __, ___) => onCut++;
 
-        // 上方向（90°ズレ）→ 拒否されず、降格扱いでカットは成功
+        // 上方向（90°ズレ）→ 2026-10-22 から1段下げで切らず、その振りでは何も起きない
         n.Cut(Vector3.zero, Vector3.up);
+        Assert.IsFalse(n.IsCut);
+        Assert.IsFalse(n.IsMissed);
+        Assert.AreEqual(0, onCut);
+        // 向きの合う次の振りで切れる
+        n.Cut(Vector3.zero, Vector3.right);
         Assert.IsTrue(n.IsCut);
         Assert.AreEqual(1, onCut);
-        Assert.IsFalse(n.LastCutCorrectDirection, "向きが合っていないので方向フラグは false");
         Object.DestroyImmediate(n.gameObject);
     }
 
@@ -142,7 +146,7 @@ public class CuttableNoteTests
     [Test]
     public void Cut_DirectionVisualOnly_AcceptsAnyDirection()
     {
-        // メニューのナビノーツ用: 矢印は見た目だけで、逆方向のスイングでも切れる(降格もしない)
+        // メニューのナビノーツ用: 矢印は見た目だけで、逆方向のスイングでも切れる
         var n = Make();
         n.RequiredDirection = CutDirection.Up;
         n.DirectionVisualOnly = true;
@@ -152,22 +156,22 @@ public class CuttableNoteTests
         n.Cut(Vector3.zero, Vector3.down); // 真逆
         Assert.IsTrue(n.IsCut, "方向が見た目だけなら逆方向でも切れる");
         Assert.AreEqual(1, onCut);
-        Assert.IsTrue(n.LastCutCorrectDirection, "方向判定をしないので降格扱いにならない");
         Object.DestroyImmediate(n.gameObject);
     }
 
     [Test]
-    public void Cut_DirectionVisualOnly_Off_KeepsOppositeRejection()
+    public void Cut_DirectionVisualOnly_Off_CutsOnlyInTheArrowDirection()
     {
-        // 既定(false)では従来どおり逆方向は拒否・横振りは降格カット(本編の規則は不変)
+        // 既定(false)では、逆方向も横振りも切らない(本編の規則)
         var n = Make();
         n.RequiredDirection = CutDirection.Up;
         Assert.IsFalse(n.DirectionVisualOnly, "DirectionVisualOnly の既定は false");
         n.Cut(Vector3.zero, Vector3.down);
-        Assert.IsFalse(n.IsCut, "逆方向は拒否");
+        Assert.IsFalse(n.IsCut, "逆方向は切らない");
         n.Cut(Vector3.zero, Vector3.right);
-        Assert.IsTrue(n.IsCut, "横振りは降格カットで通る");
-        Assert.IsFalse(n.LastCutCorrectDirection);
+        Assert.IsFalse(n.IsCut, "横振りも切らない");
+        n.Cut(Vector3.zero, Vector3.up);
+        Assert.IsTrue(n.IsCut, "矢印の向きの振りで切れる");
         Object.DestroyImmediate(n.gameObject);
     }
 }

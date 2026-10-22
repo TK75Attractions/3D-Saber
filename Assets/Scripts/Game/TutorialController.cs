@@ -241,8 +241,6 @@ public sealed class TutorialController : MonoBehaviour
             return;
         }
         if (note.RequiredCutCount > 1) SetHint("数字がなくなるまで、同じ場所を切ろう");
-        else if (step.NeedDirection && !note.LastCutCorrectDirection)
-            SetHint("矢印の向きに振ろう(" + TutorialProgram.DirectionJapanese(note.RequiredDirection) + ")");
     }
 
     void Missed(CuttableNote note)

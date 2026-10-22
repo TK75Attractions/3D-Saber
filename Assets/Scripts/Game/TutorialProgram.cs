@@ -105,7 +105,8 @@ public static class TutorialProgram
         return steps.ToArray();
     }
 
-    // 1 回の判定が「成功」に数えられるか。向きの違いは 1 段降格で切れるが、矢印の練習では数えない。
+    // 1 回の判定が「成功」に数えられるか。矢印の練習は向きが合った切りだけを数える
+    // (2026-10-22 から向きの合わない振りではそもそも切れないので、切れた矢印はいつも向きが合っている)。
     // ロングは必要回数を切り切ったときだけ成功。割合による緩和はしない。
     public static bool CountsAsSuccess(TutorialStep step, JudgmentTier tier, bool correctDirection, int requiredCuts, int achievedCuts)
     {

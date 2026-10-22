@@ -40,7 +40,7 @@ public class CuttableNote : MonoBehaviour
         IsCut = IsMissed = IsFinalized = judgeable = false;
         JudgmentOwner = null;
         MinimumCutSpeed = 0; RequireJudgeableOnCut = DirectionVisualOnly = false;
-        LastCutCorrectDirection = LatestCutCorrectDirection = true; LastCutterHand = SaberHand.Any;
+        LastCutterHand = SaberHand.Any;
         LastCutSongTime = null;
         firstPiece = secondPiece = null;
         hasPendingFlash = false;
@@ -99,12 +99,12 @@ public class CuttableNote : MonoBehaviour
     // 誤った手のスイングは「切れない」(ペナルティなし。ロングの各カットにも同じルールを適用)。
     public SaberHand RequiredHand = SaberHand.Any;
     // 方向は見た目だけ(メニューのナビノーツ用)。true なら RequiredDirection は矢印の表示にだけ使い、
-    // 判定ではどの方向のスイングでも切れる(逆方向拒否も降格もしない)。本編のノーツは既定 false。
+    // 判定ではどの方向のスイングでも切れる。本編のノーツは既定 false。
     public bool DirectionVisualOnly = false;
-    // 通算で1回でも誤方向に切ったら false。
-    public bool LastCutCorrectDirection { get; private set; } = true;
-    // 直前の1カットだけの向き。ロングは1回ごとに採点するので、その回の降格に使う。
-    public bool LatestCutCorrectDirection { get; private set; } = true;
+    // 切れたカットの向きが合っていたか。2026-10-22 から向きの合わない振りでは切らないので、いつも true
+    // (判定の記録 PhoneSaberJudgeTimingLog などが読むので残す)。
+    public bool LastCutCorrectDirection => true;
+    public bool LatestCutCorrectDirection => true;
     // 最後に「受理された」カットを行った手。ハプティクスの宛先ルーティング等に使う。
     public SaberHand LastCutterHand { get; private set; } = SaberHand.Any;
     // 何回切れたか（達成数）。
@@ -146,7 +146,7 @@ public class CuttableNote : MonoBehaviour
 
     // 最終カット時に発火（タップなら1回、ロングなら全部切れた瞬間に1回）。
     public event System.Action<CuttableNote, Vector3, Vector3> OnCut;
-    // ScoreManagerの方向降格も含めた確定判定。成功演出はOnCutの購読順に依存させない。
+    // ScoreManagerの確定判定。成功演出はOnCutの購読順に依存させない。
     public event System.Action<CuttableNote, JudgmentTier, Vector3, Vector3> OnJudged;
     internal void NotifyJudgment(JudgmentTier tier, Vector3 point, Vector3 velocity)
     {
@@ -211,7 +211,7 @@ public class CuttableNote : MonoBehaviour
         CutCore(hitPoint, cutVelocity, imuHint, cutterHand, null, .866f);
     }
 
-    // 時間窓・位置を外側で確認済みのCamera判定専用。逆方向も拒否せず1段階降格へ渡す。
+    // 時間窓・位置を外側で確認済みのCamera判定専用。向きの扱いは本編の判定と同じ(合わなければ切らない)。
     public bool TryCutWithCameraTiming(Vector3 hitPoint, Vector3 cutVelocity, SaberHand cutterHand,
         double songTime, float directionTolerance)
     {
@@ -220,7 +220,7 @@ public class CuttableNote : MonoBehaviour
     }
 
     // 従来のセーバー判定用。judgedSongTime があれば、その曲時計(刃がノーツを通り過ぎた・いちばん近づいた時刻)で採点する。
-    // 方向の扱いは Cut と同じ(逆方向は切らない)。directionTolerance は向きが合うとみなす dot 閾値(既定 ±30°)。
+    // 方向の扱いは Cut と同じ(向きが合わなければ切らない)。directionTolerance は向きが合うとみなす dot 閾値(既定 ±30°)。
     // judgedDirection は向きの判定だけに使う動き(省略時は cutVelocity)。切り口や破片は cutVelocity のまま。
     // 切れたかどうかを返す。
     public bool CutAtSongTime(Vector3 hitPoint, Vector3 cutVelocity, CutDirection imuHint, SaberHand cutterHand,
@@ -243,26 +243,17 @@ public class CuttableNote : MonoBehaviour
         double? cutTime = swingSongTime ?? judgedSongTime;
         if (cutTime.HasValue && !CanBeginCutAt(cutTime.Value, cutterHand)) return false;
 
-        // 逆方向（要求方向と約120°以上ズレた）スイングはそもそも切らない。
-        // 「準備で間違って切ってしまう」現象を防ぐためのガード。
-        // 横方向（90°前後）は dot ≈ 0 で reject されないので、従来通り降格カットで通る。
-        Vector2 vXY = judgedDirection ?? new Vector2(cutVelocity.x, cutVelocity.y);
-        // 方向が見た目だけのノーツ(ナビノーツ)は逆方向拒否も方向判定もしない
-        bool judgeDirection = RequiredDirection != CutDirection.None && !DirectionVisualOnly;
-        if (!swingSongTime.HasValue && judgeDirection &&
-            CutDirectionHelper.ShouldRejectOpposite(RequiredDirection, vXY, imuHint))
+        // 向きの決まったノーツは、向きが合わない振りでは切らない(2026-10-22 ユーザー指定。以前は 60〜120° を1段下げて切っていた)。
+        // 何もせず終了: 判定もミスも出さず、ノーツは IsCut も IsMissed も変わらない。向きの合う振りで切り直せる。
+        // 方向が見た目だけのノーツ(ナビノーツ)は向きを見ない。
+        if (RequiredDirection != CutDirection.None && !DirectionVisualOnly)
         {
-            // 何もせず終了：ノーツは IsCut も IsMissed も変わらず、セーバーが再度関わると再判定可能。
-            return false;
+            Vector2 vXY = judgedDirection ?? new Vector2(cutVelocity.x, cutVelocity.y);
+            bool dirOk = swingSongTime.HasValue
+                ? CutDirectionHelper.Matches(RequiredDirection, vXY, directionTolerance)
+                : CutDirectionHelper.MatchesWithHint(RequiredDirection, vXY, imuHint, directionTolerance);
+            if (!dirOk) return false;
         }
-
-        // 方向判定（1回でも誤方向なら以降 false 維持）
-        bool dirOk = !judgeDirection || (swingSongTime.HasValue
-            ? CutDirectionHelper.Matches(RequiredDirection, vXY, directionTolerance)
-            : CutDirectionHelper.MatchesWithHint(RequiredDirection, vXY, imuHint, directionTolerance));
-        if (CutsAchieved == 0) LastCutCorrectDirection = dirOk;
-        else LastCutCorrectDirection = LastCutCorrectDirection && dirOk;
-        LatestCutCorrectDirection = dirOk;
 
         LastCutterHand = cutterHand;
         LastCutSongTime = swingSongTime ?? judgedSongTime;

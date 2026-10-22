@@ -197,36 +197,42 @@ public class CameraImuJudgmentTests
         Assert.True(notes[1].IsCut, "新しいSwingは通常どおり受け付ける");
     }
 
-    [TestCase("right", false, JudgmentTier.Perfect)]
-    [TestCase("right", true, JudgmentTier.Great)]
-    [TestCase("up", false, JudgmentTier.Great)]
-    public void DirectionComesFromCameraAndOppositeDirectionDowngrades(string direction, bool reverse, JudgmentTier expected)
+    // 向きはカメラの軌跡で決める。向きの合わない振りでは切らない(2026-10-22〜。以前は1段下げ)。
+    [TestCase("right", false, true)]
+    [TestCase("right", true, false)]
+    [TestCase("up", false, false)]
+    public void DirectionComesFromCameraAndWrongDirectionDoesNotCut(string direction, bool reverse, bool cut)
     {
         Create(direction: direction); Swing(); Path(reversed: reverse);
         Advance(.12); Assert.False(notes[0].IsCut, "方向はSwing後の軌跡まで待つ");
-        Advance(.17); Assert.True(notes[0].IsCut); Assert.That(score.LastTier, Is.EqualTo(expected));
+        Advance(.17); Assert.AreEqual(cut, notes[0].IsCut);
+        if (cut) Assert.That(score.LastTier, Is.EqualTo(JudgmentTier.Perfect));
+        else Assert.That(score.HitCount + score.MissCount, Is.Zero, "判定もミスも出さない");
     }
 
-    [TestCase(.00, JudgmentTier.Great)]
-    [TestCase(.10, JudgmentTier.Good)]
-    [TestCase(.15, JudgmentTier.Bad)]
-    [TestCase(.17, JudgmentTier.Miss)]
-    public void WrongDirectionDropsExactlyOneExistingTier(double at, JudgmentTier expected)
+    [Test]
+    public void WrongDirectionSwingIsUsedUpAndTheNextSwingCutsOnItsOwnTiming()
     {
-        Create(direction: "right"); Advance(at); Swing(at); Path(at, true); Advance(at + .17);
-        Assert.True(notes[0].IsCut); Assert.That(score.LastTier, Is.EqualTo(expected));
+        Create(direction: "right"); Swing(); Path(reversed: true); Advance(.17);
+        Assert.False(notes[0].IsCut); Assert.False(notes[0].IsMissed);
+        Assert.That(fusion.PendingSwingCount, Is.Zero, "向きの合わない振りは使い切る");
+        Assert.That(fusion.LastDecision, Does.Contain("reason=direction_fail"));
+        Swing(.1, 2, xiao: 456); Path(.1); Advance(.27);
+        Assert.True(notes[0].IsCut);
+        Assert.That(score.LastErrorMs, Is.EqualTo(100).Within(.001), "採点は切れた振りの時刻");
+        Assert.That(score.LastTier, Is.EqualTo(JudgmentTierHelper.Classify(.1)), "向きで1段下げない");
         Assert.That(score.HitCount + score.MissCount, Is.EqualTo(1));
     }
 
-    [TestCase(SwingDirection.Left, false, JudgmentTier.Perfect)]
-    [TestCase(SwingDirection.Right, true, JudgmentTier.Great)]
-    public void ImuDirectionIsNotUsed(SwingDirection imuDirection, bool reverse, JudgmentTier expected)
+    [TestCase(SwingDirection.Left, false, true)]
+    [TestCase(SwingDirection.Right, true, false)]
+    public void ImuDirectionIsNotUsed(SwingDirection imuDirection, bool reverse, bool cut)
     {
         Create(direction: "right");
         long ticks = (long)(Clock * System.Diagnostics.Stopwatch.Frequency);
         fusion.swingInput.Publish(new SwingEvent(1, imuDirection, 1, 123, ticks, 0), PhysicalSaberSide.Right);
         Path(reversed: reverse); Advance(.17);
-        Assert.That(score.LastTier, Is.EqualTo(expected));
+        Assert.AreEqual(cut, notes[0].IsCut);
     }
 
     [TestCase(CutDirection.Up)] [TestCase(CutDirection.Down)]
@@ -241,13 +247,21 @@ public class CameraImuJudgmentTests
         Assert.That(score.LastTier, Is.EqualTo(JudgmentTier.Perfect));
     }
 
-    [TestCase(20, JudgmentTier.Great)] [TestCase(50, JudgmentTier.Perfect)]
-    public void InspectorDirectionToleranceIsApplied(float degrees, JudgmentTier expected)
+    [TestCase(20, false)] [TestCase(50, true)]
+    public void InspectorDirectionToleranceIsApplied(float degrees, bool cut)
     {
         Create(direction: "right"); fusion.directionToleranceDegrees = degrees; Swing();
         var v = new Vector3(1, 1).normalized;
         Sample(.08, -v * 2); Sample(.12, v * 2); Sample(.17, v * 3); Advance(.17);
-        Assert.That(score.LastTier, Is.EqualTo(expected));
+        Assert.AreEqual(cut, notes[0].IsCut);
+        if (cut) Assert.That(score.LastTier, Is.EqualTo(JudgmentTier.Perfect));
+    }
+
+    [Test]
+    public void DefaultDirectionToleranceMatchesTheCameraJudge()
+    {
+        Create();
+        Assert.AreEqual(SaberCutJudge.DefaultDirectionToleranceDegrees, fusion.directionToleranceDegrees);
     }
 
     [Test]

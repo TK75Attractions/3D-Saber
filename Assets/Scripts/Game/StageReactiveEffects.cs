@@ -161,7 +161,7 @@ public sealed class StageReactiveEffects : MonoBehaviour
 
     void Cut(CuttableNote note, JudgmentTier tier, Vector3 point, Vector3 velocity)
     {
-        // 降格後の確定判定だけを使う。ロング途中・時間切れは祝福しない。
+        // 確定判定だけを使う。ロング途中・時間切れは祝福しない。
         // 床の縁の帯は Great/Good にも弱めに出す。背景ごとの動きと織り目は Perfect 限定。
         bool valid = CanReact && note != null && note.IsCut && !note.IsMissed &&
             Finite(note.HitTime) && FloorLaneForX(note.transform.position.x) >= 0;

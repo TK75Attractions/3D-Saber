@@ -28,12 +28,13 @@ public class DirectionAndLongNoteTests
     }
 
     [Test]
-    public void DirectionNote_CutInWrongDirection_IsIncorrect()
+    public void DirectionNote_CutInWrongDirection_DoesNotCut()
     {
         var n = MakeNote();
         n.RequiredDirection = CutDirection.Right;
         n.Cut(Vector3.zero, new Vector3(0f, 5f, 0f));
-        Assert.IsFalse(n.LastCutCorrectDirection);
+        Assert.IsFalse(n.IsCut);
+        Assert.IsFalse(n.IsMissed);
     }
 
     [Test]

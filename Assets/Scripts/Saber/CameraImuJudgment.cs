@@ -20,7 +20,8 @@ public class CameraImuJudgment : MonoBehaviour
     [Range(20, 200)] public float maxCameraSampleGapMs = 100;
     [Range(.5f, 1f)] public float cameraHistorySeconds = .75f;
     [Header("Camera direction")]
-    [Range(0, 90)] public float directionToleranceDegrees = 30;
+    // 向きが合わない振りでは切らない(本編の判定と同じ幅。2026-10-22 に1段下げをやめたときに±30°からそろえた)。
+    [Range(0, 90)] public float directionToleranceDegrees = SaberCutJudge.DefaultDirectionToleranceDegrees;
     [Header("Debug")]
     public bool debugJudgment;
     public string LastDecision { get; private set; }
@@ -295,22 +296,28 @@ public class CameraImuJudgment : MonoBehaviour
         int noteId = best.GetInstanceID();
         // ノーツはXYが固定でZだけ流れる。判定時刻のZを再構成して演出にも渡す。
         contact.Point.z = spawner.ComputeNoteZ(best, best.HitTime - p.SongTime, spawner.Speed);
-        JudgmentTier original = best.RequiredCutCount > 1
+        JudgmentTier tier = best.RequiredCutCount > 1
             ? ScoreManager.TierByCompletionRatio((best.CutsAchieved + 1f) / best.RequiredCutCount)
             : JudgmentTierHelper.Classify(p.SongTime - best.HitTime);
         bool direction = best.DirectionVisualOnly || CutDirectionHelper.Matches(best.RequiredDirection,
             contact.Velocity, Mathf.Cos(directionToleranceDegrees * Mathf.Deg2Rad));
-        bool cumulativeDirection = direction && (best.CutsAchieved == 0 || best.LastCutCorrectDirection);
-        var tier = cumulativeDirection ? original : ScoreManager.DowngradeTier(original);
+        string detail = $"seq={p.Swing.Sequence} side={p.Swing.Side} camera={color} receive={p.Swing.ReceiveTime:F6} xiao={p.Swing.XiaoTimestampUs} song={p.SongTime:F6} sample={contact.SampleTime:F6} sampleAgeMs={(now - contact.ReceiveTime) * 1000:F1} latencyMs={cameraLatencyCompensationMs:F1} deltaMs={(contact.SampleTime - p.Swing.ReceiveTime) * 1000:F1} note={noteId} position=pass swept={contact.Swept} direction={direction}";
+        if (!direction)
+        {
+            // 向きの合わない振りは、このノーツを切らずに使い切る(判定もミスも出さない。ノーツは向きの合う次の振りで切れる)。
+            p.Failure = "direction_fail";
+            Decision(detail + " reason=direction_fail");
+            return true;
+        }
         bool accepted = best.TryCutWithCameraTiming(contact.Point, contact.Velocity, judge.EffectiveHand(),
             p.SongTime, Mathf.Cos(directionToleranceDegrees * Mathf.Deg2Rad));
         if (!accepted) { p.Failure = "note_rejected"; return false; }
         // 同時のノーツ(金＋金など)は同じ振りでまとめて切る。時刻のずれた後続ノーツは次の振りへ残す。
         CutSimultaneous(best, history, p, judge);
         // 成功した時点でこのイベントを消費。ロングも1イベントにつき1カット。
-        Decision($"seq={p.Swing.Sequence} side={p.Swing.Side} camera={color} receive={p.Swing.ReceiveTime:F6} xiao={p.Swing.XiaoTimestampUs} song={p.SongTime:F6} sample={contact.SampleTime:F6} sampleAgeMs={(now - contact.ReceiveTime) * 1000:F1} latencyMs={cameraLatencyCompensationMs:F1} deltaMs={(contact.SampleTime - p.Swing.ReceiveTime) * 1000:F1} note={noteId} position=pass swept={contact.Swept} direction={direction} original={original} final={tier} reason={(tier == JudgmentTier.Miss ? "direction_downgrade_miss" : "hit")}");
+        Decision(detail + $" tier={tier} reason=hit");
         if (debugJudgment)
-            Debug.Log($"[JUDGMENT] note={noteId} position=PASS direction={(direction ? "PASS" : "FAIL")} result={tier}", this);
+            Debug.Log($"[JUDGMENT] note={noteId} position=PASS direction=PASS result={tier}", this);
         return true;
     }
 

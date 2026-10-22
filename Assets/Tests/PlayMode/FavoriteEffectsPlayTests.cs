@@ -129,14 +129,15 @@ public class FavoriteEffectsPlayTests
             Assert.AreNotEqual(JudgmentTier.Perfect, manager.scoreManager.LastTier);
             Assert.AreEqual(0, response.ActiveResponseCount, "Great以下で素材が応答しました。");
 
+            // 2026-10-22 から横振りでは矢印を切らない(1段下げはやめた)。切れず、素材も応答しない。
             var direction = Single(1); direction.notes[0].type = "direction"; direction.notes[0].direction = "up";
             SetChart(direction); yield return null;
             manager.noteSpawner.Tick(1); Draw(1);
             Cut(notes[0], 1, Vector3.right * 6, CutDirection.Right);
-            Assert.AreEqual(JudgmentTier.Great, manager.scoreManager.LastTier, "横振りによる方向降格が再現できません。");
-            Assert.AreEqual(0, response.ActiveResponseCount, "方向降格前のPerfectで素材が応答しました。");
+            Assert.IsFalse(notes[0].IsCut, "横振りで矢印が切れました。");
+            Assert.AreEqual(0, response.ActiveResponseCount, "切れていない矢印で素材が応答しました。");
 
-            // 同時刻の4列でも、方向降格後にPerfectだった実列だけを返す。
+            // 同時刻の4列でも、Perfectだった実列だけを返す(Great の列は時刻のずれ +100ms で作る)。
             // Perfectを青の左列と赤の右内列へ置き、親のPair統合も通す。
             var simultaneous = new ChartData { bpm = 120, notes = new List<NoteData>() };
             for (int lane = 0; lane < 4; lane++)
@@ -157,8 +158,7 @@ public class FavoriteEffectsPlayTests
                     !note.IsFinalized && StageReactiveEffects.FloorLaneForX(note.transform.position.x) == lane);
                 Assert.NotNull(current, "対象列のノーツがありません: " + lane);
                 bool succeeds = lane == 0 || lane == 2;
-                Cut(current, 1, (succeeds ? Vector3.up : Vector3.right) * 6,
-                    succeeds ? CutDirection.Up : CutDirection.Right);
+                Cut(current, succeeds ? 1 : 1.10, Vector3.up * 6, CutDirection.Up);
                 Assert.AreEqual(succeeds ? JudgmentTier.Perfect : JudgmentTier.Great,
                     manager.scoreManager.LastTier, "混在判定が再現できません: " + lane);
                 if (succeeds) perfectMask |= 1 << lane;
@@ -260,8 +260,8 @@ public class FavoriteEffectsPlayTests
                 StageReactiveEffects.FloorLaneForX(n.transform.position.x) == lane);
             Assert.NotNull(current);
             bool perfect = lane == 0 || lane == 2;
-            Cut(current, 1, (perfect ? Vector3.up : Vector3.right) * 6,
-                perfect ? CutDirection.Up : CutDirection.Right);
+            // Great の列は時刻のずれ(+100ms)で作る(2026-10-22 から横振りでは矢印を切らない)。
+            Cut(current, perfect ? 1 : 1.10, Vector3.up * 6, CutDirection.Up);
             Assert.AreEqual(perfect ? JudgmentTier.Perfect : JudgmentTier.Great, manager.scoreManager.LastTier);
             if (perfect) perfectMask |= 1 << lane;
             floorMask |= 1 << lane;
@@ -378,7 +378,8 @@ public class FavoriteEffectsPlayTests
                 StageReactiveEffects.FloorLaneForX(n.transform.position.x)==lane);
             Assert.NotNull(note);
             bool perfect=lane==0 || lane==2;
-            Cut(note,9,(perfect?Vector3.up:Vector3.right)*6,perfect?CutDirection.Up:CutDirection.Right);
+            // Great の列は時刻のずれ(+100ms)で作る(2026-10-22 から横振りでは矢印を切らない)。
+            Cut(note,perfect?9:9.10,Vector3.up*6,CutDirection.Up);
             Assert.AreEqual(perfect?JudgmentTier.Perfect:JudgmentTier.Great,manager.scoreManager.LastTier);
             if(perfect)mask|=1<<lane;
             floorMask|=1<<lane;
@@ -481,14 +482,14 @@ public class FavoriteEffectsPlayTests
                 StageReactiveEffects.FloorLaneForX(n.transform.position.x) == lane);
             Assert.NotNull(note);
             bool perfect = lane == 0 || lane == 2;
-            Cut(note, 10, (perfect ? Vector3.up : Vector3.right) * 6,
-                perfect ? CutDirection.Up : CutDirection.Right);
+            // Great の列は時刻のずれ(+100ms)で作る(2026-10-22 から横振りでは矢印を切らない)。
+            Cut(note, perfect ? 10 : 10.10, Vector3.up * 6, CutDirection.Up);
             Assert.AreEqual(perfect ? JudgmentTier.Perfect : JudgmentTier.Great, manager.scoreManager.LastTier);
             if (perfect) perfectMask |= 1 << lane;
             floorMask |= 1 << lane;
             Assert.AreEqual(floorMask, effects.ActiveFloorLaneMask, "床の帯は Great にも弱めに出す");
             Draw(10);
-            CollectionAssert.AreEqual(peak, curtainMesh.vertices, "曲同期の幕を成功・方向降格で動かさない");
+            CollectionAssert.AreEqual(peak, curtainMesh.vertices, "曲同期の幕を成功・Great で動かさない");
         }
         Draw(10.12);
         var successMesh = effects.GetComponent<MeshFilter>().sharedMesh;
