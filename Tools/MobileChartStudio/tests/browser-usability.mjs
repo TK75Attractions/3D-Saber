@@ -80,7 +80,51 @@ try{
   await round6();
   await codexRound6();
   await round7();
+  await round8();
 }finally{await browser.close();}
+
+// 2026-10-22 8回目: ノーツが多い譜面で重くしない(隠れている旧ノーツ一覧を、操作のたびに作り直さない)。
+async function round8(){
+  const ctx=await browser.newContext({viewport:{width:390,height:664},hasTouch:true}),p=await ctx.newPage(),errs=[];p.on('pageerror',e=>errs.push(e.message));
+  const wait=()=>p.waitForTimeout(300);
+  try{
+    await p.goto(site);await wait();
+    await p.locator('#audioFile').setInputFiles({name:'多い.wav',mimeType:'audio/wav',buffer:wav()});
+    await p.waitForFunction(()=>document.querySelector('#saveStatus').textContent==='この端末に保存済み');
+    const notes=Array.from({length:300},(_,i)=>({time:500+i*90,beat:1+i*.18,x:(i%5)-2,y:0,color:i%2?'red':'blue',direction:'none',count:1,type:'tap',lengthMs:0}));
+    await p.locator('#libraryButton').click();await p.locator('#chartFile').setInputFiles({name:'chart_hard.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify({bpm:120,offsetMs:0,beatZeroMs:0,coordScale:1,displayLevel:8,timeSignatures:[],notes}))});await wait();
+    await p.locator('#nav-edit').click();await wait();if(!await p.locator('.map-note-details').evaluate(e=>e.open))await p.locator('.map-note-details summary').click();
+    await p.locator('#mapNotes button').first().click();await wait();for(let i=0;i<3;i++){await p.locator('#nextNote').click();await p.waitForTimeout(80);}await p.locator('#laterNote').click();await wait();
+    assert.equal(await p.locator('#noteList').evaluate(e=>e.children.length),0,'隠れた一覧は空のまま');
+    assert.match(await p.locator('#selectedNoteLabel').innerText(),/^4 \/ 300 · /);assert.equal(await p.locator('#noteEditor').isHidden(),false,'選んだノーツの欄は出る');
+    check('a hidden legacy list is not rebuilt on every edit');
+    // 2. 一覧の行は「番号・時刻・色・矢印・回数と長さ・位置」。選んでいる行に印。
+    const row=await p.locator('#mapNotes button.selected').innerText();assert.match(row,/^#4 0:00\.780 赤 \(1\.0, 0\.0\)$/);check('note list rows carry number, colour, arrow, count and position');
+    // 3. 表示幅を変えても、見ていた区間の真ん中を保つ。
+    await p.locator('#mapZoom').selectOption('5');await wait();for(let i=0;i<2;i++){await p.locator('#mapNext').click();await wait();}
+    const shown=async()=>(await p.locator('#mapRange').innerText()).match(/(\d+):(\d+\.\d+)/g).map(t=>{const[m,s]=t.split(':');return Number(m)*60+Number(s);});
+    const before=await shown();await p.locator('#mapZoom').selectOption('2');await wait();const after=await shown();
+    assert.ok(Math.abs((before[0]+before[1])/2-(after[0]+after[1])/2)<.01,`真ん中 ${before} → ${after}`);check('changing the zoom keeps the centre of the shown range');
+    // 4. 「＋ 置く」は録音用の入力補正・速度を混ぜず、今の位置にそのまま置く。
+    await p.evaluate(()=>{for(const[id,v]of[['latency','100'],['speed','0.5']]){const e=document.getElementById(id);e.value=v;e.dispatchEvent(new Event('change',{bubbles:true}));}const s=document.querySelector('#seek');s.value='10';s.dispatchEvent(new Event('input',{bubbles:true}));});await wait();
+    await p.locator('#placeNote').click();await wait();
+    assert.ok((await storedIn(p)).chart.notes.some(n=>Math.abs(n.time-10000)<1),'10.000秒に置く');check('manual placement ignores the recording latency and speed');
+    // 5. 一覧を開いたまま曲名を変えると、一覧と検索もその場で新しい名前になる。
+    await p.locator('#libraryButton').click();await p.locator('#library').waitFor({state:'visible'});
+    await p.locator('#projectName').fill('改名した曲');await p.locator('#projectName').press('Tab');await wait();
+    assert.match(await p.locator('#projectList').innerText(),/改名した曲/);await p.locator('#projectSearch').fill('改名');await wait();
+    assert.equal(await p.locator('#projectList .project:visible').count(),1);await p.locator('#projectSearch').fill('');check('renaming refreshes the open list and search');
+    // 6. 削除の確認に、ノーツ数・更新日時・編集中と、音源も消えるかを書く(ここではキャンセル)。
+    let message='';p.once('dialog',async d=>{message=d.message();await d.dismiss();});
+    await p.locator('.project .danger').first().click();await wait();
+    assert.match(message,/301 notes・最終更新 .*・編集中/);assert.match(message,/ほかの下書き 1 件が同じ音源を使うので、音源は残ります。/);
+    assert.equal(await p.locator('.project').count(),2,'キャンセルしたら消さない');
+    p.once('dialog',d=>d.accept());await p.locator('.project').filter({hasText:'NORMAL'}).locator('.danger').click();await wait();assert.equal(await p.locator('.project').count(),1);
+    p.once('dialog',async d=>{message=d.message();await d.dismiss();});await p.locator('.project .danger').first().click();await wait();
+    assert.match(message,/この曲の最後の下書きなので、音源もこの端末から削除されます。/);await p.locator('[data-close="library"]').click();check('delete confirmation names the draft and says whether the audio goes too');
+    assert.deepEqual(errs,[]);check('no browser runtime errors in round 8');
+  }finally{await ctx.close();}
+}
 
 // 2026-10-22 7回目: 選んだノーツのパネルは、スクロールなしで「削除・前後・10ms・聴く・矢印3×3・色・拍にそろえる・次へ」まで見える。色は1回で変わる。設定のBPMを測る道具はBPMのすぐ下。
 async function round7(){

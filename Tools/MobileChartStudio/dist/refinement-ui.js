@@ -1,7 +1,7 @@
 import { transformRange } from './editing.js';
 import { refineChart, chartReport, noteSeek, beatSeek, chartWithBeatOrigin, safeBookmarks, filterProjects } from './refinement.js';
 import { formatTime } from './core.js';
-import { deleteProject, getAudio } from './storage.js';
+import { deleteProject, getAudio, listProjects } from './storage.js';
 
 export function installRefinementUI(context) {
   const {getState, mutate, stop, seek, persist, run, toast, selectNote, downloadBlob} = context;
@@ -111,11 +111,15 @@ export function installRefinementUI(context) {
     $('projectSearchStatus').textContent = `${visible} 件の下書き`;
   });
   async function removeProject(item) {
-    if (!window.confirm(`「${item.name}」の${(item.difficulty||'normal').toUpperCase()}下書きをこの端末から削除します。必要なら先にバックアップを保存してください。削除しますか？`)) return;
+    // 同じ名前の下書きが並んでも取り違えないよう、ノーツ数・更新日時・編集中かを書く。最後の下書きなら音源も消えることも書く。
+    const others = (await listProjects()).filter(p => p.audioId === item.audioId && p.id !== item.id).length, editing = getState().project?.id === item.id;
+    const detail = `${item.chart?.notes?.length || 0} notes・最終更新 ${new Date(item.updated).toLocaleString('ja-JP')}${editing ? '・編集中' : ''}`;
+    const audioNote = others ? `この曲のほかの下書き ${others} 件が同じ音源を使うので、音源は残ります。` : 'この曲の最後の下書きなので、音源もこの端末から削除されます。';
+    if (!window.confirm(`「${item.name}」の${(item.difficulty||'normal').toUpperCase()}下書き(${detail})を削除します。\n${audioNote}\n必要なら先にバックアップを保存してください。削除しますか？`)) return;
     stop(); await persist(); await deleteProject(item.id);
     if (getState().project?.id === item.id) context.clearProject();
     await context.projectsChanged?.();
-    await context.showLibrary(); toast('下書きを削除しました。他の下書きが使っている音源は残しています。');
+    await context.showLibrary(); toast(others ? '下書きを削除しました。同じ曲のほかの下書きが使う音源は残しています。' : '下書きと、その曲の音源を削除しました。');
   }
   function decorateProject(row,item) {
     row.dataset.projectName = item.name; row.dataset.projectDifficulty = item.difficulty || 'normal';
