@@ -84,7 +84,54 @@ try{
   await round9();
   await round10();
   await round11();
+  await round12();
 }finally{await browser.close();}
+
+// 2026-10-22 12回目(Opus 議論の追加): テンポ地図(editorTempoMap)のある譜面は、BPMを数値で直してもタップで適用しても、拍・時刻・地図をそのまま残す(Unityの譜面エディターの BPM 欄と同じ)。地図が空・有効な点がない譜面は、従来どおり時刻を保って数え直す。
+async function round12(){
+  const ctx=await browser.newContext({viewport:{width:390,height:664},hasTouch:true}),p=await ctx.newPage(),errs=[];p.on('pageerror',e=>errs.push(e.message));
+  const wait=()=>p.waitForTimeout(300),saved=()=>p.waitForFunction(()=>document.querySelector('#saveStatus').textContent==='この端末に保存済み');
+  const open=async(name,value)=>{await p.locator('#libraryButton').click();await p.locator('#library').waitFor({state:'visible'});await p.locator('#chartFile').setInputFiles({name,mimeType:'application/json',buffer:Buffer.from(JSON.stringify(value))});await wait();await saved();};
+  const setBpm=async v=>{await p.locator('#settingsButton').click();await p.locator('#bpm').fill(String(v));await p.locator('#bpm').press('Tab');await wait();await p.locator('#settingsDialogClose').click();await wait();await saved();};
+  // タップは実際のクリックと待ち時間で測る。測れた値は画面の表示から読み、数値は決め打ちしない。
+  const tapBpm=async()=>{await p.locator('#settingsButton').click();await p.locator('#settingsDialog').waitFor({state:'visible'});for(let i=0;i<6;i++){await p.locator('#tapTempo').click();await p.waitForTimeout(250);}
+    const shown=Number((await p.locator('#tempoReadout').innerText()).match(/^([\d.]+) BPM/)?.[1]);assert.ok(Number.isFinite(shown),'タップでBPMが測れた');
+    await p.locator('#applyTempo').click();await wait();assert.equal(await p.locator('#bpm').inputValue(),String(shown),'測ったBPMが欄に入る');
+    await p.locator('#settingsDialogClose').click();await wait();await saved();return shown;};
+  const undo=async()=>{await p.locator('#undoButton').click();await wait();await saved();},redo=async()=>{await p.locator('#redoButton').click();await wait();await saved();};
+  const times=notes=>notes.map(n=>n.time),beats=notes=>notes.map(n=>n.beat),onGrid=(notes,bpm)=>notes.every(n=>Math.abs(n.beat-n.time*bpm/60000)<1e-3);
+  const steady=Array.from({length:8},(_,i)=>({time:1000+i*500,beat:2+i,x:0,y:0,color:i%2?'red':'blue',direction:'none',count:1,type:'tap',lengthMs:0}));
+  const song={bpm:120,offsetMs:0,beatZeroMs:0,coordScale:1,displayLevel:2,timeSignatures:[]},tempoMap=[{beat:0,timeMs:0},{beat:8,timeMs:4000}];
+  try{
+    await p.goto(site);await wait();
+    await p.locator('#audioFile').setInputFiles({name:'テンポ地図.wav',mimeType:'audio/wav',buffer:wav()});await saved();
+    // 1. 数値で120→150。BPMだけ変わり、拍・時刻・地図・未知の項目はそのまま。元に戻すは1回で120へ、やり直しで150へ。
+    await open('chart_normal.json',{...song,editorTempoMap:tempoMap,_comment:'残す',notes:steady});
+    await setBpm(150);let value=(await storedIn(p)).chart;
+    assert.equal(value.bpm,150);assert.deepEqual(beats(value.notes),beats(steady),'地図に合った拍のまま');assert.deepEqual(times(value.notes),times(steady));
+    assert.deepEqual(value.editorTempoMap,tempoMap);assert.equal(value._comment,'残す');
+    await undo();value=(await storedIn(p)).chart;assert.equal(value.bpm,120,'1回で戻る');assert.deepEqual(beats(value.notes),beats(steady));assert.equal(await p.locator('#bpm').inputValue(),'120');
+    await redo();value=(await storedIn(p)).chart;assert.equal(value.bpm,150);assert.deepEqual(beats(value.notes),beats(steady));assert.deepEqual(value.editorTempoMap,tempoMap);
+    check('a typed BPM keeps beats, times and the tempo map, and undoes in one step');
+    // 2. タップで測って適用しても同じ。
+    await open('chart_hard.json',{...song,editorTempoMap:tempoMap,notes:steady});
+    const tapped=await tapBpm();value=(await storedIn(p)).chart;
+    assert.notEqual(tapped,120,'BPMは変わる');assert.equal(value.bpm,tapped);assert.deepEqual(beats(value.notes),beats(steady),'地図に合った拍のまま');assert.deepEqual(times(value.notes),times(steady));assert.deepEqual(value.editorTempoMap,tempoMap);
+    await undo();value=(await storedIn(p)).chart;assert.equal(value.bpm,120,'1回で戻る');assert.deepEqual(beats(value.notes),beats(steady));
+    await redo();value=(await storedIn(p)).chart;assert.equal(value.bpm,tapped);assert.deepEqual(beats(value.notes),beats(steady));assert.deepEqual(value.editorTempoMap,tempoMap);
+    check('a tapped BPM keeps beats, times and the tempo map, and undoes in one step');
+    // 3. 地図が空・有効な点がない譜面は地図なしと同じ。数値でもタップでも時刻を保って新しいBPMで数え直す(その項目自体は残す)。
+    const unusable={editorTempoMap:[],tempoMap:[{beat:null,timeMs:500}]};
+    await open('chart_easy.json',{...song,...unusable,notes:steady});
+    await setBpm(90);value=(await storedIn(p)).chart;
+    assert.ok(onGrid(value.notes,90),'数値のBPMで数え直す');assert.deepEqual(times(value.notes),times(steady));
+    assert.deepEqual(value.editorTempoMap,unusable.editorTempoMap);assert.deepEqual(value.tempoMap,unusable.tempoMap);
+    const again=await tapBpm();value=(await storedIn(p)).chart;
+    assert.equal(value.bpm,again);assert.ok(onGrid(value.notes,again),'タップのBPMで数え直す');assert.deepEqual(times(value.notes),times(steady));
+    check('charts without a usable tempo map still recount beats for typed and tapped BPM');
+    assert.deepEqual(errs,[]);check('no browser runtime errors in round 12');
+  }finally{await ctx.close();}
+}
 
 // 2026-10-22 11回目(第2回の Opus 議論 S1・S3): 拍の始まりを数値で直すと、時刻を保って拍を数え直す(テンポが変わる譜面・テンポ地図・拍子の変わり目は壊さない)。録音・録り直しで選択が消えたら、選択パネルも閉じる。
 async function round11(){

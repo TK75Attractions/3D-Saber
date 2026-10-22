@@ -13,12 +13,12 @@ import { encodeWav } from './wav.js';
 import { saveProject, listProjects, getProject, saveAudio, getAudio, saveProjectWithAudio, contentOf } from './storage.js';
 const $ = id => document.getElementById(id), audio = new SongAudio();
 // 画面に出す版。sw.js のキャッシュ名(saber-tap-shell-<版>)と同じにする(tests/offline.test.js が確かめる)。
-const APP_VERSION='v19-20261022';
+const APP_VERSION='v20-20261022';
 let refinementUI, workspaceUI;
 let bpmConfirmed=true;
 let chart = blankChart(), history = new History(), project = null, selected = null;
 let mode = 'record', color = 'auto', loading = false, saving = false, saveFailed = false, starting = false;
-let saveTimer, toastTimer, persistChain = Promise.resolve(), flashes = [], lastFrameTime = 0;
+let saveTimer, toastTimer, persistChain = Promise.resolve(), flashes = [];
 let take = null, lastTake = null, playbackEnd = Infinity, saveRevision = 0, pendingSaves = 0, loopingRange = false, tempoListening = false, copySource = null, copyCreating = false;
 const tapTempo = new TapTempo();
 const touches = new Map();
@@ -447,8 +447,7 @@ function drawStage(t,now) {
 function tick(now) {
   if(audio.playing&&audio.rawTime()>=Math.min(audio.duration,playbackEnd)){const loop=mode==='preview'&&loopingRange&&$('previewLoop').checked&&$('rangeEnabled').checked;stop();if(loop)togglePlayback().catch(fail);else toast('区間の終わりまで再生しました。');}if(audio.playing&&audio.context.state!=='running'){stop();toast('音声が中断されたため、一時停止しました。');}
   const t=audio.time();
-  if(audio.playing&&mode==='preview'&&$('clickSound').checked)for(const n of chart.notes){const hit=audioTime(n,chart);if(hit>lastFrameTime&&hit<=t&&t-lastFrameTime<.2)audio.click(n.color==='blue'?570:n.color==='red'?760:950);}
-  lastFrameTime=t;$('timeReadout').textContent=formatTime(t,true);$('seek').value=t;
+  $('timeReadout').textContent=formatTime(t,true);$('seek').value=t;
   const remaining=audio.playing?(audio.startedAt-audio.outputContextTime()):0,countdown=remaining>0?Math.ceil(remaining/(60/chart.bpm/audio.rate)):0;
   $('transportStatus').textContent=loading?'読み込み中':countdown>0?`カウント ${Math.min(4,countdown)}`:audio.playing?(mode==='record'?'録音中':'確認中'):'一時停止';
   $('stageMessage').textContent=loading?'音源を読み込み中…':!audio.buffer?'音源を開くと、曲に合わせて記録できます':countdown>0?String(Math.min(4,countdown)):'';
@@ -456,18 +455,19 @@ function tick(now) {
   if(workspaceUI?.active==='edit'&&now-mapLastPaint>100){paintMap();mapLastPaint=now;}
   drawStage(t,now);requestAnimationFrame(tick);
 }
-async function togglePlayback({useRange=true}={}) {
+async function togglePlayback({useRange=true,end}={}) {
   if(starting||loading)return;if(audio.playing){stop();return;}starting=true;refresh();
   try{
     const range=useRange?readRange():null;
     loopingRange=!!range;
     if(range)audio.seek(range.start);else if(audio.position>=audio.duration-.01)audio.seek(0);
-    playbackEnd=range?.end??audio.duration;
+    // 短い試聴も、曲とタップ音の終わりを再生前に同じ音声時計へ渡す。
+    playbackEnd=range?.end??(Number.isFinite(end)?Math.min(audio.duration,end):audio.duration);
+    const hits=mode==='preview'&&$('clickSound').checked?chart.notes.map(n=>({time:audioTime(n,chart),frequency:n.color==='blue'?570:n.color==='red'?760:950})):[];
     // BPMを測るために流すときは、遅く聴く設定でも1.0倍(たたいた間隔がそのままBPMになるように)。
-    const started=await audio.play({rate:tempoListening?1:Number($('speed').value),countBeats:mode==='record'&&bpmConfirmed&&$('countIn').checked?4:0,bpm:chart.bpm,metronome:bpmConfirmed&&$('metronome').checked,beatOrigin:(chart.beatZeroMs+chart.offsetMs)/1000,end:playbackEnd});
+    const started=await audio.play({rate:tempoListening?1:Number($('speed').value),countBeats:mode==='record'&&bpmConfirmed&&$('countIn').checked?4:0,bpm:chart.bpm,metronome:bpmConfirmed&&$('metronome').checked,beatOrigin:(chart.beatZeroMs+chart.offsetMs)/1000,end:playbackEnd,hits});
     if(started===false)return;
     if(mode==='record')take=new RecordingTake(chart,{start:audio.startOffset,end:playbackEnd,replace:!!range&&$('replaceRange').checked});
-    lastFrameTime=audio.time();
   }finally{starting=false;refresh();}
 }
 function readRange(enabledOnly=true) {
@@ -506,7 +506,7 @@ function setColor(value) {
   const label=(element,name,note)=>{const small=document.createElement('small');small.textContent=note;element.replaceChildren(name,document.createElement('br'),small);};
   $('pad').dataset.ink=value;label(left,...(fixed||['BLUE','左手']));right.hidden=!!fixed;refreshInputOptions();
 }
-function seek(value){stop();audio.seek(value);lastFrameTime=audio.time();refresh();}
+function seek(value){stop();audio.seek(value);refresh();}
 $('audioFile').addEventListener('change',run(e=>loadAudioFile(e.target.files[0])));$('libraryAudioFile').addEventListener('change',run(e=>loadAudioFile(e.target.files[0])));
 $('chartFile').addEventListener('change',run(async e=>{try{await importChart(e.target.files[0]);}finally{e.target.value='';}}));
 $('libraryButton').addEventListener('click',run(showLibrary));$('helpButton').onclick=()=>{$('help').showModal();};for(const b of document.querySelectorAll('[data-close]'))b.onclick=()=>$(b.dataset.close).close();
@@ -553,11 +553,11 @@ for(const id of ['rangeStart','rangeEnd','rangeEnabled','replaceRange'])$(id).ad
 for(const[id,field]of[['setRangeStart','rangeStart'],['setRangeEnd','rangeEnd']])$(id).onclick=()=>{$(field).value=audio.time().toFixed(3);lastTake=null;refresh();};
 $('tapTempo').onclick=()=>{const result=tapTempo.tap(performance.now());$('tempoReadout').textContent=result.bpm?`${result.bpm} BPM · ${result.count}回`:`${result.count}回 · あと${Math.max(1,4-result.count)}回`; $('applyTempo').disabled=!result.bpm||loading;};
 // BPMを初めて決めたとき、または一定テンポの譜面でBPMを直したときは、時刻を保ったまま拍を数え直す(テンポが変わる譜面は beat をそのまま残す)。
-const recount=()=>!bpmConfirmed||!hasVariableGrid(chart);
+// テンポ地図のある譜面は、本編とUnityの譜面エディターが地図で拍を数えるので、BPM(数値・タップ)と拍の始まりのどれを直しても数え直さない(UnityのBPM・原点の欄と同じ条件)。
+const recount=()=>!hasTempoMap(chart)&&(!bpmConfirmed||!hasVariableGrid(chart));
 $('applyTempo').onclick=()=>{const result=tapTempo.result();if(!result.bpm||loading)return;stop();commit(()=>{const again=recount();bpmConfirmed=true;chart.bpm=result.bpm;if(again)rebeat(chart);});fillChartFields();toast('BPMを設定しました。録音済みノーツの時刻はそのままです。');};
 // 拍の始まりを数値で直したときも、同じ規則で時刻を保って数え直す(一定テンポなら「今の位置を拍の始まりに」と同じ結果)。拍子の変わり目は拍のままで、本編の小節線と同じく新しい始まりから数える。
-// テンポ地図のある譜面は、本編とUnityの譜面エディターが地図で拍を数えるので数え直さない(Unityの原点の欄と同じ条件)。
-for(const[id,field,min,max]of[['bpm','bpm',20,400],['offset','offsetMs',-600000,600000],['beatZero','beatZeroMs',-600000,600000],['level','displayLevel',0,10]])$(id).addEventListener('change',run(()=>{stop();const v=Number($(id).value);if($(id).value===''||!Number.isFinite(v)||v<min||v>max){fillChartFields();throw new Error('設定値の範囲を確認してください。');}commit(()=>{const again=(id==='bpm'||(id==='beatZero'&&!hasTempoMap(chart)))&&recount();if(id==='bpm')bpmConfirmed=true;chart[field]=v;if(again)rebeat(chart);});}));
+for(const[id,field,min,max]of[['bpm','bpm',20,400],['offset','offsetMs',-600000,600000],['beatZero','beatZeroMs',-600000,600000],['level','displayLevel',0,10]])$(id).addEventListener('change',run(()=>{stop();const v=Number($(id).value);if($(id).value===''||!Number.isFinite(v)||v<min||v>max){fillChartFields();throw new Error('設定値の範囲を確認してください。');}commit(()=>{const again=(id==='bpm'||id==='beatZero')&&recount();if(id==='bpm')bpmConfirmed=true;chart[field]=v;if(again)rebeat(chart);});}));
 for(const id of ['positionGrid','previewLoop','speed','snap','snapMode','snapWindowMs','flickEnabled','flickSensitivity','longCount','direction','latency','metronome','countIn','clickSound'])$(id).addEventListener('change',()=>{stop();refresh();if(['snap','snapMode'].includes(id)&&$('snapMode').value!=='off'&&hasVariableGrid(chart))toast('テンポ変化のある曲では、固定BPMへの整列でずれることがあります。');});
 $('difficulty').addEventListener('change',()=>{if(!project)return;const next=$('difficulty').value,previous=project.difficulty;if(next!==previous&&chart.notes.length&&!window.confirm(`この下書きの難易度を${previous.toUpperCase()}から${next.toUpperCase()}へ変えます。ノーツは変わりません。別の下書きを残す場合は「曲・保存」からコピーしてください。変更しますか？`)){$('difficulty').value=previous;return;}project.difficulty=next;stop();refresh();refreshTabDetails();});
 for(const id of ['songVolume','feedbackVolume'])$(id).addEventListener('input',()=>{audio.setVolumes(Number($('songVolume').value),Number($('feedbackVolume').value));if(project){clearTimeout(saveTimer);saveTimer=setTimeout(()=>persist().catch(fail),180);}});
@@ -624,7 +624,7 @@ function showResume(recent){
   button.onclick=run(()=>openProject(recent.id));
 }
 refinementUI=installRefinementUI({getState:()=>({chart,project,audio,mode,loading,bpmConfirmed,difficulty:$('difficulty').value}),openPreview:()=>workspaceUI.activate('preview'),mutate:next=>{commit(()=>{const keep=selected;chart=next;selected=keep&&chart.notes.some(n=>n.__editorId===keep)?keep:null;});if(selected)fillSelectedFields();else if(review)continueReview();else if($('noteDialog').open)$('noteDialog').close();},stop,seek,persist,run,toast,selectNote,downloadBlob,fillChartFields,showLibrary,clearProject:()=>{project=null;chart=blankChart();history=new History();selected=null;audio.seek(0);audio.buffer=null;resetSession();fillChartFields();renderNotes();drawWaveform();refresh();status('下書きを削除しました。音源を開くか別の下書きを選んでください。');},projectsChanged:()=>refreshResume()});
-workspaceUI=installWorkspace({fieldFailures:()=>fieldFailures,locked:()=>starting||copyCreating||(audio.playing&&mode==='record'),stop,redoFromHere,loopFromHere,clearRange,listenForTempo:run(async()=>{if(audio.playing){stop();return;}if(!audio.buffer||loading)return;tempoListening=true;mode='preview';tapTempo.reset();$('tempoReadout').textContent='曲の拍に合わせて4回以上';$('applyTempo').disabled=true;await togglePlayback({useRange:false});}),onTab:name=>{mode=name==='record'?'record':'preview';if(name==='preview')refinementUI.report();if(name==='export')refreshExportWarnings().catch(fail);refresh();drawWaveform();},listenTake:run(async()=>{if(!lastTake)return;const saved=lastTake;stop();workspaceUI.activate('preview');mode='preview';audio.seek(saved.start);await togglePlayback({useRange:false});playbackEnd=saved.end;refresh();}),listenNote:run(async()=>{const n=chart.notes.find(n=>n.__editorId===selected);if(!n)return;stop();mode='preview';audio.seek(Math.max(0,audioTime(n,chart)-60/chart.bpm));await togglePlayback({useRange:false});playbackEnd=Math.min(audio.duration,audioTime(n,chart)+longSeconds(n)+120/chart.bpm);refresh();}),edit:(id,value)=>{try{updateNoteField(id,value);}catch(e){fail(e);}},placeNote:()=>{if(!project)return;stop();/* 手で置くときは、録音用の入力補正と速度を混ぜない(今の再生位置にそのまま置く)。 */const at=clamp(audio.time(),0,audio.duration);let note=makeNote({startAudio:at,x:0,y:0},at,chart,{...settings(),snapMode:'off',latencyMs:0,rate:1,color:color==='auto'?'blue':color});commit(()=>chart.notes.push(note));selectNote(note.__editorId);},shareChart:run(async()=>{if(!project)return;stop();const file=new File([JSON.stringify(exportChart(chart),null,2)+'\n'],`chart_${$('difficulty').value}.json`,{type:'application/json'});if(navigator.canShare?.({files:[file]})){try{await navigator.share({files:[file],title:project.name});project.lastExportedAt=Date.now();persist().catch(console.error);toast('譜面を共有しました。');}catch(e){if(e.name!=='AbortError')throw e;}}else downloadChart();})});
+workspaceUI=installWorkspace({fieldFailures:()=>fieldFailures,locked:()=>starting||copyCreating||(audio.playing&&mode==='record'),stop,redoFromHere,loopFromHere,clearRange,listenForTempo:run(async()=>{if(audio.playing){stop();return;}if(!audio.buffer||loading)return;tempoListening=true;mode='preview';tapTempo.reset();$('tempoReadout').textContent='曲の拍に合わせて4回以上';$('applyTempo').disabled=true;await togglePlayback({useRange:false});}),onTab:name=>{mode=name==='record'?'record':'preview';if(name==='preview')refinementUI.report();if(name==='export')refreshExportWarnings().catch(fail);refresh();drawWaveform();},listenTake:run(async()=>{if(!lastTake)return;const saved=lastTake;stop();workspaceUI.activate('preview');mode='preview';audio.seek(saved.start);await togglePlayback({useRange:false,end:saved.end});}),listenNote:run(async()=>{const n=chart.notes.find(n=>n.__editorId===selected);if(!n)return;stop();mode='preview';audio.seek(Math.max(0,audioTime(n,chart)-60/chart.bpm));await togglePlayback({useRange:false,end:audioTime(n,chart)+longSeconds(n)+120/chart.bpm});}),edit:(id,value)=>{try{updateNoteField(id,value);}catch(e){fail(e);}},placeNote:()=>{if(!project)return;stop();/* 手で置くときは、録音用の入力補正と速度を混ぜない(今の再生位置にそのまま置く)。 */const at=clamp(audio.time(),0,audio.duration);let note=makeNote({startAudio:at,x:0,y:0},at,chart,{...settings(),snapMode:'off',latencyMs:0,rate:1,color:color==='auto'?'blue':color});commit(()=>chart.notes.push(note));selectNote(note.__editorId);},shareChart:run(async()=>{if(!project)return;stop();const file=new File([JSON.stringify(exportChart(chart),null,2)+'\n'],`chart_${$('difficulty').value}.json`,{type:'application/json'});if(navigator.canShare?.({files:[file]})){try{await navigator.share({files:[file],title:project.name});project.lastExportedAt=Date.now();persist().catch(console.error);toast('譜面を共有しました。');}catch(e){if(e.name!=='AbortError')throw e;}}else downloadChart();})});
 // 保存に失敗したら、上の「未保存」を押すと「渡す」(譜面JSONと音源入りバックアップ)へ行ける。
 $('saveStatus').addEventListener('click',()=>{if(saveFailed&&project)workspaceUI.activate('export');});
 // 「矢印の変更後に次へ」と直す画面の表示幅は、この端末で前回の選び方を覚える。
