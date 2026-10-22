@@ -127,9 +127,12 @@ def display_list(capacity, displays, count):
     return 0
 def is_asleep(display):
     return int(Path(os.environ['DISPLAY_PATH']).read_text().split(',')[display - 1])
+def is_builtin(display):
+    return int(os.environ.get('DISPLAY_BUILTIN', '0'))
 class FakeCG:
     CGGetOnlineDisplayList = staticmethod(display_list)
     CGDisplayIsAsleep = staticmethod(is_asleep)
+    CGDisplayIsBuiltin = staticmethod(is_builtin)
 c.CDLL = lambda path: FakeCG()
 exec(sys.argv[2])
 ''')

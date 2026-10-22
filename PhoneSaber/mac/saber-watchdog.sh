@@ -126,13 +126,18 @@ if not count.value:
 displays = (c.c_uint32 * count.value)()
 if cg.CGGetOnlineDisplayList(len(displays), displays, c.byref(count)):
     raise SystemExit(1)
-print("none" if not count.value else
-      "asleep" if all(cg.CGDisplayIsAsleep(d) for d in displays[:count.value]) else "awake")
+cg.CGDisplayIsBuiltin.argtypes = [c.c_uint32]
+cg.CGDisplayIsBuiltin.restype = c.c_uint32
+online = displays[:count.value]
+print("none" if not online else
+      "asleep" if all(cg.CGDisplayIsAsleep(d) for d in online) else
+      "builtin" if all(cg.CGDisplayIsBuiltin(d) for d in online) else "awake")
 ' 2>/dev/null)" || return 1
     case "$state" in
         asleep) return 0 ;;
         # 接続画面が無い場合だけ蓋の状態を使う（閉じた蓋だけでは外部画面を除外できない）。
-        none) ioreg -r -k AppleClamshellState -d 4 2>/dev/null |
+        # 内蔵画面だけのときも蓋が閉じていれば描画されない（10/22 実測: 蓋閉で awake 報告のまま停止）。
+        none|builtin) ioreg -r -k AppleClamshellState -d 4 2>/dev/null |
             awk '/"AppleClamshellState"[[:space:]]*=[[:space:]]*Yes([[:space:]]|$)/ { closed=1 } END { exit !closed }' ;;
         *) return 1 ;;
     esac
