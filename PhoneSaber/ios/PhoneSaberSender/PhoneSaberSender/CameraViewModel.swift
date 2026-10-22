@@ -188,22 +188,23 @@ func disableCameraPostProcessing(_ camera: AVCaptureDevice) -> Bool {
     return true
 }
 
-// 固定短時間露出は明示 opt-in。10/22午後の自動露出（−2EV）の露出積中央値は約0.87 ISO秒。
-// 1 ISO秒を維持する（1/2000ならISO2000）。最低ISO×2では約30倍暗く、実機で剣を見失った。
+// 本番既定は1/2000秒・ISO2000。反射と刃の分離を実機比較するためISOを段階的に下げる。
 struct CameraShutterPlan: Equatable {
     let duration: CMTime
     let iso: Float
 
+    // ISO未指定の呼出だけ従来の露出積を維持する。端末設定は選択ISOを明示して適用する。
     static func make(denominator: Int, minimum: CMTime, maximum: CMTime,
-                     frameDuration: CMTime, minISO: Float, maxISO: Float) -> Self? {
-        guard [500, 1000, 2000].contains(denominator),
+                     frameDuration: CMTime, minISO: Float, maxISO: Float, requestedISO: Int? = nil) -> Self? {
+        guard requestedISO.map({ [2000, 1000, 500, 250].contains($0) }) ?? true,
+              [500, 1000, 2000].contains(denominator),
               [minimum, maximum, frameDuration].allSatisfy({
                   $0.isNumeric && CMTimeGetSeconds($0).isFinite && CMTimeGetSeconds($0) > 0
               }), minISO.isFinite, maxISO.isFinite, minISO > 0, maxISO >= minISO else { return nil }
         let ceiling = CMTimeMinimum(maximum, frameDuration)
         guard CMTimeCompare(minimum, ceiling) <= 0 else { return nil }
         let duration = CMTimeMaximum(minimum, CMTimeMinimum(CMTime(value: 1, timescale: Int32(denominator)), ceiling))
-        let iso = Float(1 / CMTimeGetSeconds(duration))
+        let iso = requestedISO.map(Float.init) ?? Float(1 / CMTimeGetSeconds(duration))
         return Self(duration: duration, iso: min(maxISO, max(minISO, iso)))
     }
 }
@@ -212,7 +213,7 @@ struct CameraShutterPlan: Equatable {
 struct CameraShutterController {
     private(set) var active = false
 
-    mutating func apply(_ denominator: Int, to camera: AVCaptureDevice) throws -> Bool {
+    mutating func apply(_ denominator: Int, to camera: AVCaptureDevice, requestedISO: Int? = nil) throws -> Bool {
         if denominator == 0 {
             guard active else { return true }
             try camera.lockForConfiguration()
@@ -226,7 +227,7 @@ struct CameraShutterController {
               let plan = CameraShutterPlan.make(denominator: denominator,
                   minimum: format.minExposureDuration, maximum: format.maxExposureDuration,
                   frameDuration: camera.activeVideoMinFrameDuration,
-                  minISO: format.minISO, maxISO: format.maxISO) else { return false }
+                  minISO: format.minISO, maxISO: format.maxISO, requestedISO: requestedISO) else { return false }
         try camera.lockForConfiguration()
         defer { camera.unlockForConfiguration() }
         let minimum = camera.activeVideoMinFrameDuration, maximum = camera.activeVideoMaxFrameDuration
@@ -1681,7 +1682,8 @@ final class CameraViewModel: NSObject, ObservableObject {
             self.lanProbe.sendAck(to: host, line: line)
         }
         if command.defaults {
-            guard setShutter(2000) else { return }
+            guard setShutterISO(2000), setShutter(2000) else { return }
+            setShutterEmitter(false)
             setTrackLockEnabled(true)
             setExposureBias(-2, commandID: command.id)
             ack("defaults", "tracklock-on-ev-2-shutter-2000")
@@ -1701,6 +1703,8 @@ final class CameraViewModel: NSObject, ObservableObject {
         }
         if command.clearArea { clearPlayArea(commandID: command.id); ack("cleared", "area") }
         if let enabled = command.trackLock { setTrackLockEnabled(enabled); ack("tracklock", enabled ? "on" : "off") }
+        if let value = command.shutterISO, setShutterISO(value) { ack("shutter-iso", String(value)) }
+        if let enabled = command.shutterEmitter { setShutterEmitter(enabled); ack("shutter-emitter", enabled ? "on" : "off") }
         if let value = command.shutter, setShutter(value) { ack("shutter", value == 0 ? "off" : String(value)) }
         if let bias = command.exposureBias { setExposureBias(bias, commandID: command.id); ack("exposure", "ev\(bias)") }
         if let enabled = command.autoClip { setAutoClipEnabled(enabled, commandID: command.id); ack("autoclip", enabled ? "on" : "off") }
@@ -1756,7 +1760,7 @@ final class CameraViewModel: NSObject, ObservableObject {
     private func updateAutoClipEnvironment(thermal: String) {
         autoClip.updateEnvironment(AutoClipEnvironment(
             thermal: thermal, exposureBias: exposureBias,
-            shutter: shutter,
+            shutter: shutter, shutterISO: shutterISO, shutterEmitter: shutterEmitter,
             exposureDurationSeconds: running ? exposureBiasCamera.map { CMTimeGetSeconds($0.exposureDuration) } : nil,
             iso: running ? exposureBiasCamera.map { Double($0.iso) } : nil,
             appVersion: (Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String) ?? "unknown",
@@ -1902,6 +1906,45 @@ final class CameraViewModel: NSObject, ObservableObject {
 
     // MARK: 露出補正（光らない物を暗くする試験スイッチ）
 
+    static let shutterISOChoices = LANLivenessProbe.shutterISOChoices
+    nonisolated private static let shutterISOKey = "PhoneSaber.shutterISO.v1"
+    private static let shutterEmitterKey = "PhoneSaber.shutterEmitter.v1"
+    @Published private(set) var shutterISO = NSClassFromString("XCTestCase") == nil
+        ? CameraViewModel.storedShutterISO(in: .standard) : 2000
+    @Published private(set) var shutterEmitter = NSClassFromString("XCTestCase") == nil
+        && UserDefaults.standard.bool(forKey: CameraViewModel.shutterEmitterKey)
+
+    nonisolated static func storedShutterISO(in defaults: UserDefaults) -> Int {
+        let value = defaults.integer(forKey: shutterISOKey)
+        return LANLivenessProbe.shutterISOChoices.contains(value) ? value : 2000
+    }
+
+    static func shutterISOLabel(_ value: Int) -> String {
+        let stops = shutterISOChoices.firstIndex(of: value) ?? 0
+        return "ISO \(value)（−\(stops) 段）"
+    }
+
+    @discardableResult
+    func setShutterISO(_ value: Int) -> Bool {
+        guard Self.shutterISOChoices.contains(value) else { return false }
+        if running, shutter != 0, let camera = exposureBiasCamera,
+           !applyShutter(shutter, to: camera, requestedISO: value) { return false }
+        shutterISO = value
+        if NSClassFromString("XCTestCase") == nil { UserDefaults.standard.set(value, forKey: Self.shutterISOKey) }
+        refreshShutterStatus()
+        updateAutoClipEnvironment(thermal: DeviceThermalLevel(state: ProcessInfo.processInfo.thermalState).metadataValue)
+        ConnectivityLog.shared.record("SHUTTER_ISO", "requested=\(value) \(shutterStatus)")
+        return true
+    }
+
+    func setShutterEmitter(_ enabled: Bool) {
+        shutterEmitter = enabled
+        if NSClassFromString("XCTestCase") == nil { UserDefaults.standard.set(enabled, forKey: Self.shutterEmitterKey) }
+        refreshShutterStatus()
+        updateAutoClipEnvironment(thermal: DeviceThermalLevel(state: ProcessInfo.processInfo.thermalState).metadataValue)
+        ConnectivityLog.shared.record("SHUTTER_EMITTER", "enabled=\(enabled) \(shutterStatus)")
+    }
+
     static let shutterChoices = LANLivenessProbe.shutterChoices
     // 旧キーの OFF を一度だけ移行し、以後は明示的な OFF も保存する。
     private static let shutterKey = "PhoneSaber.shutter.v2"
@@ -1935,9 +1978,9 @@ final class CameraViewModel: NSObject, ObservableObject {
         return true
     }
 
-    private func applyShutter(_ value: Int, to camera: AVCaptureDevice) -> Bool {
+    private func applyShutter(_ value: Int, to camera: AVCaptureDevice, requestedISO: Int? = nil) -> Bool {
         do {
-            guard try shutterController.apply(value, to: camera) else {
+            guard try shutterController.apply(value, to: camera, requestedISO: requestedISO ?? shutterISO) else {
                 shutterStatus = "固定シャッター: このカメラ形式では使用できません"
                 ConnectivityLog.shared.record("SHUTTER", "unsupported requested=\(value)")
                 return false
@@ -1956,7 +1999,10 @@ final class CameraViewModel: NSObject, ObservableObject {
     }
 
     private func refreshShutterStatus() {
+        processor.setShutterEmitterMode(ShutterEmitterMode(shutter: shutterController.active ? shutter : 0,
+                                                         iso: shutterISO, enabled: shutterEmitter))
         let title = "固定シャッター: " + Self.shutterLabel(shutter)
+            + (shutter == 0 ? "" : " / " + Self.shutterISOLabel(shutterISO))
         if running, let camera = exposureBiasCamera {
             shutterStatus = title + String(format: "（実測 %.3f ms / ISO %.0f、%@）",
                 CMTimeGetSeconds(camera.exposureDuration) * 1000, camera.iso,

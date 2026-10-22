@@ -109,6 +109,45 @@ final class DetectionCoreTests: XCTestCase {
         XCTAssertEqual(CameraViewModel.storedShutter(in: try XCTUnwrap(UserDefaults(suiteName: name))), 0)
     }
 
+    func testFixedShutterISOStorageAndExplicitPlans() throws {
+        let name = "PhoneSaber.iso.tests." + UUID().uuidString
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: name))
+        defer { defaults.removePersistentDomain(forName: name) }
+        XCTAssertEqual(CameraViewModel.storedShutterISO(in: defaults), 2000)
+        for value in [2000, 1000, 500, 250, 0, -1, 125, 4000] {
+            defaults.set(value, forKey: "PhoneSaber.shutterISO.v1")
+            XCTAssertEqual(CameraViewModel.storedShutterISO(in: defaults), [2000, 1000, 500, 250].contains(value) ? value : 2000)
+        }
+        for fps in [30, 60] { for iso in [2000, 1000, 500, 250] {
+            let plan = try XCTUnwrap(CameraShutterPlan.make(denominator: 2000,
+                minimum: CMTime(value: 1, timescale: 100_000), maximum: CMTime(value: 1, timescale: 1),
+                frameDuration: CMTime(value: 1, timescale: Int32(fps)), minISO: 32, maxISO: 3000, requestedISO: iso))
+            XCTAssertEqual(CMTimeGetSeconds(plan.duration), 0.0005, accuracy: 1e-9)
+            XCTAssertEqual(plan.iso, Float(iso))
+        } }
+        let clamped = try XCTUnwrap(CameraShutterPlan.make(denominator: 2000,
+            minimum: CMTime(value: 1, timescale: 100_000), maximum: CMTime(value: 1, timescale: 1),
+            frameDuration: CMTime(value: 1, timescale: 60), minISO: 300, maxISO: 800, requestedISO: 250))
+        XCTAssertEqual(clamped.iso, 300)
+    }
+
+    @MainActor
+    func testFixedShutterISOCommandsAndEmitterDefaults() throws {
+        let model = CameraViewModel(sender: UDPSender { _, _, _ in }, p2pEnabled: false)
+        XCTAssertEqual(model.shutterISO, 2000)
+        XCTAssertFalse(model.shutterEmitter)
+        model.applyPCCommand(try XCTUnwrap(LANLivenessProbe.parseCommand("PHONESABER_COMMAND 1 id=801 shutter-iso=500")))
+        XCTAssertEqual(model.shutterISO, 500)
+        model.applyPCCommand(.init(id: 801, ignore: nil, clearIgnore: false, shutterISO: 250))
+        XCTAssertEqual(model.shutterISO, 500)
+        model.applyPCCommand(.init(id: 802, ignore: nil, clearIgnore: false, shutterEmitter: true))
+        XCTAssertTrue(model.shutterEmitter)
+        model.applyPCCommand(.init(id: 803, ignore: nil, clearIgnore: false, defaults: true))
+        XCTAssertEqual(model.shutter, 2000)
+        XCTAssertEqual(model.shutterISO, 2000)
+        XCTAssertFalse(model.shutterEmitter)
+    }
+
     func testFixedShutterPlanClampsDurationISOAndPreservesFrameBudget() throws {
         func plan(_ denominator: Int, minimum: Double = 0.00001, maximum: Double = 1,
                   frame: Double = 1.0 / 60, minISO: Float = 32, maxISO: Float = 1000) -> CameraShutterPlan? {

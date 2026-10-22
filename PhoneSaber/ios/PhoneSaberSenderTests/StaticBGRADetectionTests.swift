@@ -1155,6 +1155,122 @@ enum StaticBGRADetectionTests {
             }
             print("Play area: the candidate whose midpoint is outside is skipped and the inside bar is selected")
         }
+        // ISO実験の暫定閾値はこの合成グリッドを根拠にする。実機の再現性を保証するものではない。
+        do {
+            let on = ShutterEmitterMode(shutter: 2000, iso: 500, enabled: true)
+            func scene(_ rgb: (UInt8, UInt8, UInt8), background: UInt8 = 8,
+                       length: Int = 100, thickness: Int = 2) -> StaticImage {
+                var image = StaticImage(width: 240, height: 160, padding: 16)
+                for y in 0..<image.height { for x in 0..<image.width {
+                    image.pixel(x, y, red: background, green: background, blue: background)
+                } }
+                image.coloredBar(from: PixelPoint(x: 50, y: 60), to: PixelPoint(x: 50 + length, y: 60),
+                                 red: rgb.0, green: rgb.1, blue: rgb.2, thickness: thickness)
+                return image
+            }
+            func run(_ image: StaticImage, _ mode: ShutterEmitterMode = ShutterEmitterMode(),
+                     step: Int = 2, zones: [SaberColor: [SaberIgnoreZone]] = [:],
+                     area: SaberPlayArea? = nil) -> SaberFrameAnalysis {
+                analyzeSabers(in: image.bytes, width: image.width, height: image.height,
+                              bytesPerRow: image.bytesPerRow, redThreshold: ColorThreshold(), blueThreshold: ColorThreshold(),
+                              sampleStep: step, collectObserverEvidence: true, ignoreZones: zones, playArea: area,
+                              shutterEmitter: mode)
+            }
+            func emitters(_ a: SaberFrameAnalysis, _ color: SaberColor) -> [SaberCandidate] {
+                (a.candidates[color] ?? []).filter { $0.source == "shutter-color-emitter" }
+            }
+            var positive = 0, negative = 0
+            for color in [SaberColor.red, .blue] {
+                for background in [0, 8, 24, 48] {
+                    for value in [64, 80, 96, 128, 144, 200, 234] {
+                        let rgb: (UInt8, UInt8, UInt8) = color == .red ? (UInt8(value), 12, 12) : (12, 24, UInt8(value))
+                        let image = scene(rgb, background: UInt8(background))
+                        let expected = value >= max(64, background + 40, background * 3)
+                        let result = run(image, on)
+                        guard !emitters(result, color).isEmpty == expected else {
+                            fatalError("shutter emitter grid color=\(color) bg=\(background) value=\(value) expected=\(expected)")
+                        }
+                        if expected {
+                            guard let selected = result.selected[color],
+                                  endpointDistance(selected, (PixelPoint(x: 50, y: 60), PixelPoint(x: 150, y: 60))) <= 8 else {
+                                fatalError("shutter emitter endpoints")
+                            }
+                            positive += 1
+                        } else { negative += 1 }
+                    }
+                }
+                let image = scene(color == .red ? (128, 12, 12) : (12, 24, 128))
+                let baseline = run(image)
+                for shutter in [0, 500, 1000, 2000] { for iso in [2000, 1000, 500, 250] { for enabled in [false, true] {
+                    let mode = ShutterEmitterMode(shutter: shutter, iso: iso, enabled: enabled)
+                    let result = run(image, mode)
+                    if mode.active {
+                        guard !emitters(result, color).isEmpty else { fatalError("low ISO opt-in missing") }
+                    } else {
+                        let a = baseline.candidates[color] ?? [], b = result.candidates[color] ?? []
+                        guard emitters(result, color).isEmpty, a.count == b.count,
+                              zip(a, b).allSatisfy({ $0.score.bitPattern == $1.score.bitPattern
+                                && $0.isEmitterEligible == $1.isEmitterEligible && endpointDistance($0.endpoints, $1.endpoints) == 0 }) else {
+                            fatalError("auto/ISO2000/OFF parity")
+                        }
+                    }
+                } } }
+                // 別sample stepでも同じ物体を選び、無視範囲とプレイ範囲は追加経路にも適用する。
+                guard !emitters(run(image, on, step: 1), color).isEmpty,
+                      run(image, on, area: SaberPlayArea(minX: 0.8, minY: 0.8, maxX: 1, maxY: 1)).selected[color] == nil,
+                      run(image, on, zones: [color: [SaberIgnoreZone(minX: 0, minY: 0, maxX: 1, maxY: 1)]]).selected[color] == nil else {
+                    fatalError("shutter emitter area/ignore/step")
+                }
+            }
+            let negatives = [
+                scene((128, 12, 12), background: 49), // 明るい背景
+                scene((12, 24, 128), background: 49),
+                scene((63, 8, 8)), scene((8, 12, 63)), // 暗すぎる
+                scene((235, 12, 12)), scene((12, 24, 235)), // 飽和に近い画素は既存経路の仕事
+                scene((128, 80, 80)), scene((80, 80, 128)), // 色の薄い服
+                scene((128, 60, 12)), scene((12, 128, 128)), // 暖色・シアン反射
+                scene((128, 12, 128)), scene((12, 128, 12)), scene((200, 200, 200)),
+                scene((128, 12, 12), thickness: 12), scene((12, 24, 128), thickness: 12), // 広い服・反射
+                scene((128, 12, 12), length: 4, thickness: 3), scene((12, 24, 128), length: 4, thickness: 3) // 小さな点
+            ]
+            for image in negatives {
+                let result = run(image, on)
+                guard emitters(result, .red).isEmpty, emitters(result, .blue).isEmpty else { fatalError("shutter emitter negative") }
+                negative += 1
+            }
+            // 各暫定定数の境界を他の条件から独立させる（暗背景8、step1、矩形の画素数既知）。
+            func rectangle(_ length: Int, _ thickness: Int, rgb: (UInt8, UInt8, UInt8) = (128, 12, 12)) -> StaticImage {
+                var image = scene((8, 8, 8))
+                for y in 40..<(40 + thickness) { for x in 30..<(30 + length) {
+                    image.pixel(x, y, red: rgb.0, green: rgb.1, blue: rgb.2)
+                } }
+                return image
+            }
+            let shapeCases = [(6, 1, true), (5, 1, false), // 最小6画素
+                              (24, 6, true), (23, 6, false), // PCA長/平均幅4
+                              (100, 11, true), (90, 12, false), // 平均幅は短辺の7%以内
+                              (150, 7, true), (166, 7, false)] // 画像面積の3%以内
+            for (length, thickness, expected) in shapeCases {
+                let result = run(rectangle(length, thickness), on, step: 1)
+                guard !emitters(result, .red).isEmpty == expected else {
+                    fatalError("shutter emitter shape boundary \(length)x\(thickness), expected \(expected)")
+                }
+            }
+            let colorCases: [((UInt8, UInt8, UInt8), SaberColor, Bool)] = [
+                ((200, 70, 70), .red, true), ((200, 71, 71), .red, false), // 純度0.65
+                ((70, 70, 200), .blue, true), ((71, 71, 200), .blue, false),
+                ((200, 50, 0), .red, true), ((200, 60, 0), .red, false), // 赤0±15度
+                ((200, 0, 50), .red, true), ((200, 0, 60), .red, false),
+                ((0, 120, 180), .blue, true), ((0, 123, 180), .blue, false), // 青200..250度
+                ((30, 0, 180), .blue, true), ((33, 0, 180), .blue, false)
+            ]
+            for (rgb, color, expected) in colorCases {
+                guard !emitters(run(rectangle(100, 3, rgb: rgb), on, step: 1), color).isEmpty == expected else {
+                    fatalError("shutter emitter color boundary \(rgb), expected \(expected)")
+                }
+            }
+            print("Shutter emitter synthetic: \(positive) positive / \(negative) negative, mode/area/ignore/stride parity + \(shapeCases.count + colorCases.count) boundaries PASS")
+        }
         print("Static BGRA detection tests passed")
     }
 }

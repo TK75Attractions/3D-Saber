@@ -39,6 +39,8 @@ public sealed class PhoneSaberDiscoveryResponder : IDisposable
     public static readonly string LearnAreaCommand = "learn-area=" + LearnAreaSeconds;
     public const string ClearAreaCommand = "clear-area=1";
     // iPhone専用の固定短時間露出。OFFは既存の自動露出＋補正へ戻す。
+    public static readonly int[] ShutterISOChoices = { 2000, 1000, 500, 250 };
+    public static string ShutterISOCommand(int value) => "shutter-iso=" + value.ToString(System.Globalization.CultureInfo.InvariantCulture);
     public static readonly int[] ShutterChoices = { 0, 500, 1000, 2000 };
     public static string ShutterCommand(int value) => "shutter=" + value.ToString(System.Globalization.CultureInfo.InvariantCulture);
     // 露出補正（EV、0 = OFF、-1、-2 = 既定）。スマホが保存する。
@@ -261,6 +263,8 @@ public sealed class PhoneSaberAcknowledgement
             case "learning": return detail.EndsWith("s") && Number(detail.Substring(0, detail.Length - 1)) &&
                 int.Parse(detail.Substring(0, detail.Length - 1)) >= 1 && int.Parse(detail.Substring(0, detail.Length - 1)) <= 60;
             case "learned": case "failed": return detail.StartsWith("samples") && Number(detail.Substring(7));
+            case "shutter-iso": return detail == "250" || detail == "500" || detail == "1000" || detail == "2000";
+            case "shutter-emitter": return detail == "on" || detail == "off";
             case "shutter": return detail == "off" || detail == "500" || detail == "1000" || detail == "2000";
             case "exposure": return detail == "ev0" || detail == "ev-1" || detail == "ev-2";
             case "defaults": return detail == "tracklock-on-ev-2" || detail == "tracklock-on-ev-2-shutter-2000";

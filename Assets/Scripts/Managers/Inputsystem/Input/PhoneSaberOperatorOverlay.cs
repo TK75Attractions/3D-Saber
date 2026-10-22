@@ -229,6 +229,8 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
             { "phone-clear-ignore", _ => PhoneSaberDiscoveryResponder.QueueCommand("clear-ignore=1") },
             { "phone-learn-area", _ => PhoneSaberDiscoveryResponder.QueueCommand(PhoneSaberDiscoveryResponder.LearnAreaCommand) },
             { "phone-clear-area", _ => PhoneSaberDiscoveryResponder.QueueCommand(PhoneSaberDiscoveryResponder.ClearAreaCommand) },
+            { "phone-shutter-iso", v => PhoneSaberOperatorKeys.SelectShutterISO(int.Parse(v, CultureInfo.InvariantCulture)) },
+            { "phone-shutter-emitter", v => PhoneSaberDiscoveryResponder.QueueCommand("shutter-emitter=" + v) },
             { "phone-shutter", v => PhoneSaberOperatorKeys.SelectShutter(int.Parse(v, CultureInfo.InvariantCulture)) },
             { "phone-exposure", v => PhoneSaberDiscoveryResponder.QueueCommand(PhoneSaberDiscoveryResponder.ExposureBiasCommand(int.Parse(v, CultureInfo.InvariantCulture))) },
             { "phone-track-lock", _ => {
@@ -491,6 +493,12 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         panel.Label("iPhone固定シャッター [Ctrl+Shift+S]: 既定 1/2000 → OFF（自動露出）→ 1/500 → 1/1000 → 1/2000。起動時の既定: 追跡 ON・露出 −2・1/2000 秒");
         foreach (int value in PhoneSaberDiscoveryResponder.ShutterChoices)
             panel.Button(value == 0 ? "固定シャッター: OFF" : $"固定シャッター: 1/{value} 秒", "phone-shutter", value.ToString(CultureInfo.InvariantCulture));
+        panel.Label("固定シャッターの明るさ [Ctrl+Shift+D]: ISO 2000 → 1000 → 500 → 250。1/2000秒のまま各−1段。起動時の既定はISO 2000");
+        foreach (int value in PhoneSaberDiscoveryResponder.ShutterISOChoices)
+            panel.Button(PhoneSaberOperatorKeys.ShutterISOLabel(value), "phone-shutter-iso", value.ToString(CultureInfo.InvariantCulture));
+        panel.Label("低ISOの色付き発光体: 既定OFF、固定シャッター・ISO2000未満のときだけ有効（試験）");
+        panel.Button("色付き発光体 OFF", "phone-shutter-emitter", "0");
+        panel.Button("色付き発光体 ON", "phone-shutter-emitter", "1");
         panel.Label($"PC 側で無視（予備）: {count} か所（この台に保存）{ignored}");
         string warning = input != null ? IgnoreDominanceWarning(input) : "";
         if (warning.Length > 0) panel.Label(warning, true);

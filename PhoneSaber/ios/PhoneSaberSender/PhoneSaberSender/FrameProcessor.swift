@@ -143,6 +143,11 @@ final class FrameProcessor: @unchecked Sendable {
     // for the detector queue just to reject an obsolete generation.
     private var generationSnapshot = 0
     private let pendingLock = NSLock()
+    /// カメラ設定のスナップショット。低ISOの明示ON以外では従来経路を維持する。
+    private var shutterEmitterMode = ShutterEmitterMode()
+    func setShutterEmitterMode(_ mode: ShutterEmitterMode) {
+        pendingLock.lock(); shutterEmitterMode = mode; pendingLock.unlock()
+    }
     /// 無視する範囲（SaberIgnoreZone）。main から設定し、検出スレッドで読む（pendingLock で保護）。
     private var ignoreZones: [SaberColor: [SaberIgnoreZone]] = [:]
     private var ignoreLearners: [UUID: SaberIgnoreLearner] = [:]
@@ -612,6 +617,7 @@ final class FrameProcessor: @unchecked Sendable {
         let area = learningArea ? nil : playArea
         let areaRevision = playAreaRevision
         let frameCaptureFPS = captureFPS
+        let emitterMode = shutterEmitterMode
         pendingLock.unlock()
         if !lockEnabled || selectionTrackRevision != lockRevision { selectionTrack.reset() }
         selectionTrackRevision = lockRevision
@@ -629,7 +635,7 @@ final class FrameProcessor: @unchecked Sendable {
                                      blueThreshold: blueThreshold, collectProfile: collectProfile,
                                      collectPipelineDiagnostics: debugVideoRecorder != nil,
                                      collectObserverEvidence: observer != nil,
-                                     ignoreZones: zones, playArea: area, trackLock: lockState, now: processingStart)
+                                     ignoreZones: zones, playArea: area, trackLock: lockState, now: processingStart, shutterEmitter: emitterMode)
         let sabers = analysis.selected
         let observedAnalysis: SaberFrameAnalysis? = analysis
 #else
@@ -643,7 +649,7 @@ final class FrameProcessor: @unchecked Sendable {
                 baseAddress: bytes, width: width, height: height,
                 bytesPerRow: bytesPerRow, redThreshold: redThreshold,
                 blueThreshold: blueThreshold, collectObserverEvidence: true,
-                ignoreZones: zones, playArea: area, trackLock: lockState, now: processingStart
+                ignoreZones: zones, playArea: area, trackLock: lockState, now: processingStart, shutterEmitter: emitterMode
             )
             analysis = result
             sabers = result.selected
@@ -652,7 +658,7 @@ final class FrameProcessor: @unchecked Sendable {
                 baseAddress: bytes, width: width, height: height,
                 bytesPerRow: bytesPerRow, redThreshold: redThreshold,
                 blueThreshold: blueThreshold, collectProfile: false,
-                collectPipelineDiagnostics: true, ignoreZones: zones, playArea: area, trackLock: lockState, now: processingStart
+                collectPipelineDiagnostics: true, ignoreZones: zones, playArea: area, trackLock: lockState, now: processingStart, shutterEmitter: emitterMode
             )
             analysis = recordedAnalysis
             sabers = recordedAnalysis.selected
@@ -660,7 +666,7 @@ final class FrameProcessor: @unchecked Sendable {
             let result = analyzeSabers(baseAddress: bytes, width: width, height: height,
                                   bytesPerRow: bytesPerRow,
                                   redThreshold: redThreshold, blueThreshold: blueThreshold,
-                                  ignoreZones: zones, playArea: area, trackLock: lockState, now: processingStart)
+                                  ignoreZones: zones, playArea: area, trackLock: lockState, now: processingStart, shutterEmitter: emitterMode)
             analysis = result
             sabers = result.selected
         }

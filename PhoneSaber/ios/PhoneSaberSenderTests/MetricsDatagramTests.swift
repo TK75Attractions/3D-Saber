@@ -5,6 +5,36 @@ import XCTest
 #endif
 
 final class MetricsDatagramTests: XCTestCase {
+    func testShutterISOAndEmitterCommandRules() {
+        for value in [2000, 1000, 500, 250] {
+            let line = "PHONESABER_COMMAND 1 id=72 shutter-iso=\(value) future=x"
+            XCTAssertEqual(LANLivenessProbe.parseCommand(line)?.shutterISO, value)
+            XCTAssertEqual(LANLivenessProbe.formatAck(id: 72, station: "A", platform: "ios", result: "shutter-iso", detail: String(value)),
+                           "PHONESABER_ACK 1 id=72 station=A platform=ios result=shutter-iso detail=\(value)")
+            for other in ["shutter=2000", "shutter-emitter=1", "ignore=red", "clear-ignore=1", "learn-area=10", "clear-area=1",
+                          "exposure-bias=-2", "clip=1", "auto-clip=0", "track-lock=1", "defaults=1"] {
+                XCTAssertNil(LANLivenessProbe.parseCommand(line + " " + other))
+            }
+        }
+        for value in ["0", "-1", "125", "4000", "500.0", "x"] {
+            XCTAssertNil(LANLivenessProbe.parseCommand("PHONESABER_COMMAND 1 id=72 shutter-iso=\(value)"))
+        }
+        XCTAssertNil(LANLivenessProbe.parseCommand("PHONESABER_COMMAND 1 shutter-iso=500"))
+        XCTAssertNil(LANLivenessProbe.parseCommand("PHONESABER_COMMAND 2 id=72 shutter-iso=500"))
+        XCTAssertEqual(LANLivenessProbe.parseCommand("PHONESABER_COMMAND 1 id=72 shutter-iso=500 shutter-iso=250")?.shutterISO, 250)
+        XCTAssertNil(LANLivenessProbe.parseCommand("PHONESABER_COMMAND 1 id=72 shutter-iso=500 shutter-iso=x"))
+        XCTAssertNotNil(LANLivenessProbe.parseCommand("PHONESABER_COMMAND 1 id=72 shutter-iso=x ignore=red"))
+        for value in [0, 1] {
+            let line = "PHONESABER_COMMAND 1 id=73 shutter-emitter=\(value)"
+            XCTAssertEqual(LANLivenessProbe.parseCommand(line)?.shutterEmitter, value == 1)
+            for other in ["shutter=2000", "shutter-iso=500", "defaults=1", "ignore=both", "clip=1"] {
+                XCTAssertNil(LANLivenessProbe.parseCommand(line + " " + other))
+            }
+        }
+        XCTAssertNil(LANLivenessProbe.parseCommand("PHONESABER_COMMAND 1 id=73 shutter-emitter=on"))
+        XCTAssertEqual(LANLivenessProbe.parseCommand("PHONESABER_COMMAND 1 id=73 shutter-emitter=1 shutter-emitter=0")?.shutterEmitter, false)
+    }
+
     func testIPhoneShutterParsingAndAck() {
         for value in [0, 500, 1000, 2000] {
             let line = "PHONESABER_COMMAND 1 id=71 shutter=\(value) future=x"

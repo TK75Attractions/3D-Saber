@@ -877,6 +877,77 @@ final class SaberTrackLock {
     }
 }
 
+// 低ISO専用の明示opt-in。自動露出・ISO2000では追加走査も候補も作らない。
+struct ShutterEmitterMode: Equatable {
+    var shutter = 0
+    var iso = 2000
+    var enabled = false
+    var active: Bool { enabled && [500, 1000, 2000].contains(shutter) && [1000, 500, 250].contains(iso) }
+}
+
+// 合成境界テスト（StaticBGRADetectionTests）の仮設定。実機クリップで再調整する場所を集約。
+// 白飛び芯を要求しない代わりに、暗背景・狭い色相・高純度・背景比・細長さ・小面積を全て要求する。
+enum ShutterEmitterThresholds {
+    static let maximumBackground = 48
+    static let minimumValue = 64
+    static let maximumValue = 234
+    static let minimumBackgroundRatio = 3
+    static let minimumPurity = 0.65
+    static let redHueEdge = 15.0
+    // HSVのbinary64計算で250度が1ULP上になる境界だけ含める。
+    static let blueHueRange = 200.0...250.0.nextUp
+    static let minimumPixels = 6
+    static let maximumAreaRatio = 0.03
+    static let minimumAspect = 4.0
+    static let maximumWidthRatio = 0.07
+}
+
+private func shutterEmitterMasks(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int,
+                                  bytesPerRow: Int, step: Int, values: [UInt8],
+                                  chroma: [UInt8]) -> [SaberColor: [UInt8]] {
+    var histogram = Array(repeating: 0, count: 256)
+    for value in values { histogram[Int(value)] += 1 }
+    var count = 0, background = 0
+    for value in histogram.indices {
+        count += histogram[value]
+        if count > values.count / 2 { background = value; break }
+    }
+    guard background <= ShutterEmitterThresholds.maximumBackground else { return [:] }
+    let floor = max(ShutterEmitterThresholds.minimumValue,
+                    background * ShutterEmitterThresholds.minimumBackgroundRatio)
+    var red = Array(repeating: UInt8(0), count: values.count), blue = red
+    for i in values.indices {
+        let value = Int(values[i])
+        guard value >= floor, value <= ShutterEmitterThresholds.maximumValue,
+              Double(chroma[i]) / Double(max(value, 1)) >= ShutterEmitterThresholds.minimumPurity else { continue }
+        let offset = (i / width) * step * bytesPerRow + (i % width) * step * 4
+        let hsv = saberHSV(baseAddress[offset + 2], baseAddress[offset + 1], baseAddress[offset])
+        if hsv.hue <= ShutterEmitterThresholds.redHueEdge || hsv.hue >= 360 - ShutterEmitterThresholds.redHueEdge { red[i] = 1 }
+        if ShutterEmitterThresholds.blueHueRange.contains(hsv.hue) { blue[i] = 1 }
+    }
+    return [.red: red, .blue: blue]
+}
+
+private func shutterEmitterCandidates(mask: [UInt8], width: Int, height: Int,
+                                      color: SaberColor, values: [UInt8], chroma: [UInt8],
+                                      radiance: [UInt8], collectEvidence: Bool) -> [SaberCandidate] {
+    let evidence = SaberEvidence(color: color, radiance: radiance, value: values, chroma: chroma,
+                                 colorMask: mask, coreMask: Array(repeating: 0, count: mask.count),
+                                 collectObserverEvidence: collectEvidence)
+    return saberCandidates(in: mask, width: width, height: height, evidence: evidence,
+                           minimumAreaOverride: ShutterEmitterThresholds.minimumPixels).compactMap { candidate in
+        let length = max(candidate.rawPCASpan, 1)
+        let meanWidth = Double(candidate.pointCount) / length
+        guard Double(candidate.pointCount) <= Double(width * height) * ShutterEmitterThresholds.maximumAreaRatio,
+              length / max(meanWidth, 1) >= ShutterEmitterThresholds.minimumAspect,
+              meanWidth <= Double(min(width, height)) * ShutterEmitterThresholds.maximumWidthRatio else { return nil }
+        var emitter = candidate
+        emitter.source = "shutter-color-emitter"
+        emitter.isEmitterEligible = true
+        return emitter
+    }
+}
+
 func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, bytesPerRow: Int,
                    redThreshold: ColorThreshold, blueThreshold: ColorThreshold,
                    sampleStep: Int = 2, collectProfile: Bool = false,
@@ -884,7 +955,8 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
                    collectObserverEvidence: Bool = false,
                    ignoreZones: [SaberColor: [SaberIgnoreZone]] = [:],
                    playArea: SaberPlayArea? = nil,
-                  trackLock: SaberTrackLock? = nil, now: Double = 0) -> SaberFrameAnalysis {
+                  trackLock: SaberTrackLock? = nil, now: Double = 0,
+                   shutterEmitter: ShutterEmitterMode = ShutterEmitterMode()) -> SaberFrameAnalysis {
     let totalStart = collectProfile ? ProcessInfo.processInfo.systemUptime : 0
     var profile = SaberDetectionProfile()
     let candidateStageProfile = collectProfile ? SaberCandidateStageProfile() : nil
@@ -981,6 +1053,9 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
             }
         }
     }
+    let lowISOMasks = shutterEmitter.active
+        ? shutterEmitterMasks(baseAddress: baseAddress, width: maskWidth, height: maskHeight,
+                              bytesPerRow: bytesPerRow, step: step, values: valueMap, chroma: chromaMap) : [:]
     let scanEnd = collectProfile ? ProcessInfo.processInfo.systemUptime : 0
     let strictBlueMask = blueMask
     blueMask = supportedBlueDiffuserMask(
@@ -1011,7 +1086,7 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
         // Most live frames contain at most one saber color. Do not run several
         // full-mask morphology/component passes for an absent color; this is
         // an exact empty-mask fast path and does not alter candidate scoring.
-        guard rawMask.contains(1) else {
+        guard rawMask.contains(1) || lowISOMasks[color]?.contains(1) == true else {
             _ = trackLock?.select([], color: color, width: width, height: height, now: now)
             allCandidates[color] = []
             if collectPipelineDiagnostics {
@@ -1592,6 +1667,15 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
                 }
             }
         }
+        if let mask = lowISOMasks[color], mask.contains(1) {
+            let additional = shutterEmitterCandidates(mask: mask, width: maskWidth, height: maskHeight,
+                color: color, values: valueMap, chroma: chromaMap, radiance: radianceMap,
+                collectEvidence: collectObserverEvidence)
+            if !additional.isEmpty {
+                candidates += additional
+                candidates.sort { $0.score > $1.score }
+            }
+        }
         let scaled = candidates.map { candidate in
             let endpoints = candidate.endpoints
             return SaberCandidate(
@@ -1744,7 +1828,8 @@ func analyzeSabers(in bgra: [UInt8], width: Int, height: Int, bytesPerRow: Int,
                    collectObserverEvidence: Bool = false,
                    ignoreZones: [SaberColor: [SaberIgnoreZone]] = [:],
                    playArea: SaberPlayArea? = nil,
-                   trackLock: SaberTrackLock? = nil, now: Double = 0) -> SaberFrameAnalysis {
+                   trackLock: SaberTrackLock? = nil, now: Double = 0,
+                   shutterEmitter: ShutterEmitterMode = ShutterEmitterMode()) -> SaberFrameAnalysis {
     guard width > 0, height > 0, bytesPerRow >= width * 4,
           bgra.count >= bytesPerRow * height else {
         return SaberFrameAnalysis(candidates: [:], selected: [:])
@@ -1759,6 +1844,6 @@ func analyzeSabers(in bgra: [UInt8], width: Int, height: Int, bytesPerRow: Int,
                              collectProfile: collectProfile,
                              collectPipelineDiagnostics: collectPipelineDiagnostics,
                              collectObserverEvidence: collectObserverEvidence, ignoreZones: ignoreZones,
-                             playArea: playArea, trackLock: trackLock, now: now)
+                             playArea: playArea, trackLock: trackLock, now: now, shutterEmitter: shutterEmitter)
     }
 }

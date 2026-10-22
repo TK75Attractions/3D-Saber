@@ -597,6 +597,8 @@ struct AutoClipEnvironment: Equatable {
     var thermal = "nominal"
     var exposureBias = 0
     var shutter = 0
+    var shutterISO = 2000
+    var shutterEmitter = false
     var exposureDurationSeconds: Double?
     var iso: Double?
     var appVersion = ""
@@ -1228,6 +1230,8 @@ struct AutoClipBundleContent {
                        "shutter": capture.environmentAtTrigger.shutter,
                        "exposureDurationSeconds": capture.environmentAtTrigger.exposureDurationSeconds ?? NSNull(),
                        "iso": capture.environmentAtTrigger.iso ?? NSNull(),
+                       "shutterISO": capture.environmentAtTrigger.shutterISO,
+                       "shutterEmitter": capture.environmentAtTrigger.shutterEmitter,
                        "thermalAtTrigger": capture.environmentAtTrigger.thermal,
                        "thermalAtSave": capture.environmentAtSave.thermal,
                        "appVersion": capture.environmentAtTrigger.appVersion],

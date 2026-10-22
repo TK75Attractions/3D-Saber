@@ -592,10 +592,11 @@ final class LANLivenessProbe {
     /// PC（Unity の F8）からの指示。生存確認の応答と一緒に届く別の datagram（応答の形式は変えない）。
     ///   "PHONESABER_COMMAND 1 id=<番号> ignore=red|blue" / "PHONESABER_COMMAND 1 id=<番号> clear-ignore=1"
     ///   "PHONESABER_COMMAND 1 id=<番号> learn-area=<秒 1..60>" / "... clear-area=1"（プレイ範囲、2026-10-18）
+    ///   "PHONESABER_COMMAND 1 id=<番号> shutter-iso=2000|1000|500|250" / "... shutter-emitter=0|1"（単独操作）
     ///   "PHONESABER_COMMAND 1 id=<番号> shutter=0|500|1000|2000"（iPhoneの固定短時間露出）
     ///   "PHONESABER_COMMAND 1 id=<番号> exposure-bias=0|-1|-2"（露出補正 EV、2026-10-18）
     ///   "PHONESABER_COMMAND 1 id=<番号> clip=1" / "... auto-clip=0|1"（自動クリップの今すぐ保存・ON/OFF、2026-10-19）
-    ///   "PHONESABER_COMMAND 1 id=<番号> defaults=1"（剣を追いかける ON・露出 -2・固定シャッター 1/2000 に戻して保存）
+    ///   "PHONESABER_COMMAND 1 id=<番号> defaults=1"（剣を追いかける ON・露出 -2・固定シャッター 1/2000・ISO2000・色付き発光体OFFに戻して保存）
     /// 2026-10-18: 会場のコーンを無視する範囲を、iPhone に触らず Mac から登録するため。
     /// 規則（Android の PcCommandProtocol と同じ）: 版は 1 だけ、id 必須、知らない項目は無視、同じ項目は後のものが有効、
     /// 範囲外の値はその項目が無いのと同じ。1つの指示は1つの操作だけ: learn-area / clear-area / exposure-bias / shutter は
@@ -609,13 +610,15 @@ final class LANLivenessProbe {
         var clearArea = false
         var exposureBias: Int? = nil
         var shutter: Int? = nil
+        var shutterISO: Int? = nil
+        var shutterEmitter: Bool? = nil
         /// clip=1: 今の前後を自動クリップとして保存する。
         var clip = false
         /// auto-clip=0|1: 自動クリップの ON/OFF（端末に保存）。
         var autoClip: Bool? = nil
         /// track-lock=0|1: 剣を追いかける（既定 ON、端末に保存）。
         var trackLock: Bool? = nil
-        /// defaults=1: 本番の既定（追跡 ON・露出 -2・固定シャッター 1/2000）に戻し、端末に保存する。
+        /// defaults=1: 本番の既定（追跡 ON・露出 -2・固定シャッター 1/2000・ISO2000・色付き発光体OFF）に戻し、端末に保存する。
         var defaults = false
         var sourceHost: String? = nil
     }
@@ -623,10 +626,12 @@ final class LANLivenessProbe {
     static let maximumLearnAreaSeconds = 60
     static let exposureBiasChoices = [0, -1, -2]
     static let shutterChoices = [0, 500, 1000, 2000]
+    static let shutterISOChoices = [2000, 1000, 500, 250]
     static func parseCommand(_ text: String) -> PCCommand? {
         guard text.hasPrefix(commandPrefix) else { return nil }
         var id: Int?, ignore: String?, clear = false
         var learn: Int?, clearArea = false, exposure: Int?, shutter: Int?
+        var shutterISO: Int?, shutterEmitter: Bool?
         var clip = false, autoClip: Bool?, trackLock: Bool?, defaults = false
         for field in text.dropFirst(commandPrefix.count).split(separator: " ") {
             let parts = field.split(separator: "=", maxSplits: 1).map(String.init)
@@ -639,6 +644,8 @@ final class LANLivenessProbe {
             case "learn-area": learn = Int(parts[1]).flatMap { (1...maximumLearnAreaSeconds).contains($0) ? $0 : nil }
             case "clear-area": clearArea = parts[1] == "1"
             case "defaults": defaults = parts[1] == "1"
+            case "shutter-iso": shutterISO = Int(parts[1]).flatMap { shutterISOChoices.contains($0) ? $0 : nil }
+            case "shutter-emitter": shutterEmitter = parts[1] == "1" ? true : parts[1] == "0" ? false : nil
             case "shutter": shutter = Int(parts[1]).flatMap { shutterChoices.contains($0) ? $0 : nil }
             case "exposure-bias": exposure = Int(parts[1]).flatMap { exposureBiasChoices.contains($0) ? $0 : nil }
             case "clip": clip = parts[1] == "1"
@@ -649,10 +656,10 @@ final class LANLivenessProbe {
         }
         let legacy = (ignore != nil ? 1 : 0) + (clear ? 1 : 0)
         let added = (learn != nil ? 1 : 0) + (clearArea ? 1 : 0) + (exposure != nil ? 1 : 0)
-            + (shutter != nil ? 1 : 0) + (clip ? 1 : 0) + (autoClip != nil ? 1 : 0) + (trackLock != nil ? 1 : 0) + (defaults ? 1 : 0)
+            + (shutter != nil ? 1 : 0) + (shutterISO != nil ? 1 : 0) + (shutterEmitter != nil ? 1 : 0) + (clip ? 1 : 0) + (autoClip != nil ? 1 : 0) + (trackLock != nil ? 1 : 0) + (defaults ? 1 : 0)
         guard let id, legacy + added > 0, added == 0 || legacy + added == 1 else { return nil }
         return PCCommand(id: id, ignore: ignore, clearIgnore: clear,
-                         learnAreaSeconds: learn, clearArea: clearArea, exposureBias: exposure, shutter: shutter,
+                         learnAreaSeconds: learn, clearArea: clearArea, exposureBias: exposure, shutter: shutter, shutterISO: shutterISO, shutterEmitter: shutterEmitter,
                          clip: clip, autoClip: autoClip, trackLock: trackLock, defaults: defaults)
     }
     static func formatAck(id: Int, station: String, platform: String, result: String, detail: String) -> String? {

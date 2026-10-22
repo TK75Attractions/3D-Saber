@@ -148,8 +148,8 @@ extension AVCaptureSession { func addOutput(_ output: AVCaptureVideoDataOutput) 
     support += block(camera, "struct CameraShutterPlan:") + "\n"
     support += block(camera, "struct CameraShutterController") + "\n"
     shutter_key = next(line for line in camera.splitlines() if 'static let shutterKey =' in line)
-    support += 'enum LANLivenessProbe { static let shutterChoices = [0, 500, 1000, 2000] }\n'
-    support += 'enum CameraViewModel {\n' + shutter_key + '\n' + block(camera, 'nonisolated static func storedShutter(') + '\n}\n'
+    support += 'enum LANLivenessProbe { static let shutterChoices = [0, 500, 1000, 2000]; static let shutterISOChoices = [2000, 1000, 500, 250] }\n'
+    support += 'enum CameraViewModel {\n' + shutter_key + '\n' + block(camera, 'nonisolated static func storedShutter(') + '\n' + next(line for line in camera.splitlines() if 'static let shutterISOKey =' in line) + '\n' + block(camera, 'nonisolated static func storedShutterISO(') + '\n}\n'
     current_camera = (SOURCE / "CameraViewModel.swift").read_text()
     support += block(current_camera, "struct CameraPostProcessingState") + "\n"
     if "func configureCameraPostProcessing(" in camera:
@@ -165,7 +165,7 @@ extension AVCaptureSession { func addOutput(_ output: AVCaptureVideoDataOutput) 
     support += "enum ConnectivityLog { static let shared = ConnectivityLogStub() }; struct ConnectivityLogStub { func exportTail() -> String { \"\" } }\n"
     support += block(source("EventRecovery.swift"), "struct FPSComparisonPolicy") + "\n"
     core = (TESTS / "DetectionCoreTests.swift").read_text()
-    markers = ["func testFixedShutterStored", "func testFixedShutterPlan", "func testCameraFormatSelection", "func test120FPSFormat", "func testLatestFramePolicy", "func testPostProcessing",
+    markers = ["func testFixedShutterStored", "func testFixedShutterISOStorage", "func testFixedShutterPlan", "func testCameraFormatSelection", "func test120FPSFormat", "func testLatestFramePolicy", "func testPostProcessing",
                "func testDefaultCameraSettings", "func testFrameSendPrecedes", "func testCaptureHealthUses",
                "func test120FPSMailboxPreserves", "func testDebugRecordingBundleIncludesConnectivityTail", "func testPlayAreaGrowth", "func testIgnoreZoneSnapshot"]
     focused = "import XCTest\nimport CoreMedia\nimport CoreVideo\nimport AVFoundation\nfinal class CameraLatencyTests: XCTestCase {\n"
@@ -199,6 +199,13 @@ extension AVCaptureSession { func addOutput(_ output: AVCaptureVideoDataOutput) 
             XCTAssertFalse(controller.active)
             XCTAssertEqual(camera.exposureMode, .continuousAutoExposure)
         }
+        for iso in [2000, 1000, 500, 250] {
+            camera.activeFormat.maxISO = 3000
+            XCTAssertTrue(try controller.apply(2000, to: camera, requestedISO: iso))
+            XCTAssertEqual(camera.customISO, Float(iso))
+            XCTAssertEqual(CMTimeGetSeconds(camera.customDuration), 0.0005, accuracy: 1e-9)
+        }
+        XCTAssertTrue(try controller.apply(0, to: camera))
         camera.customSupported = false
         let restored = camera.writes
         XCTAssertFalse(try controller.apply(500, to: camera))

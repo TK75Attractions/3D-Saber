@@ -26,6 +26,18 @@ public class PhoneSaberControlPanelTests
         }
         foreach (string value in new[] { "off", "250", "-1", "1000&clip=1" })
             Assert.IsFalse(PhoneSaberControlPanelActions.Dispatch("phone-shutter", value, handlers));
+        handlers["phone-shutter-iso"] = value => seen = value;
+        handlers["phone-shutter-emitter"] = value => seen = value;
+        foreach (string value in new[] { "2000", "1000", "500", "250" })
+        {
+            Assert.IsTrue(PhoneSaberControlPanelActions.Dispatch("phone-shutter-iso", value, handlers));
+            Assert.AreEqual(value, seen);
+        }
+        foreach (string value in new[] { "0", "1" })
+            Assert.IsTrue(PhoneSaberControlPanelActions.Dispatch("phone-shutter-emitter", value, handlers));
+        foreach (string value in new[] { "0", "125", "off", "500&clip=1" })
+            Assert.IsFalse(PhoneSaberControlPanelActions.Dispatch("phone-shutter-iso", value, handlers));
+        Assert.IsFalse(PhoneSaberControlPanelActions.Dispatch("phone-shutter-emitter", "on", handlers));
     }
 
     [Test]
@@ -112,6 +124,8 @@ public class PhoneSaberControlPanelTests
             { "filter", new[] { "0", "1", "2", "3", "4" } }, { "stabilizer", new[] { "0", "1" } },
             { "phone-ignore", new[] { "red", "blue", "both" } }, { "phone-clear-ignore", new[] { "" } },
             { "phone-learn-area", new[] { "" } }, { "phone-clear-area", new[] { "" } },
+            { "phone-shutter-iso", new[] { "2000", "1000", "500", "250" } },
+            { "phone-shutter-emitter", new[] { "0", "1" } },
             { "phone-shutter", new[] { "0", "500", "1000", "2000" } },
             { "phone-exposure", new[] { "0", "-1", "-2" } }, { "phone-track-lock", new[] { "" } }, { "phone-clip", new[] { "" } },
             { "pc-ignore", new[] { "red", "blue" } }, { "pc-clear-ignore", new[] { "" } }, { "clocks-synchronized", new[] { "0", "1" } }
@@ -130,6 +144,9 @@ public class PhoneSaberControlPanelTests
         Assert.AreEqual(200, Parse(Request("POST", "/action?t=" + Token + "&name=" + name + "&value=" + Uri.EscapeDataString(value))));
     }
 
+    [TestCase("phone-shutter-iso", "0")]
+    [TestCase("phone-shutter-iso", "125")]
+    [TestCase("phone-shutter-emitter", "on")]
     [TestCase("unknown", "")]
     [TestCase("prediction", "1000")]
     [TestCase("filter", "-1")]

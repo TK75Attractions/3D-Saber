@@ -56,6 +56,29 @@ public class PhoneSaberOperatorKeysTests
     }
 
     [Test]
+    public void ISOCyclesAndDefaultsResetToProduction()
+    {
+        int index = 0;
+        foreach (int value in new[] { 1000, 500, 250, 2000, 1000 })
+        {
+            Assert.AreEqual("shutter-iso=" + value, PhoneSaberOperatorKeys.CommandFor(Key.D, 2, out int ev, true, 3, index).Value.command);
+            Assert.AreEqual(2, ev);
+            Assert.AreEqual("shutter-iso=" + value, PhoneSaberOperatorKeys.ShutterISOCommand(index, out index).command);
+        }
+        var field = typeof(PhoneSaberOperatorKeys).GetField("shutterISOIndex", BindingFlags.NonPublic | BindingFlags.Static);
+        object saved = field.GetValue(null);
+        try
+        {
+            PhoneSaberOperatorKeys.SelectShutterISO(250);
+            Assert.AreEqual(3, field.GetValue(null));
+            PhoneSaberDiscoveryResponder.QueueCommand(PhoneSaberDiscoveryResponder.DefaultsCommand);
+            Assert.AreEqual(0, field.GetValue(null));
+            Assert.AreEqual("shutter-iso=1000", PhoneSaberOperatorKeys.CommandFor(Key.D, 2, out _).Value.command);
+        }
+        finally { field.SetValue(null, saved); }
+    }
+
+    [Test]
     public void KeysMapToPhoneCommands()
     {
         Assert.AreEqual("ignore=red", PhoneSaberOperatorKeys.CommandFor(Key.R, 0, out _).Value.command);
@@ -66,7 +89,7 @@ public class PhoneSaberOperatorKeysTests
         Assert.AreEqual(PhoneSaberDiscoveryResponder.LearnAreaCommand, PhoneSaberOperatorKeys.CommandFor(Key.P, 0, out _).Value.command);
         Assert.AreEqual(PhoneSaberDiscoveryResponder.ClearAreaCommand, PhoneSaberOperatorKeys.CommandFor(Key.X, 0, out _).Value.command);
         // ゲームが使うキーは割り当てない。
-        foreach (var key in new[] { Key.A, Key.D, Key.W, Key.N, Key.Digit1, Key.Space, Key.Enter, Key.Escape })
+        foreach (var key in new[] { Key.A, Key.W, Key.N, Key.Digit1, Key.Space, Key.Enter, Key.Escape })
             Assert.IsNull(PhoneSaberOperatorKeys.CommandFor(key, 0, out _));
     }
 

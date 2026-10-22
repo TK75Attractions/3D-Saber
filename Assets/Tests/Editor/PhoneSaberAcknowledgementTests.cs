@@ -26,6 +26,26 @@ public class PhoneSaberAcknowledgementTests
     }
 
     [Test]
+    public void ShutterISOVerifiesBothStationRepliesAndToast()
+    {
+        foreach (string station in new[] { "A", "B" })
+        foreach (int value in new[] { 2000, 1000, 500, 250 })
+        {
+            string line = $"PHONESABER_ACK 1 id=92 station={station} platform=ios result=shutter-iso detail={value}";
+            Assert.IsTrue(PhoneSaberAcknowledgement.TryParse(line, out var ack));
+            var store = new PhoneSaberAcknowledgementStore();
+            store.Queue(92, "shutter-iso=" + value, 0);
+            Assert.IsTrue(store.Receive(ack, "127.0.0.1"));
+            StringAssert.Contains("iPhone（台" + station + "）: 固定シャッター " + PhoneSaberOperatorKeys.ShutterISOLabel(value), PhoneSaberOperatorKeys.ToastText(store, 1));
+            StringAssert.Contains("ISO " + value, PhoneSaberOperatorKeys.PendingLabel("shutter-iso=" + value));
+        }
+        foreach (string value in new[] { "0", "125", "4000", "off", "-250" })
+            Assert.IsFalse(PhoneSaberAcknowledgement.TryParse("PHONESABER_ACK 1 id=92 station=A platform=ios result=shutter-iso detail=" + value, out _));
+        foreach (string value in new[] { "on", "off" })
+            Assert.IsTrue(PhoneSaberAcknowledgement.TryParse("PHONESABER_ACK 1 id=93 station=B platform=ios result=shutter-emitter detail=" + value, out _));
+    }
+
+    [Test]
     public void SharedPhoneExamplesParseAndUnknownFieldsAreIgnored()
     {
         foreach (string line in new[] {
@@ -112,7 +132,7 @@ public class PhoneSaberAcknowledgementTests
         Assert.IsEmpty(PhoneSaberOperatorKeys.ToastText(store, 100));
         store.Receive(Ack(81, "defaults", "tracklock-on-ev-2-shutter-2000"), "10.0.0.1");
         Assert.IsEmpty(PhoneSaberOperatorKeys.ToastText(store, 101));
-        Assert.AreEqual("iPhone: 既定に戻しました（剣を追いかける ON・露出 −2・固定シャッター 1/2000 秒）",
+        Assert.AreEqual("iPhone: 既定に戻しました（剣を追いかける ON・露出 −2・固定シャッター 1/2000 秒・ISO 2000・色付き発光体 OFF）",
             PhoneSaberOperatorKeys.StatusText(store, 101));
         store.Queue(82, PhoneSaberDiscoveryResponder.DefaultsCommand, 102);
         store.Receive(Ack(82, "defaults", "tracklock-on-ev-2"), "10.0.0.1");
@@ -169,7 +189,7 @@ public class PhoneSaberAcknowledgementTests
     [TestCase("exposure", "ev-2", "露出を -2 EV にしました")]
     [TestCase("tracklock", "off", "剣を追いかける OFF")]
     [TestCase("defaults", "tracklock-on-ev-2", "既定に戻しました（剣を追いかける ON・露出 −2）")]
-    [TestCase("defaults", "tracklock-on-ev-2-shutter-2000", "既定に戻しました（剣を追いかける ON・露出 −2・固定シャッター 1/2000 秒）")]
+    [TestCase("defaults", "tracklock-on-ev-2-shutter-2000", "既定に戻しました（剣を追いかける ON・露出 −2・固定シャッター 1/2000 秒・ISO 2000・色付き発光体 OFF）")]
     [TestCase("autoclip", "on", "自動クリップ ON")]
     [TestCase("clip-saved", "saved", "今の場面を保存しました")]
     [TestCase("clip-off", "off", "今の場面を保存できませんでした（クリップOFF・停止中・保存不可）")]
