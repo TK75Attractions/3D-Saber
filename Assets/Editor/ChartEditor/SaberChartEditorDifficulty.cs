@@ -87,9 +87,16 @@ namespace Saber.ChartEditor
         {
             SaberChartDocument upperChart = UpperDocument();
             if (upperChart == null) return;
-            IEnumerable<SaberChartNote> source = HasRangeSelection
-                ? SaberChartRangeOps.NotesIn(upperChart, rangeStartMs, rangeEndMs)
-                : upperChart.notes;
+            // 音源上の同じ位置を、現在の譜面の時計へ写してから範囲・拍を判定する。
+            // 読み込んだ上位譜面はキャッシュされるので、元のノーツは変更しない。
+            IEnumerable<SaberChartNote> source = upperChart.notes.Where(note => note != null).Select(note =>
+            {
+                SaberChartNote projected = note.Clone();
+                projected.time = UpperTimeInCurrentClock(note, upperChart);
+                return projected;
+            });
+            if (HasRangeSelection)
+                source = source.Where(note => note.time >= rangeStartMs && note.time < rangeEndMs);
             deriveCandidates = SaberChartDerive.Candidates(source, SaberChartDerive.Rules.For(EditingDifficulty), BeatAtTime, document);
             SetStatus(deriveCandidates.Count == 0
                 ? "候補はありません（もう同じノーツがあるか、決まりに合うノーツがありません）"
@@ -124,6 +131,17 @@ namespace Saber.ChartEditor
             Repaint();
         }
 
+        private float UpperTimeInCurrentClock(SaberChartNote note, SaberChartDocument upperChart)
+            => note.time + upperChart.offsetMs - document.offsetMs;
+
+        private Rect UpperNoteRect(SaberChartNote note, SaberChartDocument upperChart, Rect laneRect)
+        {
+            Rect rect = NoteRect(note, laneRect);
+            float centerY = YForBeat(BeatAtTime(UpperTimeInCurrentClock(note, upperChart)), laneRect);
+            rect.y = centerY - rect.height * .5f;
+            return rect;
+        }
+
         private void DrawUpperOverlay(Rect laneRect)
         {
             if (!showUpperOverlay || recordMode) return;
@@ -131,7 +149,7 @@ namespace Saber.ChartEditor
             if (upperChart?.notes == null) return;
             foreach (SaberChartNote note in upperChart.notes)
             {
-                Rect rect = NoteRect(note, laneRect);
+                Rect rect = UpperNoteRect(note, upperChart, laneRect);
                 if (rect.yMax < laneRect.y || rect.y > laneRect.yMax) continue;
                 Color color = NoteColor(note.color);
                 EditorGUI.DrawRect(rect, new Color(color.r, color.g, color.b, .14f));

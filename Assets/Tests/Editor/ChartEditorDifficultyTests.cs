@@ -9,7 +9,7 @@ using UnityEditor;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-// 難易度の派生(上から下ろす候補)と、曲の設定の食い違いの扱いを確かめる。架空の曲フォルダだけを使う。
+// 難易度の派生(上から下ろす候補)と、曲の設定の食い違いの扱いを確かめる。書き込みは架空の曲フォルダだけに行う。
 public class ChartEditorDifficultyTests
 {
     const string Prefix = "3DSaber.ChartEditor.";
@@ -144,6 +144,100 @@ public class ChartEditorDifficultyTests
             Assert.AreEqual(1, candidates.Count);
             Assert.AreEqual(1000f, candidates[0].time);
         });
+    }
+
+    [TestCase(100f, 0f)]
+    [TestCase(0f, 100f)]
+    [TestCase(100f, 100f)]
+    public void UpperOffsetProjectionAlignsOverlayCandidatesRangeAndUndo(float upperOffset, float currentOffset)
+    {
+        WithSongFolder((song, folder) =>
+        {
+            var upper = new SaberChartDocument { bpm = 120f, offsetMs = upperOffset,
+                beatZeroMs = currentOffset - upperOffset, notes = new List<SaberChartNote> { N(2, "red", 1), N(3, "blue", -1) } };
+            foreach (SaberChartNote note in upper.notes) note.time += currentOffset - upperOffset;
+            var current = new SaberChartDocument { bpm = 120f, offsetMs = currentOffset,
+                notes = new List<SaberChartNote> { N(0, "gold", 0) } };
+            string upperPath = Path.Combine(folder, "chart_hard.json");
+            string upperJson = SaberChartUtility.ToJson(upper, true);
+            File.WriteAllText(upperPath, upperJson);
+            File.WriteAllText(Path.Combine(folder, "chart_normal.json"), SaberChartUtility.ToJson(current, true));
+            Load(song, 1);
+            var cachedUpper = (SaberChartDocument)Call("UpperDocument");
+            float[] originalTimes = cachedUpper.notes.Select(n => n.time).ToArray();
+            Call("MakeDeriveCandidates");
+            var all = Get<List<SaberChartNote>>("deriveCandidates");
+            CollectionAssert.AreEqual(new[] { 1000f, 1500f }, all.Select(n => n.time).ToArray());
+            CollectionAssert.AreEqual(new[] { 2f, 3f }, all.Select(n => n.beat).ToArray());
+            Assert.AreEqual(1, Document.notes.Count, "候補の表示だけでは編集中のノーツも変えない");
+
+            var lane = new Rect(20f, 30f, 800f, 600f);
+            var projectedRect = (Rect)Call("UpperNoteRect", cachedUpper.notes[0], cachedUpper, lane);
+            var currentRect = (Rect)Call("NoteRect", N(2, "red", 1), lane);
+            Assert.AreEqual(currentRect.center.y, projectedRect.center.y, .001f, "同じ音源時刻の重ね表示を揃える");
+
+            Call("SetRange", 1000f, 1500f);
+            Call("MakeDeriveCandidates");
+            var inRange = Get<List<SaberChartNote>>("deriveCandidates");
+            Assert.AreEqual(1, inRange.Count, "投影後の開始境界は含み、終了境界は含まない");
+            Assert.AreEqual(1000f, inRange[0].time);
+            Assert.AreEqual(cachedUpper.notes[0].time + upperOffset, inRange[0].time + currentOffset, .001f);
+            Call("AdoptDeriveCandidates");
+            Assert.AreEqual(2, Document.notes.Count);
+            Assert.True(Document.notes.Any(n => n.color == "gold" && n.time == 0));
+            Call("MakeDeriveCandidates");
+            Assert.AreEqual(0, Get<List<SaberChartNote>>("deriveCandidates").Count, "投影済みの同じスロットは重複採用しない");
+            Key(KeyCode.Z, EventModifiers.Control);
+            Assert.AreEqual(1, Document.notes.Count, "採用を一度のUndoで戻せる");
+            CollectionAssert.AreEqual(originalTimes, cachedUpper.notes.Select(n => n.time).ToArray(), "上位のキャッシュは変更しない");
+            Assert.AreEqual(upperJson, File.ReadAllText(upperPath), "上位ファイルは変更しない");
+        });
+    }
+
+    [Test]
+    public void RealZeroUpperOffsetProducesCandidatesAtTheirOriginalAudioTimes()
+    {
+        // Zero の保存フォルダ名は「製作中」。実譜面は読み取り、架空の曲へ複写して確かめる。
+        string source = Path.Combine(Application.streamingAssetsPath, "Songs", "製作中");
+        string hardJson = File.ReadAllText(Path.Combine(source, "chart_hard.json"));
+        string normalJson = File.ReadAllText(Path.Combine(source, "chart_normal.json"));
+        WithSongFolder((song, folder) =>
+        {
+            File.WriteAllText(Path.Combine(folder, "chart_hard.json"), hardJson);
+            File.WriteAllText(Path.Combine(folder, "chart_normal.json"), normalJson);
+            Load(song, 1);
+            var upper = (SaberChartDocument)Call("UpperDocument");
+            Assert.AreEqual(110f, upper.offsetMs - Document.offsetMs, "OFFSET差がある実データの対照");
+            string upperBefore = SaberChartUtility.ToJson(upper, false);
+            string currentBefore = SaberChartUtility.ToJson(Document, false);
+            Call("MakeDeriveCandidates");
+            var candidates = Get<List<SaberChartNote>>("deriveCandidates");
+            Assert.Greater(candidates.Count, 0, "未変換では全ノーツが現在の8分格子から外れて候補が0になる");
+            var upperGroups = SaberChartLint.GroupSimultaneous(upper.notes);
+            foreach (SaberChartNote note in candidates)
+            {
+                Assert.True(upper.notes.Any(n => Mathf.Abs(n.time + upper.offsetMs - note.time - Document.offsetMs) < .02f),
+                    "候補の音源上の時刻は上位の打点を保つ");
+                var group = upperGroups.First(g => g.Any(n => Mathf.Abs(n.time + upper.offsetMs - note.time - Document.offsetMs) < .02f));
+                float groupTime = group[0].time + upper.offsetMs - Document.offsetMs;
+                Assert.AreEqual((float)Call("BeatAtTime", groupTime), note.beat, .001f,
+                    "候補の拍は、既存仕様どおり25ms同時組の先頭を現在の譜面で数え直す");
+            }
+            var lane = new Rect(20f, 30f, 800f, 600f);
+            var overlay = (Rect)Call("UpperNoteRect", upper.notes[0], upper, lane);
+            var own = (Rect)Call("NoteRect", Document.notes[0], lane);
+            Assert.AreEqual(own.center.y, overlay.center.y, .01f, "実データの同じ先頭打点を重ねる");
+            float[] firstTimes = candidates.Select(n => n.time).ToArray();
+            Call("MakeDeriveCandidates");
+            CollectionAssert.AreEqual(firstTimes, Get<List<SaberChartNote>>("deriveCandidates").Select(n => n.time).ToArray(),
+                "繰り返し表示してもOFFSETを累積加算しない");
+            Assert.AreEqual(upperBefore, SaberChartUtility.ToJson(upper, false));
+            Assert.AreEqual(currentBefore, SaberChartUtility.ToJson(Document, false));
+            Assert.AreEqual(hardJson, File.ReadAllText(Path.Combine(folder, "chart_hard.json")));
+            Assert.AreEqual(normalJson, File.ReadAllText(Path.Combine(folder, "chart_normal.json")));
+        });
+        Assert.AreEqual(hardJson, File.ReadAllText(Path.Combine(source, "chart_hard.json")));
+        Assert.AreEqual(normalJson, File.ReadAllText(Path.Combine(source, "chart_normal.json")));
     }
 
     // ---- 取6: 曲の設定の食い違い ----
