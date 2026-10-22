@@ -172,6 +172,8 @@ public sealed class ChorusDrop : MonoBehaviour
     {
         ScheduledCount++;
         if (dropSource == null || donClip == null) return;
+        // 作った音は鳴らす前に中身を確かめる(音の出力先が変わると消えるため。ProceduralSfx.Revive)。
+        dropSource.clip = ProceduralSfx.Revive(ref donClip);
         if (delay <= 0) dropSource.PlayOneShot(donClip, 1f);
         else dropSource.PlayScheduled(AudioSettings.dspTime + delay);
     }

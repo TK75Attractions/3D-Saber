@@ -151,7 +151,8 @@ public class ComboBonusPresentation : MonoBehaviour
         if (!landed && elapsed >= LandingTime)
         {
             landed = true;
-            if (audioSource != null && impact != null) audioSource.PlayOneShot(impact, .48f);
+            // 作った音は鳴らす前に中身を確かめる(音の出力先が変わると消えるため。ProceduralSfx.Revive)。
+            if (audioSource != null && impact != null) audioSource.PlayOneShot(ProceduralSfx.Revive(ref impact), .48f);
         }
     }
 
@@ -175,9 +176,7 @@ public class ComboBonusPresentation : MonoBehaviour
             float bell = (Mathf.Sin(t * 2 * Mathf.PI * 880) + .4f * Mathf.Sin(t * 2 * Mathf.PI * 1320)) * Mathf.Exp(-t * 8);
             samples[i] = (.65f * bass + .16f * bell) * Mathf.Clamp01(t / .004f) * Mathf.Clamp01((.65f - t) / .04f);
         }
-        var clip = AudioClip.Create("ComboBonusImpact", samples.Length, 1, rate, false);
-        clip.SetData(samples, 0);
-        return clip;
+        return ProceduralSfx.Clip("ComboBonusImpact", samples, rate);
     }
 
     void OnDestroy()

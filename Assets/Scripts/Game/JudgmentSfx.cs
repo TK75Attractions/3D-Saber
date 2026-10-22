@@ -53,7 +53,12 @@ public class JudgmentSfx : MonoBehaviour
         if (Application.isPlaying) CrossCutClip();
     }
 
-    AudioClip CrossCutClip() => genCross ??= ProceduralSfx.Clip("CrossCut", FlourishSfx.Cached("CrossCut", FlourishSfx.CrossCut));
+    // 作った音は鳴らす前に中身を確かめる(音の出力先が変わると消えるため。ProceduralSfx.Revive)。
+    AudioClip CrossCutClip()
+    {
+        genCross ??= ProceduralSfx.Clip("CrossCut", FlourishSfx.Cached("CrossCut", FlourishSfx.CrossCut));
+        return ProceduralSfx.Revive(ref genCross);
+    }
 
     void OnEnable()
     {
@@ -92,7 +97,7 @@ public class JudgmentSfx : MonoBehaviour
         if (WantsChorusSparkle(tier, clip))
         {
             genSparkle ??= ProceduralSfx.Clip("ChorusSparkle", FlourishSfx.Cached("ChorusSparkle", () => ProceduralSfx.Sparkle()));
-            source.PlayOneShot(genSparkle, volume * ChorusSparkleVolume);
+            source.PlayOneShot(ProceduralSfx.Revive(ref genSparkle), volume * ChorusSparkleVolume);
             SparkleCount++;
         }
     }
@@ -178,7 +183,6 @@ public class JudgmentSfx : MonoBehaviour
     {
         const int sampleRate = 44100;
         int samples = Mathf.Max(1, (int)(sampleRate * duration));
-        var clip = AudioClip.Create($"sweep_{fromHz:F0}_{toHz:F0}", samples, 1, sampleRate, false);
         var data = new float[samples];
         double phase = 0.0;
         for (int i = 0; i < samples; i++)
@@ -191,8 +195,8 @@ public class JudgmentSfx : MonoBehaviour
             float decay = 1f - k;
             data[i] = (float)System.Math.Sin(phase) * attack * decay * 0.6f;
         }
-        clip.SetData(data, 0);
-        return clip;
+        // ProceduralSfx で作ると、音の出力先が変わって中身が消えても Revive で作り直せる。
+        return ProceduralSfx.Clip($"sweep_{fromHz:F0}_{toHz:F0}", data, sampleRate);
     }
 
     // 純粋関数：周波数と長さからシンプルなサイン波 + 簡易エンベロープでクリップを作る。
@@ -200,7 +204,6 @@ public class JudgmentSfx : MonoBehaviour
     {
         const int sampleRate = 44100;
         int samples = Mathf.Max(1, (int)(sampleRate * duration));
-        var clip = AudioClip.Create($"beep_{frequency:F0}", samples, 1, sampleRate, false);
         var data = new float[samples];
         for (int i = 0; i < samples; i++)
         {
@@ -211,15 +214,13 @@ public class JudgmentSfx : MonoBehaviour
             float env = attack * decay;
             data[i] = Mathf.Sin(2f * Mathf.PI * frequency * t) * env * 0.5f;
         }
-        clip.SetData(data, 0);
-        return clip;
+        return ProceduralSfx.Clip($"beep_{frequency:F0}", data, sampleRate);
     }
 
     public static AudioClip Buzz(float frequency, float duration)
     {
         const int sampleRate = 44100;
         int samples = Mathf.Max(1, (int)(sampleRate * duration));
-        var clip = AudioClip.Create($"buzz_{frequency:F0}", samples, 1, sampleRate, false);
         var data = new float[samples];
         for (int i = 0; i < samples; i++)
         {
@@ -231,7 +232,6 @@ public class JudgmentSfx : MonoBehaviour
             float saw = 2f * (frequency * t - Mathf.Floor(frequency * t + 0.5f));
             data[i] = saw * env * 0.4f;
         }
-        clip.SetData(data, 0);
-        return clip;
+        return ProceduralSfx.Clip($"buzz_{frequency:F0}", data, sampleRate);
     }
 }

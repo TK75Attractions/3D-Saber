@@ -78,6 +78,15 @@ public sealed class ResultSoundtrack : MonoBehaviour
         }
         SetScore(0);
         if (reveal != null) reveal.TimeChanged += Tick;
+        AudioOutputRecovery.Restored += RestartLoop;
+    }
+
+    // 音の出力先が変わると、流していたループ曲も止まる(AudioOutputRecovery)。流し始めていたら、その場で流し直す。
+    void RestartLoop()
+    {
+        if (!LoopStarted || loopSource == null) return;
+        loopSource.clip = ProceduralSfx.Revive(ref loopClip);
+        loopSource.Play();
     }
 
     static int LevelForRank(PlayRank rank)
@@ -131,13 +140,13 @@ public sealed class ResultSoundtrack : MonoBehaviour
                 {
                     StopSwell();
                     CountStopCount++;
-                    PlayAccent(countStopClip);
+                    PlayAccent(ref countStopClip);
                 }
             }
             if (!FinishPlayed && previous < finishTime && t >= finishTime)
             {
                 FinishPlayed = true;
-                PlayAccent(finishClip);
+                PlayAccent(ref finishClip);
             }
         }
         else
@@ -152,7 +161,7 @@ public sealed class ResultSoundtrack : MonoBehaviour
         {
             LoopStarted = true;
             loopStartedAt = Time.unscaledTime;
-            if (loopSource != null) loopSource.Play();
+            if (loopSource != null) { loopSource.clip = ProceduralSfx.Revive(ref loopClip); loopSource.Play(); }
         }
         if (LoopStarted && loopSource != null)
             loopSource.volume = LoopVolume * Mathf.Clamp01((Time.unscaledTime - loopStartedAt) / LoopFadeSeconds);
@@ -162,7 +171,7 @@ public sealed class ResultSoundtrack : MonoBehaviour
     {
         SwellStarted = true;
         SwellActive = true;
-        if (swellSource != null) swellSource.Play();
+        if (swellSource != null) { swellSource.clip = ProceduralSfx.Revive(ref countSwellClip); swellSource.Play(); }
     }
 
     void StopSwell()
@@ -171,11 +180,12 @@ public sealed class ResultSoundtrack : MonoBehaviour
         if (swellSource != null) swellSource.Stop();
     }
 
-    void PlayAccent(AudioClip clip)
+    // 作った音は鳴らす前に中身を確かめる(音の出力先が変わると消えるため。ProceduralSfx.Revive)。
+    void PlayAccent(ref AudioClip clip)
     {
         if (oneShots == null) return;
         oneShots.pitch = 1f;
-        oneShots.PlayOneShot(clip, 1f);
+        oneShots.PlayOneShot(ProceduralSfx.Revive(ref clip), 1f);
     }
 
     void PlayTick(float progress)
@@ -183,7 +193,7 @@ public sealed class ResultSoundtrack : MonoBehaviour
         TickCount++;
         if (oneShots == null) return;
         oneShots.pitch = Mathf.Lerp(.9f, 1.35f, Mathf.Clamp01(progress));
-        oneShots.PlayOneShot(tickClip, TickVolume);
+        oneShots.PlayOneShot(ProceduralSfx.Revive(ref tickClip), TickVolume);
     }
 
     void SetScore(int value)
@@ -195,6 +205,7 @@ public sealed class ResultSoundtrack : MonoBehaviour
     void OnDestroy()
     {
         if (reveal != null) reveal.TimeChanged -= Tick;
+        AudioOutputRecovery.Restored -= RestartLoop;
         StopSwell();
         if (oneShots != null) oneShots.Stop();
         if (loopSource != null) loopSource.Stop();

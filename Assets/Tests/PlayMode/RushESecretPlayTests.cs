@@ -240,7 +240,7 @@ public class RushESecretPlayTests
         ctl.StopPreview();
     }
 
-    // 音の出力先が変わって選曲を作り直しても(AudioOutputRecovery、2026-10-22)、解除した E のまま。
+    // 音の出力先が変わっても(AudioOutputRecovery、2026-10-22)、選曲はそのままで、解除した E のまま。
     [UnityTest]
     public IEnumerator AudioOutputChangeKeepsTheRevealedE()
     {
@@ -262,16 +262,12 @@ public class RushESecretPlayTests
         Assert.True(AudioSettings.Reset(AudioSettings.GetConfiguration()));
         deadline = Time.realtimeSinceStartup + 10;
         while (AudioOutputRecovery.RecoveryCount == recoveries && Time.realtimeSinceStartup < deadline) yield return null;
-        Assert.AreEqual(AudioOutputRecovery.Action.KeepSelection, AudioOutputRecovery.LastAction);
-        yield return ScreenTransitionPlayTests.WaitForTransition();
-        ctl = Object.FindFirstObjectByType<SongSelectController>();
-        skin = Object.FindFirstObjectByType<SongSelectSkin>();
-        deadline = Time.realtimeSinceStartup + 10;
-        while ((skin == null || !skin.IsReady) && Time.realtimeSinceStartup < deadline) { yield return null; skin = Object.FindFirstObjectByType<SongSelectSkin>(); }
+        Assert.AreEqual(AudioOutputRecovery.Action.InPlace, AudioOutputRecovery.LastAction);
+        Assert.False(ScreenTransition.IsBusy, "選曲を作り直さない");
+        Assert.AreSame(ctl, Object.FindFirstObjectByType<SongSelectController>());
         Assert.AreEqual("RushE", ctl.SongIdAt(ctl.SelectedIndex));
         Assert.IsTrue(ctl.RushESecret.Unlocked); Assert.IsFalse(ctl.RushESecret.Transitioning);
-        Assert.AreEqual("E", ctl.CurrentDifficultyName, "作り直したあとも E のまま");
-        Assert.IsFalse(GameSession.RushESecretCarry, "持ち越しは一度で消す");
+        Assert.AreEqual("E", ctl.CurrentDifficultyName, "E のまま");
         ctl.StopPreview();
     }
 

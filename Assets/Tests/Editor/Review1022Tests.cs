@@ -11,24 +11,36 @@ using Object = UnityEngine.Object;
 public class Review1022Tests
 {
     // ---- 1: 音の出力先が変わったとき ----
-    [TestCase("Title", Action.ReloadScreen)]
-    [TestCase("Result", Action.ReloadScreen)]
-    [TestCase("SongSelect", Action.KeepSelection)]
-    [TestCase("SampleScene", Action.None)]
-    public void ScreensAreRebuiltAfterTheOutputChanges(string scene, Action expected)
+    // 同日ユーザー「戻るのやめて」: 画面は戻さず、その場で音を立て直す。曲の途中は読み直して 3・2・1 で続きから。
+    [Test]
+    public void GameKeepsTheScreenAndResumesTheSongAfterTheOutputChanges()
     {
-        Assert.AreEqual(expected, AudioOutputRecovery.PlanScreen(scene));
+        Assert.AreEqual(Action.ResumeSong, AudioOutputRecovery.PlanGame(false, false, false, false, false, true), "曲の途中・カウントイン・一時停止");
+        Assert.AreEqual(Action.InPlace, AudioOutputRecovery.PlanGame(false, false, false, false, false, false), "曲を始める前は予約の直前に読み直す");
+        Assert.AreEqual(Action.InPlace, AudioOutputRecovery.PlanGame(false, false, true, true, false, true), "終わりの演出はそのまま続ける");
+        Assert.AreEqual(Action.InPlace, AudioOutputRecovery.PlanGame(false, true, false, false, false, true), "練習はその場で曲を鳴らし直す");
+        Assert.AreEqual(Action.CalibrationInPlace, AudioOutputRecovery.PlanGame(true, false, false, false, false, true));
+        Assert.AreEqual(Action.None, AudioOutputRecovery.PlanGame(false, false, false, false, true, true), "もう画面を出るところ");
+        Assert.AreEqual(Action.None, AudioOutputRecovery.PlanGame(false, false, false, true, false, true), "空の譜面で選曲へ戻るところ");
     }
 
+    // 作った音を鳴らす前の確かめ(ProceduralSfx.Revive)。中身のある音・ここで作っていない音・null はそのまま返す。
     [Test]
-    public void GameAbortsUnfinishedSongsAndFinishesCompletedOnes()
+    public void ReviveKeepsLiveClipsAndLeavesForeignOnesAlone()
     {
-        Assert.AreEqual(Action.AbortToTitle, AudioOutputRecovery.PlanGame(false, false, false, false, false), "曲の途中・カウントイン・一時停止");
-        Assert.AreEqual(Action.FinishToResult, AudioOutputRecovery.PlanGame(false, false, true, true, false), "終わりの演出の間は結果へ");
-        Assert.AreEqual(Action.TutorialToSongSelect, AudioOutputRecovery.PlanGame(false, true, false, false, false));
-        Assert.AreEqual(Action.CalibrationInPlace, AudioOutputRecovery.PlanGame(true, false, false, false, false));
-        Assert.AreEqual(Action.None, AudioOutputRecovery.PlanGame(false, false, false, false, true), "もう画面を出るところ");
-        Assert.AreEqual(Action.None, AudioOutputRecovery.PlanGame(false, false, false, true, false), "空の譜面で選曲へ戻るところ");
+        var made = ProceduralSfx.Clip("ReviveProbe", new float[] { 0f, .5f, -.5f });
+        var foreign = AudioClip.Create("ForeignProbe", 3, 1, 44100, false);
+        try
+        {
+            var held = made;
+            Assert.AreSame(made, ProceduralSfx.Revive(ref held));
+            Assert.AreSame(made, held);
+            var other = foreign;
+            Assert.AreSame(foreign, ProceduralSfx.Revive(ref other));
+            AudioClip none = null;
+            Assert.IsNull(ProceduralSfx.Revive(ref none));
+        }
+        finally { Object.DestroyImmediate(made); Object.DestroyImmediate(foreign); }
     }
 
     // ---- 3: 片方の色だけ届かないとき ----

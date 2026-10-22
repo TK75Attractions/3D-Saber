@@ -167,9 +167,15 @@ public class GamePlayManager : MonoBehaviour
     // 曲(練習)が鳴り始めた実時間(一度も届いていない色の警告の起点)、再開の表示を消す時刻、いま出している 3・2・1 の数字。
     private double playingSince = double.NaN, resumedShownUntil = double.NegativeInfinity;
     private int countdownShown;
-    // 音の出力先が変わって、立て直しを待っている(HoldForAudioChange)。
+    // 音の出力先が変わって、曲を止めて立て直している(HoldForAudioChange)。曲を読み直したら(audioResumeAt から)3・2・1 で再開する。
     private bool audioChangeHold;
     public bool AudioChangeHold => audioChangeHold;
+    private double audioResumeAt = double.NaN;
+    private Coroutine audioReload;
+    // 曲を始める前に出力先が変わって、読んだ曲の音が消えたかもしれない(予約の直前に読み直す)。
+    private bool audioLostBeforeStart;
+    private string loadedSongId;
+    public const string AudioReloadingText = "音の出力先が変わったので、曲を読み直しています…";
     // 曲ごとの音が鳴り終わる秒(仕様面の点検 7)。0 以下は音源の長さ。
     private double musicEndSeconds = -1;
     double MusicEnd => musicEndSeconds > 0 ? musicEndSeconds : songPlayer.Duration;
@@ -305,6 +311,7 @@ public class GamePlayManager : MonoBehaviour
         stagePerformance = StagePerformanceTimeline.Load(songId);
 
         // 音源を先にロードして、譜面長を音源に合わせて切り詰められるようにする。
+        loadedSongId = songId;
         yield return LoadAudio(songId);
         // 曲ごとの鳴らす範囲(仕様面の点検 7)。頭の無音を飛ばす秒(escapade の 5 秒)と音が鳴り終わる秒。
         // stage.json の audioSha256 が今の音源と一致するときだけ使う。譜面の切り詰めは今までどおり音源の長さで行う。
@@ -424,8 +431,13 @@ public class GamePlayManager : MonoBehaviour
         double leadInSeconds = chart.notes.Count > 0 ? System.Math.Max(0.0, noteSpawner.approachTime - firstNoteFromPlayStart) : 0.0;
         // 幕が開く前に音やノーツを走らせず、カウントダウンの最初から見せる。
         while (ScreenTransition.IsBusy) yield return null;
-        // 読み込みの間に音の出力先が変わっていたら、曲を始めない(AudioOutputRecovery がタイトルへ戻す)。
-        if (audioChangeHold) { ready = true; yield break; }
+        // 読み込みや幕の間に音の出力先が変わって曲の音が消えていたら、読み直してから始める(2026-10-22、タイトルへ戻さない)。
+        // 読み直しの後から曲の予約までは待たない(予約のあとに変われば、曲を止めて読み直す側で扱う)。
+        for (int attempt = 0; attempt < 3 && (ownedSongClip != null ? ownedSongClip.samples <= 0 : audioLostBeforeStart); attempt++)
+        {
+            audioLostBeforeStart = false;
+            yield return LoadAudio(songId);
+        }
         if (enableStartCountdown)
         {
             // START の演出が消えてから先頭ノーツを流す。移動時間と補正込みの到着時刻から
@@ -645,6 +657,40 @@ public class GamePlayManager : MonoBehaviour
         songPlayer.Stop();
         songPlayer.Clip = null;
         songPlayer.SetLoudnessGain(1);
+        yield return RequestSongClip(songId, (clip, gain) =>
+        {
+            ReleaseOwnedSongClip();
+            ownedSongClip = clip;
+            songPlayer.Clip = clip;
+            songPlayer.SetLoudnessGain(gain);
+        });
+    }
+
+    // 音の出力先が変わったあと(AudioOutputRecovery)、曲の音を読み直して止めた位置から鳴らせるようにする。
+    // 読み直せたら 3・2・1 を数え始める(剣を見失って止めているときは、そちらの見張りが戻してから再開する)。読めなければ音なしで続ける。
+    IEnumerator ReloadSongAndResume()
+    {
+        audioResumeAt = double.NaN;
+        AudioClip loaded = null;
+        float loadedGain = 1;
+        if (!string.IsNullOrEmpty(loadedSongId))
+            yield return RequestSongClip(loadedSongId, (clip, gain) => { loaded = clip; loadedGain = gain; });
+        if (loaded != null)
+        {
+            var dead = ownedSongClip;
+            ownedSongClip = loaded;
+            songPlayer.ReplaceClipWhilePaused(loaded);
+            songPlayer.SetLoudnessGain(loadedGain);
+            if (dead != null && dead != loaded) Destroy(dead);
+        }
+        else Debug.LogWarning("GamePlayManager: 音の出力先が変わったあと、曲を読み直せませんでした。音なしで続けます");
+        audioResumeAt = Time.realtimeSinceStartupAsDouble + (trackingWatch.Paused ? 0 : PlayTrackingWatch.ResumeCountdownSeconds);
+        audioReload = null;
+    }
+
+    // 曲の音を StreamingAssets から読み、読めた音と音量の係数を found に渡す。中身の無い音(読む間に出力先が変わったなど)は使わない。
+    private IEnumerator RequestSongClip(string songId, System.Action<AudioClip, float> found)
+    {
         string dir = Path.Combine(Application.streamingAssetsPath, "Songs", songId);
         foreach (var playback in SongLoudness.CandidatesInFolder(dir))
         {
@@ -669,10 +715,7 @@ public class GamePlayManager : MonoBehaviour
                     }
                     if (clip != null)
                     {
-                        ReleaseOwnedSongClip();
-                        ownedSongClip = clip;
-                        songPlayer.Clip = clip;
-                        songPlayer.SetLoudnessGain(playback.Gain);
+                        found(clip, playback.Gain);
                         yield break;
                     }
                 }
@@ -882,9 +925,10 @@ public class GamePlayManager : MonoBehaviour
     // 2026-10-22: 片方の色だけ届かないときのスタッフ向けの1行、止まっている間の「確認中」・暗い幕・3・2・1 の輪と音、再開の表示を足した。
     void TickTrackingWatch()
     {
-        // 中断・結果へ進むと決めたあと(幕が閉じる間)と、音の出力先が変わって立て直しを待つ間(0.5秒、そのあとタイトルへ)は、
-        // 見張りも表示も止める。数えかけの 3・2・1 の刻みや再開の音を鳴らさない(Codex の点検で 2026-10-22 に追加)。
-        if (trackingView == null || leaving || audioChangeHold) return;
+        // 中断・結果へ進むと決めたあと(幕が閉じる間)は、見張りも表示も止める。数えかけの 3・2・1 の刻みや再開の音を鳴らさない
+        // (Codex の点検で 2026-10-22 に追加)。音の出力先が変わって曲を止めている間は、そちらの表示と再開だけを動かす。
+        if (trackingView == null || leaving) return;
+        if (audioChangeHold) { TickAudioResume(); return; }
         var input = InputPoint.Instance;
         double now = Time.realtimeSinceStartupAsDouble;
         if (input != null)
@@ -986,48 +1030,78 @@ public class GamePlayManager : MonoBehaviour
         Debug.Log($"GamePlayManager: 剣の位置が戻ったので再開 songTime={songPlayer.SongTime:F2}s");
     }
 
-    // 音の出力先が変わった瞬間(AudioOutputRecovery が 0.5 秒後に立て直す)。本編の途中なら、その間に曲が終わって
+    // 音の出力先が変わった瞬間(AudioOutputRecovery が 0.5 秒後に立て直す)。本編の途中なら、その間に曲が進んだり終わって
     // 「完了」と記録されたり、剣の見張りが曲を再開したりしないよう、すぐ止めておく(Codex の点検で 2026-10-22 に追加)。
+    // 曲を始める前(読み込み・幕の間)は止める曲がないので、曲を予約する直前に音の中身を確かめて読み直す(Start)。
     public void HoldForAudioChange()
     {
-        if (leaving || completing || finished || inCalibration || inTutorial || audioChangeHold) return;
+        if (leaving || completing || finished || inCalibration || inTutorial) return;
+        if (!ready) { audioLostBeforeStart = true; return; }
+        // 読み直しや 3・2・1 の途中でまた変わったら、読み直しからやり直す(落ち着いたら HandleAudioOutputChanged が始める)。
+        if (audioReload != null) { StopCoroutine(audioReload); audioReload = null; AbortAudioRequest(); }
+        audioResumeAt = double.NaN;
+        if (audioChangeHold) return;
         audioChangeHold = true;
+        countdownShown = 0;
         if (songPlayer != null && songPlayer.IsScheduled)
         {
             songPlayer.Pause();
             songPlayer.HeldByTracking = true;
         }
+        // 予約したサビの音や下げた音量を戻し、鳴り始めた「シュー」も止める(剣を見失って止めたときと同じ)。
+        if (chorusDrop != null) chorusDrop.ResetEffects();
+        if (feverShow != null) feverShow.StopEndSound();
     }
 
-    // 音の出力先が変わった(AudioOutputRecovery、2026-10-22)。曲の音とスクリプトで作った音は中身が消え、続きから鳴らし直せない。
-    // 本編の途中(読み込み・カウントイン・一時停止を含む)は記録せずにタイトルへ。終わりの演出の間は結果を確定して結果へ。
-    // 練習は曲えらびへ(難易度はまだ決まっていない)。判定調整は CalibrationController がその場で中断して音を作り直す。
+    // 音の出力先が変わった(AudioOutputRecovery、2026-10-22)。画面は戻さない(同日ユーザー「戻るのやめて」)。
+    // 曲の途中(カウントイン・一時停止を含む)は、止めたまま曲を読み直し、3・2・1 で続きから再開する。記録もそのまま続く。
+    // 練習は同梱の曲なので、時計はそのままに今の位置から鳴らし直す。終わりの演出の間はそのまま続ける(曲の残りは鳴らさない)。
+    // 判定調整は CalibrationController がその場で中断して音を作り直す。作った効果音は鳴らすときに作り直す(ProceduralSfx.Revive)。
     public AudioOutputRecovery.Action HandleAudioOutputChanged()
     {
-        var action = AudioOutputRecovery.PlanGame(inCalibration || GameSession.IsCalibrationMode, inTutorial, completing, finished, leaving);
+        var action = AudioOutputRecovery.PlanGame(inCalibration || GameSession.IsCalibrationMode, inTutorial, completing, finished, leaving, ready);
         switch (action)
         {
-            case AudioOutputRecovery.Action.AbortToTitle:
-                ReturnToTitle();
+            case AudioOutputRecovery.Action.ResumeSong:
+                if (!audioChangeHold) HoldForAudioChange();
+                if (audioReload != null) StopCoroutine(audioReload);
+                audioReload = StartCoroutine(ReloadSongAndResume());
                 break;
-            case AudioOutputRecovery.Action.FinishToResult:
-                // 点と3つの記録(実績・通算の順位・HI-SCORE は結果画面)を一度だけ確定し、残りの演出は飛ばす。
-                CommitFinalResult();
-                if (!string.IsNullOrEmpty(resultSceneName) && ScreenTransition.Load(resultSceneName, ScreenTransition.Style.Result))
-                {
-                    leaving = true;
-                    StopAllCoroutines();
-                }
-                break;
-            case AudioOutputRecovery.Action.TutorialToSongSelect:
-                if (ExitTutorial())
-                {
-                    leaving = true;
-                    if (songPlayer != null) songPlayer.Stop();
-                }
+            case AudioOutputRecovery.Action.InPlace:
+                if (inTutorial && songPlayer != null) songPlayer.RestartSource();
                 break;
         }
         return action;
+    }
+
+    // 音の出力先が変わって曲を止めている間の表示と、読み直したあとの 3・2・1(剣を見失ったときと同じ見た目と音)。
+    // 数え終えたら続きから再開する。剣を見失って止めていたときは、そちらの見張りが戻ってから再開する。
+    void TickAudioResume()
+    {
+        double now = Time.realtimeSinceStartupAsDouble;
+        var input = InputPoint.Instance;
+        string status = input != null ? MenuSaberStatus.Status(now, input.LastReceivedTime, input.LastReceivedTime2) : "";
+        if (double.IsNaN(audioResumeAt))
+        {
+            trackingView.Show(status, AudioReloadingText, false, null, -1, true);
+            return;
+        }
+        double remaining = audioResumeAt - now;
+        if (remaining > 0)
+        {
+            int number = System.Math.Max(1, (int)System.Math.Ceiling(remaining));
+            if (number != countdownShown) { countdownShown = number; trackingView.PlayCountTick(); }
+            trackingView.Show(status, PlayTrackingStatus.ResumeText(remaining), false, null,
+                (float)(1 - remaining / PlayTrackingWatch.ResumeCountdownSeconds), true);
+            return;
+        }
+        audioChangeHold = false;
+        audioResumeAt = double.NaN;
+        countdownShown = 0;
+        if (trackingWatch.Paused) { trackingWatch.RestartCountdown(now); return; }
+        ResumeAfterTracking();
+        trackingView.PlayResumeCue();
+        resumedShownUntil = now + PlayTrackingStatus.ResumedSeconds;
     }
 
     // 最後まで遊んだ回の点と判定を確定し、実績・通算の順位を残す(一度だけ。HI-SCORE は結果画面が残す)。

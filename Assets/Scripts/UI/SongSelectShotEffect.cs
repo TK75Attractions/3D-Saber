@@ -54,7 +54,8 @@ public sealed class SongSelectShotEffect : MonoBehaviour
         }
         age = 0; Tick(0);
         if (shot == null) shot = BuildSound();
-        source.PlayOneShot(shot, .42f);
+        // 作った音は鳴らす前に中身を確かめる(音の出力先が変わると消えるため。ProceduralSfx.Revive)。
+        source.PlayOneShot(ProceduralSfx.Revive(ref shot), .42f);
     }
 
     // 低い衝撃に、急降下する電子音と短い破砕音を重ねる。乱数は局所で固定する。
@@ -73,7 +74,7 @@ public sealed class SongSelectShotEffect : MonoBehaviour
             float crack = ((float)noise.NextDouble() * 2 - 1) * Mathf.Exp(-t * 32) * .24f;
             samples[i] = Mathf.Clamp((zap + thump + crack) * Mathf.Min(1, t * 1400) * Mathf.Clamp01((.28f - t) / .03f), -.95f, .95f);
         }
-        var clip = AudioClip.Create("menu_aim_shot", samples.Length, 1, rate, false); clip.SetData(samples, 0); return clip;
+        return ProceduralSfx.Clip("menu_aim_shot", samples, rate);
     }
 
     void Update() { Tick(Time.unscaledDeltaTime); }

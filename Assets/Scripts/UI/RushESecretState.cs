@@ -42,7 +42,7 @@ public sealed class RushESecretState
         if (!Transitioning || !Unlocked) return false;
         Transitioning = false; return true;
     }
-    // 音の出力先が変わって選曲を作り直したとき(AudioOutputRecovery、2026-10-22)、解除したままの状態へ戻す。演出はくり返さない。
+    // 判定調整との往復で選曲へ戻ったとき(GameSession.RushESecretCarry、2026-10-22)、解除したままの状態へ戻す。演出はくり返さない。
     public void RestoreUnlocked()
     {
         SelectedSong = SongId; Hits = RequiredHits; Transitioning = false; Unlocked = true; lastHit = double.NegativeInfinity;

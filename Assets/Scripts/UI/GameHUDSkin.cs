@@ -549,7 +549,7 @@ public class GameHUDSkin : MonoBehaviour
             {
                 rankStampAge = 0f;
                 RankStampCount++;
-                if (hudAudio != null && rankStampClip != null) hudAudio.PlayOneShot(rankStampClip, 1f);
+                if (hudAudio != null && rankStampClip != null) hudAudio.PlayOneShot(ProceduralSfx.Revive(ref rankStampClip), 1f);
             }
             rankVisualInit = true;
             currentRank = rank;

@@ -130,7 +130,8 @@ public sealed class DailyRankingPresentation : MonoBehaviour
         {
             landed = true;
             // スキップで効果音が遅れて鳴らない。手動Tickの巻き戻しでも再生し直さない。
-            if (!special && time < EndTime && audioSource != null && chime != null) audioSource.PlayOneShot(chime, .3f);
+            // 作った音は鳴らす前に中身を確かめる(音の出力先が変わると消えるため。ProceduralSfx.Revive)。
+            if (!special && time < EndTime && audioSource != null && chime != null) audioSource.PlayOneShot(ProceduralSfx.Revive(ref chime), .3f);
         }
         float p = Mathf.Clamp01((time - arrival) / (landing - arrival));
         numberGroup.alpha = p;
@@ -165,9 +166,7 @@ public sealed class DailyRankingPresentation : MonoBehaviour
             samples[i] = envelope * .24f * (Mathf.Sin(2 * Mathf.PI * root * t)
                 + .5f * Mathf.Sin(2 * Mathf.PI * root * 1.25f * t) + .25f * Mathf.Sin(2 * Mathf.PI * root * 1.5f * t));
         }
-        var clip = AudioClip.Create("DailyRankChime", samples.Length, 1, rate, false);
-        clip.SetData(samples, 0);
-        return clip;
+        return ProceduralSfx.Clip("DailyRankChime", samples, rate);
     }
 
     TextMeshProUGUI Text(string name, string text, Vector2 pos, Vector2 size, float fontSize, Color color, Transform parent = null)

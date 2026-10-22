@@ -41,7 +41,8 @@ public sealed class RushESecret : MonoBehaviour
         {
             transitionAt = Time.unscaledTimeAsDouble;
             curtain.gameObject.SetActive(true); curtain.Show(0);
-            sound.PlayOneShot(revealClip, .65f);
+            // 作った音は鳴らす前に中身を確かめる(音の出力先が変わると消えるため。ProceduralSfx.Revive)。
+            sound.PlayOneShot(ProceduralSfx.Revive(ref revealClip), .65f);
         }
     }
     void SelectionChanged(int index)
@@ -105,8 +106,7 @@ public sealed class RushESecret : MonoBehaviour
             }
             data[i] = Mathf.Clamp(sample * .72f, -.75f, .75f);
         }
-        var clip = AudioClip.Create("Rush E secret swell", data.Length, 1, rate, false);
-        clip.SetData(data, 0); return clip;
+        return ProceduralSfx.Clip("Rush E secret swell", data, rate);
     }
     void OnDestroy()
     {

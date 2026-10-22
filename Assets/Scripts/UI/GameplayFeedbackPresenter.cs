@@ -127,9 +127,10 @@ public sealed class GameplayFeedbackPresenter : MonoBehaviour
     {
         MilestoneSoundCount++;
         if (milestoneSource == null) return;
-        var clip = milestoneClips[MilestoneStep(combo)];
+        // 作った音は鳴らす前に中身を確かめる(音の出力先が変わると消えるため。ProceduralSfx.Revive)。
+        var clip = ProceduralSfx.Revive(ref milestoneClips[MilestoneStep(combo)]);
         if (clip != null) milestoneSource.PlayOneShot(clip, 1f);
-        if (IsBigMilestone(combo) && crowdClip != null) milestoneSource.PlayOneShot(crowdClip, 1f);
+        if (IsBigMilestone(combo) && crowdClip != null) milestoneSource.PlayOneShot(ProceduralSfx.Revive(ref crowdClip), 1f);
     }
 
     public void Tick(float delta, double songTime, double duration, double lastNote)
@@ -160,7 +161,7 @@ public sealed class GameplayFeedbackPresenter : MonoBehaviour
             outroSource = gameObject.AddComponent<AudioSource>();
             outroSource.playOnAwake = false; outroSource.spatialBlend = 0;
         }
-        outroSource.PlayOneShot(outroClip, OutroVolume);
+        outroSource.PlayOneShot(ProceduralSfx.Revive(ref outroClip), OutroVolume);
     }
     void OnDestroy()
     {

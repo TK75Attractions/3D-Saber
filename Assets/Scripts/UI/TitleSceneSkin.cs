@@ -318,8 +318,9 @@ public class TitleSceneSkin : MonoBehaviour
         go.transform.SetParent(transform, false);
         var src = go.GetComponent<AudioSource>();
         src.playOnAwake = false;
-        src.PlayOneShot(slashChimeLow, .50f);
-        src.PlayOneShot(slashChimeHigh, .35f);
+        // 作った音は鳴らす前に中身を確かめる(音の出力先が変わると消えるため。ProceduralSfx.Revive)。
+        src.PlayOneShot(ProceduralSfx.Revive(ref slashChimeLow), .50f);
+        src.PlayOneShot(ProceduralSfx.Revive(ref slashChimeHigh), .35f);
         Destroy(go, 1.5f);
     }
 

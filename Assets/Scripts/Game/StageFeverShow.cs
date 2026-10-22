@@ -254,7 +254,8 @@ public sealed class StageFeverShow : MonoBehaviour
     void PlayEnd()
     {
         EndSoundCount++;
-        if (endSource != null && endClip != null) endSource.PlayOneShot(endClip, 1f);
+        // 作った音は鳴らす前に中身を確かめる(音の出力先が変わると消えるため。ProceduralSfx.Revive)。
+        if (endSource != null && endClip != null) endSource.PlayOneShot(ProceduralSfx.Revive(ref endClip), 1f);
     }
 
     // 剣を見失って曲を止めたとき(GamePlayManager.PauseForTracking)。鳴りかけの「シュー」だけを止める。

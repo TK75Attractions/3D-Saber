@@ -108,7 +108,7 @@ public sealed class SongSelectChartPreview : MonoBehaviour
     public void Attach(RectTransform panel) { view?.Dispose(); view=new SongChartPreviewView(panel); }
     public void Select(string songId,string difficulty,float duration)
     {
-        Cancel(); SongId=songId; Difficulty=difficulty; SelectedAt=SettledAt=Time.realtimeSinceStartupAsDouble;
+        Cancel(); SongId=songId; Difficulty=difficulty; selectedDuration=duration; SelectedAt=SettledAt=Time.realtimeSinceStartupAsDouble;
         if(source==null || !isActiveAndEnabled || string.IsNullOrEmpty(songId)) return;
         State=PreviewState.Waiting;
         loading=StartCoroutine(Load(songId,difficulty,duration,generation));
@@ -204,6 +204,32 @@ public sealed class SongSelectChartPreview : MonoBehaviour
         if(ownedClip!=null) { Destroy(ownedClip); ownedClip=null; }
         view?.Hide();
     }
-    private void OnDisable() { Cancel(); }
+    // 音の出力先が変わると、試聴の音も止まって中身が消える(AudioOutputRecovery)。
+    // 試聴中・準備中だったら、いったん止めて(「再生できません」にしない)、立て直したあとに同じ曲の試聴をやり直す。
+    private float selectedDuration;
+    private bool replayAfterAudioChange;
+    private void OnEnable()
+    {
+        AudioOutputRecovery.OutputChanged+=PauseForAudioChange;
+        AudioOutputRecovery.Restored+=ReplayAfterAudioChange;
+    }
+    void PauseForAudioChange()
+    {
+        replayAfterAudioChange|=IsPlaying || loading!=null;
+        if(replayAfterAudioChange) Cancel();
+    }
+    void ReplayAfterAudioChange()
+    {
+        if(!replayAfterAudioChange) return;
+        replayAfterAudioChange=false;
+        if(!string.IsNullOrEmpty(SongId)) Select(SongId,Difficulty,selectedDuration);
+    }
+    private void OnDisable()
+    {
+        AudioOutputRecovery.OutputChanged-=PauseForAudioChange;
+        AudioOutputRecovery.Restored-=ReplayAfterAudioChange;
+        replayAfterAudioChange=false;
+        Cancel();
+    }
     private void OnDestroy() { Cancel(); view?.Dispose(); view=null; }
 }

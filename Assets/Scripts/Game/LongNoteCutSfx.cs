@@ -98,7 +98,8 @@ public class LongNoteCutSfx : MonoBehaviour
         // 最後まで切れたときだけ「チーン」。時間切れ(途中まで)では鳴らさない。
         if (note != null && note.IsCut && !note.IsMissed && isActiveAndEnabled && source != null && finishChime != null)
         {
-            source.PlayOneShot(finishChime, 1f);
+            // 作った音は鳴らす前に中身を確かめる(音の出力先が変わると消えるため。ProceduralSfx.Revive)。
+            source.PlayOneShot(ProceduralSfx.Revive(ref finishChime), 1f);
             FinishChimeCount++;
         }
         Untrack(note);
@@ -163,7 +164,7 @@ public class LongNoteCutSfx : MonoBehaviour
         voice.clip = clip;
         voice.Play();
         // 切るたびに一段ずつ上がる鐘(斬5)。刻みの音とは別に重ねる。
-        var bell = stepBells[Mathf.Clamp(cutIndex, 0, stepBells.Length - 1)];
+        var bell = ProceduralSfx.Revive(ref stepBells[Mathf.Clamp(cutIndex, 0, stepBells.Length - 1)]);
         if (bell != null) { source.PlayOneShot(bell, 1f); BellCount++; }
     }
 

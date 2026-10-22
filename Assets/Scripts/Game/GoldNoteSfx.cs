@@ -124,10 +124,15 @@ public class GoldNoteSfx : MonoBehaviour
         if (source == null) source = GetComponent<AudioSource>();
         int step = Mathf.Clamp(criticalStep, 0, CriticalSteps - 1);
         CriticalCount++;
-        AudioClip clip = cutClip != null ? cutClip : criticalClips[step];
+        // 作った音は鳴らす前に中身を確かめる(音の出力先が変わると消えるため。ProceduralSfx.Revive)。
+        AudioClip clip = cutClip != null ? cutClip : ProceduralSfx.Revive(ref criticalClips[step]);
         if (clip != null) source.PlayOneShot(clip, volume);
         else PlayLuxury();
-        if (coinSource != null && coinClip != null) coinSource.PlayDelayed(CoinDelaySeconds);
+        if (coinSource != null && coinClip != null)
+        {
+            coinSource.clip = ProceduralSfx.Revive(ref coinClip);
+            coinSource.PlayDelayed(CoinDelaySeconds);
+        }
         criticalStep = Mathf.Min(CriticalSteps - 1, criticalStep + 1);
         OnCritical?.Invoke(point, step);
     }
@@ -136,7 +141,7 @@ public class GoldNoteSfx : MonoBehaviour
     {
         if (note == null || bound == null || note.JudgmentOwner != bound) return;
         OmenCount++;
-        if (source != null && omenClip != null) source.PlayOneShot(omenClip, 1f);
+        if (source != null && omenClip != null) source.PlayOneShot(ProceduralSfx.Revive(ref omenClip), 1f);
     }
 
     public AudioClip ResolveCutClip()

@@ -240,7 +240,44 @@ public static class ProceduralSfx
     {
         var clip = AudioClip.Create(name, Mathf.Max(1, samples.Length), 1, rate, false);
         clip.SetData(samples, 0);
+        Remember(clip, new Made { name = name, samples = samples, rate = rate });
         return clip;
+    }
+
+    // 音の出力先が変わると、スクリプトで作った AudioClip は中身が消え(samples=0)、SetData でも戻らない
+    // (2026-10-22 にこのプロジェクトで確かめた。新しく作った音は鳴る)。そこで作った波形を覚えておき、
+    // 鳴らす前に Revive を通す。中身が消えていたら同じ波形で作り直して clip を差し替え、古いものは捨てる。
+    // 中身がある音・ここで作っていない音(同梱の音)・null はそのまま返す。
+    public static AudioClip Revive(ref AudioClip clip)
+    {
+        if (clip == null || clip.samples > 0 || !made.TryGetValue(clip, out var source)) return clip;
+        var dead = clip;
+        made.Remove(dead);
+        clip = Clip(source.name, source.samples, source.rate);
+        clip.hideFlags = dead.hideFlags;
+        if (Application.isPlaying) Object.Destroy(dead); else Object.DestroyImmediate(dead);
+        return clip;
+    }
+
+    struct Made { public string name; public float[] samples; public int rate; }
+    static readonly System.Collections.Generic.Dictionary<AudioClip, Made> made = new System.Collections.Generic.Dictionary<AudioClip, Made>();
+    static readonly System.Collections.Generic.List<AudioClip> released = new System.Collections.Generic.List<AudioClip>();
+    const int PruneCount = 64;
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetMade() => made.Clear();
+
+    // 持ち主が捨てた音(Destroy 済み)の波形は、数が増えたら手放す。
+    static void Remember(AudioClip clip, Made source)
+    {
+        if (made.Count >= PruneCount)
+        {
+            released.Clear();
+            foreach (var key in made.Keys) if (key == null) released.Add(key);
+            foreach (var key in released) made.Remove(key);
+            released.Clear();
+        }
+        made[clip] = source;
     }
 
     static int Samples(float seconds) => Mathf.Max(1, Mathf.RoundToInt(seconds * Rate));

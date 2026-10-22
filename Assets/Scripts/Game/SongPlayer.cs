@@ -30,6 +30,12 @@ public class SongPlayer : MonoBehaviour
     private bool pausedByApplication;
     private double pausedSongTime;
     public float startDelay = 0.2f;
+    // 音の出力先が変わって音が止まり、読み直した音へ差し替えたとき(AudioOutputRecovery)。再開では止めた位置から鳴らし直す。
+    private bool restartOnResume;
+    // 鳴らし直しを予約した DSP 時刻。それまで時計は止めた位置のまま待つ(先に進んで音とずれない)。
+    private double holdUntilDsp = double.NegativeInfinity;
+    // 鳴らし直すときの予約の余裕(秒)。
+    public const double RestartLeadSeconds = .05;
 
     public AudioClip Clip
     {
@@ -56,6 +62,7 @@ public class SongPlayer : MonoBehaviour
             if (!scheduled) return 0.0;
             if (paused) return pausedSongTime;
             double now = AudioSettings.dspTime;
+            if (now < holdUntilDsp) return holdUntilDsp - startDspTime;
             double elapsed = now - startDspTime;
             if (!clockSynchronized && elapsed >= startOffset && source != null && source.clip != null)
             {
@@ -101,7 +108,8 @@ public class SongPlayer : MonoBehaviour
     {
         EnsureSource();
         source.Stop();
-        paused = pausedByApplication = false;
+        paused = pausedByApplication = restartOnResume = false;
+        holdUntilDsp = double.NegativeInfinity;
         HeldByTracking = false;
         clockSynchronized = false;
         if (double.IsNaN(dspStartTime) || double.IsInfinity(dspStartTime)) dspStartTime = AudioSettings.dspTime;
@@ -138,7 +146,8 @@ public class SongPlayer : MonoBehaviour
         if (source != null) source.Stop();
         scheduled = false;
         clockSynchronized = false;
-        paused = pausedByApplication = false;
+        paused = pausedByApplication = restartOnResume = false;
+        holdUntilDsp = double.NegativeInfinity;
         HeldByTracking = false;
         startOffset = 0; startSample = 0;
     }
@@ -162,6 +171,8 @@ public class SongPlayer : MonoBehaviour
         if (!scheduled || !paused) return;
         startDspTime = AudioSettings.dspTime - pausedSongTime;
         paused = false;
+        bool restart = restartOnResume;
+        restartOnResume = false;
         if (source != null && source.clip != null)
         {
             if (pausedBeforeStart)
@@ -169,8 +180,52 @@ public class SongPlayer : MonoBehaviour
                 if (startSample > 0) source.timeSamples = startSample;
                 source.PlayScheduled(startDspTime + startOffset);
             }
+            else if (restart) PlayFrom(pausedSongTime);
             else source.UnPause();
         }
+    }
+
+    // 止めている間に音を差し替える(音の出力先が変わって、前の音の中身が消えたとき)。再開で止めた位置から鳴らし直す。
+    // 止めていないときは、ふつうに差し替える(Clip と同じく止める)。
+    public void ReplaceClipWhilePaused(AudioClip clip)
+    {
+        EnsureSource();
+        if (!scheduled || !paused) { Clip = clip; return; }
+        source.Stop();
+        source.clip = clip;
+        restartOnResume = true;
+    }
+
+    // 鳴らしている途中で音だけが止まったとき(音の出力先が変わった。中身の残っている同梱の音)、時計はそのままで今の位置から鳴らし直す。
+    // ループする音は折り返した位置から。止めている間・始まる前・音の終わりより後ろでは何もしない(再開や予約がそのまま使える)。
+    public void RestartSource()
+    {
+        EnsureSource();
+        var clip = source.clip;
+        if (!scheduled || paused || clip == null || clip.samples <= 0 || clip.frequency <= 0) return;
+        double playAt = AudioSettings.dspTime + RestartLeadSeconds;
+        double at = playAt - startDspTime;
+        if (at < startOffset) return;
+        double length = clip.samples / (double)clip.frequency;
+        if (source.loop) at %= length;
+        else if (at >= length) return;
+        source.Stop();
+        source.timeSamples = Mathf.Clamp((int)System.Math.Round(at * clip.frequency), 0, clip.samples - 1);
+        source.PlayScheduled(playAt);
+    }
+
+    // 止めた位置(曲の時刻)から鳴らし直す。予約した時刻までは時計も止めた位置で待つ。音の終わりより後ろなら時計だけ進める。
+    void PlayFrom(double songTime)
+    {
+        var clip = source.clip;
+        double playAt = AudioSettings.dspTime + RestartLeadSeconds;
+        startDspTime = playAt - songTime;
+        holdUntilDsp = playAt;
+        if (clip.frequency <= 0) return;
+        double sample = System.Math.Round(songTime * clip.frequency);
+        if (sample < 0 || sample >= clip.samples) return;
+        source.timeSamples = (int)sample;
+        source.PlayScheduled(playAt);
     }
 
     void OnApplicationPause(bool value)

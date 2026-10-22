@@ -123,28 +123,6 @@ public class SongSelectSkin : MonoBehaviour
     public static string FormatHighScore(HighScoreTable table) => table != null && table.entries != null && table.entries.Count > 0
         ? table.entries[0].score.ToString("N0") + "<size=24>点</size>" : "—";
     public static void ApplyNeon(Button button, Color accent, float fillAlpha) => UISkinKit.RestyleButton(button, accent);
-    // 音の出力先が変わったとき(AudioOutputRecovery、2026-10-22)に、選曲を作り直す。画面ごとに作った音は中身が消えているため。
-    // 判定調整との往復と同じ持ち越しで、曲・難易度・残り時間・操作したか(SongSelectOperated はそのまま)を保つ。
-    public static bool ReloadKeepingSelection()
-    {
-        var skin = Object.FindFirstObjectByType<SongSelectSkin>();
-        var controller = Object.FindFirstObjectByType<SongSelectController>();
-        string song = controller != null ? controller.SongIdAt(controller.SelectedIndex) : null;
-        string difficulty = controller != null && controller.difficultyNames != null
-            && controller.SelectedDifficultyIndex >= 0 && controller.SelectedDifficultyIndex < controller.difficultyNames.Length
-            ? controller.difficultyNames[controller.SelectedDifficultyIndex] : null;
-        double seconds = skin != null ? skin.RemainingSeconds : 100;
-        // RUSH E の E を解除していたら(解除の演出中も)、作り直したあとも E のまま(Codex の点検で 2026-10-22 に追加)。
-        bool secret = controller != null && song == RushESecretState.SongId
-            && (controller.RushESecret.Unlocked || controller.RushESecret.Transitioning);
-        if (!ScreenTransition.Load("SongSelect", ScreenTransition.Style.Back)) return false;
-        GameSession.CalibrationSelectionSongId = song;
-        GameSession.CalibrationSelectionDifficulty = difficulty;
-        GameSession.CalibrationSelectionSeconds = seconds;
-        GameSession.RushESecretCarry = secret;
-        return true;
-    }
-
     public static void EnterCalibration()
     {
         if (!ScreenTransition.Load("Game", ScreenTransition.Style.Calibration)) return;

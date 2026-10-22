@@ -82,6 +82,12 @@ public sealed class PlayTrackingWatch
     public double CountdownRemaining(double now) =>
         State == Phase.Countdown ? System.Math.Max(0, ResumeCountdownSeconds - (now - countdownStart)) : 0;
 
+    // 3・2・1 を数えている途中なら、今から数え直す(音の出力先が変わって曲を読み直したあと。2026-10-22)。
+    public void RestartCountdown(double now)
+    {
+        if (State == Phase.Countdown) countdownStart = now;
+    }
+
     // 毎フレーム呼ぶ。notesComing=ノーツが画面にあるかまもなく流れる。止める/再開するフレームだけ要求を返す。
     public Request Step(double now, bool notesComing)
     {

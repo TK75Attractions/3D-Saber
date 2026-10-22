@@ -118,14 +118,15 @@ public sealed class DailyRankingWheel : MonoBehaviour
         if (time < lastTickTime) lastTickTime = -1;   // スキップや手動の巻き戻し
         if (visible && time < StopTime && cellIndex != lastCell && time - lastTickTime >= TickInterval)
         {
-            audioSource.PlayOneShot(tickSound, .16f);
+            // 作った音は鳴らす前に中身を確かめる(音の出力先が変わると消えるため。ProceduralSfx.Revive)。
+            audioSource.PlayOneShot(ProceduralSfx.Revive(ref tickSound), .16f);
             lastTickTime = time;
         }
         lastCell = cellIndex;
         if (!impacted && time >= ImpactTime)
         {
             impacted = true;
-            if (visible && time < ImpactTime + .3f) audioSource.PlayOneShot(impactSound, .65f);
+            if (visible && time < ImpactTime + .3f) audioSource.PlayOneShot(ProceduralSfx.Revive(ref impactSound), .65f);
         }
         // スキップ、LOW切替、終了では回転音や衝撃音を残さない。
         if (!visible) audioSource.Stop();
@@ -158,8 +159,7 @@ public sealed class DailyRankingWheel : MonoBehaviour
             float envelope = Mathf.Min(1, t / .002f) * Mathf.Pow(1 - p, impact ? 2.4f : 3);
             data[i] = envelope * (impact ? .52f * Mathf.Sin(phase) + .12f * Mathf.Sin(2 * Mathf.PI * 440 * t) + .06f * Mathf.Sin(2 * Mathf.PI * 660 * t) : .38f * Mathf.Sin(phase));
         }
-        var clip = AudioClip.Create(impact ? "DailyRankDEN" : "DailyRankWheelTick", length, 1, rate, false);
-        clip.SetData(data, 0); return clip;
+        return ProceduralSfx.Clip(impact ? "DailyRankDEN" : "DailyRankWheelTick", data, rate);
     }
 
     static RectTransform Rect(string name, Transform parent, Vector2 size, Vector2 pos)

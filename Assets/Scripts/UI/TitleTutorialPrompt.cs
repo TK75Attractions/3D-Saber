@@ -175,8 +175,9 @@ public sealed class TitleTutorialPrompt : MonoBehaviour
         go.transform.SetParent(transform, false);
         var src = go.GetComponent<AudioSource>();
         src.playOnAwake = false;
-        src.PlayOneShot(chimeLow, .45f);
-        src.PlayOneShot(chimeHigh, .35f);
+        // 作った音は鳴らす前に中身を確かめる(音の出力先が変わると消えるため。ProceduralSfx.Revive)。
+        src.PlayOneShot(ProceduralSfx.Revive(ref chimeLow), .45f);
+        src.PlayOneShot(ProceduralSfx.Revive(ref chimeHigh), .35f);
         Destroy(go, 1.5f);
     }
 
