@@ -118,6 +118,39 @@ public class DailyRankingPlayTests
         CollectionAssert.AreEqual(new[] { GameSession.AchievementRunId }, SongAchievementStore.Load(song, "Normal").recentRunIds);
     }
 
+    // 終わりの演出の間にアプリを終了しても(Cmd+Q・ウィンドウの×)、最後まで遊んだ回の点と3つの記録を一度だけ残す
+    // (2026-10-22 くり返し14回目、Codex の指摘)。そのまま結果画面まで進んでも二重に残さない。
+    [UnityTest] public IEnumerator QuittingDuringTheEndPresentationStillKeepsTheRecordsOnce()
+    {
+        var root = new GameObject("QuitDuringEnd");
+        var score = root.AddComponent<ScoreManager>();
+        for (int i = 0; i < 3; i++) score.RegisterHit(JudgmentTier.Perfect);
+        score.RegisterMiss();
+        var manager = root.AddComponent<GamePlayManager>();
+        manager.enabled = false;
+        manager.scoreManager = score;
+        manager.songPlayer = root.AddComponent<SongPlayer>();
+        manager.noteSpawner = root.AddComponent<NoteSpawner>();
+        var flags = BindingFlags.Instance | BindingFlags.NonPublic;
+        typeof(GamePlayManager).GetMethod("FinishGame", flags).Invoke(manager, null);
+        yield return null;
+        Assert.IsNull(GameSession.FinalDailyRanking, "演出の間はまだ残していない");
+        Assert.AreEqual(0, HighScoreStore.Load(song, "Normal").entries.Count);
+        typeof(GamePlayManager).GetMethod("OnApplicationQuit", flags).Invoke(manager, null);
+        Assert.AreEqual(67500 + 7500, GameSession.FinalScore, "コンボ点の演出を待たずに精算する");
+        Assert.NotNull(GameSession.FinalDailyRanking);
+        Assert.AreEqual(1, HighScoreStore.Load(song, "Normal").entries.Count, "HI-SCORE も残す");
+        CollectionAssert.AreEqual(new[] { GameSession.AchievementRunId }, SongAchievementStore.Load(song, "Normal").recentRunIds);
+        float deadline = Time.realtimeSinceStartup + 15;
+        while (SceneManager.GetActiveScene().name != "Result" && Time.realtimeSinceStartup < deadline) yield return null;
+        yield return null;
+        Assert.AreEqual("Result", SceneManager.GetActiveScene().name);
+        Assert.AreEqual(1, HighScoreStore.Load(song, "Normal").entries.Count, "結果画面で二重に残さない");
+        Assert.True(DailyRankingStore.TryRead(PlayerPrefs.GetString(DailyRankingStore.Key(song, "Normal")),
+            GameSession.FinalDailyRanking.Day, out var table));
+        Assert.AreEqual(1, table.entries.Count);
+    }
+
     [UnityTest] public IEnumerator CalibrationEmptyResultAndScenePreviewDoNotRegisterDailyScores()
     {
         GameSession.RecordCompletedDailyRanking();

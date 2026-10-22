@@ -700,6 +700,16 @@ public class GamePlayManager : MonoBehaviour
         ReleaseOwnedSongClip();
     }
 
+    // 最後まで遊んだあと、終わりの演出(FULL COMBO・コンボ点)の間や結果画面へ移る間にアプリを終了しても
+    // (Cmd+Q・ウィンドウの×・運営の終了)、点と3つの記録(実績・通算の順位・HI-SCORE)を残す。Esc 2回と同じ後始末で、
+    // どちらも同じ回を二重に残さない(Codex の点検で 2026-10-22 に追加)。強制終了は救えない。
+    void OnApplicationQuit()
+    {
+        if (!completing || inCalibration || inTutorial) return;
+        CommitFinalResult();
+        GameSession.RecordCompletedHighScore();
+    }
+
     // 読み込み中の音源の要求。途中で抜けると(StopAllCoroutines・シーンの破棄)using の後始末が走らないので、ここで止めて手放す。
     UnityWebRequest pendingAudioRequest;
     void AbortAudioRequest()
