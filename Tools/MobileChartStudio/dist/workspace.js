@@ -34,12 +34,13 @@ export function installWorkspace(context) {
   const noteHead=element('div',{class:'inline-note-head'});noteHead.append(element('strong',{},'選択ノーツ · 変更は即保存'),$('deleteNote'),button('closeNote','閉じる',()=>$('noteDialog').close()));$('noteDialog').prepend(noteHead);
   $('noteEditorHost').append($('noteEditor'));
   // 数値欄に打ちかけのまま矢印や色を押しても、先にその値を確定させる(change は blur で出る。押したボタンがフォーカスを取らない端末向け)。
-  const settleField=()=>{const field=document.activeElement;if(field?.matches?.('#noteDialog input,#noteDialog select'))field.blur();};
+  // 確定できなかったら(音源の外の時刻など)、矢印・色の変更と「次へ」は行わない。
+  const settleField=()=>{const field=document.activeElement;if(!field?.matches?.('#noteDialog input,#noteDialog select'))return true;const before=context.fieldFailures();field.blur();return context.fieldFailures()===before;};
   const directionGrid=element('div',{id:'directionGrid',class:'direction-grid',role:'group','aria-label':'ノーツの矢印'});
-  for(const [value,text] of [['upleft','↖'],['up','↑'],['upright','↗'],['left','←'],['none','自由'],['right','→'],['downleft','↙'],['down','↓'],['downright','↘']]){const b=button('direction-'+value,text,()=>{settleField();context.edit('noteDirection',value);if($('autoNext').checked)$('nextNote').click();});b.dataset.direction=value;b.setAttribute('aria-label',value==='none'?'矢印なし':`${text}の矢印`);directionGrid.append(b);}
+  for(const [value,text] of [['upleft','↖'],['up','↑'],['upright','↗'],['left','←'],['none','自由'],['right','→'],['downleft','↙'],['down','↓'],['downright','↘']]){const b=button('direction-'+value,text,()=>{if(!settleField())return;context.edit('noteDirection',value);if($('autoNext').checked)$('nextNote').click();});b.dataset.direction=value;b.setAttribute('aria-label',value==='none'?'矢印なし':`${text}の矢印`);directionGrid.append(b);}
   // 矢印の右の列は「色(1回で変える)・拍にそろえる・矢印の変更後に次へ」。聴くは10msの行へ移し、3×3の矢印まで最初の画面に収める。
   const colors=element('div',{id:'noteColorButtons',class:'note-colors',role:'group','aria-label':'ノーツの色'});
-  for(const [value,text] of [['blue','青'],['red','赤'],['gold','金']]){const b=button('noteColor-'+value,text,()=>{settleField();context.edit('noteColor',value);});b.dataset.noteColor=value;b.setAttribute('aria-pressed','false');b.setAttribute('aria-label',`${text}にする`);colors.append(b);}
+  for(const [value,text] of [['blue','青'],['red','赤'],['gold','金']]){const b=button('noteColor-'+value,text,()=>{if(!settleField())return;context.edit('noteColor',value);});b.dataset.noteColor=value;b.setAttribute('aria-pressed','false');b.setAttribute('aria-label',`${text}にする`);colors.append(b);}
   const directions=element('div',{class:'direction-tools'});directions.append(directionGrid);const auto=element('label',{class:'check'});auto.append(element('input',{type:'checkbox',id:'autoNext'}),document.createTextNode('矢印の変更後に次へ'));directions.append(colors,$('snapNote'),auto);$('noteEditorHost').before(directions);
   q('.time-nudge').append(button('listenNote','聴く',context.listenNote));$('listenNote').setAttribute('aria-label','選んだノーツの少し前から聴く');
   $('noteDirection').closest('label').hidden=true;$('updateNote').hidden=true;

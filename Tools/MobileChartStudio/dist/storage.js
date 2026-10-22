@@ -31,7 +31,8 @@ export async function saveProject(project) {
     read.onsuccess=()=>{
       const current=read.result;
       // 再生位置だけの保存や、開き直した際の内部IDの違いは編集競合にしない。
-      if(current&&contentOf(current)===contentOf(project)){nextRevision=current._revision||0;store.put({...project,_revision:nextRevision});return;}
+      // 中身が同じなら最終更新は新しいほうを残す(別タブで変えて戻したあと、古いタブの再生位置の保存で時刻が巻き戻らないように)。
+      if(current&&contentOf(current)===contentOf(project)){nextRevision=current._revision||0;project.updated=Math.max(project.updated||0,current.updated||0);store.put({...project,_revision:nextRevision});return;}
       if((current?current._revision||0:0)!==expected){conflict=new Error('別のタブでこの下書きが更新・削除されました。手元の譜面を書き出してから、画面を再読み込みしてください。');conflict.name='ConflictError';tx.abort();return;}
       store.put({...project,_revision:expected+1});
     };

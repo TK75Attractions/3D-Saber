@@ -82,7 +82,39 @@ try{
   await round7();
   await round8();
   await round9();
+  await round10();
 }finally{await browser.close();}
+
+// 2026-10-22 10回目: Codex が見つけた、今日の機能どうしの組み合わせの不具合。
+async function round10(){
+  const ctx=await browser.newContext({viewport:{width:390,height:664},hasTouch:true}),p=await ctx.newPage(),errs=[];p.on('pageerror',e=>errs.push(e.message));
+  const wait=()=>p.waitForTimeout(300),saved=()=>p.waitForFunction(()=>document.querySelector('#saveStatus').textContent==='この端末に保存済み');
+  const setBpm=async v=>{await p.locator('#settingsButton').click();await p.locator('#bpm').fill(String(v));await p.locator('#bpm').press('Tab');await wait();await p.locator('#settingsDialogClose').click();await wait();};
+  try{
+    await p.goto(site);await wait();
+    await p.locator('#audioFile').setInputFiles({name:'組み合わせ.wav',mimeType:'audio/wav',buffer:wav()});await saved();
+    // 1. BPMを決めたあと(150)、一定テンポのまま直しても(180)、小節で移動でき、拍は新しいBPMで数え直す。
+    await p.evaluate(()=>{const s=document.querySelector('#seek');s.value='10';s.dispatchEvent(new Event('input',{bubbles:true}));});await wait();
+    await p.locator('#playButton').click();await p.waitForTimeout(200);for(let i=0;i<3;i++){await p.locator('#pad').tap({position:{x:60+i*40,y:100}});await p.waitForTimeout(300);}await p.locator('#playButton').click();await wait();
+    await setBpm(150);await setBpm(180);assert.equal(await p.locator('#backButton').innerText(),'−1小節');await saved();
+    assert.deepEqual((await storedIn(p)).chart.notes.map(n=>Math.abs(n.beat-n.time*180/60000)<1e-3),[true,true,true]);check('correcting a confirmed BPM on a steady chart recounts beats');
+    // 2. 時刻に音源の外(99秒)を打ちかけて矢印を押すと、時刻は採用されず、矢印も変えない(次へも進まない)。
+    await p.locator('#nav-edit').click();await wait();if(!await p.locator('.map-note-details').evaluate(e=>e.open))await p.locator('.map-note-details summary').click();
+    await p.locator('#mapCurrent').click();await wait();await p.locator('#mapNotes button').first().click();await wait();await p.locator('#autoNext').check();const label=await p.locator('#selectedNoteLabel').innerText();
+    await p.locator('#noteTime').fill('99');await p.evaluate(()=>document.getElementById('direction-up').click());await wait();
+    const first=(await storedIn(p)).chart.notes[0];assert.equal(first.direction,'none','矢印は変えない');assert.ok(first.time<11000,'時刻も採用しない');
+    assert.equal(await p.locator('#selectedNoteLabel').innerText(),label,'次へ進まない');await p.locator('#autoNext').uncheck();check('a failed typed value stops the arrow edit and auto-next');
+    // 3. 点検モードで候補を消して、元に戻す→前の候補→やり直しても、点検は残りの候補で続く。
+    const notes=Array.from({length:6},(_,i)=>({time:1000+i*500,beat:2+i,x:i%2===0?3:0,y:0,color:'blue',direction:'none',count:1,type:'tap',lengthMs:0}));
+    await p.locator('#libraryButton').click();await p.locator('#chartFile').setInputFiles({name:'chart_hard.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify({bpm:120,offsetMs:0,beatZeroMs:0,coordScale:1,displayLevel:5,timeSignatures:[],notes}))});await wait();
+    await p.locator('#nav-preview').click();await wait();await p.locator('#reportIssues button').first().click();await wait();
+    await p.locator('#deleteNote').click();await wait();assert.match(await p.locator('#selectedNoteLabel').innerText(),/^候補 2\/3/);
+    await p.locator('#editUndo').click();await wait();await p.locator('#previousNote').click();await wait();assert.match(await p.locator('#selectedNoteLabel').innerText(),/^候補 1\/3/);
+    await p.locator('#editRedo').click();await wait();assert.match(await p.locator('#selectedNoteLabel').innerText(),/^候補 2\/3/,'やり直しで消えたら次の候補へ');assert.equal(await p.locator('#nextNote').innerText(),'次の候補');
+    check('review mode continues when redo removes the selected candidate');
+    assert.deepEqual(errs,[]);check('no browser runtime errors in round 10');
+  }finally{await ctx.close();}
+}
 
 // 2026-10-22 9回目: 確かめるの候補から直すへ「点検モード」(前後の候補を順に回る)・候補への近道・最終更新は中身が変わったときだけ。
 async function round9(){
