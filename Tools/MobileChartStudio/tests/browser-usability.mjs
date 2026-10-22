@@ -83,7 +83,67 @@ try{
   await round8();
   await round9();
   await round10();
+  await round11();
 }finally{await browser.close();}
+
+// 2026-10-22 11回目(第2回の Opus 議論 S1・S3): 拍の始まりを数値で直すと、時刻を保って拍を数え直す(テンポが変わる譜面・テンポ地図・拍子の変わり目は壊さない)。録音・録り直しで選択が消えたら、選択パネルも閉じる。
+async function round11(){
+  const ctx=await browser.newContext({viewport:{width:390,height:664},hasTouch:true}),p=await ctx.newPage(),errs=[];p.on('pageerror',e=>errs.push(e.message));
+  const wait=()=>p.waitForTimeout(300),saved=()=>p.waitForFunction(()=>document.querySelector('#saveStatus').textContent==='この端末に保存済み');
+  const open=async(name,value)=>{await p.locator('#libraryButton').click();await p.locator('#library').waitFor({state:'visible'});await p.locator('#chartFile').setInputFiles({name,mimeType:'application/json',buffer:Buffer.from(JSON.stringify(value))});await wait();await saved();};
+  const setZero=async ms=>{await p.locator('#settingsButton').click();await p.locator('#beatZero').fill(String(ms));await p.locator('#beatZero').press('Tab');await wait();await p.locator('#settingsDialogClose').click();await wait();await saved();};
+  const playing=()=>p.waitForFunction(()=>document.querySelector('#playButton').textContent==='一時停止');
+  const times=notes=>notes.map(n=>n.time),beats=notes=>notes.map(n=>n.beat),recounted=notes=>notes.map(n=>(n.time-250)/500);
+  const steady=Array.from({length:8},(_,i)=>({time:1000+i*500,beat:2+i,x:0,y:0,color:i%2?'red':'blue',direction:'none',count:1,type:'tap',lengthMs:0}));
+  const song={bpm:120,offsetMs:0,beatZeroMs:0,coordScale:1,displayLevel:2,timeSignatures:[]};
+  try{
+    await p.goto(site);await wait();
+    await p.locator('#audioFile').setInputFiles({name:'拍の始まり.wav',mimeType:'audio/wav',buffer:wav()});await saved();
+    // 1. 一定テンポ(120 BPM)で拍の始まりを0→250msにすると、時刻はそのまま、拍は (時刻−250)/500 に数え直す。小節で移動できるまま。元に戻すで拍も戻る。
+    await open('chart_normal.json',{...song,notes:steady});assert.equal(await p.locator('#backButton').innerText(),'−1小節');
+    await setZero(250);let value=(await storedIn(p)).chart;
+    assert.equal(value.beatZeroMs,250);assert.deepEqual(times(value.notes),times(steady),'時刻はそのまま');assert.deepEqual(beats(value.notes),recounted(steady),'新しい拍の始まりから数え直す');
+    assert.equal(await p.locator('#backButton').innerText(),'−1小節','テンポが変わる譜面と取り違えない');
+    await p.locator('#undoButton').click();await wait();await saved();value=(await storedIn(p)).chart;
+    assert.equal(value.beatZeroMs,0);assert.deepEqual(beats(value.notes),beats(steady),'元に戻すと拍も戻る');assert.equal(await p.locator('#beatZero').inputValue(),'0');
+    await p.locator('#redoButton').click();await wait();await saved();assert.deepEqual(beats((await storedIn(p)).chart.notes),recounted(steady),'やり直すと数え直した拍');
+    check('a typed beat origin recounts beats, keeps times and bar navigation, and undoes in one step');
+    // 2. 途中に拍子の変わり目(4拍目から3/4)と未知の項目がある一定テンポの譜面。拍子の変わり目と未知の項目はそのまま、拍は同じく数え直す。
+    const meters=[{beat:0,numerator:4,denominator:4},{beat:4,numerator:3,denominator:4}];
+    await open('chart_hard.json',{...song,timeSignatures:meters,_comment:'残す',notes:steady.map(n=>({...n,customNote:'残す'}))});
+    await setZero(250);value=(await storedIn(p)).chart;
+    assert.deepEqual(value.timeSignatures,meters,'拍子の変わり目は拍のまま');assert.equal(value._comment,'残す');assert.ok(value.notes.every(n=>n.customNote==='残す'),'ノーツの未知の項目');
+    assert.deepEqual(times(value.notes),times(steady));assert.deepEqual(beats(value.notes),recounted(steady));assert.equal(await p.locator('#backButton').innerText(),'−1小節');
+    check('a meter change and unknown fields survive a typed beat origin');
+    // 3. テンポが変わる譜面(拍が1つの格子に乗らない)は、拍の始まりを変えても拍をそのまま残す。
+    const variable=steady.map((n,i)=>({...n,beat:2+i*1.5}));
+    await open('chart_easy.json',{...song,notes:variable});assert.equal(await p.locator('#backButton').innerText(),'−5秒','テンポが変わる譜面として扱う');
+    await setZero(250);value=(await storedIn(p)).chart;
+    assert.equal(value.beatZeroMs,250);assert.deepEqual(times(value.notes),times(variable));assert.deepEqual(beats(value.notes),beats(variable),'拍はそのまま');
+    // 4. テンポ地図(editorTempoMap)のある譜面は、本編とUnityの譜面エディターが地図で拍を数える。拍も地図もそのまま残す。
+    const tempoMap=[{beat:0,timeMs:0},{beat:16,timeMs:8000}];
+    await open('chart_normal.json',{...song,editorTempoMap:tempoMap,notes:steady});
+    await setZero(250);value=(await storedIn(p)).chart;
+    assert.deepEqual(value.editorTempoMap,tempoMap);assert.deepEqual(times(value.notes),times(steady));assert.deepEqual(beats(value.notes),beats(steady),'地図に合った拍のまま');
+    check('variable-tempo beats and a tempo map are left alone');
+    // 5. 「直す」でノーツを選んだまま録音して入力すると、選択が消える。直すへ戻ったとき、中身のない選択パネルを残さない。
+    const pick=async()=>{await p.locator('#nav-edit').click();await wait();if(!await p.locator('.map-note-details').evaluate(e=>e.open))await p.locator('.map-note-details summary').click();await p.locator('#mapNotes button').first().click();await wait();assert.equal(await p.locator('#noteDialog').evaluate(e=>e.open),true);};
+    const record=async tap=>{await p.locator('#nav-record').click();await wait();await p.locator('#playButton').click();await playing();await p.waitForTimeout(200);if(tap)await p.locator('#pad').tap({position:{x:60,y:100}});await p.waitForTimeout(200);await p.locator('#playButton').click();await wait();await saved();};
+    const panel=async()=>{await p.locator('#nav-edit').click();await wait();return{open:await p.locator('#noteDialog').evaluate(e=>e.open),remove:await p.locator('#deleteNote').isVisible()};};
+    await open('chart_normal.json',{...song,notes:steady});
+    await pick();await record(true);assert.equal((await storedIn(p)).chart.notes.length,9);
+    assert.deepEqual(await panel(),{open:false,remove:false},'録音で選択が消えたらパネルも閉じる');
+    // 入力しなかった録音では、選択もパネルも残す(選択が消えたときだけ閉じる)。
+    await pick();const label=await p.locator('#selectedNoteLabel').innerText();await record(false);
+    assert.deepEqual(await panel(),{open:true,remove:true});assert.equal(await p.locator('#selectedNoteLabel').innerText(),label);
+    // 6. 選んだまま「録り直す」(直前の録音の前へ戻して録る)も同じ。
+    await p.locator('#nav-record').click();await wait();await p.locator('#retryTake').click();await playing();await p.waitForTimeout(200);await p.locator('#playButton').click();await wait();await saved();
+    assert.equal((await storedIn(p)).chart.notes.length,8,'直前の録音の前へ戻る');
+    assert.deepEqual(await panel(),{open:false,remove:false},'録り直しで選択が消えたらパネルも閉じる');
+    check('recording or retrying a take closes the emptied note panel');
+    assert.deepEqual(errs,[]);check('no browser runtime errors in round 11');
+  }finally{await ctx.close();}
+}
 
 // 2026-10-22 10回目: Codex が見つけた、今日の機能どうしの組み合わせの不具合。
 async function round10(){

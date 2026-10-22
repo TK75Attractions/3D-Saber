@@ -23,12 +23,17 @@ async function request(store, mode, operation) {
   });
 }
 // 同じ下書きを別タブで更新していたら上書きしない。照合と保存は同一トランザクション。
-export async function saveProject(project) {
+// requireAudio: 開いていない曲の下書きから作るときだけ、その曲の音源が残っていることも同じトランザクションで確かめ、なければ書かない
+// (一覧を開いてから作るまでの間に別タブで曲ごと消されると、開けない下書きが残っていた)。ふだんの保存は音源を見ない。
+export async function saveProject(project,{requireAudio=false}={}) {
   const db=await database(), expected=revisions.get(project.id)??project._revision??0;
   return new Promise((resolve,reject)=>{
-    const tx=db.transaction('projects','readwrite'),store=tx.objectStore('projects'),read=store.get(project.id);
+    const tx=db.transaction(requireAudio?['projects','audio']:'projects','readwrite'),store=tx.objectStore('projects');
+    // 要求は出した順に処理されるので、下書きを読み終えた時点で音源の数も分かっている。
+    const audio=requireAudio?tx.objectStore('audio').count(project.audioId):null,read=store.get(project.id);
     let conflict,nextRevision=expected+1;
     read.onsuccess=()=>{
+      if(audio&&!audio.result){conflict=new Error('元の曲の音源が別のタブで削除されています。「曲・保存」を開き直してください。');conflict.name='MissingAudioError';tx.abort();return;}
       const current=read.result;
       // 再生位置だけの保存や、開き直した際の内部IDの違いは編集競合にしない。
       // 中身が同じなら最終更新は新しいほうを残す(別タブで変えて戻したあと、古いタブの再生位置の保存で時刻が巻き戻らないように)。

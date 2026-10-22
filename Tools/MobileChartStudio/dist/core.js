@@ -87,6 +87,11 @@ export function rebeat(chart) {
 export function hasVariableGrid(chart) {
   return chart.notes.filter(n => Math.abs(n.time - (chart.beatZeroMs + n.beat * 60000 / chart.bpm)) > 80).length > Math.max(2, chart.notes.length * .12);
 }
+// 本編(ChartTempoMap)とUnityの譜面エディター(SaberChartGrid)は、テンポ地図に有効な点が1つでもあると、BPMと拍の始まりではなく地図で拍を数える。
+// ファイルの名前は editorTempoMap。Unityの譜面エディターは tempoMap の名前でも読む。
+export function hasTempoMap(chart) {
+  return ['editorTempoMap', 'tempoMap'].some(key => Array.isArray(chart[key]) && chart[key].some(point => Number.isFinite(point?.beat) && Number.isFinite(point?.timeMs)));
+}
 export function formatTime(seconds, precise = false) {
   const ms = Math.round(Math.max(0, seconds) * 1000);
   return `${Math.floor(ms / 60000)}:${String(Math.floor(ms / 1000) % 60).padStart(2, '0')}${precise ? '.' + String(ms % 1000).padStart(3, '0') : ''}`;

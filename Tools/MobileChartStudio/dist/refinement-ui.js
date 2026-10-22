@@ -109,7 +109,8 @@ export function installRefinementUI(context) {
   }));
   $('exportOriginalAudio').addEventListener('click', run(async () => {
     const {project} = getState(); if (!project) return;
-    const source = await getAudio(project.audioId); if (!source?.blob) throw new Error('元の音源が見つかりません。');
+    // 別のタブで曲ごと消されて保存した音源が無いときも、開いている音源はWAVで書き出せる(app.js の downloadBackup と同じ案内)。
+    const source = await getAudio(project.audioId); if (!source?.blob) throw new Error('元の音源が別のタブで削除されています。「音源をWAV保存」で、開いている音源を保存してください。');
     downloadBlob(source.blob, source.name.replace(/[<>:"/\\|?*\u0000-\u001f]/g,'_') || 'audio'); toast('元の音源を変換せず保存しました。');
   }));
   $('projectSearch').addEventListener('input', () => {
