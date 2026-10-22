@@ -29,7 +29,7 @@ export function installRefinementUI(context) {
     if(kind==='copy'||kind==='mirror'){const range={start:scope.start??0,end:scope.end??audio.duration,color:scope.color};result=transformRange(chart,range,{kind,value:Number($('refineDestination').value),swapColors:$('refineSwap').checked},audio.duration);result.targetCount=result.count;}else result=refineChart(chart, scope, operation, audio.duration);
     $('refineTargetCount').textContent=`対象 ${result.targetCount} 個 · ${scope.start===undefined?'曲全体':scope.start+'〜'+scope.end+'秒'}`;
     pending = {before:JSON.stringify(chart), ...result, kind};
-    $('refinePreview').textContent = `${operationNames[kind]}：対象 ${result.targetCount} 個のうち ${result.count} 個を${kind === 'delete' || kind === 'dedupe' ? '削除' : '変更'}します。${kind === 'shift' ? ` ${operation.ms}ms（${operation.ms < 0 ? '早く' : '遅く'}）` : ''}「戻す」で取り消せます。`;
+    $('refinePreview').textContent = `${operationNames[kind]}：対象 ${result.targetCount} 個のうち ${result.count} 個を${kind === 'delete' || kind === 'dedupe' ? '削除' : '変更'}します。${kind === 'shift' ? ` ${operation.ms}ms（${operation.ms < 0 ? '早く' : '遅く'}）` : ''}「元に戻す」で取り消せます。`;
     $('refineApply').disabled = result.count === 0;
   }
   $('refineButton').onclick = showRefinement;
@@ -38,7 +38,7 @@ export function installRefinementUI(context) {
   $('refineApply').addEventListener('click', run(() => {
     if (!pending) return;
     if (JSON.stringify(getState().chart) !== pending.before) { clearPreview(); throw new Error('譜面が変更されたため、もう一度確認してください。'); }
-    const {chart, count, kind} = pending; mutate(chart); clearPreview(); $('refineDialog').close(); toast(`${operationNames[kind]}：${count} 個を変更しました。「戻す」で取り消せます。`);
+    const {chart, count, kind} = pending; mutate(chart); clearPreview(); $('refineDialog').close(); toast(`${operationNames[kind]}：${count} 個を変更しました。「元に戻す」で取り消せます。`);
   }));
   for (const input of $('refineDialog').querySelectorAll('input,select')) input.addEventListener('input', clearPreview);
   $('refineKind').addEventListener('change', () => {

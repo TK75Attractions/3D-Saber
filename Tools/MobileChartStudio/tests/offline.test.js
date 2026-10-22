@@ -15,3 +15,9 @@ test('offline shell serves cached navigation and scripts without network; extern
   }
   assert.equal(network,0);let intercepted=false;handlers.fetch({request:{url:'https://outside.test/audio.mp3',method:'GET'},respondWith:()=>intercepted=true});assert.equal(intercepted,false);
 });
+test('the version shown in the app matches the offline cache name, so an update is visible',()=>{
+  const app=fs.readFileSync(new URL('../dist/app.js',import.meta.url),'utf8'),sw=fs.readFileSync(new URL('../dist/sw.js',import.meta.url),'utf8');
+  const version=/const APP_VERSION='([^']+)'/.exec(app)?.[1];
+  assert.ok(version,'APP_VERSION がある');
+  assert.ok(sw.includes(`'saber-tap-shell-${version}'`),'sw.js のキャッシュ名と同じ版');
+});

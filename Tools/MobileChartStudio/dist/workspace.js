@@ -7,12 +7,16 @@ export function installWorkspace(context) {
   const settings=dialog('settingsDialog','設定'), range=dialog('rangeDialog','録音・確認する区間');
   range.append(q('.range-tools'));q('.range-tools').open=true;
   const groups=[['曲設定',['bpm','difficulty','beatZero','offset','level']],['打ち方',['snapMode','snap','snapWindowMs','flickEnabled','flickSensitivity','positionGrid','longCount','direction']],['この端末',['latency','songVolume','feedbackVolume']],['聴き方',['speed','countIn','clickSound','metronome']]];
+  // BPMをたたいて測るには曲が要るので、測る道具の横で曲を流せるようにする(録音はしない)。
+  const tempoListen=button('tempoListen','曲を流す',context.listenForTempo);q('.tempo-tools').prepend(tempoListen);
   for(const [title,ids] of groups){const details=element('details',{class:'settings-group'});details.open=title==='曲設定';details.append(element('summary',{},title));const fields=element('div',{class:'fields'});for(const id of ids)fields.append($(id).closest('label'));details.append(fields);if(title==='曲設定'){details.append(q('.tempo-tools'),q('.refinement-tools'));}if(title==='打ち方'){details.append($('snapHint'));const label=element('label',{},'ロングになる長押し（ms）'),input=element('input',{id:'longThresholdMs',type:'number',min:'150',max:'1000',step:'10',inputmode:'numeric',value:'300'});label.append(input);fields.append(label);}if(title==='この端末')details.append(element('p',{class:'hint'},'入力補正を＋にすると新しい入力を早めます。スピーカー・有線・Bluetoothで遅れが異なります。音源上の時刻を聴いて調整してください。'));if(title==='聴き方')details.append(element('p',{class:'hint'},'速度を下げると音程も下がります。BPM未設定では拍の音・カウントは使いません。'));settings.append(details);}
   // ヘッダーは曲名と設定、ライブラリに絞る。
   const top=q('.topbar');q('.brand').remove();const heading=button('songSettings','',()=>settings.showModal());heading.setAttribute('aria-label','曲の設定');heading.append($('difficultyLabel'),$('songTitle'));top.prepend(heading);top.append(button('settingsButton','設定',()=>settings.showModal()));
   const save=$('saveStatus');top.after(save);save.setAttribute('role','status');
   const audioLabel=$('audioFile').closest('label');q('.song-strip').remove();
-  const welcome=element('section',{id:'welcome',class:'welcome'});welcome.append(element('h1',{},'曲を聴いて、譜面を作ろう'),element('p',{},'音源と下書きはこの端末に保存します。まず曲を開くか、「曲・保存」から再開してください。'),audioLabel);top.parentElement.insertBefore(welcome,q('.workspace'));
+  // 前回の下書きがあれば、最初の画面から1回で続きを開ける(app.js が名前と開き方を入れる)。
+  const resume=element('button',{id:'resumeProject',class:'primary resume-project',hidden:''});
+  const welcome=element('section',{id:'welcome',class:'welcome'});welcome.append(element('h1',{},'曲を聴いて、譜面を作ろう'),element('p',{},'音源と下書きはこの端末に保存します。まず曲を開くか、「曲・保存」から再開してください。'),resume,audioLabel);top.parentElement.insertBefore(welcome,q('.workspace'));
   const workspace=q('.workspace'),performance=q('.performance'),editing=q('.editing');workspace.className='workspace mobile-workspace';
   const tabs={};for(const name of ['record','edit','preview','export']){tabs[name]=element('section',{id:`tab-${name}`,class:'workspace-tab',role:'tabpanel','aria-labelledby':`nav-${name}`});workspace.append(tabs[name]);}tabs.record.append(performance);tabs.edit.append($('timelineDialog'),$('noteDialog'));tabs.preview.append($('reportDialog'));tabs.export.append(q('.export-panel'));
   q('.surface-head').hidden=true;q('.notes-panel').hidden=true;editing.hidden=true;
@@ -21,7 +25,8 @@ export function installWorkspace(context) {
   $('undoButton').textContent='元に戻す';$('redoButton').textContent='やり直し';$('retryTake').textContent='録り直す';q('.take-actions').append(button('listenTake','▶ 聴く',context.listenTake));
   const padHint=$('padHint');padHint.hidden=true;$('inputFeedback').textContent='タップ・フリック・長押しで入力';
   for(const id of ['noteDialog','timelineDialog','reportDialog']){$(id).classList.add('inline-panel');$(id).querySelector('.dialog-head').hidden=true;}
-  const noteHead=element('div',{class:'inline-note-head'});noteHead.append(element('strong',{},'選択ノーツ · 変更は即保存'),button('closeNote','閉じる',()=>$('noteDialog').close()));$('noteDialog').prepend(noteHead);
+  // 削除は見出しの横に置く(打ち間違いを続けて消すとき、下までスクロールしない)。
+  const noteHead=element('div',{class:'inline-note-head'});noteHead.append(element('strong',{},'選択ノーツ · 変更は即保存'),$('deleteNote'),button('closeNote','閉じる',()=>$('noteDialog').close()));$('noteDialog').prepend(noteHead);
   $('noteEditorHost').append($('noteEditor'));
   const directionGrid=element('div',{id:'directionGrid',class:'direction-grid',role:'group','aria-label':'ノーツの矢印'});
   for(const [value,text] of [['upleft','↖'],['up','↑'],['upright','↗'],['left','←'],['none','自由'],['right','→'],['downleft','↙'],['down','↓'],['downright','↘']]){const b=button('direction-'+value,text,()=>{context.edit('noteDirection',value);if($('autoNext').checked)$('nextNote').click();});b.dataset.direction=value;b.setAttribute('aria-label',value==='none'?'矢印なし':`${text}の矢印`);directionGrid.append(b);}
@@ -37,23 +42,28 @@ export function installWorkspace(context) {
   map.querySelector('.row').append(button('placeNote','＋ 置く',context.placeNote));
   $('mapStats').after(button('editUndo','元に戻す',()=>$('undoButton').click()));
   $('help').innerHTML='<div class="dialog-head"><h2>曲を聴いて、譜面を作る</h2><button id="closeHelp">閉じる</button></div><ol><li>音源を開きます。新規曲のBPMは未設定で、打った時刻をそのまま記録します。</li><li>「録る」で録音開始。左は青、右は赤。タップ・フリック・長押しを使えます。「元に戻す」は1回の録音をまとめて取り消します。「録り直す」は直前の録音を置き換えます。</li><li>「設定」でBPM・拍の始まりを確認してから、必要なら「拍への補正」を有効にします。BPM変更で録音済みノーツは動きません。</li><li>「直す」の縦タイムラインでノーツを選びます。値は入力を確定すると即保存。「次へ」に進む前の適用操作は不要です。空白を触っても追加されず、「＋ 置く」で追加できます。</li><li>「まとめて直す」でA–B・色・操作を指定し、変更件数を確認して適用します。編集画面にも「元に戻す」があります。</li><li>「確かめる」で試聴し、診断候補を確認します。診断は本編の採点を再現しません。金はどちらの手でも切れます。</li><li>「渡す」でJSONを書き出すか共有し、表示される手順に沿ってUnityへ渡します。音源入り.saberバックアップで別端末へ移せます。</li></ol><p>「区間」の置き換えは、入力した場合だけ、再生した範囲の既存ノーツを消します。途中停止より先のノーツは残ります。録音中は停止するまで別画面へ移れません。</p><p>iPhoneは共有メニューの「ホーム画面に追加」、Androidはブラウザのインストールから使えます。「オフラインで使用できます」の表示後は保存済み音源で作業できます。</p><p>端末のデータを消す前にバックアップを保存してください。別タブと編集が競合した場合は上書きを止めます。手元の譜面を書き出してから再読み込みしてください。</p>';$('closeHelp').onclick=()=>$('help').close();
-  const imports=element('div',{class:'row'});imports.append($('chartFile').closest('label'));$('library').querySelector('.row').after(imports);
+  // 曲・保存は続きの下書きを開く場所。操作は2列に詰めて、下書きの一覧が最初の画面に入るようにする。曲名の変更は一覧の下へ。
+  const library=$('library'),actions=element('div',{class:'library-actions'}),oldRow=library.querySelector('.row');
+  actions.append($('libraryAudioFile').closest('label'),$('chartFile').closest('label'),$('duplicateButton'),$('libraryBackupFile').closest('label'));
+  oldRow.remove();library.querySelector(':scope > .hint').after(actions);$('projectList').after($('projectNameLabel'));
   $('backupFile').closest('label').hidden=true;
   const unity=element('section',{class:'unity-guide'});unity.append(element('h2',{},'Unityへ渡す'));const list=element('ol');for(const text of ['PCへ譜面JSONと音源を渡します。既存曲への上書き前にファイルをバックアップしてください。','Unityエディター内の未保存編集を保存または破棄してから、Assets/StreamingAssets/Songs/<曲ID>/ に chart_easy.json・chart_normal.json・chart_hard.json と audio.wav を置きます。','譜面エディターの「読込先」で該当する難易度を選び「読込」。曲情報はUnity側で設定します。','NORMALをUnityで保存すると互換用の chart.json も更新されます。スマホからのファイルを配置するだけで、開いている編集内容が自動更新されるわけではありません。'])list.append(element('li',{},text));unity.append(list,element('p',{class:'hint'},'金ノーツはどちらの手でも切れます。確かめる画面の診断は目安で、本編の採点や難易度判定を再現するものではありません。'));tabs.export.append(unity);
   q('.export-panel > .hint').textContent='chart_easy / normal / hard.json の名前で保存します。音源がM4Aなどの場合はWAV保存してPCへ渡してください。';
   $('exportButton').after(button('shareChart','共有する',context.shareChart));q('.export-panel').prepend(element('p',{id:'exportWarnings',class:'change-preview',role:'status',hidden:''}));
   const nav=element('nav',{class:'bottom-tabs',role:'tablist','aria-label':'作業画面'});let active=null;
   for(const [name,label] of [['record','録る'],['edit','直す'],['preview','確かめる'],['export','渡す']]){const b=button(`nav-${name}`,label,()=>activate(name));b.setAttribute('role','tab');b.setAttribute('aria-controls',tabs[name].id);nav.append(b);}
-  workspace.after(nav);$('library').append(q('footer'));$('offlineStatus').before(element('strong',{},'Saber Tap Studio'));
+  workspace.after(nav);$('library').append(q('footer'));$('offlineStatus').before(element('strong',{id:'appBrand'},'Saber Tap Studio'));
   const shared=[q('.stage-wrap'),q('.transport'),q('.timeline-wrap')];
+  // タブごとにスクロール位置を覚える(前のタブで下へ送った位置のまま、別のタブの途中が開かないように)。
+  const scrolls={};
   function activate(name){
     if(active===name)return true;if(context.locked())return false;
-    context.stop();active=name;
+    context.stop();if(active)scrolls[active]=window.scrollY;active=name;
     for(const[key,panel]of Object.entries(tabs)){panel.hidden=key!==name;$('nav-'+key).setAttribute('aria-selected',key===name);$('nav-'+key).tabIndex=key===name?0:-1;}
     if(name==='preview')$('reportDialog').before(...shared);else tools.after(...shared);
     if(name==='edit')$('timelineDialog').open=true;
     if(name==='preview')$('reportDialog').open=true;
-    document.body.dataset.tab=name;context.onTab(name);return true;
+    document.body.dataset.tab=name;context.onTab(name);window.scrollTo(0,scrolls[name]||0);return true;
   }
   nav.addEventListener('keydown',event=>{if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;event.preventDefault();const names=Object.keys(tabs),index=names.indexOf(active),next=event.key==='Home'?0:event.key==='End'?3:(index+(event.key==='ArrowLeft'?3:1))%4;if(activate(names[next]))$('nav-'+names[next]).focus();});
   // 数字キーボードに負号がなくても方向を切り替えられる。

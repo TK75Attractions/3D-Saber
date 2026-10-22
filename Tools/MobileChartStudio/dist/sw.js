@@ -1,4 +1,4 @@
-const CACHE = 'saber-tap-shell-v8-20261013';
+const CACHE = 'saber-tap-shell-v9-20261022';
 const SHELL = ['./', './index.html', './style.css', './workspace.css', './workspace.js', './mobile.js', './vertical-timeline.js', './app.js', './core.js', './gestures.js', './editing.js', './timeline.js', './backup.js', './audio.js', './storage.js', './wav.js', './refinement.js', './refinement-ui.js', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 self.addEventListener('install', event => event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL.map(path => new Request(new URL(path, self.registration.scope), {cache:'reload'})))).then(() => self.skipWaiting())));
 self.addEventListener('activate', event => event.waitUntil(Promise.all([caches.keys().then(keys => Promise.all(keys.filter(key => key.startsWith('saber-tap-shell-') && key !== CACHE).map(key => caches.delete(key)))), self.clients.claim()])));
