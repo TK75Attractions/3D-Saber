@@ -4,6 +4,7 @@ import SwiftUI
 
 struct ContentView: View {
     @StateObject private var model = CameraViewModel()
+    @ObservedObject private var diagnostics = DiagnosticsDestination.shared
     @Environment(\.scenePhase) private var scenePhase
     @AppStorage("phoneSaberAutoTransferDebugBundles") private var autoTransferDebugBundles = true
     @State private var recordingPreviewURL: URL?
@@ -25,7 +26,10 @@ struct ContentView: View {
         .background(TouchActivityObserver { model.lowHeatTouch() })
         .statusBarHidden(model.lowHeatDisplayActive)
         .persistentSystemOverlays(model.lowHeatDisplayActive ? .hidden : .automatic)
-        .task { model.refreshDebugRecordingSessions() }
+        .task {
+            model.refreshDebugRecordingSessions()
+            diagnostics.startDiscovery()
+        }
         .onAppear { model.sceneDidChange(isActive: scenePhase == .active) }
         .confirmationDialog(
             "古い録画sessionを整理しますか？",
@@ -164,6 +168,20 @@ struct ContentView: View {
                             .autocorrectionDisabled(true)
                             .textInputAutocapitalization(.never)
                             .disabled(model.running)
+                        Text("診断データの送り先（Mac）")
+                            .font(.footnote)
+                        TextField("手動IP（空欄でMacを自動発見）", text: $diagnostics.manualHost)
+                            .textFieldStyle(.roundedBorder)
+                            .keyboardType(.URL)
+                            .autocorrectionDisabled(true)
+                            .textInputAutocapitalization(.never)
+                        if let endpoint = diagnostics.selected(coordinateHost: model.host) {
+                            Text("診断送信先: \(endpoint.url.host ?? ""):\(endpoint.url.port ?? 8765)（\(endpoint.source.rawValue)）")
+                                .font(.caption).foregroundStyle(.secondary)
+                        } else {
+                            Text("診断送信先: 未設定（Macを探索中・手動IPも指定できます）")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
                         Toggle("起動時に送信を自動開始", isOn: $model.autoStartSending)
                             .font(.footnote)
                         if !model.automaticResumeMessage.isEmpty {

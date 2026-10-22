@@ -17,7 +17,7 @@ def main():
     support += block((SOURCE / "FrameProcessor.swift").read_text(), "enum HostMonotonicClock") + "\n"
     tests = (TESTS / "P2PTransportTests.swift").read_text()
     focused = "import XCTest\nimport Network\nimport Foundation\n"
-    for marker in ["final class DebugBundleOutboxTests", "final class DebugBundleLogTests"]:
+    for marker in ["final class DiagnosticsDestinationTests", "final class DebugBundleOutboxTests", "final class DebugBundleLogTests"]:
         focused += block(tests, marker) + "\n"
     developer = Path(subprocess.check_output(["xcode-select", "-p"], text=True).strip()) / "Platforms/MacOSX.platform/Developer"
     frameworks = developer / "Library/Frameworks"
@@ -28,10 +28,11 @@ def main():
         (tmp / "main.swift").write_text('''import XCTest
 import Darwin
 let suite = XCTestSuite(name: "Debug transfer (host; no discovery or upload)")
+suite.addTest(DiagnosticsDestinationTests.defaultTestSuite)
 suite.addTest(DebugBundleOutboxTests.defaultTestSuite)
 suite.addTest(DebugBundleLogTests.defaultTestSuite)
 suite.run()
-guard let run = suite.testRun, run.executionCount >= 7, run.hasSucceeded else { exit(1) }
+guard let run = suite.testRun, run.executionCount >= 10, run.hasSucceeded else { exit(1) }
 ''')
         sources = [str(SOURCE / name) for name in [
             "DebugBundleTransfer.swift", "UDPSender.swift", "P2PSender.swift",

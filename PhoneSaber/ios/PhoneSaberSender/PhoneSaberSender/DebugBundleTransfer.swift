@@ -1,3 +1,4 @@
+import Combine
 import CryptoKit
 import Foundation
 import Network
@@ -156,14 +157,110 @@ struct DebugBundleOutbox: Codable {
     }
 }
 
+/// 座標の台指定・手動IPとは独立した診断用の宛先。選択はネットワークI/Oを行わない。
+struct DiagnosticsEndpoint: Equatable {
+    enum Source: String { case manual = "手動", discovered = "Mac自動発見", coordinate = "座標の送り先" }
+    let url: URL
+    let source: Source
+
+    static func receiverURL(host: String, port: Int = 8765) -> URL? {
+        let host = host.trimmingCharacters(in: .whitespacesAndNewlines)
+            .trimmingCharacters(in: CharacterSet(charactersIn: "."))
+        guard !host.isEmpty, (1...65535).contains(port) else { return nil }
+        var components = URLComponents()
+        components.scheme = "http"
+        components.host = host
+        components.port = port
+        components.path = "/v1/bundle"
+        return components.url
+    }
+
+    static func choose(manualHost: String, discovered: URL?, coordinateHost: String) -> Self? {
+        if !manualHost.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return receiverURL(host: manualHost).map { Self(url: $0, source: .manual) }
+        }
+        if let discovered { return Self(url: discovered, source: .discovered) }
+        return receiverURL(host: coordinateHost).map { Self(url: $0, source: .coordinate) }
+    }
+}
+
+/// 診断用Bonjourだけを非同期で探索する。カメラ・座標送信には接続しない。
+final class DiagnosticsDestination: NSObject, ObservableObject, NetServiceBrowserDelegate, NetServiceDelegate {
+    static let shared = DiagnosticsDestination()
+    static let preferenceKey = "phoneSaberDiagnosticsHost"
+    static let serviceType = "_phonesaber-diag._tcp."
+    private let defaults: UserDefaults
+    @Published var manualHost: String {
+        didSet { defaults.set(manualHost.trimmingCharacters(in: .whitespacesAndNewlines), forKey: Self.preferenceKey) }
+    }
+    @Published private(set) var discoveredURL: URL?
+    private var browser: NetServiceBrowser?
+    private var services: [NetService] = []
+    private var endpoints: [NetService: URL] = [:]
+
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+        manualHost = defaults.string(forKey: Self.preferenceKey) ?? ""
+        super.init()
+    }
+
+    func selected(coordinateHost: String) -> DiagnosticsEndpoint? {
+        DiagnosticsEndpoint.choose(manualHost: manualHost, discovered: discoveredURL, coordinateHost: coordinateHost)
+    }
+
+    func startDiscovery() {
+        precondition(Thread.isMainThread)
+        guard browser == nil, NSClassFromString("XCTestCase") == nil else { return }
+        let browser = NetServiceBrowser()
+        browser.delegate = self
+        self.browser = browser
+        browser.searchForServices(ofType: Self.serviceType, inDomain: "local.")
+    }
+
+    func netServiceBrowser(_ browser: NetServiceBrowser, didFind service: NetService, moreComing: Bool) {
+        guard self.browser === browser, !services.contains(service) else { return }
+        services.append(service)
+        service.delegate = self
+        service.resolve(withTimeout: 6)
+    }
+
+    func netServiceBrowser(_ browser: NetServiceBrowser, didRemove service: NetService, moreComing: Bool) {
+        guard self.browser === browser else { return }
+        services.first(where: { $0 == service })?.stop()
+        services.removeAll { $0 == service }
+        endpoints.removeValue(forKey: service)
+        updateDiscoveredURL()
+    }
+
+    func netServiceDidResolveAddress(_ sender: NetService) {
+        guard services.contains(sender), let host = sender.hostName,
+              let url = DiagnosticsEndpoint.receiverURL(host: host, port: sender.port) else { return }
+        endpoints[sender] = url
+        updateDiscoveredURL()
+    }
+
+    func netServiceBrowser(_ browser: NetServiceBrowser, didNotSearch errorDict: [String: NSNumber]) {
+        guard self.browser === browser else { return }
+        browser.stop()
+        self.browser = nil
+        services.forEach { $0.stop() }
+        services.removeAll()
+        endpoints.removeAll()
+        updateDiscoveredURL()
+    }
+
+    private func updateDiscoveredURL() {
+        // 複数のMacがある場合も再描画や辞書の反復順で送り先を切り替えない。
+        discoveredURL = endpoints.values.sorted { $0.absoluteString < $1.absoluteString }.first
+    }
+}
+
 /// Sends only the files named in summary.json. Discovery, packaging, and retries
 /// run after recording completion on queues independent from camera and UDP.
-final class DebugBundleTransfer: NSObject, NetServiceBrowserDelegate, NetServiceDelegate {
+final class DebugBundleTransfer: NSObject {
     static let shared = DebugBundleTransfer()
 
     static let preferenceKey = "phoneSaberAutoTransferDebugBundles"
-    static let serviceType = "_phonesaber-diag._tcp."
-    static let serviceName = "Phone Saber Diagnostics"
     private static let maximumImages = 20
     private static let maximumFiles = 43
     private static let maximumBytes: Int64 = 64 * 1024 * 1024
@@ -186,14 +283,12 @@ final class DebugBundleTransfer: NSObject, NetServiceBrowserDelegate, NetService
     private var isBusy = false
     private var activeBundleURL: URL?
     private var activePackageURL: URL?
-    private var browser: NetServiceBrowser?
-    private var resolvedService: NetService?
+    private var destinationSubscription: AnyCancellable?
     private var discoveryTimeout: DispatchWorkItem?
     private var attempt = 0
     private var phase: AttemptPhase = .idle
-    private var p2pUploader: P2PBundleUploader?
 
-    private enum AttemptPhase { case idle, p2p, searching, resolving, uploading, finished }
+    private enum AttemptPhase { case idle, searching, uploading, finished }
 
     private override convenience init() {
         self.init(directory: FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!,
@@ -364,97 +459,40 @@ final class DebugBundleTransfer: NSObject, NetServiceBrowserDelegate, NetService
             return
         }
         attempt = number
-        // Peer-to-peer Wi-Fi first (the Mac bridge relays to the receiver), so a
-        // phone that only reaches the Mac over AWDL can still deliver; otherwise
-        // the existing LAN Bonjour path below runs unchanged.
-        if P2PPreferredMac.coordinateDestination.manual {
-            startLANAttempt(number)
-            return
-        }
-        phase = .p2p
-        let uploader = P2PBundleUploader()
-        p2pUploader = uploader
-        uploader.upload(fileURL: activePackageURL!, sessionID: activeSessionID) { [weak self] outcome in
-            DispatchQueue.main.async {
-                guard let self, self.p2pUploader === uploader, self.attempt == number,
-                      self.phase == .p2p else { return }
-                self.p2pUploader = nil
-                switch outcome {
-                case .uploaded(let service):
-                    print("[DebugTriageTransfer] uploaded selected bundle over P2P via \(service)")
-                    self.recordOutcome(reason: nil)
-                    self.finishCurrentBundle()
-                case .notFound:
-                    self.startLANAttempt(number)
-                case .failed(let error):
-                    print("[DebugTriageTransfer] P2P upload failed (\(error.localizedDescription)); trying LAN")
-                    self.startLANAttempt(number)
-                }
-            }
-        }
-    }
-
-    private func startLANAttempt(_ number: Int) {
-        precondition(Thread.isMainThread)
-        guard attempt == number, activeBundleURL != nil, activePackageURL != nil else { return }
-        // 台指定時の LAN fallback も、座標で選んだ PC に固定する。
-        let destination = P2PPreferredMac.coordinateDestination
-        if destination.manual || !destination.station.isEmpty {
-            guard let url = Self.receiverURL(hostName: destination.lanHost, port: 8765) else {
-                retryCurrentBundle(after: DebugBundleTransferError.discoveryTimeout)
-                return
-            }
-            phase = .uploading
-            upload(to: url, attemptNumber: number)
+        let diagnostics = DiagnosticsDestination.shared
+        diagnostics.startDiscovery()
+        if !diagnostics.manualHost.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || diagnostics.discoveredURL != nil {
+            uploadToSelectedDestination()
             return
         }
         phase = .searching
-        resolvedService = nil
-        let browser = NetServiceBrowser()
-        browser.delegate = self
-        self.browser = browser
-        browser.searchForServices(ofType: Self.serviceType, inDomain: "local.")
-
+        destinationSubscription = diagnostics.$discoveredURL.dropFirst().sink { [weak self] url in
+            guard let self, url != nil, self.phase == .searching else { return }
+            // @Published は値を格納する前に通知するため、次のmainキューで選択する。
+            DispatchQueue.main.async { [weak self] in
+                guard let self, self.phase == .searching else { return }
+                self.uploadToSelectedDestination()
+            }
+        }
         let timeout = DispatchWorkItem { [weak self] in
-            guard let self, self.phase == .searching || self.phase == .resolving else { return }
-            self.retryCurrentBundle(after: DebugBundleTransferError.discoveryTimeout)
+            guard let self, self.phase == .searching else { return }
+            self.uploadToSelectedDestination()
         }
         discoveryTimeout = timeout
         DispatchQueue.main.asyncAfter(deadline: .now() + 8, execute: timeout)
     }
 
-    func netServiceBrowser(_ browser: NetServiceBrowser, didFind service: NetService,
-                           moreComing: Bool) {
-        guard self.browser === browser, service.name == Self.serviceName,
-              phase == .searching else { return }
-        phase = .resolving
-        resolvedService = service
-        service.delegate = self
-        service.resolve(withTimeout: 6)
-    }
-
-    func netServiceBrowser(_ browser: NetServiceBrowser, didNotSearch errorDict: [String: NSNumber]) {
-        guard self.browser === browser, phase == .searching else { return }
-        retryCurrentBundle(after: NSError(domain: "PhoneSaberBonjour", code: 1,
-                                          userInfo: [NSLocalizedDescriptionKey: "Bonjour browse failed"]))
-    }
-
-    func netServiceDidResolveAddress(_ sender: NetService) {
-        guard sender === resolvedService, phase == .resolving else { return }
+    private func uploadToSelectedDestination() {
+        destinationSubscription = nil
         discoveryTimeout?.cancel()
-        guard let url = Self.receiverURL(hostName: sender.hostName, port: sender.port) else {
+        discoveryTimeout = nil
+        guard let endpoint = DiagnosticsDestination.shared.selected(
+            coordinateHost: P2PPreferredMac.coordinateDestination.lanHost) else {
             retryCurrentBundle(after: DebugBundleTransferError.invalidEndpoint)
             return
         }
         phase = .uploading
-        stopDiscovery()
-        upload(to: url, attemptNumber: attempt)
-    }
-
-    func netService(_ sender: NetService, didNotResolve errorDict: [String: NSNumber]) {
-        guard sender === resolvedService, phase == .resolving else { return }
-        retryCurrentBundle(after: NSError(domain: "PhoneSaberBonjour", code: 2,
-                                          userInfo: [NSLocalizedDescriptionKey: "Bonjour resolve failed"]))
+        upload(to: endpoint.url, attemptNumber: attempt)
     }
 
     private func upload(to url: URL, attemptNumber: Int) {
@@ -513,16 +551,9 @@ final class DebugBundleTransfer: NSObject, NetServiceBrowserDelegate, NetService
     private func stopDiscovery() {
         lanSession?.invalidateAndCancel()
         lanSession = nil
-        p2pUploader?.cancel()
-        p2pUploader = nil
+        destinationSubscription = nil
         discoveryTimeout?.cancel()
         discoveryTimeout = nil
-        browser?.stop()
-        browser?.delegate = nil
-        browser = nil
-        resolvedService?.stop()
-        resolvedService?.delegate = nil
-        resolvedService = nil
     }
 
     private func recordOutcome(reason: String?) {
@@ -545,16 +576,6 @@ final class DebugBundleTransfer: NSObject, NetServiceBrowserDelegate, NetService
         attempt = 0
         isBusy = false
         startNextBundleIfNeeded()
-    }
-
-    private static func receiverURL(hostName: String?, port: Int) -> URL? {
-        guard let hostName, !hostName.isEmpty, (1...65535).contains(port) else { return nil }
-        var components = URLComponents()
-        components.scheme = "http"
-        components.host = hostName.trimmingCharacters(in: CharacterSet(charactersIn: "."))
-        components.port = port
-        components.path = "/v1/bundle"
-        return components.url
     }
 
     /// Relative to Documents when inside it (also in a subfolder such as AutoClips/),

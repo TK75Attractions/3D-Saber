@@ -3,8 +3,59 @@ import Network
 @testable import PhoneSaberSender
 import XCTest
 
+final class DiagnosticsDestinationTests: XCTestCase {
+    func testManualThenDiscoveredMacThenCoordinateHost() throws {
+        let mac = try XCTUnwrap(DiagnosticsEndpoint.receiverURL(host: "triage-mac.local.", port: 9876))
+        for coordinateHost in ["192.168.1.10", "zen-windows.local"] {
+            let manual = try XCTUnwrap(DiagnosticsEndpoint.choose(
+                manualHost: " 10.0.0.42\n", discovered: mac, coordinateHost: coordinateHost))
+            XCTAssertEqual(manual.url.absoluteString, "http://10.0.0.42:8765/v1/bundle")
+            XCTAssertEqual(manual.source, .manual)
+            let discovered = try XCTUnwrap(DiagnosticsEndpoint.choose(
+                manualHost: " \n", discovered: mac, coordinateHost: coordinateHost))
+            XCTAssertEqual(discovered.url, mac, "A/Bどちらの座標宛先でも診断はMacへ送る")
+            XCTAssertEqual(discovered.source, .discovered)
+            let fallback = try XCTUnwrap(DiagnosticsEndpoint.choose(
+                manualHost: "", discovered: nil, coordinateHost: coordinateHost))
+            XCTAssertEqual(fallback.url.host, coordinateHost)
+            XCTAssertEqual(fallback.url.port, 8765)
+            XCTAssertEqual(fallback.source, .coordinate)
+        }
+        XCTAssertEqual(DiagnosticsEndpoint.choose(manualHost: "10.0.0.42", discovered: nil,
+                                                   coordinateHost: "")?.source, .manual)
+        XCTAssertEqual(DiagnosticsEndpoint.choose(manualHost: "", discovered: mac,
+                                                   coordinateHost: "")?.source, .discovered)
+        XCTAssertNil(DiagnosticsEndpoint.choose(manualHost: "", discovered: nil, coordinateHost: ""))
+        XCTAssertNil(DiagnosticsEndpoint.receiverURL(host: "mac.local", port: 0))
+    }
+
+    func testManualIPPersistsAndClearingRestoresDiscovery() throws {
+        let suite = "DiagnosticsDestinationTests-\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let destination = DiagnosticsDestination(defaults: defaults)
+        XCTAssertEqual(destination.manualHost, "")
+        destination.manualHost = " 192.168.1.42 "
+        let relaunched = DiagnosticsDestination(defaults: defaults)
+        XCTAssertEqual(relaunched.manualHost, "192.168.1.42")
+        XCTAssertEqual(relaunched.selected(coordinateHost: "zen-windows.local")?.source, .manual)
+        relaunched.manualHost = ""
+        XCTAssertEqual(DiagnosticsDestination(defaults: defaults).manualHost, "")
+        XCTAssertEqual(relaunched.selected(coordinateHost: "zen-windows.local")?.source, .coordinate)
+    }
+}
+
 final class DebugBundleOutboxTests: XCTestCase {
     private let now = Date(timeIntervalSince1970: 1_000)
+
+    func testAutoClipsWaitForIdleAndRecordingCompletion() {
+        var outbox = DebugBundleOutbox()
+        outbox.register(sessionID: "clip", bundlePath: "clip", now: now, deferDuringPlay: true)
+        XCTAssertNil(outbox.beginNext(now: now, recording: false, automatic: true, liveTraffic: true))
+        XCTAssertNil(outbox.beginNext(now: now, recording: true, automatic: true, liveTraffic: false))
+        XCTAssertEqual(outbox.beginNext(now: now, recording: false, automatic: true,
+                                       liveTraffic: false)?.sessionID, "clip")
+    }
 
     func testFailureStaysPendingWithBackoffAndManualRetry() {
         var outbox = DebugBundleOutbox()
