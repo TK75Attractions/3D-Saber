@@ -13,7 +13,7 @@ import { encodeWav } from './wav.js';
 import { saveProject, listProjects, getProject, saveAudio, getAudio, saveProjectWithAudio } from './storage.js';
 const $ = id => document.getElementById(id), audio = new SongAudio();
 // 画面に出す版。sw.js のキャッシュ名(saber-tap-shell-<版>)と同じにする(tests/offline.test.js が確かめる)。
-const APP_VERSION='v11-20261022';
+const APP_VERSION='v12-20261022';
 let refinementUI, workspaceUI;
 let bpmConfirmed=true;
 let chart = blankChart(), history = new History(), project = null, selected = null;
@@ -67,7 +67,8 @@ function refresh() {
 function refreshInputOptions() {
   const mode=$('snapMode').value;
   $('padCenter').textContent=$('flickEnabled').checked?'TAP / FLICK / HOLD':'TAP / HOLD';
-  $('pad').setAttribute('aria-label',$('flickEnabled').checked?'ノーツ入力パッド。左は青、右は赤。タップで配置、素早くはらうとフリック、長押しでロング。':'ノーツ入力パッド。左は青、右は赤。タップで配置、長押しでロング。フリック入力はOFF。');
+  const sides=color==='auto'?'左は青、右は赤。':`どこを押しても${{blue:'青',red:'赤',gold:'金'}[color]}。`;
+  $('pad').setAttribute('aria-label',`ノーツ入力パッド。${sides}${$('flickEnabled').checked?'タップで配置、素早くはらうとフリック、長押しでロング。':'タップで配置、長押しでロング。フリック入力はOFF。'}`);
   $('snapMode').disabled=!bpmConfirmed; $('snapNote').disabled=!bpmConfirmed; $('countIn').disabled=!bpmConfirmed; $('metronome').disabled=!bpmConfirmed; $('snap').disabled=mode==='off'||!bpmConfirmed;$('snapWindowMs').disabled=mode!=='near';$('flickSensitivity').disabled=!$('flickEnabled').checked;
   $('snapHint').textContent=!bpmConfirmed?'BPM未設定：打った時刻をそのまま記録します。数値入力かタップでBPMを設定してください。':mode==='near'?'拍の近くだけ補正し、離れた入力はそのまま記録します。BPMと拍の始まりを合わせてください。':mode==='always'?'すべての新しい入力を、選んだ拍の刻みにそろえます。':'タップしたタイミングをそのまま記録します。';
 }
@@ -101,7 +102,7 @@ function stop({finish=true}={}) {
 function resetSession() {
   take=null;lastTake=null;tapTempo.reset();$('tempoReadout').textContent='曲の拍に合わせて4回以上';$('applyTempo').disabled=true;
   $('rangeEnabled').checked=false;$('replaceRange').checked=false;$('rangeStart').value=0;$('rangeEnd').value=audio.duration.toFixed(3);$('noteDialog').close();
-  $('inputFeedback').textContent='タップ・フリック・ロングの入力結果を表示します';
+  $('inputFeedback').textContent='タップ・フリック・ロングの入力結果を表示します';$('inputFeedback').classList.remove('has-result');
   mapStart=0;batchRange=null;for(const id of ['batchDialog','duplicateDialog'])$(id).close();
 }
 function restoreSettings(value={}) {
@@ -165,7 +166,7 @@ async function importChart(file) {
   const difficulty=/chart_(easy|normal|hard)/i.exec(file.name)?.[1].toLowerCase()||$('difficulty').value;
   const replacement={...project,id:uid(),_revision:0,lastExportedAt:null,chart:next,difficulty,settings:{...settings(),bpmConfirmed:true,snapMode:'off'},position:0,updated:Date.now()};await saveProject(replacement);
   project=replacement;chart=next;bpmConfirmed=true;history=new History();selected=null;audio.seek(0);resetSession();$('difficulty').value=difficulty;$('snapMode').value='off';fillChartFields();changed();
-  toast(hasVariableGrid(chart)?'テンポが変わる譜面です。元の時刻を維持し、拍への整列をOFFにしました。':'譜面を開きました。前の下書きは「曲・保存」に残っています。');
+  toast(`${file.name} を「${project.name}」の ${difficulty.toUpperCase()} の新しい下書きとして開きました。前の下書きも一覧に残っています。${hasVariableGrid(chart)?'テンポが変わる譜面なので、元の時刻を維持し、拍への整列をOFFにしました。':''}`);
   }finally{loading=false;refresh();}
 }
 function downloadChart() {
@@ -362,7 +363,7 @@ function endTouch(id,endAudio) {
   const note=take.add(makeNote(touch,Math.min(endAudio,take.end),chart,touch.options));chart=take.compose(endAudio);selected=null;changed();flashes.push({x:touch.x,y:touch.y,color:note.color,direction:note.direction,when:performance.now()});
   const delta=Math.round(audioTime(note,chart)*1000-Math.max(0,touch.startAudio*1000-touch.options.latencyMs*touch.options.rate));
   const kind=note.count>1?`ロング ×${note.count}`:arrow(note.direction)?`${arrow(note.direction)} フリック`:'タップ';
-  $('inputFeedback').textContent=`${kind} · ${delta?`時刻を${delta>0?'+':''}${delta}ms補正`:'入力した時刻のまま'}`;
+  $('inputFeedback').textContent=`${kind} · ${delta?`時刻を${delta>0?'+':''}${delta}ms補正`:'入力した時刻のまま'}`;$('inputFeedback').classList.add('has-result');
 }
 function fitCanvas(canvas) {
   const dpr=Math.min(devicePixelRatio||1,2),w=canvas.clientWidth,h=canvas.clientHeight;
@@ -444,6 +445,10 @@ function clearRange() {
 }
 function setColor(value) {
   color=value;for(const button of document.querySelectorAll('[data-color]')){button.classList.toggle('active',button.dataset.color===value);button.setAttribute('aria-pressed',button.dataset.color===value);}
+  // 色を固定したら、パッドの地と見出しもその色だけにする(左が青・右が赤になるのは「左右で色分け」のときだけ)。
+  const fixed={blue:['BLUE','どこでも青'],red:['RED','どこでも赤'],gold:['GOLD','どこでも金']}[value],left=document.querySelector('.pad-hand.left'),right=document.querySelector('.pad-hand.right');
+  const label=(element,name,note)=>{const small=document.createElement('small');small.textContent=note;element.replaceChildren(name,document.createElement('br'),small);};
+  $('pad').dataset.ink=value;label(left,...(fixed||['BLUE','左手']));right.hidden=!!fixed;refreshInputOptions();
 }
 function seek(value){stop();audio.seek(value);lastFrameTime=audio.time();refresh();}
 $('audioFile').addEventListener('change',run(e=>loadAudioFile(e.target.files[0])));$('libraryAudioFile').addEventListener('change',run(e=>loadAudioFile(e.target.files[0])));
@@ -554,6 +559,11 @@ $('autoNext').checked=preference('saber-auto-next')==='1';$('autoNext').addEvent
 $('settingsDialog').addEventListener('close',()=>{if(!tempoListening)return;tempoListening=false;stop();mode=workspaceUI.active==='record'?'record':'preview';refresh();});
 for(const id of Object.keys(noteFields)){$(id).addEventListener('change',run(()=>updateNoteField(id)));$(id).addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();$(id).blur();}});}
 $('longThresholdMs').addEventListener('change',()=>{stop();$('longThresholdMs').value=clamp(Number($('longThresholdMs').value)||300,150,1000);persist().catch(fail);});
-for(const event of ['pointerdown','pointermove'])$('waveform').addEventListener(event,e=>{if(!audio.buffer||event==='pointermove'&&!e.buttons)return;const r=$('waveform').getBoundingClientRect();if(event==='pointerdown')$('waveform').setPointerCapture(e.pointerId);seek(clamp((e.clientX-r.left)/r.width,0,1)*audio.duration);});
+// 波形を押して位置を変える。録る画面では細い波形の上の時刻の行も含めた帯全体で押せる(スライダー本体は自分で動くので除く)。
+{const band=document.querySelector('.timeline-wrap');let seekPointer=null;
+ const seekTo=e=>{const r=$('waveform').getBoundingClientRect();seek(clamp((e.clientX-r.left)/r.width,0,1)*audio.duration);};
+ band.addEventListener('pointerdown',e=>{if(!audio.buffer||e.target===$('seek')||e.target!==$('waveform')&&!band.closest('.performance'))return;seekPointer=e.pointerId;band.setPointerCapture(e.pointerId);seekTo(e);});
+ band.addEventListener('pointermove',e=>{if(e.pointerId===seekPointer&&e.buttons)seekTo(e);});
+ for(const event of ['pointerup','pointercancel'])band.addEventListener(event,e=>{if(e.pointerId===seekPointer)seekPointer=null;});}
 workspaceUI.activate('record');
 init();

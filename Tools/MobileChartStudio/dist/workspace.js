@@ -52,6 +52,7 @@ export function installWorkspace(context) {
   const library=$('library'),actions=element('div',{class:'library-actions'}),oldRow=library.querySelector('.row');
   actions.append($('libraryAudioFile').closest('label'),$('chartFile').closest('label'),$('duplicateButton'),$('libraryBackupFile').closest('label'));
   oldRow.remove();library.querySelector(':scope > .hint').after(actions);$('projectList').after($('projectNameLabel'));
+  $('chartFile').before(element('small',{id:'importTarget',class:'import-target'}));$('chartFile').closest('label').classList.add('import-label');
   $('backupFile').closest('label').hidden=true;
   const unity=element('section',{class:'unity-guide'});unity.append(element('h2',{},'Unityへ渡す'));const list=element('ol');for(const text of ['PCへ譜面JSONと音源を渡します。既存曲への上書き前にファイルをバックアップしてください。','Unityエディター内の未保存編集を保存または破棄してから、Assets/StreamingAssets/Songs/<曲ID>/ に chart_easy.json・chart_normal.json・chart_hard.json と音源（audio.mp3・audio.ogg・audio.wav のどれか1つ）を置きます。','譜面エディターの「読込先」で該当する難易度を選び「読込」。曲情報はUnity側で設定します。','NORMALをUnityで保存すると互換用の chart.json も更新されます。スマホからのファイルを配置するだけで、開いている編集内容が自動更新されるわけではありません。'])list.append(element('li',{},text));unity.append(list,element('p',{class:'hint'},'金ノーツはどちらの手でも切れます。確かめる画面の診断は目安で、本編の採点や難易度判定を再現するものではありません。'));tabs.export.append(unity);
   q('.export-panel > .hint').textContent='chart_easy / normal / hard.json の名前で保存します。音源がM4Aなどの場合はWAV保存してPCへ渡してください。';
@@ -84,6 +85,8 @@ export function installWorkspace(context) {
     for(const id of ['songSettings','settingsButton','libraryButton','rangeButton'])$(id).disabled=locked||state.loading;
     // 設定は下書きごとに保存するので、曲を開くまでは押せない(開く前に変えても、曲を開くと消えていた)。
     for(const id of ['songSettings','settingsButton'])$(id).disabled||=!state.project;
+    // 譜面JSONは、今開いている曲の新しい下書きになる。どの曲へ入るかを「譜面を開く」に書いておく。
+    $('importTarget').textContent=state.project?`→「${state.project.name}」へ`:'先に音源を開く';
     $('listenTake').disabled=!state.lastTake||state.playing;$('editUndo').disabled=$('undoButton').disabled;$('editRedo').disabled=$('redoButton').disabled;$('shareChart').disabled=!state.project||state.loading;
     $('recordWarning').textContent=locked?'● 録音中 · 停止してから画面を切り替えられます':'区間指定なし · 入力を追加';
     if($('rangeEnabled').checked)$('recordWarning').textContent=`${$('replaceRange').checked?'⚠ 入力した区間を置き換え':'A–Bに追加'} · ${Number($('rangeStart').value).toFixed(2)}〜${Number($('rangeEnd').value).toFixed(2)}秒`;

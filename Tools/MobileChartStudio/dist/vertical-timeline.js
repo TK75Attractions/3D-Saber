@@ -6,7 +6,10 @@ export function verticalGeometry(chart,window,width,height){
   return visibleNotes(chart,window).map(note=>({note,x:left+clamp(note.x*chart.coordScale/5+.5,0,1)*(right-left),y:bottom-(audioTime(note,chart)-window.start)*scale,end:bottom-(audioTime(note,chart)+longSeconds(note)-window.start)*scale}));
 }
 export function verticalHits(boxes,x,y){
-  return boxes.filter(b=>Math.abs(x-b.x)<=22&&Math.abs(y-b.y)<=22).sort((a,b)=>Math.hypot(x-a.x,y-a.y)-Math.hypot(x-b.x,y-b.y)).map(b=>b.note);
+  const heads=boxes.filter(b=>Math.abs(x-b.x)<=22&&Math.abs(y-b.y)<=22).sort((a,b)=>Math.hypot(x-a.x,y-a.y)-Math.hypot(x-b.x,y-b.y)).map(b=>b.note);
+  if(heads.length)return heads;
+  // ロングの胴(始点から終わりまでの棒)でも選べる。始点が表示区間の外にあっても、見えている棒を押せば選べる。始点が優先。
+  return boxes.filter(b=>b.end<b.y-1&&Math.abs(x-b.x)<=16&&y>=b.end-4&&y<=b.y).sort((a,b)=>Math.abs(x-a.x)-Math.abs(x-b.x)).map(b=>b.note);
 }
 export function paintVerticalTimeline(canvas,chart,buffer,window,position,selected,range){
   const w=canvas.clientWidth,h=canvas.clientHeight;if(!w||!h)return [];

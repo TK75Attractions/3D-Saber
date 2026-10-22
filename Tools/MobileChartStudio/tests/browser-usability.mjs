@@ -12,7 +12,8 @@ const context=await browser.newContext({viewport:{width:390,height:664},hasTouch
 const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
 const check=name=>console.log('PASS '+name),settle=()=>page.waitForTimeout(300);
 const box=selector=>page.locator(selector).first().boundingBox();
-const stored=async()=>page.evaluate(async()=>{const id=localStorage.getItem('saber-last-project');return new Promise((resolve,reject)=>{const r=indexedDB.open('saber-tap-studio-v1',1);r.onerror=()=>reject(r.error);r.onsuccess=()=>{const d=r.result,tx=d.transaction('projects','readonly'),q=tx.objectStore('projects').get(id);q.onsuccess=()=>resolve(q.result);tx.oncomplete=()=>d.close();};});});
+const storedIn=async target=>target.evaluate(async()=>{const id=localStorage.getItem('saber-last-project');return new Promise((resolve,reject)=>{const r=indexedDB.open('saber-tap-studio-v1',1);r.onerror=()=>reject(r.error);r.onsuccess=()=>{const d=r.result,tx=d.transaction('projects','readonly'),q=tx.objectStore('projects').get(id);q.onsuccess=()=>resolve(q.result);tx.oncomplete=()=>d.close();};});});
+const stored=()=>storedIn(page);
 function wav(){const length=16000*30,b=Buffer.alloc(44+length*2);b.write('RIFF');b.writeUInt32LE(b.length-8,4);b.write('WAVEfmt ',8);b.writeUInt32LE(16,16);b.writeUInt16LE(1,20);b.writeUInt16LE(1,22);b.writeUInt32LE(16000,24);b.writeUInt32LE(32000,28);b.writeUInt16LE(2,32);b.writeUInt16LE(16,34);b.write('data',36);b.writeUInt32LE(length*2,40);for(let i=0;i<length;i++)b.writeInt16LE(Math.sin(i/16000*440*Math.PI*2)*300,i*2+44);return b;}
 const chart={bpm:120,offsetMs:0,beatZeroMs:0,coordScale:1,displayLevel:2,timeSignatures:[],notes:Array.from({length:30},(_,i)=>({time:1000+i*500,beat:i,x:(i%5)-2,y:0,color:i%2?'red':'blue',direction:'none',count:1,type:'tap',lengthMs:0}))};
 try{
@@ -75,7 +76,60 @@ try{
   assert.equal((await stored()).chart.notes.length,28);check('the welcome screen reopens the last draft in one tap');
   assert.deepEqual(errors,[]);check('no browser runtime errors');
   await fixesFound20261022();
+  await round5();
 }finally{await browser.close();}
+
+// 2026-10-22 5回目: 色を固定したパッドの表示・時刻の行でも位置を変える・譜面を開くの行き先・横向きの入力結果・押せる高さ。
+async function round5(){
+  const ctx=await browser.newContext({viewport:{width:390,height:664},hasTouch:true}),p=await ctx.newPage(),errs=[];p.on('pageerror',e=>errs.push(e.message));
+  const wait=()=>p.waitForTimeout(300),seekValue=async()=>Number(await p.locator('#seek').inputValue());
+  const record=async position=>{await p.locator('#playButton').click();await p.waitForTimeout(200);await p.locator('#pad').tap({position});await p.waitForTimeout(200);await p.locator('#playButton').click();await wait();};
+  try{
+    await p.goto(site);await wait();
+    await p.locator('#audioFile').setInputFiles({name:'五回目.wav',mimeType:'audio/wav',buffer:wav()});
+    await p.waitForFunction(()=>document.querySelector('#saveStatus').textContent==='この端末に保存済み');
+    // 1. 金に固定すると、パッドの地と見出しも金だけ(右の RED は消える)。右側を押しても金になる。左右で色分けに戻すと元どおり。
+    await p.locator('[data-color="gold"]').click();
+    assert.equal(await p.locator('#pad').getAttribute('data-ink'),'gold');assert.match(await p.locator('.pad-hand.left').innerText(),/GOLD/);
+    assert.equal(await p.locator('.pad-hand.right').isVisible(),false);assert.match(await p.locator('#pad').getAttribute('aria-label'),/どこを押しても金/);
+    const pad=await p.locator('#pad').boundingBox();await record({x:pad.width-40,y:pad.height/2});
+    assert.deepEqual((await storedIn(p)).chart.notes.map(n=>n.color),['gold'],'右側を押しても金');
+    await p.locator('[data-color="auto"]').click();assert.equal(await p.locator('.pad-hand.right').isVisible(),true);assert.match(await p.locator('.pad-hand.left').innerText(),/BLUE/);
+    assert.match(await p.locator('#pad').getAttribute('aria-label'),/左は青、右は赤/);check('a fixed colour repaints the pad labels and saves that colour');
+    // 2. 録る画面は、細い波形の上の時刻の行を押しても位置が変わる。確かめる画面の時刻の行は、スクロールのために押しても動かさない。
+    const row=await p.locator('.timeline-wrap .time-line').boundingBox();await p.mouse.click(row.x+row.width/2,row.y+row.height/2);await wait();
+    assert.ok(Math.abs(await seekValue()-15)<.6,`時刻の行の真ん中で約15秒 (${await seekValue()})`);
+    await p.locator('#nav-preview').click();await wait();const before=await seekValue(),previewRow=await p.locator('.timeline-wrap .time-line').boundingBox();
+    await p.mouse.click(previewRow.x+previewRow.width*.2,previewRow.y+previewRow.height/2);await wait();assert.equal(await seekValue(),before,'確かめる画面の時刻の行では動かさない');
+    await p.locator('#nav-record').click();await wait();check('the record tab seeks from the whole time row');
+    // 3. 「譜面を開く」に入る先の曲名を書き、開いたら「どの曲のどの難易度の新しい下書きか」を知らせる。
+    await p.locator('#libraryButton').click();await p.locator('#library').waitFor({state:'visible'});
+    assert.equal(await p.locator('#importTarget').innerText(),'→「五回目」へ');
+    const notes=Array.from({length:4},(_,i)=>({time:1000+i*500,beat:2+i,x:0,y:0,color:'blue',direction:'none',count:1,type:'tap',lengthMs:0}));
+    await p.locator('#chartFile').setInputFiles({name:'chart_hard.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify({bpm:120,offsetMs:0,beatZeroMs:0,coordScale:1,displayLevel:2,timeSignatures:[],notes}))});await wait();
+    assert.match(await p.locator('#toast').innerText(),/chart_hard\.json を「五回目」の HARD の新しい下書きとして開きました/);
+    await p.locator('[data-close="library"]').click();await wait();check('JSON import names the song it joins');
+    // 4. 横向きでも、入力したあとに結果がパッドの下端に出る(入力前は出さない)。
+    await p.setViewportSize({width:844,height:390});await wait();
+    assert.equal(await p.locator('#inputFeedback').isVisible(),false,'入力前は出さない');
+    const wide=await p.locator('#pad').boundingBox();await record({x:60,y:wide.height/2});
+    assert.equal(await p.locator('#inputFeedback').isVisible(),true);assert.match(await p.locator('#inputFeedback').innerText(),/タップ/);
+    const shown=await p.locator('#inputFeedback').boundingBox(),padNow=await p.locator('#pad').boundingBox();
+    assert.ok(shown.y>=padNow.y&&shown.y+shown.height<=padNow.y+padNow.height&&shown.x>=padNow.x&&shown.x+shown.width<=padNow.x+padNow.width,'パッドの中の下端');
+    assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth),844);await p.screenshot({path:path.join(output,'round5-landscape.png')});check('landscape shows the input result over the pad');
+    await p.setViewportSize({width:390,height:664});await wait();
+    // 5. チェック項目と開閉見出しは44px以上。区間の画面では閉じても意味のない見出しを出さない。
+    await p.locator('#settingsButton').click();await p.locator('#settingsDialog').waitFor({state:'visible'});
+    for(const s of await p.locator('#settingsDialog summary').all())if(!await s.evaluate(e=>e.parentElement.open))await s.click();
+    for(const label of await p.locator('#settingsDialog label.check').all())if(await label.isVisible())assert.ok((await label.boundingBox()).height>=44,'設定のチェック項目');
+    await p.locator('#settingsDialogClose').click();await p.locator('#rangeButton').click();
+    assert.equal(await p.locator('#rangeDialog .range-tools>summary').isVisible(),false);assert.equal(await p.locator('#rangeStart').isVisible(),true);
+    for(const label of await p.locator('#rangeDialog label.check').all())if(await label.isVisible())assert.ok((await label.boundingBox()).height>=44,'区間のチェック項目');
+    await p.locator('#rangeDialogClose').click();await p.locator('#nav-export').click();await wait();
+    assert.ok((await p.locator('#tab-export .advanced>summary').boundingBox()).height>=44,'バックアップの見出し');check('checkboxes and disclosure headers are 44px targets');
+    assert.deepEqual(errs,[]);check('no browser runtime errors in round 5');
+  }finally{await ctx.close();}
+}
 
 // 2026-10-22 Codex の点検で見つかった食い違いの直し。新しい端末(別のブラウザの中身)で確かめる。
 async function fixesFound20261022(){

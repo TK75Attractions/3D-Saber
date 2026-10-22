@@ -63,6 +63,14 @@ test('vertical timeline uses scaled X, future goes upward, overlaps remain selec
  const boxes=verticalGeometry(c,window,390,300);assert.ok(boxes[0].x<boxes[1].x);assert.ok(boxes[3].y<boxes[0].y);
  assert.equal(verticalHits(boxes,boxes[1].x+21,boxes[1].y).length,2);assert.equal(verticalTime(window,276,300),0);assert.equal(verticalTime(window,24,300),5);
 });
+test('a long note can be picked by its visible body even when its head is before the window; heads win',()=>{
+ const c=chart([{x:0,time:500,count:4,type:'long',lengthMs:3000},{x:2,time:3000}]),window={start:2,end:7,span:5};
+ const boxes=verticalGeometry(c,window,390,300),long=boxes.find(b=>b.note.count===4),tap=boxes.find(b=>b.note.count===1);
+ assert.ok(long.y>276,'始点は表示区間より前(下へ外れる)');
+ assert.deepEqual(verticalHits(boxes,long.x+4,(long.end+276)/2).map(n=>n.count),[4],'見えている胴を押せば選べる');
+ assert.deepEqual(verticalHits(boxes,long.x+40,(long.end+276)/2),[],'胴の横は空白');
+ assert.deepEqual(verticalHits(boxes,tap.x,tap.y).map(n=>n.count),[1],'始点は今までどおり');
+});
 test('audio backup retains explicit unknown-tempo state and hold threshold',async()=>{
  const c=chart([]),p={name:'新しい曲',difficulty:'normal',chart:c,settings:{...freshSettings(),longThresholdMs:450}};
  const restored=await readBackup(createBackup(p,{name:'音源.wav',blob:new Blob(['audio'])}));
