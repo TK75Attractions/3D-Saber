@@ -88,7 +88,8 @@ public class ResultSkin : MonoBehaviour
         ResultSoundtrack.Build(root.transform, reveal, scoreValueText, GameSession.FinalScore, DelayScoreBlock, RankLandingTime,
             Mathf.Max(3f, DailyRankingPresentation.CompletionTime(GameSession.FinalDailyRanking) + .2f));
         StyleBackButton(canvas);
-        var pointer = SaberUIPointer.Build();
+        // 選曲・判定調整と同じ照準で指す(小さな光の点は投影で見にくい。2026-10-22 ユーザーの依頼)。
+        var pointer = SaberUIPointer.Build(useAimReticle: true);
         // 結果の出口は演出後に現れる。隠れている間に入場猶予が消費されても、
         // 受付開始時点で照準が重なっていれば、一度外すまで決定させない。
         float exitReadyAt = DailyRankingPresentation.CompletionTime(GameSession.FinalDailyRanking) + .45f;

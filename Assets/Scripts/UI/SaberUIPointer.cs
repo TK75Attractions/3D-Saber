@@ -93,7 +93,7 @@ public class SaberUIPointer : MonoBehaviour
     private Vector3 smoothedPosition;
     private bool hasSmoothed;
 
-    // 判定調整では選曲と同じ照準を使う。従来の結果画面のポインターは維持する。
+    // 判定調整・練習・結果画面では選曲と同じ照準を使う(結果画面は 2026-10-22 から)。光の点のポインターは照準を使わない画面用。
     private SongSelectAimGraphic aimReticle;
     private readonly SongSelectAimTracker aimTracker = new SongSelectAimTracker();
     private Vector2 aimPosition, lastMouse;

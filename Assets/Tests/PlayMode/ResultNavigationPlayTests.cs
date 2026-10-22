@@ -127,6 +127,7 @@ public class ResultNavigationPlayTests
     {
         var pointer = Object.FindFirstObjectByType<SaberUIPointer>();
         Assert.NotNull(pointer, "ゲーム終了後もセーバーで操作できること");
+        Assert.NotNull(pointer.AimReticle, "結果画面も選曲と同じ照準で指す(2026-10-22)");
         Assert.IsNull(Object.FindFirstObjectByType<SaberInputBridge>(), "結果画面はゲームのセーバー本体を持たない");
         reveal.Tick(999);
         Canvas.ForceUpdateCanvases();
