@@ -14,7 +14,7 @@ export function installWorkspace(context) {
   const groups=[['曲設定',['bpm','difficulty','beatZero','offset','level']],['打ち方',['snapMode','snap','snapWindowMs','flickEnabled','flickSensitivity','positionGrid','longCount','direction']],['この端末',['latency','songVolume','feedbackVolume']],['聴き方',['speed','countIn','clickSound','metronome']]];
   // BPMをたたいて測るには曲が要るので、測る道具の横で曲を流せるようにする(録音はしない)。
   const tempoListen=button('tempoListen','曲を流す',context.listenForTempo);q('.tempo-tools').prepend(tempoListen);
-  for(const [title,ids] of groups){const details=element('details',{class:'settings-group'});details.open=title==='曲設定';details.append(element('summary',{},title));const fields=element('div',{class:'fields'});for(const id of ids)fields.append($(id).closest('label'));details.append(fields);if(title==='曲設定'){details.append(q('.tempo-tools'),q('.refinement-tools'));}if(title==='打ち方'){details.append($('snapHint'));const label=element('label',{},'ロングになる長押し（ms）'),input=element('input',{id:'longThresholdMs',type:'number',min:'150',max:'1000',step:'10',inputmode:'numeric',value:'300'});label.append(input);fields.append(label);}if(title==='この端末')details.append(element('p',{class:'hint'},'入力補正を＋にすると新しい入力を早めます。スピーカー・有線・Bluetoothで遅れが異なります。音源上の時刻を聴いて調整してください。'));if(title==='聴き方')details.append(element('p',{class:'hint'},'速度を下げると音程も下がります。BPM未設定では拍の音・カウントは使いません。'));settings.append(details);}
+  for(const [title,ids] of groups){const details=element('details',{class:'settings-group'});details.open=title==='曲設定';details.append(element('summary',{},title));const fields=element('div',{class:'fields'});for(const id of ids)fields.append($(id).closest('label'));details.append(fields);if(title==='曲設定'){/* BPMを測る道具は BPM の欄のすぐ下(拍の始まり・オフセットはその後)。 */const timing=element('div',{class:'fields'});for(const id of ['beatZero','offset','level'])timing.append(fields.querySelector('#'+id).closest('label'));details.append(q('.tempo-tools'),timing,q('.refinement-tools'));}if(title==='打ち方'){details.append($('snapHint'));const label=element('label',{},'ロングになる長押し（ms）'),input=element('input',{id:'longThresholdMs',type:'number',min:'150',max:'1000',step:'10',inputmode:'numeric',value:'300'});label.append(input);fields.append(label);}if(title==='この端末')details.append(element('p',{class:'hint'},'入力補正を＋にすると新しい入力を早めます。スピーカー・有線・Bluetoothで遅れが異なります。音源上の時刻を聴いて調整してください。'));if(title==='聴き方')details.append(element('p',{class:'hint'},'速度を下げると音程も下がります。BPM未設定では拍の音・カウントは使いません。'));settings.append(details);}
   // ヘッダーは曲名と設定、ライブラリに絞る。
   const top=q('.topbar');q('.brand').remove();const heading=button('songSettings','',()=>settings.showModal());heading.setAttribute('aria-label','曲の設定');heading.append($('difficultyLabel'),$('songTitle'));top.prepend(heading);top.append(button('settingsButton','設定',()=>settings.showModal()));
   const save=$('saveStatus');top.after(save);save.setAttribute('role','status');
@@ -33,9 +33,15 @@ export function installWorkspace(context) {
   // 削除は見出しの横に置く(打ち間違いを続けて消すとき、下までスクロールしない)。
   const noteHead=element('div',{class:'inline-note-head'});noteHead.append(element('strong',{},'選択ノーツ · 変更は即保存'),$('deleteNote'),button('closeNote','閉じる',()=>$('noteDialog').close()));$('noteDialog').prepend(noteHead);
   $('noteEditorHost').append($('noteEditor'));
+  // 数値欄に打ちかけのまま矢印や色を押しても、先にその値を確定させる(change は blur で出る。押したボタンがフォーカスを取らない端末向け)。
+  const settleField=()=>{const field=document.activeElement;if(field?.matches?.('#noteDialog input,#noteDialog select'))field.blur();};
   const directionGrid=element('div',{id:'directionGrid',class:'direction-grid',role:'group','aria-label':'ノーツの矢印'});
-  for(const [value,text] of [['upleft','↖'],['up','↑'],['upright','↗'],['left','←'],['none','自由'],['right','→'],['downleft','↙'],['down','↓'],['downright','↘']]){const b=button('direction-'+value,text,()=>{context.edit('noteDirection',value);if($('autoNext').checked)$('nextNote').click();});b.dataset.direction=value;b.setAttribute('aria-label',value==='none'?'矢印なし':`${text}の矢印`);directionGrid.append(b);}
-  const directions=element('div',{class:'direction-tools'});directions.append(directionGrid);const auto=element('label',{class:'check'});auto.append(element('input',{type:'checkbox',id:'autoNext'}),document.createTextNode('矢印の変更後に次へ'));directions.append(auto,button('listenNote','選択ノーツを聴く',context.listenNote));$('noteEditorHost').before(directions);
+  for(const [value,text] of [['upleft','↖'],['up','↑'],['upright','↗'],['left','←'],['none','自由'],['right','→'],['downleft','↙'],['down','↓'],['downright','↘']]){const b=button('direction-'+value,text,()=>{settleField();context.edit('noteDirection',value);if($('autoNext').checked)$('nextNote').click();});b.dataset.direction=value;b.setAttribute('aria-label',value==='none'?'矢印なし':`${text}の矢印`);directionGrid.append(b);}
+  // 矢印の右の列は「色(1回で変える)・拍にそろえる・矢印の変更後に次へ」。聴くは10msの行へ移し、3×3の矢印まで最初の画面に収める。
+  const colors=element('div',{id:'noteColorButtons',class:'note-colors',role:'group','aria-label':'ノーツの色'});
+  for(const [value,text] of [['blue','青'],['red','赤'],['gold','金']]){const b=button('noteColor-'+value,text,()=>{settleField();context.edit('noteColor',value);});b.dataset.noteColor=value;b.setAttribute('aria-pressed','false');b.setAttribute('aria-label',`${text}にする`);colors.append(b);}
+  const directions=element('div',{class:'direction-tools'});directions.append(directionGrid);const auto=element('label',{class:'check'});auto.append(element('input',{type:'checkbox',id:'autoNext'}),document.createTextNode('矢印の変更後に次へ'));directions.append(colors,$('snapNote'),auto);$('noteEditorHost').before(directions);
+  q('.time-nudge').append(button('listenNote','聴く',context.listenNote));$('listenNote').setAttribute('aria-label','選んだノーツの少し前から聴く');
   $('noteDirection').closest('label').hidden=true;$('updateNote').hidden=true;
   const detail=element('details',{class:'note-details'});detail.append(element('summary',{},'位置・ロングの長さ'));const fields=element('div',{class:'fields'});for(const id of ['noteX','noteY','noteLength'])fields.append($(id).closest('label'));detail.append($('positionPad'),fields);$('noteEditor').append(detail);
   $('noteDialog').querySelector(':scope > .hint').hidden=true;
@@ -55,10 +61,13 @@ export function installWorkspace(context) {
   $('chartFile').before(element('small',{id:'importTarget',class:'import-target'}));$('chartFile').closest('label').classList.add('import-label');
   $('backupFile').closest('label').hidden=true;
   const unity=element('section',{class:'unity-guide'});unity.append(element('h2',{},'Unityへ渡す'));const list=element('ol');for(const text of ['PCへ譜面JSONと音源を渡します。既存曲への上書き前にファイルをバックアップしてください。','Unityエディター内の未保存編集を保存または破棄してから、Assets/StreamingAssets/Songs/<曲ID>/ に chart_easy.json・chart_normal.json・chart_hard.json と音源（audio.mp3・audio.ogg・audio.wav のどれか1つ）を置きます。','譜面エディターの「読込先」で該当する難易度を選び「読込」。曲情報はUnity側で設定します。','NORMALをUnityで保存すると互換用の chart.json も更新されます。スマホからのファイルを配置するだけで、開いている編集内容が自動更新されるわけではありません。'])list.append(element('li',{},text));unity.append(list,element('p',{class:'hint'},'金ノーツはどちらの手でも切れます。確かめる画面の診断は目安で、本編の採点や難易度判定を再現するものではありません。'));tabs.export.append(unity);
-  q('.export-panel > .hint').textContent='chart_easy / normal / hard.json の名前で保存します。音源がM4Aなどの場合はWAV保存してPCへ渡してください。';
   $('exportButton').after(button('shareChart','共有する',context.shareChart));q('.export-panel').prepend(element('p',{id:'exportWarnings',class:'change-preview',role:'status',hidden:''}));
   // 実際に保存されるファイル名と、ゲームの曲フォルダーでの名前(app.js の exportNames)。
   $('exportButton').closest('.row').after(element('p',{id:'exportNames',class:'export-names'}));
+  // 渡すは「① 譜面」「② 同じ音源」の順。音源は形式に合うほうを主ボタンにする(app.js の refreshExportWarnings が切り替える)。ファイル名の確認は両方のあと。
+  q('.export-panel > h2').textContent='① 譜面';$('shareChart').textContent='譜面を共有';
+  {const audioRow=$('exportAudioButton').closest('.row');audioRow.before(element('h2',{class:'export-step'},'② 同じ音源'));$('exportAudioButton').before($('exportOriginalAudio'));audioRow.after($('exportNames'));}
+  q('.export-panel > .hint').textContent='①の譜面と②の音源をPCへ渡し、ゲームの同じ曲フォルダーに置きます(手順は下の「Unityへ渡す」)。';
   const nav=element('nav',{class:'bottom-tabs',role:'tablist','aria-label':'作業画面'});let active=null;
   for(const [name,label] of [['record','録る'],['edit','直す'],['preview','確かめる'],['export','渡す']]){const b=button(`nav-${name}`,label,()=>activate(name));b.setAttribute('role','tab');b.setAttribute('aria-controls',tabs[name].id);nav.append(b);}
   workspace.after(nav);$('library').append(q('footer'));$('offlineStatus').before(element('strong',{id:'appBrand'},'Saber Tap Studio'));
@@ -97,5 +106,6 @@ export function installWorkspace(context) {
     const previewing=active==='preview';$('redoFromHere').hidden=previewing;$('loopHere').hidden=!previewing;$('loopHere').disabled=state.loading||!state.project||state.playing;
     $('replaceRange').closest('label').hidden=previewing;
     $('previewRangeButton').textContent=$('rangeEnabled').checked?'区間・ループ ON':'区間・ループ';$('previewRangeButton').classList.toggle('range-on',$('rangeEnabled').checked);$('previewRangeButton').disabled=state.loading||!state.project||state.playing;
-  },direction(value){for(const b of directionGrid.children){b.setAttribute('aria-pressed',b.dataset.direction===value);b.classList.toggle('active',b.dataset.direction===value);}}};
+  },direction(value){for(const b of directionGrid.children){b.setAttribute('aria-pressed',b.dataset.direction===value);b.classList.toggle('active',b.dataset.direction===value);}},
+  color(value){for(const b of colors.children){b.setAttribute('aria-pressed',b.dataset.noteColor===value);b.classList.toggle('active',b.dataset.noteColor===value);}}};
 }

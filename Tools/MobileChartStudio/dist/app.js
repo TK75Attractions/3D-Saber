@@ -13,7 +13,7 @@ import { encodeWav } from './wav.js';
 import { saveProject, listProjects, getProject, saveAudio, getAudio, saveProjectWithAudio } from './storage.js';
 const $ = id => document.getElementById(id), audio = new SongAudio();
 // 画面に出す版。sw.js のキャッシュ名(saber-tap-shell-<版>)と同じにする(tests/offline.test.js が確かめる)。
-const APP_VERSION='v13-20261022';
+const APP_VERSION='v14-20261022';
 let refinementUI, workspaceUI;
 let bpmConfirmed=true;
 let chart = blankChart(), history = new History(), project = null, selected = null;
@@ -186,11 +186,14 @@ async function refreshExportWarnings(){
   if(differing.length)messages.push(differing.join('・')+'の下書きとBPM・OFFSET・拍の始まり・拍子・座標倍率のいずれかが異なります。意図した違いか設定で確認してください。');
   $('exportWarnings').textContent=messages.join('\n');$('exportWarnings').hidden=!messages.length;
   $('exportNames').textContent=exportNames(current,$('difficulty').value);
+  // ② 同じ音源: ゲームが読める形式(mp3/ogg/wav)なら「元の音源を保存」、それ以外は「音源をWAV保存」を主ボタンにする。
+  const direct=readableAudio(current.audioName);$('exportOriginalAudio').classList.toggle('primary',direct);$('exportAudioButton').classList.toggle('primary',!direct);
 }
+function readableAudio(name){return['mp3','ogg','wav'].includes((/\.([^.]+)$/.exec(name||'')?.[1]||'').toLowerCase());}
 // 渡すときの実際のファイル名と、ゲームの曲フォルダーでの名前(元の音源は名前を変える。読めない形式はWAV保存)。
 function exportNames(current,difficulty){
   const lines=[`譜面：chart_${difficulty}.json`],name=current.audioName||'',ext=(/\.([^.]+)$/.exec(name)?.[1]||'').toLowerCase();
-  if(name)lines.push(['mp3','ogg','wav'].includes(ext)?`元の音源：${name} → PCで audio.${ext} に名前を変える`:`元の音源：${name} はゲームで読めない形式です。「音源をWAV保存」で audio.wav を作ってください`);
+  if(name)lines.push(readableAudio(name)?`元の音源：${name} → PCで audio.${ext} に名前を変える`:`元の音源：${name} はゲームで読めない形式です。「音源をWAV保存」で audio.wav を作ってください`);
   return lines.join('\n');
 }
 function downloadAudio() {
@@ -321,7 +324,7 @@ function refreshSelected() {
   $('positionMarker').style.left=`${clamp(note.x*chart.coordScale/5+.5,0,1)*100}%`;
   $('positionMarker').style.top=`${clamp(.5-note.y*chart.coordScale/3,0,1)*100}%`;
   $('positionMarker').style.background=COLORS[note.color];
-  $('positionMarker').textContent=note.count>1?`×${note.count}`:arrow(note.direction);workspaceUI?.direction(note.direction);
+  $('positionMarker').textContent=note.count>1?`×${note.count}`:arrow(note.direction);workspaceUI?.direction(note.direction);workspaceUI?.color(note.color);
 }
 const noteFields={noteTime:'time',noteX:'x',noteY:'y',noteCuts:'count',noteLength:'length',noteColor:'color',noteDirection:'direction'};
 function fillSelectedFields(){const note=chart.notes.find(n=>n.__editorId===selected);if(!note)return;const values={noteTime:audioTime(note,chart).toFixed(3),noteX:+(note.x*chart.coordScale).toFixed(3),noteY:+(note.y*chart.coordScale).toFixed(3),noteCuts:note.count,noteLength:longSeconds(note).toFixed(3),noteColor:note.color,noteDirection:note.direction};for(const[id,value]of Object.entries(values))$(id).value=value;refreshSelected();}

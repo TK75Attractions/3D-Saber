@@ -9,3 +9,7 @@
 .pad[data-ink=blue]{background:linear-gradient(90deg,#132b3f,#112031)}.pad[data-ink=red]{background:linear-gradient(90deg,#2d1b2a,#412031)}.pad[data-ink=gold]{background:linear-gradient(90deg,#2e2712,#3b3115)}.pad[data-ink=red] .pad-hand.left{color:var(--red)}.pad[data-ink=gold] .pad-hand.left{color:var(--gold)}.import-label{flex-direction:column;gap:0}.import-target{display:block;max-width:100%;font-size:.7rem;font-weight:500;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}label.check{min-height:44px}.advanced>summary{min-height:44px;padding-block:12px;box-sizing:border-box}#rangeDialog .range-tools>summary{display:none}.performance .timeline-wrap{touch-action:none;cursor:pointer}
 /* 2026-10-22 使いやすさ(6): 渡すの注意は1件ずつ改行。 */
 #exportWarnings{white-space:pre-line}
+/* 2026-10-22 使いやすさ(7): 選んだノーツのパネル。矢印3×3の右に「色・拍にそろえる・次へ」の3段、聴くは10msの行。 */
+.direction-tools{grid-template-rows:repeat(3,auto);row-gap:4px;align-items:center}.direction-grid{grid-row:1 / span 3}.direction-tools>#snapNote{align-self:center;min-height:44px;padding:4px 8px}.direction-tools>.check{min-height:44px}
+.note-colors{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}.note-colors button{min-height:44px;padding:4px;font-size:.85rem;font-weight:700}
+.export-panel>h2.export-step{margin-top:18px}.note-colors [data-note-color=blue]{color:var(--blue)}.note-colors [data-note-color=red]{color:var(--red)}.note-colors [data-note-color=gold]{color:var(--gold)}.note-colors .active{background:#26324a;border-color:currentColor;box-shadow:inset 0 0 0 1px currentColor}

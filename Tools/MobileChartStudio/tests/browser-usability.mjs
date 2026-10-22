@@ -79,7 +79,51 @@ try{
   await round5();
   await round6();
   await codexRound6();
+  await round7();
 }finally{await browser.close();}
+
+// 2026-10-22 7回目: 選んだノーツのパネルは、スクロールなしで「削除・前後・10ms・聴く・矢印3×3・色・拍にそろえる・次へ」まで見える。色は1回で変わる。設定のBPMを測る道具はBPMのすぐ下。
+async function round7(){
+  const ctx=await browser.newContext({viewport:{width:390,height:664},hasTouch:true}),p=await ctx.newPage(),errs=[];p.on('pageerror',e=>errs.push(e.message));
+  const wait=()=>p.waitForTimeout(300);
+  try{
+    await p.goto(site);await wait();
+    await p.locator('#audioFile').setInputFiles({name:'パネル.wav',mimeType:'audio/wav',buffer:wav()});
+    await p.waitForFunction(()=>document.querySelector('#saveStatus').textContent==='この端末に保存済み');
+    // 1. 設定: 曲を流す・タップで測る・BPMに適用は、BPMの欄のすぐ下(拍の始まりより上)で、開いたときの画面に入る。
+    await p.locator('#settingsButton').click();await p.locator('#settingsDialog').waitFor({state:'visible'});
+    const bpm=await p.locator('#bpm').boundingBox(),tap=await p.locator('#tapTempo').boundingBox(),apply=await p.locator('#applyTempo').boundingBox(),zero=await p.locator('#beatZero').boundingBox();
+    assert.ok(bpm.y<tap.y&&tap.y<zero.y&&apply.y<zero.y,'BPM → 測る → 拍の始まり の順');assert.ok(apply.y+apply.height<=664,'開いたときの画面に入る');
+    await p.locator('#settingsDialogClose').click();check('tempo tools sit right under the BPM field');
+    // 2. 直す: パネルを開いた直後(スクロールなし)に、よく使う操作がすべてパネルの中に見える。
+    const notes=Array.from({length:6},(_,i)=>({time:1000+i*500,beat:2+i,x:0,y:0,color:'blue',direction:'none',count:1,type:'tap',lengthMs:0}));
+    await p.locator('#libraryButton').click();await p.locator('#chartFile').setInputFiles({name:'chart_normal.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify({bpm:120,offsetMs:0,beatZeroMs:0,coordScale:1,displayLevel:2,timeSignatures:[],notes}))});await wait();
+    await p.locator('#nav-edit').click();await wait();if(!await p.locator('.map-note-details').evaluate(e=>e.open))await p.locator('.map-note-details summary').click();
+    await p.locator('#mapNotes button').first().click();await wait();
+    const inside=await p.evaluate(()=>{const panel=document.getElementById('noteDialog'),r=panel.getBoundingClientRect(),ids=['deleteNote','closeNote','previousNote','nextNote','earlierNote','laterNote','listenNote','snapNote','autoNext','noteColor-blue','noteColor-red','noteColor-gold',...[...document.querySelectorAll('#directionGrid button')].map(b=>b.id)];
+      return{scrollTop:panel.scrollTop,outside:ids.filter(id=>{const e=document.getElementById(id),b=(id==='autoNext'?e.closest('label'):e).getBoundingClientRect();return b.top<r.top||b.bottom>r.bottom||b.left<r.left||b.right>r.right;})};});
+    assert.equal(inside.scrollTop,0);assert.deepEqual(inside.outside,[],'パネルの外に出ている操作');await p.screenshot({path:path.join(output,'round7-note-panel.png')});check('the note panel shows every frequent control without scrolling');
+    // 3. 色ボタンは1回で変わり、押された状態になる。元に戻すは1回で前の色へ。
+    await p.locator('#noteColor-gold').click();await wait();
+    assert.equal((await storedIn(p)).chart.notes[0].color,'gold');assert.equal(await p.locator('#noteColor-gold').getAttribute('aria-pressed'),'true');assert.equal(await p.locator('#noteColor-blue').getAttribute('aria-pressed'),'false');
+    assert.match(await p.locator('#selectedNoteLabel').innerText(),/金/);
+    await p.locator('#editUndo').click();await wait();assert.equal((await storedIn(p)).chart.notes[0].color,'blue');assert.equal(await p.locator('#noteColor-blue').getAttribute('aria-pressed'),'true');
+    check('colour buttons change the note in one tap and undo in one step');
+    // 4. 時刻を打ちかけのまま(確定せずに)矢印を押しても、打った時刻は消えない(ボタンがフォーカスを取らない端末と同じく click だけを送る)。
+    await p.locator('#noteTime').fill('1.234');await p.evaluate(()=>document.getElementById('direction-up').click());await wait();
+    const first=(await storedIn(p)).chart.notes[0];assert.equal(first.time,1234);assert.equal(first.direction,'up');check('an unconfirmed time survives an arrow tap');
+    // 5. 渡す: ① 譜面 → ② 同じ音源 の順。WAV は「元の音源を保存」、ゲームが読めない形式(M4A)は「音源をWAV保存」が主ボタン。
+    await p.locator('#nav-export').click();await wait();
+    const heads=await p.locator('.export-panel > h2').allInnerTexts();assert.deepEqual(heads,['① 譜面','② 同じ音源']);
+    const order=await p.evaluate(()=>['exportButton','exportOriginalAudio','exportAudioButton','exportNames'].map(id=>document.getElementById(id).getBoundingClientRect().top));assert.ok(order[0]<order[1]&&order[1]<=order[2]&&order[2]<order[3],'譜面 → 音源 → ファイル名');
+    assert.equal(await p.locator('#exportOriginalAudio').evaluate(e=>e.classList.contains('primary')),true);assert.equal(await p.locator('#exportAudioButton').evaluate(e=>e.classList.contains('primary')),false);
+    await p.locator('#libraryButton').click();await p.locator('#libraryAudioFile').setInputFiles({name:'変換.m4a',mimeType:'audio/mp4',buffer:wav()});await p.waitForFunction(()=>document.querySelector('#saveStatus').textContent==='この端末に保存済み');await wait();
+    await p.locator('#nav-export').click();await wait();
+    assert.equal(await p.locator('#exportAudioButton').evaluate(e=>e.classList.contains('primary')),true);assert.equal(await p.locator('#exportOriginalAudio').evaluate(e=>e.classList.contains('primary')),false);
+    assert.match(await p.locator('#exportNames').innerText(),/変換\.m4a はゲームで読めない形式です/);await p.screenshot({path:path.join(output,'round7-export.png'),fullPage:true});check('export reads chart first, then the matching audio button');
+    assert.deepEqual(errs,[]);check('no browser runtime errors in round 7');
+  }finally{await ctx.close();}
+}
 
 // 2026-10-22 Codex の第2回の点検で見つかった食い違い(BPMを後で決める・BPMを測る速さ・3拍子のループ・まとめて直したあとの選択)。
 async function codexRound6(){
