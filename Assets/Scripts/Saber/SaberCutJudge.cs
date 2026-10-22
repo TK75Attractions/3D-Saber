@@ -8,6 +8,7 @@ using UnityEngine;
 // 見るのは刃のうちノーツに届く部分(CuttingPoint)。刃の腹で払うときはノーツの横の位置にある刃の点、
 // 細い側で振る(刃が動く向きに沿う)ときは先端なので、刃の中心が届くまで振り切らなくても切れる。
 // そのときの向きは、入った瞬間の速さではなく刃の中心が動いた向きで決める(構えの振りを拾わない)。
+// ノーツを通り過ぎたときの動きのほうが矢印に近ければ、そちらで比べる(横から入って斜めに切り上げる振り)。
 // 曲時計があるときは、前に判定したときの刃から今の刃までが通った面でも入ったかを見て(速い振りの飛び越し)、
 // 採点はノーツに届く部分がノーツの中心を通り過ぎた時刻にする(前後の刃の値の間で割り振る)。
 // カメラの値で細い側から振ると、振りを横切る刃の幅がなくなるので、そのときだけ当たりを広げる(近くに別の時刻のノーツがなければ)。
@@ -537,7 +538,7 @@ public class SaberCutJudge : MonoBehaviour
         bool clocked = Finite(songTime);
         Vector2 motion = new Vector2(velocity.x, velocity.y);
         double? judged = clocked ? ScoreTime(note, p, motion) : Finite(p.bestSongTime) ? p.bestSongTime : (double?)null;
-        Vector2? direction = clocked && ReceivingCamera ? JudgedDirection(motion) : (Vector2?)null;
+        Vector2? direction = clocked ? CutDirectionFor(note, p, motion) : (Vector2?)null;
         bool accepted = note.CutAtSongTime(p.hitPoint, velocity, imuHint, EffectiveHand(), judged, DirectionTolerance(), direction);
         if (!accepted || !Grouped(note)) return;
         // この振りで切った時刻を進める(同時のノーツは最初の1つで決まる)。次のなぞりの間隔は、刃がこのノーツに届いた時刻から測る。
@@ -556,14 +557,33 @@ public class SaberCutJudge : MonoBehaviour
     // カメラの値は縦が縮んで届くので、向きを比べるときだけ縦の動きを戻す(切り口や破片の向きは画面の動きのまま)。
     Vector2 JudgedDirection(Vector2 motion) => new Vector2(motion.x, motion.y * verticalDirectionScale);
 
+    // 矢印と比べる動き(曲時計があるとき)。刃の中心が起点から動いた向き(構えの振りを拾わない)と、
+    // 刃がノーツを通り過ぎたときの動き(切った向きと同じ向きに通り過ぎたもの)のうち、矢印の向きに近いほう。
+    // 2026-10-22 ユーザー: 横から入って斜め上へ切り上げると、起点からの動きは横寄りになり、上向きの矢印が切れなかった。
+    Vector2 CutDirectionFor(CuttableNote note, Pending p, Vector2 motion)
+    {
+        Vector2 travel = ReceivingCamera ? JudgedDirection(motion) : motion;
+        if (!Crossing(p, motion, out _, out Vector2 crossing)) return travel;
+        if (ReceivingCamera) crossing = JudgedDirection(crossing);
+        Vector2 arrow = CutDirectionHelper.ToVector(note.RequiredDirection);
+        return Vector2.Dot(crossing.normalized, arrow) > Vector2.Dot(travel.normalized, arrow) ? crossing : travel;
+    }
+
+    // 切った向きと同じ向きに、刃のうちノーツに届く部分がノーツの中心を通り過ぎた記録(最新、なければその前の1回)。
+    static bool Crossing(Pending p, Vector2 cutMotion, out double time, out Vector2 direction)
+    {
+        if (Finite(p.crossSongTime) && Vector2.Dot(p.crossDirection, cutMotion) > 0f)
+        { time = p.crossSongTime; direction = p.crossDirection; return true; }
+        if (Finite(p.previousCrossSongTime) && Vector2.Dot(p.previousCrossDirection, cutMotion) > 0f)
+        { time = p.previousCrossSongTime; direction = p.previousCrossDirection; return true; }
+        time = double.NaN; direction = default;
+        return false;
+    }
+
     // 刃がノーツに届いた時刻: 刃のうちノーツに届く部分がノーツの中心を通り過ぎた時刻(切った向きと同じ向きに通り過ぎたもの)。
     // なければいちばん近づいた時刻。
-    static double ReachTime(Pending p, Vector2 cutMotion)
-    {
-        if (Finite(p.crossSongTime) && Vector2.Dot(p.crossDirection, cutMotion) > 0f) return p.crossSongTime;
-        if (Finite(p.previousCrossSongTime) && Vector2.Dot(p.previousCrossDirection, cutMotion) > 0f) return p.previousCrossSongTime;
-        return p.bestSongTime;
-    }
+    static double ReachTime(Pending p, Vector2 cutMotion) =>
+        Crossing(p, cutMotion, out double time, out _) ? time : p.bestSongTime;
 
     // 採点の時刻は刃がノーツに届いた時刻。
     // 1回で切るノーツは判定窓の端に収める(切れたのに MISS と採点しない)。ロングは完了の割合で採点する。
@@ -607,8 +627,7 @@ public class SaberCutJudge : MonoBehaviour
             && reach <= note.HitTime + JudgmentTierHelper.LatePerfectSeconds;
         if (!paced && !onTime) return false;
         if (note.RequiredDirection == CutDirection.None || note.DirectionVisualOnly) return true;
-        return CutDirectionHelper.MatchesWithHint(note.RequiredDirection,
-            ReceivingCamera ? JudgedDirection(motion) : motion, imuHint, DirectionTolerance());
+        return CutDirectionHelper.MatchesWithHint(note.RequiredDirection, CutDirectionFor(note, p, motion), imuHint, DirectionTolerance());
     }
 
     bool SweepActive => sweepEnabled && Finite(songTime);

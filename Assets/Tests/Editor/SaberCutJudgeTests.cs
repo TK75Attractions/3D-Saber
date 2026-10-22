@@ -935,6 +935,48 @@ public class SaberCutJudgeTests
         Assert.False(note.IsMissed, "向きの合わない振りでもミスにはしない");
     }
 
+    // 上向きの矢印を、横から入って斜め上へ切り上げる(2026-10-22 ユーザー)。入ったところからの動きは横寄りでも、
+    // ノーツを通り過ぎたときの動きが斜め上なら切れる。y は体の動き(カメラのときは縦を約1/2.4に縮めて届ける)。
+    [TestCase(-.6f, -.6f, 45f, false)]
+    [TestCase(-.6f, -.6f, 45f, true)]
+    [TestCase(-.6f, -.6f, 35f, false)]
+    [TestCase(-.6f, -.6f, 35f, true)]
+    [TestCase(-.4f, -.2f, 50f, false)]
+    [TestCase(-.4f, -.2f, 50f, true)]
+    public void UpArrowCutDiagonallyAfterEnteringFromTheSide(float approachY, float turnX, float angle, bool camera)
+    {
+        var (judge, tracker, bridge) = GameBladeRig();
+        bridge.OverrideCameraInput(camera);
+        var note = TimedNote(Vector3.zero, 1.0);
+        note.RequiredDirection = CutDirection.Up;
+        float squash = camera ? 1f / 2.4f : 1f;
+        Vector2 at = new Vector2(-3f, approachY);
+        tracker.ResetTo(new Vector3(at.x, at.y * squash, 0f));
+        double t = .86;
+        // 横から近づく(ノーツの少し下の高さを右へ)
+        while (at.x < turnX - .01f) { at.x = Mathf.Min(turnX, at.x + .6f); Step(judge, tracker, bridge, new Vector2(at.x, at.y * squash), t += .02, true, .8f); }
+        Assert.False(note.IsCut, "横に近づいただけでは切れない");
+        // 斜め上へ切り上げる
+        Vector2 up = new Vector2(Mathf.Cos(angle * Mathf.Deg2Rad), Mathf.Sin(angle * Mathf.Deg2Rad)) * .5f;
+        for (int i = 0; i < 8 && !note.IsCut; i++) { at += up; Step(judge, tracker, bridge, new Vector2(at.x, at.y * squash), t += .02, true, .8f); }
+        Assert.True(note.IsCut, "ノーツを通り過ぎたときの動きは斜め上");
+    }
+
+    // 横に払う振りは、上向きの矢印を切らない(通り過ぎたときの動きも横)。
+    [TestCase(false)]
+    [TestCase(true)]
+    public void UpArrowIsNotCutByASidewaysSwing(bool camera)
+    {
+        var (judge, tracker, bridge) = GameBladeRig();
+        bridge.OverrideCameraInput(camera);
+        var note = TimedNote(Vector3.zero, 1.0);
+        note.RequiredDirection = CutDirection.Up;
+        tracker.ResetTo(new Vector3(-3f, -.1f, 0f));
+        double t = .9;
+        for (float x = -2.4f; x <= 3f; x += .6f) Step(judge, tracker, bridge, new Vector2(x, -.1f + x * .05f), t += .02, true, .8f);
+        Assert.False(note.IsCut);
+    }
+
     // 向きの合わない振りでは切れないが、ノーツは残り、構え直して向きの合う次の振りで切れる。採点はその振りの時刻。
     [Test]
     public void WrongWaySwingLeavesTheNoteForTheNextSwing()
