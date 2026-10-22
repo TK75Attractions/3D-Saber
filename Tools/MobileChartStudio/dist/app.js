@@ -13,7 +13,7 @@ import { encodeWav } from './wav.js';
 import { saveProject, listProjects, getProject, saveAudio, getAudio, saveProjectWithAudio, contentOf } from './storage.js';
 const $ = id => document.getElementById(id), audio = new SongAudio();
 // 画面に出す版。sw.js のキャッシュ名(saber-tap-shell-<版>)と同じにする(tests/offline.test.js が確かめる)。
-const APP_VERSION='v21-20261023';
+const APP_VERSION='v22-20261023';
 let refinementUI, workspaceUI;
 let bpmConfirmed=true;
 let chart = blankChart(), history = new History(), project = null, selected = null;

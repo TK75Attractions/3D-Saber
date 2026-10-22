@@ -54,6 +54,8 @@ export function timingSummary(notes, chart) {
   const errors=notes.map(n=>{const t=n.time-chart.beatZeroMs;return t-Math.round(t/beat)*beat;});
   return {mean:errors.reduce((sum,v)=>sum+v,0)/errors.length, meanAbsolute:errors.reduce((sum,v)=>sum+Math.abs(v),0)/errors.length};
 }
+// 本編の数値設定はfloat。float32で同値の書き出し差だけを除外し、配列・型違い・巨大値は完全一致で比べる。
+const sameFloat32=(x,y)=>typeof x==='number'&&typeof y==='number'&&Number.isFinite(Math.fround(x))&&Math.fround(x)===Math.fround(y);
 export function differentSongSettings(a,b){
-  return ['bpm','offsetMs','beatZeroMs','coordScale','timeSignatures'].filter(key=>JSON.stringify(a[key])!==JSON.stringify(b[key]));
+  return ['bpm','offsetMs','beatZeroMs','coordScale','timeSignatures'].filter(key=>JSON.stringify(a[key])!==JSON.stringify(b[key])&&!sameFloat32(a[key],b[key]));
 }

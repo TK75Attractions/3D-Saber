@@ -1,12 +1,30 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { blankChart, parseChart, makeNote, exportChart, History, hasVariableGrid, rebeat } from '../dist/core.js';
-import { freshSettings, tempoIsSet, barSeek, barSpan, editNote } from '../dist/mobile.js';
+import { freshSettings, tempoIsSet, barSeek, barSpan, editNote, differentSongSettings } from '../dist/mobile.js';
 import { refineChart, chartReport } from '../dist/refinement.js';
 import { verticalGeometry, verticalHits, verticalTime } from '../dist/vertical-timeline.js';
 import { createBackup, readBackup } from '../dist/backup.js';
 
 const chart=(notes,extra={})=>parseChart({...blankChart(),...extra,notes:notes.map(n=>({time:1000,x:0,y:0,color:'blue',direction:'none',...n}))});
+test('difficulty settings ignore Unity float32 spelling differences without changing either chart',()=>{
+ for(const[a,b]of [[1359.533,1359.532958984375],[-1656.5079,-1656.5079345703125]]){
+  const left=chart([],{beatZeroMs:a}),right=chart([],{beatZeroMs:b}),before=JSON.stringify([left,right]);
+  assert.deepEqual(differentSongSettings(left,right),[]);assert.equal(JSON.stringify([left,right]),before);
+ }
+ const left=chart([],{coordScale:1.1}),right=chart([],{coordScale:Math.fround(1.1)});
+ assert.deepEqual(differentSongSettings(left,right),[]);
+});
+test('difficulty settings still report meaningful timing, scale and meter differences',()=>{
+ const base=chart([],{bpm:90,beatZeroMs:1359.533});
+ for(const[key,value]of [['beatZeroMs',1360.533],['offsetMs',110],['bpm',90.001],['coordScale',1.01],['timeSignatures',[{beat:0,numerator:3,denominator:4}]]])assert.deepEqual(differentSongSettings(base,{...base,[key]:value}),[key]);
+});
+test('difficulty setting comparison does not coerce types or collapse float32 overflow',()=>{
+ const base=chart([]);
+ assert.deepEqual(differentSongSettings({...base,offsetMs:1e39},{...base,offsetMs:2e39}),['offsetMs']);
+ for(const value of ['0',null,[0]])assert.deepEqual(differentSongSettings({...base,offsetMs:0},{...base,offsetMs:value}),['offsetMs']);
+ assert.deepEqual(differentSongSettings({...base,offsetMs:0},{...base,offsetMs:1e-6}),['offsetMs']);
+});
 test('unknown tempo never quantizes new input, old 120 BPM drafts remain confirmed',()=>{
  const c=blankChart(),options={...freshSettings(),snapMode:'always',snap:1,color:'blue',rate:1};
  const note=makeNote({startAudio:1.23,x:0,y:0},1.24,c,options);

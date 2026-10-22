@@ -61,7 +61,9 @@ export function installRefinementUI(context) {
     if (!getState().project) return; if (!keepPlaying) stop();
     const {chart, audio, difficulty,bpmConfirmed,project} = getState(); if (project.id !== limitFor) { issueLimit = 200; limitFor = project.id; }
     const report = chartReport(chart, audio.duration, bpmConfirmed===false?undefined:difficulty, issueLimit);
-    $('reportStats').textContent = `タップ ${report.counts.tap} / フリック ${report.counts.flick} / ロング ${report.counts.long}\n青 ${report.counts.blue} / 赤 ${report.counts.red} / 金 ${report.counts.gold} / その他 ${report.counts.default}\n平均 ${report.average.toFixed(2)} 個/秒 · 最大2秒密度 ${report.peakNps.toFixed(2)} 個/秒（${formatTime(report.peakStart,true)}から）`;
+    // 山が音源の前(負の時刻)から始まるときは「0:00.000から」と丸めず符号を付ける(統計は音源外のノーツも数えたまま)。
+    const peakMs = Math.round(report.peakStart * 1000), peakTime = Number.isFinite(peakMs) && peakMs < 0 ? '-' + formatTime(-peakMs / 1000, true) : formatTime(report.peakStart,true);
+    $('reportStats').textContent = `タップ ${report.counts.tap} / フリック ${report.counts.flick} / ロング ${report.counts.long}\n青 ${report.counts.blue} / 赤 ${report.counts.red} / 金 ${report.counts.gold} / その他 ${report.counts.default}\n平均 ${report.average.toFixed(2)} 個/秒 · 最大2秒密度 ${report.peakNps.toFixed(2)} 個/秒（${peakTime}から）`;
     $('reportDensity').replaceChildren(); const maximum = Math.max(1, ...report.buckets.map(bucket => bucket.count));
     for (const bucket of report.buckets) {
       const button = document.createElement('button'); button.className = 'density-bucket';
