@@ -328,6 +328,182 @@ exit $LASTEXITCODE
             self.assertNotIn('not-started STOP-file', (folder / 'watchdog.log').read_text(encoding='utf-8-sig'))
 
 
+class WindowsPowerStateTests(unittest.TestCase):
+    def test_real_csharp_notification_values_and_pause_decisions_with_fakes(self):
+        mono = Path('/Applications/Unity/Hub/Editor/6000.3.9f1/Unity.app/Contents/Resources/Scripting/MonoBleedingEdge')
+        if os.name == 'nt':
+            compiler = [str(Path(os.environ['WINDIR']) / 'Microsoft.NET/Framework/v4.0.30319/csc.exe')]
+            runtime = []
+        elif (mono / 'bin/mono').is_file():
+            runtime = [str(mono / 'bin/mono')]
+            compiler = runtime + [str(mono / 'lib/mono/4.5/csc.exe')]
+        else:
+            self.skipTest('C# compiler / Unity Mono が必要')
+        script = (ROOT / 'PhoneSaber/windows/saber-watchdog.ps1').read_text(encoding='utf-8-sig')
+        source = script.split("Add-Type -TypeDefinition @'\n")[-1].split("\n'@")[0]
+        # 本番の通知デコード/判断を実行し、OS 境界の通知値だけを偽装する。
+        harness = r'''
+class Check {
+    static void Send(string guid, int value, int length = 4, uint type = 0x8013) {
+        IntPtr data = Marshal.AllocHGlobal(24);
+        try {
+            Marshal.StructureToPtr(new Guid(guid), data, false);
+            Marshal.WriteInt32(data, 16, length);
+            Marshal.WriteInt32(data, 20, value);
+            typeof(PhoneSaberPowerState).GetMethod("OnPowerChanged",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)
+                .Invoke(null, new object[] { IntPtr.Zero, type, data });
+        } finally { Marshal.FreeHGlobal(data); }
+    }
+    static void Expect(string expected, uint[] outputs) {
+        string actual = PhoneSaberPowerState.PauseReason(outputs);
+        if (actual != expected) throw new Exception("expected=" + expected + " actual=" + actual);
+    }
+    static void Main() {
+        string display = "2b84c20e-ad23-4ddf-93db-05ffbd7efca5";
+        string lid = "ba3e0f4d-b817-4094-a2d1-d56379e6a0f3";
+        Expect("", null); // 初期値不明では通常のハング監視。
+        Send(display, 0);
+        Expect("display-asleep", null);
+        Send(display, 1);
+        Expect("", null);
+        Send(display, 2); // dim は消灯ではない。
+        Expect("", null);
+        Send(lid, 0);
+        foreach (uint output in new uint[] {6, 11, 13, 0x80000000})
+            Expect("lid-closed", new uint[] {output});
+        Expect("lid-closed", new uint[0]);
+        Expect("", null); // WMI 失敗/空応答は不明。
+        foreach (uint output in new uint[] {0, 5, 10, 15, 0xffffffff})
+            Expect("", new uint[] {11, output}); // 外部/不明画面で蓋だけを根拠に休止しない。
+        Send(lid, 1);
+        Expect("", new uint[] {11});
+        Send(lid, 0, 0); // 不正なデータも不明へ戻す。
+        Expect("", new uint[] {11});
+        Send(lid, 9);
+        Expect("", new uint[] {11});
+        Send(display, 0);
+        Send(display, 1, 4, 123); // 別イベントを無視。
+        Send(Guid.Empty.ToString(), 1); // 別 GUID を無視。
+        Expect("display-asleep", null);
+        Send(display, 0, 0);
+        Expect("", null);
+        Send(display, 99);
+        Expect("", null);
+    }
+}
+'''
+        with tempfile.TemporaryDirectory() as temporary:
+            folder = Path(temporary)
+            code = folder / 'Check.cs'
+            code.write_text(source + harness, encoding='utf-8')
+            binary = folder / 'Check.exe'
+            for command in (compiler + ['/nologo', '/out:' + str(binary), str(code)], runtime + [str(binary)]):
+                result = subprocess.run(command, capture_output=True, text=True, timeout=30)
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+
+@unittest.skipUnless(os.name == 'nt' or shutil.which('pwsh'), 'PowerShell が必要（偽時計/画面/Player は OS 非依存）')
+class WindowsWatchdogPauseTests(unittest.TestCase):
+    def run_ticks(self, reasons, ticks=None, threshold=3, fresh_at=None, stop=False, heartbeat=True):
+        ticks = ticks or list(range(1, len(reasons) + 1))
+        source = (ROOT / 'PhoneSaber/windows/saber-watchdog.ps1').read_text(encoding='utf-8-sig')
+        # 本番の監視ループを実行する。時計/画面/プロセスだけを偽装し、実ゲームは起動しない。
+        prelude = '''
+$script:index = -1
+$script:reasons = @(%s)
+$script:ticks = @(%s)
+$origin = [DateTime]::UtcNow
+$fake = [PSCustomObject]@{ Id = 123; ExitCode = 0; Killed = $false }
+$fake | Add-Member ScriptMethod WaitForExit {
+    param([int]$timeout)
+    if ($timeout -eq 1000) { $script:index++; return $script:index -ge $script:ticks.Count }
+}
+$fake | Add-Member ScriptMethod Kill { $this.Killed = $true; $this.ExitCode = 1 }
+$fake | Add-Member ScriptMethod Dispose { }
+function Get-TestTime { return $origin.AddSeconds($script:ticks[$script:index]) }
+function Get-TestReason { return $script:reasons[$script:index] }
+function Get-Item {
+    if (%s) {
+        $written = if ($script:index -ge %s) { Get-TestTime } else { $origin.AddSeconds(-100) }
+        return [PSCustomObject]@{ Length = 1; LastWriteTimeUtc = $written }
+    }
+}
+''' % (','.join("'" + reason + "'" for reason in reasons), ','.join(map(str, ticks)),
+       '$true' if heartbeat else '$false', fresh_at if fresh_at is not None else 999)
+        source = source.replace("$ErrorActionPreference = 'Stop'", prelude + "\n$ErrorActionPreference = 'Stop'", 1)
+        source = source.replace('Write-PresentationDiagnostics\n\n$heartbeat', '$heartbeat')
+        source = source.replace('$powerNotifications = Start-PowerStateNotifications', '$powerNotifications = $false')
+        source = source.replace('$game = [Diagnostics.Process]::Start($info)', '$game = $fake')
+        source = source.replace('$lastTick = [DateTime]::UtcNow', '$lastTick = $origin')
+        source = source.replace('$tick = [DateTime]::UtcNow', '$tick = Get-TestTime')
+        source = source.replace('$pauseReason = Get-HangCheckPauseReason', '$pauseReason = Get-TestReason')
+        source = source.replace('([DateTime]::UtcNow - $lastWrite)', '((Get-TestTime) - $lastWrite)')
+        with tempfile.TemporaryDirectory() as temporary:
+            folder = Path(temporary)
+            wrapper = folder / 'test.ps1'
+            wrapper.write_text(source, encoding='utf-8-sig')
+            stop_path = folder / 'Start-Saber-B.STOP'
+            # 起動後だけ STOP を置く。起動前 STOP のテストは既存クラスにある。
+            if stop:
+                wrapper.write_text(source.replace('$game = $fake',
+                                   "$game = $fake\n[IO.File]::WriteAllText($env:STOP_FILE, '')"), encoding='utf-8-sig')
+            env = dict(os.environ, TEMP=str(folder), GAME_EXE=sys.executable, STOP_FILE=str(stop_path),
+                       LOG_FILE=str(folder / 'watchdog.log'), PHONESABER_STATION='B', RESTART_COUNT='0',
+                       PHONESABER_HANG_SECONDS=str(threshold))
+            shell = 'powershell.exe' if os.name == 'nt' else 'pwsh'
+            result = subprocess.run([shell, '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', str(wrapper),
+                                     '-Mode', 'Run'], env=env, capture_output=True, text=True, timeout=15)
+            self.assertEqual(result.stderr, '', result.stdout + result.stderr)
+            log = folder / 'watchdog.log'
+            return result.returncode, log.read_text(encoding='utf-8-sig') if log.exists() else ''
+
+    def test_pauses_once_even_when_reason_changes_and_no_restart(self):
+        code, log = self.run_ticks(['display-asleep', 'session-locked', 'lid-closed', 'lid-closed'])
+        self.assertEqual(code, 0)
+        self.assertEqual(log.count('hang-check paused '), 1)
+        self.assertNotIn('hang detected', log)
+
+    def test_resume_grants_full_grace_then_detects_real_hang(self):
+        for reason in ('display-asleep', 'session-locked', 'lid-closed'):
+            with self.subTest(reason=reason):
+                code, log = self.run_ticks([reason, '', '', '', ''])
+                self.assertEqual(code, 1)
+                self.assertEqual(log.count('hang-check resumed'), 1)
+                self.assertIn('grace=3s', log)
+                # 偽時計の5秒目（復帰から3秒）まで到達して初めて kill する。
+                code, short_log = self.run_ticks([reason, '', '', ''])
+                self.assertEqual(code, 0, short_log)
+                self.assertNotIn('hang detected', short_log)
+
+    def test_heartbeat_can_resume_during_grace(self):
+        code, log = self.run_ticks(['display-asleep', '', '', '', '', ''], fresh_at=3)
+        self.assertEqual(code, 0)
+        self.assertIn('hang-check resumed', log)
+        self.assertNotIn('hang detected', log)
+
+    def test_unknown_detection_keeps_hang_detection_enabled(self):
+        code, log = self.run_ticks([''])
+        self.assertEqual(code, 1)
+        self.assertIn('hang detected', log)
+        self.assertNotIn('hang-check paused ', log)
+
+    def test_disabled_stop_and_old_build_remain_safe(self):
+        for options in ({'threshold': 0}, {'stop': True}, {'heartbeat': False}):
+            with self.subTest(options=options):
+                code, log = self.run_ticks(['display-asleep', '', '', '', ''], **options)
+                self.assertEqual(code, 0)
+                self.assertNotIn('hang detected', log)
+                if options.get('threshold') == 0:
+                    self.assertNotIn('hang-check paused ', log)
+
+    def test_watchdog_stall_still_restarts_grace(self):
+        code, log = self.run_ticks(['', '', '', ''], ticks=[20, 21, 22, 23], fresh_at=3)
+        self.assertEqual(code, 0)
+        self.assertIn('watchdog resumed after 20s', log)
+        self.assertNotIn('hang detected', log)
+
+
 @unittest.skipUnless(os.name == 'nt', 'cmd.exe / PowerShell 5.1 は Windows 実機でのみ実行')
 class WindowsWatchdogIntegrationTests(unittest.TestCase):
     def setUp(self):
@@ -342,6 +518,10 @@ class WindowsWatchdogIntegrationTests(unittest.TestCase):
             source = ROOT / 'PhoneSaber/windows' / name
             if source.exists():
                 shutil.copyfile(source, self.kit / name)
+        # 実画面の休止は別テスト。従来のハング/再起動テストはデスクトップ状態から独立させる。
+        helper = self.kit / 'saber-watchdog.ps1'
+        helper.write_bytes(helper.read_bytes().replace(
+            b'$pauseReason = Get-HangCheckPauseReason', b"$pauseReason = ''"))
         csc = Path(os.environ['WINDIR']) / 'Microsoft.NET/Framework/v4.0.30319/csc.exe'
         if not csc.exists():
             self.skipTest('.NET Framework C# compiler が必要')

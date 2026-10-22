@@ -131,6 +131,97 @@ public static class PhoneSaberDisplayRead {
     }
 }
 
+# 電源設定値ではなく現在の画面/蓋の通知を購読する。管理者権限・表示ウィンドウは不要。
+# 対話セッション用 GUID_SESSION_DISPLAY_STATUS を使う（CONSOLE_DISPLAY_STATE のセッション版）。
+function Start-PowerStateNotifications {
+    try {
+        Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+public static class PhoneSaberPowerState {
+    private static readonly Guid DisplayGuid = new Guid("2b84c20e-ad23-4ddf-93db-05ffbd7efca5");
+    private static readonly Guid LidGuid = new Guid("ba3e0f4d-b817-4094-a2d1-d56379e6a0f3");
+    private static volatile int display = -1, lid = -1;
+    public static int Display { get { return display; } }
+    public static int Lid { get { return lid; } }
+    [UnmanagedFunctionPointer(CallingConvention.Winapi)]
+    private delegate uint Notify(IntPtr context, uint type, IntPtr setting);
+    [StructLayout(LayoutKind.Sequential)]
+    private struct Subscription { public Notify Callback; public IntPtr Context; }
+    // OS のスレッドから呼ばれる delegate を購読解除まで保持する。PowerShell は呼ばない。
+    private static readonly Notify callback = OnPowerChanged;
+    private static IntPtr displayHandle, lidHandle;
+    [DllImport("powrprof.dll")]
+    private static extern uint PowerSettingRegisterNotification(ref Guid guid, uint flags,
+        ref Subscription recipient, out IntPtr handle);
+    [DllImport("powrprof.dll")]
+    private static extern uint PowerSettingUnregisterNotification(IntPtr handle);
+    private static uint OnPowerChanged(IntPtr context, uint type, IntPtr setting) {
+        if (type != 0x8013 || setting == IntPtr.Zero) return 0; // PBT_POWERSETTINGCHANGE
+        Guid guid = (Guid)Marshal.PtrToStructure(setting, typeof(Guid));
+        int value = Marshal.ReadInt32(setting, 16) == 4 ? Marshal.ReadInt32(setting, 20) : -1;
+        if (guid == DisplayGuid) display = value >= 0 && value <= 2 ? value : -1;
+        if (guid == LidGuid) lid = value == 0 || value == 1 ? value : -1;
+        return 0;
+    }
+    public static bool Start() {
+        Subscription recipient = new Subscription { Callback = callback };
+        Guid guid = DisplayGuid;
+        // 登録直後にも現在値が通知される。未通知/未対応は -1（不明）のまま扱う。
+        uint displayError = PowerSettingRegisterNotification(ref guid, 2, ref recipient, out displayHandle);
+        guid = LidGuid;
+        uint lidError = PowerSettingRegisterNotification(ref guid, 2, ref recipient, out lidHandle);
+        return displayError == 0 || lidError == 0;
+    }
+    public static void Stop() {
+        if (displayHandle != IntPtr.Zero) PowerSettingUnregisterNotification(displayHandle);
+        if (lidHandle != IntPtr.Zero) PowerSettingUnregisterNotification(lidHandle);
+        displayHandle = lidHandle = IntPtr.Zero;
+    }
+    // null は取得失敗、空配列は取得成功だが有効画面なし。dim(2) は監視を続ける。
+    public static string PauseReason(uint[] activeOutputs) {
+        if (display == 0) return "display-asleep";
+        if (lid != 0 || activeOutputs == null) return "";
+        foreach (uint output in activeOutputs)
+            if (output != 6 && output != 11 && output != 13 && output != 0x80000000) return "";
+        return "lid-closed";
+    }
+}
+'@
+        $available = [PhoneSaberPowerState]::Start()
+        if (-not $available) { Write-WatchdogLog 'power-state-unavailable=notification-registration-failed' }
+        return $available
+    } catch {
+        Write-WatchdogLog ('power-state-unavailable=' + $_.Exception.Message)
+        return $false # 検知失敗では休止せず、従来のハング監視を続ける。
+    }
+}
+
+function Get-HangCheckPauseReason {
+    # 別ユーザーのロック画面では休止しない。取得失敗時はロックとみなさない。
+    try {
+        $sessionId = (Get-Process -Id $PID).SessionId
+        if (Get-Process -Name LogonUI -ErrorAction SilentlyContinue | Where-Object { $_.SessionId -eq $sessionId }) {
+            return 'session-locked'
+        }
+    } catch { }
+    if (-not $powerNotifications) { return '' }
+    [uint[]]$outputs = $null
+    if ([PhoneSaberPowerState]::Lid -eq 0 -and [PhoneSaberPowerState]::Display -ne 0) {
+        try {
+            # Active は電源状態ではない。蓋閉時、外部画面が使われているかだけを調べる。
+            $monitors = @(Get-CimInstance -Namespace root/wmi -ClassName WmiMonitorConnectionParams -ErrorAction Stop)
+            if ($monitors.Count -gt 0) {
+                $outputs = @($monitors | Where-Object Active | ForEach-Object {
+                    if ($null -eq $_.VideoOutputTechnology) { throw 'unknown monitor output' }
+                    [uint]$_.VideoOutputTechnology
+                })
+            }
+        } catch { $outputs = $null }
+    }
+    return [PhoneSaberPowerState]::PauseReason($outputs)
+}
+
 Write-PresentationDiagnostics
 
 $heartbeat = Join-Path $env:TEMP ('phonesaber-heartbeat-' + [Guid]::NewGuid().ToString('N'))
@@ -143,7 +234,10 @@ $value = 0
 if ([int]::TryParse($env:PHONESABER_HANG_SECONDS, [ref]$value) -and $value -ge 0 -and $value -le 999999) {
     $hangSeconds = $value
 }
+$powerNotifications = $false
+$displayPaused = $false
 try {
+    if ($hangSeconds -gt 0) { $powerNotifications = Start-PowerStateNotifications }
     $exe = [IO.Path]::GetFullPath($env:GAME_EXE)
     $info = New-Object Diagnostics.ProcessStartInfo
     $info.FileName = $exe
@@ -175,6 +269,19 @@ try {
             Write-WatchdogLog ('watchdog resumed after {0}s; hang check paused' -f [int]($tick - $lastTick).TotalSeconds)
         }
         $lastTick = $tick
+        if ($hangSeconds -gt 0) {
+            $pauseReason = Get-HangCheckPauseReason
+            if ($pauseReason) {
+                if (-not $displayPaused) { Write-WatchdogLog ('hang-check paused ' + $pauseReason) }
+                $displayPaused = $true
+                continue
+            }
+            if ($displayPaused) {
+                $displayPaused = $false
+                $graceUntil = $tick.AddSeconds($hangSeconds)
+                Write-WatchdogLog ('hang-check resumed display/session-active-or-unknown grace={0}s' -f $hangSeconds)
+            }
+        }
         if ($tick -lt $graceUntil) { continue }
         # STOP はゲームを強制終了しないという従来の操作を維持する。
         if ((Test-Path -LiteralPath $env:STOP_FILE) -or (Test-Path -LiteralPath $commonStop)) { continue }
@@ -210,6 +317,7 @@ try {
     }
     exit 1
 } finally {
+    if ($powerNotifications) { [PhoneSaberPowerState]::Stop() }
     if ($null -ne $game) { $game.Dispose() }
     Remove-Item -LiteralPath $heartbeat -Force -ErrorAction SilentlyContinue
 }
