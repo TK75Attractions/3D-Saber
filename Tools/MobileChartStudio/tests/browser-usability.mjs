@@ -52,7 +52,17 @@ try{
   await page.locator('#settingsDialogClose').click();await settle();
   assert.equal(await page.locator('#playButton').innerText(),'録音開始','閉じたら止まり、録る画面の使い方へ戻る');
   assert.equal((await stored()).chart.notes.length,28,'曲を流してもノーツは増えない');check('settings can play the song for tap tempo and stop on close');
-  // 6. 最初の画面から、前回の下書きを1回で開ける。
+  // 6. 区間の近道: 今の位置から最後まで録り直す(1回で A・B・置き換え)。区間を解除も1回で。区間ボタンは状態を見せる。
+  await page.evaluate(()=>{const s=document.querySelector('#seek');s.value='12';s.dispatchEvent(new Event('input',{bubbles:true}));});await settle();
+  await page.locator('#rangeButton').click();await page.locator('#rangeDialog').waitFor({state:'visible'});assert.equal(await page.locator('#clearRange').isVisible(),false,'区間がないときは解除を出さない');
+  await page.locator('#redoFromHere').click();await settle();
+  assert.equal(await page.locator('#rangeDialog').isVisible(),false);assert.equal(await page.locator('#rangeStart').inputValue(),'12.000');assert.equal(await page.locator('#rangeEnd').inputValue(),'30.000');
+  assert.equal(await page.locator('#rangeEnabled').isChecked(),true);assert.equal(await page.locator('#replaceRange').isChecked(),true);
+  assert.equal(await page.locator('#rangeButton').innerText(),'区間 ON');assert.match(await page.locator('#recordWarning').innerText(),/置き換え · 12\.00〜30\.00秒/);
+  await page.waitForTimeout(3000);await page.screenshot({path:path.join(output,'usability-range.png')});
+  await page.locator('#rangeButton').click();await page.locator('#clearRange').click();await settle();
+  assert.equal(await page.locator('#rangeEnabled').isChecked(),false);assert.equal(await page.locator('#rangeButton').innerText(),'区間');check('one tap re-records from here, one tap clears the range');
+  // 7. 最初の画面から、前回の下書きを1回で開ける。
   await page.reload();await settle();assert.equal(await page.locator('#resumeProject').isVisible(),true);
   assert.match(await page.locator('#resumeProject').innerText(),/続きを開く：.*NORMAL/);await page.screenshot({path:path.join(output,'usability-resume.png')});
   await page.locator('#resumeProject').click();await page.waitForFunction(()=>!document.querySelector('#welcome')||document.querySelector('#welcome').hidden);

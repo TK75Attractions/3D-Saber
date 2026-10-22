@@ -6,6 +6,8 @@ export function installWorkspace(context) {
   const dialog=(id,title)=>{const d=element('dialog',{id}),head=element('div',{class:'dialog-head'});head.append(element('h2',{},title),button(id+'Close','閉じる',()=>d.close()));d.append(head);document.body.append(d);return d;};
   const settings=dialog('settingsDialog','設定'), range=dialog('rangeDialog','録音・確認する区間');
   range.append(q('.range-tools'));q('.range-tools').open=true;
+  // よく使う区間の操作を上に置く。今の位置から録り直す(A=今・B=曲の終わり・置き換え)と、区間の解除を1回で。
+  const quick=element('div',{class:'range-quick'});quick.append(button('redoFromHere','今の位置から最後まで録り直す',context.redoFromHere),button('clearRange','区間を解除',context.clearRange));range.querySelector('.dialog-head').after(quick);
   const groups=[['曲設定',['bpm','difficulty','beatZero','offset','level']],['打ち方',['snapMode','snap','snapWindowMs','flickEnabled','flickSensitivity','positionGrid','longCount','direction']],['この端末',['latency','songVolume','feedbackVolume']],['聴き方',['speed','countIn','clickSound','metronome']]];
   // BPMをたたいて測るには曲が要るので、測る道具の横で曲を流せるようにする(録音はしない)。
   const tempoListen=button('tempoListen','曲を流す',context.listenForTempo);q('.tempo-tools').prepend(tempoListen);
@@ -78,5 +80,7 @@ export function installWorkspace(context) {
     $('recordWarning').textContent=locked?'● 録音中 · 停止してから画面を切り替えられます':'区間指定なし · 入力を追加';
     if($('rangeEnabled').checked)$('recordWarning').textContent=`${$('replaceRange').checked?'⚠ 入力した区間を置き換え':'A–Bに追加'} · ${Number($('rangeStart').value).toFixed(2)}〜${Number($('rangeEnd').value).toFixed(2)}秒`;
     $('recordWarning').classList.toggle('replacing',$('rangeEnabled').checked&&$('replaceRange').checked);
+    $('rangeButton').textContent=$('rangeEnabled').checked?'区間 ON':'区間';$('rangeButton').classList.toggle('range-on',$('rangeEnabled').checked);
+    $('clearRange').hidden=!$('rangeEnabled').checked;$('redoFromHere').disabled=locked||state.loading||!state.project||state.playing;
   },direction(value){for(const b of directionGrid.children){b.setAttribute('aria-pressed',b.dataset.direction===value);b.classList.toggle('active',b.dataset.direction===value);}}};
 }
