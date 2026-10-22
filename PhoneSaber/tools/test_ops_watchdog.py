@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 @unittest.skipUnless(sys.platform == 'darwin', 'macOS bash / BSD stat の検証')
 class MacWatchdogTests(unittest.TestCase):
-    def run_watchdog(self, mode, threshold="1"):
+    def run_watchdog(self, mode, threshold="1", displays="0", clamshell="No", station="A"):
         with tempfile.TemporaryDirectory(prefix="縁日 テスト (1) ! ") as tmp:
             folder = Path(tmp)
             app = folder / "3D-Saber.app"
@@ -36,6 +36,21 @@ if mode == 'hang' and count == 1:
         os.utime(path, (time.time() - 90, time.time() - 90))
     quit_path.write_text('stale marker must not make hang a clean quit')
     time.sleep(30)
+elif mode.startswith('display-') and count == 1:
+    path = Path(args[args.index('-phonesaberHeartbeat') + 1])
+    path.write_text('1')
+    os.utime(path, (time.time() - 90, time.time() - 90))
+    time.sleep(1.5)
+    if mode in ('display-wake-fresh', 'display-wake-hang'):
+        Path(os.environ['DISPLAY_PATH']).write_text('0')
+        if mode == 'display-wake-hang':
+            time.sleep(30)
+        else:
+            # 復帰直後はまだ古い heartbeat。猶予中に Unity が再開する。
+            time.sleep(0.5)
+            for _ in range(4):
+                path.write_text('1')
+                time.sleep(0.3)
 elif mode == 'fresh':
     path = Path(args[args.index('-phonesaberHeartbeat') + 1])
     for _ in range(4):
@@ -91,17 +106,55 @@ else:
     print(command)
 ''')
             fake_ps.chmod(0o755)
+            # 実際の画面や電源設定に依存させない。inline Python はそのまま実行し、
+            # ctypes の CoreGraphics 呼出しだけを差し替える（複数画面・取得失敗も再現）。
+            fake_python = folder / "python3"
+            fake_python.write_text(f'#!{sys.executable}\n' + '''
+import ctypes as c
+import os, sys
+from pathlib import Path
+if sys.argv[1] != '-c':
+    os.execv(sys.executable, [sys.executable, *sys.argv[1:]])
+def display_list(capacity, displays, count):
+    state = Path(os.environ['DISPLAY_PATH']).read_text()
+    if state == 'error':
+        return 1
+    states = [] if state == 'none' else state.split(',')
+    count._obj.value = min(capacity, len(states)) if displays is not None else len(states)
+    if displays is not None:
+        for index in range(count._obj.value):
+            displays[index] = index + 1
+    return 0
+def is_asleep(display):
+    return int(Path(os.environ['DISPLAY_PATH']).read_text().split(',')[display - 1])
+class FakeCG:
+    CGGetOnlineDisplayList = staticmethod(display_list)
+    CGDisplayIsAsleep = staticmethod(is_asleep)
+c.CDLL = lambda path: FakeCG()
+exec(sys.argv[2])
+''')
+            fake_python.chmod(0o755)
+            (folder / 'display').write_text(displays)
+            for name, output in {
+                'ioreg': f'  |   "AppleClamshellState" = {clamshell}\n',
+                'pmset': "Now drawing from 'AC Power'\n lowpowermode 0\n",
+            }.items():
+                tool = folder / name
+                tool.write_text("#!/bin/bash\ncat <<'WATCHDOG_TEST_OUTPUT'\n" +
+                                output + 'WATCHDOG_TEST_OUTPUT\n')
+                tool.chmod(0o755)
             watcher = folder / "saber-watchdog.sh"
             watcher.write_text((ROOT / "PhoneSaber/mac/saber-watchdog.sh").read_text().replace(
                 '/usr/bin/open -W', f'"{fake_open}" -W').replace('sleep 1', 'sleep 0.1'))
             env = dict(os.environ, MODE=mode, COUNT_PATH=str(folder / 'count'), PID_PATH=str(folder / 'pid'),
                        PHONESABER_HANG_SECONDS=threshold, PHONESABER_P2P_BRIDGE_SCRIPT=str(folder / 'missing'),
+                       PHONESABER_TRIAGE_RECEIVER='0', DISPLAY_PATH=str(folder / 'display'),
                        COMMAND_PATH=str(folder / 'command'), STOP_PATH=str(folder / 'STOP'), PATH=str(folder) + os.pathsep + os.environ['PATH'])
-            process = subprocess.Popen(['/bin/bash', str(watcher), 'A', str(app)], env=env,
+            process = subprocess.Popen(['/bin/bash', str(watcher), station, str(app)], env=env,
                                        stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             try:
-                out, _ = process.communicate(timeout=6)
-                log = (folder / 'Start-Saber-A.log').read_text()
+                out, _ = process.communicate(timeout=10)
+                log = (folder / f'Start-Saber-{station}.log').read_text()
                 return process.returncode, log, int((folder / 'count').read_text()), out.decode()
             except subprocess.TimeoutExpired:
                 self.fail('監視がハングから復帰しなかった')
@@ -136,9 +189,10 @@ else:
         self.assertNotIn('hang detected', log)
 
     def test_disabled_threshold_never_kills(self):
-        code, log, count, _ = self.run_watchdog('disabled', '0')
+        code, log, count, _ = self.run_watchdog('disabled', '0', displays='1')
         self.assertEqual((code, count), (0, 1))
         self.assertNotIn('hang detected', log)
+        self.assertNotIn('hang-check paused', log)
 
     def test_stop_does_not_force_kill_current_game(self):
         code, log, count, _ = self.run_watchdog('stop')
@@ -149,6 +203,52 @@ else:
         code, log, count, _ = self.run_watchdog('fresh', '2')
         self.assertEqual((code, count), (0, 1))
         self.assertNotIn('hang detected', log)
+
+    def test_sleeping_displays_pause_once_without_restart_warning_spam(self):
+        for station in ('A', 'B'):
+            with self.subTest(station=station):
+                code, log, count, out = self.run_watchdog('display-sleep', displays='1,1', station=station)
+                self.assertEqual((code, count), (0, 1), out)
+                self.assertEqual(log.count('hang-check paused display-asleep'), 1)
+                self.assertNotIn('hang detected', log)
+                self.assertNotIn('異常終了', out)
+                self.assertEqual(out.count('再起動回数:'), 1)
+
+    def test_closed_lid_without_online_display_pauses(self):
+        code, log, count, out = self.run_watchdog('display-sleep', displays='none', clamshell='Yes')
+        self.assertEqual((code, count), (0, 1), out)
+        self.assertEqual(log.count('hang-check paused display-asleep'), 1)
+        self.assertNotIn('hang detected', log)
+
+    def test_awake_external_display_with_closed_lid_still_detects_hang(self):
+        code, log, count, out = self.run_watchdog('hang', displays='1,0', clamshell='Yes')
+        self.assertEqual((code, count), (0, 2), out)
+        self.assertIn('hang detected', log)
+        self.assertNotIn('hang-check paused', log)
+
+    def test_display_probe_failure_does_not_disable_real_hang_detection(self):
+        for displays, clamshell in (('error', 'Yes'), ('none', 'No'), ('none', 'unknown')):
+            with self.subTest(displays=displays, clamshell=clamshell):
+                code, log, count, out = self.run_watchdog('hang', displays=displays, clamshell=clamshell)
+                self.assertEqual((code, count), (0, 2), out)
+                self.assertIn('hang detected', log)
+                self.assertNotIn('hang-check paused', log)
+
+    def test_display_wake_allows_heartbeat_to_resume_during_grace(self):
+        code, log, count, out = self.run_watchdog('display-wake-fresh', '2', displays='1')
+        self.assertEqual((code, count), (0, 1), out)
+        self.assertEqual(log.count('hang-check paused display-asleep'), 1)
+        self.assertIn('hang-check resumed display-awake grace=2s', log)
+        self.assertNotIn('hang detected', log)
+
+    def test_display_wake_still_detects_hang_after_full_grace(self):
+        code, log, count, out = self.run_watchdog('display-wake-hang', '2', displays='1')
+        self.assertEqual((code, count), (0, 2), out)
+        resumed = next(line for line in log.splitlines() if 'hang-check resumed' in line)
+        detected = next(line for line in log.splitlines() if 'hang detected' in line)
+        resumed_at = time.strptime(resumed[1:21], '%Y-%m-%dT%H:%M:%SZ')
+        detected_at = time.strptime(detected[1:21], '%Y-%m-%dT%H:%M:%SZ')
+        self.assertGreaterEqual(time.mktime(detected_at) - time.mktime(resumed_at), 2)
 
 
 class WindowsSourceContractTests(unittest.TestCase):

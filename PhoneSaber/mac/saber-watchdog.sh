@@ -106,8 +106,39 @@ run_game_pid() {
     [[ -n "$found" ]] || return 1
     printf '%s\n' "$found"
 }
+# IODisplayWrangler に電源状態が無い Mac でも、標準ライブラリだけで全画面を確認する。
+# 蓋を閉じても外部画面が起きていれば監視を続ける。取得失敗時も従来どおり監視する。
+display_asleep() {
+    local state
+    state="$(python3 -c '
+import ctypes as c
+cg = c.CDLL("/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics")
+cg.CGGetOnlineDisplayList.argtypes = [c.c_uint32, c.POINTER(c.c_uint32), c.POINTER(c.c_uint32)]
+cg.CGGetOnlineDisplayList.restype = c.c_int32
+cg.CGDisplayIsAsleep.argtypes = [c.c_uint32]
+cg.CGDisplayIsAsleep.restype = c.c_uint32
+count = c.c_uint32()
+if cg.CGGetOnlineDisplayList(0, None, c.byref(count)):
+    raise SystemExit(1)
+if not count.value:
+    print("none")
+    raise SystemExit(0)
+displays = (c.c_uint32 * count.value)()
+if cg.CGGetOnlineDisplayList(len(displays), displays, c.byref(count)):
+    raise SystemExit(1)
+print("none" if not count.value else
+      "asleep" if all(cg.CGDisplayIsAsleep(d) for d in displays[:count.value]) else "awake")
+' 2>/dev/null)" || return 1
+    case "$state" in
+        asleep) return 0 ;;
+        # 接続画面が無い場合だけ蓋の状態を使う（閉じた蓋だけでは外部画面を除外できない）。
+        none) ioreg -r -k AppleClamshellState -d 4 2>/dev/null |
+            awk '/"AppleClamshellState"[[:space:]]*=[[:space:]]*Yes([[:space:]]|$)/ { closed=1 } END { exit !closed }' ;;
+        *) return 1 ;;
+    esac
+}
 monitor_game() {
-    local seen=0 modified size last_modified=0 now pid command last_tick grace_until=0
+    local seen=0 modified size last_modified=0 now pid command last_tick grace_until=0 display_paused=0
     last_tick="$(date +%s)"
     while kill -0 "$OPEN_PID" 2>/dev/null; do
         # 監視自身が止まっていた（Mac のスリープ復帰など）間は、ゲームも heartbeat を書けていない。
@@ -118,6 +149,18 @@ monitor_game() {
             log "watchdog resumed after $((now - last_tick))s; hang check paused"
         fi
         last_tick="$now"
+        # 画面スリープ中は Unity の Update も止まり得るので heartbeat の古さを数えない。
+        if [[ "$HANG_SECONDS" -gt 0 ]] && display_asleep; then
+            [[ "$display_paused" -eq 1 ]] || log "hang-check paused display-asleep"
+            display_paused=1
+            sleep 1
+            continue
+        fi
+        if [[ "$display_paused" -eq 1 ]]; then
+            display_paused=0
+            grace_until=$((now + HANG_SECONDS))
+            log "hang-check resumed display-awake grace=${HANG_SECONDS}s"
+        fi
         if [[ "$HANG_SECONDS" -gt 0 && "$now" -ge "$grace_until" ]] && ! stopped; then
             read -r modified size <<< "$(stat -f '%m %z' "$HEARTBEAT" 2>/dev/null)"
             # 作成だけ成功し、最初の書込みが容量不足で失敗した0 byteファイルは進行の証拠ではない。
