@@ -514,10 +514,13 @@ struct SaberIgnoreZone: Equatable, Codable {
     }
     // optional の合成 Codable により、両端のない旧保存形式もそのまま読める。
     var objectEndpoints: ObjectEndpoints?
-    static let margin = 0.04, minimumSize = 0.06
+    var objects: [ObjectEndpoints]?
+    static let margin = 0.05, minimumSize = 0.06
+    static let maximumObjects = 12
 
     /// 両端（フレームのピクセル）を囲み、少し広げた範囲。
-    init(around endpoints: (PixelPoint, PixelPoint), width: Int, height: Int) {
+    init(around endpoints: (PixelPoint, PixelPoint), width: Int, height: Int,
+         candidates: [SaberCandidate] = []) {
         let w = Double(max(width, 1)), h = Double(max(height, 1))
         objectEndpoints = ObjectEndpoints(
             x1: min(1, max(0, Double(endpoints.0.x) / w)), y1: min(1, max(0, Double(endpoints.0.y) / h)),
@@ -529,6 +532,19 @@ struct SaberIgnoreZone: Equatable, Codable {
         if highX - lowX < Self.minimumSize { let c = (lowX + highX) / 2; lowX = c - Self.minimumSize / 2; highX = c + Self.minimumSize / 2 }
         if highY - lowY < Self.minimumSize { let c = (lowY + highY) / 2; lowY = c - Self.minimumSize / 2; highY = c + Self.minimumSize / 2 }
         minX = lowX; maxX = highX; minY = lowY; maxY = highY
+        // winner を先頭に残し、同じフレーム・同じ色の矩形内候補を eligibility に依らず覚える。
+        var stored = [objectEndpoints!]
+        for candidate in candidates {
+            let ends = candidate.endpoints
+            guard contains(ends.0, width: width, height: height),
+                  contains(ends.1, width: width, height: height) else { continue }
+            let object = ObjectEndpoints(x1: Double(ends.0.x) / w, y1: Double(ends.0.y) / h,
+                                         x2: Double(ends.1.x) / w, y2: Double(ends.1.y) / h)
+            let reversed = ObjectEndpoints(x1: object.x2, y1: object.y2, x2: object.x1, y2: object.y1)
+            if !stored.contains(object) && !stored.contains(reversed) { stored.append(object) }
+            if stored.count == Self.maximumObjects { break }
+        }
+        objects = stored
     }
 
     init(minX: Double, minY: Double, maxX: Double, maxY: Double) {
@@ -543,15 +559,20 @@ struct SaberIgnoreZone: Equatable, Codable {
     func ignores(_ endpoints: (PixelPoint, PixelPoint), width: Int, height: Int) -> Bool {
         guard contains(endpoints.0, width: width, height: height),
               contains(endpoints.1, width: width, height: height) else { return false }
-        guard let object = objectEndpoints else { return true }
+        // 配列のない旧 objectEndpoints と、両方ない旧矩形形式も維持する。
+        let stored = objects.flatMap { $0.isEmpty ? nil : $0 } ?? objectEndpoints.map { [$0] }
+        guard let stored else { return true }
         let w = Double(max(width, 1)), h = Double(max(height, 1))
         let x1 = Double(endpoints.0.x) / w, y1 = Double(endpoints.0.y) / h
         let x2 = Double(endpoints.1.x) / w, y2 = Double(endpoints.1.y) / h
-        let tolerance = max(0.03, 0.25 * hypot(object.x2 - object.x1, object.y2 - object.y1))
-        return (hypot(x1 - object.x1, y1 - object.y1) <= tolerance
-                && hypot(x2 - object.x2, y2 - object.y2) <= tolerance)
-            || (hypot(x1 - object.x2, y1 - object.y2) <= tolerance
-                && hypot(x2 - object.x1, y2 - object.y1) <= tolerance)
+        return stored.contains { object in
+            // 蛍光灯 8090 登録時の矩形内変動は最大 0.06068（全候補、順序不問）。
+            let tolerance = max(0.07, 0.25 * hypot(object.x2 - object.x1, object.y2 - object.y1))
+            return (hypot(x1 - object.x1, y1 - object.y1) <= tolerance
+                    && hypot(x2 - object.x2, y2 - object.y2) <= tolerance)
+                || (hypot(x1 - object.x2, y1 - object.y2) <= tolerance
+                    && hypot(x2 - object.x1, y2 - object.y1) <= tolerance)
+        }
     }
 }
 

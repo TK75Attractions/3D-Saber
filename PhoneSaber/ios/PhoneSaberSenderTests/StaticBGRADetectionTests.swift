@@ -979,8 +979,10 @@ enum StaticBGRADetectionTests {
                               redThreshold: threshold, blueThreshold: threshold,
                               ignoreZones: zone.map { [color: [$0]] } ?? [:], trackLock: lock, now: 1)
             }
-            let endpoints = analyze(original, nil).selected[color]!
-            let zone = SaberIgnoreZone(around: endpoints, width: 640, height: 480)
+            let originalAnalysis = analyze(original, nil)
+            let endpoints = originalAnalysis.selected[color]!
+            let zone = SaberIgnoreZone(around: endpoints, width: 640, height: 480,
+                                       candidates: originalAnalysis.candidates[color] ?? [])
             let oldData = Data("{\"minX\":\(zone.minX),\"minY\":\(zone.minY),\"maxX\":\(zone.maxX),\"maxY\":\(zone.maxY)}".utf8)
             let old = try! JSONDecoder().decode(SaberIgnoreZone.self, from: oldData)
             let restored = try! JSONDecoder().decode(SaberIgnoreZone.self, from: JSONEncoder().encode(zone))
@@ -1001,8 +1003,8 @@ enum StaticBGRADetectionTests {
             }
             // 正規化距離の許容値境界と、矩形条件を別々に確認する。
             let short = SaberIgnoreZone(around: (PixelPoint(x: 500, y: 500), PixelPoint(x: 550, y: 500)), width: 1000, height: 1000)
-            precondition(saberIgnored((PixelPoint(x: 500, y: 529), PixelPoint(x: 550, y: 529)), width: 1000, height: 1000, zones: [short]))
-            precondition(!saberIgnored((PixelPoint(x: 500, y: 531), PixelPoint(x: 550, y: 531)), width: 1000, height: 1000, zones: [short]))
+            precondition(saberIgnored((PixelPoint(x: 549, y: 549), PixelPoint(x: 599, y: 549)), width: 1000, height: 1000, zones: [short]))
+            precondition(!saberIgnored((PixelPoint(x: 550, y: 550), PixelPoint(x: 600, y: 550)), width: 1000, height: 1000, zones: [short]))
         }
         print("Object ignore zones: both colors, same/reversed object, crossing saber, ON/OFF and Codable old/new passed")
         // 会場の赤いコーン（2026-10-18）: 無視する範囲に両端が入る候補は選ばず、同じコマの別の候補を選ぶ。

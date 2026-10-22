@@ -1602,7 +1602,7 @@ final class CameraViewModel: NSObject, ObservableObject {
 
     private var ignoreZones: [SaberColor: [SaberIgnoreZone]] = CameraViewModel.storedIgnoreZones()
     @Published private(set) var ignoreZoneSummary = CameraViewModel.summary(CameraViewModel.storedIgnoreZones())
-    static let maximumIgnoreZones = 4
+    static let maximumIgnoreZones = 8
 
     nonisolated private static func storedIgnoreZones() -> [SaberColor: [SaberIgnoreZone]] {
         guard NSClassFromString("XCTestCase") == nil,
@@ -1620,11 +1620,11 @@ final class CameraViewModel: NSObject, ObservableObject {
     }
 
     /// 剣を消し（カメラの外・電源 OFF）、コーンなど置きっぱなしの物だけが検出されている状態で押す。
-    /// 今その色で選ばれている物体の両端と範囲を覚え、矩形内でも異なる剣は残す。
+    /// 直近の検出フレームの同色候補をまとめて覚え、矩形内でも異なる剣は残す。
     @discardableResult
     func ignoreCurrentDetection(_ color: SaberColor) -> Bool {
-        guard let endpoints = color == .red ? redEndpoints : blueEndpoints else { return false }
-        let zone = SaberIgnoreZone(around: endpoints, width: sourceDimensions.width, height: sourceDimensions.height)
+        guard (color == .red ? redEndpoints : blueEndpoints) != nil,
+              let zone = processor.currentIgnoreZone(color) else { return false }
         var list = ignoreZones[color] ?? []
         list.append(zone)
         ignoreZones[color] = Array(list.suffix(Self.maximumIgnoreZones))

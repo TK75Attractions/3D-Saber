@@ -145,6 +145,14 @@ final class FrameProcessor: @unchecked Sendable {
     private let pendingLock = NSLock()
     /// 無視する範囲（SaberIgnoreZone）。main から設定し、検出スレッドで読む（pendingLock で保護）。
     private var ignoreZones: [SaberColor: [SaberIgnoreZone]] = [:]
+    // UI の更新間隔中に空フレームが来ても、最後にその色が選ばれた1フレームを使う（画像は保持しない）。
+    private var ignoreFrames: [SaberColor: (analysis: SaberFrameAnalysis, width: Int, height: Int)] = [:]
+    func currentIgnoreZone(_ color: SaberColor) -> SaberIgnoreZone? {
+        pendingLock.lock(); let frame = ignoreFrames[color]; pendingLock.unlock()
+        guard let frame, let endpoints = frame.analysis.selected[color] else { return nil }
+        return SaberIgnoreZone(around: endpoints, width: frame.width, height: frame.height,
+                               candidates: frame.analysis.candidates[color] ?? [])
+    }
     func setIgnoreZones(_ zones: [SaberColor: [SaberIgnoreZone]]) {
         pendingLock.lock(); ignoreZones = zones; pendingLock.unlock()
     }
@@ -288,6 +296,7 @@ final class FrameProcessor: @unchecked Sendable {
             generation += 1
             pendingLock.lock()
             generationSnapshot = generation
+            ignoreFrames = [:]
             pendingLock.unlock()
             return generation
         }
@@ -642,11 +651,12 @@ final class FrameProcessor: @unchecked Sendable {
             analysis = recordedAnalysis
             sabers = recordedAnalysis.selected
         } else {
-            analysis = nil
-            sabers = detectSabers(baseAddress: bytes, width: width, height: height,
+            let result = analyzeSabers(baseAddress: bytes, width: width, height: height,
                                   bytesPerRow: bytesPerRow,
                                   redThreshold: redThreshold, blueThreshold: blueThreshold,
                                   ignoreZones: zones, playArea: area, trackLock: lockState, now: processingStart)
+            analysis = result
+            sabers = result.selected
         }
         let observedAnalysis = analysis
 #endif
@@ -662,6 +672,11 @@ final class FrameProcessor: @unchecked Sendable {
         // ゲートを通った実winnerだけで拡張。補間・holdした座標は使わない。
         let grownArea = lockState?.grownPlayArea(area, selected: sabers, width: width, height: height, now: processingStart)
         pendingLock.lock()
+        if let frameAnalysis = observedAnalysis {
+            for color in [SaberColor.red, .blue] where frameAnalysis.selected[color] != nil {
+                ignoreFrames[color] = (frameAnalysis, width, height)
+            }
+        }
         if lockEnabled, trackLockEnabled, !learningArea, playAreaLearner == nil, areaRevision == playAreaRevision {
             if let grownArea, grownArea != playArea {
                 playArea = grownArea

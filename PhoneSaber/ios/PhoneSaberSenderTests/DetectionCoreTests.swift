@@ -319,6 +319,33 @@ final class DetectionCoreTests: XCTestCase {
     }
 #endif
 
+    func testIgnoreZoneSnapshotUsesOneDetectionFrameAndResets() throws {
+        let processor = FrameProcessor(expiryScheduler: nil)
+        XCTAssertNil(processor.currentIgnoreZone(.red))
+        func frame(_ x: Int?) -> CMSampleBuffer {
+            sampleBuffer(width: 480, height: 640) { base, stride in
+                guard let x else { return }
+                let pixels = base.assumingMemoryBound(to: UInt8.self)
+                for y in 340...410 { for dx in -4...4 {
+                    let i = y * stride + (x + dx) * 4
+                    pixels[i] = 30; pixels[i + 1] = 45; pixels[i + 2] = 245
+                } }
+            }
+        }
+        processor.queue.sync { processor.process(frame(40)) }
+        let first = try XCTUnwrap(processor.currentIgnoreZone(.red))
+        XCTAssertNotNil(first.objects)
+        XCTAssertNil(processor.currentIgnoreZone(.blue))
+        processor.queue.sync { processor.process(frame(nil)) }
+        XCTAssertEqual(processor.currentIgnoreZone(.red), first, "UI 更新の間に空コマが来ても直近の検出フレームを保持")
+        processor.queue.sync { processor.process(frame(360)) }
+        let next = try XCTUnwrap(processor.currentIgnoreZone(.red))
+        XCTAssertNotEqual(next, first)
+        XCTAssertGreaterThan(next.minX, 0.6, "別フレームの winner と候補を混ぜない")
+        processor.reset()
+        XCTAssertNil(processor.currentIgnoreZone(.red))
+    }
+
     func testFrameSendPrecedesHealthStatisticsWithTrackLock() {
         var now = 1.0
         let processor = FrameProcessor(clock: { now }, expiryScheduler: nil)

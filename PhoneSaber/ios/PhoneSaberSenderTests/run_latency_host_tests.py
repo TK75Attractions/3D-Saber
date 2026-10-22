@@ -167,7 +167,7 @@ extension AVCaptureSession { func addOutput(_ output: AVCaptureVideoDataOutput) 
     core = (TESTS / "DetectionCoreTests.swift").read_text()
     markers = ["func testFixedShutterStored", "func testFixedShutterPlan", "func testCameraFormatSelection", "func test120FPSFormat", "func testLatestFramePolicy", "func testPostProcessing",
                "func testDefaultCameraSettings", "func testFrameSendPrecedes", "func testCaptureHealthUses",
-               "func test120FPSMailboxPreserves", "func testDebugRecordingBundleIncludesConnectivityTail", "func testPlayAreaGrowth"]
+               "func test120FPSMailboxPreserves", "func testDebugRecordingBundleIncludesConnectivityTail", "func testPlayAreaGrowth", "func testIgnoreZoneSnapshot"]
     focused = "import XCTest\nimport CoreMedia\nimport CoreVideo\nimport AVFoundation\nfinal class CameraLatencyTests: XCTestCase {\n"
     for name in re.findall(r"func (test\w+)\(", core):
         if any(("func " + name).startswith(marker) for marker in markers):

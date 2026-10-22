@@ -33,6 +33,75 @@ final class AutoClipTests: XCTestCase {
 
     // MARK: Competition
 
+    func testIgnoreZoneStoresAllThreeTubeCandidatesIncludingIneligible() throws {
+        // 実録 20261022_113757 frame 8090。winner だけでは別形状が再び選ばれる。
+        let candidates = [Self.candidate((18, 372), (48, 410), source: "core-halo"),
+                          Self.candidate((12, 390), (34, 342)),
+                          Self.candidate((18, 404), (28, 340), eligible: false, source: "color-close")]
+        let zone = SaberIgnoreZone(around: candidates[0].endpoints, width: 480, height: 640,
+                                   candidates: candidates)
+        XCTAssertEqual(zone.objects?.count, 3)
+        let restored = try JSONDecoder().decode(SaberIgnoreZone.self, from: JSONEncoder().encode(zone))
+        XCTAssertEqual(restored, zone)
+        for candidate in candidates {
+            XCTAssertTrue(restored.ignores(candidate.endpoints, width: 480, height: 640))
+            XCTAssertTrue(restored.ignores((candidate.endpoints.1, candidate.endpoints.0), width: 480, height: 640))
+        }
+        // 実録の flicker: 最寄りの登録両端から正規化距離 0.06068。
+        XCTAssertTrue(restored.ignores(Self.candidate((12, 350), (72, 432)).endpoints, width: 480, height: 640))
+        let crossing = Self.candidate((0, 440), (70, 345))
+        XCTAssertTrue(zone.contains(crossing.endpoints.0, width: 480, height: 640))
+        XCTAssertTrue(zone.contains(crossing.endpoints.1, width: 480, height: 640))
+        XCTAssertTrue(AutoClipCompetition.selectable(crossing, width: 480, height: 640, zones: [zone], playArea: nil))
+        var legacy = zone
+        legacy.objects = nil
+        let old = try JSONDecoder().decode(SaberIgnoreZone.self, from: JSONEncoder().encode(legacy))
+        XCTAssertEqual(old.objectEndpoints, zone.objectEndpoints)
+        XCTAssertTrue(old.ignores(candidates[0].endpoints, width: 480, height: 640))
+    }
+
+    func testIgnoreZoneObjectsAreBoundedDeduplicatedAndInsideRectangle() {
+        let seed = Self.candidate((200, 200), (400, 400))
+        let reversed = Self.candidate((400, 400), (200, 200), eligible: false)
+        let outside = Self.candidate((200, 200), (900, 900))
+        let many = (1...30).map { Self.candidate((200 + $0, 200), (400, 400)) }
+        let zone = SaberIgnoreZone(around: seed.endpoints, width: 1000, height: 1000,
+                                   candidates: [seed, reversed, outside] + many)
+        XCTAssertEqual(zone.objects?.count, SaberIgnoreZone.maximumObjects)
+        XCTAssertEqual(zone.objects?.first, zone.objectEndpoints)
+        XCTAssertEqual(zone.objects?[1].x1, 0.201)
+        XCTAssertFalse(zone.ignores(outside.endpoints, width: 1000, height: 1000))
+    }
+
+    func testSaberCrossingTubeRectangleIsStillSelected() throws {
+        let candidates = [Self.candidate((18, 372), (48, 410)), Self.candidate((12, 390), (34, 342)),
+                          Self.candidate((18, 404), (28, 340), eligible: false)]
+        let zone = SaberIgnoreZone(around: candidates[0].endpoints, width: 480, height: 640, candidates: candidates)
+        for color in [SaberColor.red, .blue] {
+            var bytes = [UInt8](repeating: 0, count: 480 * 640 * 4)
+            for t in 0...95 {
+                let x = Int((70.0 * Double(t) / 95).rounded()), y = 440 - t
+                for dy in -2...2 { for dx in -2...2 where x + dx >= 0 {
+                    let i = ((y + dy) * 480 + x + dx) * 4
+                    bytes[i] = color == .blue ? 245 : 30
+                    bytes[i + 1] = 45
+                    bytes[i + 2] = color == .red ? 245 : 30
+                    bytes[i + 3] = 255
+                } }
+            }
+            let threshold = ColorThreshold(brightness: 140, dominance: 20)
+            for lock in [nil, SaberTrackLock()] as [SaberTrackLock?] {
+                let analysis = analyzeSabers(in: bytes, width: 480, height: 640, bytesPerRow: 480 * 4,
+                    redThreshold: threshold, blueThreshold: threshold, ignoreZones: [color: [zone]],
+                    trackLock: lock, now: 1)
+                let selected = try XCTUnwrap(analysis.selected[color])
+                XCTAssertTrue(zone.contains(selected.0, width: 480, height: 640))
+                XCTAssertTrue(zone.contains(selected.1, width: 480, height: 640))
+                XCTAssertFalse(zone.ignores(selected, width: 480, height: 640))
+            }
+        }
+    }
+
     func testObjectIgnoreZoneSelectableKeepsCrossingSaber() {
         let cone = Self.candidate((150, 100), (400, 350))
         let crossing = Self.candidate((170, 320), (380, 130))
