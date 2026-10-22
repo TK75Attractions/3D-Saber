@@ -229,6 +229,7 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
             { "phone-clear-ignore", _ => PhoneSaberDiscoveryResponder.QueueCommand("clear-ignore=1") },
             { "phone-learn-area", _ => PhoneSaberDiscoveryResponder.QueueCommand(PhoneSaberDiscoveryResponder.LearnAreaCommand) },
             { "phone-clear-area", _ => PhoneSaberDiscoveryResponder.QueueCommand(PhoneSaberDiscoveryResponder.ClearAreaCommand) },
+            { "phone-shutter", v => PhoneSaberOperatorKeys.SelectShutter(int.Parse(v, CultureInfo.InvariantCulture)) },
             { "phone-exposure", v => PhoneSaberDiscoveryResponder.QueueCommand(PhoneSaberDiscoveryResponder.ExposureBiasCommand(int.Parse(v, CultureInfo.InvariantCulture))) },
             { "phone-track-lock", _ => {
                 bool last = (bool)TrackLockState.GetValue(null);
@@ -468,7 +469,7 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         // 本命は iPhone 側（候補を選ぶ前に外すので、同じコマの剣が選ばれる）。PC 側はその予備。
         double left = PhoneSaberDiscoveryResponder.CommandSecondsLeft(SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp));
         panel.Label("キーでも操作できます（F8 を開かずに）: Ctrl+Shift+R 赤を無視 / B 青を無視 / I 赤と青を無視 / C 無視を消す / K 今の場面を保存（iPhone） / " +
-            "P プレイ範囲を覚える / X プレイ範囲を消す / E 露出 −2→0→−1→−2 / T 剣を追いかける ON→OFF→ON");
+            "P プレイ範囲を覚える / X プレイ範囲を消す / E 露出 −2→0→−1→−2 / T 剣を追いかける ON→OFF→ON / S 固定シャッター");
         panel.Label("スマホに無視させる（iPhone・Android。剣の電源を切り、コーンなどだけが映っている状態で押す）" +
             (left > 0 ? $"　送信中 あと {left:0} 秒" : ""));
         if (!string.IsNullOrEmpty(PhoneSaberOperatorKeys.LastResultText))
@@ -486,6 +487,9 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         // 露出補正（試験、既定 0 = OFF）。−1・−2 で光らない服などが暗くなる。認識に入る画像が変わるので比べて使う。
         foreach (int ev in PhoneSaberDiscoveryResponder.ExposureBiasChoices)
             panel.Button(ev == 0 ? "スマホ露出: 0" : $"スマホ露出: −{-ev}", "phone-exposure", ev.ToString(CultureInfo.InvariantCulture));
+        panel.Label("iPhone固定シャッター（試験）[Ctrl+Shift+S]: OFF → 1/500 → 1/1000 → 1/2000 → OFF。LED芯の明るさを確認");
+        foreach (int value in PhoneSaberDiscoveryResponder.ShutterChoices)
+            panel.Button(value == 0 ? "固定シャッター: OFF" : $"固定シャッター: 1/{value} 秒", "phone-shutter", value.ToString(CultureInfo.InvariantCulture));
         panel.Label($"PC 側で無視（予備）: {count} か所（この台に保存）{ignored}");
         string warning = input != null ? IgnoreDominanceWarning(input) : "";
         if (warning.Length > 0) panel.Label(warning, true);

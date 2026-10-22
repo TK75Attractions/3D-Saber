@@ -215,7 +215,7 @@ struct ContentView: View {
                                 ForEach(CameraExposureExperiment.allCases) { Text($0.title).tag($0) }
                             }
                             .pickerStyle(.segmented)
-                            .disabled(!model.cameraExposureExperimentEditable)
+                            .disabled(!model.cameraExposureExperimentEditable || model.shutter != 0)
                             Text("実験用。自動(既定)はカメラ露出を一切変更しません。速い振りのブレ確認用で、画面が暗くなる・ノイズが増えることがあります。録画中は変更できません。状態: \(model.cameraExposureExperimentState.displayText)")
                                 .font(.caption2)
                                 .foregroundStyle(model.cameraExposureExperimentState.capActive ? .orange : .secondary)
@@ -494,6 +494,16 @@ struct ContentView: View {
                             .buttonStyle(.bordered)
                             Text("赤い服の人など、動く赤・青の物の対策。送信中に押し、\(CameraViewModel.playAreaLearnSeconds)秒間、遊ぶ範囲いっぱいに剣（赤・青）を振ります。以後、中心がその範囲（緑の枠）の外にある候補は選びません。カメラを動かしたら覚え直してください。Mac の F8 からも操作できます。")
                                 .font(.caption).foregroundStyle(.secondary)
+                            Text(model.shutterStatus)
+                            Picker("固定シャッター（iPhone）", selection: Binding(
+                                get: { model.shutter }, set: { model.setShutter($0) }
+                            )) {
+                                ForEach(CameraViewModel.shutterChoices, id: \.self) { value in
+                                    Text(CameraViewModel.shutterLabel(value)).tag(value)
+                                }
+                            }
+                            Text("服などの反射光を暗くする試験。ISOは端末の最低値×2に固定。LED芯が明るいままか確認してください。OFFで従来の自動露出＋補正に戻ります。")
+                                .font(.caption)
                             Text(model.exposureBiasStatus)
                             Picker("露出補正", selection: Binding(
                                 get: { model.exposureBias },
@@ -504,7 +514,7 @@ struct ContentView: View {
                                 }
                             }
                             .pickerStyle(.segmented)
-                            Text("既定 0（OFF、カメラの露出に触れない）。−1・−2 EV は光らない服などを暗くする試験設定で、認識に入る画像が変わります。送信中もそのまま切り替わり、保存されます。")
+                            Text("既定 −2 EV。固定シャッターOFF時に使う自動露出の補正です。固定シャッター中の変更は保存し、OFFに戻したとき適用します。")
                                 .font(.caption).foregroundStyle(.secondary)
                             Toggle("低発熱表示（送信中に\(Int(LowHeatDisplayPolicy.idleSeconds))秒触れなければ画面を暗くする）", isOn: Binding(
                                 get: { model.lowHeatDisplayEnabled },

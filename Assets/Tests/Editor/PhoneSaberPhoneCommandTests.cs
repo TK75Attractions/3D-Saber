@@ -11,6 +11,15 @@ public class PhoneSaberPhoneCommandTests
             PhoneSaberDiscoveryResponder.BuildReply(5005, 5006, "Mac", "A"));
     }
 
+    [Test]
+    public void ShutterCommandsMatchTheIPhoneParser()
+    {
+        CollectionAssert.AreEqual(new[] { 0, 500, 1000, 2000 }, PhoneSaberDiscoveryResponder.ShutterChoices);
+        foreach (int value in PhoneSaberDiscoveryResponder.ShutterChoices)
+            Assert.AreEqual("PHONESABER_COMMAND 1 id=17 shutter=" + value,
+                PhoneSaberDiscoveryResponder.BuildCommand(17, PhoneSaberDiscoveryResponder.ShutterCommand(value)));
+    }
+
     // プレイ範囲・露出補正（2026-10-18）。iPhone の testPCCommandParsingPlayAreaAndExposure・Android の PlayAreaTest と同じ形式。
     [Test]
     public void PlayAreaAndExposureCommandsMatchWhatThePhonesParse()

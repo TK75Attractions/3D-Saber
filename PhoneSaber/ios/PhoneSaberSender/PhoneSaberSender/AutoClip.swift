@@ -596,6 +596,9 @@ final class AutoClipBuffers {
 struct AutoClipEnvironment: Equatable {
     var thermal = "nominal"
     var exposureBias = 0
+    var shutter = 0
+    var exposureDurationSeconds: Double?
+    var iso: Double?
     var appVersion = ""
     var signingExpiryRemainingHours: Int?
 }
@@ -1222,6 +1225,9 @@ struct AutoClipBundleContent {
             "camera": ["captureFPS": capture.captureFPS, "measuredFPS": round1(measuredFPS),
                        "signingExpiryRemainingHours": capture.environmentAtSave.signingExpiryRemainingHours ?? NSNull(),
                        "exposureBias": capture.environmentAtTrigger.exposureBias,
+                       "shutter": capture.environmentAtTrigger.shutter,
+                       "exposureDurationSeconds": capture.environmentAtTrigger.exposureDurationSeconds ?? NSNull(),
+                       "iso": capture.environmentAtTrigger.iso ?? NSNull(),
                        "thermalAtTrigger": capture.environmentAtTrigger.thermal,
                        "thermalAtSave": capture.environmentAtSave.thermal,
                        "appVersion": capture.environmentAtTrigger.appVersion],

@@ -188,6 +188,56 @@ func disableCameraPostProcessing(_ camera: AVCaptureDevice) -> Bool {
     return true
 }
 
+// 固定短時間露出は明示 opt-in。ISO は最低感度の2倍（+1段）を初期値にして
+// LED 芯の飽和の余裕を残しつつ、反射光を自動ISOで持ち上げない。飽和は実機で確認する。
+struct CameraShutterPlan: Equatable {
+    let duration: CMTime
+    let iso: Float
+
+    static func make(denominator: Int, minimum: CMTime, maximum: CMTime,
+                     frameDuration: CMTime, minISO: Float, maxISO: Float) -> Self? {
+        guard [500, 1000, 2000].contains(denominator),
+              [minimum, maximum, frameDuration].allSatisfy({
+                  $0.isNumeric && CMTimeGetSeconds($0).isFinite && CMTimeGetSeconds($0) > 0
+              }), minISO.isFinite, maxISO.isFinite, minISO > 0, maxISO >= minISO else { return nil }
+        let ceiling = CMTimeMinimum(maximum, frameDuration)
+        guard CMTimeCompare(minimum, ceiling) <= 0 else { return nil }
+        let duration = CMTimeMaximum(minimum, CMTimeMinimum(CMTime(value: 1, timescale: Int32(denominator)), ceiling))
+        return Self(duration: duration, iso: min(maxISO, minISO * 2))
+    }
+}
+
+// lock と setter の境界を既存の fake device でも検証する。OFF の初回適用は書込みゼロ。
+struct CameraShutterController {
+    private(set) var active = false
+
+    mutating func apply(_ denominator: Int, to camera: AVCaptureDevice) throws -> Bool {
+        if denominator == 0 {
+            guard active else { return true }
+            try camera.lockForConfiguration()
+            defer { camera.unlockForConfiguration() }
+            camera.exposureMode = .continuousAutoExposure
+            active = false
+            return true
+        }
+        let format = camera.activeFormat
+        guard camera.isExposureModeSupported(.custom), camera.isExposureModeSupported(.continuousAutoExposure),
+              let plan = CameraShutterPlan.make(denominator: denominator,
+                  minimum: format.minExposureDuration, maximum: format.maxExposureDuration,
+                  frameDuration: camera.activeVideoMinFrameDuration,
+                  minISO: format.minISO, maxISO: format.maxISO) else { return false }
+        try camera.lockForConfiguration()
+        defer { camera.unlockForConfiguration() }
+        let minimum = camera.activeVideoMinFrameDuration, maximum = camera.activeVideoMaxFrameDuration
+        camera.setExposureModeCustom(duration: plan.duration, iso: plan.iso, completionHandler: nil)
+        // custom exposure が fps を変更しても、設定済みの固定 fps（通常60）を維持する。
+        camera.activeVideoMinFrameDuration = minimum
+        camera.activeVideoMaxFrameDuration = maximum
+        active = true
+        return true
+    }
+}
+
 struct CameraFrameIntervalStatistics: Equatable {
     let sampleCount: Int
     let latestMs: Double
@@ -994,6 +1044,7 @@ final class CameraViewModel: NSObject, ObservableObject {
             enabled: autoClipOn)
         self.autoClipEnabled = autoClipOn
         super.init()
+        refreshShutterStatus()
         self.lowHeatDisplay.onDimmedChange = { [weak self] dimmed in self?.lowHeatDimmedChanged(dimmed) }
         if !underTest {
             let manual = UserDefaults.standard.string(forKey: "PhoneSaber.manualHost") ?? ""
@@ -1382,6 +1433,7 @@ final class CameraViewModel: NSObject, ObservableObject {
     private func publishDeviceHealth(at time: TimeInterval, force: Bool = false) {
         guard force || time - lastHealthPublish >= 1 else { return }
         lastHealthPublish = time
+        refreshShutterStatus()
         let state = ProcessInfo.processInfo.thermalState
         let thermal = DeviceThermalLevel(state: state)
         if let previous = lastThermalState, previous != state {
@@ -1394,7 +1446,7 @@ final class CameraViewModel: NSObject, ObservableObject {
             ConnectivityLog.shared.recordToFileOnly("CAPTURE_METRICS", CaptureLatencyLogPolicy.line(
                 route: delivery.currentRoute.rawValue, captureModeFPS: activeCaptureFPS,
                 rates: rates, thermal: thermal, brightness: Double(UIScreen.main.brightness),
-                batteryLevel: battery.level, batteryState: battery.state))
+                batteryLevel: battery.level, batteryState: battery.state) + " camera: " + shutterStatus)
         }
         if metricsCadence.due(at: time, sending: running),
            delivery.currentRoute == .lanVerified || delivery.currentRoute == .lanUnverified {
@@ -1609,6 +1661,7 @@ final class CameraViewModel: NSObject, ObservableObject {
             self.lanProbe.sendAck(to: host, line: line)
         }
         if command.defaults {
+            guard setShutter(0) else { return }
             setTrackLockEnabled(true)
             setExposureBias(-2, commandID: command.id)
             ack("defaults", "tracklock-on-ev-2")
@@ -1630,6 +1683,7 @@ final class CameraViewModel: NSObject, ObservableObject {
         }
         if command.clearArea { clearPlayArea(commandID: command.id); ack("cleared", "area") }
         if let enabled = command.trackLock { setTrackLockEnabled(enabled); ack("tracklock", enabled ? "on" : "off") }
+        if let value = command.shutter, setShutter(value) { ack("shutter", value == 0 ? "off" : String(value)) }
         if let bias = command.exposureBias { setExposureBias(bias, commandID: command.id); ack("exposure", "ev\(bias)") }
         if let enabled = command.autoClip { setAutoClipEnabled(enabled, commandID: command.id); ack("autoclip", enabled ? "on" : "off") }
         if command.clip {
@@ -1665,6 +1719,7 @@ final class CameraViewModel: NSObject, ObservableObject {
             ConnectivityLog.shared.record("AUTOCLIP", "clip skipped reason=notSending request=\(request)")
             return
         }
+        updateAutoClipEnvironment(thermal: DeviceThermalLevel(state: ProcessInfo.processInfo.thermalState).metadataValue)
         autoClip.requestClip(reason: request)
     }
 
@@ -1680,13 +1735,20 @@ final class CameraViewModel: NSObject, ObservableObject {
         refreshAutoClipStatus()
     }
 
+    private func updateAutoClipEnvironment(thermal: String) {
+        autoClip.updateEnvironment(AutoClipEnvironment(
+            thermal: thermal, exposureBias: exposureBias,
+            shutter: shutter,
+            exposureDurationSeconds: running ? exposureBiasCamera.map { CMTimeGetSeconds($0.exposureDuration) } : nil,
+            iso: running ? exposureBiasCamera.map { Double($0.iso) } : nil,
+            appVersion: (Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String) ?? "unknown",
+            signingExpiryRemainingHours: SigningExpiry.current.remainingHours(at: Date())))
+    }
+
     /// 1秒ごと（publishDeviceHealth）。発熱・fps 低下・Debug Recording 中は止め、転送はプレイの合間に回す。
     private func updateAutoClipPolicy(thermalState: ProcessInfo.ThermalState, thermal: DeviceThermalLevel,
                                       rates: DeviceHealthRates, at time: TimeInterval) {
-        autoClip.updateEnvironment(AutoClipEnvironment(
-            thermal: thermal.metadataValue, exposureBias: exposureBias,
-            appVersion: (Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String) ?? "unknown",
-            signingExpiryRemainingHours: SigningExpiry.current.remainingHours(at: Date())))
+        updateAutoClipEnvironment(thermal: thermal.metadataValue)
         autoClip.setSuspended(AutoClipSuspendPolicy.reason(
             thermal: thermalState, fpsReduced: thermalFPSPolicy.reduced,
             debugRecording: debugRecordingActive || debugRecordingFinalizing))
@@ -1822,6 +1884,68 @@ final class CameraViewModel: NSObject, ObservableObject {
 
     // MARK: 露出補正（光らない物を暗くする試験スイッチ）
 
+    static let shutterChoices = LANLivenessProbe.shutterChoices
+    private static let shutterKey = "PhoneSaber.shutter.v1"
+    @Published private(set) var shutter = NSClassFromString("XCTestCase") == nil
+        ? CameraViewModel.storedShutter(in: .standard) : 0
+    @Published private(set) var shutterStatus = "固定シャッター: OFF"
+    private var shutterController = CameraShutterController()
+
+    nonisolated static func storedShutter(in defaults: UserDefaults) -> Int {
+        let value = defaults.integer(forKey: shutterKey)
+        return LANLivenessProbe.shutterChoices.contains(value) ? value : 0
+    }
+
+    static func shutterLabel(_ value: Int) -> String { value == 0 ? "OFF（自動露出）" : "1/\(value) 秒" }
+
+    @discardableResult
+    func setShutter(_ value: Int) -> Bool {
+        guard Self.shutterChoices.contains(value) else { return false }
+        let wasActive = shutterController.active
+        if running, let camera = exposureBiasCamera, !applyShutter(value, to: camera) { return false }
+        shutter = value
+        if NSClassFromString("XCTestCase") == nil { UserDefaults.standard.set(value, forKey: Self.shutterKey) }
+        if value == 0, wasActive, running, let camera = exposureBiasCamera {
+            applyCameraExposureExperiment(to: camera)
+            applyExposureBias(to: camera, reason: "shutter-off")
+        }
+        refreshShutterStatus()
+        updateAutoClipEnvironment(thermal: DeviceThermalLevel(state: ProcessInfo.processInfo.thermalState).metadataValue)
+        ConnectivityLog.shared.record("SHUTTER", "requested=\(value) running=\(running) \(shutterStatus)")
+        return true
+    }
+
+    private func applyShutter(_ value: Int, to camera: AVCaptureDevice) -> Bool {
+        do {
+            guard try shutterController.apply(value, to: camera) else {
+                shutterStatus = "固定シャッター: このカメラ形式では使用できません"
+                ConnectivityLog.shared.record("SHUTTER", "unsupported requested=\(value)")
+                return false
+            }
+            return true
+        } catch {
+            shutterStatus = "固定シャッター: 設定失敗（\(error.localizedDescription)）"
+            ConnectivityLog.shared.record("SHUTTER", shutterStatus)
+            return false
+        }
+    }
+
+    private func restoreShutterBeforeStop() {
+        guard shutterController.active, let camera = exposureBiasCamera else { return }
+        if applyShutter(0, to: camera) { applyExposureBias(to: camera, reason: "shutter-restore") }
+    }
+
+    private func refreshShutterStatus() {
+        let title = "固定シャッター: " + Self.shutterLabel(shutter)
+        if running, let camera = exposureBiasCamera {
+            shutterStatus = title + String(format: "（実測 %.3f ms / ISO %.0f、%@）",
+                CMTimeGetSeconds(camera.exposureDuration) * 1000, camera.iso,
+                shutterController.active ? "固定" : "自動")
+        } else {
+            shutterStatus = title + (shutter == 0 ? "" : "（送信開始時に適用）")
+        }
+    }
+
     /// 既定 −2 EV。0 = OFF で、0 の間はカメラの露出に一切触れない。シャッター上限（CameraExposureExperiment）だけでは
     /// 自動露出が ISO を上げて戻すため、負の露出補正（setExposureTargetBias）で服などを暗くし、自発光の LED 剣だけを
     /// 明るく残す狙い。0 以外では認識への入力（画素）が変わる。閾値は変えない。実機で比べるための試験設定。
@@ -1845,7 +1969,7 @@ final class CameraViewModel: NSObject, ObservableObject {
         exposureBias = ev
         if NSClassFromString("XCTestCase") == nil { UserDefaults.standard.set(ev, forKey: PlayAreaSettings.exposureBiasKey) }
         ConnectivityLog.shared.record("EXPOSURE_BIAS", "set ev=\(ev) id=\(commandID.map(String.init) ?? "-")")
-        if let camera = exposureBiasCamera {
+        if shutter == 0, let camera = exposureBiasCamera {
             applyExposureBias(to: camera, reason: "set")
         } else {
             exposureBiasStatus = "露出補正: \(Self.exposureBiasLabel(ev))" + (ev == 0 ? "" : "（送信開始時に適用）")
@@ -2173,10 +2297,12 @@ final class CameraViewModel: NSObject, ObservableObject {
         publishCameraLifecycle(at: ProcessInfo.processInfo.systemUptime)
         updateIdleTimerPolicy()
         sessionRunner.stopSynchronously()
+        restoreShutterBeforeStop()
         sender.stop(); lanConfigured = false; lanProbe.stop(); resetProcessor(); activeDestination = "未設定"; status = "停止中"; redEndpoints = nil; blueEndpoints = nil; senderStates = [:]; senderErrors = [:]; cameraErrorMessage = nil; connectionErrorMessage = nil; sendErrorMessages = [:]; recomputeErrorMessage()
     }
 
     private func configureAndStart(isRecovery: Bool = false, recoveryGeneration: Int? = nil) {
+        restoreShutterBeforeStop()
         processor.setIgnoreZones(ignoreZones)
         processor.setPlayArea(playArea)
         processor.setTrackLockEnabled(trackLockEnabled)
@@ -2297,6 +2423,12 @@ final class CameraViewModel: NSObject, ObservableObject {
         applyCameraExposureExperiment(to: camera)
         // 露出補正（既定 0 では触れない）。形式の再設定・熱による fps 変更はここを通るので毎回かけ直す。
         applyExposureBias(to: camera, reason: isRecovery ? "recovery" : "configure")
+        if shutter != 0, !applyShutter(shutter, to: camera) {
+            // 対応しない形式・lock失敗は自動露出のまま明示して止める。
+            fail(shutterStatus)
+            return
+        }
+        refreshShutterStatus()
         let actualDuration = CMTimeGetSeconds(camera.activeVideoMaxFrameDuration)
         let actualFPS = actualDuration > 0 && actualDuration.isFinite ? Int((1 / actualDuration).rounded()) : 0
         activeCaptureFPS = Double(actualFPS)
@@ -2739,7 +2871,7 @@ final class CameraViewModel: NSObject, ObservableObject {
     }
 
     func setCameraExposureExperiment(_ setting: CameraExposureExperiment) {
-        guard setting != cameraExposureExperiment, cameraExposureExperimentEditable else { return }
+        guard shutter == 0, setting != cameraExposureExperiment, cameraExposureExperimentEditable else { return }
         cameraExposureExperiment = setting
         if NSClassFromString("XCTestCase") == nil { setting.store(in: .standard) }
         if running, let camera = exposureExperimentCamera {
@@ -2815,7 +2947,7 @@ final class CameraViewModel: NSObject, ObservableObject {
     private func cameraExposureExperimentSnapshot() -> CameraExposureExperimentState {
         // A camera reconfiguration can reset activeMaxExposureDuration after the cap was
         // applied; re-apply when the device no longer honours the requested cap.
-        if let camera = exposureExperimentCamera,
+        if shutter == 0, let camera = exposureExperimentCamera,
            let requested = cameraExposureExperiment.requestedMaxExposureDuration,
            let observed = CameraExposureExperimentPlanner.seconds(camera.activeMaxExposureDuration),
            let wanted = CameraExposureExperimentPlanner.seconds(requested),

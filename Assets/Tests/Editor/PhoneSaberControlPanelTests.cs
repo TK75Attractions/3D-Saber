@@ -15,6 +15,20 @@ public class PhoneSaberControlPanelTests
     static int Parse(byte[] bytes) => PhoneSaberControlPanelServer.ParseRequest(bytes, 5010, Token, out _);
 
     [Test]
+    public void ShutterButtonsDispatchOnlySupportedValues()
+    {
+        string seen = null;
+        var handlers = new Dictionary<string, Action<string>> { { "phone-shutter", value => seen = value } };
+        foreach (string value in new[] { "0", "500", "1000", "2000" })
+        {
+            Assert.IsTrue(PhoneSaberControlPanelActions.Dispatch("phone-shutter", value, handlers));
+            Assert.AreEqual(value, seen);
+        }
+        foreach (string value in new[] { "off", "250", "-1", "1000&clip=1" })
+            Assert.IsFalse(PhoneSaberControlPanelActions.Dispatch("phone-shutter", value, handlers));
+    }
+
+    [Test]
     public void ParsesMethodPathQueryAndEncodedValues()
     {
         Assert.AreEqual(200, PhoneSaberControlPanelServer.ParseRequest(Request("POST",
@@ -98,6 +112,7 @@ public class PhoneSaberControlPanelTests
             { "filter", new[] { "0", "1", "2", "3", "4" } }, { "stabilizer", new[] { "0", "1" } },
             { "phone-ignore", new[] { "red", "blue", "both" } }, { "phone-clear-ignore", new[] { "" } },
             { "phone-learn-area", new[] { "" } }, { "phone-clear-area", new[] { "" } },
+            { "phone-shutter", new[] { "0", "500", "1000", "2000" } },
             { "phone-exposure", new[] { "0", "-1", "-2" } }, { "phone-track-lock", new[] { "" } }, { "phone-clip", new[] { "" } },
             { "pc-ignore", new[] { "red", "blue" } }, { "pc-clear-ignore", new[] { "" } }, { "clocks-synchronized", new[] { "0", "1" } }
         };

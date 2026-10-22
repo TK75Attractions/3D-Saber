@@ -17,6 +17,7 @@ public static class PhoneSaberControlPanelActions
         { "filter", new[] { "0", "1", "2", "3", "4" } }, { "stabilizer", new[] { "0", "1" } },
         { "phone-ignore", new[] { "red", "blue", "both" } }, { "phone-clear-ignore", new[] { "" } },
         { "phone-learn-area", new[] { "" } }, { "phone-clear-area", new[] { "" } },
+        { "phone-shutter", new[] { "0", "500", "1000", "2000" } },
         { "phone-exposure", new[] { "0", "-1", "-2" } },
         { "phone-track-lock", new[] { "" } }, { "phone-clip", new[] { "" } },
         { "pc-ignore", new[] { "red", "blue" } }, { "pc-clear-ignore", new[] { "" } },

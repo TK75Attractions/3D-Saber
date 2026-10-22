@@ -9,6 +9,23 @@ public class PhoneSaberAcknowledgementTests
         new PhoneSaberAcknowledgement(id, station, platform, result, detail);
 
     [Test]
+    public void ShutterAcknowledgementsValidateAndProduceToastForBothStations()
+    {
+        foreach (string station in new[] { "A", "B" })
+        foreach (string detail in new[] { "off", "500", "1000", "2000" })
+        {
+            string line = $"PHONESABER_ACK 1 id=91 station={station} platform=ios result=shutter detail={detail}";
+            Assert.IsTrue(PhoneSaberAcknowledgement.TryParse(line, out var ack));
+            var store = new PhoneSaberAcknowledgementStore();
+            store.Queue(91, "shutter=" + (detail == "off" ? "0" : detail), 0);
+            Assert.IsTrue(store.Receive(ack, "127.0.0.1"));
+            StringAssert.Contains("iPhone（台" + station + "）: 固定シャッター " + (detail == "off" ? "OFF" : "1/" + detail), PhoneSaberOperatorKeys.ToastText(store, 1));
+        }
+        foreach (string detail in new[] { "0", "on", "250", "-500", "1/1000" })
+            Assert.IsFalse(PhoneSaberAcknowledgement.TryParse("PHONESABER_ACK 1 id=91 station=A platform=ios result=shutter detail=" + detail, out _));
+    }
+
+    [Test]
     public void SharedPhoneExamplesParseAndUnknownFieldsAreIgnored()
     {
         foreach (string line in new[] {

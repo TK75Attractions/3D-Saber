@@ -311,6 +311,7 @@ struct Transport { func stop() {} }
     var fpsComparisonPolicy = FPSComparisonPolicy()
     var debugComparisonHighFPS = 60
     var debugAlternateFPS = true { didSet { scheduleFPSAlternation() } }
+    func restoreShutterBeforeStop() {} // 露出のsetterはrun_latency_host_testsで検証
     var persistedIntent = true
     var intentWrites: [Bool] = []
     func start() { starts += 1; running = true; resumePolicy.start(); persistSendingIntent() }

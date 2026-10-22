@@ -94,6 +94,65 @@ final class DetectionCoreTests: XCTestCase {
         }
     }
 
+    func testFixedShutterStoredSettingsDefaultOffAndRejectInvalidValues() throws {
+        let name = "PhoneSaber.shutter.tests." + UUID().uuidString
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: name))
+        defer { defaults.removePersistentDomain(forName: name) }
+        XCTAssertEqual(CameraViewModel.storedShutter(in: defaults), 0)
+        for value in [0, 500, 1000, 2000, -1, 250, 4000] {
+            defaults.set(value, forKey: "PhoneSaber.shutter.v1")
+            XCTAssertEqual(CameraViewModel.storedShutter(in: defaults), [0, 500, 1000, 2000].contains(value) ? value : 0)
+        }
+    }
+
+    func testFixedShutterPlanClampsDurationISOAndPreservesFrameBudget() throws {
+        func plan(_ denominator: Int, minimum: Double = 0.00001, maximum: Double = 1,
+                  frame: Double = 1.0 / 60, minISO: Float = 32, maxISO: Float = 1000) -> CameraShutterPlan? {
+            CameraShutterPlan.make(denominator: denominator,
+                minimum: CMTime(seconds: minimum, preferredTimescale: 1_000_000),
+                maximum: CMTime(seconds: maximum, preferredTimescale: 1_000_000),
+                frameDuration: CMTime(seconds: frame, preferredTimescale: 1_000_000), minISO: minISO, maxISO: maxISO)
+        }
+        for denominator in [500, 1000, 2000] {
+            let chosen = try XCTUnwrap(plan(denominator))
+            XCTAssertEqual(CMTimeGetSeconds(chosen.duration), 1 / Double(denominator), accuracy: 1e-9)
+            XCTAssertEqual(chosen.iso, 64)
+            XCTAssertLessThanOrEqual(CMTimeGetSeconds(chosen.duration), 1.0 / 60)
+        }
+        XCTAssertEqual(CMTimeGetSeconds(try XCTUnwrap(plan(2000, minimum: 0.001)).duration), 0.001)
+        XCTAssertEqual(CMTimeGetSeconds(try XCTUnwrap(plan(500, maximum: 0.001)).duration), 0.001)
+        XCTAssertEqual(CMTimeGetSeconds(try XCTUnwrap(plan(500, frame: 0.001)).duration), 0.001)
+        XCTAssertEqual(plan(1000, minISO: 80, maxISO: 100)?.iso, 100)
+        XCTAssertEqual(plan(1000, minISO: 80, maxISO: 80)?.iso, 80)
+        XCTAssertNil(plan(0))
+        XCTAssertNil(plan(250))
+        XCTAssertNil(plan(500, minimum: 0.02))
+        XCTAssertNil(plan(500, minISO: 100, maxISO: 50))
+        XCTAssertNil(plan(500, minISO: .nan))
+        XCTAssertNil(plan(500, frame: 0))
+    }
+
+    @MainActor
+    func testFixedShutterCommandsDeduplicateAndDefaultsKeepExistingTrackAndExposure() throws {
+        let model = CameraViewModel(sender: UDPSender { _, _, _ in }, p2pEnabled: false)
+        XCTAssertEqual(model.shutter, 0)
+        model.applyPCCommand(try XCTUnwrap(LANLivenessProbe.parseCommand("PHONESABER_COMMAND 1 id=901 shutter=1000")))
+        XCTAssertEqual(model.shutter, 1000)
+        model.applyPCCommand(.init(id: 901, ignore: nil, clearIgnore: false, shutter: 2000))
+        XCTAssertEqual(model.shutter, 1000)
+        model.setTrackLockEnabled(false)
+        model.setExposureBias(-1)
+        model.applyPCCommand(.init(id: 902, ignore: nil, clearIgnore: false, defaults: true))
+        XCTAssertEqual(model.shutter, 0)
+        XCTAssertTrue(model.trackLockEnabled)
+        XCTAssertEqual(model.exposureBias, -2)
+        model.applyPCCommand(.init(id: 903, ignore: nil, clearIgnore: false, shutter: 500))
+        model.stop()
+        XCTAssertEqual(model.shutter, 500, "停止しても次回送信用の選択は保持する")
+        XCTAssertFalse(model.setShutter(250))
+        XCTAssertEqual(model.shutter, 500)
+    }
+
     func testCameraFormatSelectionRequires30FPSAndKeepsCompactResolution() {
         let options = [
             CameraFormatOption(index: 0, width: 1920, height: 1080, frameRateRanges: [24...24]),

@@ -1,4 +1,5 @@
 # PhoneSaber STATUS
+- 2026-10-22（固定シャッター）: iPhone A/Bのみopt-in shutter=0|500|1000|2000（保存、ISO=minISO×2を機器範囲内、露出≤フレーム時間、停止/再設定前に自動露出へ復帰し選択を再適用）。Ctrl+Shift+S/F8/端末詳細設定、ACKトースト、camera欄に実露出秒/ISO・接続ログ。defaultsは従来のtrack lock ON/露出−2を維持しshutter OFF。formal40/40、field66PASS/新FAIL0（24XFAIL）、Android parity325PNG/541遷移/27合成不一致0、cameraホスト41+6・parser10・Unity NUnitホスト35・lifecycle4 PASS、static/AutoClip19PASS+保存1SKIP、diff --check PASS。総合verifyはSimulator/Release macro/Unity UPMのsandbox制限・Tools既存失敗/容量取得0等で不合格（停止stub追加後lifecycle再実行PASS）。実機60fps・LED飽和/服の減光は未検証。認識/判定/座標UDP・禁止asset/既存meta・Android実装変更、commit/pushなし。
 - ユーザー待ち（今回）: なし。35フレームは概数で、operator受入済みの保守的14件へ置換し、ラベル照合ゲートは終了。
 - 現在の仮説（今回）: iPhone A/Bのtrack lock ONで幾何対応＋3コマの復帰証拠を本番適用。既知反射90試行は全件3コマ以内・最悪50.00ms、反射14→0/122。
 - 次にやること（今回）: iPhone A/Bで本番ビルド後の実機再試験（今回未実施）。commit/push・配布なし。

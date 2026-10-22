@@ -75,10 +75,24 @@ enum AVCaptureColorSpace { case sRGB, HLG_BT2020 }
 struct StubRange { let minFrameRate: Double; let maxFrameRate: Double }
 final class AVCaptureDevice {
     struct Format {
+        var minExposureDuration = CMTime(value: 1, timescale: 100_000)
+        var maxExposureDuration = CMTime(value: 1, timescale: 1)
+        var minISO: Float = 32, maxISO: Float = 1000
         var id = 0
         var supportedColorSpaces: [AVCaptureColorSpace] = [.sRGB]
         var isAutoVideoFrameRateSupported = true
         var videoSupportedFrameRateRanges = [StubRange(minFrameRate: 1, maxFrameRate: 60)]
+    }
+    enum ExposureMode { case custom, continuousAutoExposure }
+    var exposureMode = ExposureMode.continuousAutoExposure { didSet { writes.append("exposure=\\(exposureMode)") } }
+    var customSupported = true
+    var lockFails = false
+    var customDuration = CMTime.invalid
+    var customISO: Float = 0
+    func isExposureModeSupported(_ mode: ExposureMode) -> Bool { mode != .custom || customSupported }
+    func setExposureModeCustom(duration: CMTime, iso: Float, completionHandler: ((CMTime) -> Void)?) {
+        exposureMode = .custom; customDuration = duration; customISO = iso
+        writes.append("custom")
     }
     var writes: [String] = []
     var formats = [Format()]
@@ -100,7 +114,7 @@ final class AVCaptureDevice {
     var activeVideoMinFrameDuration = CMTime.invalid { didSet { writes.append("min=\\(CMTimeGetSeconds(activeVideoMinFrameDuration))") } }
     var activeVideoMaxFrameDuration = CMTime.invalid { didSet { writes.append("max=\\(CMTimeGetSeconds(activeVideoMaxFrameDuration))") } }
     var unsupportedWrites = 0
-    func lockForConfiguration() throws {}
+    func lockForConfiguration() throws { if lockFails { throw NSError(domain: "fake", code: 1) } }
     func unlockForConfiguration() {}
 }
 final class AVCaptureSession {
@@ -131,6 +145,11 @@ extension AVCaptureSession { func addOutput(_ output: AVCaptureVideoDataOutput) 
                    "func preferredCameraFormatIndex(", "func highSpeedCameraFormatIndex(",
                    "func storedCameraFPS(", "func disableCameraPostProcessing("]:
         support += block(camera, marker) + "\n"
+    support += block(camera, "struct CameraShutterPlan:") + "\n"
+    support += block(camera, "struct CameraShutterController") + "\n"
+    shutter_key = next(line for line in camera.splitlines() if 'static let shutterKey =' in line)
+    support += 'enum LANLivenessProbe { static let shutterChoices = [0, 500, 1000, 2000] }\n'
+    support += 'enum CameraViewModel {\n' + shutter_key + '\n' + block(camera, 'nonisolated static func storedShutter(') + '\n}\n'
     current_camera = (SOURCE / "CameraViewModel.swift").read_text()
     support += block(current_camera, "struct CameraPostProcessingState") + "\n"
     if "func configureCameraPostProcessing(" in camera:
@@ -146,13 +165,51 @@ extension AVCaptureSession { func addOutput(_ output: AVCaptureVideoDataOutput) 
     support += "enum ConnectivityLog { static let shared = ConnectivityLogStub() }; struct ConnectivityLogStub { func exportTail() -> String { \"\" } }\n"
     support += block(source("EventRecovery.swift"), "struct FPSComparisonPolicy") + "\n"
     core = (TESTS / "DetectionCoreTests.swift").read_text()
-    markers = ["func testCameraFormatSelection", "func test120FPSFormat", "func testLatestFramePolicy", "func testPostProcessing",
+    markers = ["func testFixedShutterStored", "func testFixedShutterPlan", "func testCameraFormatSelection", "func test120FPSFormat", "func testLatestFramePolicy", "func testPostProcessing",
                "func testDefaultCameraSettings", "func testFrameSendPrecedes", "func testCaptureHealthUses",
                "func test120FPSMailboxPreserves", "func testDebugRecordingBundleIncludesConnectivityTail", "func testPlayAreaGrowth"]
     focused = "import XCTest\nimport CoreMedia\nimport CoreVideo\nimport AVFoundation\nfinal class CameraLatencyTests: XCTestCase {\n"
     for name in re.findall(r"func (test\w+)\(", core):
         if any(("func " + name).startswith(marker) for marker in markers):
             focused += block(core, "func " + name + "(") + "\n"
+    focused += r'''func testFixedShutterDeviceWritesAndRevert() throws {
+        let camera = AVCaptureDevice()
+        camera.activeVideoMinFrameDuration = CMTime(value: 1, timescale: 60)
+        camera.activeVideoMaxFrameDuration = camera.activeVideoMinFrameDuration
+        let before = camera.writes
+        var controller = CameraShutterController()
+        XCTAssertTrue(try controller.apply(0, to: camera))
+        XCTAssertEqual(camera.writes, before)
+        for fps in [60, 30, 60] {
+            camera.activeVideoMinFrameDuration = CMTime(value: 1, timescale: Int32(fps))
+            camera.activeVideoMaxFrameDuration = camera.activeVideoMinFrameDuration
+            for denominator in [500, 1000, 2000] {
+                XCTAssertTrue(try controller.apply(denominator, to: camera))
+                XCTAssertEqual(camera.exposureMode, .custom)
+                XCTAssertEqual(camera.customISO, 64)
+                XCTAssertEqual(CMTimeGetSeconds(camera.customDuration), 1 / Double(denominator), accuracy: 1e-9)
+                XCTAssertEqual(camera.activeVideoMinFrameDuration, CMTime(value: 1, timescale: Int32(fps)))
+                XCTAssertEqual(camera.activeVideoMaxFrameDuration, camera.activeVideoMinFrameDuration)
+            }
+            camera.lockFails = true
+            XCTAssertThrowsError(try controller.apply(0, to: camera))
+            XCTAssertTrue(controller.active)
+            camera.lockFails = false
+            XCTAssertTrue(try controller.apply(0, to: camera))
+            XCTAssertFalse(controller.active)
+            XCTAssertEqual(camera.exposureMode, .continuousAutoExposure)
+        }
+        camera.customSupported = false
+        let restored = camera.writes
+        XCTAssertFalse(try controller.apply(500, to: camera))
+        XCTAssertEqual(camera.writes, restored)
+        camera.customSupported = true
+        camera.lockFails = true
+        XCTAssertThrowsError(try controller.apply(500, to: camera))
+        XCTAssertFalse(controller.active)
+        XCTAssertEqual(camera.writes, restored)
+    }
+''' + "\n"
     focused += block(core, "private func sampleBuffer(") + "\n"
     focused += block((TESTS / "EventRecoveryTests.swift").read_text(), "func testFPSComparisonSupports60") + "\n}\n"
     health_tests = (TESTS / "DeviceHealthTests.swift").read_text()

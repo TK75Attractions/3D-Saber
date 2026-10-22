@@ -5,6 +5,28 @@ import XCTest
 #endif
 
 final class MetricsDatagramTests: XCTestCase {
+    func testIPhoneShutterParsingAndAck() {
+        for value in [0, 500, 1000, 2000] {
+            let line = "PHONESABER_COMMAND 1 id=71 shutter=\(value) future=x"
+            XCTAssertEqual(LANLivenessProbe.parseCommand(line)?.shutter, value)
+            let detail = value == 0 ? "off" : String(value)
+            XCTAssertEqual(LANLivenessProbe.formatAck(id: 71, station: "B", platform: "ios", result: "shutter", detail: detail),
+                "PHONESABER_ACK 1 id=71 station=B platform=ios result=shutter detail=\(detail)")
+            for other in ["ignore=red", "clear-ignore=1", "learn-area=10", "clear-area=1", "exposure-bias=-2",
+                          "clip=1", "auto-clip=0", "track-lock=1", "defaults=1"] {
+                XCTAssertNil(LANLivenessProbe.parseCommand(line + " " + other))
+            }
+        }
+        for value in ["-1", "1", "250", "4000", "1000.0", "x"] {
+            XCTAssertNil(LANLivenessProbe.parseCommand("PHONESABER_COMMAND 1 id=71 shutter=\(value)"))
+        }
+        XCTAssertNil(LANLivenessProbe.parseCommand("PHONESABER_COMMAND 1 shutter=500"))
+        XCTAssertNil(LANLivenessProbe.parseCommand("PHONESABER_COMMAND 2 id=71 shutter=500"))
+        XCTAssertEqual(LANLivenessProbe.parseCommand("PHONESABER_COMMAND 1 id=71 shutter=500 shutter=2000")?.shutter, 2000)
+        XCTAssertNil(LANLivenessProbe.parseCommand("PHONESABER_COMMAND 1 id=71 shutter=500 shutter=x"))
+        XCTAssertNotNil(LANLivenessProbe.parseCommand("PHONESABER_COMMAND 1 id=71 shutter=x ignore=red"))
+    }
+
     // Android の IgnoreZonesTest と同じ例。
     func testAckFormatMatchesAndroid() {
         XCTAssertEqual(LANLivenessProbe.formatAck(id: 7, station: "A", platform: "ios", result: "ignored", detail: "red1-blue1"),

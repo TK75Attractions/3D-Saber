@@ -20,6 +20,7 @@ public sealed class PhoneSaberOperatorKeys : MonoBehaviour
 
     PhoneSaberOperatorToast toast;
     static bool lastSentTrackLock = true; // スマホの新しい既定 ON に合わせる。
+    static int shutterIndex; // OFF → 1/500 → 1/1000 → 1/2000 → OFF
     static int exposureIndex = 2; // 開始時 -2、次に 0 → -1 → -2（スマホ側が保存する）
 
     // Unity API を使わず、defaults のキュー投入と一緒に Mac 側も既定に戻す。
@@ -27,6 +28,7 @@ public sealed class PhoneSaberOperatorKeys : MonoBehaviour
     {
         Volatile.Write(ref lastSentTrackLock, true);
         Volatile.Write(ref exposureIndex, 2);
+        Volatile.Write(ref shutterIndex, 0);
     }
 
     // 運営の操作を除いて、このフレームにキーが押されたか。F1〜F12(F4 の投影切替・F7〜F10 など)と、
@@ -45,7 +47,7 @@ public sealed class PhoneSaberOperatorKeys : MonoBehaviour
         || key == Key.LeftAlt || key == Key.RightAlt || key == Key.LeftMeta || key == Key.RightMeta || key == Key.ContextMenu;
 
     // 押されたキーに対応する指示と表示。対応しないキーは null。
-    public static (string command, string label)? CommandFor(Key key, int currentExposureIndex, out int nextExposureIndex, bool currentTrackLock = true)
+    public static (string command, string label)? CommandFor(Key key, int currentExposureIndex, out int nextExposureIndex, bool currentTrackLock = true, int currentShutterIndex = 0)
     {
         nextExposureIndex = currentExposureIndex;
         switch (key)
@@ -59,6 +61,7 @@ public sealed class PhoneSaberOperatorKeys : MonoBehaviour
             case Key.P: return (PhoneSaberDiscoveryResponder.LearnAreaCommand,
                 $"スマホ: プレイ範囲を覚える（{PhoneSaberDiscoveryResponder.LearnAreaSeconds}秒、範囲いっぱいに振る）");
             case Key.X: return (PhoneSaberDiscoveryResponder.ClearAreaCommand, "スマホ: プレイ範囲を消す");
+            case Key.S: return ShutterCommand(currentShutterIndex, out _);
             case Key.T: return TrackLockCommand(currentTrackLock);
             case Key.E:
                 var choices = PhoneSaberDiscoveryResponder.ExposureBiasChoices;
@@ -69,13 +72,31 @@ public sealed class PhoneSaberOperatorKeys : MonoBehaviour
         }
     }
 
+    public static (string command, string label) ShutterCommand(int index, out int nextIndex)
+    {
+        var choices = PhoneSaberDiscoveryResponder.ShutterChoices;
+        nextIndex = (index + 1) % choices.Length;
+        int value = choices[nextIndex];
+        return (PhoneSaberDiscoveryResponder.ShutterCommand(value), "iPhone固定シャッター: " + ShutterLabel(value));
+    }
+
+    static string ShutterLabel(int value) => value == 0 ? "OFF（自動露出）" : "1/" + value + " 秒";
+
+    public static void SelectShutter(int value)
+    {
+        int index = System.Array.IndexOf(PhoneSaberDiscoveryResponder.ShutterChoices, value);
+        if (index < 0) return;
+        Volatile.Write(ref shutterIndex, index);
+        PhoneSaberDiscoveryResponder.QueueCommand(PhoneSaberDiscoveryResponder.ShutterCommand(value));
+    }
+
     public static (string command, string label) TrackLockCommand(bool lastSent)
     {
         bool enabled = !lastSent;
         return ("track-lock=" + (enabled ? "1" : "0"), "スマホ: 剣を追いかける " + (enabled ? "ON" : "OFF"));
     }
 
-    static readonly Key[] Keys = { Key.R, Key.B, Key.I, Key.C, Key.K, Key.P, Key.X, Key.E, Key.T };
+    static readonly Key[] Keys = { Key.R, Key.B, Key.I, Key.C, Key.K, Key.P, Key.X, Key.E, Key.T, Key.S };
 
     string displayed = "";
     int displayedId;
@@ -98,6 +119,7 @@ public sealed class PhoneSaberOperatorKeys : MonoBehaviour
             case PhoneSaberDiscoveryResponder.DefaultsCommand: return "スマホ: 既定に戻す（剣を追いかける ON・露出 −2）";
             default:
                 if (fields.StartsWith("learn-area=")) return "スマホ: プレイ範囲を覚える（" + fields.Substring(11) + "秒、範囲いっぱいに振る）";
+                if (fields.StartsWith("shutter=")) return "iPhone固定シャッター: " + (fields == "shutter=0" ? "OFF（自動露出）" : "1/" + fields.Substring(8) + " 秒");
                 if (fields.StartsWith("exposure-bias=")) return "スマホ露出: " + (fields.Substring(14) == "0" ? "0（OFF）" : fields.Substring(14));
                 if (fields.StartsWith("track-lock=")) return "スマホ: 剣を追いかける " + (fields.EndsWith("1") ? "ON" : "OFF");
                 if (fields.StartsWith("auto-clip=")) return "スマホ: 自動クリップ " + (fields.EndsWith("1") ? "ON" : "OFF");
@@ -134,6 +156,7 @@ public sealed class PhoneSaberOperatorKeys : MonoBehaviour
             case "learning": result = "プレイ範囲を覚えています（" + ack.Detail.TrimEnd('s') + "秒、範囲いっぱいに振る）"; break;
             case "learned": result = "プレイ範囲を覚えました（" + ack.Detail.Substring(7) + "回分）"; break;
             case "failed": result = "覚えられませんでした（振りが足りません）"; break;
+            case "shutter": result = "固定シャッター " + (ack.Detail == "off" ? "OFF（自動露出）" : "1/" + ack.Detail + " 秒"); break;
             case "exposure": result = "露出を " + ack.Detail.Substring(2) + " EV にしました"; break;
             case "tracklock": result = "剣を追いかける " + (ack.Detail == "on" ? "ON" : "OFF"); break;
             case "defaults": result = "既定に戻しました（剣を追いかける ON・露出 −2）"; break;
@@ -185,9 +208,10 @@ public sealed class PhoneSaberOperatorKeys : MonoBehaviour
         foreach (var key in Keys)
         {
             if (!keyboard[key].wasPressedThisFrame) continue;
-            var command = CommandFor(key, Volatile.Read(ref exposureIndex), out int next, Volatile.Read(ref lastSentTrackLock));
+            var command = CommandFor(key, Volatile.Read(ref exposureIndex), out int next, Volatile.Read(ref lastSentTrackLock), Volatile.Read(ref shutterIndex));
             if (command == null) continue;
             exposureIndex = next;
+            if (key == Key.S) shutterIndex = (shutterIndex + 1) % PhoneSaberDiscoveryResponder.ShutterChoices.Length;
             if (key == Key.T) lastSentTrackLock = !lastSentTrackLock;
             PhoneSaberDiscoveryResponder.QueueCommand(command.Value.command);
             PhoneSaberEventLog.Record(PhoneSaberStation.Read(), "SYSTEM", "operator-key", "key=" + key + " command=" + command.Value.command);

@@ -30,6 +30,29 @@ public class PhoneSaberOperatorKeysTests
     }
 
     [Test]
+    public void ShutterCyclesAndDefaultsResetToOff()
+    {
+        int index = 0;
+        foreach (int value in new[] { 500, 1000, 2000, 0, 500 })
+        {
+            Assert.AreEqual("shutter=" + value, PhoneSaberOperatorKeys.CommandFor(Key.S, 2, out int ev, true, index).Value.command);
+            Assert.AreEqual(2, ev);
+            Assert.AreEqual("shutter=" + value, PhoneSaberOperatorKeys.ShutterCommand(index, out index).command);
+        }
+        var field = typeof(PhoneSaberOperatorKeys).GetField("shutterIndex", BindingFlags.NonPublic | BindingFlags.Static);
+        object saved = field.GetValue(null);
+        try
+        {
+            field.SetValue(null, 3);
+            PhoneSaberDiscoveryResponder.QueueCommand(PhoneSaberDiscoveryResponder.DefaultsCommand);
+            Assert.AreEqual(0, field.GetValue(null));
+            PhoneSaberOperatorKeys.SelectShutter(1000);
+            Assert.AreEqual(2, field.GetValue(null));
+        }
+        finally { field.SetValue(null, saved); }
+    }
+
+    [Test]
     public void KeysMapToPhoneCommands()
     {
         Assert.AreEqual("ignore=red", PhoneSaberOperatorKeys.CommandFor(Key.R, 0, out _).Value.command);
@@ -40,7 +63,7 @@ public class PhoneSaberOperatorKeysTests
         Assert.AreEqual(PhoneSaberDiscoveryResponder.LearnAreaCommand, PhoneSaberOperatorKeys.CommandFor(Key.P, 0, out _).Value.command);
         Assert.AreEqual(PhoneSaberDiscoveryResponder.ClearAreaCommand, PhoneSaberOperatorKeys.CommandFor(Key.X, 0, out _).Value.command);
         // ゲームが使うキーは割り当てない。
-        foreach (var key in new[] { Key.A, Key.S, Key.D, Key.W, Key.N, Key.Digit1, Key.Space, Key.Enter, Key.Escape })
+        foreach (var key in new[] { Key.A, Key.D, Key.W, Key.N, Key.Digit1, Key.Space, Key.Enter, Key.Escape })
             Assert.IsNull(PhoneSaberOperatorKeys.CommandFor(key, 0, out _));
     }
 
