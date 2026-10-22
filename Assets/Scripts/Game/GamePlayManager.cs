@@ -1104,6 +1104,14 @@ public class GamePlayManager : MonoBehaviour
         audioChangeHold = false;
         audioResumeAt = double.NaN;
         countdownShown = 0;
+        // 読み直す間に剣を見失った場合は、再開音を鳴らさず既存の追跡待ちへ渡す。
+        // 保留中は見張りを止めているため、完了時の受信を観測してから同じ条件で判定する。
+        if (!trackingWatch.Paused && songPlayer != null && songPlayer.SongTime >= songPlayer.PlayStartSeconds)
+        {
+            if (input != null && input.LastReceivedTime >= trackingSince && input.HasValidStickEndpoints) trackingWatch.ObserveUsable(0, input.LastReceivedTime);
+            if (input != null && input.LastReceivedTime2 >= trackingSince && input.HasValidStickEndpoints2) trackingWatch.ObserveUsable(1, input.LastReceivedTime2);
+            trackingWatch.Step(now, NotesComing(songPlayer.SongTime));
+        }
         if (trackingWatch.Paused) { trackingWatch.RestartCountdown(now); return; }
         ResumeAfterTracking();
         trackingView.PlayResumeCue();

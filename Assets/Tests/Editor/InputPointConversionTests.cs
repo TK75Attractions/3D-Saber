@@ -1,3 +1,5 @@
+using System.Reflection;
+using System.Text;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -169,5 +171,207 @@ public class InputPointConversionTests
         Vector2 movedMid = (movedA + movedB) * 0.5f;
         Assert.AreEqual(sensMid.x, movedMid.x, 1e-4f);
         Assert.AreEqual(sensMid.y, movedMid.y, 1e-4f);
+    }
+}
+
+// 点単体の自動判別とは別に、実際の4値パケット内で単位が揃うことを検証する。
+// 受信機は起動せず、実 parser の結果を受信バッファ相当へ入れて main thread の変換だけを呼ぶ。
+public class InputPointConversionTests_Packets
+{
+    const float W = 1920f, H = 1080f;
+    const float Epsilon = 1e-4f;
+    static readonly Vector2 Scale = new Vector2(5.5f, 3f);
+    const BindingFlags PrivateInstance = BindingFlags.Instance | BindingFlags.NonPublic;
+    GameObject owner;
+    InputPoint input;
+    InputPoint savedInstance;
+    bool savedAutoStart, savedIgnoreZones;
+
+    [SetUp]
+    public void CreateInactiveInputWithoutNetworkOrSavedSettings()
+    {
+        savedInstance = InputPoint.Instance;
+        savedAutoStart = PhoneSaberP2PBridgeProcess.AutoStartEnabled;
+        savedIgnoreZones = PhoneSaberIgnoreZones.Enabled;
+        PhoneSaberP2PBridgeProcess.AutoStartEnabled = false;
+        // IgnoreZones.Load の PlayerPrefs 読み出しも避ける。保存済み設定は書き換えない。
+        PhoneSaberIgnoreZones.Enabled = false;
+        owner = new GameObject("パケット単位の座標変換テスト");
+        owner.SetActive(false);
+        input = owner.AddComponent<InputPoint>();
+        input.camWidth = W;
+        input.camHeight = H;
+        input.useDirectWorldMapping = true;
+        input.worldScale = Scale;
+        input.worldOffset = Vector2.zero;
+        input.sensitivity = 1f;
+        input.useImuFallback = false;
+        Assert.IsFalse(input.PositionCalibrationEnabled, "ネットワークを起動せず位置補正設定を読み込まない");
+        AssertNetworkWasNotStarted();
+    }
+
+    [TearDown]
+    public void DestroyInputAndRestoreStaticSettings()
+    {
+        try
+        {
+            if (input != null) AssertNetworkWasNotStarted();
+        }
+        finally
+        {
+            try
+            {
+                if (owner != null) Object.DestroyImmediate(owner);
+            }
+            finally
+            {
+                PhoneSaberP2PBridgeProcess.AutoStartEnabled = savedAutoStart;
+                PhoneSaberIgnoreZones.Enabled = savedIgnoreZones;
+                typeof(InputPoint).GetProperty("Instance").SetMethod
+                    .Invoke(null, new object[] { savedInstance });
+                owner = null;
+                input = null;
+            }
+        }
+    }
+
+    [TestCase(false, "0,0,1919,1079", 0f, 0f, 1919f, 1079f)]
+    [TestCase(true, "1919,1079,0,0", 1919f, 1079f, 0f, 0f)]
+    public void ApplyLatestInput_PixelCorner_UsesPixelsForWholePacket(
+        bool blue, string payload, float ax, float ay, float bx, float by)
+    {
+        ApplyPacket(blue, payload);
+        AssertPublishedStick(blue, new Vector2(ax, ay), new Vector2(bx, by), false);
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public void ApplyLatestInput_NormalizedStick_KeepsNormalizedCoordinates(bool blue)
+    {
+        ApplyPacket(blue, "-.5,0,.5,0");
+        AssertPublishedStick(blue, new Vector2(-.5f, 0f), new Vector2(.5f, 0f), true);
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public void ApplyLatestInput_NonCornerPixelStick_KeepsPixelCoordinates(bool blue)
+    {
+        ApplyPacket(blue, "100,200,300,400");
+        AssertPublishedStick(blue, new Vector2(100f, 200f), new Vector2(300f, 400f), false);
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public void ApplyLatestInput_PixelEdge_KeepsNormalizedEndpointsAndWorldEndpointsConsistent(bool blue)
+    {
+        // 片軸だけ小さい点は CanonicalizePoint ではピクセルだが、NormalizeAxis は別判定になる。
+        ApplyPacket(blue, "0,200,300,0");
+        AssertPublishedStick(blue, new Vector2(0f, 200f), new Vector2(300f, 0f), false);
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public void ApplyLatestInput_PixelStickWithSmallMidpoint_UsesPixelsForMidpointToo(bool blue)
+    {
+        // 4値の一部が 1.5 を超える一方、中点は (1,1)。中点だけの再判別を検出する。
+        ApplyPacket(blue, "0,0,2,2");
+        AssertPublishedStick(blue, Vector2.zero, new Vector2(2f, 2f), false);
+    }
+
+    [TestCase(false, "0,0", 0f, 0f, true)]
+    [TestCase(true, "0,0", 0f, 0f, true)]
+    [TestCase(false, ".5,-.75", .5f, -.75f, true)]
+    [TestCase(true, ".5,-.75", .5f, -.75f, true)]
+    [TestCase(false, "100,200", 100f, 200f, false)]
+    [TestCase(true, "100,200", 100f, 200f, false)]
+    public void ApplyLatestInput_TwoValuePacketAfterPixelStick_KeepsPointInterpretation(
+        bool blue, string payload, float x, float y, bool normalized)
+    {
+        // 直前の4値の単位判定を2値へ持ち越さず、端点有効フラグも解除する。
+        ApplyPacket(blue, "100,200,300,400");
+        Assert.IsTrue(blue ? input.HasValidStickEndpoints2 : input.HasValidStickEndpoints);
+        ApplyPacket(blue, payload);
+        Vector2 raw = new Vector2(x, y);
+        Vector2 expected = normalized ? raw : PixelToNormalized(raw);
+        Assert.IsFalse(blue ? input.HasValidStickEndpoints2 : input.HasValidStickEndpoints);
+        AssertVector(raw, blue ? input.LastRaw2 : input.LastRaw, "2値の生座標");
+        AssertVector(ToWorld(expected), blue ? input.LocalPosition2 : input.LocalPosition, "2値のワールド中点");
+        AssertVector(To01(expected), blue ? input.NormalizedPosition2 : input.NormalizedPosition, "2値の0..1中点");
+    }
+
+    void ApplyPacket(bool blue, string payload)
+    {
+        var parser = new PhoneSaberPacketParser();
+        Assert.IsTrue(parser.TryParse(Encoding.ASCII.GetBytes(payload), out bool stick,
+            out float a, out float b, out float c, out float d, out double? sentEpoch));
+        Assert.IsTrue(PhoneSaberPacketParser.IsUsableCoordinates(stick, a, b, c, d));
+        // ReceiveData と同じ「両端と算術中点」の受信バッファを作る。socket・受信 thread は使わない。
+        string pointSuffix = blue ? "2" : "";
+        string endPrefix = blue ? "2" : "1";
+        if (stick)
+        {
+            SetField("rawX" + endPrefix + "a", a);
+            SetField("rawY" + endPrefix + "a", b);
+            SetField("rawX" + endPrefix + "b", c);
+            SetField("rawY" + endPrefix + "b", d);
+        }
+        SetField("rawX" + pointSuffix, stick ? (a + c) * .5f : a);
+        SetField("rawY" + pointSuffix, stick ? (b + d) * .5f : b);
+        SetField("hasStickData" + pointSuffix, stick);
+        SetField("rawReceiveTimestampTicks" + pointSuffix, SwingMonotonicClock.Timestamp);
+        SetField("rawSender" + pointSuffix, "192.0.2.1");
+        SetField("hasNewData" + pointSuffix, true);
+        typeof(InputPoint).GetMethod("ApplyLatestInput", PrivateInstance)
+            .Invoke(input, new object[] { false });
+    }
+
+    void AssertPublishedStick(bool blue, Vector2 rawA, Vector2 rawB, bool normalized)
+    {
+        // 期待値は既存の自動判別関数を呼ばず、パケットの既知の単位から計算する。
+        Vector2 a = normalized ? rawA : PixelToNormalized(rawA);
+        Vector2 b = normalized ? rawB : PixelToNormalized(rawB);
+        Vector2 rawMid = (rawA + rawB) * .5f;
+        Vector2 mid = (a + b) * .5f;
+        Vector2 actualA = blue ? input.LocalStickRawA2 : input.LocalStickRawA;
+        Vector2 actualB = blue ? input.LocalStickRawB2 : input.LocalStickRawB;
+        Vector2 actualMid = blue ? input.LocalPosition2 : input.LocalPosition;
+        Assert.IsTrue(blue ? input.HasValidStickEndpoints2 : input.HasValidStickEndpoints);
+        AssertVector(rawMid, blue ? input.LastRaw2 : input.LastRaw, "変換前の中点");
+        AssertVector(ToWorld(a), actualA, "ワールド端点A");
+        AssertVector(ToWorld(b), actualB, "ワールド端点B");
+        AssertVector(ToWorld(mid), actualMid, "ワールド中点");
+        AssertVector(actualMid, (actualA + actualB) * .5f, "端点の平均と中点の一致");
+        AssertVector(To01(a), blue ? input.LastRawEndsA2 : input.LastRawEndsA, "無視範囲用の端点A");
+        AssertVector(To01(b), blue ? input.LastRawEndsB2 : input.LastRawEndsB, "無視範囲用の端点B");
+        AssertVector(To01(mid), blue ? input.NormalizedPosition2 : input.NormalizedPosition, "0..1中点");
+        AssertVector(a, blue ? input.LocalStickA2 : input.LocalStickA, "-1..1端点A");
+        AssertVector(b, blue ? input.LocalStickB2 : input.LocalStickB, "-1..1端点B");
+        float length = Vector2.Distance(a, b);
+        Assert.AreEqual(length, blue ? input.LocalStickLength2 : input.LocalStickLength, Epsilon, "棒長");
+        Assert.AreEqual(length / Mathf.Sqrt(8f), blue ? input.LocalStickLengthNormalized2 : input.LocalStickLengthNormalized,
+            Epsilon, "正規化した棒長");
+        float angle = Mathf.Atan2(b.y - a.y, b.x - a.x) * Mathf.Rad2Deg;
+        Assert.AreEqual(angle, blue ? input.LocalAngleDeg2 : input.LocalAngleDeg, Epsilon, "棒の角度");
+    }
+
+    void AssertNetworkWasNotStarted()
+    {
+        Assert.IsFalse(owner.activeInHierarchy);
+        Assert.AreSame(savedInstance, InputPoint.Instance, "既存の singleton を使わない");
+        Assert.IsTrue((bool)Field("networkShutdown"));
+        foreach (string name in new[] { "udpClient1", "udpClient2", "receiveThread1", "receiveThread2",
+            "receiverStopSignal1", "receiverStopSignal2", "bonjourPublisher", "discoveryResponder", "p2pBridge" })
+            Assert.IsNull(Field(name), name + " を生成しない");
+    }
+
+    object Field(string name) => typeof(InputPoint).GetField(name, PrivateInstance).GetValue(input);
+    void SetField(string name, object value) => typeof(InputPoint).GetField(name, PrivateInstance).SetValue(input, value);
+    static Vector2 PixelToNormalized(Vector2 p) => new Vector2(p.x / W * 2f - 1f, p.y / H * 2f - 1f);
+    static Vector2 To01(Vector2 p) => (p + Vector2.one) * .5f;
+    static Vector2 ToWorld(Vector2 p) => Vector2.Scale(p, Scale);
+    static void AssertVector(Vector2 expected, Vector2 actual, string label)
+    {
+        Assert.AreEqual(expected.x, actual.x, Epsilon, label + " x");
+        Assert.AreEqual(expected.y, actual.y, Epsilon, label + " y");
     }
 }

@@ -444,6 +444,14 @@ public class InputPoint : MonoBehaviour
             : new Vector2(x / width, y / height);
     }
 
+    // 4値packet(棒の両端)の単位は packet ごとに1回だけ決める。4値すべて |v|<=1.5 なら従来どおり正規化、
+    // 1つでも超えれば4値ともピクセル(ピクセル送信で画像の隅 (0,0) に来た端点を、正規化の画面中央と取り違えない)。
+    // 4値とも 1.5 以下の極小ピクセルは従来どおり正規化扱い。2値packetには使わない(点単位の判別のまま)。
+    static bool IsPixelStickPacket(float ax, float ay, float bx, float by)
+    {
+        return !(Mathf.Abs(ax) <= 1.5f && Mathf.Abs(ay) <= 1.5f && Mathf.Abs(bx) <= 1.5f && Mathf.Abs(by) <= 1.5f);
+    }
+
     // 中点(CanonicalizePoint 通過後の座標)に感度を適用する純関数。
     // 生値に掛けると |v|<=1.5 の正規化/ピクセル自動判別が壊れるため、必ず canonical 化の後に呼ぶ。
     //   direct モード: 中心0の -1..1 → 単純スケール後 ±1 にクランプ
@@ -839,18 +847,22 @@ public class InputPoint : MonoBehaviour
             }
         }
 
+        // 4値packetの単位は補正前の生の4値で1回だけ決め、生の両端(無視範囲用)・中点・刃の両端・LocalStick で共有する。
+        bool pixelStick1 = updatedStick && IsPixelStickPacket(x1a, y1a, x1b, y1b);
+        bool pixelStick2 = updatedStick2 && IsPixelStickPacket(x2a, y2a, x2b, y2b);
+
         // 「この赤を無視する」（PhoneSaberIgnoreZones）。両端とも同じ範囲に入る受信は使わない（前の位置を保つ）。
         // 範囲を覚えるために、捨てる前の生の両端（カメラ画像の 0..1）を残す。
         if (updated && updatedStick)
         {
-            LastRawEndsA = Normalized01(x1a, y1a, camWidth, camHeight);
-            LastRawEndsB = Normalized01(x1b, y1b, camWidth, camHeight);
+            LastRawEndsA = Normalized01(x1a, y1a, camWidth, camHeight, pixelStick1);
+            LastRawEndsB = Normalized01(x1b, y1b, camWidth, camHeight, pixelStick1);
             if (PhoneSaberIgnoreZones.Enabled && PhoneSaberIgnoreZones.Covers(IgnoreZones(), LastRawEndsA, LastRawEndsB)) { updated = false; IgnoredSamples++; }
         }
         if (updated2 && updatedStick2)
         {
-            LastRawEndsA2 = Normalized01(x2a, y2a, camWidth, camHeight);
-            LastRawEndsB2 = Normalized01(x2b, y2b, camWidth, camHeight);
+            LastRawEndsA2 = Normalized01(x2a, y2a, camWidth, camHeight, pixelStick2);
+            LastRawEndsB2 = Normalized01(x2b, y2b, camWidth, camHeight, pixelStick2);
             if (PhoneSaberIgnoreZones.Enabled && PhoneSaberIgnoreZones.Covers(IgnoreZones(), LastRawEndsA2, LastRawEndsB2)) { updated2 = false; IgnoredSamples2++; }
         }
 
@@ -865,9 +877,11 @@ public class InputPoint : MonoBehaviour
             RedCoordinateSender = sender;
             LastRaw = new Vector2(x, y);
             if (calibrated) CalibrateCoordinates(ref x, ref y, ref x1a, ref y1a, ref x1b, ref y1b, updatedStick);
+            // 位置補正済みなら従来どおりピクセル。補正なしでも、ピクセルの4値packetは中点・両端・LocalStick をそろえてピクセルにする。
+            bool forcePixels1 = calibrated || pixelStick1;
             // 中点: 正規化/ピクセルの判別と単位揃えは棒1・棒2共通の純関数で行う
-            NormalizedPosition = ApplySensitivity01(Normalized01(x, y, camWidth, camHeight, calibrated), sensitivity);
-            Vector2 mid1 = CanonicalizePoint(x, y, camWidth, camHeight, useDirectWorldMapping, calibrated);
+            NormalizedPosition = ApplySensitivity01(Normalized01(x, y, camWidth, camHeight, forcePixels1), sensitivity);
+            Vector2 mid1 = CanonicalizePoint(x, y, camWidth, camHeight, useDirectWorldMapping, forcePixels1);
             // 感度は中点に掛け、端点は同じ量だけ平行移動する(棒の長さ・角度を保つ)
             Vector2 sensMid1 = ApplySensitivity(mid1, sensitivity, useDirectWorldMapping, camWidth, camHeight);
             Vector2 delta1 = sensMid1 - mid1;
@@ -876,16 +890,16 @@ public class InputPoint : MonoBehaviour
             HasValidStickEndpoints = updatedStick;
             if (updatedStick)
             {
-                Vector2 end1a = CanonicalizePoint(x1a, y1a, camWidth, camHeight, useDirectWorldMapping, calibrated) + delta1;
-                Vector2 end1b = CanonicalizePoint(x1b, y1b, camWidth, camHeight, useDirectWorldMapping, calibrated) + delta1;
+                Vector2 end1a = CanonicalizePoint(x1a, y1a, camWidth, camHeight, useDirectWorldMapping, forcePixels1) + delta1;
+                Vector2 end1b = CanonicalizePoint(x1b, y1b, camWidth, camHeight, useDirectWorldMapping, forcePixels1) + delta1;
                 LocalStickRawA = ToLocalPosition(end1a.x, end1a.y);
                 LocalStickRawB = ToLocalPosition(end1b.x, end1b.y);
 
                 // -1..1 正規化は既存の NormalizeAxis で扱う（混在対応）
-                float nxA = NormalizeAxis(x1a, camWidth, calibrated);
-                float nyA = NormalizeAxis(y1a, camHeight, calibrated);
-                float nxB = NormalizeAxis(x1b, camWidth, calibrated);
-                float nyB = NormalizeAxis(y1b, camHeight, calibrated);
+                float nxA = NormalizeAxis(x1a, camWidth, forcePixels1);
+                float nyA = NormalizeAxis(y1a, camHeight, forcePixels1);
+                float nxB = NormalizeAxis(x1b, camWidth, forcePixels1);
+                float nyB = NormalizeAxis(y1b, camHeight, forcePixels1);
 
                 LocalStickA = new Vector2(nxA, nyA);
                 LocalStickB = new Vector2(nxB, nyB);
@@ -902,7 +916,7 @@ public class InputPoint : MonoBehaviour
             RedCoordinateTiming.Applied(LastReceivedMonotonicTime, appliedAt);
             if (debugCoordinates)
             {
-                bool isNorm = Mathf.Abs(x) <= 1.5f && Mathf.Abs(y) <= 1.5f;
+                bool isNorm = !forcePixels1 && Mathf.Abs(x) <= 1.5f && Mathf.Abs(y) <= 1.5f;
                 Debug.Log($"[InputPoint] raw=({x:F2},{y:F2}) norm=({NormalizedPosition.x:F3},{NormalizedPosition.y:F3}) local=({localPosition.x:F1},{localPosition.y:F1}) isNorm={isNorm}");
                 if (updatedStick)
                 {
@@ -917,11 +931,13 @@ public class InputPoint : MonoBehaviour
             BlueCoordinateSender = sender2;
             LastRaw2 = new Vector2(x2, y2);
             if (calibrated) CalibrateCoordinates(ref x2, ref y2, ref x2a, ref y2a, ref x2b, ref y2b, updatedStick2);
+            // 棒1と同じく、位置補正済みか、ピクセルの4値packetならすべてピクセル。
+            bool forcePixels2 = calibrated || pixelStick2;
             // 棒2も棒1と同一の純関数で変換する。
             // (旧実装は direct モードでピクセル→正規化の変換が抜けており、
             //  ピクセル送信のトラッカーだと棒2だけ画面隅に張り付くバグがあった)
-            NormalizedPosition2 = ApplySensitivity01(Normalized01(x2, y2, camWidth, camHeight, calibrated), sensitivity);
-            Vector2 mid2 = CanonicalizePoint(x2, y2, camWidth, camHeight, useDirectWorldMapping, calibrated);
+            NormalizedPosition2 = ApplySensitivity01(Normalized01(x2, y2, camWidth, camHeight, forcePixels2), sensitivity);
+            Vector2 mid2 = CanonicalizePoint(x2, y2, camWidth, camHeight, useDirectWorldMapping, forcePixels2);
             // 棒1と同じく: 感度は中点、端点は平行移動
             Vector2 sensMid2 = ApplySensitivity(mid2, sensitivity, useDirectWorldMapping, camWidth, camHeight);
             Vector2 delta2 = sensMid2 - mid2;
@@ -930,15 +946,15 @@ public class InputPoint : MonoBehaviour
             HasValidStickEndpoints2 = updatedStick2;
             if (updatedStick2)
             {
-                Vector2 end2a = CanonicalizePoint(x2a, y2a, camWidth, camHeight, useDirectWorldMapping, calibrated) + delta2;
-                Vector2 end2b = CanonicalizePoint(x2b, y2b, camWidth, camHeight, useDirectWorldMapping, calibrated) + delta2;
+                Vector2 end2a = CanonicalizePoint(x2a, y2a, camWidth, camHeight, useDirectWorldMapping, forcePixels2) + delta2;
+                Vector2 end2b = CanonicalizePoint(x2b, y2b, camWidth, camHeight, useDirectWorldMapping, forcePixels2) + delta2;
                 LocalStickRawA2 = ToLocalPosition(end2a.x, end2a.y);
                 LocalStickRawB2 = ToLocalPosition(end2b.x, end2b.y);
 
-                float nxA2 = NormalizeAxis(x2a, camWidth, calibrated);
-                float nyA2 = NormalizeAxis(y2a, camHeight, calibrated);
-                float nxB2 = NormalizeAxis(x2b, camWidth, calibrated);
-                float nyB2 = NormalizeAxis(y2b, camHeight, calibrated);
+                float nxA2 = NormalizeAxis(x2a, camWidth, forcePixels2);
+                float nyA2 = NormalizeAxis(y2a, camHeight, forcePixels2);
+                float nxB2 = NormalizeAxis(x2b, camWidth, forcePixels2);
+                float nyB2 = NormalizeAxis(y2b, camHeight, forcePixels2);
 
                 LocalStickA2 = new Vector2(nxA2, nyA2);
                 LocalStickB2 = new Vector2(nxB2, nyB2);

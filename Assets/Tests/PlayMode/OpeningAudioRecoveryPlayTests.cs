@@ -148,7 +148,8 @@ public class OpeningAudioRecoveryPlayTests
         Assert.Greater(manager.songPlayer.Clip.samples, 0);
         Assert.AreEqual("Game", SceneManager.GetActiveScene().name);
         Assert.AreEqual(runId, GameSession.AchievementRunId, "同じ回を続ける");
-        Assert.That(manager.songPlayer.SongTime, Is.InRange(heldSongTime, heldSongTime + .3));
+        // DSP時刻の差を再計算すると停止位置を数ulp下回ることがある。1µsだけ丸め誤差を許す。
+        Assert.That(manager.songPlayer.SongTime, Is.InRange(heldSongTime - .000001, heldSongTime + .3));
         Assert.AreEqual(oldFirstHit, manager.noteSpawner.CurrentChart.notes[0].time, "譜面の到着時刻を変えない");
         Assert.IsNull(Object.FindFirstObjectByType<GameStartCountdown>());
         // 残りの待ち時間のあと、最初のノーツは設定どおりの移動時間で来て、曲の音とノーツの時計がそろう。
