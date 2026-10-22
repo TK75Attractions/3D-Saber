@@ -1038,16 +1038,22 @@ public class GamePlayManager : MonoBehaviour
         if (leaving || completing || finished || inCalibration || inTutorial) return;
         if (!ready) { audioLostBeforeStart = true; return; }
         // 読み直しや 3・2・1 の途中でまた変わったら、読み直しからやり直す(落ち着いたら HandleAudioOutputChanged が始める)。
+        // 出していた数字も忘れる。「3」の途中で変わると、数え直した「3」の刻みが鳴らなかった(2026-10-22)。
         if (audioReload != null) { StopCoroutine(audioReload); audioReload = null; AbortAudioRequest(); }
         audioResumeAt = double.NaN;
+        countdownShown = 0;
         if (audioChangeHold) return;
         audioChangeHold = true;
-        countdownShown = 0;
         if (songPlayer != null && songPlayer.IsScheduled)
         {
             songPlayer.Pause();
             songPlayer.HeldByTracking = true;
         }
+        // 開幕の 3・2・1・START の途中なら取り除く。曲は止めたのに START が「読み直しています」と重なって出ていた(2026-10-22)。
+        // 再開の合図は読み直したあとの 3・2・1 にまとめる。曲は残りの待ち時間ごと止めてあるので、最初のノーツの移動時間は変わらない。
+        // ゲートと床の色は OnDisable/OnDestroy が戻し、予約したクリック音もオブジェクトごと消える(Esc で中断するときと同じ)。
+        var countdown = Object.FindFirstObjectByType<GameStartCountdown>();
+        if (countdown != null) Destroy(countdown.gameObject);
         // 予約したサビの音や下げた音量を戻し、鳴り始めた「シュー」も止める(剣を見失って止めたときと同じ)。
         if (chorusDrop != null) chorusDrop.ResetEffects();
         if (feverShow != null) feverShow.StopEndSound();

@@ -222,6 +222,114 @@ public class ChartEditorDifficultyTests
         });
     }
 
+    [TestCase(false)]
+    [TestCase(true)]
+    public void SongSettingsKeepBeatsAlreadyFollowingTempoMap(bool copyToOtherDifficulty)
+    {
+        WithSongFolder((song, folder) =>
+        {
+            const string mapped = ",\"offsetMs\":0,\"beatZeroMs\":0,\"editorTempoMap\":[{\"beat\":0,\"timeMs\":0},{\"beat\":8,\"timeMs\":4000}]," +
+                "\"notes\":[{\"beat\":2,\"time\":1000,\"x\":-1,\"color\":\"blue\"},{\"beat\":4,\"time\":2000,\"x\":1,\"color\":\"red\"}]}";
+            File.WriteAllText(Path.Combine(folder, "chart_normal.json"), "{\"bpm\":150" + mapped);
+            File.WriteAllText(Path.Combine(folder, "chart_hard.json"), "{\"bpm\":120" + mapped);
+            Load(song, copyToOtherDifficulty ? 1 : 2);
+            SaberChartDocument result;
+            if (copyToOtherDifficulty)
+            {
+                Set("confirmSettingsCopy", new Func<string, string, bool>((a, b) => true));
+                Call("CopySongSettingsToOtherDifficulties");
+                result = SaberChartUtility.FromJson(File.ReadAllText(Path.Combine(folder, "chart_hard.json")));
+            }
+            else
+            {
+                Call("LoadSongSettingsFrom", "normal");
+                result = Document;
+            }
+            Assert.AreEqual(150f, result.bpm);
+            Assert.AreEqual(2, result.tempoMap.Count);
+            Assert.AreEqual(4000f, result.tempoMap[1].timeMs);
+            CollectionAssert.AreEqual(new[] { 1000f, 2000f }, result.notes.Select(n => n.time).ToArray());
+            CollectionAssert.AreEqual(new[] { 2f, 4f }, result.notes.Select(n => n.beat).ToArray(),
+                "両方の譜面で同じテンポ地図に合った拍を、別のBPMの格子へ書き換えない");
+            if (!copyToOtherDifficulty)
+            {
+                Key(KeyCode.Z, EventModifiers.Control);
+                Assert.AreEqual(120f, Document.bpm);
+                CollectionAssert.AreEqual(new[] { 2f, 4f }, Document.notes.Select(n => n.beat).ToArray());
+            }
+        });
+    }
+
+    // 地図が加わる・消えるときは、前後で同じ地図のときと違い、1つの格子に乗っていた拍を新しい BPM で数え直す。
+    // 加わる地図は 150 BPM の直線なので、新しい地図で数え直すようにしても期待値は変わらない。
+    [TestCase(false, false)]
+    [TestCase(false, true)]
+    [TestCase(true, false)]
+    [TestCase(true, true)]
+    public void SongSettingsRecountBeatsWhenTheTempoMapIsAddedOrRemoved(bool copyToOtherDifficulty, bool sourceHasMap)
+    {
+        WithSongFolder((song, folder) =>
+        {
+            const string settings = ",\"offsetMs\":0,\"beatZeroMs\":0";
+            File.WriteAllText(Path.Combine(folder, "chart_normal.json"), "{\"bpm\":150" + settings +
+                (sourceHasMap ? ",\"editorTempoMap\":[{\"beat\":0,\"timeMs\":0},{\"beat\":8,\"timeMs\":3200}]" : "") +
+                ",\"notes\":[{\"beat\":1,\"time\":400,\"x\":0,\"color\":\"red\"}]}");
+            File.WriteAllText(Path.Combine(folder, "chart_hard.json"), "{\"bpm\":120" + settings +
+                (sourceHasMap ? "" : ",\"editorTempoMap\":[{\"beat\":0,\"timeMs\":0},{\"beat\":8,\"timeMs\":4000}]") +
+                ",\"notes\":[{\"beat\":2,\"time\":1000,\"x\":-1,\"color\":\"blue\"},{\"beat\":4,\"time\":2000,\"x\":1,\"color\":\"red\"}]}");
+            Load(song, copyToOtherDifficulty ? 1 : 2);
+            SaberChartDocument result;
+            if (copyToOtherDifficulty)
+            {
+                Set("confirmSettingsCopy", new Func<string, string, bool>((a, b) => true));
+                Call("CopySongSettingsToOtherDifficulties");
+                result = SaberChartUtility.FromJson(File.ReadAllText(Path.Combine(folder, "chart_hard.json")));
+            }
+            else
+            {
+                Call("LoadSongSettingsFrom", "normal");
+                result = Document;
+            }
+            Assert.AreEqual(150f, result.bpm);
+            Assert.AreEqual(sourceHasMap ? 2 : 0, result.tempoMap.Count);
+            CollectionAssert.AreEqual(new[] { 1000f, 2000f }, result.notes.Select(n => n.time).ToArray());
+            CollectionAssert.AreEqual(new[] { 2.5f, 5f }, result.notes.Select(n => n.beat).ToArray(),
+                "地図が加わる・消えるときは、1つの格子に乗っていた拍を新しい BPM で数え直す");
+        });
+    }
+
+    // 点が1つの地図は BPM で格子が動くので、同じ地図でも拍を保つとは決めていない。今までどおり新しい BPM で数え直す。
+    [TestCase(false)]
+    [TestCase(true)]
+    public void SongSettingsStillRecountBeatsWithTheSameSinglePointTempoMap(bool copyToOtherDifficulty)
+    {
+        WithSongFolder((song, folder) =>
+        {
+            const string mapped = ",\"offsetMs\":0,\"beatZeroMs\":0,\"editorTempoMap\":[{\"beat\":0,\"timeMs\":0}]," +
+                "\"notes\":[{\"beat\":2,\"time\":1000,\"x\":-1,\"color\":\"blue\"},{\"beat\":4,\"time\":2000,\"x\":1,\"color\":\"red\"}]}";
+            File.WriteAllText(Path.Combine(folder, "chart_normal.json"), "{\"bpm\":150" + mapped);
+            File.WriteAllText(Path.Combine(folder, "chart_hard.json"), "{\"bpm\":120" + mapped);
+            Load(song, copyToOtherDifficulty ? 1 : 2);
+            SaberChartDocument result;
+            if (copyToOtherDifficulty)
+            {
+                Set("confirmSettingsCopy", new Func<string, string, bool>((a, b) => true));
+                Call("CopySongSettingsToOtherDifficulties");
+                result = SaberChartUtility.FromJson(File.ReadAllText(Path.Combine(folder, "chart_hard.json")));
+            }
+            else
+            {
+                Call("LoadSongSettingsFrom", "normal");
+                result = Document;
+            }
+            Assert.AreEqual(150f, result.bpm);
+            Assert.AreEqual(1, result.tempoMap.Count);
+            CollectionAssert.AreEqual(new[] { 1000f, 2000f }, result.notes.Select(n => n.time).ToArray());
+            CollectionAssert.AreEqual(new[] { 2.5f, 5f }, result.notes.Select(n => n.beat).ToArray(),
+                "点が1つの地図は、同じ地図でも今までどおり新しい BPM で数え直す(保つかは未決)");
+        });
+    }
+
     // ---- helpers ----
 
     SaberChartDocument Document => Get<SaberChartDocument>("document");

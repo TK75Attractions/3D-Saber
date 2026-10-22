@@ -169,6 +169,7 @@ namespace Saber.ChartEditor
             document.extraFields ??= new List<SaberChartExtraField>();
             document.markers ??= new List<SaberChartMarker>();
             if (!SaberJson.TryParseObject(json, out SaberJsonObject root)) return;
+            RemoveExplicitNullNotes(root, document);
             if (document.markers.Count == 0 && root.Get(MarkersFileKey) is SaberJsonArray markerArray)
             {
                 foreach (SaberJsonNode item in markerArray.Items)
@@ -200,6 +201,17 @@ namespace Saber.ChartEditor
                     json = SaberJson.WriteCompact(member.Value),
                 });
             }
+        }
+
+        // JsonUtility は notes 配列の null を既定値のノーツ(0秒・中央)にするので、そのまま保存すると本編で実ノーツになる。
+        // 本編 ChartLoader と同じく、元の JSON で null と書かれた位置だけ除く(値では見分けず、0秒・中央の正規ノーツは残す)。
+        // 位置で合わせるので Normalize の並べ替えより前に呼び、root の notes が1つで要素数も合うときだけ行う。
+        private static void RemoveExplicitNullNotes(SaberJsonObject root, SaberChartDocument document)
+        {
+            if (document.notes == null || root.Members.Count(member => member.Key == "notes") != 1) return;
+            if (!(root.Get("notes") is SaberJsonArray array) || array.Items.Count != document.notes.Count) return;
+            for (int i = array.Items.Count - 1; i >= 0; i--)
+                if (array.Items[i] is SaberJsonValue value && value.Raw == "null") document.notes.RemoveAt(i);
         }
 
         /// <summary>エディター内の比較・履歴用の JSON。作業用の項目も含む。</summary>
@@ -301,9 +313,8 @@ namespace Saber.ChartEditor
                 if (!IsFinite(note.time)) note.time = 0f;
                 if (!IsFinite(note.x)) note.x = 0f;
                 if (!IsFinite(note.y)) note.y = 0f;
-
-                note.beat = Mathf.Max(0f, note.beat);
-                note.time = Mathf.Max(0f, note.time);
+                // 0 未満の time・beat は直さない。OFFSET が正なら本編は time + offsetMs で曲の中に届かせる(ChartLoader も直さない)ので、
+                // 別の項目を編集して保存しても判定時刻を動かさない。時刻を指定する編集と拍の数え直しは、従来どおり 0 未満へ置かない。
 
                 string direction = LowerOrDefault(note.direction, DirectionNone);
                 note.direction = ValidDirections.Contains(direction) ? direction : DirectionNone;
@@ -409,7 +420,8 @@ namespace Saber.ChartEditor
             return differences;
         }
 
-        private static bool SameTempoMaps(List<SaberChartTempoPoint> a, List<SaberChartTempoPoint> b)
+        // 曲の設定の食い違いの警告と、設定を写すときに拍を保つかの判断で、同じ許容差を使う。
+        internal static bool SameTempoMaps(List<SaberChartTempoPoint> a, List<SaberChartTempoPoint> b)
         {
             List<SaberChartTempoPoint> left = SaberChartGrid.Clean(a), right = SaberChartGrid.Clean(b);
             if (left.Count != right.Count) return false;

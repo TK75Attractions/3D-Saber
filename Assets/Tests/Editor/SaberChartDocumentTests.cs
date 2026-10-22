@@ -281,4 +281,131 @@ public class SaberChartDocumentTests
         Assert.AreEqual(SaberChartUtility.TypeDirection, document.notes[1].type);
         Assert.AreEqual("up", document.notes[1].direction);
     }
+
+    [Test]
+    public void FileRoundTrip_KeepsNegativeTimeAndBeatWithPositiveOffset()
+    {
+        // スマホ版の書き出しと同じ形。OFFSET +500 なので、本編では音源の 0.1 秒と 0.3 秒に届く。
+        const string json = "{\"bpm\":120,\"coordScale\":1,\"offsetMs\":500,\"beatZeroMs\":0,\"displayLevel\":0,\"timeSignatures\":[],\"notes\":[" +
+            "{\"time\":-400,\"beat\":-0.8,\"x\":-1,\"y\":0,\"type\":\"tap\",\"color\":\"blue\",\"direction\":\"none\",\"count\":1,\"lengthMs\":0}," +
+            "{\"time\":-200,\"beat\":-0.4,\"x\":1,\"y\":0,\"type\":\"tap\",\"color\":\"red\",\"direction\":\"none\",\"count\":1,\"lengthMs\":0}]}";
+
+        // エディターの読込と書き出しだけを通したファイルを本編が読む(別のノーツを直して保存したときや、
+        // 曲の設定を他の難易度へ写したときに、触っていないノーツが通る経路)。
+        ChartData chart = ChartLoader.Parse(SaberChartUtility.ToFileJson(SaberChartUtility.FromJson(json)));
+
+        Assert.AreEqual(2, chart.notes.Count);
+        Assert.AreEqual(-400f, chart.notes[0].time, Epsilon);
+        Assert.AreEqual(-0.8f, chart.notes[0].beat, Epsilon);
+        Assert.AreEqual(-200f, chart.notes[1].time, Epsilon);
+        Assert.AreEqual(-0.4f, chart.notes[1].beat, Epsilon);
+        // 本編の到着(NoteSpawner.EffectiveTime)は time + offsetMs。2つを 0.5 秒の同時押しにまとめない。
+        Assert.AreEqual(100f, chart.notes[0].time + chart.offsetMs, Epsilon);
+        Assert.AreEqual(300f, chart.notes[1].time + chart.offsetMs, Epsilon);
+    }
+
+    [Test]
+    public void FileRoundTrip_KeepsNegativeTimeWithNegativeOriginAndTempoMap()
+    {
+        // 原点 -500ms と OFFSET +500 で、拍 0 が音源の頭。拍 0.5 のノーツは time が負でも拍は正。
+        const string json = "{\"bpm\":120,\"offsetMs\":500,\"beatZeroMs\":-500," +
+            "\"editorTempoMap\":[{\"beat\":0,\"timeMs\":-500},{\"beat\":8,\"timeMs\":3500}]," +
+            "\"notes\":[{\"time\":-250,\"beat\":0.5,\"x\":0,\"y\":0},{\"time\":1500,\"beat\":4,\"x\":0,\"y\":0}]}";
+
+        SaberChartDocument document = SaberChartUtility.FromJson(json);
+        ChartData chart = ChartLoader.Parse(SaberChartUtility.ToFileJson(document));
+
+        Assert.AreEqual(-500f, chart.beatZeroMs, Epsilon);
+        Assert.AreEqual(2, chart.editorTempoMap.Count);
+        Assert.AreEqual(-500f, chart.editorTempoMap[0].timeMs, Epsilon);
+        Assert.AreEqual(-250f, chart.notes[0].time, Epsilon);
+        Assert.AreEqual(0.5f, chart.notes[0].beat, Epsilon);
+        Assert.AreEqual(250f, chart.notes[0].time + chart.offsetMs, Epsilon);
+        Assert.IsTrue(SaberChartUtility.BeatsFollowSingleGrid(document),
+            "time だけ 0 に寄せて拍を残すと、テンポの変わる譜面と取り違える");
+    }
+
+    [Test]
+    public void Normalize_KeepsNegativeTimesButRepairsNonFiniteValues()
+    {
+        var document = new SaberChartDocument
+        {
+            notes =
+            {
+                new SaberChartNote { time = float.NaN, beat = float.PositiveInfinity, x = 1f },
+                new SaberChartNote { time = -400f, beat = -0.8f },
+            },
+        };
+
+        SaberChartUtility.Normalize(document);
+
+        Assert.AreEqual(-400f, document.notes[0].time, Epsilon);
+        Assert.AreEqual(-0.8f, document.notes[0].beat, Epsilon);
+        Assert.AreEqual(0f, document.notes[1].time, Epsilon, "数でない時刻は従来どおり 0 に直す");
+        Assert.AreEqual(0f, document.notes[1].beat, Epsilon);
+    }
+    [Test]
+    public void FileRoundTrip_DoesNotTurnExplicitNullIntoRuntimeNote()
+    {
+        const string json = "{\"offsetMs\":1000,\"notes\":[null," +
+            "{\"time\":2000,\"x\":1,\"y\":0,\"color\":\"blue\"}]}";
+        var before = ChartLoader.Parse(json);
+        Assert.AreEqual(1, before.notes.Count, "本編直接読込は明示nullを除く");
+
+        var document = SaberChartUtility.FromJson(json);
+        document.displayLevel = 3; // ノーツに触れない編集でも保存経路を通る。
+        var after = ChartLoader.Parse(SaberChartUtility.ToFileJson(document));
+
+        Assert.AreEqual(1, after.notes.Count, "保存だけで1秒地点にノーツを増やさない");
+        Assert.AreEqual(2000f, after.notes[0].time);
+        Assert.AreEqual(1f, after.notes[0].x);
+        Assert.AreEqual("blue", after.notes[0].color);
+        Assert.AreEqual(3000f, after.notes[0].time + after.offsetMs);
+        Assert.AreEqual(3, after.displayLevel);
+    }
+
+    [Test]
+    public void FileRoundTrip_KeepsRealZeroNoteAndNestedNullOrFalseMetadata()
+    {
+        const string json = "{\"metadata\":{\"notes\":[null],\"enabled\":false},\"notes\":[" +
+            "null,{\"time\":0,\"x\":0,\"y\":0,\"color\":\"red\"}," +
+            "{\"time\":2000,\"x\":1,\"y\":0,\"color\":\"blue\"},null]}";
+        var document = SaberChartUtility.FromJson(json);
+        document.displayLevel = 3;
+        string saved = SaberChartUtility.ToFileJson(document);
+        var after = ChartLoader.Parse(saved);
+
+        Assert.AreEqual(2, after.notes.Count);
+        Assert.AreEqual(0f, after.notes[0].time, "中央の0秒ノーツ自体は正規データ");
+        Assert.AreEqual(0f, after.notes[0].x);
+        Assert.AreEqual(0f, after.notes[0].y);
+        Assert.AreEqual("red", after.notes[0].color);
+        Assert.AreEqual(2000f, after.notes[1].time);
+        Assert.AreEqual("blue", after.notes[1].color);
+        Assert.AreEqual("{\"notes\": [null], \"enabled\": false}",
+            document.extraFields.Find(field => field.key == "metadata").json);
+        var reloaded = SaberChartUtility.FromJson(saved);
+        Assert.AreEqual(document.extraFields.Find(field => field.key == "metadata").json,
+            reloaded.extraFields.Find(field => field.key == "metadata").json);
+    }
+
+    [Test]
+    public void FileRoundTrip_NullRemovalKeepsNegativeTimeAndBeat()
+    {
+        const string json = "{\"offsetMs\":500,\"notes\":[null," +
+            "{\"time\":-400,\"beat\":-0.8,\"x\":1,\"color\":\"blue\"},null]}";
+        var after = ChartLoader.Parse(SaberChartUtility.ToFileJson(SaberChartUtility.FromJson(json)));
+        Assert.AreEqual(1, after.notes.Count);
+        Assert.AreEqual(-400f, after.notes[0].time, Epsilon);
+        Assert.AreEqual(-0.8f, after.notes[0].beat, Epsilon);
+        Assert.AreEqual(100f, after.notes[0].time + after.offsetMs, Epsilon);
+    }
+
+    [Test]
+    public void FromJson_LeavesDuplicateNotesKeysAsBefore()
+    {
+        // 重複キーは別の仕様。異なる配列の null の位置で正規ノーツを消さない。
+        const string json = "{\"notes\":[null],\"notes\":[{\"time\":0,\"x\":0,\"y\":0,\"color\":\"red\"}]}";
+        Assert.AreEqual(1, SaberChartUtility.FromJson(json).notes.Count);
+    }
 }
