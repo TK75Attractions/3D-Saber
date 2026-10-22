@@ -101,7 +101,7 @@ public static class GameSession
     // 判定調整から戻るときだけ復元する曲と難易度。並び順の変更に備えて名前で保持する。
     public static string CalibrationSelectionSongId;
     public static string CalibrationSelectionDifficulty;
-    // 音の出力先が変わって選曲を作り直すとき、RUSH E の秘密の E を解除したままにする(AudioOutputRecovery、2026-10-22)。
+    // 音の出力先が変わって選曲を作り直すとき・判定調整から選曲へ戻るとき、RUSH E の秘密の E を解除したままにする(2026-10-22)。
     public static bool RushESecretCarry;
 
     // 判定オフセット（ミリ秒）。SongSelect でユーザーが調整して PlayerPrefs に保存。

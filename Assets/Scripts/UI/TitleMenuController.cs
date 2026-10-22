@@ -9,6 +9,8 @@ public class TitleMenuController : MonoBehaviour
         // 起動時と前の人からの交代時に、標準の判定・速度で始める。選曲の操作の記録も消す(次の選曲は新しい人の選曲)。
         GameSession.ResetPlayerSettings();
         GameSession.SongSelectOperated = false;
+        // RUSH E の E の持ち越し(判定調整・音の出力先の作り直し)も、次の人へ渡さない。
+        GameSession.RushESecretCarry = false;
     }
 
     public void OnStartButton()

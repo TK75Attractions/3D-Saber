@@ -266,6 +266,54 @@ public class RushESecretPlayTests
         ctl.StopPreview();
     }
 
+    // 判定調整を往復しても E のまま(2026-10-22 くり返し3回目)。タイトルへ抜けたら持ち越さない。
+    [UnityTest]
+    public IEnumerator CalibrationRoundTripKeepsTheRevealedE()
+    {
+        if (!File.Exists(Path.Combine(Application.streamingAssetsPath, "Songs", "RushE", "audio.wav"))) Assert.Ignore("文化祭用ローカル音源が必要です。");
+        yield return SceneManager.LoadSceneAsync("SongSelect", LoadSceneMode.Single);
+        var ctl = Object.FindFirstObjectByType<SongSelectController>();
+        var skin = Object.FindFirstObjectByType<SongSelectSkin>();
+        float deadline = Time.realtimeSinceStartup + 15;
+        while (!skin.IsReady && Time.realtimeSinceStartup < deadline) yield return null;
+        Object.FindFirstObjectByType<SongSelectAimPointer>().enabled = false;
+        int rush = Enumerable.Range(0, ctl.SongCount).First(i => ctl.SongIdAt(i) == "RushE");
+        ctl.Select(rush); ctl.SetDifficulty(2);
+        yield return new WaitForSecondsRealtime(.8f);
+        while (ScreenTransition.IsBusy || !skin.DiscsSettled) yield return null;
+        for (int i = 0; i < 10; i++) { ctl.startButton.onClick.Invoke(); yield return new WaitForSecondsRealtime(.25f); }
+        yield return new WaitForSecondsRealtime(2.2f);
+        Assert.AreEqual("E", ctl.CurrentDifficultyName);
+        for (int exit = 0; exit < 2; exit++)
+        {
+            SongSelectSkin.EnterCalibration();
+            yield return ScreenTransitionPlayTests.WaitForTransition();
+            Assert.AreEqual("Game", SceneManager.GetActiveScene().name);
+            var calibration = Object.FindFirstObjectByType<GamePlayManager>().Calibration;
+            Assert.NotNull(calibration);
+            foreach (var judge in Object.FindObjectsByType<SaberCutJudge>(FindObjectsSortMode.None)) judge.autonomous = false;
+            if (exit == 1)
+            {
+                calibration.DiscardAndExitTo("Title");
+                yield return ScreenTransitionPlayTests.WaitForTransition();
+                Assert.AreEqual("Title", SceneManager.GetActiveScene().name);
+                Assert.IsFalse(GameSession.RushESecretCarry, "タイトルへ抜けたら E を次の人へ持ち越さない");
+                yield break;
+            }
+            calibration.DiscardAndExit();
+            yield return ScreenTransitionPlayTests.WaitForTransition();
+            skin = Object.FindFirstObjectByType<SongSelectSkin>();
+            deadline = Time.realtimeSinceStartup + 10;
+            while ((skin == null || !skin.IsReady) && Time.realtimeSinceStartup < deadline) { yield return null; skin = Object.FindFirstObjectByType<SongSelectSkin>(); }
+            ctl = Object.FindFirstObjectByType<SongSelectController>();
+            Assert.AreEqual("RushE", ctl.SongIdAt(ctl.SelectedIndex));
+            Assert.IsTrue(ctl.RushESecret.Unlocked); Assert.IsFalse(ctl.RushESecret.Transitioning);
+            Assert.AreEqual("E", ctl.CurrentDifficultyName, "判定調整から戻っても E のまま");
+            Assert.IsFalse(GameSession.RushESecretCarry, "持ち越しは一度で消す");
+            while (ScreenTransition.IsBusy) yield return null;
+        }
+    }
+
     // 赤(照準)でジャケットを横切って隣の盤へ移っても、切断には数えたまま、照準をロックせず曲送りも遅らせない。
     [UnityTest]
     public IEnumerator RedSlashIntoTheNextDiscCountsWithoutLockingOrDelayingTheAim()

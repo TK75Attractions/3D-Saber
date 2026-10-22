@@ -156,6 +156,9 @@ public class SongSelectSkin : MonoBehaviour
             && controller.SelectedDifficultyIndex >= 0 && controller.SelectedDifficultyIndex < controller.difficultyNames.Length
             ? controller.difficultyNames[controller.SelectedDifficultyIndex] : null;
         GameSession.CalibrationSelectionSeconds = skin != null ? skin.RemainingSeconds : 100;
+        // RUSH E の E を解除していたら、戻ったあとも E のまま(往復で Hard に戻り、時間切れで Hard が始まっていた。2026-10-22)。
+        GameSession.RushESecretCarry = controller != null && GameSession.CalibrationSelectionSongId == RushESecretState.SongId
+            && (controller.RushESecret.Unlocked || controller.RushESecret.Transitioning);
         GameSession.IsCalibrationMode = true;
         // 判定調整に入ったのは来場者の操作。戻ったあとの時間切れでは今までどおり自動で始める。
         GameSession.SongSelectOperated = true;

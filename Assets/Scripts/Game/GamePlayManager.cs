@@ -1118,6 +1118,7 @@ public class GamePlayManager : MonoBehaviour
                 GameSession.CalibrationSelectionSeconds = null;
                 GameSession.CalibrationSelectionSongId = null;
                 GameSession.CalibrationSelectionDifficulty = null;
+                GameSession.RushESecretCarry = false;
             }
         }
     }
