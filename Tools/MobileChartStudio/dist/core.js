@@ -79,6 +79,11 @@ export function makeNote(gesture, endAudio, chart, options) {
     x: +(gesture.x / chart.coordScale).toFixed(6), y: +(gesture.y / chart.coordScale).toFixed(6),
     color, direction, type: held ? 'long' : direction !== 'none' ? 'direction' : 'tap', count, lengthMs: +lengthMs.toFixed(3) };
 }
+// BPM未設定のあいだの beat は仮の120で数えた値。BPMを初めて決めたら、時刻を保ったまま新しいBPMで数え直す(テンポが変わる譜面と取り違えない)。
+export function rebeat(chart) {
+  for (const note of chart.notes) note.beat = +((note.time - chart.beatZeroMs) / (60000 / chart.bpm)).toFixed(6);
+  return chart;
+}
 export function hasVariableGrid(chart) {
   return chart.notes.filter(n => Math.abs(n.time - (chart.beatZeroMs + n.beat * 60000 / chart.bpm)) > 80).length > Math.max(2, chart.notes.length * .12);
 }

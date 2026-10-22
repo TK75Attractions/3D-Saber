@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { blankChart, parseChart, makeNote, exportChart, History } from '../dist/core.js';
-import { freshSettings, tempoIsSet, barSeek, editNote } from '../dist/mobile.js';
+import { blankChart, parseChart, makeNote, exportChart, History, hasVariableGrid, rebeat } from '../dist/core.js';
+import { freshSettings, tempoIsSet, barSeek, barSpan, editNote } from '../dist/mobile.js';
 import { refineChart, chartReport } from '../dist/refinement.js';
 import { verticalGeometry, verticalHits, verticalTime } from '../dist/vertical-timeline.js';
 import { createBackup, readBackup } from '../dist/backup.js';
@@ -25,6 +25,17 @@ test('bar navigation follows meter changes, offset, negative pickup and exact bo
  const c=chart([],{bpm:120,offsetMs:100,beatZeroMs:200,timeSignatures:[{beat:8,numerator:3,denominator:4},{beat:14,numerator:6,denominator:8}]});
  assert.equal(barSeek(c,.3,1,20),2.3);assert.equal(barSeek(c,4.3,1,20),5.8);assert.equal(barSeek(c,4.3,-1,20),2.3);
  assert.equal(barSeek(c,5.8,-1,20),4.3);assert.equal(barSeek(c,7.3,1,20),8.8);assert.equal(barSeek(c,0,-1,20),0);
+});
+test('confirming a BPM after recording keeps times and recounts beats, so a steady song is not taken for a tempo change',()=>{
+ const c=chart([{time:2000,beat:4},{time:4000,beat:8},{time:6000,beat:12},{time:8000,beat:16,count:3,type:'long',lengthMs:900}]);c.bpm=150;
+ assert.equal(hasVariableGrid(c),true,'仮の120で数えた beat のままだと取り違える');
+ rebeat(c);assert.deepEqual(c.notes.map(n=>n.time),[2000,4000,6000,8000]);assert.deepEqual(c.notes.map(n=>n.beat),[5,10,15,20]);
+ assert.equal(c.notes[3].lengthMs,900);assert.equal(hasVariableGrid(c),false);
+});
+test('two bars from here follow the meter, across a change, and stop at the end of the song',()=>{
+ const c=chart([],{bpm:120,offsetMs:0,beatZeroMs:0,timeSignatures:[{beat:8,numerator:3,denominator:4}]});
+ assert.equal(barSpan(c,0,2,60),4);assert.equal(barSpan(c,4,2,60),7);assert.equal(barSpan(c,3,2,60),6.25);assert.equal(barSpan(c,58,2,60),60);
+ assert.equal(barSpan(chart([],{bpm:120,timeSignatures:[{beat:0,numerator:6,denominator:8}]}),0,2,60),3);
 });
 test('immediate single-field edits retain variable beat timing, unknown metadata, type and implicit long duration',()=>{
  const c=chart([{beat:9,editorMemo:'keep',count:3,type:'long',lengthMs:1400}],{coordScale:2,offsetMs:110}),id=c.notes[0].__editorId;

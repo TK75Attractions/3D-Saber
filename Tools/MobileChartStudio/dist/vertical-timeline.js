@@ -22,6 +22,8 @@ export function paintVerticalTimeline(canvas,chart,buffer,window,position,select
   const beat=60/chart.bpm,step=beat*(bottom-top)/window.span>24?beat:Math.max(1,Math.ceil(window.span/6));
   const origin=(chart.beatZeroMs+chart.offsetMs)/1000;
   for(let t=origin+Math.ceil((window.start-origin)/step)*step;t<=window.end+.0001;t+=step){const y=toY(t);ctx.strokeStyle='#314158';ctx.beginPath();ctx.moveTo(left,y);ctx.lineTo(right,y);ctx.stroke();ctx.fillStyle='#a1b2ca';ctx.textAlign='right';ctx.fillText(step<1?t.toFixed(1)+'s':formatTime(t),left-7,y+4);}
+  // まだノーツがない下書きでは、何をすればよいかをグラフの中に書く。
+  if(!chart.notes.length){ctx.fillStyle='#c9d4e4';ctx.font='14px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';const cx=(left+right)/2,cy=(top+bottom)/2;ctx.fillText('ノーツはまだありません',cx,cy-12);ctx.fillStyle='#9baac1';ctx.font='12px system-ui';ctx.fillText('「録る」でタップするか、「＋ 置く」で追加',cx,cy+12);ctx.textBaseline='alphabetic';}
   const boxes=verticalGeometry(chart,window,w,h),arrows={up:'↑',down:'↓',left:'←',right:'→',upleft:'↖',upright:'↗',downleft:'↙',downright:'↘'};
   ctx.save();ctx.beginPath();ctx.rect(left-22,top-12,right-left+44,bottom-top+24);ctx.clip();
   for(const b of boxes){ctx.fillStyle=COLORS[b.note.color];if(b.end<b.y){ctx.globalAlpha=.35;ctx.fillRect(b.x-6,b.end,12,b.y-b.end);ctx.globalAlpha=1;}ctx.fillRect(b.x-13,b.y-13,26,26);ctx.fillStyle='#0b1019';ctx.font='bold 18px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(arrows[b.note.direction]||'•',b.x,b.y);if(b.note.count>1){ctx.font='11px system-ui';ctx.fillStyle=COLORS[b.note.color];ctx.fillText('×'+b.note.count,b.x+24,b.y);}if(b.note.__editorId===selected){ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.strokeRect(b.x-16,b.y-16,32,32);ctx.lineWidth=1;}}

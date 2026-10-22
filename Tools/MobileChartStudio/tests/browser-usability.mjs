@@ -29,7 +29,7 @@ try{
   // 2. 曲・保存は、操作を2列に詰めて下書きの一覧が最初の画面に入る。
   await page.locator('#libraryButton').click();await page.locator('#library').waitFor({state:'visible'});
   await page.locator('#chartFile').setInputFiles({name:'chart_normal.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(chart))});await settle();
-  await page.locator('[data-close="library"]').click();await page.locator('#libraryButton').click();await page.locator('#library').waitFor({state:'visible'});
+  assert.equal(await page.locator('#library').isVisible(),false,'読み込んだら一覧を閉じる');await page.locator('#libraryButton').click();await page.locator('#library').waitFor({state:'visible'});
   const group=await box('.project-group .open-project');assert.ok(group&&group.y+group.height<=664,'最初の下書きのボタンが画面内');
   await page.screenshot({path:path.join(output,'usability-library.png')});await page.locator('[data-close="library"]').click();check('the library shows drafts without scrolling');
   // 3. タブごとにスクロール位置を覚える。
@@ -77,7 +77,81 @@ try{
   assert.deepEqual(errors,[]);check('no browser runtime errors');
   await fixesFound20261022();
   await round5();
+  await round6();
+  await codexRound6();
 }finally{await browser.close();}
+
+// 2026-10-22 Codex の第2回の点検で見つかった食い違い(BPMを後で決める・BPMを測る速さ・3拍子のループ・まとめて直したあとの選択)。
+async function codexRound6(){
+  const ctx=await browser.newContext({viewport:{width:390,height:664},hasTouch:true}),p=await ctx.newPage(),errs=[];p.on('pageerror',e=>errs.push(e.message));
+  const wait=()=>p.waitForTimeout(300),seekTo=seconds=>p.evaluate(s=>{const e=document.querySelector('#seek');e.value=String(s);e.dispatchEvent(new Event('input',{bubbles:true}));},seconds);
+  try{
+    await p.goto(site);await wait();
+    await p.locator('#audioFile').setInputFiles({name:'後で決める.wav',mimeType:'audio/wav',buffer:wav()});
+    await p.waitForFunction(()=>document.querySelector('#saveStatus').textContent==='この端末に保存済み');
+    // 1. BPM未設定で録ってから BPM を決めても、テンポが変わる譜面と取り違えない(小節で移動できる)。
+    await seekTo(10);await wait();await p.locator('#playButton').click();await p.waitForTimeout(200);
+    for(let i=0;i<3;i++){await p.locator('#pad').tap({position:{x:60+i*40,y:100}});await p.waitForTimeout(300);}
+    await p.locator('#playButton').click();await wait();assert.equal((await storedIn(p)).chart.notes.length,3);
+    await p.locator('#settingsButton').click();await p.locator('#bpm').fill('150');await p.locator('#bpm').press('Tab');await wait();
+    // 2. 遅く聴く設定でも、BPMを測るための再生は1.0倍。
+    await p.evaluate(()=>{const s=document.querySelector('#speed');s.value='0.5';s.dispatchEvent(new Event('change',{bubbles:true}));});
+    await p.locator('#tempoListen').click();await p.waitForTimeout(300);const t0=Number(await p.locator('#seek').inputValue());await p.waitForTimeout(1000);const t1=Number(await p.locator('#seek').inputValue());
+    assert.ok(t1-t0>.8,`1秒で${(t1-t0).toFixed(2)}秒進む(0.5倍なら0.5秒)`);await p.locator('#tempoListen').click();await p.locator('#settingsDialogClose').click();await wait();
+    assert.equal(await p.locator('#backButton').innerText(),'−1小節','BPMを決めたら小節で移動');
+    assert.deepEqual((await storedIn(p)).chart.notes.map(n=>Math.abs(n.beat-(n.time-0)*150/60000)<1e-3),[true,true,true],'beat は新しいBPMで数え直す');
+    check('setting a BPM after recording keeps bar navigation; tap-tempo playback runs at 1.0x');
+    // 3. 3拍子の曲で「今の位置からくり返し聴く」は2小節=6拍(120 BPMで3秒)。
+    const notes=Array.from({length:6},(_,i)=>({time:1000+i*500,beat:2+i,x:0,y:0,color:i%2?'red':'blue',direction:'none',count:1,type:'tap',lengthMs:0}));
+    await p.locator('#libraryButton').click();await p.locator('#chartFile').setInputFiles({name:'chart_normal.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify({bpm:120,offsetMs:0,beatZeroMs:0,coordScale:1,displayLevel:2,timeSignatures:[{beat:0,numerator:3,denominator:4}],notes}))});await wait();
+    await p.locator('#nav-preview').click();await seekTo(0);await wait();await p.locator('#previewRangeButton').click();await p.locator('#loopHere').click();await wait();
+    assert.equal(await p.locator('#rangeEnd').inputValue(),'3.000','3拍子の2小節');await p.locator('#previewRangeButton').click();await p.locator('#clearRange').click();await wait();check('the preview loop is two bars of the current meter');
+    // 4. まとめて直したあとも、選んだノーツが残っていれば選んだまま(値は新しく)。消えたらパネルを閉じる。
+    await p.locator('#nav-edit').click();await wait();if(!await p.locator('.map-note-details').evaluate(e=>e.open))await p.locator('.map-note-details summary').click();
+    await p.locator('#mapNotes button').first().click();await wait();assert.match(await p.locator('#selectedNoteLabel').innerText(),/0:01\.000/);
+    const refine=async(kind,fields)=>{await p.locator('#mapRefine').click();await p.locator('#refineDialog').waitFor({state:'visible'});await p.locator('#refineScope').selectOption('all');await p.locator('#refineKind').selectOption(kind);for(const[id,value]of Object.entries(fields))await p.locator('#'+id).fill(String(value));await p.locator('#refineCheck').click();await wait();await p.locator('#refineApply').click();await wait();};
+    await refine('shift',{refineShift:100});
+    assert.equal(await p.locator('#noteDialog').evaluate(e=>e.open),true,'選んだまま');assert.match(await p.locator('#selectedNoteLabel').innerText(),/0:01\.100/);
+    await refine('delete',{});assert.equal(await p.locator('#noteDialog').evaluate(e=>e.open),false,'消えたら閉じる');check('bulk edits keep a surviving selection and close the panel otherwise');
+    assert.deepEqual(errs,[]);check('no browser runtime errors in the Codex round-6 fixes');
+  }finally{await ctx.close();}
+}
+
+// 2026-10-22 6回目: 「＋難易度」は作るまで今の下書きを切り替えず、何を元にするかを見せる。
+async function round6(){
+  const ctx=await browser.newContext({viewport:{width:390,height:664},hasTouch:true}),p=await ctx.newPage(),errs=[];p.on('pageerror',e=>errs.push(e.message));
+  const wait=()=>p.waitForTimeout(300),saved=()=>p.waitForFunction(()=>document.querySelector('#saveStatus').textContent==='この端末に保存済み');
+  try{
+    await p.goto(site);await wait();
+    await p.locator('#audioFile').setInputFiles({name:'六回目A.wav',mimeType:'audio/wav',buffer:wav()});await saved();
+    await p.locator('#settingsButton').click();await p.locator('#bpm').fill('150');await p.locator('#bpm').press('Tab');await wait();await p.locator('#settingsDialogClose').click();await wait();
+    // 0. まだノーツがないとき、渡すは「0個」を先に知らせる(注意は1件ずつ改行)。
+    await p.locator('#nav-export').click();await wait();assert.match(await p.locator('#exportWarnings').innerText(),/^ノーツが0個です。/);
+    await p.locator('#nav-record').click();await wait();check('export warns about an empty chart first');
+    await p.locator('#libraryButton').click();await p.locator('#libraryAudioFile').setInputFiles({name:'六回目B.wav',mimeType:'audio/wav',buffer:wav()});await saved();await wait();
+    await p.locator('#playButton').click();await p.waitForTimeout(200);await p.locator('#pad').tap({position:{x:60,y:100}});await p.waitForTimeout(200);await p.locator('#playButton').click();await wait();
+    assert.equal(await p.locator('#undoButton').isDisabled(),false);
+    // 1. 開いていない曲Aの「＋EASY」: 元にする下書き(A・NORMAL・BPM 150)を見せる。閉じれば曲Bのまま、元に戻すも残る。
+    await p.locator('#libraryButton').click();await p.locator('#library').waitFor({state:'visible'});
+    const groupA=p.locator('.project-group').filter({hasText:'六回目A'});await groupA.locator(':scope>button').filter({hasText:'EASY'}).click();
+    await p.locator('#duplicateDialog').waitFor({state:'visible'});
+    assert.match(await p.locator('#copySource').innerText(),/元にする下書き：六回目A · NORMAL · 0 notes · BPM 150 · OFFSET 0ms。/);
+    assert.equal(await p.locator('#copyDifficulty').inputValue(),'easy');assert.equal(await p.locator('#copyContent').inputValue(),'empty');
+    await p.locator('[data-close="duplicateDialog"]').click();await wait();
+    assert.equal((await storedIn(p)).name,'六回目B','閉じたら今の下書きのまま');assert.equal(await p.locator('#undoButton').isDisabled(),false,'元に戻すも残る');
+    // 2. もう一度押して作ると、曲Aの EASY(空・BPM 150)が開く。
+    await p.locator('#libraryButton').click();await p.locator('#library').waitFor({state:'visible'});
+    await p.locator('.project-group').filter({hasText:'六回目A'}).locator(':scope>button').filter({hasText:'EASY'}).click();await p.locator('#createCopy').dblclick();await wait();await saved();
+    const all=await p.evaluate(()=>new Promise((resolve,reject)=>{const r=indexedDB.open('saber-tap-studio-v1',1);r.onerror=()=>reject(r.error);r.onsuccess=()=>{const d=r.result,q=d.transaction('projects','readonly').objectStore('projects').getAll();q.onsuccess=()=>{resolve(q.result.map(x=>`${x.name}/${x.difficulty}`));d.close();};};}));
+    assert.equal(all.filter(x=>x==='六回目A/easy').length,1,'二度押しでも1つだけ');
+    const made=await storedIn(p);assert.equal(made.name,'六回目A');assert.equal(made.difficulty,'easy');assert.equal(made.chart.notes.length,0);assert.equal(made.chart.bpm,150);assert.equal(made.settings.bpmConfirmed,true);
+    assert.match(await p.locator('#difficultyLabel').innerText(),/EASY \/ 150 BPM/);check('adding a difficulty shows its source and keeps the open draft until confirmed');
+    // 3. 開いている曲の「＋難易度」と「別の難易度・コピー」は、いま開いている下書きを元にすると書く。
+    await p.locator('#libraryButton').click();await p.locator('#library').waitFor({state:'visible'});await p.locator('#duplicateButton').click();
+    assert.match(await p.locator('#copySource').innerText(),/六回目A · EASY · 0 notes · BPM 150 · OFFSET 0ms（いま開いている下書き）/);await p.locator('[data-close="duplicateDialog"]').click();check('copying names the open draft as its source');
+    assert.deepEqual(errs,[]);check('no browser runtime errors in round 6');
+  }finally{await ctx.close();}
+}
 
 // 2026-10-22 5回目: 色を固定したパッドの表示・時刻の行でも位置を変える・譜面を開くの行き先・横向きの入力結果・押せる高さ。
 async function round5(){
@@ -108,7 +182,7 @@ async function round5(){
     const notes=Array.from({length:4},(_,i)=>({time:1000+i*500,beat:2+i,x:0,y:0,color:'blue',direction:'none',count:1,type:'tap',lengthMs:0}));
     await p.locator('#chartFile').setInputFiles({name:'chart_hard.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify({bpm:120,offsetMs:0,beatZeroMs:0,coordScale:1,displayLevel:2,timeSignatures:[],notes}))});await wait();
     assert.match(await p.locator('#toast').innerText(),/chart_hard\.json を「五回目」の HARD の新しい下書きとして開きました/);
-    await p.locator('[data-close="library"]').click();await wait();check('JSON import names the song it joins');
+    assert.equal(await p.locator('#library').isVisible(),false,'読み込んだら一覧を閉じる');check('JSON import names the song it joins and closes the stale list');
     // 4. 横向きでも、入力したあとに結果がパッドの下端に出る(入力前は出さない)。
     await p.setViewportSize({width:844,height:390});await wait();
     assert.equal(await p.locator('#inputFeedback').isVisible(),false,'入力前は出さない');
@@ -162,7 +236,7 @@ async function fixesFound20261022(){
     assert.match(await p.locator('#exportNames').innerText(),/譜面：chart_normal\.json/);assert.match(await p.locator('#exportNames').innerText(),/直し\.wav → PCで audio\.wav に名前を変える/);check('export shows the saved file names');
     // 5. 直す: 選んだノーツへグラフが追いかける。元に戻すで選んだまま値が戻り、やり直しもその場で。
     const notes=Array.from({length:12},(_,i)=>({time:1000+i*500,beat:2+i,x:0,y:0,color:i%2?'red':'blue',direction:'none',count:1,type:'tap',lengthMs:0}));
-    await p.locator('#libraryButton').click();await p.locator('#chartFile').setInputFiles({name:'chart_normal.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify({bpm:120,offsetMs:0,beatZeroMs:0,coordScale:1,displayLevel:2,timeSignatures:[],notes}))});await wait();await p.locator('[data-close="library"]').click();
+    await p.locator('#libraryButton').click();await p.locator('#chartFile').setInputFiles({name:'chart_normal.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify({bpm:120,offsetMs:0,beatZeroMs:0,coordScale:1,displayLevel:2,timeSignatures:[],notes}))});await wait();
     await p.locator('#nav-edit').click();await p.locator('#mapZoom').selectOption('2');await wait();
     if(!await p.locator('.map-note-details').evaluate(e=>e.open))await p.locator('.map-note-details summary').click();
     await p.locator('#mapNotes button').first().click();await wait();for(let i=0;i<4;i++){await p.locator('#nextNote').click();await wait();}

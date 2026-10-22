@@ -14,6 +14,16 @@ export function barSeek(chart, time, direction, duration) {
   if(direction>0){const next=meters.find(m=>m.beat>beat+1e-7);if(next)target=Math.min(target,next.beat);}
   return clamp(origin+target*60/chart.bpm,0,duration);
 }
+// 今の位置から bars 小節ぶん先の時刻。小節の長さはその位置の拍子で数え、拍子の変わり目をまたぐときはそれぞれの長さで数える。
+export function barSpan(chart, time, bars, duration) {
+  const origin=(chart.beatZeroMs+chart.offsetMs)/1000, meters=[{beat:0,numerator:4,denominator:4},...chart.timeSignatures].sort((a,b)=>a.beat-b.beat);
+  let beat=(time-origin)*chart.bpm/60, left=bars;
+  while(left>1e-9){
+    const meter=meters.filter(m=>m.beat<=beat+1e-7).at(-1)||meters[0], size=meter.numerator*4/meter.denominator, next=meters.find(m=>m.beat>beat+1e-7);
+    const take=Math.min(left,next?(next.beat-beat)/size:Infinity);beat+=take*size;left-=take;
+  }
+  return clamp(origin+beat*60/chart.bpm,0,duration);
+}
 // 個別編集では変えた項目だけを更新。時刻未変更時のbeatや未知の属性は保持する。
 export function editNote(chart, id, field, value, duration) {
   const result=clone(chart), note=result.notes.find(n=>n.__editorId===id);
