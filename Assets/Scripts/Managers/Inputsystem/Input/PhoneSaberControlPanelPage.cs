@@ -25,7 +25,7 @@ border:1px solid #465a77;border-radius:8px;background:#202e43;color:#c4d1e3;curs
 button:hover{background:#355377}button.selected{background:#80f0ce;color:#06291f;border:2px solid #c6ffef;font-weight:850;box-shadow:0 0 0 1px #80f0ce}button:disabled{cursor:default;opacity:.55}button.selected:disabled{opacity:1}button.pending{color:#ffe0a1;opacity:1;border-color:#ffd080}button:focus-visible,summary:focus-visible{outline:3px solid #9fcaff;outline-offset:3px}
 @media(max-width:850px){main,.phone-grid{grid-template-columns:1fr}body{padding:12px}.settings{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style><header><h1>PhoneSaber 操作画面</h1><div id='connection' role='status'>接続中…</div>
-<div>ゲーム: F8 でブラウザを開く ／ Shift+F8 でゲーム内の予備画面 ／ F7 で位置補正を採取</div>
+<div>ゲーム: F8 でブラウザを開く ／ Shift+F8 でゲーム内の予備画面 ／ Ctrl+Shift+P で10秒学習 ／ F7 は詳細の4隅測定</div>
 <div id='message' role='status'></div></header><main id='panel'></main><script>
 'use strict';
 const token=new URLSearchParams(location.search).get('t')||'';

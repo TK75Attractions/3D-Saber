@@ -201,7 +201,7 @@ public sealed class PhoneSaberOperatorKeys : MonoBehaviour
             case "learning": result = command.StartsWith("ignore=")
                 ? "無視する物を覚えています（剣を消して3秒待つ）"
                 : "プレイ範囲を覚えています（" + ack.Detail.TrimEnd('s') + "秒、範囲いっぱいに振る）"; break;
-            case "learned": result = "プレイ範囲を覚えました（" + ack.Detail.Substring(7) + "回分）"; break;
+            case "learned": result = "プレイ範囲を覚えました（" + ack.SampleCount + "回分）"; break;
             case "failed": result = "覚えられませんでした（振りが足りません）"; break;
             case "shutter-iso": result = "固定シャッター ISO " + ack.Detail; break;
             case "shutter-emitter": result = "低ISOの色付き発光体 " + (ack.Detail == "on" ? "ON（固定・ISO2000未満で有効）" : "OFF"); break;

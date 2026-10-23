@@ -5,6 +5,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
+using System.Globalization;
 
 // Android 版 PhoneSaberSender が、同じ Wi-Fi 上で Unity の PC(Windows / Mac)を見つけるための応答役。
 // Windows には Mac の dns-sd に当たる標準コマンドがないので、全 OS 共通の UDP broadcast で答える。
@@ -249,6 +250,33 @@ public sealed class PhoneSaberAcknowledgement
     static bool Atom(string value) => !string.IsNullOrEmpty(value) && value.All(c =>
         c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z' || c >= '0' && c <= '9' || c == '_' || c == '.' || c == '-');
     static bool Number(string value) => !string.IsNullOrEmpty(value) && value.All(c => c >= '0' && c <= '9') && int.TryParse(value, out _);
+    public string SampleCount => Detail.Split('-')[0].Substring(7);
+    // 解析・受信スレッドは Unity の型や保存 API に依存させない。
+    public readonly struct LearnedBounds
+    {
+        public readonly float xMin, yMin, xMax, yMax;
+        public LearnedBounds(float x0, float y0, float x1, float y1)
+        { xMin = x0; yMin = y0; xMax = x1; yMax = y1; }
+    }
+    public bool TryLearnedBounds(out LearnedBounds bounds) => TryLearnedBounds(Detail, out bounds);
+
+    static bool TryLearnedBounds(string detail, out LearnedBounds bounds)
+    {
+        bounds = default;
+        var parts = detail.Split(new[] { "-area" }, StringSplitOptions.None);
+        if (parts.Length != 2 || !parts[0].StartsWith("samples") || !Number(parts[0].Substring(7)) ||
+            int.Parse(parts[0].Substring(7)) < 30) return false;
+        var values = parts[1].Split('_');
+        if (values.Length != 4) return false;
+        var parsed = new float[4];
+        for (int i = 0; i < 4; i++)
+            if (!float.TryParse(values[i], NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out parsed[i])) return false;
+        if (parsed.Any(v => float.IsNaN(v) || float.IsInfinity(v) || v < 0 || v > 1) ||
+            parsed[0] >= parsed[2] || parsed[1] >= parsed[3]) return false;
+        bounds = new LearnedBounds(parsed[0], parsed[1], parsed[2], parsed[3]);
+        return true;
+    }
+
     static bool DetailValid(string result, string detail)
     {
         switch (result)
@@ -262,7 +290,9 @@ public sealed class PhoneSaberAcknowledgement
             case "cleared": return detail == "ignore" || detail == "area";
             case "learning": return detail.EndsWith("s") && Number(detail.Substring(0, detail.Length - 1)) &&
                 int.Parse(detail.Substring(0, detail.Length - 1)) >= 1 && int.Parse(detail.Substring(0, detail.Length - 1)) <= 60;
-            case "learned": case "failed": return detail.StartsWith("samples") && Number(detail.Substring(7));
+            case "learned": return detail.StartsWith("samples") &&
+                (Number(detail.Substring(7)) || TryLearnedBounds(detail, out _));
+            case "failed": return detail.StartsWith("samples") && Number(detail.Substring(7));
             // 形式のminISOで制限された実適用値は、選択肢外や小数にもなる。
             case "shutter-iso": return double.TryParse(detail, System.Globalization.NumberStyles.AllowDecimalPoint,
                 System.Globalization.CultureInfo.InvariantCulture, out double iso) && iso > 0 && !double.IsInfinity(iso);
@@ -317,6 +347,7 @@ public sealed class PhoneSaberAcknowledgementStore
         public string Fields;
         public double QueuedAt;
         public bool Automatic;
+        public readonly HashSet<string> AppliedStations = new HashSet<string>();
         public readonly Dictionary<string, PhoneSaberAcknowledgement> Phones = new Dictionary<string, PhoneSaberAcknowledgement>();
     }
     readonly object gate = new object();
@@ -349,6 +380,31 @@ public sealed class PhoneSaberAcknowledgementStore
             Interlocked.Increment(ref revision);
             return true;
         }
+    }
+
+    // receive thread は値の保存だけ。main thread が台を照合し、最新の学習結果を一度だけ取り出す。
+    public bool TakeLearnedArea(string station, out PhoneSaberAcknowledgement.LearnedBounds bounds)
+    {
+        bounds = default;
+        if (station != "A" && station != "B") return false;
+        lock (gate)
+        {
+            var command = commands.LastOrDefault(c => c.Fields.StartsWith("learn-area="));
+            if (command == null || command.AppliedStations.Contains(station)) return false;
+            var ack = command.Phones.Values.FirstOrDefault(a => a.Platform == "ios" && a.Station == station &&
+                a.Result == "learned" && a.TryLearnedBounds(out _));
+            if (ack == null || !ack.TryLearnedBounds(out bounds)) return false;
+            command.AppliedStations.Add(station);
+            return true;
+        }
+    }
+
+    // リセット／手動保存より前の学習は、未着の完了ACKも含めて補正へ再適用しない。
+    public void DiscardLearnedAreas(string station)
+    {
+        lock (gate)
+            foreach (var command in commands)
+                if (command.Fields.StartsWith("learn-area=")) command.AppliedStations.Add(station);
     }
 
     public PhoneSaberAcknowledgement[] Read(int id)

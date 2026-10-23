@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
@@ -158,6 +159,32 @@ public class PhoneSaberControlPanelTests
     {
         Assert.IsFalse(PhoneSaberControlPanelActions.Dispatch(name, value, new Dictionary<string, Action<string>>()));
         Assert.AreEqual(400, Parse(Request("POST", "/action?t=" + Token + "&name=" + Uri.EscapeDataString(name ?? "") + "&value=" + Uri.EscapeDataString(value))));
+    }
+
+    [Test]
+    public void StationSetupButtonAndKeyQueueTheSameTenSecondLearningOnce()
+    {
+        var go = new GameObject("station setup test");
+        try
+        {
+            var overlay = go.AddComponent<PhoneSaberOperatorOverlay>();
+            var state = (PhoneSaberControlPanelState)typeof(PhoneSaberOperatorOverlay)
+                .GetMethod("BuildPanel", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(overlay, new object[] { 0d });
+            var button = state.Sections.SelectMany(s => s.Items).Single(i => i.Name == "phone-learn-area");
+            Assert.AreEqual("範囲を覚える（10秒、いっぱいに振る）", button.Text);
+            Assert.IsTrue(button.Enabled);
+            var advanced = state.Sections.Single(s => s.Items.Any(i => i.Name == "calibration-start"));
+            StringAssert.StartsWith("詳細", advanced.Title);
+            var key = PhoneSaberOperatorKeys.CommandFor(UnityEngine.InputSystem.Key.P, 0, out _).Value;
+            Assert.AreEqual("learn-area=10", key.command);
+            int before = PhoneSaberDiscoveryResponder.Acknowledgements.Revision;
+            Assert.IsTrue(PhoneSaberControlPanelActions.Dispatch(button.Name, button.Value, overlay.ControlPanelHandlers));
+            Assert.IsTrue(PhoneSaberDiscoveryResponder.Acknowledgements.Latest(out int after, out string fields, out _));
+            Assert.AreEqual(before + 1, PhoneSaberDiscoveryResponder.Acknowledgements.Revision);
+            Assert.AreEqual(key.command, fields);
+            StringAssert.EndsWith(" learn-area=10", PhoneSaberDiscoveryResponder.BuildCommand(after, fields));
+        }
+        finally { UnityEngine.Object.DestroyImmediate(go); }
     }
 
     [Test]

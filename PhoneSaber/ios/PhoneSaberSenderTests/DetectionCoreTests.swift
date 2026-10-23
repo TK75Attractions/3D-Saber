@@ -2513,6 +2513,50 @@ final class DetectionCoreTests: XCTestCase {
         XCTAssertEqual(down.x, origin.x, accuracy: 0.001)
     }
 
+    func testPlayAreaLearningReportsRawWinnerBoundsAndKeepsRecognitionMargin() throws {
+        var now = 100.0
+        let processor = FrameProcessor(clock: { now }, expiryScheduler: nil)
+        processor.setTrackLockEnabled(false)
+        // 既存の狭い範囲も、学習中は従来どおり無効になる。
+        processor.setPlayArea(SaberPlayArea(minX: 0, minY: 0, maxX: 0.1, maxY: 1))
+        var endpoints: [PixelPoint] = []
+        processor.onResult = { results, _, _, _, _, _ in
+            for result in results where result.isFresh {
+                endpoints += [result.endpoints.0, result.endpoints.1]
+            }
+        }
+        processor.startPlayAreaLearning()
+        for i in 0..<30 {
+            now += 0.05
+            let frame = sampleBuffer(width: 200, height: 120) { base, stride in
+                let pixels = base.assumingMemoryBound(to: UInt8.self)
+                let x = 50 + i * 3
+                for y in 30...90 { for dx in -4...4 {
+                    let offset = y * stride + (x + dx) * 4
+                    pixels[offset] = 30; pixels[offset + 1] = 45
+                    pixels[offset + 2] = 245; pixels[offset + 3] = 255
+                } }
+            }
+            processor.queue.sync { processor.process(frame) }
+        }
+        var reported: SaberPlayArea?
+        let learner = try XCTUnwrap(processor.finishPlayAreaLearning(reportBounds: { reported = $0 }))
+        let bounds = try XCTUnwrap(reported)
+        XCTAssertEqual(learner.samples, 30)
+        XCTAssertEqual(endpoints.count, 60)
+        XCTAssertEqual(bounds.minX, Double(endpoints.map(\.x).min()!) / 199, accuracy: 0.000001)
+        XCTAssertEqual(bounds.maxX, Double(endpoints.map(\.x).max()!) / 199, accuracy: 0.000001)
+        XCTAssertEqual(bounds.minY, Double(endpoints.map(\.y).min()!) / 119, accuracy: 0.000001)
+        XCTAssertEqual(bounds.maxY, Double(endpoints.map(\.y).max()!) / 119, accuracy: 0.000001)
+        // 認識側は従来の width/height 正規化と8%余白をそのまま保持する。
+        XCTAssertEqual(learner.area(), SaberPlayArea.around(minX: learner.minX, minY: learner.minY,
+                                                         maxX: learner.maxX, maxY: learner.maxY))
+        XCTAssertLessThan(try XCTUnwrap(learner.area()).minX, bounds.minX)
+        XCTAssertNil(processor.finishPlayAreaLearning())
+        processor.startPlayAreaLearning()
+        XCTAssertEqual(processor.finishPlayAreaLearning(reportBounds: { XCTAssertNil($0) })?.samples, 0)
+    }
+
     func testPlayAreaGrowthFrameQueueNotifiesMainAtMostEveryFiveSeconds() {
         var now = 100.0
         let processor = FrameProcessor(clock: { now }, expiryScheduler: nil)

@@ -1721,11 +1721,14 @@ final class CameraViewModel: NSObject, ObservableObject {
         }
         if let seconds = command.learnAreaSeconds {
             ack("learning", "\(seconds)s")
-            learnPlayArea(seconds: seconds, commandID: command.id) { samples, learned in
-                ack(learned ? "learned" : "failed", "samples\(samples)")
+            learnPlayArea(seconds: seconds, commandID: command.id) { [weak self] samples, learned, bounds in
+                let detail = learned ? bounds?.learnedDetail(samples: samples, mirrorX: self?.mirrorX ?? false,
+                                                             mirrorY: self?.mirrorY ?? false) : nil
+                ack(learned ? "learned" : "failed", detail ?? "samples\(samples)")
             }
         }
         if command.clearArea { clearPlayArea(commandID: command.id); ack("cleared", "area") }
+        if let area = command.playArea { setPlayArea(area); ack("area", "set") }
         if let enabled = command.trackLock { setTrackLockEnabled(enabled); ack("tracklock", enabled ? "on" : "off") }
         if let value = command.shutterISO, setShutterISO(value) { ack("shutter-iso", shutterISOAckDetail()) }
         if let enabled = command.shutterEmitter { setShutterEmitter(enabled); ack("shutter-emitter", enabled ? "on" : "off") }
@@ -1847,7 +1850,7 @@ final class CameraViewModel: NSObject, ObservableObject {
     @Published private(set) var playArea: SaberPlayArea? = CameraViewModel.storedPlayArea()
     @Published private(set) var playAreaLearning = false
     private var playAreaLearningTask: Task<Void, Never>?
-    private var playAreaAcknowledgement: ((Int, Bool) -> Void)?
+    private var playAreaAcknowledgement: ((Int, Bool, LANLivenessProbe.PCCommand.Area?) -> Void)?
     static let playAreaLearnSeconds = PlayAreaSettings.learnSeconds
 
     nonisolated private static func storedPlayArea() -> SaberPlayArea? {
@@ -1866,15 +1869,15 @@ final class CameraViewModel: NSObject, ObservableObject {
 
     /// 送信中に [seconds] 秒、選ばれた winner（赤・青）の両端を数え、足りれば（30 コマ以上）範囲にして保存する。
     /// 足りなければ前の範囲を残す。学習中は範囲で絞らない（無視範囲は効く）。
-    func learnPlayArea(seconds: Int = PlayAreaSettings.learnSeconds, commandID: Int? = nil, completion: ((Int, Bool) -> Void)? = nil) {
+    func learnPlayArea(seconds: Int = PlayAreaSettings.learnSeconds, commandID: Int? = nil, completion: ((Int, Bool, LANLivenessProbe.PCCommand.Area?) -> Void)? = nil) {
         let id = commandID.map(String.init) ?? "-"
         guard running else {
             ConnectivityLog.shared.record("PLAY_AREA", "learn id=\(id): not sending")
-            completion?(0, false)
+            completion?(0, false, nil)
             return
         }
         playAreaLearningTask?.cancel()
-        playAreaAcknowledgement?(0, false)
+        playAreaAcknowledgement?(0, false, nil)
         playAreaAcknowledgement = completion
         processor.startPlayAreaLearning()
         playAreaLearning = true
@@ -1892,30 +1895,46 @@ final class CameraViewModel: NSObject, ObservableObject {
         let completion = playAreaAcknowledgement
         playAreaAcknowledgement = nil
         let previous = playArea.map { "\($0.minX),\($0.minY),\($0.maxX),\($0.maxY)" } ?? "none"
-        guard let learner = processor.finishPlayAreaLearning() else {
+        var bounds: SaberPlayArea?
+        guard let learner = processor.finishPlayAreaLearning(reportBounds: { bounds = $0 }) else {
             ConnectivityLog.shared.record("PLAY_AREA", "learn id=\(id): not learning; kept \(previous)")
-            completion?(0, false)
+            completion?(0, false, nil)
             return
         }
         guard let area = learner.area() else {
             ConnectivityLog.shared.record("PLAY_AREA", "learn id=\(id): only \(learner.samples) samples (< \(SaberPlayArea.minimumSamples)); kept \(previous)")
-            completion?(learner.samples, false)
+            completion?(learner.samples, false, nil)
             return
         }
         applyPlayArea(area)
-        completion?(learner.samples, true)
+        completion?(learner.samples, true, bounds.map {
+            LANLivenessProbe.PCCommand.Area(minX: $0.minX, minY: $0.minY, maxX: $0.maxX, maxY: $0.maxY)
+        })
         ConnectivityLog.shared.record("PLAY_AREA", "learn id=\(id) samples=\(learner.samples) area=\(area.minX),\(area.minY),\(area.maxX),\(area.maxY)")
     }
 
     func clearPlayArea(commandID: Int? = nil) {
         if playAreaLearningTask != nil {
             playAreaLearningTask?.cancel(); playAreaLearningTask = nil
-            playAreaAcknowledgement?(0, false); playAreaAcknowledgement = nil
+            playAreaAcknowledgement?(0, false, nil); playAreaAcknowledgement = nil
             playAreaLearning = false
             _ = processor.finishPlayAreaLearning()
         }
         applyPlayArea(nil)
         ConnectivityLog.shared.record("PLAY_AREA", "clear id=\(commandID.map(String.init) ?? "-")")
+    }
+
+    /// 4隅で採取した送信カメラ座標。送信時の反転だけ戻し、検出フレームの範囲として保存する。
+    func setPlayArea(_ area: LANLivenessProbe.PCCommand.Area) {
+        playAreaLearningTask?.cancel(); playAreaLearningTask = nil
+        playAreaAcknowledgement?(0, false, nil); playAreaAcknowledgement = nil
+        playAreaLearning = false
+        _ = processor.finishPlayAreaLearning()
+        applyPlayArea(SaberPlayArea(minX: mirrorX ? 1 - area.maxX : area.minX,
+                                   minY: mirrorY ? 1 - area.maxY : area.minY,
+                                   maxX: mirrorX ? 1 - area.minX : area.maxX,
+                                   maxY: mirrorY ? 1 - area.minY : area.maxY))
+        ConnectivityLog.shared.record("PLAY_AREA", "set from four corners")
     }
 
     private func applyPlayArea(_ area: SaberPlayArea?) {

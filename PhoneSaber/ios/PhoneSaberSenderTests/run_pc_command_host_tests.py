@@ -32,7 +32,7 @@ def main():
     var requestedReasons: [String] = []
     var effects: [String] = []
     var ignoreCompletion: ((Int, Int) -> Void)?
-    var areaCompletion: ((Int, Bool) -> Void)?
+    var areaCompletion: ((Int, Bool, LANLivenessProbe.PCCommand.Area?) -> Void)?
     var clipAcknowledgements: [String: (String, String) -> Void] = [:]
     enum Color { case red, blue }
     func setShutterISO(_ value: Int) -> Bool { effects.append("iso"); return true }
@@ -45,9 +45,11 @@ def main():
     func learnIgnoreZones(_ colors: [Color], completion: @escaping (Int, Int) -> Void) {
         effects.append("ignore"); ignoreCompletion = completion
     }
-    func learnPlayArea(seconds: Int, commandID: Int?, completion: @escaping (Int, Bool) -> Void) {
+    func learnPlayArea(seconds: Int, commandID: Int?, completion: @escaping (Int, Bool, LANLivenessProbe.PCCommand.Area?) -> Void) {
         effects.append("area"); areaCompletion = completion
     }
+    var mirrorX = false, mirrorY = false
+    func setPlayArea(_ area: LANLivenessProbe.PCCommand.Area) {}
     func clearPlayArea(commandID: Int?) { effects.append("clear-area") }
     func setAutoClipEnabled(_ value: Bool, commandID: Int?) { effects.append("auto-clip") }
     func requestAutoClip(commandID: Int?, reason: String? = nil) { effects.append("clip"); requestedReasons.append(reason ?? "pc-command id=\\(commandID!)") }
@@ -59,6 +61,21 @@ def main():
     support += block(camera, "func applyPCCommand(") + "\n}\n"
     tests = '''import XCTest
 final class PCCommandRecoveryTests: XCTestCase {
+    @MainActor func testSwingLearningRepliesWithBoundsAndRunsOnlyOnceForEachStation() {
+        for station in ["A", "B"] {
+            let model = CameraViewModel(); model.station = station
+            model.mirrorX = true
+            let command = LANLivenessProbe.PCCommand(id: 81, ignore: nil, clearIgnore: false, learnAreaSeconds: 10, sourceHost: "192.0.2.1")
+            model.applyPCCommand(command); model.applyPCCommand(command)
+            XCTAssertEqual(model.effects, ["area"])
+            model.areaCompletion?(300, true, .init(minX: 0.1, minY: 0.2, maxX: 0.7, maxY: 0.9))
+            let line = model.lanProbe.replies.last?.line
+            XCTAssertEqual(line, "PHONESABER_ACK 1 id=81 station=\(station) platform=ios result=learned detail=samples300-area0.300000_0.200000_0.900000_0.900000")
+            model.applyPCCommand(command)
+            XCTAssertEqual(model.effects, ["area"])
+            XCTAssertEqual(model.lanProbe.replies.last?.line, line)
+        }
+    }
     @MainActor func testLostAckIsReplayedWithoutRepeatingTheOperation() {
         for station in ["A", "B"] {
             let model = CameraViewModel()
@@ -118,7 +135,7 @@ final class PCCommandRecoveryTests: XCTestCase {
         let model = CameraViewModel()
         let command = LANLivenessProbe.PCCommand(id: 75, ignore: nil, clearIgnore: false, learnAreaSeconds: 10, sourceHost: "192.168.1.2")
         model.applyPCCommand(command)
-        model.areaCompletion?(2, false)
+        model.areaCompletion?(2, false, nil)
         let failed = model.lanProbe.replies.last?.line
         XCTAssertTrue(failed?.contains("result=failed") == true)
         model.lanProbe.replies.removeAll()
@@ -146,7 +163,7 @@ final class PCCommandRecoveryTests: XCTestCase {
         model.applyPCCommand(command)
         let oldCompletion = model.areaCompletion
         model.now = 60
-        model.areaCompletion?(100, true)
+        model.areaCompletion?(100, true, nil)
         let completed = model.lanProbe.replies.last?.line
         model.applyPCCommand(command)
         XCTAssertEqual(model.effects, ["area"])
@@ -155,7 +172,7 @@ final class PCCommandRecoveryTests: XCTestCase {
         model.applyPCCommand(command)
         XCTAssertEqual(model.effects, ["area", "area"])
         let count = model.lanProbe.replies.count
-        oldCompletion?(0, false)
+        oldCompletion?(0, false, nil)
         XCTAssertEqual(model.lanProbe.replies.count, count)
         model.applyPCCommand(command)
         XCTAssertTrue(model.lanProbe.replies.last?.line.contains("result=learning") == true)
@@ -180,7 +197,7 @@ final class PCCommandRecoveryTests: XCTestCase {
 import Darwin
 let suite = PCCommandRecoveryTests.defaultTestSuite
 suite.run()
-guard let run = suite.testRun, run.executionCount == 8, run.hasSucceeded else { exit(1) }
+guard let run = suite.testRun, run.executionCount == 9, run.hasSucceeded else { exit(1) }
 ''')
         subprocess.run(["xcrun", "swiftc", "-O", "-module-cache-path", str(tmp / "cache"),
                         str(tmp / "Support.swift"), str(tmp / "Tests.swift"), str(tmp / "main.swift"),

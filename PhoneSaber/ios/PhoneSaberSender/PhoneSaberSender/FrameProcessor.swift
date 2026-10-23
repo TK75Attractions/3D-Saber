@@ -171,6 +171,8 @@ final class FrameProcessor: @unchecked Sendable {
     /// 学習中は範囲で絞らない（前の範囲より広く覚えられるように）。無視範囲は学習中も効く。
     private var playArea: SaberPlayArea?
     private var playAreaLearner: SaberPlayAreaLearner?
+    // ACK の位置補正専用。既存の認識用範囲・winner選択・送信座標には使わない。
+    private var positionLearningBounds: SaberPlayArea?
     private var playAreaRevision: UInt64 = 0 // 設定変更前のフレーム・main通知を破棄する。
     private var playAreaGrowthPending = false // pendingLock で保護。
     private var playAreaGrowthNotificationQueued = false // main 停滞中も通知を1つにまとめる。
@@ -182,13 +184,15 @@ final class FrameProcessor: @unchecked Sendable {
     }
     func startPlayAreaLearning() {
         pendingLock.lock()
-        playAreaLearner = SaberPlayAreaLearner(); playAreaRevision &+= 1
+        playAreaLearner = SaberPlayAreaLearner(); positionLearningBounds = nil; playAreaRevision &+= 1
         pendingLock.unlock()
     }
     /// 学習を終えて結果を返す。学習していなければ nil。
-    func finishPlayAreaLearning() -> SaberPlayAreaLearner? {
+    func finishPlayAreaLearning(reportBounds: ((SaberPlayArea?) -> Void)? = nil) -> SaberPlayAreaLearner? {
         pendingLock.lock(); defer { pendingLock.unlock() }
         let learner = playAreaLearner
+        reportBounds?(positionLearningBounds)
+        positionLearningBounds = nil
         playAreaLearner = nil
         return learner
     }
@@ -678,7 +682,19 @@ final class FrameProcessor: @unchecked Sendable {
         ]
         if learningArea {
             pendingLock.lock()
-            for (_, endpoints) in detected { if let endpoints { playAreaLearner?.add(endpoints, width: width, height: height) } }
+            for (_, endpoints) in detected {
+                if let endpoints, playAreaLearner != nil {
+                    playAreaLearner?.add(endpoints, width: width, height: height)
+                    // scaledPoint と同じ width-1 / height-1。丸め前の送信位置を記録する。
+                    for point in [endpoints.0, endpoints.1] {
+                        let x = Double(point.x) / Double(max(width - 1, 1))
+                        let y = Double(point.y) / Double(max(height - 1, 1))
+                        let old = positionLearningBounds
+                        positionLearningBounds = .init(minX: min(old?.minX ?? x, x), minY: min(old?.minY ?? y, y),
+                                                       maxX: max(old?.maxX ?? x, x), maxY: max(old?.maxY ?? y, y))
+                    }
+                }
+            }
             pendingLock.unlock()
         }
         // ゲートを通った実winnerだけで拡張。補間・holdした座標は使わない。

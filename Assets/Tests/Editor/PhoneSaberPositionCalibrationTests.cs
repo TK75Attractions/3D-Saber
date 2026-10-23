@@ -265,6 +265,91 @@ public class PhoneSaberPositionCalibrationTests
             InputPoint.Normalized01(mapped.x, mapped.y, 1920, 1080, true), 2));
     }
 
+    [Test]
+    public void LearnedRectangleUsesInsetCornersAndReachesEdgesBeforeMaximumSwing()
+    {
+        var bounds = Rect.MinMaxRect(.2f, .1f, .8f, .9f);
+        Assert.IsTrue(PhoneSaberPositionCalibration.TryFromLearnedArea(bounds, 1920, 1080, out var mapping, out var error), error);
+        var corners = mapping.CopyCorners();
+        Near(new Vector2(.23f * 1919, .14f * 1079), corners[0]);
+        Near(new Vector2(.77f * 1919, .86f * 1079), corners[2]);
+        for (int i = 0; i < 4; i++) Near(Target[i], mapping.Map(corners[i]));
+        Near(new Vector2(960, 540), mapping.Map(new Vector2(.5f * 1919, .5f * 1079)));
+        var low = mapping.Map(new Vector2(.2f * 1919, .1f * 1079));
+        Assert.Less(low.x, 0); Assert.Less(low.y, 0);
+        var high = mapping.Map(new Vector2(.8f * 1919, .9f * 1079));
+        Assert.Greater(high.x, 1920); Assert.Greater(high.y, 1080);
+        // iPhoneの左右・上下反転済み矩形と、送信解像度も同じ導出を通す。
+        Assert.IsTrue(PhoneSaberPositionCalibration.TryFromLearnedArea(Rect.MinMaxRect(.1f, .3f, .7f, .8f),
+            1280, 720, out var other, out _));
+        Near(new Vector2(.13f * 1279, .325f * 719), other.CopyCorners()[0]);
+    }
+
+    [Test]
+    public void LearnedRectangleRejectsInvalidOrTinyBounds()
+    {
+        foreach (var bounds in new[] { new Rect(), Rect.MinMaxRect(-.1f, 0, 1, 1),
+            Rect.MinMaxRect(0, 0, 1.1f, 1), new Rect(0, 0, float.NaN, 1),
+            new Rect(0, 0, float.PositiveInfinity, 1), new Rect(.5f, .5f, .001f, .001f), new Rect(.5f, .5f, -.1f, .5f) })
+            Assert.IsFalse(PhoneSaberPositionCalibration.TryFromLearnedArea(bounds, 1920, 1080, out _, out _));
+        Assert.IsFalse(PhoneSaberPositionCalibration.TryFromLearnedArea(new Rect(0, 0, 1, 1), float.NaN, 1080, out _, out _));
+    }
+
+    [TestCase("A")]
+    [TestCase("B")]
+    public void LearnedAckAppliesOnceToItsStationAndResetOnlyClearsMapping(string station)
+    {
+        // 実運用のA/B設定をテスト後に復元する。
+        string key = PhoneSaberPositionCalibrationStore.DataKey(station);
+        string enabledKey = PhoneSaberPositionCalibrationStore.EnabledKey(station);
+        bool hadData = PlayerPrefs.HasKey(key), hadEnabled = PlayerPrefs.HasKey(enabledKey);
+        string original = PlayerPrefs.GetString(key); int enabled = PlayerPrefs.GetInt(enabledKey);
+        var go = new GameObject("10秒学習テスト");
+        try
+        {
+            var input = go.AddComponent<InputPoint>(); input.enabled = false;
+            Set(input, "phoneSaberStation", station);
+            var store = new PhoneSaberAcknowledgementStore();
+            store.Queue(71, "learn-area=10", 0);
+            string line = $"PHONESABER_ACK 1 id=71 station={station} platform=ios result=learned detail=samples300-area0.2_0.1_0.8_0.9";
+            Assert.IsTrue(PhoneSaberAcknowledgement.TryParse(line, out var ack));
+            store.Receive(ack, "192.0.2.1");
+            Assert.IsFalse(store.TakeLearnedArea(station == "A" ? "B" : "A", out _));
+            Assert.IsTrue(input.ApplyLearnedPositionCalibration(store, "2026-10-23 12:34:56"));
+            Assert.IsTrue(input.PositionCalibrationEnabled);
+            Assert.AreEqual("2026-10-23 12:34:56", PhoneSaberPositionCalibrationStore.LearnedAt(station));
+            Assert.IsNotNull(PhoneSaberPositionCalibrationStore.Load(station, out bool loaded)); Assert.IsTrue(loaded);
+            int revision = input.PredictionRevision;
+            for (int i = 0; i < 3; i++)
+            {
+                store.Receive(ack, "192.0.2.1");
+                Assert.IsFalse(input.ApplyLearnedPositionCalibration(store, "duplicate"));
+            }
+            Assert.AreEqual(revision, input.PredictionRevision);
+            PhoneSaberDiscoveryResponder.Acknowledgements.Latest(out int beforeReset, out _, out _);
+            input.ResetPositionCalibration();
+            PhoneSaberDiscoveryResponder.Acknowledgements.Latest(out int afterReset, out _, out _);
+            Assert.AreEqual(beforeReset, afterReset, "リセットはiPhoneへclear-areaを送らない");
+            Assert.IsFalse(input.HasPositionCalibration);
+            Assert.AreEqual("", PhoneSaberPositionCalibrationStore.LearnedAt(station));
+            store.Receive(ack, "192.0.2.1");
+            Assert.IsFalse(input.ApplyLearnedPositionCalibration(store, "duplicate"));
+            store.Queue(72, "learn-area=10", 20);
+            Assert.IsTrue(PhoneSaberAcknowledgement.TryParse(line.Replace("id=71", "id=72"), out var next));
+            store.Receive(next, "192.0.2.1");
+            Assert.IsTrue(input.ApplyLearnedPositionCalibration(store, "next"));
+            Assert.IsTrue(input.SavePositionCalibration(Rectangle, out _));
+            Assert.AreEqual("", PhoneSaberPositionCalibrationStore.LearnedAt(station), "詳細の4隅で上書きすると出典も変わる");
+        }
+        finally
+        {
+            UnityEngine.Object.DestroyImmediate(go);
+            if (hadData) PlayerPrefs.SetString(key, original); else PlayerPrefs.DeleteKey(key);
+            if (hadEnabled) PlayerPrefs.SetInt(enabledKey, enabled); else PlayerPrefs.DeleteKey(enabledKey);
+            PlayerPrefs.Save();
+        }
+    }
+
     static void Set(InputPoint input, string name, object value) =>
         typeof(InputPoint).GetField(name, BindingFlags.Instance | BindingFlags.NonPublic).SetValue(input, value);
 }

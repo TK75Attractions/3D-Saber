@@ -9,6 +9,64 @@ public class PhoneSaberAcknowledgementTests
         new PhoneSaberAcknowledgement(id, station, platform, result, detail);
 
     [Test]
+    public void LearnedBoundsAckAcceptsIosFormatAndRejectsMalformedRectangles()
+    {
+        const string prefix = "PHONESABER_ACK 1 id=71 station=A platform=ios result=learned detail=";
+        const string detail = "samples300-area0.200000_0.100000_0.800000_0.900000";
+        Assert.IsTrue(PhoneSaberAcknowledgement.TryParse(prefix + detail, out var ack));
+        Assert.AreEqual("300", ack.SampleCount);
+        Assert.IsTrue(ack.TryLearnedBounds(out var bounds));
+        Assert.AreEqual(.2f, bounds.xMin); Assert.AreEqual(.9f, bounds.yMax);
+        Assert.IsTrue(PhoneSaberAcknowledgement.TryParse(prefix + "samples300", out var legacy));
+        Assert.IsFalse(legacy.TryLearnedBounds(out _));
+        foreach (string bad in new[] { "samples29-area0_0_1_1", "samples300-area0_0_0_1",
+            "samples300-area0_0_1_0", "samples300-area0_0_1.1_1", "samples300-area-0.1_0_1_1",
+            "samples300-area0_0_NaN_1", "samples300-area0_0_Infinity_1", "samples300-area0_0_1",
+            "samples300-area0_0_1_1_1", "samples300-area0_0_1_1-area0_0_1_1" })
+            Assert.IsFalse(PhoneSaberAcknowledgement.TryParse(prefix + bad, out _), bad);
+        Assert.IsFalse(PhoneSaberAcknowledgement.TryParse((prefix + detail).Replace("result=learned", "result=failed"), out _));
+        StringAssert.DoesNotContain("area", PhoneSaberOperatorKeys.ResultText(ack, "learn-area=10"));
+    }
+
+    [Test]
+    public void ResetDiscardsPendingLearningForOnlyThatStation()
+    {
+        var store = new PhoneSaberAcknowledgementStore();
+        const string detail = "samples300-area0.2_0.1_0.8_0.9";
+        store.Queue(1, "learn-area=10", 0);
+        store.DiscardLearnedAreas("A");
+        store.Receive(Ack(1, "learned", detail, station: "A"), "phoneA");
+        store.Receive(Ack(1, "learned", detail, station: "B"), "phoneB");
+        Assert.IsFalse(store.TakeLearnedArea("A", out _));
+        Assert.IsTrue(store.TakeLearnedArea("B", out _));
+        store.Queue(2, "learn-area=10", 20);
+        store.Receive(Ack(2, "learned", detail, station: "A"), "phoneA");
+        Assert.IsTrue(store.TakeLearnedArea("A", out _));
+    }
+
+    [Test]
+    public void OnlyLatestLearnCommandCanApplyAndOtherCommandsCannotSupplyBounds()
+    {
+        const string detail = "samples300-area0.2_0.1_0.8_0.9";
+        var store = new PhoneSaberAcknowledgementStore();
+        store.Queue(1, "learn-area=10", 0);
+        store.Queue(2, "learn-area=10", 1);
+        store.Receive(Ack(1, "learned", detail, station: "A"), "192.0.2.1");
+        Assert.IsFalse(store.TakeLearnedArea("A", out _));
+        store.Receive(Ack(2, "learned", detail, platform: "android", station: "A"), "192.0.2.1");
+        Assert.IsFalse(store.TakeLearnedArea("A", out _));
+        store.Receive(Ack(2, "failed", "samples2", station: "A"), "192.0.2.1");
+        Assert.IsFalse(store.TakeLearnedArea("A", out _));
+        store.Queue(3, "clear-area=1", 2);
+        store.Receive(Ack(3, "learned", detail, station: "A"), "192.0.2.1");
+        Assert.IsFalse(store.TakeLearnedArea("A", out _));
+        store.Receive(Ack(2, "learned", detail, station: "A"), "192.0.2.1");
+        store.Receive(Ack(2, "learning", "10s", station: "A"), "192.0.2.1");
+        Assert.IsTrue(store.TakeLearnedArea("A", out _));
+        Assert.IsFalse(store.TakeLearnedArea("A", out _));
+    }
+
+    [Test]
     public void ShutterAcknowledgementsValidateAndProduceToastForBothStations()
     {
         foreach (string station in new[] { "A", "B" })

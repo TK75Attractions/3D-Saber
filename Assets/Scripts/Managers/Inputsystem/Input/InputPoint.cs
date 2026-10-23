@@ -271,6 +271,8 @@ public class InputPoint : MonoBehaviour
 
     // 保存と座標補正は main thread、採取だけは receive thread から行う。
     PhoneSaberPositionCalibration positionCalibration;
+    PhoneSaberAcknowledgementStore learnedAreaStore;
+    int learnedAreaRevision = -1;
     bool positionCalibrationEnabled;
     public PhoneSaberPositionCapture PositionCapture { get; } = new PhoneSaberPositionCapture();
     public bool HasPositionCalibration => positionCalibration != null;
@@ -279,6 +281,7 @@ public class InputPoint : MonoBehaviour
     public bool SavePositionCalibration(Vector2[] corners, out string error)
     {
         if (!PhoneSaberPositionCalibration.TryCreate(corners, out var calibration, out error)) return false;
+        PhoneSaberDiscoveryResponder.Acknowledgements.DiscardLearnedAreas(StationLabel);
         PhoneSaberPositionCalibrationStore.Save(StationLabel, calibration);
         positionCalibration = calibration;
         positionCalibrationEnabled = true;
@@ -296,6 +299,7 @@ public class InputPoint : MonoBehaviour
     public void ResetPositionCalibration()
     {
         PositionCapture.Cancel();
+        PhoneSaberDiscoveryResponder.Acknowledgements.DiscardLearnedAreas(StationLabel);
         PhoneSaberPositionCalibrationStore.Reset(StationLabel);
         positionCalibration = null;
         positionCalibrationEnabled = false;
@@ -645,7 +649,7 @@ public class InputPoint : MonoBehaviour
 
             // 補正前のカメラ座標を、採取中の指定色だけ記録する。
             if (isStick) PositionCapture.Add(secondStick, new Vector2(a, b), new Vector2(c, d),
-                SwingMonotonicClock.ToSeconds(receiveTimestampTicks));
+                SwingMonotonicClock.ToSeconds(receiveTimestampTicks), camWidth, camHeight);
 
             // メインスレッドと衝突しないようロック
             lock (targetLock)
@@ -716,8 +720,27 @@ public class InputPoint : MonoBehaviour
             SwingMonotonicClock.ToSeconds(timestampTicks), senderIP, parsed, receiveEpoch, sentEpoch);
     }
 
+    // ACK の適用も保存も main thread。再送ACKでリセット済みの補正を復活させない。
+    public bool ApplyLearnedPositionCalibration(PhoneSaberAcknowledgementStore store, string learnedAt)
+    {
+        int revision = store.Revision;
+        if (ReferenceEquals(learnedAreaStore, store) && learnedAreaRevision == revision) return false;
+        learnedAreaStore = store;
+        learnedAreaRevision = revision;
+        if (!store.TakeLearnedArea(StationLabel, out var bounds) ||
+            !PhoneSaberPositionCalibration.TryFromLearnedArea(Rect.MinMaxRect(bounds.xMin, bounds.yMin, bounds.xMax, bounds.yMax),
+                camWidth, camHeight, out var calibration, out _)) return false;
+        PositionCapture.Cancel();
+        PhoneSaberPositionCalibrationStore.Save(StationLabel, calibration, learnedAt ?? DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+        positionCalibration = calibration;
+        positionCalibrationEnabled = true;
+        PredictionRevision++;
+        return true;
+    }
+
     void Update()
     {
+        ApplyLearnedPositionCalibration(PhoneSaberDiscoveryResponder.Acknowledgements, null);
         // 自動の統計読出しは秒1回だけ。描画ごとに時刻配列や文字列を作らない。
         // 予測の有効期限は受信と同じ Stopwatch 基準。Unity 起動からの経過秒とは比較しない。
         double predictionNow = SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp);

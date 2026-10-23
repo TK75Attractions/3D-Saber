@@ -364,10 +364,27 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         nextRefresh = 0;
     }
 
+    void BuildStationSetup()
+    {
+        var input = InputPoint.Instance;
+        panel.Button("範囲を覚える（10秒、いっぱいに振る）", "phone-learn-area");
+        panel.Label("点灯した剣を遊ぶ範囲いっぱいに振ります。iPhoneのプレイ範囲と、この台の位置補正を一度で保存します。[Ctrl+Shift+P]");
+        string learnedAt = PhoneSaberPositionCalibrationStore.LearnedAt(CurrentStation);
+        panel.Label(input != null && input.HasPositionCalibration
+            ? (string.IsNullOrEmpty(learnedAt) ? "位置補正: 4隅の測定から" : "位置補正: 10秒の振りから（" + learnedAt + "）") +
+                (input.PositionCalibrationEnabled ? " ON" : " OFF")
+            : "位置補正: 未設定");
+        panel.Label(PhoneSaberOperatorKeys.LastResultText);
+        panel.Toggle("位置補正をON（この台だけ）", input != null && input.PositionCalibrationEnabled,
+            "calibration-enabled", input != null && input.HasPositionCalibration && calibrationCorner < 0);
+        panel.Button("この台の位置補正をリセット（補正だけ消す）", "calibration-reset",
+            enabled: input != null && input.HasPositionCalibration && calibrationCorner < 0);
+    }
+
     void BuildCalibration()
     {
         var input = InputPoint.Instance;
-        panel.Label("台ごとの位置補正 [F7: 開始 / 隅を採取]");
+        panel.Label("詳細: 4隅による位置補正 [F7: 開始 / 隅を採取]（通常は10秒の振りを使用）");
         panel.Label("状態: " + (input != null && input.PositionCalibrationEnabled ? "ON" : "OFF") +
             (input != null && input.HasPositionCalibration ? "（保存済み）" : "（未設定・従来の座標）"));
         panel.Label("カメラは画面下の箱からプレイヤーを撮影。立ち位置は画面から約2.7〜3.1m、プレイ範囲は直径1.5m。\n" +
@@ -514,7 +531,6 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         panel.Button("今の場面を保存 [K]", "phone-clip");
         // プレイ範囲（2026-10-18）: 赤い服の人など動く物は無視範囲では外せないので、剣を振る範囲の外の候補を選ばせない。
         panel.Label("スマホのプレイ範囲（赤い服の人など、動く赤・青の物の対策。押してから10秒、遊ぶ範囲いっぱいに剣を振る）");
-        panel.Button("スマホ: プレイ範囲を覚える（10秒、範囲いっぱいに剣を振る）", "phone-learn-area");
         panel.Button("スマホ: プレイ範囲を消す", "phone-clear-area");
         // 露出補正（試験、既定 0 = OFF）。−1・−2 で光らない服などが暗くなる。認識に入る画像が変わるので比べて使う。
         foreach (int ev in PhoneSaberDiscoveryResponder.ExposureBiasChoices)
@@ -614,12 +630,13 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         if (!string.IsNullOrEmpty(redWarning)) panel.Label(redWarning, true);
         panel.Label(blueText);
         if (!string.IsNullOrEmpty(blueWarning)) panel.Label(blueWarning, true);
+        panel.BeginSection("台の準備（iPhone）"); BuildStationSetup();
         panel.BeginSection("剣の揺れ補正・揺れ止め"); BuildFilter();
         panel.BeginSection("スマホの操作・PCの無視範囲"); BuildIgnoreZones(InputPoint.Instance, CurrentStation);
         panel.BeginSection("剣の遅延補正"); BuildPrediction();
         panel.BeginSection("画面同期・フレーム上限"); BuildDisplaySync();
         panel.BeginSection("判定の遅れ補正"); BuildJudgeLatency();
-        panel.BeginSection("台ごとの位置補正"); BuildCalibration();
+        panel.BeginSection("詳細 · 4隅の位置補正"); BuildCalibration();
         panel.BeginSection("接続・イベントログ");
         panel.Label(services);
         panel.Toggle("スマホとPCのNTP同期を確認済み（片道遅延も判定）", clocksSynchronized, "clocks-synchronized");

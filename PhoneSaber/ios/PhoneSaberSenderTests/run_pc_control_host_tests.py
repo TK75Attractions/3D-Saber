@@ -102,8 +102,10 @@ enum PlayAreaSettings { static let exposureBiasKey = "unused" }
     func setShutterEmitter(_ value: Bool) {}
     func setAutoClipEnabled(_ value: Bool, commandID: Int? = nil) {}
     func requestAutoClip(commandID: Int? = nil, reason: String? = nil) {}
+    var mirrorX = false, mirrorY = false
+    func setPlayArea(_ area: LANLivenessProbe.PCCommand.Area) {}
     func clearPlayArea(commandID: Int?) {}
-    func learnPlayArea(seconds: Int, commandID: Int?, completion: (Int, Bool) -> Void) {}
+    func learnPlayArea(seconds: Int, commandID: Int?, completion: (Int, Bool, LANLivenessProbe.PCCommand.Area?) -> Void) {}
     func applyIgnoreZones() { applyCount += 1 }
     func updateDeliverySettings() {}
     func begin(_ colors: [SaberColor], completion: ((Int, Int) -> Void)? = nil) {

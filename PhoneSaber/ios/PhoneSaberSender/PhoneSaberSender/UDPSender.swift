@@ -592,6 +592,7 @@ final class LANLivenessProbe {
     /// PC（Unity の F8）からの指示。生存確認の応答と一緒に届く別の datagram（応答の形式は変えない）。
     ///   "PHONESABER_COMMAND 1 id=<番号> ignore=red|blue" / "PHONESABER_COMMAND 1 id=<番号> clear-ignore=1"
     ///   "PHONESABER_COMMAND 1 id=<番号> learn-area=<秒 1..60>" / "... clear-area=1"（プレイ範囲、2026-10-18）
+    ///   "PHONESABER_COMMAND 1 id=<番号> play-area=minX,minY,maxX,maxY"（カメラ 0..1 の矩形、単独操作）
     ///   "PHONESABER_COMMAND 1 id=<番号> shutter-iso=2000|250|200|160|125|100|80|64" / "... shutter-emitter=0|1"（単独操作）
     ///   "PHONESABER_COMMAND 1 id=<番号> shutter=0|500|1000|2000"（iPhoneの固定短時間露出）
     ///   "PHONESABER_COMMAND 1 id=<番号> exposure-bias=0|-1|-2"（露出補正 EV、2026-10-18）
@@ -602,12 +603,33 @@ final class LANLivenessProbe {
     /// 範囲外の値はその項目が無いのと同じ。1つの指示は1つの操作だけ: learn-area / clear-area / exposure-bias / shutter は
     /// 他の操作と一緒なら指示ごと捨てる（ignore と clear-ignore の組は 7c5a1c1 からの受け付けを変えない）。
     struct PCCommand: Equatable {
+        struct Area: Equatable {
+            let minX: Double, minY: Double, maxX: Double, maxY: Double
+
+            /// ACK 専用。余白なしの実winner範囲を、座標UDPと同じ反転後の0..1で報告する。
+            func learnedDetail(samples: Int, mirrorX: Bool, mirrorY: Bool) -> String {
+                let values = [mirrorX ? 1 - maxX : minX, mirrorY ? 1 - maxY : minY,
+                              mirrorX ? 1 - minX : maxX, mirrorY ? 1 - minY : maxY]
+                return "samples\(samples)-area" + values.map {
+                    String(format: "%.6f", locale: Locale(identifier: "en_US_POSIX"), $0)
+                }.joined(separator: "_")
+            }
+            static func parse(_ text: String) -> Area? {
+                let parts = text.split(separator: ",", omittingEmptySubsequences: false)
+                guard parts.count == 4 else { return nil }
+                let values = parts.compactMap { Double($0) }
+                guard values.count == 4, values.allSatisfy({ $0.isFinite && (0...1).contains($0) }),
+                      values[0] < values[2], values[1] < values[3] else { return nil }
+                return Area(minX: values[0], minY: values[1], maxX: values[2], maxY: values[3])
+            }
+        }
         let id: Int
         /// "red" / "blue"（検出の型に依存させない）。
         let ignore: String?
         let clearIgnore: Bool
         var learnAreaSeconds: Int? = nil
         var clearArea = false
+        var playArea: Area? = nil
         var exposureBias: Int? = nil
         var shutter: Int? = nil
         var shutterISO: Int? = nil
@@ -632,6 +654,7 @@ final class LANLivenessProbe {
         var id: Int?, ignore: String?, clear = false
         var learn: Int?, clearArea = false, exposure: Int?, shutter: Int?
         var shutterISO: Int?, shutterEmitter: Bool?
+        var playArea: PCCommand.Area?
         var clip = false, autoClip: Bool?, trackLock: Bool?, defaults = false
         for field in text.dropFirst(commandPrefix.count).split(separator: " ") {
             let parts = field.split(separator: "=", maxSplits: 1).map(String.init)
@@ -643,6 +666,7 @@ final class LANLivenessProbe {
             case "clear-ignore": clear = parts[1] == "1"
             case "learn-area": learn = Int(parts[1]).flatMap { (1...maximumLearnAreaSeconds).contains($0) ? $0 : nil }
             case "clear-area": clearArea = parts[1] == "1"
+            case "play-area": playArea = PCCommand.Area.parse(parts[1])
             case "defaults": defaults = parts[1] == "1"
             case "shutter-iso": shutterISO = Int(parts[1]).flatMap { shutterISOChoices.contains($0) ? $0 : nil }
             case "shutter-emitter": shutterEmitter = parts[1] == "1" ? true : parts[1] == "0" ? false : nil
@@ -656,10 +680,10 @@ final class LANLivenessProbe {
         }
         let legacy = (ignore != nil ? 1 : 0) + (clear ? 1 : 0)
         let added = (learn != nil ? 1 : 0) + (clearArea ? 1 : 0) + (exposure != nil ? 1 : 0)
-            + (shutter != nil ? 1 : 0) + (shutterISO != nil ? 1 : 0) + (shutterEmitter != nil ? 1 : 0) + (clip ? 1 : 0) + (autoClip != nil ? 1 : 0) + (trackLock != nil ? 1 : 0) + (defaults ? 1 : 0)
+            + (shutter != nil ? 1 : 0) + (shutterISO != nil ? 1 : 0) + (shutterEmitter != nil ? 1 : 0) + (clip ? 1 : 0) + (autoClip != nil ? 1 : 0) + (trackLock != nil ? 1 : 0) + (defaults ? 1 : 0) + (playArea != nil ? 1 : 0)
         guard let id, legacy + added > 0, added == 0 || legacy + added == 1 else { return nil }
         return PCCommand(id: id, ignore: ignore, clearIgnore: clear,
-                         learnAreaSeconds: learn, clearArea: clearArea, exposureBias: exposure, shutter: shutter, shutterISO: shutterISO, shutterEmitter: shutterEmitter,
+                         learnAreaSeconds: learn, clearArea: clearArea, playArea: playArea, exposureBias: exposure, shutter: shutter, shutterISO: shutterISO, shutterEmitter: shutterEmitter,
                          clip: clip, autoClip: autoClip, trackLock: trackLock, defaults: defaults)
     }
     static func formatAck(id: Int, station: String, platform: String, result: String, detail: String) -> String? {

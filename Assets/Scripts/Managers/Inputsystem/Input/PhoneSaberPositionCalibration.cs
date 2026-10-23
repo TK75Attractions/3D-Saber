@@ -44,6 +44,24 @@ public sealed class PhoneSaberPositionCalibration
             (float)((inverse[3] * x + inverse[4] * y + inverse[5]) / d * Height));
     }
 
+    // 実際の可動域の各辺を5%内側へ寄せ、その4隅を従来の射影へ渡す。
+    // 画面端に到達するのに最大の振り切りを必要としない。認識用の8%余白とは別。
+    public const float LearnedEdgeInset = 0.05f;
+    public static bool TryFromLearnedArea(Rect bounds, float cameraWidth, float cameraHeight,
+        out PhoneSaberPositionCalibration calibration, out string error)
+    {
+        calibration = null;
+        error = "学習した範囲が無効か、狭すぎます。もう一度いっぱいに振ってください。";
+        if (!PhoneSaberCalibrationPlayArea.Valid(bounds) || !IsFinite(cameraWidth) || !IsFinite(cameraHeight) ||
+            cameraWidth <= 1 || cameraHeight <= 1) return false;
+        float x0 = (bounds.xMin + bounds.width * LearnedEdgeInset) * (cameraWidth - 1);
+        float x1 = (bounds.xMax - bounds.width * LearnedEdgeInset) * (cameraWidth - 1);
+        float y0 = (bounds.yMin + bounds.height * LearnedEdgeInset) * (cameraHeight - 1);
+        float y1 = (bounds.yMax - bounds.height * LearnedEdgeInset) * (cameraHeight - 1);
+        return TryCreate(new[] { new Vector2(x0, y0), new Vector2(x1, y0),
+            new Vector2(x1, y1), new Vector2(x0, y1) }, out calibration, out error);
+    }
+
     public static bool TryCreate(Vector2[] points, out PhoneSaberPositionCalibration calibration, out string error)
     {
         calibration = null;
@@ -126,6 +144,7 @@ public static class PhoneSaberPositionCalibrationStore
     {
         public int version = 1;
         public Vector2[] corners;
+        public string learnedAt;
     }
 
     public static PhoneSaberPositionCalibration Load(string station, out bool enabled)
@@ -142,9 +161,15 @@ public static class PhoneSaberPositionCalibrationStore
         catch (ArgumentException) { return null; }
     }
 
-    public static void Save(string station, PhoneSaberPositionCalibration calibration)
+    public static string LearnedAt(string station)
     {
-        PlayerPrefs.SetString(DataKey(station), JsonUtility.ToJson(new Data { corners = calibration.CopyCorners() }));
+        try { return JsonUtility.FromJson<Data>(PlayerPrefs.GetString(DataKey(station), ""))?.learnedAt ?? ""; }
+        catch (ArgumentException) { return ""; }
+    }
+
+    public static void Save(string station, PhoneSaberPositionCalibration calibration, string learnedAt = null)
+    {
+        PlayerPrefs.SetString(DataKey(station), JsonUtility.ToJson(new Data { corners = calibration.CopyCorners(), learnedAt = learnedAt }));
         SetEnabled(station, true);
     }
 
@@ -159,5 +184,57 @@ public static class PhoneSaberPositionCalibrationStore
         PlayerPrefs.DeleteKey(DataKey(station));
         PlayerPrefs.DeleteKey(EnabledKey(station));
         PlayerPrefs.Save();
+    }
+}
+
+// 4隅の各採取窓で得た両端のカメラ 0..1 の矩形をまとめる純関数。
+public static class PhoneSaberCalibrationPlayArea
+{
+    // iOS SaberPlayArea.around と同じ余白・最小幅。大振り用に各辺へ画面幅/高さの5%を追加する。
+    public const float Margin = 0.08f, SwingMargin = 0.05f, MinimumSize = 0.3f;
+
+    public static bool Valid(Rect area) =>
+        PhoneSaberPositionCalibration.IsFinite(area.xMin) && PhoneSaberPositionCalibration.IsFinite(area.yMin) &&
+        PhoneSaberPositionCalibration.IsFinite(area.xMax) && PhoneSaberPositionCalibration.IsFinite(area.yMax) &&
+        area.xMin >= 0 && area.yMin >= 0 && area.xMax <= 1 && area.yMax <= 1 &&
+        area.width > 0 && area.height > 0;
+
+    public static bool TryDerive(Rect[] cornerBounds, out Rect area)
+    {
+        area = default;
+        if (cornerBounds == null || cornerBounds.Length != 4) return false;
+        float minX = 1, minY = 1, maxX = 0, maxY = 0;
+        foreach (Rect bounds in cornerBounds)
+        {
+            // 横向き・縦向きの剣の矩形は一辺が0でも有効。
+            if (!Valid(Rect.MinMaxRect(bounds.xMin, bounds.yMin,
+                Math.Max(bounds.xMax, bounds.xMin + 0.000001f), Math.Max(bounds.yMax, bounds.yMin + 0.000001f))) ||
+                bounds.width < 0 || bounds.height < 0) return false;
+            minX = Math.Min(minX, bounds.xMin); minY = Math.Min(minY, bounds.yMin);
+            maxX = Math.Max(maxX, bounds.xMax); maxY = Math.Max(maxY, bounds.yMax);
+        }
+        Fit(ref minX, ref maxX); Fit(ref minY, ref maxY);
+        area = Rect.MinMaxRect(minX, minY, maxX, maxY);
+        return Valid(area);
+    }
+
+    static void Fit(ref float low, ref float high)
+    {
+        low -= Margin + SwingMargin; high += Margin + SwingMargin;
+        if (high - low < MinimumSize)
+        {
+            float center = (low + high) * 0.5f;
+            low = center - MinimumSize * 0.5f; high = center + MinimumSize * 0.5f;
+        }
+        if (low < 0) { high -= low; low = 0; }
+        if (high > 1) { low -= high - 1; high = 1; }
+        low = Math.Max(0, low); high = Math.Min(1, high);
+    }
+
+    public static string Command(Rect area)
+    {
+        if (!Valid(area)) throw new ArgumentException("カメラ 0..1 の有効な矩形が必要です。", nameof(area));
+        return string.Format(System.Globalization.CultureInfo.InvariantCulture, "play-area={0:R},{1:R},{2:R},{3:R}",
+            area.xMin, area.yMin, area.xMax, area.yMax);
     }
 }

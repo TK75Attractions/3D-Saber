@@ -5,6 +5,23 @@ import XCTest
 #endif
 
 final class MetricsDatagramTests: XCTestCase {
+    func testLearnedBoundsAckUsesSafeTokensAndMirrorsWithoutRecognitionMargin() {
+        let area = LANLivenessProbe.PCCommand.Area(minX: 0.1, minY: 0.2, maxX: 0.7, maxY: 0.9)
+        for (x, y, expected) in [
+            (false, false, "0.100000_0.200000_0.700000_0.900000"),
+            (true, false, "0.300000_0.200000_0.900000_0.900000"),
+            (false, true, "0.100000_0.100000_0.700000_0.800000"),
+            (true, true, "0.300000_0.100000_0.900000_0.800000")
+        ] {
+            let detail = area.learnedDetail(samples: 300, mirrorX: x, mirrorY: y)
+            XCTAssertEqual(detail, "samples300-area" + expected)
+            let ack = LANLivenessProbe.formatAck(id: 71, station: "A", platform: "ios", result: "learned", detail: detail)
+            XCTAssertEqual(ack, "PHONESABER_ACK 1 id=71 station=A platform=ios result=learned detail=" + detail)
+            XCTAssertLessThan(ack!.utf8.count, 200)
+        }
+        XCTAssertEqual(LANLivenessProbe.parseCommand("PHONESABER_COMMAND 1 id=71 learn-area=10")?.learnAreaSeconds, 10)
+    }
+
     func testShutterISOAndEmitterCommandRules() {
         for value in [2000, 250, 200, 160, 125, 100, 80, 64] {
             let line = "PHONESABER_COMMAND 1 id=72 shutter-iso=\(value) future=x"
