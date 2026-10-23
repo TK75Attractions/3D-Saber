@@ -282,6 +282,7 @@ namespace Saber.ChartEditor
             upperDocumentKey = null;
             settingsMismatchKey = null;
             overviewSectionsSong = null;
+            pendingDraft = null;
             ClearRange();
         }
 
@@ -1485,6 +1486,7 @@ namespace Saber.ChartEditor
             // 新規作成に進む確認で破棄した曲情報を、次の譜面へ持ち越さない。
             if (songInfo != null) { LoadSongInfo(EditingSongId); CacheSongInfoDraft(); }
             UpdateDirtyState();
+            EnsureAudioForSong(false);
             SetStatus(inheritedFrom == null
                 ? "新しい譜面を作成しました"
                 : $"新しい譜面を作成しました（BPM・原点・拍子などは {inheritedFrom} から引き継ぎ）");

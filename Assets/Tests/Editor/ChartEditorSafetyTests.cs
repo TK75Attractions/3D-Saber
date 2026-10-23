@@ -831,6 +831,43 @@ public class ChartEditorSafetyTests
 
     SaberChartDocument Document => Get<SaberChartDocument>("document");
 
+    [TestCase("NewDocument")]
+    [TestCase("DuplicateToSelection")]
+    public void ChangingTargetKeepsOldDraftAndAudioOut(string operation)
+    {
+        Call("WriteDraftNow");
+        Document.notes.Clear();
+        Set("savedJson", SaberChartUtility.ToJson(Document, false));
+        Call("UpdateDirtyState");
+        Call("CheckForDraft");
+        Assert.NotNull(Get<object>("pendingDraft"));
+        var clip = AudioClip.Create("旧曲", 800, 1, 8000, false);
+        try
+        {
+            Set("audioClip", clip);
+            Set("songId", "__Other_" + Guid.NewGuid().ToString("N"));
+            Call(operation);
+            Call("RestoreDraft");
+            Assert.IsEmpty(Document.notes);
+            Assert.IsNull(Get<AudioClip>("audioClip"));
+        }
+        finally { Object.DestroyImmediate(clip); }
+    }
+
+    [Test]
+    public void ClipboardKeepsBeatsAfterTempoChange()
+    {
+        Document.notes[0].time = 1000f;
+        Document.notes[1].time = 1500f;
+        Call("SetRange", 1000f, 2000f);
+        Call("CopySelection");
+        Call("ApplyChartSettings", 60f, 0f, 0f, 1f);
+        Call("PasteAtCursor");
+        Call("PasteAtCursor");
+        CollectionAssert.AreEqual(new[] { 1000f, 1500f, 4000f, 5000f },
+            Document.notes.Select(n => n.time));
+    }
+
     void Load(string target, int difficulty)
     {
         Set("songId", target);

@@ -21,6 +21,7 @@ namespace Saber.ChartEditor
         // コピーした範囲。ウィンドウを閉じるまで残す。
         private static List<SaberChartNote> rangeClipboard;
         private static float rangeClipboardStartMs;
+        private static SaberChartGrid rangeClipboardGrid;
 
         // 範囲の対象の色(0=全部)。片手だけをずらす・消すときに使う。範囲を外すと全部に戻す(気付かずに一部だけ消さないように)。
         [SerializeField] private int rangeColorFilter;
@@ -426,6 +427,7 @@ namespace Saber.ChartEditor
                 return;
             }
             rangeClipboard = targets.Select(note => note.Clone()).ToList();
+            rangeClipboardGrid = Grid;
             rangeClipboardStartMs = HasRangeSelection ? rangeStartMs : targets.Min(note => note.time);
             SetStatus($"{targets.Count}ノーツをコピーしました。Ctrl+V で今の位置へ貼り付けます");
         }
@@ -437,7 +439,7 @@ namespace Saber.ChartEditor
                 SetStatus("コピーした範囲がありません");
                 return;
             }
-            PasteClip(rangeClipboard, rangeClipboardStartMs, TimeAtBeat(currentBeat), moveRange: false);
+            PasteClip(rangeClipboard, rangeClipboardStartMs, TimeAtBeat(currentBeat), false, rangeClipboardGrid);
         }
 
         // 範囲の直後(終わりの位置)へ同じ並びを置く。サビの繰り返しなどに使う。
@@ -454,15 +456,18 @@ namespace Saber.ChartEditor
         }
 
         // 拍の上の相対位置で貼る(テンポ地図があっても、拍の並びをそのまま写す)。
-        private void PasteClip(List<SaberChartNote> clip, float sourceStartMs, float targetStartMs, bool moveRange)
+        private void PasteClip(List<SaberChartNote> clip, float sourceStartMs, float targetStartMs, bool moveRange,
+            SaberChartGrid sourceGrid = null)
         {
             if (!CanEditAtCursor) return;
             EndNoteDrag();
-            float sourceBeat = GridBeatAt(sourceStartMs);
+            // コピー時の格子で元の拍を読み、貼り付け先の格子へ移す。
+            sourceGrid ??= Grid;
+            float sourceBeat = sourceGrid.BeatAt(sourceStartMs);
             float targetBeat = GridBeatAt(targetStartMs);
             string before = CurrentJson();
             List<SaberChartNote> added = SaberChartRangeOps.Paste(document, clip,
-                note => GridTimeAt(targetBeat + (GridBeatAt(note.time) - sourceBeat)), BeatAtTime);
+                note => GridTimeAt(targetBeat + (sourceGrid.BeatAt(note.time) - sourceBeat)), BeatAtTime);
             if (added.Count == 0)
             {
                 SetStatus("貼り付け先に同じノーツがあるので、何も足しませんでした");
