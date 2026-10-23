@@ -279,7 +279,7 @@ public class PhoneSaberControlPanelTests
         StringAssert.Contains("\"trackLock\":{\"value\":\"ON\",\"ageSeconds\":10.0,\"source\":\"metrics\"}", json);
         StringAssert.Contains("\"exposureEv\":{\"value\":\"-2\"", json);
         StringAssert.Contains("\"shutter\":{\"value\":\"1/2000\"", json);
-        StringAssert.Contains("\"iso\":{\"value\":\"1000\"", json);
+        StringAssert.Contains("\"iso\":{\"value\":\"250\"", json);
         StringAssert.Contains("\"colouredEmitter\":{\"value\":\"ON\",\"ageSeconds\":8.0,\"source\":\"ACK確認\"}", json);
         StringAssert.Contains("\"ignoreRed\":{\"value\":\"0\"", json);
         StringAssert.Contains("\"ignoreBlue\":{\"value\":\"0\"", json);
@@ -293,7 +293,7 @@ public class PhoneSaberControlPanelTests
         var phone = new PhoneSaberControlPanelPhone("A", "10.0.0.1");
         phone.Acknowledge(Ack(1, "defaults", "tracklock-on-ev-2-shutter-2000"), 8, 7);
         Assert.AreEqual("OFF", phone.Value("colouredEmitter"));
-        phone.Metrics(new PhoneSaberMetrics { Platform = "ios", Station = "A", Controls = "0013", ReceivedAt = 10 });
+        phone.Metrics(new PhoneSaberMetrics { Platform = "ios", Station = "A", Controls = "0011", ReceivedAt = 10 });
         Assert.AreEqual("OFF", phone.Value("trackLock"));
         Assert.AreEqual("1/500", phone.Value("shutter"));
         Assert.AreEqual("250", phone.Value("iso"));

@@ -30,7 +30,7 @@ public sealed class PhoneSaberOperatorKeys : MonoBehaviour
     public static bool FollowPhoneState(PhoneSaberMetrics phone, string station, double now, double queuedAt)
     {
         if (phone == null || ReferenceEquals(phone, lastPhoneState) || phone.Platform != "ios" ||
-            (station != "A" && station != "B") || phone.Station != station || phone.Controls == null ||
+            (station != "A" && station != "B") || (phone.Station != station && (phone.Station == "A" || phone.Station == "B")) || phone.Controls == null ||
             now < phone.ReceivedAt || now - phone.ReceivedAt > PhoneSaberMetricsStore.FreshSeconds ||
             phone.ReceivedAt <= queuedAt) return false;
         lastPhoneState = phone;

@@ -162,19 +162,19 @@ public sealed class PhoneSaberControlPanelPhone
         if (!Settings.TryGetValue(key, out var old) || order >= old.Order)
             Settings[key] = new Report { Value = value, At = at, Order = order, Source = source };
     }
-    public void Metrics(PhoneSaberMetrics phone)
+    public void Metrics(PhoneSaberMetrics phone, string effectiveStation = null)
     {
-        if (phone == null || phone.Platform != "ios" || phone.Station != Station || phone.Controls == null) return;
+        if (phone == null || phone.Platform != "ios" || (effectiveStation ?? phone.Station) != Station || phone.Controls == null) return;
         string ctl = phone.Controls;
         void Put(string key, string value) => Set(key, value, phone.ReceivedAt, phone.ReceivedAt, "metrics");
         Put("trackLock", ctl[0] == '1' ? "ON" : "OFF");
         Put("exposureEv", new[] { "0", "-1", "-2" }[ctl[1] - '0']);
         Put("shutter", new[] { "OFF", "1/500", "1/1000", "1/2000" }[ctl[2] - '0']);
-        Put("iso", new[] { "2000", "1000", "500", "250" }[ctl[3] - '0']);
+        Put("iso", new[] { "2000", "250", "200", "160", "125", "100", "80", "64" }[ctl[3] - '0']);
     }
-    public void Acknowledge(PhoneSaberAcknowledgement ack, double observedAt, double commandAt)
+    public void Acknowledge(PhoneSaberAcknowledgement ack, double observedAt, double commandAt, string effectiveStation = null)
     {
-        if (ack.Platform != "ios" || ack.Station != Station || ack.Sender != Sender) return;
+        if (ack.Platform != "ios" || (effectiveStation ?? ack.Station) != Station || ack.Sender != Sender) return;
         void Put(string key, string value)
         {
             // 時刻を保持していない過去操作のACKは、metricsがある項目には使わない。
@@ -204,7 +204,9 @@ public sealed class PhoneSaberControlPanelPhone
     }
     public static bool HasAcknowledged(string station, string[] senders, PhoneSaberAcknowledgement[] acknowledgements)
     {
-        bool Matches(string sender) => Array.Exists(acknowledgements, a => a.Platform == "ios" && a.Station == station &&
+        // 台を未設定のiPhone（station=none）の返事も、このPCの台の返事として扱う。
+        bool Matches(string sender) => Array.Exists(acknowledgements, a => a.Platform == "ios" &&
+            (a.Station == station || a.Station != "A" && a.Station != "B") &&
             (sender == null || a.Sender == sender) && a.Result != "learning");
         if (senders.Length == 0) return Matches(null);
         return Array.TrueForAll(senders, Matches);

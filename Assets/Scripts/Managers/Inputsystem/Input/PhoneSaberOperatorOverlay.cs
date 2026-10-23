@@ -684,11 +684,12 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
                 {
                     string key = ack.Id + ":" + ack.Sender + ":" + ack.Result + ":" + ack.Detail;
                     currentAcks.Add(key);
-                    if (ack.Platform != "ios" || ack.Station != "A" && ack.Station != "B" || !seenPhoneAcks.Add(key)) continue;
-                    var phone = PhoneReport(ack.Station, ack.Sender);
+                    string ackStation = PhoneStation(ack.Station);
+                    if (ack.Platform != "ios" || ackStation == null || !seenPhoneAcks.Add(key)) continue;
+                    var phone = PhoneReport(ackStation, ack.Sender);
                     // 過去ACKの確認時刻と操作時刻を区別し、後から来たmetricsを優先する。
                     double order = phoneCommandTimes.TryGetValue(ack.Id, out double at) ? at : double.NegativeInfinity;
-                    phone.Acknowledge(ack, now, order);
+                    phone.Acknowledge(ack, now, order, ackStation);
                 }
             seenPhoneAcks.IntersectWith(currentAcks);
             foreach (int id in new List<int>(phoneCommandTimes.Keys))
@@ -698,8 +699,10 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
             foreach (string sender in new[] { input.RedCoordinateSender, input.BlueCoordinateSender })
             {
                 var metrics = input.ReadPhoneMetrics(sender, now);
-                if (metrics?.Platform == "ios" && (metrics.Station == "A" || metrics.Station == "B"))
-                    PhoneReport(metrics.Station, sender).Metrics(metrics);
+                // 台を未設定のiPhone（station=none）は、このPCの台のiPhoneとして表示する。
+                string metricsStation = PhoneStation(metrics?.Station);
+                if (metrics?.Platform == "ios" && metricsStation != null)
+                    PhoneReport(metricsStation, sender).Metrics(metrics, metricsStation);
             }
         panel.BeginSection("いまの設定");
         panel.Label("操作対象: このPCの台 " + (CurrentStation ?? "未指定") + " のiPhone（送信だけでは確定しません）");
@@ -715,6 +718,9 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         panel.Label("PC 予測: " + (input == null ? "未確認" : input.PredictionAutomatic ? $"自動（赤 {input.PredictionLead(false)} / 青 {input.PredictionLead(true)} ms）" : input.PredictionHorizonMilliseconds + " ms") +
             " ／ フレーム上限: " + PhoneSaberFrameCapSettings.Label(PhoneSaberDisplaySync.FrameCapMode));
     }
+    string PhoneStation(string reported) =>
+        reported == "A" || reported == "B" ? reported : CurrentStation == "A" || CurrentStation == "B" ? CurrentStation : null;
+
     PhoneSaberControlPanelPhone PhoneReport(string phoneStation, string sender)
     {
         string key = phoneStation + ":" + sender;

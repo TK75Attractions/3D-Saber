@@ -44,7 +44,8 @@ struct MetricsDatagram {
         if let controls {
             guard controls.count == 4, controls.first == "0" || controls.first == "1",
                   controls.dropFirst().first.map({ "012".contains($0) }) == true,
-                  controls.suffix(2).allSatisfy({ "0123".contains($0) }) else { return nil }
+                  controls.dropFirst(2).first.map({ "0123".contains($0) }) == true,
+                  controls.last.map({ "01234567".contains($0) }) == true else { return nil }
             text += " ctl=\(controls)"
         }
         return text.utf8.count < 400 && text.data(using: .ascii) != nil ? text : nil
