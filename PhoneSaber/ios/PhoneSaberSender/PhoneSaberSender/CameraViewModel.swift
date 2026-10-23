@@ -1850,6 +1850,7 @@ final class CameraViewModel: NSObject, ObservableObject {
     @Published private(set) var playArea: SaberPlayArea? = CameraViewModel.storedPlayArea()
     @Published private(set) var playAreaLearning = false
     private var playAreaLearningTask: Task<Void, Never>?
+    private var playAreaLearningID: UUID?
     private var playAreaAcknowledgement: ((Int, Bool, LANLivenessProbe.PCCommand.Area?) -> Void)?
     static let playAreaLearnSeconds = PlayAreaSettings.learnSeconds
 
@@ -1876,8 +1877,9 @@ final class CameraViewModel: NSObject, ObservableObject {
             completion?(0, false, nil)
             return
         }
-        playAreaLearningTask?.cancel()
-        playAreaAcknowledgement?(0, false, nil)
+        cancelPlayAreaLearning()
+        let learningID = UUID()
+        playAreaLearningID = learningID
         playAreaAcknowledgement = completion
         processor.startPlayAreaLearning()
         playAreaLearning = true
@@ -1885,11 +1887,26 @@ final class CameraViewModel: NSObject, ObservableObject {
         playAreaLearningTask = Task { @MainActor [weak self] in
             try? await Task.sleep(nanoseconds: UInt64(seconds) * 1_000_000_000)
             guard let self, !Task.isCancelled else { return }
-            self.finishPlayAreaLearning(id: id)
+            self.finishPlayAreaLearning(id: id, learningID: learningID)
         }
     }
 
-    private func finishPlayAreaLearning(id: String) {
+    /// 保存済み範囲は残し、採取・表示・未完了通知を一度だけ終了する。
+    private func cancelPlayAreaLearning() {
+        playAreaLearningID = nil
+        playAreaLearningTask?.cancel()
+        playAreaLearningTask = nil
+        playAreaLearning = false
+        let completion = playAreaAcknowledgement
+        playAreaAcknowledgement = nil
+        _ = processor.finishPlayAreaLearning()
+        completion?(0, false, nil)
+    }
+
+    private func finishPlayAreaLearning(id: String, learningID: UUID) {
+        // 旧タイマー・完了通知は、新しい学習や保存値・ACKに触れない。
+        guard playAreaLearningID == learningID else { return }
+        playAreaLearningID = nil
         playAreaLearningTask = nil
         playAreaLearning = false
         let completion = playAreaAcknowledgement
@@ -1914,22 +1931,14 @@ final class CameraViewModel: NSObject, ObservableObject {
     }
 
     func clearPlayArea(commandID: Int? = nil) {
-        if playAreaLearningTask != nil {
-            playAreaLearningTask?.cancel(); playAreaLearningTask = nil
-            playAreaAcknowledgement?(0, false, nil); playAreaAcknowledgement = nil
-            playAreaLearning = false
-            _ = processor.finishPlayAreaLearning()
-        }
+        cancelPlayAreaLearning()
         applyPlayArea(nil)
         ConnectivityLog.shared.record("PLAY_AREA", "clear id=\(commandID.map(String.init) ?? "-")")
     }
 
     /// 4隅で採取した送信カメラ座標。送信時の反転だけ戻し、検出フレームの範囲として保存する。
     func setPlayArea(_ area: LANLivenessProbe.PCCommand.Area) {
-        playAreaLearningTask?.cancel(); playAreaLearningTask = nil
-        playAreaAcknowledgement?(0, false, nil); playAreaAcknowledgement = nil
-        playAreaLearning = false
-        _ = processor.finishPlayAreaLearning()
+        cancelPlayAreaLearning()
         applyPlayArea(SaberPlayArea(minX: mirrorX ? 1 - area.maxX : area.minX,
                                    minY: mirrorY ? 1 - area.maxY : area.minY,
                                    maxX: mirrorX ? 1 - area.minX : area.maxX,
@@ -2598,6 +2607,7 @@ final class CameraViewModel: NSObject, ObservableObject {
 
     private func resetProcessor() {
         cancelIgnoreLearning()
+        cancelPlayAreaLearning()
         // reset が検出キューの終了を待つ間も旧世代の送信・fallback を拒否する。
         delivery.suspend()
         _ = processor.reset()

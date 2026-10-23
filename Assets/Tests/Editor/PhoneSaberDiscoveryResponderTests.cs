@@ -13,6 +13,29 @@ using UnityEngine.TestTools;
 // 5007 を占有せず、bind 失敗後の socket 解放を確認する。
 public class PhoneSaberDiscoveryResponderTests
 {
+    [TestCase(1)]
+    [TestCase(10)]
+    [TestCase(60)]
+    public void LearningRetriesPastCompletionWithTheSameIdAndStopsWithinIPhoneCache(int seconds)
+    {
+        int id = PhoneSaberDiscoveryResponder.QueueCommand("learn-area=" + seconds);
+        Assert.IsTrue(PhoneSaberDiscoveryResponder.Acknowledgements.Latest(out int latest, out string fields, out double queuedAt));
+        Assert.AreEqual(id, latest);
+        Assert.AreEqual(seconds + 5, PhoneSaberDiscoveryResponder.CommandSecondsLeft(queuedAt));
+        Assert.Greater(PhoneSaberDiscoveryResponder.CommandSecondsLeft(queuedAt + seconds + .001), 0);
+        Assert.AreEqual(0, PhoneSaberDiscoveryResponder.CommandSecondsLeft(queuedAt + seconds + 5));
+        Assert.AreEqual(0, PhoneSaberDiscoveryResponder.CommandSecondsLeft(queuedAt + seconds + 10));
+        var pending = typeof(PhoneSaberDiscoveryResponder).GetField("pendingCommand", BindingFlags.NonPublic | BindingFlags.Static);
+        Assert.AreEqual(PhoneSaberDiscoveryResponder.BuildCommand(id, fields), pending.GetValue(null));
+        int next = PhoneSaberDiscoveryResponder.QueueCommand("clear-area=1");
+        Assert.AreNotEqual(id, next);
+        PhoneSaberDiscoveryResponder.Acknowledgements.Latest(out latest, out fields, out queuedAt);
+        Assert.AreEqual(next, latest);
+        Assert.AreEqual("clear-area=1", fields);
+        Assert.AreEqual(10, PhoneSaberDiscoveryResponder.CommandSecondsLeft(queuedAt));
+        Assert.AreEqual(PhoneSaberDiscoveryResponder.BuildCommand(next, fields), pending.GetValue(null));
+    }
+
     [Test]
     public void DefaultsCommandAndNewSenderRule()
     {

@@ -8,6 +8,85 @@ public class PhoneSaberAcknowledgementTests
     static PhoneSaberAcknowledgement Ack(int id, string result, string detail, string platform = "ios", string station = "none") =>
         new PhoneSaberAcknowledgement(id, station, platform, result, detail);
 
+    [TestCase("A")]
+    [TestCase("B")]
+    [TestCase("none")]
+    public void MissingCompletionExpiresWithoutExtendingOnDuplicateStartsAndLateCompletionWins(string station)
+    {
+        var store = new PhoneSaberAcknowledgementStore();
+        store.Queue(71, "learn-area=10", 100);
+        var start = Ack(71, "learning", "10s", station: station);
+        store.Receive(start, "phone");
+        StringAssert.Contains("覚えています", PhoneSaberOperatorKeys.StatusText(store, 114.999));
+        const string missing = "完了の返事を確認できません。台の準備をやり直してください";
+        for (int i = 0; i < 3; i++)
+        {
+            double now = 115 + i * 100;
+            store.Receive(start, "phone");
+            StringAssert.Contains(missing, PhoneSaberOperatorKeys.StatusText(store, now));
+            Assert.AreEqual(PhoneSaberOperatorKeys.StatusText(store, now), PhoneSaberOperatorKeys.ToastText(store, now));
+            StringAssert.DoesNotContain("振りが足り", PhoneSaberOperatorKeys.StatusText(store, now));
+        }
+        store.Receive(Ack(71, "learned", "samples300-area0.2_0.1_0.8_0.9", station: station), "phone");
+        string completed = PhoneSaberOperatorKeys.StatusText(store, 500);
+        StringAssert.Contains("覚えました", completed);
+        store.Receive(start, "phone");
+        Assert.AreEqual(completed, PhoneSaberOperatorKeys.ToastText(store, 501));
+        Assert.IsTrue(store.TakeLearnedArea(station == "none" ? "A" : station, out _));
+        Assert.IsFalse(store.TakeLearnedArea(station == "none" ? "A" : station, out _));
+        store.Queue(72, "learn-area=10", 600);
+        store.Receive(Ack(71, "learned", "samples300-area0_0_1_1", station: station), "phone");
+        StringAssert.EndsWith("（送信中）", PhoneSaberOperatorKeys.StatusText(store, 601));
+        Assert.IsFalse(store.TakeLearnedArea(station == "none" ? "A" : station, out _));
+        store.DiscardLearnedAreas(station == "none" ? "A" : station);
+        store.Receive(Ack(72, "learned", "samples300-area0_0_1_1", station: station), "phone");
+        Assert.IsFalse(store.TakeLearnedArea(station == "none" ? "A" : station, out _));
+    }
+
+    [Test]
+    public void LearningCompletionDeadlineIsPerReplyAndDoesNotChangeOtherCommands()
+    {
+        var store = new PhoneSaberAcknowledgementStore();
+        store.Queue(71, "learn-area=60", 100);
+        store.Receive(Ack(71, "learning", "60s", station: "A"), "phoneA");
+        store.Receive(Ack(71, "learned", "samples300", station: "B"), "phoneB");
+        StringAssert.Contains("覚えています", PhoneSaberOperatorKeys.StatusText(store, 164.999));
+        string text = PhoneSaberOperatorKeys.StatusText(store, 165);
+        StringAssert.Contains("iPhone（台A）: 完了の返事を確認できません", text);
+        StringAssert.Contains("iPhone（台B）: プレイ範囲を覚えました", text);
+        store.Queue(72, "ignore=red", 200);
+        store.Receive(Ack(72, "learning", "3s"), "phone");
+        StringAssert.Contains("無視する物を覚えています", PhoneSaberOperatorKeys.StatusText(store, 999));
+    }
+
+    [Test]
+    public void CompletionDeadlineRefreshesToastEvenWithoutAnAckRevision()
+    {
+        var store = new PhoneSaberAcknowledgementStore();
+        store.Queue(71, "learn-area=10", 100);
+        store.Receive(Ack(71, "learning", "10s"), "phone");
+        // 旧実装との比較でも同じテストをcompileできるよう、追加の時計関数だけ反射で読む。
+        var next = typeof(PhoneSaberOperatorKeys).GetMethod("NextToastRefreshAt");
+        Assert.IsNotNull(next, "ACK 更新がなくても完了期限で再描画を予約する");
+        Func<double, double> refresh = now => (double)next.Invoke(null, new object[] { store, now });
+        Assert.AreEqual(103, refresh(101));
+        Assert.AreEqual(115, refresh(103));
+        int revision = store.Revision;
+        Assert.IsFalse(PhoneSaberOperatorKeys.ShouldRefreshToast(revision, revision, 114.999, refresh(103)));
+        Assert.IsTrue(PhoneSaberOperatorKeys.ShouldRefreshToast(revision, revision, 115, refresh(103)));
+        StringAssert.Contains("完了の返事を確認できません", PhoneSaberOperatorKeys.ToastText(store, 115));
+        Assert.AreEqual(double.PositiveInfinity, refresh(115));
+        Assert.AreEqual(revision, store.Revision);
+        store.Receive(Ack(71, "learning", "10s"), "phone");
+        Assert.AreEqual(115, refresh(114));
+        Assert.AreEqual(double.PositiveInfinity, refresh(116));
+        store.Queue(72, "clear-area=1", 200);
+        Assert.AreEqual(203, refresh(201));
+        Assert.AreEqual(double.PositiveInfinity, refresh(203));
+        store.Queue(73, "learn-area=10", 300, automatic: true);
+        Assert.AreEqual(double.PositiveInfinity, refresh(301));
+    }
+
     [Test]
     public void LearnedBoundsAckAcceptsIosFormatAndRejectsMalformedRectangles()
     {

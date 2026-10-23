@@ -6,6 +6,7 @@ import subprocess
 import tempfile
 
 from run_latency_host_tests import ROOT, SOURCE, block
+from run_play_area_host_tests import run as run_play_area_tests
 
 
 def main():
@@ -47,6 +48,7 @@ final class FrameProcessor {
     func setTrackLockEnabled(_ enabled: Bool) { trackChanges += 1 }
     func clock() -> Double { serial += 1; return serial }
     func reset() -> Int { cancelIgnoreLearning(); return 0 }
+    func finishPlayAreaLearning() -> Int? { nil }
 '''
     for marker in ['func startIgnoreLearning(', 'func finishIgnoreLearning(', 'func cancelIgnoreLearning(']:
         support += block(frames, marker) + '\n'
@@ -116,6 +118,11 @@ enum PlayAreaSettings { static let exposureBiasKey = "unused" }
 '''
     # 状態の宣言も修正前後の実ソースを使う。
     support += next(line for line in camera.splitlines() if 'private var ignoreLearningIDs:' in line) + '\n'
+    for line in camera.splitlines():
+        if any(marker in line for marker in ['private var playAreaLearningTask:', 'private var playAreaLearningID:',
+                                             'private var playAreaAcknowledgement:']):
+            support += line + '\n'
+    support += 'var playAreaLearning = false\n'
     setter = block(camera, 'func setTrackLockEnabled(')
     start = camera.index(setter) + len(setter)
     end = camera.index('    func applyPCCommand(', start)
@@ -129,6 +136,8 @@ enum PlayAreaSettings { static let exposureBiasKey = "unused" }
         support += method + '\n'
     if 'private func cancelIgnoreLearning(' in camera:
         support += block(camera, 'private func cancelIgnoreLearning(') + '\n'
+    if 'private func cancelPlayAreaLearning(' in camera:
+        support += block(camera, 'private func cancelPlayAreaLearning(') + '\n'
     support += '}\n'
     tests = '''import XCTest
 @MainActor final class PCControlTests: XCTestCase {
@@ -248,7 +257,9 @@ guard let run = suite.testRun, run.executionCount >= 7, run.hasSucceeded else { 
                         '-I', str(developer / 'usr/lib'), '-L', str(developer / 'usr/lib'),
                         '-F', str(developer / 'Library/Frameworks'), '-Xlinker', '-rpath', '-Xlinker', str(developer / 'Library/Frameworks'),
                         '-Xlinker', '-rpath', '-Xlinker', str(developer / 'usr/lib'), '-o', str(tmp / 'tests')], check=True)
-        return subprocess.run([str(tmp / 'tests')], timeout=30).returncode
+        control_result = subprocess.run([str(tmp / 'tests')], timeout=30).returncode
+    area_result = run_play_area_tests(args.revision)
+    return control_result or area_result
 
 
 if __name__ == '__main__':

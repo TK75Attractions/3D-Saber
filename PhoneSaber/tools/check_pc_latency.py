@@ -4,6 +4,7 @@ import argparse
 import os
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -29,6 +30,8 @@ def main():
     parser.add_argument('--frames-only', action='store_true', help='新着なし/定常入力のhost回帰と計測だけ実行')
     parser.add_argument('--sender-before-ref', help='旧統計の競合なしpoll回帰FAILとhost計測を確認')
     parser.add_argument('--prediction-before-ref', help='旧InputPointの時計混在による予測期限切れ回帰FAILを確認')
+    parser.add_argument('--learning-only', action='store_true', help='台準備ACKのNUnit・実Swiftとの偽配送だけ実行')
+    parser.add_argument('--learning-before-ref', help='旧指示再送・表示の実ソースで同じ回帰FAILも確認')
     args = parser.parse_args()
     editor = Path(os.environ.get('PHONESABER_UNITY_CONTENTS', '/Applications/Unity/Hub/Editor/6000.3.9f1/Unity.app/Contents'))
     mono = editor / 'Resources/Scripting/MonoBleedingEdge'
@@ -75,7 +78,7 @@ public class GamePlayManager : MonoBehaviour { public NoteSpawner noteSpawner; p
         frame_sources = sources + [frame_tests, stats_tests, sender_tests, HOST / 'Host.cs']
         runtime = dict(os.environ, MONO_PATH=os.pathsep.join(map(str, (
             nunit.parent, build, editor / 'Resources/Scripting/Managed/UnityEngine', template))))
-        for before in ([True, False] if args.frame_before_ref or args.sender_before_ref or args.prediction_before_ref else [False]):
+        for before in ([] if args.learning_only else [True, False] if args.frame_before_ref or args.sender_before_ref or args.prediction_before_ref else [False]):
             current = list(frame_sources)
             # native API は起動しない。Unity時計を固定し、画面・保存設定のqueryもhostへ差し替える。
             host_input = build / 'InputPointHost.cs'
@@ -114,16 +117,45 @@ public class GamePlayManager : MonoBehaviour { public NoteSpawner noteSpawner; p
         test_source = test_source.replace('UnityEngine.Object.DestroyImmediate(go);', 'go.Dispose();')
         host_calibration_tests.write_text(aliases + 'using GameObject = CalibrationHostObject;\n' + test_source)
         calibration_sources = list(frame_sources)
+        if args.learning_only:
+            host_input = build / 'InputPointHost.cs'
+            host_input.write_text('using Time = FrameClock;\nusing Screen = FrameScreen;\n' +
+                                  (INPUT / 'InputPoint.cs').read_text().replace('PhoneSaberPerfLog.Estimate(', 'FramePredictionPerfLog.Estimate('))
         calibration_sources[calibration_sources.index(INPUT / 'InputPoint.cs')] = host_input
         calibration_sources[calibration_sources.index(INPUT / 'PhoneSaberPositionCalibration.cs')] = host_calibration
-        exe = build / 'calibration.exe'
-        if run(compiler + ['/define:UNITY_EDITOR,UNITY_EDITOR_WIN,PHONESABER_FRAME_HOST,PHONESABER_CALIBRATION_HOST',
-                           '/r:' + str(nunit), '/r:System.Runtime.Serialization.dll', '/out:' + str(exe)] + refs +
-               list(map(str, calibration_sources + [host_calibration_tests, acknowledgement_tests]))):
-            return 1
-        if run([str(mono / 'bin/mono'), str(exe)], env=runtime):
-            return 1
-        if args.frames_only:
+        discovery_tests = ROOT / 'Assets/Tests/Editor/PhoneSaberDiscoveryResponderTests.cs'
+        test_runner = template / 'UnityEngine.TestRunner.dll'
+        runtime['MONO_PATH'] += os.pathsep + str(template)
+        for before in ([True, False] if args.learning_before_ref else [False]):
+            current = list(calibration_sources)
+            for name in ('PhoneSaberDiscoveryResponder.cs', 'PhoneSaberOperatorKeys.cs'):
+                source = (subprocess.check_output(['git', 'show', args.learning_before_ref +
+                          ':Assets/Scripts/Managers/Inputsystem/Input/' + name], cwd=ROOT).decode()
+                          if before else (INPUT / name).read_text())
+                host_source = build / ('Host' + name)
+                host_source.write_text(source.replace('SwingMonotonicClock.', 'CommandHostClock.'))
+                current[current.index(INPUT / name)] = host_source
+            exe = build / ('learning-before.exe' if before else 'calibration.exe')
+            if run(compiler + ['/define:UNITY_EDITOR,UNITY_EDITOR_WIN,PHONESABER_FRAME_HOST,PHONESABER_CALIBRATION_HOST',
+                               '/r:' + str(nunit), '/r:' + str(test_runner), '/r:System.Runtime.Serialization.dll', '/out:' + str(exe)] + refs +
+                   list(map(str, current + [host_calibration_tests, acknowledgement_tests, discovery_tests]))):
+                return 1
+            schedule, trace = build / 'learning-schedule.tsv', build / 'learning-acks.tsv'
+            if run([str(mono / 'bin/mono'), str(exe), 'learning-schedule', str(schedule)], env=runtime):
+                return 1
+            if run([sys.executable, str(ROOT / 'PhoneSaber/ios/PhoneSaberSenderTests/run_pc_command_host_tests.py'),
+                    '--retry-schedule', str(schedule), '--ack-trace', str(trace)]):
+                return 1
+            replay_result = run([str(mono / 'bin/mono'), str(exe), 'learning-replay', str(trace)], env=runtime)
+            test_result = run([str(mono / 'bin/mono'), str(exe)], env=runtime)
+            if before:
+                if replay_result == 0 or test_result == 0:
+                    print('ERROR: 旧実装で台準備ACK回帰FAILを再現できませんでした')
+                    return 1
+                print('Before learning recovery + status regressions FAIL reproduced (expected)')
+            elif replay_result or test_result:
+                return 1
+        if args.frames_only or args.learning_only:
             return 0
         if args.platform_before_ref:
             for name in ('PhoneSaberBonjourPublisher.cs', 'PhoneSaberP2PBridgeProcess.cs', 'PhoneSaberTriageReceiverLauncher.cs'):

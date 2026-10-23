@@ -194,6 +194,7 @@ final class FrameProcessor: @unchecked Sendable {
         reportBounds?(positionLearningBounds)
         positionLearningBounds = nil
         playAreaLearner = nil
+        playAreaRevision &+= 1
         return learner
     }
     private struct PendingFrame {
@@ -287,6 +288,10 @@ final class FrameProcessor: @unchecked Sendable {
     @discardableResult
     func reset() -> Int {
         pendingLock.lock()
+        // 検出キューを待つ前に旧学習・範囲通知を無効化し、処理中フレームの書き戻しも拒否する。
+        playAreaLearner = nil
+        positionLearningBounds = nil
+        playAreaRevision &+= 1
         mailbox.clearPending()
         pendingFrameShouldSave = false
         rawFrameSaveRequested = false
@@ -683,7 +688,7 @@ final class FrameProcessor: @unchecked Sendable {
         if learningArea {
             pendingLock.lock()
             for (_, endpoints) in detected {
-                if let endpoints, playAreaLearner != nil {
+                if let endpoints, playAreaLearner != nil, areaRevision == playAreaRevision {
                     playAreaLearner?.add(endpoints, width: width, height: height)
                     // scaledPoint と同じ width-1 / height-1。丸め前の送信位置を記録する。
                     for point in [endpoints.0, endpoints.1] {

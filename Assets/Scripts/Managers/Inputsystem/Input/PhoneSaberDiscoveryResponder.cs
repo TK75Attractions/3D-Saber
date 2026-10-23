@@ -18,7 +18,7 @@ public sealed class PhoneSaberDiscoveryResponder : IDisposable
     public const string Request = "PHONESABER_DISCOVER 1";
     public const string ReplyPrefix = "PHONESABER_UNITY 1";
     // F8 から iPhone への指示（2026-10-18: 会場のコーンを iPhone に触らず無視させる）。応答の形式は変えず、
-    // 応答の直後に別の datagram として同じ相手へ送る。CommandSeconds の間、探索要求が来るたびに送り直し、
+    // 応答の直後に別の datagram として同じ相手へ送る。期限内は探索要求が来るたびに送り直し、
     // iPhone は同じ id を一度だけ実行する。古いアプリや Android は知らない datagram として捨てる。
     public const string CommandPrefix = "PHONESABER_COMMAND 1";
     public const double CommandSeconds = 10;
@@ -35,10 +35,15 @@ public sealed class PhoneSaberDiscoveryResponder : IDisposable
     public static string BuildCommand(int id, string fields) => CommandPrefix + " id=" + id + " " + fields;
 
     // プレイ範囲（2026-10-18、赤い服の人など動く物の対策）: スマホが LearnAreaSeconds 秒間の winner の範囲を覚え、
-    // 以後その外（両端の中点）の候補を選ばない。指示は CommandSeconds 送り直すが、スマホは同じ id を一度だけ実行する。
+    // 以後その外（両端の中点）の候補を選ばない。完了後も同じ id を送り、iPhone の保存済み ACK を回収する。
     public const int LearnAreaSeconds = 10;
     public static readonly string LearnAreaCommand = "learn-area=" + LearnAreaSeconds;
     public const string ClearAreaCommand = "clear-area=1";
+    // iPhone のキャッシュは受信から学習秒数＋10秒。再送はそれより短く、通常指示は従来の10秒。
+    public static double CommandRetrySeconds(string fields) =>
+        fields != null && fields.StartsWith("learn-area=", StringComparison.Ordinal) &&
+        int.TryParse(fields.Substring(11), NumberStyles.None, CultureInfo.InvariantCulture, out int seconds) &&
+        seconds >= 1 && seconds <= 60 ? seconds + 5 : CommandSeconds;
     // iPhone専用の固定短時間露出。OFFは既存の自動露出＋補正へ戻す。
     public static readonly int[] ShutterISOChoices = { 2000, 250, 200, 160, 125, 100, 80, 64 };
     public static string ShutterISOCommand(int value) => "shutter-iso=" + value.ToString(System.Globalization.CultureInfo.InvariantCulture);
@@ -57,7 +62,7 @@ public sealed class PhoneSaberDiscoveryResponder : IDisposable
             double now = SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp);
             Acknowledgements.Queue(id, fields, now, automatic);
             Volatile.Write(ref pendingCommand, BuildCommand(id, fields));
-            Volatile.Write(ref pendingUntil, now + CommandSeconds);
+            Volatile.Write(ref pendingUntil, now + CommandRetrySeconds(fields));
             if (fields == DefaultsCommand)
             {
                 PhoneSaberOperatorKeys.ResetDefaultsState();

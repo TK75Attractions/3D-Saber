@@ -11,7 +11,11 @@ from run_latency_host_tests import ROOT, SOURCE, block
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--revision", help="旧版の実ハンドラで同じ回帰を実行")
+    parser.add_argument("--retry-schedule", type=Path, help="実PC responderが偽時計で出した指示を配送する")
+    parser.add_argument("--ack-trace", type=Path, help="偽配送したACKをPCホストへ返すTSV")
     args = parser.parse_args()
+    if bool(args.retry_schedule) != bool(args.ack_trace):
+        parser.error("--retry-schedule と --ack-trace は組で指定してください")
     camera = (subprocess.check_output(
         ["git", "show", f"{args.revision}:{(SOURCE / 'CameraViewModel.swift').relative_to(ROOT)}"],
         cwd=ROOT, text=True) if args.revision else (SOURCE / "CameraViewModel.swift").read_text())
@@ -19,6 +23,8 @@ def main():
     support = "import Foundation\nfinal class LANLivenessProbe {\n"
     # 指示の型とACKの整形は実ソース。ネットワークへ出す直前のhost・本文を観測する。
     support += block(udp, "struct PCCommand:") + "\n"
+    start = udp.index("    static let commandPrefix =", udp.index("struct PCCommand:"))
+    support += udp[start:udp.index("    static func formatAck(", start)]
     support += block(udp, "static func formatAck(") + "\n"
     support += '''
     var replies: [(host: String, line: String)] = []
@@ -61,6 +67,29 @@ def main():
     support += block(camera, "func applyPCCommand(") + "\n}\n"
     tests = '''import XCTest
 final class PCCommandRecoveryTests: XCTestCase {
+    @MainActor func testLearningCacheOutlivesFiniteRecoveryWindowWithoutRelearning() {
+        for station in ["A", "B", ""] {
+            for seconds in [1, 10, 60] {
+                let model = CameraViewModel(); model.station = station
+                let command = LANLivenessProbe.PCCommand(id: 95, ignore: nil, clearIgnore: false,
+                                                       learnAreaSeconds: seconds, sourceHost: "192.0.2.1")
+                model.applyPCCommand(command)
+                let started = model.lanProbe.replies.last!.line
+                model.now = Double(seconds)
+                model.applyPCCommand(command)
+                XCTAssertEqual(model.lanProbe.replies.last!.line, started)
+                model.areaCompletion?(300, true, .init(minX: 0.2, minY: 0.1, maxX: 0.8, maxY: 0.9))
+                let completed = model.lanProbe.replies.last!.line
+                model.lanProbe.replies.removeAll() // 完了ACK全3通を偽配送で落とす。
+                for time in [Double(seconds) + 0.5, Double(seconds) + 5] {
+                    model.now = time
+                    model.applyPCCommand(command)
+                    XCTAssertEqual(model.lanProbe.replies.last!.line, completed)
+                    XCTAssertEqual(model.effects, ["area"])
+                }
+            }
+        }
+    }
     @MainActor func testSwingLearningRepliesWithBoundsAndRunsOnlyOnceForEachStation() {
         for station in ["A", "B"] {
             let model = CameraViewModel(); model.station = station
@@ -221,6 +250,58 @@ final class PCCommandRecoveryTests: XCTestCase {
         XCTAssertTrue(model.lanProbe.replies.isEmpty)
     }
 }
+
+// 指示は実C#が生成し、ACKは実Swiftが生成する。通信・カメラ・時計だけを代用する。
+@MainActor func replayRetrySchedule(_ schedule: String, output: String) throws {
+    let steps = try String(contentsOfFile: schedule, encoding: .utf8).split(separator: "\\n").map {
+        $0.split(separator: "\\t", maxSplits: 1, omittingEmptySubsequences: false).map(String.init)
+    }
+    var trace: [String] = []
+    for pcStation in ["A", "B"] {
+        for phoneStation in [pcStation, ""] {
+            for loseAll in [false, true] {
+                let model = CameraViewModel(); model.station = phoneStation
+                trace.append("case\\t\\(pcStation)\\t\\(phoneStation.isEmpty ? "none" : phoneStation)\\t\\(loseAll ? "lost" : "recover")")
+                let commandText = steps.first![1]
+                trace.append("queue\\t0\\t\\(commandText)")
+                var finishesAt: Double?, completed = false, firstCompletion = true, dropped = 0
+                func drain(_ time: Double) {
+                    for reply in model.lanProbe.replies {
+                        let learned = reply.line.contains("result=learned")
+                        let drop = learned && (firstCompletion || loseAll)
+                        for _ in 0..<3 {
+                            trace.append("\\(drop ? "drop" : "ack")\\t\\(time)\\t\\(reply.line)")
+                            if drop { dropped += 1 }
+                        }
+                        if learned { firstCompletion = false }
+                    }
+                    model.lanProbe.replies.removeAll()
+                }
+                for step in steps {
+                    let time = Double(step[0])!
+                    if let finish = finishesAt, time >= finish, !completed {
+                        model.now = finish
+                        model.areaCompletion?(300, true, .init(minX: 0.2, minY: 0.1, maxX: 0.8, maxY: 0.9))
+                        completed = true
+                        drain(finish)
+                    }
+                    model.now = time
+                    if !step[1].isEmpty {
+                        var command = LANLivenessProbe.parseCommand(step[1])!
+                        command.sourceHost = "192.0.2.1"
+                        model.applyPCCommand(command)
+                        if finishesAt == nil { finishesAt = time + Double(command.learnAreaSeconds!) }
+                        drain(time)
+                    }
+                }
+                precondition(model.effects == ["area"], "同じIDの再送で再学習しない")
+                precondition(dropped >= 3, "初回の完了ACK全3通を落とす")
+                trace.append("end")
+            }
+        }
+    }
+    try (trace.joined(separator: "\\n") + "\\n").write(toFile: output, atomically: true, encoding: .utf8)
+}
 '''
     developer = Path(subprocess.check_output(["xcode-select", "-p"], text=True).strip()) / "Platforms/MacOSX.platform/Developer"
     frameworks = developer / "Library/Frameworks"
@@ -232,7 +313,10 @@ final class PCCommandRecoveryTests: XCTestCase {
 import Darwin
 let suite = PCCommandRecoveryTests.defaultTestSuite
 suite.run()
-guard let run = suite.testRun, run.executionCount == 10, run.hasSucceeded else { exit(1) }
+guard let run = suite.testRun, run.executionCount == 11, run.hasSucceeded else { exit(1) }
+if CommandLine.arguments.count == 3 {
+    try MainActor.assumeIsolated { try replayRetrySchedule(CommandLine.arguments[1], output: CommandLine.arguments[2]) }
+}
 ''')
         subprocess.run(["xcrun", "swiftc", "-O", "-module-cache-path", str(tmp / "cache"),
                         str(tmp / "Support.swift"), str(tmp / "Tests.swift"), str(tmp / "main.swift"),
@@ -240,7 +324,8 @@ guard let run = suite.testRun, run.executionCount == 10, run.hasSucceeded else {
                         "-Xlinker", "-rpath", "-Xlinker", str(frameworks),
                         "-Xlinker", "-rpath", "-Xlinker", str(developer / "usr/lib"),
                         "-o", str(tmp / "tests")], check=True)
-        return subprocess.run([str(tmp / "tests")], timeout=30).returncode
+        replay = [str(args.retry_schedule), str(args.ack_trace)] if args.retry_schedule else []
+        return subprocess.run([str(tmp / "tests")] + replay, timeout=30).returncode
 
 
 if __name__ == "__main__":

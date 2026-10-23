@@ -5,7 +5,7 @@ using UnityEngine.InputSystem;
 
 // 運営のキーボード操作（2026-10-18 ユーザー: スマホに無視させる操作は F8 の画面ではなくキーで直接）。
 // Ctrl+Shift+文字。Sは固定シャッター、DはISO。修飾中の入力は来場者操作に数えない。
-// 押すと PhoneSaberDiscoveryResponder.QueueCommand で、探索応答と一緒にスマホへ 10 秒送り、返事を画面に出す。
+// 押すと PhoneSaberDiscoveryResponder.QueueCommand で、探索応答と一緒に期限まで送り、返事を画面に出す。
 public sealed class PhoneSaberOperatorKeys : MonoBehaviour
 {
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
@@ -145,6 +145,7 @@ public sealed class PhoneSaberOperatorKeys : MonoBehaviour
     int toastRevision = -1;
     double nextToastRefresh = double.PositiveInfinity;
     public const string NoReplyMessage = "スマホから返事がありません（送信中か・同じネットワークか確認）";
+    public const string MissingCompletionMessage = "完了の返事を確認できません。台の準備をやり直してください";
     public static string LastResultText => StatusText(PhoneSaberDiscoveryResponder.Acknowledgements,
         SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp));
 
@@ -176,12 +177,13 @@ public sealed class PhoneSaberOperatorKeys : MonoBehaviour
     {
         if (!store.Latest(out int id, out string fields, out double queuedAt)) return "";
         var replies = store.Read(id);
-        if (replies.Length > 0) return string.Join("\n", replies.Select(a => ResultText(a, fields)));
+        bool completionMissing = now >= queuedAt + PhoneSaberDiscoveryResponder.CommandRetrySeconds(fields);
+        if (replies.Length > 0) return string.Join("\n", replies.Select(a => ResultText(a, fields, completionMissing)));
         return now - queuedAt >= 3 ? NoReplyMessage
             : PendingLabel(fields) + "（送信中）";
     }
 
-    public static string ResultText(PhoneSaberAcknowledgement ack, string command)
+    public static string ResultText(PhoneSaberAcknowledgement ack, string command, bool completionMissing = false)
     {
         string phone = ack.Platform == "ios" ? "iPhone" : "Android";
         if (ack.Station != "none") phone += "（台" + ack.Station + "）";
@@ -198,7 +200,8 @@ public sealed class PhoneSaberOperatorKeys : MonoBehaviour
                 result = "今は" + color + "映っていないので無視するものがありません";
                 break;
             case "cleared": result = ack.Detail == "area" ? "プレイ範囲を消しました" : "無視をすべて消しました"; break;
-            case "learning": result = command.StartsWith("ignore=")
+            case "learning": result = completionMissing && ack.Platform == "ios" && command.StartsWith("learn-area=") ? MissingCompletionMessage
+                : command.StartsWith("ignore=")
                 ? "無視する物を覚えています（剣を消して3秒待つ）"
                 : "プレイ範囲を覚えています（" + ack.Detail.TrimEnd('s') + "秒、範囲いっぱいに振る）"; break;
             case "learned": result = "プレイ範囲を覚えました（" + ack.SampleCount + "回分）"; break;
@@ -229,16 +232,26 @@ public sealed class PhoneSaberOperatorKeys : MonoBehaviour
     public static bool ShouldRefreshToast(int revision, int previousRevision, double now, double nextRefresh)
         => revision != previousRevision || now >= nextRefresh;
 
+    // ACK が増えなくても無応答・完了未確認へ移る。開始 ACK の再送では期限を延ばさない。
+    public static double NextToastRefreshAt(PhoneSaberAcknowledgementStore store, double now)
+    {
+        if (!store.Latest(out _, out string fields, out double queuedAt, out bool automatic) || automatic)
+            return double.PositiveInfinity;
+        if (now < queuedAt + 3) return queuedAt + 3;
+        double deadline = queuedAt + PhoneSaberDiscoveryResponder.CommandRetrySeconds(fields);
+        return fields.StartsWith("learn-area=") && now < deadline ? deadline : double.PositiveInfinity;
+    }
+
     void RefreshToast()
     {
         var store = PhoneSaberDiscoveryResponder.Acknowledgements;
         int revision = store.Revision;
         double now = SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp);
-        // 変更なしのフレームは文字列・LINQ・配列を作らない。時計だけの変化は3秒の無応答判定時だけ。
+        // 変更なしのフレームは文字列・LINQ・配列を作らない。無応答と学習完了の期限だけ再描画する。
         if (!ShouldRefreshToast(revision, toastRevision, now, nextToastRefresh)) return;
         toastRevision = revision;
-        bool latest = store.Latest(out int id, out _, out double queuedAt, out bool automatic);
-        nextToastRefresh = latest && !automatic && now < queuedAt + 3 ? queuedAt + 3 : double.PositiveInfinity;
+        store.Latest(out int id, out _, out _);
+        nextToastRefresh = NextToastRefreshAt(store, now);
         string message = ToastText(store, now);
         if (message == displayed && id == displayedId) return;
         displayed = message; displayedId = id;

@@ -39,8 +39,17 @@ class Frames
     static int Main(string[] args)
     {
 #if PHONESABER_CALIBRATION_HOST
+        if (args.Length == 2 && args[0] == "learning-schedule")
+        { WriteLearningSchedule(args[1]); return 0; }
+        if (args.Length == 2 && args[0] == "learning-replay")
+        { ReplayLearningAcknowledgements(args[1]); return 0; }
         RunFixture(typeof(PhoneSaberAcknowledgementTests));
         RunFixture(typeof(PhoneSaberPositionCalibrationTests));
+        var discovery = new PhoneSaberDiscoveryResponderTests();
+        foreach (int seconds in new[] { 1, 10, 60 })
+            discovery.LearningRetriesPastCompletionWithTheSameIdAndStopsWithinIPhoneCache(seconds);
+        discovery.DefaultsCommandAndNewSenderRule();
+        Console.WriteLine("Discovery retry host: 4 PASS (socket lifecycle tests excluded)");
         Console.WriteLine("Calibration host: Unity lifecycle / PlayerPrefs / JSON substituted; actual ACK / mapping / InputPoint methods executed");
         return 0;
 #else
@@ -131,6 +140,105 @@ class Frames
         Console.WriteLine(type.Name + ": " + passed + " PASS");
     }
 
+#if PHONESABER_CALIBRATION_HOST
+    static void WriteLearningSchedule(string path)
+    {
+        CommandHostClock.Now = 0;
+        int id = PhoneSaberDiscoveryResponder.QueueCommand("learn-area=10");
+        var current = typeof(PhoneSaberDiscoveryResponder).GetMethod("CurrentCommand", BindingFlags.Static | BindingFlags.NonPublic);
+        using (var output = new System.IO.StreamWriter(path))
+            foreach (double now in new[] { .2, 5, 10, 10.5, 11, 14.999, 15.001, 16 })
+            {
+                CommandHostClock.Now = now;
+                var bytes = (byte[])current.Invoke(null, null);
+                string command = bytes == null ? "" : System.Text.Encoding.ASCII.GetString(bytes);
+                if (command.Length > 0) Assert.AreEqual(PhoneSaberDiscoveryResponder.BuildCommand(id, "learn-area=10"), command);
+                output.WriteLine(now.ToString(System.Globalization.CultureInfo.InvariantCulture) + "\t" + command);
+            }
+        Assert.AreEqual(0, PhoneSaberDiscoveryResponder.CommandSecondsLeft(16));
+    }
+
+    static void ReplayLearningAcknowledgements(string path)
+    {
+        var store = new PhoneSaberAcknowledgementStore();
+        InputPoint input = null;
+        string station = "", phoneStation = "", outcome = "", lastCompletion = "";
+        int applied = 0, cases = 0, dropped = 0, id = 0;
+        foreach (string line in System.IO.File.ReadLines(path))
+        {
+            string[] parts = line.Split('\t');
+            if (parts[0] == "case")
+            {
+                station = parts[1]; phoneStation = parts[2]; outcome = parts[3];
+                store = new PhoneSaberAcknowledgementStore();
+                input = new CalibrationHostObject("ACK回収").AddComponent<InputPoint>();
+                typeof(InputPoint).GetField("phoneSaberStation", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(input, station);
+                input.camWidth = 1920; input.camHeight = 1080;
+                applied = dropped = 0; lastCompletion = "";
+            }
+            else if (parts[0] == "queue")
+            {
+                id = int.Parse(parts[2].Split(' ')[2].Substring(3));
+                store.Queue(id, "learn-area=10", 0);
+            }
+            else if (parts[0] == "ack" || parts[0] == "drop")
+            {
+                double now = double.Parse(parts[1], System.Globalization.CultureInfo.InvariantCulture);
+                Assert.IsTrue(PhoneSaberAcknowledgement.TryParse(parts[2], out var ack));
+                if (ack.Result == "learned") lastCompletion = parts[2];
+                if (parts[0] == "drop") { dropped++; continue; }
+                Assert.IsTrue(store.Receive(ack, "192.0.2.1"));
+                if (input.ApplyLearnedPositionCalibration(store, "recovered")) applied++;
+                if (ack.Result == "learning")
+                    StringAssert.Contains("覚えています", PhoneSaberOperatorKeys.StatusText(store, now));
+                else
+                {
+                    Assert.Greater(now, 10, "10秒を過ぎた同一IDの再送で完了を回収する");
+                    Assert.AreEqual(1, applied);
+                }
+            }
+            else if (parts[0] == "end")
+            {
+                Assert.GreaterOrEqual(dropped, 3, "初回の完了ACK全3通を破棄する");
+                Assert.AreEqual(outcome == "recover" ? 1 : 0, applied, "PC補正も一度だけ適用する");
+                string status = PhoneSaberOperatorKeys.StatusText(store, 16);
+                Assert.AreEqual(status, PhoneSaberOperatorKeys.ToastText(store, 16));
+                StringAssert.Contains(outcome == "recover" ? "覚えました" : "完了の返事を確認できません", status);
+                // 再送期限後の正常ACKも有効。新学習・リセット後の旧ACKは適用しない。
+                Assert.IsTrue(PhoneSaberAcknowledgement.TryParse(lastCompletion, out var late));
+                store.Receive(late, "192.0.2.1");
+                Assert.AreEqual(outcome == "lost", input.ApplyLearnedPositionCalibration(store, "late"));
+                StringAssert.Contains("覚えました", PhoneSaberOperatorKeys.StatusText(store, 30));
+                store.Queue(id + 1, "learn-area=10", 31);
+                store.Receive(late, "192.0.2.1");
+                Assert.IsFalse(input.ApplyLearnedPositionCalibration(store, null));
+                store.DiscardLearnedAreas(station);
+                store.Receive(new PhoneSaberAcknowledgement(id + 1, station, "ios", "learned", late.Detail), "192.0.2.1");
+                Assert.IsFalse(input.ApplyLearnedPositionCalibration(store, null));
+                Console.WriteLine("iPhone -> PC recovery " + station + "/" + phoneStation + " " + outcome + ": PASS");
+                cases++;
+            }
+        }
+        Assert.AreEqual(8, cases);
+        Console.WriteLine("Cross-language fake clock/delivery: 8 PASS (A/B, unspecified, first/all completion ACKs lost)");
+        // 実RefreshToastも動かし、ACK Revisionが同じまま時計だけ進める。
+        var global = PhoneSaberDiscoveryResponder.Acknowledgements;
+        global.Queue(88000, "learn-area=10", 0);
+        global.Receive(new PhoneSaberAcknowledgement(88000, "A", "ios", "learning", "10s"), "phone");
+        var keys = (PhoneSaberOperatorKeys)System.Runtime.Serialization.FormatterServices.GetUninitializedObject(typeof(PhoneSaberOperatorKeys));
+        var refresh = typeof(PhoneSaberOperatorKeys).GetMethod("RefreshToast", BindingFlags.Instance | BindingFlags.NonPublic);
+        var displayed = typeof(PhoneSaberOperatorKeys).GetField("displayed", BindingFlags.Instance | BindingFlags.NonPublic);
+        foreach (double now in new[] { 1, 3, 14.999, 15 })
+        {
+            CommandHostClock.Now = now;
+            refresh.Invoke(keys, null);
+            StringAssert.Contains(now < 15 ? "覚えています" : "完了の返事を確認できません", (string)displayed.GetValue(keys));
+        }
+        Assert.AreEqual(PhoneSaberOperatorKeys.LastResultText, displayed.GetValue(keys));
+        Console.WriteLine("Actual RefreshToast + F8 clock-only deadline: PASS");
+    }
+#endif
+
     static bool Measure(string label, Action<int> step)
     {
         const int count = 1000000, repetitions = 21;
@@ -153,6 +261,14 @@ class Frames
 }
 
 #if PHONESABER_CALIBRATION_HOST
+// 指示生成と表示だけを偽時計へ接続する。認識・判定・座標取り込みの時計は変えない。
+public static class CommandHostClock
+{
+    public static double Now;
+    public static long Timestamp => (long)(Now * 1000000);
+    public static double ToSeconds(long ticks) => ticks / 1000000.0;
+}
+
 // native objectを作らず既存のNUnit全件を実行する。保存はメモリ内で隔離する。
 public sealed class CalibrationHostObject : IDisposable
 {
