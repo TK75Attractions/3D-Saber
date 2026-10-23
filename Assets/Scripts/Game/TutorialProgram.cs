@@ -57,7 +57,7 @@ public static class TutorialProgram
     public const float RightX = 1.65f, LeftX = -1.65f, BaseY = .5f, LowY = -.4f;
 
     // 難易度を選ぶ前に挟まるので、Easy / Normal に共通の型。左右・斜めの矢印は曲の中で覚える。
-    public static readonly string[] CommonFlow = { "hands", "tapRed", "tapBlue", "tapMix", "arrowEasy", "long", "gold", "simul", "ready" };
+    public static readonly string[] CommonFlow = { "hands", "tapRed", "tapBlue", "tapMix", "gold", "simul", "arrowEasy", "long", "ready" };
 
     static TutorialPatternNote Tap(float x, float y, string color, float dt) => new TutorialPatternNote { dt = dt, x = x, y = y, color = color, type = "tap" };
     static TutorialPatternNote Arrow(float x, float y, string color, string direction, float dt) => new TutorialPatternNote { dt = dt, x = x, y = y, color = color, type = "direction", direction = direction };

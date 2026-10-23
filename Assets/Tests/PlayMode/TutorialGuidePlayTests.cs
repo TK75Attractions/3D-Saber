@@ -96,14 +96,19 @@ public class TutorialGuidePlayTests
     {
         double now = tutorial.DemonstrationTime;
         int index = Array.IndexOf(TutorialProgram.CommonFlow, "long");
+        Assert.AreEqual(7, index);
         typeof(TutorialController).GetMethod("BeginStep", Private).Invoke(tutorial,
             new object[] { index, now - TutorialProgram.LongPracticeTimeoutSeconds - .1 });
+        Assert.AreEqual("long", tutorial.Step.Id);
         tutorial.Tick(.016f);
         Assert.True(tutorial.StepDone); Assert.AreEqual(0, tutorial.Successes);
         Assert.AreEqual("timeout", tutorial.Records[tutorial.Records.Count - 1].Reason);
         Assert.AreNotEqual("OK!", tutorial.BannerTitle);
-        typeof(TutorialController).GetMethod("BeginStep", Private).Invoke(tutorial,
-            new object[] { Array.IndexOf(TutorialProgram.CommonFlow, "ready"), now });
+        // 終了表示の待ちだけを省き、Tick の次段処理で準備へ進む。
+        typeof(TutorialController).GetField("stepEndAt", Private).SetValue(tutorial, now - .1);
+        tutorial.Tick(.016f);
+        Assert.AreEqual(8, tutorial.StepIndex); Assert.AreEqual("ready", tutorial.Step.Id);
+        Assert.False(tutorial.StepDone);
         tutorial.Overlay.Tick(.016f);
         Assert.AreEqual("曲を選びに行こう", tutorial.Overlay.TitleText);
         yield return null;

@@ -95,7 +95,8 @@ public class GameHUDSkin : MonoBehaviour
     private TextMeshProUGUI flickWarningText;
     private TextMeshProUGUI difficultyText;
     private Text songTitleText;
-    private RectTransform progressFill;
+    private RectTransform progressFill, progressCursor;
+    private SongProgressSections progressSections;
 
     private RectTransform tierRT;
     private Vector2 tierBasePos;
@@ -482,22 +483,58 @@ public class GameHUDSkin : MonoBehaviour
         brt.anchorMax = new Vector2(1f, 1f);
         brt.pivot = new Vector2(0.5f, 1f);
         brt.anchoredPosition = Vector2.zero;
-        brt.sizeDelta = new Vector2(0f, 12f);
+        brt.sizeDelta = new Vector2(0f, 18f);
         var bgImg = bg.GetComponent<Image>();
-        bgImg.color = new Color(1f, 1f, 1f, 0.08f);
+        bgImg.color = new Color(.035f, .045f, .085f);
         bgImg.raycastTarget = false;
 
         var fill = new GameObject("ProgressFill", typeof(RectTransform), typeof(Image));
         fill.transform.SetParent(bg.transform, false);
         progressFill = fill.GetComponent<RectTransform>();
         progressFill.anchorMin = new Vector2(0f, 0f);
-        progressFill.anchorMax = new Vector2(0f, 1f); // x は Update で伸ばす
+        progressFill.anchorMax = new Vector2(0f, 2f / 3f); // 下の12pxで進行量を示す
         progressFill.offsetMin = Vector2.zero;
         progressFill.offsetMax = Vector2.zero;
         progressFill.pivot = new Vector2(0f, 0.5f);
         var fillImg = fill.GetComponent<Image>();
         fillImg.color = UISkinPalette.Cyan;
         fillImg.raycastTarget = false;
+
+        // 上の4pxは山場専用。進行量で覆わず、通過した山場も残す。
+        var marks = new GameObject("ProgressSections", typeof(RectTransform), typeof(SongProgressSections));
+        marks.transform.SetParent(bg.transform, false);
+        progressSections = marks.GetComponent<SongProgressSections>();
+        var mrt = progressSections.rectTransform;
+        mrt.anchorMin = new Vector2(0f, 1f); mrt.anchorMax = Vector2.one;
+        mrt.pivot = new Vector2(.5f, 1f);
+        mrt.anchoredPosition = new Vector2(0f, -1f); mrt.sizeDelta = new Vector2(0f, 4f);
+        progressSections.raycastTarget = false;
+        progressSections.RefreshStyle();
+
+        var cursor = new GameObject("ProgressCursor", typeof(RectTransform), typeof(Image), typeof(Outline));
+        cursor.transform.SetParent(bg.transform, false);
+        progressCursor = cursor.GetComponent<RectTransform>();
+        progressCursor.anchorMin = Vector2.zero; progressCursor.anchorMax = new Vector2(0f, 1f);
+        progressCursor.pivot = new Vector2(0f, .5f);
+        progressCursor.sizeDelta = new Vector2(3f, 0f); progressCursor.anchoredPosition = Vector2.zero;
+        cursor.GetComponent<Image>().color = Color.white;
+        cursor.GetComponent<Image>().raycastTarget = false;
+        cursor.GetComponent<Outline>().effectColor = new Color(.035f, .045f, .085f);
+        cursor.GetComponent<Outline>().effectDistance = new Vector2(1f, 0f);
+    }
+
+    internal void SetProgressSections(StagePerformanceTimeline timeline, StagePerformanceTimeline.PlayRange range)
+    {
+        progressSections.SetTimeline(timeline, range.Start, range.End);
+        SetProgressPosition(0f);
+    }
+
+    private void SetProgressPosition(float p)
+    {
+        progressFill.anchorMax = new Vector2(p, 2f / 3f);
+        progressCursor.anchorMin = new Vector2(p, 0f);
+        progressCursor.anchorMax = new Vector2(p, 1f);
+        progressCursor.pivot = new Vector2(p, .5f);
     }
 
     private void RefreshStaticTexts()
@@ -868,11 +905,12 @@ public class GameHUDSkin : MonoBehaviour
 
     private void UpdateProgress()
     {
+        if (progressSections != null) progressSections.RefreshStyle();
         // 曲を止めると SongTime は 0 に戻るので、終わったあと(コンボ点の演出の間)は最後の位置のまま残す。
         if (progressFill == null || songPlayer == null || !songPlayer.IsScheduled) return;
         double end = songPlayer.ProgressEndSeconds > 0 ? songPlayer.ProgressEndSeconds : songPlayer.Duration;
-        float p = Progress01(songPlayer.SongTime, songPlayer.PlayStartSeconds, end);
-        progressFill.anchorMax = new Vector2(p, 1f);
+        progressSections.SetRange(songPlayer.PlayStartSeconds, end);
+        SetProgressPosition(Progress01(songPlayer.SongTime, songPlayer.PlayStartSeconds, end));
     }
 
     // ---------------------------------------------------------------

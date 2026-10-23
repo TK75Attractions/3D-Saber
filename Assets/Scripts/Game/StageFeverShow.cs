@@ -88,6 +88,7 @@ public sealed partial class StageFeverShow : MonoBehaviour
         endTimes = EndSoundTimes(strong);
         cues = BuildCues(chart);
         BuildBeats(chart);
+        BuildLaserShapes();
         if (mesh == null) Build();
         stageCamera = Camera.main;
         baseBackground = GameStageSkin.BackgroundColor;
@@ -370,12 +371,13 @@ public sealed partial class StageFeverShow : MonoBehaviour
             float laserPulse = BeatPulseAt(laser.poseTime, out bool laserDownbeat);
             float beat = Mathf.Lerp(.25f, .7f, laserPulse);
             float thick = 1f + (laserDownbeat ? .9f : .35f) * laserPulse;
+            float fan = LaserFanAt(laser.poseTime);
+            float sway = LaserSwayAt(laser.poseTime, 0, 1);
             for (int k = 0; k < LasersPerSide; k++)
                 for (int side = -1; side <= 1; side += 2)
                 {
-                    float sway = LaserSwayAt(laser.poseTime, k, side);
                     Vector3 origin = new Vector3(side * 6.5f, floor + .05f, 6 + k * 8);
-                    Vector3 direction = new Vector3(side * (.45f + sway), 1f, .55f + .1f * k).normalized;
+                    Vector3 direction = LaserDirection(fan, sway, k, side);
                     Color tint = (k + (side > 0 ? 1 : 0)) % 2 == 0 ? boostA : boostB;
                     if (laser.length > 0f && laser.width > 0f)
                         Beam(origin, origin + direction * laser.length, .06f * thick * laser.width,

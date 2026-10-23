@@ -324,6 +324,7 @@ public class GamePlayManager : MonoBehaviour
             SongLoudness.SourceMatches(Path.Combine(Application.streamingAssetsPath, "Songs", songId), stagePerformance.audioSha256));
         musicEndSeconds = playRange.End;
         songPlayer.ProgressEndSeconds = playRange.End;
+        if (useOverhauledStage) GameHUDSkin.Ensure().SetProgressSections(stagePerformance, playRange);
 
         // 譜面オフセット計算：
         //   chart.offsetMs（曲固有）+ extraOffsetSeconds（Inspector）+ GameSession.JudgmentOffsetMs（プレイヤー調整）

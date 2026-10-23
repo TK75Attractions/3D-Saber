@@ -27,9 +27,9 @@ public class TutorialProgramTests
         Assert.AreEqual(TutorialStepKind.Explain, steps[0].Kind);
         Assert.AreEqual("ready", steps[steps.Length - 1].Id);
         Assert.AreEqual(TutorialStepKind.Ready, steps[steps.Length - 1].Kind);
-        var ids = steps.Select(s => s.Id).ToList();
-        foreach (var required in new[] { "tapRed", "tapBlue", "tapMix", "arrowEasy", "long", "gold", "simul" })
-            CollectionAssert.Contains(ids, required);
+        CollectionAssert.AreEqual(
+            new[] { "hands", "tapRed", "tapBlue", "tapMix", "gold", "simul", "arrowEasy", "long", "ready" },
+            steps.Select(s => s.Id));
     }
 
     [Test]
@@ -39,6 +39,24 @@ public class TutorialProgramTests
         Assert.IsFalse(steps.Any(s => s.Kind == TutorialStepKind.Explain));
         Assert.AreEqual("tapRed", steps[0].Id);
         Assert.AreEqual(TutorialProgram.CommonFlow.Length - 1, steps.Length);
+        Assert.AreEqual(8, steps.Length);
+    }
+
+    [TestCase(true, 4)]
+    [TestCase(false, 3)]
+    public void ReorderedSteps_KeepTheirGoalsDirectionsAndTimings(bool includeHands, int firstIndex)
+    {
+        var steps = TutorialProgram.Build(TutorialProgram.CommonFlow, includeHands).Skip(firstIndex).Take(4).ToArray();
+        CollectionAssert.AreEqual(new[] { "gold", "simul", "arrowEasy", "long" }, steps.Select(s => s.Id));
+        Assert.IsTrue(steps.All(s => s.Kind == TutorialStepKind.Practice));
+        CollectionAssert.AreEqual(new[] { 1, 2, 2, 3 }, steps.Select(s => s.Goal));
+        CollectionAssert.AreEqual(new[] { false, true, false, false }, steps.Select(s => s.Simultaneous));
+        CollectionAssert.AreEqual(new[] { false, false, true, false }, steps.Select(s => s.NeedDirection));
+        CollectionAssert.AreEqual(new[] { CutDirection.Up, CutDirection.Down }, steps[2].RequiredDirections);
+        Assert.IsTrue(steps.Where(s => s.Id != "arrowEasy").All(s => s.RequiredDirections.Length == 0));
+        CollectionAssert.AreEqual(new[] { 4.0, 4.0, 4.0, 12.0 }, steps.Select(s => s.PeriodSeconds));
+        CollectionAssert.AreEqual(new[] { 15f, 15f, 15f, 30f },
+            steps.Select(s => s.TimeoutSeconds > 0 ? s.TimeoutSeconds : TutorialProgram.DefaultStepTimeoutSeconds));
     }
 
     [Test]

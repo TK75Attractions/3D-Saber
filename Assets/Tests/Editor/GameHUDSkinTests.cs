@@ -148,6 +148,17 @@ public class GameHUDSkinTests
         Assert.IsNotNull(t.Find("Difficulty"), "難易度");
         Assert.IsNotNull(t.Find("ProgressBg"), "進行バー背景");
         Assert.IsNotNull(t.Find("ProgressBg/ProgressFill"), "進行バー本体");
+        var bar = t.Find("ProgressBg").GetComponent<RectTransform>();
+        var fill = t.Find("ProgressBg/ProgressFill").GetComponent<RectTransform>();
+        var marks = t.Find("ProgressBg/ProgressSections").GetComponent<SongProgressSections>();
+        var cursor = t.Find("ProgressBg/ProgressCursor").GetComponent<RectTransform>();
+        Assert.AreEqual(18f, bar.sizeDelta.y);
+        Assert.AreEqual(2f / 3f, fill.anchorMax.y, 1e-6f);
+        Assert.AreEqual(4f, marks.rectTransform.sizeDelta.y);
+        Assert.AreEqual(3f, cursor.sizeDelta.x);
+        Assert.Greater(cursor.GetSiblingIndex(), marks.transform.GetSiblingIndex());
+        foreach (var graphic in bar.GetComponentsInChildren<Graphic>())
+            Assert.IsFalse(graphic.raycastTarget, graphic.name);
     }
 
     [Test]
