@@ -7,8 +7,8 @@ using UnityEngine.UI;
 // 曲の途中で剣を見失ったときの見張り(仕様面の点検 4、2026-10-21)。時刻を受け取って状態を返す純粋な判定。
 // ・届いていた色(赤・青)の端点つきの位置が、すべて LostSeconds 届かないと「見失った」(スタッフ向けの1行を出す)。
 // ・見失っていて、ノーツが来ている(画面にある・まもなく流れる)ときだけ曲を止める。休みの区間で剣を下ろしても止めない。
-// ・届いていた色がすべて、間を MaxGapSeconds 以下で StableSeconds 続けて届いたら 3・2・1 を数え、続きから再開する。
-//   片方しか戻らないときは、その色が OneColorResumeSeconds 続いたら数え始める(2026-10-22)。数える間にまた途切れたら待ちに戻る。
+// ・届き直したら、使っていた色の剣を輪に0.3秒そろえてから 3・2・1 を数える。
+//   5秒そろわなければ従来の安定受信による再開へ戻す。数える間に必要な色が途切れたら待ち直す。
 // 一度も届いていない色は待たない(青を使わない台・マウスで試す台では止めない)。
 public sealed class PlayTrackingWatch
 {
@@ -24,6 +24,13 @@ public sealed class PlayTrackingWatch
     struct Feed { public bool seen; public double last, streakStart; }
     readonly Feed[] feeds = new Feed[2];
     double countdownStart;
+    int countdownMask;
+    readonly PlayResumePose pose = new PlayResumePose();
+    int SeenMask => (Seen(0) ? 1 : 0) | (Seen(1) ? 2 : 0);
+    public int FreshMask(double now) =>
+        (Seen(0) && now - feeds[0].last <= MaxGapSeconds ? 1 : 0) |
+        (Seen(1) && now - feeds[1].last <= MaxGapSeconds ? 2 : 0);
+    public int PoseMask => State == Phase.Waiting && pose.Active && !pose.TimedOut ? SeenMask : 0;
     public Phase State { get; private set; }
     public bool Paused => State != Phase.Playing;
 
@@ -85,22 +92,32 @@ public sealed class PlayTrackingWatch
     // 3・2・1 を数えている途中なら、今から数え直す(音の出力先が変わって曲を読み直したあと。2026-10-22)。
     public void RestartCountdown(double now)
     {
+        pose.Reset();
         if (State == Phase.Countdown) countdownStart = now;
     }
 
     // 毎フレーム呼ぶ。notesComing=ノーツが画面にあるかまもなく流れる。止める/再開するフレームだけ要求を返す。
-    public Request Step(double now, bool notesComing)
+    public Request Step(double now, bool notesComing, int insideMask = 0)
     {
         switch (State)
         {
             case Phase.Playing:
+                pose.Reset();
                 if (notesComing && AllLost(now)) { State = Phase.Waiting; return Request.Pause; }
                 return Request.None;
             case Phase.Waiting:
-                if (Stable(now)) { State = Phase.Countdown; countdownStart = now; }
+                int fresh = FreshMask(now);
+                pose.Step(now, true, SeenMask, fresh, insideMask);
+                if (pose.Held || (pose.TimedOut && Stable(now)))
+                {
+                    countdownMask = fresh;
+                    State = Phase.Countdown; countdownStart = now;
+                    pose.Reset();
+                }
                 return Request.None;
             default:
-                if (!Stable(now)) { State = Phase.Waiting; return Request.None; }
+                if ((FreshMask(now) & countdownMask) != countdownMask)
+                { State = Phase.Waiting; pose.Reset(); return Request.None; }
                 if (now - countdownStart < ResumeCountdownSeconds) return Request.None;
                 State = Phase.Playing;
                 return Request.Resume;
@@ -150,6 +167,7 @@ public sealed class PlayTrackingStatus : MonoBehaviour
 {
     public const string PausedText = "一時停止中 ― 剣をカメラに映してね";
     public const string CheckingText = "剣を確認中…そのまま映してね";
+    public const string ReadyText = "同じ色の輪に、剣の真ん中を合わせてね";
     public const string ResumedText = "再開！";
     public const string StaffText = "スタッフへ：剣の位置が届きません。スマホとカメラを確認（Esc 2回で中断）";
     public static string ResumeText(double remaining) => "再開まで " + System.Math.Max(1, (int)System.Math.Ceiling(remaining));
@@ -176,6 +194,13 @@ public sealed class PlayTrackingStatus : MonoBehaviour
     string shownStatus, shownHeadline, shownWarning;
     bool shownStaff, shownPanel, shownRing;
     float dimLevel;
+    PlayRecoveryView recovery;
+    public PlayRecoveryView Recovery => recovery;
+    public void ConfigureRecovery(NoteSpawner notes, SaberCutJudge first, SaberCutJudge second) =>
+        recovery.Configure(notes, first, second);
+    public int RecoveryInsideMask() => recovery.InsideMask();
+    public void ShowRecovery(bool visible, InputPoint input, double now, int poseMask) =>
+        recovery.Show(visible, input, now, poseMask);
 
     public static PlayTrackingStatus Create(Transform parent, float statusTop)
     {
@@ -218,6 +243,7 @@ public sealed class PlayTrackingStatus : MonoBehaviour
         // 3・2・1 の進み具合の輪(見出しの左)。数えている間だけ出す。
         view.ring = SongSelectSkin.Graphic(view.panel, "ResumeRing", new Vector2(-470, 0), new Vector2(84, 84), SongSelectDiscGraphic.Shape.Ring, SongSelectSkin.Gold);
         view.ring.Width = 7; view.ring.Progress = 0; view.ring.gameObject.SetActive(false);
+        view.recovery = new PlayRecoveryView((RectTransform)root.transform, view.panel);
         view.panel.gameObject.SetActive(false);
         if (Application.isPlaying)
         {

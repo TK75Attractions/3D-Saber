@@ -135,6 +135,8 @@ public class SongLeadInPlayTests
         yield return OpenGame(true);
         var countdown = Object.FindFirstObjectByType<GameStartCountdown>();
         double zero = (double)typeof(SongPlayer).GetField("startDspTime", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(manager.songPlayer);
+        Assert.AreEqual(1.25f, manager.noteSpawner.approachTime, "Easyのふつうは、この曲だけ1.25秒");
+        Assert.AreEqual(1f, GameSession.NoteApproachTime, "保存した速さはそのまま");
         Assert.That(zero + 5.0, Is.EqualTo(countdown.SongStartDspTime).Within(.0001), "鳴らし始めは5秒目、曲の0秒はその5秒前");
         Assert.AreEqual(5.0, manager.songPlayer.PlayStartSeconds, 1 / 44100.0);
         Assert.AreEqual(107.85, manager.songPlayer.ProgressEndSeconds, 1e-9, "音が鳴り終わる秒(stage.json)");

@@ -411,7 +411,7 @@ namespace Saber.ChartEditor
             "本編の決まり（このツールが変更案に同じチェックをかけます）:",
             "- 青=左手、赤=右手、金=どちらの手でも切れる。x は -2.5〜2.5、y は -1.5〜1.5（coordScale 倍で配置）。",
             FormattableString.Invariant($"- 刃の線からノーツの中心まで {SaberChartLint.HitRange} 以内で当たる。時刻差 {SaberChartLint.SimultaneousMs:0}ms 以内は同時で、1振りでまとめて切れる。"),
-            FormattableString.Invariant($"- 同じ手の続きは、隣へなぞる並び（間 0.4〜{2 * SaberChartLint.HitRange}、矢印はなぞる向きと±{SaberChartLint.SweepArrowDegrees:0}°）なら1振りで続けて切れる。そうでなければ振り返す間を空ける（Hard {SaberChartLint.FastSameHandMs:0}ms・Easy/Normal {SaberChartLint.EasySameHandMs:0}ms 以上）。"),
+            FormattableString.Invariant($"- 同じ手の続きは、隣へなぞる並び（間 0.4〜{2 * SaberChartLint.HitRange}、矢印はなぞる向きと Easy ±{SaberChartLint.SweepArrowDegrees("easy"):0}°・Normal/Hard ±{SaberChartLint.SweepArrowDegrees("normal"):0}°）なら1振りで続けて切れる。そうでなければ振り返す間を空ける（Hard {SaberChartLint.FastSameHandMs:0}ms・Easy/Normal {SaberChartLint.EasySameHandMs:0}ms 以上）。"),
             FormattableString.Invariant($"- 同じ手のロングの途中に同じ手のノーツを置かない。内向きの同時押し（青が右向き・赤が左向きで近づく）を置かない。同じ手で同じ向きの矢印を {SaberChartLint.ResetMs:0}ms 未満で続けない（なぞりを除く）。"),
             "- Easy・Normal では左右の手を交差させない。下の難易度は上の難易度から間引いて作る（上にない時刻を足さない）。",
         });

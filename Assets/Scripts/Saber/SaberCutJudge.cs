@@ -109,6 +109,7 @@ public class SaberCutJudge : MonoBehaviour
     // 今の振り。止まるか向きが大きく変わるまでを1回とし、その振りで最後に切った時刻(未カットは NaN)と、
     // そのノーツに刃が届いた曲時計(なぞりの間隔を測る起点)を覚える。
     int strokeTick = -1;
+    ulong feedbackSwingId = WrongDirectionCueGate.NewSwing();
     bool strokeMoving;
     Vector2 strokeDirection;
     float strokeRest;
@@ -539,7 +540,7 @@ public class SaberCutJudge : MonoBehaviour
         Vector2 motion = new Vector2(velocity.x, velocity.y);
         double? judged = clocked ? ScoreTime(note, p, motion) : Finite(p.bestSongTime) ? p.bestSongTime : (double?)null;
         Vector2? direction = clocked ? CutDirectionFor(note, p, motion) : (Vector2?)null;
-        bool accepted = note.CutAtSongTime(p.hitPoint, velocity, imuHint, EffectiveHand(), judged, DirectionTolerance(), direction);
+        bool accepted = note.CutAtSongTime(p.hitPoint, velocity, imuHint, EffectiveHand(), judged, DirectionTolerance(), direction, feedbackSwingId);
         if (!accepted || !Grouped(note)) return;
         // この振りで切った時刻を進める(同時のノーツは最初の1つで決まる)。次のなぞりの間隔は、刃がこのノーツに届いた時刻から測る。
         if (double.IsNaN(strokeGroupTime) || note.HitTime - strokeGroupTime > SimultaneousSeconds)
@@ -737,6 +738,7 @@ public class SaberCutJudge : MonoBehaviour
 
     void NextStroke()
     {
+        feedbackSwingId = WrongDirectionCueGate.NewSwing();
         strokeMoving = false;
         strokeRest = 0;
         strokeGroupTime = strokeGroupReach = double.NaN;

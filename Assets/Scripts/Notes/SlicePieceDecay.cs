@@ -22,7 +22,7 @@ public class SlicePieceDecay : MonoBehaviour
     bool hasEmission;
     float flashAge = float.PositiveInfinity, flashSeconds = .3f;
     internal NoteFragmentPool Pool;
-    internal void PrepareForRent() { released=false; }
+    internal void PrepareForRent() { released=false; gravity=false; gravityScale=1f; }
     public Mesh ReusableMesh => ownedMesh != null ? ownedMesh : ownedMesh = new Mesh { name="NoteSlice", hideFlags=HideFlags.DontSave };
     void Awake() { mr=GetComponent<MeshRenderer>(); }
     public void SetOwnedMesh(Mesh mesh)

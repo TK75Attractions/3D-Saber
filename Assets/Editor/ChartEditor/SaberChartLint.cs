@@ -25,8 +25,8 @@ namespace Saber.ChartEditor
     {
         // 同時とみなす時刻の差(本編の SaberCutJudge.SimultaneousSeconds)。
         public const float SimultaneousMs = SaberCutJudge.SimultaneousSeconds * 1000f;
-        // なぞりで続けて切れる矢印の、なぞる向きからの幅(±度。本編の SaberCutJudge.DefaultDirectionToleranceDegrees)。
-        public const float SweepArrowDegrees = SaberCutJudge.DefaultDirectionToleranceDegrees;
+        // 難易度ごとの許しを、本編と同じ規則から求める。
+        public static float SweepArrowDegrees(string difficulty) => GameDifficultyRules.DirectionDegrees(difficulty);
         // 刃の線からノーツの中心まで、これ以内なら当たる(本編の刃 0.32 + ノーツ 0.88)。
         public const float HitRange = 1.2f;
         // 本編が同時押しの線(同時線)を引く時刻の差(NoteSpawner.SimultaneousEpsilonSeconds)。
@@ -70,7 +70,7 @@ namespace Saber.ChartEditor
             bool easier = level == "easy" || level == "normal";
             CheckFormat(chart, audioLengthMs, issues);
             foreach (string hand in new[] { SaberChartUtility.ColorBlue, SaberChartUtility.ColorRed })
-                CheckHand(chart, hand, easier, issues);
+                CheckHand(chart, hand, easier, SweepArrowDegrees(level), issues);
             CheckBothHands(chart, easier, issues);
             CheckDensity(chart, level, issues);
             return issues.OrderBy(i => i.timeMs).ThenBy(i => i.level).ThenBy(i => i.rule, StringComparer.Ordinal).ToList();
@@ -186,7 +186,7 @@ namespace Saber.ChartEditor
         }
 
         // 同じ手の流れ。金(どちらの手でも切れる)は手の列に入れない。
-        static void CheckHand(SaberChartDocument chart, string color, bool easier, List<SaberChartIssue> issues)
+        static void CheckHand(SaberChartDocument chart, string color, bool easier, float arrowDegrees, List<SaberChartIssue> issues)
         {
             string handName = color == SaberChartUtility.ColorBlue ? "左手(青)" : "右手(赤)";
             List<List<int>> groups = Groups(chart, Enumerable.Range(0, chart.notes.Count)
@@ -216,7 +216,7 @@ namespace Saber.ChartEditor
                 if (g == 0) continue;
                 List<int> previous = groups[g - 1];
                 float gap = time - chart.notes[previous[0]].time;
-                bool sweep = Sweepable(chart, previous, group);
+                bool sweep = Sweepable(chart, previous, group, arrowDegrees);
                 if (gap < FastSameHandMs)
                 {
                     if (sweep)
@@ -298,8 +298,8 @@ namespace Saber.ChartEditor
         }
 
         // 1振りで隣へなぞって続けて切れる並びか(本編の「なぞり」と同じ考え)。
-        // 同じ位置の連打はなぞれない。矢印があれば、なぞる向きと SweepArrowDegrees 以内で合っていること。
-        static bool Sweepable(SaberChartDocument chart, List<int> from, List<int> to)
+        // 同じ位置の連打はなぞれない。矢印があれば、その難易度の許し以内で合っていること。
+        static bool Sweepable(SaberChartDocument chart, List<int> from, List<int> to, float arrowDegrees)
         {
             Vector2 a = Center(chart, from), b = Center(chart, to), d = b - a;
             float distance = d.magnitude;
@@ -307,7 +307,7 @@ namespace Saber.ChartEditor
             foreach (int i in from.Concat(to))
             {
                 Vector2 arrow = Arrow(chart.notes[i].direction);
-                if (arrow != Vector2.zero && Vector2.Dot(arrow, d / distance) < Mathf.Cos(SweepArrowDegrees * Mathf.Deg2Rad)) return false;
+                if (arrow != Vector2.zero && Vector2.Dot(arrow, d / distance) < Mathf.Cos(arrowDegrees * Mathf.Deg2Rad)) return false;
             }
             return true;
         }

@@ -97,6 +97,12 @@ public class InputPoint : MonoBehaviour
     // SaberInputBridge が「UDP 無音 → マウスフォールバック/非表示」を判定するのに使う。
     public double LastReceivedTime { get; private set; } = -1000.0;
     public double LastReceivedTime2 { get; private set; } = -1000.0;
+    // 最後に採用したカメラの中点。位置補正・感度補正の前、画像内の 0..1。
+    // 小窓用の時刻は受信機の再起動でも残す。古い点として表示し、現在位置とは扱わない。
+    public Vector2 LastCameraPosition01 { get; private set; }
+    public Vector2 LastCameraPosition012 { get; private set; }
+    public double LastCameraReceivedTime { get; private set; } = -1000;
+    public double LastCameraReceivedTime2 { get; private set; } = -1000;
     // UDP receive() 完了時点のOS monotonic clock。Task 1のCamera/IMU照合は
     // UnityのUpdate時刻ではなく、この受信時刻をSwingEventと同じ時計で使う。
     public double LastReceivedMonotonicTime { get; private set; } = double.NegativeInfinity;
@@ -876,6 +882,7 @@ public class InputPoint : MonoBehaviour
             if (RedCoordinateSender != sender) RedCoordinateTiming.ResetSource();
             RedCoordinateSender = sender;
             LastRaw = new Vector2(x, y);
+            LastCameraPosition01 = Normalized01(x, y, camWidth, camHeight, pixelStick1);
             if (calibrated) CalibrateCoordinates(ref x, ref y, ref x1a, ref y1a, ref x1b, ref y1b, updatedStick);
             // 位置補正済みなら従来どおりピクセル。補正なしでも、ピクセルの4値packetは中点・両端・LocalStick をそろえてピクセルにする。
             bool forcePixels1 = calibrated || pixelStick1;
@@ -913,6 +920,7 @@ public class InputPoint : MonoBehaviour
             double appliedAt = SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp);
             // 取込み待ちの時間を鮮度へ戻し、古い受信を新着扱いしない。
             LastReceivedTime = Time.realtimeSinceStartupAsDouble - (appliedAt - LastReceivedMonotonicTime);
+            LastCameraReceivedTime = LastReceivedTime;
             RedCoordinateTiming.Applied(LastReceivedMonotonicTime, appliedAt);
             if (debugCoordinates)
             {
@@ -930,6 +938,7 @@ public class InputPoint : MonoBehaviour
             if (BlueCoordinateSender != sender2) BlueCoordinateTiming.ResetSource();
             BlueCoordinateSender = sender2;
             LastRaw2 = new Vector2(x2, y2);
+            LastCameraPosition012 = Normalized01(x2, y2, camWidth, camHeight, pixelStick2);
             if (calibrated) CalibrateCoordinates(ref x2, ref y2, ref x2a, ref y2a, ref x2b, ref y2b, updatedStick2);
             // 棒1と同じく、位置補正済みか、ピクセルの4値packetならすべてピクセル。
             bool forcePixels2 = calibrated || pixelStick2;
@@ -967,6 +976,7 @@ public class InputPoint : MonoBehaviour
             double appliedAt = SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp);
             // 棒2も受信から取込みまでの待ち時間を鮮度へ含める。
             LastReceivedTime2 = Time.realtimeSinceStartupAsDouble - (appliedAt - LastReceivedMonotonicTime2);
+            LastCameraReceivedTime2 = LastReceivedTime2;
             BlueCoordinateTiming.Applied(LastReceivedMonotonicTime2, appliedAt);
         }
 

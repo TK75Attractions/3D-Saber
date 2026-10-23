@@ -316,14 +316,30 @@ public sealed class CalibrationController : MonoBehaviour
 
     void AudioConfigurationChanged(bool deviceChanged)
     {
-        if (IsRunning) InterruptRun("音声機器の設定が変わったため中断しました。出力先を確認して測り直してください。");
-        else Notice = "音声機器の設定が変わりました。出力先とプロフィールを確認してください。";
-        BuildClicks();
+        if (IsRunning)
+            InterruptRun("音声機器の設定が変わったため中断しました。出力先を確認して測り直してください。", true);
+        else
+        {
+            Notice = "音声機器の設定が変わりました。出力先とプロフィールを確認してください。";
+            BuildClicks();
+        }
     }
-    void InterruptRun(string message)
+    void InterruptRun(string message, bool audioChanged = false)
     {
+        bool restartLive = audioChanged && IsLive;
         interrupted = true; StopPlayback(); Overlay.ClearTimingPreview(); Mode = CalibrationRunMode.Idle; Result = null;
-        HasLastError = false; LastInputWasMiss = false; History.Clear(); Notice = message; Overlay.Refresh();
+        HasLastError = false; LastInputWasMiss = false; History.Clear();
+        if (audioChanged) BuildClicks();
+        if (restartLive)
+        {
+            // 下書きは同じものを保持し、旧時計のノーツ・記録だけを捨てて再予約する。
+            BeginLivePractice();
+            LastErrorMs = 0;
+            LastCut = "音に合わせて切り終えましょう";
+            Notice = "音の出力先が変わったので、音を作り直しました。そのまま続けられます";
+        }
+        else Notice = message;
+        Overlay.Refresh();
     }
     void OnDestroy()
     {

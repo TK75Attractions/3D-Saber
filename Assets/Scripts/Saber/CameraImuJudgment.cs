@@ -31,6 +31,7 @@ public class CameraImuJudgment : MonoBehaviour
     {
         public bool Active, HasSongTime;
         public GameplaySwing Swing;
+        public ulong FeedbackSwingId;
         public double SongTime;
         public string Failure;
         public int NoteId;
@@ -127,7 +128,10 @@ public class CameraImuJudgment : MonoBehaviour
         for (int i = 0; i < pending.Length; i++)
         {
             if (pending[i].Active) continue;
-            pending[i] = new PendingSwing { Active = true, Swing = swing, Failure = "camera_missing" };
+            pending[i] = new PendingSwing {
+                Active = true, Swing = swing, Failure = "camera_missing",
+                FeedbackSwingId = WrongDirectionCueGate.NewSwing()
+            };
             seen[seenNext] = new SeenSwing { Valid = true, Swing = swing };
             seenNext = (seenNext + 1) % seen.Length;
             if (debugJudgment)
@@ -302,17 +306,17 @@ public class CameraImuJudgment : MonoBehaviour
         bool direction = best.DirectionVisualOnly || CutDirectionHelper.Matches(best.RequiredDirection,
             contact.Velocity, Mathf.Cos(directionToleranceDegrees * Mathf.Deg2Rad));
         string detail = $"seq={p.Swing.Sequence} side={p.Swing.Side} camera={color} receive={p.Swing.ReceiveTime:F6} xiao={p.Swing.XiaoTimestampUs} song={p.SongTime:F6} sample={contact.SampleTime:F6} sampleAgeMs={(now - contact.ReceiveTime) * 1000:F1} latencyMs={cameraLatencyCompensationMs:F1} deltaMs={(contact.SampleTime - p.Swing.ReceiveTime) * 1000:F1} note={noteId} position=pass swept={contact.Swept} direction={direction}";
+        bool accepted = best.TryCutWithCameraTiming(contact.Point, contact.Velocity, judge.EffectiveHand(),
+            p.SongTime, Mathf.Cos(directionToleranceDegrees * Mathf.Deg2Rad), p.FeedbackSwingId);
         if (!direction)
         {
-            // 向きの合わない振りは、このノーツを切らずに使い切る(判定もミスも出さない。ノーツは向きの合う次の振りで切れる)。
+            // CutCore の方向拒否から矢印へ通知した後、この振りを使い切る。判定・ミスは出さない。
             p.Failure = "direction_fail";
             Decision(detail + " reason=direction_fail");
             // 同じ振りが通った同時のノーツは、それぞれの向きで判定する(カメラだけの経路と同じ)。
             CutSimultaneous(best, history, p, judge);
             return true;
         }
-        bool accepted = best.TryCutWithCameraTiming(contact.Point, contact.Velocity, judge.EffectiveHand(),
-            p.SongTime, Mathf.Cos(directionToleranceDegrees * Mathf.Deg2Rad));
         if (!accepted) { p.Failure = "note_rejected"; return false; }
         // 同時のノーツ(金＋金など)は同じ振りでまとめて切る。時刻のずれた後続ノーツは次の振りへ残す。
         CutSimultaneous(best, history, p, judge);
@@ -340,7 +344,7 @@ public class CameraImuJudgment : MonoBehaviour
                 c.Velocity = directionVelocity;
             }
             c.Point.z = spawner.ComputeNoteZ(note, note.HitTime - p.SongTime, spawner.Speed);
-            note.TryCutWithCameraTiming(c.Point, c.Velocity, judge.EffectiveHand(), p.SongTime, tolerance);
+            note.TryCutWithCameraTiming(c.Point, c.Velocity, judge.EffectiveHand(), p.SongTime, tolerance, p.FeedbackSwingId);
         }
         touched.Clear();
     }

@@ -245,7 +245,7 @@ public sealed class AudioRecoveryTrackingPlayTests
         // ここで主要 assert を置かない。旧実装でも、剣が戻った本当の再開まで測ってから失敗させる。
         // loss の旧実装は完了フレームだけ Resume したあと、この時点では次フレームの Pause に入っている。
         bool waitingBeforeReturn = game.TrackingWatch.State == PlayTrackingWatch.Phase.Waiting && game.songPlayer.IsPaused;
-        deadline = Now + 8;
+        deadline = Now + 11;
         while ((game.songPlayer.IsPaused || game.TrackingWatch.State != PlayTrackingWatch.Phase.Playing) && Now < deadline)
         {
             SendBoth();
@@ -299,7 +299,7 @@ public sealed class AudioRecoveryTrackingPlayTests
             Check(completed.BlueAge >= PlayTrackingWatch.LostSeconds, "完了時には青が失われている: " + F(completed.BlueAge));
             Check(waitingBeforeReturn, "送信を戻す前は追跡待ちである");
         }
-        Check(returned, "両色が戻れば 8 秒以内に実際の再開へ到達する");
+        Check(returned, "構え待ち5秒とカウント3秒のあと、11秒以内に実際の再開へ到達する");
         Check(finalResumeLogs == 1, "実際の再開だけを一度呼ぶ: " + finalResumeLogs);
         // DSP時刻の引き算で生じる丸め誤差だけを許し、実際の巻き戻りは検出する。
         Check(resumedTime >= heldTime - .000001 && resumedTime <= heldTime + .3, "止めた時計の続きから再開する: " + F(heldTime) + " -> " + F(resumedTime));

@@ -145,6 +145,13 @@ public class OpeningAudioRecoveryPlayTests
         while (manager.AudioChangeHold && Time.realtimeSinceStartupAsDouble < deadline) yield return null;
         Assert.False(manager.AudioChangeHold, "音を読み直して再開する");
         Assert.False(manager.songPlayer.IsPaused);
+        if (manager.songPlayer.SongTime < manager.songPlayer.PlayStartSeconds)
+        {
+            StringAssert.StartsWith("曲が始まるまで ", manager.TrackingView.HeadlineShown);
+            Assert.True(manager.TrackingView.RingShown);
+        }
+        Assert.False(manager.TrackingView.Recovery.MiniShown);
+        Assert.Zero(manager.TrackingView.Recovery.ShownPoseMask, "音の復旧だけでは構え直しを要求しない");
         Assert.Greater(manager.songPlayer.Clip.samples, 0);
         Assert.AreEqual("Game", SceneManager.GetActiveScene().name);
         Assert.AreEqual(runId, GameSession.AchievementRunId, "同じ回を続ける");

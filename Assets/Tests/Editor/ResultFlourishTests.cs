@@ -8,7 +8,7 @@ using UnityEngine.UI;
 public class ResultFlourishTests
 {
     const BindingFlags PrivateInstance = BindingFlags.Instance | BindingFlags.NonPublic;
-    const float CountStart = .24f;
+    const float CountStart = ResultSkin.ScoreCountStart;
     const float CountEnd = CountStart + ResultSoundtrack.CountSeconds;
 
     GameObject root;
@@ -96,6 +96,34 @@ public class ResultFlourishTests
     }
 
     [Test]
+    public void CountWaitsForVisibleTextAndFinishesBeforeRankLanding()
+    {
+        Assert.AreEqual(.56f, CountStart, 1e-6f);
+        Assert.AreEqual(1.35f, ResultSoundtrack.CountSeconds, 1e-6f);
+        Assert.AreEqual(1.91f, CountEnd, 1e-6f);
+        Assert.AreEqual(2.21f, ResultSkin.RankLandingTime, 1e-6f);
+        var track = Soundtrack();
+        var swell = Field<AudioClip>(track, "countSwellClip");
+        Assert.AreEqual(1.35f, swell.length, 1f / swell.frequency);
+        At(.24f);
+        AdvanceTo(CountStart - .001f);
+        Assert.Zero(track.ShownScore);
+        Assert.Zero(track.TickCount);
+        Assert.IsFalse(track.SwellStarted);
+        At(CountStart);
+        Assert.IsTrue(track.SwellActive);
+        AdvanceTo(CountStart + .1f);
+        Assert.Greater(track.ShownScore, 0);
+        AdvanceTo(CountEnd);
+        Assert.AreEqual(48000, track.ShownScore);
+        Assert.AreEqual(1, track.CountStopCount);
+        Assert.IsFalse(track.SwellActive);
+        Assert.IsFalse(track.FinishPlayed);
+        AdvanceTo(ResultSkin.RankLandingTime);
+        Assert.IsTrue(track.FinishPlayed);
+    }
+
+    [Test]
     public void TickVolumeIsAudible()
     {
         Assert.AreEqual(.3f, ResultSoundtrack.TickVolume, 1e-6f);
@@ -127,8 +155,9 @@ public class ResultFlourishTests
     }
 
     [TestCase(.1f)]
+    [TestCase(.55f)]
     [TestCase(.6f)]
-    [TestCase(1.7f)]
+    [TestCase(1.90f)]
     public void SkippingBeforeCountEndStopsTheSwellWithoutAChime(float skipAt)
     {
         var track = Soundtrack();
@@ -164,10 +193,10 @@ public class ResultFlourishTests
     public void AJumpInsideTheCountSuppressesTheChimeButNotTheLaterLanding()
     {
         var track = Soundtrack();
-        AdvanceTo(.4f);
+        AdvanceTo(.7f);
         Assert.IsTrue(track.SwellActive);
         int ticks = track.TickCount;
-        At(1.1f);
+        At(1.3f);
         Assert.IsFalse(track.SwellActive);
         AdvanceTo(ResultSkin.RankLandingTime);
         Assert.Zero(track.CountStopCount, "カウントを飛ばした後に終点を普通に越えても鳴らさない");

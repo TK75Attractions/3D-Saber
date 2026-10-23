@@ -106,6 +106,28 @@ public class GameHUDSkin : MonoBehaviour
     private Image comboGlow;
     private int lastCombo;
     private float comboPunchAge = 999f;
+    private TextMeshProUGUI comboBreakValue;
+    private RectTransform comboBreakRT;
+    private Vector2 comboBreakOrigin;
+    private Vector3 comboBreakScale;
+    private VertexGradient comboBreakGradient;
+    private float comboBreakAge;
+    private bool comboBreakActive, comboBreakReduced;
+
+    public const float ComboBreakSeconds = .28f, ReducedComboBreakSeconds = .2f;
+
+    public static bool ShouldBreakCombo(int previous, int current) => previous >= 10 && current == 0;
+
+    // 通常は下へ落として縮め、灰色へ寄せて消す。控えめでは薄れるだけ。純関数。
+    public static void ComboBreakFrame(float age, bool reduced,
+        out float y, out float scale, out float gray, out float alpha)
+    {
+        float u = Mathf.Clamp01(age / (reduced ? ReducedComboBreakSeconds : ComboBreakSeconds));
+        y = reduced ? 0f : -60f * u * u;
+        scale = reduced ? 1f : Mathf.Lerp(1f, .82f, u);
+        gray = reduced ? 0f : Mathf.Clamp01(age / .1f);
+        alpha = 1f - u;
+    }
 
     // スコア/コンボ数字の縦グラデ下端色(#1899B3、リザルトと同じ)
     private static readonly Color ScoreGradientBottom = new Color(0.094f, 0.60f, 0.702f);
@@ -237,6 +259,13 @@ public class GameHUDSkin : MonoBehaviour
         // パンチは右上を支点に(CSS transform-origin:100% 20% 相当)
         comboRT.pivot = new Vector2(1f, 0.8f);
         comboRT.anchoredPosition = new Vector2(-70f, -174f - 140f * 0.2f);
+
+        // 消える数字は構築時に1つだけ用意し、新しいコンボの表示から独立させる。
+        comboBreakValue = Object.Instantiate(comboValue, transform);
+        comboBreakValue.name = "ComboBreakValue";
+        comboBreakRT = comboBreakValue.rectTransform;
+        comboBreakValue.raycastTarget = false;
+        comboBreakValue.gameObject.SetActive(false);
 
         comboLabel = UISkinKit.MakeTMP(transform, "ComboLabel", "", 28f,
             UISkinPalette.SubtleGray, TextAlignmentOptions.TopRight,
@@ -489,6 +518,7 @@ public class GameHUDSkin : MonoBehaviour
     void Update()
     {
         if (!IsBuilt) return;
+        TickComboBreak(Time.deltaTime);
         if (score != null)
         {
             UpdateScoreRoll();
@@ -675,6 +705,7 @@ public class GameHUDSkin : MonoBehaviour
     {
         if (comboValue == null) return;
         int combo = score.Combo;
+        if (ShouldBreakCombo(lastCombo, combo)) StartComboBreak();
 
         if (combo > lastCombo)
         {
@@ -686,6 +717,8 @@ public class GameHUDSkin : MonoBehaviour
 
         if (combo <= 0)
         {
+            comboPunchAge = milestonePunchAge = 999f;
+            milestoneTinted = false;
             comboValue.text = "";
             shownCombo = int.MinValue;
             if (comboLabel != null) comboLabel.text = "";
@@ -736,6 +769,49 @@ public class GameHUDSkin : MonoBehaviour
         // 節目の拡大(最大 1.7 倍)の間も、数字の下端に合わせて「COMBO」を下げる(拡大は右上寄りの支点まわり)。
         PlaceComboLabel();
     }
+
+    void StartComboBreak()
+    {
+        if (comboBreakValue == null || comboRT == null) return;
+        comboBreakValue.text = comboValue.text;
+        comboBreakValue.fontSize = comboValue.fontSize;
+        comboBreakValue.enableVertexGradient = true;
+        comboBreakGradient = comboValue.colorGradient;
+        comboBreakOrigin = comboRT.anchoredPosition;
+        comboBreakScale = comboRT.localScale;
+        comboBreakReduced = DisplaySettings.ReducedEffects;
+        comboBreakAge = 0f;
+        comboBreakActive = true;
+        comboBreakValue.gameObject.SetActive(true);
+        TickComboBreak(0f);
+    }
+
+    internal void TickComboBreak(float dt)
+    {
+        if (!comboBreakActive || comboBreakValue == null) return;
+        comboBreakAge += Mathf.Max(0f, dt);
+        ComboBreakFrame(comboBreakAge, comboBreakReduced, out float y, out float scale, out float gray, out float alpha);
+        comboBreakRT.anchoredPosition = comboBreakOrigin + Vector2.up * y;
+        comboBreakRT.localScale = comboBreakScale * scale;
+        Color miss = TierColor(JudgmentTier.Miss);
+        comboBreakValue.colorGradient = new VertexGradient(
+            Color.Lerp(comboBreakGradient.topLeft, miss, gray),
+            Color.Lerp(comboBreakGradient.topRight, miss, gray),
+            Color.Lerp(comboBreakGradient.bottomLeft, miss, gray),
+            Color.Lerp(comboBreakGradient.bottomRight, miss, gray));
+        comboBreakValue.color = new Color(1f, 1f, 1f, alpha);
+        if (alpha <= 0f) HideComboBreak();
+    }
+
+    void HideComboBreak()
+    {
+        comboBreakActive = false;
+        if (comboBreakValue == null) return;
+        comboBreakValue.text = "";
+        comboBreakValue.gameObject.SetActive(false);
+    }
+
+    void OnDisable() { HideComboBreak(); }
 
     // 「COMBO」の文字の上端(右上の基準からの y)。数字は 90→128pt に育つので、描いた数字の下端より ComboLabelGap 下へ置く。
     // 既定の位置(ComboLabelRestY)より上へは上げない(2026-10-22、3けたで数字が文字にかかっていた)。純関数。

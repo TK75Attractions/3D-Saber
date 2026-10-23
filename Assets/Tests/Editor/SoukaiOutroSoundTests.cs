@@ -71,24 +71,26 @@ public class SoukaiOutroSoundTests
 
     [TestCase(0f, 0)]
     [TestCase(.24f, 0)]
-    [TestCase(1.74f, 48000)]
+    [TestCase(.56f, 0)]
+    [TestCase(1.91f, 48000)]
     [TestCase(9f, 48000)]
     public void CountUpStartsAtZeroAndLandsOnTheFinalScore(float t, int expected)
     {
-        Assert.AreEqual(expected, ResultSoundtrack.CountedScore(t, 48000, .24f, 1.5f));
+        Assert.AreEqual(expected, ResultSoundtrack.CountedScore(t, 48000, ResultSkin.ScoreCountStart, ResultSoundtrack.CountSeconds));
     }
 
     [Test]
     public void CountUpIsMonotonicAndFastFirst()
     {
         int previous = 0;
-        for (float t = .24f; t <= 1.74f; t += .05f)
+        float start = ResultSkin.ScoreCountStart, seconds = ResultSoundtrack.CountSeconds;
+        for (float t = start; t <= start + seconds; t += .05f)
         {
-            int v = ResultSoundtrack.CountedScore(t, 48000, .24f, 1.5f);
+            int v = ResultSoundtrack.CountedScore(t, 48000, start, seconds);
             Assert.GreaterOrEqual(v, previous);
             previous = v;
         }
-        Assert.Greater(ResultSoundtrack.CountedScore(.24f + .75f, 48000, .24f, 1.5f), 48000 * .8f, "前半で大きく進む");
+        Assert.Greater(ResultSoundtrack.CountedScore(start + seconds * .5f, 48000, start, seconds), 48000 * .8f, "前半で大きく進む");
     }
 
     ResultSoundtrack Soundtrack(out ResultReveal reveal, out TextMeshProUGUI text)
@@ -97,7 +99,7 @@ public class SoukaiOutroSoundTests
         reveal = canvas.AddComponent<ResultReveal>();
         var textGo = new GameObject("ScoreValue", typeof(RectTransform)); created.Add(textGo);
         text = textGo.AddComponent<TextMeshProUGUI>();
-        var view = ResultSoundtrack.Build(canvas.transform, reveal, text, 48000, .24f, ResultSkin.RankLandingTime, 3.2f);
+        var view = ResultSoundtrack.Build(canvas.transform, reveal, text, 48000, ResultSkin.ScoreCountStart, ResultSkin.RankLandingTime, 3.2f);
         created.Add(view.gameObject);
         return view;
     }

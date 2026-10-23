@@ -17,6 +17,7 @@ public class ResultSkin : MonoBehaviour
     // 出現タイミング(秒)。デザインハンドオフのタイムラインをそのまま定数化。
     const float DelayTitle = 0.08f;
     const float DelayScoreBlock = 0.24f;
+    public const float ScoreCountStart = .56f;
     const float DelayAccuracy = 0.46f;
     const float DelayRowsStart = 0.66f;
     const float DelayRowsStep = 0.13f;
@@ -85,7 +86,7 @@ public class ResultSkin : MonoBehaviour
         BuildDistributionBar(root.transform);
         DailyRankingPresentation.Build(root.transform, reveal, GameSession.FinalDailyRanking);
         // スコアのカウントアップ・ランク着地の決め・順位の演出の後の静かなループ曲。
-        ResultSoundtrack.Build(root.transform, reveal, scoreValueText, GameSession.FinalScore, DelayScoreBlock, RankLandingTime,
+        ResultSoundtrack.Build(root.transform, reveal, scoreValueText, GameSession.FinalScore, ScoreCountStart, RankLandingTime,
             Mathf.Max(3f, DailyRankingPresentation.CompletionTime(GameSession.FinalDailyRanking) + .2f));
         StyleBackButton(canvas);
         // 選曲・判定調整と同じ照準で指す(小さな光の点は投影で見にくい。2026-10-22 ユーザーの依頼)。

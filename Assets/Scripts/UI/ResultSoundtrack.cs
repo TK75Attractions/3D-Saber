@@ -2,13 +2,13 @@ using TMPro;
 using UnityEngine;
 
 // リザルトの音(爽快感カタログ 山4・賞2・賞5)。
-//   ・スコアを 1.5 秒でカウントアップし、刻む音と上昇音、止まった瞬間の「チン」
+//   ・スコアを 1.35 秒でカウントアップし、刻む音と上昇音、止まった瞬間の「チン」
 //   ・ランクバッジの着地に合わせて、成績ごとの決めの音
 //   ・順位の演出が終わってから、静かなループ曲を小さく流す
 // ResultReveal の経過時間で動く。スキップで過ぎた効果音は鳴らさず、上昇音もすぐ止める。
 public sealed class ResultSoundtrack : MonoBehaviour
 {
-    public const float CountSeconds = 1.5f;
+    public const float CountSeconds = 1.35f;
     public const float TickInterval = .07f;
     public const float TickVolume = .3f;
     public const float LoopVolume = .13f;

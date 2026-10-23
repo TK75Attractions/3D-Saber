@@ -8,13 +8,65 @@ public sealed class NoteArrowMaterials : MonoBehaviour
     internal void Register(Mesh mesh) { meshes.Add(mesh); }
     readonly List<Material> owned = new List<Material>();
 
-    internal void Register(Material material)
+    public static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
+    public const float FlashSeconds = .2f;
+    Material bars;
+    CuttableNote note;
+    Color noteColor;
+    float flashAge = FlashSeconds;
+
+    internal void Register(Material material, bool isBars = false)
     {
         owned.Add(material);
+        if (isBars) bars = material;
     }
+
+    internal void Bind(CuttableNote target, Color color)
+    {
+        if (note != null) note.OnWrongDirection -= Flash;
+        note = target;
+        noteColor = color;
+        ResetCue();
+        if (note == null) return;
+        note.Arrow = this;
+        note.OnWrongDirection -= Flash;
+        note.OnWrongDirection += Flash;
+    }
+
+    // 色を一瞬乗せ、0.2 秒で白へ戻す。黒い下敷きの材質には触れない。
+    public static Color FlashColor(Color color, float age)
+        => Color.Lerp(color, Color.white, Mathf.Clamp01(age / FlashSeconds));
+
+    void Flash(CuttableNote source)
+    {
+        if (source.DirectionVisualOnly || source.IsMissed || bars == null) return;
+        flashAge = 0f;
+        bars.SetColor(BaseColorId, FlashColor(noteColor, flashAge));
+    }
+
+    internal void Tick(float dt)
+    {
+        if (flashAge >= FlashSeconds || bars == null) return;
+        if (note == null || note.IsMissed || note.IsFinalized) { ResetCue(); return; }
+        flashAge = Mathf.Min(FlashSeconds, flashAge + Mathf.Max(0f, dt));
+        bars.SetColor(BaseColorId, FlashColor(noteColor, flashAge));
+    }
+
+    internal void ResetCue()
+    {
+        flashAge = FlashSeconds;
+        if (bars != null) bars.SetColor(BaseColorId, Color.white);
+    }
+
+    void OnDisable() { ResetCue(); }
 
     void OnDestroy()
     {
+        if (note != null)
+        {
+            note.OnWrongDirection -= Flash;
+            if (note.Arrow == this) note.Arrow = null;
+        }
         // 切断・ミス回収・譜面リセット・選曲の再生成・シーン退出で共通して解放する。
         foreach (var material in owned)
         {

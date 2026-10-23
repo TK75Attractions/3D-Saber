@@ -509,16 +509,20 @@ public class SongSelectKeyboardPlayTests
             Assert.AreEqual(judged, manager.scoreManager.JudgedNoteCount, "止めている間に MISS を数えない");
             Assert.AreEqual(alive, manager.noteSpawner.AliveCount);
             Assert.Greater(manager.TrackingView.DimLevel, .2f, "止まっている間は画面を少し暗くする");
-            // 1秒続けて届いたら数え始め、3秒後に続きから。届き始めた1秒は「確認中」。
+            // この送信位置は輪の外。5秒の構え待ちのあと、自動で3秒数えて続きから。
             double backAt = Time.realtimeSinceStartupAsDouble;
             bool counted = false, checking = false, ring = false, shotCount = false;
-            deadline = backAt + 8;
+            deadline = backAt + 11;
             while (manager.songPlayer.IsPaused && Time.realtimeSinceStartupAsDouble < deadline)
             {
                 Send(); yield return null;
                 bool wasChecking = checking;
                 counted |= manager.TrackingView.HeadlineShown.StartsWith("再開まで");
-                checking |= manager.TrackingView.HeadlineShown == PlayTrackingStatus.CheckingText;
+                checking |= manager.TrackingView.HeadlineShown == PlayTrackingStatus.ReadyText;
+                if (manager.TrackingView.HeadlineShown == PlayTrackingStatus.ReadyText)
+                    Assert.AreEqual(1, manager.TrackingView.Recovery.ShownPoseMask, "赤だけ届いた台では右の赤い輪だけ");
+                if (manager.TrackingWatch.State == PlayTrackingWatch.Phase.Countdown)
+                    Assert.Zero(manager.TrackingView.Recovery.ShownPoseMask, "3・2・1の間は構えの輪を消す");
                 ring |= manager.TrackingView.RingShown;
                 // 環境変数 SABER_UI_CATALOG_CAPTURE_DIR があれば、確認中と 3・2・1 の画面を撮る(撮る間も送り続ける)。
                 if (checking && !wasChecking) UICatalogPlayTests.Capture("pause-checking");
@@ -526,9 +530,9 @@ public class SongSelectKeyboardPlayTests
             }
             Assert.False(manager.songPlayer.IsPaused, "戻ったら再開する");
             Assert.True(counted, "再開の前に 3・2・1 を出す");
-            Assert.True(checking, "剣が戻りかけたら「確認中」");
+            Assert.True(checking, "剣が戻ったら構え直しを案内する");
             Assert.True(ring, "3・2・1 は輪で進み具合を見せる");
-            Assert.That(Time.realtimeSinceStartupAsDouble - backAt, Is.InRange(3.9, 6.0));
+            Assert.That(Time.realtimeSinceStartupAsDouble - backAt, Is.InRange(7.9, 10.5));
             Assert.AreEqual(pausedAt, manager.songPlayer.SongTime, .25, "止めた位置の続きから");
             Assert.AreEqual(cues + 4, manager.TrackingView.CueCount, "3・2・1 の刻み3回と再開の音1回");
             Assert.AreEqual(PlayTrackingStatus.ResumedText, manager.TrackingView.HeadlineShown, "再開の直後は「再開！」");

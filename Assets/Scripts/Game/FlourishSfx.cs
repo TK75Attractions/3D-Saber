@@ -40,7 +40,7 @@ public static class FlourishSfx
         for (int s = 1; s <= 10; s++) { int k = s; Cached("TimerTick" + k, () => TimerTick(k)); }
         Cached("TimerChime", TimerChime);
         PrewarmGameplay();
-        Cached("ResultCountSwell", () => CountSwell(1.5)); Cached("ResultCountStop", CountStop);
+        Cached("ResultCountSwell", () => CountSwell(ResultSoundtrack.CountSeconds)); Cached("ResultCountStop", CountStop);
         for (int level = 0; level <= 4; level++) { int k = level; Cached("ResultRankFinish." + k, () => RankFinish(k)); }
         Cached("ComboImpact", ComboImpact); Cached("DailyRankDen", DailyRankDen);
     }

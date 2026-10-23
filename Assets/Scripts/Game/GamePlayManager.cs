@@ -167,6 +167,7 @@ public class GamePlayManager : MonoBehaviour
     // 曲(練習)が鳴り始めた実時間(一度も届いていない色の警告の起点)、再開の表示を消す時刻、いま出している 3・2・1 の数字。
     private double playingSince = double.NaN, resumedShownUntil = double.NegativeInfinity;
     private int countdownShown;
+    private readonly ResumedSongWait resumedSongWait = new ResumedSongWait();
     // 音の出力先が変わって、曲を止めて立て直している(HoldForAudioChange)。曲を読み直したら(audioResumeAt から)3・2・1 で再開する。
     private bool audioChangeHold;
     public bool AudioChangeHold => audioChangeHold;
@@ -252,10 +253,13 @@ public class GamePlayManager : MonoBehaviour
             scenicStageWorld = floor.GetComponentInChildren<ScenicStageWorld>();
         }
 
-        // ユーザー設定のノーツ速度（approachTime）を NoteSpawner に反映。
+        // 保存値を残し、本編の Easy だけ実効値を変える。
+        bool songRun = !GameSession.IsCalibrationMode && !GameSession.TutorialPending;
+        GameDifficultyRules.ConfigureJudges(GameSession.SelectedDifficulty, songRun, cutJudge, cutJudge2, cameraImuJudgment);
         if (noteSpawner != null)
         {
-            noteSpawner.approachTime = GameSession.NoteApproachTime;
+            noteSpawner.approachTime = GameDifficultyRules.ApproachSeconds(
+                GameSession.SelectedDifficulty, GameSession.NoteApproachTime, songRun);
             if (stageFloor != null) noteSpawner.ConfigureFloorGuide(stageFloor.floorY);
             // 判定可能ウィンドウを Classify の判定窓と同期させる
             // (シーンに古い狭い窓が焼き込まれていても、甘くした定数側が常に効くように)。
@@ -287,6 +291,7 @@ public class GamePlayManager : MonoBehaviour
         if (useOverhauledStage) GameHUDSkin.Ensure();
         // 受信の表示は左上の列、RANK の下(仕様面の点検 4)。
         trackingView = PlayTrackingStatus.Create(transform, 262);
+        trackingView.ConfigureRecovery(noteSpawner, cutJudge, cutJudge2);
 
         string songId = GameSession.SelectedSongId;
         if (string.IsNullOrEmpty(songId))
@@ -408,7 +413,7 @@ public class GamePlayManager : MonoBehaviour
             barLineSpawner.lineAlpha = useOverhauledStage ? GameStageSkin.BarLineAlpha : barLineAlpha;
             barLineSpawner.lineThickness = useOverhauledStage ? GameStageSkin.BarLineThickness : barLineThickness;
             // 小節線はノーツと同じ速度で流す(シーンに古い値が焼き込まれていても揃うように)。
-            barLineSpawner.approachTime = GameSession.NoteApproachTime;
+            barLineSpawner.approachTime = noteSpawner.approachTime;
             barLineSpawner.SetChart(chart, effectiveExtraOffset);
             barLineSpawner.FirstBarTime = playRange.Start;
         }
@@ -937,8 +942,13 @@ public class GamePlayManager : MonoBehaviour
     {
         // 中断・結果へ進むと決めたあと(幕が閉じる間)は、見張りも表示も止める。数えかけの 3・2・1 の刻みや再開の音を鳴らさない
         // (Codex の点検で 2026-10-22 に追加)。音の出力先が変わって曲を止めている間は、そちらの表示と再開だけを動かす。
-        if (trackingView == null || leaving) return;
-        if (audioChangeHold) { TickAudioResume(); return; }
+        if (trackingView == null) return;
+        if (leaving || finished || audioChangeHold)
+        {
+            trackingView.ShowRecovery(false, null, 0, 0);
+            if (audioChangeHold && !leaving && !finished) TickAudioResume();
+            return;
+        }
         var input = InputPoint.Instance;
         double now = Time.realtimeSinceStartupAsDouble;
         if (input != null)
@@ -951,7 +961,8 @@ public class GamePlayManager : MonoBehaviour
         double songTime = songPlayer != null ? songPlayer.SongTime : 0;
         bool canPause = !inTutorial && !inCalibration && ready && !finished && !leaving
             && songPlayer != null && songPlayer.IsPlaying && NotesComing(songTime);
-        var request = trackingWatch.Step(now, canPause);
+        int inside = trackingWatch.State == PlayTrackingWatch.Phase.Waiting ? trackingView.RecoveryInsideMask() : 0;
+        var request = trackingWatch.Step(now, canPause, inside);
         if (request == PlayTrackingWatch.Request.Pause) { PauseForTracking(); trackingView.PlayPauseCue(); }
         else if (request == PlayTrackingWatch.Request.Resume)
         {
@@ -963,7 +974,9 @@ public class GamePlayManager : MonoBehaviour
         string head = null; float ring = -1; bool dimmed = false;
         if (trackingWatch.State == PlayTrackingWatch.Phase.Waiting)
         {
-            head = trackingWatch.Receiving(now) ? PlayTrackingStatus.CheckingText : PlayTrackingStatus.PausedText; dimmed = true;
+            head = trackingWatch.PoseMask != 0 ? PlayTrackingStatus.ReadyText :
+                trackingWatch.Receiving(now) ? PlayTrackingStatus.CheckingText : PlayTrackingStatus.PausedText;
+            dimmed = true;
         }
         else if (trackingWatch.State == PlayTrackingWatch.Phase.Countdown)
         {
@@ -978,7 +991,13 @@ public class GamePlayManager : MonoBehaviour
         if (trackingWatch.State != PlayTrackingWatch.Phase.Countdown) countdownShown = 0;
         // 片方の色の警告は、止まっていないとき・全部見失ったスタッフ向けの1行が出ていないときだけ(出ていれば上の中央にまとめる)。
         string warning = active && !trackingWatch.Paused && !allLost ? ColorWarning(now, songTime) : null;
+        if (active && resumedSongWait.Read(songTime, songPlayer.PlayStartSeconds,
+                trackingWatch.Paused || songPlayer.IsPaused, out _, out float waitingRing))
+        {
+            head = resumedSongWait.Caption; ring = waitingRing;
+        }
         trackingView.Show(status, head, allLost, warning, ring, dimmed);
+        trackingView.ShowRecovery(trackingWatch.Paused, input, now, trackingWatch.PoseMask);
     }
 
     // 片方の色だけ届かないとき(2026-10-22)。その色のノーツが来ているのに 3 秒届かなければ、スタッフ向けの1行を返す(止めはしない)。
@@ -1037,6 +1056,7 @@ public class GamePlayManager : MonoBehaviour
             if (judge != null && judge.saber != null) judge.saber.ResetTo(judge.saber.transform.position);
         songPlayer.HeldByTracking = false;
         songPlayer.Resume();
+        resumedSongWait.Begin(songPlayer.SongTime, songPlayer.PlayStartSeconds);
         Debug.Log($"GamePlayManager: 剣の位置が戻ったので再開 songTime={songPlayer.SongTime:F2}s");
     }
 
@@ -1126,6 +1146,9 @@ public class GamePlayManager : MonoBehaviour
         ResumeAfterTracking();
         trackingView.PlayResumeCue();
         resumedShownUntil = now + PlayTrackingStatus.ResumedSeconds;
+        // 音の復旧が終わった同じフレームから、残りの無音時間を表示する。
+        if (resumedSongWait.Read(songPlayer.SongTime, songPlayer.PlayStartSeconds, false, out _, out float progress))
+            trackingView.Show(status, resumedSongWait.Caption, false, null, progress);
     }
 
     // 最後まで遊んだ回の点と判定を確定し、実績・通算の順位を残す(一度だけ。HI-SCORE は結果画面が残す)。

@@ -176,8 +176,11 @@ public class CameraImuJudgmentTests
     public void WrongWayArrowDoesNotBlockItsSimultaneousNote(bool arrowFirst)
     {
         Create(direction: arrowFirst ? "up" : "", twoNotes: true, secondTime: 1000, secondDirection: arrowFirst ? "" : "up");
-        Swing(); Path(); Advance(.17);
         CuttableNote arrow = notes[arrowFirst ? 0 : 1], dot = notes[arrowFirst ? 1 : 0];
+        int signals = 0;
+        arrow.OnWrongDirection += _ => signals++;
+        Swing(); Swing(); Path(); Advance(.17); Advance(.18);
+        Assert.AreEqual(1, signals, "主候補・同時ノーツのどちらでも、同じ振りで1回だけ知らせる");
         Assert.False(arrow.IsCut, "向きの合わない矢印は切れない");
         Assert.True(dot.IsCut, "同じ振りが通った向きなしのノーツは切れる");
         Assert.That(score.HitCount, Is.EqualTo(1));
@@ -270,6 +273,24 @@ public class CameraImuJudgmentTests
         Sample(.08, -v * 2); Sample(.12, v * 2); Sample(.17, v * 3); Advance(.17);
         Assert.AreEqual(cut, notes[0].IsCut);
         if (cut) Assert.That(score.LastTier, Is.EqualTo(JudgmentTier.Perfect));
+    }
+
+    [TestCase("Easy", 75f, true)]
+    [TestCase("Easy", 81f, false)]
+    [TestCase("Easy", 90f, false)]
+    [TestCase("Easy", 180f, false)]
+    [TestCase("Normal", 65f, true)]
+    [TestCase("Normal", 75f, false)]
+    [TestCase("Hard", 75f, false)]
+    public void SongDifficultyAppliesToImuCuts(string difficulty, float degrees, bool cut)
+    {
+        Create(direction: "right");
+        GameDifficultyRules.ConfigureJudges(difficulty, true, judge, judge2, fusion);
+        Swing();
+        float rad = degrees * Mathf.Deg2Rad;
+        var v = new Vector3(Mathf.Cos(rad), Mathf.Sin(rad), 0);
+        Sample(.08, -v * 2); Sample(.12, v * 2); Sample(.17, v * 3); Advance(.17);
+        Assert.AreEqual(cut, notes[0].IsCut);
     }
 
     [Test]

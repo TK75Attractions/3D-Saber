@@ -913,15 +913,22 @@ public class SaberCutJudgeTests
         Assert.AreEqual(1, judge.PendingCount);
     }
 
-    // 2026-10-21 に±45°から±60°へ、10-22 に1段下げをやめて±70°へ。それより外の振りでは切らない。
-    [TestCase(65f, true, true)]
-    [TestCase(75f, true, false)]
-    [TestCase(115f, true, false)]
-    [TestCase(25f, false, true)]
-    [TestCase(40f, false, false)]
-    public void DirectionToleranceIs70DegreesOnlyWithTheSongClock(float degrees, bool clock, bool cut)
+    // 標準の±70°を残し、Easy の±80°と直角・逆向きの拒否も確かめる。
+    [TestCase("Normal", 65f, true, true)]
+    [TestCase("Normal", 75f, true, false)]
+    [TestCase("Normal", 115f, true, false)]
+    [TestCase("Normal", 25f, false, true)]
+    [TestCase("Normal", 40f, false, false)]
+    [TestCase("Hard", 75f, true, false)]
+    [TestCase("Easy", 75f, true, true)]
+    [TestCase("Easy", 81f, true, false)]
+    [TestCase("Easy", 90f, true, false)]
+    [TestCase("Easy", 180f, true, false)]
+    [TestCase("Easy", 40f, false, false)]
+    public void DirectionToleranceFollowsTheSongDifficulty(string difficulty, float degrees, bool clock, bool cut)
     {
         var (judge, tracker, bridge) = GameBladeRig();
+        GameDifficultyRules.ConfigureJudges(difficulty, true, judge, null, null);
         var note = MakeNote(Vector3.zero);
         note.HitTime = 1.0;
         note.RequiredDirection = CutDirection.Down;
@@ -931,7 +938,7 @@ public class SaberCutJudgeTests
         Step(judge, tracker, bridge, -dir, clock ? .98 : double.NaN, false);
         Step(judge, tracker, bridge, dir * .6f, clock ? 1.0 : double.NaN, false);
         if (!clock) Step(judge, tracker, bridge, dir * 2.6f, double.NaN, false); // 時計がなければ抜けたときに切る
-        Assert.AreEqual(cut, note.IsCut, clock ? "曲時計があるときは ±70°" : "時計がないときは従来の ±30°");
+        Assert.AreEqual(cut, note.IsCut, clock ? difficulty : "時計がないときは従来の ±30°");
         Assert.False(note.IsMissed, "向きの合わない振りでもミスにはしない");
     }
 
@@ -980,11 +987,14 @@ public class SaberCutJudgeTests
     }
 
     // 横に払う振りは、上向きの矢印を切らない(通り過ぎたときの動きも横)。
-    [TestCase(false)]
-    [TestCase(true)]
-    public void UpArrowIsNotCutByASidewaysSwing(bool camera)
+    [TestCase(false, "Normal")]
+    [TestCase(true, "Normal")]
+    [TestCase(false, "Easy")]
+    [TestCase(true, "Easy")]
+    public void UpArrowIsNotCutByASidewaysSwing(bool camera, string difficulty)
     {
         var (judge, tracker, bridge) = GameBladeRig();
+        GameDifficultyRules.ConfigureJudges(difficulty, true, judge, null, null);
         bridge.OverrideCameraInput(camera);
         var note = TimedNote(Vector3.zero, 1.0);
         note.RequiredDirection = CutDirection.Up;

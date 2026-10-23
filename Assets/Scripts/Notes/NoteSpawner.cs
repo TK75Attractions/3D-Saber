@@ -327,6 +327,7 @@ public class NoteSpawner : MonoBehaviour
         {
             BuildArrow(go.transform, note.RequiredDirection);
         }
+        if (reused && note.Arrow != null) note.Arrow.Bind(note, visuals.baseColor);
         // ロングは Z 方向に伸ばし、上に残カウント数字を浮かべる。
         // count が大きすぎる（50 など）と視野を覆い尽くすので longMaxVisualZScale でキャップする。
         if (note.RequiredCutCount > 1)
@@ -396,13 +397,16 @@ public class NoteSpawner : MonoBehaviour
             part.GetComponent<MeshFilter>().sharedMesh = mesh;
             var material = new Material(shader) { renderQueue = 3021 + layer };
             // 縁取りは黒(投影でも矢印の白と本体色の両方から分離する)。
-            material.SetColor("_BaseColor", layer == 0 ? new Color(0f, 0f, .01f) : Color.white);
-            owner.Register(material);
+            material.SetColor(NoteArrowMaterials.BaseColorId, layer == 0 ? new Color(0f, 0f, .01f) : Color.white);
+            owner.Register(material, layer == 1);
             var renderer = part.GetComponent<MeshRenderer>();
             renderer.sharedMaterial = material;
             renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             renderer.receiveShadows = false;
         }
+        var note = parent.GetComponent<CuttableNote>();
+        var visuals = parent.GetComponent<NoteVisuals>();
+        owner.Bind(note, visuals != null ? visuals.baseColor : Color.white);
     }
     private static void BuildCountLabel(Transform target, CuttableNote note)
     {
@@ -466,6 +470,7 @@ public class NoteSpawner : MonoBehaviour
             {
                 note.TimingCue.Tick(dt, approachTime, earlyJudgeWindow, lateWindow);
             }
+            if (note.Arrow != null) note.Arrow.Tick(Time.deltaTime);
 
             if (note.IsCut)
             {

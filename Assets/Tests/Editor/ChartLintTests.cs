@@ -17,6 +17,20 @@ public class ChartLintTests
     static List<SaberChartIssue> Issues(SaberChartDocument chart, string rule, string difficulty = "normal", float audioMs = 0f) =>
         SaberChartLint.Check(chart, difficulty, audioMs).Where(i => i.rule == rule).ToList();
 
+    [TestCase("easy", 75f, true)]
+    [TestCase("normal", 75f, false)]
+    [TestCase("hard", 75f, false)]
+    [TestCase("easy", 90f, false)]
+    [TestCase("easy", 180f, false)]
+    public void SweepUsesTheSongDirectionTolerance(string difficulty, float degrees, bool sweep)
+    {
+        float angle = degrees * UnityEngine.Mathf.Deg2Rad;
+        var chart = Chart(Note(1000, 0, "red", "direction", "right"),
+            Note(1100, UnityEngine.Mathf.Cos(angle), "red", "direction", "right", y: UnityEngine.Mathf.Sin(angle)));
+        Assert.AreEqual(sweep ? 1 : 0, Issues(chart, "sweep", difficulty).Count);
+        Assert.AreEqual(sweep ? 0 : 1, Issues(chart, "fast-same-hand", difficulty).Count);
+    }
+
     [Test]
     public void EmptyChartHasNoIssues()
     {

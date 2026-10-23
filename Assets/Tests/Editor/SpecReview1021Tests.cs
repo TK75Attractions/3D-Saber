@@ -126,25 +126,29 @@ public class SpecReview1021Tests
     }
 
     [Test]
-    public void TrackingWatchResumesAfterOneSecondStableAndAThreeSecondCount()
+    public void TrackingWatchResumesAfterReadyPoseAndAThreeSecondCount()
     {
         var watch = new PlayTrackingWatch();
         Feed(watch, 0, 0, 10);
         Assert.AreEqual(PlayTrackingWatch.Request.Pause, watch.Step(13.5, true));
-        watch.ObserveUsable(0, 20);
-        Assert.AreEqual(PlayTrackingWatch.Request.None, watch.Step(20.05, true));
-        Assert.AreEqual(PlayTrackingWatch.Phase.Waiting, watch.State, "1回届いただけでは戻らない");
-        Feed(watch, 0, 20, 21.1);
-        watch.Step(21.12, true);
-        Assert.AreEqual(PlayTrackingWatch.Phase.Countdown, watch.State, "間を空けずに1秒届いたら数え始める");
-        Assert.AreEqual(3, watch.CountdownRemaining(21.12), .001);
-        StringAssert.Contains("再開まで 3", PlayTrackingStatus.ResumeText(watch.CountdownRemaining(21.12)));
-        Feed(watch, 0, 21.1, 22.5);
-        Assert.AreEqual(PlayTrackingWatch.Phase.Waiting, StepAt(watch, 23.0), "数える間に0.25秒より長く途切れたら待ちに戻る");
-        Feed(watch, 0, 23.0, 24.2);
-        Assert.AreEqual(PlayTrackingWatch.Phase.Countdown, StepAt(watch, 24.2));
-        Feed(watch, 0, 24.2, 27.25);
-        Assert.AreEqual(PlayTrackingWatch.Request.Resume, watch.Step(27.25, false), "3秒数えたら続きから");
+        for (int i = 0; i <= 3; i++)
+        {
+            double now = 20 + i * .1;
+            watch.ObserveUsable(0, now);
+            watch.Step(now, false, 1);
+            Assert.AreEqual(i < 3 ? PlayTrackingWatch.Phase.Waiting : PlayTrackingWatch.Phase.Countdown, watch.State);
+        }
+        Assert.AreEqual(3, watch.CountdownRemaining(20.3), .001);
+        StringAssert.Contains("再開まで 3", PlayTrackingStatus.ResumeText(watch.CountdownRemaining(20.3)));
+        Assert.AreEqual(PlayTrackingWatch.Phase.Waiting, StepAt(watch, 20.6), "数える間に途切れたら待ち直す");
+        for (int i = 0; i <= 3; i++)
+        {
+            double now = 21 + i * .1;
+            watch.ObserveUsable(0, now); watch.Step(now, false, 1);
+        }
+        Assert.AreEqual(PlayTrackingWatch.Phase.Countdown, watch.State);
+        Feed(watch, 0, 21.3, 24.35);
+        Assert.AreEqual(PlayTrackingWatch.Request.Resume, watch.Step(24.35, false));
         Assert.AreEqual(PlayTrackingWatch.Phase.Playing, watch.State);
     }
 

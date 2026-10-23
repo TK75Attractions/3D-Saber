@@ -336,6 +336,68 @@ public class CalibrationFlowPlayTests
         foreach(var sfx in sounds) Assert.AreEqual(0f,sfx.volume,"中止後も調整画面内では無音を維持");
         Assert.AreEqual(saved,GameSession.JudgmentOffsetMs);
     }
+    [UnityTest] public IEnumerator AudioChangeRestartsLivePracticeAndKeepsTheDraft()
+    {
+        var manager = Object.FindFirstObjectByType<GamePlayManager>();
+        var c = manager.Calibration;
+        c.BeginLivePractice();
+        c.ChangeOffset(saved < 990 ? 10 : -10);
+        c.SetSpeedStep(c.SpeedStep == 0 ? 2 : 0);
+        var draft = c.Draft;
+        int offset = draft.OffsetMs, profile = draft.Profile;
+        float approach = draft.ApproachTime, savedSpeed = GameSession.NoteApproachTime;
+        c.History.Add(85, SaberHand.Right);
+        var oldClip = manager.songPlayer.Clip;
+        c.SendMessage("AudioConfigurationChanged", true);
+        Assert.AreEqual(CalibrationRunMode.LivePractice, c.Mode);
+        Assert.AreSame(draft, c.Draft);
+        Assert.AreEqual(offset, draft.OffsetMs);
+        Assert.AreEqual(profile, draft.Profile);
+        Assert.AreEqual(approach, draft.ApproachTime);
+        Assert.AreEqual(savedSpeed, GameSession.NoteApproachTime);
+        Assert.AreEqual(saved, GameSession.JudgmentOffsetMs);
+        Assert.AreEqual(0, c.History.Count);
+        Assert.AreEqual(0, c.CollectedCount);
+        Assert.False(c.HasLastError);
+        Assert.False(c.LastInputWasMiss);
+        Assert.IsNull(c.Result);
+        Assert.AreNotSame(oldClip, manager.songPlayer.Clip);
+        Assert.Greater(manager.songPlayer.Clip.samples, 0);
+        Assert.True(manager.songPlayer.IsScheduled);
+        Assert.True(manager.songPlayer.GetComponent<AudioSource>().loop);
+        Assert.Greater(manager.noteSpawner.TotalNoteCount, 0);
+        Assert.AreEqual("音の出力先が変わったので、音を作り直しました。そのまま続けられます", c.Notice);
+        yield return null;
+        Assert.True(c.IsLive);
+    }
+
+    [UnityTest] public IEnumerator AudioChangeStillInterruptsMeasurement()
+    {
+        var manager = Object.FindFirstObjectByType<GamePlayManager>();
+        var c = manager.Calibration;
+        var input = InputPoint.Instance;
+        double red = input.LastReceivedTime, blue = input.LastReceivedTime2;
+        try
+        {
+            typeof(InputPoint).GetProperty("LastReceivedTime").SetValue(input, Time.realtimeSinceStartupAsDouble);
+            typeof(InputPoint).GetProperty("LastReceivedTime2").SetValue(input, Time.realtimeSinceStartupAsDouble);
+            c.Begin(CalibrationRunMode.Measure);
+            Assert.AreEqual(CalibrationRunMode.Measure, c.Mode);
+            c.SendMessage("AudioConfigurationChanged", true);
+            Assert.AreEqual(CalibrationRunMode.Idle, c.Mode);
+            Assert.False(manager.songPlayer.IsScheduled);
+            Assert.AreEqual(0, manager.noteSpawner.TotalNoteCount);
+            StringAssert.Contains("中断しました", c.Notice);
+            Assert.AreEqual(saved, GameSession.JudgmentOffsetMs);
+        }
+        finally
+        {
+            typeof(InputPoint).GetProperty("LastReceivedTime").SetValue(input, red);
+            typeof(InputPoint).GetProperty("LastReceivedTime2").SetValue(input, blue);
+        }
+        yield return null;
+    }
+
     [UnityTest] public IEnumerator FocusLossStopsAudioAndClearsTrial()
     {
         var manager=Object.FindFirstObjectByType<GamePlayManager>();var c=manager.Calibration;c.Begin(CalibrationRunMode.Practice);

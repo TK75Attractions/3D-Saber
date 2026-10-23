@@ -13,6 +13,10 @@ public class CuttableNote : MonoBehaviour
     public static IReadOnlyList<CuttableNote> ActiveNotes => activeNotes;
     public uint SpawnVersion { get; private set; }
     internal NoteFragmentPool FragmentPool;
+    internal NoteArrowMaterials Arrow;
+    readonly WrongDirectionCueGate wrongDirectionCue = new WrongDirectionCueGate();
+    JudgmentTier? fragmentTier;
+    public event System.Action<CuttableNote> OnWrongDirection;
     internal bool IsPooled;
     internal event System.Action<CuttableNote> OnRetired;
     int registryIndex = -1;
@@ -37,6 +41,10 @@ public class CuttableNote : MonoBehaviour
         // 前のノーツに結び付いたスコア・音・演出の購読を持ち越さない。
         OnRetired?.Invoke(this);
         OnCut = null; OnJudged = null; OnMiss = null; OnPartialCut = null; OnRetired = null;
+        OnWrongDirection = null;
+        wrongDirectionCue.Reset();
+        if (Arrow != null) Arrow.ResetCue();
+        fragmentTier = null;
         IsCut = IsMissed = IsFinalized = judgeable = false;
         JudgmentOwner = null;
         MinimumCutSpeed = 0; RequireJudgeableOnCut = DirectionVisualOnly = false;
@@ -150,6 +158,8 @@ public class CuttableNote : MonoBehaviour
     public event System.Action<CuttableNote, JudgmentTier, Vector3, Vector3> OnJudged;
     internal void NotifyJudgment(JudgmentTier tier, Vector3 point, Vector3 velocity)
     {
+        // OnCut 内の採点は破片生成より先。BAD の重力だけを生成時に引き渡す。
+        fragmentTier = tier;
         OnJudged?.Invoke(this, tier, point, velocity);
     }
     // 直前の切断で飛ばした2片(Perfect の演出から呼ぶ)。再利用ノーツへ持ち越さない。
@@ -206,17 +216,17 @@ public class CuttableNote : MonoBehaviour
 
     // imuHint：IMU 由来の振り検知方向（無ければ None）。velocity か imuHint のどちらかで一致すれば OK。
     // cutterHand：切ろうとしたセーバーの手。RequiredHand と不一致なら何もしない(逆方向拒否と同じ非ペナルティ設計)。
-    public void Cut(Vector3 hitPoint, Vector3 cutVelocity, CutDirection imuHint, SaberHand cutterHand)
+    public void Cut(Vector3 hitPoint, Vector3 cutVelocity, CutDirection imuHint, SaberHand cutterHand, ulong swingId = 0)
     {
-        CutCore(hitPoint, cutVelocity, imuHint, cutterHand, null, .866f);
+        CutCore(hitPoint, cutVelocity, imuHint, cutterHand, null, .866f, swingId: swingId);
     }
 
     // 時間窓・位置を外側で確認済みのCamera判定専用。向きの扱いは本編の判定と同じ(合わなければ切らない)。
     public bool TryCutWithCameraTiming(Vector3 hitPoint, Vector3 cutVelocity, SaberHand cutterHand,
-        double songTime, float directionTolerance)
+        double songTime, float directionTolerance, ulong swingId = 0)
     {
         if (!CameraSaberHistory.Finite(songTime)) return false;
-        return CutCore(hitPoint, cutVelocity, CutDirection.None, cutterHand, songTime, directionTolerance);
+        return CutCore(hitPoint, cutVelocity, CutDirection.None, cutterHand, songTime, directionTolerance, swingId: swingId);
     }
 
     // 従来のセーバー判定用。judgedSongTime があれば、その曲時計(刃がノーツを通り過ぎた・いちばん近づいた時刻)で採点する。
@@ -224,14 +234,15 @@ public class CuttableNote : MonoBehaviour
     // judgedDirection は向きの判定だけに使う動き(省略時は cutVelocity)。切り口や破片は cutVelocity のまま。
     // 切れたかどうかを返す。
     public bool CutAtSongTime(Vector3 hitPoint, Vector3 cutVelocity, CutDirection imuHint, SaberHand cutterHand,
-        double? judgedSongTime, float directionTolerance = .866f, Vector2? judgedDirection = null)
+        double? judgedSongTime, float directionTolerance = .866f, Vector2? judgedDirection = null, ulong swingId = 0)
     {
         if (judgedSongTime.HasValue && !CameraSaberHistory.Finite(judgedSongTime.Value)) judgedSongTime = null;
-        return CutCore(hitPoint, cutVelocity, imuHint, cutterHand, null, directionTolerance, judgedSongTime, judgedDirection);
+        return CutCore(hitPoint, cutVelocity, imuHint, cutterHand, null, directionTolerance, judgedSongTime, judgedDirection, swingId);
     }
 
     bool CutCore(Vector3 hitPoint, Vector3 cutVelocity, CutDirection imuHint, SaberHand cutterHand,
-        double? swingSongTime, float directionTolerance, double? judgedSongTime = null, Vector2? judgedDirection = null)
+        double? swingSongTime, float directionTolerance, double? judgedSongTime = null, Vector2? judgedDirection = null,
+        ulong swingId = 0)
     {
         if (!isActiveAndEnabled || IsCut || IsMissed || IsFinalized) return false;
 
@@ -244,7 +255,7 @@ public class CuttableNote : MonoBehaviour
         if (cutTime.HasValue && !CanBeginCutAt(cutTime.Value, cutterHand)) return false;
 
         // 向きの決まったノーツは、向きが合わない振りでは切らない(2026-10-22 ユーザー指定。以前は 60〜120° を1段下げて切っていた)。
-        // 何もせず終了: 判定もミスも出さず、ノーツは IsCut も IsMissed も変わらない。向きの合う振りで切り直せる。
+        // 矢印だけで知らせて終了。判定・ミスは出さず、向きの合う振りで切り直せる。
         // 方向が見た目だけのノーツ(ナビノーツ)は向きを見ない。
         if (RequiredDirection != CutDirection.None && !DirectionVisualOnly)
         {
@@ -252,7 +263,14 @@ public class CuttableNote : MonoBehaviour
             bool dirOk = swingSongTime.HasValue
                 ? CutDirectionHelper.Matches(RequiredDirection, vXY, directionTolerance)
                 : CutDirectionHelper.MatchesWithHint(RequiredDirection, vXY, imuHint, directionTolerance);
-            if (!dirOk) return false;
+            if (!dirOk)
+            {
+                // ID 省略の直接呼び出しは1回を1振りとする。実際の入力経路は振りの ID を渡す。
+                if (swingId == 0) swingId = WrongDirectionCueGate.NewSwing();
+                if (wrongDirectionCue.TrySignal(swingId, Time.timeAsDouble))
+                    OnWrongDirection?.Invoke(this);
+                return false;
+            }
         }
 
         LastCutterHand = cutterHand;
@@ -439,9 +457,16 @@ public class CuttableNote : MonoBehaviour
     }
     float PieceLife => FlowDebris ? Mathf.Min(pieceLife, FlowPieceLife) : pieceLife;
     float PieceFadeStart => FlowDebris ? Mathf.Min(pieceFadeStart, FlowFadeStart) : pieceFadeStart;
+    public const float BadFragmentGravityScale = 1.6f;
+    public static float FragmentGravityScale(JudgmentTier? tier)
+        => tier == JudgmentTier.Bad ? BadFragmentGravityScale : FlowGravityScale;
+
     void ApplyFlow(SlicePieceDecay piece)
     {
-        if (FlowDebris && piece != null) piece.Flow(FlowNoteVelocity * FlowMomentumKeep, FlowGravityScale);
+        if (piece == null) return;
+        JudgmentTier? tier = IsMissed || DirectionVisualOnly ? null : fragmentTier;
+        if (FlowDebris) piece.Flow(FlowNoteVelocity * FlowMomentumKeep, FragmentGravityScale(tier));
+        else if (tier == JudgmentTier.Bad) piece.Flow(Vector3.zero, BadFragmentGravityScale);
     }
     private SlicePieceDecay RentPiece(Material material, bool sliced)
     {
