@@ -127,7 +127,7 @@ public class PhoneSaberControlPanelTests
             { "phone-shutter-iso", new[] { "2000", "1000", "500", "250" } },
             { "phone-shutter-emitter", new[] { "0", "1" } },
             { "phone-shutter", new[] { "0", "500", "1000", "2000" } },
-            { "phone-exposure", new[] { "0", "-1", "-2" } }, { "phone-track-lock", new[] { "" } }, { "phone-clip", new[] { "" } },
+            { "phone-exposure", new[] { "0", "-1", "-2" } }, { "phone-track-lock", new[] { "", "0", "1" } }, { "phone-clip", new[] { "" } },
             { "pc-ignore", new[] { "red", "blue" } }, { "pc-clear-ignore", new[] { "" } }, { "clocks-synchronized", new[] { "0", "1" } }
         };
         foreach (var pair in expected)
@@ -139,7 +139,7 @@ public class PhoneSaberControlPanelTests
     {
         string seen = null;
         var handlers = new Dictionary<string, Action<string>> { { name, v => seen = v } };
-        Assert.IsTrue(PhoneSaberControlPanelActions.Dispatch(name, value, handlers));
+        Assert.IsTrue(PhoneSaberControlPanelActions.Dispatch(name, value, handlers, confirmed: true));
         Assert.AreEqual(value, seen);
         Assert.AreEqual(200, Parse(Request("POST", "/action?t=" + Token + "&name=" + name + "&value=" + Uri.EscapeDataString(value))));
     }
@@ -206,6 +206,97 @@ public class PhoneSaberControlPanelTests
         StringAssert.Contains("\"enabled\":false,\"selected\":true", json);
         StringAssert.Contains("\"warning\":true", json);
         Assert.Throws<ArgumentException>(() => state.Button("bad", "unknown"));
+    }
+
+    [TestCase("judge-mode", "0")]
+    [TestCase("phone-clear-ignore", "")]
+    [TestCase("pc-clear-ignore", "")]
+    [TestCase("phone-clear-area", "")]
+    [TestCase("calibration-reset", "")]
+    public void DangerousActionsRequireConfirmationEvenOutsideBrowser(string name, string value)
+    {
+        int calls = 0;
+        var handlers = new Dictionary<string, Action<string>> { { name, _ => calls++ } };
+        Assert.IsFalse(PhoneSaberControlPanelActions.Dispatch(name, value, handlers));
+        Assert.AreEqual(0, calls);
+        Assert.IsTrue(PhoneSaberControlPanelActions.Dispatch(name, value, handlers, confirmed: true));
+        Assert.AreEqual(1, calls);
+        var state = new PhoneSaberControlPanelState();
+        state.BeginSection("通常"); state.Button("危険", name, value); state.Button("自動", "judge-mode", "1");
+        state.MoveDangerousControls();
+        Assert.AreEqual(1, state.Sections[0].Items.Count);
+        Assert.AreEqual("judge-mode", state.Sections[0].Items[0].Name);
+        Assert.IsTrue(state.Sections[1].Dangerous);
+        Assert.IsTrue(state.Sections[1].Items[0].RequiresConfirmation);
+        StringAssert.Contains("\"requiresConfirmation\":true", state.ToJson());
+        StringAssert.Contains("\"dangerous\":true", state.ToJson());
+        Assert.IsFalse(PhoneSaberControlPanelActions.RequiresConfirmation("judge-mode", "1"));
+    }
+
+    static PhoneSaberAcknowledgement Ack(int id, string result, string detail, string station = "A", string sender = "10.0.0.1")
+        => new PhoneSaberAcknowledgement(id, station, "ios", result, detail, sender);
+
+    [Test]
+    public void PhoneJsonIncludesEveryReportedSettingUnknownsSourcesAndAge()
+    {
+        var phone = new PhoneSaberControlPanelPhone("A", "10.0.0.1");
+        phone.Metrics(new PhoneSaberMetrics { Platform = "ios", Station = "A", Controls = "1231", ReceivedAt = 10 });
+        phone.Acknowledge(Ack(1, "shutter-emitter", "on"), 12, 11);
+        phone.Acknowledge(Ack(2, "cleared", "ignore"), 13, 12);
+        phone.Acknowledge(Ack(3, "learned", "samples42"), 14, 13);
+        var state = new PhoneSaberControlPanelState { Now = 20 };
+        state.Phones.Add(phone); state.Phones.Add(new PhoneSaberControlPanelPhone("B", null));
+        string json = state.ToJson();
+        foreach (string key in PhoneSaberControlPanelPhone.Keys) StringAssert.Contains("\"" + key + "\":{", json);
+        StringAssert.Contains("\"trackLock\":{\"value\":\"ON\",\"ageSeconds\":10.0,\"source\":\"metrics\"}", json);
+        StringAssert.Contains("\"exposureEv\":{\"value\":\"-2\"", json);
+        StringAssert.Contains("\"shutter\":{\"value\":\"1/2000\"", json);
+        StringAssert.Contains("\"iso\":{\"value\":\"1000\"", json);
+        StringAssert.Contains("\"colouredEmitter\":{\"value\":\"ON\",\"ageSeconds\":8.0,\"source\":\"ACK確認\"}", json);
+        StringAssert.Contains("\"ignoreRed\":{\"value\":\"0\"", json);
+        StringAssert.Contains("\"ignoreBlue\":{\"value\":\"0\"", json);
+        StringAssert.Contains("\"playArea\":{\"value\":\"設定済み\"", json);
+        StringAssert.Contains("\"trackLock\":{\"value\":null,\"ageSeconds\":null,\"source\":null}", json);
+    }
+
+    [Test]
+    public void PhoneReportsFollowMetricsAndAcksWithoutGuessingUnreportedTotals()
+    {
+        var phone = new PhoneSaberControlPanelPhone("A", "10.0.0.1");
+        phone.Acknowledge(Ack(1, "defaults", "tracklock-on-ev-2-shutter-2000"), 8, 7);
+        Assert.AreEqual("OFF", phone.Value("colouredEmitter"));
+        phone.Metrics(new PhoneSaberMetrics { Platform = "ios", Station = "A", Controls = "0013", ReceivedAt = 10 });
+        Assert.AreEqual("OFF", phone.Value("trackLock"));
+        Assert.AreEqual("1/500", phone.Value("shutter"));
+        Assert.AreEqual("250", phone.Value("iso"));
+        phone.Acknowledge(Ack(2, "tracklock", "on"), 12, 9);
+        Assert.AreEqual("OFF", phone.Value("trackLock"), "古い操作のACKで新しいmetricsを戻さない");
+        phone.Acknowledge(Ack(3, "tracklock", "on"), 13, 11);
+        Assert.AreEqual("ON", phone.Value("trackLock"));
+        phone.Acknowledge(Ack(4, "shutter", "off", "B"), 14, 13);
+        phone.Acknowledge(Ack(4, "shutter", "off", sender: "10.0.0.2"), 14, 13);
+        Assert.AreEqual("1/500", phone.Value("shutter"), "別台・別端末を混ぜない");
+        phone.Acknowledge(Ack(5, "cleared", "ignore"), 15, 14);
+        phone.Acknowledge(Ack(6, "ignored", "red2-blue1"), 16, 15);
+        Assert.IsNull(phone.Value("ignoreRed"), "追加数は総数ではない");
+        Assert.IsNull(phone.Value("ignoreBlue"));
+        phone.Acknowledge(Ack(7, "cleared", "area"), 17, 16);
+        phone.Acknowledge(Ack(8, "failed", "samples0"), 18, 17);
+        Assert.AreEqual("なし", phone.Value("playArea"));
+    }
+
+    [Test]
+    public void PhonePendingWaitsForEachTargetAckAndNotLearningOrOtherStation()
+    {
+        string[] targets = { "10.0.0.1", "10.0.0.2" };
+        Assert.IsFalse(PhoneSaberControlPanelPhone.HasAcknowledged("A", targets, new[] { Ack(1, "shutter", "500") }));
+        Assert.IsFalse(PhoneSaberControlPanelPhone.HasAcknowledged("A", Array.Empty<string>(), new[] { Ack(1, "learning", "3s") }));
+        Assert.IsFalse(PhoneSaberControlPanelPhone.HasAcknowledged("A", Array.Empty<string>(), new[] { Ack(1, "shutter", "500", "B") }));
+        Assert.IsTrue(PhoneSaberControlPanelPhone.HasAcknowledged("A", targets,
+            new[] { Ack(1, "shutter", "500"), Ack(1, "shutter", "500", sender: "10.0.0.2") }));
+        var state = new PhoneSaberControlPanelState(); state.BeginSection("iPhone"); state.Button("1/500", "phone-shutter", "500");
+        state.Sections[0].Items[0].Pending = true; state.Sections[0].Items[0].CommandId = 42;
+        StringAssert.Contains("\"commandId\":42,\"pending\":true", state.ToJson());
     }
 
     // ソケットはこの1件のみ。固定ポートを使用せず、終了時に停止・破棄する。

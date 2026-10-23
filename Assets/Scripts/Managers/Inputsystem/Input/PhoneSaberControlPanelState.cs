@@ -21,16 +21,20 @@ public static class PhoneSaberControlPanelActions
         { "phone-shutter-emitter", new[] { "0", "1" } },
         { "phone-shutter", new[] { "0", "500", "1000", "2000" } },
         { "phone-exposure", new[] { "0", "-1", "-2" } },
-        { "phone-track-lock", new[] { "" } }, { "phone-clip", new[] { "" } },
+        { "phone-track-lock", new[] { "", "0", "1" } }, { "phone-clip", new[] { "" } },
         { "pc-ignore", new[] { "red", "blue" } }, { "pc-clear-ignore", new[] { "" } },
         { "clocks-synchronized", new[] { "0", "1" } }
     };
 
     public static IEnumerable<string> Names => choices.Keys;
     public static bool IsValid(string name, string value) => name != null && choices.TryGetValue(name, out var values) && Array.IndexOf(values, value) >= 0;
-    public static bool Dispatch(string name, string value, IReadOnlyDictionary<string, Action<string>> handlers)
+    public static bool RequiresConfirmation(string name, string value) =>
+        name == "judge-mode" && value == "0" || name == "phone-clear-ignore" || name == "pc-clear-ignore" ||
+        name == "phone-clear-area" || name == "calibration-reset";
+
+    public static bool Dispatch(string name, string value, IReadOnlyDictionary<string, Action<string>> handlers, bool confirmed = false)
     {
-        if (!IsValid(name, value) || !handlers.TryGetValue(name, out var handler)) return false;
+        if (!IsValid(name, value) || RequiresConfirmation(name, value) && !confirmed || !handlers.TryGetValue(name, out var handler)) return false;
         handler(value);
         return true;
     }
@@ -50,13 +54,18 @@ public sealed class PhoneSaberControlPanelState
     public sealed class Item
     {
         public string Text, Name, Value, Grade;
-        public bool Enabled, Selected, Warning;
+        public int CommandId;
+        public bool Enabled, Selected, Warning, Pending, Acknowledged;
+        public bool RequiresConfirmation => PhoneSaberControlPanelActions.RequiresConfirmation(Name, Value);
     }
     public sealed class Section
     {
         public string Title;
+        public bool Dangerous;
         public readonly List<Item> Items = new List<Item>();
     }
+    public readonly List<PhoneSaberControlPanelPhone> Phones = new List<PhoneSaberControlPanelPhone>();
+    public double Now;
     public readonly List<Section> Sections = new List<Section>();
     Section current;
     public void BeginSection(string title) { current = new Section { Title = title }; Sections.Add(current); }
@@ -67,20 +76,45 @@ public sealed class PhoneSaberControlPanelState
         if (!PhoneSaberControlPanelActions.IsValid(name, value)) throw new ArgumentException("Unknown control panel action: " + name);
         current.Items.Add(new Item { Text = text, Name = name, Value = value, Enabled = enabled, Selected = selected });
     }
-    public void Toggle(string text, bool selected, string name, bool enabled = true) => Button(text, name, selected ? "0" : "1", enabled, selected);
+    public void Toggle(string text, bool selected, string name, bool enabled = true)
+    {
+        Label(text);
+        Button("OFF", name, "0", enabled, !selected);
+        Button("ON", name, "1", enabled, selected);
+    }
+    public void MoveDangerousControls()
+    {
+        var details = new Section { Title = "詳細・危険", Dangerous = true };
+        foreach (var section in Sections)
+        {
+            details.Items.AddRange(section.Items.FindAll(i => i.RequiresConfirmation));
+            section.Items.RemoveAll(i => i.RequiresConfirmation);
+        }
+        Sections.Add(details);
+    }
     public string ToJson()
     {
-        var json = new StringBuilder("{\"sections\":[");
+        var json = new StringBuilder("{\"phones\":[");
+        foreach (var phone in Phones)
+        {
+            if (json[json.Length - 1] != '[') json.Append(',');
+            phone.AppendJson(json, Now);
+        }
+        json.Append("],\"sections\":[");
         foreach (var section in Sections)
         {
             if (json[json.Length - 1] != '[') json.Append(',');
-            json.Append("{\"title\":").Append(Quote(section.Title)).Append(",\"items\":[");
+            json.Append("{\"title\":").Append(Quote(section.Title)).Append(",\"dangerous\":").Append(section.Dangerous ? "true" : "false").Append(",\"items\":[");
             foreach (var item in section.Items)
             {
                 if (json[json.Length - 1] != '[') json.Append(',');
                 json.Append("{\"text\":").Append(Quote(item.Text)).Append(",\"name\":").Append(Quote(item.Name))
                     .Append(",\"value\":").Append(Quote(item.Value)).Append(",\"enabled\":").Append(item.Enabled ? "true" : "false")
                     .Append(",\"selected\":").Append(item.Selected ? "true" : "false").Append(",\"warning\":").Append(item.Warning ? "true" : "false")
+                    .Append(",\"commandId\":").Append(item.CommandId)
+                    .Append(",\"pending\":").Append(item.Pending ? "true" : "false")
+                    .Append(",\"acknowledged\":").Append(item.Acknowledged ? "true" : "false")
+                    .Append(",\"requiresConfirmation\":").Append(item.RequiresConfirmation ? "true" : "false")
                     .Append(",\"grade\":").Append(Quote(item.Grade)).Append('}');
             }
             json.Append("]}");
@@ -107,6 +141,89 @@ public sealed class PhoneSaberControlPanelState
             }
         }
         return result.Append('"').ToString();
+    }
+}
+
+// iPhone が実際に報告した値だけを保持する。ACK の時刻は受信時刻ではなく、パネルで確認した時刻。
+public sealed class PhoneSaberControlPanelPhone
+{
+    public sealed class Report
+    {
+        public string Value, Source;
+        public double At, Order;
+    }
+    public readonly string Station, Sender;
+    public readonly Dictionary<string, Report> Settings = new Dictionary<string, Report>();
+    public static readonly string[] Keys = { "trackLock", "exposureEv", "shutter", "iso", "colouredEmitter", "ignoreRed", "ignoreBlue", "playArea" };
+    public static readonly string[] Labels = { "追跡ロック", "露出 EV", "シャッター", "ISO", "色付き発光体", "無視範囲 赤", "無視範囲 青", "プレイ範囲" };
+    public PhoneSaberControlPanelPhone(string station, string sender) { Station = station; Sender = sender; }
+    void Set(string key, string value, double at, double order, string source)
+    {
+        if (!Settings.TryGetValue(key, out var old) || order >= old.Order)
+            Settings[key] = new Report { Value = value, At = at, Order = order, Source = source };
+    }
+    public void Metrics(PhoneSaberMetrics phone)
+    {
+        if (phone == null || phone.Platform != "ios" || phone.Station != Station || phone.Controls == null) return;
+        string ctl = phone.Controls;
+        void Put(string key, string value) => Set(key, value, phone.ReceivedAt, phone.ReceivedAt, "metrics");
+        Put("trackLock", ctl[0] == '1' ? "ON" : "OFF");
+        Put("exposureEv", new[] { "0", "-1", "-2" }[ctl[1] - '0']);
+        Put("shutter", new[] { "OFF", "1/500", "1/1000", "1/2000" }[ctl[2] - '0']);
+        Put("iso", new[] { "2000", "1000", "500", "250" }[ctl[3] - '0']);
+    }
+    public void Acknowledge(PhoneSaberAcknowledgement ack, double observedAt, double commandAt)
+    {
+        if (ack.Platform != "ios" || ack.Station != Station || ack.Sender != Sender) return;
+        void Put(string key, string value)
+        {
+            // 時刻を保持していない過去操作のACKは、metricsがある項目には使わない。
+            if (double.IsNegativeInfinity(commandAt) && Settings.TryGetValue(key, out var old) && old.Source == "metrics") return;
+            Set(key, value, observedAt, double.IsNegativeInfinity(commandAt) ? observedAt : commandAt, "ACK確認");
+        }
+        switch (ack.Result)
+        {
+            case "tracklock": Put("trackLock", ack.Detail == "on" ? "ON" : "OFF"); break;
+            case "exposure": Put("exposureEv", ack.Detail.Substring(2)); break;
+            case "shutter": Put("shutter", ack.Detail == "off" ? "OFF" : "1/" + ack.Detail); break;
+            case "shutter-iso": Put("iso", ack.Detail); break;
+            case "shutter-emitter": Put("colouredEmitter", ack.Detail == "on" ? "ON" : "OFF"); break;
+            case "defaults":
+                Put("trackLock", "ON"); Put("exposureEv", "-2");
+                if (ack.Detail.EndsWith("shutter-2000"))
+                { Put("shutter", "1/2000"); Put("iso", "2000"); Put("colouredEmitter", "OFF"); }
+                break;
+            case "cleared":
+                if (ack.Detail == "area") Put("playArea", "なし");
+                else { Put("ignoreRed", "0"); Put("ignoreBlue", "0"); }
+                break;
+            case "learned": Put("playArea", "設定済み"); break;
+            // ignored の数は追加数であって総数ではない。総数を推測して表示しない。
+            case "ignored": Put("ignoreRed", null); Put("ignoreBlue", null); break;
+        }
+    }
+    public static bool HasAcknowledged(string station, string[] senders, PhoneSaberAcknowledgement[] acknowledgements)
+    {
+        bool Matches(string sender) => Array.Exists(acknowledgements, a => a.Platform == "ios" && a.Station == station &&
+            (sender == null || a.Sender == sender) && a.Result != "learning");
+        if (senders.Length == 0) return Matches(null);
+        return Array.TrueForAll(senders, Matches);
+    }
+    public string Value(string key) => Settings.TryGetValue(key, out var report) ? report.Value : null;
+    public void AppendJson(StringBuilder json, double now)
+    {
+        json.Append("{\"station\":").Append(PhoneSaberControlPanelState.Quote(Station))
+            .Append(",\"sender\":").Append(PhoneSaberControlPanelState.Quote(Sender)).Append(",\"settings\":{");
+        foreach (string key in Keys)
+        {
+            if (json[json.Length - 1] != '{') json.Append(',');
+            Settings.TryGetValue(key, out var report);
+            json.Append(PhoneSaberControlPanelState.Quote(key)).Append(":{\"value\":")
+                .Append(PhoneSaberControlPanelState.Quote(report?.Value)).Append(",\"ageSeconds\":")
+                .Append(report == null ? "null" : Math.Max(0, now - report.At).ToString("0.0", CultureInfo.InvariantCulture))
+                .Append(",\"source\":").Append(PhoneSaberControlPanelState.Quote(report?.Source)).Append('}');
+        }
+        json.Append("}}");
     }
 }
 

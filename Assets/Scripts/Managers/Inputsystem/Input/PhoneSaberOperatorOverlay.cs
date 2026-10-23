@@ -28,6 +28,19 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
     readonly PhoneSaberControlPanelRates healthRates = new PhoneSaberControlPanelRates();
     PhoneSaberControlPanelHealth.GameWindow healthGame;
     List<PhoneSaberControlPanelHealth.Check> healthChecks;
+    readonly Dictionary<string, PhoneSaberControlPanelPhone> phoneReports = new Dictionary<string, PhoneSaberControlPanelPhone>();
+    readonly HashSet<string> seenPhoneAcks = new HashSet<string>();
+    readonly Dictionary<int, double> phoneCommandTimes = new Dictionary<int, double>();
+    sealed class PendingPhoneAction
+    {
+        public int Id;
+        public double At;
+        public string Value;
+        public string[] Senders;
+    }
+    readonly Dictionary<string, PendingPhoneAction> pendingPhoneActions = new Dictionary<string, PendingPhoneAction>();
+    bool showDangerous;
+    string confirmAction, confirmValue;
     string fallbackStation;
     string station;
     string services;
@@ -133,7 +146,7 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         if (controlPanel != null)
         {
             for (int i = 0; i < 8 && controlPanel.TryDequeue(out var action); i++)
-                ExecuteAction(action.Name, action.Value);
+                ExecuteAction(action.Name, action.Value, action.Query.TryGetValue("confirm", out var confirmation) && confirmation == "1");
             if (!controlPanel.Running)
             {
                 LogControlPanel("stopped error=" + controlPanel.Error);
@@ -183,9 +196,23 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
 
     // 通信・IMGUI・F7 の全操作はこの同じ表を通る。実行時にも現在の有効条件を確認する。
     public IReadOnlyDictionary<string, Action<string>> ControlPanelHandlers => actionHandlers ?? (actionHandlers = CreateActionHandlers());
-    bool ExecuteAction(string name, string value)
+    bool ExecuteAction(string name, string value, bool confirmed = false)
     {
-        if (!PhoneSaberControlPanelActions.Dispatch(name, value, ControlPanelHandlers)) return false;
+        if (!PhoneSaberControlPanelActions.Dispatch(name, value, ControlPanelHandlers, confirmed)) return false;
+        if (name.StartsWith("phone-"))
+        {
+            var store = PhoneSaberDiscoveryResponder.Acknowledgements;
+            if (store.Latest(out int id, out _, out double at))
+            {
+                var senders = new List<string>();
+                var input = InputPoint.Instance;
+                if (input != null)
+                    foreach (string sender in new[] { input.RedCoordinateSender, input.BlueCoordinateSender })
+                        if (!string.IsNullOrEmpty(sender) && !senders.Contains(sender)) senders.Add(sender);
+                pendingPhoneActions[name] = new PendingPhoneAction { Id = id, At = at, Value = value, Senders = senders.ToArray() };
+                phoneCommandTimes[id] = at;
+            }
+        }
         LogControlPanel("action name=" + name + " value=" + value);
         nextRefresh = 0;
         return true;
@@ -233,8 +260,8 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
             { "phone-shutter-emitter", v => PhoneSaberDiscoveryResponder.QueueCommand("shutter-emitter=" + v) },
             { "phone-shutter", v => PhoneSaberOperatorKeys.SelectShutter(int.Parse(v, CultureInfo.InvariantCulture)) },
             { "phone-exposure", v => PhoneSaberDiscoveryResponder.QueueCommand(PhoneSaberDiscoveryResponder.ExposureBiasCommand(int.Parse(v, CultureInfo.InvariantCulture))) },
-            { "phone-track-lock", _ => {
-                bool last = (bool)TrackLockState.GetValue(null);
+            { "phone-track-lock", v => {
+                bool last = v == "" ? (bool)TrackLockState.GetValue(null) : v == "0";
                 var command = PhoneSaberOperatorKeys.TrackLockCommand(last);
                 TrackLockState.SetValue(null, !last);
                 PhoneSaberDiscoveryResponder.QueueCommand(command.command);
@@ -409,7 +436,7 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         string measured = PhoneSaberJudgeLatency.AutomaticMs.HasValue ? $"{PhoneSaberJudgeLatency.AutomaticMs.Value:0} ms" : "未測定";
         string game = PhoneSaberJudgeLatency.GameMs.HasValue ? $"{PhoneSaberJudgeLatency.GameMs.Value:0} ms" : "120 ms";
         panel.Label($"判定の遅れ補正: {(auto ? "自動（測った遅れ）" : "ゲームの設定")}  いま {applied}（測定 {measured}・調整 {offset:+0;-0;0} ms・ゲーム {game}{(PhoneSaberJudgeLatency.PredictionLeadMs > 0 && auto ? $"・予測の先読み −{PhoneSaberJudgeLatency.PredictionLeadMs:0} ms" : "")}）（この台に保存）");
-        panel.Button("ゲームの設定", "judge-mode", "0", selected: !auto);
+        panel.Button("判定: ゲームの設定", "judge-mode", "0", selected: !auto);
         panel.Button("自動", "judge-mode", "1", selected: auto);
         panel.Button("調整 −10", "judge-adjust", "-10");
         panel.Button("調整 +10", "judge-adjust", "10");
@@ -472,7 +499,7 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         double left = PhoneSaberDiscoveryResponder.CommandSecondsLeft(SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp));
         panel.Label("キーでも操作できます（F8 を開かずに）: Ctrl+Shift+R 赤を無視 / B 青を無視 / I 赤と青を無視 / C 無視を消す / K 今の場面を保存（iPhone） / " +
             "P プレイ範囲を覚える / X プレイ範囲を消す / E 露出 −2→0→−1→−2 / T 剣を追いかける ON→OFF→ON / S 固定シャッター");
-        panel.Label("スマホに無視させる（iPhone・Android。剣の電源を切り、コーンなどだけが映っている状態で押す）" +
+        panel.Label("iPhoneに無視させる（剣の電源を切り、コーンなどだけが映っている状態で押す）" +
             (left > 0 ? $"　送信中 あと {left:0} 秒" : ""));
         if (!string.IsNullOrEmpty(PhoneSaberOperatorKeys.LastResultText))
             panel.Label(PhoneSaberOperatorKeys.LastResultText);
@@ -481,7 +508,9 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         panel.Button("スマホ: 赤と青を無視", "phone-ignore", "both");
         panel.Label("剣を消して3秒待つ（学習中に映った剣も無視されます）");
         panel.Button("スマホ: 無視をすべて消す", "phone-clear-ignore");
-        panel.Button("剣を追いかける ON/OFF [T]", "phone-track-lock");
+        panel.Label("追跡ロック [T]（iPhoneの報告値は上の「いまの設定」）");
+        panel.Button("OFF", "phone-track-lock", "0");
+        panel.Button("ON", "phone-track-lock", "1");
         panel.Button("今の場面を保存 [K]", "phone-clip");
         // プレイ範囲（2026-10-18）: 赤い服の人など動く物は無視範囲では外せないので、剣を振る範囲の外の候補を選ばせない。
         panel.Label("スマホのプレイ範囲（赤い服の人など、動く赤・青の物の対策。押してから10秒、遊ぶ範囲いっぱいに剣を振る）");
@@ -571,7 +600,8 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
 
     PhoneSaberControlPanelState BuildPanel(double now)
     {
-        panel = new PhoneSaberControlPanelState();
+        panel = new PhoneSaberControlPanelState { Now = now };
+        BuildCurrentSettings(now);
         panel.BeginSection("状態チェック · good-20261020");
         if (healthChecks != null)
             foreach (var check in healthChecks) panel.HealthLabel(check);
@@ -599,7 +629,99 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         panel.Label("片道時計差=PC受信壁時計−ts。NTP同期時のみ有効（負値は時計差）。\n" +
             "受信間隔は同期不要。良好 p95<50/最大<150 ms、注意 p95<100/最大<500 ms。\n" +
             "最大間隔は現在の無受信時間も判定。両色を認識させ20サンプル以上で確認。");
+        panel.MoveDangerousControls();
+        foreach (var section in panel.Sections)
+            foreach (var item in section.Items)
+            {
+                if (item.Name == null || !item.Name.StartsWith("phone-")) continue;
+                string reported = PhoneChoice(item.Name);
+                item.Selected = reported != null && reported == item.Value;
+                if (pendingPhoneActions.TryGetValue(item.Name, out var pending))
+                {
+                    item.CommandId = pending.Id;
+                    bool acknowledged = PhoneSaberControlPanelPhone.HasAcknowledged(CurrentStation, pending.Senders,
+                        PhoneSaberDiscoveryResponder.Acknowledgements.Read(pending.Id));
+                    item.Acknowledged = acknowledged;
+                    if (!acknowledged && pending.Value == item.Value)
+                    {
+                        item.Pending = now - pending.At < 20;
+                        if (!item.Pending) item.Text += "（未確認・応答なし）";
+                    }
+                    if (!acknowledged && now - pending.At < 20) item.Enabled = false;
+                }
+            }
         return panel;
+    }
+
+    // 台A/Bの報告を混ぜず、同じ台の複数端末も送信元ごとに表示する。
+    void BuildCurrentSettings(double now)
+    {
+        var input = InputPoint.Instance;
+        var store = PhoneSaberDiscoveryResponder.Acknowledgements;
+        if (store.Latest(out int latest, out _, out double queuedAt))
+        {
+            phoneCommandTimes[latest] = queuedAt;
+            var currentAcks = new HashSet<string>();
+            for (int offset = 31; offset >= 0 && latest - offset > 0; offset--)
+                foreach (var ack in store.Read(latest - offset))
+                {
+                    string key = ack.Id + ":" + ack.Sender + ":" + ack.Result + ":" + ack.Detail;
+                    currentAcks.Add(key);
+                    if (ack.Platform != "ios" || ack.Station != "A" && ack.Station != "B" || !seenPhoneAcks.Add(key)) continue;
+                    var phone = PhoneReport(ack.Station, ack.Sender);
+                    // 過去ACKの確認時刻と操作時刻を区別し、後から来たmetricsを優先する。
+                    double order = phoneCommandTimes.TryGetValue(ack.Id, out double at) ? at : double.NegativeInfinity;
+                    phone.Acknowledge(ack, now, order);
+                }
+            seenPhoneAcks.IntersectWith(currentAcks);
+            foreach (int id in new List<int>(phoneCommandTimes.Keys))
+                if (id < latest - 31) phoneCommandTimes.Remove(id);
+        }
+        if (input != null)
+            foreach (string sender in new[] { input.RedCoordinateSender, input.BlueCoordinateSender })
+            {
+                var metrics = input.ReadPhoneMetrics(sender, now);
+                if (metrics?.Platform == "ios" && (metrics.Station == "A" || metrics.Station == "B"))
+                    PhoneReport(metrics.Station, sender).Metrics(metrics);
+            }
+        panel.BeginSection("いまの設定");
+        panel.Label("操作対象: このPCの台 " + (CurrentStation ?? "未指定") + " のiPhone（送信だけでは確定しません）");
+        foreach (string phoneStation in new[] { "A", "B" })
+        {
+            bool found = false;
+            foreach (var phone in phoneReports.Values)
+                if (phone.Station == phoneStation) { panel.Phones.Add(phone); found = true; }
+            if (!found) panel.Phones.Add(new PhoneSaberControlPanelPhone(phoneStation, null));
+        }
+        panel.Label($"PC 判定: {(PhoneSaberJudgeLatency.Mode == PhoneSaberJudgeLatencySettings.Automatic ? "自動" : "ゲームの設定")} ／ 調整 {PhoneSaberJudgeLatency.OffsetMs:+0;-0;0} ms");
+        panel.Label($"PC フィルター: {PhoneSaberFilterSettings.Label(PhoneSaberFilterSettings.Load(CurrentStation))} ／ 揺れ止め: {(PhoneSaberBladeStabilizerSettings.Load(CurrentStation) ? "ON" : "OFF")}");
+        panel.Label("PC 予測: " + (input == null ? "未確認" : input.PredictionAutomatic ? $"自動（赤 {input.PredictionLead(false)} / 青 {input.PredictionLead(true)} ms）" : input.PredictionHorizonMilliseconds + " ms") +
+            " ／ フレーム上限: " + PhoneSaberFrameCapSettings.Label(PhoneSaberDisplaySync.FrameCapMode));
+    }
+    PhoneSaberControlPanelPhone PhoneReport(string phoneStation, string sender)
+    {
+        string key = phoneStation + ":" + sender;
+        if (!phoneReports.TryGetValue(key, out var phone))
+            phoneReports[key] = phone = new PhoneSaberControlPanelPhone(phoneStation, sender);
+        return phone;
+    }
+    string PhoneChoice(string name)
+    {
+        string key = name == "phone-track-lock" ? "trackLock" : name == "phone-exposure" ? "exposureEv" :
+            name == "phone-shutter" ? "shutter" : name == "phone-shutter-iso" ? "iso" :
+            name == "phone-shutter-emitter" ? "colouredEmitter" : null;
+        if (key == null) return null;
+        string value = null;
+        foreach (var phone in panel.Phones)
+        {
+            if (phone.Station != CurrentStation) continue;
+            var input = InputPoint.Instance;
+            if (input != null && phone.Sender != input.RedCoordinateSender && phone.Sender != input.BlueCoordinateSender) continue;
+            string reported = phone.Value(key);
+            if (reported == null || value != null && reported != value) return null;
+            value = reported;
+        }
+        return value == "ON" ? "1" : value == "OFF" ? "0" : value?.Replace("1/", "");
     }
 
     void DrawGUI()
@@ -651,7 +773,20 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         foreach (var section in panel.Sections)
         {
             GUILayout.Space(8);
+            if (section.Dangerous)
+            {
+                showDangerous = GUILayout.Toggle(showDangerous, "詳細・危険（確認して実行）", buttonStyle);
+                if (!showDangerous) { confirmAction = null; continue; }
+            }
             GUILayout.Label(section.Title, warningStyle);
+            if (section.Title == "いまの設定")
+                foreach (var phone in panel.Phones)
+                    for (int i = 0; i < PhoneSaberControlPanelPhone.Keys.Length; i++)
+                    {
+                        phone.Settings.TryGetValue(PhoneSaberControlPanelPhone.Keys[i], out var report);
+                        GUILayout.Label($"iPhone 台{phone.Station} {phone.Sender}: {PhoneSaberControlPanelPhone.Labels[i]} {report?.Value ?? "未確認"}" +
+                            (report == null ? "" : $"（{report.Source}・{Math.Max(0, panel.Now - report.At):0}秒前）"), textStyle);
+                    }
             foreach (var item in section.Items)
             {
                 if (item.Name == null)
@@ -664,9 +799,20 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
                 else
                 {
                     bool previousEnabled = GUI.enabled;
-                    GUI.enabled = previousEnabled && item.Enabled;
-                    if (GUILayout.Button((item.Selected ? "● " : "") + item.Text, buttonStyle)) ExecuteAction(item.Name, item.Value);
+                    GUI.enabled = previousEnabled && item.Enabled && !item.Pending;
+                    if (GUILayout.Button((item.Pending ? "送信中… " : item.Selected ? "✓ " : "") + item.Text, buttonStyle))
+                    {
+                        if (item.RequiresConfirmation) { confirmAction = item.Name; confirmValue = item.Value; }
+                        else ExecuteAction(item.Name, item.Value);
+                    }
                     GUI.enabled = previousEnabled;
+                    if (confirmAction == item.Name && confirmValue == item.Value)
+                    {
+                        GUILayout.Label("「" + item.Text + "」を実行しますか？設定が変わります。", warningStyle);
+                        if (GUILayout.Button("確認して実行", buttonStyle))
+                        { ExecuteAction(item.Name, item.Value, true); confirmAction = null; }
+                        if (GUILayout.Button("キャンセル", buttonStyle)) confirmAction = null;
+                    }
                 }
             }
         }
