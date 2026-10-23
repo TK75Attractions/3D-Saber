@@ -78,8 +78,15 @@ public sealed class SongSelectBeatTimeline
     }
     internal double BeatAt(double time)
     {
-        int i = 0;
-        while (i < points.Count - 2 && points[i + 1].Value < time) i++;
+        // 背景の柱・レーザーが1フレームに何度も呼ぶので、頭からなめずに二分探索で区間を探す。
+        int lo = 0, hi = points.Count - 2;
+        while (lo < hi)
+        {
+            int mid = (lo + hi) / 2;
+            if (points[mid + 1].Value < time) lo = mid + 1;
+            else hi = mid;
+        }
+        int i = lo;
         var a = points[i]; var b = points[i + 1];
         return a.Key + (b.Key - a.Key) * (time - a.Value) / (b.Value - a.Value);
     }

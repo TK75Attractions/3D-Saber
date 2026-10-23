@@ -29,7 +29,7 @@ public sealed class TutorialOverlay : MonoBehaviour
     float judgeShownAt = -100f;
     string shownTitle, shownSub, shownHint;
     int shownStep = -1;
-    string shownProgress;
+    (TutorialStep step, int successes, int directions, bool done) shownProgressState;
 
     public static TutorialOverlay Ensure()
     {
@@ -182,11 +182,11 @@ public sealed class TutorialOverlay : MonoBehaviour
         if (Guide != null) Guide.Show(ctl.DemonstrationNotes, ctl.DemonstrationTime);
         if (timer != null)
         {
-            string progress = TutorialProgram.RemainingText(ctl.Step, ctl.Successes, ctl.RemainingDirections, ctl.StepDone);
-            if (progress != shownProgress)
+            var state = (ctl.Step, ctl.Successes, ctl.RemainingDirections, ctl.StepDone);
+            if (state != shownProgressState)
             {
-                shownProgress = progress;
-                timer.text = progress;
+                shownProgressState = state;
+                timer.text = TutorialProgram.RemainingText(state.Item1, state.Item2, state.Item3, state.Item4);
             }
         }
         if (ctl.Step != null && shownStep != ctl.StepIndex) { shownStep = ctl.StepIndex; RefreshDots(shownStep); }

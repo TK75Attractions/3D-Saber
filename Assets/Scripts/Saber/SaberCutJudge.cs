@@ -775,7 +775,11 @@ public class SaberCutJudge : MonoBehaviour
         double time = stepFromTime + span * t;
         float distance = DistPointToSegment(xy, Vector2.Lerp(stepFromA, stepToA, t),
             Vector2.Lerp(stepFromB, stepToB, t), out _);
-        return distance <= bladeRadius + noteHitRadiusXY
+        float range = bladeRadius + noteHitRadiusXY;
+        // カメラの値で細い側から振ったときは、入りと同じく広げた当たりで見る(混雑していれば TryCutBlade が広げずに見る)。
+        if (bladeProvider != null && bladeProvider.HasBlade)
+            range = ThinRange(stepToA, stepToB, range);
+        return distance <= range
             && time >= note.HitTime - owner.earlyJudgeWindow
             && time <= note.HitTime + owner.LateWindowFor(note) ? time : double.NaN;
     }

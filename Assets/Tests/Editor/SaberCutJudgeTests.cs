@@ -1056,6 +1056,21 @@ public class SaberCutJudgeTests
         Assert.AreEqual(1, score.JudgedNoteCount);
     }
 
+    // 窓内の通過だけを、カメラ用の当たり幅で救う。
+    [TestCase(1.16, true, 1)]
+    [TestCase(1.18, true, 0)]
+    [TestCase(1.16, false, 0)]
+    public void LateCrossingUsesCameraWidth(double from, bool camera, int hits)
+    {
+        var (j, t, b, s, score, _) = SweepRig(SweepNote(1000, 0));
+        b.OverrideCameraInput(camera);
+        SweepStep(j, t, b, s, new Vector2(1.5f, 2), from);
+        SweepStep(j, t, b, s, new Vector2(1.5f, -1), from + .04);
+        s.Tick(2);
+        Assert.AreEqual(hits, score.BadCount);
+        Assert.AreEqual(1 - hits, score.MissCount);
+    }
+
     [Test]
     public void LongNoteIsCutOncePerSwingWhenPassing()
     {

@@ -8,6 +8,21 @@ public class SongPreviewBarEndTests
         => SongPreviewWindow.Resolve(new StagePerformanceTimeline{previewStartSeconds=start},length,requested,
             new SongSelectBeatTimeline(new[]{chart}));
 
+    [Test]
+    public void BeatLookupPreservesKnotsExtrapolationAndRewind()
+    {
+        var chart = new ChartData {
+            editorTempoMap = new List<ChartTempoPoint> {
+                new ChartTempoPoint { beat = 0, timeMs = 1000 },
+                new ChartTempoPoint { beat = 4, timeMs = 3000 },
+                new ChartTempoPoint { beat = 8, timeMs = 4000 }
+            }
+        };
+        var beats = new SongSelectBeatTimeline(new[] { chart });
+        foreach (double beat in new[] { 12d, 8, 6, 4, 2, 0, -2 })
+            Assert.AreEqual(beat, beats.BeatAt(beats.TimeAt(beat)), 1e-9);
+    }
+
     [TestCase(.2,10)]
     [TestCase(1.2,12)]
     [TestCase(1,10)]
