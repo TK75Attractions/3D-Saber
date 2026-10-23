@@ -211,7 +211,30 @@ private func binaryErode(_ input: [UInt8], width: Int, height: Int, radius: Int)
             let source = source.baseAddress!
             let destination = destination.baseAddress!
             for y in radius..<(height - radius) {
-                for x in radius..<(width - radius) {
+                var scalarStart = radius
+                if radius <= 2 {
+                    // 同じ菱形近傍を16画素ずつ判定する。非二値入力も非ゼロなら1にする。
+                    @inline(__always) func nonzero(_ index: Int) -> SIMDMask<SIMD16<Int8>> {
+                        UnsafeRawPointer(source + index).loadUnaligned(as: SIMD16<UInt8>.self)
+                            .!= SIMD16<UInt8>(repeating: 0)
+                    }
+                    while scalarStart + 16 <= width - radius {
+                        let index = y * width + scalarStart
+                        var survives = nonzero(index) .& nonzero(index - 1) .& nonzero(index + 1)
+                            .& nonzero(index - width) .& nonzero(index + width)
+                        if radius == 2 {
+                            survives = survives .& nonzero(index - 2) .& nonzero(index + 2)
+                                .& nonzero(index - width - 1) .& nonzero(index - width + 1)
+                                .& nonzero(index + width - 1) .& nonzero(index + width + 1)
+                                .& nonzero(index - 2 * width) .& nonzero(index + 2 * width)
+                        }
+                        let result = SIMD16<UInt8>(repeating: 0)
+                            .replacing(with: SIMD16<UInt8>(repeating: 1), where: survives)
+                        UnsafeMutableRawPointer(destination + index).storeBytes(of: result, as: SIMD16<UInt8>.self)
+                        scalarStart += 16
+                    }
+                }
+                for x in scalarStart..<(width - radius) {
                     // 中心も必須の近傍要素なので、0 なら残りの読み出しは不要。
                     let index = y * width + x
                     guard source[index] != 0 else { continue }

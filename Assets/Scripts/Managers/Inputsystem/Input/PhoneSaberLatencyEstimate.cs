@@ -15,6 +15,7 @@ public sealed class PhoneSaberMetrics
     public double? Battery;
     public int LowLatencyTest;
     public double ReceivedAt;
+    public string Controls;
     public const int MaximumBytes = 399;
 
     public static bool TryParse(byte[] data, int length, out PhoneSaberMetrics metrics)
@@ -55,6 +56,12 @@ public sealed class PhoneSaberMetrics
             m.LowLatencyTest = (int)Number(fields["low-latency-test"], 0, 1);
             if (fields["low-latency-test"] != "0" && fields["low-latency-test"] != "1") return false;
             if (m.FpsMode != Math.Floor(m.FpsMode)) return false;
+            if (fields.TryGetValue("ctl", out string controls))
+            {
+                if (controls.Length != 4 || "01".IndexOf(controls[0]) < 0 || "012".IndexOf(controls[1]) < 0 ||
+                    "0123".IndexOf(controls[2]) < 0 || "0123".IndexOf(controls[3]) < 0) return false;
+                m.Controls = controls;
+            }
             metrics = m; return true;
         }
         catch (Exception e) when (e is KeyNotFoundException || e is FormatException || e is OverflowException) { return false; }

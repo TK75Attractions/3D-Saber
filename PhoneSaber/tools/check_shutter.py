@@ -47,9 +47,14 @@ guard let run = suite.testRun, run.executionCount > 0, run.hasSucceeded else { e
 public static class PhoneSaberP2PBridgeProcess { public static bool AutoStartEnabled=false; }
 public static class PhoneSaberEventLog { public static void Record(string a,string b,string c,string d) {} }
 public static class SwingMonotonicClock { public static long Timestamp=>Stopwatch.GetTimestamp(); public static double ToSeconds(long t)=>t/(double)Stopwatch.Frequency; }
-public static class PhoneSaberMetrics { public const int MaximumBytes=400; }
-public class PhoneSaberMetricsStore { public void Receive(byte[] d,int n,IPAddress a,double t) {} }
+public class InputPoint {
+ public static InputPoint Instance; public string RedCoordinateSender,BlueCoordinateSender,StationLabel;
+ public PhoneSaberMetrics ReadPhoneMetrics(string s,double t) => null;
+}
 ''')
+        metrics = (inputs / 'PhoneSaberLatencyEstimate.cs').read_text()
+        (tmp / 'Metrics.cs').write_text('using System; using System.Collections.Generic; using System.Globalization; using System.Net; using System.Text;\n' +
+            block(metrics, 'public sealed class PhoneSaberMetrics\n') + '\n' + block(metrics, 'public sealed class PhoneSaberMetricsStore'))
         actions = block((inputs / 'PhoneSaberControlPanelState.cs').read_text(), 'public static class PhoneSaberControlPanelActions')
         (tmp / 'Actions.cs').write_text('using System; using System.Collections.Generic;\n' + actions)
         panel = block((tests / 'PhoneSaberControlPanelTests.cs').read_text(), 'public void ShutterButtonsDispatchOnlySupportedValues()')
@@ -70,7 +75,7 @@ class Run { static int Main() {
         refs = ['/r:' + str(p) for p in managed.glob('*.dll')]
         refs += ['/r:' + str(template / 'Unity.InputSystem.dll'), '/r:' + str(mono / 'lib/mono/4.5/Facades/netstandard.dll'), '/r:' + str(nunit)]
         run([mono / 'bin/mono', mono / 'lib/mono/4.5/csc.exe', '/nologo', '/langversion:9.0', '/out:' + str(tmp / 'tests.exe'), *refs,
-             tmp / 'Host.cs', tmp / 'Actions.cs', tmp / 'PanelTests.cs', tmp / 'Run.cs',
+             tmp / 'Host.cs', tmp / 'Metrics.cs', tmp / 'Actions.cs', tmp / 'PanelTests.cs', tmp / 'Run.cs',
              inputs / 'PhoneSaberDiscoveryResponder.cs', inputs / 'PhoneSaberOperatorKeys.cs',
              *[tests / n for n in ['PhoneSaberOperatorKeysTests.cs', 'PhoneSaberAcknowledgementTests.cs', 'PhoneSaberPhoneCommandTests.cs']]])
         env = dict(os.environ, MONO_PATH=os.pathsep.join(map(str, [nunit.parent, managed, template])))

@@ -110,6 +110,7 @@ final class MetricsDatagramTests: XCTestCase {
             m.median = Double(v["c2s-median-ms"]!); m.p95 = Double(v["c2s-p95-ms"]!); m.samples = Int(v["c2s-n"]!)!
             m.rtt = Double(v["rtt-ms"]!); m.rttSamples = Int(v["rtt-n"]!)!; m.rttAge = Double(v["rtt-age-s"]!)
             m.thermal = v["thermal"]!; m.battery = Double(v["battery"]!); m.c2sEnd = v["c2s-end"]!
+            m.controls = v["ctl"]
             XCTAssertEqual(m.line(), f[1], f[0])
         }
     }
@@ -148,6 +149,23 @@ final class MetricsDatagramTests: XCTestCase {
         XCTAssertEqual(meter.snapshot(at: 20.05).count, 1)
         XCTAssertEqual(meter.snapshot(at: 20.051).count, 0)
     }
+    func testCurrentControlsFitMetricsAndUseStableChoiceIndices() {
+        for station in ["A", "B"] {
+            var m = MetricsDatagram()
+            m.station = station; m.app = String(repeating: "x", count: 24)
+            m.fpsMode = 240; m.captureFPS = 1000; m.redFPS = 1000; m.blueFPS = 1000
+            m.median = 2000; m.p95 = 2000; m.samples = 2400
+            m.rtt = 1000; m.rttAge = 10; m.rttSamples = 2400
+            m.thermal = "critical"; m.battery = 100
+            m.controls = MetricsDatagram.controlState(trackLock: false, exposureBias: 0, shutter: 1000, shutterISO: 500)
+            XCTAssertEqual(m.controls, "0022")
+            XCTAssertTrue(m.line()?.hasSuffix(" ctl=0022") == true)
+            XCTAssertLessThan(m.line()!.utf8.count, 400)
+        }
+        XCTAssertEqual(MetricsDatagram.controlState(trackLock: true, exposureBias: -2, shutter: 2000, shutterISO: 2000), "1230")
+        XCTAssertNil(MetricsDatagram.controlState(trackLock: true, exposureBias: -3, shutter: 2000, shutterISO: 2000))
+    }
+
     func testCadenceAndUntrustedValues() {
         var cadence = MetricsCadence()
         XCTAssertFalse(cadence.due(at: 0, sending: true)); XCTAssertFalse(cadence.due(at: 4.99, sending: true))

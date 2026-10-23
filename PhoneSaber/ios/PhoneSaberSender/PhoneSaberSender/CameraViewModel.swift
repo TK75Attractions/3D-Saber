@@ -1463,6 +1463,8 @@ final class CameraViewModel: NSObject, ObservableObject {
             metrics.rtt = rtt.median; metrics.rttSamples = rtt.count; metrics.rttAge = rtt.age
             metrics.thermal = thermal.metadataValue; metrics.battery = battery.level.map { $0 * 100 }
             metrics.lowLatencyTest = lowLatencyCameraSettings
+            metrics.controls = MetricsDatagram.controlState(trackLock: trackLockEnabled, exposureBias: exposureBias,
+                                                           shutter: shutter, shutterISO: shutterISO)
             if let line = metrics.line() { lanProbe.sendMetrics(line) }
         }
         if debugRecordingActive {
@@ -1629,12 +1631,13 @@ final class CameraViewModel: NSObject, ObservableObject {
     }
 
     private func learnIgnoreZones(_ colors: [SaberColor], completion: ((Int, Int) -> Void)? = nil) {
+        cancelIgnoreLearning()
         let id = processor.startIgnoreLearning(colors)
         ignoreLearningIDs.insert(id)
         ignoreLearning = true
         Task { @MainActor [weak self] in
             try? await Task.sleep(nanoseconds: UInt64(SaberIgnoreLearner.seconds * 1_000_000_000))
-            guard let self else { return }
+            guard let self, self.ignoreLearningIDs.contains(id) else { return }
             let learned = self.processor.finishIgnoreLearning(id)
             var counts: [SaberColor: Int] = [:]
             for color in colors {
@@ -1651,10 +1654,14 @@ final class CameraViewModel: NSObject, ObservableObject {
         }
     }
 
-    func clearIgnoreZones() {
+    private func cancelIgnoreLearning() {
         processor.cancelIgnoreLearning()
         ignoreLearningIDs.removeAll()
         ignoreLearning = false
+    }
+
+    func clearIgnoreZones() {
+        cancelIgnoreLearning()
         ignoreZones = [:]
         applyIgnoreZones()
         ConnectivityLog.shared.record("IGNORE_ZONE", "clear")
@@ -1670,16 +1677,27 @@ final class CameraViewModel: NSObject, ObservableObject {
         if NSClassFromString("XCTestCase") == nil { UserDefaults.standard.set(enabled, forKey: Self.trackLockKey) }
     }
 
-    private var seenPCCommandIDs: Set<Int> = []
+    private var pcCommands: [String: (expiresAt: TimeInterval, token: UUID, ack: String?)] = [:]
 
-    /// Mac の F8 から届いた指示（同じ id は一度だけ）。
+    /// 台・PC送信元・IDごとに操作と最新ACKを保持する。ID再利用を永久拒否しない。
     func applyPCCommand(_ command: LANLivenessProbe.PCCommand) {
-        guard seenPCCommandIDs.insert(command.id).inserted else { return }
+        let now = connectivityClock()
+        pcCommands = pcCommands.filter { now < $0.value.expiresAt }
+        let key = "\(station)|\(command.sourceHost ?? host)|\(command.id)"
+        if let previous = pcCommands[key] {
+            if let line = previous.ack, let host = command.sourceHost { lanProbe.sendAck(to: host, line: line) }
+            return
+        }
+        // 学習・保存の完了後にも再送へ返答できる期間を残す。
+        let lifetime = max(10, command.clip ? 25 : Double(command.learnAreaSeconds ?? 0) + 10)
+        let token = UUID()
+        pcCommands[key] = (now + lifetime, token, nil)
         let replyStation = station
         let ack: (String, String) -> Void = { [weak self] result, detail in
-            guard let self, let host = command.sourceHost,
+            guard let self, self.pcCommands[key]?.token == token,
                   let line = LANLivenessProbe.formatAck(id: command.id, station: replyStation, platform: "ios", result: result, detail: detail) else { return }
-            self.lanProbe.sendAck(to: host, line: line)
+            self.pcCommands[key]?.ack = line
+            if let host = command.sourceHost { self.lanProbe.sendAck(to: host, line: line) }
         }
         if command.defaults {
             guard setShutterISO(2000), setShutter(2000) else { return }
@@ -1710,9 +1728,9 @@ final class CameraViewModel: NSObject, ObservableObject {
         if let enabled = command.autoClip { setAutoClipEnabled(enabled, commandID: command.id); ack("autoclip", enabled ? "on" : "off") }
         if command.clip {
             if running && autoClipEnabled {
-                let reason = "pc-command id=\(command.id)"
+                let reason = "pc-command id=\(command.id) source=\(key) token=\(token)"
                 clipAcknowledgements[reason] = ack
-                requestAutoClip(commandID: command.id)
+                requestAutoClip(commandID: command.id, reason: reason)
                 // コマが来ない場合も返事を終える。保存成功は writer の完了からだけ返す。
                 Task { @MainActor [weak self] in
                     try? await Task.sleep(nanoseconds: 15_000_000_000)
@@ -1735,8 +1753,8 @@ final class CameraViewModel: NSObject, ObservableObject {
     }
 
     /// PC の clip=1。送信中だけ、次のコマの前後を保存する。
-    func requestAutoClip(commandID: Int? = nil) {
-        let request = commandID.map { "pc-command id=\($0)" } ?? "manual"
+    func requestAutoClip(commandID: Int? = nil, reason: String? = nil) {
+        let request = reason ?? commandID.map { "pc-command id=\($0)" } ?? "manual"
         guard running else {
             ConnectivityLog.shared.record("AUTOCLIP", "clip skipped reason=notSending request=\(request)")
             return
@@ -2107,6 +2125,7 @@ final class CameraViewModel: NSObject, ObservableObject {
     // 台変更は停止中のみ。旧台の自動送信先と P2P の lock を破棄する。
     func setStation(_ value: String) {
         guard !running, value != station, PhoneSaberStation.choices.contains(value) else { return }
+        pcCommands.removeAll()
         p2pSender.stop()
         p2pState = .disabled
         p2pRoundTrip = nil
@@ -2542,6 +2561,7 @@ final class CameraViewModel: NSObject, ObservableObject {
     }
 
     private func resetProcessor() {
+        cancelIgnoreLearning()
         // reset が検出キューの終了を待つ間も旧世代の送信・fallback を拒否する。
         delivery.suspend()
         _ = processor.reset()

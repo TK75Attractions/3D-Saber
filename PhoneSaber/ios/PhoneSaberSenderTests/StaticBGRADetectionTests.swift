@@ -240,7 +240,18 @@ private func assertLosslessMorphology() {
             check(mask, width: width, height: height)
         }
     }
-    print("lossless morphology: exhaustive masks, diamond radii 0...4, edges and nonbinary inputs passed")
+    // SIMD の開始幅・16画素境界・端数を、密な非二値 mask と各 lane の穴でも照合する。
+    for width in [17, 18, 19, 20, 31, 32, 33, 34, 35, 36, 49, 50] {
+        let height = 9
+        check(Array(repeating: 255, count: width * height), width: width, height: height)
+        for lane in 0..<16 {
+            var mask = Array(repeating: UInt8(127), count: width * height)
+            mask[4 * width + 1 + lane] = 0
+            mask[2 * width + width - 2] = 0
+            check(mask, width: width, height: height)
+        }
+    }
+    print("lossless morphology: exhaustive masks, diamond radii 0...4, SIMD lanes/tails, edges and nonbinary inputs passed")
 }
 
 // 任意の PNG を XCTest と同じ CoreGraphics BGRA 経路で読み込む native -O 計測用。

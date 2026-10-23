@@ -24,9 +24,27 @@ public sealed class PhoneSaberOperatorKeys : MonoBehaviour
     static int shutterIndex = 3; // 既定 1/2000 → OFF → 1/500 → 1/1000 → 1/2000
     static int exposureIndex = 2; // 開始時 -2、次に 0 → -1 → -2（スマホ側が保存する）
 
+    static PhoneSaberMetrics lastPhoneState;
+
+    // 同じ台の新しいiPhone計測だけを使う。古い計測で直前のPC操作を巻き戻さない。
+    public static bool FollowPhoneState(PhoneSaberMetrics phone, string station, double now, double queuedAt)
+    {
+        if (phone == null || ReferenceEquals(phone, lastPhoneState) || phone.Platform != "ios" ||
+            (station != "A" && station != "B") || phone.Station != station || phone.Controls == null ||
+            now < phone.ReceivedAt || now - phone.ReceivedAt > PhoneSaberMetricsStore.FreshSeconds ||
+            phone.ReceivedAt <= queuedAt) return false;
+        lastPhoneState = phone;
+        Volatile.Write(ref lastSentTrackLock, phone.Controls[0] == '1');
+        Volatile.Write(ref exposureIndex, phone.Controls[1] - '0');
+        Volatile.Write(ref shutterIndex, phone.Controls[2] - '0');
+        Volatile.Write(ref shutterISOIndex, phone.Controls[3] - '0');
+        return true;
+    }
+
     // Unity API を使わず、defaults のキュー投入と一緒に Mac 側も既定に戻す。
     public static void ResetDefaultsState()
     {
+        lastPhoneState = null;
         Volatile.Write(ref lastSentTrackLock, true);
         Volatile.Write(ref exposureIndex, 2);
         Volatile.Write(ref shutterIndex, 3);
@@ -239,6 +257,19 @@ public sealed class PhoneSaberOperatorKeys : MonoBehaviour
         bool ctrl = keyboard.leftCtrlKey.isPressed || keyboard.rightCtrlKey.isPressed;
         bool shift = keyboard.leftShiftKey.isPressed || keyboard.rightShiftKey.isPressed;
         if (!ctrl || !shift) return;
+        var input = InputPoint.Instance;
+        if (input != null)
+        {
+            double now = SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp);
+            bool queued = PhoneSaberDiscoveryResponder.Acknowledgements.Latest(out _, out _, out double queuedAt);
+            string station = input.StationLabel;
+            var red = input.ReadPhoneMetrics(input.RedCoordinateSender, now);
+            var blue = input.ReadPhoneMetrics(input.BlueCoordinateSender, now);
+            if (red?.Station != station) red = null;
+            if (blue?.Station != station) blue = null;
+            var phone = red == null || blue != null && blue.ReceivedAt > red.ReceivedAt ? blue : red;
+            FollowPhoneState(phone, station, now, queued ? queuedAt : double.NegativeInfinity);
+        }
         foreach (var key in Keys)
         {
             if (!keyboard[key].wasPressedThisFrame) continue;
