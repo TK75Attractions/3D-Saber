@@ -580,6 +580,8 @@ namespace Saber.ChartEditor
                     playbackPreview.ShowBarLines = previewBarLines;
                     playbackPreview.ShowHitRadius = previewHitRadius;
                     playbackPreview.ShowPerfectCuts = previewPerfectCuts;
+                    playbackPreview.ApproachTimeOverride = GameDifficultyRules.ApproachSeconds(
+                        EditingDifficulty, GameSession.NoteApproachTime, true);
                     playbackPreview.Tick(document, BeatToAudioSeconds(currentBeat));
                     Texture frame = playbackPreview.Render(viewport);
                     if (frame != null) GUI.DrawTexture(viewport, frame, ScaleMode.ScaleToFit, false);

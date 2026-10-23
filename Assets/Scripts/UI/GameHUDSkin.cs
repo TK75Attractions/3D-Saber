@@ -656,6 +656,13 @@ public class GameHUDSkin : MonoBehaviour
 
     private void OnJudgmentEx(JudgmentTier tier, int awarded, bool wasWrongFlick)
     {
+        if (score != null && ShouldBreakCombo(lastCombo, score.Combo))
+        {
+            StartComboBreak();
+            lastCombo = 0;
+            comboPunchAge = milestonePunchAge = 999f;
+            milestoneTinted = false;
+        }
         if (tierText != null)
         {
             tierText.text = JudgmentTierHelper.Label(tier);

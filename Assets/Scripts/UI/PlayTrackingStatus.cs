@@ -111,6 +111,11 @@ public sealed class PlayTrackingWatch
                 if (pose.Held || (pose.TimedOut && Stable(now)))
                 {
                     countdownMask = fresh;
+                    if (!pose.Held)
+                        for (int i = 0; i < feeds.Length; i++)
+                            if ((fresh & (1 << i)) != 0 &&
+                                feeds[i].last - feeds[i].streakStart >= OneColorResumeSeconds)
+                            { countdownMask = 1 << i; break; }
                     State = Phase.Countdown; countdownStart = now;
                     pose.Reset();
                 }

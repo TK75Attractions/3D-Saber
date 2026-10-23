@@ -326,7 +326,8 @@ public sealed class CalibrationController : MonoBehaviour
     }
     void InterruptRun(string message, bool audioChanged = false)
     {
-        bool restartLive = audioChanged && IsLive;
+        bool restartLive = audioChanged && IsLive &&
+            (!ScreenTransition.IsBusy || ScreenTransition.IsArriving);
         interrupted = true; StopPlayback(); Overlay.ClearTimingPreview(); Mode = CalibrationRunMode.Idle; Result = null;
         HasLastError = false; LastInputWasMiss = false; History.Clear();
         if (audioChanged) BuildClicks();
