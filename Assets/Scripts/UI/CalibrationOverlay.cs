@@ -150,7 +150,8 @@ public sealed class CalibrationOverlay : MonoBehaviour
         restore = Action(p,"Restore","元に戻す",324,-65,610,76,()=>ctl?.RestoreSaved());
         restore.GetComponent<SaberDwellTarget>().dwellSeconds=2;
         measurementStatus = Label(p,"MeasurementStatus","",26,0,-135,1320,52,Muted);
-        Label(p,"Shortcuts","F2 スタッフ画面   Space 再開・停止   ← → ノーツを早く・遅く\nスタッフ画面では ← → 1 ms / Shift 10 ms   1・2・3 速さ   Esc 戻る",26,0,-225,1310,104,Muted);
+        // キーの説明は実際の動きに合わせる(2026-10-23 点検: Space はこの画面では効かず、Esc は2回で下書きを捨ててタイトルへ戻るのに「Esc 戻る」と出ていた)。
+        Label(p,"Shortcuts","F2 この画面⇔練習   練習中: Space 再開・停止 / ← → 10 ms   1・2・3 速さ\nこの画面: ← → 1 ms(Shift 10 ms)   Esc を2秒以内に2回: 保存せずタイトルへ",26,0,-225,1310,104,Muted);
         Action(p,"Close","練習へ",0,-375,1260,88,CloseSettings,true);
         settings.SetActive(false);
     }
