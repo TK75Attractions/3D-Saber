@@ -1026,6 +1026,36 @@ public class SaberCutJudgeTests
         Assert.AreEqual(.98 + .02 * (1.0 / 1.6), note.LastCutSongTime.Value, 1e-6, "採点は振り下ろしでノーツを通り過ぎた時刻");
     }
 
+    // 抜けて切ったロングに、同じ振りのまま(振り返さず・止まらず)曲げて入り直しても、2回目は数えない(通り過ぎて切るときと同じ)。
+    [Test]
+    public void LongNoteExitCutIsAlsoOncePerSwing()
+    {
+        var (j, t, b) = GameBladeRig();
+        var n = TimedNote(Vector3.zero, 1);
+        n.RequiredCutCount = n.RemainingCuts = 3;
+        Step(j, t, b, new Vector2(-1, 1.69f), .98);
+        Step(j, t, b, new Vector2(.2f, 1.69f), 1);
+        Assert.AreEqual(1, n.CutsAchieved);
+        // 反転せず曲げて入り直す。
+        Step(j, t, b, new Vector2(.21f, 1.65f), 1.02);
+        Step(j, t, b, new Vector2(.22f, -1.7f), 1.04);
+        Assert.AreEqual(1, n.CutsAchieved);
+    }
+
+    // 窓の終わり(1.18秒)までに刃が通り過ぎていれば、そのフレームが窓のあとでも BAD で切れる。窓のあとに通り過ぎたら MISS。
+    [TestCase(1.16, 1)]
+    [TestCase(1.18, 0)]
+    public void CrossingBeforeTheLateEdgeCountsEvenIfTheFrameEndsAfterIt(double from, int hits)
+    {
+        var (j, t, b, s, score, _) = SweepRig(SweepNote(1000, 0));
+        SweepStep(j, t, b, s, new Vector2(-1.3f, 0), from);
+        SweepStep(j, t, b, s, new Vector2(1.3f, 0), from + .04);
+        s.Tick(2);
+        Assert.AreEqual(hits, score.BadCount);
+        Assert.AreEqual(1 - hits, score.MissCount);
+        Assert.AreEqual(1, score.JudgedNoteCount);
+    }
+
     [Test]
     public void LongNoteIsCutOncePerSwingWhenPassing()
     {

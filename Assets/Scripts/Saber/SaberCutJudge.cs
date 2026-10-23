@@ -315,7 +315,11 @@ public class SaberCutJudge : MonoBehaviour
             if (distNow > p.range)
             {
                 Vector3 exit = ExitVelocity(p, center);
-                if (TakeTurn(note, p, exit, imuHint, a, b)) Finish(note, p, imuHint, exit);
+                if (TakeTurn(note, p, exit, imuHint, a, b))
+                {
+                    Finish(note, p, imuHint, exit);
+                    if (!note.IsCut) Block(note);
+                }
                 cuts++;
                 toRemove.Add(note);
                 continue;
@@ -347,7 +351,7 @@ public class SaberCutJudge : MonoBehaviour
             range = range,
             bestDistance = distance,
             // 進入は判定窓の中でしか起きない(IsCandidate)ので、進入時刻はそのまま採点に使える。
-            bestSongTime = Finite(songTime) ? songTime : double.NaN,
+            bestSongTime = EntryTime(note),
             anchor = anchor,
             approach = center - anchor,
             crossSongTime = double.NaN,
@@ -360,7 +364,7 @@ public class SaberCutJudge : MonoBehaviour
     // 時刻は前後の刃の値の間で割り振る。同じ値の組では何度呼んでも同じ結果になる。変わったら tracked に積む。
     void TrackCrossing(CuttableNote note, Pending p)
     {
-        if (!Finite(songTime) || !hasStepFrom || !hasLastMotion || !note.IsJudgeable) return;
+        if (!Finite(songTime) || !hasStepFrom || !hasLastMotion || !Finite(EntryTime(note))) return;
         Vector2 noteXY = new Vector2(note.transform.position.x, note.transform.position.y);
         Vector2 m = lastMotion;
         // 動く向きで見た、届く部分からノーツまでの残り(正ならまだ手前)。
@@ -753,11 +757,34 @@ public class SaberCutJudge : MonoBehaviour
         ResetMotion();
     }
 
+    // 刃が届いた曲時計。判定窓の中なら今の曲時計。窓が閉じた直後のフレームでも、前の刃の値から今の値までの間で
+    // ノーツに届く部分がノーツの中心を窓の中で通り過ぎていたら、その時刻(前後の値の間で割り振る)。それ以外は NaN。
+    // 2026-10-23 点検: 窓の終わりぎりぎりで切っても、そのフレームが窓のあとだと候補から外れて MISS になっていた。
+    double EntryTime(CuttableNote note)
+    {
+        if (note.IsJudgeable) return songTime;
+        var owner = note.JudgmentOwner;
+        double span = stepToTime - stepFromTime;
+        if (owner == null || !hasStepFrom || !hasLastMotion || !Finite(span)
+            || span <= 0 || span > MaxStepSeconds) return double.NaN;
+        Vector2 xy = note.transform.position, m = lastMotion;
+        float before = Vector2.Dot(xy - CuttingPoint(stepFromA, stepFromB, xy, m), m);
+        float after = Vector2.Dot(xy - CuttingPoint(stepToA, stepToB, xy, m), m);
+        if (before <= 0 || after > 0) return double.NaN;
+        float t = before / (before - after);
+        double time = stepFromTime + span * t;
+        float distance = DistPointToSegment(xy, Vector2.Lerp(stepFromA, stepToA, t),
+            Vector2.Lerp(stepFromB, stepToB, t), out _);
+        return distance <= bladeRadius + noteHitRadiusXY
+            && time >= note.HitTime - owner.earlyJudgeWindow
+            && time <= note.HitTime + owner.LateWindowFor(note) ? time : double.NaN;
+    }
+
     private bool IsCandidate(CuttableNote n, bool checkCutOrder = true)
     {
         if (n == null) return false;
         if (n.IsCut || n.IsMissed) return false;
-        if (!n.IsJudgeable) return false;
+        if (!n.IsJudgeable && !Finite(EntryTime(n))) return false;
         if (!n.gameObject.activeInHierarchy) return false;
         if (checkCutOrder && !n.CanBeginCutAt(songTime, EffectiveHand())) return false;
         return true;
