@@ -307,6 +307,8 @@ public class CameraImuJudgment : MonoBehaviour
             // 向きの合わない振りは、このノーツを切らずに使い切る(判定もミスも出さない。ノーツは向きの合う次の振りで切れる)。
             p.Failure = "direction_fail";
             Decision(detail + " reason=direction_fail");
+            // 同じ振りが通った同時のノーツは、それぞれの向きで判定する(カメラだけの経路と同じ)。
+            CutSimultaneous(best, history, p, judge);
             return true;
         }
         bool accepted = best.TryCutWithCameraTiming(contact.Point, contact.Velocity, judge.EffectiveHand(),

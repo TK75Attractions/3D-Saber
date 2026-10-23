@@ -97,7 +97,8 @@ namespace Saber.ChartEditor
             });
             if (HasRangeSelection)
                 source = source.Where(note => note.time >= rangeStartMs && note.time < rangeEndMs);
-            deriveCandidates = SaberChartDerive.Candidates(source, SaberChartDerive.Rules.For(EditingDifficulty), BeatAtTime, document);
+            // 拍は0で切り捨てない(OFFSET の差でマイナスになった時刻が、みな0拍=表拍に見えるため)。
+            deriveCandidates = SaberChartDerive.Candidates(source, SaberChartDerive.Rules.For(EditingDifficulty), GridBeatAt, document);
             SetStatus(deriveCandidates.Count == 0
                 ? "候補はありません（もう同じノーツがあるか、決まりに合うノーツがありません）"
                 : $"{deriveCandidates.Count}個の候補を点線で表示しました。「採用」で足します");

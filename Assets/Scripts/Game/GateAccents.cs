@@ -63,6 +63,7 @@ public sealed class GateAccents : MonoBehaviour
     public int BurstCount { get; private set; }
     public float FillLevel => fillShown;
     public int ActiveStreaks { get { int n = 0; foreach (var s in streaks) if (s.active) n++; return n; } }
+    public int ActiveRings { get { int n = 0; foreach (var r in rings) if (r.active) n++; return n; } }
     public bool CrossLit => crossAge >= 0;
     public Mesh Mesh => mesh;
 

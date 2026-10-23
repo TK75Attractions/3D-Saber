@@ -779,7 +779,12 @@ public class GamePlayManager : MonoBehaviour
         if (HandleEscape()) return;
         LockMouseFallbackOnceCameraSeen();
         TickTrackingWatch();
-        if (finished || !ready || (songPlayer != null && songPlayer.IsPaused)) return;
+        if (finished || !ready || (songPlayer != null && songPlayer.IsPaused))
+        {
+            // 一時停止中(剣の見失い・音の立て直し)・終了後も、ゲートまわりの光は最後まで消えていく(広がりかけの形で固めない)。
+            if (ready && gateAccents != null) gateAccents.Tick(Time.deltaTime);
+            return;
+        }
 
         // カメラの遅れは判定の時計だけで差し引く(受付窓・刃の判定・Miss の3か所。ノーツの位置と音は曲の時計のまま)。
         if (noteSpawner != null) noteSpawner.JudgeLatencySeconds = CameraInputActive() ? cameraJudgeLatencySeconds : 0;

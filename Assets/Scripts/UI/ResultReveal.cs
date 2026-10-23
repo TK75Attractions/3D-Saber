@@ -125,11 +125,16 @@ public class ResultReveal : MonoBehaviour
 
     public int EntryCount => entries.Count;
 
+    // 1コマで進める時間の上限。処理落ちの長いコマ(0.5秒超)を、音と光が「飛ばした」と取り違えないように
+    // (ランクの決めの音・放射光・刻みが鳴らなかった。本編の終わりの演出と同じ考え)。クリック・キーのスキップは別。
+    public const float MaxFrameStep = .1f;
+    public static float Advance(float elapsed, float unscaledDeltaTime) => elapsed + Mathf.Clamp(unscaledDeltaTime, 0f, MaxFrameStep);
+
     // EventSystemの入力処理後に操作を解禁し、スキップした同じEnterでBACKを押さない。
     void LateUpdate()
     {
         if (ScreenTransition.IsBusy) return;
-        elapsed += Time.unscaledDeltaTime;
+        elapsed = Advance(elapsed, Time.unscaledDeltaTime);
         if (SkipRequested()) elapsed = 999f;
         Tick(elapsed);
     }

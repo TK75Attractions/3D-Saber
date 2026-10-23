@@ -191,6 +191,8 @@ public sealed class SongSelectChartPreview : MonoBehaviour
 
     public void Cancel()
     {
+        // 止めた試聴は、音の立て直しのあとにも鳴らし直さない(立て直しの間にスタートした・RUSH E を解いた、など)。
+        replayAfterAudioChange=false;
         generation++;
         if(loading!=null) { StopCoroutine(loading); loading=null; }
         if(request!=null) { request.Abort(); request.Dispose(); request=null; }
@@ -215,8 +217,9 @@ public sealed class SongSelectChartPreview : MonoBehaviour
     }
     void PauseForAudioChange()
     {
-        replayAfterAudioChange|=IsPlaying || loading!=null;
-        if(replayAfterAudioChange) Cancel();
+        bool replay=replayAfterAudioChange || IsPlaying || loading!=null;
+        if(replay) Cancel();
+        replayAfterAudioChange=replay;
     }
     void ReplayAfterAudioChange()
     {

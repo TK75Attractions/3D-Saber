@@ -194,6 +194,27 @@ public class ChartEditorDifficultyTests
         });
     }
 
+    // OFFSET の差で今の時計ではマイナスになる時刻も、拍を0に切り捨てない(-0.8拍が表拍として残っていた。10/23 Codex の指摘)。
+    [Test]
+    public void NegativeProjectedTimesKeepTheirBeatsForTheBeatHeadRule()
+    {
+        WithSongFolder((song, folder) =>
+        {
+            // 上(Hard)は OFFSET 0、今(Normal)は OFFSET 500。上の 0ms → -500ms(-1拍)、上の 100ms → -400ms(-0.8拍)。
+            var upper = new SaberChartDocument { bpm = 120f, offsetMs = 0f, notes = new List<SaberChartNote> {
+                new SaberChartNote { beat = 0f, time = 0f, x = 1, color = "red", direction = "none", type = "tap", count = 1 },
+                new SaberChartNote { beat = .2f, time = 100f, x = -1, color = "blue", direction = "none", type = "tap", count = 1 } } };
+            var current = new SaberChartDocument { bpm = 120f, offsetMs = 500f, notes = new List<SaberChartNote> { N(4, "gold", 0) } };
+            File.WriteAllText(Path.Combine(folder, "chart_hard.json"), SaberChartUtility.ToJson(upper, true));
+            File.WriteAllText(Path.Combine(folder, "chart_normal.json"), SaberChartUtility.ToJson(current, true));
+            Load(song, 1);
+            Call("MakeDeriveCandidates");
+            var all = Get<List<SaberChartNote>>("deriveCandidates");
+            CollectionAssert.AreEqual(new[] { -500f }, all.Select(n => n.time).ToArray(), "-0.8拍(-400ms)は表拍ではない");
+            CollectionAssert.AreEqual(new[] { -1f }, all.Select(n => n.beat).ToArray(), "拍は -1 のまま");
+        });
+    }
+
     [Test]
     public void RealZeroUpperOffsetProducesCandidatesAtTheirOriginalAudioTimes()
     {

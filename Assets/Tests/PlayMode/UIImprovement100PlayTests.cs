@@ -60,6 +60,36 @@ public class UIImprovement100PlayTests
         Assert.False(preview.IsLoading); Assert.IsNull(source.clip);
     }
 
+    // 音の出力先が変わったら、止めていなければ同じ試聴をやり直す。立て直しを待つ間に止めた試聴
+    // (その間にスタートした・RUSH E を解いた など)は鳴らし直さない(10/23 Codex の指摘)。
+    [UnityTest]
+    public IEnumerator PreviewStoppedWhileAudioRecoversIsNotReplayed()
+    {
+        var source = root.AddComponent<AudioSource>(); source.playOnAwake = false;
+        var preview = root.AddComponent<SongSelectChartPreview>(); preview.Initialize(source);
+        preview.Select("Morning", "Normal", 10);
+        Assert.True(preview.IsLoading);
+        int recoveries = AudioOutputRecovery.RecoveryCount;
+        AudioOutputRecovery.SimulateChangeForTest();
+        Assert.AreEqual(SongSelectChartPreview.PreviewState.Idle, preview.State, "立て直しを待つ間は止める");
+        double deadline = Time.realtimeSinceStartupAsDouble + 5;
+        while (AudioOutputRecovery.RecoveryCount == recoveries && Time.realtimeSinceStartupAsDouble < deadline) yield return null;
+        Assert.Greater(AudioOutputRecovery.RecoveryCount, recoveries);
+        Assert.AreEqual(SongSelectChartPreview.PreviewState.Waiting, preview.State, "止めていなければ同じ試聴をやり直す");
+        Assert.AreEqual("Morning", preview.SongId);
+
+        recoveries = AudioOutputRecovery.RecoveryCount;
+        AudioOutputRecovery.SimulateChangeForTest();
+        preview.Cancel();
+        deadline = Time.realtimeSinceStartupAsDouble + 5;
+        while (AudioOutputRecovery.RecoveryCount == recoveries && Time.realtimeSinceStartupAsDouble < deadline) yield return null;
+        Assert.Greater(AudioOutputRecovery.RecoveryCount, recoveries);
+        yield return null;
+        Assert.AreEqual(SongSelectChartPreview.PreviewState.Idle, preview.State, "止めた試聴は、立て直したあとも鳴らし直さない");
+        Assert.False(preview.IsLoading);
+        Assert.False(preview.IsPlaying);
+    }
+
     [Test]
     public void PreviewMuteOnlyChangesPreviewAndSurvivesReinitialization()
     {

@@ -17,6 +17,16 @@ public class ResultRevealTests
         created.Clear();
     }
 
+    // 処理落ちの長いコマ(0.7秒)でも時計は 0.1 秒しか進めず、音の側が「飛ばした」と取り違えない(10/23)。
+    [Test]
+    public void LongFrameAdvancesTheClockByAtMostOneStep()
+    {
+        Assert.AreEqual(1.8f, ResultReveal.Advance(1.7f, .7f), 1e-5f);
+        Assert.AreEqual(1.716f, ResultReveal.Advance(1.7f, .016f), 1e-5f);
+        Assert.AreEqual(1.7f, ResultReveal.Advance(1.7f, -.5f), 1e-5f, "時計を戻さない");
+        Assert.Less(ResultReveal.MaxFrameStep, ResultSoundtrack.SkipJump, "処理落ちはスキップの閾値に届かない");
+    }
+
     // ---- Slide(シャッ) ----
 
     [Test]

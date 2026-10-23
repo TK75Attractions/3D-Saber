@@ -789,14 +789,23 @@ public class SongSelectKeyboardPlayTests
         Assert.True(manager.songPlayer.IsPlaying);
         string runId = GameSession.AchievementRunId;
         var oldClip = manager.songPlayer.Clip;
+        // 止まる直前にコンボの節目の輪を出しておく(止めている間に消えきるか。10/23)。
+        var accents = Object.FindFirstObjectByType<GateAccents>();
+        Assert.NotNull(accents);
+        accents.Milestone(30);
+        Assert.AreEqual(1, accents.ActiveRings);
         int recoveries = AudioOutputRecovery.RecoveryCount;
         Assert.True(AudioSettings.Reset(AudioSettings.GetConfiguration()));
         yield return null;
         Assert.True(manager.AudioChangeHold, "知らせが来たらすぐ止めておく(立て直すまでに曲が進んだり終わって記録されたりしない)");
         Assert.True(manager.songPlayer.IsPaused);
         double pausedAt = manager.songPlayer.SongTime;
+        double pausedClock = Time.realtimeSinceStartupAsDouble;
         deadline = Time.realtimeSinceStartupAsDouble + 10;
         while (AudioOutputRecovery.RecoveryCount == recoveries && Time.realtimeSinceStartupAsDouble < deadline) yield return null;
+        while (manager.songPlayer.IsPaused && Time.realtimeSinceStartupAsDouble < pausedClock + GateAccents.MilestoneSeconds + .3) yield return null;
+        Assert.True(manager.songPlayer.IsPaused, "まだ止まっている間に確かめる");
+        Assert.AreEqual(0, accents.ActiveRings, "止めている間も、ゲートまわりの光は最後まで消えていく(固まって残さない)");
         Assert.AreEqual(AudioOutputRecovery.Action.ResumeSong, AudioOutputRecovery.LastAction);
         Assert.AreEqual(pausedAt, manager.songPlayer.SongTime, 1e-9, "読み直す間も止めたまま");
         deadline = Time.realtimeSinceStartupAsDouble + 15;

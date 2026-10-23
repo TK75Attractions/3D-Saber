@@ -14,7 +14,7 @@ public class CameraImuJudgmentTests
     const double Clock = 100;
 
     void Create(CameraImuMode mode = CameraImuMode.ImuAndCamera, int count = 1,
-        string direction = "", bool twoNotes = false, float secondTime = 1040)
+        string direction = "", bool twoNotes = false, float secondTime = 1040, string secondDirection = "")
     {
         root = new GameObject("CameraImuTest");
         spawner = root.AddComponent<NoteSpawner>();
@@ -27,7 +27,7 @@ public class CameraImuJudgmentTests
         var data = new ChartData { notes = new List<NoteData> {
             new NoteData { time = 1000, color = "red", count = count, direction = direction }
         } };
-        if (twoNotes) data.notes.Add(new NoteData { time = secondTime, x = secondTime == 1000 ? 1 : 0, color = "red", count = 1 });
+        if (twoNotes) data.notes.Add(new NoteData { time = secondTime, x = secondTime == 1000 ? 1 : 0, color = "red", count = 1, direction = secondDirection });
         spawner.SetChart(data); spawner.Tick(.9);
         judge = MakeJudge("Red", SaberHand.Right);
         judge2 = MakeJudge("Blue", SaberHand.Left);
@@ -168,6 +168,21 @@ public class CameraImuJudgmentTests
         Assert.True(notes[0].IsCut); Assert.True(notes[1].IsCut);
         Assert.That(score.HitCount, Is.EqualTo(2));
         Assert.That(score.LastTier, Is.EqualTo(JudgmentTier.Perfect));
+    }
+
+    // 同時の2つのうち向きの合わない矢印があっても、同じ振りが通った向きなしのノーツは切れる(どちらが先に選ばれても)。10/23 Codex の指摘
+    [TestCase(true)]
+    [TestCase(false)]
+    public void WrongWayArrowDoesNotBlockItsSimultaneousNote(bool arrowFirst)
+    {
+        Create(direction: arrowFirst ? "up" : "", twoNotes: true, secondTime: 1000, secondDirection: arrowFirst ? "" : "up");
+        Swing(); Path(); Advance(.17);
+        CuttableNote arrow = notes[arrowFirst ? 0 : 1], dot = notes[arrowFirst ? 1 : 0];
+        Assert.False(arrow.IsCut, "向きの合わない矢印は切れない");
+        Assert.True(dot.IsCut, "同じ振りが通った向きなしのノーツは切れる");
+        Assert.That(score.HitCount, Is.EqualTo(1));
+        Assert.That(score.MissCount, Is.Zero);
+        Assert.That(fusion.PendingSwingCount, Is.Zero);
     }
 
     [TestCase(1019, -.100, true)]
