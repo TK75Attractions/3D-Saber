@@ -450,7 +450,7 @@ public class GamePlayManager : MonoBehaviour
             var countdown = GameStartCountdown.Ensure();
             double startDspTime = countdown.Begin(chart.bpm, GameSession.SelectedDifficulty, startCountdownVolume, noteSpawner.approachTime, firstNoteFromPlayStart);
             countdown.ConfigureFirstHandHint(chart, firstNoteFromPlayStart, inTutorial || GameSession.TutorialPending,
-                inCalibration || GameSession.IsCalibrationMode);
+                inCalibration || GameSession.IsCalibrationMode, playRange.Start);
             songPlayer.PlayScheduled(startDspTime, playRange.Start);
         }
         else
@@ -753,6 +753,7 @@ public class GamePlayManager : MonoBehaviour
     {
         AbortAudioRequest();
         ReleaseOwnedSongClip();
+        FirstNoteHandHintView.Hide();
     }
 
     // 最後まで遊んだあと、終わりの演出(FULL COMBO・コンボ点)の間や結果画面へ移る間にアプリを終了しても
@@ -791,6 +792,8 @@ public class GamePlayManager : MonoBehaviour
         if (HandleEscape()) return;
         LockMouseFallbackOnceCameraSeen();
         TickTrackingWatch();
+        // 最初の手の予告は曲の時計で出し入れする(止まっている間は隠す)。
+        FirstNoteHandHintView.Tick(songPlayer);
         if (finished || !ready || (songPlayer != null && songPlayer.IsPaused))
         {
             // 一時停止中(剣の見失い・音の立て直し)・終了後も、ゲートまわりの光は最後まで消えていく(広がりかけの形で固めない)。

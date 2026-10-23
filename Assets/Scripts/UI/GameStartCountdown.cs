@@ -120,13 +120,15 @@ public class GameStartCountdown : MonoBehaviour
     }
 
     // 中央のSTARTとは別に、画面下の案内だけを最初の到着直前まで残す。
-    public void ConfigureFirstHandHint(ChartData chart, double firstNoteSeconds, bool tutorial, bool calibration)
+    // firstNoteSeconds は鳴らし始める位置からの秒、playStartSeconds は鳴らし始める位置(音源の頭からの秒)。
+    public void ConfigureFirstHandHint(ChartData chart, double firstNoteSeconds, bool tutorial, bool calibration, double playStartSeconds = 0)
     {
         FirstNoteHandHintView.Hide();
         if (!running || tutorial || calibration || double.IsNaN(firstNoteSeconds) || double.IsInfinity(firstNoteSeconds)
             || !FirstNoteHandHint.TryDescribe(chart, out string text, out Color color)) return;
-        double begin = firstBeatDspTime + countSeconds * 2;
-        double end = songStartDspTime + firstNoteSeconds - .15;
+        // 予告は曲の時計で動かす(止まる・途中から鳴り直すときもノーツと合う)。「1」の DSP 時刻を曲の秒に直す。
+        double begin = playStartSeconds + (firstBeatDspTime + countSeconds * 2 - songStartDspTime);
+        double end = playStartSeconds + firstNoteSeconds - .15;
         if (end <= begin) return;
         // 3・2・1 の部品は START のすぐあとに消えるので、予告はその寿命から切り離した別の表示にする。
         FirstNoteHandHintView.Show(text, color, begin, end);
@@ -513,7 +515,9 @@ public class GameStartCountdown : MonoBehaviour
 
     private void OnDisable()
     {
-        // 途中で止められても(シーン移動・テストでの無効化)、ゲートと床の色を必ず元に戻す
+        // 途中で止められても(シーン移動・テストでの無効化)、ゲートと床の色を必ず元に戻す。
+        // 数えている途中で無効にされたときは、別の表示の予告も残さない(ふつうに終わったときは running が先に落ちる)。
+        if (running) FirstNoteHandHintView.Hide();
         if (gateCue != null) gateCue.Restore();
     }
 

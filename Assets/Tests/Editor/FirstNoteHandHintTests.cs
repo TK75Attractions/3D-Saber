@@ -61,6 +61,52 @@ public class FirstNoteHandHintTests
         }
     }
 
+    [Test]
+    public void HintFollowsTheSongClockAndHidesWhilePaused()
+    {
+        try
+        {
+            FirstNoteHandHintView.Show("右手から", Color.red, 10, 12);
+            var label = GameObject.Find("FirstHandHint").GetComponentInChildren<TextMeshProUGUI>();
+            FirstNoteHandHintView.Apply(9.9, false);
+            Assert.AreEqual(0, label.alpha, .001);
+            FirstNoteHandHintView.Apply(10.09, false);
+            Assert.AreEqual(.5, label.alpha, .001);
+            FirstNoteHandHintView.Apply(11, true);
+            Assert.AreEqual(0, label.alpha, .001, "曲が止まっている間は隠す");
+            Assert.NotNull(GameObject.Find("FirstHandHint"), "止まっている間は消さない(再開したら戻る)");
+            FirstNoteHandHintView.Apply(11, false);
+            Assert.AreEqual(1, label.alpha, .001);
+            FirstNoteHandHintView.Apply(12, false);
+            Assert.IsNull(GameObject.Find("FirstHandHint"), "最初のノーツの0.15秒前で消える");
+            FirstNoteHandHintView.Apply(12.5, false);
+        }
+        finally { FirstNoteHandHintView.Hide(); }
+    }
+
+    [Test]
+    public void HintWindowIsInSongSecondsFromThePlayStart()
+    {
+        var root = new GameObject("HintSongClock", typeof(RectTransform));
+        var countdown = root.AddComponent<GameStartCountdown>();
+        try
+        {
+            var chart = new ChartData();
+            chart.notes.Add(new NoteData { color = "blue", time = 32000 });
+            double start = countdown.Begin(120, "normal", 0, 1, 2);
+            // 音源の30秒から鳴らし、最初のノーツはそこから2秒後(音源の32秒)。
+            countdown.ConfigureFirstHandHint(chart, 2, false, false, 30);
+            Assert.AreEqual(31.85, FirstNoteHandHintView.CurrentEnd, 1e-6, "最初のノーツの0.15秒前(音源の秒)");
+            double one = countdown.FirstBeatDspTime + countdown.CountLength * 2;
+            Assert.AreEqual(30 + (one - start), FirstNoteHandHintView.CurrentBegin, 1e-6, "「1」の時刻を音源の秒に直す");
+        }
+        finally
+        {
+            Object.DestroyImmediate(root);
+            FirstNoteHandHintView.Hide();
+        }
+    }
+
     [TestCase(true, false)]
     [TestCase(false, true)]
     public void TutorialAndCalibrationDoNotCreateHint(bool tutorial, bool calibration)

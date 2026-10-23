@@ -37,14 +37,19 @@ internal static class FirstNoteHandHint
 }
 
 // 最初の手の予告を、3・2・1 の部品とは別の画面に出す(3・2・1 の部品は START のすぐあとに消えるため)。
-// 曲の DSP 時計で薄く出し入れし、最初のノーツの0.15秒前までに消える。シーンを出れば一緒に消える。
+// 時刻は曲の時計(SongPlayer.SongTime、音源の頭からの秒)で持ち、ノーツと同じ時計で薄く出し入れして、
+// 最初のノーツの0.15秒前までに消える。曲が止まっている間(剣の見失い・音の立て直し)は隠し、再開すれば戻る。
+// 自分では Update を持たず、本編の GamePlayManager.Update が毎フレーム Tick を呼ぶ。シーンを出れば一緒に消える。
 internal sealed class FirstNoteHandHintView : MonoBehaviour
 {
     static FirstNoteHandHintView current;
     TextMeshProUGUI label;
     double begin, end;
 
-    internal static void Show(string text, Color color, double beginDsp, double endDsp)
+    internal static double CurrentBegin => current != null ? current.begin : double.NaN;
+    internal static double CurrentEnd => current != null ? current.end : double.NaN;
+
+    internal static void Show(string text, Color color, double beginSongSeconds, double endSongSeconds)
     {
         Hide();
         var go = new GameObject("FirstHandHint", typeof(Canvas), typeof(CanvasScaler));
@@ -58,7 +63,7 @@ internal sealed class FirstNoteHandHintView : MonoBehaviour
         view.label.textWrappingMode = TextWrappingModes.NoWrap;
         view.label.raycastTarget = false;
         view.label.alpha = 0;
-        view.begin = beginDsp; view.end = endDsp;
+        view.begin = beginSongSeconds; view.end = endSongSeconds;
         current = view;
     }
 
@@ -68,11 +73,19 @@ internal sealed class FirstNoteHandHintView : MonoBehaviour
         current = null;
     }
 
-    void Update()
+    // 本編の Update から毎フレーム呼ぶ。曲の予約が無くなったら(止めて読み直す途中など)消す。
+    internal static void Tick(SongPlayer song)
     {
-        double now = AudioSettings.dspTime;
-        if (label != null) label.alpha = FirstNoteHandHint.AlphaAt(now, begin, end);
-        if (now >= end) Hide();
+        if (current == null) return;
+        if (song == null || !song.IsScheduled) { Hide(); return; }
+        Apply(song.SongTime, song.IsPaused);
+    }
+
+    internal static void Apply(double songSeconds, bool paused)
+    {
+        if (current == null) return;
+        if (current.label != null) current.label.alpha = paused ? 0f : FirstNoteHandHint.AlphaAt(songSeconds, current.begin, current.end);
+        if (!paused && songSeconds >= current.end) Hide();
     }
 
     void OnDestroy() { if (current == this) current = null; }
