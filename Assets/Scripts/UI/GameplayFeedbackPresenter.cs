@@ -102,6 +102,12 @@ public sealed class GameplayFeedbackPresenter : MonoBehaviour
     public static bool FullComboEligible(int hits, int bad, int miss) => hits > 0 && bad == 0 && miss == 0;
     // 節目は 30・50・100、そのあとは50ごと。初めての人にも早めに1回目を見せる(osu! は30から)。
     public static bool IsMilestone(int combo) => combo == 30 || combo == 50 || combo >= 100 && combo % 50 == 0;
+    // previous から current までの間に節目を通ったか(赤青を同じコマで切ると 29→31 のように飛ぶ)。
+    public static bool CrossedMilestone(int previous, int current)
+    {
+        for (int c = System.Math.Max(previous + 1, 1); c <= current; c++) if (IsMilestone(c)) return true;
+        return false;
+    }
     // 何段目の形で鳴らすか(30=0、50=1、100=2、それ以降=3)。
     public static int MilestoneStep(int combo) => combo < 50 ? 0 : combo < 100 ? 1 : combo < 150 ? 2 : 3;
     // 輪を二重にし、歓声を足す節目。

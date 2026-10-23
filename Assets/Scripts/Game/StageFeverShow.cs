@@ -137,6 +137,9 @@ public sealed class StageFeverShow : MonoBehaviour
     }
 
     // 照明の合図。ノーツの時刻(と長いノーツの終わり)を、点滅が1秒2.2回を超えないように間引く。判定調整値は含めない。純関数。
+    // 遠景の柱の明るさ。演出控えめ(LOW)の3割は Beam が掛けるので、ここでは掛けない(二重に掛かって9%になっていた。2026-10-23 点検)。
+    public static float PillarAlpha(float pulse, float lightLevel, float projector) => (.05f + .6f * pulse * lightLevel) * projector;
+
     public static double[] BuildCues(ChartData chart)
     {
         var all = new List<double>();
@@ -146,7 +149,9 @@ public sealed class StageFeverShow : MonoBehaviour
                 if (note != null && Finite(note.time) && note.TimeSeconds + offset >= 0)
                 {
                     all.Add(note.TimeSeconds + offset);
-                    if (note.count > 1 && note.lengthMs > 0 && Finite(note.lengthMs)) all.Add(note.TimeSeconds + offset + note.lengthMs / 1000.0);
+                    // ロングの終わりも合図にする。長さの指定が無いロングは、回数から長さを出す(本編と同じ LingerSeconds)。
+                    double linger = note.count > 1 && Finite(note.lengthMs) ? note.LingerSeconds(NoteSpawner.DefaultSecondsPerLongCut) : 0;
+                    if (linger > 0) all.Add(note.TimeSeconds + offset + linger);
                 }
         all.Sort();
         var picked = new List<double>();
@@ -339,7 +344,7 @@ public sealed class StageFeverShow : MonoBehaviour
             {
                 float z = 12 + k * 8;
                 float pulse = CuePulse(cues, songTime - (PillarsPerSide - 1 - k) * .04);
-                float alpha = (.05f + .6f * pulse * LightLevel) * projector * (low ? .3f : 1f);
+                float alpha = PillarAlpha(pulse, LightLevel, projector);
                 for (int side = -1; side <= 1; side += 2)
                 {
                     Color tint = Fever > 0 ? Color.Lerp(baseLight, (k + (side > 0 ? 1 : 0)) % 2 == 0 ? boostA : boostB, Fever) : baseLight;

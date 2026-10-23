@@ -24,6 +24,35 @@ public class BeatVisualTests
         Assert.AreEqual(original, JsonUtility.ToJson(chart));
     }
 
+    // 長さの指定(lengthMs)が無いロングも、回数から出した終わり(本編と同じ (回数-1)×0.7秒)を合図にする(10/23 点検)。
+    [Test]
+    public void LongNotesWithoutLengthStillCueTheirEnd()
+    {
+        var chart = new ChartData();
+        chart.notes.Add(new NoteData { time = 1000, count = 3, lengthMs = 0, type = "long" });
+        var cues = new StageLightCues(chart);
+        Assert.AreEqual(2, cues.Count);
+        Assert.AreEqual(1, cues.Evaluate(2.4), .0001, "1.0 秒 + (3-1)×0.7 秒");
+        Assert.That(StageFeverShow.BuildCues(chart), Has.Some.EqualTo(2.4).Within(1e-6), "遠景の柱も同じ終わりで光る");
+        chart.notes[0].lengthMs = 900;
+        Assert.That(StageFeverShow.BuildCues(chart), Has.Some.EqualTo(1.9).Within(1e-6), "長さの指定があればそちらを使う");
+    }
+
+    // 遠景の柱の明るさに演出控えめ(LOW)を掛けるのは Beam の1回だけ(柱でも掛けて 0.3×0.3 になっていた。10/23 点検)。
+    [Test]
+    public void FarPillarsAreDimmedOnlyOnceInLowEffects()
+    {
+        try
+        {
+            DisplaySettings.SetReducedEffectsForTest(false);
+            float normal = StageFeverShow.PillarAlpha(1, 1, 1);
+            DisplaySettings.SetReducedEffectsForTest(true);
+            Assert.AreEqual(normal, StageFeverShow.PillarAlpha(1, 1, 1), 1e-6f, "柱の値そのものは LOW で変えない");
+            Assert.AreEqual(.3f, DisplaySettings.AccentScale, 1e-6f, "Beam が3割にする");
+        }
+        finally { DisplaySettings.ResetReducedEffectsCacheForTest(); }
+    }
+
     [Test]
     public void DenseOrInvalidCuesDoNotCauseUnboundedFlashes()
     {

@@ -19,8 +19,9 @@ public sealed class StageLightCues
                 {
                     sorted.Add(note.TimeSeconds + offset);
                     // 長い保持区間の終わりも曲の節目として扱い、開始音だけで照明を終わらせない。
-                    if (note.count > 1 && note.lengthMs > 0 && Finite(note.lengthMs))
-                        sorted.Add(note.TimeSeconds + offset + note.lengthMs / 1000.0);
+                    // 長さの指定が無いロングは、回数から長さを出す(本編と同じ LingerSeconds。2026-10-23 点検)。
+                    double linger = note.count > 1 && Finite(note.lengthMs) ? note.LingerSeconds(NoteSpawner.DefaultSecondsPerLongCut) : 0;
+                    if (linger > 0) sorted.Add(note.TimeSeconds + offset + linger);
                 }
         sorted.Sort();
         var selected = new List<double>();

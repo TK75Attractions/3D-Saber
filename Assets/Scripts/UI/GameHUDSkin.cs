@@ -679,7 +679,8 @@ public class GameHUDSkin : MonoBehaviour
         if (combo > lastCombo)
         {
             comboPunchAge = 0f;
-            if (GameplayFeedbackPresenter.IsMilestone(combo)) milestonePunchAge = 0f;
+            // 節目を飛び越えたコマでも出す(同時押しで 29→31。音と輪は判定ごとに出ていた。2026-10-23 点検)。
+            if (GameplayFeedbackPresenter.CrossedMilestone(lastCombo, combo)) milestonePunchAge = 0f;
         }
         lastCombo = combo;
 

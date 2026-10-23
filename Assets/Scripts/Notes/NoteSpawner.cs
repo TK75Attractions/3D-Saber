@@ -28,7 +28,9 @@ public class NoteSpawner : MonoBehaviour
     // ロングノーツの追加カット1回あたりの判定ウィンドウ延長秒。
     // 4 回切りなら lateWindow = judgeWindow + 3 * secondsPerLongCut ≒ 2.3s。
     // 50 回切りなら ≒ 34.5s（25秒の「サビ前ロング」も余裕で表現可能）。
-    public float secondsPerLongCut = 0.7f;
+    public float secondsPerLongCut = DefaultSecondsPerLongCut;
+    // 照明の合図など、ノーツを出す前に長さを知りたい所が使う既定値(本編のシーンも 0.7)。
+    public const float DefaultSecondsPerLongCut = 0.7f;
     // ロングノーツが HitTime 経過後、判定面の少し後方に滞留する距離（プレイヤーが切り続けられるように）。
     public float longLingerDriftZ = 1.0f;
     // ロングノーツの見た目の Z スケール上限（count=50 等でも視野を埋め尽くさないようにキャップ）。
