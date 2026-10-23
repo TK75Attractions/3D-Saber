@@ -190,7 +190,7 @@ public class DailyRankingPlayTests
         Assert.Greater(wheel.GetComponent<CanvasGroup>().alpha, 0);
         Assert.False(back.IsInteractable());
         reveal.Tick(DailyRankingWheel.StopTime + .05f);
-        Assert.Greater(wheel.transform.Find("Frame/Stamp").localScale.x, 1);
+        Assert.Greater(wheel.transform.Find("Stamp").localScale.x, 1);
         DisplaySettings.SetReducedEffectsForTest(true);
         reveal.Tick(DailyRankingWheel.StartTime + .18f);
         Assert.AreEqual(0, wheel.GetComponent<CanvasGroup>().alpha);
@@ -207,6 +207,69 @@ public class DailyRankingPlayTests
         Assert.AreEqual(0, panel.transform.Find("LandingGlow").GetComponent<Image>().color.a);
         GameSession.ResetResult();
         Assert.IsNull(GameSession.FinalDailyRanking);
+    }
+
+    [UnityTest] public IEnumerator PodiumNumberTravelsAndSkipHandsItToTheLowerPanel()
+    {
+        foreach (int rank in new[] { 1, 2, 3 })
+        {
+            var root = new GameObject("RankTransferTest", typeof(RectTransform), typeof(Canvas));
+            var reveal = ResultReveal.Ensure(root.GetComponent<Canvas>());
+            reveal.enabled = false;
+            var table = new DailyRankingStore.Table { day = "2026-10-23" };
+            for (int i = 1; i < rank; i++)
+                table.entries.Add(new DailyRankingStore.Entry { runId = "higher" + i, score = 2000 });
+            table.entries.Add(new DailyRankingStore.Entry { runId = "current", score = 1000 });
+            var view = DailyRankingPresentation.Build(root.transform, reveal, DailyRankingStore.Evaluate(table, "current"));
+            var wheel = root.GetComponentInChildren<DailyRankingWheel>();
+            var stamp = (RectTransform)wheel.transform.Find("Stamp");
+            var text = stamp.Find("Value").GetComponent<TMP_Text>();
+            var lower = view.transform.Find("Rank").GetComponent<CanvasGroup>();
+            var frame = wheel.transform.Find("Frame").GetComponent<CanvasGroup>();
+
+            reveal.Tick(7.10f);
+            Assert.AreEqual(new Vector2(0, -2), stamp.anchoredPosition);
+            Assert.AreEqual(206, text.fontSize);
+            Assert.AreEqual(0, lower.alpha);
+            Assert.AreEqual(1, frame.alpha);
+            reveal.Tick(7.22f);
+            Assert.AreEqual(.5f, frame.alpha, .001);
+            reveal.Tick(7.34f);
+            Assert.AreEqual(0, frame.alpha, .001);
+            Assert.AreEqual(0, wheel.transform.Find("Dim").GetComponent<Image>().color.a, .001);
+            reveal.Tick(7.375f);
+            Assert.Less(Vector2.Distance(new Vector2(-176.25f, -202.25f), stamp.anchoredPosition), .01);
+            Assert.AreEqual(143, text.fontSize, .01);
+            StringAssert.Contains("<size=49>", text.text);
+            Assert.AreEqual(Vector3.one, stamp.localScale);
+            Assert.AreEqual(0, lower.alpha);
+            reveal.Tick(7.649f);
+            Assert.AreEqual(0, lower.alpha);
+            Assert.AreEqual(1, wheel.GetComponent<CanvasGroup>().alpha);
+            reveal.Tick(7.65f);
+            Assert.AreEqual(new Vector2(-425, -269), stamp.anchoredPosition);
+            Assert.AreEqual(80, text.fontSize);
+            Assert.AreEqual(rank + "<size=34> 位</size>", text.text);
+            Assert.AreEqual(0, wheel.GetComponent<CanvasGroup>().alpha);
+            Assert.AreEqual(1, lower.alpha);
+            Assert.AreEqual(Vector3.one, lower.transform.localScale);
+
+            // クリックが送る終端時刻は、回転前・確定後・移動中のどこからでも同じ状態になる。
+            foreach (float time in new[] { 0f, 6.4f, 7.2f, 7.64f })
+            {
+                reveal.Tick(time); reveal.Tick(999);
+                Assert.AreEqual(0, wheel.GetComponent<CanvasGroup>().alpha);
+                Assert.AreEqual(1, lower.alpha);
+                Assert.AreEqual(Vector3.one, lower.transform.localScale);
+            }
+            DisplaySettings.SetReducedEffectsForTest(true);
+            reveal.Tick(7.375f);
+            Assert.AreEqual(0, wheel.GetComponent<CanvasGroup>().alpha);
+            Assert.AreEqual(1, lower.alpha);
+            DisplaySettings.SetReducedEffectsForTest(false);
+            Object.Destroy(root);
+            yield return null;
+        }
     }
 
     [UnityTest] public IEnumerator PodiumNormalTiesAndLongNumbersFitTheActualResultScene()
@@ -249,8 +312,8 @@ public class DailyRankingPlayTests
                 reveal.Tick(DailyRankingWheel.StopTime - .03f);
                 Assert.AreEqual(rank.ToString(), wheel.transform.Find("Frame/WheelMask/Reel/Cell2").GetComponent<TMP_Text>().text);
                 reveal.Tick(DailyRankingWheel.ImpactTime);
-                Assert.AreEqual(rank + "<size=64> 位</size>", wheel.transform.Find("Frame/Stamp/Value").GetComponent<TMP_Text>().text);
-                Assert.AreEqual(1, wheel.transform.Find("Frame/Stamp").localScale.x, .001f);
+                Assert.AreEqual(rank + "<size=64> 位</size>", wheel.transform.Find("Stamp/Value").GetComponent<TMP_Text>().text);
+                Assert.AreEqual(1, wheel.transform.Find("Stamp").localScale.x, .001f);
                 Capture("podium-" + rank + ".png", 1920, 1080);
                 reveal.Tick(999);
                 Assert.AreEqual(0, wheel.GetComponent<CanvasGroup>().alpha);

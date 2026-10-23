@@ -6,7 +6,7 @@ using UnityEngine.UI;
 // 更新するたびに上げる: 軽微な直しは 1.0.1 → 1.0.2、中くらいの変更は 1.1 → 1.2(下の桁は 0 に戻して省く)。
 public static class GameVersion
 {
-    public const string Number = "1.5.3";
+    public const string Number = "1.6";
     public static string Label => "v" + Number;
 }
 

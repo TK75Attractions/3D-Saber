@@ -1609,6 +1609,7 @@ namespace Saber.ChartEditor
             if (savedJson != null && CurrentJson() == savedJson && (exists || SongInfoDirty))
             {
                 if (SongInfoDirty && !SaveSongInfo()) return false;
+                SaberChartDrafts.DeleteSessionChart(sessionDraftPaths, targetSong, targetDifficulty);
                 UpdateDirtyState();
                 SetStatus("保存済み（譜面の内容は変更ありません）");
                 return true;
@@ -1638,9 +1639,8 @@ namespace Saber.ChartEditor
                 hasUnsavedChanges = false;
                 nextAutosaveAt = 0;
                 settingsMismatchKey = null;
-                // この窓の下書きだけを消す。まだ開いていない(前の起動の)下書きは残す(守3)。
-                SaberChartDrafts.Delete(sessionDraftPaths);
-                sessionDraftPaths.Clear();
+                // 保存した曲・難易度の、この窓が作った下書きだけを消す。
+                SaberChartDrafts.DeleteSessionChart(sessionDraftPaths, targetSong, targetDifficulty);
                 string unseenDraft = pendingDraft != null ? "。開いていない下書きは Library/3DSaberChartDrafts に残しています" : "";
                 lastDraftSavedAt = lastDraftTarget = null;
                 pendingDraft = null;

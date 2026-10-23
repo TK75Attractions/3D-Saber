@@ -52,10 +52,11 @@ public class CutFeelTests
         note.Cut(Vector3.zero, Vector3.right * 8, CutDirection.None, SaberHand.Left);
         Assert.AreEqual(0, note.transform.childCount, "違う手で傷を付けない");
         note.Cut(Vector3.zero, Vector3.right * 8, CutDirection.None, SaberHand.Right);
+        note.TickCracks(.3f);
         var first = note.transform.Find("Crack"); Vector3 early = first.localScale;
         note.Cut(Vector3.zero, Vector3.right * 8, CutDirection.None, SaberHand.Right);
         note.Cut(Vector3.zero, Vector3.right * 8, CutDirection.None, SaberHand.Right);
-        Assert.Greater(first.localScale.x, early.x); Assert.Greater(first.localScale.y, early.y);
+        Assert.AreEqual(early, first.localScale, "以前のひびを再伸長・再発光させない");
         Assert.AreEqual(1, note.RemainingCuts); Assert.False(note.IsCut);
         Assert.Greater(Mathf.Abs(Vector3.Dot(first.up, Vector3.right)), .9f, "傷も振り方向に沿う");
         typeof(CuttableNote).GetMethod("ResetForSpawn", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(note, null);

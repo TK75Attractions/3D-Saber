@@ -21,6 +21,7 @@ namespace Saber.ChartEditor
             public SlicePieceDecay[] slices;
             public SlicePieceDecay[] debris;
             public readonly List<Transform> cracks = new List<Transform>();
+            public readonly List<Material> crackMaterials = new List<Material>();
             public Vector3 swing;
             public int seed;
         }
@@ -36,7 +37,7 @@ namespace Saber.ChartEditor
         private readonly List<SimultaneousNoteLink> links = new List<SimultaneousNoteLink>();
         private readonly List<GameplayCutFeedback.StaticBurst> bursts = new List<GameplayCutFeedback.StaticBurst>();
         private readonly HashSet<Object> stageResources = new HashSet<Object>();
-        private Material crackMaterial;
+
         private bool projectorMode;
         private bool disposed;
         private bool labelWarned;
@@ -107,6 +108,7 @@ namespace Saber.ChartEditor
                 motion.enabled = false;
                 // 本編の切断の演出(光の輪・火花・光片)。切ってからの経過秒を渡して描くので、本編の時計は使わない。
                 cutFeedback = GameplayCutFeedback.Create(motion);
+                cutFeedback.ProtectDisabledPreviewNotes = true;
                 CollectGeometry(cutFeedback.gameObject, stageResources);
                 projectorMode = DisplaySettings.ProjectorMode;
                 guideRoot = new GameObject("PreviewGuides");
@@ -184,7 +186,7 @@ namespace Saber.ChartEditor
                     float shrink = !ShowPerfectCuts && elapsed > linger ? Mathf.Clamp01(1 - (float)((elapsed - linger) / .12)) : 1;
                     entry.note.transform.localScale = entry.scale * Mathf.Max(.001f, shrink);
                     // ロングの途中の振り: 切った回数ぶん、本編と同じ場所にひびを残す。
-                    UpdateCracks(entry, ShowPerfectCuts && elapsed >= 0 ? count - remaining : 0, count);
+                    UpdateCracks(entry, ShowPerfectCuts && elapsed >= 0 ? count - remaining : 0, count, elapsed, linger);
                 }
                 if (entry.label != null)
                 {
@@ -201,6 +203,7 @@ namespace Saber.ChartEditor
             if (rebuildLinks) RebuildLinks();
             foreach (var link in links) link.Refresh();
             VisibleCutCount = cutting;
+            cutFeedback.SetProtectionTime(songTime);
             cutFeedback.DrawBursts(bursts);
             floor.Tick(songTime, 0);
             ApplyCamera();
@@ -339,6 +342,7 @@ namespace Saber.ChartEditor
             try
             {
                 renderer.camera.aspect = rect.width / rect.height;
+                cutFeedback.PrepareProtection(renderer.camera, DisplayedSongTime);
                 renderer.Render(true);
             }
             catch
@@ -392,6 +396,7 @@ namespace Saber.ChartEditor
             foreach (var collider in body.GetComponentsInChildren<Collider>(true)) Object.DestroyImmediate(collider);
             HideHierarchy(body);
             body.SetActive(true);
+            cutFeedback.Track(note);
             return entry;
         }
 
@@ -581,7 +586,7 @@ namespace Saber.ChartEditor
         }
 
         // ロングの途中の振りで入るひび。本編 CuttableNote.AddCrack と同じ位置・向き・太さ(Perfect は中心に当たる)。
-        private void UpdateCracks(Entry entry, int achieved, int count)
+        private void UpdateCracks(Entry entry, int achieved, int count, double elapsed, double linger)
         {
             while (entry.cracks.Count < achieved)
             {
@@ -589,18 +594,26 @@ namespace Saber.ChartEditor
                 crack.name = "Crack";
                 Object.DestroyImmediate(crack.GetComponent<Collider>());
                 crack.transform.SetParent(entry.note.transform, false);
-                crack.GetComponent<MeshRenderer>().sharedMaterial = crackMaterial ??= CuttableNote.MakeCrackMaterial();
+                var material = CuttableNote.MakeCrackMaterial();
+                crack.GetComponent<MeshRenderer>().sharedMaterial = material;
+                entry.crackMaterials.Add(material);
+                entry.resources.Add(material);
                 CuttableNote.PlaceCrack(crack.transform, entry.cracks.Count, Vector3.zero,
                     entry.note.transform.InverseTransformDirection(entry.swing));
                 HideHierarchy(crack);
                 entry.cracks.Add(crack.transform);
             }
-            float progress = Mathf.Clamp01(achieved / (float)Mathf.Max(1, count - 1));
             for (int i = 0; i < entry.cracks.Count; i++)
             {
                 bool shown = i < achieved;
                 if (entry.cracks[i].gameObject.activeSelf != shown) entry.cracks[i].gameObject.SetActive(shown);
-                if (shown) entry.cracks[i].localScale = CuttableNote.CrackScale(i, progress);
+                if (shown)
+                {
+                    float progress = (i + 1f) / Mathf.Max(1, count - 1);
+                    float age = (float)(elapsed - i * linger / Mathf.Max(1, count - 1));
+                    CuttableNote.ApplyCrack(entry.cracks[i], entry.crackMaterials[i],
+                        CuttableNote.CrackScale(i, progress), age);
+                }
             }
         }
 
@@ -654,8 +667,9 @@ namespace Saber.ChartEditor
             foreach (var item in parent.GetComponentsInChildren<Transform>(true)) item.gameObject.hideFlags = HideFlags.HideAndDontSave;
         }
 
-        private static void DestroyEntry(Entry entry)
+        private void DestroyEntry(Entry entry)
         {
+            if (entry.note != null) cutFeedback.Untrack(entry.note);
             if (entry.note != null) Object.DestroyImmediate(entry.note.gameObject);
             if (entry.label != null) Object.DestroyImmediate(entry.label.gameObject);
             foreach (var piece in AllPieces(entry)) Object.DestroyImmediate(piece.gameObject);
@@ -699,10 +713,11 @@ namespace Saber.ChartEditor
             ClearLinks();
             foreach (var entry in entries.Values) DestroyEntry(entry);
             entries.Clear();
+            cutFeedback.ReleaseProtection();
             renderer.Cleanup();
             ReleaseGeometry(stageResources);
             // 目印の線や円、ひびの素材は、このプレビューだけが作って持つ。
-            foreach (Material material in new[] { frameMaterial, barMaterial, ringMaterial, crackMaterial })
+            foreach (Material material in new[] { frameMaterial, barMaterial, ringMaterial })
                 if (material != null) Object.DestroyImmediate(material);
         }
     }

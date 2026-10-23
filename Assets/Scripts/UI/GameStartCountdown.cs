@@ -91,6 +91,7 @@ public class GameStartCountdown : MonoBehaviour
         double firstNoteSeconds = double.NaN)
     {
         Build();
+        FirstNoteHandHintView.Hide();
         countSeconds = CountSeconds(bpm);
         accent = AccentForDifficulty(difficulty);
         string d = string.IsNullOrEmpty(difficulty) ? "" : difficulty.ToLowerInvariant();
@@ -116,6 +117,19 @@ public class GameStartCountdown : MonoBehaviour
         HideAll();
         if (Application.isPlaying) ScheduleCues(Mathf.Clamp01(volume));
         return songStartDspTime;
+    }
+
+    // 中央のSTARTとは別に、画面下の案内だけを最初の到着直前まで残す。
+    public void ConfigureFirstHandHint(ChartData chart, double firstNoteSeconds, bool tutorial, bool calibration)
+    {
+        FirstNoteHandHintView.Hide();
+        if (!running || tutorial || calibration || double.IsNaN(firstNoteSeconds) || double.IsInfinity(firstNoteSeconds)
+            || !FirstNoteHandHint.TryDescribe(chart, out string text, out Color color)) return;
+        double begin = firstBeatDspTime + countSeconds * 2;
+        double end = songStartDspTime + firstNoteSeconds - .15;
+        if (end <= begin) return;
+        // 3・2・1 の部品は START のすぐあとに消えるので、予告はその寿命から切り離した別の表示にする。
+        FirstNoteHandHintView.Show(text, color, begin, end);
     }
 
     public static float SanitizeBpm(float bpm)
@@ -505,6 +519,8 @@ public class GameStartCountdown : MonoBehaviour
 
     private void OnDestroy()
     {
+        // 途中で打ち切られた(Esc・音の立て直し)ときだけ、最初の手の予告も消す。ふつうに終わったときは予告を最初のノーツの前まで残す。
+        if (running) FirstNoteHandHintView.Hide();
         if (gateCue != null) gateCue.Restore();
         ReleaseMaterials();
     }

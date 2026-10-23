@@ -182,17 +182,6 @@
       "lengthMs": 0
     },
     {
-      "beat": 23.0,
-      "time": 7283.1573,
-      "x": -1.9,
-      "y": -0.6,
-      "type": "tap",
-      "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
       "beat": 24.000002,
       "time": 7598.9473,
       "x": -1.9,
@@ -1110,9 +1099,9 @@
       "time": 71072.6328,
       "x": 1.9,
       "y": 0.3,
-      "type": "direction",
+      "type": "tap",
       "color": "red",
-      "direction": "down",
+      "direction": "none",
       "count": 1,
       "lengthMs": 0
     },

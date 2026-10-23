@@ -158,11 +158,11 @@
       "time": 0.0,
       "x": 0.9,
       "y": -0.6,
-      "type": "long",
+      "type": "tap",
       "color": "red",
       "direction": "none",
-      "count": 2,
-      "lengthMs": 857.1429
+      "count": 1,
+      "lengthMs": 0
     },
     {
       "beat": 3.999999,

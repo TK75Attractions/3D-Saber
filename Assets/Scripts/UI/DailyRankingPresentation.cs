@@ -134,10 +134,11 @@ public sealed class DailyRankingPresentation : MonoBehaviour
             if (!special && time < EndTime && audioSource != null && chime != null) audioSource.PlayOneShot(ProceduralSfx.Revive(ref chime), .3f);
         }
         float p = Mathf.Clamp01((time - arrival) / (landing - arrival));
-        numberGroup.alpha = p;
+        numberGroup.alpha = special ? (time >= DailyRankingWheel.EndTime ? 1 : 0) : p;
         float settle = Mathf.Clamp01((time - landing) / .34f);
         float scale = low ? 1 : (p < 1 ? Mathf.Lerp(1.32f, 1, p * p) : 1 + .065f * Mathf.Sin(settle * Mathf.PI) * (1 - settle));
-        number.localScale = Vector3.one * scale;
+        // 上位3位は飛んできた数字と同じ80px・等倍で引き継ぐ。
+        number.localScale = Vector3.one * (special ? 1 : scale);
         detailGroup.alpha = Mathf.Clamp01((time - landing) / .22f);
         float flash = low || !available ? 0 : Mathf.Clamp01(1 - (time - landing) / .48f);
         if (time < landing) flash = 0;

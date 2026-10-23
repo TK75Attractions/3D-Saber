@@ -5,7 +5,7 @@ using UnityEngine.Rendering;
 // 切断が確定した場所に、判定段階に応じた短い演出を出す(Perfect > Great > Good。Bad と Miss は出さない)。
 // 2026-09-23: ユーザー依頼で段階化。A案「リング+火花+光片」、Perfect は虹色の二重リングと白い芯、切断片の縁も一瞬発光。
 // 画面全体のフラッシュやカメラ揺れ、物理判定は追加しない。ノーツ付近に文字は出さない。
-public sealed class GameplayCutFeedback : MonoBehaviour
+public sealed partial class GameplayCutFeedback : MonoBehaviour
 {
     public const int MaxBursts = 12;
     public const float BurstLifetime = .24f;
@@ -82,7 +82,7 @@ public sealed class GameplayCutFeedback : MonoBehaviour
     void BuildRenderer()
     {
         // Resourcesから参照し、ビルドでも頂点色を使う専用シェーダーが残るようにする。
-        var shader = Resources.Load<Shader>("Effects/GameplayCutAccent");
+        var shader = Resources.Load<Shader>("Effects/GameplayCutProtected");
         if (shader == null) return;
         mesh = new Mesh { name = "GameplayCutFeedback", hideFlags = HideFlags.DontSave };
         mesh.MarkDynamic();
@@ -95,23 +95,27 @@ public sealed class GameplayCutFeedback : MonoBehaviour
         meshRenderer.lightProbeUsage = LightProbeUsage.Off;
         meshRenderer.reflectionProbeUsage = ReflectionProbeUsage.Off;
         meshRenderer.enabled = false;
+        ReserveProtection(Mathf.Max(16, owner.TotalNoteCount));
     }
 
     public void Track(CuttableNote note)
     {
         if (note == null || !tracked.Add(note)) return;
+        protectionTargets[note] = note.GetComponent<MeshRenderer>();
+        ReserveProtection(tracked.Count);
         note.OnRetired += Untrack;
         note.OnJudged += HandleCut;
         note.OnMiss += HandleMiss;
     }
 
-    void Untrack(CuttableNote note)
+    public void Untrack(CuttableNote note)
     {
         if (note == null) return;
         note.OnRetired -= Untrack;
         note.OnJudged -= HandleCut;
         note.OnMiss -= HandleMiss;
         tracked.Remove(note);
+        protectionTargets.Remove(note);
     }
 
     void HandleMiss(CuttableNote note) { Untrack(note); }
@@ -229,12 +233,13 @@ public sealed class GameplayCutFeedback : MonoBehaviour
     void RebuildMesh()
     {
         if (mesh == null) return;
-        vertices.Clear(); colors.Clear(); uvs.Clear(); triangles.Clear();
+        vertices.Clear(); colors.Clear(); uvs.Clear(); triangles.Clear(); protectionUVs.Clear();
         bool reduced = DisplaySettings.ReducedEffects;
         float accentScale = DisplaySettings.AccentScale;
         foreach (var burst in bursts)
         {
             if (!burst.active) continue;
+            protectionWeight = 0f;
             TierStyle style = StyleFor(burst.tier, reduced);
             float t = Mathf.Clamp01(burst.age / BurstLifetime);
             float life = 1f - t;
@@ -258,6 +263,7 @@ public sealed class GameplayCutFeedback : MonoBehaviour
             }
 
             // 衝撃波リング。Perfect は虹色(回転)の二重で2本目が少し遅れて広がる、Great/Good はノーツ色を白へ寄せた一重。
+            protectionWeight = burst.age >= ProtectionDelaySeconds ? 1f : 0f;
             for (int r = 0; r < style.rings; r++)
             {
                 float lag = r * .06f;
@@ -278,6 +284,7 @@ public sealed class GameplayCutFeedback : MonoBehaviour
                 }
             }
 
+            protectionWeight = 0f;
             // 光片(Perfect のみ): 回転しながら放射状に離れ、先端が細くなる。
             for (int i = 0; i < style.shards; i++)
             {
@@ -302,6 +309,7 @@ public sealed class GameplayCutFeedback : MonoBehaviour
             }
 
             // 火花: 主に振った方向へ飛ばし、少数だけ後方へ散らす。細い白い芯は短く減衰する。
+            protectionWeight = burst.age >= ProtectionDelaySeconds ? 1f : 0f;
             int forward = Mathf.Max(1, style.sparks * 3 / 4);
             for (int i = 0; i < style.sparks; i++)
             {
@@ -318,6 +326,7 @@ public sealed class GameplayCutFeedback : MonoBehaviour
         }
         mesh.Clear();
         mesh.SetVertices(vertices); mesh.SetColors(colors); mesh.SetUVs(0, uvs);
+        mesh.SetUVs(1, protectionUVs);
         mesh.SetTriangles(triangles, 0, true);
         meshRenderer.enabled = vertices.Count > 0;
     }
@@ -368,6 +377,7 @@ public sealed class GameplayCutFeedback : MonoBehaviour
 
     void AddQuad(int first)
     {
+        for (int i = 0; i < 4; i++) protectionUVs.Add(new Vector2(protectionWeight, 0f));
         triangles.Add(first); triangles.Add(first + 1); triangles.Add(first + 2);
         triangles.Add(first); triangles.Add(first + 2); triangles.Add(first + 3);
     }
@@ -390,13 +400,20 @@ public sealed class GameplayCutFeedback : MonoBehaviour
             note.OnMiss -= HandleMiss;
         }
         tracked.Clear();
+        protectionTargets.Clear();
+        protectionSongTime = double.NaN;
         ClearEffects();
     }
 
-    void OnDisable() { ClearEffects(); }
+    void OnDisable()
+    {
+        RenderPipelineManager.beginCameraRendering -= PrepareProtectionCamera;
+        ClearEffects();
+    }
     void OnDestroy()
     {
         ResetState();
+        ReleaseProtection();
         UISkinKit.SafeDestroy(mesh);
         UISkinKit.SafeDestroy(material);
     }

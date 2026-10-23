@@ -113,6 +113,24 @@ namespace Saber.ChartEditor
                     TryDelete(path);
         }
 
+        // この窓の所有分と保存対象の両方に一致する下書きだけを消す。
+        public static void DeleteSessionChart(List<string> paths, string songId, string difficulty)
+        {
+            if (paths == null) return;
+            var owned = new HashSet<string>(paths.Where(path => !string.IsNullOrEmpty(path))
+                .Select(Path.GetFullPath), StringComparer.OrdinalIgnoreCase);
+            foreach (var (file, draft) in ReadAll())
+            {
+                if (!owned.Contains(Path.GetFullPath(file))
+                    || !Same(draft.songId, songId) || !Same(draft.difficulty, difficulty)) continue;
+                TryDelete(file);
+                // 削除できなかったものは、次の保存で再試行できるよう所有履歴に残す。
+                if (!File.Exists(file))
+                    paths.RemoveAll(path => !string.IsNullOrEmpty(path)
+                        && string.Equals(Path.GetFullPath(path), Path.GetFullPath(file), StringComparison.OrdinalIgnoreCase));
+            }
+        }
+
         public static int Count() => Directory.Exists(Root) ? Directory.GetFiles(Root, "*.json").Length : 0;
 
         private static IEnumerable<(string file, Draft draft)> ReadAll()

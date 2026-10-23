@@ -6,12 +6,10 @@
     {
       "index": 0,
       "timesMs": [
-        0.0,
-        857.1429
+        0.0
       ],
       "directions": [
-        "down",
-        "up"
+        "down"
       ],
       "hand": "red",
       "source": "normal",

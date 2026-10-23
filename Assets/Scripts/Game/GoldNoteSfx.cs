@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 // 金ノーツを切った瞬間に、同梱の短い金属音「シャン」を単独で鳴らす。
@@ -26,6 +27,12 @@ public class GoldNoteSfx : MonoBehaviour
     private AudioSource source, coinSource;
     private readonly AudioClip[] criticalClips = new AudioClip[CriticalSteps];
     private AudioClip coinClip, omenClip;
+    private readonly AudioClip[] pairBells = new AudioClip[CriticalSteps];
+    private readonly GoldChordGate chordGate = new GoldChordGate();
+    private readonly Dictionary<CuttableNote, int> tracked = new Dictionary<CuttableNote, int>(128);
+    public int MainSoundCount { get; private set; }
+    public int PairBellCount { get; private set; }
+    public int CoinCount { get; private set; }
     private ScoreManager boundScore;
     private int criticalStep;
     public int CriticalCount { get; private set; }
@@ -52,8 +59,9 @@ public class GoldNoteSfx : MonoBehaviour
         {
             int step = i;
             criticalClips[i] = ProceduralSfx.Clip("GoldCritical" + i, FlourishSfx.Cached("GoldCut" + i, () => FlourishSfx.GoldCut(step)));
+            pairBells[i] = ProceduralSfx.Clip("GoldPairBell" + i, FlourishSfx.Cached("GoldPairBell" + i, () => FlourishSfx.GoldPairBell(step)));
         }
-        coinClip = ProceduralSfx.Clip("GoldCoin", FlourishSfx.Cached("GoldCoin", FlourishSfx.GoldCoin));
+        coinClip = ProceduralSfx.Clip("GoldCoinDelayed", FlourishSfx.Cached("GoldCoinDelayed", FlourishSfx.GoldCoinDelayed));
         omenClip = ProceduralSfx.Clip("GoldOmen", FlourishSfx.Cached("GoldOmen", FlourishSfx.GoldOmen));
         coinSource = gameObject.AddComponent<AudioSource>();
         coinSource.playOnAwake = false; coinSource.spatialBlend = 0; coinSource.clip = coinClip;
@@ -63,14 +71,20 @@ public class GoldNoteSfx : MonoBehaviour
 
     public void Bind(NoteSpawner spawner)
     {
-        if (bound != null) bound.OnNoteSpawned -= HandleSpawned;
+        ResetNotes();
+        if (bound != null)
+        {
+            bound.OnNoteSpawned -= HandleSpawned;
+            bound.OnChartReset -= ResetNotes;
+        }
         NoteTimingCue.GoldOmen -= HandleOmen;
         bound = spawner;
-        criticalStep = 0;
         if (bound != null)
         {
             bound.OnNoteSpawned += HandleSpawned;
+            bound.OnChartReset += ResetNotes;
             NoteTimingCue.GoldOmen += HandleOmen;
+            foreach (var note in bound.LiveNotes) HandleSpawned(note);
         }
     }
 
@@ -93,6 +107,7 @@ public class GoldNoteSfx : MonoBehaviour
         BindScore(null);
         ReleaseGeneratedClips();
         for (int i = 0; i < criticalClips.Length; i++) { UISkinKit.SafeDestroy(criticalClips[i]); criticalClips[i] = null; }
+        for (int i = 0; i < pairBells.Length; i++) { UISkinKit.SafeDestroy(pairBells[i]); pairBells[i] = null; }
         UISkinKit.SafeDestroy(coinClip);
         UISkinKit.SafeDestroy(omenClip);
         coinClip = omenClip = null;
@@ -107,33 +122,93 @@ public class GoldNoteSfx : MonoBehaviour
 
     private void HandleSpawned(CuttableNote note)
     {
-        if (note == null || !note.IsGold) return;
+        if (note == null || !note.IsGold || note.IsFinalized || tracked.ContainsKey(note)) return;
+        chordGate.Reserve(bound != null ? bound.TotalNoteCount : 16);
+        tracked.Add(note, chordGate.Register(note.HitTime));
         note.OnJudged += HandleJudged;
+        note.OnRetired += Untrack;
+        note.OnMiss += Untrack;
     }
 
-    // 確定判定で分ける。Perfect と Great は会心の音、それ以外は段を戻すだけ(音は JudgmentSfx)。
+    void Untrack(CuttableNote note)
+    {
+        if (note == null) return;
+        note.OnJudged -= HandleJudged;
+        note.OnRetired -= Untrack;
+        note.OnMiss -= Untrack;
+        tracked.Remove(note);
+    }
+
+    void ResetNotes()
+    {
+        foreach (var pair in tracked)
+        {
+            var note = pair.Key;
+            if (note == null) continue;
+            note.OnJudged -= HandleJudged;
+            note.OnRetired -= Untrack;
+            note.OnMiss -= Untrack;
+        }
+        tracked.Clear();
+        chordGate.Reset();
+        criticalStep = 0;
+        if (coinSource != null) coinSource.Stop();
+    }
+
+    // 無効中の予約音は残さない。組の履歴は復帰まで維持し、同じ組の硬貨を再発行しない。
+    void OnDisable()
+    {
+        StopAllCoroutines();
+        if (source != null) source.Stop();
+        if (coinSource != null) coinSource.Stop();
+    }
+
     private void HandleJudged(CuttableNote note, JudgmentTier tier, Vector3 point, Vector3 velocity)
     {
-        if (note == null || note.IsMissed || !note.IsCut) return;
+        if (note == null || !tracked.TryGetValue(note, out int group)) return;
+        Untrack(note);
+        if (!isActiveAndEnabled || note.IsMissed || !note.IsCut) return;
         if (!IsCritical(tier)) { criticalStep = 0; return; }
-        PlayCritical(point);
+        double cutTime = note.LastCutSongTime ?? (boundScore != null && boundScore.songPlayer != null
+            ? boundScore.songPlayer.SongTime : AudioSettings.dspTime);
+        PlayCritical(point, chordGate.Decide(group, cutTime, criticalStep));
     }
 
     public void PlayCritical(Vector3 point)
     {
+        PlayCritical(point, new GoldChordGate.Decision {
+            main = true, coin = true, step = Mathf.Clamp(criticalStep, 0, CriticalSteps - 1)
+        });
+    }
+
+    void PlayCritical(Vector3 point, GoldChordGate.Decision decision)
+    {
+        if (!isActiveAndEnabled) return;
         if (source == null) source = GetComponent<AudioSource>();
-        int step = Mathf.Clamp(criticalStep, 0, CriticalSteps - 1);
+        int step = decision.step;
         CriticalCount++;
-        // 作った音は鳴らす前に中身を確かめる(音の出力先が変わると消えるため。ProceduralSfx.Revive)。
-        AudioClip clip = cutClip != null ? cutClip : ProceduralSfx.Revive(ref criticalClips[step]);
-        if (clip != null) source.PlayOneShot(clip, volume);
-        else PlayLuxury();
-        if (coinSource != null && coinClip != null)
+        if (decision.main)
         {
-            coinSource.clip = ProceduralSfx.Revive(ref coinClip);
-            coinSource.PlayDelayed(CoinDelaySeconds);
+            MainSoundCount++;
+            AudioClip clip = cutClip != null ? cutClip : ProceduralSfx.Revive(ref criticalClips[step]);
+            if (clip != null) source.PlayOneShot(clip, volume);
+            else PlayLuxury();
+            criticalStep = Mathf.Min(CriticalSteps - 1, criticalStep + 1);
         }
-        criticalStep = Mathf.Min(CriticalSteps - 1, criticalStep + 1);
+        if (decision.bell)
+        {
+            PairBellCount++;
+            var bell = ProceduralSfx.Revive(ref pairBells[step]);
+            if (source != null && bell != null) source.PlayOneShot(bell, 1f);
+        }
+        if (decision.coin)
+        {
+            CoinCount++;
+            // 0.15秒の無音を持つ音源を重ね、別の組の予約を上書きしない。
+            if (coinSource != null && coinClip != null)
+                coinSource.PlayOneShot(ProceduralSfx.Revive(ref coinClip), 1f);
+        }
+        // 見た目の通知は切れた各ノーツに残す。採点・振動の経路は変更しない。
         OnCritical?.Invoke(point, step);
     }
 

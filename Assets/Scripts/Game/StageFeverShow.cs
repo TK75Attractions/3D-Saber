@@ -9,11 +9,11 @@ using UnityEngine.Rendering;
 //       RUSH E の背景(PulseArray)は自前の照明が同じ合図で光るので、柱は足さない。
 //   祭2 サビ(強度 .65 以上の区間)の間は、左右の床から斜め上へレーザー6本(拍で明るく、強拍で太く、0.5Hz でゆっくり首を振る)、
 //       通路の外の柱を手前へ流して速さを出し、背景の色を背景ごとの「ブースト」の色へ0.3秒で寄せる。
-//       終わりはレーザーを0.5秒で細くして消し、下がる「シュー」を鳴らして色を戻す。拍の明滅も1秒2.2回まで(速い曲は2拍ごと)。
+//       終わりはレーザーを0.5秒で根元へ巻き取り、幅は0.3秒保ってから0.2秒で消す。下がる「シュー」と色戻しは維持する。
 //   斬2 金ノーツの会心では、背景を2拍だけ金色へ寄せる。
 // 独自の Update は持たず、GamePlayManager の曲時計から Tick する。演出控えめ(LOW)ではレーザー・流れる柱・色の変化を出さず、
 // 遠景の柱は3割。投影モードでは明るさを抑える。
-public sealed class StageFeverShow : MonoBehaviour
+public sealed partial class StageFeverShow : MonoBehaviour
 {
     public const float FeverInSeconds = .3f, FeverOutSeconds = .5f;
     public const float MaxFlashesPerSecond = 2.2f;
@@ -84,7 +84,7 @@ public sealed class StageFeverShow : MonoBehaviour
                 if (s != null && Finite(s.startSeconds) && Finite(s.endSeconds) && Finite(s.intensity)
                     && s.startSeconds >= 0 && s.endSeconds > s.startSeconds && s.intensity >= StagePerformanceTimeline.StrongIntensity)
                     strong.Add((s.startSeconds, s.endSeconds));
-        strong.Sort((a, b) => a.start.CompareTo(b.start));
+        MergeStrongSections();
         endTimes = EndSoundTimes(strong);
         cues = BuildCues(chart);
         BuildBeats(chart);
@@ -353,19 +353,23 @@ public sealed class StageFeverShow : MonoBehaviour
                 }
             }
 
-        if (!low && Fever > .001f)
+        if (!low && Fever > 0f)
         {
-            // 祭2: 左右の床から斜め上へ伸びるレーザー。拍で明るく(0.25→0.7)、強拍で太く、ゆっくり首を振る。
-            float beat = Mathf.Lerp(.25f, .7f, BeatPulse);
-            float thick = 1f + (downbeat ? .9f : .35f) * BeatPulse;
+            var laser = LaserAt(songTime);
+            // 巻き取り中は終了時の向きと拍の幅を固定する。
+            float laserPulse = BeatPulseAt(laser.poseTime, out bool laserDownbeat);
+            float beat = Mathf.Lerp(.25f, .7f, laserPulse);
+            float thick = 1f + (laserDownbeat ? .9f : .35f) * laserPulse;
             for (int k = 0; k < LasersPerSide; k++)
                 for (int side = -1; side <= 1; side += 2)
                 {
-                    float sway = Mathf.Sin(time * Mathf.PI * 2 * .5f + k * 1.3f + (side > 0 ? 0 : Mathf.PI)) * .2f;
+                    float sway = Mathf.Sin((float)laser.poseTime * Mathf.PI * 2 * .5f + k * 1.3f + (side > 0 ? 0 : Mathf.PI)) * .2f;
                     Vector3 origin = new Vector3(side * 6.5f, floor + .05f, 6 + k * 8);
                     Vector3 direction = new Vector3(side * (.45f + sway), 1f, .55f + .1f * k).normalized;
                     Color tint = (k + (side > 0 ? 1 : 0)) % 2 == 0 ? boostA : boostB;
-                    Beam(origin, origin + direction * 18f, .06f * thick * Fever, tint, beat * Fever * projector, Vector3.zero);
+                    if (laser.length > 0f && laser.width > 0f)
+                        Beam(origin, origin + direction * laser.length, .06f * thick * laser.width,
+                            tint, beat * Fever * projector, Vector3.zero);
                 }
 
             // 通路の外の柱を手前へ流して速さを出す(拍ごとに1本ぶん進む)。

@@ -1464,9 +1464,9 @@
       "time": 79500.0,
       "x": -0.9,
       "y": 0.3,
-      "type": "direction",
+      "type": "tap",
       "color": "blue",
-      "direction": "down",
+      "direction": "none",
       "count": 1,
       "lengthMs": 0
     },
@@ -1845,17 +1845,6 @@
       "lengthMs": 0
     },
     {
-      "beat": 319.0,
-      "time": 107500.0,
-      "x": -1.9,
-      "y": -0.6,
-      "type": "tap",
-      "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
       "beat": 320.0,
       "time": 107833.3333,
       "x": -1.9,
@@ -1893,9 +1882,9 @@
       "time": 108833.3333,
       "x": -1.9,
       "y": -0.6,
-      "type": "direction",
+      "type": "tap",
       "color": "blue",
-      "direction": "up",
+      "direction": "none",
       "count": 1,
       "lengthMs": 0
     },
@@ -2390,17 +2379,6 @@
       "y": -0.6,
       "type": "tap",
       "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 401.0,
-      "time": 145500.0,
-      "x": -0.9,
-      "y": 0.3,
-      "type": "tap",
-      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0

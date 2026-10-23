@@ -297,7 +297,7 @@ public class FlourishGameplayTests
         Assert.AreEqual(0f, StageFeverShow.FeverAt(9.9, sections));
         Assert.AreEqual(.5f, StageFeverShow.FeverAt(10.15, sections), 1e-3f, "0.3 秒で入る");
         Assert.AreEqual(1f, StageFeverShow.FeverAt(15, sections));
-        Assert.AreEqual(.5f, StageFeverShow.FeverAt(20.25, sections), 1e-3f, "終わってから 0.5 秒で細くして消す");
+        Assert.AreEqual(.5f, StageFeverShow.FeverAt(20.25, sections), 1e-3f, "背景色と光量は従来どおり0.5秒で戻す。レーザーの形は別に検証する");
         Assert.AreEqual(0f, StageFeverShow.FeverAt(21, sections));
     }
 

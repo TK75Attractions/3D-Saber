@@ -683,9 +683,9 @@
       "time": 40224.0,
       "x": -1.9,
       "y": 0.3,
-      "type": "direction",
+      "type": "tap",
       "color": "blue",
-      "direction": "down",
+      "direction": "none",
       "count": 1,
       "lengthMs": 0
     },

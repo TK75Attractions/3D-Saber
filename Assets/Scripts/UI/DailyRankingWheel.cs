@@ -9,6 +9,8 @@ public sealed class DailyRankingWheel : MonoBehaviour
     public const float StopTime = 6.30f;
     public const float ImpactTime = 6.48f;
     public const float EndTime = 7.65f;
+    public const float TransferTime = 7.10f;
+    public const float BackdropEndTime = 7.34f;
     // 何人でも、この順位から数を下げて止める(2026-10-22 ユーザーの依頼: 1人でも 100位あたりから回して1位の演出に)。
     public const int SpinFrom = 100;
     // 刻みの音の最短の間隔。100マスを回すと始めは1秒に約190マス進むので、唸りにならないよう間引く。
@@ -18,7 +20,9 @@ public sealed class DailyRankingWheel : MonoBehaviour
     CanvasGroup group, reelGroup, stampGroup;
     RectTransform reel, stamp, ring;
     Image ringImage, impactGlow;
-    TextMeshProUGUI stateLabel;
+    TextMeshProUGUI stateLabel, stampValue;
+    CanvasGroup frameGroup;
+    Image dim;
     int rank, count, steps, lastCell = -1;
     float lastTickTime = -1;
     Color accent;
@@ -49,8 +53,9 @@ public sealed class DailyRankingWheel : MonoBehaviour
     {
         group = GetComponent<CanvasGroup>();
         group.blocksRaycasts = group.interactable = false;
-        Image("Dim", transform, Vector2.zero, new Vector2(1920, 1080), new Color(.015f, .023f, .065f, .94f));
+        dim = Image("Dim", transform, Vector2.zero, new Vector2(1920, 1080), new Color(.015f, .023f, .065f, .94f));
         var frame = Rect("Frame", transform, new Vector2(980, 530), new Vector2(0, 10));
+        frameGroup = frame.gameObject.AddComponent<CanvasGroup>();
         Image("Panel", frame, Vector2.zero, new Vector2(980, 530), new Color(.026f, .043f, .095f));
         Image("Top", frame, new Vector2(0, 264), new Vector2(980, 3), accent);
         Image("Bottom", frame, new Vector2(0, -264), new Vector2(980, 3), accent);
@@ -71,9 +76,12 @@ public sealed class DailyRankingWheel : MonoBehaviour
         impactGlow.sprite = UISkinKit.SoftGlow();
         ringImage = Image("ImpactRing", frame, new Vector2(0, -12), new Vector2(440, 350), Color.clear);
         ringImage.sprite = UISkinKit.CircleRing(); ring = ringImage.rectTransform;
-        stamp = Rect("Stamp", frame, new Vector2(720, 240), new Vector2(0, -12));
+        // 背景のフェードと切り離し、確定した数字そのものを下の欄へ運ぶ。
+        stamp = Rect("Stamp", transform, new Vector2(720, 240), new Vector2(0, -2));
         stampGroup = stamp.gameObject.AddComponent<CanvasGroup>();
-        Label("Value", stamp, rank + "<size=64> 位</size>", Vector2.zero, new Vector2(720, 240), 206, accent);
+        stampValue = Label("Value", stamp, rank + "<size=64> 位</size>", Vector2.zero, new Vector2(720, 240), 206, accent);
+        stampValue.enableAutoSizing = false;
+        stampValue.raycastTarget = false;
         audioSource = gameObject.AddComponent<AudioSource>();
         audioSource.playOnAwake = false; audioSource.spatialBlend = 0;
         // 「デン」は響1 でドンと同じ倍音型にした(FlourishSfx.DailyRankDen)。この画面の音は 22050Hz なので半分に間引く。
@@ -85,7 +93,10 @@ public sealed class DailyRankingWheel : MonoBehaviour
     public void Tick(float time, bool reduced)
     {
         bool visible = !reduced && time > StartTime && time < EndTime;
-        group.alpha = visible ? Mathf.Min(Mathf.Clamp01((time - StartTime) / .16f), Mathf.Clamp01((EndTime - time) / .24f)) : 0;
+        group.alpha = visible ? Mathf.Clamp01((time - StartTime) / .16f) : 0;
+        float background = 1 - Mathf.InverseLerp(TransferTime, BackdropEndTime, time);
+        frameGroup.alpha = background;
+        dim.color = new Color(.015f, .023f, .065f, .94f * background);
         float p = Mathf.Clamp01((time - StartTime) / (StopTime - StartTime));
         float remaining = steps * Mathf.Pow(1 - p, 3);
         int cellIndex = Mathf.FloorToInt(remaining);
@@ -108,8 +119,16 @@ public sealed class DailyRankingWheel : MonoBehaviour
         stampGroup.alpha = time >= StopTime ? 1 : 0;
         float scale = time < ImpactTime ? Mathf.Lerp(1.65f, 1, slam * slam)
             : 1 + .11f * Mathf.Sin(Mathf.Clamp01(after / .32f) * Mathf.PI) * Mathf.Clamp01(1 - after / .32f);
-        stamp.localScale = Vector3.one * scale;
-        stamp.anchoredPosition = new Vector2(0, -12 + (time >= ImpactTime ? Mathf.Sin(after * 66) * 8 * Mathf.Clamp01(1 - after / .22f) : 0));
+        float travel = Mathf.InverseLerp(TransferTime, EndTime, time);
+        stamp.localScale = Vector3.one * (time < TransferTime ? scale : 1);
+        stamp.anchoredPosition = time < TransferTime
+            ? new Vector2(0, -2 + (time >= ImpactTime ? Mathf.Sin(after * 66) * 8 * Mathf.Clamp01(1 - after / .22f) : 0))
+            : TransferPosition(travel);
+        stamp.sizeDelta = Vector2.Lerp(new Vector2(720, 240), new Vector2(310, 94), travel);
+        stampValue.rectTransform.sizeDelta = stamp.sizeDelta;
+        stampValue.fontSize = Mathf.Lerp(206, 80, travel);
+        string suffix = Mathf.Lerp(64, 34, travel).ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
+        stampValue.text = rank + "<size=" + suffix + "> 位</size>";
         stateLabel.text = time < StopTime ? "RANKING" : rank == 1 ? "通算 第1位！" : "TOP 3  ランクイン！";
         float burst = time >= ImpactTime ? Mathf.Clamp01(1 - after / .6f) : 0;
         impactGlow.color = new Color(accent.r, accent.g, accent.b, burst * .6f);
@@ -130,6 +149,15 @@ public sealed class DailyRankingWheel : MonoBehaviour
         }
         // スキップ、LOW切替、終了では回転音や衝撃音を残さない。
         if (!visible) audioSource.Stop();
+    }
+
+    // 1920×1080 の左上原点の二次ベジェを、中央原点のUI座標へ変換する。
+    public static Vector2 TransferPosition(float progress)
+    {
+        float t = Mathf.Clamp01(progress), u = 1 - t;
+        Vector2 point = u * u * new Vector2(960, 542)
+            + 2 * u * t * new Vector2(820, 809) + t * t * new Vector2(535, 809);
+        return new Vector2(point.x - 960, 540 - point.y);
     }
 
     void OnDestroy()

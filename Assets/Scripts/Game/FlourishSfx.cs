@@ -54,6 +54,8 @@ public static class FlourishSfx
         for (int i = 0; i < 4; i++) { int k = i; Cached("Milestone" + k, () => Milestone(k)); }
         for (int i = 0; i < 3; i++) { int k = i; Cached("GoldCut" + k, () => GoldCut(k)); }
         Cached("GoldCoin", GoldCoin); Cached("GoldOmen", GoldOmen);
+        Cached("GoldCoinDelayed", GoldCoinDelayed);
+        for (int i = 0; i < 3; i++) { int k = i; Cached("GoldPairBell" + k, () => GoldPairBell(k)); }
         for (int i = 0; i < LongStepCount; i++) { int k = i; Cached("LongStep" + k, () => LongStep(k)); }
         Cached("LongFinish", LongFinish); Cached("RankStamp", RankStamp);
         // 曲の終わり(FULL COMBO・ALL PERFECT の幕、TRACK CLEAR)とサビの余韻も、その場で合成すると1コマ引っかかるので作り置く。
@@ -380,6 +382,16 @@ public static class FlourishSfx
         for (int i = 0; i < notes.Length; i++) layers[i] = new Layer(Env(Osc(.05, Midi(notes[i])), AdExp(.0008, .012)), i * .022, -i * 2);
         return Finish(Mix(.12, layers), -20);
     }
+
+    // 低い鐘は最初の主音の基音(G6/B6/D7)から1オクターブ下。ピーク -22dBFS、再生ピッチは変えない。
+    public static float[] GoldPairBell(int step)
+    {
+        int k = Math.Max(0, Math.Min(2, step));
+        int up = k == 0 ? 0 : k == 1 ? 4 : 7;
+        return Finish(Bell(.18, Midi(79 + up), .055, .25), -22);
+    }
+
+    public static float[] GoldCoinDelayed() => Mix(.65, new Layer(GoldCoin(), GoldNoteSfx.CoinDelaySeconds));
 
     // スコアの所で鳴る「チャリン」(斬2)。硬貨のように高い2音を少しずらす。
     public static float[] GoldCoin()

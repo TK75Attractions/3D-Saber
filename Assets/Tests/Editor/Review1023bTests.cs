@@ -136,7 +136,7 @@ public class Review1023bTests
     }
 
     [TestCase("escapade", "easy", 67)]
-    [TestCase("escapade", "normal", 120)]
+    [TestCase("escapade", "normal", 119)]
     [TestCase("Phobia PARTⅠ", "easy", 79)]
     [TestCase("Phobia PARTⅠ", "normal", 138)]
     [TestCase("Andalusia", "easy", 105)]

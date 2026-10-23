@@ -90,6 +90,31 @@ def hand_choice(song, difficulty, chart, side, a, b):
                  and abs(b[0] - a[0] - r[6]) <= CHOICE_EPSILON_MS), None)
 
 
+
+# 21A: 青葉騒Normalの冒頭を1回切りにした結果だけ、ロング0個を認める。
+LONG_PRESENCE_SONGS = ("ManicSonic", "escapade", "logic", "BenkyouRemaster", "Aobasou")
+LONG_PRESENCE_CHOICE = (
+    "21A", "Aobasou", "normal", 0.0, "red", .9, -.6,
+    "2026-10-23 ユーザーが冒頭を1回切りにすることを選んだ",
+)
+
+
+def is_long(note):
+    return note.get("count", 1) > 1 or note.get("type", "").lower() == "long"
+
+
+def long_presence_choice(song, difficulty, chart):
+    row = LONG_PRESENCE_CHOICE
+    if (song, difficulty) != row[1:3] or any(is_long(n) for n in chart["notes"]):
+        return None
+    found = [n for n in chart["notes"]
+             if abs(n["time"] + chart.get("offsetMs", 0) - row[3]) <= CHOICE_EPSILON_MS]
+    if len(found) != 1:
+        return None
+    n = found[0]
+    return row if (single_tap(n) and
+                   (n["color"], n["x"], n["y"]) == row[4:7]) else None
+
 def read(path):
     return json.loads(Path(path).read_text(encoding="utf-8-sig"))
 
@@ -135,6 +160,12 @@ def audit(chart,difficulty,pulses,quarter_at,subdivisions_at=lambda _: (.5,),mus
         require(n.get("count",1)>=1,f"invalid count {i}")
         require(abs(n["x"])<=2.5 and abs(n["y"])<=1.5,f"outside field {i}")
         require(n.get("count",1)<=1 or (n["lengthMs"]>0 and n["direction"]=="none"),f"invalid long {i}")
+    if song in LONG_PRESENCE_SONGS and not any(is_long(n) for n in notes):
+        choice = long_presence_choice(song, difficulty, chart)
+        if choice:
+            record("long-presence", choice)
+        else:
+            require(False, "missing long")
     events=cuts(chart)
     times=[]
     groups=[]

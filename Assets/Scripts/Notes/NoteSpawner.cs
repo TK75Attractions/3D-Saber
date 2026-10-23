@@ -165,6 +165,7 @@ public class NoteSpawner : MonoBehaviour
         if (cutFeedback != null) cutFeedback.ResetState();
         if (FloorGuide != null) FloorGuide.Clear();
         chart = data;
+        if (cutFeedback != null) cutFeedback.ReserveProtection(TotalNoteCount);
         nextIndex = 0;
         RecomputeTotalOffset();
         foreach (var n in liveNotes)
@@ -208,7 +209,11 @@ public class NoteSpawner : MonoBehaviour
         SpawnDue(songTime);
         UpdateLive(songTime);
         if (FloorGuide != null) FloorGuide.Tick(this, songTime);
-        if (cutFeedback != null) cutFeedback.Tick(Time.deltaTime);
+        if (cutFeedback != null)
+        {
+            cutFeedback.SetProtectionTime(songTime);
+            cutFeedback.Tick(Time.deltaTime);
+        }
     }
 
     // セーバー判定の前に受付窓だけを今の曲時計へ合わせる(判定の時計で見る)。
@@ -471,6 +476,7 @@ public class NoteSpawner : MonoBehaviour
                 note.TimingCue.Tick(dt, approachTime, earlyJudgeWindow, lateWindow);
             }
             if (note.Arrow != null) note.Arrow.Tick(Time.deltaTime);
+            note.TickCracks(Time.deltaTime);
 
             if (note.IsCut)
             {

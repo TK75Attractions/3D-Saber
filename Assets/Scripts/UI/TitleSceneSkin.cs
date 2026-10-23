@@ -14,6 +14,8 @@ public class TitleSceneSkin : MonoBehaviour
     private TitlePresentationMotion presentationMotion;
     private CanvasGroup startTargetGroup;
     private TitleStartNote startNote;
+    private TitleTargetProximity startProximity;
+    private readonly SaberInputBridge[] titleBlades = new SaberInputBridge[2];
     private Image flashImage;
     private bool transitioning;
     private AudioClip slashChimeLow, slashChimeHigh;
@@ -81,6 +83,8 @@ public class TitleSceneSkin : MonoBehaviour
 
     void Update()
     {
+        startProximity?.Tick(canvasRef, Camera.main, InputPoint.Instance, titleBlades,
+            !transitioning && !ScreenTransition.IsBusy, Time.unscaledDeltaTime);
         if (ScreenTransition.IsBusy) return;
         if (prompt != null && InputManager.EscapeGetDown
             && escapeGate.PressAndNotify(Time.unscaledTimeAsDouble, EscapeTwiceGate.ToTitleNotice))
@@ -177,11 +181,7 @@ public class TitleSceneSkin : MonoBehaviour
                 3f, UISkinKit.FontAsset("Oxanium-Bold"));
             fallback.raycastTarget = false;
         }
-        var hover = go.AddComponent<UIHoverEffect>();
-        hover.hoverScale = 1.04f;
-        hover.pressScale = .98f;
-        hover.glow = glow;
-        hover.glowHoverAlpha = .22f;
+        startProximity = new TitleTargetProximity(rt, glow);
     }
 
     void BuildExitButton(Canvas canvas)
@@ -239,6 +239,7 @@ public class TitleSceneSkin : MonoBehaviour
         var bridge = saber.AddComponent<SaberInputBridge>();
         bridge.SetBladeColor(SaberHandHelper.HandColor(hand));
         bridge.stickIndex = stick;
+        titleBlades[stick - 1] = bridge;
         bridge.useInputPoint = true;
         bridge.fallbackToMouse = mouseFallback;
         bridge.fixedZ = 0f;

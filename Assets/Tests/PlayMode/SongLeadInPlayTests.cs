@@ -203,6 +203,7 @@ public class SongLeadInPlayTests
         Capture(reduced, "start");
         while (AudioSettings.dspTime < end + .05) yield return null;
         Assert.IsTrue(countdown == null);
+        Assert.IsNotNull(GameObject.Find("FirstHandHint"), "最初の手の予告は 3・2・1 とは別の表示で残る");
         Assert.IsNull(firstNote, "演出後に短い間を空ける");
         double deadline = Time.realtimeSinceStartupAsDouble + 5;
         while (firstNote == null && Time.realtimeSinceStartupAsDouble < deadline) yield return null;
@@ -212,6 +213,9 @@ public class SongLeadInPlayTests
         Assert.Zero(manager.scoreManager.MissCount);
         while (manager.songPlayer.SongTime < firstNote.HitTime - .25 && Time.realtimeSinceStartupAsDouble < deadline) yield return null;
         Assert.IsNull(Object.FindFirstObjectByType<GameStartCountdown>(), "接近中の視界にSTARTを残さない");
+        var hint = GameObject.Find("FirstHandHint");
+        if (hint != null)
+            Assert.AreEqual(new Vector2(0, -360), hint.GetComponentInChildren<TMPro.TextMeshProUGUI>().rectTransform.anchoredPosition);
         Capture(reduced, "approach");
         var source = manager.songPlayer.GetComponent<AudioSource>();
         while (source.timeSamples < 4800 && Time.realtimeSinceStartupAsDouble < deadline) yield return null;

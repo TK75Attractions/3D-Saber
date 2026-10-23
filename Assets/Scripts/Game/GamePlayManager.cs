@@ -449,6 +449,8 @@ public class GamePlayManager : MonoBehaviour
             // 楽曲開始を予約し、冒頭のノーツが文字や光に隠れたままゲートへ着くのを防ぐ。
             var countdown = GameStartCountdown.Ensure();
             double startDspTime = countdown.Begin(chart.bpm, GameSession.SelectedDifficulty, startCountdownVolume, noteSpawner.approachTime, firstNoteFromPlayStart);
+            countdown.ConfigureFirstHandHint(chart, firstNoteFromPlayStart, inTutorial || GameSession.TutorialPending,
+                inCalibration || GameSession.IsCalibrationMode);
             songPlayer.PlayScheduled(startDspTime, playRange.Start);
         }
         else

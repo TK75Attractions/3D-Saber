@@ -50,7 +50,23 @@ public class FiveSongPackTests
             var chart=ChartLoader.LoadFromStreamingAssets(id,difficulty);
             Assert.Greater(chart.notes.Count,previous);previous=chart.notes.Count;
             Assert.That(chart.displayLevel,Is.InRange(1,10));
-            Assert.IsTrue(chart.notes.Any(n=>n.IsLong));
+            // 21A: 青葉騒Normalだけ、冒頭を1回切りにしてロング0個とする。
+            if(id=="Aobasou" && difficulty.Equals("normal",StringComparison.OrdinalIgnoreCase))
+            {
+                Assert.AreEqual(0,chart.notes.Count(n=>n.IsLong));
+                var opening=chart.notes.Where(n=>
+                    Math.Abs((double)n.time+chart.offsetMs)<=.03).ToArray();
+                Assert.AreEqual(1,opening.Length);
+                Assert.AreEqual("red",opening[0].color);
+                Assert.AreEqual("tap",opening[0].type);
+                Assert.AreEqual("none",opening[0].direction);
+                Assert.AreEqual(1,opening[0].count);
+                Assert.AreEqual(0,opening[0].lengthMs);
+                Assert.AreEqual(.9,opening[0].x,.00001);
+                Assert.AreEqual(-.6,opening[0].y,.00001);
+            }
+            else
+                Assert.IsTrue(chart.notes.Any(n=>n.IsLong));
             // 下位譜面は表拍・速度条件を優先し、金同時切りを義務付けない。
             if(difficulty.Equals("hard",StringComparison.OrdinalIgnoreCase))
                 Assert.IsTrue(chart.notes.GroupBy(n=>n.time).Any(g=>g.Count()==2 && g.All(n=>n.color=="gold")));

@@ -23,6 +23,7 @@ public class SongSelectSkin : MonoBehaviour
     SongSelectController ctl;
     readonly List<Disc> discs = new List<Disc>();
     readonly SongSelectCountdown countdown = new SongSelectCountdown();
+    readonly SongSelectRimPulse rimPulse = new SongSelectRimPulse();
     readonly SongSelectDiscGraphic[] difficultyFaces = new SongSelectDiscGraphic[3];
     readonly SongSelectDiscGraphic[] difficultyRings = new SongSelectDiscGraphic[3];
     readonly TextMeshProUGUI[] difficultyNumbers = new TextMeshProUGUI[3];
@@ -467,6 +468,7 @@ public class SongSelectSkin : MonoBehaviour
     void DifficultyChanged(int selected)
     {
         bool secret = ctl.RushESecret.Unlocked;
+        rimPulse.Select(ctl.SelectedIndex, selected, secret, Time.unscaledTimeAsDouble);
         secretDifficulty.gameObject.SetActive(secret);
         difficultyTray.gameObject.SetActive(!secret);
         corridor.SetSecretTheme(secret);
@@ -568,7 +570,9 @@ public class SongSelectSkin : MonoBehaviour
             {
                 Color accent = ctl.RushESecret.Unlocked ? RushESecretState.Purple : Cyan;
                 float pulse = corridor != null ? corridor.CenterPulse : 0;
-                d.rim.color = new Color(accent.r, accent.g, accent.b, .35f + .55f * pulse); d.rim.Width = 3 + 4 * pulse; d.rim.Refresh();
+                d.rim.color = SongSelectRimPulse.ColorFor(ctl.SelectedDifficultyIndex, ctl.RushESecret.Unlocked);
+                d.rim.Width = rimPulse.WidthAt(Time.unscaledTimeAsDouble);
+                d.rim.Refresh();
                 float spread = 24 + 40 * pulse;
                 d.halo.Width = spread; d.halo.rectTransform.sizeDelta = Vector2.one * (540 + spread * 2);
                 d.halo.color = new Color(accent.r, accent.g, accent.b, .04f + .08f * pulse);

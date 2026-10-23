@@ -4,7 +4,7 @@ using UnityEngine;
 // 切れるノーツ。タップ・方向指定・ロングをすべてこのコンポーネントで扱う。
 // ロングノーツは Cut() を RequiredCutCount 回呼ぶことで完了する。
 // 部分カット時は「ひび」を表示し、最終カットで本体をスライス＋砕け散らせる。
-public class CuttableNote : MonoBehaviour
+public partial class CuttableNote : MonoBehaviour
 {
     public bool IsCut { get; private set; }
     private bool judgeable;
@@ -188,7 +188,7 @@ public class CuttableNote : MonoBehaviour
 
     private Vector3 lastHitPoint;
     private Vector3 lastVelocity = Vector3.right;
-    private readonly List<(GameObject visual, Material material)> ownedCracks = new List<(GameObject, Material)>();
+    private readonly List<CrackVisual> ownedCracks = new List<CrackVisual>();
 
     void OnDestroy()
     {
@@ -339,8 +339,10 @@ public class CuttableNote : MonoBehaviour
         var material = mr.material;
         if (material == null) return;
         Color c;
+        // 色の無い材質(2D の既定の材質など)には触らない(色の読み書きは HasProperty で確かめる)。
         if (material.HasProperty("_BaseColor")) c = material.GetColor("_BaseColor");
-        else c = material.color;
+        else if (material.HasProperty("_Color")) c = material.color;
+        else return;
         c = new Color(c.r * 0.4f, c.g * 0.4f, c.b * 0.4f, c.a);
         if (material.HasProperty("_BaseColor")) material.SetColor("_BaseColor", c);
         else material.color = c;
@@ -363,12 +365,11 @@ public class CuttableNote : MonoBehaviour
     {
         float angle = localDirection.sqrMagnitude > .0001f
             ? Mathf.Atan2(localDirection.y, localDirection.x) * Mathf.Rad2Deg - 90f : 0f;
-        float offset = (index % 3 - 1) * .09f;
-        crack.localPosition = new Vector3(Mathf.Clamp(localHit.x + offset, -.28f, .28f),
-            Mathf.Clamp(localHit.y - offset, -.28f, .28f), -.55f);
+        crack.localPosition = new Vector3(Mathf.Clamp(localHit.x, -.5f, .5f),
+            Mathf.Clamp(localHit.y, -.5f, .5f), -.55f);
         crack.localRotation = Quaternion.Euler(0, 0, angle + ((index & 1) == 1 ? 12f : -12f));
     }
-    // 完了が近いほど(progress 0→1)既存のひびも太く長くする。
+    // 作った時点の達成率で最終サイズを決める。既存のひびは次のカットで作り直さない。
     public static Vector3 CrackScale(int index, float progress)
     {
         return new Vector3(Mathf.Lerp(.025f, .055f, progress),
@@ -383,20 +384,22 @@ public class CuttableNote : MonoBehaviour
             crack.GetComponent<MeshFilter>().sharedMesh = NoteFragmentPool.CubeMesh;
             var mat = MakeCrackMaterial();
             crack.GetComponent<MeshRenderer>().sharedMaterial = mat;
-            crack.SetActive(false); ownedCracks.Add((crack, mat));
+            crack.SetActive(false);
+            ownedCracks.Add(new CrackVisual { visual = crack, material = mat, transform = crack.transform });
         }
     }
     private void AddCrack()
     {
         WarmCracks(cracksUsed + 1);
-        var crack = ownedCracks[cracksUsed++].visual;
-        // 当たった位置・振った方向に傷を残し、完了が近いほど既存の傷も太く長くする。
-        // 成功の光は最終判定まで出さず、ノーツ本体や判定形状は動かさない。
-        PlaceCrack(crack.transform, cracksUsed - 1, transform.InverseTransformPoint(lastHitPoint),
+        int index = cracksUsed++;
+        var crack = ownedCracks[index];
+        PlaceCrack(crack.transform, index, transform.InverseTransformPoint(lastHitPoint),
             transform.InverseTransformDirection(lastVelocity));
-        float progress = Mathf.Clamp01(CutsAchieved / (float)Mathf.Max(1, RequiredCutCount - 1));
-        for (int i = 0; i < cracksUsed; i++) ownedCracks[i].visual.transform.localScale = CrackScale(i, progress);
-        crack.SetActive(true);
+        crack.fullScale = CrackScale(index, Mathf.Clamp01(CutsAchieved / (float)Mathf.Max(1, RequiredCutCount - 1)));
+        crack.age = 0f;
+        ApplyCrack(crack.transform, crack.material, crack.fullScale, 0f);
+        crack.visual.SetActive(true);
+        // この直後の OnPartialCut で刻み音も始まる。過去のひびの時計は戻さない。
     }
 
     private void ShatterAndDestroy(Vector3 hitPoint, Vector3 cutVelocity)

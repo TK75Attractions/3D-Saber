@@ -543,6 +543,58 @@ public class ChartEditorSafetyTests
     }
 
     [Test]
+    public void SavingDeletesOnlyThisWindowsDraftsForTheSavedChart()
+    {
+        WithChartFolder((target, folder) =>
+        {
+            File.WriteAllText(Path.Combine(folder, "chart_normal.json"), OneNoteChart);
+            File.WriteAllText(Path.Combine(folder, "chart_hard.json"), OneNoteChart);
+            Load(target, 1);
+            Document.notes[0].x = .25f; Call("UpdateDirtyState"); Call("WriteDraftNow");
+            var owned = Get<List<string>>("sessionDraftPaths");
+            string normal = owned.Single();
+
+            Load(target, 2);
+            Document.notes[0].x = .5f; Call("UpdateDirtyState"); Call("WriteDraftNow");
+            string hard = owned.Single(path => path != normal);
+            string other = (string)Drafts.GetMethod("Write").Invoke(null,
+                new object[] { target + "_other", "hard", Document, null });
+            owned.Add(other);
+            // 上部の候補を変えても、保存先は開いた曲・難易度のまま。
+            Set("songId", target + "_other"); Set("difficultyIndex", 1);
+            Assert.True((bool)Call("SaveDocument"));
+            Assert.False(File.Exists(hard));
+            Assert.True(File.Exists(normal));
+            Assert.True(File.Exists(other));
+            CollectionAssert.AreEquivalent(new[] { normal, other }, owned);
+
+            Load(target, 1);
+            Document.notes[0].x = .75f; Call("UpdateDirtyState"); Call("WriteDraftNow");
+            Assert.True((bool)Call("SaveDocument"));
+            Assert.False(File.Exists(normal));
+            Assert.True(File.Exists(other));
+            CollectionAssert.AreEqual(new[] { other }, owned);
+        });
+    }
+
+    [Test]
+    public void SavingUnchangedChartAlsoClearsOnlyItsOwnedDrafts()
+    {
+        WithChartFolder((target, folder) =>
+        {
+            File.WriteAllText(Path.Combine(folder, "chart_normal.json"), OneNoteChart);
+            Load(target, 1);
+            float original = Document.notes[0].x;
+            Document.notes[0].x = .25f; Call("UpdateDirtyState"); Call("WriteDraftNow");
+            string draft = Get<List<string>>("sessionDraftPaths").Single();
+            Document.notes[0].x = original; Call("UpdateDirtyState");
+            Assert.True((bool)Call("SaveDocument"));
+            Assert.False(File.Exists(draft));
+            Assert.IsEmpty(Get<List<string>>("sessionDraftPaths"));
+        });
+    }
+
+    [Test]
     public void ReusingAnEarlierSessionDraftDoesNotClaimItForDeletionOnSave()
     {
         WithChartFolder((target, folder) =>
