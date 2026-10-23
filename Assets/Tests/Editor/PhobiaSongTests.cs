@@ -50,7 +50,7 @@ public class PhobiaSongTests
             File.ReadAllText(Path.Combine(Folder, "chart.json")));
         var timeline = StagePerformanceTimeline.Load(SongId);
         Assert.IsTrue(timeline.hideBarLines, "固定BPMの本編ガイドを変速後に誤表示しない");
-        var window = SongPreviewWindow.Resolve(timeline, Duration);
+        var window = SongSelectChartPreview.ResolveWindow(SongId, timeline, Duration);
         foreach (string difficulty in SongSelectController.StandardDifficulties)
         {
             var chart = ChartLoader.LoadFromStreamingAssets(SongId, difficulty);

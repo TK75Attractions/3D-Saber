@@ -23,12 +23,19 @@ public sealed class SongSelectBeatTimeline
         foreach (var chart in charts)
         {
             var clock = new ChartTempoMap(chart.bpm, chart.beatZeroMs, chart.editorTempoMap);
-            if (clock.Points.Count >= 2 && Finite(chart.offsetMs))
+            if (clock.Points.Count > 0 && Finite(chart.offsetMs))
             {
                 // 休符の中のテンポ変更も保つ。ノーツ間の推測より作者の地図を優先。
                 foreach (var point in clock.Points)
                 {
                     double beat = point.beat, time = (point.timeMs + chart.offsetMs) / 1000.0;
+                    if (!knots.TryGetValue(beat, out var values)) knots[beat] = values = new List<double>();
+                    values.Add(time);
+                }
+                if (clock.Points.Count == 1)
+                {
+                    // アンカーが一つでも、その原点とBPMを使い、ノーツ時刻へ戻さない。
+                    double beat = clock.Points[0].beat + 1.0, time = (clock.TimeAt(beat) + chart.offsetMs) / 1000.0;
                     if (!knots.TryGetValue(beat, out var values)) knots[beat] = values = new List<double>();
                     values.Add(time);
                 }
@@ -69,13 +76,28 @@ public sealed class SongSelectBeatTimeline
         var a = points[i]; var b = points[i + 1];
         return a.Value + (b.Value - a.Value) * (beat - a.Key) / (b.Key - a.Key);
     }
-    double BeatAt(double time)
+    internal double BeatAt(double time)
     {
         int i = 0;
         while (i < points.Count - 2 && points[i + 1].Value < time) i++;
         var a = points[i]; var b = points[i + 1];
         return a.Key + (b.Key - a.Key) * (time - a.Value) / (b.Value - a.Value);
     }
+    // 整数拍のイベントを経由せず、7/8などの半拍にある小節頭も拾う。
+    internal IEnumerable<double> BarStartTimes(double from, double through)
+    {
+        if (!Finite(from) || !Finite(through) || through < from) yield break;
+        double first = BeatAt(from), last = BeatAt(through);
+        if (!Finite(first) || !Finite(last) || first < int.MinValue || last > int.MaxValue
+            || last - first > 100000) yield break;
+        foreach (double beat in meter.BarStarts(first, last))
+        {
+            double time = TimeAt(beat);
+            if (Finite(time) && time >= from - 1e-9 && time <= through + 1e-9)
+                yield return Math.Max(from, Math.Min(through, time));
+        }
+    }
+
     public List<BeatEvent> Events(double from, double through)
     {
         var result = new List<BeatEvent>();

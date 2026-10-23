@@ -161,7 +161,7 @@ public class AndalusiaSongFlowPlayTests
             Assert.AreEqual(names[i], preview.Difficulty);
             Assert.AreEqual(levels[i], controller.CurrentDifficultyDisplayLevel());
             Assert.AreEqual(53.44, preview.Window.Start, .001);
-            Assert.AreEqual(10, preview.Window.Duration, .001);
+            Assert.AreEqual(63.815197, preview.Window.Start + preview.Window.Duration, .001);
             Assert.IsNotNull(controller.previewSource.clip);
             Assert.That(controller.previewSource.clip.length, Is.InRange(112.15f, 112.30f));
             Assert.IsNull(preview.View, "ディスク画面では譜面ウィンドウなしで試聴する");

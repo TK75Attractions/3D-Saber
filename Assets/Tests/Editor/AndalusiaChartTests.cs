@@ -183,9 +183,9 @@ public class AndalusiaChartTests
         var stage = StagePerformanceTimeline.Load(SongId);
         Assert.IsFalse(stage.hideBarLines);
         Assert.AreEqual(2, stage.sections.Length, "2026-10-23に採用した2区間");
-        var window = SongPreviewWindow.Resolve(stage, 112.22059, 10);
+        var window = SongSelectChartPreview.ResolveWindow(SongId, stage, 112.22059);
         Assert.AreEqual(53.44, window.Start, .001);
-        Assert.AreEqual(10, window.Duration, .001);
+        Assert.AreEqual(63.815197, window.Start + window.Duration, .001);
         foreach (string difficulty in new[] { "easy", "normal", "hard" })
         {
             var chart = ChartLoader.LoadFromStreamingAssets(SongId, difficulty);

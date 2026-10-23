@@ -36,7 +36,7 @@ public class SongChartPreviewPlayTests
     }
 
     [UnityTest]
-    public IEnumerator LatestSelectionWaitsOneSecondAndDifficultyRestartsSyncedPreview()
+    public IEnumerator LatestSelectionWaitsOneSecondAndDifficultyKeepsSyncedPreview()
     {
         yield return Open(); controller.Select(Index("ElDorado"));
         yield return new WaitForSecondsRealtime(.2f);
@@ -48,6 +48,7 @@ public class SongChartPreviewPlayTests
         Assert.AreEqual("Epilogue",preview.SongId); Assert.AreEqual("Normal",preview.Difficulty);
         Assert.GreaterOrEqual(preview.StartedAt-preview.SelectedAt,1);
         Assert.That(preview.Window.Start,Is.EqualTo(133.859).Within(.001));
+        Assert.That(preview.Window.Start+preview.Window.Duration,Is.EqualTo(143.368062).Within(.001));
         Assert.That(controller.previewSource.time,Is.EqualTo(preview.SongTime).Within(.35));
         var world=preview.View.WorldRoot;
         Assert.IsFalse(world.GetComponentsInChildren<Collider>().Any(c=>c.enabled));
@@ -55,12 +56,24 @@ public class SongChartPreviewPlayTests
         Assert.Greater(preview.View.ExcerptNoteCount,0);
         Assert.IsTrue(world.GetComponentsInChildren<Renderer>().All(r=>r.gameObject.layer==SongChartPreviewView.PreviewLayer));
         Assert.AreEqual(1<<SongChartPreviewView.PreviewLayer,preview.View.PreviewCamera.cullingMask);
-        double start=preview.Window.Start;
+        double start=preview.Window.Start, started=preview.StartedAt, selected=preview.SelectedAt;
+        var clip=controller.previewSource.clip;
+        int sample=controller.previewSource.timeSamples;
         controller.SetDifficulty(2);
-        Assert.IsFalse(preview.IsPlaying); Assert.IsFalse(controller.previewSource.isPlaying); Assert.IsFalse(preview.View.IsVisible);
-        yield return AwaitPlaying();
+        Assert.IsTrue(preview.IsPlaying); Assert.IsTrue(controller.previewSource.isPlaying); Assert.IsTrue(preview.View.IsVisible);
+        Assert.AreSame(clip,controller.previewSource.clip, "音源を破棄・読み直ししない");
+        Assert.AreEqual(started,preview.StartedAt); Assert.AreEqual(selected,preview.SelectedAt);
+        Assert.GreaterOrEqual(controller.previewSource.timeSamples,sample, "再生位置を巻き戻さない");
         Assert.AreEqual("Hard",preview.Difficulty); Assert.AreEqual(start,preview.Window.Start);
+        Assert.That(preview.View.DisplayedSongTime,Is.EqualTo(preview.SongTime).Within(.35));
         Assert.That(controller.previewSource.time,Is.EqualTo(preview.SongTime).Within(.35));
+        Assert.IsFalse(preview.TryChangeDifficulty("Morning","Easy",10), "別曲は継続しない");
+        Assert.IsFalse(preview.TryChangeDifficulty("Epilogue","E",10), "隠しEへは継続しない");
+        Assert.IsFalse(preview.TryChangeDifficulty("Epilogue","Easy",5), "範囲が変われば継続しない");
+        controller.ReplayPreview();
+        Assert.IsFalse(preview.IsPlaying); Assert.IsNull(controller.previewSource.clip);
+        yield return AwaitPlaying();
+        Assert.Greater(preview.StartedAt,started, "再試聴の操作では従来どおり最初から鳴らす");
         controller.StopPreview(); yield return null;
         Assert.IsNull(controller.previewSource.clip); Assert.IsFalse(preview.View.IsVisible);
     }
@@ -80,17 +93,21 @@ public class SongChartPreviewPlayTests
     }
 
     [UnityTest]
-    public IEnumerator TenSecondPreviewFinishesAndSceneExitReleasesWorld()
+    public IEnumerator BarAlignedPreviewFinishesAndSceneExitReleasesWorld()
     {
         yield return Open(); Assert.AreEqual(10,controller.previewDuration);
         controller.Select(Index("揺籠")); controller.SetDifficulty(2);
         yield return AwaitPlaying();
         var preview=controller.ChartPreview;
-        Assert.AreEqual(10,preview.Window.Duration);
-        float deadline=Time.realtimeSinceStartup+12;
-        while(preview.IsPlaying && Time.realtimeSinceStartup<deadline) yield return null;
+        Assert.That(preview.Window.Start,Is.EqualTo(140.245).Within(.001));
+        Assert.That(preview.Window.Start+preview.Window.Duration,Is.EqualTo(150.709672).Within(.001));
+        Assert.That(preview.Window.Duration,Is.InRange(8d,12d));
+        double end=preview.Window.Start+preview.Window.Duration;
+        double deadline=Time.realtimeSinceStartupAsDouble+preview.Window.Duration+3;
+        while(preview.IsPlaying && Time.realtimeSinceStartupAsDouble<deadline) yield return null;
+        Assert.AreEqual(SongSelectChartPreview.PreviewState.Complete,preview.State);
         Assert.IsFalse(preview.IsPlaying); Assert.IsFalse(preview.View.IsVisible); Assert.IsNull(controller.previewSource.clip);
-        Assert.That(preview.SongTime-preview.Window.Start,Is.GreaterThanOrEqualTo(10));
+        Assert.That(preview.SongTime,Is.EqualTo(end).Within(.35));
         controller.Select(Index("Morning"));
         yield return new WaitForSecondsRealtime(.2f);
         yield return SceneManager.LoadSceneAsync("Title",LoadSceneMode.Single); yield return null;

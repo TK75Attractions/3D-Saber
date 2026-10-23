@@ -42,7 +42,7 @@ public class RushESongTests
             Assert.AreEqual(grid.TimeAt(pair.b.beat), pair.b.time, .10f);
             Assert.Less((pair.b.time + pair.b.lengthMs) / 1000.0, Duration);
         }
-        var window = SongPreviewWindow.Resolve(StagePerformanceTimeline.Load(Id), Duration);
+        var window = SongSelectChartPreview.ResolveWindow(Id, StagePerformanceTimeline.Load(Id), Duration);
         Assert.IsTrue(source.notes.Any(n => SongPreviewWindow.Intersects(source, n, window, 0)));
     }
 

@@ -17,6 +17,7 @@ public sealed class TutorialController : MonoBehaviour
     public int StepIndex => stepIndex;
     public int StepCount => steps != null ? steps.Length : 0;
     public int Successes { get; private set; }
+    public int RemainingDirections => TutorialProgram.RemainingDirections(Step, completedDirections);
     public bool StepDone { get; private set; }
     public IReadOnlyList<NoteData> DemonstrationNotes => liveChart?.notes;
     public double DemonstrationTime => started && song != null ? Now : 0;
@@ -45,6 +46,7 @@ public sealed class TutorialController : MonoBehaviour
     readonly Dictionary<CuttableNote, int> noteSteps = new Dictionary<CuttableNote, int>();
     readonly TutorialPairProgress pairs = new TutorialPairProgress();
     readonly HashSet<int> completedLongCounts = new HashSet<int>();
+    readonly HashSet<CutDirection> completedDirections = new HashSet<CutDirection>();
     bool timedOutPractice;
     readonly List<TutorialStepRecord> records = new List<TutorialStepRecord>();
     double totalOffset, startChartTime, stepStart, stepEndAt, nextPatternAt;
@@ -124,7 +126,7 @@ public sealed class TutorialController : MonoBehaviour
                     switch (step.Kind)
                     {
                         case TutorialStepKind.Practice:
-                            if (Successes >= step.Goal) Complete(now, "ok");
+                            if (TutorialProgram.PracticeGoalReached(step, Successes, completedDirections)) Complete(now, "ok");
                             else if (elapsed >= (step.TimeoutSeconds > 0 ? step.TimeoutSeconds : PracticeTimeoutSeconds)) Complete(now, "timeout");
                             break;
                         case TutorialStepKind.Explain:
@@ -161,6 +163,7 @@ public sealed class TutorialController : MonoBehaviour
         stepStart = now;
         pairs.Clear();
         completedLongCounts.Clear();
+        completedDirections.Clear();
         var step = Step;
         nextPatternAt = TutorialProgram.NextBarAtOrAfter(now + TutorialProgram.ReadDelaySeconds + spawner.approachTime);
         BannerTitle = step.Kind == TutorialStepKind.Ready && timedOutPractice ? "曲を選びに行こう" : step.Title;
@@ -236,7 +239,11 @@ public sealed class TutorialController : MonoBehaviour
                 // 同じ回数だけ繰り返しても通過させず、2・3・4 回をそれぞれ切り切る。
                 if (completedLongCounts.Add(note.RequiredCutCount)) Successes++;
             }
-            else if (!step.Simultaneous) Successes++;
+            else if (!step.Simultaneous)
+            {
+                Successes++;
+                if (step.NeedDirection) completedDirections.Add(note.RequiredDirection);
+            }
             else if (pairs.Register(note.HitTime, note.RequiredHand)) Successes += 2;
             return;
         }

@@ -46,6 +46,7 @@ public sealed class SongSelectChartPreview : MonoBehaviour
     }
     private AudioSource source;
     private AudioClip ownedClip;
+    private string loadedAudioIdentity;
     private UnityWebRequest request;
     private Coroutine loading;
     private SongChartPreviewView view;
@@ -114,6 +115,79 @@ public sealed class SongSelectChartPreview : MonoBehaviour
         loading=StartCoroutine(Load(songId,difficulty,duration,generation));
     }
 
+    // 難易度変更だけの入口。音源・範囲が同じなら、音とDSP時計には触れない。
+    public bool TryChangeDifficulty(string songId,string difficulty,float duration)
+    {
+        if(!isActiveAndEnabled || !IsPlaying || State!=PreviewState.Playing
+            || source==null || ownedClip==null || source.clip!=ownedClip || !source.isPlaying
+            || !string.Equals(SongId,songId,StringComparison.Ordinal)
+            || string.Equals(Difficulty,"E",StringComparison.OrdinalIgnoreCase)
+            || string.Equals(difficulty,"E",StringComparison.OrdinalIgnoreCase)) return false;
+
+        ChartData chart;
+        StagePerformanceTimeline timeline;
+        SongPreviewWindow nextWindow;
+        try
+        {
+            chart=ChartLoader.LoadFromStreamingAssets(songId,difficulty);
+            if(chart?.notes==null || chart.notes.Count==0) return false;
+            timeline=StagePerformanceTimeline.Load(songId);
+            nextWindow=ResolveWindow(songId,timeline,ownedClip.length,duration);
+            string dir=Path.Combine(Application.streamingAssetsPath,"Songs",songId);
+            if(string.IsNullOrEmpty(loadedAudioIdentity) || loadedAudioIdentity!=AudioIdentity(dir)) return false;
+        }
+        catch(Exception) { return false; }
+        if(!nextWindow.IsValid || nextWindow.Start!=Window.Start || nextWindow.Duration!=Window.Duration) return false;
+        double now=SongTime;
+        if(now>=Window.Start+Window.Duration) return false;
+
+        Difficulty=difficulty; selectedDuration=duration;
+        if(view!=null)
+        {
+            view.Prepare(chart,Window,timeline,Difficulty);
+            view.Tick(now); view.Show();
+        }
+        return true;
+    }
+
+    // デコード失敗で原音へ戻った場合も含め、候補の順序・内容の更新・音量補正が同じかを確かめる。
+    static string AudioIdentity(string directory)
+    {
+        try
+        {
+            var identity=new System.Text.StringBuilder();
+            foreach(var playback in SongLoudness.CandidatesInFolder(directory))
+            {
+                var file=new FileInfo(playback.Path);
+                identity.Append(file.FullName).Append('\n').Append(file.Length).Append(':')
+                    .Append(file.LastWriteTimeUtc.Ticks).Append(':')
+                    .Append(playback.Gain.ToString("R",System.Globalization.CultureInfo.InvariantCulture)).Append('\n');
+            }
+            return identity.ToString();
+        }
+        catch(IOException) { return null; }
+        catch(UnauthorizedAccessException) { return null; }
+    }
+
+    // 難易度を切り替えても同じ時計で終端を求める。Normal、互換譜面、Easy、Hardの順。
+    internal static SongPreviewWindow ResolveWindow(string songId,StagePerformanceTimeline timeline,double audioLength,double duration=10)
+    {
+        string dir=Path.Combine(Application.streamingAssetsPath,"Songs",songId);
+        SongSelectBeatTimeline beats=null;
+        foreach(string name in new[]{"chart_normal.json","chart.json","chart_easy.json","chart_hard.json"})
+        {
+            string path=Path.Combine(dir,name);
+            if(!File.Exists(path)) continue;
+            var chart=ChartLoader.LoadFromFile(path);
+            if(chart?.notes==null || chart.notes.Count==0) continue;
+            // editorTempoMapを優先し、校歌のような旧譜面はノーツの拍・時刻を使う。
+            // 揺籠の旧データは付点四分音符が1拍。既定の4拍で12/8の1小節になる。
+            beats=new SongSelectBeatTimeline(new[]{chart});
+            break;
+        }
+        return SongPreviewWindow.Resolve(timeline,audioLength,duration,beats);
+    }
+
     // まだ待っている試聴の開始を、今から1秒後以降へ延ばす。読み込み中・再生中の試聴は止めない。
     public void HoldOff()
     {
@@ -131,6 +205,7 @@ public sealed class SongSelectChartPreview : MonoBehaviour
         if(chart?.notes==null || chart.notes.Count==0) { State=PreviewState.Unavailable; loading=null; yield break; }
         State=PreviewState.Loading;
         string dir=Path.Combine(Application.streamingAssetsPath,"Songs",songId);
+        string audioIdentity=AudioIdentity(dir);
         foreach(var playback in SongLoudness.CandidatesInFolder(dir))
         {
             string full=playback.Path;
@@ -147,7 +222,7 @@ public sealed class SongSelectChartPreview : MonoBehaviour
             if(ownedClip==null) continue;
             loudnessGain=playback.Gain;
             var timeline=StagePerformanceTimeline.Load(songId);
-            Window=SongPreviewWindow.Resolve(timeline,ownedClip.length,duration);
+            Window=ResolveWindow(songId,timeline,ownedClip.length,duration);
             if(token!=generation) yield break;
             if(!Window.IsValid)
             {
@@ -155,6 +230,7 @@ public sealed class SongSelectChartPreview : MonoBehaviour
             }
             // 音だけのディスク選曲でも同じDSP時計を使う。旧譜面表示は任意。
             view?.Prepare(chart,Window,timeline,Difficulty);
+            loadedAudioIdentity=audioIdentity;
             source.clip=ownedClip; source.loop=false; source.pitch=1;
             startSample=Mathf.Clamp((int)Math.Round(Window.Start*ownedClip.frequency),0,ownedClip.samples-1);
             source.timeSamples=startSample;
@@ -201,7 +277,7 @@ public sealed class SongSelectChartPreview : MonoBehaviour
     private void Finish()
     {
         if(IsPlaying) stoppedSongTime=SongTime;
-        IsPlaying=false; clockSynchronized=false; loudnessGain=1;
+        IsPlaying=false; clockSynchronized=false; loudnessGain=1; loadedAudioIdentity=null;
         if(source!=null) { source.Stop(); source.clip=null; source.volume=baseVolume; }
         if(ownedClip!=null) { Destroy(ownedClip); ownedClip=null; }
         view?.Hide();

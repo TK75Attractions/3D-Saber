@@ -74,7 +74,7 @@ public class FiveSongPackTests
             // 下位譜面は表拍・速度条件を優先し、金同時切りを義務付けない。
             if(difficulty.Equals("hard",StringComparison.OrdinalIgnoreCase))
                 Assert.IsTrue(chart.notes.GroupBy(n=>n.time).Any(g=>g.Count()==2 && g.All(n=>n.color=="gold")));
-            Assert.IsTrue(chart.notes.Any(n=>SongPreviewWindow.Intersects(chart,n,SongPreviewWindow.Resolve(timeline,Durations[index]),0)));
+            Assert.IsTrue(chart.notes.Any(n=>SongPreviewWindow.Intersects(chart,n,SongSelectChartPreview.ResolveWindow(id,timeline,Durations[index]),0)));
             Assert.IsTrue(chart.notes.Any(n=>n.IsDirection));
         }
     }

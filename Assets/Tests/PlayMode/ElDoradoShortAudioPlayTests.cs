@@ -42,7 +42,8 @@ public class ElDoradoShortAudioPlayTests
             // MPEGデコーダーは末尾の割当分を含み144.77秒と報告する。PCM位置は6区間で元音源と照合する。
             Assert.That(manager.songPlayer.Duration, Is.InRange(144.0, 145.0), "旧223秒版や途中までの音源を読んでいない");
             var stage = StagePerformanceTimeline.Load("ElDorado");
-            var window = SongPreviewWindow.Resolve(stage, manager.songPlayer.Duration);
+            var beats = new SongSelectBeatTimeline(new[] { ChartLoader.LoadFromStreamingAssets("ElDorado", "Normal") });
+            var window = SongPreviewWindow.Resolve(stage, manager.songPlayer.Duration, 10, beats);
             Assert.That(window.Start, Is.EqualTo(100.203).Within(.001));
             Assert.Less(window.Start + window.Duration, manager.songPlayer.Duration);
             foreach (var d in new[] { "easy", "normal", "hard" })

@@ -8,7 +8,7 @@ using UnityEngine.UI;
 
 // スクロール可能な曲リスト + 右側に難易度・ジャケット・スタートボタン。
 // PC キー入力（←→で曲選択、↑↓・1/2/3で難易度、Enter/Space で開始）。
-// 選択が1秒落ち着いたら、選択難易度のクライマックスを音付きで10秒プレビューする。
+// 選択が1秒落ち着いたら、クライマックスを約10秒、終わりを小節にそろえてプレビューする。
 // EventSystem（実行順 -1000）より先に専用キーを処理し、同じ入力の二重配送を防ぐ。
 [DefaultExecutionOrder(-1100)]
 public class SongSelectController : MonoBehaviour
@@ -583,11 +583,14 @@ public class SongSelectController : MonoBehaviour
         return Color.HSVToRGB(h, 0.4f, 0.6f);
     }
 
-    private void StartPreview(string songId)
+    private void StartPreview(string songId, bool preservePosition = false)
     {
         if (!Application.isPlaying || previewSource == null || SelectedSongLocked || RushESecret.Transitioning) return;
         if (difficultyNames == null || selectedDifficulty >= difficultyNames.Length) return;
         EnsureChartPreview();
+        // 隠し E を出したあとは、今までどおり読み直す(試聴の続きは通常の難易度どうしだけ)。
+        if (preservePosition && !RushESecret.Unlocked
+            && chartPreview.TryChangeDifficulty(songId, CurrentDifficultyName, previewDuration)) return;
         chartPreview.Select(songId, CurrentDifficultyName, previewDuration);
     }
 
@@ -680,7 +683,7 @@ public class SongSelectController : MonoBehaviour
         // スキンが無効表示へ更新できるよう、通知より先に開始可否を揃える。
         RefreshStartAvailability();
         OnDifficultyChanged?.Invoke(idx);
-        if (changed && selectedIndex >= 0 && selectedIndex < songIds.Count) StartPreview(songIds[selectedIndex]);
+        if (changed && selectedIndex >= 0 && selectedIndex < songIds.Count) StartPreview(songIds[selectedIndex], true);
     }
 
     public void StartGame()

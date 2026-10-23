@@ -7,10 +7,11 @@ public readonly struct SongPreviewWindow
     public bool IsValid => Duration > .05;
     public SongPreviewWindow(double start,double duration) { Start=start; Duration=duration; }
 
-    public static SongPreviewWindow Resolve(StagePerformanceTimeline timeline,double audioLength,double requestedDuration=10)
+    public static SongPreviewWindow Resolve(StagePerformanceTimeline timeline,double audioLength,double requestedDuration=10,SongSelectBeatTimeline beats=null)
     {
         if(!Finite(audioLength) || audioLength<=.05) return default;
-        double duration=Math.Min(audioLength,Finite(requestedDuration)?Math.Max(.1,Math.Min(30,requestedDuration)):10);
+        double requested=Finite(requestedDuration)?Math.Max(.1,Math.Min(30,requestedDuration)):10;
+        double duration=Math.Min(audioLength,requested);
         double start=timeline!=null?timeline.previewStartSeconds:-1;
         if(!Finite(start) || start<0)
         {
@@ -22,7 +23,17 @@ public readonly struct SongPreviewWindow
                     if(s.intensity>=strongest) { strongest=s.intensity; start=s.startSeconds; }
                 }
         }
-        return new SongPreviewWindow(Math.Max(0,Math.Min(start,audioLength-duration)),duration);
+        // 開始位置と曲末での補正は従来どおり。既定の10秒だけ、終端を小節へ寄せる。
+        var window=new SongPreviewWindow(Math.Max(0,Math.Min(start,audioLength-duration)),duration);
+        if(beats==null || requested!=10) return window;
+        double target=window.Start+10, end=window.Start+window.Duration, nearest=double.PositiveInfinity;
+        foreach(double candidate in beats.BarStartTimes(window.Start+8,Math.Min(window.Start+12,audioLength)))
+        {
+            double distance=Math.Abs(candidate-target);
+            // 昇順に調べ、同距離なら早い小節を残す。候補がなければ従来の終端。
+            if(distance<nearest-1e-9) { nearest=distance; end=candidate; }
+        }
+        return new SongPreviewWindow(window.Start,end-window.Start);
     }
 
     public static double NoteTime(ChartData chart,NoteData note) => note.TimeSeconds+(chart!=null?chart.offsetMs/1000.0:0);

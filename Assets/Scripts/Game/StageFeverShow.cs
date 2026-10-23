@@ -7,7 +7,7 @@ using UnityEngine.Rendering;
 //   祭4 譜面のノーツの時刻で、遠景の左右に5本ずつ立つ光の柱を、奥から手前へ順に光らせる。押したかどうかに関係なく光る。
 //       点滅は1秒2.2回まで(それより詰まった合図はまとめる)。強さは区間の強度で決める(区間外・A メロ 0.25 → サビ 1.0)。
 //       RUSH E の背景(PulseArray)は自前の照明が同じ合図で光るので、柱は足さない。
-//   祭2 サビ(強度 .65 以上の区間)の間は、左右の床から斜め上へレーザー6本(拍で明るく、強拍で太く、0.5Hz でゆっくり首を振る)、
+//   祭2 サビ(強度 .65 以上の区間)の間は、左右の床から斜め上へレーザー6本(拍で明るく、強拍で太く、4拍で1往復する)、
 //       通路の外の柱を手前へ流して速さを出し、背景の色を背景ごとの「ブースト」の色へ0.3秒で寄せる。
 //       終わりはレーザーを0.5秒で根元へ巻き取り、幅は0.3秒保ってから0.2秒で消す。下がる「シュー」と色戻しは維持する。
 //   斬2 金ノーツの会心では、背景を2拍だけ金色へ寄せる。
@@ -35,7 +35,7 @@ public sealed partial class StageFeverShow : MonoBehaviour
     double[] endTimes = new double[0];
     // 明滅させる拍。前に光らせた拍から CueSpacing 以上あいたものだけ(テンポが途中で速くなっても1秒2.2回まで)。
     Beat[] beats = new Beat[0];
-    float beatSeconds = .5f;
+    SongSelectBeatTimeline motionBeats = new SongSelectBeatTimeline(null);
     StageTheme theme;
     float floor;
     bool pillars = true;
@@ -162,23 +162,21 @@ public sealed partial class StageFeverShow : MonoBehaviour
 
     void BuildBeats(ChartData chart)
     {
-        beats = new Beat[0]; beatSeconds = .5f;
+        beats = new Beat[0];
+        motionBeats = new SongSelectBeatTimeline(new[] { chart });
         if (chart == null) return;
         double end = 0;
         double offset = Finite(chart.offsetMs) ? chart.offsetMs / 1000.0 : 0;
         if (chart.notes != null) foreach (var note in chart.notes) if (note != null && Finite(note.time)) end = System.Math.Max(end, note.TimeSeconds + offset);
         foreach (var s in strong) end = System.Math.Max(end, s.end);
-        var events = new SongSelectBeatTimeline(new[] { chart }).Events(0, end + 2);
+        var events = motionBeats.Events(0, end + 2);
         var picked = new List<Beat>(events.Count);
-        double sum = 0; int n = 0;
         for (int i = 0; i < events.Count; i++)
         {
-            if (i > 0 && n < 64) { sum += events[i].Time - events[i - 1].Time; n++; }
             if (picked.Count == 0 || events[i].Time - picked[picked.Count - 1].time >= CueSpacing - 1e-6)
                 picked.Add(new Beat { time = events[i].Time, downbeat = events[i].Downbeat });
         }
         beats = picked.ToArray();
-        if (n > 0) beatSeconds = Mathf.Clamp((float)(sum / n), .2f, 1.5f);
     }
 
     // 明滅させる拍の時刻(テスト用)。
@@ -330,11 +328,22 @@ public sealed partial class StageFeverShow : MonoBehaviour
         }
     }
 
+    // 間引く前の連続した拍位置で動かす。テンポ変更・シーク・再開でも同じ時刻なら同じ位置になる。
+    internal float PostZAt(double songTime, int index)
+    {
+        double beat = motionBeats.BeatAt(songTime) + index;
+        double phase = beat - System.Math.Floor(beat / PostsPerSide) * PostsPerSide;
+        return 48f - (float)(phase * (44.0 / PostsPerSide));
+    }
+
+    internal float LaserSwayAt(double poseTime, int index, int side)
+        => (float)System.Math.Sin(motionBeats.BeatAt(poseTime) * (System.Math.PI / 2)
+            + index * 1.3 + (side > 0 ? 0 : System.Math.PI)) * .2f;
+
     void Draw(double songTime, bool downbeat, bool low)
     {
         if (mesh == null) return;
         vertices.Clear(); colors.Clear(); uvs.Clear(); indices.Clear();
-        float time = (float)songTime;
         float projector = DisplaySettings.ProjectorMode ? .7f : 1f;
         BoostLasers(theme, out Color boostA, out Color boostB);
         Color baseLight = LightColor(theme);
@@ -364,7 +373,7 @@ public sealed partial class StageFeverShow : MonoBehaviour
             for (int k = 0; k < LasersPerSide; k++)
                 for (int side = -1; side <= 1; side += 2)
                 {
-                    float sway = Mathf.Sin((float)laser.poseTime * Mathf.PI * 2 * .5f + k * 1.3f + (side > 0 ? 0 : Mathf.PI)) * .2f;
+                    float sway = LaserSwayAt(laser.poseTime, k, side);
                     Vector3 origin = new Vector3(side * 6.5f, floor + .05f, 6 + k * 8);
                     Vector3 direction = new Vector3(side * (.45f + sway), 1f, .55f + .1f * k).normalized;
                     Color tint = (k + (side > 0 ? 1 : 0)) % 2 == 0 ? boostA : boostB;
@@ -374,10 +383,9 @@ public sealed partial class StageFeverShow : MonoBehaviour
                 }
 
             // 通路の外の柱を手前へ流して速さを出す(拍ごとに1本ぶん進む)。
-            float speed = 44f / PostsPerSide / beatSeconds;
             for (int k = 0; k < PostsPerSide; k++)
             {
-                float z = 48 - Mathf.Repeat(time * speed + k * (44f / PostsPerSide), 44f);
+                float z = PostZAt(songTime, k);
                 float fade = Mathf.Clamp01((48 - z) / 6f) * Mathf.Clamp01((z - 3) / 6f);
                 for (int side = -1; side <= 1; side += 2)
                     Beam(new Vector3(side * 6.3f, floor + .05f, z), new Vector3(side * 6.3f, floor + 2.4f, z), .07f,

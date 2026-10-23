@@ -3,16 +3,27 @@ using NUnit.Framework;
 
 public class SongPreviewWindowTests
 {
-    [TestCase("ElDorado",100.203,144.065306)] [TestCase("Epilogue",133.859,166.408707)]
-    [TestCase("揺籠",140.245,184.24163)] [TestCase("Morning",113.898,165.329)]
-    [TestCase("2_23_AM",129.333,196.075)]
-    [TestCase("製作中",134.713878,174.864)]
-    public void AllDifficultyExcerptsUseAuthoredClimaxAndContainRealNotes(string song,double expected,double length)
+    [TestCase("2_23_AM",129.333,196.075,140.026203)]
+    [TestCase("Andalusia",53.44,112.22059,63.815197)]
+    [TestCase("Aobasou",109.714286,138.857052,120.000012)]
+    [TestCase("BenkyouRemaster",6.024,138.762449,16.524000)]
+    [TestCase("ElDorado",100.203,144.065306,110.400200)]
+    [TestCase("Epilogue",133.859,166.408707,143.368062)]
+    [TestCase("escapade",85.914737,109.944036,96.019996)]
+    [TestCase("logic",144.153,206.759184,154.403000)]
+    [TestCase("ManicSonic",81.166667,149.451938,91.833333)]
+    [TestCase("Morning",113.898,165.329,124.591797)]
+    [TestCase("Phobia PARTⅠ",89.106909,110.968163,98.197818)]
+    [TestCase("揺籠",140.245,184.24163,150.709672)]
+    [TestCase("製作中",134.713878,174.864,144.815922)]
+    public void AllDifficultyExcerptsKeepTheirStartAndEndOnTheSameBar(string song,double expected,double length,double expectedEnd)
     {
         var timeline=StagePerformanceTimeline.Load(song);
-        var window=SongPreviewWindow.Resolve(timeline,length);
-        Assert.That(window.Start,Is.EqualTo(expected).Within(.001)); Assert.AreEqual(10,window.Duration);
-        Assert.Less(window.Start+window.Duration,length);
+        var window=SongSelectChartPreview.ResolveWindow(song,timeline,length);
+        Assert.That(window.Start,Is.EqualTo(expected).Within(.001));
+        Assert.That(window.Start+window.Duration,Is.EqualTo(expectedEnd).Within(.001));
+        Assert.That(window.Duration,Is.InRange(8d,12d));
+        Assert.LessOrEqual(window.Start+window.Duration,length);
         foreach(var difficulty in SongSelectController.StandardDifficulties)
         {
             var chart=ChartLoader.LoadFromStreamingAssets(song,difficulty);

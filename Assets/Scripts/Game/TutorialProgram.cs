@@ -33,6 +33,7 @@ public sealed class TutorialStep
     public double PeriodSeconds;                      // 型を繰り返す間隔(秒)
     public int Goal;                                  // 成功回数
     public bool NeedDirection;                        // 向きが合った切りだけを数える
+    public CutDirection[] RequiredDirections = Array.Empty<CutDirection>();
     public bool Simultaneous;
     public double PatternLengthSeconds => Pattern.Length == 0 ? 0 : Pattern[Pattern.Length - 1].dt;
 }
@@ -78,9 +79,11 @@ public static class TutorialProgram
             case "tapMix": return new TutorialStep { Id = id, Kind = TutorialStepKind.Practice, Title = "来た色と同じ手で切ろう", Sub = "赤は右、青は左",
                 Pattern = new[] { Tap(RightX, BaseY, "red", 0f), Tap(LeftX, BaseY, "blue", 1f), Tap(RightX, LowY, "red", 2f), Tap(LeftX, LowY, "blue", 3f) }, PeriodSeconds = LoopSeconds, Goal = 3 };
             case "arrowEasy": return new TutorialStep { Id = id, Kind = TutorialStepKind.Practice, Title = "矢印の向きに振ろう", Sub = "上向きなら下から上へ",
-                Pattern = new[] { Arrow(RightX, BaseY, "red", "up", 0f), Arrow(LeftX, BaseY, "blue", "down", 2f) }, PeriodSeconds = LoopSeconds, Goal = 2, NeedDirection = true };
+                Pattern = new[] { Arrow(RightX, BaseY, "red", "up", 0f), Arrow(LeftX, BaseY, "blue", "down", 2f) }, PeriodSeconds = LoopSeconds, Goal = 2, NeedDirection = true,
+                RequiredDirections = new[] { CutDirection.Up, CutDirection.Down } };
             case "arrowNormal": return new TutorialStep { Id = id, Kind = TutorialStepKind.Practice, Title = "矢印の向きに振ろう", Sub = "上・下・左・右",
-                Pattern = new[] { Arrow(RightX, BaseY, "red", "up", 0f), Arrow(LeftX, BaseY, "blue", "down", 2f), Arrow(RightX, BaseY, "red", "left", 4f), Arrow(LeftX, BaseY, "blue", "right", 6f) }, PeriodSeconds = 2 * LoopSeconds, Goal = 3, NeedDirection = true };
+                Pattern = new[] { Arrow(RightX, BaseY, "red", "up", 0f), Arrow(LeftX, BaseY, "blue", "down", 2f), Arrow(RightX, BaseY, "red", "left", 4f), Arrow(LeftX, BaseY, "blue", "right", 6f) }, PeriodSeconds = 2 * LoopSeconds, Goal = 3, NeedDirection = true,
+                RequiredDirections = new[] { CutDirection.Up, CutDirection.Down } };
             case "long": return new TutorialStep { Id = id, Kind = TutorialStepKind.Practice, Title = "長いノーツは、数字の回数だけ振ろう", Sub = "数字がなくなるまで切り切ろう",
                 Pattern = new[] { Long(RightX, BaseY, "red", 2, 500f, 0f), Long(LeftX, BaseY, "blue", 3, 1000f, 3f), Long(RightX, BaseY, "red", 4, 1500f, 6f) },
                 PeriodSeconds = 3 * LoopSeconds, Goal = 3, TimeoutSeconds = LongPracticeTimeoutSeconds };
@@ -117,6 +120,28 @@ public static class TutorialProgram
         }
         if (tier == JudgmentTier.Miss) return false;
         return !step.NeedDirection || correctDirection;
+    }
+
+    internal static int RemainingDirections(TutorialStep step, ISet<CutDirection> completed)
+    {
+        int remaining = 0;
+        if (step != null)
+            foreach (var direction in step.RequiredDirections)
+                if (!completed.Contains(direction)) remaining++;
+        return remaining;
+    }
+
+    internal static bool PracticeGoalReached(TutorialStep step, int successes, ISet<CutDirection> completed)
+        => step != null && step.Kind == TutorialStepKind.Practice && successes >= step.Goal
+            && RemainingDirections(step, completed) == 0;
+
+    internal static string RemainingText(TutorialStep step, int successes, int directions, bool done)
+    {
+        if (step == null || step.Kind != TutorialStepKind.Practice || step.Goal <= 1 || done) return "";
+        if (directions > 0) return "あと " + directions + " 方向";
+        int left = Mathf.Max(0, step.Goal - successes);
+        return step.Id == "long" ? "あと " + left + " 種類"
+            : step.Simultaneous ? "あと " + ((left + 1) / 2) + " 組" : "あと " + left + " 回";
     }
 
     public static string DirectionJapanese(CutDirection direction)

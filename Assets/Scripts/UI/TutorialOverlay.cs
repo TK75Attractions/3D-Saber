@@ -29,7 +29,7 @@ public sealed class TutorialOverlay : MonoBehaviour
     float judgeShownAt = -100f;
     string shownTitle, shownSub, shownHint;
     int shownStep = -1;
-    int shownRemaining = int.MinValue; bool shownPairs;
+    string shownProgress;
 
     public static TutorialOverlay Ensure()
     {
@@ -182,13 +182,11 @@ public sealed class TutorialOverlay : MonoBehaviour
         if (Guide != null) Guide.Show(ctl.DemonstrationNotes, ctl.DemonstrationTime);
         if (timer != null)
         {
-            int left = ctl.Step != null ? Mathf.Max(0, ctl.Step.Goal - ctl.Successes) : 0;
-            bool pairs = ctl.Step != null && ctl.Step.Simultaneous;
-            int remaining = ctl.Step != null && ctl.Step.Kind == TutorialStepKind.Practice && ctl.Step.Goal > 1 && !ctl.StepDone ? left : -1;
-            if (remaining != shownRemaining || pairs != shownPairs)
+            string progress = TutorialProgram.RemainingText(ctl.Step, ctl.Successes, ctl.RemainingDirections, ctl.StepDone);
+            if (progress != shownProgress)
             {
-                shownRemaining = remaining; shownPairs = pairs;
-                timer.text = remaining < 0 ? "" : ctl.Step.Id == "long" ? "あと " + left + " 種類" : pairs ? "あと " + ((left + 1) / 2) + " 組" : "あと " + left + " 回";
+                shownProgress = progress;
+                timer.text = progress;
             }
         }
         if (ctl.Step != null && shownStep != ctl.StepIndex) { shownStep = ctl.StepIndex; RefreshDots(shownStep); }
