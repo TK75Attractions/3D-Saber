@@ -47,6 +47,8 @@ public partial class CuttableNote
         for (int i = 0; i < cracksUsed; i++)
         {
             var crack = ownedCracks[i];
+            // 終了値は通常・LOW共通。最後の反映を終えたひびは触らない。
+            if (crack.age >= end) continue;
             crack.age = Mathf.Min(end, crack.age + Mathf.Max(0f, deltaTime));
             ApplyCrack(crack.transform, crack.material, crack.fullScale, crack.age);
         }

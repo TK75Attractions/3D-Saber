@@ -72,8 +72,10 @@ public sealed class FloorTimingGuide : MonoBehaviour
             Bar(1.8f, JudgmentZ, 3.6f, .065f * visibility, Color.Lerp(lineColor, countRight, countRightAmount), .003f);
         }
         candidates.Clear();
-        foreach (var note in spawner.LiveNotes)
+        var live = spawner.LiveNotes;
+        for (int i = 0; i < live.Count; i++)
         {
+            var note = live[i];
             if (note == null || !note.gameObject.activeInHierarchy || note.IsCut || note.IsMissed || note.IsFinalized || !Finite(note.HitTime)) continue;
             Vector3 p = note.transform.position;
             if (!Finite(p.x) || !Finite(p.y) || !Finite(p.z)) continue;

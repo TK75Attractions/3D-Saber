@@ -193,8 +193,9 @@ public sealed partial class StageFeverShow : MonoBehaviour
     public static float FeverAt(double time, IReadOnlyList<(double start, double end)> sections)
     {
         float level = 0;
-        foreach (var (start, end) in sections)
+        for (int i = 0; i < sections.Count; i++)
         {
+            var (start, end) = sections[i];
             if (time < start) continue;
             if (time < end) level = Mathf.Max(level, Mathf.Clamp01((float)((time - start) / FeverInSeconds)));
             else if (time < end + FeverOutSeconds) level = Mathf.Max(level, 1 - (float)((time - end) / FeverOutSeconds));

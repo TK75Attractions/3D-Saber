@@ -79,8 +79,9 @@ public class BarLineSpawner : MonoBehaviour
         }
         lastSongTime = songTime;
         UpdateLive(songTime);
+        int previousIndex = nextBarIndex;
         SpawnDue(songTime);
-        UpdateLive(songTime);
+        if (nextBarIndex != previousIndex) UpdateLive(songTime);
     }
 
     private void SpawnDue(double songTime)

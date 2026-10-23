@@ -90,7 +90,10 @@ public partial class CuttableNote : MonoBehaviour
     }
 
     public bool CanBeginCutAt(double songTime, SaberHand cutterHand)
-        => !CameraSaberHistory.Finite(songTime) || songTime + OrderTimeEpsilon >= CutOrderStartTime(cutterHand);
+        => !CameraSaberHistory.Finite(songTime)
+            // 保護開始時刻の上限に達していれば、先行ノーツを探す必要はない。
+            || songTime + OrderTimeEpsilon >= HitTime - JudgmentTierHelper.EarlyPerfectSeconds
+            || songTime + OrderTimeEpsilon >= CutOrderStartTime(cutterHand);
     // 採点に使う曲時計。IMU+Camera照合ではSwingの時刻、従来判定では刃がいちばん近づいた時刻。時計がなければnull。
     public double? LastCutSongTime { get; private set; }
     // 金ノーツ：切ったときに豪華音を鳴らすため NoteSpawner が立てる。

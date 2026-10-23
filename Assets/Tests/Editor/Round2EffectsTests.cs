@@ -162,6 +162,12 @@ public class Round2EffectsTests
         note.TickCracks(.06f);
         Assert.AreEqual(.7f, material.GetColor(color).r, 1e-5);
         Vector3 settled = first.localScale;
+        note.TickCracks(1f);
+        first.hasChanged = false;
+        note.TickCracks(1f);
+        Assert.False(first.hasChanged, "終了済みのひびへスケールを再設定しない");
+        Assert.AreEqual(settled, first.localScale);
+        Assert.AreEqual(.7f, material.GetColor(color).r, 1e-5);
         note.Cut(hit, Vector3.up * 8);
         Assert.AreEqual(settled, first.localScale);
         Assert.AreEqual(.7f, material.GetColor(color).r, 1e-5);
