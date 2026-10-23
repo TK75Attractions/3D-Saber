@@ -6,7 +6,7 @@ import XCTest
 
 final class MetricsDatagramTests: XCTestCase {
     func testShutterISOAndEmitterCommandRules() {
-        for value in [2000, 1000, 500, 250] {
+        for value in [2000, 250, 200, 160, 125, 100, 80, 64] {
             let line = "PHONESABER_COMMAND 1 id=72 shutter-iso=\(value) future=x"
             XCTAssertEqual(LANLivenessProbe.parseCommand(line)?.shutterISO, value)
             XCTAssertEqual(LANLivenessProbe.formatAck(id: 72, station: "A", platform: "ios", result: "shutter-iso", detail: String(value)),
@@ -16,18 +16,18 @@ final class MetricsDatagramTests: XCTestCase {
                 XCTAssertNil(LANLivenessProbe.parseCommand(line + " " + other))
             }
         }
-        for value in ["0", "-1", "125", "4000", "500.0", "x"] {
+        for value in ["0", "-1", "1000", "500", "63", "4000", "64.0", "x"] {
             XCTAssertNil(LANLivenessProbe.parseCommand("PHONESABER_COMMAND 1 id=72 shutter-iso=\(value)"))
         }
-        XCTAssertNil(LANLivenessProbe.parseCommand("PHONESABER_COMMAND 1 shutter-iso=500"))
-        XCTAssertNil(LANLivenessProbe.parseCommand("PHONESABER_COMMAND 2 id=72 shutter-iso=500"))
-        XCTAssertEqual(LANLivenessProbe.parseCommand("PHONESABER_COMMAND 1 id=72 shutter-iso=500 shutter-iso=250")?.shutterISO, 250)
-        XCTAssertNil(LANLivenessProbe.parseCommand("PHONESABER_COMMAND 1 id=72 shutter-iso=500 shutter-iso=x"))
+        XCTAssertNil(LANLivenessProbe.parseCommand("PHONESABER_COMMAND 1 shutter-iso=125"))
+        XCTAssertNil(LANLivenessProbe.parseCommand("PHONESABER_COMMAND 2 id=72 shutter-iso=125"))
+        XCTAssertEqual(LANLivenessProbe.parseCommand("PHONESABER_COMMAND 1 id=72 shutter-iso=125 shutter-iso=250")?.shutterISO, 250)
+        XCTAssertNil(LANLivenessProbe.parseCommand("PHONESABER_COMMAND 1 id=72 shutter-iso=125 shutter-iso=x"))
         XCTAssertNotNil(LANLivenessProbe.parseCommand("PHONESABER_COMMAND 1 id=72 shutter-iso=x ignore=red"))
         for value in [0, 1] {
             let line = "PHONESABER_COMMAND 1 id=73 shutter-emitter=\(value)"
             XCTAssertEqual(LANLivenessProbe.parseCommand(line)?.shutterEmitter, value == 1)
-            for other in ["shutter=2000", "shutter-iso=500", "defaults=1", "ignore=both", "clip=1"] {
+            for other in ["shutter=2000", "shutter-iso=125", "defaults=1", "ignore=both", "clip=1"] {
                 XCTAssertNil(LANLivenessProbe.parseCommand(line + " " + other))
             }
         }
@@ -157,12 +157,17 @@ final class MetricsDatagramTests: XCTestCase {
             m.median = 2000; m.p95 = 2000; m.samples = 2400
             m.rtt = 1000; m.rttAge = 10; m.rttSamples = 2400
             m.thermal = "critical"; m.battery = 100
-            m.controls = MetricsDatagram.controlState(trackLock: false, exposureBias: 0, shutter: 1000, shutterISO: 500)
+            m.controls = MetricsDatagram.controlState(trackLock: false, exposureBias: 0, shutter: 1000, shutterISO: 200)
             XCTAssertEqual(m.controls, "0022")
             XCTAssertTrue(m.line()?.hasSuffix(" ctl=0022") == true)
             XCTAssertLessThan(m.line()!.utf8.count, 400)
         }
-        XCTAssertEqual(MetricsDatagram.controlState(trackLock: true, exposureBias: -2, shutter: 2000, shutterISO: 2000), "1230")
+        for (index, iso) in [2000, 250, 200, 160, 125, 100, 80, 64].enumerated() {
+            XCTAssertEqual(MetricsDatagram.controlState(trackLock: true, exposureBias: -2, shutter: 2000, shutterISO: iso), "123\(index)")
+        }
+        for removed in [1000, 500] {
+            XCTAssertNil(MetricsDatagram.controlState(trackLock: true, exposureBias: -2, shutter: 2000, shutterISO: removed))
+        }
         XCTAssertNil(MetricsDatagram.controlState(trackLock: true, exposureBias: -3, shutter: 2000, shutterISO: 2000))
     }
 

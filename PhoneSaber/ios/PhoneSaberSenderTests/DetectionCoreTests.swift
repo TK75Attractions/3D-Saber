@@ -114,11 +114,13 @@ final class DetectionCoreTests: XCTestCase {
         let defaults = try XCTUnwrap(UserDefaults(suiteName: name))
         defer { defaults.removePersistentDomain(forName: name) }
         XCTAssertEqual(CameraViewModel.storedShutterISO(in: defaults), 2000)
-        for value in [2000, 1000, 500, 250, 0, -1, 125, 4000] {
+        for value in [2000, 250, 200, 160, 125, 100, 80, 64, 1000, 500, 0, -1, 4000] {
             defaults.set(value, forKey: "PhoneSaber.shutterISO.v1")
-            XCTAssertEqual(CameraViewModel.storedShutterISO(in: defaults), [2000, 1000, 500, 250].contains(value) ? value : 2000)
+            let expected = [1000, 500].contains(value) ? 250 :
+                ([2000, 250, 200, 160, 125, 100, 80, 64].contains(value) ? value : 2000)
+            XCTAssertEqual(CameraViewModel.storedShutterISO(in: defaults), expected)
         }
-        for fps in [30, 60] { for iso in [2000, 1000, 500, 250] {
+        for fps in [30, 60] { for iso in [2000, 250, 200, 160, 125, 100, 80, 64] {
             let plan = try XCTUnwrap(CameraShutterPlan.make(denominator: 2000,
                 minimum: CMTime(value: 1, timescale: 100_000), maximum: CMTime(value: 1, timescale: 1),
                 frameDuration: CMTime(value: 1, timescale: Int32(fps)), minISO: 32, maxISO: 3000, requestedISO: iso))
@@ -129,6 +131,18 @@ final class DetectionCoreTests: XCTestCase {
             minimum: CMTime(value: 1, timescale: 100_000), maximum: CMTime(value: 1, timescale: 1),
             frameDuration: CMTime(value: 1, timescale: 60), minISO: 300, maxISO: 800, requestedISO: 250))
         XCTAssertEqual(clamped.iso, 300)
+        for requested in [125, 100, 80, 64] {
+            let low = try XCTUnwrap(CameraShutterPlan.make(denominator: 2000,
+                minimum: CMTime(value: 1, timescale: 100_000), maximum: CMTime(value: 1, timescale: 1),
+                frameDuration: CMTime(value: 1, timescale: 60), minISO: 80.5, maxISO: 3000, requestedISO: requested))
+            XCTAssertEqual(low.iso, max(80.5, Float(requested)))
+            XCTAssertEqual(CMTimeGetSeconds(low.duration), 0.0005, accuracy: 1e-9)
+        }
+        for removed in [1000, 500] {
+            XCTAssertNil(CameraShutterPlan.make(denominator: 2000,
+                minimum: CMTime(value: 1, timescale: 100_000), maximum: CMTime(value: 1, timescale: 1),
+                frameDuration: CMTime(value: 1, timescale: 60), minISO: 32, maxISO: 3000, requestedISO: removed))
+        }
     }
 
     @MainActor
@@ -136,10 +150,10 @@ final class DetectionCoreTests: XCTestCase {
         let model = CameraViewModel(sender: UDPSender { _, _, _ in }, p2pEnabled: false)
         XCTAssertEqual(model.shutterISO, 2000)
         XCTAssertFalse(model.shutterEmitter)
-        model.applyPCCommand(try XCTUnwrap(LANLivenessProbe.parseCommand("PHONESABER_COMMAND 1 id=801 shutter-iso=500")))
-        XCTAssertEqual(model.shutterISO, 500)
+        model.applyPCCommand(try XCTUnwrap(LANLivenessProbe.parseCommand("PHONESABER_COMMAND 1 id=801 shutter-iso=125")))
+        XCTAssertEqual(model.shutterISO, 125)
         model.applyPCCommand(.init(id: 801, ignore: nil, clearIgnore: false, shutterISO: 250))
-        XCTAssertEqual(model.shutterISO, 500)
+        XCTAssertEqual(model.shutterISO, 125)
         model.applyPCCommand(.init(id: 802, ignore: nil, clearIgnore: false, shutterEmitter: true))
         XCTAssertTrue(model.shutterEmitter)
         model.applyPCCommand(.init(id: 803, ignore: nil, clearIgnore: false, defaults: true))

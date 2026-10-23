@@ -196,7 +196,7 @@ struct CameraShutterPlan: Equatable {
     // ISO未指定の呼出だけ従来の露出積を維持する。端末設定は選択ISOを明示して適用する。
     static func make(denominator: Int, minimum: CMTime, maximum: CMTime,
                      frameDuration: CMTime, minISO: Float, maxISO: Float, requestedISO: Int? = nil) -> Self? {
-        guard requestedISO.map({ [2000, 1000, 500, 250].contains($0) }) ?? true,
+        guard requestedISO.map({ [2000, 250, 200, 160, 125, 100, 80, 64].contains($0) }) ?? true,
               [500, 1000, 2000].contains(denominator),
               [minimum, maximum, frameDuration].allSatisfy({
                   $0.isNumeric && CMTimeGetSeconds($0).isFinite && CMTimeGetSeconds($0) > 0
@@ -212,6 +212,7 @@ struct CameraShutterPlan: Equatable {
 // lock と setter の境界を既存の fake device でも検証する。OFF の初回適用は書込みゼロ。
 struct CameraShutterController {
     private(set) var active = false
+    private(set) var appliedISO: Float?
 
     mutating func apply(_ denominator: Int, to camera: AVCaptureDevice, requestedISO: Int? = nil) throws -> Bool {
         if denominator == 0 {
@@ -220,6 +221,7 @@ struct CameraShutterController {
             defer { camera.unlockForConfiguration() }
             camera.exposureMode = .continuousAutoExposure
             active = false
+            appliedISO = nil
             return true
         }
         let format = camera.activeFormat
@@ -236,6 +238,7 @@ struct CameraShutterController {
         camera.activeVideoMinFrameDuration = minimum
         camera.activeVideoMaxFrameDuration = maximum
         active = true
+        appliedISO = plan.iso
         return true
     }
 }
@@ -1724,7 +1727,7 @@ final class CameraViewModel: NSObject, ObservableObject {
         }
         if command.clearArea { clearPlayArea(commandID: command.id); ack("cleared", "area") }
         if let enabled = command.trackLock { setTrackLockEnabled(enabled); ack("tracklock", enabled ? "on" : "off") }
-        if let value = command.shutterISO, setShutterISO(value) { ack("shutter-iso", String(value)) }
+        if let value = command.shutterISO, setShutterISO(value) { ack("shutter-iso", shutterISOAckDetail()) }
         if let enabled = command.shutterEmitter { setShutterEmitter(enabled); ack("shutter-emitter", enabled ? "on" : "off") }
         if let value = command.shutter, setShutter(value) { ack("shutter", value == 0 ? "off" : String(value)) }
         if let bias = command.exposureBias { setExposureBias(bias, commandID: command.id); ack("exposure", "ev\(bias)") }
@@ -1942,12 +1945,18 @@ final class CameraViewModel: NSObject, ObservableObject {
 
     nonisolated static func storedShutterISO(in defaults: UserDefaults) -> Int {
         let value = defaults.integer(forKey: shutterISOKey)
+        if value == 1000 || value == 500 { return 250 }
         return LANLivenessProbe.shutterISOChoices.contains(value) ? value : 2000
     }
 
     static func shutterISOLabel(_ value: Int) -> String {
-        let stops = shutterISOChoices.firstIndex(of: value) ?? 0
-        return "ISO \(value)（−\(stops) 段）"
+        "ISO \(value)"
+    }
+
+    // カメラの実測値は非同期で更新されるため、ACKには形式の上下限で制限して適用した値を返す。
+    private func shutterISOAckDetail() -> String {
+        if running, let appliedISO = shutterController.appliedISO { return String(appliedISO) }
+        return String(shutterISO)
     }
 
     @discardableResult

@@ -20,7 +20,7 @@ public sealed class PhoneSaberOperatorKeys : MonoBehaviour
 
     PhoneSaberOperatorToast toast;
     static bool lastSentTrackLock = true; // スマホの新しい既定 ON に合わせる。
-    static int shutterISOIndex = 0; // ISO2000 → 1000 → 500 → 250 → 2000
+    static int shutterISOIndex = 0; // ISO2000 → 250 → 200 → 160 → 125 → 100 → 80 → 64 → 2000
     static int shutterIndex = 3; // 既定 1/2000 → OFF → 1/500 → 1/1000 → 1/2000
     static int exposureIndex = 2; // 開始時 -2、次に 0 → -1 → -2（スマホ側が保存する）
 
@@ -103,8 +103,7 @@ public sealed class PhoneSaberOperatorKeys : MonoBehaviour
 
     public static string ShutterISOLabel(int value)
     {
-        int stops = System.Array.IndexOf(PhoneSaberDiscoveryResponder.ShutterISOChoices, value);
-        return $"ISO {value}（−{System.Math.Max(0, stops)} 段）";
+        return $"ISO {value}";
     }
 
     public static (string command, string label) ShutterISOCommand(int index, out int nextIndex)
@@ -204,7 +203,7 @@ public sealed class PhoneSaberOperatorKeys : MonoBehaviour
                 : "プレイ範囲を覚えています（" + ack.Detail.TrimEnd('s') + "秒、範囲いっぱいに振る）"; break;
             case "learned": result = "プレイ範囲を覚えました（" + ack.Detail.Substring(7) + "回分）"; break;
             case "failed": result = "覚えられませんでした（振りが足りません）"; break;
-            case "shutter-iso": result = "固定シャッター " + ShutterISOLabel(int.Parse(ack.Detail)); break;
+            case "shutter-iso": result = "固定シャッター ISO " + ack.Detail; break;
             case "shutter-emitter": result = "低ISOの色付き発光体 " + (ack.Detail == "on" ? "ON（固定・ISO2000未満で有効）" : "OFF"); break;
             case "shutter": result = "固定シャッター " + (ack.Detail == "off" ? "OFF（自動露出）" : "1/" + ack.Detail + " 秒"); break;
             case "exposure": result = "露出を " + ack.Detail.Substring(2) + " EV にしました"; break;

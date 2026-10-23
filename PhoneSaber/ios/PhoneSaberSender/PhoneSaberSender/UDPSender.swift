@@ -592,7 +592,7 @@ final class LANLivenessProbe {
     /// PC（Unity の F8）からの指示。生存確認の応答と一緒に届く別の datagram（応答の形式は変えない）。
     ///   "PHONESABER_COMMAND 1 id=<番号> ignore=red|blue" / "PHONESABER_COMMAND 1 id=<番号> clear-ignore=1"
     ///   "PHONESABER_COMMAND 1 id=<番号> learn-area=<秒 1..60>" / "... clear-area=1"（プレイ範囲、2026-10-18）
-    ///   "PHONESABER_COMMAND 1 id=<番号> shutter-iso=2000|1000|500|250" / "... shutter-emitter=0|1"（単独操作）
+    ///   "PHONESABER_COMMAND 1 id=<番号> shutter-iso=2000|250|200|160|125|100|80|64" / "... shutter-emitter=0|1"（単独操作）
     ///   "PHONESABER_COMMAND 1 id=<番号> shutter=0|500|1000|2000"（iPhoneの固定短時間露出）
     ///   "PHONESABER_COMMAND 1 id=<番号> exposure-bias=0|-1|-2"（露出補正 EV、2026-10-18）
     ///   "PHONESABER_COMMAND 1 id=<番号> clip=1" / "... auto-clip=0|1"（自動クリップの今すぐ保存・ON/OFF、2026-10-19）
@@ -626,7 +626,7 @@ final class LANLivenessProbe {
     static let maximumLearnAreaSeconds = 60
     static let exposureBiasChoices = [0, -1, -2]
     static let shutterChoices = [0, 500, 1000, 2000]
-    static let shutterISOChoices = [2000, 1000, 500, 250]
+    static let shutterISOChoices = [2000, 250, 200, 160, 125, 100, 80, 64]
     static func parseCommand(_ text: String) -> PCCommand? {
         guard text.hasPrefix(commandPrefix) else { return nil }
         var id: Int?, ignore: String?, clear = false

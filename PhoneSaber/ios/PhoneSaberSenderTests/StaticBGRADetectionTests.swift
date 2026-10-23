@@ -1212,8 +1212,9 @@ enum StaticBGRADetectionTests {
                 }
                 let image = scene(color == .red ? (128, 12, 12) : (12, 24, 128))
                 let baseline = run(image)
-                for shutter in [0, 500, 1000, 2000] { for iso in [2000, 1000, 500, 250] { for enabled in [false, true] {
+                for shutter in [0, 500, 1000, 2000] { for iso in [2000, 250, 200, 160, 125, 100, 80, 64] { for enabled in [false, true] {
                     let mode = ShutterEmitterMode(shutter: shutter, iso: iso, enabled: enabled)
+                    guard mode.active == (enabled && shutter != 0 && iso < 2000) else { fatalError("shutter emitter mode") }
                     let result = run(image, mode)
                     if mode.active {
                         guard !emitters(result, color).isEmpty else { fatalError("low ISO opt-in missing") }

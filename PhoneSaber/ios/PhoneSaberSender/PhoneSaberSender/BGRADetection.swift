@@ -882,7 +882,7 @@ struct ShutterEmitterMode: Equatable {
     var shutter = 0
     var iso = 2000
     var enabled = false
-    var active: Bool { enabled && [500, 1000, 2000].contains(shutter) && [1000, 500, 250].contains(iso) }
+    var active: Bool { enabled && [500, 1000, 2000].contains(shutter) && iso > 0 && iso < 2000 }
 }
 
 // 合成境界テスト（StaticBGRADetectionTests）の仮設定。実機クリップで再調整する場所を集約。

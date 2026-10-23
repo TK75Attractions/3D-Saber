@@ -522,7 +522,7 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         panel.Label("iPhone固定シャッター [Ctrl+Shift+S]: 既定 1/2000 → OFF（自動露出）→ 1/500 → 1/1000 → 1/2000。起動時の既定: 追跡 ON・露出 −2・1/2000 秒");
         foreach (int value in PhoneSaberDiscoveryResponder.ShutterChoices)
             panel.Button(value == 0 ? "固定シャッター: OFF" : $"固定シャッター: 1/{value} 秒", "phone-shutter", value.ToString(CultureInfo.InvariantCulture));
-        panel.Label("固定シャッターの明るさ [Ctrl+Shift+D]: ISO 2000 → 1000 → 500 → 250。1/2000秒のまま各−1段。起動時の既定はISO 2000");
+        panel.Label("固定シャッターの明るさ [Ctrl+Shift+D]: ISO 2000 → 250 → 200 → 160 → 125 → 100 → 80 → 64。起動時の既定はISO 2000");
         foreach (int value in PhoneSaberDiscoveryResponder.ShutterISOChoices)
             panel.Button(PhoneSaberOperatorKeys.ShutterISOLabel(value), "phone-shutter-iso", value.ToString(CultureInfo.InvariantCulture));
         panel.Label("低ISOの色付き発光体: 既定OFF、固定シャッター・ISO2000未満のときだけ有効（試験）");

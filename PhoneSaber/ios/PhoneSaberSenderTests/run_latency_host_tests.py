@@ -148,7 +148,7 @@ extension AVCaptureSession { func addOutput(_ output: AVCaptureVideoDataOutput) 
     support += block(camera, "struct CameraShutterPlan:") + "\n"
     support += block(camera, "struct CameraShutterController") + "\n"
     shutter_key = next(line for line in camera.splitlines() if 'static let shutterKey =' in line)
-    support += 'enum LANLivenessProbe { static let shutterChoices = [0, 500, 1000, 2000]; static let shutterISOChoices = [2000, 1000, 500, 250] }\n'
+    support += 'enum LANLivenessProbe { static let shutterChoices = [0, 500, 1000, 2000]; static let shutterISOChoices = [2000, 250, 200, 160, 125, 100, 80, 64] }\n'
     support += 'enum CameraViewModel {\n' + shutter_key + '\n' + block(camera, 'nonisolated static func storedShutter(') + '\n' + next(line for line in camera.splitlines() if 'static let shutterISOKey =' in line) + '\n' + block(camera, 'nonisolated static func storedShutterISO(') + '\n}\n'
     current_camera = (SOURCE / "CameraViewModel.swift").read_text()
     support += block(current_camera, "struct CameraPostProcessingState") + "\n"
@@ -199,13 +199,19 @@ extension AVCaptureSession { func addOutput(_ output: AVCaptureVideoDataOutput) 
             XCTAssertFalse(controller.active)
             XCTAssertEqual(camera.exposureMode, .continuousAutoExposure)
         }
-        for iso in [2000, 1000, 500, 250] {
+        for iso in [2000, 250, 200, 160, 125, 100, 80, 64] {
             camera.activeFormat.maxISO = 3000
             XCTAssertTrue(try controller.apply(2000, to: camera, requestedISO: iso))
             XCTAssertEqual(camera.customISO, Float(iso))
+            XCTAssertEqual(controller.appliedISO, Float(iso))
             XCTAssertEqual(CMTimeGetSeconds(camera.customDuration), 0.0005, accuracy: 1e-9)
         }
+        camera.activeFormat.minISO = 80.5
+        XCTAssertTrue(try controller.apply(2000, to: camera, requestedISO: 64))
+        XCTAssertEqual(camera.customISO, 80.5)
+        XCTAssertEqual(controller.appliedISO, 80.5)
         XCTAssertTrue(try controller.apply(0, to: camera))
+        XCTAssertNil(controller.appliedISO)
         camera.customSupported = false
         let restored = camera.writes
         XCTAssertFalse(try controller.apply(500, to: camera))

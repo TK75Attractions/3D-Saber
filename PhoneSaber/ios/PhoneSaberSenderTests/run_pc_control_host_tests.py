@@ -64,7 +64,7 @@ final class LANLivenessProbe {
     support += '''}
 struct Delivery { func suspend() {} }
 final class AVCaptureDevice {}
-struct ShutterController { var active = false }
+struct ShutterController { var active = false; var appliedISO: Float? }
 struct DeviceThermalLevel {
     init(state: ProcessInfo.ThermalState) {}
     var metadataValue: String { "nominal" }
@@ -85,12 +85,16 @@ enum PlayAreaSettings { static let exposureBiasKey = "unused" }
     var trackLockEnabled = true, exposureBias = -2, shutter = 2000, shutterISO = 2000
     var commandsApplied: Int { processor.trackChanges }
     static let trackLockKey = "unused", shutterISOKey = "unused", shutterKey = "unused"
-    static let shutterISOChoices = [2000, 1000, 500, 250], shutterChoices = [0, 500, 1000, 2000]
+    static let shutterISOChoices = [2000, 250, 200, 160, 125, 100, 80, 64], shutterChoices = [0, 500, 1000, 2000]
     static let exposureBiasChoices = [0, -1, -2]
     var shutterStatus = "", exposureBiasStatus = ""
     var exposureBiasCamera: AVCaptureDevice?
     var shutterController = ShutterController()
-    func applyShutter(_ value: Int, to camera: AVCaptureDevice, requestedISO: Int? = nil) -> Bool { true }
+    func applyShutter(_ value: Int, to camera: AVCaptureDevice, requestedISO: Int? = nil) -> Bool {
+        shutterController.active = value != 0
+        shutterController.appliedISO = value == 0 ? nil : max(80.5, Float(requestedISO ?? shutterISO))
+        return true
+    }
     func applyCameraExposureExperiment(to camera: AVCaptureDevice) {}
     func applyExposureBias(to camera: AVCaptureDevice, reason: String) {}
     func refreshShutterStatus() {}
@@ -116,7 +120,7 @@ enum PlayAreaSettings { static let exposureBiasKey = "unused" }
     support += camera[start:end]
     for marker in ['private func learnIgnoreZones(', 'func clearIgnoreZones(', 'func applyPCCommand(',
                    'private func resetProcessor(', 'func setTrackLockEnabled(', 'func setExposureBias(',
-                   'func setShutterISO(', 'func setShutter(', 'static func exposureBiasLabel(']:
+                   'func setShutterISO(', 'private func shutterISOAckDetail(', 'func setShutter(', 'static func exposureBiasLabel(']:
         method = block(camera, marker)
         method = method.replace('try? await Task.sleep(nanoseconds: UInt64(SaberIgnoreLearner.seconds * 1_000_000_000))',
                                 'await LearnSleeper.wait()')
@@ -126,6 +130,23 @@ enum PlayAreaSettings { static let exposureBiasKey = "unused" }
     support += '}\n'
     tests = '''import XCTest
 @MainActor final class PCControlTests: XCTestCase {
+    func testShutterISOAckReportsAppliedValueForBothStations() {
+        for station in ["A", "B"] {
+            let model = CameraViewModel()
+            model.station = station
+            model.exposureBiasCamera = AVCaptureDevice()
+            for (id, iso) in [2000, 250, 200, 160, 125, 100, 80, 64].enumerated() {
+                model.applyPCCommand(.init(id: id, ignore: nil, clearIgnore: false, shutterISO: iso, sourceHost: model.host))
+                XCTAssertEqual(model.shutterISO, iso, "選択値は保存・UI・ctl用に維持")
+                let actual = max(80.5, Float(iso))
+                XCTAssertTrue(model.lanProbe.acks.last?.hasSuffix("result=shutter-iso detail=" + String(actual)) == true)
+                XCTAssertTrue(model.lanProbe.acks.last?.contains("station=" + station) == true)
+            }
+            model.running = false
+            model.applyPCCommand(.init(id: 100, ignore: nil, clearIgnore: false, shutterISO: 64, sourceHost: model.host))
+            XCTAssertTrue(model.lanProbe.acks.last?.hasSuffix("detail=64") == true, "停止中は予約した選択値")
+        }
+    }
     func begin(_ model: CameraViewModel, _ color: SaberColor, completion: ((Int, Int) -> Void)? = nil) async {
         model.begin([color], completion: completion)
         for _ in 0..<20 { await Task.yield() }

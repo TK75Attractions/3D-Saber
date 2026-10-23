@@ -29,7 +29,7 @@ public class PhoneSaberAcknowledgementTests
     public void ShutterISOVerifiesBothStationRepliesAndToast()
     {
         foreach (string station in new[] { "A", "B" })
-        foreach (int value in new[] { 2000, 1000, 500, 250 })
+        foreach (int value in new[] { 2000, 250, 200, 160, 125, 100, 80, 64 })
         {
             string line = $"PHONESABER_ACK 1 id=92 station={station} platform=ios result=shutter-iso detail={value}";
             Assert.IsTrue(PhoneSaberAcknowledgement.TryParse(line, out var ack));
@@ -39,7 +39,17 @@ public class PhoneSaberAcknowledgementTests
             StringAssert.Contains("iPhone（台" + station + "）: 固定シャッター " + PhoneSaberOperatorKeys.ShutterISOLabel(value), PhoneSaberOperatorKeys.ToastText(store, 1));
             StringAssert.Contains("ISO " + value, PhoneSaberOperatorKeys.PendingLabel("shutter-iso=" + value));
         }
-        foreach (string value in new[] { "0", "125", "4000", "off", "-250" })
+        // 実適用ISOは形式の下限により選択肢外・小数になる。
+        foreach (string station in new[] { "A", "B" })
+        foreach (string value in new[] { "80.5", "300", "500", "1000", "2000.0" })
+        {
+            Assert.IsTrue(PhoneSaberAcknowledgement.TryParse($"PHONESABER_ACK 1 id=92 station={station} platform=ios result=shutter-iso detail={value}", out var ack));
+            var store = new PhoneSaberAcknowledgementStore();
+            store.Queue(92, "shutter-iso=64", 0);
+            Assert.IsTrue(store.Receive(ack, "127.0.0.1"));
+            StringAssert.Contains("固定シャッター ISO " + value, PhoneSaberOperatorKeys.ToastText(store, 1));
+        }
+        foreach (string value in new[] { "0", "0.0", "off", "-250", "NaN", "Infinity", "80..5", "8e1", "80,5" })
             Assert.IsFalse(PhoneSaberAcknowledgement.TryParse("PHONESABER_ACK 1 id=92 station=A platform=ios result=shutter-iso detail=" + value, out _));
         foreach (string value in new[] { "on", "off" })
             Assert.IsTrue(PhoneSaberAcknowledgement.TryParse("PHONESABER_ACK 1 id=93 station=B platform=ios result=shutter-emitter detail=" + value, out _));

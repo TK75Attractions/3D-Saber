@@ -36,6 +36,7 @@ def main():
     var clipAcknowledgements: [String: (String, String) -> Void] = [:]
     enum Color { case red, blue }
     func setShutterISO(_ value: Int) -> Bool { effects.append("iso"); return true }
+    func shutterISOAckDetail() -> String { "2000" }
     func setShutter(_ value: Int) -> Bool { effects.append("shutter"); return true }
     func setShutterEmitter(_ value: Bool) { effects.append("emitter") }
     func setTrackLockEnabled(_ value: Bool) { effects.append("tracklock") }

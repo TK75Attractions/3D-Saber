@@ -28,14 +28,14 @@ public class PhoneSaberControlPanelTests
             Assert.IsFalse(PhoneSaberControlPanelActions.Dispatch("phone-shutter", value, handlers));
         handlers["phone-shutter-iso"] = value => seen = value;
         handlers["phone-shutter-emitter"] = value => seen = value;
-        foreach (string value in new[] { "2000", "1000", "500", "250" })
+        foreach (string value in new[] { "2000", "250", "200", "160", "125", "100", "80", "64" })
         {
             Assert.IsTrue(PhoneSaberControlPanelActions.Dispatch("phone-shutter-iso", value, handlers));
             Assert.AreEqual(value, seen);
         }
         foreach (string value in new[] { "0", "1" })
             Assert.IsTrue(PhoneSaberControlPanelActions.Dispatch("phone-shutter-emitter", value, handlers));
-        foreach (string value in new[] { "0", "125", "off", "500&clip=1" })
+        foreach (string value in new[] { "0", "1000", "500", "off", "500&clip=1" })
             Assert.IsFalse(PhoneSaberControlPanelActions.Dispatch("phone-shutter-iso", value, handlers));
         Assert.IsFalse(PhoneSaberControlPanelActions.Dispatch("phone-shutter-emitter", "on", handlers));
     }
@@ -124,7 +124,7 @@ public class PhoneSaberControlPanelTests
             { "filter", new[] { "0", "1", "2", "3", "4" } }, { "stabilizer", new[] { "0", "1" } },
             { "phone-ignore", new[] { "red", "blue", "both" } }, { "phone-clear-ignore", new[] { "" } },
             { "phone-learn-area", new[] { "" } }, { "phone-clear-area", new[] { "" } },
-            { "phone-shutter-iso", new[] { "2000", "1000", "500", "250" } },
+            { "phone-shutter-iso", new[] { "2000", "250", "200", "160", "125", "100", "80", "64" } },
             { "phone-shutter-emitter", new[] { "0", "1" } },
             { "phone-shutter", new[] { "0", "500", "1000", "2000" } },
             { "phone-exposure", new[] { "0", "-1", "-2" } }, { "phone-track-lock", new[] { "", "0", "1" } }, { "phone-clip", new[] { "" } },
@@ -145,7 +145,8 @@ public class PhoneSaberControlPanelTests
     }
 
     [TestCase("phone-shutter-iso", "0")]
-    [TestCase("phone-shutter-iso", "125")]
+    [TestCase("phone-shutter-iso", "500")]
+    [TestCase("phone-shutter-iso", "1000")]
     [TestCase("phone-shutter-emitter", "on")]
     [TestCase("unknown", "")]
     [TestCase("prediction", "1000")]

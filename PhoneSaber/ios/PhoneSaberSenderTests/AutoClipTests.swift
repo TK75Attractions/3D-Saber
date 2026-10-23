@@ -331,7 +331,7 @@ final class AutoClipTests: XCTestCase {
         }
         let capture = AutoClipCapture(clipID: "test", trigger: AutoClipTriggerEvent(kind: .manual, frameID: 1, timestamp: 1),
             buffers: buffers, windowStart: 0, windowEnd: 2, captureFPS: 30,
-            environmentAtTrigger: AutoClipEnvironment(shutter: 1000, shutterISO: 500, shutterEmitter: true, exposureDurationSeconds: 0.001, iso: 64, signingExpiryRemainingHours: 49),
+            environmentAtTrigger: AutoClipEnvironment(shutter: 1000, shutterISO: 64, shutterEmitter: true, exposureDurationSeconds: 0.001, iso: 80.5, signingExpiryRemainingHours: 49),
             environmentAtSave: AutoClipEnvironment(signingExpiryRemainingHours: 48),
             ignoreZones: [:], playArea: nil, sessionClipIndex: 1, rejectedTriggers: [:])
         let content = AutoClipBundleContent(capture: capture, slots: [0])
@@ -344,10 +344,10 @@ final class AutoClipTests: XCTestCase {
         XCTAssertEqual((clip["camera"] as? [String: Any])?["signingExpiryRemainingHours"] as? Int, 48)
         let camera = try XCTUnwrap(clip["camera"] as? [String: Any])
         XCTAssertEqual(camera["shutter"] as? Int, 1000)
-        XCTAssertEqual(camera["shutterISO"] as? Int, 500)
+        XCTAssertEqual(camera["shutterISO"] as? Int, 64)
         XCTAssertEqual(camera["shutterEmitter"] as? Bool, true)
         XCTAssertEqual(camera["exposureDurationSeconds"] as? Double, 0.001)
-        XCTAssertEqual(camera["iso"] as? Double, 64)
+        XCTAssertEqual(camera["iso"] as? Double, 80.5)
         let frames = try XCTUnwrap(clip["frames"] as? [[String: Any]])
         let red = try XCTUnwrap(frames.first?["red"] as? [String: Any])
         let blue = try XCTUnwrap(frames.first?["blue"] as? [String: Any])

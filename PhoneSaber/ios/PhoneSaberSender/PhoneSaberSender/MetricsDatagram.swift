@@ -15,7 +15,7 @@ struct MetricsDatagram {
     static func controlState(trackLock: Bool, exposureBias: Int, shutter: Int, shutterISO: Int) -> String? {
         guard (0...2).contains(-exposureBias),
               let shutterIndex = [0, 500, 1000, 2000].firstIndex(of: shutter),
-              let isoIndex = [2000, 1000, 500, 250].firstIndex(of: shutterISO) else { return nil }
+              let isoIndex = [2000, 250, 200, 160, 125, 100, 80, 64].firstIndex(of: shutterISO) else { return nil }
         return "\(trackLock ? 1 : 0)\(-exposureBias)\(shutterIndex)\(isoIndex)"
     }
 

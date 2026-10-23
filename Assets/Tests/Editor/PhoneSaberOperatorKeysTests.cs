@@ -59,7 +59,7 @@ public class PhoneSaberOperatorKeysTests
     public void ISOCyclesAndDefaultsResetToProduction()
     {
         int index = 0;
-        foreach (int value in new[] { 1000, 500, 250, 2000, 1000 })
+        foreach (int value in new[] { 250, 200, 160, 125, 100, 80, 64, 2000, 250 })
         {
             Assert.AreEqual("shutter-iso=" + value, PhoneSaberOperatorKeys.CommandFor(Key.D, 2, out int ev, true, 3, index).Value.command);
             Assert.AreEqual(2, ev);
@@ -70,10 +70,10 @@ public class PhoneSaberOperatorKeysTests
         try
         {
             PhoneSaberOperatorKeys.SelectShutterISO(250);
-            Assert.AreEqual(3, field.GetValue(null));
+            Assert.AreEqual(1, field.GetValue(null));
             PhoneSaberDiscoveryResponder.QueueCommand(PhoneSaberDiscoveryResponder.DefaultsCommand);
             Assert.AreEqual(0, field.GetValue(null));
-            Assert.AreEqual("shutter-iso=1000", PhoneSaberOperatorKeys.CommandFor(Key.D, 2, out _).Value.command);
+            Assert.AreEqual("shutter-iso=250", PhoneSaberOperatorKeys.CommandFor(Key.D, 2, out _).Value.command);
         }
         finally { field.SetValue(null, saved); }
     }
@@ -139,7 +139,7 @@ public class PhoneSaberOperatorKeysTests
                     (int)type.GetField("shutterIndex", flags).GetValue(null),
                     (int)type.GetField("shutterISOIndex", flags).GetValue(null));
                 string expected = key == Key.T ? "track-lock=1" : key == Key.E ? "exposure-bias=-1" :
-                    key == Key.S ? "shutter=2000" : "shutter-iso=250";
+                    key == Key.S ? "shutter=2000" : "shutter-iso=160";
                 Assert.AreEqual(expected, action.Value.command);
             }
             Assert.IsFalse(PhoneSaberOperatorKeys.FollowPhoneState(phone, station, 22, 10), "同じ計測で再適用しない");
@@ -166,7 +166,12 @@ public class PhoneSaberOperatorKeysTests
         }
         Assert.IsTrue(Parse("", out var old)); Assert.IsNull(old.Controls);
         Assert.IsTrue(Parse(" ctl=0022", out var current)); Assert.AreEqual("0022", current.Controls);
-        foreach (string invalid in new[] { " ctl=002", " ctl=00220", " ctl=2022", " ctl=0322", " ctl=0042", " ctl=002x", " ctl=0022 ctl=1230" })
+        for (int index = 0; index < 8; index++)
+        {
+            Assert.IsTrue(Parse(" ctl=123" + index, out var iso));
+            Assert.AreEqual("123" + index, iso.Controls);
+        }
+        foreach (string invalid in new[] { " ctl=002", " ctl=00220", " ctl=2022", " ctl=0322", " ctl=0042", " ctl=0028", " ctl=002x", " ctl=0022 ctl=1230" })
             Assert.IsFalse(Parse(invalid, out _), invalid);
     }
 

@@ -59,7 +59,7 @@ public sealed class PhoneSaberMetrics
             if (fields.TryGetValue("ctl", out string controls))
             {
                 if (controls.Length != 4 || "01".IndexOf(controls[0]) < 0 || "012".IndexOf(controls[1]) < 0 ||
-                    "0123".IndexOf(controls[2]) < 0 || "0123".IndexOf(controls[3]) < 0) return false;
+                    "0123".IndexOf(controls[2]) < 0 || "01234567".IndexOf(controls[3]) < 0) return false;
                 m.Controls = controls;
             }
             metrics = m; return true;

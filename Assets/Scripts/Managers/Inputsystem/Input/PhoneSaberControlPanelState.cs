@@ -17,7 +17,7 @@ public static class PhoneSaberControlPanelActions
         { "filter", new[] { "0", "1", "2", "3", "4" } }, { "stabilizer", new[] { "0", "1" } },
         { "phone-ignore", new[] { "red", "blue", "both" } }, { "phone-clear-ignore", new[] { "" } },
         { "phone-learn-area", new[] { "" } }, { "phone-clear-area", new[] { "" } },
-        { "phone-shutter-iso", new[] { "2000", "1000", "500", "250" } },
+        { "phone-shutter-iso", new[] { "2000", "250", "200", "160", "125", "100", "80", "64" } },
         { "phone-shutter-emitter", new[] { "0", "1" } },
         { "phone-shutter", new[] { "0", "500", "1000", "2000" } },
         { "phone-exposure", new[] { "0", "-1", "-2" } },
