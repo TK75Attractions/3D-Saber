@@ -794,9 +794,10 @@ public class GamePlayManager : MonoBehaviour
         TickTrackingWatch();
         // 最初の手の予告は曲の時計で出し入れする(止まっている間は隠す)。
         FirstNoteHandHintView.Tick(songPlayer);
-        if (finished || !ready || (songPlayer != null && songPlayer.IsPaused))
+        if (finished || !ready || (songPlayer != null &&
+            (songPlayer.IsPaused || songPlayer.IsWaitingForAudio)))
         {
-            // 一時停止中(剣の見失い・音の立て直し)・終了後も、ゲートまわりの光は最後まで消えていく(広がりかけの形で固めない)。
+            // 一時停止中(剣の見失い・音の立て直し・鳴らし直した音が進むのを待つ間)・終了後も、ゲートまわりの光は最後まで消えていく(広がりかけの形で固めない)。
             if (ready && gateAccents != null) gateAccents.Tick(Time.deltaTime);
             return;
         }
@@ -952,7 +953,9 @@ public class GamePlayManager : MonoBehaviour
         if (leaving || finished || audioChangeHold)
         {
             trackingView.ShowRecovery(false, null, 0, 0);
-            if (audioChangeHold && !leaving && !finished) TickAudioResume();
+            // 終わり・中断のあとは表示ごと隠す(最後のノーツのあとに出たスタッフ向けの1行が、終わりの演出まで残っていた。2026-10-23 点検)。
+            if (leaving || finished) trackingView.gameObject.SetActive(false);
+            else if (audioChangeHold) TickAudioResume();
             return;
         }
         var input = InputPoint.Instance;

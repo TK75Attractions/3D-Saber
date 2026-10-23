@@ -243,6 +243,50 @@ public class GameplayJudgmentClockTests
         TickManager(time);
     }
 
+    // 音を鳴らし直して実際の音が進むのを待つ間は、止まっているのと同じ(切れない・サビの音を予約しない)。待ち終われば動く。
+    [Test]
+    public void NothingIsCutOrScheduledWhileTheReplayedAudioHasNotStarted()
+    {
+        Create(false, false, 1);
+        spawner.Tick(.94);
+        tracker.ResetTo(new Vector3(-2, 0, 0));
+        tracker.Tick(new Vector3(2, 0, 0), .033f);
+        var drop = root.AddComponent<ChorusDrop>();
+        drop.Setup(new StagePerformanceTimeline {
+            sections = new[] {
+                new StagePerformanceTimeline.Section {
+                    startSeconds = 1.1, endSeconds = 2, intensity = 1
+                }
+            }
+        }, null, 120, null, null);
+        Set(manager, "chorusDrop", drop);
+        // 再開予約後も曲時計が1秒で待っている状態を作る。
+        Set(song, "holdUntilDsp", AudioSettings.dspTime + 10);
+        Set(song, "restartSongTime", 1d);
+        TickManager(1);
+        Assert.Zero(drop.ScheduledCount);
+        Assert.False(note.IsCut);
+        Set(song, "holdUntilDsp", double.NegativeInfinity);
+        TickManager(1);
+        Assert.AreEqual(1, drop.ScheduledCount);
+        Assert.True(note.IsCut);
+    }
+
+    // 曲の終わり・中断のあとは、剣の見張りの表示ごと隠す(スタッフ向けの1行を終わりの演出まで残さない)。
+    [TestCase("finished")]
+    [TestCase("leaving")]
+    public void TrackingDisplayIsHiddenOnceTheSongEndsOrIsLeft(string state)
+    {
+        Create(false, false, 1);
+        var view = PlayTrackingStatus.Create(root.transform, 262);
+        Set(manager, "trackingView", view);
+        view.Show("", null, true);
+        Assert.True(view.PanelShown);
+        Set(manager, state, true);
+        typeof(GamePlayManager).GetMethod("TickTrackingWatch", Fields).Invoke(manager, null);
+        Assert.False(view.gameObject.activeSelf);
+    }
+
     void TickManager(double time)
     {
         Set(song, "scheduled", true);

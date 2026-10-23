@@ -49,6 +49,12 @@ public class SongPlayer : MonoBehaviour
     public bool IsScheduled => scheduled;
     public bool IsPlaying => scheduled && !paused && AudioSettings.dspTime >= startDspTime + startOffset;
     public bool IsPaused => paused;
+    // 鳴らし直したあと(PlayFrom)、実際の音が進むのを待って時計を止めている間。本編はこの間、判定・譜面の進行・演出の予約も止める
+    // (2026-10-23 点検: 止まった時計のまま「今から0.1秒後」と予約したサビの音が、曲のサビより先に鳴った)。
+    public bool IsWaitingForAudio
+    {
+        get { _ = SongTime; return !double.IsNegativeInfinity(holdUntilDsp); }
+    }
     // 鳴らし始めた位置(音源の頭からの秒)。
     public double PlayStartSeconds => startOffset;
     // 進行バーの終わり(音源の頭からの秒)。0 以下なら音源の長さ。本編が曲ごとの鳴り終わりを入れる。
