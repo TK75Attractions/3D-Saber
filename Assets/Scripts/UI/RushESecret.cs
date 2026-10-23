@@ -67,7 +67,7 @@ public sealed class RushESecret : MonoBehaviour
         }
         bool eligible = !ScreenTransition.IsBusy && !controller.RushESecret.Unlocked
             && controller.SongIdAt(controller.SelectedIndex) == RushESecretState.SongId && skin.DiscsSettled
-            && (Application.isFocused || Application.isBatchMode);
+            && SongSelectSkin.VisitorInputLive();
         Rect area = skin.SelectedDiscScreenRect;
         var input = InputPoint.Instance;
         bool r = eligible && input != null && input.IsRecentlyActive(.15), b = eligible && input != null && input.IsRecentlyActive2(.15);
@@ -77,7 +77,7 @@ public sealed class RushESecret : MonoBehaviour
         var pointer = Mouse.current;
         // 本編と同じく、マウスは移動だけで切る。押下を要求するとかざす操作しかできない。
         bool mouseCut = mouse.Tick(Unit(pointer != null ? pointer.position.ReadValue() : Vector2.zero, area), now,
-            eligible && !r && !b && pointer != null);
+            eligible && (Application.isFocused || Application.isBatchMode) && !r && !b && pointer != null);
         if (redCut || blueCut || mouseCut)
         {
             suppressClickUntil = now + .20;

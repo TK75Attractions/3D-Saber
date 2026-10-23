@@ -239,10 +239,21 @@ public class CameraImuJudgment : MonoBehaviour
         if (secondary != null) secondary.ExternalJudgment = UsesFusion(secondary);
     }
 
+    readonly string[] cameraSenders = new string[2];
     void Capture(SaberCutJudge judge)
     {
-        if (judge != null && judge.bladeProvider != null && judge.bladeProvider.TryGetCameraSample(out var sample))
-            AddCameraSample(sample);
+        if (judge == null || judge.bladeProvider == null ||
+            !judge.bladeProvider.TryGetCameraSample(out var sample)) return;
+        var input = InputPoint.Instance;
+        string sender = sample.Color == CameraSaberColor.Red
+            ? input?.RedCoordinateSender : input?.BlueCoordinateSender;
+        int color = (int)sample.Color;
+        if (cameraSenders[color] != sender)
+        {
+            History(sample.Color).Clear();
+            cameraSenders[color] = sender;
+        }
+        AddCameraSample(sample);
     }
 
     bool IsCandidate(CuttableNote note, PendingSwing p, SaberCutJudge judge)

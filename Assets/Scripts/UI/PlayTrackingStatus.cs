@@ -40,7 +40,12 @@ public sealed class PlayTrackingWatch
         if (color < 0 || color >= feeds.Length || double.IsNaN(receivedAt) || double.IsInfinity(receivedAt)) return;
         ref Feed feed = ref feeds[color];
         if (feed.seen && receivedAt <= feed.last) return;
-        if (!feed.seen || receivedAt - feed.last > MaxGapSeconds) feed.streakStart = receivedAt;
+        if (!feed.seen || receivedAt - feed.last > MaxGapSeconds)
+        {
+            feed.streakStart = receivedAt;
+            if (State == Phase.Countdown && (countdownMask & (1 << color)) != 0)
+            { State = Phase.Waiting; pose.Reset(); }
+        }
         feed.seen = true; feed.last = receivedAt;
     }
 

@@ -90,6 +90,7 @@ public class SongSelectSkin : MonoBehaviour
         }
         layout = SongSelectVisuals.Rect(canvas.transform, "DiscSelectLayout", Vector2.zero, new Vector2(1920, 1080));
         ctl.suppressDefaultDifficultyTint = true;
+        ctl.startButton = null;
         corridor = SongSelectCorridor.Build(layout, ctl);
         BuildHeader(); BuildDiscs(); BuildTitle(); BuildDifficulties(); BuildSecretDifficulty(); BuildAchievements(); BuildActions();
         // 選曲の音は幕の裏で作っておき、最初の操作で処理落ちしないようにする。
