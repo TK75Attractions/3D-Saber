@@ -515,6 +515,8 @@ public class GameStartCountdown : MonoBehaviour
 
     private void OnDisable()
     {
+        // この部品だけの無効化でも、別コンポーネントの予約音を止める。
+        foreach (var source in GetComponents<AudioSource>()) if (source != null) source.Stop();
         // 途中で止められても(シーン移動・テストでの無効化)、ゲートと床の色を必ず元に戻す。
         // 数えている途中で無効にされたときは、別の表示の予告も残さない(ふつうに終わったときは running が先に落ちる)。
         if (running) FirstNoteHandHintView.Hide();

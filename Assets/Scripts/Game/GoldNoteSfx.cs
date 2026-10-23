@@ -105,6 +105,8 @@ public class GoldNoteSfx : MonoBehaviour
     {
         Bind(null);
         BindScore(null);
+        UISkinKit.SafeDestroy(coinSource);
+        coinSource = null;
         ReleaseGeneratedClips();
         for (int i = 0; i < criticalClips.Length; i++) { UISkinKit.SafeDestroy(criticalClips[i]); criticalClips[i] = null; }
         for (int i = 0; i < pairBells.Length; i++) { UISkinKit.SafeDestroy(pairBells[i]); pairBells[i] = null; }
@@ -156,7 +158,10 @@ public class GoldNoteSfx : MonoBehaviour
     }
 
     // 無効中の予約音は残さない。組の履歴は復帰まで維持し、同じ組の硬貨を再発行しない。
-    void OnDisable()
+    void OnDisable() { StopSounds(); }
+
+    // 曲の中断でも、遅れて鳴る硬貨音を残さない。
+    public void StopSounds()
     {
         StopAllCoroutines();
         if (source != null) source.Stop();

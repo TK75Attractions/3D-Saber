@@ -892,6 +892,7 @@ public class GamePlayManager : MonoBehaviour
         StopAllCoroutines();
         AbortAudioRequest();
         if (songPlayer != null) songPlayer.Stop();
+        if (goldNoteSfx != null) goldNoteSfx.StopSounds();
         if (chorusDrop != null) chorusDrop.ResetEffects();
         if (feverShow != null) feverShow.ResetState();
         if (gateAccents != null) gateAccents.ResetState();
