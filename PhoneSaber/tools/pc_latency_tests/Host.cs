@@ -38,6 +38,12 @@ class Frames
 
     static int Main(string[] args)
     {
+#if PHONESABER_CALIBRATION_HOST
+        RunFixture(typeof(PhoneSaberAcknowledgementTests));
+        RunFixture(typeof(PhoneSaberPositionCalibrationTests));
+        Console.WriteLine("Calibration host: Unity lifecycle / PlayerPrefs / JSON substituted; actual ACK / mapping / InputPoint methods executed");
+        return 0;
+#else
         Console.WriteLine(System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription + " / " +
             System.Runtime.InteropServices.RuntimeInformation.OSDescription + " / " +
             System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture);
@@ -87,6 +93,7 @@ class Frames
         Console.WriteLine($"Frame regression: {(checkPrediction ? 10 : 8) - failed} PASS / {failed} FAIL");
         int expected = args.Length >= 1 ? int.Parse(args[0]) : 0;
         return failureMask == expected && zero ? 0 : 1;
+#endif
     }
 
     static void RunFixture(Type type)
@@ -144,6 +151,56 @@ class Frames
         return allocated == 0;
     }
 }
+
+#if PHONESABER_CALIBRATION_HOST
+// native objectを作らず既存のNUnit全件を実行する。保存はメモリ内で隔離する。
+public sealed class CalibrationHostObject : IDisposable
+{
+    public CalibrationHostObject(string name) { }
+    public T AddComponent<T>() where T : class
+    {
+        var input = PhoneSaberReceiverStateReadTests.CreateIdleInput();
+        typeof(InputPoint).GetField("<PositionCapture>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic)
+            .SetValue(input, new PhoneSaberPositionCapture());
+        return (T)(object)input;
+    }
+    public void Dispose() { }
+}
+
+public static class CalibrationHostPrefs
+{
+    static readonly System.Collections.Generic.Dictionary<string, string> values = new System.Collections.Generic.Dictionary<string, string>();
+    public static bool HasKey(string key) => values.ContainsKey(key);
+    public static string GetString(string key, string fallback = "") => values.TryGetValue(key, out var value) ? value : fallback;
+    public static int GetInt(string key, int fallback = 0) => int.TryParse(GetString(key), out int value) ? value : fallback;
+    public static void SetString(string key, string value) => values[key] = value;
+    public static void SetInt(string key, int value) => SetString(key, value.ToString());
+    public static void DeleteKey(string key) => values.Remove(key);
+    public static void Save() { }
+}
+
+public static class CalibrationHostJson
+{
+    public static string ToJson(object value)
+    {
+        using (var stream = new System.IO.MemoryStream())
+        {
+            new System.Runtime.Serialization.Json.DataContractJsonSerializer(value.GetType()).WriteObject(stream, value);
+            return System.Text.Encoding.UTF8.GetString(stream.ToArray());
+        }
+    }
+    public static T FromJson<T>(string value)
+    {
+        if (string.IsNullOrEmpty(value)) return default;
+        try
+        {
+            using (var stream = new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(value)))
+                return (T)new System.Runtime.Serialization.Json.DataContractJsonSerializer(typeof(T)).ReadObject(stream);
+        }
+        catch (System.Runtime.Serialization.SerializationException e) { throw new ArgumentException("Invalid JSON", e); }
+    }
+}
+#endif
 
 #else
 // 実Playerの代用ではない。PerfLogの窓境界と純粋な集計だけをhostで検証する。

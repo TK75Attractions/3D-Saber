@@ -295,9 +295,11 @@ public class PhoneSaberPositionCalibrationTests
         Assert.IsFalse(PhoneSaberPositionCalibration.TryFromLearnedArea(new Rect(0, 0, 1, 1), float.NaN, 1080, out _, out _));
     }
 
-    [TestCase("A")]
-    [TestCase("B")]
-    public void LearnedAckAppliesOnceToItsStationAndResetOnlyClearsMapping(string station)
+    [TestCase("A", "A")]
+    [TestCase("B", "B")]
+    [TestCase("A", "none")]
+    [TestCase("B", "none")]
+    public void LearnedAckAppliesOnceToItsStationAndResetOnlyClearsMapping(string station, string phoneStation)
     {
         // 実運用のA/B設定をテスト後に復元する。
         string key = PhoneSaberPositionCalibrationStore.DataKey(station);
@@ -311,10 +313,10 @@ public class PhoneSaberPositionCalibrationTests
             Set(input, "phoneSaberStation", station);
             var store = new PhoneSaberAcknowledgementStore();
             store.Queue(71, "learn-area=10", 0);
-            string line = $"PHONESABER_ACK 1 id=71 station={station} platform=ios result=learned detail=samples300-area0.2_0.1_0.8_0.9";
+            string line = $"PHONESABER_ACK 1 id=71 station={phoneStation} platform=ios result=learned detail=samples300-area0.2_0.1_0.8_0.9";
             Assert.IsTrue(PhoneSaberAcknowledgement.TryParse(line, out var ack));
             store.Receive(ack, "192.0.2.1");
-            Assert.IsFalse(store.TakeLearnedArea(station == "A" ? "B" : "A", out _));
+            if (phoneStation != "none") Assert.IsFalse(store.TakeLearnedArea(station == "A" ? "B" : "A", out _));
             Assert.IsTrue(input.ApplyLearnedPositionCalibration(store, "2026-10-23 12:34:56"));
             Assert.IsTrue(input.PositionCalibrationEnabled);
             Assert.AreEqual("2026-10-23 12:34:56", PhoneSaberPositionCalibrationStore.LearnedAt(station));
@@ -326,6 +328,21 @@ public class PhoneSaberPositionCalibrationTests
                 Assert.IsFalse(input.ApplyLearnedPositionCalibration(store, "duplicate"));
             }
             Assert.AreEqual(revision, input.PredictionRevision);
+            // リセットなしで新しい小さい可動域へ完全に置換する。古い範囲へ届く必要はない。
+            store.Queue(73, "learn-area=10", 15);
+            string smaller = line.Replace("id=71", "id=73").Replace("area0.2_0.1_0.8_0.9", "area0.4_0.5_0.6_0.7");
+            Assert.IsTrue(PhoneSaberAcknowledgement.TryParse(smaller, out var smallAck));
+            store.Receive(smallAck, "192.0.2.1");
+            Assert.IsTrue(input.ApplyLearnedPositionCalibration(store, "small"));
+            Assert.AreEqual(revision + 1, input.PredictionRevision);
+            var replacement = PhoneSaberPositionCalibrationStore.Load(station, out bool replacementEnabled);
+            Assert.IsTrue(replacementEnabled);
+            Near(Vector2.zero, replacement.Map(new Vector2(.41f * 1919, .51f * 1079)));
+            Near(new Vector2(1920, 1080), replacement.Map(new Vector2(.59f * 1919, .69f * 1079)));
+            store.Receive(smallAck, "192.0.2.1");
+            store.Receive(ack, "192.0.2.1");
+            Assert.IsFalse(input.ApplyLearnedPositionCalibration(store, "duplicate"));
+            Assert.AreEqual("small", PhoneSaberPositionCalibrationStore.LearnedAt(station));
             PhoneSaberDiscoveryResponder.Acknowledgements.Latest(out int beforeReset, out _, out _);
             input.ResetPositionCalibration();
             PhoneSaberDiscoveryResponder.Acknowledgements.Latest(out int afterReset, out _, out _);

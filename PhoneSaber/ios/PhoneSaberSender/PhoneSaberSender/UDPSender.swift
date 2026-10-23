@@ -611,7 +611,8 @@ final class LANLivenessProbe {
                 let values = [mirrorX ? 1 - maxX : minX, mirrorY ? 1 - maxY : minY,
                               mirrorX ? 1 - minX : maxX, mirrorY ? 1 - minY : maxY]
                 return "samples\(samples)-area" + values.map {
-                    String(format: "%.6f", locale: Locale(identifier: "en_US_POSIX"), $0)
+                    // 画面端のPCA端点は数pxはみ出すことがある。ACKの矩形だけ0..1に収める。
+                    String(format: "%.6f", locale: Locale(identifier: "en_US_POSIX"), min(1, max(0, $0)))
                 }.joined(separator: "_")
             }
             static func parse(_ text: String) -> Area? {

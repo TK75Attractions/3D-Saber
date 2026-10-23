@@ -347,6 +347,7 @@ public sealed class PhoneSaberAcknowledgementStore
         public string Fields;
         public double QueuedAt;
         public bool Automatic;
+        public bool LearnedAreaTaken;
         public readonly HashSet<string> AppliedStations = new HashSet<string>();
         public readonly Dictionary<string, PhoneSaberAcknowledgement> Phones = new Dictionary<string, PhoneSaberAcknowledgement>();
     }
@@ -390,11 +391,18 @@ public sealed class PhoneSaberAcknowledgementStore
         lock (gate)
         {
             var command = commands.LastOrDefault(c => c.Fields.StartsWith("learn-area="));
-            if (command == null || command.AppliedStations.Contains(station)) return false;
-            var ack = command.Phones.Values.FirstOrDefault(a => a.Platform == "ios" && a.Station == station &&
+            if (command == null || command.LearnedAreaTaken || command.AppliedStations.Contains(station)) return false;
+            var phones = command.Phones.Values.Where(a => a.Platform == "ios").ToArray();
+            // 同じ台の送信元が開始ACKだけでも返していれば、その端末の完了を待つ。
+            // 台未設定は送信元を一意に選べる場合だけ代用し、別の台のACKは使わない。
+            var matching = phones.Where(a => a.Station == station).ToArray();
+            var candidates = matching.Length > 0 ? matching : phones.Where(a => a.Station == "none").ToArray();
+            if (matching.Length == 0 && candidates.Length != 1) return false;
+            var ack = candidates.OrderBy(a => a.Sender, StringComparer.Ordinal).FirstOrDefault(a =>
                 a.Result == "learned" && a.TryLearnedBounds(out _));
             if (ack == null || !ack.TryLearnedBounds(out bounds)) return false;
-            command.AppliedStations.Add(station);
+            // 台名変更や遅延ACKでも、同じ指示から別の矩形を再適用しない。
+            command.LearnedAreaTaken = true;
             return true;
         }
     }

@@ -90,6 +90,41 @@ final class PCCommandRecoveryTests: XCTestCase {
             XCTAssertEqual(model.lanProbe.replies.first?.line, first, "再送された指示には保存済みACKを返す")
         }
     }
+    @MainActor func testNewLearningAtCameraEdgesRepliesWithValidReplacementBounds() {
+        for station in ["A", "B", ""] {
+            for mirrorX in [false, true] {
+                for mirrorY in [false, true] {
+                    let model = CameraViewModel(); model.station = station
+                    model.mirrorX = mirrorX; model.mirrorY = mirrorY
+                    let areas: [LANLivenessProbe.PCCommand.Area] = [
+                        .init(minX: 0.1, minY: 0.1, maxX: 0.9, maxY: 0.9),
+                        .init(minX: -4.0/479, minY: -2.0/639, maxX: 482.0/479, maxY: 644.0/639),
+                        .init(minX: 0.4, minY: 0.5, maxX: 0.6, maxY: 0.7)]
+                    for (index, area) in areas.enumerated() {
+                        let command = LANLivenessProbe.PCCommand(id: 81 + index, ignore: nil, clearIgnore: false,
+                                                               learnAreaSeconds: 10, sourceHost: "192.0.2.1")
+                        model.applyPCCommand(command)
+                        model.areaCompletion?(600, true, area)
+                        let line = model.lanProbe.replies.last!.line
+                        XCTAssertTrue(line.contains("result=learned"))
+                        let detail = String(line.components(separatedBy: "-area").last!)
+                        let parsed = LANLivenessProbe.PCCommand.Area.parse(detail.replacingOccurrences(of: "_", with: ","))
+                        XCTAssertNotNil(parsed, "PCが拒否する画面外の学習ACK: \(line)")
+                        if index == 1 { XCTAssertEqual(parsed, .init(minX: 0, minY: 0, maxX: 1, maxY: 1)) }
+                        if index == 2 {
+                            XCTAssertEqual(parsed?.minX, 0.4)
+                            XCTAssertEqual(parsed?.minY, mirrorY ? 0.3 : 0.5)
+                            XCTAssertEqual(parsed?.maxX, 0.6)
+                            XCTAssertEqual(parsed?.maxY, mirrorY ? 0.5 : 0.7)
+                        }
+                        model.applyPCCommand(command)
+                        XCTAssertEqual(model.lanProbe.replies.last?.line, line)
+                        XCTAssertEqual(model.effects.count, index + 1)
+                    }
+                }
+            }
+        }
+    }
     @MainActor func testLearningReplaysLatestAck() {
         let model = CameraViewModel()
         let command = LANLivenessProbe.PCCommand(id: 72, ignore: "red", clearIgnore: false, sourceHost: "169.254.1.2")
@@ -197,7 +232,7 @@ final class PCCommandRecoveryTests: XCTestCase {
 import Darwin
 let suite = PCCommandRecoveryTests.defaultTestSuite
 suite.run()
-guard let run = suite.testRun, run.executionCount == 9, run.hasSucceeded else { exit(1) }
+guard let run = suite.testRun, run.executionCount == 10, run.hasSucceeded else { exit(1) }
 ''')
         subprocess.run(["xcrun", "swiftc", "-O", "-module-cache-path", str(tmp / "cache"),
                         str(tmp / "Support.swift"), str(tmp / "Tests.swift"), str(tmp / "main.swift"),

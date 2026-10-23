@@ -103,6 +103,26 @@ public class GamePlayManager : MonoBehaviour { public NoteSpawner noteSpawner; p
                 return 1
             if before:
                 print('Before frame regressions FAIL reproduced (expected mask): ' + str(expected))
+        # 位置補正の既存NUnit全件も実行する。native生成・保存APIだけhostへ置換する。
+        calibration_tests = ROOT / 'Assets/Tests/Editor/PhoneSaberPositionCalibrationTests.cs'
+        acknowledgement_tests = ROOT / 'Assets/Tests/Editor/PhoneSaberAcknowledgementTests.cs'
+        host_calibration = build / 'CalibrationHost.cs'
+        aliases = 'using PlayerPrefs = CalibrationHostPrefs;\nusing JsonUtility = CalibrationHostJson;\n'
+        host_calibration.write_text(aliases + (INPUT / 'PhoneSaberPositionCalibration.cs').read_text())
+        host_calibration_tests = build / 'CalibrationTestsHost.cs'
+        test_source = calibration_tests.read_text().replace('input.enabled = false;', '')
+        test_source = test_source.replace('UnityEngine.Object.DestroyImmediate(go);', 'go.Dispose();')
+        host_calibration_tests.write_text(aliases + 'using GameObject = CalibrationHostObject;\n' + test_source)
+        calibration_sources = list(frame_sources)
+        calibration_sources[calibration_sources.index(INPUT / 'InputPoint.cs')] = host_input
+        calibration_sources[calibration_sources.index(INPUT / 'PhoneSaberPositionCalibration.cs')] = host_calibration
+        exe = build / 'calibration.exe'
+        if run(compiler + ['/define:UNITY_EDITOR,UNITY_EDITOR_WIN,PHONESABER_FRAME_HOST,PHONESABER_CALIBRATION_HOST',
+                           '/r:' + str(nunit), '/r:System.Runtime.Serialization.dll', '/out:' + str(exe)] + refs +
+               list(map(str, calibration_sources + [host_calibration_tests, acknowledgement_tests]))):
+            return 1
+        if run([str(mono / 'bin/mono'), str(exe)], env=runtime):
+            return 1
         if args.frames_only:
             return 0
         if args.platform_before_ref:
@@ -149,7 +169,8 @@ class Check { static int Main(string[] args) {
                 tests = [ROOT / 'Assets/Tests/Editor/PhoneSaberLatencyCompensationTests.cs',
                          ROOT / 'Assets/Tests/Editor/PhoneSaberLatencyProbeTests.cs',
                          ROOT / 'Assets/Tests/Editor/PhoneSaberJudgeTimingLogTests.cs',
-                         ROOT / 'Assets/Tests/Editor/PhoneSaberEndpointPredictorTests.cs', frame_tests, stats_tests, sender_tests]
+                         ROOT / 'Assets/Tests/Editor/PhoneSaberEndpointPredictorTests.cs', frame_tests, stats_tests, sender_tests,
+                         calibration_tests, acknowledgement_tests]
                 if run(compiler + ['/target:library', '/r:' + str(nunit),
                                    '/out:' + str(build / (platform.replace(',', '-') + '-tests.dll'))] + refs + list(map(str, sources + tests))):
                     return 1

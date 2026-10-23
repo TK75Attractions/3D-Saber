@@ -44,6 +44,76 @@ public class PhoneSaberAcknowledgementTests
         Assert.IsTrue(store.TakeLearnedArea("A", out _));
     }
 
+    [TestCase(false)]
+    [TestCase(true)]
+    public void ExplicitStationBeatsUnspecifiedRegardlessOfArrivalOrder(bool unspecifiedFirst)
+    {
+        var store = new PhoneSaberAcknowledgementStore();
+        store.Queue(1, "learn-area=10", 0);
+        var explicitAck = Ack(1, "learned", "samples300-area0.2_0.1_0.8_0.9", station: "A");
+        var unspecified = Ack(1, "learned", "samples300-area0.4_0.5_0.6_0.7");
+        store.Receive(unspecifiedFirst ? unspecified : explicitAck, unspecifiedFirst ? "phoneNone" : "phoneA");
+        store.Receive(unspecifiedFirst ? explicitAck : unspecified, unspecifiedFirst ? "phoneA" : "phoneNone");
+        Assert.IsTrue(store.TakeLearnedArea("A", out var bounds));
+        Assert.AreEqual(.2f, bounds.xMin);
+        Assert.AreEqual(.9f, bounds.yMax);
+        Assert.IsFalse(store.TakeLearnedArea("A", out _));
+    }
+
+    [TestCase("learning", "10s")]
+    [TestCase("failed", "samples2")]
+    [TestCase("learned", "samples300")]
+    public void ExplicitStationSenderPreventsAnotherPhonesUnspecifiedFallback(string result, string detail)
+    {
+        var store = new PhoneSaberAcknowledgementStore();
+        store.Queue(1, "learn-area=10", 0);
+        store.Receive(Ack(1, result, detail, station: "A"), "phoneA");
+        store.Receive(Ack(1, "learned", "samples300-area0.4_0.5_0.6_0.7"), "phoneNone");
+        Assert.IsFalse(store.TakeLearnedArea("A", out _));
+        store.Receive(Ack(1, "learned", "samples300-area0.2_0.1_0.8_0.9", station: "A"), "phoneA");
+        Assert.IsTrue(store.TakeLearnedArea("A", out var bounds));
+        Assert.AreEqual(.2f, bounds.xMin);
+    }
+
+    [TestCase("A")]
+    [TestCase("B")]
+    public void UnspecifiedOnlyAppliesOnceEvenIfAnotherStationAnswersLater(string station)
+    {
+        var store = new PhoneSaberAcknowledgementStore();
+        store.Queue(1, "learn-area=10", 0);
+        store.Receive(Ack(1, "learned", "samples300-area0.2_0.1_0.8_0.9"), "phoneNone");
+        Assert.IsTrue(store.TakeLearnedArea(station, out var bounds));
+        Assert.AreEqual(.2f, bounds.xMin);
+        string other = station == "A" ? "B" : "A";
+        store.Receive(Ack(1, "learned", "samples300-area0.4_0.5_0.6_0.7", station: station), "phoneExplicit");
+        store.Receive(Ack(1, "learned", "samples300-area0_0_1_1", station: other), "phoneOther");
+        Assert.IsFalse(store.TakeLearnedArea(station, out _));
+        Assert.IsFalse(store.TakeLearnedArea(other, out _));
+    }
+
+    [TestCase("A", "B")]
+    [TestCase("B", "A")]
+    public void OtherStationNeverSuppliesLearnedArea(string pcStation, string phoneStation)
+    {
+        var store = new PhoneSaberAcknowledgementStore();
+        store.Queue(1, "learn-area=10", 0);
+        store.Receive(Ack(1, "learned", "samples300-area0.2_0.1_0.8_0.9", station: phoneStation), "phoneOther");
+        Assert.IsFalse(store.TakeLearnedArea(pcStation, out _));
+        Assert.IsTrue(store.TakeLearnedArea(phoneStation, out _));
+        Assert.IsFalse(store.TakeLearnedArea(pcStation, out _));
+    }
+
+    [Test]
+    public void MultipleUnspecifiedSendersCannotChooseAnArbitraryRectangle()
+    {
+        var store = new PhoneSaberAcknowledgementStore();
+        store.Queue(1, "learn-area=10", 0);
+        store.Receive(Ack(1, "learned", "samples300-area0.2_0.1_0.8_0.9"), "phone1");
+        store.Receive(Ack(1, "learned", "samples300-area0.4_0.5_0.6_0.7"), "phone2");
+        Assert.IsFalse(store.TakeLearnedArea("A", out _));
+        Assert.IsFalse(store.TakeLearnedArea("B", out _));
+    }
+
     [Test]
     public void OnlyLatestLearnCommandCanApplyAndOtherCommandsCannotSupplyBounds()
     {
