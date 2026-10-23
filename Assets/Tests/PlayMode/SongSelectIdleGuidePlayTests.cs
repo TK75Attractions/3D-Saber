@@ -197,6 +197,32 @@ public class SongSelectIdleGuidePlayTests
         guide.Tick(20, true); Assert.False(guide.IsVisible);
         yield return null;
     }
+    [UnityTest] public IEnumerator LongFrameDoesNotCountAsActivityOrStartTheSong()
+    {
+        guide.Tick(.25f, true);
+        Assert.True(guide.IsVisible);
+        Assert.False(guide.Completed);
+        GameSession.SongSelectOperated = false;
+        var point = controller.startButton.GetComponent<SongSelectDiscTarget>().ScreenRect().center;
+
+        // 無効なフレームの時間を、次の案内解除のためへ持ち越さない。
+        aim.TickAt(point, .3f);
+        aim.TickAt(point, .11f);
+        Assert.False(guide.Completed);
+        Assert.True(guide.IsVisible);
+        Assert.False(GameSession.SongSelectOperated);
+        Assert.Zero(aim.Progress01);
+        Assert.Zero(aim.ShotCount);
+        aim.TickAt(new Vector2(1, 1), .1f);
+
+        // 操作していない回の時間切れでは、曲を始めずタイトルへ戻る。
+        Object.FindFirstObjectByType<SongSelectSkin>().TickCountdown(101);
+        Assert.False(controller.StartAccepted);
+        Assert.True(ScreenTransition.IsBusy);
+        yield return ScreenTransitionPlayTests.WaitForTransition();
+        Assert.AreEqual("Title", SceneManager.GetActiveScene().name);
+    }
+
     [UnityTest] public IEnumerator GuideDismissalDoesNotCountTowardTheStartHold()
     {
         var point = controller.startButton.GetComponent<SongSelectDiscTarget>().ScreenRect().center;

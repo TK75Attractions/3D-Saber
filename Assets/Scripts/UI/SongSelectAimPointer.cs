@@ -194,7 +194,9 @@ public sealed class SongSelectAimPointer : MonoBehaviour
             if (!ReferenceEquals(guideTarget, next.key) || !ready || tracker.NeedsRelease || !validDt) guideHeld = 0;
             guideTarget = next.key;
         }
-        if (guideBlocksStart && ready && !tracker.NeedsRelease)
+        // 長すぎる・おかしなフレームの時間は数えない(上の数え直しと同じ。2026-10-23 点検: 0.3 秒の1フレームで案内が閉じ、
+        // 操作していない回の時間切れでタイトルへ戻らず曲が始まった)。
+        if (guideBlocksStart && ready && !tracker.NeedsRelease && validDt)
         {
             guideHeld += dt;
             if (guideHeld >= SongSelectIdleState.AimActivitySeconds) idleGuide.RegisterActivity();
