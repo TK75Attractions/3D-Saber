@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import io
 import json
 import struct
 import sys
@@ -18,7 +19,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import phone_saber_clip_report as report  # noqa: E402
 import phone_saber_triage_protocol as protocol  # noqa: E402
-from phone_saber_triage_receiver import TriageHTTPServer  # noqa: E402
+from phone_saber_triage_receiver import TriageHTTPServer, TriageRequestHandler  # noqa: E402
 from phone_saber_test_isolation import isolate_codex_logs as setUpModule  # noqa: F401,E402
 from phone_saber_test_isolation import restore_codex_logs as tearDownModule  # noqa: F401,E402
 
@@ -271,6 +272,30 @@ class ClipReportTests(unittest.TestCase):
 
 
 class ReceiverRoutingTests(unittest.TestCase):
+    def test_manual_clip_receipt_precedes_report_and_duplicate_is_acknowledged(self) -> None:
+        # socketを使わず実受信処理を検証。レポートや解析待ちをiPhoneへ伝播させない。
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            bundle = make_clip(root / "phone", "autoclip_manual", kind="manual")
+            package = root / "manual.psbt"
+            protocol.pack_bundle(bundle, package)
+            events = []
+            server = mock.Mock(inbox=root / "inbox")
+            server.write_clip_report.side_effect = lambda path: events.append("report")
+            handler = object.__new__(TriageRequestHandler)
+            handler.server = server
+            handler.client_address = ("127.0.0.1", 12345)
+            handler._reply = lambda status, payload: events.append((status, payload))
+            for _ in range(2):
+                handler.rfile = io.BytesIO(package.read_bytes())
+                handler._receive(package.stat().st_size)
+            self.assertEqual(events[0][0], 201)
+            self.assertEqual(events[1], "report")
+            self.assertEqual(events[2], (200, {"status": "duplicate", "sessionID": "autoclip_manual"}))
+            self.assertTrue((root / "inbox/autoclips" / bundle.name / "summary.json").is_file())
+            server.enqueue_analysis.assert_not_called()
+            server.write_clip_report.assert_called_once()
+
     def test_auto_clip_is_stored_in_autoclips_reported_and_not_analysed(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

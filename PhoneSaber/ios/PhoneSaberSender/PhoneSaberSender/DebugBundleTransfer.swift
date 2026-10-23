@@ -42,6 +42,7 @@ private enum DebugBundleTransferError: LocalizedError {
 
 // Persist relative paths: iOS may move the Documents container after relaunch.
 struct DebugBundleOutbox: Codable {
+    static let maximumAttempts = 6
     enum State: String, Codable { case pending, uploading, received, failed }
     struct Entry: Codable, Equatable {
         let sessionID: String
@@ -57,7 +58,10 @@ struct DebugBundleOutbox: Codable {
         /// an upload never competes with gameplay traffic. nil in older outboxes.
         var deferDuringPlay: Bool? = nil
 
+        // 旧outboxでも手動優先度を読み込めるようoptionalで追加する。
+        var manualClip: Bool? = nil
         var isPending: Bool { state != .received }
+        var canRetry: Bool { isPending && attempts < DebugBundleOutbox.maximumAttempts }
         func bundleURL(in directory: URL) -> URL {
             bundlePath.hasPrefix("/") ? URL(fileURLWithPath: bundlePath) : directory.appendingPathComponent(bundlePath)
         }
@@ -70,7 +74,9 @@ struct DebugBundleOutbox: Codable {
                     DateFormatter.localizedString(from: $0, dateStyle: .short, timeStyle: .medium)
                 } ?? ""
                 return "Mac 受信済み（\(time)）"
-            case .failed: return "転送失敗（\(reason ?? "不明")）— 自動で再試行します"
+            case .failed:
+                return "転送失敗（\(reason ?? "不明")）— "
+                    + (canRetry ? "自動で再試行します" : "再試行上限・端末に保存済み（手動再送可）")
             }
         }
     }
@@ -81,10 +87,16 @@ struct DebugBundleOutbox: Codable {
     var latest: Entry? { entries.max { $0.createdAt < $1.createdAt } }
 
     mutating func register(sessionID: String, bundlePath: String, now: Date, automatic: Bool = true,
-                           deferDuringPlay: Bool = false) {
-        guard now > prunedBefore, !entries.contains(where: { $0.sessionID == sessionID }) else { return }
+                           deferDuringPlay: Bool = false, manualClip: Bool = false) {
+        if let index = entries.firstIndex(where: { $0.sessionID == sessionID }) {
+            // 再起動時は保存済みsummaryで旧エントリーの優先度・プレイ中抑止も復元する。
+            if deferDuringPlay { entries[index].deferDuringPlay = true }
+            if manualClip { entries[index].manualClip = true }
+            return
+        }
+        guard now > prunedBefore else { return }
         entries.append(Entry(sessionID: sessionID, bundlePath: bundlePath, createdAt: now, automatic: automatic,
-                             deferDuringPlay: deferDuringPlay ? true : nil))
+                             deferDuringPlay: deferDuringPlay ? true : nil, manualClip: manualClip ? true : nil))
     }
 
     mutating func recover(exists: (String) -> Bool) -> [String] {
@@ -97,14 +109,34 @@ struct DebugBundleOutbox: Codable {
         return missing
     }
 
+    // 手動を先頭にし、各種別では保存順を守る。古い自動clipのbackoff中も追い越さない。
+    private func candidates(automatic: Bool, manualIDs: Set<String>, liveTraffic: Bool) -> [Int] {
+        entries.indices.filter {
+            entries[$0].canRetry && !(liveTraffic && entries[$0].deferDuringPlay == true)
+                && ((automatic && entries[$0].automatic) || manualIDs.contains(entries[$0].sessionID))
+        }.sorted {
+            let left = entries[$0], right = entries[$1]
+            if (left.manualClip == true) != (right.manualClip == true) { return left.manualClip == true }
+            if left.createdAt != right.createdAt { return left.createdAt < right.createdAt }
+            return left.sessionID < right.sessionID
+        }
+    }
+
+    func nextAttemptDate(automatic: Bool, manualIDs: Set<String> = [], liveTraffic: Bool = false) -> Date? {
+        let ordered = candidates(automatic: automatic, manualIDs: manualIDs, liveTraffic: liveTraffic)
+        let manual = ordered.filter { entries[$0].manualClip == true }
+        let automaticHead = ordered.first { entries[$0].manualClip != true }
+        return (manual + (automaticHead.map { [$0] } ?? [])).map { entries[$0].nextAttemptAt }.min()
+    }
+
     mutating func beginNext(now: Date, recording: Bool, automatic: Bool,
                             manualIDs: Set<String> = [], liveTraffic: Bool = false) -> Entry? {
-        guard !recording, !entries.contains(where: { $0.state == .uploading }),
-              let index = entries.indices.first(where: {
-                  entries[$0].isPending && entries[$0].nextAttemptAt <= now
-                      && !(liveTraffic && entries[$0].deferDuringPlay == true)
-                      && ((automatic && entries[$0].automatic) || manualIDs.contains(entries[$0].sessionID))
-              }) else { return nil }
+        guard !recording, !entries.contains(where: { $0.state == .uploading }) else { return nil }
+        let ordered = candidates(automatic: automatic, manualIDs: manualIDs, liveTraffic: liveTraffic)
+        // backoff中の手動clipが、新しい手動指示を待たせない。
+        let readyManual = ordered.first { entries[$0].manualClip == true && entries[$0].nextAttemptAt <= now }
+        guard let index = readyManual ?? ordered.first(where: { entries[$0].manualClip != true }),
+              entries[index].nextAttemptAt <= now else { return nil }
         entries[index].state = .uploading
         entries[index].reason = nil
         return entries[index]
@@ -116,9 +148,9 @@ struct DebugBundleOutbox: Codable {
         entries[index].reason = reason
         entries[index].state = reason == nil ? .received : .failed
         entries[index].receivedAt = reason == nil ? now : nil
-        // A failed batch remains pending, with 30 s -> 60 s -> ... -> 15 min backoff.
-        let batches = max(0, (entries[index].attempts - 1) / 3)
-        entries[index].nextAttemptAt = now.addingTimeInterval(min(900, 30 * pow(2, Double(min(5, batches)))))
+        // 1回失敗ごとにキューへ戻す。30/60/120/240/480秒、計6回で自動再試行を止める。
+        let failures = max(0, entries[index].attempts - 1)
+        entries[index].nextAttemptAt = now.addingTimeInterval(min(900, 30 * pow(2, Double(min(5, failures)))))
         prune()
     }
 
@@ -130,6 +162,7 @@ struct DebugBundleOutbox: Codable {
     mutating func retryNow() -> Set<String> {
         let ids = Set(entries.filter(\.isPending).map(\.sessionID))
         for index in entries.indices where entries[index].isPending {
+            entries[index].attempts = 0
             entries[index].nextAttemptAt = .distantPast
             entries[index].automatic = true
         }
@@ -264,7 +297,6 @@ final class DebugBundleTransfer: NSObject {
     private static let maximumImages = 20
     private static let maximumFiles = 43
     private static let maximumBytes: Int64 = 64 * 1024 * 1024
-    private static let maximumAttempts = 3
 
     private let workQueue = DispatchQueue(label: "PhoneSaberSender.debug-bundle-transfer",
                                           qos: .utility)
@@ -329,14 +361,20 @@ final class DebugBundleTransfer: NSObject {
         // Scan only on launch, when no builder can still be writing a bundle.
         // Recover files finalized before the app died between creation and registration.
         if scan {
-            for url in (try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)) ?? [] {
+            let roots = [directory, directory.appendingPathComponent("AutoClips")]
+            let bundles = roots.flatMap {
+                (try? FileManager.default.contentsOfDirectory(at: $0, includingPropertiesForKeys: nil)) ?? []
+            }
+            for url in bundles {
                 guard url.lastPathComponent.hasPrefix("phone_saber_triage_"), bundleFilesExist(at: url),
                       let data = try? Data(contentsOf: url.appendingPathComponent("summary.json")),
                       let summary = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                       let id = summary["sessionID"] as? String else { continue }
                 let created = (try? url.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? Date()
-                outbox.register(sessionID: id, bundlePath: url.lastPathComponent, now: created,
-                                automatic: DebugRecordingLimits.shouldAutoTransfer(recordedFrames: summary["recordedFrameCount"] as? Int ?? 0))
+                let clip = summary["autoClip"] as? [String: Any]
+                outbox.register(sessionID: id, bundlePath: Self.storedPath(for: url, in: directory), now: created,
+                                automatic: clip != nil || DebugRecordingLimits.shouldAutoTransfer(recordedFrames: summary["recordedFrameCount"] as? Int ?? 0),
+                                deferDuringPlay: clip != nil, manualClip: Self.isManualClip(summary))
             }
         }
         persist()
@@ -364,13 +402,17 @@ final class DebugBundleTransfer: NSObject {
         } else if !active { startNextBundleIfNeeded() }
     }
 
-    /// True while the phone is sending coordinates (a saber was sent recently).
-    /// Deferred entries (auto clips) wait; an upload already running continues.
+    /// 座標送信中はclipを待機させ、開始済みの転送も中断して端末に保持する。
     func setLiveTrafficActive(_ active: Bool) {
         precondition(Thread.isMainThread)
         guard active != liveTrafficActive else { return }
         liveTrafficActive = active
-        if !active { startNextBundleIfNeeded() }
+        if active, let id = activeSessionID,
+           outbox.entries.first(where: { $0.sessionID == id })?.deferDuringPlay == true {
+            outbox.pause(sessionID: id)
+            persist()
+            finishCurrentBundle()
+        } else if !active { startNextBundleIfNeeded() }
     }
 
     func retryPending(immediately: Bool = false) {
@@ -388,6 +430,11 @@ final class DebugBundleTransfer: NSObject {
         return UserDefaults.standard.object(forKey: preferenceKey) as? Bool ?? true
     }
 
+    static func isManualClip(_ summary: [String: Any]) -> Bool {
+        let clip = summary["autoClip"] as? [String: Any]
+        return (clip?["trigger"] as? [String: Any])?["kind"] as? String == "manual"
+    }
+
     func enqueue(bundleURL: URL, automatic: Bool = true, deferDuringPlay: Bool = false) {
         DispatchQueue.main.async { [weak self] in
             guard let self,
@@ -395,9 +442,18 @@ final class DebugBundleTransfer: NSObject {
                   let summary = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                   let id = summary["sessionID"] as? String else { return }
             self.outbox.register(sessionID: id, bundlePath: Self.storedPath(for: bundleURL, in: self.directory),
-                                 now: Date(), automatic: automatic, deferDuringPlay: deferDuringPlay)
+                                 now: Date(), automatic: automatic,
+                                 deferDuringPlay: deferDuringPlay || summary["autoClip"] != nil,
+                                 manualClip: Self.isManualClip(summary))
             self.persist()
-            self.startNextBundleIfNeeded()
+            // 新しい手動clipは古い自動clipの通信タイムアウトを待たない。
+            if Self.isManualClip(summary), let activeID = self.activeSessionID,
+               let active = self.outbox.entries.first(where: { $0.sessionID == activeID }),
+               active.deferDuringPlay == true, active.manualClip != true {
+                self.outbox.pause(sessionID: activeID)
+                self.persist()
+                self.finishCurrentBundle()
+            } else { self.startNextBundleIfNeeded() }
         }
     }
 
@@ -409,10 +465,8 @@ final class DebugBundleTransfer: NSObject {
         guard let entry = outbox.beginNext(now: Date(), recording: recordingActive,
                                           automatic: Self.automaticTransferEnabled, manualIDs: manualIDs,
                                           liveTraffic: liveTrafficActive) else {
-            if Self.automaticTransferEnabled,
-               let next = outbox.entries.filter({
-                   $0.isPending && $0.automatic && !(liveTrafficActive && $0.deferDuringPlay == true)
-               }).map(\.nextAttemptAt).min() {
+            if let next = outbox.nextAttemptDate(automatic: Self.automaticTransferEnabled,
+                                                  manualIDs: manualIDs, liveTraffic: liveTrafficActive) {
                 let wake = DispatchWorkItem { [weak self] in self?.retryPending() }
                 retryWake = wake
                 DispatchQueue.main.asyncAfter(deadline: .now() + max(1, next.timeIntervalSinceNow), execute: wake)
@@ -429,17 +483,19 @@ final class DebugBundleTransfer: NSObject {
         workQueue.async { [weak self] in
             do {
                 let packageURL = try Self.makePackage(for: activeBundleURL)
-                DispatchQueue.main.async {
+                // 次のpackagingを始める前に旧世代の一時ファイルを片付ける。
+                // workQueueは直列なので、同じclipの再開と固定package名が競合しない。
+                DispatchQueue.main.sync {
                     guard let self, self.generation == token, self.activeBundleURL == activeBundleURL else {
                         try? FileManager.default.removeItem(at: packageURL)
                         return
                     }
                     self.activePackageURL = packageURL
-                    if self.recordingActive {
+                    if self.recordingActive || (self.liveTrafficActive && entry.deferDuringPlay == true) {
                         self.outbox.pause(sessionID: entry.sessionID)
                         self.persist()
                         self.finishCurrentBundle()
-                    } else { self.startAttempt(1) }
+                    } else { self.startAttempt() }
                 }
             } catch {
                 print("[DebugTriageTransfer] package failed; local bundle preserved: \(error.localizedDescription)")
@@ -452,13 +508,13 @@ final class DebugBundleTransfer: NSObject {
         }
     }
 
-    private func startAttempt(_ number: Int) {
+    private func startAttempt() {
         precondition(Thread.isMainThread)
         guard activeBundleURL != nil, activePackageURL != nil else {
             finishCurrentBundle()
             return
         }
-        attempt = number
+        attempt = 1
         let diagnostics = DiagnosticsDestination.shared
         diagnostics.startDiscovery()
         if !diagnostics.manualHost.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || diagnostics.discoveredURL != nil {
@@ -531,21 +587,10 @@ final class DebugBundleTransfer: NSObject {
     private func retryCurrentBundle(after error: Error) {
         precondition(Thread.isMainThread)
         stopDiscovery()
-        guard attempt < Self.maximumAttempts else {
-            print("[DebugTriageTransfer] stopped after \(attempt) attempts; local bundle preserved: \(error.localizedDescription)")
-            recordOutcome(reason: error.localizedDescription)
-            finishCurrentBundle()
-            return
-        }
-        let nextAttempt = attempt + 1
-        phase = .finished
-        let delay = Double(attempt)
-        print("[DebugTriageTransfer] retry \(nextAttempt)/\(Self.maximumAttempts): \(error.localizedDescription)")
-        let token = generation
-        DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
-            guard let self, self.generation == token, self.activeBundleURL != nil else { return }
-            self.startAttempt(nextAttempt)
-        }
+        // 再試行はoutboxが期限と総回数を管理し、待機中は手動clipへ送信権を譲る。
+        print("[DebugTriageTransfer] attempt failed; local bundle preserved: \(error.localizedDescription)")
+        recordOutcome(reason: error.localizedDescription)
+        finishCurrentBundle()
     }
 
     private func stopDiscovery() {
@@ -559,7 +604,7 @@ final class DebugBundleTransfer: NSObject {
     private func recordOutcome(reason: String?) {
         guard let id = activeSessionID else { return }
         // 録画による一時停止では手動送信の要求を消費しない。
-        manualIDs.remove(id)
+        if reason == nil { manualIDs.remove(id) }
         outbox.finish(sessionID: id, now: Date(), reason: reason, attempts: max(1, attempt))
         persist()
     }

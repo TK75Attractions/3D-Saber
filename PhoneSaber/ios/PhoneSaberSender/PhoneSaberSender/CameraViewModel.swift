@@ -1161,7 +1161,10 @@ final class CameraViewModel: NSObject, ObservableObject {
         sessionObserverTokens.append(NotificationCenter.default.addObserver(
             forName: DebugBundleTransfer.didChange, object: nil, queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in self?.refreshDebugTransferStatus() }
+            Task { @MainActor in
+                self?.refreshDebugTransferStatus()
+                self?.refreshAutoClipStatus()
+            }
         })
         sessionObserverTokens.append(NotificationCenter.default.addObserver(
             forName: UIApplication.didBecomeActiveNotification, object: nil, queue: .main
@@ -1811,6 +1814,11 @@ final class CameraViewModel: NSObject, ObservableObject {
         } else {
             line = "自動クリップ: ON（この送信で \(status.savedThisSession) 件保存）"
         }
+        let outbox = DebugBundleTransfer.shared.outbox
+        let clips = outbox.entries.filter { $0.deferDuringPlay == true && $0.isPending }
+        line += " / Mac転送待ち \(clips.count) 件"
+        let stopped = clips.filter { !$0.canRetry }.count
+        if stopped > 0 { line += "（再試行上限 \(stopped) 件・手動再送可）" }
         if let error = status.lastError { line += " / 保存失敗: \(error)" }
         assignIfChanged(\.autoClipStatusLine, line)
     }

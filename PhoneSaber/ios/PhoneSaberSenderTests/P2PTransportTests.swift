@@ -60,22 +60,69 @@ final class DebugBundleOutboxTests: XCTestCase {
     func testFailureStaysPendingWithBackoffAndManualRetry() {
         var outbox = DebugBundleOutbox()
         outbox.register(sessionID: "one", bundlePath: "bundle-one", now: now)
-        XCTAssertEqual(outbox.beginNext(now: now, recording: false, automatic: true)?.state, .uploading)
-        XCTAssertNil(outbox.beginNext(now: now, recording: false, automatic: true), "one upload at a time")
-        outbox.finish(sessionID: "one", now: now, reason: "offline", attempts: 3)
-        XCTAssertEqual(outbox.pendingCount, 1)
-        XCTAssertEqual(outbox.latest?.state, .failed)
-        XCTAssertEqual(outbox.latest?.attempts, 3)
-        XCTAssertTrue(outbox.latest?.statusText.contains("自動で再試行") == true)
-        XCTAssertNil(outbox.beginNext(now: now.addingTimeInterval(29), recording: false, automatic: true))
-        XCTAssertEqual(outbox.beginNext(now: now.addingTimeInterval(30), recording: false, automatic: true)?.sessionID, "one")
-        outbox.finish(sessionID: "one", now: now, reason: "offline", attempts: 3)
-        XCTAssertEqual(outbox.latest?.nextAttemptAt, now.addingTimeInterval(60))
-        for _ in 0..<8 { outbox.finish(sessionID: "one", now: now, reason: "offline", attempts: 3) }
-        XCTAssertEqual(outbox.latest?.nextAttemptAt, now.addingTimeInterval(900))
+        var time = now
+        for attempt in 1...DebugBundleOutbox.maximumAttempts {
+            XCTAssertEqual(outbox.beginNext(now: time, recording: false, automatic: true)?.state, .uploading)
+            XCTAssertNil(outbox.beginNext(now: time, recording: false, automatic: true), "one upload at a time")
+            outbox.finish(sessionID: "one", now: time, reason: "offline", attempts: 1)
+            XCTAssertEqual(outbox.pendingCount, 1, "失敗しても端末に残す")
+            XCTAssertEqual(outbox.latest?.attempts, attempt)
+            let delay = min(900, 30 * pow(2, Double(attempt - 1)))
+            XCTAssertEqual(outbox.latest?.nextAttemptAt, time.addingTimeInterval(delay))
+            XCTAssertNil(outbox.beginNext(now: time.addingTimeInterval(delay - 1), recording: false, automatic: true))
+            time = time.addingTimeInterval(delay)
+        }
+        XCTAssertNil(outbox.beginNext(now: time.addingTimeInterval(10000), recording: false, automatic: true))
+        XCTAssertNil(outbox.nextAttemptDate(automatic: true), "上限到達後はwakeも予約しない")
+        XCTAssertTrue(outbox.latest?.statusText.contains("再試行上限") == true)
         let manual = outbox.retryNow()
         XCTAssertEqual(manual, ["one"])
-        XCTAssertEqual(outbox.beginNext(now: now, recording: false, automatic: false, manualIDs: manual)?.sessionID, "one")
+        XCTAssertEqual(outbox.latest?.attempts, 0)
+        XCTAssertEqual(outbox.beginNext(now: time, recording: false, automatic: false, manualIDs: manual)?.sessionID, "one")
+    }
+
+    func testManualClipOvertakesBacklogAndAutomaticClipsRemainFIFO() {
+        var outbox = DebugBundleOutbox()
+        // 再起動スキャンの列挙順でもFIFOを崩さない。
+        outbox.register(sessionID: "auto-2", bundlePath: "2", now: now.addingTimeInterval(1), deferDuringPlay: true)
+        outbox.register(sessionID: "auto-1", bundlePath: "1", now: now, deferDuringPlay: true)
+        outbox.register(sessionID: "manual", bundlePath: "m", now: now.addingTimeInterval(100),
+                        deferDuringPlay: true, manualClip: true)
+        XCTAssertEqual(outbox.pendingCount, 3)
+        XCTAssertNil(outbox.beginNext(now: now, recording: false, automatic: true, liveTraffic: true))
+        XCTAssertNil(outbox.beginNext(now: now, recording: true, automatic: true))
+        XCTAssertEqual(outbox.beginNext(now: now, recording: false, automatic: true)?.sessionID, "manual")
+        outbox.finish(sessionID: "manual", now: now, reason: nil, attempts: 1)
+        XCTAssertEqual(outbox.beginNext(now: now, recording: false, automatic: true)?.sessionID, "auto-1")
+        outbox.finish(sessionID: "auto-1", now: now, reason: "offline", attempts: 1)
+        XCTAssertNil(outbox.beginNext(now: now, recording: false, automatic: true), "backoff中も自動clipを追い越さない")
+        XCTAssertEqual(outbox.nextAttemptDate(automatic: true), now.addingTimeInterval(30))
+        outbox.register(sessionID: "manual-2", bundlePath: "m2", now: now.addingTimeInterval(200),
+                        deferDuringPlay: true, manualClip: true)
+        XCTAssertEqual(outbox.beginNext(now: now, recording: false, automatic: true)?.sessionID, "manual-2")
+        outbox.finish(sessionID: "manual-2", now: now, reason: nil, attempts: 1)
+        XCTAssertEqual(outbox.beginNext(now: now.addingTimeInterval(30), recording: false, automatic: true)?.sessionID, "auto-1")
+        outbox.finish(sessionID: "auto-1", now: now, reason: nil, attempts: 1)
+        XCTAssertEqual(outbox.beginNext(now: now, recording: false, automatic: true)?.sessionID, "auto-2")
+    }
+
+    func testNewManualClipDoesNotWaitForOlderManualBackoff() {
+        var outbox = DebugBundleOutbox()
+        outbox.register(sessionID: "old", bundlePath: "old", now: now, manualClip: true)
+        outbox.finish(sessionID: "old", now: now, reason: "offline", attempts: 1)
+        outbox.register(sessionID: "new", bundlePath: "new", now: now.addingTimeInterval(1), manualClip: true)
+        XCTAssertEqual(outbox.beginNext(now: now, recording: false, automatic: true)?.sessionID, "new")
+        outbox.finish(sessionID: "new", now: now, reason: nil, attempts: 1)
+        XCTAssertEqual(outbox.nextAttemptDate(automatic: true), now.addingTimeInterval(30))
+    }
+
+    func testExhaustedAutomaticClipDoesNotBlockTheNextClip() {
+        var outbox = DebugBundleOutbox()
+        outbox.register(sessionID: "one", bundlePath: "one", now: now)
+        outbox.register(sessionID: "two", bundlePath: "two", now: now.addingTimeInterval(1))
+        outbox.finish(sessionID: "one", now: now, reason: "too large", attempts: DebugBundleOutbox.maximumAttempts)
+        XCTAssertEqual(outbox.beginNext(now: now, recording: false, automatic: true)?.sessionID, "two")
+        XCTAssertEqual(outbox.pendingCount, 2)
     }
 
     func testRecordingBlocksUploadsAndPauseRetainsTheBundle() {
@@ -114,12 +161,12 @@ final class DebugBundleOutboxTests: XCTestCase {
         XCTAssertEqual(relaunched.latest?.bundleURL(in: directory), directory.appendingPathComponent("bundle-one"))
         XCTAssertEqual(relaunched.latest?.state, .pending)
         XCTAssertEqual(relaunched.beginNext(now: now, recording: false, automatic: true)?.sessionID, "one")
-        relaunched.finish(sessionID: "one", now: now, reason: "offline", attempts: 3)
+        relaunched.finish(sessionID: "one", now: now, reason: "offline", attempts: 1)
         try relaunched.save(to: url)
         let failed = try DebugBundleOutbox.load(from: url)
         XCTAssertEqual(failed.latest?.reason, "offline")
         XCTAssertEqual(failed.latest?.nextAttemptAt, now.addingTimeInterval(30))
-        XCTAssertEqual(failed.latest?.attempts, 3)
+        XCTAssertEqual(failed.latest?.attempts, 1)
     }
 
     func testReceivedPruningKeepsTwentyAndDoesNotRediscoverPrunedBundles() throws {
@@ -151,6 +198,68 @@ final class DebugBundleOutboxTests: XCTestCase {
         XCTAssertFalse(DebugBundleReceipt.accepts(status: 409, body: body, sessionID: "one"))
         XCTAssertTrue(DebugBundleReceipt.accepts(status: 201, body: Data(#"{"accepted":true}"#.utf8), sessionID: "one"),
                       "old receivers still work")
+    }
+
+    func testRelaunchRestoresLegacyManualClipPriorityAndScansAutoClips() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        func bundle(_ id: String, kind: String) throws -> URL {
+            let url = directory.appendingPathComponent("AutoClips/phone_saber_triage_" + id)
+            try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+            let summary: [String: Any] = ["sessionID": id, "images": [],
+                "autoClip": ["trigger": ["kind": kind]]]
+            try JSONSerialization.data(withJSONObject: summary).write(to: url.appendingPathComponent("summary.json"))
+            try Data("test".utf8).write(to: url.appendingPathComponent("prompt.md"))
+            return url
+        }
+        _ = try bundle("automatic", kind: "jump")
+        let manual = try bundle("manual", kind: "manual")
+        // 新しいoptionalフィールドを持たない、旧版の永続化データ。
+        var old = DebugBundleOutbox()
+        old.register(sessionID: "manual", bundlePath: DebugBundleTransfer.storedPath(for: manual, in: directory), now: now)
+        let encoded = try JSONEncoder().encode(old)
+        XCTAssertFalse(String(decoding: encoded, as: UTF8.self).contains("manualClip"))
+        try encoded.write(to: directory.appendingPathComponent("debug-bundle-outbox.json"))
+        let transfer = DebugBundleTransfer(directoryForTesting: directory)
+        var recovered = transfer.outbox
+        XCTAssertEqual(recovered.pendingCount, 2)
+        XCTAssertTrue(recovered.entries.allSatisfy { $0.deferDuringPlay == true })
+        XCTAssertEqual(recovered.beginNext(now: Date(), recording: false, automatic: true)?.sessionID, "manual")
+        XCTAssertEqual(recovered.entries.first { $0.sessionID == "manual" }?.manualClip, true)
+        let saved = try DebugBundleOutbox.load(from: directory.appendingPathComponent("debug-bundle-outbox.json"))
+        XCTAssertEqual(saved.entries, transfer.outbox.entries)
+    }
+
+    @MainActor
+    func testLiveTrafficPausesManualClipDuringPackagingWithoutNetworkIO() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let bundle = directory.appendingPathComponent("AutoClips/phone_saber_triage_manual")
+        try FileManager.default.createDirectory(at: bundle, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        try Data(#"{"sessionID":"manual","selectedImageCount":0,"images":[],"autoClip":{"trigger":{"kind":"manual"}}}"#.utf8)
+            .write(to: bundle.appendingPathComponent("summary.json"))
+        try Data("test".utf8).write(to: bundle.appendingPathComponent("prompt.md"))
+        let transfer = DebugBundleTransfer(directoryForTesting: directory)
+        let paused = expectation(description: "play resumes during packaging")
+        var started = false
+        let observer = NotificationCenter.default.addObserver(
+            forName: DebugBundleTransfer.didChange, object: transfer, queue: .main
+        ) { _ in
+            // recordingテストと同様、packaging前に差し込む。通信・Bonjourは行わない。
+            if transfer.outbox.latest?.state == .uploading {
+                started = true
+                transfer.setLiveTrafficActive(true)
+            } else if started && transfer.outbox.latest?.state == .pending {
+                started = false
+                paused.fulfill()
+            }
+        }
+        defer { NotificationCenter.default.removeObserver(observer) }
+        transfer.retryPending(immediately: true)
+        wait(for: [paused], timeout: 5)
+        XCTAssertEqual(transfer.outbox.latest?.state, .pending)
+        XCTAssertEqual(transfer.outbox.latest?.attempts, 0)
+        XCTAssertEqual(transfer.outbox.pendingCount, 1)
     }
 
     @MainActor
