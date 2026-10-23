@@ -52,6 +52,18 @@ public class PhoneSaberUIFocusTests
         typeof(InputPoint).GetProperty("Instance").SetValue(null, input);
     }
 
+    // 選曲・判定調整の残り時間も照準と同じ決まり。iPhone の座標が届いていればウィンドウが裏でも進み、
+    // 届いていなければ裏にある間は止まる(10/23 点検: 照準だけ動いて時計が止まり、時間切れが来なかった)。
+    [TestCase(false, false, true, true)]
+    [TestCase(false, false, false, false)]
+    [TestCase(true, false, false, true)]
+    [TestCase(false, true, false, true)]
+    public void SelectionClockRunsWheneverVisitorsCanAim(bool focused, bool batchMode, bool phoneInput, bool runs)
+    {
+        Assert.AreEqual(runs, SongSelectSkin.VisitorInputLive(focused, batchMode, phoneInput));
+        Assert.AreEqual(PhoneSaberUIFocus.AllowsInput(phoneInput, focused, batchMode), runs, "照準と同じ決まり");
+    }
+
     [TestCase(true, true)]
     [TestCase(true, false)]
     [TestCase(false, true)]

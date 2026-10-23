@@ -120,6 +120,19 @@ public class SongSelectSkin : MonoBehaviour
     public static string StartHint(int second, bool operated) => second > 0 && second <= 10
         ? "あと " + second + (operated ? "秒で この曲が はじまるよ" : "秒で タイトルへ もどるよ")
         : "中央の曲に２秒かざすと スタート";
+
+    // 残り時間を進めて刻みを鳴らすか(選曲と判定調整)。照準と同じく、iPhone の座標が届いている間はウィンドウが裏でも進める
+    // (8882f18 から来場者は裏でも照準で操作できる。時計だけ止まって時間切れが来なかった。2026-10-23 点検)。
+    // 座標が来ていなければ、今までどおりウィンドウが裏にある間は止める(スタッフが別の窓で作業中)。
+    public static bool VisitorInputLive(bool focused, bool batchMode, bool phoneInput) =>
+        PhoneSaberUIFocus.AllowsInput(phoneInput, focused, batchMode);
+    public static bool VisitorInputLive()
+    {
+        var input = InputPoint.Instance;
+        bool phone = input != null && (input.IsRecentlyActive(SongSelectAimPointer.SaberActiveSeconds)
+            || input.IsRecentlyActive2(SongSelectAimPointer.SaberActiveSeconds));
+        return VisitorInputLive(Application.isFocused, Application.isBatchMode, phone);
+    }
     public static string FormatHighScore(HighScoreTable table) => table != null && table.entries != null && table.entries.Count > 0
         ? table.entries[0].score.ToString("N0") + "<size=24>点</size>" : "—";
     public static void ApplyNeon(Button button, Color accent, float fillAlpha) => UISkinKit.RestyleButton(button, accent);
@@ -494,7 +507,7 @@ public class SongSelectSkin : MonoBehaviour
         bool operated = GameSession.SongSelectOperated;
         startHint.text = StartHint(displayedSecond, operated);
         startHint.color = urgent ? Gold : White;
-        bool audible = !ScreenTransition.IsBusy && (Application.isFocused || Application.isBatchMode);
+        bool audible = !ScreenTransition.IsBusy && VisitorInputLive();
         if (urgent && lastBeepSecond != displayedSecond && audible)
         {
             lastBeepSecond = displayedSecond;
@@ -524,7 +537,7 @@ public class SongSelectSkin : MonoBehaviour
     {
         if (!built) return;
         if (!countdown.Tick(deltaSeconds, !ScreenTransition.IsBusy && !ctl.RushESecret.Transitioning
-            && (Application.isFocused || Application.isBatchMode))) return;
+            && VisitorInputLive())) return;
         if (GameSession.SongSelectOperated) ctl.StartGame();
         if (!ctl.StartAccepted && !ScreenTransition.IsBusy) ctl.ReturnToTitle();
     }

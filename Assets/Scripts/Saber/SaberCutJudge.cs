@@ -560,25 +560,47 @@ public class SaberCutJudge : MonoBehaviour
     // 矢印と比べる動き(曲時計があるとき)。刃の中心が起点から動いた向き(構えの振りを拾わない)と、
     // 刃がノーツを通り過ぎたときの動き(切った向きと同じ向きに通り過ぎたもの)のうち、矢印の向きに近いほう。
     // 2026-10-22 ユーザー: 横から入って斜め上へ切り上げると、起点からの動きは横寄りになり、上向きの矢印が切れなかった。
-    Vector2 CutDirectionFor(CuttableNote note, Pending p, Vector2 motion)
+    Vector2 CutDirectionFor(CuttableNote note, Pending p, Vector2 motion) =>
+        JudgedCutDirection(CutDirectionHelper.ToVector(note.RequiredDirection), motion,
+            p.crossSongTime, p.crossDirection, p.previousCrossSongTime, p.previousCrossDirection,
+            ReceivingCamera ? verticalDirectionScale : 1f);
+
+    // 通り過ぎたときの1コマの動きで救うのは、その動きが全体の動き(起点から)から 60° 以内で、
+    // 全体の動きが矢印から 100° 以内のときだけ(2026-10-23 点検: 1コマのぶれに縦の補正が掛かり、
+    // 斜めの矢印を真逆の振りが切れる組み合わせがあった)。「横から入って斜め上」(全体から 15〜50°)はこの範囲に入る。
+    public const float CrossingMaxTurnDegrees = 60f, CrossingRescueDegrees = 100f;
+
+    // 矢印と比べる動きを選ぶ(純関数)。motion・crossing は画面の動き、verticalScale はカメラのときの縦の補正。
+    public static Vector2 JudgedCutDirection(Vector2 arrow, Vector2 motion, double crossTime, Vector2 crossDirection,
+        double previousCrossTime, Vector2 previousCrossDirection, float verticalScale)
     {
-        Vector2 travel = ReceivingCamera ? JudgedDirection(motion) : motion;
-        if (!Crossing(p, motion, out _, out Vector2 crossing)) return travel;
-        if (ReceivingCamera) crossing = JudgedDirection(crossing);
-        Vector2 arrow = CutDirectionHelper.ToVector(note.RequiredDirection);
+        Vector2 travel = new Vector2(motion.x, motion.y * verticalScale);
+        if (Vector2.Dot(travel.normalized, arrow) < Mathf.Cos(CrossingRescueDegrees * Mathf.Deg2Rad)) return travel;
+        if (!PickCrossing(crossTime, crossDirection, previousCrossTime, previousCrossDirection, motion,
+                Mathf.Cos(CrossingMaxTurnDegrees * Mathf.Deg2Rad), out _, out Vector2 crossing)) return travel;
+        crossing = new Vector2(crossing.x, crossing.y * verticalScale);
         return Vector2.Dot(crossing.normalized, arrow) > Vector2.Dot(travel.normalized, arrow) ? crossing : travel;
     }
 
     // 切った向きと同じ向きに、刃のうちノーツに届く部分がノーツの中心を通り過ぎた記録(最新、なければその前の1回)。
-    static bool Crossing(Pending p, Vector2 cutMotion, out double time, out Vector2 direction)
+    static bool Crossing(Pending p, Vector2 cutMotion, out double time, out Vector2 direction) =>
+        PickCrossing(p.crossSongTime, p.crossDirection, p.previousCrossSongTime, p.previousCrossDirection,
+            cutMotion, 0f, out time, out direction);
+
+    // minCos: 切った向きとのずれの許し(0 = 90° 未満。向きの判定は CrossingMaxTurnDegrees)。
+    static bool PickCrossing(double crossTime, Vector2 crossDirection, double previousCrossTime, Vector2 previousCrossDirection,
+        Vector2 cutMotion, float minCos, out double time, out Vector2 direction)
     {
-        if (Finite(p.crossSongTime) && Vector2.Dot(p.crossDirection, cutMotion) > 0f)
-        { time = p.crossSongTime; direction = p.crossDirection; return true; }
-        if (Finite(p.previousCrossSongTime) && Vector2.Dot(p.previousCrossDirection, cutMotion) > 0f)
-        { time = p.previousCrossSongTime; direction = p.previousCrossDirection; return true; }
+        if (Finite(crossTime) && SameWay(crossDirection, cutMotion, minCos))
+        { time = crossTime; direction = crossDirection; return true; }
+        if (Finite(previousCrossTime) && SameWay(previousCrossDirection, cutMotion, minCos))
+        { time = previousCrossTime; direction = previousCrossDirection; return true; }
         time = double.NaN; direction = default;
         return false;
     }
+
+    static bool SameWay(Vector2 a, Vector2 b, float minCos) =>
+        minCos <= 0f ? Vector2.Dot(a, b) > 0f : Vector2.Dot(a.normalized, b.normalized) > minCos;
 
     // 刃がノーツに届いた時刻: 刃のうちノーツに届く部分がノーツの中心を通り過ぎた時刻(切った向きと同じ向きに通り過ぎたもの)。
     // なければいちばん近づいた時刻。

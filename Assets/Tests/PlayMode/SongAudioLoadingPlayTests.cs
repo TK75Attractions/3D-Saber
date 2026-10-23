@@ -168,6 +168,26 @@ public class SongAudioLoadingPlayTests
         Assert.AreSame(external, player.Clip, "他の仕組みが割り当てた音源を外したり破棄したりしない");
     }
 
+    // 音の出力先が変わったあとに曲を読み直せなかったら、スタッフ向けの知らせを画面に出す
+    // (「続きから再開します」の知らせのまま、ログだけ残して無音で続いていた。2026-10-23 点検)。
+    [UnityTest]
+    public IEnumerator FailedReloadAfterAudioChangeShowsAStaffNotice()
+    {
+        string id = MakeSong();
+        var manager = MakeManager();
+        typeof(GamePlayManager).GetField("loadedSongId", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(manager, id);
+        File.Delete(Path.Combine(Application.streamingAssetsPath, "Songs", id, "audio.wav"));
+        foreach (var old in Object.FindObjectsByType<OperatorNotice>(FindObjectsSortMode.None)) Object.Destroy(old.gameObject);
+        yield return null;
+        yield return (IEnumerator)typeof(GamePlayManager).GetMethod("ReloadSongAndResume", BindingFlags.Instance | BindingFlags.NonPublic)
+            .Invoke(manager, null);
+        var notice = Object.FindFirstObjectByType<OperatorNotice>();
+        Assert.NotNull(notice, "読み直せなかったことを画面に出す");
+        Assert.AreEqual(AudioOutputRecovery.ReloadFailedNotice, notice.GetComponentInChildren<TMPro.TextMeshProUGUI>().text);
+        Assert.IsNull(manager.songPlayer.Clip, "読めなかった音は使わない");
+        objects.Add(notice.gameObject);
+    }
+
     [UnityTearDown]
     public IEnumerator Cleanup()
     {

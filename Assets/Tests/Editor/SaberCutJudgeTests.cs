@@ -962,6 +962,23 @@ public class SaberCutJudgeTests
         Assert.True(note.IsCut, "ノーツを通り過ぎたときの動きは斜め上");
     }
 
+    // 通り過ぎたときの1コマの動きで救うのは、全体の動きから60°以内・矢印から100°以内のときだけ(10/23 点検)。
+    // 斜めの矢印を真逆に振った振りは、1コマが矢印寄りにぶれても切れない。「横から入って斜め上」は今までどおり切れる。
+    [TestCase(CutDirection.UpRight, 225f, 136f, 2.4f, false)] // カメラ: 右上の矢印を左下へ真逆に。通過の1コマだけ左上(全体から89°)
+    [TestCase(CutDirection.Up, 200f, 155f, 1f, false)]        // マウス: 矢印から110°の振り。1コマは矢印から65°
+    [TestCase(CutDirection.Up, 0f, 75f, 1f, false)]           // 1コマだけ全体から75°曲がった値では救わない
+    [TestCase(CutDirection.Up, 0f, 45f, 2.4f, true)]          // カメラ: 横から入って斜め上
+    [TestCase(CutDirection.Up, 0f, 45f, 1f, true)]            // マウスでも同じ
+    [TestCase(CutDirection.Up, 15f, 70f, 1f, true)]           // 急な切り上げ(全体から55°)も救う
+    public void CrossingRescuesOnlyNearMisses(CutDirection arrow, float travelDeg, float crossingDeg, float verticalScale, bool cut)
+    {
+        Vector2 Dir(float deg) => new Vector2(Mathf.Cos(deg * Mathf.Deg2Rad), Mathf.Sin(deg * Mathf.Deg2Rad));
+        Vector2 judged = SaberCutJudge.JudgedCutDirection(CutDirectionHelper.ToVector(arrow), Dir(travelDeg),
+            1.0, Dir(crossingDeg), double.NaN, Vector2.zero, verticalScale);
+        Assert.AreEqual(cut, CutDirectionHelper.Matches(arrow, judged,
+            Mathf.Cos(SaberCutJudge.DefaultDirectionToleranceDegrees * Mathf.Deg2Rad)));
+    }
+
     // 横に払う振りは、上向きの矢印を切らない(通り過ぎたときの動きも横)。
     [TestCase(false)]
     [TestCase(true)]

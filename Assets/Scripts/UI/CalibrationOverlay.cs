@@ -228,8 +228,9 @@ public sealed class CalibrationOverlay : MonoBehaviour
     public void TickCountdown(double deltaSeconds)
     {
         if (ctl==null||ScreenTransition.IsBusy) return;
-        // 選曲の残り時間と同じく、ウィンドウが裏にある間は進めない(練習も止まるので、時間だけ減らさない)。
-        bool expired=countdown.Tick(deltaSeconds,Application.isFocused||Application.isBatchMode);
+        // 選曲の残り時間と同じ決まり: ウィンドウが裏にある間は進めない。ただし iPhone の座標が届いていれば、
+        // 照準も練習も裏で動くので進める(2026-10-23 点検)。
+        bool expired=countdown.Tick(deltaSeconds,SongSelectSkin.VisitorInputLive());
         GameSession.CalibrationSelectionSeconds=countdown.Remaining; RefreshCountdown();
         if (!expired) return;
         GameSession.CalibrationSelectionSeconds=10; ctl.DiscardAndExit();

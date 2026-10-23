@@ -683,7 +683,12 @@ public class GamePlayManager : MonoBehaviour
             songPlayer.SetLoudnessGain(loadedGain);
             if (dead != null && dead != loaded) Destroy(dead);
         }
-        else Debug.LogWarning("GamePlayManager: 音の出力先が変わったあと、曲を読み直せませんでした。音なしで続けます");
+        else
+        {
+            Debug.LogWarning("GamePlayManager: 音の出力先が変わったあと、曲を読み直せませんでした。音なしで続けます");
+            // スタッフが気づけるよう画面にも出す(「続きから再開します」の知らせのまま無音で続いていた。2026-10-23 点検)。
+            OperatorNotice.Show(AudioOutputRecovery.ReloadFailedNotice, AudioOutputRecovery.NoticeSeconds + 2f);
+        }
         audioResumeAt = Time.realtimeSinceStartupAsDouble + (trackingWatch.Paused ? 0 : PlayTrackingWatch.ResumeCountdownSeconds);
         audioReload = null;
     }

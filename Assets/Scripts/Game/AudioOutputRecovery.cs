@@ -18,6 +18,7 @@ public sealed class AudioOutputRecovery : MonoBehaviour
     public const float NoticeSeconds = 4f;
     public const string RestoredNotice = "音の出力先が変わったので、音を立て直しました";
     public const string ResumeNotice = "音の出力先が変わったので、曲を読み直して続きから再開します";
+    public const string ReloadFailedNotice = "曲を読み直せませんでした。音なしで続けます(スタッフへ: 音の出力先を確かめてください)";
 
     // 出力先が変わった直後(音はもう止まっている)。流しっぱなしの音の持ち主が、いま何を鳴らしていたかを覚えておく。
     public static event System.Action OutputChanged;
