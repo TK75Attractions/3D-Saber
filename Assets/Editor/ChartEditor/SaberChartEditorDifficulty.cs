@@ -266,7 +266,9 @@ namespace Saber.ChartEditor
                     // 1つの格子に乗っていた拍の値だけ、新しい格子に合わせる(テンポの変わる曲の拍は保つ)。
                     // 点が2つ以上の同じテンポ地図なら、BPM や原点が変わっても格子は同じなので拍の値を保つ(1点の地図は BPM で格子が動くので従来どおり数え直す)。
                     bool sameMap = other.tempoMap.Count >= 2 && SaberChartUtility.SameTempoMaps(previousMap, other.tempoMap);
-                    if (followed && !sameMap) SaberChartUtility.RecalculateBeatsFromTimes(other, beatZeroMs);
+                    // 数え直しは写した先の格子(テンポ表を含む)で。BPM と原点だけで数えると、テンポの変わる地図で拍がずれた(2026-10-23 点検)。
+                    if (followed && !sameMap)
+                        SaberChartUtility.RecalculateBeatsFromTimes(other, new SaberChartGrid(other.bpm, beatZeroMs, other.tempoMap).BeatAt);
                     SaberChartFileStore.Save(other, EditingSongId, difficulty);
                     written.Add(label);
                 }
@@ -301,7 +303,7 @@ namespace Saber.ChartEditor
             beatZeroMs = SaberChartUtility.EstimateBeatZeroMs(other);
             // コピーと同じく、点が2つ以上の同じテンポ地図なら拍の値を保つ。
             bool sameMap = document.tempoMap.Count >= 2 && SaberChartUtility.SameTempoMaps(previousMap, document.tempoMap);
-            if (followed && !sameMap) SaberChartUtility.RecalculateBeatsFromTimes(document, beatZeroMs);
+            if (followed && !sameMap) SaberChartUtility.RecalculateBeatsFromTimes(document, GridBeatAt);
             if (CurrentJson() == before) return;
             history.Record(before);
             MarkChanged();

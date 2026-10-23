@@ -406,15 +406,15 @@ namespace Saber.ChartEditor
                 return;
             }
             float startBefore = rangeStartMs, endBefore = rangeEndMs;
-            float firstBefore = targets.Min(note => note.time);
             bool changed = ApplySelectionEdit(label, list =>
             {
                 foreach (SaberChartNote note in list) SetNoteTime(note, newTime(note));
                 return true;
             });
             if (!changed || !HasRangeSelection) return;
-            float delta = targets.Min(note => note.time) - firstBefore;
-            SetRange(startBefore + delta, endBefore + delta);
+            // 範囲の両端も、ノーツと同じ動かし方で動かす(テンポの変わる所をまたぐと、先頭の ms の差だけでは
+            // 終わりがずれ、続けて動かすと後ろのノーツが範囲から落ちた。2026-10-23 点検)。
+            SetRange(newTime(new SaberChartNote { time = startBefore }), newTime(new SaberChartNote { time = endBefore }));
         }
 
         private void CopySelection()

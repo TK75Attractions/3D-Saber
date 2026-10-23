@@ -413,6 +413,39 @@ public class ChartEditorDifficultyTests
         });
     }
 
+    // テンポの変わる地図を写したら、拍はその地図で数え直す(BPM と原点だけで数え、4000ms を8拍にしていた。10/23 Codex の指摘)。
+    [TestCase(false)]
+    [TestCase(true)]
+    public void SongSettingsRecountBeatsWithTheCopiedTempoChange(bool copyToOtherDifficulty)
+    {
+        WithSongFolder((song, folder) =>
+        {
+            const string settings = ",\"offsetMs\":0,\"beatZeroMs\":0";
+            File.WriteAllText(Path.Combine(folder, "chart_normal.json"), "{\"bpm\":120" + settings +
+                ",\"editorTempoMap\":[{\"beat\":0,\"timeMs\":0},{\"beat\":4,\"timeMs\":2000},{\"beat\":8,\"timeMs\":6000}]" +
+                ",\"notes\":[{\"beat\":1,\"time\":500,\"x\":0,\"color\":\"red\"}]}");
+            File.WriteAllText(Path.Combine(folder, "chart_hard.json"), "{\"bpm\":120" + settings +
+                ",\"notes\":[{\"beat\":2,\"time\":1000,\"x\":-1,\"color\":\"blue\"},{\"beat\":8,\"time\":4000,\"x\":1,\"color\":\"red\"}]}");
+            Load(song, copyToOtherDifficulty ? 1 : 2);
+            SaberChartDocument result;
+            if (copyToOtherDifficulty)
+            {
+                Set("confirmSettingsCopy", new Func<string, string, bool>((a, b) => true));
+                Call("CopySongSettingsToOtherDifficulties");
+                result = SaberChartUtility.FromJson(File.ReadAllText(Path.Combine(folder, "chart_hard.json")));
+            }
+            else
+            {
+                Call("LoadSongSettingsFrom", "normal");
+                result = Document;
+            }
+            Assert.AreEqual(3, result.tempoMap.Count);
+            CollectionAssert.AreEqual(new[] { 1000f, 4000f }, result.notes.Select(n => n.time).ToArray());
+            CollectionAssert.AreEqual(new[] { 2f, 6f }, result.notes.Select(n => n.beat).ToArray(),
+                "4000ms はテンポが半分になった後なので6拍");
+        });
+    }
+
     // 点が1つの地図は BPM で格子が動くので、同じ地図でも拍を保つとは決めていない。今までどおり新しい BPM で数え直す。
     [TestCase(false)]
     [TestCase(true)]

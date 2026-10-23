@@ -425,6 +425,35 @@ public class ChartEditorOperationTests
         Assert.False((bool)GetProperty("HasRangeSelection"));
     }
 
+    // テンポの変わる所をまたいで範囲を動かしても、範囲の終わりはノーツと同じ動かし方で動く
+    // (先頭の動いた ms だけ足していたので、2回目に後ろのノーツが範囲から落ちた。10/23 Codex の指摘)。
+    [Test]
+    public void RangeShiftAcrossATempoChangeKeepsEveryNoteSelected()
+    {
+        var doc = Document;
+        doc.bpm = 120f;
+        doc.tempoMap = new List<SaberChartTempoPoint>
+        {
+            new SaberChartTempoPoint { beat = 0, timeMs = 0 },
+            new SaberChartTempoPoint { beat = 4, timeMs = 2000 },
+            new SaberChartTempoPoint { beat = 8, timeMs = 6000 },
+        };
+        doc.notes = new List<SaberChartNote>
+        {
+            new SaberChartNote { beat = 2, time = 1000, x = -1, color = "blue" },
+            new SaberChartNote { beat = 7.5f, time = 5500, x = 1, color = "red" },
+        };
+        Set("snapIndex", 0);
+        Call("SetRange", 1000f, 6000f);
+        Call("ShiftSelectionBySnap", 1);
+        Assert.AreEqual(1500f, doc.notes.Min(n => n.time), .01f);
+        Assert.AreEqual(6500f, doc.notes.Max(n => n.time), .01f);
+        Assert.AreEqual(7000f, Get<float>("rangeEndMs"), .01f, "範囲の終わりも1拍(テンポが半分の所では 1000ms)動く");
+        Call("ShiftSelectionBySnap", 1);
+        Assert.AreEqual(2000f, doc.notes.Min(n => n.time), .01f);
+        Assert.AreEqual(7500f, doc.notes.Max(n => n.time), .01f, "2回目も後ろのノーツが動く");
+    }
+
     [Test]
     public void FromCursorToEndShiftsEverythingAfterThePosition()
     {
