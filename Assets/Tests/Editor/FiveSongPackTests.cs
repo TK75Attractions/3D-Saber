@@ -50,10 +50,14 @@ public class FiveSongPackTests
             var chart=ChartLoader.LoadFromStreamingAssets(id,difficulty);
             Assert.Greater(chart.notes.Count,previous);previous=chart.notes.Count;
             Assert.That(chart.displayLevel,Is.InRange(1,10));
-            // 21A: 青葉騒Normalだけ、冒頭を1回切りにしてロング0個とする。
+            // 54A: 冒頭の単発を維持し、106.714秒に2回切りを1個置く。
             if(id=="Aobasou" && difficulty.Equals("normal",StringComparison.OrdinalIgnoreCase))
             {
-                Assert.AreEqual(0,chart.notes.Count(n=>n.IsLong));
+                Assert.AreEqual(1,chart.notes.Count(n=>n.IsLong));
+                var hold=chart.notes.Single(n=>n.IsLong);
+                Assert.AreEqual(106714.2857,hold.time,.03);
+                Assert.AreEqual(2,hold.count);
+                Assert.AreEqual(1285.7143,hold.lengthMs,.03);
                 var opening=chart.notes.Where(n=>
                     Math.Abs((double)n.time+chart.offsetMs)<=.03).ToArray();
                 Assert.AreEqual(1,opening.Length);

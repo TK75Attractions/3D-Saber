@@ -226,7 +226,10 @@ public class Review1022Tests
             Assert.False(normal.notes.Any(n => Math.Abs(n.time - ms) < 1), "Normal " + ms + "ms(音が無い)");
             Assert.False(easy.notes.Any(n => Math.Abs(n.time - ms) < 1), "Easy " + ms + "ms(音が無い)");
         }
-        Assert.True(normal.notes.Any(n => Math.Abs(n.time - 124607.1429) < 1), "近くの Hard の音へ動かした1個");
+        Assert.False(normal.notes.Any(n => Math.Abs(n.time - 124607.1429) < 1));
+        var replacement = normal.notes.Single(n => Math.Abs(n.time - 124285.7143) < 1);
+        Assert.AreEqual("red", replacement.color);
+        Assert.AreEqual("up", replacement.direction);
     }
 
     // ---- くり返し1回目: 全曲の音の取り方(Codex と合意した4か所) ----
@@ -263,21 +266,24 @@ public class Review1022Tests
     [TestCase("2_23_AM", 88026.2, 88058.0, "easy,normal,hard")]
     [TestCase("2_23_AM", 89359.53, 89385.0, "normal,hard")]
     [TestCase("2_23_AM", 90692.87, 90732.0, "easy,hard")]
-    [TestCase("BenkyouRemaster", 12774.0, 12736.0, "easy,normal,hard")]
+    [TestCase("BenkyouRemaster", 12774.0, 12736.0, "hard")]
+    [TestCase("BenkyouRemaster", 12774.0, 12736.0, "easy,normal", false)]
     [TestCase("RushE", 15968.49, 16001.0, "normal,hard,e")]
     [TestCase("RushE", 67843.49, 67877.0, "easy,normal,hard,e")]
     [TestCase("RushE", 68218.49, 68244.0, "normal,hard,e")]
     [TestCase("RushE", 94155.99, 94131.0, "easy,normal,e")]
     [TestCase("escapade", 57493.68, 57516.0, "easy,normal,hard")]
     [TestCase("logic", 53903.0, 53928.0, "easy,normal,hard")]
-    [TestCase("logic", 105403.0, 105431.0, "normal,hard")]
+    [TestCase("logic", 105403.0, 105431.0, "hard")]
+    [TestCase("logic", 105403.0, 105431.0, "normal", false)]
     [TestCase("logic", 108403.0, 108347.0, "easy,hard")]
-    public void SharedNotesMovedToTheSoundInEveryChart(string song, double from, double to, string difficulties)
+    public void SharedNotesMovedToTheSoundInEveryChart(string song, double from, double to, string difficulties, bool present = true)
     {
         foreach (string difficulty in difficulties.Split(','))
         {
             var chart = ChartLoader.LoadFromStreamingAssets(song, difficulty);
-            Assert.True(chart.notes.Any(n => Math.Abs(n.time - to) < .2), song + " " + difficulty + " " + to + "ms(音の頭)");
+            Assert.AreEqual(present, chart.notes.Any(n => Math.Abs(n.time - to) < .2),
+                song + " " + difficulty + " " + to + "ms");
             Assert.False(chart.notes.Any(n => Math.Abs(n.time - from) < 1), song + " " + difficulty + " " + from + "ms には残さない");
         }
     }

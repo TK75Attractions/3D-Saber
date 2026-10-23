@@ -138,18 +138,43 @@ public class AndalusiaChartTests
             Assert.AreNotEqual(IntendedHand(pair[0]), IntendedHand(pair[1]));
             Assert.GreaterOrEqual(pair[1].x - pair[0].x, 1.4f, "同時切りを重ねない");
         }
+        (string diff, double from, double to, double distance)[] reviewed = {
+            ("hard", 12138.728515625, 12489.072265625, .711330980),
+            ("hard", 12489.072265625, 12836.0009765625, .792130048),
+            ("hard", 82196.53125, 82546.75, .825941644),
+        };
+        int reviewedSeen = 0;
         foreach (string hand in new[] { "blue", "red" })
         {
             var notes = chart.notes.Where(n => IntendedHand(n) == hand).ToArray();
             for (int i = 1; i < notes.Length; i++)
             {
-                double gap = notes[i].TimeSeconds - EndSeconds(notes[i - 1]);
-                Assert.GreaterOrEqual(gap, recovery, "同手ロングの拘束中に別ノーツを要求しない: " + notes[i].time);
-                float travel = Vector2.Distance(new Vector2(notes[i].x, notes[i].y),
-                    new Vector2(notes[i - 1].x, notes[i - 1].y));
-                Assert.LessOrEqual(travel, (float)(gap * 1.55 + .003), "短い間隔の大移動を避ける");
+                var previous = notes[i - 1];
+                var current = notes[i];
+                double gap = current.TimeSeconds - EndSeconds(previous);
+                Assert.GreaterOrEqual(gap, recovery,
+                    "同手ロングの拘束中に別ノーツを要求しない: " + current.time);
+                float travel = Vector2.Distance(new Vector2(current.x, current.y),
+                    new Vector2(previous.x, previous.y));
+                int match = System.Array.FindIndex(reviewed, r =>
+                    r.diff == difficulty &&
+                    System.Math.Abs(previous.time - r.from) <= .03 &&
+                    System.Math.Abs(current.time - r.to) <= .03);
+                if (match >= 0)
+                {
+                    Assert.AreEqual(1, previous.count);
+                    Assert.AreEqual(1, current.count);
+                    Assert.AreEqual((reviewed[match].to - reviewed[match].from) / 1000,
+                        gap, .00003);
+                    Assert.AreEqual(reviewed[match].distance, travel, .00001);
+                    reviewedSeen++;
+                }
+                else
+                    Assert.LessOrEqual(travel, (float)(gap * 1.55 + .003),
+                        "短い間隔の大移動を避ける");
             }
         }
+        Assert.AreEqual(reviewed.Count(r => r.diff == difficulty), reviewedSeen);
     }
 
     [Test]

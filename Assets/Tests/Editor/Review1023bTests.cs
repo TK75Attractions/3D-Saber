@@ -46,12 +46,12 @@ public class Review1023bTests
     [TestCase("Phobia PARTⅠ", "easy", 48197.8182)]
     [TestCase("Phobia PARTⅠ", "easy", 88197.8182)]
     [TestCase("Andalusia", "easy", 6952.1582)]
-    [TestCase("Aobasou", "normal", 58714.2857)]
+    [TestCase("Aobasou", "normal", 58714.2857, 1)]
     [TestCase("Aobasou", "normal", 59142.8571)]
-    [TestCase("Aobasou", "normal", 106714.2857)]
+    [TestCase("Aobasou", "normal", 106714.2857, 1)]
     [TestCase("Aobasou", "normal", 107142.8571)]
-    [TestCase("logic", "normal", 51403.0)]
-    [TestCase("logic", "normal", 52153.0)]
+    [TestCase("logic", "normal", 51403.0, 1)]
+    [TestCase("logic", "normal", 52153.0, 1)]
     [TestCase("RushE", "normal", 110437.2421)]
     [TestCase("RushE", "normal", 110968.4921)]
     [TestCase("BenkyouRemaster", "normal", 70674.0)]
@@ -62,34 +62,35 @@ public class Review1023bTests
     [TestCase("Phobia PARTⅠ", "normal", 47743.2727)]
     [TestCase("Phobia PARTⅠ", "normal", 85470.5455)]
     [TestCase("Phobia PARTⅠ", "normal", 88197.8182)]
-    public void SelectedSingleNotesAreAbsent(string song, string diff, double audioMs)
+    public void SelectedSingleNotesAreAbsent(string song, string diff, double audioMs, int expectedCount = 0)
     {
         var c = Load(song, diff);
-        Assert.False(c.notes.Any(n => At(c, n, audioMs)), song + "/" + diff);
+        Assert.AreEqual(expectedCount, c.notes.Count(n => At(c, n, audioMs)), song + "/" + diff);
     }
 
     [TestCase("Andalusia", "easy", 3815.0288, 3949.193115234375, "blue")]
-    [TestCase("logic", "normal", 46528, 46434.25, "blue")]
+    [TestCase("logic", "normal", 46528, 46434.25, "blue", 0)]
     [TestCase("logic", "normal", 129653, 129403, "red")]
-    [TestCase("logic", "normal", 138653, 138403, "red")]
+    [TestCase("logic", "normal", 138653, 138403, "blue")]
     public void SelectedHalfBeatNotesMatchHard(
-        string song, string diff, double from, double to, string color)
+        string song, string diff, double from, double to, string color, int expectedCount = 1)
     {
         var c = Load(song, diff);
         var hard = Load(song, "hard");
         Assert.False(c.notes.Any(n => At(c, n, from)));
         var moved = c.notes.Where(n => n.color == color && At(c, n, to)).ToArray();
-        Assert.AreEqual(1, moved.Length);
+        Assert.AreEqual(expectedCount, moved.Length);
         Assert.True(hard.notes.Any(n => At(hard, n, to)));
         var map = new ChartTempoMap(c.bpm, c.beatZeroMs, c.editorTempoMap);
-        Assert.AreEqual(map.BeatAt(moved[0].time), moved[0].beat, .0001);
+        foreach (var note in moved)
+            Assert.AreEqual(map.BeatAt(note.time), note.beat, .0001);
     }
 
     // E/N/H/隠しEの個数。曲内の同時ノーツを片方だけ動かしても通さない。
     [TestCase("2_23_AM", 8026, 8075, 1, 1, 1, 0)]
     [TestCase("logic", 111403, 111453, 1, 1, 2, 0)]
     [TestCase("logic", 113403, 113454, 1, 1, 2, 0)]
-    [TestCase("BenkyouRemaster", 24774, 24805, 1, 0, 1, 0)]
+    [TestCase("BenkyouRemaster", 24774, 24805, 0, 0, 1, 0)]
     [TestCase("BenkyouRemaster", 64299, 64325, 0, 1, 1, 0)]
     [TestCase("RushE", 118406, 118382, 1, 2, 2, 2)]
     [TestCase("RushE", 50115, 50138, 1, 1, 1, 2)]
@@ -142,12 +143,12 @@ public class Review1023bTests
     [TestCase("Andalusia", "easy", 105)]
     [TestCase("Epilogue", "easy", 131)]
     [TestCase("揺籠", "easy", 106)]
-    [TestCase("Aobasou", "normal", 193)]
-    [TestCase("logic", "normal", 212)]
-    [TestCase("RushE", "normal", 186)]
-    [TestCase("BenkyouRemaster", "normal", 154)]
-    [TestCase("2_23_AM", "hard", 447)]
-    [TestCase("logic", "hard", 425)]
+    [TestCase("Aobasou", "normal", 176)]
+    [TestCase("logic", "normal", 210)]
+    [TestCase("RushE", "normal", 182)]
+    [TestCase("BenkyouRemaster", "normal", 155)]
+    [TestCase("2_23_AM", "hard", 449)]
+    [TestCase("logic", "hard", 424)]
     [TestCase("BenkyouRemaster", "hard", 335)]
     [TestCase("RushE", "hard", 353)]
     [TestCase("RushE", "e", 1158)]
@@ -214,12 +215,12 @@ public class Review1023bTests
     }
 
     // 上限2個では目安1.0に届かない区間は、実際の前/サビ個数を固定する。
-    [TestCase("Aobasou", 61.714286, 4, 5, .625)]
-    [TestCase("Aobasou", 109.714286, 5, 30, 1.0)]
-    [TestCase("logic", 54.403, 4, 7, .73828125)]
+    [TestCase("Aobasou", 61.714286, 4, 13, 1.625)]
+    [TestCase("Aobasou", 109.714286, 2, 29, 2.4166666667)]
+    [TestCase("logic", 54.403, 4, 8, .84375)]
     [TestCase("RushE", 112.22494, 5, 26, .86467323)]
     [TestCase("RushE", 40.05941, 7, 33, .78571428)]
-    [TestCase("BenkyouRemaster", 73.674, 2, 5, 1.25)]
+    [TestCase("BenkyouRemaster", 73.674, 0, 6, double.PositiveInfinity)]
     [TestCase("escapade", 65.704211, 3, 18, 1.5)]
     [TestCase("Phobia PARTⅠ", 49.106909, 5, 42, 1.2)]
     [TestCase("Phobia PARTⅠ", 89.106909, 6, 21, .875)]
@@ -276,16 +277,19 @@ public class Review1023bTests
     }
 
     [Test]
-    public void ApprovedH15PairRemainsExactly281Point25Milliseconds()
+    public void RebuiltLogicRemovesH15AndKeepsTheNeighbouringBlueTaps()
     {
         var c = Load("logic", "normal");
+        Assert.False(c.notes.Any(n => At(c, n, 46434.25)));
         var blue = c.notes.Where(n => Hand(n) == "blue")
             .SelectMany(n => Cuts(c, n).Select(t => (time: t, note: n)))
             .OrderBy(x => x.time).ToArray();
-        int i = Array.FindIndex(blue, x => Math.Abs(x.time - 46434.25) <= EpsilonMs);
-        Assert.Greater(i, 0);
-        Assert.True(SingleBlueTap(blue[i - 1].note) && SingleBlueTap(blue[i].note));
-        Assert.True(IsH15Pair("logic", "normal", "blue", blue[i - 1].time, blue[i].time));
+        int i = Array.FindIndex(blue, x => Math.Abs(x.time - 46153.0) <= EpsilonMs);
+        Assert.GreaterOrEqual(i, 0);
+        Assert.Less(i + 1, blue.Length);
+        Assert.True(SingleBlueTap(blue[i].note) && SingleBlueTap(blue[i + 1].note));
+        Assert.AreEqual(52153.0, blue[i + 1].time, EpsilonMs);
+        Assert.AreEqual(6000.0, blue[i + 1].time - blue[i].time, EpsilonMs);
     }
 
     [Test]

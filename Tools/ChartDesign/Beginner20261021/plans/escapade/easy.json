@@ -135,12 +135,29 @@
       "sourceIndex": null,
       "sourceLong": null,
       "added": true,
-      "phaseErrorMs": 0,
+      "phaseErrorMs": 0.0,
       "cell": null,
       "handRepair": false
     },
     {
       "index": 8,
+      "timesMs": [
+        16757.1699
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "audio-onset",
+      "sourceIndex": null,
+      "sourceLong": null,
+      "added": true,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 9,
       "timesMs": [
         17704.209
       ],
@@ -152,29 +169,29 @@
       "sourceIndex": null,
       "sourceLong": null,
       "added": true,
-      "phaseErrorMs": 0,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 9,
-      "timesMs": [
-        18967.3668
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "audio-onset",
-      "sourceIndex": null,
-      "sourceLong": null,
-      "added": true,
-      "phaseErrorMs": 0,
+      "phaseErrorMs": 0.0,
       "cell": null,
       "handRepair": false
     },
     {
       "index": 10,
+      "timesMs": [
+        19598.9457
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "audio-onset",
+      "sourceIndex": null,
+      "sourceLong": null,
+      "added": true,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 11,
       "timesMs": [
         20231.209
       ],
@@ -182,45 +199,28 @@
         "down"
       ],
       "hand": "blue",
-      "source": "easy",
-      "sourceIndex": 11,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.6844,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 11,
-      "timesMs": [
-        22756.8402
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
       "source": "audio-onset",
       "sourceIndex": null,
       "sourceLong": null,
       "added": true,
-      "phaseErrorMs": 0,
+      "phaseErrorMs": 0.0,
       "cell": null,
       "handRepair": false
     },
     {
       "index": 12,
       "timesMs": [
-        24019.9979
+        21493.6824
       ],
       "directions": [
         "down"
       ],
-      "hand": "blue",
+      "hand": "red",
       "source": "audio-onset",
       "sourceIndex": null,
       "sourceLong": null,
       "added": true,
-      "phaseErrorMs": 0,
+      "phaseErrorMs": 0.0,
       "cell": null,
       "handRepair": false
     },

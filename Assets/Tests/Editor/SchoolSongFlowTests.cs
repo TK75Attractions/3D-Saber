@@ -12,11 +12,25 @@ public class SchoolSongFlowTests
     {
         var chart = ChartLoader.LoadFromStreamingAssets("Epilogue", difficulty);
         Assert.AreEqual(level, chart.displayLevel);
+        int centralNotes = 0;
         foreach (var n in chart.notes)
         {
-            Assert.That(Mathf.Abs(n.x), Is.InRange(.85f, 2.15f));
+            double audioMs = (double)n.time + chart.offsetMs;
+            bool movedRed = difficulty == "hard" && n.color == "red" &&
+                System.Math.Abs(audioMs - 20643.829) <= .03;
+            bool movedBlue = difficulty == "hard" && n.color == "blue" &&
+                System.Math.Abs(audioMs - 20861.22) <= .03;
+            if (movedRed || movedBlue)
+            {
+                Assert.AreEqual(movedRed ? .5 : -.5, n.x, .00001);
+                Assert.AreEqual(-.38, n.y, .00001);
+                centralNotes++;
+            }
+            else
+                Assert.That(Mathf.Abs(n.x), Is.InRange(.85f, 2.15f));
             Assert.That(n.y, Is.InRange(-1.05f, 1.05f));
         }
+        Assert.AreEqual(difficulty == "hard" ? 2 : 0, centralNotes);
         Assert.Greater(chart.notes.Count(n => n.y > .35f), 10);
         Assert.Greater(chart.notes.Count(n => n.y < -.35f), 10);
         Assert.Greater(chart.notes.Count(n => Mathf.Abs(n.y) <= .35f), 10);

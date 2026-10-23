@@ -1749,9 +1749,9 @@
       "time": 102218.915,
       "x": 1.0714,
       "y": -0.2143,
-      "type": "direction",
+      "type": "tap",
       "color": "red",
-      "direction": "down",
+      "direction": "none",
       "count": 1,
       "lengthMs": 0
     },
@@ -1793,9 +1793,9 @@
       "time": 103744.339,
       "x": 1.0714,
       "y": -0.2143,
-      "type": "tap",
+      "type": "direction",
       "color": "red",
-      "direction": "none",
+      "direction": "down",
       "count": 1,
       "lengthMs": 0
     },

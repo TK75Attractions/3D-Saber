@@ -59,10 +59,10 @@ public class Review1023cTests
     }
 
     [TestCase("Aobasou", 0.0, "red", .9, -.6, 0.0, "down")]
-    [TestCase("BenkyouRemaster", 40224.0, "blue", -1.9, .3, 97.0, "down")]
+    [TestCase("BenkyouRemaster", 40224.0, "blue", -1.05, -.45, 97.0, "down")]
     [TestCase("escapade", 71072.6328, "red", 1.9, .3, 225.000023, "down")]
-    [TestCase("ManicSonic", 79500.0, "blue", -.9, .3, 235.0, "down")]
-    [TestCase("ManicSonic", 108833.3333, "blue", -1.9, -.6, 323.0, "up")]
+    [TestCase("ManicSonic", 79500.0, "blue", -.9, .2, 235.0, "down")]
+    [TestCase("ManicSonic", 108833.3333, "blue", -1.1, -.15, 323.0, "down")]
     public void SelectedNotesAreSingleTapsAtTheOriginalSoundAndPosition(
         string song, double ms, string color, double x, double y,
         double beat, string plannedStroke)
@@ -83,6 +83,7 @@ public class Review1023cTests
 
     [TestCase("escapade", 7283.1573)]
     [TestCase("ManicSonic", 107500.0)]
+    [TestCase("ManicSonic", 107833.3333)]
     [TestCase("ManicSonic", 145500.0)]
     public void SelectedBlueNotesAreAbsent(string song, double ms)
     {
@@ -92,11 +93,11 @@ public class Review1023cTests
 
     [TestCase("escapade", 6967.3682, "blue", -1.9, -.6)]
     [TestCase("escapade", 7598.9473, "blue", -1.9, -.6)]
-    [TestCase("ManicSonic", 107166.6667, "blue", -1.9, -.6)]
-    [TestCase("ManicSonic", 107833.3333, "blue", -1.9, -.6)]
-    [TestCase("ManicSonic", 144500.0, "red", .9, -.6)]
-    [TestCase("ManicSonic", 145833.3333, "blue", -.9, -.6)]
-    [TestCase("ManicSonic", 146166.6667, "red", .9, -.6)]
+    [TestCase("ManicSonic", 107166.6667, "blue", -.55, -.15)]
+    [TestCase("ManicSonic", 108166.6667, "blue", -1.1, -.15)]
+    [TestCase("ManicSonic", 144500.0, "red", 1.15, -.15)]
+    [TestCase("ManicSonic", 145833.3333, "blue", -1.15, -.15)]
+    [TestCase("ManicSonic", 146166.6667, "red", 1.15, -.15)]
     public void NeighboursRemainAtTheirOriginalSoundsAndPositions(
         string song, double ms, string color, double x, double y)
     {
@@ -104,10 +105,10 @@ public class Review1023cTests
         Tap(One(chart, ms, color), x, y);
     }
 
-    [TestCase("Aobasou", 193, 193, 0, 6)]
-    [TestCase("BenkyouRemaster", 154, 155, 1, 5)]
+    [TestCase("Aobasou", 176, 177, 1, 6)]
+    [TestCase("BenkyouRemaster", 155, 156, 1, 7)]
     [TestCase("escapade", 119, 120, 1, 4)]
-    [TestCase("ManicSonic", 208, 209, 1, 5)]
+    [TestCase("ManicSonic", 207, 208, 1, 8)]
     public void CountsPlansAndFallbackMatchTheReviewedResult(
         string song, int notes, int cuts, int longs, int flicks)
     {

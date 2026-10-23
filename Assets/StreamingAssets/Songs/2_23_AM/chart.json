@@ -832,17 +832,6 @@
       "lengthMs": 0
     },
     {
-      "beat": 82.550001,
-      "time": 56392.867,
-      "x": 0.9,
-      "y": 0.375,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
       "beat": 83.000001,
       "time": 56692.867,
       "x": 1.07,
@@ -1806,17 +1795,6 @@
       "y": 0.375,
       "type": "tap",
       "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 178.550001,
-      "time": 120392.867,
-      "x": 0.9,
-      "y": 0.375,
-      "type": "tap",
-      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0

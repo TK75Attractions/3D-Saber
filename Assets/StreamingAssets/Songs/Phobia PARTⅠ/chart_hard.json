@@ -1803,8 +1803,8 @@
     {
       "beat": 181,
       "time": 93181.8182,
-      "x": 1.3,
-      "y": -0.5,
+      "x": 0.1,
+      "y": 0.35,
       "type": "tap",
       "color": "red",
       "direction": "none",
