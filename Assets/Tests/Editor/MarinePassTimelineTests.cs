@@ -165,7 +165,8 @@ public class MarinePassTimelineTests
         Assert.AreEqual(-1, timeline.EvaluateMarinePassAge(end + .00001));
     }
 
-    [TestCase("Morning")] [TestCase("Andalusia")]
+    // アンダルシアは 2026-10-23 に長い区間(52.370〜75.260 秒ほか)を入れたので、ここからは外した。
+    [TestCase("Morning")]
     public void SongsWithOnlyShortOrUnspecifiedSectionsDoNotCreateAPass(string song)
     {
         var timeline = StagePerformanceTimeline.Load(song);

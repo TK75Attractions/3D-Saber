@@ -1020,8 +1020,8 @@
       "lengthMs": 0
     },
     {
-      "beat": 151.0,
-      "time": 64299.0,
+      "beat": 151.069333333,
+      "time": 64325.0,
       "x": -1.9,
       "y": -0.6,
       "type": "tap",
@@ -1125,28 +1125,6 @@
       "y": -0.6,
       "type": "tap",
       "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 168.0,
-      "time": 70674.0,
-      "x": -1.9,
-      "y": -0.6,
-      "type": "tap",
-      "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 169.0,
-      "time": 71049.0,
-      "x": -1.9,
-      "y": 0.3,
-      "type": "tap",
-      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0

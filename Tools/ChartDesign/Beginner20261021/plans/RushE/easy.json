@@ -620,7 +620,7 @@
     {
       "index": 36,
       "timesMs": [
-        50115.3579
+        50138.0
       ],
       "directions": [
         "down"
@@ -630,7 +630,7 @@
       "sourceIndex": 99,
       "sourceLong": null,
       "added": false,
-      "phaseErrorMs": 0.0,
+      "phaseErrorMs": 22.6421,
       "cell": null,
       "handRepair": false
     },
@@ -1612,7 +1612,7 @@
     {
       "index": 94,
       "timesMs": [
-        118405.9921
+        118382.0
       ],
       "directions": [
         "down"
@@ -1622,7 +1622,7 @@
       "sourceIndex": 302,
       "sourceLong": null,
       "added": false,
-      "phaseErrorMs": 0.0,
+      "phaseErrorMs": -23.9921,
       "cell": null,
       "handRepair": false
     },
@@ -1750,7 +1750,7 @@
     {
       "index": 102,
       "timesMs": [
-        134812.2421
+        134770.0
       ],
       "directions": [
         "down"
@@ -1760,7 +1760,7 @@
       "sourceIndex": 342,
       "sourceLong": null,
       "added": false,
-      "phaseErrorMs": 0.0,
+      "phaseErrorMs": -42.2421,
       "cell": null,
       "handRepair": false
     },

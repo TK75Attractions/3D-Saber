@@ -9,5 +9,22 @@
   "musicEndSeconds": 105.15,
   "hideBarLines": false,
   "audioSha256": "b68e6874dfca9f7e48b5449b404b002a8712a5009b909a7e97b8b85d92d24cb0",
-  "sections": []
+  "sections": [
+    {
+      "label": "主部",
+      "startSeconds": 52.37,
+      "endSeconds": 75.26,
+      "fadeInSeconds": 0.8,
+      "fadeOutSeconds": 1.4,
+      "intensity": 0.85
+    },
+    {
+      "label": "最終展開",
+      "startSeconds": 86.358,
+      "endSeconds": 100.578,
+      "fadeInSeconds": 0.8,
+      "fadeOutSeconds": 1.4,
+      "intensity": 1.0
+    }
+  ]
 }

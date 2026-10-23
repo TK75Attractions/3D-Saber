@@ -157,7 +157,7 @@ public class AndalusiaChartTests
     {
         var stage = StagePerformanceTimeline.Load(SongId);
         Assert.IsFalse(stage.hideBarLines);
-        Assert.AreEqual(0, stage.sections.Length, "未確認のサビ区間を断定しない");
+        Assert.AreEqual(2, stage.sections.Length, "2026-10-23に採用した2区間");
         var window = SongPreviewWindow.Resolve(stage, 112.22059, 10);
         Assert.AreEqual(53.44, window.Start, .001);
         Assert.AreEqual(10, window.Duration, .001);

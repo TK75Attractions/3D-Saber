@@ -7,6 +7,89 @@ import json
 import math
 from pathlib import Path
 
+# 例外時刻は time + offsetMs のms。単発・方向なしの指定ノーツだけに適用する。
+# ID、曲、難易度、音源時刻、色、担当手、理由。
+CHOICE_REASON = "2026-10-23 ユーザーが音に合わせることを選んだ"
+CHOICE_EPSILON_MS = 1e-6
+AUDIO_CHOICES = (
+    ("h06", "Andalusia", "easy", 3949.193115234375, "blue", "blue", CHOICE_REASON),
+    ("h15", "logic", "normal", 46434.25, "blue", "blue", CHOICE_REASON),
+    ("h16", "logic", "normal", 129403.0, "red", "red", CHOICE_REASON),
+    ("h17", "logic", "normal", 138403.0, "red", "red", CHOICE_REASON),
+    ("z01", "2_23_AM", "easy", 8075.0, "blue", "blue", CHOICE_REASON),
+    ("z01", "2_23_AM", "normal", 8075.0, "red", "red", CHOICE_REASON),
+    ("z01", "2_23_AM", "hard", 8075.0, "blue", "blue", CHOICE_REASON),
+    ("z02", "logic", "easy", 111453.0, "red", "red", CHOICE_REASON),
+    ("z02", "logic", "normal", 111453.0, "red", "red", CHOICE_REASON),
+    ("z02", "logic", "hard", 111453.0, "red", "red", CHOICE_REASON),
+    ("z02", "logic", "hard", 111453.0, "blue", "blue", CHOICE_REASON),
+    ("z03", "logic", "easy", 113454.0, "red", "red", CHOICE_REASON),
+    ("z03", "logic", "normal", 113454.0, "red", "red", CHOICE_REASON),
+    ("z03", "logic", "hard", 113454.0, "red", "red", CHOICE_REASON),
+    ("z03", "logic", "hard", 113454.0, "blue", "blue", CHOICE_REASON),
+    ("z04", "BenkyouRemaster", "easy", 24805.0, "red", "red", CHOICE_REASON),
+    ("z04", "BenkyouRemaster", "hard", 24805.0, "red", "red", CHOICE_REASON),
+    ("z05", "BenkyouRemaster", "normal", 64325.0, "blue", "blue", CHOICE_REASON),
+    ("z05", "BenkyouRemaster", "hard", 64325.0, "blue", "blue", CHOICE_REASON),
+    ("z06", "RushE", "easy", 118382.0, "gold", "red", CHOICE_REASON),
+    ("z06", "RushE", "normal", 118382.0, "gold", "blue", CHOICE_REASON),
+    ("z06", "RushE", "normal", 118382.0, "gold", "red", CHOICE_REASON),
+    ("z06", "RushE", "hard", 118382.0, "gold", "blue", CHOICE_REASON),
+    ("z06", "RushE", "hard", 118382.0, "gold", "red", CHOICE_REASON),
+    ("z06", "RushE", "e", 118382.0, "gold", "blue", CHOICE_REASON),
+    ("z06", "RushE", "e", 118382.0, "gold", "red", CHOICE_REASON),
+    ("z07", "RushE", "easy", 50138.0, "blue", "blue", CHOICE_REASON),
+    ("z07", "RushE", "normal", 50138.0, "blue", "blue", CHOICE_REASON),
+    ("z07", "RushE", "hard", 50138.0, "blue", "blue", CHOICE_REASON),
+    ("z07", "RushE", "e", 50138.0, "red", "red", CHOICE_REASON),
+    ("z07", "RushE", "e", 50138.0, "blue", "blue", CHOICE_REASON),
+    ("z08", "RushE", "easy", 134770.0, "gold", "red", CHOICE_REASON),
+    ("z08", "RushE", "normal", 134770.0, "gold", "red", CHOICE_REASON),
+    ("z08", "RushE", "hard", 134770.0, "gold", "red", CHOICE_REASON),
+    ("z08", "RushE", "e", 134770.0, "gold", "red", CHOICE_REASON),
+)
+# 同手間隔はこの隣接2ノーツだけ。281.25ms全般を許可しない。
+HAND_CHOICES = (
+    ("h15", "logic", "normal", "blue", 46153.0, 46434.25, 281.25, CHOICE_REASON),
+)
+
+
+def note_hand(note):
+    if note["color"] in ("red", "blue"):
+        return note["color"]
+    return "blue" if note["x"] < 0 else "red"
+
+
+def single_tap(note):
+    return (note.get("count", 1) == 1 and note.get("lengthMs", 0) == 0
+            and note.get("direction", "none") == "none"
+            and note.get("type", "tap") == "tap")
+
+
+def audio_choice(song, difficulty, chart, note):
+    if not single_tap(note):
+        return None
+    audio_ms = note["time"] + chart.get("offsetMs", 0)
+    return next((r for r in AUDIO_CHOICES
+                 if (song, difficulty, note["color"], note_hand(note)) ==
+                 (r[1], r[2], r[4], r[5])
+                 and abs(audio_ms - r[3]) <= CHOICE_EPSILON_MS), None)
+
+
+def hand_choice(song, difficulty, chart, side, a, b):
+    # a/bはcuts()の(time, noteIndex, cutIndex)。ロング中の切断には使わない。
+    na, nb = chart["notes"][a[1]], chart["notes"][b[1]]
+    if not (a[2] == b[2] == 0 and single_tap(na) and single_tap(nb)
+            and na["color"] == nb["color"] == side):
+        return None
+    offset = chart.get("offsetMs", 0)
+    return next((r for r in HAND_CHOICES
+                 if (song, difficulty, side) == (r[1], r[2], r[3])
+                 and abs(a[0] + offset - r[4]) <= CHOICE_EPSILON_MS
+                 and abs(b[0] + offset - r[5]) <= CHOICE_EPSILON_MS
+                 and abs(b[0] - a[0] - r[6]) <= CHOICE_EPSILON_MS), None)
+
+
 def read(path):
     return json.loads(Path(path).read_text(encoding="utf-8-sig"))
 
@@ -35,8 +118,12 @@ def hierarchy_issues(easy,normal):
     return [f"Normal {key} below Easy" for key in ("notes","flicks")
             if normal[key]<easy[key]]
 
-def audit(chart,difficulty,pulses,quarter_at,subdivisions_at=lambda _: (.5,),music_start=None):
+def audit(chart,difficulty,pulses,quarter_at,subdivisions_at=lambda _: (.5,),music_start=None,song=None):
     issues=[]
+    exceptions=[]
+    def record(rule, row):
+        item={"rule":rule,"choice":row}
+        if item not in exceptions:exceptions.append(item)
     def require(value,message):
         if not value:issues.append(message)
     notes=chart["notes"]
@@ -50,8 +137,18 @@ def audit(chart,difficulty,pulses,quarter_at,subdivisions_at=lambda _: (.5,),mus
         require(n.get("count",1)<=1 or (n["lengthMs"]>0 and n["direction"]=="none"),f"invalid long {i}")
     events=cuts(chart)
     times=[]
-    for t,_,_ in events:
-        if not times or t-times[-1]>.1:times.append(t)
+    groups=[]
+    for event in events:
+        t=event[0]
+        if not times or t-times[-1]>.1:
+            times.append(t)
+            groups.append([])
+        groups[-1].append(event)
+    selected=[]
+    for group in groups:
+        rows=[audio_choice(song,difficulty,chart,notes[i]) if k==0 else None
+              for _,i,k in group]
+        selected.append(rows if all(rows) else [])
     gaps=[b-a for a,b in zip(times,times[1:])]
     require(max(gaps,default=0)<5000,"gap >= 5000ms")
     if music_start is not None:
@@ -61,6 +158,9 @@ def audit(chart,difficulty,pulses,quarter_at,subdivisions_at=lambda _: (.5,),mus
     for i,(t,p) in enumerate(zip(times,phase)):
         if p is not None:continue
         off.append(t)
+        if selected[i]:
+            for row in selected[i]:record("fixed-pulse",row)
+            continue
         if difficulty=="easy":
             issues.append(f"Easy offbeat at {t:.3f}")
             continue
@@ -70,8 +170,15 @@ def audit(chart,difficulty,pulses,quarter_at,subdivisions_at=lambda _: (.5,),mus
                    for f in subdivisions_at(t))<=.10)
         require(valid,f"unanchored Normal offbeat at {t:.3f}")
     for i in range(len(phase)-2):
-        require(not(phase[i] is None and phase[i+1] is not None and phase[i+2] is None),
-                f"off-on-off at {times[i]:.3f}")
+        if not(phase[i] is None and phase[i+1] is not None and phase[i+2] is None):
+            continue
+        # phaseは変えない。両端とも指定ノーツのときだけ、この拍並びを免除する。
+        denied=[j for j in (i,i+2) if not selected[j]]
+        if denied:
+            issues.append(f"off-on-off at {times[denied[0]]:.3f}")
+        else:
+            for j in (i,i+2):
+                for row in selected[j]:record("off-on-off",row)
     if difficulty=="easy":
         for a,b in zip(times,times[1:]):
             require(b-a>=499.0,f"Easy real-time interval {b-a:.3f} at {a:.3f}")
@@ -98,13 +205,17 @@ def audit(chart,difficulty,pulses,quarter_at,subdivisions_at=lambda _: (.5,),mus
             dt=b[0]-a[0]
             require(dt>0,f"same-hand chord at {a[0]:.3f}")
             minimum=499 if difficulty=="easy" else 299
-            require(dt>=minimum,f"same hand too fast: {side} {a[0]:.3f} -> {b[0]:.3f}")
+            choice=hand_choice(song,difficulty,chart,side,a,b) if dt<minimum else None
+            if choice:
+                record("same-hand",choice)
+            else:
+                require(dt>=minimum,f"same hand too fast: {side} {a[0]:.3f} -> {b[0]:.3f}")
     return {
         "notes":len(notes),"cuts":len(events),"attacks":len(times),
         "flicks":len(flicks),"longs":sum(n.get("count",1)>1 for n in notes),
         "chords":sum(x>1 for x in chord_groups.values()),
         "minGapMs":round(min(gaps,default=0),3),"maxGapMs":round(max(gaps,default=0),3),
-        "offbeats":len(off),"offbeatTimesMs":off,"issues":issues,
+        "offbeats":len(off),"offbeatTimesMs":off,"issues":issues,"exceptions":exceptions,
         "heights":len(set(round(n["y"],1) for n in notes)),
         "firstMs":times[0],"lastMs":times[-1],
     }
@@ -156,7 +267,7 @@ def main():
                 meter=next((s for s in reversed(chart.get("timeSignatures",[])) if s["beat"]<=beat),
                            {"numerator":4,"denominator":4})
                 return (1/3,2/3) if meter["numerator"]==6 and meter["denominator"]==8 else (.5,)
-            result=audit(chart,diff,info["pulseTimesMs"],quarter_at,subdivisions_at,info["musicStartMs"])
+            result=audit(chart,diff,info["pulseTimesMs"],quarter_at,subdivisions_at,info["musicStartMs"],song=song)
             for key in ("bpm","beatZeroMs","offsetMs","coordScale","displayLevel","timeSignatures","editorTempoMap"):
                 if chart.get(key)!=old.get(key):result["issues"].append("changed timing/level metadata: "+key)
             plan=read(args.candidate/"Tools/ChartDesign/Beginner20261021/plans"/song/f"{diff}.json")

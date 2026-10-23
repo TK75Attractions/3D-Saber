@@ -85,9 +85,10 @@ public class EclipseTests
     }
 
     [Test]
-    public void AndalusiaWithoutAuthoredSectionsStaysUnchanged()
+    public void SongWithoutAuthoredSectionsStaysUnchanged()
     {
-        var timeline = StagePerformanceTimeline.Load("Andalusia");
+        // 区間の無い曲(アンダルシアは 2026-10-23 に区間を入れたので、区間の無い時間表で確かめる)。
+        var timeline = new StagePerformanceTimeline();
         Assert.IsEmpty(timeline.sections);
         for (double time = 0; time < 240; time += .5) Assert.AreEqual(0,timeline.EvaluateEclipse(time));
     }

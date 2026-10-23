@@ -54,7 +54,7 @@ public class SongStagePerformanceTests
         {
             var timeline = StagePerformanceTimeline.Load(Path.GetFileName(folder));
             Assert.IsNotNull(timeline.sections,folder);
-            if (Path.GetFileName(folder) != "Andalusia") Assert.IsNotEmpty(timeline.sections,folder);
+            Assert.IsNotEmpty(timeline.sections,folder);
             Assert.GreaterOrEqual(timeline.previewStartSeconds,0,folder);
             Assert.AreEqual(1,Directory.GetFiles(folder,"stage*.json").Length,folder);
         }

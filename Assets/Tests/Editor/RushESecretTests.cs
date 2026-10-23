@@ -108,10 +108,18 @@ public class RushESecretTests
         Assert.AreEqual(RushESecretState.Purple, GameHUDSkin.DifficultyColor("E"));
     }
 
-    // E の番号 → 音の頭へ動かした時刻(ms)。2026-10-22 の点検(ず6〜9)。
+    // Eの番号 → 採用された音合わせの時刻(ms)。10/22分と10/23のz06〜z08。
     static readonly Dictionary<int, double> AudioAligned = new Dictionary<int, double>
     {
-        [54] = 16001.0, [391] = 67877.0, [402] = 68244.0, [690] = 94131.0,
+        [54] = 16001.0,
+        [391] = 67877.0,
+        [402] = 68244.0,
+        [690] = 94131.0,
+        [261] = 50138.0,
+        [262] = 50138.0,
+        [924] = 118382.0,
+        [925] = 118382.0,
+        [1136] = 134770.0,
     };
 
     [Test]
@@ -128,11 +136,13 @@ public class RushESecretTests
         {
             var original = source[i]; var converted = e.notes[i];
             double expected = original._time * 500.0 - 18263.0 / 11025 * 1000;
-            // 2026-10-22 ユーザーの指示(点検のず6〜9): この4個だけは元の譜面から、音の頭へ動かした(Easy・Normal・Hard と同じ時刻)。
+            // ユーザーが採用した音合わせだけを辞書で限定する。同時ノーツも全件保持する。
             if (AudioAligned.TryGetValue(i, out double aligned))
             {
                 Assert.AreEqual(aligned, converted.time, .02, "音の頭へ動かした時刻 / " + i);
-                Assert.That(converted.time - expected, Is.InRange(-40.0, 40.0), "元の譜面から40ms以内 / " + i);
+                // z08だけは選択Bが約42.24ms前。全ノーツの許容幅は広げない。
+                Assert.LessOrEqual(Math.Abs(converted.time - expected),
+                    i == 1136 ? 43.0 : 40.0, "承認された移動幅 / " + i);
             }
             else Assert.AreEqual(expected, converted.time, .02, "時刻 / " + i);
             Assert.AreEqual(original._lineIndex - 1.5f, converted.x, .001f, "左右配置 / " + i);

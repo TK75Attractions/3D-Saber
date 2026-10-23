@@ -924,7 +924,7 @@
     {
       "index": 99,
       "timesMs": [
-        50115.3594
+        50138.0
       ],
       "directions": [
         "down"
@@ -2836,7 +2836,7 @@
     {
       "index": 301,
       "timesMs": [
-        118405.9922
+        118382.0
       ],
       "directions": [
         "downleft"
@@ -2845,7 +2845,7 @@
     {
       "index": 302,
       "timesMs": [
-        118405.9922
+        118382.0
       ],
       "directions": [
         "downright"
@@ -3217,7 +3217,7 @@
     {
       "index": 342,
       "timesMs": [
-        134812.2344
+        134770.0
       ],
       "directions": [
         "down"

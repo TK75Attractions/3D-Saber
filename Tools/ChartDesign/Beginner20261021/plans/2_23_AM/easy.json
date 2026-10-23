@@ -40,7 +40,7 @@
     {
       "index": 2,
       "timesMs": [
-        8026.2
+        8075.0
       ],
       "directions": [
         "down"
@@ -50,7 +50,7 @@
       "sourceIndex": 1,
       "sourceLong": null,
       "added": false,
-      "phaseErrorMs": 0.0003,
+      "phaseErrorMs": 48.8003,
       "cell": null,
       "handRepair": false
     },

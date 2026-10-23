@@ -1638,40 +1638,6 @@
     {
       "index": 96,
       "timesMs": [
-        158023.2558
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "easy",
-      "sourceIndex": 91,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": -0.0,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 97,
-      "timesMs": [
-        159069.7674
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "red",
-      "source": "easy",
-      "sourceIndex": 92,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": -0.0,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 98,
-      "timesMs": [
         161162.7907
       ],
       "directions": [
@@ -1687,7 +1653,7 @@
       "handRepair": false
     },
     {
-      "index": 99,
+      "index": 97,
       "timesMs": [
         163255.814,
         164302.3257
@@ -1706,7 +1672,7 @@
       "handRepair": false
     },
     {
-      "index": 100,
+      "index": 98,
       "timesMs": [
         165348.8373
       ],
@@ -1723,7 +1689,7 @@
       "handRepair": false
     },
     {
-      "index": 101,
+      "index": 99,
       "timesMs": [
         167441.8605
       ],
@@ -1740,7 +1706,7 @@
       "handRepair": false
     },
     {
-      "index": 102,
+      "index": 100,
       "timesMs": [
         169534.8837
       ],
@@ -1757,7 +1723,7 @@
       "handRepair": false
     },
     {
-      "index": 103,
+      "index": 101,
       "timesMs": [
         171627.907
       ],
@@ -1774,7 +1740,7 @@
       "handRepair": false
     },
     {
-      "index": 104,
+      "index": 102,
       "timesMs": [
         173720.9302
       ],
@@ -1791,7 +1757,7 @@
       "handRepair": false
     },
     {
-      "index": 105,
+      "index": 103,
       "timesMs": [
         175813.9535
       ],
@@ -1808,7 +1774,7 @@
       "handRepair": false
     },
     {
-      "index": 106,
+      "index": 104,
       "timesMs": [
         177906.9767
       ],
@@ -1825,7 +1791,7 @@
       "handRepair": false
     },
     {
-      "index": 107,
+      "index": 105,
       "timesMs": [
         180000.0
       ],

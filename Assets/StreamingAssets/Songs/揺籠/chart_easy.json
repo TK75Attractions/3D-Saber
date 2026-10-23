@@ -1062,28 +1062,6 @@
       "lengthMs": 0
     },
     {
-      "beat": 151.0,
-      "time": 158023.2558,
-      "x": -0.9,
-      "y": 0.2143,
-      "type": "tap",
-      "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 152.0,
-      "time": 159069.7674,
-      "x": 1.0714,
-      "y": 0.6429,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
       "beat": 154.0,
       "time": 161162.7907,
       "x": -0.9,

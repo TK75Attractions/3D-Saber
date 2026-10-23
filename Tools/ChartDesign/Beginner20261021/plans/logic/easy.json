@@ -1266,7 +1266,7 @@
     {
       "index": 74,
       "timesMs": [
-        111403.0
+        111453.0
       ],
       "directions": [
         "down"
@@ -1276,7 +1276,7 @@
       "sourceIndex": null,
       "sourceLong": null,
       "added": true,
-      "phaseErrorMs": 0,
+      "phaseErrorMs": 50.0,
       "cell": null,
       "handRepair": false
     },
@@ -1300,7 +1300,7 @@
     {
       "index": 76,
       "timesMs": [
-        113403.0
+        113454.0
       ],
       "directions": [
         "down"
@@ -1310,7 +1310,7 @@
       "sourceIndex": null,
       "sourceLong": null,
       "added": true,
-      "phaseErrorMs": 0,
+      "phaseErrorMs": 51.0,
       "cell": null,
       "handRepair": false
     },

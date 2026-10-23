@@ -314,17 +314,6 @@
       "lengthMs": 0
     },
     {
-      "time": 16441.0512,
-      "beat": 52.0,
-      "x": 1.6,
-      "y": -0.091,
-      "color": "red",
-      "direction": "none",
-      "type": "tap",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
       "time": 16757.1699,
       "beat": 53.001043,
       "x": 1.6,
@@ -1007,32 +996,10 @@
       "lengthMs": 0
     },
     {
-      "beat": 204.000012,
-      "time": 64441.0508,
-      "x": -0.9,
-      "y": -0.6,
-      "type": "tap",
-      "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
       "beat": 205.000023,
       "time": 64756.8438,
       "x": 0.9,
       "y": 0.3,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 207.00002,
-      "time": 65388.4219,
-      "x": 1.9,
-      "y": -0.6,
       "type": "tap",
       "color": "red",
       "direction": "none",

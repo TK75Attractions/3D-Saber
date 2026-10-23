@@ -171,9 +171,10 @@ public class VaultCurtainTimelineTests
     }
 
     [Test]
-    public void AndalusiaWithoutAuthoredSectionsLeavesTheCurtainAtRest()
+    public void SongWithoutAuthoredSectionsLeavesTheCurtainAtRest()
     {
-        var timeline = StagePerformanceTimeline.Load("Andalusia");
+        // 区間の無い曲(アンダルシアは 2026-10-23 に区間を入れたので、区間の無い時間表で確かめる)。
+        var timeline = new StagePerformanceTimeline();
         Assert.IsEmpty(timeline.sections);
         foreach (double time in new[] { 0d, 1, 50, 100, 150, 200, 300 })
             Assert.AreEqual(0, timeline.EvaluateVaultCurtain(time));
