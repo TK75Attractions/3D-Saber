@@ -30,7 +30,8 @@ public sealed class CalibrationController : MonoBehaviour
     public bool LeftReady => firstHand == SaberHand.Left ? Stick1Ready : Stick2Ready;
     public bool RightReady => firstHand == SaberHand.Left ? Stick2Ready : Stick1Ready;
     public bool CanMeasure => Stick1Ready && Stick2Ready;
-    public float ReferenceVolume { get; private set; } = .65f;
+    // 曲と同じく音量1が既定(クリックの形で −18 LUFS 前後にしてある。2026-10-24)。下げるだけ調整できる。
+    public float ReferenceVolume { get; private set; } = 1f;
     public CalibrationOverlay Overlay { get; private set; }
 
     SongPlayer song;

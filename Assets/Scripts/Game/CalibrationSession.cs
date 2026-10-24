@@ -27,21 +27,30 @@ public static class CalibrationProtocol
         return chart;
     }
 
+    // クリックの形(2026-10-24 ユーザー「判定調整の音が他より小さい」)。曲は −18 LUFS にそろえて音量1で鳴らすので、
+    // クリック列も音量1で約 −18.7 LUFS になるよう、振幅 .76・長さ 0.1 秒・減衰 30/秒にした
+    // (旧: .38・0.035 秒・120/秒を音量 .65 で鳴らして −35 LUFS)。立ち上がりは今までどおり 1ms で、拍の位置は聞き取りやすいまま。
+    public const double ClickAmplitude = .76, ClickSeconds = .1, ClickDecayPerSecond = 30;
+
+    static void AddClick(float[] samples, int start, int sampleRate, double hz)
+    {
+        int length = (int)(sampleRate * ClickSeconds);
+        for (int j = 0; j < length && start + j < samples.Length; j++)
+        {
+            double t = j / (double)sampleRate;
+            double attack = Math.Min(1, j / (sampleRate * .001));
+            samples[start + j] = (float)(ClickAmplitude * attack * Math.Exp(-t * ClickDecayPerSecond) *
+                (Math.Sin(2 * Math.PI * hz * t) + .25 * Math.Sin(2 * Math.PI * hz * 2.1 * t)));
+        }
+    }
+
     // ライブ調整は4拍の短い音源を連続ループ。ノーツの時刻はDSP時計に合わせて先読みする。
     public static float[] LiveClickSamples(int sampleRate)
     {
         if (sampleRate < 8000) throw new ArgumentOutOfRangeException(nameof(sampleRate));
         var samples = new float[(int)Math.Round(4 * BeatSeconds * sampleRate)];
         for (int beat = 0; beat < 4; beat++)
-        {
-            int start = (int)Math.Round(beat * BeatSeconds * sampleRate);
-            for (int j = 0; j < sampleRate * .035; j++)
-            {
-                double t = j / (double)sampleRate;
-                samples[start + j] = (float)(.38 * Math.Min(1, j / (sampleRate * .001)) * Math.Exp(-t * 120) *
-                    (Math.Sin(2 * Math.PI * 1040 * t) + .25 * Math.Sin(2 * Math.PI * 2184 * t)));
-            }
-        }
+            AddClick(samples, (int)Math.Round(beat * BeatSeconds * sampleRate), sampleRate, 1040);
         return samples;
     }
 
@@ -58,18 +67,8 @@ public static class CalibrationProtocol
         if (sampleRate < 8000) throw new ArgumentOutOfRangeException(nameof(sampleRate));
         var samples = new float[(int)Math.Ceiling((EndSeconds + .2) * sampleRate)];
         for (int beat = 1; beat <= 32; beat++)
-        {
-            int start = (int)Math.Round(beat * BeatSeconds * sampleRate);
-            int length = (int)(sampleRate * .035);
-            double hz = beat < 5 ? 740 : ((beat - 5) % 4 == 0 ? 1320 : 1040);
-            for (int j = 0; j < length && start + j < samples.Length; j++)
-            {
-                double t = j / (double)sampleRate;
-                double attack = Math.Min(1, j / (sampleRate * .001));
-                samples[start + j] = (float)(.38 * attack * Math.Exp(-t * 120) *
-                    (Math.Sin(2 * Math.PI * hz * t) + .25 * Math.Sin(2 * Math.PI * hz * 2.1 * t)));
-            }
-        }
+            AddClick(samples, (int)Math.Round(beat * BeatSeconds * sampleRate), sampleRate,
+                beat < 5 ? 740 : ((beat - 5) % 4 == 0 ? 1320 : 1040));
         return samples;
     }
 }

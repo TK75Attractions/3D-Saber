@@ -83,9 +83,10 @@ public class CalibrationSessionTests
         for(int i=1;i<=32;i++)
         {
             int start=(int)Math.Round(i*.6*rate);Assert.AreEqual(0,s[start-1]);
-            Assert.Greater(s.Skip(start).Take((int)(rate*.02)).Max(v=>Math.Abs(v)),.1f);
-            Assert.AreEqual(0,s[start+(int)(rate*.06)]);
+            Assert.Greater(s.Skip(start).Take((int)(rate*.02)).Max(v=>Math.Abs(v)),.5f,"曲と同じくらいの大きさ(2026-10-24)");
+            Assert.AreEqual(0,s[start+(int)(rate*(CalibrationProtocol.ClickSeconds+.005))],"次の拍より前に鳴り終わる");
         }
+        Assert.Less(CalibrationProtocol.ClickSeconds,CalibrationProtocol.BeatSeconds/2);
         Assert.Less(s.Max(v=>Math.Abs(v)),1f);
     }
     [Test] public void TimingGraphicOwnsRendererAndProducesVisibleMesh()
