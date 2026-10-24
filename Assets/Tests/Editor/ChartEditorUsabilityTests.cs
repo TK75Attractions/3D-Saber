@@ -93,18 +93,19 @@ public class ChartEditorUsabilityTests
     {
         WithSongFolder((song, folder) =>
         {
+            // 内向きの同時押しは 2026-10-24 から情報だけ(印なし)。エラーの例は同じ時刻・同じ位置の重なり。
             File.WriteAllText(Path.Combine(folder, "chart_normal.json"), "{\"bpm\":120,\"notes\":[" +
-                "{\"beat\":2,\"time\":1000,\"x\":-0.5,\"color\":\"blue\",\"type\":\"direction\",\"direction\":\"right\"}," +
+                "{\"beat\":2,\"time\":1000,\"x\":0.5,\"color\":\"blue\",\"type\":\"direction\",\"direction\":\"right\"}," +
                 "{\"beat\":2,\"time\":1000,\"x\":0.5,\"color\":\"red\",\"type\":\"direction\",\"direction\":\"left\"}," +
                 "{\"beat\":4,\"time\":2000,\"x\":1,\"color\":\"red\"}]}");
             Load(song, 1);
             int[] marks = (int[])Call("NoteIssueMarks");
-            CollectionAssert.AreEqual(new[] { 2, 2, 0 }, marks, "内向きの同時押しはエラーの印、問題のないノーツは印なし");
+            CollectionAssert.AreEqual(new[] { 2, 2, 0 }, marks, "重なったノーツはエラーの印、問題のないノーツは印なし");
 
             Key(KeyCode.F8);
             Assert.AreEqual(0, Get<int>("selectedIndex"));
             StringAssert.Contains("1/2", Get<string>("statusMessage"));
-            StringAssert.Contains("内向き", Get<string>("statusMessage"), "理由も出す");
+            StringAssert.Contains("重なった", Get<string>("statusMessage"), "理由も出す");
             Key(KeyCode.F8);
             Assert.AreEqual(1, Get<int>("selectedIndex"));
             Key(KeyCode.F8);
@@ -122,14 +123,14 @@ public class ChartEditorUsabilityTests
         {
             File.WriteAllText(Path.Combine(folder, "chart_normal.json"), "{\"bpm\":120,\"notes\":[" +
                 "{\"beat\":2,\"time\":1000,\"x\":-0.5,\"y\":1.5,\"color\":\"blue\",\"type\":\"direction\",\"direction\":\"right\"}," +
-                "{\"beat\":2,\"time\":1000,\"x\":0.5,\"color\":\"red\",\"type\":\"direction\",\"direction\":\"left\"}]}");
+                "{\"beat\":2,\"time\":1000,\"x\":-0.5,\"y\":1.5,\"color\":\"red\",\"type\":\"direction\",\"direction\":\"left\"}]}");
             Load(song, 1);
             string text = (string)Call("NoteInfoText", Document.notes[0], 0);
             StringAssert.Contains("青 / 左手", text);
             StringAssert.Contains("方向 →", text);
             StringAssert.Contains("高さ 8/8", text, "TAP 以外でも高さが分かる");
             StringAssert.Contains("1.000秒", text);
-            StringAssert.Contains("エラー: 内向き", text, "問題のあるノーツは理由も出す");
+            StringAssert.Contains("エラー: 同じ時刻・同じ位置", text, "問題のあるノーツは理由も出す");
         });
     }
 
