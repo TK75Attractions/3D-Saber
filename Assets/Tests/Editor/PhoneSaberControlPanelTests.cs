@@ -10,6 +10,36 @@ using UnityEngine;
 
 public class PhoneSaberControlPanelTests
 {
+    [Test] public void PhoneIdentityAndStationCollisionUseFreshDistinctSenders() {
+        PhoneSaberControlPanelPhone Phone(string sender, string station, double at, string model = "iPhone14_5") {
+            var phone = new PhoneSaberControlPanelPhone(station, sender);
+            phone.Metrics(new PhoneSaberMetrics { Station = station, Platform = "ios", Model = model,
+                App = "1.0.20261024", ReceivedAt = at });
+            return phone;
+        }
+        var a = Phone(".119", "A", 10);
+        var b = Phone(".129", "B", 10, "iPhone16_2");
+        Assert.AreEqual("iPhone 13", a.ModelLabel);
+        Assert.AreEqual("iPhone 15 Pro Max", b.ModelLabel);
+        Assert.IsEmpty(PhoneSaberControlPanelPhone.StationWarnings(new[] { a, b }, 11));
+        var secondA = Phone(".129", "A", 10, "iPhone16_2");
+        var warnings = PhoneSaberControlPanelPhone.StationWarnings(new[] { a, secondA }, 11);
+        Assert.AreEqual(1, warnings.Count);
+        StringAssert.Contains("同じ台 A", warnings[0]);
+        StringAssert.Contains("iPhone 13 (.119)", warnings[0]);
+        StringAssert.Contains("iPhone 15 Pro Max (.129)", warnings[0]);
+        Assert.IsEmpty(PhoneSaberControlPanelPhone.StationWarnings(new[] { a, secondA }, 25.01));
+        Assert.IsEmpty(PhoneSaberControlPanelPhone.StationWarnings(new[] { a, a }, 11));
+        // 同じ端末がBへ変更したら古いAの報告は数えない。
+        var moved = Phone(".129", "B", 11, "iPhone16_2");
+        Assert.IsEmpty(PhoneSaberControlPanelPhone.StationWarnings(new[] { a, secondA, moved }, 11));
+        var json = new StringBuilder(); a.AppendJson(json, 11);
+        StringAssert.Contains("\"model\":\"iPhone 13\"", json.ToString());
+        StringAssert.Contains("\"app\":\"1.0.20261024\"", json.ToString());
+        StringAssert.Contains("\"metricsAgeSeconds\":1.0", json.ToString());
+        Assert.AreEqual("機種未報告", new PhoneSaberControlPanelPhone("A", null).ModelLabel);
+    }
+
     const string Token = "0123456789abcdef0123456789abcdef";
     static byte[] Request(string method = "GET", string target = "/?t=" + Token, string headers = "Host: 127.0.0.1:5010\r\n")
         => Encoding.ASCII.GetBytes(method + " " + target + " HTTP/1.1\r\n" + headers + "\r\n");
@@ -171,7 +201,7 @@ public class PhoneSaberControlPanelTests
             var state = (PhoneSaberControlPanelState)typeof(PhoneSaberOperatorOverlay)
                 .GetMethod("BuildPanel", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(overlay, new object[] { 0d });
             var button = state.Sections.SelectMany(s => s.Items).Single(i => i.Name == "phone-learn-area");
-            Assert.AreEqual("範囲を覚える（10秒、いっぱいに振る）", button.Text);
+            Assert.AreEqual("範囲を覚える（10秒、振りやすい範囲で上下左右に振る）", button.Text);
             Assert.IsTrue(button.Enabled);
             var advanced = state.Sections.Single(s => s.Items.Any(i => i.Name == "calibration-start"));
             StringAssert.StartsWith("詳細", advanced.Title);

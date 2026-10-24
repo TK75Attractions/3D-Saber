@@ -191,13 +191,23 @@ class TriageBundleProtocolTests(unittest.TestCase):
     def test_valid_bundle_is_received_atomically_and_png_bytes_are_unchanged(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory) / "bundle"
-            body = write_bundle(root)
+            write_bundle(root)
+            phone = {"deviceModel": "iPhone16,2", "deviceName": "iPhone 15 Pro Max", "deviceID": "test-device",
+                     "appVersion": "1.0", "appBuild": "20261024", "station": "B",
+                     "destination": "Mac 192.168.1.2:5005/5006", "manualIPOverride": True}
+            summary = json.loads((root / "summary.json").read_text())
+            summary["phone"] = phone
+            (root / "summary.json").write_text(json.dumps(summary), encoding="utf-8")
+            package = root.parent / "identity.psbt"
+            protocol.pack_bundle(root, package)
+            body = package.read_bytes()
             inbox = Path(directory) / "inbox"
             received = protocol.receive_bundle(io.BytesIO(body), len(body), inbox)
             self.assertEqual(received.name, "phone_saber_triage_sample_session")
             self.assertEqual((received / "images/image_01.png").read_bytes(), png_bytes())
             self.assertTrue((received / "frames/frame_100_1.json").is_file())
             self.assertFalse(any(received.glob("*.mp4")))
+            self.assertEqual(json.loads((received / "summary.json").read_text())["phone"], phone)
 
     def test_many_images_over_hard_limit_are_rejected_without_partial_bundle(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

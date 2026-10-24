@@ -593,17 +593,26 @@ final class P2PTransportTests: XCTestCase {
             P2PPreferredMac.configure(station: "", lanHost: "", manual: false)
         }
         model.applyBonjourForTesting(host: "192.168.1.1", serviceName: "Phone Saber Unity")
+        XCTAssertEqual(model.phoneIdentity.station, "none")
+        XCTAssertFalse(model.phoneIdentity.manualIPOverride)
         model.setStation("A")
         XCTAssertEqual(model.host, "")
+        XCTAssertTrue(model.phoneIdentity.destination.contains("送信先なし"))
         model.applyBonjourForTesting(host: "192.168.1.2", serviceName: "Phone Saber Unity B")
         XCTAssertEqual(model.host, "")
         model.applyBonjourForTesting(host: "192.168.1.3", serviceName: "Phone Saber Unity A")
         XCTAssertEqual(model.host, "192.168.1.3")
+        XCTAssertEqual(model.phoneIdentity.station, "A")
+        XCTAssertTrue(model.phoneIdentity.destination.contains("Phone Saber Unity A"))
+        XCTAssertTrue(model.phoneIdentity.destination.contains("192.168.1.3:5005/5006"))
         model.setManualHost("192.168.1.9")
         model.setStation("B")
         model.applyBonjourForTesting(host: "192.168.1.2", serviceName: "Phone Saber Unity B")
         XCTAssertEqual(model.host, "192.168.1.9")
         XCTAssertEqual(model.transportLabel, "Manual IP")
+        XCTAssertEqual(model.phoneIdentity.station, "B")
+        XCTAssertTrue(model.phoneIdentity.manualIPOverride)
+        XCTAssertTrue(model.phoneIdentity.destination.contains("192.168.1.9:5005/5006"))
     }
 
     func testServiceSelectionKeepsTheFirstChosenMacWhileItIsAdvertised() {

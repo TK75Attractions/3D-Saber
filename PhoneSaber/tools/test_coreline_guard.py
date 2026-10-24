@@ -33,7 +33,7 @@ class CoreLineGuardTests(unittest.TestCase):
             command = ['xcrun', 'swiftc', *guard_build.swift_flags(), '-O', '-D', 'DEBUG',
                        '-D', 'CORELINE_GUARD_DIAGNOSTICS', '-module-cache-path', str(root/'cache')]
             command += [str(source / n) for n in ('DetectionCore.swift', 'BGRADetection.swift',
-                'FrameProcessor.swift', 'DebugVideoRecorder.swift', 'DebugRecordingTriage.swift', 'GuidedRecording.swift')]
+                'FrameProcessor.swift', 'DebugVideoRecorder.swift', 'DebugRecordingTriage.swift', 'GuidedRecording.swift', 'MetricsDatagram.swift')]
             command += [str(support), str(PHONE/'ios/PhoneSaberSenderTests/CoreLineGuardTests.swift'), '-o', str(binary)]
             compiled = subprocess.run(command, text=True, capture_output=True, timeout=180)
             self.assertEqual(compiled.returncode,0,compiled.stderr)

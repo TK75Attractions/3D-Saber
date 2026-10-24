@@ -409,6 +409,8 @@
 				ENABLE_TESTABILITY = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = BonjourInfo.plist;
+				MARKETING_VERSION = 1.0;
+				CURRENT_PROJECT_VERSION = 20261024;
 				INFOPLIST_KEY_CFBundleDisplayName = PhoneSaberSender;
 				INFOPLIST_KEY_LSRequiresIPhoneOS = YES;
 				INFOPLIST_KEY_NSCameraUsageDescription = "赤と青のLED付き棒を検出するためカメラを使用します。";
@@ -432,6 +434,8 @@
 				DEVELOPMENT_TEAM = Q6V25P8DUU;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = BonjourInfo.plist;
+				MARKETING_VERSION = 1.0;
+				CURRENT_PROJECT_VERSION = 20261024;
 				INFOPLIST_KEY_CFBundleDisplayName = PhoneSaberSender;
 				INFOPLIST_KEY_LSRequiresIPhoneOS = YES;
 				INFOPLIST_KEY_NSCameraUsageDescription = "赤と青のLED付き棒を検出するためカメラを使用します。";

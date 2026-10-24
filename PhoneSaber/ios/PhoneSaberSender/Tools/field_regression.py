@@ -39,6 +39,7 @@ import sys
 import tempfile
 
 import run_lossless_regression as lossless
+from phone_saber_clip_report import validate_frame_integrity
 
 
 PRIVATE_ROOT = Path.home() / "Library/Application Support/PhoneSaber"
@@ -128,7 +129,13 @@ def add_frames(labels_path: Path, inbox: Path, destination: Path) -> int:
             raise ValueError("原画像が inbox 外を参照しています")
         size = png_size(source)
         validate_label(label, size)
-        metadata = json.loads((source.parent.parent / "summary.json").read_text(encoding="utf-8"))["autoClip"]
+        bundle = source.parent.parent
+        summary = json.loads((bundle / "summary.json").read_text(encoding="utf-8"))
+        validate_frame_integrity(bundle, summary)
+        if not any(image["path"] == "images/" + label["image"] and image.get("role") == "event"
+                   for image in summary.get("images", [])):
+            raise ValueError(f"登録対象が event 画像一覧にありません: {source.name}")
+        metadata = summary["autoClip"]
         if metadata["frameSize"] != {"width": size[0], "height": size[1]}:
             raise ValueError(f"フル解像度の event 画像が必要です: {source.name}")
         if label["exposure"] != metadata["camera"]["exposureBias"]:

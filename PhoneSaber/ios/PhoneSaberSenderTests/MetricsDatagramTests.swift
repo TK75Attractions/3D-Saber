@@ -5,6 +5,38 @@ import XCTest
 #endif
 
 final class MetricsDatagramTests: XCTestCase {
+    func testPhoneIdentityAndMetricsExtension() throws {
+        for (station, model, name) in [("A", "iPhone14,5", "iPhone 13"), ("B", "iPhone16,2", "iPhone 15 Pro Max")] {
+            let phone = PhoneSaberIdentity(deviceModel: model, deviceID: "test-device", appVersion: "1.0",
+                appBuild: "20261024", station: station, destination: "Test Mac 192.168.1.2:5005/5006", manualIPOverride: true)
+            XCTAssertTrue(phone.displayText.contains("台" + station))
+            XCTAssertTrue(phone.displayText.contains(name))
+            XCTAssertTrue(phone.displayText.contains(phone.destination))
+            XCTAssertTrue(phone.displayText.contains("手動IP優先 ON"))
+            let copy = try JSONDecoder().decode(PhoneSaberIdentity.self, from: JSONEncoder().encode(phone))
+            XCTAssertEqual(copy, phone)
+            XCTAssertEqual(phone.jsonObject["manualIPOverride"] as? Bool, true)
+            var metrics = MetricsDatagram()
+            metrics.station = station; metrics.model = model; metrics.app = "1.0.20261024"; metrics.controls = "1233"
+            // 全数値の最大桁・欠測の双方で、旧PCも受理する399 byte以内に収まる。
+            for missing in [false, true] {
+                metrics.median = missing ? nil : 2000; metrics.p95 = metrics.median; metrics.samples = 2400
+                metrics.rtt = missing ? nil : 1000; metrics.rttAge = missing ? nil : 10; metrics.rttSamples = 2400
+                metrics.fpsMode = 240; metrics.captureFPS = 1000; metrics.redFPS = 1000; metrics.blueFPS = 1000
+                metrics.battery = 100; metrics.thermal = "critical"
+                let line = try XCTUnwrap(metrics.line())
+                XCTAssertLessThan(line.utf8.count, 400)
+                XCTAssertTrue(line.contains("station=\(station) platform=ios app=1.0.20261024"))
+                XCTAssertTrue(line.hasSuffix("model=" + model.replacingOccurrences(of: ",", with: "_")))
+            }
+        }
+        let unassigned = PhoneSaberIdentity(deviceModel: "future-model", deviceID: "id", appVersion: "1.0", appBuild: "1",
+            station: "none", destination: "未解決・送信先なし", manualIPOverride: false)
+        XCTAssertTrue(unassigned.displayText.contains("未指定"))
+        XCTAssertTrue(unassigned.displayText.contains("手動IP優先 OFF"))
+        XCTAssertTrue(unassigned.displayText.contains("future-model"))
+    }
+
     func testLearnedBoundsAckUsesSafeTokensAndMirrorsWithoutRecognitionMargin() {
         let area = LANLivenessProbe.PCCommand.Area(minX: 0.1, minY: 0.2, maxX: 0.7, maxY: 0.9)
         for (x, y, expected) in [

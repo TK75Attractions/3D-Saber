@@ -62,7 +62,7 @@ public static class TutorialProgram
 
     // 振る範囲を合わせる段(2026-10-24 ユーザー指示「チュートリアルの最初に、剣をふる範囲の設定」)。
     // 台の準備(F8)の「範囲を覚える」と同じ指示(learn-area=10)をスマホへ送る。限界まででなく、振りやすい範囲で振ってもらう
-    // (同日ユーザー「振れる限界までじゃなくて振りやすいとこを振る想定」)。覚えた枠は RangeWidenFactor 倍に広げて使う。
+    // (同日ユーザー「振れる限界までじゃなくて振りやすいとこを振る想定」)。覚えた枠は F8 と共通の倍率で広げて使う。
     // スマホの座標を受けているときだけ最初に入れる(マウスで遊ぶとき・テストでは入れない)。
     public const string RangeStepId = "range";
     public const double RangeAnswerSeconds = 3.0;      // 学習の開始が返ってこなければ、この秒数でそのまま進む
@@ -70,10 +70,6 @@ public static class TutorialProgram
     public const double RangeCheerSeconds = 5.0;       // 残りがこの秒数になったら、そのまま続けてと声をかける
     public const double RangeEndSeconds = 1.6;         // 結果の文を見せる間
     public const string RangeCheer = "その調子！ そのまま振ってね";
-    // 覚えた枠(振りやすい範囲)をそのまま画面いっぱいにすると、剣が大きく映りすぎる(同日ユーザー「ある程度は広げて」)。
-    // 中心を保って縦横この倍率に広げてから位置補正にする。振りやすい範囲は限界のおよそ3分の2なので、限界まで振る台の準備(F8)と
-    // 同じくらいの映り方になり、ノーツの範囲(左右±2.5)は振りやすい範囲の内側に収まる。剣の大きさは広げない場合のおよそ0.6倍。
-    public const float RangeWidenFactor = 1.5f;
     public const string RangeLearnedTitle = "OK! 振る範囲を合わせたよ";
     public const string RangeKeptTitle = "今の範囲のまま進むよ";
 
@@ -291,21 +287,6 @@ public sealed class TutorialRangeLearning
                 return true;
             }
         return false;
-    }
-
-    // 振りやすい範囲の枠を、中心を保って縦横 factor 倍にする(カメラ画像の外へはみ出してよい)。
-    public static Rect Widen(Rect bounds, float factor)
-    {
-        Vector2 size = bounds.size * factor;
-        return new Rect(bounds.center - size * .5f, size);
-    }
-
-    // 位置補正の4隅(カメラのピクセル、左上→右上→右下→左下)。PhoneSaberPositionCalibration.TryFromLearnedArea と同じ向きと単位。
-    public static Vector2[] CalibrationCorners(Rect area, float cameraWidth, float cameraHeight)
-    {
-        float x0 = area.xMin * (cameraWidth - 1), x1 = area.xMax * (cameraWidth - 1);
-        float y0 = area.yMin * (cameraHeight - 1), y1 = area.yMax * (cameraHeight - 1);
-        return new[] { new Vector2(x0, y0), new Vector2(x1, y0), new Vector2(x1, y1), new Vector2(x0, y1) };
     }
 }
 

@@ -604,6 +604,7 @@ struct AutoClipEnvironment: Equatable {
     var exposureDurationSeconds: Double?
     var iso: Double?
     var appVersion = ""
+    var identity: PhoneSaberIdentity?
     var signingExpiryRemainingHours: Int?
 }
 
@@ -660,6 +661,9 @@ final class AutoClipRecorder: FrameAnalysisObserver {
     private var limiter = AutoClipRateLimiter()
     private var pending: Pending?
     private var lastTimestamp: Double?
+    // processor の reset をまたいでも診断用IDは再使用しない。カメラの欠番は維持する。
+    private var lastInputSequence: UInt64?
+    private var sequenceOffset: UInt64 = 0
     private let writer: AutoClipWriter
     private let clipNamer: () -> String
 
@@ -729,7 +733,7 @@ final class AutoClipRecorder: FrameAnalysisObserver {
 
     // MARK: Frame queue
 
-    func observe(_ frame: ObservedFrame) {
+    func observe(_ input: ObservedFrame) {
         lock.lock()
         let isEnabled = enabled
         let suspended = suspendedReason
@@ -744,7 +748,7 @@ final class AutoClipRecorder: FrameAnalysisObserver {
 
         // 停止直後の再開でも旧セッションの収集中clip・画像を持ち越さない。
         if resetSession { dropState(); limiter.beginSession() }
-        guard isEnabled, suspended == nil, frame.timestamp.isFinite else {
+        guard isEnabled, suspended == nil, input.timestamp.isFinite else {
             dropState()
             if let manual {
                 onLog?("clip skipped reason=\(!isEnabled ? "disabled" : suspended ?? "invalidTimestamp") request=\(manual)")
@@ -752,6 +756,16 @@ final class AutoClipRecorder: FrameAnalysisObserver {
             }
             return
         }
+        if let last = lastInputSequence, input.sequence <= last {
+            dropState()
+            sequenceOffset += last + 1 - input.sequence
+        }
+        lastInputSequence = input.sequence
+        let frame = ObservedFrame(baseAddress: input.baseAddress, width: input.width, height: input.height,
+                                  bytesPerRow: input.bytesPerRow, sequence: sequenceOffset + input.sequence,
+                                  timestamp: input.timestamp, processingSeconds: input.processingSeconds,
+                                  analysis: input.analysis, ignoreZones: input.ignoreZones,
+                                  playArea: input.playArea, captureFPS: input.captureFPS)
         // A new format or a time discontinuity invalidates the recorded past.
         if let current = buffers, current.width != frame.width || current.height != frame.height {
             dropState()
@@ -833,7 +847,7 @@ final class AutoClipRecorder: FrameAnalysisObserver {
 
     private func dropState() {
         if let pending {
-            onLog?("clip dropped kind=\(pending.event.kind.rawValue) (suspended, format change or time gap)")
+            onLog?("clip dropped kind=\(pending.event.kind.rawValue) (suspended, format change, sequence reset or time gap)")
             if pending.event.kind == .manual { onManualClipResult?(pending.event.note ?? "", false) }
         }
         pending = nil
@@ -890,12 +904,14 @@ final class AutoClipRecorder: FrameAnalysisObserver {
 enum AutoClipWriterError: LocalizedError {
     case lowDiskSpace(Int64)
     case noFrames
+    case inconsistentFrames
     case encodeFailed(String)
 
     var errorDescription: String? {
         switch self {
         case .lowDiskSpace(let bytes): return "空き容量不足（\(bytes / 1_048_576) MiB）"
         case .noFrames: return "保存するフレームがありません"
+        case .inconsistentFrames: return "画像とメタデータのフレームID・時刻が一致しません"
         case .encodeFailed(let name): return "PNG を書けません（\(name)）"
         }
     }
@@ -938,6 +954,7 @@ final class AutoClipWriter {
         try fileManager.createDirectory(at: temporary.appendingPathComponent("frames"), withIntermediateDirectories: true)
         do {
             let content = AutoClipBundleContent(capture: capture, slots: slots)
+            try content.validateFrameIdentity()
             var images: [[String: Any]] = []
             for (number, image) in content.images.enumerated() {
                 let index = number + 1
@@ -1072,6 +1089,17 @@ struct AutoClipBundleContent {
     }
 
     private var triggerColor: String { AutoClipRecorder.colorName(capture.trigger.color) }
+
+    // 辞書の後勝ちやリングの欠落を、PNG・JSONの公開前に拒否する。
+    func validateFrameIdentity() throws {
+        guard slotByFrameID.count == slots.count else { throw AutoClipWriterError.inconsistentFrames }
+        for image in images {
+            guard let slot = slotByFrameID[image.frameID], image.timestamp.isFinite,
+                  capture.buffers.frames[slot].timestamp == image.timestamp else {
+                throw AutoClipWriterError.inconsistentFrames
+            }
+        }
+    }
 
     func imageEntry(_ image: Image, path: String, contextPath: String, sessionID: String) -> [String: Any] {
         let offset = image.timestamp - capture.trigger.timestamp
@@ -1232,6 +1260,7 @@ struct AutoClipBundleContent {
             "contextImages": ["scale": 0.5, "width": buffers.halfWidth, "height": buffers.halfHeight,
                               "intervalSeconds": AutoClipLimits.contextInterval,
                               "sampling": "point sample of every second pixel and row (the pixels the step-2 detector mask scan reads); coordinates in metadata are full-resolution"],
+            "phone": capture.environmentAtTrigger.identity?.jsonObject ?? [:],
             "camera": ["captureFPS": capture.captureFPS, "measuredFPS": round1(measuredFPS),
                        "signingExpiryRemainingHours": capture.environmentAtSave.signingExpiryRemainingHours ?? NSNull(),
                        "exposureBias": capture.environmentAtTrigger.exposureBias,

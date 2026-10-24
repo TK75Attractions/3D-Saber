@@ -86,7 +86,7 @@ class IsoCompareTests(unittest.TestCase):
                 autoClipCandidates=[dict(endpoints=BLADE, bbox=[0, 0, 20, 120],
                                          eligible=True, meanValue=123, highValueRatio=.2)]))])
             (path / 'frames/2.json').write_text(json.dumps(context))
-            summary['images'] = [dict(frameID=2, path='images/'+image.name, frameContextPath='frames/2.json')]
+            summary['images'] = [dict(frameID=2, timestamp=2/60, path='images/'+image.name, frameContextPath='frames/2.json')]
             save(path, summary)
             rows = list(iso.observations(path, 'A', labels))
             self.assertEqual(len(rows), 4)
@@ -98,6 +98,26 @@ class IsoCompareTests(unittest.TestCase):
             image.write_bytes(b'changed')
             with self.assertRaisesRegex(ValueError, 'ハッシュ不一致'):
                 list(iso.observations(path, 'A', labels))
+
+    def test_corrupt_clip_is_rejected_and_cli_excludes_it_with_warning(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            path, summary = bundle(root)
+            summary['autoClip']['frames'] *= 2
+            save(path, summary)
+            with self.assertRaisesRegex(iso.ClipIntegrityError, 'duplicate frame ID'):
+                list(iso.observations(path, 'A', {}))
+            with contextlib.redirect_stdout(io.StringIO()) as out, contextlib.redirect_stderr(io.StringIO()) as err:
+                self.assertEqual(iso.main([str(root), '--labels', str(root/'no-labels')]), 0)
+            self.assertIn('対象: 0 clips', out.getvalue())
+            self.assertIn('破損クリップを除外', err.getvalue())
+            summary['autoClip']['frames'].pop()
+            (path/'frames').mkdir()
+            (path/'frames/1.json').write_text(json.dumps(dict(frames=[dict(frameID=1, timestamp=1.22+1/60)])))
+            summary['images'] = [dict(frameID=1, timestamp=1/60, path='images/1.png', frameContextPath='frames/1.json')]
+            save(path, summary)
+            with self.assertRaisesRegex(iso.ClipIntegrityError, 'timestamp mismatch'):
+                list(iso.observations(path, 'A', {}))
 
     def test_evidence_margin_and_no_brightness_based_truth(self):
         blade = candidate(mean=150, emitter=None)

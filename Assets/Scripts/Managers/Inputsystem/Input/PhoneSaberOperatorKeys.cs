@@ -79,7 +79,7 @@ public sealed class PhoneSaberOperatorKeys : MonoBehaviour
             // iPhone の自動クリップ（c81113d）: 今の前後数秒を保存し、曲の合間に Mac の diagnostics-inbox/autoclips へ送る。
             case Key.K: return ("clip=1", "スマホ: 今の場面を切り抜いて保存");
             case Key.P: return (PhoneSaberDiscoveryResponder.LearnAreaCommand,
-                $"スマホ: プレイ範囲を覚える（{PhoneSaberDiscoveryResponder.LearnAreaSeconds}秒、範囲いっぱいに振る）");
+                $"スマホ: プレイ範囲を覚える（{PhoneSaberDiscoveryResponder.LearnAreaSeconds}秒、振りやすい範囲で上下左右に振る）");
             case Key.X: return (PhoneSaberDiscoveryResponder.ClearAreaCommand, "スマホ: プレイ範囲を消す");
             case Key.D: return ShutterISOCommand(currentShutterISOIndex, out _);
             case Key.S: return ShutterCommand(currentShutterIndex, out _);
@@ -161,7 +161,7 @@ public sealed class PhoneSaberOperatorKeys : MonoBehaviour
             case "clip=1": return "スマホ: 今の場面を切り抜いて保存";
             case PhoneSaberDiscoveryResponder.DefaultsCommand: return "iPhone: 既定に戻す（剣を追いかける ON・露出 −2・固定シャッター 1/2000 秒・ISO 160・色付き発光体 ON）";
             default:
-                if (fields.StartsWith("learn-area=")) return "スマホ: プレイ範囲を覚える（" + fields.Substring(11) + "秒、範囲いっぱいに振る）";
+                if (fields.StartsWith("learn-area=")) return "スマホ: プレイ範囲を覚える（" + fields.Substring(11) + "秒、振りやすい範囲で上下左右に振る）";
                 if (fields.StartsWith("shutter-iso=")) return "iPhone固定シャッター: " + ShutterISOLabel(int.Parse(fields.Substring(12)));
                 if (fields.StartsWith("shutter-emitter=")) return "iPhone低ISOの色付き発光体 " + (fields.EndsWith("1") ? "ON" : "OFF");
                 if (fields.StartsWith("shutter=")) return "iPhone固定シャッター: " + (fields == "shutter=0" ? "OFF（自動露出）" : "1/" + fields.Substring(8) + " 秒");
@@ -203,7 +203,7 @@ public sealed class PhoneSaberOperatorKeys : MonoBehaviour
             case "learning": result = completionMissing && ack.Platform == "ios" && command.StartsWith("learn-area=") ? MissingCompletionMessage
                 : command.StartsWith("ignore=")
                 ? "無視する物を覚えています（剣を消して3秒待つ）"
-                : "プレイ範囲を覚えています（" + ack.Detail.TrimEnd('s') + "秒、範囲いっぱいに振る）"; break;
+                : "プレイ範囲を覚えています（" + ack.Detail.TrimEnd('s') + "秒、振りやすい範囲で上下左右に振る）"; break;
             case "learned": result = "プレイ範囲を覚えました（" + ack.SampleCount + "回分）"; break;
             case "failed": result = "覚えられませんでした（振りが足りません）"; break;
             case "shutter-iso": result = "固定シャッター ISO " + ack.Detail; break;

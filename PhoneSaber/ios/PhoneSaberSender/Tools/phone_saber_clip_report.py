@@ -171,10 +171,55 @@ def _reconcile_selection(candidates: list[dict], endpoints: list[int] | None) ->
         c["selected"] = c is winner
 
 
+class ClipIntegrityError(ValueError):
+    """画像と認識メタデータを安全に結合できないクリップ。"""
+
+
+def validate_frame_integrity(bundle: Path, summary: dict) -> None:
+    # 同じIDの複数レコードを辞書へ入れる前に拒否する。summaryの間引きは許容する。
+    times = {}
+
+    def record(frame_id, timestamp, source):
+        if type(frame_id) is not int or frame_id < 0:
+            raise ClipIntegrityError(f"{bundle.name}: invalid frame ID ({source})")
+        if type(timestamp) not in (int, float) or not math.isfinite(timestamp):
+            raise ClipIntegrityError(f"{bundle.name}: invalid timestamp ({source}, frame {frame_id})")
+        if frame_id in times and abs(times[frame_id] - timestamp) > 1e-6:
+            raise ClipIntegrityError(f"{bundle.name}: timestamp mismatch (frame {frame_id}, {source})")
+        times[frame_id] = timestamp
+
+    frames = summary.get("autoClip", {}).get("frames", [])
+    ids = set()
+    for frame in frames:
+        frame_id = frame["f"]
+        if frame_id in ids:
+            raise ClipIntegrityError(f"{bundle.name}: duplicate frame ID {frame_id} in summary")
+        ids.add(frame_id)
+        record(frame_id, frame.get("t"), "summary")
+    image_ids = set()
+    for image in summary.get("images", []):
+        frame_id = image["frameID"]
+        if frame_id in image_ids:
+            raise ClipIntegrityError(f"{bundle.name}: duplicate frame ID {frame_id} in images")
+        image_ids.add(frame_id)
+        record(frame_id, image.get("timestamp"), image["path"])
+        context = json.loads((bundle / image["frameContextPath"]).read_text(encoding="utf-8"))
+        context_ids = set()
+        for frame in context.get("frames", []):
+            context_id = frame["frameID"]
+            if context_id in context_ids:
+                raise ClipIntegrityError(f"{bundle.name}: duplicate frame ID {context_id} in context")
+            context_ids.add(context_id)
+            record(context_id, frame.get("timestamp"), image["frameContextPath"])
+        if len(context_ids) != 1 or frame_id not in context_ids or context.get("selectedFrameID", frame_id) != frame_id:
+            raise ClipIntegrityError(f"{bundle.name}: image/context frame ID mismatch ({image['path']})")
+
+
 def load_clip(bundle: Path) -> dict[str, Any]:
     summary = json.loads((bundle / "summary.json").read_text(encoding="utf-8"))
     if summary.get("summaryScope") != "autoClip":
         raise ValueError(f"not an auto clip: {bundle}")
+    validate_frame_integrity(bundle, summary)
     clip = summary.get("autoClip") or {}
     columns = clip.get("candidateColumns") or []
     sources = clip.get("sources") or []
@@ -481,8 +526,14 @@ def main(argv: list[str] | None = None) -> int:
         print("no auto clips found", file=sys.stderr)
         return 1
     infos = []
+    rejected = 0
     for clip in clips:
-        info = describe(clip)
+        try:
+            info = describe(clip)
+        except ClipIntegrityError as exc:
+            print(f"WARNING: excluded clip: {exc}", file=sys.stderr)
+            rejected += 1
+            continue
         infos.append(info)
         if args.write:
             info["report"] = str(write_clip_report(clip))
@@ -495,7 +546,7 @@ def main(argv: list[str] | None = None) -> int:
             print(render_text(info))
             if info.get("report"):
                 print(f"report: {info['report']}\n")
-    return 0
+    return 2 if rejected else 0
 
 
 if __name__ == "__main__":

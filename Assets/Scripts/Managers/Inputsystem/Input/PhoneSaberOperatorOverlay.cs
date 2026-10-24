@@ -367,13 +367,15 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
     void BuildStationSetup()
     {
         var input = InputPoint.Instance;
-        panel.Button("範囲を覚える（10秒、いっぱいに振る）", "phone-learn-area");
-        panel.Label("点灯した剣を遊ぶ範囲いっぱいに振ります。iPhoneのプレイ範囲と、この台の位置補正を一度で保存します。[Ctrl+Shift+P]");
+        panel.Button("範囲を覚える（10秒、振りやすい範囲で上下左右に振る）", "phone-learn-area");
+        panel.Label("点灯した剣を振りやすい範囲で上下左右に振ります。iPhoneのプレイ範囲と、この台の位置補正を一度で保存します。[Ctrl+Shift+P]");
         string learnedAt = PhoneSaberPositionCalibrationStore.LearnedAt(CurrentStation);
         panel.Label(input != null && input.HasPositionCalibration
             ? (string.IsNullOrEmpty(learnedAt) ? "位置補正: 4隅の測定から" : "位置補正: 10秒の振りから（" + learnedAt + "）") +
                 (input.PositionCalibrationEnabled ? " ON" : " OFF")
             : "位置補正: 未設定");
+        panel.Label(input != null && !string.IsNullOrEmpty(input.LearnedPositionCalibrationResult)
+            ? input.LearnedPositionCalibrationResult : "学習範囲のPC適用: 未確認");
         panel.Label(PhoneSaberOperatorKeys.LastResultText);
         panel.Toggle("位置補正をON（この台だけ）", input != null && input.PositionCalibrationEnabled,
             "calibration-enabled", input != null && input.HasPositionCalibration && calibrationCorner < 0);
@@ -530,7 +532,7 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         panel.Button("ON", "phone-track-lock", "1");
         panel.Button("今の場面を保存 [K]", "phone-clip");
         // プレイ範囲（2026-10-18）: 赤い服の人など動く物は無視範囲では外せないので、剣を振る範囲の外の候補を選ばせない。
-        panel.Label("スマホのプレイ範囲（赤い服の人など、動く赤・青の物の対策。押してから10秒、遊ぶ範囲いっぱいに剣を振る）");
+        panel.Label("スマホのプレイ範囲（赤い服の人など、動く赤・青の物の対策。押してから10秒、振りやすい範囲で上下左右に振る）");
         panel.Button("スマホ: プレイ範囲を消す", "phone-clear-area");
         // 露出補正（試験、既定 0 = OFF）。−1・−2 で光らない服などが暗くなる。認識に入る画像が変わるので比べて使う。
         foreach (int ev in PhoneSaberDiscoveryResponder.ExposureBiasChoices)
@@ -696,9 +698,10 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
                 if (id < latest - 31) phoneCommandTimes.Remove(id);
         }
         if (input != null)
-            foreach (string sender in new[] { input.RedCoordinateSender, input.BlueCoordinateSender })
+            foreach (var pair in input.ReadFreshPhoneMetrics(now))
             {
-                var metrics = input.ReadPhoneMetrics(sender, now);
+                string sender = pair.Key;
+                var metrics = pair.Value;
                 // 台を未設定のiPhone（station=none）は、このPCの台のiPhoneとして表示する。
                 string metricsStation = PhoneStation(metrics?.Station);
                 if (metrics?.Platform == "ios" && metricsStation != null)
@@ -706,6 +709,8 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
             }
         panel.BeginSection("いまの設定");
         panel.Label("操作対象: このPCの台 " + (CurrentStation ?? "未指定") + " のiPhone（送信だけでは確定しません）");
+        foreach (string warning in PhoneSaberControlPanelPhone.StationWarnings(phoneReports.Values, now))
+            panel.Label(warning, warning: true);
         foreach (string phoneStation in new[] { "A", "B" })
         {
             bool found = false;
@@ -804,12 +809,15 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
             GUILayout.Label(section.Title, warningStyle);
             if (section.Title == "いまの設定")
                 foreach (var phone in panel.Phones)
+                {
+                    GUILayout.Label($"iPhone 台{phone.Station} {phone.ModelLabel} {phone.Sender} ／ app {phone.App ?? "未報告"}", textStyle);
                     for (int i = 0; i < PhoneSaberControlPanelPhone.Keys.Length; i++)
                     {
                         phone.Settings.TryGetValue(PhoneSaberControlPanelPhone.Keys[i], out var report);
                         GUILayout.Label($"iPhone 台{phone.Station} {phone.Sender}: {PhoneSaberControlPanelPhone.Labels[i]} {report?.Value ?? "未確認"}" +
                             (report == null ? "" : $"（{report.Source}・{Math.Max(0, panel.Now - report.At):0}秒前）"), textStyle);
                     }
+                }
             foreach (var item in section.Items)
             {
                 if (item.Name == null)

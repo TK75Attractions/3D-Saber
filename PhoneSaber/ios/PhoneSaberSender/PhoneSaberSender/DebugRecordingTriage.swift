@@ -995,6 +995,7 @@ enum DebugRecordingTriageBuilder {
             if let experiment = metadata["cameraExposureExperiment"] as? [String: Any] {
                 summary["cameraExposureExperiment"] = experiment
             }
+            if let phone = metadata["phone"] as? [String: Any] { summary["phone"] = phone }
             if let guided = metadata["guidedRecording"] as? [String: Any] {
                 summary["guidedRecording"] = guided
             }

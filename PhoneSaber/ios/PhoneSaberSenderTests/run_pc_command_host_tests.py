@@ -67,6 +67,36 @@ def main():
     support += block(camera, "func applyPCCommand(") + "\n}\n"
     tests = '''import XCTest
 final class PCCommandRecoveryTests: XCTestCase {
+    @MainActor func testRapidDifferentCommandsReplayEachAckWithoutRepeatingEitherOperation() {
+        for station in ["A", "B"] {
+            for learning in [false, true] {
+                let model = CameraViewModel(); model.station = station
+                let first = LANLivenessProbe.PCCommand(id: 91, ignore: nil, clearIgnore: !learning,
+                                                       learnAreaSeconds: learning ? 10 : nil, sourceHost: "192.0.2.1")
+                let second = LANLivenessProbe.PCCommand(id: 92, ignore: nil, clearIgnore: false,
+                                                        trackLock: false, sourceHost: "192.0.2.1")
+                model.applyPCCommand(first)
+                model.applyPCCommand(second)
+                model.lanProbe.replies.removeAll() // 両操作の最初のACKを落とす。
+                model.now = 1
+                model.applyPCCommand(first)
+                model.applyPCCommand(second)
+                XCTAssertEqual(model.effects, [learning ? "area" : "clear-ignore", "tracklock"])
+                XCTAssertTrue(model.lanProbe.replies[0].line.contains("id=91"))
+                XCTAssertTrue(model.lanProbe.replies[1].line.contains("id=92"))
+                if learning {
+                    model.now = 10.1
+                    model.areaCompletion?(300, true, .init(minX: 0.2, minY: 0.1, maxX: 0.8, maxY: 0.9))
+                    model.lanProbe.replies.removeAll() // 学習完了ACKも落とし、同じIDで回収する。
+                    model.now = 11
+                    model.applyPCCommand(first)
+                    XCTAssertTrue(model.lanProbe.replies.last!.line.contains("id=91 station=" + station))
+                    XCTAssertTrue(model.lanProbe.replies.last!.line.contains("result=learned"))
+                    XCTAssertEqual(model.effects, ["area", "tracklock"])
+                }
+            }
+        }
+    }
     @MainActor func testLearningCacheOutlivesFiniteRecoveryWindowWithoutRelearning() {
         for station in ["A", "B", ""] {
             for seconds in [1, 10, 60] {
@@ -313,7 +343,7 @@ final class PCCommandRecoveryTests: XCTestCase {
 import Darwin
 let suite = PCCommandRecoveryTests.defaultTestSuite
 suite.run()
-guard let run = suite.testRun, run.executionCount == 11, run.hasSucceeded else { exit(1) }
+guard let run = suite.testRun, run.executionCount == 12, run.hasSucceeded else { exit(1) }
 if CommandLine.arguments.count == 3 {
     try MainActor.assumeIsolated { try replayRetrySchedule(CommandLine.arguments[1], output: CommandLine.arguments[2]) }
 }

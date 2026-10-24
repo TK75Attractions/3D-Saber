@@ -26,7 +26,7 @@ import sys
 
 TOOLS = Path(__file__).resolve().parents[1] / 'ios/PhoneSaberSender/Tools'
 sys.path.insert(0, str(TOOLS))
-from phone_saber_clip_report import find_clips, load_clip, frame_candidates, frame_output
+from phone_saber_clip_report import ClipIntegrityError, find_clips, load_clip, frame_candidates, frame_output
 
 PRIVATE = Path.home() / 'Library/Application Support/PhoneSaber'
 COLORS = ('red', 'blue')
@@ -377,8 +377,13 @@ def main(argv=None):
                     raise ValueError(f'同一クリップの局指定が競合: {bundle}')
                 continue
             seen[bundle] = station
+            try:
+                rows = list(observations(bundle, station, labels))
+            except ClipIntegrityError as error:
+                print(f'警告: 破損クリップを除外: {error}', file=sys.stderr)
+                continue
             clip_count += 1
-            for row in observations(bundle, station, labels):
+            for row in rows:
                 groups[row['key']].append(row)
     print(f'対象: {clip_count} clips / {args.date or "全収録日"}')
     print(render({key: summarize(rows) for key, rows in groups.items()}, args.min_labelled))

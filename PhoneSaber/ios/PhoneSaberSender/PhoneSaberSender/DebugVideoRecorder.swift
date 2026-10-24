@@ -1552,6 +1552,7 @@ final class DebugVideoRecorder {
     /// Opt-in exposure experiment in effect at Start (root `cameraExposureExperiment`).
     /// nil (tests, older callers) omits the key.
     private let cameraExposureExperiment: CameraExposureExperimentState?
+    private let identity: PhoneSaberIdentity?
     private var bridgeTrackers: [String: DebugBridgeTracker] = [:]
     private var lastDetectedFrames: [String: DebugRetainedBlueFrame] = [:]
     private var bridgePending: [String: DebugBridgePending] = [:]
@@ -1590,6 +1591,7 @@ final class DebugVideoRecorder {
          forensicPolicy: DebugForensicCapturePolicy = .production,
          diagnosticColors: DebugDiagnosticColors = .both,
          cameraExposureExperiment: CameraExposureExperimentState? = nil,
+         identity: PhoneSaberIdentity? = nil,
          guidedScript: GuidedRecordingScript? = nil,
          clock: @escaping () -> TimeInterval = { ProcessInfo.processInfo.systemUptime }) throws {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -1606,6 +1608,7 @@ final class DebugVideoRecorder {
         self.forensicPolicy = forensicPolicy
         self.diagnosticColors = diagnosticColors
         self.cameraExposureExperiment = cameraExposureExperiment
+        self.identity = identity
         self.guidedLedger = guidedScript.map(DebugGuidedLedger.init(script:))
         self.manualLosslessCaptureLimit = guidedScript == nil
             ? DebugRecordingLimits.maximumManualLosslessCaptures
@@ -2821,6 +2824,7 @@ final class DebugVideoRecorder {
         if let cameraExposureExperiment {
             result["cameraExposureExperiment"] = cameraExposureExperiment.metadataDictionary
         }
+        if let identity { result["phone"] = identity.jsonObject }
         if let guidedLedger { result["guidedRecording"] = guidedLedger.summary.jsonObject }
         return result
     }

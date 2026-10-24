@@ -1764,6 +1764,9 @@ extension DebugBridgeDropoutTests {
             setting: .maxShutter1_120, status: .applied, requestedMaxExposureSeconds: 1.0 / 120,
             appliedMaxExposureSeconds: 1.0 / 120).metadataDictionary
         document["cameraExposureExperiment"] = experiment
+        let phone = PhoneSaberIdentity(deviceModel: "iPhone14,5", deviceID: "test-device", appVersion: "1.0",
+            appBuild: "20261024", station: "A", destination: "Mac 192.168.1.2", manualIPOverride: false).jsonObject
+        document["phone"] = phone
         let bundle = try DebugRecordingTriageBuilder.build(
             metadataData: JSONSerialization.data(withJSONObject: document),
             metadataURL: directory.appendingPathComponent("metadata.json"),
@@ -1773,6 +1776,7 @@ extension DebugBridgeDropoutTests {
         let copied = try XCTUnwrap(summary["cameraExposureExperiment"] as? [String: Any])
         XCTAssertEqual(copied["setting"] as? String, "maxShutter1_120")
         XCTAssertEqual(copied["status"] as? String, "applied")
+        XCTAssertEqual(summary["phone"] as? NSDictionary, phone as NSDictionary)
 
         let legacyDirectory = try temporaryDirectory()
         let legacy = try DebugRecordingTriageBuilder.build(
@@ -1782,6 +1786,7 @@ extension DebugBridgeDropoutTests {
         let legacySummary = try XCTUnwrap(JSONSerialization.jsonObject(with:
             Data(contentsOf: legacy.appendingPathComponent("summary.json"))) as? [String: Any])
         XCTAssertNil(legacySummary["cameraExposureExperiment"])
+        XCTAssertNil(legacySummary["phone"])
     }
 
 }

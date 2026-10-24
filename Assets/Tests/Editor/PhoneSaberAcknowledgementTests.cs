@@ -325,7 +325,7 @@ public class PhoneSaberAcknowledgementTests
         Assert.AreEqual("learned", store.Read(7)[0].Result);
         string text = PhoneSaberOperatorKeys.StatusText(store, 40);
         StringAssert.Contains("iPhone: プレイ範囲を覚えました（42回分）", text);
-        StringAssert.Contains("Android（台B）: プレイ範囲を覚えています（10秒、範囲いっぱいに振る）", text);
+        StringAssert.Contains("Android（台B）: プレイ範囲を覚えています（10秒、振りやすい範囲で上下左右に振る）", text);
         for (int i = 8; i < 40; i++) store.Queue(i, "ignore=both", 40);
         Assert.IsFalse(store.Receive(Ack(7, "failed", "samples0"), "10.0.0.1"));
         Assert.IsEmpty(store.Read(7));
@@ -437,7 +437,7 @@ public class PhoneSaberAcknowledgementTests
         store.Receive(Ack(7, "learning", "3s", station: station), "phone");
         Assert.AreEqual(result, store.Read(7)[0].Result);
         StringAssert.DoesNotContain("覚えています", PhoneSaberOperatorKeys.StatusText(store, 4));
-        StringAssert.Contains("プレイ範囲を覚えています（10秒、範囲いっぱいに振る）",
+        StringAssert.Contains("プレイ範囲を覚えています（10秒、振りやすい範囲で上下左右に振る）",
             PhoneSaberOperatorKeys.ResultText(Ack(8, "learning", "10s"), "learn-area=10"));
     }
 }

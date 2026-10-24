@@ -41,7 +41,7 @@ guard let run = suite.testRun, run.executionCount == 2, run.hasSucceeded else { 
 ''')
         inputs = [tmp / "Support.swift", tmp / "main.swift", TESTS / "HighSpeedCaptureTests.swift"]
         names = ["FrameProcessor.swift", "DetectionCore.swift", "BGRADetection.swift", "DebugVideoRecorder.swift",
-                 "DebugRecordingTriage.swift", "GuidedRecording.swift"]
+                 "DebugRecordingTriage.swift", "GuidedRecording.swift", "MetricsDatagram.swift"]
         if rejected:
             names.append("HighSpeedCapture.swift")
         for name in names:

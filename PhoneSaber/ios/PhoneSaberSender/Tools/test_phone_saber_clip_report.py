@@ -135,6 +135,54 @@ class PNGTests(unittest.TestCase):
 
 
 class ClipReportTests(unittest.TestCase):
+    def test_integrity_rejects_duplicate_ids_and_time_mismatches_before_overlay(self):
+        for corruption in ('summary-duplicate', 'image-duplicate', 'context-duplicate',
+                           'image-time', 'context-time', 'context-id', 'context-extra', 'invalid-time'):
+            with self.subTest(corruption=corruption), tempfile.TemporaryDirectory() as directory:
+                bundle = make_clip(Path(directory))
+                path = bundle/'summary.json'
+                summary = json.loads(path.read_text())
+                image = summary['images'][1]
+                context_path = bundle/image['frameContextPath']
+                context = json.loads(context_path.read_text())
+                if corruption == 'summary-duplicate':
+                    summary['autoClip']['frames'].append(summary['autoClip']['frames'][0])
+                elif corruption == 'image-duplicate':
+                    summary['images'].append(image)
+                elif corruption == 'context-duplicate':
+                    context['frames'] *= 2
+                elif corruption == 'image-time':
+                    image['timestamp'] += 1.22
+                elif corruption == 'context-time':
+                    # summaryが間引かれていても、画像自身の時刻との比較で拒否する。
+                    summary['autoClip']['frames'] = []
+                    context['frames'][0]['timestamp'] += 1.22
+                elif corruption == 'invalid-time':
+                    image['timestamp'] = None
+                elif corruption == 'context-extra':
+                    context['frames'].insert(0, dict(frameID=999, timestamp=image['timestamp']))
+                else:
+                    context['frames'][0]['frameID'] = 999
+                path.write_text(json.dumps(summary))
+                context_path.write_text(json.dumps(context))
+                with self.assertRaises(report.ClipIntegrityError):
+                    report.write_clip_report(bundle)
+                self.assertFalse(bundle.with_suffix('.contact.png').exists())
+                self.assertFalse(bundle.with_suffix('.report.md').exists())
+                with mock.patch('sys.stdout'), mock.patch('sys.stderr') as stderr:
+                    self.assertEqual(report.main([str(bundle), '--write']), 2)
+                self.assertIn('excluded clip', ''.join(c.args[0] for c in stderr.write.call_args_list))
+
+    def test_integrity_accepts_thinned_summary_and_roundoff(self):
+        with tempfile.TemporaryDirectory() as directory:
+            bundle = make_clip(Path(directory))
+            path = bundle/'summary.json'
+            summary = json.loads(path.read_text())
+            summary['autoClip']['frames'] = []
+            summary['images'][0]['timestamp'] += 1e-9
+            path.write_text(json.dumps(summary))
+            self.assertTrue(report.load_clip(bundle)['summary']['images'])
+
     def test_confusion_summary_lists_competing_candidates(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             bundle = make_clip(Path(directory))

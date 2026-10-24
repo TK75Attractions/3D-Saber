@@ -45,12 +45,19 @@ class Frames
         { ReplayLearningAcknowledgements(args[1]); return 0; }
         RunFixture(typeof(PhoneSaberAcknowledgementTests));
         RunFixture(typeof(PhoneSaberPositionCalibrationTests));
-        Console.WriteLine("10s swing mapping: central 90.9%, virtual camera-edge corners, linear OutsideMargin, A/B save/reload PASS");
+        RunFixture(typeof(TutorialProgramTests));
+        RunFixture(typeof(PhoneSaberPhoneCommandTests));
+        Console.WriteLine("10s swing mapping: central 66.7%, F8/tutorial shared 1.5x, virtual camera-edge corners, linear OutsideMargin, A/B save/reload PASS");
         var discovery = new PhoneSaberDiscoveryResponderTests();
         foreach (int seconds in new[] { 1, 10, 60 })
             discovery.LearningRetriesPastCompletionWithTheSameIdAndStopsWithinIPhoneCache(seconds);
         discovery.DefaultsCommandAndNewSenderRule();
-        Console.WriteLine("Discovery retry host: 4 PASS (socket lifecycle tests excluded)");
+        foreach (string station in new[] { "A", "B" })
+            discovery.RapidDifferentOperationsRetryIndependentlyAndCollectOutOfOrderAcks(station);
+        discovery.LearningAndAnotherCommandKeepTheirOwnDeadlineAndFinalAck("learned", "samples300-area0.2_0.1_0.8_0.9");
+        discovery.LearningAndAnotherCommandKeepTheirOwnDeadlineAndFinalAck("failed", "samples0");
+        discovery.FullQueuePreservesUnacknowledgedCommandsAndReusesExpiredSlots();
+        Console.WriteLine("Discovery retry host: 9 PASS (socket lifecycle tests excluded)");
         Console.WriteLine("Calibration host: Unity lifecycle / PlayerPrefs / JSON substituted; actual ACK / mapping / InputPoint methods executed");
         return 0;
 #else
@@ -146,13 +153,14 @@ class Frames
     {
         CommandHostClock.Now = 0;
         int id = PhoneSaberDiscoveryResponder.QueueCommand("learn-area=10");
-        var current = typeof(PhoneSaberDiscoveryResponder).GetMethod("CurrentCommand", BindingFlags.Static | BindingFlags.NonPublic);
+        var current = typeof(PhoneSaberDiscoveryResponder).GetMethod("CurrentCommands", BindingFlags.Static | BindingFlags.NonPublic);
         using (var output = new System.IO.StreamWriter(path))
             foreach (double now in new[] { .2, 5, 10, 10.5, 11, 14.999, 15.001, 16 })
             {
                 CommandHostClock.Now = now;
-                var bytes = (byte[])current.Invoke(null, null);
-                string command = bytes == null ? "" : System.Text.Encoding.ASCII.GetString(bytes);
+                var commands = (byte[][])current.Invoke(null, new object[] { "phone" });
+                Assert.LessOrEqual(commands.Length, 1);
+                string command = commands.Length == 0 ? "" : System.Text.Encoding.ASCII.GetString(commands[0]);
                 if (command.Length > 0) Assert.AreEqual(PhoneSaberDiscoveryResponder.BuildCommand(id, "learn-area=10"), command);
                 output.WriteLine(now.ToString(System.Globalization.CultureInfo.InvariantCulture) + "\t" + command);
             }

@@ -42,8 +42,12 @@ class FieldRegressionTests(unittest.TestCase):
         (clip / "images").mkdir(parents=True)
         self.source = clip / "images" / self.label["image"]
         self.source.write_bytes(synthetic_png())
+        (clip / "frames").mkdir()
+        (clip / "frames/1.json").write_text(json.dumps({"frames": [{"frameID": 1, "timestamp": 1}]}))
         (clip / "summary.json").write_text(json.dumps({"autoClip": {
-            "frameSize": {"width": 160, "height": 120}, "camera": {"exposureBias": -2}}}))
+            "frameSize": {"width": 160, "height": 120}, "camera": {"exposureBias": -2},
+            "frames": [{"f": 1, "t": 1}]}, "images": [{"frameID": 1, "timestamp": 1,
+            "path": "images/" + self.label["image"], "frameContextPath": "frames/1.json", "role": "event"}]}))
         self.labels = self.root / "labels.json"
         self.destination = self.root / "set"
         self.save_labels()
@@ -66,6 +70,23 @@ class FieldRegressionTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "重複"):
             self.add()
 
+    def test_corrupt_clip_cannot_be_registered_or_partially_copied(self):
+        summary_path = self.source.parent.parent / "summary.json"
+        original = json.loads(summary_path.read_text())
+        for corruption in ('duplicate', 'time', 'unlisted-image'):
+            with self.subTest(corruption=corruption):
+                summary = copy.deepcopy(original)
+                if corruption == 'duplicate':
+                    summary['autoClip']['frames'] *= 2
+                elif corruption == 'time':
+                    summary['images'][0]['timestamp'] += 1.22
+                else:
+                    summary['images'] = []
+                summary_path.write_text(json.dumps(summary))
+                with self.assertRaises(ValueError):
+                    self.add()
+                self.assertFalse(self.destination.exists())
+
     def test_invalid_label_resolution_exposure_and_traversal_rejected(self):
         for update in ({"red": None}, {"blue": points(-1)}, {"blue": points(float("nan"))},
                        {"exposure": 0}, {"date": "wrong"}, {"image": "../event.png"},
@@ -78,8 +99,10 @@ class FieldRegressionTests(unittest.TestCase):
                     self.add()
                 self.label = original
         self.save_labels()
-        (self.source.parent.parent / "summary.json").write_text(json.dumps({"autoClip": {
-            "frameSize": {"width": 320, "height": 240}, "camera": {"exposureBias": -2}}}))
+        summary_path = self.source.parent.parent / "summary.json"
+        summary = json.loads(summary_path.read_text())
+        summary["autoClip"]["frameSize"] = {"width": 320, "height": 240}
+        summary_path.write_text(json.dumps(summary))
         with self.assertRaisesRegex(ValueError, "フル解像度"):
             self.add()
         self.assertFalse(self.destination.exists())

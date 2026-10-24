@@ -5,6 +5,13 @@ using UnityEngine;
 // チュートリアルの進行表(純粋データ)と、タイトルの問いかけ・Game シーンのフラグの約束事。
 public class TutorialProgramTests
 {
+    // 基準復元テスト用の、拡張前のカメラ矩形。
+    static Vector2[] CameraCorners(Rect area, float width, float height) => new[] {
+        new Vector2(area.xMin * (width - 1), area.yMin * (height - 1)),
+        new Vector2(area.xMax * (width - 1), area.yMin * (height - 1)),
+        new Vector2(area.xMax * (width - 1), area.yMax * (height - 1)),
+        new Vector2(area.xMin * (width - 1), area.yMax * (height - 1)) };
+
     [TearDown]
     public void ResetState()
     {
@@ -97,11 +104,12 @@ public class TutorialProgramTests
     public void RangeLearning_WidensTheEasySwingAreaBeforeCalibrating()
     {
         var learned = Rect.MinMaxRect(.2f, .1f, .8f, .9f);
-        var widened = TutorialRangeLearning.Widen(learned, TutorialProgram.RangeWidenFactor);
-        Assert.AreEqual(1.5f, TutorialProgram.RangeWidenFactor);
+        var widened = PhoneSaberPositionCalibration.WidenLearnedArea(learned);
+        Assert.AreEqual(1.5f, PhoneSaberPositionCalibration.LearnedRangeWidenFactor);
         Assert.AreEqual(.05f, widened.xMin, 1e-5f); Assert.AreEqual(.95f, widened.xMax, 1e-5f);
         Assert.AreEqual(-.1f, widened.yMin, 1e-5f); Assert.AreEqual(1.1f, widened.yMax, 1e-5f);
-        var corners = TutorialRangeLearning.CalibrationCorners(widened, 1920, 1080);
+        Assert.IsTrue(PhoneSaberPositionCalibration.TryFromLearnedArea(learned, 1920, 1080, out var calibration, out _));
+        var corners = calibration.CopyCorners();
         var expected = new[] { new Vector2(.05f * 1919, -.1f * 1079), new Vector2(.95f * 1919, -.1f * 1079),
             new Vector2(.95f * 1919, 1.1f * 1079), new Vector2(.05f * 1919, 1.1f * 1079) };
         for (int i = 0; i < 4; i++)
@@ -125,7 +133,7 @@ public class TutorialProgramTests
     [Test]
     public void RangeBaseline_PhoneAreaFollowsTheMappedCameraRegionWithTheRecognitionMargin()
     {
-        var corners = TutorialRangeLearning.CalibrationCorners(Rect.MinMaxRect(.2f, .1f, .8f, .9f), 1920, 1080);
+        var corners = CameraCorners(Rect.MinMaxRect(.2f, .1f, .8f, .9f), 1920, 1080);
         var area = TutorialRangeBaseline.PhoneAreaFor(corners, 1920, 1080);
         Assert.AreEqual(.2f - PhoneSaberCalibrationPlayArea.Margin, area.xMin, 1e-4f, "画面いっぱいに写る範囲＋認識の余白");
         Assert.AreEqual(.8f + PhoneSaberCalibrationPlayArea.Margin, area.xMax, 1e-4f);
@@ -134,10 +142,10 @@ public class TutorialProgramTests
         Assert.IsTrue(PhoneSaberCalibrationPlayArea.Valid(area));
         StringAssert.StartsWith("play-area=", PhoneSaberCalibrationPlayArea.Command(area));
         var widened = TutorialRangeBaseline.PhoneAreaFor(
-            TutorialRangeLearning.CalibrationCorners(Rect.MinMaxRect(.05f, -.1f, .95f, 1.1f), 1920, 1080), 1920, 1080);
+            CameraCorners(Rect.MinMaxRect(.05f, -.1f, .95f, 1.1f), 1920, 1080), 1920, 1080);
         Assert.AreEqual(Rect.MinMaxRect(0, 0, 1, 1), widened, "カメラ画像の外は 0..1 に収める");
         var tiny = TutorialRangeBaseline.PhoneAreaFor(
-            TutorialRangeLearning.CalibrationCorners(Rect.MinMaxRect(.5f, .5f, .52f, .52f), 1920, 1080), 1920, 1080);
+            CameraCorners(Rect.MinMaxRect(.5f, .5f, .52f, .52f), 1920, 1080), 1920, 1080);
         Assert.AreEqual(PhoneSaberCalibrationPlayArea.MinimumSize, tiny.width, 1e-4f, "最小の幅");
     }
 

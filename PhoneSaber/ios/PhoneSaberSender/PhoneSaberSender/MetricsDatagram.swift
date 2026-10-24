@@ -1,4 +1,49 @@
 import Foundation
+import Darwin
+
+// 診断の端末情報。端末IDはこのアプリのインストール単位で、座標には付加しない。
+struct PhoneSaberIdentity: Codable, Equatable {
+    var deviceModel: String
+    var deviceID: String
+    var appVersion: String
+    var appBuild: String
+    var station: String
+    var destination: String
+    var manualIPOverride: Bool
+
+    static let deviceModel: String = {
+        var info = utsname()
+        uname(&info)
+        return withUnsafeBytes(of: &info.machine) { bytes in
+            String(decoding: bytes.prefix { $0 != 0 }, as: UTF8.self)
+        }
+    }()
+    static let deviceID: String = {
+        let key = "PhoneSaber.diagnosticDeviceID.v1"
+        if let saved = UserDefaults.standard.string(forKey: key) { return saved }
+        let id = UUID().uuidString
+        UserDefaults.standard.set(id, forKey: key)
+        return id
+    }()
+    static var version: String { Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "unknown" }
+    static var build: String { Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "unknown" }
+    static func modelName(_ model: String) -> String {
+        switch model {
+        case "iPhone14,5": return "iPhone 13"
+        case "iPhone16,2": return "iPhone 15 Pro Max"
+        default: return model
+        }
+    }
+    var jsonObject: [String: Any] {
+        ["deviceModel": deviceModel, "deviceName": Self.modelName(deviceModel), "deviceID": deviceID,
+         "appVersion": appVersion, "appBuild": appBuild, "station": station,
+         "destination": destination, "manualIPOverride": manualIPOverride]
+    }
+    var displayText: String {
+        "台\(station == "none" ? "未指定（A/Bを確認）" : station) · \(Self.modelName(deviceModel))\n送信先: \(destination)\n" +
+            (manualIPOverride ? "手動IP優先 ON（台の自動選択を上書き）" : "手動IP優先 OFF（自動探索）")
+    }
+}
 
 // 診断専用の純粋な整形。座標を通すキューからは呼ばない。
 struct MetricsDatagram {
@@ -10,6 +55,7 @@ struct MetricsDatagram {
     var thermal = "unknown", battery: Double?, lowLatencyTest = false
     var c2sEnd = "detection"
     var controls: String?
+    var model: String?
 
     // 399 byte上限内で現在値を通知。順に追跡0/1、EVの符号反転、シャッター・ISOの選択index。
     static func controlState(trackLock: Bool, exposureBias: Int, shutter: Int, shutterISO: Int) -> String? {
@@ -48,6 +94,7 @@ struct MetricsDatagram {
                   controls.last.map({ "01234567".contains($0) }) == true else { return nil }
             text += " ctl=\(controls)"
         }
+        if let model { text += " model=\(Self.atom(model, limit: 16))" }
         return text.utf8.count < 400 && text.data(using: .ascii) != nil ? text : nil
     }
 }

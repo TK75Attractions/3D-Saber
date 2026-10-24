@@ -44,22 +44,38 @@ public sealed class PhoneSaberPositionCalibration
             (float)((inverse[3] * x + inverse[4] * y + inverse[5]) / d * Height));
     }
 
-    // 2026-10-24 ユーザー: 感度が良すぎる。各辺を5%広げ、全可動域を画面中央の約91%へ写す。
-    // カメラ外の拡張隅も仮想座標として扱い、端で感度や中心を変えない。認識用の8%余白とは別。
-    public const float LearnedEdgeInset = -0.05f;
+    // F8・チュートリアル共通。振りやすい範囲を中心基準で縦横1.5倍に広げる。
+    // カメラ外の仮想隅も保持し、端で感度や中心を変えない。認識用の余白とは別。
+    public const float LearnedRangeWidenFactor = 1.5f;
+    public static Rect WidenLearnedArea(Rect bounds)
+    {
+        Vector2 size = bounds.size * LearnedRangeWidenFactor;
+        return new Rect(bounds.center - size * .5f, size);
+    }
+
     public static bool TryFromLearnedArea(Rect bounds, float cameraWidth, float cameraHeight,
         out PhoneSaberPositionCalibration calibration, out string error)
     {
         calibration = null;
-        error = "学習した範囲が無効か、狭すぎます。もう一度いっぱいに振ってください。";
+        error = "学習した範囲が無効か、狭すぎます。振りやすい範囲で上下左右に振って、もう一度覚えてください。";
         if (!PhoneSaberCalibrationPlayArea.Valid(bounds) || !IsFinite(cameraWidth) || !IsFinite(cameraHeight) ||
             cameraWidth <= 1 || cameraHeight <= 1) return false;
-        float x0 = (bounds.xMin + bounds.width * LearnedEdgeInset) * (cameraWidth - 1);
-        float x1 = (bounds.xMax - bounds.width * LearnedEdgeInset) * (cameraWidth - 1);
-        float y0 = (bounds.yMin + bounds.height * LearnedEdgeInset) * (cameraHeight - 1);
-        float y1 = (bounds.yMax - bounds.height * LearnedEdgeInset) * (cameraHeight - 1);
+        Rect area = WidenLearnedArea(bounds);
+        float x0 = area.xMin * (cameraWidth - 1), x1 = area.xMax * (cameraWidth - 1);
+        float y0 = area.yMin * (cameraHeight - 1), y1 = area.yMax * (cameraHeight - 1);
         return TryCreate(new[] { new Vector2(x0, y0), new Vector2(x1, y0),
             new Vector2(x1, y1), new Vector2(x0, y1) }, out calibration, out error);
+    }
+
+    // F8 とイベントログに同じ適用結果を残す。矩形はカメラ画像の 0..1。
+    public static string LearnedAreaResult(Rect bounds, bool applied, string error)
+    {
+        Rect area = WidenLearnedArea(bounds);
+        return string.Format(System.Globalization.CultureInfo.InvariantCulture,
+            "学習矩形(0..1): ({0:F6}, {1:F6})–({2:F6}, {3:F6}) / 倍率: {4:0.0} / 適用矩形: ({5:F6}, {6:F6})–({7:F6}, {8:F6}) / PC適用: {9}{10}",
+            bounds.xMin, bounds.yMin, bounds.xMax, bounds.yMax, LearnedRangeWidenFactor,
+            area.xMin, area.yMin, area.xMax, area.yMax, applied ? "成功" : "失敗",
+            applied ? "" : "（" + error + "）");
     }
 
     public static bool TryCreate(Vector2[] points, out PhoneSaberPositionCalibration calibration, out string error)
@@ -145,6 +161,7 @@ public static class PhoneSaberPositionCalibrationStore
         public int version = 1;
         public Vector2[] corners;
         public string learnedAt;
+        public string learnedResult;
     }
 
     public static PhoneSaberPositionCalibration Load(string station, out bool enabled)
@@ -167,9 +184,15 @@ public static class PhoneSaberPositionCalibrationStore
         catch (ArgumentException) { return ""; }
     }
 
-    public static void Save(string station, PhoneSaberPositionCalibration calibration, string learnedAt = null)
+    public static string LearnedResult(string station)
     {
-        PlayerPrefs.SetString(DataKey(station), JsonUtility.ToJson(new Data { corners = calibration.CopyCorners(), learnedAt = learnedAt }));
+        try { return JsonUtility.FromJson<Data>(PlayerPrefs.GetString(DataKey(station), ""))?.learnedResult ?? ""; }
+        catch (ArgumentException) { return ""; }
+    }
+
+    public static void Save(string station, PhoneSaberPositionCalibration calibration, string learnedAt = null, string learnedResult = null)
+    {
+        PlayerPrefs.SetString(DataKey(station), JsonUtility.ToJson(new Data { corners = calibration.CopyCorners(), learnedAt = learnedAt, learnedResult = learnedResult }));
         SetEnabled(station, true);
     }
 

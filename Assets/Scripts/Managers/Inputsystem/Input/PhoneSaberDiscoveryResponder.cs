@@ -28,8 +28,6 @@ public sealed class PhoneSaberDiscoveryResponder : IDisposable
     static readonly object commandGate = new object();
     static int automaticDefaultsRequested;
     static string commandStation = "";
-    static string pendingCommand;
-    static double pendingUntil;
     static int commandId = (int)(DateTime.UtcNow.Ticks % 1000000) * 1000;
     public static readonly PhoneSaberAcknowledgementStore Acknowledgements = new PhoneSaberAcknowledgementStore();
 
@@ -62,8 +60,6 @@ public sealed class PhoneSaberDiscoveryResponder : IDisposable
             int id = Interlocked.Increment(ref commandId);
             double now = SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp);
             Acknowledgements.Queue(id, fields, now, automatic);
-            Volatile.Write(ref pendingCommand, BuildCommand(id, fields));
-            Volatile.Write(ref pendingUntil, now + CommandRetrySeconds(fields));
             if (fields == DefaultsCommand)
             {
                 PhoneSaberOperatorKeys.ResetDefaultsState();
@@ -89,16 +85,10 @@ public sealed class PhoneSaberDiscoveryResponder : IDisposable
         double now, double pendingSeconds) => pendingSeconds == 0 &&
         (!lastSeen.TryGetValue(sender, out double seen) || now - seen >= NewSenderSeconds);
 
-    public static double CommandSecondsLeft(double now) =>
-        Volatile.Read(ref pendingCommand) == null ? 0 : Math.Max(0, Volatile.Read(ref pendingUntil) - now);
+    public static double CommandSecondsLeft(double now) => Acknowledgements.CommandSecondsLeft(now);
 
-    static byte[] CurrentCommand()
-    {
-        string command = Volatile.Read(ref pendingCommand);
-        if (command == null) return null;
-        if (SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp) > Volatile.Read(ref pendingUntil)) return null;
-        return Encoding.ASCII.GetBytes(command);
-    }
+    static byte[][] CurrentCommands(string sender) => Acknowledgements.PendingCommands(
+        SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp), sender);
 
     public PhoneSaberMetricsStore Metrics { get; } = new PhoneSaberMetricsStore();
 
@@ -192,8 +182,8 @@ public sealed class PhoneSaberDiscoveryResponder : IDisposable
                         Interlocked.Exchange(ref automaticDefaultsRequested, 1);
                     lastSeen[sender] = now;
                     client.Send(reply, reply.Length, (IPEndPoint)remote);
-                    byte[] command = CurrentCommand();
-                    if (command != null) client.Send(command, command.Length, (IPEndPoint)remote);
+                    foreach (byte[] command in CurrentCommands(sender))
+                        client.Send(command, command.Length, (IPEndPoint)remote);
                 }
                 else if (PhoneSaberAcknowledgement.TryParse(data, length, out var ack))
                 {
@@ -347,6 +337,7 @@ public sealed class PhoneSaberAcknowledgement
 
 public sealed class PhoneSaberAcknowledgementStore
 {
+    public const int MaximumCommands = 32;
     sealed class Command
     {
         public int Id;
@@ -366,11 +357,34 @@ public sealed class PhoneSaberAcknowledgementStore
     {
         lock (gate)
         {
+            // 未完了の再送を押し出さない。満杯なら新規受付を失敗させ、期限切れの枠だけ再利用する。
+            if (commands.Count >= MaximumCommands && !commands.Exists(c => c.Id == id))
+            {
+                int expired = commands.FindIndex(c => now >= Deadline(c));
+                if (expired < 0) throw new InvalidOperationException("iPhone指示の送信待ちが満杯です。少し待って再操作してください。");
+                commands.RemoveAt(expired);
+            }
             commands.RemoveAll(c => c.Id == id);
             commands.Add(new Command { Id = id, Fields = fields, QueuedAt = now, Automatic = automatic });
-            if (commands.Count > 32) commands.RemoveAt(0);
             Interlocked.Increment(ref revision);
         }
+    }
+
+    static double Deadline(Command command) => command.QueuedAt + PhoneSaberDiscoveryResponder.CommandRetrySeconds(command.Fields);
+
+    // 自動defaultsは、いずれかの再送期限が残っている間は既存操作へ割り込ませない。
+    public double CommandSecondsLeft(double now)
+    {
+        lock (gate) return commands.Count == 0 ? 0 : Math.Max(0, commands.Max(Deadline) - now);
+    }
+
+    // 探索1回につき最大32件を受付順で返す。完了ACK済みの端末へは再送せず、
+    // 別端末のACKには影響させない。learningは開始ACKなので完了まで再送する。
+    internal byte[][] PendingCommands(double now, string sender)
+    {
+        lock (gate) return commands.Where(c => now < Deadline(c) &&
+            (!c.Phones.TryGetValue(sender, out var ack) || ack.Result == "learning"))
+            .Select(c => Encoding.ASCII.GetBytes(PhoneSaberDiscoveryResponder.BuildCommand(c.Id, c.Fields))).ToArray();
     }
 
     public bool Receive(PhoneSaberAcknowledgement ack, string sender)

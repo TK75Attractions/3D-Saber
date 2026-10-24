@@ -314,6 +314,8 @@ final class AutoClipTests: XCTestCase {
     }
 
     func testBundleMetadataSerializesRealOutputSuppressionAndEvidence() throws {
+        let identity = PhoneSaberIdentity(deviceModel: "iPhone16,2", deviceID: "test-device", appVersion: "1.0",
+            appBuild: "20261024", station: "B", destination: "192.168.1.2:5005/5006", manualIPOverride: true)
         var winner = Self.candidate((100, 100), (100, 300))
         winner.observerEmitterInputs = SaberObserverEmitterInputs(emitterScore: 0.8,
                                                                  nearSaturationPresent: true, aspect: 12.5)
@@ -331,7 +333,7 @@ final class AutoClipTests: XCTestCase {
         }
         let capture = AutoClipCapture(clipID: "test", trigger: AutoClipTriggerEvent(kind: .manual, frameID: 1, timestamp: 1),
             buffers: buffers, windowStart: 0, windowEnd: 2, captureFPS: 30,
-            environmentAtTrigger: AutoClipEnvironment(shutter: 1000, shutterISO: 64, shutterEmitter: true, exposureDurationSeconds: 0.001, iso: 80.5, signingExpiryRemainingHours: 49),
+            environmentAtTrigger: AutoClipEnvironment(shutter: 1000, shutterISO: 64, shutterEmitter: true, exposureDurationSeconds: 0.001, iso: 80.5, appVersion: identity.appVersion, identity: identity, signingExpiryRemainingHours: 49),
             environmentAtSave: AutoClipEnvironment(signingExpiryRemainingHours: 48),
             ignoreZones: [:], playArea: nil, sessionClipIndex: 1, rejectedTriggers: [:])
         let content = AutoClipBundleContent(capture: capture, slots: [0])
@@ -343,6 +345,9 @@ final class AutoClipTests: XCTestCase {
         XCTAssertEqual(clip["formatVersion"] as? Int, 2)
         XCTAssertEqual((clip["camera"] as? [String: Any])?["signingExpiryRemainingHours"] as? Int, 48)
         let camera = try XCTUnwrap(clip["camera"] as? [String: Any])
+        XCTAssertEqual(camera["appVersion"] as? String, "1.0")
+        let phone = try XCTUnwrap(clip["phone"] as? [String: Any])
+        XCTAssertEqual(phone as NSDictionary, identity.jsonObject as NSDictionary)
         XCTAssertEqual(camera["shutter"] as? Int, 1000)
         XCTAssertEqual(camera["shutterISO"] as? Int, 64)
         XCTAssertEqual(camera["shutterEmitter"] as? Bool, true)
@@ -724,6 +729,63 @@ final class AutoClipTests: XCTestCase {
         XCTAssertFalse(log.contains { $0.contains("clip skipped") })
     }
 
+    func testSequenceReuseDropsPendingClipAndKeepsDiagnosticIDsMonotonic() {
+        let recorder = AutoClipRecorder(directory: FileManager.default.temporaryDirectory, enabled: true)
+        var log: [String] = []
+        var cancelled: [String] = []
+        recorder.onLog = { log.append($0) }
+        recorder.onManualClipResult = { reason, saved in
+            XCTAssertFalse(saved)
+            cancelled.append(reason)
+        }
+        let pixels = [UInt8](repeating: 0, count: 16 * 16 * 4)
+        func frame(_ time: Double, _ sequence: UInt64) {
+            pixels.withUnsafeBufferPointer { buffer in
+                recorder.observe(ObservedFrame(baseAddress: buffer.baseAddress!, width: 16, height: 16,
+                    bytesPerRow: 64, sequence: sequence, timestamp: time, processingSeconds: 0,
+                    analysis: SaberFrameAnalysis(candidates: [:], selected: [:]),
+                    ignoreZones: [:], playArea: nil, captureFPS: 60))
+            }
+        }
+        frame(100, 52)
+        recorder.requestClip(reason: "before-reset")
+        frame(100.02, 53)
+        // 実録と同じ、時刻は連続したままprocessorだけが1へ戻る。
+        frame(100.04, 1)
+        XCTAssertEqual(cancelled, ["before-reset"])
+        recorder.beginSession()
+        recorder.requestClip(reason: "after-reset")
+        frame(100.06, 1)
+        XCTAssertTrue(log.contains { $0.contains("frame=55") && $0.contains("note=after-reset") })
+        XCTAssertFalse(log.contains { $0.contains("clip skipped") })
+        // 同じIDの再入力でも、セッション通知なしで収集中の窓を破棄する。
+        frame(100.08, 1)
+        XCTAssertEqual(cancelled, ["before-reset", "after-reset"])
+    }
+
+    func testWriterRejectsDuplicateIDsMissingRecordsAndImageTimeMismatch() throws {
+        let buffers = AutoClipBuffers(width: 16, height: 16, captureFPS: 30)
+        buffers.frames[0] = AutoClipFrameRecord(frameID: 7, timestamp: 100)
+        buffers.frames[1] = AutoClipFrameRecord(frameID: 7, timestamp: 101.22)
+        buffers.eventCount = 1
+        buffers.eventFrameIDs[0] = 7
+        buffers.eventTimes[0] = 100
+        let capture = AutoClipCapture(clipID: "reuse", trigger: event(.manual, at: 100), buffers: buffers,
+            windowStart: 99, windowEnd: 102, captureFPS: 30,
+            environmentAtTrigger: AutoClipEnvironment(), environmentAtSave: AutoClipEnvironment(),
+            ignoreZones: [:], playArea: nil, sessionClipIndex: 1, rejectedTriggers: [:])
+        // 実録の辞書上書きと、重複が間引かれた場合の時刻不一致の両方を拒否。
+        XCTAssertThrowsError(try AutoClipBundleContent(capture: capture, slots: [0, 1]).validateFrameIdentity())
+        XCTAssertThrowsError(try AutoClipBundleContent(capture: capture, slots: [1]).validateFrameIdentity())
+        XCTAssertThrowsError(try AutoClipBundleContent(capture: capture, slots: []).validateFrameIdentity())
+        XCTAssertNoThrow(try AutoClipBundleContent(capture: capture, slots: [0]).validateFrameIdentity())
+        buffers.eventCount = 0
+        buffers.contextValid[0] = true
+        buffers.contextFrameIDs[0] = 7
+        buffers.contextTimes[0] = 100
+        XCTAssertThrowsError(try AutoClipBundleContent(capture: capture, slots: [1]).validateFrameIdentity())
+    }
+
     func testNewSessionDoesNotInheritClipCooldowns() {
         var limiter = AutoClipRateLimiter()
         XCTAssertEqual(limiter.admit(event(.jump, at: 100), busy: false, width: 480, height: 640), .accept)
@@ -812,6 +874,9 @@ final class AutoClipTests: XCTestCase {
             let contextJSON = try XCTUnwrap(JSONSerialization.jsonObject(
                 with: Data(contentsOf: bundle.appendingPathComponent(context))) as? [String: Any])
             XCTAssertEqual((contextJSON["frames"] as? [Any])?.count, 1)
+            let frame = try XCTUnwrap((contextJSON["frames"] as? [[String: Any]])?.first)
+            XCTAssertEqual(image["frameID"] as? Int, frame["frameID"] as? Int)
+            XCTAssertEqual(image["timestamp"] as? Double, frame["timestamp"] as? Double)
             XCTAssertEqual(image["color"] as? String, "red")
         }
         let clip = try XCTUnwrap(summary["autoClip"] as? [String: Any])

@@ -23,6 +23,14 @@ struct ContentView: View {
                 mainScreen
             }
         }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            Text(model.phoneIdentity.displayText)
+                .font(.headline.monospacedDigit()).bold()
+                .foregroundStyle(model.manualHostActive || model.station.isEmpty ? Color.yellow : Color.white)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(10).background(Color.black)
+                .accessibilityIdentifier("phoneIdentity")
+        }
         .background(TouchActivityObserver { model.lowHeatTouch() })
         .statusBarHidden(model.lowHeatDisplayActive)
         .persistentSystemOverlays(model.lowHeatDisplayActive ? .hidden : .automatic)

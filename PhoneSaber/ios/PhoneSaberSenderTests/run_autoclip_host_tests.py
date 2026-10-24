@@ -24,7 +24,7 @@ suite.run()
 guard let run = suite.testRun, run.executionCount >= 13, run.hasSucceeded else { exit(1) }
 ''')
         subprocess.run(["xcrun", "swiftc", "-O", "-D", "AUTOCLIP_STANDALONE",
-                        *(str(SOURCE / f"{name}.swift") for name in ("DetectionCore", "BGRADetection", "AutoClip")),
+                        *(str(SOURCE / f"{name}.swift") for name in ("DetectionCore", "BGRADetection", "MetricsDatagram", "AutoClip")),
                         str(tmp / "Observer.swift"), str(TESTS / "AutoClipTests.swift"), str(tmp / "main.swift"),
                         "-I", str(developer / "usr/lib"), "-L", str(developer / "usr/lib"),
                         "-F", str(frameworks), "-Xlinker", "-rpath", "-Xlinker", str(frameworks),

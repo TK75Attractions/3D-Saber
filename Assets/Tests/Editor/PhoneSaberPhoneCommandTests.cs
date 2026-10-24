@@ -1,4 +1,6 @@
 using NUnit.Framework;
+using System.Linq;
+using System.Text;
 
 public class PhoneSaberPhoneCommandTests
 {
@@ -38,9 +40,9 @@ public class PhoneSaberPhoneCommandTests
     [Test]
     public void AreaCommandsAreQueuedLikeTheOthers()
     {
-        // F8 は同じ指示（同じ id）を 10 秒送り直す。id は押すたびに新しく、スマホはその id で一度だけ学習を始める。
-        double now = SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp);
+        // id は押すたびに新しく、スマホはその id で一度だけ学習を始める。
         int id = PhoneSaberDiscoveryResponder.QueueCommand(PhoneSaberDiscoveryResponder.LearnAreaCommand);
+        PhoneSaberDiscoveryResponder.Acknowledgements.Latest(out _, out _, out double now);
         Assert.Greater(PhoneSaberDiscoveryResponder.CommandSecondsLeft(now), 0);
         int next = PhoneSaberDiscoveryResponder.QueueCommand(PhoneSaberDiscoveryResponder.ClearAreaCommand);
         Assert.AreNotEqual(id, next);
@@ -49,13 +51,18 @@ public class PhoneSaberPhoneCommandTests
     [Test]
     public void QueuedCommandIsSentForTenSecondsWithANewId()
     {
-        double now = SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp);
         int first = PhoneSaberDiscoveryResponder.QueueCommand("ignore=red");
         int second = PhoneSaberDiscoveryResponder.QueueCommand("clear-ignore=1");
+        var store = PhoneSaberDiscoveryResponder.Acknowledgements;
+        store.Latest(out _, out _, out double now);
         Assert.AreNotEqual(first, second);
-        double left = PhoneSaberDiscoveryResponder.CommandSecondsLeft(now);
-        Assert.Greater(left, PhoneSaberDiscoveryResponder.CommandSeconds - 1);
-        Assert.LessOrEqual(left, PhoneSaberDiscoveryResponder.CommandSeconds + 1);
+        var commands = store.PendingCommands(now, "phone").Select(Encoding.ASCII.GetString).ToArray();
+        CollectionAssert.Contains(commands, PhoneSaberDiscoveryResponder.BuildCommand(first, "ignore=red"));
+        CollectionAssert.Contains(commands, PhoneSaberDiscoveryResponder.BuildCommand(second, "clear-ignore=1"));
+        var expired = store.PendingCommands(now + PhoneSaberDiscoveryResponder.CommandSeconds, "phone")
+            .Select(Encoding.ASCII.GetString).ToArray();
+        CollectionAssert.DoesNotContain(expired, PhoneSaberDiscoveryResponder.BuildCommand(first, "ignore=red"));
+        CollectionAssert.DoesNotContain(expired, PhoneSaberDiscoveryResponder.BuildCommand(second, "clear-ignore=1"));
         Assert.AreEqual(0, PhoneSaberDiscoveryResponder.CommandSecondsLeft(now + 60));
     }
 }

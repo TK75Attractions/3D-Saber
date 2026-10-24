@@ -32,6 +32,26 @@ public class PhoneSaberLatencyEstimateTests
     static PhoneSaberMetrics Phone(double at = 0) {
         Assert.IsTrue(PhoneSaberMetrics.TryParse(Valid, Valid.Length, out var m)); m.ReceivedAt = at; return m;
     }
+    [Test] public void OptionalModelAcceptsLegacyAndFutureFieldsWithinByteLimit() {
+        Assert.IsNull(Phone().Model);
+        var data = Encoding.ASCII.GetBytes(Encoding.ASCII.GetString(Valid) + " model=iPhone16_2 future=ok");
+        Assert.LessOrEqual(data.Length, PhoneSaberMetrics.MaximumBytes);
+        Assert.IsTrue(PhoneSaberMetrics.TryParse(data, data.Length, out var phone));
+        Assert.AreEqual("iPhone16_2", phone.Model);
+        foreach (string suffix in new[] { " model=", " model=x model=y", " model=" + new string('x', 17), " model=x=y" }) {
+            var bad = Encoding.ASCII.GetBytes(Encoding.ASCII.GetString(Valid) + suffix);
+            Assert.IsFalse(PhoneSaberMetrics.TryParse(bad, bad.Length, out _));
+        }
+    }
+    [Test] public void FreshSnapshotKeepsBothPhonesWithoutCoordinateTrafficAndExpiresThem() {
+        var store = new PhoneSaberMetricsStore();
+        store.Receive(Valid, Valid.Length, "192.168.1.119", 1);
+        store.Receive(Valid, Valid.Length, "192.168.1.129", 2);
+        Assert.AreEqual(2, store.ReadFresh(3).Count);
+        Assert.AreEqual(1, store.ReadFresh(17).Count);
+        Assert.AreEqual(0, store.ReadFresh(17.01).Count);
+        Assert.AreEqual(0, store.ReadFresh(0).Count);
+    }
     [Test] public void TermsAndUnknownsNeverBecomeZeroLatency() {
         var m = Phone(); var pc = new PhoneSaberTimingStats(new double[] { 7, 7, 7 });
         var e = new PhoneSaberLatencyEstimate(m, pc, "10.0.0.1", .1, 1, 60, 0);

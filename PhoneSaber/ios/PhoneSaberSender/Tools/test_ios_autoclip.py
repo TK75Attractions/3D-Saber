@@ -99,7 +99,7 @@ class IOSAutoClipTests(unittest.TestCase):
             compiled = subprocess.run(
                 ["xcrun", "swiftc", "-O", "-D", "DEBUG", "-module-cache-path", str(directory / "module-cache"),
                  str(SOURCE / "DetectionCore.swift"), str(SOURCE / "BGRADetection.swift"),
-                 str(directory / "Observer.swift"), str(SOURCE / "AutoClip.swift"), str(directory / "main.swift"),
+                 str(directory / "Observer.swift"), str(SOURCE / "AutoClip.swift"), str(SOURCE / "MetricsDatagram.swift"), str(directory / "main.swift"),
                  "-o", str(binary)],
                 capture_output=True, text=True, timeout=300)
             self.assertEqual(compiled.returncode, 0, compiled.stderr)

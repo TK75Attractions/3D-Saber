@@ -55,7 +55,7 @@ function refreshButtons(){
 function render(state){
  // 選択値や経過時間ではDOMを作り直さず、開いた詳細・フォーカスを維持する。
  const phones=state.phones||[];
- const next=JSON.stringify([phones.map(p=>[p.station,p.sender]),state.sections.map(s=>[s.title,s.dangerous,s.items.map(i=>[i.name,i.requiresConfirmation])])]);
+ const next=JSON.stringify([phones.map(p=>[p.station,p.sender,p.model,p.app,p.reportedStation,p.metricsAgeSeconds>15]),state.sections.map(s=>[s.title,s.dangerous,s.items.map(i=>[i.name,i.requiresConfirmation])])]);
  if(next!==structure){structure=next;nodes=[];phoneNodes=[];panel.replaceChildren();
   for(const [index,s] of state.sections.entries()){
    const section=document.createElement('section');
@@ -63,7 +63,7 @@ function render(state){
    if(s.dangerous){const details=document.createElement('details'),summary=document.createElement('summary');summary.textContent=s.title+'（確認して実行）';details.append(summary);section.append(details);content=details;section.className='danger';}
    else{const h=document.createElement('h2');h.textContent=s.title;section.append(h);section.className=index===0?'current':s.items.some(i=>i.grade)?'health':'';}
    if(index===0){const grid=document.createElement('div');grid.className='phone-grid';
-    for(const p of phones){const card=document.createElement('div'),h=document.createElement('h3'),settings=document.createElement('div');card.className='phone';h.textContent='iPhone 台'+p.station+(p.sender?' · '+p.sender:' · 報告なし');settings.className='settings';card.append(h,settings);
+    for(const p of phones){const card=document.createElement('div'),h=document.createElement('h3'),settings=document.createElement('div');card.className='phone';h.textContent=(p.model||'機種未報告')+' · 台'+(p.reportedStation==='none'||p.reportedStation==='?'?'未指定（このPCでは台'+p.station+'扱い）':p.station)+(p.sender?' · '+p.sender:' · 報告なし')+' · app '+(p.app||'未報告')+(p.metricsAgeSeconds>15?'（古い報告）':'');settings.className='settings';card.append(h,settings);
      for(const [key,label] of Object.entries(settingLabels)){const cell=document.createElement('div'),title=document.createElement('span'),value=document.createElement('strong'),age=document.createElement('small');cell.className='setting';title.textContent=label;cell.append(title,value,age);settings.append(cell);phoneNodes.push({phone:p.station,sender:p.sender,key,value,age});}grid.append(card);
     }content.append(grid);
    }

@@ -40,7 +40,7 @@ def main() -> None:
                  "onone": ["-Onone", "-D", "DEBUG"]}[args.opt]
         subprocess.run(["xcrun", "swiftc", *flags, "-module-cache-path", str(build / "cache"),
                         str(SOURCE / "DetectionCore.swift"), str(SOURCE / "BGRADetection.swift"),
-                        str(build / "Observer.swift"), str(SOURCE / "AutoClip.swift"),
+                        str(build / "Observer.swift"), str(SOURCE / "AutoClip.swift"), str(SOURCE / "MetricsDatagram.swift"),
                         str(build / "main.swift"), str(build / "allocations.o"),
                         "-o", str(build / "harness")], check=True)
         print("build: " + {"debug": "-O -D DEBUG (Xcode Debug as installed on the phone)",

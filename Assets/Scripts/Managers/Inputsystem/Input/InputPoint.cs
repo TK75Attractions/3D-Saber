@@ -61,6 +61,9 @@ public class InputPoint : MonoBehaviour
     public string BlueCoordinateSender { get; private set; }
     public PhoneSaberMetrics ReadPhoneMetrics(string sender, double now)
         => Volatile.Read(ref discoveryResponder)?.Metrics.Read(sender, now);
+    public System.Collections.Generic.Dictionary<string, PhoneSaberMetrics> ReadFreshPhoneMetrics(double now)
+        => Volatile.Read(ref discoveryResponder)?.Metrics.ReadFresh(now)
+            ?? new System.Collections.Generic.Dictionary<string, PhoneSaberMetrics>();
     float rawX2, rawY2;
     float rawX2a, rawY2a, rawX2b, rawY2b;
     volatile bool hasNewData2 = false;
@@ -274,6 +277,8 @@ public class InputPoint : MonoBehaviour
     PhoneSaberAcknowledgementStore learnedAreaStore;
     int learnedAreaRevision = -1;
     bool positionCalibrationEnabled;
+    string failedLearnedPositionCalibration;
+    public string LearnedPositionCalibrationResult => failedLearnedPositionCalibration ?? PhoneSaberPositionCalibrationStore.LearnedResult(StationLabel);
     public PhoneSaberPositionCapture PositionCapture { get; } = new PhoneSaberPositionCapture();
     public bool HasPositionCalibration => positionCalibration != null;
     public bool PositionCalibrationEnabled => positionCalibrationEnabled && positionCalibration != null;
@@ -283,6 +288,7 @@ public class InputPoint : MonoBehaviour
         if (!PhoneSaberPositionCalibration.TryCreate(corners, out var calibration, out error)) return false;
         PhoneSaberDiscoveryResponder.Acknowledgements.DiscardLearnedAreas(StationLabel);
         PhoneSaberPositionCalibrationStore.Save(StationLabel, calibration);
+        failedLearnedPositionCalibration = null;
         positionCalibration = calibration;
         positionCalibrationEnabled = true;
         PredictionRevision++;
@@ -301,6 +307,7 @@ public class InputPoint : MonoBehaviour
         PositionCapture.Cancel();
         PhoneSaberDiscoveryResponder.Acknowledgements.DiscardLearnedAreas(StationLabel);
         PhoneSaberPositionCalibrationStore.Reset(StationLabel);
+        failedLearnedPositionCalibration = null;
         positionCalibration = null;
         positionCalibrationEnabled = false;
         PredictionRevision++;
@@ -727,15 +734,28 @@ public class InputPoint : MonoBehaviour
         if (ReferenceEquals(learnedAreaStore, store) && learnedAreaRevision == revision) return false;
         learnedAreaStore = store;
         learnedAreaRevision = revision;
-        if (!store.TakeLearnedArea(StationLabel, out var bounds) ||
-            !PhoneSaberPositionCalibration.TryFromLearnedArea(Rect.MinMaxRect(bounds.xMin, bounds.yMin, bounds.xMax, bounds.yMax),
-                camWidth, camHeight, out var calibration, out _)) return false;
-        PositionCapture.Cancel();
-        PhoneSaberPositionCalibrationStore.Save(StationLabel, calibration, learnedAt ?? DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
-        positionCalibration = calibration;
-        positionCalibrationEnabled = true;
-        PredictionRevision++;
-        return true;
+        if (!store.TakeLearnedArea(StationLabel, out var bounds)) return false;
+        return ApplyLearnedPositionCalibration(Rect.MinMaxRect(bounds.xMin, bounds.yMin, bounds.xMax, bounds.yMax), learnedAt, out _);
+    }
+
+    // F8 の完了ACKとチュートリアルの両方が、同じ変換・保存・診断を使う。
+    public bool ApplyLearnedPositionCalibration(Rect bounds, string learnedAt, out string error)
+    {
+        bool applied = PhoneSaberPositionCalibration.TryFromLearnedArea(bounds, camWidth, camHeight, out var calibration, out error);
+        string result = PhoneSaberPositionCalibration.LearnedAreaResult(bounds, applied, error);
+        if (applied)
+        {
+            PositionCapture.Cancel();
+            PhoneSaberPositionCalibrationStore.Save(StationLabel, calibration,
+                learnedAt ?? DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), result);
+            failedLearnedPositionCalibration = null;
+            positionCalibration = calibration;
+            positionCalibrationEnabled = true;
+            PredictionRevision++;
+        }
+        else failedLearnedPositionCalibration = result;
+        PhoneSaberEventLog.Record(StationLabel, "SYSTEM", "learned-area-apply", result);
+        return applied;
     }
 
     void Update()

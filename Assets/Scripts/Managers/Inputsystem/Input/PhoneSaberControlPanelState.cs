@@ -153,6 +153,9 @@ public sealed class PhoneSaberControlPanelPhone
         public double At, Order;
     }
     public readonly string Station, Sender;
+    public string Model, App, ReportedStation;
+    public double LastMetricsAt = double.NegativeInfinity;
+    public string ModelLabel => Model == "iPhone14_5" ? "iPhone 13" : Model == "iPhone16_2" ? "iPhone 15 Pro Max" : Model ?? "機種未報告";
     public readonly Dictionary<string, Report> Settings = new Dictionary<string, Report>();
     public static readonly string[] Keys = { "trackLock", "exposureEv", "shutter", "iso", "colouredEmitter", "ignoreRed", "ignoreBlue", "playArea" };
     public static readonly string[] Labels = { "追跡ロック", "露出 EV", "シャッター", "ISO", "色付き発光体", "無視範囲 赤", "無視範囲 青", "プレイ範囲" };
@@ -164,7 +167,9 @@ public sealed class PhoneSaberControlPanelPhone
     }
     public void Metrics(PhoneSaberMetrics phone, string effectiveStation = null)
     {
-        if (phone == null || phone.Platform != "ios" || (effectiveStation ?? phone.Station) != Station || phone.Controls == null) return;
+        if (phone == null || phone.Platform != "ios" || (effectiveStation ?? phone.Station) != Station) return;
+        Model = phone.Model; App = phone.App; ReportedStation = phone.Station; LastMetricsAt = phone.ReceivedAt;
+        if (phone.Controls == null) return;
         string ctl = phone.Controls;
         void Put(string key, string value) => Set(key, value, phone.ReceivedAt, phone.ReceivedAt, "metrics");
         Put("trackLock", ctl[0] == '1' ? "ON" : "OFF");
@@ -212,10 +217,36 @@ public sealed class PhoneSaberControlPanelPhone
         return Array.TrueForAll(senders, Matches);
     }
     public string Value(string key) => Settings.TryGetValue(key, out var report) ? report.Value : null;
+    // 端末交換後の古い報告と、同一IPの台変更を重複警告に数えない。
+    public static List<string> StationWarnings(IEnumerable<PhoneSaberControlPanelPhone> phones, double now)
+    {
+        var latest = new Dictionary<string, PhoneSaberControlPanelPhone>();
+        foreach (var phone in phones)
+            if (phone.Sender != null && now >= phone.LastMetricsAt && now - phone.LastMetricsAt <= PhoneSaberMetricsStore.FreshSeconds &&
+                (!latest.TryGetValue(phone.Sender, out var old) || phone.LastMetricsAt > old.LastMetricsAt)) latest[phone.Sender] = phone;
+        var groups = new Dictionary<string, List<string>>();
+        foreach (var phone in latest.Values)
+        {
+            string station = phone.ReportedStation ?? "none";
+            if (!groups.TryGetValue(station, out var group)) groups[station] = group = new List<string>();
+            group.Add(phone.ModelLabel + " (" + phone.Sender + ")");
+        }
+        var warnings = new List<string>();
+        foreach (var group in groups)
+            if (group.Value.Count > 1) warnings.Add("警告: このPCに複数のiPhoneが同じ台 " +
+                (group.Key == "none" || group.Key == "?" ? "未指定" : group.Key) + " を報告しています: " +
+                string.Join(" / ", group.Value) + "。各iPhoneの台A/B・送信先・手動IP優先を確認してください（15秒以内の報告）。");
+        return warnings;
+    }
     public void AppendJson(StringBuilder json, double now)
     {
         json.Append("{\"station\":").Append(PhoneSaberControlPanelState.Quote(Station))
-            .Append(",\"sender\":").Append(PhoneSaberControlPanelState.Quote(Sender)).Append(",\"settings\":{");
+            .Append(",\"sender\":").Append(PhoneSaberControlPanelState.Quote(Sender))
+            .Append(",\"model\":").Append(PhoneSaberControlPanelState.Quote(ModelLabel))
+            .Append(",\"app\":").Append(PhoneSaberControlPanelState.Quote(App))
+            .Append(",\"reportedStation\":").Append(PhoneSaberControlPanelState.Quote(ReportedStation))
+            .Append(",\"metricsAgeSeconds\":").Append(double.IsNegativeInfinity(LastMetricsAt) ? "null" : Math.Max(0, now - LastMetricsAt).ToString("0.0", CultureInfo.InvariantCulture))
+            .Append(",\"settings\":{");
         foreach (string key in Keys)
         {
             if (json[json.Length - 1] != '{') json.Append(',');

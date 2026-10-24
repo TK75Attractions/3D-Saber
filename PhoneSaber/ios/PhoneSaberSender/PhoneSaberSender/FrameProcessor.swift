@@ -440,6 +440,7 @@ final class FrameProcessor: @unchecked Sendable {
 
     func startDebugRecording(diagnosticColors: DebugDiagnosticColors = .both,
                              cameraExposureExperiment: CameraExposureExperimentState? = nil,
+                             identity: PhoneSaberIdentity? = nil,
                              guidedScript: GuidedRecordingScript? = nil,
                              completion: @escaping (Result<String, Error>) -> Void) {
         queue.async { [weak self] in
@@ -454,6 +455,7 @@ final class FrameProcessor: @unchecked Sendable {
                 let recorder = try DebugVideoRecorder(directory: self.rawFrameDirectory(),
                                                       diagnosticColors: diagnosticColors,
                                                       cameraExposureExperiment: cameraExposureExperiment,
+                                                      identity: identity,
                                                       guidedScript: guidedScript)
                 try recorder.prepare(width: dimensions.0, height: dimensions.1)
                 self.debugVideoRecorder = recorder

@@ -811,6 +811,19 @@ final class CameraViewModel: NSObject, ObservableObject {
     private var destinationDisplay = DestinationDisplayPolicy()
     private var latestResolvedMac = (name: "", ip: "")
     var manualHostActive: Bool { hostSelection.source == .manual }
+    var phoneIdentity: PhoneSaberIdentity {
+        let destination: String
+        if !manualHostActive, p2pEnabled, case .connected(let service, _) = p2pState,
+           !(lanConfigured && lanProbe.isAlive) {
+            destination = "P2P: \(service)"
+        } else {
+            destination = host.isEmpty ? "未解決・送信先なし" : "\(discoveredMacName) \(host):5005/5006"
+        }
+        return PhoneSaberIdentity(deviceModel: PhoneSaberIdentity.deviceModel, deviceID: PhoneSaberIdentity.deviceID,
+                                  appVersion: PhoneSaberIdentity.version, appBuild: PhoneSaberIdentity.build,
+                                  station: station.isEmpty ? "none" : station, destination: destination,
+                                  manualIPOverride: manualHostActive)
+    }
     @Published private(set) var connectionMode = "Auto (Bonjour)"
     @Published private(set) var station = ""
     @Published private(set) var p2pEnabled = true { didSet { updateDeliverySettings() } }
@@ -1460,8 +1473,9 @@ final class CameraViewModel: NSObject, ObservableObject {
            delivery.currentRoute == .lanVerified || delivery.currentRoute == .lanUnverified {
             let rtt = lanProbe.metricsRoundTrip(at: time)
             var metrics = MetricsDatagram()
-            metrics.station = station
-            metrics.app = (Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String) ?? "unknown"
+            metrics.station = station.isEmpty ? "none" : station
+            metrics.app = "\(PhoneSaberIdentity.version).\(PhoneSaberIdentity.build)"
+            metrics.model = PhoneSaberIdentity.deviceModel
             metrics.fpsMode = activeCaptureFPS
             metrics.captureFPS = rates.cameraFPS; metrics.redFPS = rates.redSendFPS; metrics.blueFPS = rates.blueSendFPS
             metrics.median = rates.medianCaptureToSendMs; metrics.p95 = rates.p95CaptureToSendMs
@@ -1791,7 +1805,7 @@ final class CameraViewModel: NSObject, ObservableObject {
             shutter: shutter, shutterISO: shutterISO, shutterEmitter: shutterEmitter,
             exposureDurationSeconds: running ? exposureBiasCamera.map { CMTimeGetSeconds($0.exposureDuration) } : nil,
             iso: running ? exposureBiasCamera.map { Double($0.iso) } : nil,
-            appVersion: (Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String) ?? "unknown",
+            appVersion: PhoneSaberIdentity.version, identity: phoneIdentity,
             signingExpiryRemainingHours: SigningExpiry.current.remainingHours(at: Date())))
     }
 
@@ -2202,6 +2216,7 @@ final class CameraViewModel: NSObject, ObservableObject {
 
     private func updateDiagnosticDestination() {
         P2PPreferredMac.configure(station: station, lanHost: host, manual: hostSelection.source == .manual)
+        ConnectivityLog.shared.record("PHONE_IDENTITY", "\(phoneIdentity.displayText.replacingOccurrences(of: "\n", with: " / ")) app=\(PhoneSaberIdentity.version) build=\(PhoneSaberIdentity.build)")
     }
 
     func clearManualHost() {
@@ -3256,6 +3271,7 @@ final class CameraViewModel: NSObject, ObservableObject {
         processor.setDebugGuidedPhase(nil)
         processor.startDebugRecording(diagnosticColors: debugDiagnosticColors,
                                       cameraExposureExperiment: cameraExposureExperimentSnapshot(),
+                                      identity: phoneIdentity,
                                       guidedScript: guidedScript) { [weak self] result in
             Task { @MainActor in
                 guard let self else { return }

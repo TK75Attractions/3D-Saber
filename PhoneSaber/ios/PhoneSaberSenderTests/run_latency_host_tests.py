@@ -272,7 +272,7 @@ guard let run = suite.testRun, run.executionCount > 0, run.hasSucceeded else { e
 ''')
         runtime_sources = []
         for name in ["DetectionCore.swift", "BGRADetection.swift", "FrameProcessor.swift",
-                     "DebugVideoRecorder.swift", "DebugRecordingTriage.swift", "GuidedRecording.swift"]:
+                     "DebugVideoRecorder.swift", "DebugRecordingTriage.swift", "GuidedRecording.swift", "MetricsDatagram.swift"]:
             copied = tmp / name
             copied.write_text(source(name) if name == "FrameProcessor.swift" else (SOURCE / name).read_text())
             runtime_sources.append(str(copied))

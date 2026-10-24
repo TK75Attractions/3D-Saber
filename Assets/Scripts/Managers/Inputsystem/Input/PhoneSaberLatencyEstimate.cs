@@ -16,6 +16,7 @@ public sealed class PhoneSaberMetrics
     public int LowLatencyTest;
     public double ReceivedAt;
     public string Controls;
+    public string Model;
     public const int MaximumBytes = 399;
 
     public static bool TryParse(byte[] data, int length, out PhoneSaberMetrics metrics)
@@ -62,6 +63,7 @@ public sealed class PhoneSaberMetrics
                     "0123".IndexOf(controls[2]) < 0 || "01234567".IndexOf(controls[3]) < 0) return false;
                 m.Controls = controls;
             }
+            if (fields.TryGetValue("model", out string model)) m.Model = Atom(model, 16);
             metrics = m; return true;
         }
         catch (Exception e) when (e is KeyNotFoundException || e is FormatException || e is OverflowException) { return false; }
@@ -120,6 +122,17 @@ public sealed class PhoneSaberMetricsStore
         lock (gate) return sender != null && latest.TryGetValue(sender, out var m) && now - m.ReceivedAt <= FreshSeconds ? m : null;
     }
     public int Count { get { lock (gate) return latest.Count; } }
+    public Dictionary<string, PhoneSaberMetrics> ReadFresh(double now)
+    {
+        lock (gate)
+        {
+            var result = new Dictionary<string, PhoneSaberMetrics>();
+            foreach (var pair in latest)
+                if (now >= pair.Value.ReceivedAt && now - pair.Value.ReceivedAt <= FreshSeconds)
+                    result.Add(pair.Key, pair.Value);
+            return result;
+        }
+    }
 }
 
 public sealed class PhoneSaberLatencyEstimate
@@ -164,6 +177,7 @@ public sealed class PhoneSaberLatencyEstimate
             $"画面は実測（{DisplayAgeMinutes:0}分前）" : "画面は半周期の推定・投影機処理は含まず", ExposureMs);
     }
     public string Log() => "status=" + Status + " sender=" + Sender + " platform=" + (Phone?.Platform ?? "unknown") +
+        " phone-station=" + (Phone?.Station ?? "unknown") + " model=" + (Phone?.Model ?? "unknown") +
         " app=" + (Phone?.App ?? "unknown") + " fps-mode=" + N(Phone?.FpsMode) + " route=" + (Phone?.Route ?? "unknown") +
         " c2s-end=" + (Phone?.C2sEnd ?? "unknown") + " c2s-median-ms=" + N(Phone?.C2sMedian) +
         " c2s-p95-ms=" + N(Phone?.C2sP95) + " c2s-n=" + (Phone?.C2sCount ?? 0) +

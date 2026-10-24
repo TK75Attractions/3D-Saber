@@ -123,7 +123,7 @@ suite.run()
 guard let run = suite.testRun, run.executionCount >= 8, run.hasSucceeded else { exit(1) }
 ''')
         runtime = [str(SOURCE / name) for name in ['DetectionCore.swift', 'BGRADetection.swift',
-                   'DebugVideoRecorder.swift', 'DebugRecordingTriage.swift', 'GuidedRecording.swift']]
+                   'DebugVideoRecorder.swift', 'DebugRecordingTriage.swift', 'GuidedRecording.swift', 'MetricsDatagram.swift']]
         subprocess.run(['xcrun', 'swiftc', '-O', str(tmp / 'Support.swift'), str(tmp / 'FrameProcessor.swift'),
                         str(tmp / 'Tests.swift'), str(tmp / 'main.swift'), *runtime,
                         '-I', str(developer / 'usr/lib'), '-L', str(developer / 'usr/lib'),

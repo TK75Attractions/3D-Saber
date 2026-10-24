@@ -37,7 +37,7 @@ class IOSRecordingStorageTests(unittest.TestCase):
                  "-module-cache-path", str(directory / "module-cache"),
                  *[str(SOURCE / name) for name in (
                      "DetectionCore.swift", "BGRADetection.swift", "FrameProcessor.swift",
-                     "DebugVideoRecorder.swift", "DebugRecordingTriage.swift", "GuidedRecording.swift")],
+                     "DebugVideoRecorder.swift", "DebugRecordingTriage.swift", "GuidedRecording.swift", "MetricsDatagram.swift")],
                  str(support), str(fixture), "-o", str(binary)],
                 capture_output=True, text=True, timeout=180,
             )

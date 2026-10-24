@@ -116,7 +116,19 @@ public class GamePlayManager : MonoBehaviour { public NoteSpawner noteSpawner; p
         test_source = calibration_tests.read_text().replace('input.enabled = false;', '')
         test_source = test_source.replace('UnityEngine.Object.DestroyImmediate(go);', 'go.Dispose();')
         host_calibration_tests.write_text(aliases + 'using GameObject = CalibrationHostObject;\n' + test_source)
-        calibration_sources = list(frame_sources)
+        # チュートリアル本番の適用経路も同じNUnitで実行するため、ゲーム本体を含める。
+        game_sources = sorted((ROOT / 'Assets/Scripts').rglob('*.cs'))
+        calibration_sources = game_sources + [
+            frame_tests, stats_tests, sender_tests, HOST / 'Host.cs']
+        calibration_refs = list(dict.fromkeys(refs + [
+            '/r:' + str(p) for p in template.glob('*.dll')
+            if not p.name.startswith('UnityEditor.') and p.name != 'Assembly-CSharp.dll']))
+        host_tutorial = build / 'TutorialProgramHost.cs'
+        tutorial_program = ROOT / 'Assets/Scripts/Game/TutorialProgram.cs'
+        host_tutorial.write_text(aliases + tutorial_program.read_text())
+        calibration_sources[calibration_sources.index(tutorial_program)] = host_tutorial
+        tutorial_tests = build / 'TutorialProgramTestsHost.cs'
+        tutorial_tests.write_text(aliases + (ROOT / 'Assets/Tests/Editor/TutorialProgramTests.cs').read_text())
         if args.learning_only:
             host_input = build / 'InputPointHost.cs'
             host_input.write_text('using Time = FrameClock;\nusing Screen = FrameScreen;\n' +
@@ -137,8 +149,9 @@ public class GamePlayManager : MonoBehaviour { public NoteSpawner noteSpawner; p
                 current[current.index(INPUT / name)] = host_source
             exe = build / ('learning-before.exe' if before else 'calibration.exe')
             if run(compiler + ['/define:UNITY_EDITOR,UNITY_EDITOR_WIN,PHONESABER_FRAME_HOST,PHONESABER_CALIBRATION_HOST',
-                               '/r:' + str(nunit), '/r:' + str(test_runner), '/r:System.Runtime.Serialization.dll', '/out:' + str(exe)] + refs +
-                   list(map(str, current + [host_calibration_tests, acknowledgement_tests, discovery_tests]))):
+                               '/r:' + str(nunit), '/r:' + str(test_runner), '/r:System.Runtime.Serialization.dll', '/out:' + str(exe)] + calibration_refs +
+                   list(map(str, current + [host_calibration_tests, acknowledgement_tests, discovery_tests, tutorial_tests,
+                                           ROOT / 'Assets/Tests/Editor/PhoneSaberPhoneCommandTests.cs']))):
                 return 1
             schedule, trace = build / 'learning-schedule.tsv', build / 'learning-acks.tsv'
             if run([str(mono / 'bin/mono'), str(exe), 'learning-schedule', str(schedule)], env=runtime):
@@ -202,9 +215,10 @@ class Check { static int Main(string[] args) {
                          ROOT / 'Assets/Tests/Editor/PhoneSaberLatencyProbeTests.cs',
                          ROOT / 'Assets/Tests/Editor/PhoneSaberJudgeTimingLogTests.cs',
                          ROOT / 'Assets/Tests/Editor/PhoneSaberEndpointPredictorTests.cs', frame_tests, stats_tests, sender_tests,
-                         calibration_tests, acknowledgement_tests]
+                         calibration_tests, acknowledgement_tests, ROOT / 'Assets/Tests/Editor/TutorialProgramTests.cs']
+                # host と同じ本番依存を含め、TutorialController を使う統合テストも確認する。
                 if run(compiler + ['/target:library', '/r:' + str(nunit),
-                                   '/out:' + str(build / (platform.replace(',', '-') + '-tests.dll'))] + refs + list(map(str, sources + tests))):
+                                   '/out:' + str(build / (platform.replace(',', '-') + '-tests.dll'))] + calibration_refs + list(map(str, game_sources + tests))):
                     return 1
                 print('Compensation EditMode test assembly API compile PASS: ' + platform)
         if run(compiler + ['/target:library', '/define:UNITY_EDITOR,UNITY_EDITOR_WIN',

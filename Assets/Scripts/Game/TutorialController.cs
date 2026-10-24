@@ -148,20 +148,25 @@ public sealed class TutorialController : MonoBehaviour
 
     static PhoneSaberAcknowledgement[] DefaultReadLearnArea(int id) => PhoneSaberDiscoveryResponder.Acknowledgements.Read(id);
 
-    // 振りやすい範囲で振ってもらうので、覚えた枠をそのまま画面いっぱいにすると剣が大きく映りすぎる(2026-10-24 ユーザー)。
-    // 縦横 RangeWidenFactor 倍に広げた枠で、この台の位置補正を保存し直す(InputPoint が完了の返事から作った補正を置き換える。
-    // 保存は前の学習の返事を使い終わった扱いにするので、あとから元の枠で上書きされない)。InputPoint と同じく台 A・B だけ。
-    // 台の準備(F8)の「範囲を覚える」は今までどおり(限界まで振る前提)。
+    // F8 と同じ学習矩形の変換・保存を使う。チュートリアルの探す範囲の更新は従来どおり。
     static bool DefaultApplyWidenedRange(Rect learned)
     {
         var input = InputPoint.Instance;
         if (input == null || (input.StationLabel != "A" && input.StationLabel != "B")) return false;
-        var corners = TutorialRangeLearning.CalibrationCorners(TutorialRangeLearning.Widen(learned, TutorialProgram.RangeWidenFactor),
-            input.camWidth, input.camHeight);
-        bool saved = input.SavePositionCalibration(corners, out string error);
+        return ApplyLearnedRange(input, learned);
+    }
+
+    public static bool ApplyLearnedRange(InputPoint input, Rect learned)
+    {
+        bool saved = input.ApplyLearnedPositionCalibration(learned, null, out string error);
         if (!saved) Debug.LogWarning("Tutorial: 広げた範囲を保存できませんでした: " + error);
-        // スマホの探す範囲も広げた枠に合わせる(振りやすい範囲＋余白のままだと、広げた範囲で振った剣を拾い落とす)。
-        else TutorialRangeBaseline.SendPhoneArea(TutorialRangeBaseline.PhoneAreaFor(corners, input.camWidth, input.camHeight));
+        else
+        {
+            PhoneSaberDiscoveryResponder.Acknowledgements.DiscardLearnedAreas(input.StationLabel);
+            var calibration = PhoneSaberPositionCalibrationStore.Load(input.StationLabel, out _);
+            // スマホの探す範囲も広げた枠に合わせる(振りやすい範囲＋余白のままだと拾い落とす)。
+            TutorialRangeBaseline.SendPhoneArea(TutorialRangeBaseline.PhoneAreaFor(calibration.CopyCorners(), input.camWidth, input.camHeight));
+        }
         return saved;
     }
 
@@ -273,7 +278,7 @@ public sealed class TutorialController : MonoBehaviour
         var state = range.Update(now, acks, station);
         if (state == TutorialRangeLearning.Phase.Learned && TutorialRangeLearning.TryLearnedBounds(acks, station, out Rect learned)
             && ApplyWidenedRange != null && ApplyWidenedRange(learned))
-            AppliedRange = TutorialRangeLearning.Widen(learned, TutorialProgram.RangeWidenFactor);
+            AppliedRange = PhoneSaberPositionCalibration.WidenLearnedArea(learned);
         if (state == TutorialRangeLearning.Phase.Learning)
         {
             GrowRangeCover();
