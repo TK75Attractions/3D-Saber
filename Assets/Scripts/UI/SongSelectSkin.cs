@@ -44,6 +44,9 @@ public class SongSelectSkin : MonoBehaviour
     SongSelectCorridor corridor;
     RushESecret secretView;
     RectTransform secretDifficulty;
+    // 隠し譜面の札(E は紫、G は金)。解除した曲の隠し譜面で文字と色を変える。
+    SongSelectDiscGraphic secretGlow, secretFace, secretRing;
+    TextMeshProUGUI secretLetter;
     SongSelectDiscGraphic difficultyTray;
     public bool DiscsSettled => animation >= 1;
     public Rect SelectedDiscScreenRect => ctl != null && ctl.startButton != null
@@ -149,8 +152,9 @@ public class SongSelectSkin : MonoBehaviour
             && controller.SelectedDifficultyIndex >= 0 && controller.SelectedDifficultyIndex < controller.difficultyNames.Length
             ? controller.difficultyNames[controller.SelectedDifficultyIndex] : null;
         GameSession.CalibrationSelectionSeconds = skin != null ? skin.RemainingSeconds : 100;
-        // RUSH E の E を解除していたら、戻ったあとも E のまま(往復で Hard に戻り、時間切れで Hard が始まっていた。2026-10-22)。
-        GameSession.RushESecretCarry = controller != null && GameSession.CalibrationSelectionSongId == RushESecretState.SongId
+        // 隠し譜面(E・G)を解除していたら、戻ったあとも解除したまま(往復で Hard に戻り、時間切れで Hard が始まっていた。2026-10-22)。
+        var secret = controller != null ? controller.RushESecret.Current : null;
+        GameSession.RushESecretCarry = secret != null && GameSession.CalibrationSelectionSongId == secret.SongId
             && (controller.RushESecret.Unlocked || controller.RushESecret.Transitioning);
         GameSession.IsCalibrationMode = true;
         // 判定調整に入ったのは来場者の操作。戻ったあとの時間切れでは今までどおり自動で始める。
@@ -270,7 +274,7 @@ public class SongSelectSkin : MonoBehaviour
                 if (ScreenTransition.IsBusy) return;
                 if (d.index == ctl.SelectedIndex)
                 {
-                    if (ctl.SongIdAt(d.index) == RushESecretState.SongId && !ctl.RushESecret.Unlocked) secretView.Click();
+                    if (RushESecretState.For(ctl.SongIdAt(d.index)) != null && !ctl.RushESecret.Unlocked) secretView.Click();
                     else ctl.StartGame();
                 }
                 else if (Mathf.Abs(d.offset) <= 2) StepTo(d);
@@ -341,11 +345,18 @@ public class SongSelectSkin : MonoBehaviour
     void BuildSecretDifficulty()
     {
         secretDifficulty = Rect("RushEOnlyDifficulty", 960, 832, 200, 190);
-        var glow = Graphic(secretDifficulty, "Glow", Vector2.zero, new Vector2(192, 192), SongSelectDiscGraphic.Shape.Ring, new Color(.62f,.17f,1,.25f)); glow.Width = 20;
-        var face = Graphic(secretDifficulty, "Face", Vector2.zero, new Vector2(158, 158), SongSelectDiscGraphic.Shape.Cover, new Color(.12f,.03f,.24f));
-        var ring = Graphic(secretDifficulty, "Ring", Vector2.zero, new Vector2(164, 164), SongSelectDiscGraphic.Shape.Ring, RushESecretState.Purple); ring.Width = 6;
-        Label(secretDifficulty, "Letter", "E", 112, new Vector2(0, 2), new Vector2(140, 150), UISkinKit.LogoFontAsset(), RushESecretState.Purple);
+        var e = RushESecretState.RushE;
+        secretGlow = Graphic(secretDifficulty, "Glow", Vector2.zero, new Vector2(192, 192), SongSelectDiscGraphic.Shape.Ring, e.Glow); secretGlow.Width = 20;
+        secretFace = Graphic(secretDifficulty, "Face", Vector2.zero, new Vector2(158, 158), SongSelectDiscGraphic.Shape.Cover, e.Face);
+        secretRing = Graphic(secretDifficulty, "Ring", Vector2.zero, new Vector2(164, 164), SongSelectDiscGraphic.Shape.Ring, e.Accent); secretRing.Width = 6;
+        secretLetter = Label(secretDifficulty, "Letter", e.Difficulty, 112, new Vector2(0, 2), new Vector2(140, 150), UISkinKit.LogoFontAsset(), e.Accent);
         secretDifficulty.gameObject.SetActive(false);
+    }
+    void ShowSecretDifficulty(SecretChart secret)
+    {
+        if (secret == null) return;
+        secretGlow.color = secret.Glow; secretFace.color = secret.Face; secretRing.color = secret.Accent;
+        secretLetter.text = secret.Difficulty; secretLetter.color = secret.Accent;
     }
     void BuildAchievements()
     {
@@ -467,11 +478,13 @@ public class SongSelectSkin : MonoBehaviour
     }
     void DifficultyChanged(int selected)
     {
-        bool secret = ctl.RushESecret.Unlocked;
+        var unlocked = ctl.UnlockedSecret;
+        bool secret = unlocked != null;
         rimPulse.Select(ctl.SelectedIndex, selected, secret, Time.unscaledTimeAsDouble);
+        ShowSecretDifficulty(unlocked);
         secretDifficulty.gameObject.SetActive(secret);
         difficultyTray.gameObject.SetActive(!secret);
-        corridor.SetSecretTheme(secret);
+        corridor.SetSecretTheme(unlocked);
         hardNoise.SetHardSelected(!secret && string.Equals(ctl.CurrentDifficultyName, "Hard", System.StringComparison.OrdinalIgnoreCase));
         for (int i = 0; i < 3; i++)
         {
@@ -488,8 +501,8 @@ public class SongSelectSkin : MonoBehaviour
             ctl.difficultyButtons[i].interactable = !ctl.RushESecret.Transitioning && ctl.DifficultyLevelAt(i) > 0;
         }
         foreach (var d in discs) d.button.interactable = d.offset == 0 ? !ctl.RushESecret.Transitioning && !ctl.SelectedSongLocked && ctl.CurrentDifficultyLevel() > 0 : Mathf.Abs(d.offset) <= 2;
-        achievementDifficulty.text = secret ? "E" : DifficultyDisplayName(selected, ctl.CurrentDifficultyName);
-        achievementDifficulty.color = secret ? RushESecretState.Purple : SongSelectVisuals.Muted;
+        achievementDifficulty.text = secret ? unlocked.Difficulty : DifficultyDisplayName(selected, ctl.CurrentDifficultyName);
+        achievementDifficulty.color = secret ? unlocked.Accent : SongSelectVisuals.Muted;
         var value = SongAchievementStore.Load(ctl.SongIdAt(ctl.SelectedIndex), ctl.CurrentDifficultyName);
         int[] values = { value.s, value.sPlus, value.fc, value.ap };
         for (int i = 0; i < 4; i++) counts[i].Set(values[i].ToString() + "<size=24>回</size>");
@@ -568,9 +581,10 @@ public class SongSelectSkin : MonoBehaviour
             if (d.fallback != null) d.fallback.color = new Color(brightness, brightness, brightness, art);
             if (d.offset == 0)
             {
-                Color accent = ctl.RushESecret.Unlocked ? RushESecretState.Purple : Cyan;
+                var unlocked = ctl.UnlockedSecret;
+                Color accent = unlocked != null ? unlocked.Accent : Cyan;
                 float pulse = corridor != null ? corridor.CenterPulse : 0;
-                d.rim.color = SongSelectRimPulse.ColorFor(ctl.SelectedDifficultyIndex, ctl.RushESecret.Unlocked);
+                d.rim.color = SongSelectRimPulse.ColorFor(ctl.SelectedDifficultyIndex, unlocked);
                 d.rim.Width = rimPulse.WidthAt(Time.unscaledTimeAsDouble);
                 d.rim.Refresh();
                 float spread = 24 + 40 * pulse;

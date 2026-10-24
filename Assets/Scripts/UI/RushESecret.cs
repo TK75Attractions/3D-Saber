@@ -40,6 +40,8 @@ public sealed class RushESecret : MonoBehaviour
         if (state.Transitioning && transitionAt < 0)
         {
             transitionAt = Time.unscaledTimeAsDouble;
+            // 幕の四角はその隠し譜面の色(E は紫、G は金)。
+            curtain.SetPalette(state.Current);
             curtain.gameObject.SetActive(true); curtain.Show(0);
             // 作った音は鳴らす前に中身を確かめる(音の出力先が変わると消えるため。ProceduralSfx.Revive)。
             sound.PlayOneShot(ProceduralSfx.Revive(ref revealClip), .65f);
@@ -66,7 +68,8 @@ public sealed class RushESecret : MonoBehaviour
             return;
         }
         bool eligible = !ScreenTransition.IsBusy && !controller.RushESecret.Unlocked
-            && controller.SongIdAt(controller.SelectedIndex) == RushESecretState.SongId && skin.DiscsSettled
+            && controller.RushESecret.Current != null && controller.SongIdAt(controller.SelectedIndex) == controller.RushESecret.Current.SongId
+            && skin.DiscsSettled
             && SongSelectSkin.VisitorInputLive();
         Rect area = skin.SelectedDiscScreenRect;
         var input = InputPoint.Instance;

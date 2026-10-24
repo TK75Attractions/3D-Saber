@@ -22,7 +22,8 @@ public class SongSelectRimPulseTests
         pulse.Select(1, 2, true, 3.1);
         Assert.AreEqual(3, pulse.WidthAt(3.22), .001);
         for (int i = 0; i < 3; i++)
-            Assert.AreEqual(SongSelectSkin.DifficultyColor(i), SongSelectRimPulse.ColorFor(i, false));
-        Assert.AreEqual(RushESecretState.Purple, SongSelectRimPulse.ColorFor(2, true));
+            Assert.AreEqual(SongSelectSkin.DifficultyColor(i), SongSelectRimPulse.ColorFor(i, null));
+        Assert.AreEqual(RushESecretState.Purple, SongSelectRimPulse.ColorFor(2, RushESecretState.RushE));
+        Assert.AreEqual(UISkinPalette.NoteGold, SongSelectRimPulse.ColorFor(2, RushESecretState.ElDoradoG), "G は金");
     }
 }

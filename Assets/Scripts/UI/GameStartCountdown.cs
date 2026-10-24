@@ -167,7 +167,8 @@ public class GameStartCountdown : MonoBehaviour
     public static Color AccentForDifficulty(string difficulty)
     {
         string d = string.IsNullOrEmpty(difficulty) ? "" : difficulty.ToLowerInvariant();
-        if (d == "e") return RushESecretState.Purple;
+        var secret = RushESecretState.ForDifficulty(d);
+        if (secret != null) return secret.Accent; // 隠し譜面(E は紫、G は金)
         if (d == "easy") return UISkinPalette.LogoGreen;
         if (d == "hard") return UISkinPalette.LogoRed;
         return UISkinPalette.LogoBlue;

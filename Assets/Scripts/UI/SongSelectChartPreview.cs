@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -121,8 +122,8 @@ public sealed class SongSelectChartPreview : MonoBehaviour
         if(!isActiveAndEnabled || !IsPlaying || State!=PreviewState.Playing
             || source==null || ownedClip==null || source.clip!=ownedClip || !source.isPlaying
             || !string.Equals(SongId,songId,StringComparison.Ordinal)
-            || string.Equals(Difficulty,"E",StringComparison.OrdinalIgnoreCase)
-            || string.Equals(difficulty,"E",StringComparison.OrdinalIgnoreCase)) return false;
+            || RushESecretState.IsSecretDifficulty(Difficulty)
+            || RushESecretState.IsSecretDifficulty(difficulty)) return false;
 
         ChartData chart;
         StagePerformanceTimeline timeline;
@@ -151,12 +152,12 @@ public sealed class SongSelectChartPreview : MonoBehaviour
     }
 
     // デコード失敗で原音へ戻った場合も含め、候補の順序・内容の更新・音量補正が同じかを確かめる。
-    static string AudioIdentity(string directory)
+    static string AudioIdentity(string directory,string difficulty=null)
     {
         try
         {
             var identity=new System.Text.StringBuilder();
-            foreach(var playback in SongLoudness.CandidatesInFolder(directory))
+            foreach(var playback in SongLoudness.CandidatesInFolder(directory,difficulty))
             {
                 var file=new FileInfo(playback.Path);
                 identity.Append(file.FullName).Append('\n').Append(file.Length).Append(':')
@@ -170,11 +171,16 @@ public sealed class SongSelectChartPreview : MonoBehaviour
     }
 
     // 難易度を切り替えても同じ時計で終端を求める。Normal、互換譜面、Easy、Hardの順。
-    internal static SongPreviewWindow ResolveWindow(string songId,StagePerformanceTimeline timeline,double audioLength,double duration=10)
+    // 専用の音源を鳴らす難易度(ElDorado の G)は、その音源に合わせたその難易度の譜面の拍を先に使う。
+    internal static SongPreviewWindow ResolveWindow(string songId,StagePerformanceTimeline timeline,double audioLength,double duration=10,string variantDifficulty=null)
     {
         string dir=Path.Combine(Application.streamingAssetsPath,"Songs",songId);
         SongSelectBeatTimeline beats=null;
-        foreach(string name in new[]{"chart_normal.json","chart.json","chart_easy.json","chart_hard.json"})
+        var names=new List<string>();
+        if(!string.IsNullOrWhiteSpace(variantDifficulty) && ChartLoader.ValidPathSegment(variantDifficulty.Trim()))
+            names.Add("chart_"+variantDifficulty.Trim().ToLowerInvariant()+".json");
+        names.AddRange(new[]{"chart_normal.json","chart.json","chart_easy.json","chart_hard.json"});
+        foreach(string name in names)
         {
             string path=Path.Combine(dir,name);
             if(!File.Exists(path)) continue;
@@ -205,8 +211,10 @@ public sealed class SongSelectChartPreview : MonoBehaviour
         if(chart?.notes==null || chart.notes.Count==0) { State=PreviewState.Unavailable; loading=null; yield break; }
         State=PreviewState.Loading;
         string dir=Path.Combine(Application.streamingAssetsPath,"Songs",songId);
-        string audioIdentity=AudioIdentity(dir);
-        foreach(var playback in SongLoudness.CandidatesInFolder(dir))
+        // 専用の音源がある難易度(ElDorado の G)は、その音源・演出・試聴の区間で鳴らす。
+        string variant=SongLoudness.VariantSuffix(dir,difficulty).Length>0 ? difficulty : null;
+        string audioIdentity=AudioIdentity(dir,variant);
+        foreach(var playback in SongLoudness.CandidatesInFolder(dir,variant))
         {
             string full=playback.Path;
             string extension=Path.GetExtension(full).ToLowerInvariant();
@@ -221,8 +229,8 @@ public sealed class SongSelectChartPreview : MonoBehaviour
             request.Dispose(); request=null;
             if(ownedClip==null) continue;
             loudnessGain=playback.Gain;
-            var timeline=StagePerformanceTimeline.Load(songId);
-            Window=ResolveWindow(songId,timeline,ownedClip.length,duration);
+            var timeline=StagePerformanceTimeline.Load(songId,difficulty);
+            Window=ResolveWindow(songId,timeline,ownedClip.length,duration,variant);
             if(token!=generation) yield break;
             if(!Window.IsValid)
             {

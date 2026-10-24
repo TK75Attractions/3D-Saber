@@ -233,12 +233,19 @@ public sealed class StagePerformanceTimeline
         return age >= 0 && age < 14 ? Mathf.Min((float)age, 13.999999f) : -1;
     }
 
-    public static StagePerformanceTimeline Load(string songId)
+    // 難易度ごとの演出(stage_<難易度>.json)があればそちら(2026-10-24、ElDorado の G は長い版の音源の区間・試聴)。無ければ stage.json。
+    public static StagePerformanceTimeline Load(string songId, string difficulty = null)
     {
         // stage.jsonがない既存曲は通常演出を維持する。譜面の内容・オフセットは変えない。
         if (string.IsNullOrWhiteSpace(songId) || songId != Path.GetFileName(songId) || songId == "." || songId == "..")
             return new StagePerformanceTimeline();
-        string path = Path.Combine(Application.streamingAssetsPath,"Songs",songId,"stage.json");
+        string folder = Path.Combine(Application.streamingAssetsPath,"Songs",songId);
+        string path = Path.Combine(folder,"stage.json");
+        if (!string.IsNullOrWhiteSpace(difficulty) && ChartLoader.ValidPathSegment(difficulty.Trim()))
+        {
+            string specific = Path.Combine(folder,"stage_"+difficulty.Trim().ToLowerInvariant()+".json");
+            if (File.Exists(specific)) path = specific;
+        }
         try
         {
             return File.Exists(path) ? JsonUtility.FromJson<StagePerformanceTimeline>(File.ReadAllText(path)) ?? new StagePerformanceTimeline()

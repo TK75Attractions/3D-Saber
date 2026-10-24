@@ -173,7 +173,7 @@ public class GamePlayManager : MonoBehaviour
     public bool AudioReloading => audioReload != null;
     // 曲を始める前に出力先が変わって、読んだ曲の音が消えたかもしれない(予約の直前に読み直す)。
     private bool audioLostBeforeStart;
-    private string loadedSongId;
+    private string loadedSongId, loadedDifficulty;
     // 曲ごとの音が鳴り終わる秒(仕様面の点検 7)。0 以下は音源の長さ。
     private double musicEndSeconds = -1;
     double MusicEnd => musicEndSeconds > 0 ? musicEndSeconds : songPlayer.Duration;
@@ -310,15 +310,17 @@ public class GamePlayManager : MonoBehaviour
         }
         GameSession.SelectedSongId = songId;
         GameSession.ResetResult();
-        stagePerformance = StagePerformanceTimeline.Load(songId);
+        // 難易度ごとの演出・音源(ElDorado の隠し譜面 G は長い版の stage_g.json・audio_g.mp3)。無ければ曲の共通のもの。
+        stagePerformance = StagePerformanceTimeline.Load(songId, GameSession.SelectedDifficulty);
 
         // 音源を先にロードして、譜面長を音源に合わせて切り詰められるようにする。
         loadedSongId = songId;
+        loadedDifficulty = GameSession.SelectedDifficulty;
         yield return LoadAudio(songId);
         // 曲ごとの鳴らす範囲(仕様面の点検 7)。頭の無音を飛ばす秒(escapade の 5 秒)と音が鳴り終わる秒。
         // stage.json の audioSha256 が今の音源と一致するときだけ使う。譜面の切り詰めは今までどおり音源の長さで行う。
         var playRange = stagePerformance.ResolvePlayRange(songPlayer.Duration,
-            SongLoudness.SourceMatches(Path.Combine(Application.streamingAssetsPath, "Songs", songId), stagePerformance.audioSha256));
+            SongLoudness.SourceMatches(Path.Combine(Application.streamingAssetsPath, "Songs", songId), stagePerformance.audioSha256, loadedDifficulty));
         musicEndSeconds = playRange.End;
         songPlayer.ProgressEndSeconds = playRange.End;
         if (useOverhauledStage) GameHUDSkin.Ensure().SetProgressSections(stagePerformance, playRange);
@@ -698,10 +700,11 @@ public class GamePlayManager : MonoBehaviour
     }
 
     // 曲の音を StreamingAssets から読み、読めた音と音量の係数を found に渡す。中身の無い音(読む間に出力先が変わったなど)は使わない。
+    // 遊ぶ難易度に専用の音源(audio_<難易度>.*)があればそちらを読む(読み直しも同じ)。
     private IEnumerator RequestSongClip(string songId, System.Action<AudioClip, float> found)
     {
         string dir = Path.Combine(Application.streamingAssetsPath, "Songs", songId);
-        foreach (var playback in SongLoudness.CandidatesInFolder(dir))
+        foreach (var playback in SongLoudness.CandidatesInFolder(dir, loadedDifficulty))
         {
             string full = playback.Path;
             AudioType type = GuessType(full);

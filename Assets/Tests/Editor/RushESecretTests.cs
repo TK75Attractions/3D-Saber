@@ -108,6 +108,79 @@ public class RushESecretTests
         Assert.AreEqual(RushESecretState.Purple, GameHUDSkin.DifficultyColor("E"));
     }
 
+    // 2026-10-24: ElDorado の G。E と同じく10回切ると出る。長い版(3分43秒)の Hard を全部金色にした譜面と、G 専用の音源・演出・音量そろえ。
+    [Test]
+    public void ElDoradoUnlocksGWithTheSameTenCutsAndOtherSongsStayLocked()
+    {
+        var state = new RushESecretState(); state.Select("ElDorado");
+        Assert.AreSame(RushESecretState.ElDoradoG, state.Current);
+        for (int i = 0; i < 9; i++) { Assert.IsTrue(state.TryHit(i * .2)); Assert.IsFalse(state.Transitioning); }
+        Assert.IsTrue(state.TryHit(2)); Assert.IsTrue(state.Transitioning);
+        Assert.IsTrue(state.Reveal()); Assert.IsTrue(state.Finish()); Assert.IsTrue(state.Unlocked);
+        state.Select("RushE"); Assert.AreSame(RushESecretState.RushE, state.Current); Assert.IsFalse(state.Unlocked, "曲を変えたら最初から");
+        state.Select("Epilogue"); Assert.IsNull(state.Current); Assert.IsFalse(state.TryHit(10), "隠し譜面の無い曲は数えない");
+        Assert.AreSame(RushESecretState.ElDoradoG, RushESecretState.ForDifficulty("g"));
+        Assert.AreSame(RushESecretState.RushE, RushESecretState.ForDifficulty("E"));
+        Assert.IsFalse(RushESecretState.IsSecretDifficulty("Hard"));
+        Assert.AreEqual(UISkinPalette.NoteGold, GameHUDSkin.DifficultyColor("G"), "G は金");
+        Assert.AreEqual(UISkinPalette.NoteGold, GameStartCountdown.AccentForDifficulty("G"));
+        Assert.AreEqual(RushESecretState.Purple, GameStartCountdown.AccentForDifficulty("E"), "E は今までの紫");
+        var restored = new RushESecretState(); restored.Select("ElDorado"); restored.RestoreUnlocked();
+        Assert.IsTrue(restored.Unlocked, "判定調整との往復で G のまま戻る");
+        var none = new RushESecretState(); none.Select("Epilogue"); none.RestoreUnlocked();
+        Assert.IsFalse(none.Unlocked);
+    }
+
+    [Test]
+    public void GIsTheLongHardChartWithEveryNoteGold()
+    {
+        var g = ChartLoader.LoadFromStreamingAssets("ElDorado", "G");
+        Assert.AreEqual(392, g.notes.Count, "長い版の Hard の全ノーツ");
+        Assert.IsTrue(g.notes.All(n => n.color == "gold"), "全部金(ノーツ・フリック・ロング)");
+        Assert.AreEqual(218, g.notes.Count(n => n.type == "tap"));
+        Assert.AreEqual(127, g.notes.Count(n => n.type == "direction"));
+        Assert.AreEqual(47, g.notes.Count(n => n.IsLong));
+        Assert.IsTrue(g.notes.Where(n => n.type == "direction").All(n => n.direction != "none"), "矢印の向きはそのまま");
+        Assert.AreEqual(100f, g.bpm); Assert.AreEqual(0f, g.offsetMs); Assert.AreEqual(10, g.displayLevel);
+        Assert.AreEqual(217346f, g.notes.Max(n => n.time + n.lengthMs), 1f, "長い版の最後まで");
+        // ロングは長さ(時間)を変えずに回数だけ5倍(同日ユーザー指示)。長さの無かったロングも、今までの長さ(回数-1)×0.7秒を書いてある。
+        var longs = g.notes.Where(n => n.IsLong).ToArray();
+        Assert.IsTrue(longs.All(n => n.count >= 10 && n.count % 5 == 0), "ロングの回数は元の5倍");
+        Assert.AreEqual(790, longs.Sum(n => n.count), "元の158回の5倍");
+        Assert.IsTrue(longs.All(n => n.lengthMs > 0), "回数を増やしても長さは伸ばさない");
+        Assert.AreEqual(33, longs.Count(n => n.count == 10 && Mathf.Approximately(n.lengthMs, 700f)), "長さの無かった2回のロングは、10回・0.7秒");
+        Assert.AreEqual(1, longs.Count(n => n.count == 100 && Mathf.Approximately(n.lengthMs, 9600f)), "いちばん長い20回・9.6秒は100回・9.6秒");
+        Assert.AreEqual(1135, g.notes.Sum(n => n.count), "切る回数の合計");
+        Assert.AreEqual(257, ChartLoader.LoadFromStreamingAssets("ElDorado", "Hard").notes.Count, "ふつうの Hard(短い版)は変えない");
+        Assert.AreNotEqual(SongAchievementStore.Key("ElDorado", "G"), SongAchievementStore.Key("ElDorado", "Hard"));
+        Assert.AreNotEqual(HighScoreStore.Key("ElDorado", "G"), HighScoreStore.Key("ElDorado", "Hard"));
+        Assert.AreNotEqual(DailyRankingStore.Key("ElDorado", "G"), DailyRankingStore.Key("ElDorado", "Hard"));
+    }
+
+    [Test]
+    public void GPlaysTheLongAudioWithItsOwnTimingAndLoudness()
+    {
+        string folder = Path.Combine(Application.streamingAssetsPath, "Songs", "ElDorado");
+        Assert.AreEqual("_g", SongLoudness.VariantSuffix(folder, "G"));
+        Assert.AreEqual("", SongLoudness.VariantSuffix(folder, "Hard"), "ほかの難易度は今までの音源");
+        var g = SongLoudness.CandidatesInFolder(folder, "G").First();
+        Assert.AreEqual("audio_g.mp3", Path.GetFileName(g.Path));
+        Assert.AreEqual(Mathf.Pow(10, -5.03f / 20), g.Gain, 1e-4f, "長い版は −12.97 LUFS なので −5.03 dB で、ほかの曲と同じ −18 LUFS");
+        var hard = SongLoudness.CandidatesInFolder(folder, "Hard").First();
+        Assert.AreEqual("audio.mp3", Path.GetFileName(hard.Path));
+        Assert.AreEqual(Mathf.Pow(10, -3.79f / 20), hard.Gain, 1e-4f);
+        Assert.AreEqual("loudness_g.json", SongLoudness.MetadataFileFor("audio_g.mp3"));
+        Assert.AreEqual("loudness.json", SongLoudness.MetadataFileFor("audio.mp3"));
+        var stage = StagePerformanceTimeline.Load("ElDorado", "G");
+        Assert.AreEqual(167.4, stage.previewStartSeconds, 1e-6, "長い版の最終ピークから試聴");
+        Assert.AreEqual(4, stage.sections.Length, "長い版のピーク(短い版で切った第1ピークを含む)");
+        Assert.IsTrue(SongLoudness.SourceMatches(folder, stage.audioSha256, "G"), "演出の時刻は長い版の音源のもの");
+        Assert.IsFalse(SongLoudness.SourceMatches(folder, stage.audioSha256, "Hard"));
+        var normal = StagePerformanceTimeline.Load("ElDorado", "Hard");
+        Assert.AreEqual(100.203, normal.previewStartSeconds, 1e-6, "ふつうの難易度は今までの stage.json");
+        Assert.AreEqual(normal.stageTheme, stage.stageTheme, "背景は同じ");
+    }
+
     // Eの番号 → 採用された音合わせの時刻(ms)。10/22分と10/23のz06〜z08。
     static readonly Dictionary<int, double> AudioAligned = new Dictionary<int, double>
     {

@@ -25,6 +25,7 @@ internal sealed class SongSelectRimPulse
             : Mathf.Lerp(7, 3, (float)((age - .07) / .15));
     }
 
-    internal static Color ColorFor(int difficulty, bool secret) =>
-        secret ? RushESecretState.Purple : SongSelectSkin.DifficultyColor(difficulty);
+    // 解除している隠し譜面があればその色(E は紫、G は金)。
+    internal static Color ColorFor(int difficulty, SecretChart secret) =>
+        secret != null ? secret.Accent : SongSelectSkin.DifficultyColor(difficulty);
 }

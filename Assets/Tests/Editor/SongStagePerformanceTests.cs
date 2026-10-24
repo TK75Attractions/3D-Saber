@@ -56,7 +56,16 @@ public class SongStagePerformanceTests
             Assert.IsNotNull(timeline.sections,folder);
             Assert.IsNotEmpty(timeline.sections,folder);
             Assert.GreaterOrEqual(timeline.previewStartSeconds,0,folder);
-            Assert.AreEqual(1,Directory.GetFiles(folder,"stage*.json").Length,folder);
+            // 難易度ごとの演出は、その難易度だけの音源があるときだけ(2026-10-24、ElDorado の G は長い版の音源とその区間)。
+            var stages=Directory.GetFiles(folder,"stage*.json").Select(Path.GetFileName).ToArray();
+            CollectionAssert.Contains(stages,"stage.json",folder);
+            foreach(var stage in stages.Where(s=>s!="stage.json"))
+            {
+                string difficulty=stage.Substring(6,stage.Length-11);
+                Assert.AreEqual("_"+difficulty,SongLoudness.VariantSuffix(folder,difficulty),folder+"/"+stage+" はその難易度の音源に合わせた演出だけ");
+                Assert.IsTrue(SongLoudness.SourceMatches(folder,StagePerformanceTimeline.Load(Path.GetFileName(folder),difficulty).audioSha256,difficulty),
+                    folder+"/"+stage+" の時刻はその音源のもの");
+            }
         }
     }
 

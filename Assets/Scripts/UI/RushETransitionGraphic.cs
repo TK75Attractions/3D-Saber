@@ -6,6 +6,14 @@ using UnityEngine.UI;
 public sealed class RushETransitionGraphic : MaskableGraphic
 {
     public float Elapsed { get; private set; } = -1;
+    // 四角の暗い色と明るい色(隠し譜面ごと。既定は RUSH E の紫)。
+    public Color DeepColor { get; private set; } = RushESecretState.RushE.TileDeep;
+    public Color LightColor { get; private set; } = RushESecretState.RushE.TileLight;
+    public void SetPalette(SecretChart secret)
+    {
+        if (secret == null) return;
+        DeepColor = secret.TileDeep; LightColor = secret.TileLight; SetVerticesDirty();
+    }
     public void Show(float elapsed) { Elapsed = elapsed; SetVerticesDirty(); }
     public static float TileScale(float elapsed, int x, int y)
     {
@@ -24,7 +32,7 @@ public sealed class RushETransitionGraphic : MaskableGraphic
             float scale = TileScale(Elapsed, x, y); if (scale <= 0) continue;
             Vector2 p = r.center + new Vector2((x - 7.5f) * size, (y - 4) * size);
             float h = size * scale * .506f;
-            Color c = Color.Lerp(new Color(.12f, .025f, .25f), new Color(.48f, .17f, .70f), ((x * 3 + y * 5) % 9) / 8f);
+            Color c = Color.Lerp(DeepColor, LightColor, ((x * 3 + y * 5) % 9) / 8f);
             int at = vh.currentVertCount;
             vh.AddVert(new Vector3(p.x - h, p.y - h), c, Vector2.zero);
             vh.AddVert(new Vector3(p.x + h, p.y - h), c, Vector2.zero);

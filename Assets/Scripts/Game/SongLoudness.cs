@@ -31,16 +31,37 @@ public static class SongLoudness
     }
 
     static readonly Dictionary<string, Cached> cache = new Dictionary<string, Cached>(StringComparer.OrdinalIgnoreCase);
-    static readonly string[] audioNames = { "audio.ogg", "audio.wav", "audio.mp3" };
+    static readonly string[] audioExtensions = { ".ogg", ".wav", ".mp3" };
 
-    public static IEnumerable<Playback> CandidatesInFolder(string folder)
+    // 難易度ごとの音源(2026-10-24、ElDorado の隠し譜面 G だけが長い版 audio_g.mp3 を使う)。
+    // audio_<難易度>.ogg・.wav・.mp3 のどれかがあればその難易度はそちらを鳴らし、無ければ今までどおり audio.*。
+    // 音量そろえも音源ごと(audio_g.mp3 → loudness_g.json)。譜面(chart_<難易度>.json)・演出(stage_<難易度>.json)と同じ決まり。
+    public static string VariantSuffix(string folder, string difficulty)
     {
-        foreach (string name in audioNames)
+        if (string.IsNullOrEmpty(folder) || string.IsNullOrWhiteSpace(difficulty) || !ChartLoader.ValidPathSegment(difficulty.Trim())) return "";
+        string suffix = "_" + difficulty.Trim().ToLowerInvariant();
+        foreach (string extension in audioExtensions)
+            if (File.Exists(System.IO.Path.Combine(folder, "audio" + suffix + extension))) return suffix;
+        return "";
+    }
+
+    public static IEnumerable<Playback> CandidatesInFolder(string folder, string difficulty = null)
+    {
+        string suffix = VariantSuffix(folder, difficulty);
+        foreach (string extension in audioExtensions)
         {
-            string path = System.IO.Path.Combine(folder, name);
+            string path = System.IO.Path.Combine(folder, "audio" + suffix + extension);
             if (File.Exists(path))
                 foreach (var playback in Candidates(path)) yield return playback;
         }
+    }
+
+    // 音源の名前から、その音量そろえの名前を作る(audio.mp3 → loudness.json、audio_g.mp3 → loudness_g.json)。
+    public static string MetadataFileFor(string audioFileName)
+    {
+        string name = System.IO.Path.GetFileNameWithoutExtension(audioFileName ?? "");
+        return name.StartsWith("audio_", StringComparison.OrdinalIgnoreCase) && name.Length > 6
+            ? "loudness" + name.Substring(5).ToLowerInvariant() + ".json" : "loudness.json";
     }
 
     public static IEnumerable<Playback> Candidates(string sourcePath)
@@ -54,18 +75,19 @@ public static class SongLoudness
 
     public static void Invalidate(string sourcePath) { cache.Remove(sourcePath); }
 
-    // 曲フォルダの元の音源(audio.ogg・audio.wav・audio.mp3 の順で最初に見つかったもの)が、記録された SHA-256 と一致するか。
+    // 曲フォルダの元の音源(audio.ogg・audio.wav・audio.mp3 の順で最初に見つかったもの。難易度ごとの音源があればそちら)が、
+    // 記録された SHA-256 と一致するか。
     // 曲ごとの鳴らす範囲(stage.json)を、音源を差し替えたあとに使わないための確認(仕様面の点検 7)。
     // 同じ大きさ・更新日時のあいだは結果を覚える(本編に入るたびに読み直さない)。
     static readonly Dictionary<string, (string stamp, string expected, bool matches)> sourceChecks =
         new Dictionary<string, (string, string, bool)>(StringComparer.OrdinalIgnoreCase);
-    public static bool SourceMatches(string folder, string expectedSha256)
+    public static bool SourceMatches(string folder, string expectedSha256, string difficulty = null)
     {
         if (string.IsNullOrEmpty(folder) || string.IsNullOrEmpty(expectedSha256)) return false;
-        string source = null;
-        foreach (string name in audioNames)
+        string source = null, suffix = VariantSuffix(folder, difficulty);
+        foreach (string extension in audioExtensions)
         {
-            string path = System.IO.Path.Combine(folder, name);
+            string path = System.IO.Path.Combine(folder, "audio" + suffix + extension);
             if (File.Exists(path)) { source = path; break; }
         }
         if (source == null) return false;
@@ -80,7 +102,7 @@ public static class SongLoudness
 
     public static Playback Resolve(string sourcePath)
     {
-        string metadataPath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(sourcePath), "loudness.json");
+        string metadataPath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(sourcePath), MetadataFileFor(System.IO.Path.GetFileName(sourcePath)));
         cache.TryGetValue(sourcePath, out var cached);
         string stamp = Stamp(sourcePath) + "/" + Stamp(metadataPath) + "/" + Stamp(cached?.derivedPath);
         if (cached != null && stamp == cached.stamp) return cached.playback;

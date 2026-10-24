@@ -1,18 +1,60 @@
 using System;
 using UnityEngine;
 
-// この選曲中だけの秘密。セーブデータや他の曲へ解除状態を持ち越さない。
+// 隠し譜面の表。選曲の中央のジャケットを10回切ると、その曲だけの裏の譜面へ移る。
+// RUSH E の E(2026-10-14)と、ElDorado の G(2026-10-24 ユーザー「ElDorado のジャケットを10回切ったら、E と同じく裏譜面に」。
+// 長い版(3分43秒)の Hard 譜面を全部金色にしたもの。音源・演出・音量そろえも G 専用の audio_g.mp3・stage_g.json・loudness_g.json)。
+// 色はその譜面の目印(難易度の札・盤の縁・背景・幕・本編の HUD とカウントイン)。E は今までの紫のまま。
+public sealed class SecretChart
+{
+    public string SongId, Difficulty;
+    // 目印の色、札の光と面、幕の四角の暗い色と明るい色、背景の地・左右の光・縁・扇の光・中央と左右のもや。
+    // 表の中でだけ作る(作ったあとは書き換えない)。
+    public Color Accent, Glow, Face, TileDeep, TileLight, Backdrop, LeftLight, RightLight, EdgeLight, FanLight, CenterHaze, LeftHaze, RightHaze;
+}
+
+// この選曲中だけの秘密。セーブデータや他の曲へ解除状態を持ち越さない。選んでいる曲に隠し譜面がある(Current)ときだけ数える。
 public sealed class RushESecretState
 {
-    public const string SongId = "RushE";
-    public const string Difficulty = "E";
     public const int RequiredHits = 10;
     public const float RevealSeconds = .82f;
     public const float TransitionSeconds = 1.85f;
-    // 前の切断からこの時間あいたら1回目から数え直す。RUSH E の上で迷う間の偶然の横切りを貯めて E を出さない。
+    // 前の切断からこの時間あいたら1回目から数え直す。曲の上で迷う間の偶然の横切りを貯めて裏譜面を出さない。
     public const float ResetSeconds = 3f;
     public static readonly Color Purple = new Color(.74f, .34f, 1f);
+    public static readonly SecretChart RushE = new SecretChart
+    {
+        SongId = "RushE", Difficulty = "E", Accent = Purple, Glow = new Color(.62f, .17f, 1, .25f), Face = new Color(.12f, .03f, .24f),
+        TileDeep = new Color(.12f, .025f, .25f), TileLight = new Color(.48f, .17f, .70f),
+        Backdrop = new Color(.07f, .005f, .14f), LeftLight = new Color(.65f, .13f, 1), RightLight = new Color(.88f, .23f, 1),
+        EdgeLight = new Color(.77f, .45f, 1), FanLight = new Color(.77f, .42f, 1),
+        CenterHaze = new Color(.58f, .08f, 1, .42f), LeftHaze = new Color(.6f, .02f, 1, .35f), RightHaze = new Color(.8f, .1f, 1, .35f),
+    };
+    public static readonly SecretChart ElDoradoG = new SecretChart
+    {
+        SongId = "ElDorado", Difficulty = "G", Accent = UISkinPalette.NoteGold, Glow = new Color(1, .72f, .15f, .25f), Face = new Color(.22f, .13f, .02f),
+        TileDeep = new Color(.24f, .13f, .015f), TileLight = new Color(.80f, .56f, .12f),
+        Backdrop = new Color(.10f, .055f, .005f), LeftLight = new Color(1, .60f, .10f), RightLight = new Color(1, .80f, .28f),
+        EdgeLight = new Color(1, .88f, .52f), FanLight = new Color(1, .86f, .45f),
+        CenterHaze = new Color(1, .62f, .08f, .42f), LeftHaze = new Color(1, .50f, .02f, .35f), RightHaze = new Color(1, .72f, .15f, .35f),
+    };
+    public static readonly SecretChart[] Charts = { RushE, ElDoradoG };
+    public static SecretChart For(string songId)
+    {
+        foreach (var chart in Charts) if (chart.SongId == songId) return chart;
+        return null;
+    }
+    public static SecretChart ForDifficulty(string difficulty)
+    {
+        if (string.IsNullOrWhiteSpace(difficulty)) return null;
+        foreach (var chart in Charts) if (string.Equals(chart.Difficulty, difficulty.Trim(), StringComparison.OrdinalIgnoreCase)) return chart;
+        return null;
+    }
+    public static bool IsSecretDifficulty(string difficulty) => ForDifficulty(difficulty) != null;
+
     public string SelectedSong { get; private set; }
+    // 選んでいる曲の隠し譜面(無ければ null)。
+    public SecretChart Current { get; private set; }
     public int Hits { get; private set; }
     public bool Transitioning { get; private set; }
     public bool Unlocked { get; private set; }
@@ -20,12 +62,12 @@ public sealed class RushESecretState
     public void Select(string song)
     {
         if (SelectedSong == song) return;
-        SelectedSong = song; Reset();
+        SelectedSong = song; Current = For(song); Reset();
     }
     public void Reset() { Hits = 0; Transitioning = Unlocked = false; lastHit = double.NegativeInfinity; }
     public bool TryHit(double now)
     {
-        if (SelectedSong != SongId || Unlocked || Transitioning || double.IsNaN(now) || double.IsInfinity(now)
+        if (Current == null || Unlocked || Transitioning || double.IsNaN(now) || double.IsInfinity(now)
             || now - lastHit < .12) return false;
         if (now - lastHit >= ResetSeconds) Hits = 0;
         lastHit = now; Hits++;
@@ -43,9 +85,11 @@ public sealed class RushESecretState
         Transitioning = false; return true;
     }
     // 判定調整との往復で選曲へ戻ったとき(GameSession.RushESecretCarry、2026-10-22)、解除したままの状態へ戻す。演出はくり返さない。
+    // 選んでいる曲に隠し譜面が無ければ何もしない。
     public void RestoreUnlocked()
     {
-        SelectedSong = SongId; Hits = RequiredHits; Transitioning = false; Unlocked = true; lastHit = double.NegativeInfinity;
+        if (Current == null) return;
+        Hits = RequiredHits; Transitioning = false; Unlocked = true; lastHit = double.NegativeInfinity;
     }
 }
 

@@ -69,13 +69,23 @@ public class SongSelectController : MonoBehaviour
     // ロック中(譜面が1つも無い)曲のインデックス。譜面を作れば次回から自動で解禁される
     private readonly HashSet<int> lockedIndices = new HashSet<int>();
 
+    // 隠し譜面(RUSH E の E・ElDorado の G)。名前は RUSH E のときのままだが、選んでいる曲の隠し譜面をどれも扱う。
     public RushESecretState RushESecret { get; } = new RushESecretState();
     public event System.Action OnRushESecretChanged;
-    public string CurrentDifficultyName => RushESecret.Unlocked ? RushESecretState.Difficulty
+    // 解除している隠し譜面(無ければ null)。
+    public SecretChart UnlockedSecret => RushESecret.Unlocked ? RushESecret.Current : null;
+    public string CurrentDifficultyName => UnlockedSecret != null ? UnlockedSecret.Difficulty
         : difficultyNames != null && selectedDifficulty >= 0 && selectedDifficulty < difficultyNames.Length ? difficultyNames[selectedDifficulty] : "Normal";
-    bool HasRushEChart => SongIdAt(selectedIndex) == RushESecretState.SongId
-        && File.Exists(Path.Combine(Application.streamingAssetsPath, "Songs", RushESecretState.SongId, "chart_e.json"))
-        && LevelFor(RushESecretState.SongId, RushESecretState.Difficulty) > 0;
+    bool HasRushEChart
+    {
+        get
+        {
+            var secret = RushESecret.Current;
+            return secret != null && SongIdAt(selectedIndex) == secret.SongId
+                && File.Exists(Path.Combine(Application.streamingAssetsPath, "Songs", secret.SongId, "chart_" + secret.Difficulty.ToLowerInvariant() + ".json"))
+                && LevelFor(secret.SongId, secret.Difficulty) > 0;
+        }
+    }
     public bool TryRushEHit(double now)
     {
         if (ScreenTransition.IsBusy || !HasRushEChart || !RushESecret.TryHit(now)) return false;
@@ -92,7 +102,7 @@ public class SongSelectController : MonoBehaviour
         if (!RushESecret.Finish()) return;
         RefreshStartAvailability(); OnDifficultyChanged?.Invoke(selectedDifficulty); OnRushESecretChanged?.Invoke(); ReplayPreview();
     }
-    // 選曲を作り直したあと(音の出力先の変化)、RUSH E の E を解除したままにする。RUSH E を選んでいないときは何もしない。
+    // 選曲を作り直したあと(音の出力先の変化)、隠し譜面を解除したままにする。隠し譜面の無い曲を選んでいるときは何もしない。
     public bool RestoreRushESecret()
     {
         if (!HasRushEChart) return false;
@@ -398,7 +408,7 @@ public class SongSelectController : MonoBehaviour
     // 選択中の曲×難易度のレベル(1〜10)。譜面なし/空は 0。
     public int CurrentDifficultyLevel()
     {
-        return RushESecret.Unlocked ? (HasRushEChart ? LevelFor(RushESecretState.SongId, RushESecretState.Difficulty) : 0) : DifficultyLevelAt(selectedDifficulty);
+        return RushESecret.Unlocked ? (HasRushEChart ? LevelFor(RushESecret.Current.SongId, RushESecret.Current.Difficulty) : 0) : DifficultyLevelAt(selectedDifficulty);
     }
 
     public int CurrentDifficultyDisplayLevel()
@@ -504,7 +514,7 @@ public class SongSelectController : MonoBehaviour
         if (difficultyDisplay == null || difficultyNames == null || difficultyNames.Length == 0) return;
         string name = CurrentDifficultyName;
         int level = CurrentDifficultyDisplayLevel();
-        difficultyDisplay.text = RushESecret.Unlocked ? "E" : level > 0 ? $"{name}  {level}" : name;
+        difficultyDisplay.text = UnlockedSecret != null ? UnlockedSecret.Difficulty : level > 0 ? $"{name}  {level}" : name;
     }
 
     private void Move(int delta)
@@ -588,7 +598,7 @@ public class SongSelectController : MonoBehaviour
         if (!Application.isPlaying || previewSource == null || SelectedSongLocked || RushESecret.Transitioning) return;
         if (difficultyNames == null || selectedDifficulty >= difficultyNames.Length) return;
         EnsureChartPreview();
-        // 隠し E を出したあとは、今までどおり読み直す(試聴の続きは通常の難易度どうしだけ)。
+        // 隠し譜面を出したあとは、今までどおり読み直す(試聴の続きは通常の難易度どうしだけ)。
         if (preservePosition && !RushESecret.Unlocked
             && chartPreview.TryChangeDifficulty(songId, CurrentDifficultyName, previewDuration)) return;
         chartPreview.Select(songId, CurrentDifficultyName, previewDuration);

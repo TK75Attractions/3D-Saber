@@ -240,6 +240,58 @@ public class RushESecretPlayTests
         ctl.StopPreview();
     }
 
+    // 2026-10-24: ElDorado も E と同じく、ジャケットを10回切ると隠し譜面 G に移る。金色の札・幕・背景で、
+    // 試聴は長い版の最終ピークから。始めると長い版(3分43秒)の音源で、長い版の Hard を全部金にした譜面を流す。
+    [UnityTest]
+    public IEnumerator ElDoradoJacketCutsRevealGoldGAndStartTheLongAllGoldChart()
+    {
+        yield return SceneManager.LoadSceneAsync("SongSelect", LoadSceneMode.Single);
+        var ctl = Object.FindFirstObjectByType<SongSelectController>();
+        var skin = Object.FindFirstObjectByType<SongSelectSkin>();
+        float deadline = Time.realtimeSinceStartup + 15;
+        while (!skin.IsReady && Time.realtimeSinceStartup < deadline) yield return null;
+        Assert.IsTrue(skin.IsReady);
+        Object.FindFirstObjectByType<SongSelectAimPointer>().enabled = false;
+        int eldorado = Enumerable.Range(0, ctl.SongCount).First(i => ctl.SongIdAt(i) == "ElDorado");
+        ctl.Select(eldorado); ctl.SetDifficulty(2);
+        yield return new WaitForSecondsRealtime(.8f);
+        while (ScreenTransition.IsBusy || !skin.DiscsSettled) yield return null;
+        for (int i = 0; i < 9; i++) { ctl.startButton.onClick.Invoke(); yield return new WaitForSecondsRealtime(.25f); }
+        Assert.AreEqual(9, ctl.RushESecret.Hits); Assert.IsFalse(ctl.RushESecret.Unlocked);
+        Assert.AreEqual("SongSelect", SceneManager.GetActiveScene().name, "ジャケットを切っても開始しない");
+        ctl.startButton.onClick.Invoke(); Assert.IsTrue(ctl.RushESecret.Transitioning);
+        yield return new WaitForSecondsRealtime(.4f);
+        var curtain = Object.FindFirstObjectByType<RushETransitionGraphic>();
+        Assert.IsNotNull(curtain);
+        Assert.AreEqual(RushESecretState.ElDoradoG.TileDeep, curtain.DeepColor, "幕の四角も金");
+        yield return new WaitForSecondsRealtime(1.6f);
+        Assert.IsTrue(ctl.RushESecret.Unlocked); Assert.IsFalse(ctl.RushESecret.Transitioning);
+        Assert.AreEqual("G", ctl.CurrentDifficultyName);
+        Assert.IsTrue(skin.Background.SecretTheme);
+        var letter = GameObject.Find("RushEOnlyDifficulty").transform.Find("Letter").GetComponent<TMPro.TextMeshProUGUI>();
+        Assert.AreEqual("G", letter.text); Assert.AreEqual(UISkinPalette.NoteGold, letter.color, "札は金の G");
+        Assert.IsTrue(ctl.difficultyButtons.All(b => !b.gameObject.activeSelf)); Assert.IsTrue(ctl.startButton.interactable);
+        deadline = Time.realtimeSinceStartup + 10;
+        while (!(ctl.ChartPreview != null && ctl.ChartPreview.IsPlaying) && Time.realtimeSinceStartup < deadline) yield return null;
+        Assert.IsTrue(ctl.ChartPreview.IsPlaying, "G の試聴が鳴る");
+        Assert.AreEqual(167.4, ctl.ChartPreview.Window.Start, 1.5, "長い版の最終ピークから試聴(短い版は144秒で終わる)");
+        ctl.StartGame();
+        GamePlayManager manager = null;
+        deadline = Time.realtimeSinceStartup + 20;
+        while ((manager == null || !manager.songPlayer.IsScheduled) && Time.realtimeSinceStartup < deadline)
+        {
+            yield return null;
+            if (SceneManager.GetActiveScene().name == "Game") manager = Object.FindFirstObjectByType<GamePlayManager>();
+        }
+        Assert.NotNull(manager, "G で本編が始まる");
+        Assert.AreEqual("G", GameSession.SelectedDifficulty);
+        Assert.AreEqual(392, manager.noteSpawner.TotalNoteCount, "長い版の Hard を全部流す");
+        Assert.IsTrue(manager.noteSpawner.CurrentChart.notes.All(n => n.color == "gold"), "全部金");
+        Assert.Greater(manager.songPlayer.Duration, 220, "長い版(3分43秒)の音源で鳴らす");
+        Assert.AreEqual(UISkinPalette.NoteGold, GameHUDSkin.DifficultyColor(GameSession.SelectedDifficulty));
+        yield return SceneManager.LoadSceneAsync("Title", LoadSceneMode.Single);
+    }
+
     // 音の出力先が変わっても(AudioOutputRecovery、2026-10-22)、選曲はそのままで、解除した E のまま。
     [UnityTest]
     public IEnumerator AudioOutputChangeKeepsTheRevealedE()
