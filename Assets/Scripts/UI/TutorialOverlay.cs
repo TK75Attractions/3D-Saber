@@ -16,6 +16,11 @@ public sealed class TutorialOverlay : MonoBehaviour
     public string TitleText => title != null ? title.text : "";
     public string JudgeText => judge != null && judge.gameObject.activeSelf ? judge.text : "";
     public bool HandsVisible => handsCard != null && handsCard.activeSelf;
+    public string TimerText => timer != null ? timer.text : "";
+    // 範囲を合わせる段で、剣が届いた範囲を囲む枠(剣の平面を画面へ写したもの)。
+    public bool RangeCoverVisible => rangeBox != null && rangeBox.gameObject.activeSelf;
+    public RectTransform RangeCoverRect => rangeBox != null ? rangeBox.rectTransform : null;
+    public const float RangeCoverMinimumSize = 40f;
 
     public TutorialGuideModel Guide { get; private set; }
 
@@ -23,6 +28,8 @@ public sealed class TutorialOverlay : MonoBehaviour
     ScoreManager score;
     TextMeshProUGUI title, sub, hint, judge, judgeSub, timer;
     GameObject hintPanel, handsCard;
+    SongSelectDiscGraphic rangeBox;
+    int shownRangeSeconds = -1;
     RectTransform dots;
     Image[] dotImages = System.Array.Empty<Image>();
     Vector2 judgeBasePos;
@@ -89,6 +96,11 @@ public sealed class TutorialOverlay : MonoBehaviour
     {
         if (UnityEngine.Object.FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>() == null)
             new GameObject("EventSystem", typeof(UnityEngine.EventSystems.EventSystem), typeof(UnityEngine.InputSystem.UI.InputSystemUIInputModule));
+        // 範囲を合わせる段の枠。文・お手本・的より奥に置き、薄い塗りと水色の縁だけにする。
+        rangeBox = SongSelectSkin.Graphic(transform, "RangeCover", Vector2.zero, Vector2.one * RangeCoverMinimumSize,
+            SongSelectDiscGraphic.Shape.Panel, new Color(Cyan.r, Cyan.g, Cyan.b, .08f));
+        rangeBox.Edge = Cyan; rangeBox.Width = 4; rangeBox.Radius = 10;
+        rangeBox.gameObject.SetActive(false);
         title = Label(transform, "Title", "", 56, 0, 350, 1700, 90, Ink, true, true);
         title.enableAutoSizing = true; title.fontSizeMin = 36; title.fontSizeMax = 56; title.textWrappingMode = TextWrappingModes.NoWrap;
         sub = Label(transform, "Sub", "", 30, 0, 282, 1600, 48, Muted);
@@ -139,7 +151,8 @@ public sealed class TutorialOverlay : MonoBehaviour
         ShowBanner(step.Title, step.Sub);
         if (handsCard != null) handsCard.SetActive(step.Id == "hands");
         EnsureDots(count); RefreshDots(index); shownStep = index;
-        if (SkipButton != null) SkipButton.gameObject.SetActive(true);
+        // 範囲を合わせる間は画面の下まで振るので、やめるの的に剣が止まって押されないよう隠す(約10秒)。
+        if (SkipButton != null) SkipButton.gameObject.SetActive(step.Kind != TutorialStepKind.Range);
     }
 
     public void ShowBanner(string titleText, string subText)
@@ -179,16 +192,36 @@ public sealed class TutorialOverlay : MonoBehaviour
     public void Tick(float frameSeconds)
     {
         if (ctl == null) return;
-        if (Guide != null) Guide.Show(ctl.DemonstrationNotes, ctl.DemonstrationTime);
+        bool ranging = ctl.Step != null && ctl.Step.Kind == TutorialStepKind.Range && !ctl.StepDone;
+        if (Guide != null)
+        {
+            if (ranging) { float pose = TutorialGuideMotion.RangeSweep(ctl.DemonstrationTime); Guide.ShowPose(pose, pose); }
+            else Guide.Show(ctl.DemonstrationNotes, ctl.DemonstrationTime);
+        }
         if (timer != null)
         {
-            var state = (ctl.Step, ctl.Successes, ctl.RemainingDirections, ctl.StepDone);
-            if (state != shownProgressState)
+            if (ctl.Step != null && ctl.Step.Kind == TutorialStepKind.Range)
             {
-                shownProgressState = state;
-                timer.text = TutorialProgram.RemainingText(state.Item1, state.Item2, state.Item3, state.Item4);
+                // 残り秒が変わったときだけ文字を作り直す。
+                int seconds = ranging ? (int)System.Math.Ceiling(ctl.RangeSecondsLeft - 1e-6) : 0;
+                if (seconds != shownRangeSeconds || shownProgressState.step != ctl.Step || shownProgressState.done != ctl.StepDone)
+                {
+                    shownRangeSeconds = seconds;
+                    shownProgressState = (ctl.Step, 0, 0, ctl.StepDone);
+                    timer.text = TutorialProgram.RangeTimerText(seconds);
+                }
+            }
+            else
+            {
+                var state = (ctl.Step, ctl.Successes, ctl.RemainingDirections, ctl.StepDone);
+                if (state != shownProgressState)
+                {
+                    shownProgressState = state;
+                    timer.text = TutorialProgram.RemainingText(state.Item1, state.Item2, state.Item3, state.Item4);
+                }
             }
         }
+        ShowRangeCover(ranging);
         if (ctl.Step != null && shownStep != ctl.StepIndex) { shownStep = ctl.StepIndex; RefreshDots(shownStep); }
         if (shownTitle != ctl.BannerTitle || shownSub != ctl.BannerSub) ShowBanner(ctl.BannerTitle, ctl.BannerSub);
         if (shownHint != ctl.Hint)
@@ -212,6 +245,35 @@ public sealed class TutorialOverlay : MonoBehaviour
                 var cs = judgeSub.color; cs.a = alpha; judgeSub.color = cs;
             }
         }
+    }
+
+    // 剣の平面の矩形を、剣を映すカメラで画面へ写す。カメラの左右・上下の反転にかかわらず、写した2隅の外側を囲む。
+    void ShowRangeCover(bool ranging)
+    {
+        if (rangeBox == null) return;
+        Vector2 center = default, size = default;
+        bool show = ranging && ctl.HasRangeCover && ProjectRange(ctl.RangeCamera, ctl.RangeCover, ctl.RangeCoverZ, out center, out size);
+        if (show)
+        {
+            rangeBox.rectTransform.anchoredPosition = center;
+            rangeBox.rectTransform.sizeDelta = size;
+        }
+        if (rangeBox.gameObject.activeSelf != show) rangeBox.gameObject.SetActive(show);
+    }
+
+    bool ProjectRange(Camera camera, Rect world, float z, out Vector2 center, out Vector2 size)
+    {
+        center = size = default;
+        if (camera == null) return false;
+        var canvas = (RectTransform)transform;
+        Vector3 a = camera.WorldToScreenPoint(new Vector3(world.xMin, world.yMin, z));
+        Vector3 b = camera.WorldToScreenPoint(new Vector3(world.xMax, world.yMax, z));
+        if (a.z <= 0 || b.z <= 0 ||
+            !RectTransformUtility.ScreenPointToLocalPointInRectangle(canvas, a, null, out Vector2 p) ||
+            !RectTransformUtility.ScreenPointToLocalPointInRectangle(canvas, b, null, out Vector2 q)) return false;
+        center = (p + q) * .5f;
+        size = new Vector2(Mathf.Max(RangeCoverMinimumSize, Mathf.Abs(q.x - p.x)), Mathf.Max(RangeCoverMinimumSize, Mathf.Abs(q.y - p.y)));
+        return true;
     }
 
     void OnJudgment(JudgmentTier tier, int awarded, bool wrongFlick)

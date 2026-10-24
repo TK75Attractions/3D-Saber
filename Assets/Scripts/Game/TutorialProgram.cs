@@ -5,7 +5,8 @@ using UnityEngine;
 // チュートリアル(タイトルの問いかけで「はい」)の進行表。
 // 文・出す型・合格の条件だけを持つ純粋なデータで、EditMode テストから直接叩ける。
 // 位置は判定調整と同じ x=±1.65、y は Easy 譜面の範囲(−0.65〜1.1)。青は画面の左、赤は右から出し、交差はさせない。
-public enum TutorialStepKind { Explain, Practice, Ready }
+// Range は振る範囲を合わせる段(スマホの「範囲を覚える」を送り、返事が来るまで待つ)。
+public enum TutorialStepKind { Explain, Practice, Ready, Range }
 
 public sealed class TutorialPatternNote
 {
@@ -59,6 +60,30 @@ public static class TutorialProgram
     // 難易度を選ぶ前に挟まるので、Easy / Normal に共通の型。左右・斜めの矢印は曲の中で覚える。
     public static readonly string[] CommonFlow = { "hands", "tapRed", "tapBlue", "tapMix", "gold", "simul", "arrowEasy", "long", "ready" };
 
+    // 振る範囲を合わせる段(2026-10-24 ユーザー指示「チュートリアルの最初に、剣をふる範囲の設定」)。
+    // 台の準備(F8)の「範囲を覚える」と同じ指示(learn-area=10)をスマホへ送り、腕が届くいちばん遠くまで振ってもらう。
+    // スマホの座標を受けているときだけ最初に入れる(マウスで遊ぶとき・テストでは入れない)。
+    public const string RangeStepId = "range";
+    public const double RangeAnswerSeconds = 3.0;      // 学習の開始が返ってこなければ、この秒数でそのまま進む
+    public const double RangeResultWaitSeconds = 5.0;  // 学習の秒数のあと完了の返事を待つ秒数(PC の再送も学習秒数 +5 秒まで)
+    public const double RangeCheerSeconds = 5.0;       // 残りがこの秒数になったら、もっと遠くまでと声をかける
+    public const double RangeEndSeconds = 1.6;         // 結果の文を見せる間
+    public const string RangeCheer = "その調子！ もっと遠くまで";
+    public const string RangeLearnedTitle = "OK! 振る範囲を合わせたよ";
+    public const string RangeKeptTitle = "今の範囲のまま進むよ";
+
+    public static string[] FlowFor(bool phoneInput)
+    {
+        if (!phoneInput) return CommonFlow;
+        var flow = new string[CommonFlow.Length + 1];
+        flow[0] = RangeStepId;
+        Array.Copy(CommonFlow, 0, flow, 1, CommonFlow.Length);
+        return flow;
+    }
+
+    // 学習中の残り秒(切り上げ)。0 以下は出さない。
+    public static string RangeTimerText(int seconds) => seconds > 0 ? "あと " + seconds + " 秒" : "";
+
     static TutorialPatternNote Tap(float x, float y, string color, float dt) => new TutorialPatternNote { dt = dt, x = x, y = y, color = color, type = "tap" };
     static TutorialPatternNote Arrow(float x, float y, string color, string direction, float dt) => new TutorialPatternNote { dt = dt, x = x, y = y, color = color, type = "direction", direction = direction };
     static TutorialPatternNote Long(float x, float y, string color, int count, float lengthMs, float dt) => new TutorialPatternNote { dt = dt, x = x, y = y, color = color, type = "long", count = count, lengthMs = lengthMs };
@@ -71,6 +96,7 @@ public static class TutorialProgram
     {
         switch (id)
         {
+            case RangeStepId: return new TutorialStep { Id = id, Kind = TutorialStepKind.Range, Title = "両手の剣を、上下左右いっぱいに振ろう", Sub = "腕がとどく いちばん遠くまで" };
             case "hands": return new TutorialStep { Id = id, Kind = TutorialStepKind.Explain, Title = "赤い剣は右手、青い剣は左手", Sub = "どちらかを振ると始まります", TimeoutSeconds = HandsTimeoutSeconds };
             case "tapRed": return new TutorialStep { Id = id, Kind = TutorialStepKind.Practice, Title = "赤い箱を右手で切ろう", Sub = "手前の枠に重なった瞬間に振る",
                 Pattern = new[] { Tap(RightX, BaseY, "red", 0f), Tap(RightX, BaseY, "red", 2f) }, PeriodSeconds = LoopSeconds, Goal = 2 };
@@ -182,5 +208,57 @@ public sealed class TutorialPairProgress
         int after = before | (hand == SaberHand.Left ? 1 : 2);
         handsByTime[key] = after;
         return before != 3 && after == 3;
+    }
+}
+
+// 範囲を合わせる段の進み方。送った指示へのスマホの返事だけを見る(送信・受信・補正の適用には触れない)。
+// 補正の適用は今までどおり InputPoint が完了の返事から行う(F8 の「範囲を覚える」と同じ)。
+public sealed class TutorialRangeLearning
+{
+    public enum Phase { Waiting, Learning, Learned, Failed, NoAnswer }
+
+    public Phase State { get; private set; }
+    public int CommandId { get; }
+    public double LearnSeconds { get; }
+    readonly double begunAt;
+    double learningSince = double.NaN;
+
+    public TutorialRangeLearning(int commandId, double now, double learnSeconds = PhoneSaberDiscoveryResponder.LearnAreaSeconds)
+    {
+        CommandId = commandId; begunAt = now; LearnSeconds = learnSeconds;
+    }
+
+    public bool Finished => State == Phase.Learned || State == Phase.Failed || State == Phase.NoAnswer;
+
+    // 学習の開始を受けるまでは学習の秒数そのまま。開始からはスマホと同じ秒数で減らす。
+    public double SecondsLeft(double now) => State == Phase.Waiting ? LearnSeconds
+        : State == Phase.Learning ? Math.Max(0, learningSince + LearnSeconds - now) : 0;
+
+    public Phase Update(double now, IReadOnlyList<PhoneSaberAcknowledgement> acks, string station)
+    {
+        if (Finished) return State;
+        string result = Result(acks, station);
+        if (result == "learned") State = Phase.Learned;
+        else if (result == "failed") State = Phase.Failed;
+        else if (result == "learning" && State == Phase.Waiting) { State = Phase.Learning; learningSince = now; }
+        if (State == Phase.Waiting && now - begunAt >= TutorialProgram.RangeAnswerSeconds) State = Phase.NoAnswer;
+        else if (State == Phase.Learning && now - learningSince >= LearnSeconds + TutorialProgram.RangeResultWaitSeconds) State = Phase.Failed;
+        return State;
+    }
+
+    // この PC の台の返事を優先し、無ければ台を決めていないスマホの返事を見る(InputPoint が補正に使う返事と同じ選び方)。
+    // 台名のない PC では全部を見る。完了 > 失敗 > 学習中 の順。
+    public static string Result(IReadOnlyList<PhoneSaberAcknowledgement> acks, string station)
+    {
+        if (acks == null) return "";
+        bool byStation = !string.IsNullOrEmpty(station), same = false;
+        if (byStation) foreach (var a in acks) same |= a != null && a.Station == station;
+        bool learned = false, failed = false, learning = false;
+        foreach (var a in acks)
+        {
+            if (a == null || byStation && a.Station != (same ? station : "none")) continue;
+            learned |= a.Result == "learned"; failed |= a.Result == "failed"; learning |= a.Result == "learning";
+        }
+        return learned ? "learned" : failed ? "failed" : learning ? "learning" : "";
     }
 }

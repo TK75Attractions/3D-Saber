@@ -32,6 +32,78 @@ public class TutorialProgramTests
             steps.Select(s => s.Id));
     }
 
+    // 2026-10-24: スマホの座標を受けているときだけ、最初に振る範囲を合わせる。ほかの段の並びは変えない。
+    [Test]
+    public void RangeStep_LeadsTheFlowOnlyWhenThePhoneIsSending()
+    {
+        CollectionAssert.AreEqual(TutorialProgram.CommonFlow, TutorialProgram.FlowFor(false));
+        var flow = TutorialProgram.FlowFor(true);
+        Assert.AreEqual(TutorialProgram.RangeStepId, flow[0]);
+        CollectionAssert.AreEqual(TutorialProgram.CommonFlow, flow.Skip(1));
+        var steps = TutorialProgram.Build(flow, true);
+        Assert.AreEqual(flow.Length, steps.Length, "範囲の段も定義されている");
+        Assert.AreEqual(TutorialStepKind.Range, steps[0].Kind);
+        Assert.AreEqual(0, steps[0].Pattern.Length, "範囲を合わせる間はノーツを出さない");
+        StringAssert.Contains("両手", steps[0].Title);
+        StringAssert.Contains("いっぱい", steps[0].Title);
+        Assert.AreEqual("hands", steps[1].Id);
+        Assert.AreEqual(TutorialProgram.RangeStepId, TutorialProgram.Build(flow, false)[0].Id, "持ち方の説明を省いても範囲は合わせる");
+    }
+
+    static PhoneSaberAcknowledgement RangeAck(string result, string detail, string station = "B") =>
+        new PhoneSaberAcknowledgement(7, station, "ios", result, detail, "phone");
+
+    [Test]
+    public void RangeLearning_CountsDownFromThePhonesStartAndEndsOnItsAnswer()
+    {
+        var range = new TutorialRangeLearning(7, 100);
+        Assert.AreEqual(10.0, range.LearnSeconds, 1e-9, "F8 の「範囲を覚える」と同じ10秒");
+        Assert.AreEqual(TutorialRangeLearning.Phase.Waiting, range.Update(100.5, new PhoneSaberAcknowledgement[0], "B"));
+        Assert.AreEqual(10, range.SecondsLeft(100.5), 1e-9, "学習の開始が返るまでは10秒のまま");
+        Assert.AreEqual(TutorialRangeLearning.Phase.Learning, range.Update(101, new[] { RangeAck("learning", "10s") }, "B"));
+        Assert.AreEqual(6, range.SecondsLeft(105), 1e-9, "スマホが学習を始めた時刻から数える");
+        Assert.AreEqual(0, range.SecondsLeft(112), 1e-9);
+        Assert.AreEqual(TutorialRangeLearning.Phase.Learning, range.Update(111.5, new[] { RangeAck("learning", "10s") }, "B"));
+        Assert.AreEqual(TutorialRangeLearning.Phase.Learned,
+            range.Update(111.6, new[] { RangeAck("learned", "samples300-area0.2_0.1_0.8_0.9") }, "B"));
+        Assert.IsTrue(range.Finished);
+        Assert.AreEqual(TutorialRangeLearning.Phase.Learned, range.Update(130, null, "B"), "終わったら変わらない");
+    }
+
+    [Test]
+    public void RangeLearning_MovesOnWithoutAnAnswerOnAFailureAndWhenTheCompletionIsLost()
+    {
+        var silent = new TutorialRangeLearning(7, 100);
+        Assert.AreEqual(TutorialRangeLearning.Phase.Waiting, silent.Update(102.9, null, "B"));
+        Assert.AreEqual(TutorialRangeLearning.Phase.NoAnswer, silent.Update(103, null, "B"), "3秒返事がなければ今の範囲で進む");
+        var failed = new TutorialRangeLearning(7, 100);
+        failed.Update(100.4, new[] { RangeAck("learning", "10s") }, "B");
+        Assert.AreEqual(TutorialRangeLearning.Phase.Failed, failed.Update(110.5, new[] { RangeAck("failed", "samples12") }, "B"));
+        var lost = new TutorialRangeLearning(7, 100);
+        lost.Update(100.4, new[] { RangeAck("learning", "10s") }, "B");
+        Assert.AreEqual(TutorialRangeLearning.Phase.Learning, lost.Update(115.3, new[] { RangeAck("learning", "10s") }, "B"));
+        Assert.AreEqual(TutorialRangeLearning.Phase.Failed, lost.Update(115.5, new[] { RangeAck("learning", "10s") }, "B"),
+            "完了の返事は学習の10秒+5秒まで待つ");
+        var direct = new TutorialRangeLearning(7, 100);
+        Assert.AreEqual(TutorialRangeLearning.Phase.Learned, direct.Update(100.2, new[] { RangeAck("learned", "samples300") }, "B"),
+            "開始の返事を取りこぼしても完了で終わる");
+    }
+
+    [Test]
+    public void RangeLearning_ReadsThisStationsPhoneFirst()
+    {
+        var other = RangeAck("learned", "samples300", "A");
+        var mine = RangeAck("learning", "10s", "B");
+        var none = RangeAck("failed", "samples3", "none");
+        Assert.AreEqual("learning", TutorialRangeLearning.Result(new[] { other, mine, none }, "B"), "同じ台の返事だけを見る");
+        Assert.AreEqual("failed", TutorialRangeLearning.Result(new[] { other, none }, "B"), "同じ台が無ければ台を決めていないスマホ");
+        Assert.AreEqual("", TutorialRangeLearning.Result(new[] { other }, "B"), "別の台の返事は使わない");
+        Assert.AreEqual("learned", TutorialRangeLearning.Result(new[] { other, mine, none }, ""), "台名のない PC は全部を見る");
+        Assert.AreEqual("", TutorialRangeLearning.Result(null, "B"));
+        Assert.AreEqual("あと 10 秒", TutorialProgram.RangeTimerText(10));
+        Assert.AreEqual("", TutorialProgram.RangeTimerText(0));
+    }
+
     [Test]
     public void Build_WithoutHands_SkipsTheExplainStep()
     {

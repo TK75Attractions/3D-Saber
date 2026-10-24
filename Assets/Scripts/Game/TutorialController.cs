@@ -31,6 +31,20 @@ public sealed class TutorialController : MonoBehaviour
     public float PracticeTimeoutSeconds { get; set; } = TutorialProgram.DefaultStepTimeoutSeconds;
     public IReadOnlyList<TutorialStepRecord> Records => records;
 
+    // 範囲を合わせる段(2026-10-24)。スマホの座標をこの秒数以内に受けていれば、最初に入れる。
+    public const double PhoneActiveSeconds = 10;
+    // スマホへの指示・返事の読み取り・スマホの有無。テストでは差し替えて、本物の指示を送らない。
+    public static System.Func<bool> PhoneInputActive = DefaultPhoneInputActive;
+    public static System.Func<int> SendLearnArea = DefaultSendLearnArea;
+    public static System.Func<int, PhoneSaberAcknowledgement[]> ReadLearnArea = DefaultReadLearnArea;
+    public TutorialRangeLearning Range => range;
+    public double RangeSecondsLeft => range != null && started ? range.SecondsLeft(Now) : 0;
+    // 学習中に剣の両端が通った範囲(剣の平面の世界座標 XY)。覆いが枠で見せる。
+    public bool HasRangeCover { get; private set; }
+    public Rect RangeCover { get; private set; }
+    public float RangeCoverZ { get; private set; }
+    public Camera RangeCamera { get; private set; }
+
     SongPlayer song;
     NoteSpawner spawner;
     ScoreManager score;
@@ -48,6 +62,10 @@ public sealed class TutorialController : MonoBehaviour
     readonly HashSet<int> completedLongCounts = new HashSet<int>();
     readonly HashSet<CutDirection> completedDirections = new HashSet<CutDirection>();
     bool timedOutPractice;
+    TutorialRangeLearning range;
+    SaberInputBridge[] bridges = System.Array.Empty<SaberInputBridge>();
+    string station = "";
+    bool rangeCheered;
     readonly List<TutorialStepRecord> records = new List<TutorialStepRecord>();
     double totalOffset, startChartTime, stepStart, stepEndAt, nextPatternAt;
     int stepIndex = -1, swingFrames;
@@ -99,8 +117,32 @@ public sealed class TutorialController : MonoBehaviour
         pointer.RespectRaycastBlockers = true;
         pointer.BottomControlsOnly = true;
         pointer.HideOutsideBottomControls = true;
-        steps = TutorialProgram.Build(TutorialProgram.CommonFlow, true);
+        // 範囲の枠は剣と同じカメラで画面に写す(PlayRecoveryView と同じ選び方)。
+        bridges = UnityEngine.Object.FindObjectsByType<SaberInputBridge>(FindObjectsSortMode.None);
+        RangeCamera = Camera.main;
+        foreach (var bridge in bridges) if (bridge != null && bridge.targetCamera != null) { RangeCamera = bridge.targetCamera; break; }
+        station = InputPoint.Instance != null ? InputPoint.Instance.StationLabel : "";
+        steps = TutorialProgram.Build(TutorialProgram.FlowFor(PhoneInputActive != null && PhoneInputActive()), true);
     }
+
+    // テストの SetUpFixture は自動起動を止める。そのときは指示を送らない(探索応答も開かないので届かない)。
+    static bool DefaultPhoneInputActive()
+    {
+        var input = InputPoint.Instance;
+        return PhoneSaberP2PBridgeProcess.AutoStartEnabled && input != null &&
+            (input.IsRecentlyActive(PhoneActiveSeconds) || input.IsRecentlyActive2(PhoneActiveSeconds));
+    }
+
+    // 自動の指示として送り、スタッフ向けのトーストは出さない(F8 の状態欄と events.log には残る)。
+    static int DefaultSendLearnArea()
+    {
+        int id = PhoneSaberDiscoveryResponder.QueueCommand(PhoneSaberDiscoveryResponder.LearnAreaCommand, automatic: true);
+        PhoneSaberEventLog.Record(InputPoint.Instance != null ? InputPoint.Instance.StationLabel : "", "SYSTEM",
+            "tutorial-learn-area", "id=" + id);
+        return id;
+    }
+
+    static PhoneSaberAcknowledgement[] DefaultReadLearnArea(int id) => PhoneSaberDiscoveryResponder.Acknowledgements.Read(id);
 
     System.Collections.IEnumerator StartMusicWhenVisible()
     {
@@ -136,6 +178,9 @@ public sealed class TutorialController : MonoBehaviour
                         case TutorialStepKind.Ready:
                             if (elapsed >= step.TimeoutSeconds) Complete(now, "ok");
                             break;
+                        case TutorialStepKind.Range:
+                            TickRange(now);
+                            break;
                     }
                 }
                 else if (now >= stepEndAt) Next(now);
@@ -165,6 +210,8 @@ public sealed class TutorialController : MonoBehaviour
         completedLongCounts.Clear();
         completedDirections.Clear();
         var step = Step;
+        range = null; HasRangeCover = false; rangeCheered = false;
+        if (step.Kind == TutorialStepKind.Range && SendLearnArea != null) range = new TutorialRangeLearning(SendLearnArea(), now);
         nextPatternAt = TutorialProgram.NextBarAtOrAfter(now + TutorialProgram.ReadDelaySeconds + spawner.approachTime);
         BannerTitle = step.Kind == TutorialStepKind.Ready && timedOutPractice ? "曲を選びに行こう" : step.Title;
         BannerSub = step.Sub;
@@ -175,13 +222,57 @@ public sealed class TutorialController : MonoBehaviour
     {
         if (StepDone) return;
         StepDone = true;
-        stepEndAt = now + (reason == "timeout" ? TutorialProgram.TimeoutEndSeconds : TutorialProgram.StepEndSeconds);
         var step = Step;
+        stepEndAt = now + (step.Kind == TutorialStepKind.Range ? TutorialProgram.RangeEndSeconds
+            : reason == "timeout" ? TutorialProgram.TimeoutEndSeconds : TutorialProgram.StepEndSeconds);
         records.Add(new TutorialStepRecord { Id = step.Id, Seconds = now - stepStart, Reason = reason });
-        if (reason == "timeout") { timedOutPractice = true; BannerTitle = "次に進むよ"; BannerSub = "あとは曲の中で慣れよう"; }
+        if (step.Kind == TutorialStepKind.Range)
+        {
+            BannerTitle = reason == "ok" ? TutorialProgram.RangeLearnedTitle : TutorialProgram.RangeKeptTitle; BannerSub = "";
+            Debug.Log($"Tutorial: range {reason} id={range?.CommandId} station={station}");
+        }
+        else if (reason == "timeout") { timedOutPractice = true; BannerTitle = "次に進むよ"; BannerSub = "あとは曲の中で慣れよう"; }
         else if (step.Kind == TutorialStepKind.Practice) { BannerTitle = "OK!"; BannerSub = ""; }
         DropUnspawnedNotes();
         if (Overlay != null) Overlay.ShowBanner(BannerTitle, BannerSub);
+    }
+
+    // スマホの返事を見て進める。学習中だけ剣の届いた範囲を広げ、半分を過ぎたら一度だけ声をかける。
+    // 返事が無い・覚えられなかったときは、今の補正のまま次へ進む(列を待たせない)。
+    void TickRange(double now)
+    {
+        if (range == null) { Complete(now, "noanswer"); return; }
+        var state = range.Update(now, ReadLearnArea != null ? ReadLearnArea(range.CommandId) : null, station);
+        if (state == TutorialRangeLearning.Phase.Learning)
+        {
+            GrowRangeCover();
+            if (!rangeCheered && range.SecondsLeft(now) <= TutorialProgram.RangeCheerSeconds)
+            {
+                rangeCheered = true;
+                SetHint(TutorialProgram.RangeCheer);
+            }
+        }
+        if (range.Finished)
+            Complete(now, state == TutorialRangeLearning.Phase.Learned ? "ok"
+                : state == TutorialRangeLearning.Phase.NoAnswer ? "noanswer" : "failed");
+    }
+
+    void GrowRangeCover()
+    {
+        foreach (var bridge in bridges)
+        {
+            if (bridge == null || !bridge.isActiveAndEnabled) continue;
+            if (bridge.HasBlade) { GrowRangeCover(bridge.WorldEndA); GrowRangeCover(bridge.WorldEndB); }
+            else GrowRangeCover(bridge.transform.position);
+        }
+    }
+
+    void GrowRangeCover(Vector3 p)
+    {
+        var r = HasRangeCover ? RangeCover : new Rect(p.x, p.y, 0, 0);
+        RangeCover = Rect.MinMaxRect(Mathf.Min(r.xMin, p.x), Mathf.Min(r.yMin, p.y), Mathf.Max(r.xMax, p.x), Mathf.Max(r.yMax, p.y));
+        RangeCoverZ = p.z;
+        HasRangeCover = true;
     }
 
     // まだ出ていない型は消す。流れている途中のノーツは最後まで見せる。

@@ -17,7 +17,11 @@ public sealed class TutorialGuideModel : MaskableGraphic
     public bool IsReady => atlas != null;
     public override Texture mainTexture => atlas != null ? atlas : Texture2D.whiteTexture;
 
-    public void Show(IReadOnlyList<NoteData> notes, double chartTime)
+    public void Show(IReadOnlyList<NoteData> notes, double chartTime) =>
+        ShowPose(TutorialGuideMotion.Sample(notes, chartTime, SaberHand.Left), TutorialGuideMotion.Sample(notes, chartTime, SaberHand.Right));
+
+    // 両手の姿勢(0 = 下ろす 〜 1 = 頭の上)をそのまま見せる。範囲を合わせる段は、ノーツなしで大きく振るお手本に使う。
+    public void ShowPose(float leftPose, float rightPose)
     {
         if (!attemptedLoad)
         {
@@ -26,8 +30,7 @@ public sealed class TutorialGuideModel : MaskableGraphic
             if (atlas == null) Debug.LogError("チュートリアルのお手本画像が見つかりません。", this);
             SetMaterialDirty(); SetVerticesDirty();
         }
-        int left = Frame(TutorialGuideMotion.Sample(notes, chartTime, SaberHand.Left));
-        int right = Frame(TutorialGuideMotion.Sample(notes, chartTime, SaberHand.Right));
+        int left = Frame(leftPose), right = Frame(rightPose);
         if (left == LeftFrame && right == RightFrame) return;
         LeftFrame = left; RightFrame = right; SetVerticesDirty();
     }
@@ -87,6 +90,11 @@ public static class TutorialGuideMotion
         }
         return found ? Stroke(relative, up) : .5f;
     }
+
+    // 範囲を合わせる段のお手本: 両腕を下から頭の上まで、2拍で1往復(練習の音源と同じ拍)。
+    public const double RangeSweepSeconds = 2 * TutorialProgram.BeatSeconds;
+    public static float RangeSweep(double chartTime) => double.IsNaN(chartTime) || double.IsInfinity(chartTime) ? .5f
+        : (float)(.5 - .5 * Math.Cos(2 * Math.PI * chartTime / RangeSweepSeconds));
 
     public static float Stroke(double relative, bool up)
     {

@@ -27,6 +27,28 @@ public class TutorialGuideTests
         Assert.Greater(step.PeriodSeconds, lastEnd + TutorialGuideMotion.RecoverSeconds);
     }
 
+    // 範囲を合わせる段のお手本: 両腕を下ろした姿勢から頭の上まで、2拍で1往復。
+    [Test]
+    public void RangeSweepRaisesBothArmsOnTheBeat()
+    {
+        Assert.AreEqual(1.0, TutorialGuideMotion.RangeSweepSeconds, 1e-9);
+        Assert.AreEqual(0f, TutorialGuideMotion.RangeSweep(0), 1e-6);
+        Assert.AreEqual(1f, TutorialGuideMotion.RangeSweep(TutorialGuideMotion.RangeSweepSeconds / 2), 1e-6, "半周で頭の上");
+        Assert.AreEqual(0f, TutorialGuideMotion.RangeSweep(TutorialGuideMotion.RangeSweepSeconds * 3), 1e-6);
+        Assert.AreEqual(.5f, TutorialGuideMotion.RangeSweep(double.NaN));
+        var go = new UnityEngine.GameObject("RangeGuide", typeof(UnityEngine.RectTransform));
+        try
+        {
+            var guide = go.AddComponent<TutorialGuideModel>();
+            guide.ShowPose(0, 1);
+            Assert.AreEqual(0, guide.LeftFrame);
+            Assert.AreEqual(TutorialGuideModel.FrameCount - 1, guide.RightFrame);
+            guide.ShowPose(.5f, .5f);
+            Assert.AreEqual(8, guide.LeftFrame); Assert.AreEqual(8, guide.RightFrame);
+        }
+        finally { UnityEngine.Object.DestroyImmediate(go); }
+    }
+
     [Test]
     public void DemonstrationUsesTheActualChartTimeAndIndependentHands()
     {
