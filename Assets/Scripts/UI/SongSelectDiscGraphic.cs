@@ -11,6 +11,14 @@ public sealed class SongSelectDiscGraphic : MaskableGraphic
     public Color EdgeRight;
     public Color Bottom;
     public float Width = 3, Radius = 24, Progress = 1;
+    // 時計の針の向き(12時から時計回りの度)。既定は今までの絵(長い針が12時、短い針が3時)。
+    public float HandDegrees { get; private set; }
+    public float ShortHandDegrees { get; private set; } = 90;
+    public void SetHands(float handDegrees, float shortHandDegrees)
+    {
+        if (Mathf.Abs(Mathf.DeltaAngle(HandDegrees, handDegrees)) < .01f && Mathf.Abs(Mathf.DeltaAngle(ShortHandDegrees, shortHandDegrees)) < .01f) return;
+        HandDegrees = handDegrees; ShortHandDegrees = shortHandDegrees; SetVerticesDirty();
+    }
     public Sprite Artwork;
     public override Texture mainTexture => Form == Shape.Cover && Artwork != null ? Artwork.texture : s_WhiteTexture;
     public void Refresh() { SetVerticesDirty(); SetMaterialDirty(); }
@@ -40,8 +48,9 @@ public sealed class SongSelectDiscGraphic : MaskableGraphic
         if (Form == Shape.Clock)
         {
             Circle(vh, radius, color, false);
-            Line(vh, Vector2.zero, new Vector2(0, radius * .65f), 6, Edge);
-            Line(vh, Vector2.zero, new Vector2(radius * .48f, 0), 6, Edge);
+            // 動く針が読めるよう、長い針は長く細く、短い針は短く太く(2026-10-24)。
+            Line(vh, Vector2.zero, Hand(HandDegrees, radius * .8f), 4, Edge);
+            Line(vh, Vector2.zero, Hand(ShortHandDegrees, radius * .5f), 6, Edge);
             return;
         }
         if (Form == Shape.Arrow)
@@ -112,6 +121,8 @@ public sealed class SongSelectDiscGraphic : MaskableGraphic
             SongSelectPanelGraphic.Quad(vh, p * (radius - width / 2), p * (radius + width / 2), q * (radius + width / 2), q * (radius - width / 2), c);
         }
     }
+    static Vector2 Hand(float degrees, float length) =>
+        new Vector2(Mathf.Sin(degrees * Mathf.Deg2Rad), Mathf.Cos(degrees * Mathf.Deg2Rad)) * length;
     static void Line(VertexHelper vh, Vector2 a, Vector2 b, float width, Color c)
     {
         var direction = (b - a).normalized; Vector2 n = new Vector2(-direction.y, direction.x) * width / 2;

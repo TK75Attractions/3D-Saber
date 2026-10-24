@@ -261,4 +261,32 @@ public class SpecReview1021Tests
         GameSession.FinalPerfect = (int)s[2]; GameSession.FinalGreat = (int)s[3]; GameSession.FinalGood = (int)s[4];
         GameSession.FinalBad = (int)s[5]; GameSession.FinalMiss = (int)s[6]; GameSession.FinalCutCount = (int)s[7]; GameSession.FinalScore = (int)s[8];
     }
+
+    // 2026-10-24 ユーザー「右上の時計の絵文字を動かして」: 残りの数字が1つ減るたびに長い針が30°進み(12秒で1周)、
+    // 0.15秒で少し行き過ぎて戻る。短い針は長い針の12分の1。選曲と判定調整の同じ時計。
+    [Test]
+    public void CountdownClockHandsTickWithTheNumber()
+    {
+        Assert.AreEqual(new Vector2(0, 90), SongSelectSkin.ClockHandDegrees(100), "残り100秒は今までの絵(12時と3時)");
+        Assert.AreEqual(new Vector2(0, 90), SongSelectSkin.ClockHandDegrees(99.95), "最初の数字では動かさない");
+        Assert.AreEqual(0, SongSelectSkin.ClockHandDegrees(98.999).x, 1, "数字が変わった瞬間は前の位置から");
+        Assert.Greater(SongSelectSkin.ClockHandDegrees(98.9).x, 30, "少し行き過ぎてから");
+        var settled = SongSelectSkin.ClockHandDegrees(98.8);
+        Assert.AreEqual(30, settled.x, 1e-3, "30°の位置に止まる");
+        Assert.AreEqual(92.5, settled.y, 1e-3, "短い針は12分の1");
+        Assert.AreEqual(330, SongSelectSkin.ClockHandDegrees(88.5).x, 1e-3);
+        Assert.AreEqual(0, SongSelectSkin.ClockHandDegrees(87.5).x, 1e-3, "12秒で1周");
+        Assert.AreEqual(120, SongSelectSkin.ClockHandDegrees(87.5).y, 1e-3);
+        Assert.AreEqual(new Vector2(0, 90), SongSelectSkin.ClockHandDegrees(double.NaN));
+        var go = new GameObject("Clock", typeof(RectTransform));
+        try
+        {
+            var clock = go.AddComponent<SongSelectDiscGraphic>();
+            clock.Form = SongSelectDiscGraphic.Shape.Clock;
+            Assert.AreEqual(0, clock.HandDegrees); Assert.AreEqual(90, clock.ShortHandDegrees);
+            clock.SetHands(30, 92.5f);
+            Assert.AreEqual(30, clock.HandDegrees); Assert.AreEqual(92.5f, clock.ShortHandDegrees);
+        }
+        finally { Object.DestroyImmediate(go); }
+    }
 }

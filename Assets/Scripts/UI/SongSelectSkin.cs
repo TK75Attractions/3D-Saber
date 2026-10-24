@@ -234,6 +234,26 @@ public class SongSelectSkin : MonoBehaviour
         if (displayedSecond != seconds) { timer.text = seconds.ToString(); displayedSecond = seconds; }
         timer.color = seconds <= 10 ? Gold : White;
         timer.rectTransform.localScale = Vector3.one * (seconds <= 10 ? 1 + .055f * Mathf.Exp(-((100 - (float)remaining) % 1) * 8) : 1);
+        var icon = timer.transform.parent != null ? timer.transform.parent.Find("ClockIcon") : null;
+        var clock = icon != null ? icon.GetComponent<SongSelectDiscGraphic>() : null;
+        if (clock != null) { var hands = ClockHandDegrees(remaining); clock.SetHands(hands.x, hands.y); }
+    }
+    // 右上の時計の針(2026-10-24 ユーザー「右上の時計の絵文字を動かして」)。残りの数字が1つ減るたびに長い針が30°進み(12秒で1周)、
+    // 0.15秒で少し行き過ぎて戻る(カチッ)。短い針は長い針の12分の1の速さ。残り100秒で今までの絵(12時と3時)。純関数。
+    public const double ClockTickSeconds = .15;
+    public static Vector2 ClockHandDegrees(double remaining)
+    {
+        if (double.IsNaN(remaining) || double.IsInfinity(remaining)) return new Vector2(0, 90);
+        double shown = System.Math.Ceiling(remaining), sinceChange = shown - remaining;
+        double ticks = 100 - shown;
+        if (sinceChange < ClockTickSeconds && shown < 100) ticks += EaseOutBack(sinceChange / ClockTickSeconds) - 1;
+        float hand = (float)(ticks * 30);
+        return new Vector2(Mathf.Repeat(hand, 360), Mathf.Repeat(90 + hand / 12, 360));
+    }
+    static double EaseOutBack(double t)
+    {
+        const double c1 = 1.70158, c3 = c1 + 1;
+        return 1 + c3 * System.Math.Pow(t - 1, 3) + c1 * System.Math.Pow(t - 1, 2);
     }
     void BuildDiscs()
     {
