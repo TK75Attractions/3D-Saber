@@ -1,5 +1,6 @@
 using System.Linq;
 using NUnit.Framework;
+using UnityEngine;
 
 // チュートリアルの進行表(純粋データ)と、タイトルの問いかけ・Game シーンのフラグの約束事。
 public class TutorialProgramTests
@@ -45,7 +46,9 @@ public class TutorialProgramTests
         Assert.AreEqual(TutorialStepKind.Range, steps[0].Kind);
         Assert.AreEqual(0, steps[0].Pattern.Length, "範囲を合わせる間はノーツを出さない");
         StringAssert.Contains("両手", steps[0].Title);
-        StringAssert.Contains("いっぱい", steps[0].Title);
+        StringAssert.Contains("振りやすい", steps[0].Title, "限界までではなく、振りやすい範囲で振る(2026-10-24)");
+        StringAssert.DoesNotContain("いっぱい", steps[0].Title);
+        StringAssert.DoesNotContain("遠く", TutorialProgram.RangeCheer);
         Assert.AreEqual("hands", steps[1].Id);
         Assert.AreEqual(TutorialProgram.RangeStepId, TutorialProgram.Build(flow, false)[0].Id, "持ち方の説明を省いても範囲は合わせる");
     }
@@ -87,6 +90,35 @@ public class TutorialProgramTests
         var direct = new TutorialRangeLearning(7, 100);
         Assert.AreEqual(TutorialRangeLearning.Phase.Learned, direct.Update(100.2, new[] { RangeAck("learned", "samples300") }, "B"),
             "開始の返事を取りこぼしても完了で終わる");
+    }
+
+    // 振りやすい範囲の枠をそのまま画面いっぱいにすると剣が大きすぎるので、中心を保って縦横1.5倍に広げてから位置補正にする(2026-10-24)。
+    [Test]
+    public void RangeLearning_WidensTheEasySwingAreaBeforeCalibrating()
+    {
+        var learned = Rect.MinMaxRect(.2f, .1f, .8f, .9f);
+        var widened = TutorialRangeLearning.Widen(learned, TutorialProgram.RangeWidenFactor);
+        Assert.AreEqual(1.5f, TutorialProgram.RangeWidenFactor);
+        Assert.AreEqual(.05f, widened.xMin, 1e-5f); Assert.AreEqual(.95f, widened.xMax, 1e-5f);
+        Assert.AreEqual(-.1f, widened.yMin, 1e-5f); Assert.AreEqual(1.1f, widened.yMax, 1e-5f);
+        var corners = TutorialRangeLearning.CalibrationCorners(widened, 1920, 1080);
+        var expected = new[] { new Vector2(.05f * 1919, -.1f * 1079), new Vector2(.95f * 1919, -.1f * 1079),
+            new Vector2(.95f * 1919, 1.1f * 1079), new Vector2(.05f * 1919, 1.1f * 1079) };
+        for (int i = 0; i < 4; i++)
+            Assert.Less(Vector2.Distance(expected[i], corners[i]), .01f, "左上→右上→右下→左下 / " + i);
+        Assert.IsTrue(PhoneSaberPositionCalibration.TryCreate(corners, out _, out _), "そのまま位置補正にできる");
+        const string area = "samples300-area0.200000_0.100000_0.800000_0.900000";
+        var mine = new PhoneSaberAcknowledgement(7, "B", "ios", "learned", area, "phone-b");
+        var other = new PhoneSaberAcknowledgement(7, "A", "ios", "learned", "samples300-area0.0_0.0_1.0_1.0", "phone-a");
+        Assert.IsTrue(TutorialRangeLearning.TryLearnedBounds(new[] { other, mine }, "B", out var bounds));
+        Assert.Less(Vector2.Distance(learned.min, bounds.min) + Vector2.Distance(learned.max, bounds.max), 1e-5f, "この台のスマホの枠");
+        Assert.IsFalse(TutorialRangeLearning.TryLearnedBounds(new[] { other }, "B", out _), "別の台の枠は使わない");
+        var android = new PhoneSaberAcknowledgement(7, "B", "android", "learned", "samples300", "phone-android");
+        Assert.IsFalse(TutorialRangeLearning.TryLearnedBounds(new[] { android }, "B", out _), "枠の無い返事では補正しない");
+        var loneNone = new PhoneSaberAcknowledgement(7, "none", "ios", "learned", area, "phone-none");
+        Assert.IsTrue(TutorialRangeLearning.TryLearnedBounds(new[] { loneNone }, "B", out _), "台を決めていないスマホが1台なら使う");
+        Assert.IsFalse(TutorialRangeLearning.TryLearnedBounds(new[] { loneNone, new PhoneSaberAcknowledgement(7, "none", "ios", "learned", area, "phone-2") }, "B", out _),
+            "台を決めていないスマホが2台なら選べない");
     }
 
     [Test]

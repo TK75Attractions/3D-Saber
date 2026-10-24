@@ -37,6 +37,10 @@ public sealed class TutorialController : MonoBehaviour
     public static System.Func<bool> PhoneInputActive = DefaultPhoneInputActive;
     public static System.Func<int> SendLearnArea = DefaultSendLearnArea;
     public static System.Func<int, PhoneSaberAcknowledgement[]> ReadLearnArea = DefaultReadLearnArea;
+    // 覚えた枠(カメラ画像の 0..1)を広げて、この台の位置補正として保存し直す。保存できたら true。
+    public static System.Func<Rect, bool> ApplyWidenedRange = DefaultApplyWidenedRange;
+    // 広げて保存した枠(カメラ画像の 0..1)。保存しなかったら null。
+    public Rect? AppliedRange { get; private set; }
     public TutorialRangeLearning Range => range;
     public double RangeSecondsLeft => range != null && started ? range.SecondsLeft(Now) : 0;
     // 学習中に剣の両端が通った範囲(剣の平面の世界座標 XY)。覆いが枠で見せる。
@@ -144,6 +148,21 @@ public sealed class TutorialController : MonoBehaviour
 
     static PhoneSaberAcknowledgement[] DefaultReadLearnArea(int id) => PhoneSaberDiscoveryResponder.Acknowledgements.Read(id);
 
+    // 振りやすい範囲で振ってもらうので、覚えた枠をそのまま画面いっぱいにすると剣が大きく映りすぎる(2026-10-24 ユーザー)。
+    // 縦横 RangeWidenFactor 倍に広げた枠で、この台の位置補正を保存し直す(InputPoint が完了の返事から作った補正を置き換える。
+    // 保存は前の学習の返事を使い終わった扱いにするので、あとから元の枠で上書きされない)。InputPoint と同じく台 A・B だけ。
+    // 台の準備(F8)の「範囲を覚える」は今までどおり(限界まで振る前提)。
+    static bool DefaultApplyWidenedRange(Rect learned)
+    {
+        var input = InputPoint.Instance;
+        if (input == null || (input.StationLabel != "A" && input.StationLabel != "B")) return false;
+        var corners = TutorialRangeLearning.CalibrationCorners(TutorialRangeLearning.Widen(learned, TutorialProgram.RangeWidenFactor),
+            input.camWidth, input.camHeight);
+        bool saved = input.SavePositionCalibration(corners, out string error);
+        if (!saved) Debug.LogWarning("Tutorial: 広げた範囲を保存できませんでした: " + error);
+        return saved;
+    }
+
     System.Collections.IEnumerator StartMusicWhenVisible()
     {
         while (ScreenTransition.IsBusy) yield return null;
@@ -210,7 +229,7 @@ public sealed class TutorialController : MonoBehaviour
         completedLongCounts.Clear();
         completedDirections.Clear();
         var step = Step;
-        range = null; HasRangeCover = false; rangeCheered = false;
+        range = null; HasRangeCover = false; rangeCheered = false; AppliedRange = null;
         if (step.Kind == TutorialStepKind.Range && SendLearnArea != null) range = new TutorialRangeLearning(SendLearnArea(), now);
         nextPatternAt = TutorialProgram.NextBarAtOrAfter(now + TutorialProgram.ReadDelaySeconds + spawner.approachTime);
         BannerTitle = step.Kind == TutorialStepKind.Ready && timedOutPractice ? "曲を選びに行こう" : step.Title;
@@ -229,7 +248,7 @@ public sealed class TutorialController : MonoBehaviour
         if (step.Kind == TutorialStepKind.Range)
         {
             BannerTitle = reason == "ok" ? TutorialProgram.RangeLearnedTitle : TutorialProgram.RangeKeptTitle; BannerSub = "";
-            Debug.Log($"Tutorial: range {reason} id={range?.CommandId} station={station}");
+            Debug.Log($"Tutorial: range {reason} id={range?.CommandId} station={station} widened={(AppliedRange.HasValue ? AppliedRange.Value.ToString("F3") : "-")}");
         }
         else if (reason == "timeout") { timedOutPractice = true; BannerTitle = "次に進むよ"; BannerSub = "あとは曲の中で慣れよう"; }
         else if (step.Kind == TutorialStepKind.Practice) { BannerTitle = "OK!"; BannerSub = ""; }
@@ -242,7 +261,11 @@ public sealed class TutorialController : MonoBehaviour
     void TickRange(double now)
     {
         if (range == null) { Complete(now, "noanswer"); return; }
-        var state = range.Update(now, ReadLearnArea != null ? ReadLearnArea(range.CommandId) : null, station);
+        var acks = ReadLearnArea != null ? ReadLearnArea(range.CommandId) : null;
+        var state = range.Update(now, acks, station);
+        if (state == TutorialRangeLearning.Phase.Learned && TutorialRangeLearning.TryLearnedBounds(acks, station, out Rect learned)
+            && ApplyWidenedRange != null && ApplyWidenedRange(learned))
+            AppliedRange = TutorialRangeLearning.Widen(learned, TutorialProgram.RangeWidenFactor);
         if (state == TutorialRangeLearning.Phase.Learning)
         {
             GrowRangeCover();

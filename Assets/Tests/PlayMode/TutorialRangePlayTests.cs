@@ -15,6 +15,8 @@ public class TutorialRangePlayTests
     System.Func<bool> savedActive;
     System.Func<int> savedSend;
     System.Func<int, PhoneSaberAcknowledgement[]> savedRead;
+    System.Func<Rect, bool> savedApply;
+    Rect? appliedLearned;
     readonly List<PhoneSaberAcknowledgement> replies = new List<PhoneSaberAcknowledgement>();
     int sent;
 
@@ -22,7 +24,10 @@ public class TutorialRangePlayTests
     {
         savedCalibration = GameSession.IsCalibrationMode; GameSession.IsCalibrationMode = false;
         savedActive = TutorialController.PhoneInputActive; savedSend = TutorialController.SendLearnArea; savedRead = TutorialController.ReadLearnArea;
-        replies.Clear(); sent = 0;
+        savedApply = TutorialController.ApplyWidenedRange;
+        replies.Clear(); sent = 0; appliedLearned = null;
+        // 本物の位置補正(PlayerPrefs)には保存しない。渡された枠だけを覚える。
+        TutorialController.ApplyWidenedRange = learned => { appliedLearned = learned; return true; };
         TutorialController.PhoneInputActive = () => true;
         TutorialController.SendLearnArea = () => { sent++; return CommandId; };
         TutorialController.ReadLearnArea = id => id == CommandId ? replies.ToArray() : new PhoneSaberAcknowledgement[0];
@@ -34,6 +39,7 @@ public class TutorialRangePlayTests
     [UnityTearDown] public IEnumerator Cleanup()
     {
         TutorialController.PhoneInputActive = savedActive; TutorialController.SendLearnArea = savedSend; TutorialController.ReadLearnArea = savedRead;
+        TutorialController.ApplyWidenedRange = savedApply;
         GameSession.TutorialPending = false; GameSession.IsCalibrationMode = savedCalibration;
         var empty = SceneManager.CreateScene("TutorialRangeCleanup"); SceneManager.SetActiveScene(empty);
         for (int i = SceneManager.sceneCount - 1; i >= 0; i--)
@@ -58,7 +64,7 @@ public class TutorialRangePlayTests
         Assert.AreEqual(1, sent, "範囲を覚える指示を1回だけ送る");
         Assert.IsFalse(t.Overlay.HandsVisible);
         Assert.IsFalse(t.Overlay.SkipButton.gameObject.activeSelf, "画面の下まで振るので、やめるの的は隠す");
-        StringAssert.Contains("いっぱい", t.Overlay.TitleText);
+        StringAssert.Contains("振りやすい", t.Overlay.TitleText, "限界までではなく振りやすい範囲で");
         Assert.AreEqual("あと 10 秒", t.Overlay.TimerText, "スマホが学習を始めるまでは10秒のまま");
         Assert.IsFalse(t.Overlay.RangeCoverVisible, "学習が始まるまでは枠を出さない");
         Assert.AreEqual(0, m.noteSpawner.TotalNoteCount, "範囲を合わせる間はノーツを出さない");
@@ -84,6 +90,9 @@ public class TutorialRangePlayTests
         yield return null; yield return null;
         Assert.IsTrue(t.StepDone);
         Assert.AreEqual(TutorialProgram.RangeLearnedTitle, t.Overlay.TitleText);
+        Assert.AreEqual(Rect.MinMaxRect(.2f, .1f, .8f, .9f), appliedLearned, "完了の返事の枠を渡す");
+        Assert.IsTrue(t.AppliedRange.HasValue, "広げた枠で保存した");
+        Assert.AreEqual(.05f, t.AppliedRange.Value.xMin, 1e-5f); Assert.AreEqual(1.1f, t.AppliedRange.Value.yMax, 1e-5f);
         Assert.IsFalse(t.Overlay.RangeCoverVisible, "終わったら枠を消す");
         Assert.AreEqual("", t.Overlay.TimerText);
         Assert.AreEqual(TutorialProgram.RangeStepId, t.Records[0].Id); Assert.AreEqual("ok", t.Records[0].Reason);

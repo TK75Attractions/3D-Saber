@@ -61,14 +61,19 @@ public static class TutorialProgram
     public static readonly string[] CommonFlow = { "hands", "tapRed", "tapBlue", "tapMix", "gold", "simul", "arrowEasy", "long", "ready" };
 
     // 振る範囲を合わせる段(2026-10-24 ユーザー指示「チュートリアルの最初に、剣をふる範囲の設定」)。
-    // 台の準備(F8)の「範囲を覚える」と同じ指示(learn-area=10)をスマホへ送り、腕が届くいちばん遠くまで振ってもらう。
+    // 台の準備(F8)の「範囲を覚える」と同じ指示(learn-area=10)をスマホへ送る。限界まででなく、振りやすい範囲で振ってもらう
+    // (同日ユーザー「振れる限界までじゃなくて振りやすいとこを振る想定」)。覚えた枠は RangeWidenFactor 倍に広げて使う。
     // スマホの座標を受けているときだけ最初に入れる(マウスで遊ぶとき・テストでは入れない)。
     public const string RangeStepId = "range";
     public const double RangeAnswerSeconds = 3.0;      // 学習の開始が返ってこなければ、この秒数でそのまま進む
     public const double RangeResultWaitSeconds = 5.0;  // 学習の秒数のあと完了の返事を待つ秒数(PC の再送も学習秒数 +5 秒まで)
-    public const double RangeCheerSeconds = 5.0;       // 残りがこの秒数になったら、もっと遠くまでと声をかける
+    public const double RangeCheerSeconds = 5.0;       // 残りがこの秒数になったら、そのまま続けてと声をかける
     public const double RangeEndSeconds = 1.6;         // 結果の文を見せる間
-    public const string RangeCheer = "その調子！ もっと遠くまで";
+    public const string RangeCheer = "その調子！ そのまま振ってね";
+    // 覚えた枠(振りやすい範囲)をそのまま画面いっぱいにすると、剣が大きく映りすぎる(同日ユーザー「ある程度は広げて」)。
+    // 中心を保って縦横この倍率に広げてから位置補正にする。振りやすい範囲は限界のおよそ3分の2なので、限界まで振る台の準備(F8)と
+    // 同じくらいの映り方になり、ノーツの範囲(左右±2.5)は振りやすい範囲の内側に収まる。剣の大きさは広げない場合のおよそ0.6倍。
+    public const float RangeWidenFactor = 1.5f;
     public const string RangeLearnedTitle = "OK! 振る範囲を合わせたよ";
     public const string RangeKeptTitle = "今の範囲のまま進むよ";
 
@@ -96,7 +101,7 @@ public static class TutorialProgram
     {
         switch (id)
         {
-            case RangeStepId: return new TutorialStep { Id = id, Kind = TutorialStepKind.Range, Title = "両手の剣を、上下左右いっぱいに振ろう", Sub = "腕がとどく いちばん遠くまで" };
+            case RangeStepId: return new TutorialStep { Id = id, Kind = TutorialStepKind.Range, Title = "両手の剣を、振りやすい範囲で上下左右に振ろう", Sub = "無理せず、いつも振るくらいの大きさで" };
             case "hands": return new TutorialStep { Id = id, Kind = TutorialStepKind.Explain, Title = "赤い剣は右手、青い剣は左手", Sub = "どちらかを振ると始まります", TimeoutSeconds = HandsTimeoutSeconds };
             case "tapRed": return new TutorialStep { Id = id, Kind = TutorialStepKind.Practice, Title = "赤い箱を右手で切ろう", Sub = "手前の枠に重なった瞬間に振る",
                 Pattern = new[] { Tap(RightX, BaseY, "red", 0f), Tap(RightX, BaseY, "red", 2f) }, PeriodSeconds = LoopSeconds, Goal = 2 };
@@ -260,5 +265,46 @@ public sealed class TutorialRangeLearning
             learned |= a.Result == "learned"; failed |= a.Result == "failed"; learning |= a.Result == "learning";
         }
         return learned ? "learned" : failed ? "failed" : learning ? "learning" : "";
+    }
+
+    // 完了の返事に書かれた枠(カメラ画像の 0..1)。返事の選び方は InputPoint が補正に使うものと同じ
+    // (同じ台を優先、無ければ台を決めていないスマホが1台だけのとき)。枠の無い返事(Android など)は false。
+    public static bool TryLearnedBounds(IReadOnlyList<PhoneSaberAcknowledgement> acks, string station, out Rect bounds)
+    {
+        bounds = default;
+        if (acks == null) return false;
+        var same = new List<PhoneSaberAcknowledgement>();
+        var none = new List<PhoneSaberAcknowledgement>();
+        foreach (var a in acks)
+        {
+            if (a == null || a.Platform != "ios") continue;
+            if (!string.IsNullOrEmpty(station) && a.Station == station) same.Add(a);
+            else if (a.Station == "none") none.Add(a);
+        }
+        var candidates = same.Count > 0 ? same : none.Count == 1 ? none : null;
+        if (candidates == null) return false;
+        candidates.Sort((x, y) => string.CompareOrdinal(x.Sender, y.Sender));
+        foreach (var a in candidates)
+            if (a.Result == "learned" && a.TryLearnedBounds(out var learned))
+            {
+                bounds = Rect.MinMaxRect(learned.xMin, learned.yMin, learned.xMax, learned.yMax);
+                return true;
+            }
+        return false;
+    }
+
+    // 振りやすい範囲の枠を、中心を保って縦横 factor 倍にする(カメラ画像の外へはみ出してよい)。
+    public static Rect Widen(Rect bounds, float factor)
+    {
+        Vector2 size = bounds.size * factor;
+        return new Rect(bounds.center - size * .5f, size);
+    }
+
+    // 位置補正の4隅(カメラのピクセル、左上→右上→右下→左下)。PhoneSaberPositionCalibration.TryFromLearnedArea と同じ向きと単位。
+    public static Vector2[] CalibrationCorners(Rect area, float cameraWidth, float cameraHeight)
+    {
+        float x0 = area.xMin * (cameraWidth - 1), x1 = area.xMax * (cameraWidth - 1);
+        float y0 = area.yMin * (cameraHeight - 1), y1 = area.yMax * (cameraHeight - 1);
+        return new[] { new Vector2(x0, y0), new Vector2(x1, y0), new Vector2(x1, y1), new Vector2(x0, y1) };
     }
 }
