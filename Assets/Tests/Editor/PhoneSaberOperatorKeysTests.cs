@@ -55,8 +55,9 @@ public class PhoneSaberOperatorKeysTests
         finally { field.SetValue(null, saved); }
     }
 
-    [Test]
-    public void ISOCyclesAndDefaultsResetToProduction()
+    [TestCase(false)]
+    [TestCase(true)]
+    public void ISOCyclesAndDefaultsResetToProduction(bool automatic)
     {
         int index = 0;
         foreach (int value in new[] { 250, 200, 160, 125, 100, 80, 64, 2000, 250 })
@@ -71,9 +72,12 @@ public class PhoneSaberOperatorKeysTests
         {
             PhoneSaberOperatorKeys.SelectShutterISO(250);
             Assert.AreEqual(1, field.GetValue(null));
-            PhoneSaberDiscoveryResponder.QueueCommand(PhoneSaberDiscoveryResponder.DefaultsCommand);
-            Assert.AreEqual(0, field.GetValue(null));
-            Assert.AreEqual("shutter-iso=250", PhoneSaberOperatorKeys.CommandFor(Key.D, 2, out _).Value.command);
+            // PC起動時の自動指示でもF8でも、それまでの運営の選択をリセットする。
+            PhoneSaberDiscoveryResponder.QueueCommand(PhoneSaberDiscoveryResponder.DefaultsCommand, automatic: automatic);
+            Assert.AreEqual(3, field.GetValue(null));
+            Assert.AreEqual("shutter-iso=125", PhoneSaberOperatorKeys.CommandFor(Key.D, 2, out _).Value.command);
+            Assert.AreEqual("shutter-iso=125", PhoneSaberOperatorKeys.CommandFor(Key.D, 2, out _, true, 3, (int)field.GetValue(null)).Value.command);
+            StringAssert.Contains("ISO 160・色付き発光体 ON", PhoneSaberOperatorKeys.PendingLabel(PhoneSaberDiscoveryResponder.DefaultsCommand));
         }
         finally { field.SetValue(null, saved); }
     }

@@ -597,7 +597,7 @@ final class LANLivenessProbe {
     ///   "PHONESABER_COMMAND 1 id=<番号> shutter=0|500|1000|2000"（iPhoneの固定短時間露出）
     ///   "PHONESABER_COMMAND 1 id=<番号> exposure-bias=0|-1|-2"（露出補正 EV、2026-10-18）
     ///   "PHONESABER_COMMAND 1 id=<番号> clip=1" / "... auto-clip=0|1"（自動クリップの今すぐ保存・ON/OFF、2026-10-19）
-    ///   "PHONESABER_COMMAND 1 id=<番号> defaults=1"（剣を追いかける ON・露出 -2・固定シャッター 1/2000・ISO2000・色付き発光体OFFに戻して保存）
+    ///   "PHONESABER_COMMAND 1 id=<番号> defaults=1"（剣を追いかける ON・露出 -2・固定シャッター 1/2000・ISO160・色付き発光体ONに戻して保存）
     /// 2026-10-18: 会場のコーンを無視する範囲を、iPhone に触らず Mac から登録するため。
     /// 規則（Android の PcCommandProtocol と同じ）: 版は 1 だけ、id 必須、知らない項目は無視、同じ項目は後のものが有効、
     /// 範囲外の値はその項目が無いのと同じ。1つの指示は1つの操作だけ: learn-area / clear-area / exposure-bias / shutter は
@@ -641,7 +641,7 @@ final class LANLivenessProbe {
         var autoClip: Bool? = nil
         /// track-lock=0|1: 剣を追いかける（既定 ON、端末に保存）。
         var trackLock: Bool? = nil
-        /// defaults=1: 本番の既定（追跡 ON・露出 -2・固定シャッター 1/2000・ISO2000・色付き発光体OFF）に戻し、端末に保存する。
+        /// defaults=1: PC起動・接続時の自動指示もF8も、本番既定（追跡 ON・露出 -2・固定シャッター 1/2000・ISO160・色付き発光体ON）で保存値を上書きする。
         var defaults = false
         var sourceHost: String? = nil
     }

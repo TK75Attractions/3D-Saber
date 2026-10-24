@@ -113,11 +113,12 @@ final class DetectionCoreTests: XCTestCase {
         let name = "PhoneSaber.iso.tests." + UUID().uuidString
         let defaults = try XCTUnwrap(UserDefaults(suiteName: name))
         defer { defaults.removePersistentDomain(forName: name) }
-        XCTAssertEqual(CameraViewModel.storedShutterISO(in: defaults), 2000)
+        XCTAssertEqual(CameraViewModel.storedShutterISO(in: defaults), 160)
+        XCTAssertNil(defaults.object(forKey: "PhoneSaber.shutterISO.v1"))
         for value in [2000, 250, 200, 160, 125, 100, 80, 64, 1000, 500, 0, -1, 4000] {
             defaults.set(value, forKey: "PhoneSaber.shutterISO.v1")
             let expected = [1000, 500].contains(value) ? 250 :
-                ([2000, 250, 200, 160, 125, 100, 80, 64].contains(value) ? value : 2000)
+                ([2000, 250, 200, 160, 125, 100, 80, 64].contains(value) ? value : 160)
             XCTAssertEqual(CameraViewModel.storedShutterISO(in: defaults), expected)
         }
         for fps in [30, 60] { for iso in [2000, 250, 200, 160, 125, 100, 80, 64] {
@@ -145,6 +146,26 @@ final class DetectionCoreTests: XCTestCase {
         }
     }
 
+    func testFixedShutterISOAndEmitterPreserveStoredChoices() throws {
+        // PCからdefaultsを受け取らないアプリ更新・単独起動の再読込。
+        let name = "PhoneSaber.emitter.tests." + UUID().uuidString
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: name))
+        defer { defaults.removePersistentDomain(forName: name) }
+        XCTAssertTrue(CameraViewModel.storedShutterEmitter(in: defaults))
+        XCTAssertNil(defaults.object(forKey: "PhoneSaber.shutterEmitter.v1"))
+        for iso in [2000, 160, 64] { for emitter in [false, true] {
+            defaults.set(iso, forKey: "PhoneSaber.shutterISO.v1")
+            defaults.set(emitter, forKey: "PhoneSaber.shutterEmitter.v1")
+            let reopened = try XCTUnwrap(UserDefaults(suiteName: name))
+            XCTAssertEqual(CameraViewModel.storedShutterISO(in: reopened), iso)
+            XCTAssertEqual(CameraViewModel.storedShutterEmitter(in: reopened), emitter)
+        } }
+        defaults.removeObject(forKey: "PhoneSaber.shutterISO.v1")
+        defaults.removeObject(forKey: "PhoneSaber.shutterEmitter.v1")
+        XCTAssertEqual(CameraViewModel.storedShutterISO(in: defaults), 160)
+        XCTAssertTrue(CameraViewModel.storedShutterEmitter(in: defaults))
+    }
+
     @MainActor
     func testFixedShutterISOCommandsAndEmitterDefaults() throws {
         let model = CameraViewModel(sender: UDPSender { _, _, _ in }, p2pEnabled: false)
@@ -156,10 +177,12 @@ final class DetectionCoreTests: XCTestCase {
         XCTAssertEqual(model.shutterISO, 125)
         model.applyPCCommand(.init(id: 802, ignore: nil, clearIgnore: false, shutterEmitter: true))
         XCTAssertTrue(model.shutterEmitter)
-        model.applyPCCommand(.init(id: 803, ignore: nil, clearIgnore: false, defaults: true))
+        model.setShutterEmitter(false)
+        // 自動・手動とも同じdefaults=1で、それまでの明示選択もリセットする。
+        model.applyPCCommand(try XCTUnwrap(LANLivenessProbe.parseCommand("PHONESABER_COMMAND 1 id=803 defaults=1")))
         XCTAssertEqual(model.shutter, 2000)
-        XCTAssertEqual(model.shutterISO, 2000)
-        XCTAssertFalse(model.shutterEmitter)
+        XCTAssertEqual(model.shutterISO, 160)
+        XCTAssertTrue(model.shutterEmitter)
     }
 
     func testFixedShutterPlanClampsDurationISOAndPreservesFrameBudget() throws {

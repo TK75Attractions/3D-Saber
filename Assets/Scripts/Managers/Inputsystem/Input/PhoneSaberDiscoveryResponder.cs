@@ -22,6 +22,7 @@ public sealed class PhoneSaberDiscoveryResponder : IDisposable
     // iPhone は同じ id を一度だけ実行する。古いアプリや Android は知らない datagram として捨てる。
     public const string CommandPrefix = "PHONESABER_COMMAND 1";
     public const double CommandSeconds = 10;
+    // PC起動・新規接続時の自動指示もF8も、保存済みの選択を1/2000秒・ISO160・色付き発光体ONへ戻す。
     public const string DefaultsCommand = "defaults=1";
     const double NewSenderSeconds = 60;
     static readonly object commandGate = new object();

@@ -55,10 +55,18 @@ public class InputPoint {
         metrics = (inputs / 'PhoneSaberLatencyEstimate.cs').read_text()
         (tmp / 'Metrics.cs').write_text('using System; using System.Collections.Generic; using System.Globalization; using System.Net; using System.Text;\n' +
             block(metrics, 'public sealed class PhoneSaberMetrics\n') + '\n' + block(metrics, 'public sealed class PhoneSaberMetricsStore'))
-        actions = block((inputs / 'PhoneSaberControlPanelState.cs').read_text(), 'public static class PhoneSaberControlPanelActions')
-        (tmp / 'Actions.cs').write_text('using System; using System.Collections.Generic;\n' + actions)
-        panel = block((tests / 'PhoneSaberControlPanelTests.cs').read_text(), 'public void ShutterButtonsDispatchOnlySupportedValues()')
-        (tmp / 'PanelTests.cs').write_text('using System; using System.Collections.Generic; using NUnit.Framework;\npublic class PanelTests { [Test]\n' + panel + '\n}')
+        state = (inputs / 'PhoneSaberControlPanelState.cs').read_text()
+        actions = block(state, 'public static class PhoneSaberControlPanelActions')
+        # JSON文字列中の波括弧は数えず、クラス/メソッドの境界で実ソースを切り出す。
+        phone = state[state.index('public sealed class PhoneSaberControlPanelPhone'):state.index('// good-20261020')]
+        quote = state[state.index('    public static string Quote('):state.index('\n}\n\n// iPhone')]
+        (tmp / 'Actions.cs').write_text('using System; using System.Collections.Generic; using System.Globalization; using System.Text;\n' +
+            actions + '\n' + phone + '\npublic class PhoneSaberControlPanelState {\n' + quote + '\n}')
+        panel_tests = (tests / 'PhoneSaberControlPanelTests.cs').read_text()
+        panel = block(panel_tests, 'public void ShutterButtonsDispatchOnlySupportedValues()')
+        defaults = panel_tests[panel_tests.index('    public void PhoneDefaultsAckDisplaysISO160AndEmitterOnForBothStations('):].split('\n    }', 1)[0] + '\n    }'
+        (tmp / 'PanelTests.cs').write_text('using System; using System.Collections.Generic; using System.Text; using NUnit.Framework;\npublic class PanelTests { [Test]\n' +
+            panel + '\n[TestCase("A")]\n[TestCase("B")]\n' + defaults + '\n}')
         (tmp / 'Run.cs').write_text('''using System; using System.Reflection; using NUnit.Framework;
 class Run { static int Main() {
  int passed=0, failed=0;

@@ -349,7 +349,7 @@ public class PhoneSaberAcknowledgementTests
         Assert.IsEmpty(PhoneSaberOperatorKeys.ToastText(store, 100));
         store.Receive(Ack(81, "defaults", "tracklock-on-ev-2-shutter-2000"), "10.0.0.1");
         Assert.IsEmpty(PhoneSaberOperatorKeys.ToastText(store, 101));
-        Assert.AreEqual("iPhone: 既定に戻しました（剣を追いかける ON・露出 −2・固定シャッター 1/2000 秒・ISO 2000・色付き発光体 OFF）",
+        Assert.AreEqual("iPhone: 既定に戻しました（剣を追いかける ON・露出 −2・固定シャッター 1/2000 秒・ISO 160・色付き発光体 ON）",
             PhoneSaberOperatorKeys.StatusText(store, 101));
         store.Queue(82, PhoneSaberDiscoveryResponder.DefaultsCommand, 102);
         store.Receive(Ack(82, "defaults", "tracklock-on-ev-2"), "10.0.0.1");
@@ -406,7 +406,7 @@ public class PhoneSaberAcknowledgementTests
     [TestCase("exposure", "ev-2", "露出を -2 EV にしました")]
     [TestCase("tracklock", "off", "剣を追いかける OFF")]
     [TestCase("defaults", "tracklock-on-ev-2", "既定に戻しました（剣を追いかける ON・露出 −2）")]
-    [TestCase("defaults", "tracklock-on-ev-2-shutter-2000", "既定に戻しました（剣を追いかける ON・露出 −2・固定シャッター 1/2000 秒・ISO 2000・色付き発光体 OFF）")]
+    [TestCase("defaults", "tracklock-on-ev-2-shutter-2000", "既定に戻しました（剣を追いかける ON・露出 −2・固定シャッター 1/2000 秒・ISO 160・色付き発光体 ON）")]
     [TestCase("autoclip", "on", "自動クリップ ON")]
     [TestCase("clip-saved", "saved", "今の場面を保存しました")]
     [TestCase("clip-off", "off", "今の場面を保存できませんでした（クリップOFF・停止中・保存不可）")]

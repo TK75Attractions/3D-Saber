@@ -188,7 +188,7 @@ func disableCameraPostProcessing(_ camera: AVCaptureDevice) -> Bool {
     return true
 }
 
-// 本番既定は1/2000秒・ISO2000。反射と刃の分離を実機比較するためISOを段階的に下げる。
+// 本番既定は1/2000秒・ISO160・色付き発光体ON。反射と刃の分離を実機比較するためISOを段階的に下げる。
 struct CameraShutterPlan: Equatable {
     let duration: CMTime
     let iso: Float
@@ -1706,8 +1706,9 @@ final class CameraViewModel: NSObject, ObservableObject {
             if let host = command.sourceHost { self.lanProbe.sendAck(to: host, line: line) }
         }
         if command.defaults {
-            guard setShutterISO(2000), setShutter(2000) else { return }
-            setShutterEmitter(false)
+            // PC起動・接続時の自動指示もF8も同じリセット。保存済みの運営の選択も上書きする。
+            guard setShutterISO(160), setShutter(2000) else { return }
+            setShutterEmitter(true)
             setTrackLockEnabled(true)
             setExposureBias(-2, commandID: command.id)
             ack("defaults", "tracklock-on-ev-2-shutter-2000")
@@ -1965,16 +1966,23 @@ final class CameraViewModel: NSObject, ObservableObject {
 
     static let shutterISOChoices = LANLivenessProbe.shutterISOChoices
     nonisolated private static let shutterISOKey = "PhoneSaber.shutterISO.v1"
-    private static let shutterEmitterKey = "PhoneSaber.shutterEmitter.v1"
+    nonisolated private static let shutterEmitterKey = "PhoneSaber.shutterEmitter.v1"
     @Published private(set) var shutterISO = NSClassFromString("XCTestCase") == nil
         ? CameraViewModel.storedShutterISO(in: .standard) : 2000
     @Published private(set) var shutterEmitter = NSClassFromString("XCTestCase") == nil
-        && UserDefaults.standard.bool(forKey: CameraViewModel.shutterEmitterKey)
+        && CameraViewModel.storedShutterEmitter(in: .standard)
 
+    // 更新・単独起動では保存値を移行しない。PCのdefaults受信時だけ上の処理で既定へ戻す。
     nonisolated static func storedShutterISO(in defaults: UserDefaults) -> Int {
         let value = defaults.integer(forKey: shutterISOKey)
         if value == 1000 || value == 500 { return 250 }
-        return LANLivenessProbe.shutterISOChoices.contains(value) ? value : 2000
+        return LANLivenessProbe.shutterISOChoices.contains(value) ? value : 160
+    }
+
+    // キーなしだけ新既定ON。保存済みOFFも更新・単独起動では維持する。
+    nonisolated static func storedShutterEmitter(in defaults: UserDefaults) -> Bool {
+        guard defaults.object(forKey: shutterEmitterKey) != nil else { return true }
+        return defaults.bool(forKey: shutterEmitterKey)
     }
 
     static func shutterISOLabel(_ value: Int) -> String {

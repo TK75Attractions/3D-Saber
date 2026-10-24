@@ -149,7 +149,13 @@ extension AVCaptureSession { func addOutput(_ output: AVCaptureVideoDataOutput) 
     support += block(camera, "struct CameraShutterController") + "\n"
     shutter_key = next(line for line in camera.splitlines() if 'static let shutterKey =' in line)
     support += 'enum LANLivenessProbe { static let shutterChoices = [0, 500, 1000, 2000]; static let shutterISOChoices = [2000, 250, 200, 160, 125, 100, 80, 64] }\n'
-    support += 'enum CameraViewModel {\n' + shutter_key + '\n' + block(camera, 'nonisolated static func storedShutter(') + '\n' + next(line for line in camera.splitlines() if 'static let shutterISOKey =' in line) + '\n' + block(camera, 'nonisolated static func storedShutterISO(') + '\n}\n'
+    support += 'enum CameraViewModel {\n' + shutter_key + '\n'
+    for key in ['shutterISOKey', 'shutterEmitterKey']:
+        support += next(line for line in camera.splitlines() if f'static let {key} =' in line) + '\n'
+    for marker in ['nonisolated static func storedShutter(', 'nonisolated static func storedShutterISO(',
+                   'nonisolated static func storedShutterEmitter(']:
+        support += block(camera, marker) + '\n'
+    support += '}\n'
     current_camera = (SOURCE / "CameraViewModel.swift").read_text()
     support += block(current_camera, "struct CameraPostProcessingState") + "\n"
     if "func configureCameraPostProcessing(" in camera:
@@ -165,7 +171,7 @@ extension AVCaptureSession { func addOutput(_ output: AVCaptureVideoDataOutput) 
     support += "enum ConnectivityLog { static let shared = ConnectivityLogStub() }; struct ConnectivityLogStub { func exportTail() -> String { \"\" } }\n"
     support += block(source("EventRecovery.swift"), "struct FPSComparisonPolicy") + "\n"
     core = (TESTS / "DetectionCoreTests.swift").read_text()
-    markers = ["func testFixedShutterStored", "func testFixedShutterISOStorage", "func testFixedShutterPlan", "func testCameraFormatSelection", "func test120FPSFormat", "func testLatestFramePolicy", "func testPostProcessing",
+    markers = ["func testFixedShutterStored", "func testFixedShutterISOStorage", "func testFixedShutterISOAndEmitterPreserveStoredChoices", "func testFixedShutterPlan", "func testCameraFormatSelection", "func test120FPSFormat", "func testLatestFramePolicy", "func testPostProcessing",
                "func testDefaultCameraSettings", "func testFrameSendPrecedes", "func testCaptureHealthUses", "func testPlayAreaLearning",
                "func test120FPSMailboxPreserves", "func testDebugRecordingBundleIncludesConnectivityTail", "func testPlayAreaGrowth", "func testIgnoreZoneSnapshot"]
     focused = "import XCTest\nimport CoreMedia\nimport CoreVideo\nimport AVFoundation\nfinal class CameraLatencyTests: XCTestCase {\n"

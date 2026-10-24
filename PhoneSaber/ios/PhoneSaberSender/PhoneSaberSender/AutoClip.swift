@@ -599,8 +599,8 @@ struct AutoClipEnvironment: Equatable {
     var thermal = "nominal"
     var exposureBias = 0
     var shutter = 0
-    var shutterISO = 2000
-    var shutterEmitter = false
+    var shutterISO = 160
+    var shutterEmitter = true
     var exposureDurationSeconds: Double?
     var iso: Double?
     var appVersion = ""

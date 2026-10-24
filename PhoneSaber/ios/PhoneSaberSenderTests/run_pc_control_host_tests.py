@@ -79,14 +79,14 @@ enum PlayAreaSettings { static let exposureBiasKey = "unused" }
     var connectivityClock: () -> Double { { self.now } }
     var station = "A", host = "10.0.0.1"
     var lifecycleGeneration = 0, applyCount = 0
-    var running = true, autoClipEnabled = false
+    var running = true, autoClipEnabled = false, shutterEmitter = false
     var ignoreZones: [SaberColor: [SaberIgnoreZone]] = [:]
     var ignoreLearning = false
     static let maximumIgnoreZones = 8
     var clipAcknowledgements: [String: (String, String) -> Void] = [:]
     var trackLockEnabled = true, exposureBias = -2, shutter = 2000, shutterISO = 2000
     var commandsApplied: Int { processor.trackChanges }
-    static let trackLockKey = "unused", shutterISOKey = "unused", shutterKey = "unused"
+    static let trackLockKey = "unused", shutterISOKey = "unused", shutterKey = "unused", shutterEmitterKey = "unused"
     static let shutterISOChoices = [2000, 250, 200, 160, 125, 100, 80, 64], shutterChoices = [0, 500, 1000, 2000]
     static let exposureBiasChoices = [0, -1, -2]
     var shutterStatus = "", exposureBiasStatus = ""
@@ -101,7 +101,6 @@ enum PlayAreaSettings { static let exposureBiasKey = "unused" }
     func applyExposureBias(to camera: AVCaptureDevice, reason: String) {}
     func refreshShutterStatus() {}
     func updateAutoClipEnvironment(thermal: String) {}
-    func setShutterEmitter(_ value: Bool) {}
     func setAutoClipEnabled(_ value: Bool, commandID: Int? = nil) {}
     func requestAutoClip(commandID: Int? = nil, reason: String? = nil) {}
     var mirrorX = false, mirrorY = false
@@ -129,7 +128,7 @@ enum PlayAreaSettings { static let exposureBiasKey = "unused" }
     support += camera[start:end]
     for marker in ['private func learnIgnoreZones(', 'func clearIgnoreZones(', 'func applyPCCommand(',
                    'private func resetProcessor(', 'func setTrackLockEnabled(', 'func setExposureBias(',
-                   'func setShutterISO(', 'private func shutterISOAckDetail(', 'func setShutter(', 'static func exposureBiasLabel(']:
+                   'func setShutterISO(', 'func setShutterEmitter(', 'private func shutterISOAckDetail(', 'func setShutter(', 'static func exposureBiasLabel(']:
         method = block(camera, marker)
         method = method.replace('try? await Task.sleep(nanoseconds: UInt64(SaberIgnoreLearner.seconds * 1_000_000_000))',
                                 'await LearnSleeper.wait()')
@@ -156,6 +155,27 @@ enum PlayAreaSettings { static let exposureBiasKey = "unused" }
             model.running = false
             model.applyPCCommand(.init(id: 100, ignore: nil, clearIgnore: false, shutterISO: 64, sourceHost: model.host))
             XCTAssertTrue(model.lanProbe.acks.last?.hasSuffix("detail=64") == true, "停止中は予約した選択値")
+        }
+    }
+    func testDefaultsRestoreISO160AndEmitterForBothStations() {
+        for station in ["A", "B"] {
+            let model = CameraViewModel()
+            model.station = station
+            model.trackLockEnabled = false
+            model.exposureBias = 0
+            XCTAssertTrue(model.setShutter(0))
+            XCTAssertTrue(model.setShutterISO(64))
+            model.setShutterEmitter(false)
+            XCTAssertEqual(model.shutterISO, 64)
+            XCTAssertFalse(model.shutterEmitter)
+            // PC起動・接続時の自動指示とF8は同じdefaults。明示選択も上書きする。
+            model.applyPCCommand(.init(id: 81, ignore: nil, clearIgnore: false, defaults: true, sourceHost: model.host))
+            XCTAssertEqual(model.shutterISO, 160)
+            XCTAssertTrue(model.shutterEmitter)
+            XCTAssertEqual(model.shutter, 2000)
+            XCTAssertTrue(model.trackLockEnabled)
+            XCTAssertEqual(model.exposureBias, -2)
+            XCTAssertEqual(model.lanProbe.acks.last, "PHONESABER_ACK 1 id=81 station=\\(station) platform=ios result=defaults detail=tracklock-on-ev-2-shutter-2000")
         }
     }
     func begin(_ model: CameraViewModel, _ color: SaberColor, completion: ((Int, Int) -> Void)? = nil) async {
@@ -250,7 +270,7 @@ enum PlayAreaSettings { static let exposureBiasKey = "unused" }
 import Darwin
 let suite = PCControlTests.defaultTestSuite
 suite.run()
-guard let run = suite.testRun, run.executionCount >= 7, run.hasSucceeded else { exit(1) }
+guard let run = suite.testRun, run.executionCount >= 8, run.hasSucceeded else { exit(1) }
 ''')
         subprocess.run(['xcrun', 'swiftc', '-O', '-module-cache-path', str(tmp / 'cache'),
                         *[str(tmp / name) for name in ['Support.swift', 'Tests.swift', 'main.swift']],

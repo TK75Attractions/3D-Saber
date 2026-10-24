@@ -191,7 +191,7 @@ public sealed class PhoneSaberControlPanelPhone
             case "defaults":
                 Put("trackLock", "ON"); Put("exposureEv", "-2");
                 if (ack.Detail.EndsWith("shutter-2000"))
-                { Put("shutter", "1/2000"); Put("iso", "2000"); Put("colouredEmitter", "OFF"); }
+                { Put("shutter", "1/2000"); Put("iso", "160"); Put("colouredEmitter", "ON"); }
                 break;
             case "cleared":
                 if (ack.Detail == "area") Put("playArea", "なし");

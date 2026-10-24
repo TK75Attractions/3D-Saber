@@ -292,7 +292,8 @@ public class PhoneSaberControlPanelTests
     {
         var phone = new PhoneSaberControlPanelPhone("A", "10.0.0.1");
         phone.Acknowledge(Ack(1, "defaults", "tracklock-on-ev-2-shutter-2000"), 8, 7);
-        Assert.AreEqual("OFF", phone.Value("colouredEmitter"));
+        Assert.AreEqual("ON", phone.Value("colouredEmitter"));
+        Assert.AreEqual("160", phone.Value("iso"));
         phone.Metrics(new PhoneSaberMetrics { Platform = "ios", Station = "A", Controls = "0011", ReceivedAt = 10 });
         Assert.AreEqual("OFF", phone.Value("trackLock"));
         Assert.AreEqual("1/500", phone.Value("shutter"));
@@ -311,6 +312,27 @@ public class PhoneSaberControlPanelTests
         phone.Acknowledge(Ack(7, "cleared", "area"), 17, 16);
         phone.Acknowledge(Ack(8, "failed", "samples0"), 18, 17);
         Assert.AreEqual("なし", phone.Value("playArea"));
+    }
+
+    [TestCase("A")]
+    [TestCase("B")]
+    public void PhoneDefaultsAckDisplaysISO160AndEmitterOnForBothStations(string station)
+    {
+        const string sender = "10.0.0.1";
+        var phone = new PhoneSaberControlPanelPhone(station, sender);
+        phone.Metrics(new PhoneSaberMetrics { Platform = "ios", Station = station, Controls = "0000", ReceivedAt = 5 });
+        phone.Acknowledge(new PhoneSaberAcknowledgement(1, station, "ios", "shutter-emitter", "off", sender), 6, 6);
+        phone.Acknowledge(new PhoneSaberAcknowledgement(2, station, "ios", "defaults", "tracklock-on-ev-2-shutter-2000", sender), 8, 7);
+        Assert.AreEqual("160", phone.Value("iso"));
+        Assert.AreEqual("ON", phone.Value("colouredEmitter"));
+        var json = new StringBuilder();
+        phone.AppendJson(json, 9);
+        StringAssert.Contains("\"station\":\"" + station + "\"", json.ToString());
+        StringAssert.Contains("\"iso\":{\"value\":\"160\"", json.ToString());
+        StringAssert.Contains("\"colouredEmitter\":{\"value\":\"ON\"", json.ToString());
+        phone.Metrics(new PhoneSaberMetrics { Platform = "ios", Station = station, Controls = "1233", ReceivedAt = 10 });
+        Assert.AreEqual("160", phone.Value("iso"));
+        Assert.AreEqual("ON", phone.Value("colouredEmitter"), "通常metricsに発光体情報がなくてもACK表示を保持する");
     }
 
     [Test]
