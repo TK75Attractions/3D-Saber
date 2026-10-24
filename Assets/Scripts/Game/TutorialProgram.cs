@@ -308,3 +308,140 @@ public sealed class TutorialRangeLearning
         return new[] { new Vector2(x0, y0), new Vector2(x1, y0), new Vector2(x1, y1), new Vector2(x0, y1) };
     }
 }
+
+// チュートリアルで合わせた振る範囲は、その人の回だけ(2026-10-24 ユーザー「B にして」: タイトルに戻ったら台の準備の範囲に戻す)。
+// 範囲の段の前に、この台の位置補正(台の準備・F8 で決めたもの)を PlayerPrefs の文字のまま覚えておき、タイトルに戻ったら元へ戻す。
+// スマホの探す範囲も、戻した位置補正が画面いっぱいに写すカメラの範囲(＋認識の余白)へ送り直す。補正の無かった台は消す。
+// 間にスタッフが台の準備をし直していたら(補正がチュートリアルの残したものと違う)、そちらを残す。覚え書きはアプリを閉じても残る。
+// InputPoint と同じく台 A・B だけ。テスト(自動起動を止めている)では何もしない。
+public static class TutorialRangeBaseline
+{
+    public const string PrefsKey = "Tutorial.RangeBaseline.v1";
+
+    [Serializable]
+    public sealed class Snapshot
+    {
+        public string station = "";
+        public bool hadData, hadEnabled, enabled;
+        public string data = "";         // 範囲の段の前の位置補正(PlayerPrefs の文字そのまま)
+        public bool applied;             // 範囲を覚えて、チュートリアルの補正が入った
+        public string appliedData = "";  // そのときの位置補正(これと違っていたらスタッフが合わせ直した)
+    }
+
+    static bool Station(string station) => station == "A" || station == "B";
+    static bool Enabled => PhoneSaberP2PBridgeProcess.AutoStartEnabled;
+
+    public static Snapshot Load()
+    {
+        if (!PlayerPrefs.HasKey(PrefsKey)) return null;
+        try { var s = JsonUtility.FromJson<Snapshot>(PlayerPrefs.GetString(PrefsKey)); return s != null && Station(s.station) ? s : null; }
+        catch (ArgumentException) { return null; }
+    }
+    static void Store(Snapshot s) { PlayerPrefs.SetString(PrefsKey, JsonUtility.ToJson(s)); PlayerPrefs.Save(); }
+    public static void Forget() { PlayerPrefs.DeleteKey(PrefsKey); PlayerPrefs.Save(); }
+
+    // 範囲の段の前。まだ戻していない覚え書きがあれば(前の人のあとタイトルを通らなかった)、古いほう=台の準備のほうを残す。
+    public static void Remember(string station)
+    {
+        if (!Enabled || !Station(station) || Load() != null) return;
+        string dataKey = PhoneSaberPositionCalibrationStore.DataKey(station), enabledKey = PhoneSaberPositionCalibrationStore.EnabledKey(station);
+        Store(new Snapshot
+        {
+            station = station, hadData = PlayerPrefs.HasKey(dataKey), data = PlayerPrefs.GetString(dataKey, ""),
+            hadEnabled = PlayerPrefs.HasKey(enabledKey), enabled = PlayerPrefs.GetInt(enabledKey, 0) == 1,
+        });
+    }
+
+    // 範囲の段の終わり。そのときの補正を印にする(タイトルで、これと違っていたらスタッフが合わせ直したとみなす)。
+    // 覚えなかったとき(返事なし・失敗)も覚え書きは残す: スマホが遅れて覚えると探す範囲だけ変わるので、タイトルで送り直す。
+    // 遅れて届いた完了の返事で PC の補正が変わらないよう、この台の学習の返事は使い終わり扱いにする。
+    public static void Finish(string station, bool learned)
+    {
+        var s = Load();
+        if (s == null || s.station != station) return;
+        if (!learned) PhoneSaberDiscoveryResponder.Acknowledgements.DiscardLearnedAreas(station);
+        s.applied = true; s.appliedData = PlayerPrefs.GetString(PhoneSaberPositionCalibrationStore.DataKey(station), "");
+        Store(s);
+    }
+
+    // 戻すか(純関数)。チュートリアルの補正が入ったあと、別の補正に変わっていたらスタッフが合わせ直したので戻さない。
+    public static bool ShouldRestore(Snapshot s, string currentData) => s != null && (!s.applied || s.appliedData == currentData);
+
+    // タイトルに戻ったとき(TitleMenuController)。戻したら true。
+    public static bool RestoreAtTitle()
+    {
+        var s = Load();
+        if (s == null) return false;
+        if (!Enabled) return false;
+        var input = InputPoint.EnsureInstance();
+        if (input == null || input.StationLabel != s.station) return false;
+        string dataKey = PhoneSaberPositionCalibrationStore.DataKey(s.station), enabledKey = PhoneSaberPositionCalibrationStore.EnabledKey(s.station);
+        bool restore = ShouldRestore(s, PlayerPrefs.GetString(dataKey, ""));
+        Forget();
+        if (!restore) { PhoneSaberEventLog.Record(s.station, "SYSTEM", "tutorial-range-kept", "staff-changed"); return false; }
+        var calibration = s.hadData ? DecodeCalibration(s.data) : null;
+        if (calibration != null)
+        {
+            // 補正を作り直してから(学習の返事は使い終わり扱いになる)、PlayerPrefs を前の文字そのままに戻す。
+            var corners = calibration.CopyCorners();
+            input.SavePositionCalibration(corners, out _);
+            input.SetPositionCalibrationEnabled(s.enabled);
+            PlayerPrefs.SetString(dataKey, s.data);
+            if (!s.hadEnabled) PlayerPrefs.DeleteKey(enabledKey);
+            PlayerPrefs.Save();
+            SendPhoneArea(PhoneAreaFor(corners, input.camWidth, input.camHeight));
+        }
+        else
+        {
+            input.ResetPositionCalibration();
+            PhoneSaberDiscoveryResponder.QueueCommand(PhoneSaberDiscoveryResponder.ClearAreaCommand, automatic: true);
+        }
+        PhoneSaberEventLog.Record(s.station, "SYSTEM", "tutorial-range-restored", calibration != null ? "baseline" : "none");
+        return true;
+    }
+
+    // PlayerPrefs の文字から位置補正を読む(PhoneSaberPositionCalibrationStore と同じ形)。読めなければ null。
+    [Serializable] sealed class StoredCalibration { public int version; public Vector2[] corners; }
+    static PhoneSaberPositionCalibration DecodeCalibration(string data)
+    {
+        try
+        {
+            var stored = JsonUtility.FromJson<StoredCalibration>(data);
+            return stored != null && stored.version == 1 && PhoneSaberPositionCalibration.TryCreate(stored.corners, out var c, out _) ? c : null;
+        }
+        catch (ArgumentException) { return null; }
+    }
+
+    // スマホの探す範囲(自動の指示。スタッフ向けのトーストは出さない)。
+    public static void SendPhoneArea(Rect area)
+    {
+        if (!Enabled || !PhoneSaberCalibrationPlayArea.Valid(area)) return;
+        PhoneSaberDiscoveryResponder.QueueCommand(PhoneSaberCalibrationPlayArea.Command(area), automatic: true);
+    }
+
+    // 位置補正が画面いっぱいに写すカメラの範囲(4隅の外接矩形、カメラ画像の 0..1)に、認識の余白を足し、最小幅をそろえて 0..1 に収める。純関数。
+    public static Rect PhoneAreaFor(Vector2[] corners, float cameraWidth, float cameraHeight)
+    {
+        float minX = float.MaxValue, minY = float.MaxValue, maxX = float.MinValue, maxY = float.MinValue;
+        foreach (var corner in corners)
+        {
+            float x = corner.x / (cameraWidth - 1), y = corner.y / (cameraHeight - 1);
+            minX = Mathf.Min(minX, x); maxX = Mathf.Max(maxX, x); minY = Mathf.Min(minY, y); maxY = Mathf.Max(maxY, y);
+        }
+        Fit(ref minX, ref maxX); Fit(ref minY, ref maxY);
+        return Rect.MinMaxRect(minX, minY, maxX, maxY);
+    }
+
+    static void Fit(ref float low, ref float high)
+    {
+        low -= PhoneSaberCalibrationPlayArea.Margin; high += PhoneSaberCalibrationPlayArea.Margin;
+        if (high - low < PhoneSaberCalibrationPlayArea.MinimumSize)
+        {
+            float center = (low + high) * .5f;
+            low = center - PhoneSaberCalibrationPlayArea.MinimumSize * .5f; high = center + PhoneSaberCalibrationPlayArea.MinimumSize * .5f;
+        }
+        if (low < 0) { high -= low; low = 0; }
+        if (high > 1) { low -= high - 1; high = 1; }
+        low = Mathf.Max(0, low); high = Mathf.Min(1, high);
+    }
+}

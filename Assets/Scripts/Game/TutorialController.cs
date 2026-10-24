@@ -160,6 +160,8 @@ public sealed class TutorialController : MonoBehaviour
             input.camWidth, input.camHeight);
         bool saved = input.SavePositionCalibration(corners, out string error);
         if (!saved) Debug.LogWarning("Tutorial: 広げた範囲を保存できませんでした: " + error);
+        // スマホの探す範囲も広げた枠に合わせる(振りやすい範囲＋余白のままだと、広げた範囲で振った剣を拾い落とす)。
+        else TutorialRangeBaseline.SendPhoneArea(TutorialRangeBaseline.PhoneAreaFor(corners, input.camWidth, input.camHeight));
         return saved;
     }
 
@@ -230,7 +232,12 @@ public sealed class TutorialController : MonoBehaviour
         completedDirections.Clear();
         var step = Step;
         range = null; HasRangeCover = false; rangeCheered = false; AppliedRange = null;
-        if (step.Kind == TutorialStepKind.Range && SendLearnArea != null) range = new TutorialRangeLearning(SendLearnArea(), now);
+        if (step.Kind == TutorialStepKind.Range && SendLearnArea != null)
+        {
+            // タイトルに戻ったら台の準備の範囲へ戻すので、変える前の位置補正を覚えておく(2026-10-24 ユーザー「B にして」)。
+            TutorialRangeBaseline.Remember(station);
+            range = new TutorialRangeLearning(SendLearnArea(), now);
+        }
         nextPatternAt = TutorialProgram.NextBarAtOrAfter(now + TutorialProgram.ReadDelaySeconds + spawner.approachTime);
         BannerTitle = step.Kind == TutorialStepKind.Ready && timedOutPractice ? "曲を選びに行こう" : step.Title;
         BannerSub = step.Sub;
@@ -248,6 +255,7 @@ public sealed class TutorialController : MonoBehaviour
         if (step.Kind == TutorialStepKind.Range)
         {
             BannerTitle = reason == "ok" ? TutorialProgram.RangeLearnedTitle : TutorialProgram.RangeKeptTitle; BannerSub = "";
+            TutorialRangeBaseline.Finish(station, reason == "ok");
             Debug.Log($"Tutorial: range {reason} id={range?.CommandId} station={station} widened={(AppliedRange.HasValue ? AppliedRange.Value.ToString("F3") : "-")}");
         }
         else if (reason == "timeout") { timedOutPractice = true; BannerTitle = "次に進むよ"; BannerSub = "あとは曲の中で慣れよう"; }

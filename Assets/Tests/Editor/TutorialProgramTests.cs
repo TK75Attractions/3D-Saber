@@ -121,6 +121,72 @@ public class TutorialProgramTests
             "台を決めていないスマホが2台なら選べない");
     }
 
+    // 2026-10-24 ユーザー「B にして」: チュートリアルで合わせた範囲はその人の回だけ。タイトルで台の準備の範囲へ戻す。
+    [Test]
+    public void RangeBaseline_PhoneAreaFollowsTheMappedCameraRegionWithTheRecognitionMargin()
+    {
+        var corners = TutorialRangeLearning.CalibrationCorners(Rect.MinMaxRect(.2f, .1f, .8f, .9f), 1920, 1080);
+        var area = TutorialRangeBaseline.PhoneAreaFor(corners, 1920, 1080);
+        Assert.AreEqual(.2f - PhoneSaberCalibrationPlayArea.Margin, area.xMin, 1e-4f, "画面いっぱいに写る範囲＋認識の余白");
+        Assert.AreEqual(.8f + PhoneSaberCalibrationPlayArea.Margin, area.xMax, 1e-4f);
+        Assert.AreEqual(.1f - PhoneSaberCalibrationPlayArea.Margin, area.yMin, 1e-4f);
+        Assert.AreEqual(.9f + PhoneSaberCalibrationPlayArea.Margin, area.yMax, 1e-4f);
+        Assert.IsTrue(PhoneSaberCalibrationPlayArea.Valid(area));
+        StringAssert.StartsWith("play-area=", PhoneSaberCalibrationPlayArea.Command(area));
+        var widened = TutorialRangeBaseline.PhoneAreaFor(
+            TutorialRangeLearning.CalibrationCorners(Rect.MinMaxRect(.05f, -.1f, .95f, 1.1f), 1920, 1080), 1920, 1080);
+        Assert.AreEqual(Rect.MinMaxRect(0, 0, 1, 1), widened, "カメラ画像の外は 0..1 に収める");
+        var tiny = TutorialRangeBaseline.PhoneAreaFor(
+            TutorialRangeLearning.CalibrationCorners(Rect.MinMaxRect(.5f, .5f, .52f, .52f), 1920, 1080), 1920, 1080);
+        Assert.AreEqual(PhoneSaberCalibrationPlayArea.MinimumSize, tiny.width, 1e-4f, "最小の幅");
+    }
+
+    [Test]
+    public void RangeBaseline_RestoresUnlessStaffSetTheStationUpAgain()
+    {
+        Assert.IsFalse(TutorialRangeBaseline.ShouldRestore(null, "x"));
+        var snapshot = new TutorialRangeBaseline.Snapshot { station = "B", hadData = true, data = "base" };
+        Assert.IsTrue(TutorialRangeBaseline.ShouldRestore(snapshot, "base"), "範囲の段が終わる前なら戻す");
+        snapshot.applied = true; snapshot.appliedData = "tutorial";
+        Assert.IsTrue(TutorialRangeBaseline.ShouldRestore(snapshot, "tutorial"), "チュートリアルの補正のままなら戻す");
+        Assert.IsFalse(TutorialRangeBaseline.ShouldRestore(snapshot, "staff"), "スタッフが合わせ直していたら残す");
+
+        bool autoStart = PhoneSaberP2PBridgeProcess.AutoStartEnabled;
+        bool had = PlayerPrefs.HasKey(TutorialRangeBaseline.PrefsKey);
+        string saved = PlayerPrefs.GetString(TutorialRangeBaseline.PrefsKey, "");
+        try
+        {
+            TutorialRangeBaseline.Forget();
+            PhoneSaberP2PBridgeProcess.AutoStartEnabled = false;
+            TutorialRangeBaseline.Remember("B");
+            Assert.IsNull(TutorialRangeBaseline.Load(), "テスト(自動起動を止めている)では覚えない");
+            PhoneSaberP2PBridgeProcess.AutoStartEnabled = true;
+            TutorialRangeBaseline.Remember("");
+            Assert.IsNull(TutorialRangeBaseline.Load(), "台を決めていない PC では覚えない");
+            TutorialRangeBaseline.Remember("B");
+            var remembered = TutorialRangeBaseline.Load();
+            Assert.IsNotNull(remembered); Assert.AreEqual("B", remembered.station); Assert.IsFalse(remembered.applied);
+            Assert.AreEqual(PlayerPrefs.GetString(PhoneSaberPositionCalibrationStore.DataKey("B"), ""), remembered.data, "変える前の補正の文字そのまま");
+            TutorialRangeBaseline.Remember("B");
+            Assert.IsFalse(TutorialRangeBaseline.Load().applied, "まだ戻していない覚え書きは上書きしない");
+            TutorialRangeBaseline.Finish("A", true);
+            Assert.IsFalse(TutorialRangeBaseline.Load().applied, "別の台の終わりでは印を付けない");
+            TutorialRangeBaseline.Finish("B", false);
+            var finished = TutorialRangeBaseline.Load();
+            Assert.IsNotNull(finished, "覚えなかったときも残す(遅れて覚えたスマホの範囲をタイトルで送り直す)");
+            Assert.IsTrue(finished.applied);
+            Assert.AreEqual(PlayerPrefs.GetString(PhoneSaberPositionCalibrationStore.DataKey("B"), ""), finished.appliedData);
+            TutorialRangeBaseline.Forget();
+            Assert.IsNull(TutorialRangeBaseline.Load());
+        }
+        finally
+        {
+            PhoneSaberP2PBridgeProcess.AutoStartEnabled = autoStart;
+            if (had) PlayerPrefs.SetString(TutorialRangeBaseline.PrefsKey, saved); else PlayerPrefs.DeleteKey(TutorialRangeBaseline.PrefsKey);
+            PlayerPrefs.Save();
+        }
+    }
+
     [Test]
     public void RangeLearning_ReadsThisStationsPhoneFirst()
     {

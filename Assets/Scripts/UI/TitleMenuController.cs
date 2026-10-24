@@ -11,6 +11,8 @@ public class TitleMenuController : MonoBehaviour
         GameSession.SongSelectOperated = false;
         // RUSH E の E の持ち越し(判定調整・音の出力先の作り直し)も、次の人へ渡さない。
         GameSession.RushESecretCarry = false;
+        // チュートリアルで合わせた振る範囲は、その人の回だけ。台の準備の範囲へ戻す(2026-10-24)。
+        TutorialRangeBaseline.RestoreAtTitle();
     }
 
     public void OnStartButton()
