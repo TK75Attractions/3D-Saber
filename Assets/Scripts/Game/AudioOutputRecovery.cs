@@ -8,16 +8,17 @@ using UnityEngine.SceneManagement;
 // 同日ユーザー「音の出力先が変わっても画面を戻さないで」: 画面は作り直さず、その場で音だけを立て直す。
 // ・作った効果音は、鳴らす前に中身を確かめて同じ波形で作り直す(ProceduralSfx.Revive。MenuSfx・カウントインも同じ考え)。
 // ・流しっぱなしの音(試聴・結果のループ曲・練習の曲)は、Restored を受けてその場で鳴らし直す。
-// ・本編の曲の途中は、すぐ曲を止め(GamePlayManager.HoldForAudioChange)、曲を読み直してから 3・2・1 で続きから再開する。
+// ・本編の曲の途中は、曲を止めずに(2026-10-24 ユーザー「曲止めないで上の表示だけにして」)裏で曲を読み直し、今の位置から鳴らし直す
+//   (GamePlayManager.OnAudioOutputLost / ReloadSongInPlace)。知らせは上の1行だけ。
 //   終わりの演出の間はそのまま続ける。判定調整は CalibrationController がその場で作り直す。
 // 知らせは続けて来ることがあるので、最後の知らせから SettleSeconds 待ってから立て直す。
 public sealed class AudioOutputRecovery : MonoBehaviour
 {
-    public enum Action { None, InPlace, ResumeSong, CalibrationInPlace }
+    public enum Action { None, InPlace, ReloadSong, CalibrationInPlace }
     public const float SettleSeconds = .5f;
     public const float NoticeSeconds = 4f;
     public const string RestoredNotice = "音の出力先が変わったので、音を立て直しました";
-    public const string ResumeNotice = "音の出力先が変わったので、曲を読み直して続きから再開します";
+    public const string ReloadNotice = "音の出力先が変わったので、曲の音を読み直しています(曲は止めません)";
     public const string ReloadFailedNotice = "曲を読み直せませんでした。音なしで続けます(スタッフへ: 音の出力先を確かめてください)";
 
     // 出力先が変わった直後(音はもう止まっている)。流しっぱなしの音の持ち主が、いま何を鳴らしていたかを覚えておく。
@@ -53,7 +54,7 @@ public sealed class AudioOutputRecovery : MonoBehaviour
     }
 
     // 出力先が変わった(引数は「機器が変わった」。設定の作り直し=false でも中身は消えるので同じに扱う)。
-    // 本編の途中なら、立て直すまでの間に曲が進んだり終わって「完了」と記録されたりしないよう、この場で曲を止めておく。
+    // 本編の途中なら、読み直しかけの曲を取り消し、サビの音などの後始末だけをする(曲は止めない)。
     static void Changed(bool deviceWasChanged)
     {
         pending = true;
@@ -61,7 +62,7 @@ public sealed class AudioOutputRecovery : MonoBehaviour
         Debug.Log("AudioOutputRecovery: 音の出力先(設定)が変わりました deviceWasChanged=" + deviceWasChanged);
         if (!Application.isPlaying) return;
         var manager = Object.FindFirstObjectByType<GamePlayManager>();
-        if (manager != null) manager.HoldForAudioChange();
+        if (manager != null) manager.OnAudioOutputLost();
         OutputChanged?.Invoke();
     }
 
@@ -80,7 +81,7 @@ public sealed class AudioOutputRecovery : MonoBehaviour
         Action action = manager != null ? manager.HandleAudioOutputChanged() : Action.InPlace;
         Restored?.Invoke();
         if (action == Action.InPlace) OperatorNotice.Show(RestoredNotice, NoticeSeconds);
-        else if (action == Action.ResumeSong) OperatorNotice.Show(ResumeNotice, NoticeSeconds);
+        else if (action == Action.ReloadSong) OperatorNotice.Show(ReloadNotice, NoticeSeconds);
         RecoveryCount++; LastAction = action;
         Debug.Log("AudioOutputRecovery: " + sceneName + " → " + action);
         return action;
@@ -94,7 +95,7 @@ public sealed class AudioOutputRecovery : MonoBehaviour
         if (calibration) return Action.CalibrationInPlace;
         if (tutorial || completing || !started) return Action.InPlace;
         if (finished) return Action.None;
-        return Action.ResumeSong;
+        return Action.ReloadSong;
     }
 
     // テスト用: 出力先の変化が来たことにする(実際の AudioSettings.Reset を呼ばずに流れを確かめる)。

@@ -599,10 +599,10 @@ public class SongSelectKeyboardPlayTests
         }
     }
 
-    // 再開の 3・2・1 の途中で音の出力先が変わったとき、立て直しを待つ間は刻みや再開の音を鳴らさない
-    // (2026-10-22 くり返し12回目、Codex の指摘)。同日から画面は戻さず、曲を読み直したあと 3・2・1 を数え直して続きから再開する。
+    // 再開の 3・2・1 の途中で音の出力先が変わっても、数えるのは止めない(2026-10-24 ユーザー「曲止めないで上の表示だけにして」。
+    // それまでは立て直しを待って数え直していた)。曲の音は止めている間に裏で読み直し、数え終えたら止めた位置から鳴らす。画面は本編のまま。
     [UnityTest]
-    public IEnumerator AudioChangeDuringTheResumeCountPlaysNoMoreCues()
+    public IEnumerator AudioChangeDuringTheResumeCountKeepsCounting()
     {
         using (var sender = new UdpClient())
         {
@@ -633,26 +633,20 @@ public class SongSelectKeyboardPlayTests
             double countFrom = Time.realtimeSinceStartupAsDouble;
             while (Time.realtimeSinceStartupAsDouble < countFrom + .7) { Send(); yield return null; }
             int recoveries = AudioOutputRecovery.RecoveryCount;
-            int cues = view.CueCount;
+            double pausedAt = manager.songPlayer.SongTime;
             AudioOutputRecovery.SimulateChangeForTest();
-            double heldUntil = Time.realtimeSinceStartupAsDouble;
-            deadline = countFrom + 6;
-            while (AudioOutputRecovery.RecoveryCount == recoveries && Time.realtimeSinceStartupAsDouble < deadline)
-            {
-                heldUntil = Time.realtimeSinceStartupAsDouble;
-                Send(); yield return null;
-            }
-            Assert.AreEqual(AudioOutputRecovery.Action.ResumeSong, AudioOutputRecovery.LastAction);
-            Assert.Greater(heldUntil - countFrom, 1.05, "「2」へ変わる時刻まで立て直しを待っていた(確かめられる並び)");
-            Assert.AreEqual(cues, view.CueCount, "立て直しを待つ間は刻みも再開の音も鳴らさない");
-            Assert.True(manager.songPlayer.IsPaused, "読み直すまで曲は止めたまま");
-            // 読み直したら 3 から数え直し、続きから再開する(画面は本編のまま)。
-            deadline = Time.realtimeSinceStartupAsDouble + 15;
-            while (view.HeadlineShown != "再開まで 3" && Time.realtimeSinceStartupAsDouble < deadline) { Send(); yield return null; }
-            Assert.AreEqual("再開まで 3", view.HeadlineShown, "数え直す");
+            deadline = countFrom + 2.5;
+            while (view.HeadlineShown != "再開まで 2" && Time.realtimeSinceStartupAsDouble < deadline) { Send(); yield return null; }
+            Assert.AreEqual("再開まで 2", view.HeadlineShown, "出力先が変わっても数えるのは止めない");
+            deadline = Time.realtimeSinceStartupAsDouble + 6;
+            while ((AudioOutputRecovery.RecoveryCount == recoveries || manager.AudioReloading) && Time.realtimeSinceStartupAsDouble < deadline)
+            { Send(); yield return null; }
+            Assert.AreEqual(AudioOutputRecovery.Action.ReloadSong, AudioOutputRecovery.LastAction);
+            Assert.False(manager.AudioReloading, "止めている間に曲の音を読み直す");
             deadline = Time.realtimeSinceStartupAsDouble + 6;
             while (!manager.songPlayer.IsPlaying && Time.realtimeSinceStartupAsDouble < deadline) { Send(); yield return null; }
-            Assert.True(manager.songPlayer.IsPlaying, "続きから再開する");
+            Assert.True(manager.songPlayer.IsPlaying, "数え終えたら続きから再開する");
+            Assert.That(manager.songPlayer.SongTime, Is.GreaterThanOrEqualTo(pausedAt - .000001), "止めた位置から続ける");
             Assert.AreEqual("Game", SceneManager.GetActiveScene().name);
             InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.Escape));
             yield return null; yield return null;
@@ -775,10 +769,10 @@ public class SongSelectKeyboardPlayTests
         Assert.NotNull(Object.FindFirstObjectByType<OperatorNotice>(), "スタッフ向けに立て直したことを知らせる");
     }
 
-    // 曲の途中で出力先が変わったら、曲を止めて読み直し、3・2・1 で止めた位置から続ける(2026-10-22 ユーザー「戻るのやめて」)。
-    // その回はそのまま続く(タイトルへ戻さない・記録も消さない)。
+    // 曲の途中で音の出力先が変わっても曲は止めない(2026-10-24 ユーザー「曲止めないで上の表示だけにして」)。
+    // 本物の音の作り直し(AudioSettings.Reset)で曲の音の中身が消えても、時計とノーツは進み続け、裏で読み直した音を今の位置から鳴らす。
     [UnityTest]
-    public IEnumerator AudioOutputChangeMidSongResumesFromTheSamePlace()
+    public IEnumerator AudioOutputChangeMidSongKeepsPlaying()
     {
         InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.Enter));
         yield return null; yield return null;
@@ -793,35 +787,39 @@ public class SongSelectKeyboardPlayTests
         Assert.True(manager.songPlayer.IsPlaying);
         string runId = GameSession.AchievementRunId;
         var oldClip = manager.songPlayer.Clip;
-        // 止まる直前にコンボの節目の輪を出しておく(止めている間に消えきるか。10/23)。
         var accents = Object.FindFirstObjectByType<GateAccents>();
         Assert.NotNull(accents);
         accents.Milestone(30);
         Assert.AreEqual(1, accents.ActiveRings);
+        double ringFrom = Time.realtimeSinceStartupAsDouble;
         int recoveries = AudioOutputRecovery.RecoveryCount;
         Assert.True(AudioSettings.Reset(AudioSettings.GetConfiguration()));
         yield return null;
-        Assert.True(manager.AudioChangeHold, "知らせが来たらすぐ止めておく(立て直すまでに曲が進んだり終わって記録されたりしない)");
-        Assert.True(manager.songPlayer.IsPaused);
-        double pausedAt = manager.songPlayer.SongTime;
-        double pausedClock = Time.realtimeSinceStartupAsDouble;
+        Assert.False(manager.songPlayer.IsPaused, "知らせが来ても曲は止めない");
+        double changedAt = manager.songPlayer.SongTime;
+        bool pausedAny = false;
         deadline = Time.realtimeSinceStartupAsDouble + 10;
-        while (AudioOutputRecovery.RecoveryCount == recoveries && Time.realtimeSinceStartupAsDouble < deadline) yield return null;
-        while (manager.songPlayer.IsPaused && Time.realtimeSinceStartupAsDouble < pausedClock + GateAccents.MilestoneSeconds + .3) yield return null;
-        Assert.True(manager.songPlayer.IsPaused, "まだ止まっている間に確かめる");
-        Assert.AreEqual(0, accents.ActiveRings, "止めている間も、ゲートまわりの光は最後まで消えていく(固まって残さない)");
-        Assert.AreEqual(AudioOutputRecovery.Action.ResumeSong, AudioOutputRecovery.LastAction);
-        Assert.AreEqual(pausedAt, manager.songPlayer.SongTime, 1e-9, "読み直す間も止めたまま");
-        deadline = Time.realtimeSinceStartupAsDouble + 15;
-        while (!manager.songPlayer.IsPlaying && Time.realtimeSinceStartupAsDouble < deadline) yield return null;
-        Assert.True(manager.songPlayer.IsPlaying, "読み直して 3・2・1 のあと再開する");
+        while ((AudioOutputRecovery.RecoveryCount == recoveries || manager.AudioReloading) && Time.realtimeSinceStartupAsDouble < deadline)
+        {
+            pausedAny |= manager.songPlayer.IsPaused;
+            yield return null;
+        }
+        Assert.AreEqual(AudioOutputRecovery.Action.ReloadSong, AudioOutputRecovery.LastAction);
+        Assert.False(manager.AudioReloading, "裏で曲の音を読み直し終える");
+        Assert.False(pausedAny, "読み直す間も曲は止めない");
+        Assert.Greater(manager.songPlayer.SongTime, changedAt, "読み直す間も時計は進む");
         Assert.AreEqual("Game", SceneManager.GetActiveScene().name, "画面は本編のまま");
         Assert.AreNotSame(oldClip, manager.songPlayer.Clip, "曲の音は読み直した");
         Assert.Greater(manager.songPlayer.Clip.samples, 0);
         double resumedAt = manager.songPlayer.SongTime;
-        Assert.That(resumedAt, Is.InRange(pausedAt, pausedAt + .3), "止めた位置から続ける");
-        yield return new WaitForSecondsRealtime(.3f);
+        yield return new WaitForSecondsRealtime(.4f);
         Assert.Greater(manager.songPlayer.SongTime, resumedAt, "時計が進む");
+        var source = manager.songPlayer.GetComponent<AudioSource>();
+        Assert.True(source.isPlaying, "読み直した音が鳴っている");
+        Assert.That(source.timeSamples / (double)source.clip.frequency, Is.EqualTo(manager.songPlayer.SongTime).Within(.2),
+            "読み直した音は今の位置で鳴る");
+        while (Time.realtimeSinceStartupAsDouble < ringFrom + GateAccents.MilestoneSeconds + .3) yield return null;
+        Assert.AreEqual(0, accents.ActiveRings, "ゲートまわりの光はふつうに消えていく");
         Assert.AreEqual(runId, GameSession.AchievementRunId, "同じ回のまま続く");
         InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.Escape));
         yield return null; yield return null;

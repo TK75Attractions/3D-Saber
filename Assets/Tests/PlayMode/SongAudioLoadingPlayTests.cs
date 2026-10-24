@@ -179,7 +179,7 @@ public class SongAudioLoadingPlayTests
         File.Delete(Path.Combine(Application.streamingAssetsPath, "Songs", id, "audio.wav"));
         foreach (var old in Object.FindObjectsByType<OperatorNotice>(FindObjectsSortMode.None)) Object.Destroy(old.gameObject);
         yield return null;
-        yield return (IEnumerator)typeof(GamePlayManager).GetMethod("ReloadSongAndResume", BindingFlags.Instance | BindingFlags.NonPublic)
+        yield return (IEnumerator)typeof(GamePlayManager).GetMethod("ReloadSongInPlace", BindingFlags.Instance | BindingFlags.NonPublic)
             .Invoke(manager, null);
         var notice = Object.FindFirstObjectByType<OperatorNotice>();
         Assert.NotNull(notice, "読み直せなかったことを画面に出す");

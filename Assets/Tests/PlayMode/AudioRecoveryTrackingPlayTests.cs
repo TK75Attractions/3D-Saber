@@ -14,7 +14,8 @@ using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 using Object = UnityEngine.Object;
 
-// 実 Game / 実 UDP / 実曲で、音の読み直し中に以前届いていた両色を見失う並びと、送り続ける対照を確認する。
+// 実 Game / 実 UDP / 実曲で、音の出力先が変わったあとの読み直し中に、以前届いていた両色を見失う並びと、送り続ける対照を確認する。
+// 2026-10-24 から曲は止めずに裏で読み直すので、送り続ける回は一度も止まらず、見失う回はふつうの見張りが止めて一度だけ再開する。
 // 導入: build 終了後、このファイルを Assets/Tests/PlayMode/AudioRecoveryTrackingPlayTests.cs としてコピー。
 // まず未修正で Loss=fail / Continued=pass と completion の CueDelta=1 / ResumeLogs=1 を確認する。
 // 次に Opus23 の「完了時だけ最新受信を Observe + Step」差分で両方 pass を確認する。
@@ -180,7 +181,7 @@ public sealed class AudioRecoveryTrackingPlayTests
     public IEnumerator LostTrackingDuringAudioReloadWaitsWithoutAFalseResume() => Verify(false);
 
     [UnityTest]
-    public IEnumerator ContinuedTrackingDuringAudioReloadResumesOnceUsingLatestInput() => Verify(true);
+    public IEnumerator ContinuedTrackingDuringAudioReloadKeepsPlaying() => Verify(true);
 
     IEnumerator Verify(bool keepSending)
     {
@@ -221,30 +222,38 @@ public sealed class AudioRecoveryTrackingPlayTests
         resumeLogs = 0;
 
         AudioOutputRecovery.SimulateChangeForTest();
-        bool heldImmediately = game.AudioChangeHold && game.songPlayer.IsPaused;
-        double heldTime = game.songPlayer.SongTime;
-        int previousFrameCues = game.TrackingView.CueCount;
+        // 2026-10-24 から曲は止めない(ユーザー「音の出力先がかわったとき曲止めないで上の表示だけにして」)。
+        // 時計とノーツはそのまま進み、0.5 秒後の立て直しで曲の音を裏で読み直して、今の位置から鳴らし直す。
+        bool keptPlaying = !game.songPlayer.IsPaused;
+        double changedTime = game.songPlayer.SongTime;
+        int cuesBefore = game.TrackingView.CueCount;
+        bool reloadSeen = false, pausedDuringReload = false;
         deadline = Now + 15;
-        while (game.AudioChangeHold && Now < deadline)
+        while (Now < deadline)
         {
-            previousFrameCues = game.TrackingView.CueCount;
             if (keepSending) SendBoth();
             yield return null;
+            reloadSeen |= game.AudioReloading;
+            pausedDuringReload |= game.songPlayer.IsPaused;
+            if (reloadSeen && !game.AudioReloading) break;
         }
-        bool holdEnded = !game.AudioChangeHold;
-        Observation completed = Observe(previousFrameCues);
-        bool liveAtCompletion = PlayTrackingWatch.LiveNeeds(game.noteSpawner.LiveNotes, SaberHand.Any);
-        int completionCues = game.TrackingView.CueCount;
-        if (keepSending) SendBoth();
-        yield return null;
-        Observation next = Observe(completionCues);
-        Debug.Log("[AUDIO_RECOVERY_TRACKING] " + label + " heldImmediately=" + heldImmediately +
-            " holdEnded=" + holdEnded + " heldTime=" + F(heldTime) + " liveAtCompletion=" + liveAtCompletion +
-            " completion={" + completed + "} next={" + next + "}");
+        bool reloaded = reloadSeen && !game.AudioReloading;
+        double reloadedTime = game.songPlayer.SongTime;
+        Debug.Log("[AUDIO_RECOVERY_TRACKING] " + label + " keptPlaying=" + keptPlaying + " reloaded=" + reloaded +
+            " pausedDuringReload=" + pausedDuringReload + " changedTime=" + F(changedTime) + " reloadedTime=" + F(reloadedTime));
 
-        // ここで主要 assert を置かない。旧実装でも、剣が戻った本当の再開まで測ってから失敗させる。
-        // loss の旧実装は完了フレームだけ Resume したあと、この時点では次フレームの Pause に入っている。
-        bool waitingBeforeReturn = game.TrackingWatch.State == PlayTrackingWatch.Phase.Waiting && game.songPlayer.IsPaused;
+        // 送らない回は、ふつうの見張り(3 秒見えなければ止める)が止めるまで待つ。送り続ける回は止まらないことを確かめる。
+        bool waitingBeforeReturn = false;
+        deadline = Now + PlayTrackingWatch.LostSeconds + 3;
+        while (Now < deadline)
+        {
+            if (keepSending) SendBoth();
+            yield return null;
+            pausedDuringReload |= keepSending && game.songPlayer.IsPaused;
+            if (!keepSending && game.TrackingWatch.State == PlayTrackingWatch.Phase.Waiting && game.songPlayer.IsPaused)
+            { waitingBeforeReturn = true; break; }
+            if (keepSending && Now >= deadline - PlayTrackingWatch.LostSeconds - 2) break;
+        }
         deadline = Now + 11;
         while ((game.songPlayer.IsPaused || game.TrackingWatch.State != PlayTrackingWatch.Phase.Playing) && Now < deadline)
         {
@@ -263,8 +272,9 @@ public sealed class AudioRecoveryTrackingPlayTests
         bool sameRun = GameSession.AchievementRunId == runId;
         bool resumedAudioPlaying = source != null && source.isPlaying;
         int missesAfter = game.scoreManager.MissCount;
+        int cueDelta = game.TrackingView.CueCount - cuesBefore;
         Debug.Log("[AUDIO_RECOVERY_TRACKING] " + label + " waitingBeforeReturn=" + waitingBeforeReturn +
-            " returned=" + returned + " resumeLogs=" + finalResumeLogs + " resumedTime=" + F(resumedTime) +
+            " returned=" + returned + " resumeLogs=" + finalResumeLogs + " cueDelta=" + cueDelta + " resumedTime=" + F(resumedTime) +
             " after300msSong=" + F(clockAfter300ms) + " sourceSeconds=" + F(cursor) +
             " audioMinusSong=" + F(cursor - clockAfter300ms) + " audioPlaying=" + resumedAudioPlaying +
             " misses=" + missesBefore + "->" + missesAfter + " sameRun=" + sameRun);
@@ -276,60 +286,27 @@ public sealed class AudioRecoveryTrackingPlayTests
         // Unity 同梱の NUnit は Assert.Multiple を提供しないため、同じ意味の検査を一括で報告する。
         var failures = new List<string>();
         void Check(bool condition, string message) { if (!condition) failures.Add(message); }
-        Check(heldImmediately, "出力変更のその場で曲を保留する");
-        Check(holdEnded, "曲の読み直しと 3 秒の再開待ちが完了する");
-        Check(liveAtCompletion, "停止判定を要求する未判定ノーツが完了時にも存在する");
-        Check(completed.CueDelta == (keepSending ? 1 : 0), "完了フレーム CueDelta: expected=" + (keepSending ? 1 : 0) + " actual=" + completed.CueDelta);
-        Check(completed.ResumeLogs == (keepSending ? 1 : 0), "完了フレーム ResumeLogs: expected=" + (keepSending ? 1 : 0) + " actual=" + completed.ResumeLogs);
-        Check(completed.Paused == !keepSending, "完了フレームから正しい停止状態になる: " + completed.Paused);
-        var expectedPhase = keepSending ? PlayTrackingWatch.Phase.Playing : PlayTrackingWatch.Phase.Waiting;
-        Check(completed.Phase == expectedPhase, "完了フレーム Phase: expected=" + expectedPhase + " actual=" + completed.Phase);
-        Check(next.CueDelta == 0, "次フレームに余分な停止/再開の音を鳴らさない: " + next.CueDelta);
-        Check(next.Paused == !keepSending, "次フレームの停止状態: " + next.Paused);
-        Check(next.Phase == expectedPhase, "次フレーム Phase: expected=" + expectedPhase + " actual=" + next.Phase);
-        Check(next.ResumeLogs == (keepSending ? 1 : 0), "次フレーム ResumeLogs: " + next.ResumeLogs);
+        Check(keptPlaying, "出力が変わったその場で曲を止めない");
+        Check(reloaded, "曲の音を裏で読み直し終える");
+        Check(reloadedTime > changedTime, "読み直す間も曲の時計は進む: " + F(changedTime) + " -> " + F(reloadedTime));
         if (keepSending)
         {
-            Check(completed.RedAge < .25, "完了時に赤の新しい受信が実在する: " + F(completed.RedAge));
-            Check(completed.BlueAge < .25, "完了時に青の新しい受信が実在する: " + F(completed.BlueAge));
+            Check(!pausedDuringReload, "剣が見えている回は一度も止まらない");
+            Check(finalResumeLogs == 0, "止めていないので再開もしない: " + finalResumeLogs);
+            Check(cueDelta == 0, "止める・数える・再開の音を鳴らさない: " + cueDelta);
         }
         else
         {
-            Check(completed.RedAge >= PlayTrackingWatch.LostSeconds, "完了時には赤が失われている: " + F(completed.RedAge));
-            Check(completed.BlueAge >= PlayTrackingWatch.LostSeconds, "完了時には青が失われている: " + F(completed.BlueAge));
-            Check(waitingBeforeReturn, "送信を戻す前は追跡待ちである");
+            Check(waitingBeforeReturn, "剣を見失ったら、ふつうの見張りが止めて待つ");
+            Check(finalResumeLogs == 1, "剣が戻ったら一度だけ再開する: " + finalResumeLogs);
         }
-        Check(returned, "構え待ち5秒とカウント3秒のあと、11秒以内に実際の再開へ到達する");
-        Check(finalResumeLogs == 1, "実際の再開だけを一度呼ぶ: " + finalResumeLogs);
-        // DSP時刻の引き算で生じる丸め誤差だけを許し、実際の巻き戻りは検出する。
-        Check(resumedTime >= heldTime - .000001 && resumedTime <= heldTime + .3, "止めた時計の続きから再開する: " + F(heldTime) + " -> " + F(resumedTime));
-        Check(clockAfter300ms > resumedTime, "本当の再開後は曲の時計が進む");
-        Check(resumedAudioPlaying, "本当の再開後は読み直した音源が再生している");
+        Check(returned, "最後は曲が進んでいる");
+        Check(clockAfter300ms > resumedTime, "曲の時計が進み続ける");
+        Check(resumedAudioPlaying, "読み直した音源が鳴っている");
+        Check(Math.Abs(cursor - clockAfter300ms) < .2, "読み直した音は今の位置で鳴る: audio-song=" + F(cursor - clockAfter300ms));
         Check(sameRun, "同じ試合を続ける");
         Check(exited, "Esc 2 回で通常の Title 退出まで完了する");
         Assert.IsEmpty(failures, string.Join(Environment.NewLine, failures));
-    }
-
-    Observation Observe(int previousCues) => new Observation
-    {
-        CueDelta = game.TrackingView.CueCount - previousCues,
-        ResumeLogs = resumeLogs,
-        Paused = game.songPlayer.IsPaused,
-        Phase = game.TrackingWatch.State,
-        SongTime = game.songPlayer.SongTime,
-        RedAge = Now - input.LastReceivedTime,
-        BlueAge = Now - input.LastReceivedTime2,
-    };
-
-    struct Observation
-    {
-        public int CueDelta, ResumeLogs;
-        public bool Paused;
-        public PlayTrackingWatch.Phase Phase;
-        public double SongTime, RedAge, BlueAge;
-        public override string ToString() => "cueDelta=" + CueDelta + " resumeLogs=" + ResumeLogs +
-            " paused=" + Paused + " phase=" + Phase + " song=" + F(SongTime) +
-            " ages=" + F(RedAge) + "," + F(BlueAge);
     }
 
     IEnumerator ExitWithEscape()

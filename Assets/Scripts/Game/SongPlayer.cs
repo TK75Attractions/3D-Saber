@@ -227,6 +227,30 @@ public class SongPlayer : MonoBehaviour
         restartOnResume = true;
     }
 
+    // 音の出力先が変わって曲の音の中身が消えたあと、読み直した音へ差し替えて、時計は止めずに今の曲時刻の位置から鳴らし直す
+    // (2026-10-24 ユーザー「曲止めないで」。読み直す間も時計は DSP で進んでいる)。止めている間は再開で、止めた位置から鳴らす。
+    // 鳴らし始める前(カウントインの間)は、予約していた時刻のまま鳴らす。その時刻を過ぎていれば今の位置から。曲の終わりより後ろは差し替えるだけ。
+    public void ReplaceClipInPlace(AudioClip clip)
+    {
+        EnsureSource();
+        if (!scheduled) { Clip = clip; return; }
+        if (paused) { ReplaceClipWhilePaused(clip); return; }
+        double at = SongTime;
+        source.Stop();
+        ClearRestartWait();
+        source.clip = clip;
+        if (clip == null || clip.samples <= 0 || clip.frequency <= 0) return;
+        double playAt = AudioSettings.dspTime + RestartLeadSeconds;
+        if (at < startOffset && startDspTime + startOffset >= playAt)
+        {
+            if (startSample > 0) source.timeSamples = startSample;
+            source.PlayScheduled(startDspTime + startOffset);
+            return;
+        }
+        if (!source.loop && at >= clip.samples / (double)clip.frequency) return;
+        PlayFrom(System.Math.Max(at, startOffset), playAt);
+    }
+
     // 鳴らしている途中で音だけが止まったとき(音の出力先が変わった。中身の残っている同梱の音)、今の曲時刻の位置から鳴らし直し、
     // 実サンプルが進むまで時計もその位置で待つ。ループの周回分は曲時刻に残す。止めている間・始まる前・ループしない音の終わりより後ろでは何もしない。
     public void RestartSource()

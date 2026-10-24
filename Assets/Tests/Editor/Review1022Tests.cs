@@ -15,7 +15,7 @@ public class Review1022Tests
     [Test]
     public void GameKeepsTheScreenAndResumesTheSongAfterTheOutputChanges()
     {
-        Assert.AreEqual(Action.ResumeSong, AudioOutputRecovery.PlanGame(false, false, false, false, false, true), "曲の途中・カウントイン・一時停止");
+        Assert.AreEqual(Action.ReloadSong, AudioOutputRecovery.PlanGame(false, false, false, false, false, true), "曲の途中・カウントイン・一時停止");
         Assert.AreEqual(Action.InPlace, AudioOutputRecovery.PlanGame(false, false, false, false, false, false), "曲を始める前は予約の直前に読み直す");
         Assert.AreEqual(Action.InPlace, AudioOutputRecovery.PlanGame(false, false, true, true, false, true), "終わりの演出はそのまま続ける");
         Assert.AreEqual(Action.InPlace, AudioOutputRecovery.PlanGame(false, true, false, false, false, true), "練習はその場で曲を鳴らし直す");
