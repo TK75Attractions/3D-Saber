@@ -248,7 +248,8 @@ namespace Saber.ChartEditor
 
         static int CountGroups(SaberChartDocument chart, List<int> indices) => Groups(chart, indices).Count;
 
-        // 赤と青が同じ時刻にあるとき。内向き(互いへ振る)は手がぶつかる。左右の交差は Easy・Normal では注意。
+        // 赤と青が同じ時刻にあるとき。内向き(互いへ振る)と左右の交差は、知らせだけにする
+        // (2026-10-23 ユーザー「内側への同時押し、交差はべつに入れていい」。前は内向きをエラー、交差を Easy・Normal で注意にしていた)。
         static void CheckBothHands(SaberChartDocument chart, bool easier, List<SaberChartIssue> issues)
         {
             foreach (List<int> group in Groups(chart, Enumerable.Range(0, chart.notes.Count).Where(i => chart.notes[i] != null)))
@@ -259,9 +260,9 @@ namespace Saber.ChartEditor
                     SaberChartNote l = chart.notes[blue], r = chart.notes[red];
                     Vector2 dl = Arrow(l.direction), dr = Arrow(r.direction);
                     if (dl.x > .5f && dr.x < -.5f && l.x < r.x)
-                        Add(issues, SaberChartIssueLevel.Error, "handclap", chart, "内向きの同時押し(左右の手がぶつかる)", blue, red);
+                        Add(issues, SaberChartIssueLevel.Info, "handclap", chart, "内向きの同時押し(左右の手が近づく)", blue, red);
                     else if (l.x * Scale(chart) > r.x * Scale(chart) + .25f)
-                        Add(issues, easier ? SaberChartIssueLevel.Warning : SaberChartIssueLevel.Info, "crossed", chart,
+                        Add(issues, SaberChartIssueLevel.Info, "crossed", chart,
                             "青が赤より右にある同時押し(左右の手が交差)", blue, red);
                 }
             }

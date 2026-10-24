@@ -50,17 +50,20 @@ public class ChartLintTests
     }
 
     [Test]
-    public void InwardSimultaneousSwingsCollide()
+    public void InwardSimultaneousSwingsAreOnlyNoted()
     {
+        // 内向きの同時押しは入れてよい(10/23 ユーザー)。知らせだけ出す。
         var clap = Chart(Note(1000, -.5f, "blue", "direction", "right"), Note(1000, .5f, "red", "direction", "left"));
-        Assert.AreEqual(SaberChartIssueLevel.Error, Issues(clap, "handclap").Single().level);
+        Assert.AreEqual(SaberChartIssueLevel.Info, Issues(clap, "handclap").Single().level);
         var outward = Chart(Note(1000, -.5f, "blue", "direction", "left"), Note(1000, .5f, "red", "direction", "right"));
         Assert.IsEmpty(Issues(outward, "handclap"));
     }
 
-    [TestCase("normal", SaberChartIssueLevel.Warning)]
+    // 交差も入れてよい(10/23 ユーザー)。どの難易度でも知らせだけ。
+    [TestCase("easy", SaberChartIssueLevel.Info)]
+    [TestCase("normal", SaberChartIssueLevel.Info)]
     [TestCase("hard", SaberChartIssueLevel.Info)]
-    public void CrossedHandsDependOnDifficulty(string difficulty, SaberChartIssueLevel expected)
+    public void CrossedHandsAreOnlyNoted(string difficulty, SaberChartIssueLevel expected)
     {
         var chart = Chart(Note(1000, 1, "blue"), Note(1000, -1, "red"));
         Assert.AreEqual(expected, Issues(chart, "crossed", difficulty).Single().level);
