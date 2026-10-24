@@ -45,6 +45,7 @@ class Frames
         { ReplayLearningAcknowledgements(args[1]); return 0; }
         RunFixture(typeof(PhoneSaberAcknowledgementTests));
         RunFixture(typeof(PhoneSaberPositionCalibrationTests));
+        Console.WriteLine("10s swing mapping: central 90.9%, virtual camera-edge corners, linear OutsideMargin, A/B save/reload PASS");
         var discovery = new PhoneSaberDiscoveryResponderTests();
         foreach (int seconds in new[] { 1, 10, 60 })
             discovery.LearningRetriesPastCompletionWithTheSameIdAndStopsWithinIPhoneCache(seconds);

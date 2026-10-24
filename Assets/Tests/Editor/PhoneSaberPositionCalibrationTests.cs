@@ -266,23 +266,54 @@ public class PhoneSaberPositionCalibrationTests
     }
 
     [Test]
-    public void LearnedRectangleUsesInsetCornersAndReachesEdgesBeforeMaximumSwing()
+    public void LearnedRectangleMapsWholeSwingToCentralNinetyOnePercent()
     {
         var bounds = Rect.MinMaxRect(.2f, .1f, .8f, .9f);
         Assert.IsTrue(PhoneSaberPositionCalibration.TryFromLearnedArea(bounds, 1920, 1080, out var mapping, out var error), error);
         var corners = mapping.CopyCorners();
-        Near(new Vector2(.23f * 1919, .14f * 1079), corners[0]);
-        Near(new Vector2(.77f * 1919, .86f * 1079), corners[2]);
+        Near(new Vector2(.17f * 1919, .06f * 1079), corners[0]);
+        Near(new Vector2(.83f * 1919, .94f * 1079), corners[2]);
         for (int i = 0; i < 4; i++) Near(Target[i], mapping.Map(corners[i]));
         Near(new Vector2(960, 540), mapping.Map(new Vector2(.5f * 1919, .5f * 1079)));
-        var low = mapping.Map(new Vector2(.2f * 1919, .1f * 1079));
-        Assert.Less(low.x, 0); Assert.Less(low.y, 0);
-        var high = mapping.Map(new Vector2(.8f * 1919, .9f * 1079));
-        Assert.Greater(high.x, 1920); Assert.Greater(high.y, 1080);
+        Near(new Vector2(1920f / 22, 1080f / 22), mapping.Map(new Vector2(.2f * 1919, .1f * 1079)));
+        Near(new Vector2(1920f * 21 / 22, 1080f * 21 / 22), mapping.Map(new Vector2(.8f * 1919, .9f * 1079)));
+        Near(new Vector2(1920f * 3 / 11, 1080f * 3 / 11), mapping.Map(new Vector2(.35f * 1919, .3f * 1079)));
         // iPhoneの左右・上下反転済み矩形と、送信解像度も同じ導出を通す。
         Assert.IsTrue(PhoneSaberPositionCalibration.TryFromLearnedArea(Rect.MinMaxRect(.1f, .3f, .7f, .8f),
             1280, 720, out var other, out _));
-        Near(new Vector2(.13f * 1279, .325f * 719), other.CopyCorners()[0]);
+        Near(new Vector2(.07f * 1279, .275f * 719), other.CopyCorners()[0]);
+    }
+
+    [TestCase(0f, 0f, 1f, 1f)]
+    [TestCase(0f, 0f, .6f, .8f)]
+    [TestCase(.4f, .2f, 1f, 1f)]
+    public void LearnedRectangleAtCameraEdgesKeepsVirtualExpandedCornersAndGain(float x0, float y0, float x1, float y1)
+    {
+        var bounds = Rect.MinMaxRect(x0, y0, x1, y1);
+        Assert.IsTrue(PhoneSaberPositionCalibration.TryFromLearnedArea(bounds, 1920, 1080, out var mapping, out var error), error);
+        var corners = mapping.CopyCorners();
+        // カメラ外の仮想隅も保持し、端で拡張が切られて感度や中心が変わらないことを確認する。
+        Near(new Vector2((x0 - bounds.width * .05f) * 1919, (y0 - bounds.height * .05f) * 1079), corners[0]);
+        Near(new Vector2((x1 + bounds.width * .05f) * 1919, (y1 + bounds.height * .05f) * 1079), corners[2]);
+        Near(new Vector2(1920f / 22, 1080f / 22), mapping.Map(new Vector2(x0 * 1919, y0 * 1079)));
+        Near(new Vector2(1920f * 21 / 22, 1080f * 21 / 22), mapping.Map(new Vector2(x1 * 1919, y1 * 1079)));
+        Near(new Vector2(960, 540), mapping.Map(new Vector2(bounds.center.x * 1919, bounds.center.y * 1079)));
+        for (int i = 0; i < 4; i++)
+        {
+            Near(Target[i], mapping.Map(corners[i]));
+            Near(corners[i], mapping.Unmap(Target[i]));
+        }
+    }
+
+    [Test]
+    public void LearnedRectangleExtrapolatesLinearlyUntilExistingOutsideMargin()
+    {
+        Assert.IsTrue(PhoneSaberPositionCalibration.TryFromLearnedArea(Rect.MinMaxRect(.2f, .1f, .8f, .9f),
+            1920, 1080, out var mapping, out var error), error);
+        Near(new Vector2(-1920f / 22, -1080f / 22), mapping.Map(new Vector2(.14f * 1919, .02f * 1079)));
+        Near(new Vector2(1920f * 23 / 22, 1080f * 23 / 22), mapping.Map(new Vector2(.86f * 1919, .98f * 1079)));
+        Near(new Vector2(-192, -108), mapping.Map(new Vector2(-10000, -10000)));
+        Near(new Vector2(2112, 1188), mapping.Map(new Vector2(10000, 10000)));
     }
 
     [Test]
@@ -320,7 +351,9 @@ public class PhoneSaberPositionCalibrationTests
             Assert.IsTrue(input.ApplyLearnedPositionCalibration(store, "2026-10-23 12:34:56"));
             Assert.IsTrue(input.PositionCalibrationEnabled);
             Assert.AreEqual("2026-10-23 12:34:56", PhoneSaberPositionCalibrationStore.LearnedAt(station));
-            Assert.IsNotNull(PhoneSaberPositionCalibrationStore.Load(station, out bool loaded)); Assert.IsTrue(loaded);
+            var saved = PhoneSaberPositionCalibrationStore.Load(station, out bool loaded);
+            Assert.IsNotNull(saved); Assert.IsTrue(loaded);
+            Near(new Vector2(1920f / 22, 1080f / 22), saved.Map(new Vector2(.2f * 1919, .1f * 1079)));
             int revision = input.PredictionRevision;
             for (int i = 0; i < 3; i++)
             {
@@ -337,8 +370,8 @@ public class PhoneSaberPositionCalibrationTests
             Assert.AreEqual(revision + 1, input.PredictionRevision);
             var replacement = PhoneSaberPositionCalibrationStore.Load(station, out bool replacementEnabled);
             Assert.IsTrue(replacementEnabled);
-            Near(Vector2.zero, replacement.Map(new Vector2(.41f * 1919, .51f * 1079)));
-            Near(new Vector2(1920, 1080), replacement.Map(new Vector2(.59f * 1919, .69f * 1079)));
+            Near(Vector2.zero, replacement.Map(new Vector2(.39f * 1919, .49f * 1079)));
+            Near(new Vector2(1920, 1080), replacement.Map(new Vector2(.61f * 1919, .71f * 1079)));
             store.Receive(smallAck, "192.0.2.1");
             store.Receive(ack, "192.0.2.1");
             Assert.IsFalse(input.ApplyLearnedPositionCalibration(store, "duplicate"));

@@ -30,7 +30,7 @@ def main():
     parser.add_argument('--frames-only', action='store_true', help='新着なし/定常入力のhost回帰と計測だけ実行')
     parser.add_argument('--sender-before-ref', help='旧統計の競合なしpoll回帰FAILとhost計測を確認')
     parser.add_argument('--prediction-before-ref', help='旧InputPointの時計混在による予測期限切れ回帰FAILを確認')
-    parser.add_argument('--learning-only', action='store_true', help='台準備ACKのNUnit・実Swiftとの偽配送だけ実行')
+    parser.add_argument('--learning-only', action='store_true', help='台準備の座標変換・ACKのNUnitと実Swiftとの偽配送だけ実行')
     parser.add_argument('--learning-before-ref', help='旧指示再送・表示の実ソースで同じ回帰FAILも確認')
     args = parser.parse_args()
     editor = Path(os.environ.get('PHONESABER_UNITY_CONTENTS', '/Applications/Unity/Hub/Editor/6000.3.9f1/Unity.app/Contents'))

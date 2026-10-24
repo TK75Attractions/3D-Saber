@@ -44,9 +44,9 @@ public sealed class PhoneSaberPositionCalibration
             (float)((inverse[3] * x + inverse[4] * y + inverse[5]) / d * Height));
     }
 
-    // 実際の可動域の各辺を5%内側へ寄せ、その4隅を従来の射影へ渡す。
-    // 画面端に到達するのに最大の振り切りを必要としない。認識用の8%余白とは別。
-    public const float LearnedEdgeInset = 0.05f;
+    // 2026-10-24 ユーザー: 感度が良すぎる。各辺を5%広げ、全可動域を画面中央の約91%へ写す。
+    // カメラ外の拡張隅も仮想座標として扱い、端で感度や中心を変えない。認識用の8%余白とは別。
+    public const float LearnedEdgeInset = -0.05f;
     public static bool TryFromLearnedArea(Rect bounds, float cameraWidth, float cameraHeight,
         out PhoneSaberPositionCalibration calibration, out string error)
     {
