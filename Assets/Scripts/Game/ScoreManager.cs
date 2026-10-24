@@ -16,11 +16,24 @@ public class ScoreManager : MonoBehaviour
     public int Combo { get; private set; }
     public int MaxCombo { get; private set; }
     // コンボ点(最大コンボ ÷ 満コンボ × 10000 の切り捨て)。曲の終わりの FinalizeScore で一度だけ Score に足す。
-    public int ComboBonus => IsFinalized ? finalComboBonus : (int)((long)ComboScore * MaxCombo / Mathf.Max(1, ComboUnits));
+    // 照準の裏譜面(避)にコンボ点は無い。
+    public int ComboBonus => AimScoring ? 0 : IsFinalized ? finalComboBonus : (int)((long)ComboScore * MaxCombo / Mathf.Max(1, ComboUnits));
     // ランクと HUD 用。曲の途中でも「今の最大コンボで終わったときの点」。
     public int ScoreWithCombo => IsFinalized ? Score : Score + ComboBonus;
-    // 満コンボ(=判定の数。ロングは切る回数)。譜面が分からないときは判定済みの数。
-    public int ComboUnits { get { RefreshTotals(); return Mathf.Max(chartComboUnits, HitCount + MissCount); } }
+    // 満コンボ(=判定の数。ロングは切る回数)。譜面が分からないときは判定済みの数。避は的の数。
+    public int ComboUnits { get { if (AimScoring) return Mathf.Max(aimTargetCount, HitCount + MissCount); RefreshTotals(); return Mathf.Max(chartComboUnits, HitCount + MissCount); } }
+
+    // ---- 照準の裏譜面(Phobia の「避」、2026-10-24) ----
+    // ノーツの代わりに AimDodgeMode が的とトゲを知らせる。点は 50000 から始まり、トゲに当たると 1000 減り(0 より下げない)、
+    // 的は全部で最大 50000(AimDodgeRules)。的の BULL / INNER / OUTER / MISS は PERFECT / GREAT / GOOD / MISS の数に入れ、
+    // 記録・実績・順位の形を通常の譜面とそろえる。コンボは外さなかった的の続き(トゲに当たっても切れる)。
+    public bool AimScoring { get; private set; }
+    public int AimDamageCount { get; private set; }
+    public int AimDartPoints { get; private set; }
+    public int AimDartTotal { get; private set; }
+    // トゲに当たった(減った点)。HUD の「DAMAGE」の表示に使う。
+    public event System.Action<int> OnAimDamage;
+    int aimTargetCount;
     // 判定し終えたノーツの数(ロングも1つ)。曲の終わりの確認に使う。
     public int JudgedNoteCount { get; private set; }
     public bool IsFinalized { get; private set; }
@@ -33,8 +46,8 @@ public class ScoreManager : MonoBehaviour
     // 実際にノーツを切った回数(判定の良し悪しと別)。ロングの途中の切りも数え、期限切れは数えない。
     // 1回も切っていない回を記録に残さないために使う(仕様面の点検 1)。点数・判定・コンボには関係しない。
     public int CutCount { get; private set; }
-    // 空譜面を達成扱いにしない。Good はコンボ継続、Bad / Miss は達成対象外。
-    public bool IsFullCombo => HitCount > 0 && BadCount == 0 && MissCount == 0;
+    // 空譜面を達成扱いにしない。Good はコンボ継続、Bad / Miss は達成対象外。避はトゲに1回でも当たると対象外。
+    public bool IsFullCombo => HitCount > 0 && BadCount == 0 && MissCount == 0 && AimDamageCount == 0;
     public bool IsAllPerfect => IsFullCombo && PerfectCount == HitCount;
     public JudgmentTier LastTier { get; private set; } = JudgmentTier.Miss;
     // 直近判定のカットを行った手(ノーツ経由のカットのみ。Miss や直接 RegisterHit では Any)。
@@ -123,7 +136,60 @@ public class ScoreManager : MonoBehaviour
         LastTier = JudgmentTier.Miss;
         crossCandidate = default;
         CrossCutCount = 0;
+        AimScoring = false;
+        AimDamageCount = AimDartPoints = AimDartTotal = aimTargetCount = 0;
         ClearLastCut();
+    }
+
+    // 避の採点を始める(点は 50000 から)。targetCount は的の数(満コンボ)。
+    public void BeginAimScoring(int targetCount)
+    {
+        Reset();
+        AimScoring = true;
+        aimTargetCount = Mathf.Max(0, targetCount);
+        AimDartTotal = aimTargetCount > 0 ? AimDodgeRules.DartsTotal : 0;
+        Score = AimDodgeRules.Score(0, 0);
+    }
+
+    // 的1つの結果。tier は Perfect=BULL / Great=INNER / Good=OUTER / Miss。points はその的で取った点。
+    public void RegisterAimDart(JudgmentTier tier, int points, SaberHand hand)
+    {
+        if (IsFinalized || !AimScoring) return;
+        ClearLastCut();
+        LastCutHand = hand;
+        LastTier = tier;
+        JudgedNoteCount++;
+        if (tier == JudgmentTier.Miss)
+        {
+            MissCount++;
+            Combo = 0;
+        }
+        else
+        {
+            HitCount++;
+            CutCount++;
+            Combo++;
+            if (Combo > MaxCombo) MaxCombo = Combo;
+            if (tier == JudgmentTier.Perfect) PerfectCount++;
+            else if (tier == JudgmentTier.Great) GreatCount++;
+            else GoodCount++;
+            AimDartPoints += Mathf.Max(0, points);
+        }
+        int before = Score;
+        Score = AimDodgeRules.Score(AimDamageCount, AimDartPoints);
+        OnJudgment?.Invoke(tier, Score - before);
+        OnJudgmentEx?.Invoke(tier, Score - before, false);
+    }
+
+    // トゲに当たった。コンボを切り、点を 1000 減らす(0 より下げない)。
+    public void RegisterAimDamage()
+    {
+        if (IsFinalized || !AimScoring) return;
+        AimDamageCount++;
+        Combo = 0;
+        int before = Score;
+        Score = AimDodgeRules.Score(AimDamageCount, AimDartPoints);
+        OnAimDamage?.Invoke(before - Score);
     }
 
     // 1回切るごとの重み。金は普通の2倍。
@@ -157,6 +223,7 @@ public class ScoreManager : MonoBehaviour
     // 譜面が分からない(テスト・練習)ときや譜面より多く判定したときは、判定済みの重みを分母にする。
     private void Recalculate()
     {
+        if (AimScoring) { Score = AimDodgeRules.Score(AimDamageCount, AimDartPoints); return; }
         RefreshTotals();
         long full = (long)Mathf.Max(chartWeight, judgedWeight) * JudgmentTierHelper.BasePoints(JudgmentTier.Perfect);
         int notes = full > 0 ? (int)(NoteScore * earnedPoints / full) : 0;

@@ -69,6 +69,9 @@ public class SaberInputBridge : MonoBehaviour
     public Vector3 WorldEndB { get; private set; }
     // ブレードデータが有効か（線分判定を使うか）。
     public bool HasBlade { get; private set; }
+    // 刃を描くか。照準で遊ぶ裏譜面(避、2026-10-24)では刃を描かず、照準は AimDodgeMode が中点に描く。
+    // 端点・HasBlade・中点の位置はふだんどおり更新する。
+    public bool DrawBlade { get; set; } = true;
 
     CameraSaberSample cameraSample;
     double cameraSourceStamp = double.NegativeInfinity;
@@ -389,7 +392,7 @@ public class SaberInputBridge : MonoBehaviour
         }
         if (HasBlade) UpdateBladeOutline(WorldEndA, WorldEndB, bladeLine != null && bladeLine.enabled);
         else EnsureBladeOutline();
-        if (HasBlade && bladeVisual != null) bladeVisual.Show(WorldEndA, WorldEndB, EffectiveBladeWidth, bladeColor, Time.time);
+        if (HasBlade && DrawBlade && bladeVisual != null) bladeVisual.Show(WorldEndA, WorldEndB, EffectiveBladeWidth, bladeColor, Time.time);
     }
 
     public LineRenderer BladeOutlineForTest => bladeOutline;
@@ -568,7 +571,7 @@ public class SaberInputBridge : MonoBehaviour
             bladeLine.startColor = c;
             bladeLine.endColor = c;
         }
-        if (HasBlade && bladeVisual != null) bladeVisual.Show(WorldEndA, WorldEndB, EffectiveBladeWidth, c, Time.time);
+        if (HasBlade && DrawBlade && bladeVisual != null) bladeVisual.Show(WorldEndA, WorldEndB, EffectiveBladeWidth, c, Time.time);
     }
 
     private void ApplyBladeImmediate(Vector3 rawA, Vector3 rawB)
@@ -606,6 +609,13 @@ public class SaberInputBridge : MonoBehaviour
         WorldEndA = a;
         WorldEndB = b;
         HasBlade = true;
+        if (!DrawBlade)
+        {
+            if (bladeLine != null && bladeLine.enabled) bladeLine.enabled = false;
+            if (bladeOutline != null && bladeOutline.enabled) bladeOutline.enabled = false;
+            if (bladeVisual != null) bladeVisual.Clear();
+            return;
+        }
 
         if (bladeLine == null) EnsureBladeLine();
         if (bladeLine != null)

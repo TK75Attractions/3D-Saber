@@ -12,6 +12,9 @@ public static class ChartDifficultyRater
 
     public static int Rate(ChartData chart, float secondsPerLongCut = .7f)
     {
+        // 照準で遊ぶ裏譜面(避)はノーツが無いので、譜面に書いた表示レベル(無ければ 8)を遊べる印として返す。
+        if (chart != null && (chart.notes == null || chart.notes.Count == 0) && chart.aim != null && chart.aim.HasContent)
+            return Mathf.Clamp(chart.displayLevel > 0 ? chart.displayLevel : 8, 1, 10);
         if (chart == null || chart.notes == null || chart.notes.Count == 0) return 0;
 
         var times = new List<double>(chart.notes.Count);

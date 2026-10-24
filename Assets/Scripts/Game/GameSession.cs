@@ -17,6 +17,15 @@ public static class GameSession
     public static int FinalGreat;
     public static int FinalGood;
     public static int FinalBad;
+    // 照準の裏譜面(避、2026-10-24)の回か。FinalPerfect/Great/Good/Miss には的の BULL/INNER/OUTER/MISS が入る。
+    public static bool FinalAimMode;
+    public static int FinalAimDamage;
+    public static int FinalAimDartPoints;
+    public static int FinalAimDartTotal;
+    // 精度(結果画面の ACCURACY と HI-SCORE の記録)。避は的の点 ÷ 的の満点、ほかは判定の基礎点の割合。
+    public static float FinalAccuracy => FinalAimMode
+        ? AimDodgeRules.DartAccuracy(FinalAimDartPoints, FinalAimDartTotal)
+        : PlayRankHelper.Accuracy(FinalPerfect, FinalGreat, FinalGood, FinalBad, FinalMiss);
     // 結果UIの再構築と、同じ人の次のプレイを区別する保存用ID。
     public static string AchievementRunId;
     public static DailyRankingStore.Result FinalDailyRanking;
@@ -63,7 +72,7 @@ public static class GameSession
         {
             score = FinalScore,
             rank = PlayRankHelper.Label(PlayRankHelper.FromScore(FinalScore)),
-            accuracy = PlayRankHelper.Accuracy(FinalPerfect, FinalGreat, FinalGood, FinalBad, FinalMiss),
+            accuracy = FinalAccuracy,
             date = System.DateTime.Now.ToString("yyyy/MM/dd"),
         }, out _);
     }
@@ -185,5 +194,7 @@ public static class GameSession
         FinalGood = 0;
         FinalBad = 0;
         FinalCutCount = 0;
+        FinalAimMode = false;
+        FinalAimDamage = FinalAimDartPoints = FinalAimDartTotal = 0;
     }
 }

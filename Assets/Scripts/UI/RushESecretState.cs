@@ -3,7 +3,8 @@ using UnityEngine;
 
 // 隠し譜面の表。選曲の中央のジャケットを10回切ると、その曲だけの裏の譜面へ移る。
 // RUSH E の E(2026-10-14)と、ElDorado の G(2026-10-24 ユーザー「ElDorado のジャケットを10回切ったら、E と同じく裏譜面に」。
-// 長い版(3分43秒)の Hard 譜面を全部金色にしたもの。音源・演出・音量そろえも G 専用の audio_g.mp3・stage_g.json・loudness_g.json)。
+// 長い版(3分43秒)の Hard 譜面を全部金色にしたもの。音源・演出・音量そろえも G 専用の audio_g.mp3・stage_g.json・loudness_g.json)と、
+// Phobia PARTⅠ の 避(2026-10-24、照準でトゲをよけて的を狙う。譜面は chart_避.json の aim、音源・演出は曲の共通のもの)。
 // 色はその譜面の目印(難易度の札・盤の縁・背景・幕・本編の HUD とカウントイン)。E は今までの紫のまま。
 public sealed class SecretChart
 {
@@ -38,7 +39,18 @@ public sealed class RushESecretState
         EdgeLight = new Color(1, .88f, .52f), FanLight = new Color(1, .86f, .45f),
         CenterHaze = new Color(1, .62f, .08f, .42f), LeftHaze = new Color(1, .50f, .02f, .35f), RightHaze = new Color(1, .72f, .15f, .35f),
     };
-    public static readonly SecretChart[] Charts = { RushE, ElDoradoG };
+    // Phobia PARTⅠ の「避」(2026-10-24 ユーザー「24 のトゲと 25 のダーツで融合して」「難易度は避」)。
+    // 剣が2つの照準になり、トゲをよけて的(ダーツ)の真ん中を狙う(AimDodgeMode)。色はトゲの縁と同じ赤紫。
+    public static readonly Color Magenta = new Color(1f, .36f, .84f);
+    public static readonly SecretChart PhobiaAvoid = new SecretChart
+    {
+        SongId = "Phobia PARTⅠ", Difficulty = "避", Accent = Magenta, Glow = new Color(1, .28f, .78f, .25f), Face = new Color(.20f, .03f, .15f),
+        TileDeep = new Color(.19f, .02f, .14f), TileLight = new Color(.62f, .16f, .50f),
+        Backdrop = new Color(.10f, .01f, .08f), LeftLight = new Color(1, .25f, .70f), RightLight = new Color(1, .45f, .90f),
+        EdgeLight = new Color(1, .62f, .92f), FanLight = new Color(1, .56f, .90f),
+        CenterHaze = new Color(1, .15f, .65f, .42f), LeftHaze = new Color(.95f, .10f, .60f, .35f), RightHaze = new Color(1, .30f, .80f, .35f),
+    };
+    public static readonly SecretChart[] Charts = { RushE, ElDoradoG, PhobiaAvoid };
     public static SecretChart For(string songId)
     {
         foreach (var chart in Charts) if (chart.SongId == songId) return chart;

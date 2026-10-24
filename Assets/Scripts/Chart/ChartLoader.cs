@@ -36,6 +36,7 @@ public static class ChartLoader
             if (!Finite(data.offsetMs)) data.offsetMs = 0;
             if (!Finite(data.beatZeroMs)) data.beatZeroMs = 0;
             data.timeSignatures = ChartMeterMap.Normalize(data.timeSignatures);
+            data.aim = NormalizeAim(data.aim);
             return data;
         }
         catch (ArgumentException exception)
@@ -46,6 +47,24 @@ public static class ChartLoader
     }
 
     static bool Finite(float value) => !float.IsNaN(value) && !float.IsInfinity(value);
+
+    // 照準の裏譜面(避)の的とトゲ。壊れた値は捨て、時刻順に並べ、色の名前を小文字にそろえる。
+    static AimChartData NormalizeAim(AimChartData aim)
+    {
+        aim ??= new AimChartData();
+        aim.targets = (aim.targets ?? new List<AimTargetData>())
+            .Where(t => t != null && Finite(t.time) && Finite(t.x) && Finite(t.y)).OrderBy(t => t.time).ToList();
+        foreach (var target in aim.targets) target.color = NormalizeToken(target.color, "red");
+        aim.spikes = (aim.spikes ?? new List<AimSpikeData>())
+            .Where(s => s != null && Finite(s.time) && Finite(s.x) && Finite(s.y)).OrderBy(s => s.time).ToList();
+        foreach (var spike in aim.spikes)
+        {
+            if (!Finite(spike.size) || spike.size <= 0) spike.size = 1;
+            spike.follow = string.IsNullOrWhiteSpace(spike.follow) ? "" : spike.follow.Trim().ToLowerInvariant();
+        }
+        return aim;
+    }
+
     static string NormalizeToken(string value, string fallback) =>
         string.IsNullOrWhiteSpace(value) ? fallback : value.Trim().ToLowerInvariant();
 

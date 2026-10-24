@@ -23,6 +23,40 @@ public class ChartData
     // エディターと本編の拍ガイドで共有する時刻アンカー。ノーツの実時刻は変更しない。
     public List<ChartTempoPoint> editorTempoMap = new List<ChartTempoPoint>();
     public List<NoteData> notes = new List<NoteData>();
+    // 照準で遊ぶ裏譜面(Phobia の「避」、2026-10-24)。ノーツの代わりに、照準で狙う的とよけるトゲを置く。
+    // ふつうの譜面では空のまま(JsonUtility は無い項目を空の入れ物にする)。譜面エディターは別の型なので、この欄を読み書きしない。
+    public AimChartData aim = new AimChartData();
+}
+
+[Serializable]
+public class AimChartData
+{
+    public List<AimTargetData> targets = new List<AimTargetData>();
+    public List<AimSpikeData> spikes = new List<AimSpikeData>();
+
+    public bool HasContent => (targets != null && targets.Count > 0) || (spikes != null && spikes.Count > 0);
+}
+
+// 的(ダーツ)。time はミリ秒(ノーツと同じく offsetMs を足して使う)。color は狙う照準の色(red=右手 / blue=左手)。
+[Serializable]
+public class AimTargetData
+{
+    public float time;
+    public float x;
+    public float y;
+    public string color = "red";
+}
+
+// トゲ。time に判定面へ届く。size は当たりと見た目の倍率。follow を red/blue にすると、
+// 出てくる瞬間のその色の照準の位置へ向けて飛ぶ(追尾トゲ。x・y はその手が見えないときの置き場所)。
+[Serializable]
+public class AimSpikeData
+{
+    public float time;
+    public float x;
+    public float y;
+    public float size = 1f;
+    public string follow = "";
 }
 
 [Serializable]

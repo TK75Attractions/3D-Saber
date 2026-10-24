@@ -73,9 +73,8 @@ public class ResultSkin : MonoBehaviour
         rootRT.anchorMin = rootRT.anchorMax = new Vector2(0.5f, 0.5f);
         rootRT.sizeDelta = Vector2.zero;
 
-        float accuracy = PlayRankHelper.Accuracy(
-            GameSession.FinalPerfect, GameSession.FinalGreat, GameSession.FinalGood,
-            GameSession.FinalBad, GameSession.FinalMiss);
+        // 避(照準の裏譜面)は的の点 ÷ 的の満点、ほかは判定の基礎点の割合(GameSession.FinalAccuracy)。
+        float accuracy = GameSession.FinalAccuracy;
         PlayRank rank = PlayRankHelper.FromScore(GameSession.FinalScore);
         Color rankColor = RankAccentColor(PlayRankHelper.Label(rank));
 
@@ -147,6 +146,24 @@ public class ResultSkin : MonoBehaviour
         }
         return sb.ToString();
     }
+
+    // 右の5行の呼び名と数。照準の裏譜面(避、2026-10-24)は PERFECT などが無いので、的の段とトゲに当たった数にする。
+    // (避の回の FinalPerfect / Great / Good / Miss には、的の BULL / INNER / OUTER / MISS が入っている)
+    public static string[] JudgeLabels(bool aim) => aim
+        ? new[] { "BULL", "INNER", "OUTER", "MISS", "DAMAGE" }
+        : new[] { "PERFECT", "GREAT", "GOOD", "BAD", "MISS" };
+
+    public static int[] JudgeCounts(bool aim) => aim
+        ? new[] { GameSession.FinalPerfect, GameSession.FinalGreat, GameSession.FinalGood, GameSession.FinalMiss, GameSession.FinalAimDamage }
+        : new[] { GameSession.FinalPerfect, GameSession.FinalGreat, GameSession.FinalGood, GameSession.FinalBad, GameSession.FinalMiss };
+
+    static Color[] JudgeColors(bool aim) => aim
+        ? new[] { UISkinPalette.Cyan, UISkinPalette.Yellow, UISkinPalette.Orange, UISkinPalette.SubtleGray, RushESecretState.Magenta }
+        : new[] { UISkinPalette.Cyan, UISkinPalette.Yellow, UISkinPalette.Orange, UISkinPalette.Magenta, UISkinPalette.SubtleGray };
+
+    // 下の帯の左右の文字。避は的の数と BULL の割合。
+    public static string DistributionCountLabel(bool aim, int total) => total.ToString("N0") + (aim ? " TARGETS" : " NOTES");
+    public static string DistributionRateLabel(bool aim, float rate) => (aim ? "BULL RATE " : "PERFECT RATE ") + rate.ToString("F1") + "%";
 
     // 判定分布バーの各セグメント幅。合計 0 のときは全て 0。
     public static float[] DistributionWidths(int[] counts, float totalWidth)
@@ -504,17 +521,10 @@ public class ResultSkin : MonoBehaviour
     void BuildJudgeList(Transform parent)
     {
         var chakra = ChakraFont();
-        string[] labels = { "PERFECT", "GREAT", "GOOD", "BAD", "MISS" };
-        int[] counts =
-        {
-            GameSession.FinalPerfect, GameSession.FinalGreat, GameSession.FinalGood,
-            GameSession.FinalBad, GameSession.FinalMiss,
-        };
-        Color[] colors =
-        {
-            UISkinPalette.Cyan, UISkinPalette.Yellow, UISkinPalette.Orange,
-            UISkinPalette.Magenta, UISkinPalette.SubtleGray,
-        };
+        bool aim = GameSession.FinalAimMode;
+        string[] labels = JudgeLabels(aim);
+        int[] counts = JudgeCounts(aim);
+        Color[] colors = JudgeColors(aim);
 
         for (int i = 0; i < labels.Length; i++)
         {
@@ -551,16 +561,14 @@ public class ResultSkin : MonoBehaviour
 
     void BuildDistributionBar(Transform parent)
     {
-        int[] counts =
-        {
-            GameSession.FinalPerfect, GameSession.FinalGreat, GameSession.FinalGood,
-            GameSession.FinalBad, GameSession.FinalMiss,
-        };
-        Color[] colors =
-        {
-            UISkinPalette.Cyan, UISkinPalette.Yellow, UISkinPalette.Orange,
-            UISkinPalette.Magenta, UISkinPalette.SubtleGray,
-        };
+        // 避は的の4段(BULL・INNER・OUTER・MISS)だけを並べる(トゲに当たった数は帯に入れない)。
+        bool aim = GameSession.FinalAimMode;
+        int[] counts = aim
+            ? new[] { GameSession.FinalPerfect, GameSession.FinalGreat, GameSession.FinalGood, GameSession.FinalMiss }
+            : new[] { GameSession.FinalPerfect, GameSession.FinalGreat, GameSession.FinalGood, GameSession.FinalBad, GameSession.FinalMiss };
+        Color[] colors = aim
+            ? new[] { UISkinPalette.Cyan, UISkinPalette.Yellow, UISkinPalette.Orange, UISkinPalette.SubtleGray }
+            : new[] { UISkinPalette.Cyan, UISkinPalette.Yellow, UISkinPalette.Orange, UISkinPalette.Magenta, UISkinPalette.SubtleGray };
         int total = 0;
         foreach (int c in counts) total += Mathf.Max(0, c);
 
@@ -594,12 +602,12 @@ public class ResultSkin : MonoBehaviour
         }
 
         var oxBold = UISkinKit.FontAsset("Oxanium-Bold");
-        UISkinKit.MakeTMP(block.transform, "NotesLabel", total.ToString("N0") + " NOTES", 28f,
+        UISkinKit.MakeTMP(block.transform, "NotesLabel", DistributionCountLabel(aim, total), 28f,
             UISkinPalette.SubtleGray, TextAlignmentOptions.MidlineLeft,
             new Vector2(-535f, -383f), new Vector2(450f, 40f), FontStyles.Normal, 1f, oxBold);
         float perfectRate = total > 0 ? counts[0] * 100f / total : 0f;
         UISkinKit.MakeTMP(block.transform, "PerfectRateLabel",
-            "PERFECT RATE " + perfectRate.ToString("F1") + "%", 28f,
+            DistributionRateLabel(aim, perfectRate), 28f,
             UISkinPalette.SubtleGray, TextAlignmentOptions.MidlineRight,
             new Vector2(535f, -383f), new Vector2(450f, 40f), FontStyles.Normal, 1f, oxBold);
 

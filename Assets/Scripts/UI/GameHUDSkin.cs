@@ -180,7 +180,7 @@ public class GameHUDSkin : MonoBehaviour
 
     void OnDestroy()
     {
-        if (score != null) { score.OnJudgmentEx -= OnJudgmentEx; score.OnLongCut -= OnJudgmentEx; }
+        if (score != null) { score.OnJudgmentEx -= OnJudgmentEx; score.OnLongCut -= OnJudgmentEx; score.OnAimDamage -= OnAimDamage; }
         UISkinKit.SafeDestroy(rankStampClip);
     }
 
@@ -195,7 +195,7 @@ public class GameHUDSkin : MonoBehaviour
         score = Object.FindFirstObjectByType<ScoreManager>();
         songPlayer = Object.FindFirstObjectByType<SongPlayer>();
         // ロングは1回切るごとに判定1つなので、途中の回も判定の文字を出す。
-        if (score != null) { score.OnJudgmentEx += OnJudgmentEx; score.OnLongCut += OnJudgmentEx; }
+        if (score != null) { score.OnJudgmentEx += OnJudgmentEx; score.OnLongCut += OnJudgmentEx; score.OnAimDamage += OnAimDamage; }
 
         DisableLegacyHud();
 
@@ -703,7 +703,8 @@ public class GameHUDSkin : MonoBehaviour
         }
         if (tierText != null)
         {
-            tierText.text = JudgmentTierHelper.Label(tier);
+            // 照準の裏譜面(避)は的の段(BULL / INNER / OUTER / MISS)で出す。
+            tierText.text = score != null && score.AimScoring ? AimDodgeRules.DartLabel(tier) : JudgmentTierHelper.Label(tier);
             tierText.color = TierColor(tier);
         }
         if (timingHintText != null)
@@ -718,6 +719,20 @@ public class GameHUDSkin : MonoBehaviour
         {
             flickWarningText.text = wasWrongFlick ? "! FLICK" : "";
         }
+        tierFlashAge = 0f;
+    }
+
+    // 避でトゲに当たった。判定の文字の場所に「DAMAGE」を赤紫で出す(コンボの崩れは UpdateCombo がふだんどおり見せる)。
+    private void OnAimDamage(int lost)
+    {
+        if (tierText != null)
+        {
+            tierText.text = "DAMAGE";
+            tierText.color = RushESecretState.Magenta;
+        }
+        if (timingHintText != null) timingHintText.text = "";
+        currentWasFlickFail = false;
+        if (flickWarningText != null) flickWarningText.text = "";
         tierFlashAge = 0f;
     }
 

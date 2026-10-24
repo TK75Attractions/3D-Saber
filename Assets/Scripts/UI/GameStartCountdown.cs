@@ -134,6 +134,18 @@ public class GameStartCountdown : MonoBehaviour
         FirstNoteHandHintView.Show(text, color, begin, end);
     }
 
+    // 決まりの一言(照準の裏譜面「避」など)を、最初の手の予告と同じ場所(下の中央)に出す。
+    // 3 の数字から、最初の的・トゲが届く0.15秒前まで(手の予告より長く出して、読む間をとる)。
+    public void ConfigureCaptionHint(string text, Color color, double firstNoteSeconds, double playStartSeconds = 0)
+    {
+        FirstNoteHandHintView.Hide();
+        if (!running || string.IsNullOrEmpty(text) || double.IsNaN(firstNoteSeconds) || double.IsInfinity(firstNoteSeconds)) return;
+        double begin = playStartSeconds + (firstBeatDspTime - songStartDspTime);
+        double end = playStartSeconds + firstNoteSeconds - .15;
+        if (end <= begin) return;
+        FirstNoteHandHintView.Show(text, color, begin, end);
+    }
+
     public static float SanitizeBpm(float bpm)
     {
         return float.IsNaN(bpm) || float.IsInfinity(bpm) || bpm <= 0f ? DefaultBpm : bpm;

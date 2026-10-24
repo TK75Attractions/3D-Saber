@@ -182,6 +182,11 @@ public class GamePlayManager : MonoBehaviour
     private bool leaving;
     // 最後まで遊んだ(終わりの演出に入った)か、その回の結果を確定して残したか。演出の間に Esc で抜けても記録は残す。
     private bool completing, resultCommitted;
+    // 照準で遊ぶ裏譜面(Phobia の「避」、2026-10-24)。譜面に aim の的・トゲがあるときだけ作る。ノーツは流さない。
+    private AimDodgeMode aimMode;
+    public AimDodgeMode AimMode => aimMode;
+    // 避の終わりはコンボ点の演出が無いので、この秒数だけ置いてから結果へ。
+    const float AimEndPauseSeconds = 1.2f;
 
     IEnumerator Start()
     {
@@ -298,7 +303,8 @@ public class GamePlayManager : MonoBehaviour
         }
 
         ChartData chart = ChartLoader.LoadFromStreamingAssets(songId, GameSession.SelectedDifficulty);
-        if (chart.notes.Count == 0)
+        bool aimChart = chart.notes.Count == 0 && chart.aim != null && chart.aim.HasContent;
+        if (chart.notes.Count == 0 && !aimChart)
         {
             // 選曲後にファイルが変わっても、空譜面の成功結果を残さない。
             // ここは到着の幕の途中で走る(幕の間は次の Load を断る)ので、開ききってから戻す。待つ間は Esc でも動かさない。
@@ -383,6 +389,13 @@ public class GamePlayManager : MonoBehaviour
             }
         }
 
+        // 避の的・トゲの最後(判定の窓の終わり)も、曲の終わりを待つ時刻に入れる。
+        if (aimChart)
+        {
+            var preview = new AimDodgeSession(chart.aim, offsetSec, audioLen > 0 ? audioLen : double.PositiveInfinity);
+            lastNoteTime = System.Math.Max(lastNoteTime, preview.LastTime);
+        }
+
         // オフセットを先に NoteSpawner に渡してから SetChart
         noteSpawner.SetExtraOffsetSeconds(effectiveExtraOffset);
         noteSpawner.SetChart(chart);
@@ -421,6 +434,9 @@ public class GamePlayManager : MonoBehaviour
         scoreManager.songPlayer = songPlayer;
         scoreManager.Reset();
         scoreManager.Bind(noteSpawner);
+        // 避: 剣を照準にして、的とトゲを並べる。点は 50000 から(ScoreManager.BeginAimScoring)。
+        if (aimChart)
+            aimMode = AimDodgeMode.Create(transform, chart.aim, noteSpawner.TotalOffsetSeconds, audioLen, scoreManager, cutJudge, cutJudge2);
         if (longNoteCutSfx != null) longNoteCutSfx.Bind(noteSpawner);
         if (goldNoteSfx != null)
         {
@@ -433,7 +449,14 @@ public class GamePlayManager : MonoBehaviour
         // 冒頭にも通常と同じ移動時間を確保する。譜面の時刻・オフセットは変えない。
         // 頭を飛ばす曲は、鳴らし始める位置から最初のノーツまでの秒で考える。
         double firstNoteFromPlayStart = chart.notes.Count > 0 ? noteSpawner.EffectiveTime(chart.notes[0]) - playRange.Start : double.NaN;
-        double leadInSeconds = chart.notes.Count > 0 ? System.Math.Max(0.0, noteSpawner.approachTime - firstNoteFromPlayStart) : 0.0;
+        // 避は最初の的・トゲが見えはじめる時刻から数える(奥から届くまで AimDodgeRules.LeadSeconds)。
+        double firstApproach = noteSpawner.approachTime;
+        if (aimMode != null && !double.IsInfinity(aimMode.FirstTime))
+        {
+            firstNoteFromPlayStart = aimMode.FirstTime - playRange.Start;
+            firstApproach = System.Math.Max(firstApproach, AimDodgeRules.LeadSeconds);
+        }
+        double leadInSeconds = !double.IsNaN(firstNoteFromPlayStart) ? System.Math.Max(0.0, firstApproach - firstNoteFromPlayStart) : 0.0;
         // 幕が開く前に音やノーツを走らせず、カウントダウンの最初から見せる。
         while (ScreenTransition.IsBusy) yield return null;
         // 読み込みや幕の間に音の出力先が変わって曲の音が消えていたら、読み直してから始める(2026-10-22、タイトルへ戻さない)。
@@ -448,9 +471,12 @@ public class GamePlayManager : MonoBehaviour
             // START の演出が消えてから先頭ノーツを流す。移動時間と補正込みの到着時刻から
             // 楽曲開始を予約し、冒頭のノーツが文字や光に隠れたままゲートへ着くのを防ぐ。
             var countdown = GameStartCountdown.Ensure();
-            double startDspTime = countdown.Begin(chart.bpm, GameSession.SelectedDifficulty, startCountdownVolume, noteSpawner.approachTime, firstNoteFromPlayStart);
-            countdown.ConfigureFirstHandHint(chart, firstNoteFromPlayStart, inTutorial || GameSession.TutorialPending,
-                inCalibration || GameSession.IsCalibrationMode, playRange.Start);
+            double startDspTime = countdown.Begin(chart.bpm, GameSession.SelectedDifficulty, startCountdownVolume, firstApproach, firstNoteFromPlayStart);
+            if (aimMode != null)
+                countdown.ConfigureCaptionHint(AimDodgeRules.RuleCaption, RushESecretState.Magenta, firstNoteFromPlayStart, playRange.Start);
+            else
+                countdown.ConfigureFirstHandHint(chart, firstNoteFromPlayStart, inTutorial || GameSession.TutorialPending,
+                    inCalibration || GameSession.IsCalibrationMode, playRange.Start);
             songPlayer.PlayScheduled(startDspTime, playRange.Start);
         }
         else
@@ -856,6 +882,8 @@ public class GamePlayManager : MonoBehaviour
         {
             noteSpawner.Tick(songPlayer.SongTime);
             if (barLineSpawner != null) barLineSpawner.Tick(songPlayer.SongTime);
+            // 避の的とトゲ。見た目は曲の時計、当たりと的の判定はノーツと同じ判定の時計(カメラの遅れを引いた時刻)。
+            if (aimMode != null) aimMode.Tick(songPlayer.SongTime, noteSpawner.JudgeClock(songPlayer.SongTime));
         }
 
         if (playFeedback != null)
@@ -866,7 +894,8 @@ public class GamePlayManager : MonoBehaviour
         double endThreshold = System.Math.Max(MusicEnd + endWaitSeconds,
                                               lastNoteTime + outroSeconds);
         if (songPlayer.IsPlaying && songPlayer.SongTime >= endThreshold
-            && noteSpawner.AliveCount == 0 && noteSpawner.NextIndex >= noteSpawner.TotalNoteCount)
+            && noteSpawner.AliveCount == 0 && noteSpawner.NextIndex >= noteSpawner.TotalNoteCount
+            && (aimMode == null || aimMode.Completed))
         {
             finished = true;
             FinishGame();
@@ -1033,6 +1062,8 @@ public class GamePlayManager : MonoBehaviour
     // MISS のノーツは後ろへ流れて 1.5 秒残るので数えない(2026-10-22、休みの区間でまちがって止まっていた)。
     bool NotesNeed(double songTime, SaberHand hand)
     {
+        // 避は、その手の的か、どちらの手にも当たるトゲが来ているとき(剣を下ろして隠れてトゲをよけることもできない)。
+        if (aimMode != null) return aimMode.Needs(songTime, hand);
         if (noteSpawner == null) return false;
         if (PlayTrackingWatch.LiveNeeds(noteSpawner.LiveNotes, hand)) return true;
         var chart = noteSpawner.CurrentChart;
@@ -1118,6 +1149,10 @@ public class GamePlayManager : MonoBehaviour
         GameSession.FinalGood = scoreManager.GoodCount;
         GameSession.FinalBad = scoreManager.BadCount;
         GameSession.FinalCutCount = scoreManager.CutCount;
+        GameSession.FinalAimMode = scoreManager.AimScoring;
+        GameSession.FinalAimDamage = scoreManager.AimDamageCount;
+        GameSession.FinalAimDartPoints = scoreManager.AimDartPoints;
+        GameSession.FinalAimDartTotal = scoreManager.AimDartTotal;
         GameSession.RecordCompletedAchievements();
         GameSession.RecordCompletedDailyRanking();
     }
@@ -1215,6 +1250,7 @@ public class GamePlayManager : MonoBehaviour
             $"duration={songPlayer.Duration:F1}s lastNote={lastNoteTime:F1}s alive={noteSpawner.AliveCount}");
         completing = true;
         songPlayer.Stop();
+        if (aimMode != null) aimMode.EndPlay();
         if (stageReactions != null) stageReactions.ResetState();
         if (chorusDrop != null) chorusDrop.ResetEffects();
         if (feverShow != null) feverShow.ResetState();
@@ -1244,23 +1280,38 @@ public class GamePlayManager : MonoBehaviour
                 if (achievement != null) Destroy(achievement.gameObject);
             }
         }
-        var bonus = ComboBonusPresentation.Create(scoreManager.MaxCombo, scoreManager.IsFullCombo,
-            scoreManager.ComboUnits, scoreManager.ComboBonus);
-        // アニメと精算を同じ終了経路で管理し、途中の入力では再加算しない。
-        float elapsed = 0f;
-        while (elapsed < bonus.Duration)
+        ComboBonusPresentation bonus = null;
+        if (scoreManager.AimScoring)
         {
-            bonus.Tick(elapsed);
-            yield return null;
-            // 生成前の長いフレーム時間を足さず、処理落ちでも冒頭を飛ばさない。
-            elapsed += Mathf.Min(Time.unscaledDeltaTime, .1f);
-            if (elapsed >= ComboBonusPresentation.LandingTime) scoreManager.FinalizeScore();
+            // 避にコンボ点は無いので、コンボ点の演出は出さずに少しだけ間をおく。
+            float waited = 0f;
+            while (waited < AimEndPauseSeconds)
+            {
+                yield return null;
+                waited += Mathf.Min(Time.unscaledDeltaTime, .1f);
+            }
+            scoreManager.FinalizeScore();
+        }
+        else
+        {
+            bonus = ComboBonusPresentation.Create(scoreManager.MaxCombo, scoreManager.IsFullCombo,
+                scoreManager.ComboUnits, scoreManager.ComboBonus);
+            // アニメと精算を同じ終了経路で管理し、途中の入力では再加算しない。
+            float elapsed = 0f;
+            while (elapsed < bonus.Duration)
+            {
+                bonus.Tick(elapsed);
+                yield return null;
+                // 生成前の長いフレーム時間を足さず、処理落ちでも冒頭を飛ばさない。
+                elapsed += Mathf.Min(Time.unscaledDeltaTime, .1f);
+                if (elapsed >= ComboBonusPresentation.LandingTime) scoreManager.FinalizeScore();
+            }
         }
         CommitFinalResult();
         if (!string.IsNullOrEmpty(resultSceneName))
         {
             ScreenTransition.Load(resultSceneName, ScreenTransition.Style.Result);
         }
-        else Destroy(bonus.gameObject);
+        else if (bonus != null) Destroy(bonus.gameObject);
     }
 }
