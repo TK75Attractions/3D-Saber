@@ -25,6 +25,20 @@ public class FirstNoteHandHintTests
         Assert.False(FirstNoteHandHint.TryDescribe(new ChartData(), out _, out _));
     }
 
+    // 左右に分かれた金2個の同時は両手(escapade の最初)。同じ側の金2個は、今までどおりどちらの手でも。
+    [TestCase(-1.65f, 1.65f, "両手から")]
+    [TestCase(.6f, 1.65f, "どちらの手でも")]
+    [TestCase(-1.2f, -.4f, "どちらの手でも")]
+    public void SimultaneousGoldOnBothSidesAsksForBothHands(float x1, float x2, string expected)
+    {
+        var chart = new ChartData();
+        chart.notes.Add(new NoteData { color = "gold", time = 1000, x = x1 });
+        chart.notes.Add(new NoteData { color = "gold", time = 1000, x = x2 });
+        Assert.True(FirstNoteHandHint.TryDescribe(chart, out string text, out Color tint));
+        Assert.AreEqual(expected, text);
+        Assert.AreEqual(expected == "両手から" ? Color.white : UISkinPalette.NoteGold, tint);
+    }
+
     [Test]
     public void HintStaysBelowTheStageAfterStartAndEndsBeforeArrival()
     {

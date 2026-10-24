@@ -16,17 +16,23 @@ internal static class FirstNoteHandHint
             if (note != null && !float.IsNaN(note.time) && !float.IsInfinity(note.time))
                 first = Math.Min(first, note.TimeSeconds);
         if (double.IsInfinity(first)) return false;
-        bool red = false, blue = false, goldOnly = true;
+        bool red = false, blue = false, goldOnly = true, goldLeft = false, goldRight = false;
         foreach (var note in chart.notes)
         {
             if (note == null || !(Math.Abs(note.TimeSeconds - first) <= NoteSpawner.SimultaneousEpsilonSeconds)) continue;
             var hand = SaberHandHelper.FromColor(note.color);
             red |= hand == SaberHand.Right;
             blue |= hand == SaberHand.Left;
-            goldOnly &= string.Equals(note.color, "gold", StringComparison.OrdinalIgnoreCase);
+            bool gold = string.Equals(note.color, "gold", StringComparison.OrdinalIgnoreCase);
+            goldOnly &= gold;
+            goldLeft |= gold && note.x < 0;
+            goldRight |= gold && note.x > 0;
         }
-        text = red && blue ? "両手から" : red ? "右手から" : blue ? "左手から" : "どちらの手でも";
-        color = red && blue ? Color.white : red ? UISkinPalette.LogoRed : blue ? UISkinPalette.LogoBlue
+        // 金だけが左右に分かれて同時に来るときは両手が要る(2026-10-24 点検: escapade の最初の左右端の金2個に
+        // 「どちらの手でも」と出ていた)。金と色つきの同時は、今までどおり色の手(近ければ1振りで切れる)。
+        bool both = red && blue || !red && !blue && goldLeft && goldRight;
+        text = both ? "両手から" : red ? "右手から" : blue ? "左手から" : "どちらの手でも";
+        color = both ? Color.white : red ? UISkinPalette.LogoRed : blue ? UISkinPalette.LogoBlue
             : goldOnly ? UISkinPalette.NoteGold : Color.white;
         return true;
     }
