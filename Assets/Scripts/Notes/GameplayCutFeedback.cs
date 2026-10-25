@@ -67,7 +67,22 @@ public sealed partial class GameplayCutFeedback : MonoBehaviour
     Mesh mesh;
     Material material;
     MeshRenderer meshRenderer;
+    bool memoryVeilMode;
+    int ordinarySortingOrder, ordinaryRenderQueue;
     public int ActiveCount { get; private set; }
+
+    internal void SetMemoryVeilMode(bool enabled)
+    {
+        if (meshRenderer == null || material == null || memoryVeilMode == enabled) return;
+        if (enabled)
+        {
+            ordinarySortingOrder = meshRenderer.sortingOrder;
+            ordinaryRenderQueue = material.renderQueue;
+        }
+        meshRenderer.sortingOrder = enabled ? MemoryVeilLayers.AboveSortingOrder : ordinarySortingOrder;
+        material.renderQueue = enabled ? MemoryVeilLayers.AboveRenderQueue + 5 : ordinaryRenderQueue;
+        memoryVeilMode = enabled;
+    }
 
     public static GameplayCutFeedback Create(NoteSpawner spawner)
     {
@@ -76,6 +91,7 @@ public sealed partial class GameplayCutFeedback : MonoBehaviour
         var feedback = go.AddComponent<GameplayCutFeedback>();
         feedback.owner = spawner;
         feedback.BuildRenderer();
+        feedback.SetMemoryVeilMode(spawner.MemoryVeilMode);
         return feedback;
     }
 
@@ -179,6 +195,8 @@ public sealed partial class GameplayCutFeedback : MonoBehaviour
     // NoteSpawner.Tickからだけ呼ぶ。既存の破片と同じTime.deltaTimeで寿命を進める。
     public void Tick(float deltaTime)
     {
+        // プレビューなど、Create を直接使った所有者でも次の Tick で設定をそろえる。
+        if (owner != null) SetMemoryVeilMode(owner.MemoryVeilMode);
         if (!isActiveAndEnabled || ActiveCount == 0) return;
         if (float.IsNaN(deltaTime) || float.IsInfinity(deltaTime)) return;
         for (int i = 0; i < bursts.Length; i++)

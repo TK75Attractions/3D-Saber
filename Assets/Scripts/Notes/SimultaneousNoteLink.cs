@@ -18,18 +18,22 @@ public class SimultaneousNoteLink : MonoBehaviour
     private Material ownedMaterial;
     private NoteVisuals visualsA, visualsB;
     private bool glowApplied;
+    float pairVeil;
 
     public LineRenderer Line => line;
 
     public static SimultaneousNoteLink Create(CuttableNote a, CuttableNote b, Transform parent)
     {
-        if (!IsAlive(a) || !IsAlive(b) || a == b) return null;
+        if (!IsAlive(a) || !IsAlive(b) || a == b || a.HidesCues || b.HidesCues) return null;
         var go = new GameObject("SimulLink");
         if (parent != null) go.transform.SetParent(parent, false);
         var link = go.AddComponent<SimultaneousNoteLink>();
         link.noteA = a;
         link.noteB = b;
         link.versionA = a.SpawnVersion; link.versionB = b.SpawnVersion;
+        link.visualsA = a.GetComponent<NoteVisuals>();
+        link.visualsB = b.GetComponent<NoteVisuals>();
+        link.pairVeil = Mathf.Max(a.Veil, b.Veil);
         link.BuildLine();
         link.Refresh();
         return link;
@@ -47,7 +51,7 @@ public class SimultaneousNoteLink : MonoBehaviour
 
         var sh = Resources.Load<Shader>("Effects/NoteGuide") ?? Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Unlit/Color");
         ownedMaterial = new Material(sh);
-        Color c = new Color(1f, 1f, 1f, DefaultAlpha);
+        Color c = new Color(1f, 1f, 1f, DefaultAlpha * NoteVeil.CueAlpha(pairVeil));
         // 半透明設定(URP Unlit)。対応プロパティが無いシェーダでは色のみ。
         if (ownedMaterial.HasProperty("_Surface")) ownedMaterial.SetFloat("_Surface", 1f);
         if (ownedMaterial.HasProperty("_SrcBlend")) ownedMaterial.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
@@ -91,10 +95,8 @@ public class SimultaneousNoteLink : MonoBehaviour
     private void ApplyNoteGlow()
     {
         if (glowApplied || !gameObject.activeInHierarchy) return;
-        visualsA = noteA.GetComponent<NoteVisuals>();
-        visualsB = noteB.GetComponent<NoteVisuals>();
-        if (visualsA != null) visualsA.AddSimultaneousLink();
-        if (visualsB != null) visualsB.AddSimultaneousLink();
+        if (visualsA != null) visualsA.AddSimultaneousLink(pairVeil);
+        if (visualsB != null) visualsB.AddSimultaneousLink(pairVeil);
         glowApplied = true;
     }
 
@@ -103,8 +105,8 @@ public class SimultaneousNoteLink : MonoBehaviour
         if (!glowApplied) return;
         glowApplied = false;
         // 再利用後のノーツには、前の組のリンク解除を持ち越さない。
-        if (noteA != null && noteA.SpawnVersion == versionA && visualsA != null) visualsA.RemoveSimultaneousLink();
-        if (noteB != null && noteB.SpawnVersion == versionB && visualsB != null) visualsB.RemoveSimultaneousLink();
+        if (noteA != null && noteA.SpawnVersion == versionA && visualsA != null) visualsA.RemoveSimultaneousLink(pairVeil);
+        if (noteB != null && noteB.SpawnVersion == versionB && visualsB != null) visualsB.RemoveSimultaneousLink(pairVeil);
     }
 
     // 端点をノーツ現在位置へ更新する。ペアが両方生存していれば true(テストから直接呼べる)。
@@ -115,6 +117,23 @@ public class SimultaneousNoteLink : MonoBehaviour
             if (line != null) line.enabled = false;
             ReleaseNoteGlow();
             return false;
+        }
+        float nextVeil = Mathf.Max(noteA.Veil, noteB.Veil);
+        if (nextVeil != pairVeil)
+        {
+            ReleaseNoteGlow();
+            pairVeil = nextVeil;
+            if (line != null)
+            {
+                var color = new Color(1f, 1f, 1f, DefaultAlpha * NoteVeil.CueAlpha(pairVeil));
+                line.startColor = line.endColor = color;
+            }
+        }
+        if (pairVeil >= MemoryVeilLayers.HideCuesAtVeil)
+        {
+            if (line != null) line.enabled = false;
+            ReleaseNoteGlow();
+            return true;
         }
         ApplyNoteGlow();
         if (line != null)

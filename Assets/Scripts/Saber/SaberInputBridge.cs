@@ -73,6 +73,13 @@ public class SaberInputBridge : MonoBehaviour
     // 端点・HasBlade・中点の位置はふだんどおり更新する。
     public bool DrawBlade { get; set; } = true;
 
+    // Mのノイズより上へ描く。後から作る縁・残光にも同じ設定を渡す。
+    public bool DrawAboveMemoryVeil
+    {
+        get => SaberMemoryVeilOrder.IsAbove(this);
+        set => SaberMemoryVeilOrder.Set(this, value);
+    }
+
     CameraSaberSample cameraSample;
     double cameraSourceStamp = double.NegativeInfinity;
     bool hasCameraSample;
@@ -315,6 +322,7 @@ public class SaberInputBridge : MonoBehaviour
         bladeLine.startColor = bladeColor;
         bladeLine.endColor = bladeColor;
         EnsureBladeOutline();
+        SaberMemoryVeilOrder.RefreshFor(this);
     }
 
     // プロジェクターモードでは刃を太くする(灰色に浮いた投影面で細い線が埋もれるため)
@@ -361,6 +369,7 @@ public class SaberInputBridge : MonoBehaviour
             bladeOutline.startColor = ProjectorMode.BladeOutlineColor;
             bladeOutline.endColor = ProjectorMode.BladeOutlineColor;
             bladeOutline.enabled = false; // 位置が入るまで隠す
+            SaberMemoryVeilOrder.RefreshFor(this);
         }
         float w = EffectiveBladeWidth * ProjectorMode.BladeOutlineScale;
         bladeOutline.startWidth = w;

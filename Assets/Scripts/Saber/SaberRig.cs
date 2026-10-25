@@ -109,6 +109,7 @@ public static class SaberRig
         if (bridge != null && bridge.useBladeMode)
         {
             trail.emitting = false; trail.enabled = false; trail.Clear();
+            SaberMemoryVeilOrder.RefreshFor(saber);
             return trail;
         }
         trail.emitting = true; trail.enabled = true;
@@ -135,6 +136,7 @@ public static class SaberRig
         Color c1 = color; c1.a = 0f;
         trail.startColor = c0;
         trail.endColor = c1;
+        SaberMemoryVeilOrder.RefreshFor(saber);
         return trail;
     }
 }

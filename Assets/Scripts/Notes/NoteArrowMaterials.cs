@@ -14,6 +14,7 @@ public sealed class NoteArrowMaterials : MonoBehaviour
     CuttableNote note;
     Color noteColor;
     float flashAge = FlashSeconds;
+    float cueAlpha = 1f;
 
     internal void Register(Material material, bool isBars = false)
     {
@@ -26,6 +27,7 @@ public sealed class NoteArrowMaterials : MonoBehaviour
         if (note != null) note.OnWrongDirection -= Flash;
         note = target;
         noteColor = color;
+        SetVeil(note != null ? note.Veil : 0f);
         ResetCue();
         if (note == null) return;
         note.Arrow = this;
@@ -37,11 +39,29 @@ public sealed class NoteArrowMaterials : MonoBehaviour
     public static Color FlashColor(Color color, float age)
         => Color.Lerp(color, Color.white, Mathf.Clamp01(age / FlashSeconds));
 
+    void SetVeil(float veil)
+    {
+        float alpha = NoteVeil.CueAlpha(veil);
+        if (cueAlpha != alpha)
+        {
+            cueAlpha = alpha;
+            foreach (var material in owned) NoteVeil.SetAlpha(material, alpha);
+        }
+        bool shown = veil < MemoryVeilLayers.HideCuesAtVeil;
+        if (gameObject.activeSelf != shown) gameObject.SetActive(shown);
+    }
+
+    Color WithVeil(Color color)
+    {
+        if (cueAlpha != 1f) color.a *= cueAlpha;
+        return color;
+    }
+
     void Flash(CuttableNote source)
     {
-        if (source.DirectionVisualOnly || source.IsMissed || bars == null) return;
+        if (source.DirectionVisualOnly || source.IsMissed || source.HidesCues || bars == null) return;
         flashAge = 0f;
-        bars.SetColor(BaseColorId, FlashColor(noteColor, flashAge));
+        bars.SetColor(BaseColorId, WithVeil(FlashColor(noteColor, flashAge)));
     }
 
     internal void Tick(float dt)
@@ -49,13 +69,13 @@ public sealed class NoteArrowMaterials : MonoBehaviour
         if (flashAge >= FlashSeconds || bars == null) return;
         if (note == null || note.IsMissed || note.IsFinalized) { ResetCue(); return; }
         flashAge = Mathf.Min(FlashSeconds, flashAge + Mathf.Max(0f, dt));
-        bars.SetColor(BaseColorId, FlashColor(noteColor, flashAge));
+        bars.SetColor(BaseColorId, WithVeil(FlashColor(noteColor, flashAge)));
     }
 
     internal void ResetCue()
     {
         flashAge = FlashSeconds;
-        if (bars != null) bars.SetColor(BaseColorId, Color.white);
+        if (bars != null) bars.SetColor(BaseColorId, WithVeil(Color.white));
     }
 
     void OnDisable() { ResetCue(); }

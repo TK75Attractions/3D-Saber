@@ -44,6 +44,7 @@ public sealed class SaberBladeVisual : MonoBehaviour
         visual = gameObject.AddComponent<MeshRenderer>(); visual.sharedMaterial = material;
         visual.shadowCastingMode = ShadowCastingMode.Off; visual.receiveShadows = false;
         visual.lightProbeUsage = LightProbeUsage.Off; visual.reflectionProbeUsage = ReflectionProbeUsage.Off;
+        SaberMemoryVeilOrder.RefreshFor(this);
     }
 
     public void Show(Vector3 a, Vector3 b, float width, Color tint, float time)

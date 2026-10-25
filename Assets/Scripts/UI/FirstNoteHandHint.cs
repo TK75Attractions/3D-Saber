@@ -63,9 +63,14 @@ internal sealed class FirstNoteHandHintView : MonoBehaviour
         var scaler = go.GetComponent<CanvasScaler>(); scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920, 1080); scaler.matchWidthOrHeight = .5f;
         var view = go.AddComponent<FirstNoteHandHintView>();
+        // 手の短い予告は従来の幅。ルールや段の字幕は横へ広げ、長い文だけ縮小を許す。
+        bool longCaption = !string.IsNullOrEmpty(text) && text.Length > 14;
         view.label = UISkinKit.MakeTMP(go.transform, "Text", text, 44, color, TextAlignmentOptions.Center,
-            new Vector2(0, -360), new Vector2(720, 64), FontStyles.Normal, 0, UISkinKit.JapaneseFallbackFontAsset());
-        view.label.enableAutoSizing = false;
+            new Vector2(0, -360), new Vector2(longCaption ? 1440 : 720, 64),
+            FontStyles.Normal, 0, UISkinKit.JapaneseFallbackFontAsset());
+        view.label.fontSizeMin = 28;
+        view.label.fontSizeMax = 44;
+        view.label.enableAutoSizing = longCaption;
         view.label.textWrappingMode = TextWrappingModes.NoWrap;
         view.label.raycastTarget = false;
         view.label.alpha = 0;
@@ -75,7 +80,11 @@ internal sealed class FirstNoteHandHintView : MonoBehaviour
 
     internal static void Hide()
     {
-        if (current != null) UISkinKit.SafeDestroy(current.gameObject);
+        if (current != null)
+        {
+            current.gameObject.SetActive(false);
+            UISkinKit.SafeDestroy(current.gameObject);
+        }
         current = null;
     }
 

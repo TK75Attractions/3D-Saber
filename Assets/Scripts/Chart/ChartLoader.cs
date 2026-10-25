@@ -29,6 +29,7 @@ public static class ChartLoader
                 note.count = Math.Max(1, note.count);
                 if (!Finite(note.lengthMs) || note.lengthMs < 0) note.lengthMs = 0;
                 if (!Finite(note.beat)) note.beat = 0;
+                note.veil = Finite(note.veil) ? Math.Max(0f, Math.Min(1f, note.veil)) : 0f;
             }
             // 拍ガイドと描画を成立させる最低限の復旧。ノーツ時刻・配置は補正しない。
             if (!Finite(data.bpm) || data.bpm <= 0) data.bpm = 120;
@@ -37,6 +38,7 @@ public static class ChartLoader
             if (!Finite(data.beatZeroMs)) data.beatZeroMs = 0;
             data.timeSignatures = ChartMeterMap.Normalize(data.timeSignatures);
             data.aim = NormalizeAim(data.aim);
+            data.memory = NormalizeMemory(data.memory);
             return data;
         }
         catch (ArgumentException exception)
@@ -63,6 +65,19 @@ public static class ChartLoader
             spike.follow = string.IsNullOrWhiteSpace(spike.follow) ? "" : spike.follow.Trim().ToLowerInvariant();
         }
         return aim;
+    }
+
+    // 覚える裏譜面(M)のノイズと説明。壊れた値・長さの無い区間を捨て、強さを 0〜1 に収め、時刻順に並べる。
+    static MemoryChartData NormalizeMemory(MemoryChartData memory)
+    {
+        memory ??= new MemoryChartData();
+        memory.veils = (memory.veils ?? new List<MemoryVeilData>())
+            .Where(v => v != null && Finite(v.time) && Finite(v.endTime) && v.endTime > v.time).OrderBy(v => v.time).ToList();
+        foreach (var veil in memory.veils) veil.strength = Finite(veil.strength) ? Math.Max(0f, Math.Min(1f, veil.strength)) : 0f;
+        memory.captions = (memory.captions ?? new List<MemoryCaptionData>())
+            .Where(c => c != null && Finite(c.time) && Finite(c.endTime) && c.endTime > c.time && !string.IsNullOrWhiteSpace(c.text))
+            .OrderBy(c => c.time).ToList();
+        return memory;
     }
 
     static string NormalizeToken(string value, string fallback) =>

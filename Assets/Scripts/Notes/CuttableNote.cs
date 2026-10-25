@@ -12,6 +12,10 @@ public partial class CuttableNote : MonoBehaviour
     static readonly List<CuttableNote> activeNotes = new List<CuttableNote>();
     public static IReadOnlyList<CuttableNote> ActiveNotes => activeNotes;
     public uint SpawnVersion { get; private set; }
+    // 見えにくさは描画だけに使い、判定には使わない。
+    public float Veil { get; internal set; }
+    internal bool HidesCues => Veil >= MemoryVeilLayers.HideCuesAtVeil;
+    internal float CueVisibility => NoteVeil.CueAlpha(Veil);
     internal NoteFragmentPool FragmentPool;
     internal NoteArrowMaterials Arrow;
     readonly WrongDirectionCueGate wrongDirectionCue = new WrongDirectionCueGate();
@@ -42,6 +46,7 @@ public partial class CuttableNote : MonoBehaviour
         OnRetired?.Invoke(this);
         OnCut = null; OnJudged = null; OnMiss = null; OnPartialCut = null; OnRetired = null;
         OnWrongDirection = null;
+        Veil = 0f;
         wrongDirectionCue.Reset();
         if (Arrow != null) Arrow.ResetCue();
         fragmentTier = null;
@@ -270,7 +275,7 @@ public partial class CuttableNote : MonoBehaviour
             {
                 // ID 省略の直接呼び出しは1回を1振りとする。実際の入力経路は振りの ID を渡す。
                 if (swingId == 0) swingId = WrongDirectionCueGate.NewSwing();
-                if (wrongDirectionCue.TrySignal(swingId, Time.timeAsDouble))
+                if (!HidesCues && wrongDirectionCue.TrySignal(swingId, Time.timeAsDouble))
                     OnWrongDirection?.Invoke(this);
                 return false;
             }
@@ -386,21 +391,35 @@ public partial class CuttableNote : MonoBehaviour
             crack.transform.SetParent(transform, false);
             crack.GetComponent<MeshFilter>().sharedMesh = NoteFragmentPool.CubeMesh;
             var mat = MakeCrackMaterial();
-            crack.GetComponent<MeshRenderer>().sharedMaterial = mat;
+            var renderer = crack.GetComponent<MeshRenderer>();
+            renderer.sharedMaterial = mat;
             crack.SetActive(false);
-            ownedCracks.Add(new CrackVisual { visual = crack, material = mat, transform = crack.transform });
+            ownedCracks.Add(new CrackVisual {
+                visual = crack, material = mat, transform = crack.transform, renderer = renderer
+            });
         }
     }
     private void AddCrack()
     {
+        if (HidesCues) return;
         WarmCracks(cracksUsed + 1);
         int index = cracksUsed++;
         var crack = ownedCracks[index];
+        // 通常ノーツでは従来の不透明材質を維持する。使い回した半透明材質だけ元へ戻す。
+        bool translucent = Veil > 0f;
+        if (translucent != crack.veiled)
+        {
+            NoteVeil.SetCrackTransparency(crack.material, translucent);
+            crack.renderer.shadowCastingMode = translucent
+                ? UnityEngine.Rendering.ShadowCastingMode.Off
+                : UnityEngine.Rendering.ShadowCastingMode.On;
+            crack.veiled = translucent;
+        }
         PlaceCrack(crack.transform, index, transform.InverseTransformPoint(lastHitPoint),
             transform.InverseTransformDirection(lastVelocity));
         crack.fullScale = CrackScale(index, Mathf.Clamp01(CutsAchieved / (float)Mathf.Max(1, RequiredCutCount - 1)));
         crack.age = 0f;
-        ApplyCrack(crack.transform, crack.material, crack.fullScale, 0f);
+        ApplyCrack(crack.transform, crack.material, crack.fullScale, 0f, Veil);
         crack.visual.SetActive(true);
         // この直後の OnPartialCut で刻み音も始まる。過去のひびの時計は戻さない。
     }
@@ -479,6 +498,7 @@ public partial class CuttableNote : MonoBehaviour
         var piece = FragmentPool != null ? FragmentPool.Rent() : NoteFragmentPool.CreatePiece();
         piece.name = name + (sliced ? "_piece" : "_debris");
         piece.CopyMaterial(material);
+        piece.SetVeil(Veil);
         piece.GetComponent<MeshFilter>().sharedMesh = sliced ? piece.ReusableMesh : NoteFragmentPool.CubeMesh;
         return piece;
     }

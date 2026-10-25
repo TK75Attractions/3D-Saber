@@ -76,7 +76,7 @@ public sealed class FloorTimingGuide : MonoBehaviour
         for (int i = 0; i < live.Count; i++)
         {
             var note = live[i];
-            if (note == null || !note.gameObject.activeInHierarchy || note.IsCut || note.IsMissed || note.IsFinalized || !Finite(note.HitTime)) continue;
+            if (note == null || !note.gameObject.activeInHierarchy || note.IsCut || note.IsMissed || note.IsFinalized || note.HidesCues || !Finite(note.HitTime)) continue;
             Vector3 p = note.transform.position;
             if (!Finite(p.x) || !Finite(p.y) || !Finite(p.z)) continue;
             candidates.Add(note);
@@ -86,6 +86,7 @@ public sealed class FloorTimingGuide : MonoBehaviour
         foreach (var note in candidates)
         {
             if (MarkerCount + LongProgressCount >= MaxMarkers) break;
+            int firstColor = colors.Count;
             double remaining = note.HitTime - songTime;
             if (note.RequiredCutCount > 1 && remaining < -.13)
             {
@@ -93,6 +94,7 @@ public sealed class FloorTimingGuide : MonoBehaviour
                 if (duration > 0 && -remaining < duration)
                 {
                     DrawLongProgress(note, Mathf.Clamp01((float)(1 + remaining / duration)), visibility);
+                    if (note.Veil > 0f) FadeNoteColors(firstColor, note.CueVisibility);
                     LongProgressCount++;
                 }
                 continue;
@@ -125,10 +127,22 @@ public sealed class FloorTimingGuide : MonoBehaviour
                 Arrow(position, note.RequiredDirection, size, ink, .006f, true);
                 Arrow(position, note.RequiredDirection, size, Color.Lerp(tint, new Color(1, 1, 1, alpha), .75f), .009f);
             }
+            if (note.Veil > 0f) FadeNoteColors(firstColor, note.CueVisibility);
             MarkerCount++;
         }
         mesh.Clear(); mesh.SetVertices(vertices); mesh.SetColors(colors); mesh.SetTriangles(triangles, 0, true);
         display.enabled = true;
+    }
+
+    // 白い印だけでなく、黒い下敷き・方向矢印・ロングの残量も同じ比率で薄くする。
+    void FadeNoteColors(int first, float visibility)
+    {
+        for (int i = first; i < colors.Count; i++)
+        {
+            Color color = colors[i];
+            color.a *= visibility;
+            colors[i] = color;
+        }
     }
 
     int ComparePriority(CuttableNote a, CuttableNote b)

@@ -185,6 +185,9 @@ public class GamePlayManager : MonoBehaviour
     // 照準で遊ぶ裏譜面(Phobia の「避」、2026-10-24)。譜面に aim の的・トゲがあるときだけ作る。ノーツは流さない。
     private AimDodgeMode aimMode;
     public AimDodgeMode AimMode => aimMode;
+    // 覚える裏譜面(M)。ノーツと採点は通常どおり、ノイズと字幕だけを重ねる。
+    private MemoryVeilMode memoryMode;
+    public MemoryVeilMode MemoryMode => memoryMode;
     // 避の終わりはコンボ点の演出が無いので、この秒数だけ置いてから結果へ。
     const float AimEndPauseSeconds = 1.2f;
 
@@ -437,6 +440,8 @@ public class GamePlayManager : MonoBehaviour
         // 避: 剣を照準にして、的とトゲを並べる。点は 50000 から(ScoreManager.BeginAimScoring)。
         if (aimChart)
             aimMode = AimDodgeMode.Create(transform, chart.aim, noteSpawner.TotalOffsetSeconds, audioLen, scoreManager, cutJudge, cutJudge2);
+        if (chart.memory != null && chart.memory.HasContent)
+            memoryMode = MemoryVeilMode.Create(transform, chart, noteSpawner);
         if (longNoteCutSfx != null) longNoteCutSfx.Bind(noteSpawner);
         if (goldNoteSfx != null)
         {
@@ -474,6 +479,8 @@ public class GamePlayManager : MonoBehaviour
             double startDspTime = countdown.Begin(chart.bpm, GameSession.SelectedDifficulty, startCountdownVolume, firstApproach, firstNoteFromPlayStart);
             if (aimMode != null)
                 countdown.ConfigureCaptionHint(AimDodgeRules.RuleCaption, RushESecretState.Magenta, firstNoteFromPlayStart, playRange.Start);
+            else if (memoryMode != null)
+                countdown.ConfigureCaptionHint(MemoryVeilRules.RuleCaption, RushESecretState.Amber, firstNoteFromPlayStart, playRange.Start);
             else
                 countdown.ConfigureFirstHandHint(chart, firstNoteFromPlayStart, inTutorial || GameSession.TutorialPending,
                     inCalibration || GameSession.IsCalibrationMode, playRange.Start);
@@ -777,6 +784,7 @@ public class GamePlayManager : MonoBehaviour
 
     private void OnDestroy()
     {
+        if (memoryMode != null) memoryMode.EndPlay();
         AbortAudioRequest();
         ReleaseOwnedSongClip();
         FirstNoteHandHintView.Hide();
@@ -880,10 +888,16 @@ public class GamePlayManager : MonoBehaviour
         // 2b. 開始予約中の負の曲時計でも先読みする。停止後はSongTime=0へ巻き戻して進めない。
         if (songPlayer.IsScheduled)
         {
-            noteSpawner.Tick(songPlayer.SongTime);
-            if (barLineSpawner != null) barLineSpawner.Tick(songPlayer.SongTime);
+            // ノイズとノーツは同じコマの同じ曲時計で決める。見本へ戻るコマは先にノイズを消す。
+            double songTime = songPlayer.SongTime;
+            if (memoryMode != null) memoryMode.Tick(songTime);
+            noteSpawner.Tick(songTime);
+            if (barLineSpawner != null) barLineSpawner.Tick(songTime);
             // 避の的とトゲ。見た目は曲の時計、当たりと的の判定はノーツと同じ判定の時計(カメラの遅れを引いた時刻)。
-            if (aimMode != null) aimMode.Tick(songPlayer.SongTime, noteSpawner.JudgeClock(songPlayer.SongTime));
+            if (aimMode != null) aimMode.Tick(songTime, noteSpawner.JudgeClock(songTime));
+            // このコマで差し替えた字幕にも直ちに曲時計を反映する。
+            // 冒頭のTickは、一時停止でここへ来ないコマの非表示を受け持つ。
+            if (memoryMode != null) FirstNoteHandHintView.Tick(songPlayer);
         }
 
         if (playFeedback != null)
@@ -921,6 +935,7 @@ public class GamePlayManager : MonoBehaviour
         leaving = true;
         StopAllCoroutines();
         AbortAudioRequest();
+        if (memoryMode != null) memoryMode.EndPlay();
         if (songPlayer != null) songPlayer.Stop();
         if (goldNoteSfx != null) goldNoteSfx.StopSounds();
         if (chorusDrop != null) chorusDrop.ResetEffects();
@@ -1251,6 +1266,7 @@ public class GamePlayManager : MonoBehaviour
         completing = true;
         songPlayer.Stop();
         if (aimMode != null) aimMode.EndPlay();
+        if (memoryMode != null) memoryMode.EndPlay();
         if (stageReactions != null) stageReactions.ResetState();
         if (chorusDrop != null) chorusDrop.ResetEffects();
         if (feverShow != null) feverShow.ResetState();

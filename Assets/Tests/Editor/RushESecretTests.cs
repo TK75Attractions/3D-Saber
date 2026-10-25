@@ -7,6 +7,39 @@ using UnityEngine;
 
 public class RushESecretTests
 {
+    [Test]
+    public void BenkyouMemoryUsesTheSharedSecretTableAndAmberAccent()
+    {
+        var secret = RushESecretState.For("BenkyouRemaster");
+        Assert.AreSame(RushESecretState.BenkyouMemory, secret);
+        Assert.AreEqual("M", secret.Difficulty);
+        Assert.AreSame(secret, RushESecretState.ForDifficulty("m"));
+        Assert.AreSame(secret, RushESecretState.ForDifficulty(" M "));
+        Assert.AreEqual(RushESecretState.Amber, GameHUDSkin.DifficultyColor("M"));
+        Assert.AreEqual(RushESecretState.Amber, GameStartCountdown.AccentForDifficulty("m"));
+        CollectionAssert.AreEqual(new[]
+        {
+            RushESecretState.RushE, RushESecretState.ElDoradoG,
+            RushESecretState.PhobiaAvoid, RushESecretState.BenkyouMemory
+        }, RushESecretState.Charts);
+
+        var state = new RushESecretState();
+        state.Select("BenkyouRemaster");
+        for (int i = 0; i < 9; i++)
+        {
+            Assert.IsTrue(state.TryHit(i * .2));
+            Assert.IsFalse(state.Transitioning);
+        }
+        Assert.IsTrue(state.TryHit(2));
+        Assert.IsTrue(state.Reveal());
+        Assert.IsTrue(state.Finish());
+        Assert.IsTrue(state.Unlocked);
+        Assert.AreSame(secret, state.Current);
+        state.Select("RushE");
+        Assert.IsFalse(state.Unlocked);
+        Assert.AreSame(RushESecretState.RushE, state.Current);
+    }
+
     [Serializable] sealed class BeatSaberNote { public float _time; public int _lineIndex, _lineLayer, _type; }
     [Serializable] sealed class BeatSaberChart { public BeatSaberNote[] _notes; }
 

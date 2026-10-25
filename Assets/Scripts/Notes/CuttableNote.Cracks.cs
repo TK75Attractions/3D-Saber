@@ -16,6 +16,8 @@ public partial class CuttableNote
         public GameObject visual;
         public Material material;
         public Transform transform;
+        public MeshRenderer renderer;
+        public bool veiled;
         public Vector3 fullScale;
         public float age;
     }
@@ -28,21 +30,23 @@ public partial class CuttableNote
         return Mathf.Lerp(1f, CrackRestStrength, fade);
     }
 
-    public static void ApplyCrack(Transform target, Material material, Vector3 fullScale, float age)
+    public static void ApplyCrack(Transform target, Material material, Vector3 fullScale, float age, float veil = 0f)
     {
         fullScale.y *= Mathf.Clamp01(age / CrackGrowSeconds);
         target.localScale = fullScale;
         float strength = CrackStrength(age, DisplaySettings.ReducedEffects);
-        Color c = new Color(strength, strength, strength, 1f);
+        float visibility = NoteVeil.CueAlpha(veil);
+        Color c = new Color(strength, strength, strength, visibility);
         if (material.HasProperty(CrackBaseId)) material.SetColor(CrackBaseId, c);
         else if (material.HasProperty(CrackColorId)) material.SetColor(CrackColorId, c);
+        if (veil > 0f) strength *= visibility;
         if (material.HasProperty(CrackEmissionId))
             material.SetColor(CrackEmissionId, new Color(1.4f * strength, 1.4f * strength, 1.4f * strength, 1f));
     }
 
     public void TickCracks(float deltaTime)
     {
-        if (!isActiveAndEnabled || IsCut || IsMissed || float.IsNaN(deltaTime) || float.IsInfinity(deltaTime)) return;
+        if (!isActiveAndEnabled || IsCut || IsMissed || HidesCues || float.IsNaN(deltaTime) || float.IsInfinity(deltaTime)) return;
         float end = CrackGrowSeconds + CrackHoldSeconds + CrackFadeSeconds;
         for (int i = 0; i < cracksUsed; i++)
         {
@@ -50,7 +54,7 @@ public partial class CuttableNote
             // 終了値は通常・LOW共通。最後の反映を終えたひびは触らない。
             if (crack.age >= end) continue;
             crack.age = Mathf.Min(end, crack.age + Mathf.Max(0f, deltaTime));
-            ApplyCrack(crack.transform, crack.material, crack.fullScale, crack.age);
+            ApplyCrack(crack.transform, crack.material, crack.fullScale, crack.age, Veil);
         }
     }
 }

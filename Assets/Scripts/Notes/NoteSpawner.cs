@@ -46,6 +46,18 @@ public class NoteSpawner : MonoBehaviour
     private double extraOffsetSeconds; // GamePlayManager から実行時に上書き
     private readonly List<CuttableNote> liveNotes = new List<CuttableNote>();
     private GameplayCutFeedback cutFeedback;
+    [System.NonSerialized] bool memoryVeilMode;
+    // 自動プロパティにせず、生成済みの演出にもその場で反映する。
+    public bool MemoryVeilMode
+    {
+        get => memoryVeilMode;
+        set
+        {
+            if (memoryVeilMode == value) return;
+            memoryVeilMode = value;
+            if (cutFeedback != null) cutFeedback.SetMemoryVeilMode(value);
+        }
+    }
     public FloorTimingGuide FloorGuide { get; private set; }
     public void ConfigureFloorGuide(float floorY)
     {
@@ -303,6 +315,7 @@ public class NoteSpawner : MonoBehaviour
             note = go.AddComponent<CuttableNote>();
         }
         note.ResetForSpawn(); note.IsPooled=Pooling; note.FragmentPool=Pooling?fragmentPool:null;
+        note.Veil = NoteVeil.Clamp(nd.veil);
         if(Pooling && !reused) poolKeys.Add(note,key);
         note.HitTime = EffectiveTime(nd);
         note.JudgmentOwner = this;
@@ -323,6 +336,7 @@ public class NoteSpawner : MonoBehaviour
         // NoteVisuals 自身が冪等で、既存プレハブにも安全に被せられる。
         var visuals=go.GetComponent<NoteVisuals>() ?? go.AddComponent<NoteVisuals>();
         visuals.Initialize(); visuals.ResetForReuse();
+        visuals.SetVeil(nd.veil);
         // 使い回しの組は手ごとに分かれているが、縁は出現のたびに付け外しする(ステージをまたいでも残さない)。
         visuals.SetContrastOutline(outlineLeftNotes && note.RequiredHand == SaberHand.Left);
         go.SetActive(true);
@@ -348,7 +362,8 @@ public class NoteSpawner : MonoBehaviour
             if(note.countLabel == null) BuildCountLabel(go.transform,note);
             note.countLabel.text=note.RequiredCutCount.ToString();
             note.countLabel.transform.position=go.transform.position+LongNoteCountStyle.WorldOffset;
-            note.countLabel.gameObject.SetActive(true);
+            note.countLabel.alpha = note.CueVisibility;
+            note.countLabel.gameObject.SetActive(!note.HidesCues);
             if(Pooling) note.WarmCracks(Mathf.Min(16,note.RequiredCutCount-1));
         }
 

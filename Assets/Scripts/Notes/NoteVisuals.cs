@@ -5,7 +5,7 @@ using UnityEngine;
 // CuttableNote の RequiredDirection / RequiredCutCount を読んで、Tap / Direction / Long で見た目を分岐する。
 // 旧プレハブが持っている装飾子（Front/Back/Target/Dot*/Stripe* など）は剥がして統一スタイルに置き換える。
 // 各ノーツは独自の Material を生成するので、脈動アニメは他ノーツに影響しない。
-public class NoteVisuals : MonoBehaviour
+public partial class NoteVisuals : MonoBehaviour
 {
     public enum NoteKind { Tap, Direction, Long }
 
@@ -161,8 +161,22 @@ public class NoteVisuals : MonoBehaviour
     {
         float pulse = pulseAmplitude > 0f && pulseSpeedHz > 0f
             ? 1f + pulseAmplitude * Mathf.Sin(age * pulseSpeedHz * 2f * Mathf.PI) : 1f;
-        float simultaneousBoost = simultaneousLinkCount > 0 && !bodyDimmed ? SimultaneousEmissionBoost : 1f;
-        float combined = pulse * emissionBoost * simultaneousBoost;
+        float simultaneousBoost = simultaneousLinkCount > 0 && !bodyDimmed
+            && Veil < MemoryVeilLayers.HideCuesAtVeil ? SimultaneousEmissionBoost : 1f;
+        if (simultaneousBoost != 1f && simultaneousVeils != null && simultaneousVeils.Count > 0)
+        {
+            // 複数の線がある場合も、見えにくい組の強調を足し算で打ち消さない。
+            float pairVeil = 0f;
+            foreach (float value in simultaneousVeils) pairVeil = Mathf.Max(pairVeil, value);
+            simultaneousBoost = 1f + (SimultaneousEmissionBoost - 1f) * NoteVeil.CueAlpha(pairVeil);
+        }
+        float windowBoost = emissionBoost;
+        if (Veil > 0f)
+        {
+            pulse = 1f + (pulse - 1f) * (1f - Veil);
+            windowBoost = Mathf.Lerp(1f, emissionBoost, NoteVeil.CueAlpha(Veil));
+        }
+        float combined = pulse * windowBoost * simultaneousBoost;
         float strength = baseEmissionStrength * combined;
         // 脈動もブーストも変化していなければ SetColor を呼ばない
         if (Mathf.Approximately(strength, lastAppliedStrength)) return;
@@ -182,15 +196,21 @@ public class NoteVisuals : MonoBehaviour
         emissionBoost = Mathf.Max(0f, boost);
     }
 
-    internal void AddSimultaneousLink()
+    internal void AddSimultaneousLink(float veil = 0f)
     {
         simultaneousLinkCount++;
+        if (veil > 0f)
+        {
+            simultaneousVeils ??= new List<float>();
+            simultaneousVeils.Add(veil);
+        }
         ApplyCurrentEmission();
     }
 
-    internal void RemoveSimultaneousLink()
+    internal void RemoveSimultaneousLink(float veil = 0f)
     {
         simultaneousLinkCount = Mathf.Max(0, simultaneousLinkCount - 1);
+        if (veil > 0f && simultaneousVeils != null) simultaneousVeils.Remove(veil);
         ApplyCurrentEmission();
     }
 
@@ -210,6 +230,8 @@ public class NoteVisuals : MonoBehaviour
     {
         bodyDimmed = false;
         simultaneousLinkCount = 0;
+        simultaneousVeils?.Clear();
+        SetVeil(0f);
         age=0; emissionBoost=1; lastAppliedStrength=-1;
         if(runtimeBodyMat != null) {
             var color=baseColor; color.a=DisplaySettings.ProjectorMode?1f:.85f; SetBaseColor(runtimeBodyMat,color);
@@ -417,9 +439,11 @@ public class NoteVisuals : MonoBehaviour
         contrastOutlineMaterial = new Material(Resources.Load<Shader>("Effects/NoteGuide")) { renderQueue = 3020 };
         contrastOutlineMaterial.SetColor("_BaseColor", ContrastOutlineColor);
         var renderer = contrastOutline.GetComponent<MeshRenderer>();
+        contrastOutlineRenderer = renderer;
         renderer.sharedMaterial = contrastOutlineMaterial;
         renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         renderer.receiveShadows = false;
+        if (Veil > 0f) ApplyContrastVeil();
     }
 
     private void AddSegmentDivider(float localZ)
@@ -531,6 +555,7 @@ public class NoteVisuals : MonoBehaviour
         if (!m.HasProperty("_EmissionColor")) return;
         Color baseC = m.HasProperty("_BaseColor") ? m.GetColor("_BaseColor") : m.color;
         baseC.a = 1f;
+        if (Veil > 0f) strength *= 1f - Veil;
         m.SetColor("_EmissionColor", baseC * strength);
     }
 

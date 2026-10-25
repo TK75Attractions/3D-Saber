@@ -127,9 +127,11 @@ public class NoteTimingCue : MonoBehaviour
             if(approachRoot != null) approachRoot.SetActive(buildGhost);
             ApplyColor(ghostMat,baseColor,0,1.2f); ApplyColor(approachMat,baseColor,0,1.2f);
             ApplyColor(ringMat,baseColor,0,1.5f);
+            if (note != null && note.HidesCues) HideForPool();
             return;
         }
         initialized = true;
+        if (note != null && note.HidesCues) HideForPool();
     }
 
     void ResetRoot(GameObject root,float z)
@@ -160,6 +162,15 @@ public class NoteTimingCue : MonoBehaviour
     public void Tick(double dt, float approachTime, float earlyWindow, float lateWindow)
     {
         if (!initialized) return;
+        if (note != null && note.HidesCues)
+        {
+            HideForPool();
+            InWindow = false;
+            omenAge = -1f;
+            if (omenRunner != null) omenRunner.gameObject.SetActive(false);
+            if (visuals != null) visuals.SetEmissionBoost(1f);
+            return;
+        }
         if (double.IsNaN(dt) || double.IsInfinity(dt)) { HideForPool(); return; }
         float elapsed = double.IsNaN(lastRemaining) ? 0 : (float)System.Math.Max(0, lastRemaining - dt);
         lastRemaining = dt;
@@ -419,9 +430,10 @@ public class NoteTimingCue : MonoBehaviour
     }
 
     // 発光はアルファに連動させ、フェードアウト時に光だけ残らないようにする。
-    private static void ApplyColor(Material m, Color c, float alpha, float emission)
+    private void ApplyColor(Material m, Color c, float alpha, float emission)
     {
         if (m == null) return;
+        if (note != null && note.Veil > 0f) alpha *= note.CueVisibility;
         Color baseC = c;
         baseC.a = Mathf.Clamp01(alpha);
         if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", baseC);

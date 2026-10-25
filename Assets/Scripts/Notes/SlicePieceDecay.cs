@@ -17,6 +17,19 @@ public class SlicePieceDecay : MonoBehaviour
     Material ownedMat;
     Mesh ownedMesh;
     Color baseColor;
+    float veil;
+    internal void SetVeil(float value)
+    {
+        veil = NoteVeil.Clamp(value);
+        // alpha は CopyMaterial で本体からコピー済み。二重には掛けない。
+        if (mr != null)
+        {
+            mr.enabled = veil < 1f;
+            mr.shadowCastingMode = veil > 0f
+                ? UnityEngine.Rendering.ShadowCastingMode.Off
+                : UnityEngine.Rendering.ShadowCastingMode.On;
+        }
+    }
     // Perfect 時の縁の発光。元の発光色へ時間で戻す。発光プロパティの無い材質では何もしない。
     Color baseEmission, flashColor;
     bool hasEmission;
@@ -56,7 +69,8 @@ public class SlicePieceDecay : MonoBehaviour
     public void Flash(Color color, float seconds)
     {
         if(released || !hasEmission || ownedMat == null) return;
-        flashColor=color; flashSeconds=Mathf.Max(.01f,seconds); flashAge=0;
+        flashColor=veil > 0f ? color * (1f - veil) : color;
+        flashSeconds=Mathf.Max(.01f,seconds); flashAge=0;
         ownedMat.EnableKeyword("_EMISSION");
         ownedMat.SetColor("_EmissionColor",flashColor*2.2f);
     }

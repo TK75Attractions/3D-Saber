@@ -60,7 +60,7 @@ public sealed partial class GameplayCutFeedback
                 var note = pair.Key;
                 var body = pair.Value;
                 if (note == null || (!note.isActiveAndEnabled && !(ProtectDisabledPreviewNotes && note.gameObject.activeInHierarchy)) || note.IsCut || note.IsMissed || note.IsFinalized
-                    || body == null || !body.enabled || !body.gameObject.activeInHierarchy
+                    || note.HidesCues || body == null || !body.enabled || !body.gameObject.activeInHierarchy
                     || (camera.cullingMask & (1 << body.gameObject.layer)) == 0) continue;
                 double until = note.HitTime - songTime;
                 if (double.IsNaN(until) || until < 0 || until > ProtectionLeadSeconds + 1e-9) continue;

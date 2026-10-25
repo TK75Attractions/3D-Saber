@@ -26,6 +26,36 @@ public class ChartData
     // 照準で遊ぶ裏譜面(Phobia の「避」、2026-10-24)。ノーツの代わりに、照準で狙う的とよけるトゲを置く。
     // ふつうの譜面では空のまま(JsonUtility は無い項目を空の入れ物にする)。譜面エディターは別の型なので、この欄を読み書きしない。
     public AimChartData aim = new AimChartData();
+    // 覚える裏譜面(勉強の「M」、2026-10-25)。見本の2小節のあと、画面にノイズをかけて同じ2小節を切らせる。
+    // ノイズの時間帯(veils)と、最初の数回だけ出す説明(captions)。ノーツ側の見えにくさは NoteData.veil。
+    public MemoryChartData memory = new MemoryChartData();
+}
+
+[Serializable]
+public class MemoryChartData
+{
+    public List<MemoryVeilData> veils = new List<MemoryVeilData>();
+    public List<MemoryCaptionData> captions = new List<MemoryCaptionData>();
+
+    public bool HasContent => (veils != null && veils.Count > 0) || (captions != null && captions.Count > 0);
+}
+
+// 画面のノイズ。time〜endTime(ミリ秒、ノーツと同じく offsetMs を足して使う)の間、強さ strength(0〜1)でかける。
+[Serializable]
+public class MemoryVeilData
+{
+    public float time;
+    public float endTime;
+    public float strength = 1f;
+}
+
+// 説明の一言(下の中央)。time〜endTime はミリ秒。曲が始まる前(負の時刻)からでもよい。
+[Serializable]
+public class MemoryCaptionData
+{
+    public float time;
+    public float endTime;
+    public string text = "";
 }
 
 [Serializable]
@@ -74,6 +104,8 @@ public class NoteData
     // long 用の実長さ（ミリ秒）。0 なら従来通り (count-1) × NoteSpawner.secondsPerLongCut で自動決定。
     // 「カット回数は少ないが長く滞留する」ようなロングを作れる。
     public float lengthMs = 0f;
+    // 見えにくさ(0〜1、覚える裏譜面「M」の「まね」の側)。0 はふつう、1 は見えない。判定は変わらない。
+    public float veil = 0f;
 
     public double TimeSeconds => time / 1000.0;
 

@@ -4,7 +4,8 @@ using UnityEngine;
 // 隠し譜面の表。選曲の中央のジャケットを10回切ると、その曲だけの裏の譜面へ移る。
 // RUSH E の E(2026-10-14)と、ElDorado の G(2026-10-24 ユーザー「ElDorado のジャケットを10回切ったら、E と同じく裏譜面に」。
 // 長い版(3分43秒)の Hard 譜面を全部金色にしたもの。音源・演出・音量そろえも G 専用の audio_g.mp3・stage_g.json・loudness_g.json)と、
-// Phobia PARTⅠ の 避(2026-10-24、照準でトゲをよけて的を狙う。譜面は chart_避.json の aim、音源・演出は曲の共通のもの)。
+// Phobia PARTⅠ の 避(2026-10-24、照準でトゲをよけて的を狙う。譜面は chart_避.json の aim、音源・演出は曲の共通のもの)と、
+// 勉強(Remaster)の M(2026-10-25、見本を覚え、ノイズの中で同じ2小節を切る。chart_m.json の memory と notes)。
 // 色はその譜面の目印(難易度の札・盤の縁・背景・幕・本編の HUD とカウントイン)。E は今までの紫のまま。
 public sealed class SecretChart
 {
@@ -50,7 +51,16 @@ public sealed class RushESecretState
         EdgeLight = new Color(1, .62f, .92f), FanLight = new Color(1, .56f, .90f),
         CenterHaze = new Color(1, .15f, .65f, .42f), LeftHaze = new Color(.95f, .10f, .60f, .35f), RightHaze = new Color(1, .30f, .80f, .35f),
     };
-    public static readonly SecretChart[] Charts = { RushE, ElDoradoG, PhobiaAvoid };
+    public static readonly Color Amber = new Color(1f, .63f, .24f);
+    public static readonly SecretChart BenkyouMemory = new SecretChart
+    {
+        SongId = "BenkyouRemaster", Difficulty = "M", Accent = Amber, Glow = new Color(1, .55f, .14f, .25f), Face = new Color(.20f, .09f, .025f),
+        TileDeep = new Color(.19f, .075f, .015f), TileLight = new Color(.72f, .36f, .10f),
+        Backdrop = new Color(.09f, .035f, .008f), LeftLight = new Color(1, .46f, .12f), RightLight = new Color(1, .72f, .32f),
+        EdgeLight = new Color(1, .78f, .48f), FanLight = new Color(1, .68f, .34f),
+        CenterHaze = new Color(1, .48f, .10f, .42f), LeftHaze = new Color(.95f, .36f, .06f, .35f), RightHaze = new Color(1, .62f, .20f, .35f),
+    };
+    public static readonly SecretChart[] Charts = { RushE, ElDoradoG, PhobiaAvoid, BenkyouMemory };
     public static SecretChart For(string songId)
     {
         foreach (var chart in Charts) if (chart.SongId == songId) return chart;

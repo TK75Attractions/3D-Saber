@@ -15,6 +15,13 @@ public class MouseSaberInput : MonoBehaviour
     public Vector2 maxBounds = new Vector2(8f, 4.5f);
     public bool yieldIfPointerActive = false;
 
+    // 単点のマウス用セーバーも、点・光・残光をまとめてノイズより上へ描く。
+    public bool DrawAboveMemoryVeil
+    {
+        get => SaberMemoryVeilOrder.IsAbove(this);
+        set => SaberMemoryVeilOrder.Set(this, value);
+    }
+
     void Awake()
     {
         if (targetCamera == null) targetCamera = Camera.main;
