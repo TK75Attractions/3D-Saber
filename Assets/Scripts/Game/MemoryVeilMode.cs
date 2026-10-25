@@ -30,10 +30,16 @@ public sealed class MemoryVeilMode : MonoBehaviour
     Material material;
     MeshRenderer noise;
     List<MemoryVeilRules.Interval> intervals = new List<MemoryVeilRules.Interval>();
-    double offset = double.NaN, approach = double.NaN;
+    double offset = double.NaN;
     double previousTime = double.NegativeInfinity;
     float nextOrderRefresh;
     int nextCaption;
+    // ノイズの区間の外で切るノーツ(次の見本など)はノイズの上に描く。区間の終わり近くで奥から出てくる見本が見える。
+    // 使い回しのノーツは出るたびに決め直し、元の並び順は Renderer ごとに覚えて最後に戻す。
+    readonly Dictionary<Renderer, int> originalNoteOrders = new Dictionary<Renderer, int>();
+    readonly List<Renderer> noteRenderers = new List<Renderer>();
+    readonly List<Renderer> partRenderers = new List<Renderer>();
+    System.Action<CuttableNote> onNoteSpawned;
 
     public Renderer NoiseRenderer => noise;
     public float Strength { get; private set; }
@@ -76,18 +82,61 @@ public sealed class MemoryVeilMode : MonoBehaviour
 
         RefreshTiming();
         EnsureNoise();
+        if (spawner != null)
+        {
+            onNoteSpawned = ApplyNoteLayer;
+            spawner.OnNoteSpawned += onNoteSpawned;
+            foreach (var note in spawner.LiveNotes) ApplyNoteLayer(note);
+        }
     }
 
     void RefreshTiming()
     {
         if (spawner == null) return;
         double nextOffset = spawner.TotalOffsetSeconds;
-        double nextApproach = spawner.approachTime;
-        if (offset == nextOffset && approach == nextApproach) return;
+        if (offset == nextOffset) return;
         offset = nextOffset;
-        approach = nextApproach;
-        intervals = MemoryVeilRules.BuildIntervals(chart, offset, approach);
+        intervals = MemoryVeilRules.BuildIntervals(chart, offset);
         ResetCaptions();
+    }
+
+    // まね(区間の中で切るノーツ)はノイズの下のまま、それ以外はノイズと剣のあいだ(AboveNoteSortingOrder)に描く。
+    // 本体・矢印・着地の枠・残り回数をまとめて動かす。並び順は 2D レンダラーで材質の queue より先に効く。
+    void ApplyNoteLayer(CuttableNote note)
+    {
+        if (note == null || ended) return;
+        RefreshTiming();
+        bool above = !MemoryVeilRules.Covers(intervals, note.HitTime);
+        noteRenderers.Clear();
+        note.GetComponentsInChildren(true, noteRenderers);
+        if (note.TimingCue != null)
+        {
+            AddRenderers(note.TimingCue.GhostRoot);
+            AddRenderers(note.TimingCue.ApproachRoot);
+        }
+        if (note.countLabel != null) AddRenderers(note.countLabel.gameObject);
+        foreach (var renderer in noteRenderers)
+        {
+            if (renderer == null) continue;
+            if (!originalNoteOrders.TryGetValue(renderer, out int original))
+                originalNoteOrders[renderer] = original = renderer.sortingOrder;
+            renderer.sortingOrder = above ? MemoryVeilLayers.AboveNoteSortingOrder : original;
+        }
+    }
+
+    void AddRenderers(GameObject root)
+    {
+        if (root == null) return;
+        partRenderers.Clear();
+        root.GetComponentsInChildren(true, partRenderers);
+        noteRenderers.AddRange(partRenderers);
+    }
+
+    void RestoreNoteLayers()
+    {
+        foreach (var pair in originalNoteOrders)
+            if (pair.Key != null) pair.Key.sortingOrder = pair.Value;
+        originalNoteOrders.Clear();
     }
 
     public void Tick(double songTime)
@@ -243,7 +292,13 @@ public sealed class MemoryVeilMode : MonoBehaviour
         FirstNoteHandHintView.Hide();
         ownsCaption = false;
 
-        if (spawner != null) spawner.MemoryVeilMode = previousSpawnerMode;
+        if (spawner != null)
+        {
+            spawner.MemoryVeilMode = previousSpawnerMode;
+            if (onNoteSpawned != null) spawner.OnNoteSpawned -= onNoteSpawned;
+        }
+        onNoteSpawned = null;
+        RestoreNoteLayers();
         foreach (var item in bridges)
             if (item.bridge != null) item.bridge.DrawAboveMemoryVeil = item.above;
         foreach (var item in mice)

@@ -5,6 +5,9 @@ public static class MemoryVeilLayers
 {
     public const int NoiseSortingOrder = 30000;
     public const int NoiseRenderQueue = 3040;
+    // まね以外のノーツ(次の見本など)はノイズの上、剣の下。まねの2小節はずっとノイズをかけるので、
+    // その終わり近くで奥から出てくる次の見本をノイズの上に見せる。
+    public const int AboveNoteSortingOrder = 30005;
     // 剣(刃・縁・光)と切った場所の光。ノイズより後に描く。
     public const int AboveSortingOrder = 30010;
     public const int AboveRenderQueue = 3060;

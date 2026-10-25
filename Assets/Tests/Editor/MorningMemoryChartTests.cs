@@ -122,13 +122,20 @@ public class MorningMemoryChartTests
     }
 
     [Test]
-    public void EveryNoiseWindowLastsAboutThreeSecondsAtTheDefaultSpeed()
+    public void TheNoiseCoversTheWholeTwoBarsOfEveryRecall()
     {
-        // 118BPM の2小節は約4.07秒。次の見本が奥に出る(届く1秒前)までに消すので、どの回も約3.07秒。
-        var intervals = MemoryVeilRules.BuildIntervals(chart, 0, 1);
+        // まねの2小節(118BPM で約4.07秒)の間はずっとノイズ。まねのノーツは全部区間の中、見本は全部外。
+        var intervals = MemoryVeilRules.BuildIntervals(chart, 0);
         Assert.AreEqual(Starts.Length, intervals.Count);
         foreach (var span in intervals)
-            Assert.AreEqual(8 * 60.0 / Bpm - 1.0, span.End - span.Start, .002);
+            Assert.AreEqual(8 * 60.0 / Bpm, span.End - span.Start, .002);
+        for (int i = 0; i < Starts.Length; i++)
+        {
+            foreach (var n in Between(Starts[i] + 8, Starts[i] + 16))
+                Assert.IsTrue(MemoryVeilRules.Covers(intervals, n.TimeSeconds), n.beat + "拍のまねはノイズの下");
+            foreach (var n in Between(Starts[i], Starts[i] + 8))
+                Assert.IsFalse(MemoryVeilRules.Covers(intervals, n.TimeSeconds), n.beat + "拍の見本はノイズの上");
+        }
     }
 
     [Test]

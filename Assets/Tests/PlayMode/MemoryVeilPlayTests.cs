@@ -123,13 +123,21 @@ public class MemoryVeilPlayTests
             }
         }
 
-        // 次の見本(まねの区間が終わってからの最初の見えるノーツ)が奥に出るまでに、ノイズが消え切っている。
-        double offset = spawner.TotalOffsetSeconds;
-        var authored = chart.memory.veils.First(v => System.Math.Abs(v.time / 1000.0 + offset - interval.Start) < 1e-6);
-        var nextVisible = chart.notes.FirstOrDefault(note => note.veil == 0 && note.time >= authored.endTime - 1f);
-        Assert.NotNull(nextVisible);
-        double spawnAt = spawner.EffectiveTime(nextVisible) - spawner.approachTime;
-        Assert.LessOrEqual(interval.End, spawnAt + 1e-7);
+        // まねの2小節の間はずっとノイズ(ユーザー「その二小節の間はずっとノイズかけて」)。終わり近くでは、
+        // 奥から出てきた次の見本がノイズの上(AboveNoteSortingOrder)にいて、まねのノーツはノイズの下のまま。
+        double nearEnd = interval.End - MemoryVeilRules.FadeOut - .05;
+        yield return WaitForSong(nearEnd);
+        Assert.Less(manager.songPlayer.SongTime, interval.End - MemoryVeilRules.FadeOut, "大きな処理落ちで終わりの手前を飛び越えていない");
+        Assert.AreEqual(interval.Strength, mode.Strength, .025f, "終わりの手前までずっと全部の強さ");
+        var nextSample = spawner.LiveNotes.Where(note => note != null
+            && !MemoryVeilRules.Covers(mode.Intervals, note.HitTime) && note.HitTime >= interval.End - .001).ToArray();
+        Assert.IsNotEmpty(nextSample, "終わり近くには次の見本が奥から出てきている");
+        foreach (var note in nextSample)
+            foreach (var renderer in note.GetComponentsInChildren<Renderer>(true))
+                Assert.AreEqual(MemoryVeilLayers.AboveNoteSortingOrder, renderer.sortingOrder, renderer.name);
+        foreach (var note in spawner.LiveNotes.Where(note => note != null && MemoryVeilRules.Covers(mode.Intervals, note.HitTime)))
+            foreach (var renderer in note.GetComponentsInChildren<Renderer>(true))
+                Assert.Less(renderer.sortingOrder, MemoryVeilLayers.NoiseSortingOrder, renderer.name + " はまねなのでノイズの下");
 
         yield return WaitForSong(interval.End + .01);
         Assert.AreEqual(0, mode.Strength, 1e-6);
