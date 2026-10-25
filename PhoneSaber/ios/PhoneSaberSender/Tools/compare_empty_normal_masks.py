@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""空の通常 mask の省略を、同一 Swift テスト・-O 設定・原寸 PNG で前後比較する。
+"""mask 探索を、同一 Swift テスト・-O 設定・原寸 PNG で前後比較する。
 
 事前に BGRADetection.swift を Git 外へコピーして --before-source に渡す。
+Core の変更時は DetectionCore.swift も保存し --before-core に渡す。
 --manifest は [{"path": "/private/.../images/image_10_event_123.png"}, ...]。
 画像リスト・撮影時設定・ハッシュ・生計測・厳密比較結果は Git 外へ保存する。
 """
@@ -74,6 +75,8 @@ def stats(samples: list[float]) -> dict:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--before-source", type=Path, required=True)
+    parser.add_argument("--before-core", type=Path,
+                        help="変更前 DetectionCore.swift。省略時は現行 Core（BGRA のみの比較用）")
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--iterations", type=int, default=100)
@@ -88,8 +91,10 @@ def main() -> None:
     images = validate_images(args.manifest)
     production = ROOT / "PhoneSaberSender/BGRADetection.swift"
     sources = {"before": args.before_source.resolve(), "after": production}
+    core = ROOT / "PhoneSaberSender/DetectionCore.swift"
+    cores = {"before": args.before_core.resolve() if args.before_core else core, "after": core}
     metadata = {"host": platform.platform(), "flags": ["-O", "-module-name", "EmptyMaskComparison"],
-                "testSHA256": sha(TEST), "coreSHA256": sha(ROOT / "PhoneSaberSender/DetectionCore.swift"),
+                "testSHA256": sha(TEST), "coreSHA256": {k: sha(v) for k, v in cores.items()},
                 "compiler": execute(["xcrun", "swiftc", "--version"]).decode().strip(), "sources": {k: sha(v) for k, v in sources.items()},
                 "images": images, "iterations": args.iterations, "rounds": args.rounds,
                 "warmupPerInvocation": 5, "timing": "host analyzeSabers wall time; PNG decode excluded"}
@@ -97,13 +102,13 @@ def main() -> None:
     binaries = {}
     for name, source in sources.items():
         binary = output / name
-        execute(["xcrun", "swiftc", *metadata["flags"], str(ROOT / "PhoneSaberSender/DetectionCore.swift"),
+        execute(["xcrun", "swiftc", *metadata["flags"], str(cores[name]),
                  str(source), str(TEST), "-module-cache-path", str(output / "module-cache"), "-o", str(binary)])
         binaries[name] = str(binary)
     comparisons = []
     for mode, iso, emitter in MODES:
         settings = ["--shutter", "2000", "--iso", str(iso), "--emitter", emitter]
-        for kind in ["--empty-normal-signatures", "--lossless-signatures"]:
+        for kind in ["--seed-scan-signatures", "--empty-normal-signatures", "--lossless-signatures"]:
             command = [kind, *(i["path"] for i in images)] if kind == "--lossless-signatures" else [kind]
             signatures = []
             for name, binary in binaries.items():
@@ -160,6 +165,10 @@ def main() -> None:
                            "eligibleImages": sum(r["skippedColorsPerFrame"] > 0 for r in subset),
                            "skippedColorPaths": sum(r["skippedColorsPerFrame"] for r in subset)
                                * args.iterations * args.rounds})
+        for name in binaries:
+            samples = [s for r in records if r["mode"] == mode and r["build"] == name
+                       and r["case"] == "bright" for s in r["samplesMs"]]
+            aggregates[-1][name] = stats(samples)
     (output / "aggregate.json").write_text(json.dumps(aggregates, indent=2) + "\n")
     (output / "summary.json").write_text(json.dumps(rows, indent=2) + "\n")
     with (output / "summary.csv").open("w") as handle:

@@ -185,7 +185,15 @@ private func binaryDilate(_ input: [UInt8], width: Int, height: Int, radius: Int
                 let row = source + y * width
                 var x = 0
                 while x < width {
-                    guard row[x] != 0 else { x += 1; continue }
+                    if row[x] == 0 {
+                        // 行内に収まるゼロ8画素をまとめて飛ばす。非ゼロを含むブロックと端数は画素単位。
+                        while x + 8 <= width
+                            && UnsafeRawPointer(row + x).loadUnaligned(as: UInt64.self) == 0 {
+                            x += 8
+                        }
+                        while x < width && row[x] == 0 { x += 1 }
+                        if x == width { break }
+                    }
                     let start = x
                     repeat { x += 1 } while x < width && row[x] != 0
                     // 連続した非ゼロ画素の diamond の和集合は、各行で一つの区間になる。
@@ -1252,45 +1260,59 @@ func saberCandidates(in mask: [UInt8], width: Int, height: Int,
     remaining.withUnsafeMutableBufferPointer { buffer in
         // 画素数と近傍座標を検証済み。訪問順は元と同じ seed 順・BFS 順を維持する。
         let remaining = buffer.baseAddress!
-        for seed in 0..<mask.count where remaining[seed] != 0 {
-            let traversalStart = stageProfile == nil ? 0 : ProcessInfo.processInfo.systemUptime
-            remaining[seed] = 0
-            queue.removeAll(keepingCapacity: true)
-            queue.append(PixelPoint(x: seed % width, y: seed / width))
-            var head = 0
-            // FIFO 自体を採点用の画素列にする。元の取り出し順と同じで、二重の append が不要。
-            while head < queue.count {
-                let point = queue[head]; head += 1
-                let x = point.x, y = point.y
-                for ny in max(0, y - 1)...min(height - 1, y + 1) {
-                    for nx in max(0, x - 1)...min(width - 1, x + 1) {
-                        let neighbor = ny * width + nx
-                        if remaining[neighbor] != 0 {
-                            remaining[neighbor] = 0
-                            queue.append(PixelPoint(x: nx, y: ny))
+        let blockSize = MemoryLayout<UInt64>.size
+        var blockStart = 0
+        while blockStart < mask.count {
+            let blockEnd = blockStart + min(blockSize, mask.count - blockStart)
+            // BFS が後続画素を消すため、各ブロックの到達時に最新値を読む。
+            // 未整列でも安全な読み込みを使い、端数は従来どおり画素単位で調べる。
+            if blockEnd - blockStart == blockSize,
+               UnsafeRawPointer(remaining + blockStart).loadUnaligned(as: UInt64.self) == 0 {
+                blockStart = blockEnd
+                continue
+            }
+            let seeds = blockStart..<blockEnd
+            blockStart = blockEnd
+            for seed in seeds where remaining[seed] != 0 {
+                let traversalStart = stageProfile == nil ? 0 : ProcessInfo.processInfo.systemUptime
+                remaining[seed] = 0
+                queue.removeAll(keepingCapacity: true)
+                queue.append(PixelPoint(x: seed % width, y: seed / width))
+                var head = 0
+                // FIFO 自体を採点用の画素列にする。元の取り出し順と同じで、二重の append が不要。
+                while head < queue.count {
+                    let point = queue[head]; head += 1
+                    let x = point.x, y = point.y
+                    for ny in max(0, y - 1)...min(height - 1, y + 1) {
+                        for nx in max(0, x - 1)...min(width - 1, x + 1) {
+                            let neighbor = ny * width + nx
+                            if remaining[neighbor] != 0 {
+                                remaining[neighbor] = 0
+                                queue.append(PixelPoint(x: nx, y: ny))
+                            }
                         }
                     }
                 }
+                if let stageProfile {
+                    stageProfile.connectedComponentsMs +=
+                        (ProcessInfo.processInfo.systemUptime - traversalStart) * 1000
+                }
+                componentObserver?(queue.count)
+                let scoreStart = stageProfile == nil ? 0 : ProcessInfo.processInfo.systemUptime
+                let candidate = scoredSaberComponent(queue, width: width, height: height,
+                                                     componentMask: SaberComponentMask(
+                                                        pixels: mask, minX: 0, minY: 0, width: width, height: height
+                                                     ), evidence: evidence,
+                                                     stageProfile: stageProfile,
+                                                     minimumAreaOverride: minimumAreaOverride,
+                                                     collectEndpointDiagnostics: collectEndpointDiagnostics)
+                if let stageProfile {
+                    stageProfile.candidateScoringMs +=
+                        (ProcessInfo.processInfo.systemUptime - scoreStart) * 1000
+                }
+                guard let candidate else { continue }
+                candidates.append(candidate)
             }
-            if let stageProfile {
-                stageProfile.connectedComponentsMs +=
-                    (ProcessInfo.processInfo.systemUptime - traversalStart) * 1000
-            }
-            componentObserver?(queue.count)
-            let scoreStart = stageProfile == nil ? 0 : ProcessInfo.processInfo.systemUptime
-            let candidate = scoredSaberComponent(queue, width: width, height: height,
-                                                 componentMask: SaberComponentMask(
-                                                    pixels: mask, minX: 0, minY: 0, width: width, height: height
-                                                 ), evidence: evidence,
-                                                 stageProfile: stageProfile,
-                                                 minimumAreaOverride: minimumAreaOverride,
-                                                 collectEndpointDiagnostics: collectEndpointDiagnostics)
-            if let stageProfile {
-                stageProfile.candidateScoringMs +=
-                    (ProcessInfo.processInfo.systemUptime - scoreStart) * 1000
-            }
-            guard let candidate else { continue }
-            candidates.append(candidate)
         }
     }
     return candidates.sorted { $0.score > $1.score }

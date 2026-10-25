@@ -200,6 +200,7 @@ private func assertBlueNoDeepSupport() {
 
 // 菱形の定義から全画素を調べる参照実装。行区間化・unsafe アクセスの境界を検証する。
 private func assertLosslessMorphology() {
+    var cases = 0
     func reference(_ mask: [UInt8], _ width: Int, _ height: Int,
                    _ radius: Int, erode: Bool) -> [UInt8] {
         guard radius > 0 else { return mask }
@@ -216,6 +217,7 @@ private func assertLosslessMorphology() {
         }
     }
     func check(_ mask: [UInt8], width: Int, height: Int) {
+        cases += 1
         for radius in 0...4 {
             let dilated = reference(mask, width, height, radius, erode: false)
             let eroded = reference(mask, width, height, radius, erode: true)
@@ -251,7 +253,84 @@ private func assertLosslessMorphology() {
             check(mask, width: width, height: height)
         }
     }
-    print("lossless morphology: exhaustive masks, diamond radii 0...4, SIMD lanes/tails, edges and nonbinary inputs passed")
+    // ゼロ探索の8画素境界・非整列の行頭・最終行の端数を独立した参照実装で照合する。
+    for width in [7, 8, 9, 15, 16, 17, 23, 24, 25, 63, 64, 65] {
+        let height = 5, count = width * height
+        check(Array(repeating: 0, count: count), width: width, height: height)
+        check(Array(repeating: 127, count: count), width: width, height: height)
+        for x in 0..<width {
+            var mask = Array(repeating: UInt8(0), count: count)
+            for y in 0..<height { mask[y * width + x] = [1, 127, 255][y % 3] }
+            check(mask, width: width, height: height)
+        }
+        for start in [0, 7, 8] where start < width {
+            var mask = Array(repeating: UInt8(0), count: count)
+            for y in 0..<height {
+                for x in start..<width { mask[y * width + x] = [1, 127, 255][x % 3] }
+            }
+            check(mask, width: width, height: height)
+        }
+        for density in [1, 3, 7] {
+            let mask: [UInt8] = (0..<count).map { _ in
+                state = state &* 6364136223846793005 &+ 1
+                return (state >> 32) % 8 < density ? UInt8(truncatingIfNeeded: state) | 1 : 0
+            }
+            check(mask, width: width, height: height)
+        }
+    }
+    // 収縮の中心ブロックだけがゼロで周囲は非ゼロ、または境界付近の1画素だけが非ゼロ。
+    // 半径1/2の先頭・次ブロック、非整列行頭と端数を、値1/127/255で照合する。
+    for width in [18, 19, 20, 33, 34, 35, 36, 49, 50, 51] {
+        let height = 9, count = width * height
+        for value: UInt8 in [1, 127, 255] {
+            for start in [1, 2, 17, 18] where start + 16 < width {
+                var mask = Array(repeating: value, count: count)
+                for x in start..<(start + 16) { mask[4 * width + x] = 0 }
+                check(mask, width: width, height: height)
+            }
+            for x in [0, 1, 2, 16, 17, 18, width - 2, width - 1] where x < width {
+                var mask = Array(repeating: UInt8(0), count: count)
+                mask[4 * width + x] = value
+                check(mask, width: width, height: height)
+            }
+        }
+    }
+    print("lossless morphology: \(cases) masks, diamond radii 0...4, SIMD/zero-block lanes/tails, edges and nonbinary inputs passed")
+}
+
+// PNG 読込や段階計測から独立した、小規模な膨張・close・open のホスト計測。
+private func nativeMorphologyBenchmark(iterations: Int) {
+    precondition(iterations > 0)
+    let width = 240, height = 320, count = width * height
+    for shape in ["zero", "sparse", "dense"] {
+        var mask = Array(repeating: UInt8(shape == "dense" ? 127 : 0), count: count)
+        if shape == "sparse" {
+            for y in 40..<280 {
+                for x in 116..<124 { mask[y * width + x] = 255 }
+            }
+        }
+        for operation in ["dilate", "close", "open"] {
+            func run() -> [UInt8] {
+                switch operation {
+                case "dilate": return dilateSaberMask(mask, width: width, height: height, radius: 1)
+                case "close": return closeSaberMask(mask, width: width, height: height, radius: 1)
+                default: return openSaberMask(mask, width: width, height: height, radius: 1)
+                }
+            }
+            for _ in 0..<5 { _ = run() }
+            var samples: [Double] = [], checksum = 0
+            for iteration in 0..<iterations {
+                let start = ProcessInfo.processInfo.systemUptime
+                let result = run()
+                samples.append((ProcessInfo.processInfo.systemUptime - start) * 1000)
+                checksum += Int(result[(iteration * 997) % count])
+            }
+            let record: [String: Any] = ["shape": shape, "operation": operation,
+                "width": width, "height": height, "radius": 1, "samplesMs": samples, "checksum": checksum]
+            print("[MorphologyJSON] " + String(data: try! JSONSerialization.data(withJSONObject: record,
+                options: [.sortedKeys]), encoding: .utf8)!)
+        }
+    }
 }
 
 // 任意の PNG を XCTest と同じ CoreGraphics BGRA 経路で読み込む native -O 計測用。
@@ -345,16 +424,21 @@ private func nativeBenchmark(path: String, iterations: Int, mode: ShutterEmitter
             "candidateCount": candidateCount]
         print("[NativeJSON] " + String(data: try! JSONSerialization.data(withJSONObject: record, options: [.sortedKeys]), encoding: .utf8)!)
         var scan = 0.0, morphology = 0.0, components = 0.0, evidence = 0.0, traversal = 0.0
+        var morphologySamples: [Double] = []
         var lineProposal = 0.0, lineScore = 0.0, shape = 0.0, endpoints = 0.0
         for _ in 0..<iterations {
             let profile = run(profile: true).profile!
             scan += profile.pixelScanHSVMaskMs; morphology += profile.morphologyMs
+            morphologySamples.append(profile.morphologyMs)
             components += profile.componentAndScoreMs; evidence += profile.brightnessContrastColorMs
             traversal += profile.connectedComponentsMs
             shape += profile.shapeAndAxisMs; endpoints += profile.endpointAndBoundsMs
             lineProposal += profile.lineProposalMs; lineScore += profile.lineScoreMs
         }
         let n = Double(iterations)
+        let profileRecord: [String: Any] = ["image": path, "case": name, "samplesMs": morphologySamples]
+        print("[MorphologyProfileJSON] " + String(data: try! JSONSerialization.data(withJSONObject: profileRecord,
+            options: [.sortedKeys]), encoding: .utf8)!)
         print(String(format: "[NativeStages] %@ scanMask=%.3f morphology=%.3f components=%.3f BFS=%.3f shapeAxis=%.3f evidence=%.3f endpoints=%.3f lineProposal=%.3f lineScore=%.3f ms",
                      name, scan / n, morphology / n, components / n, traversal / n,
                      shape / n, evidence / n, endpoints / n, lineProposal / n, lineScore / n))
@@ -492,6 +576,73 @@ private func assertLosslessScoringScratch() {
     precondition(candidate.endpointDiagnosticTrace!.bodyEndpoints != nil)
     precondition(candidate.endpointDiagnosticTrace!.bodyPointCount < trimmed.count)
     print("lossless scoring scratch: clipped-white diamond at edges/interior, retained count and trimmed PCA passed")
+}
+
+// seed 走査の境界・非二値入力を、独立した画素単位 BFS と旧 Core の署名で検証する。
+private func assertSeedScan(signatures: Bool = false) {
+    var cases = 0
+    for (width, height) in [(1, 1), (7, 1), (8, 1), (9, 1), (17, 3), (31, 19), (64, 32), (73, 59)] {
+        for value: UInt8 in [1, 127, 255] {
+            for pattern in 0..<8 {
+                var mask = Array(repeating: UInt8(0), count: width * height)
+                for y in 0..<height { for x in 0..<width {
+                    let i = y * width + x
+                    let active: Bool
+                    switch pattern {
+                    case 0: active = false
+                    case 1: active = true
+                    case 2: active = x % 4 == 0 && y % 4 == 0
+                    case 3: active = x == y
+                    case 4: active = y == height / 2 || x == width / 2
+                    case 5: active = i == mask.count - 1
+                    case 6: active = (y == 2 || y == height - 3) && x >= 2 && x < width - 2
+                    default: active = (i &* 37 &+ y &* 13) % 101 < 17
+                    }
+                    if active { mask[i] = value }
+                } }
+                let original = mask
+                var reference = mask, sizes: [Int] = []
+                for seed in reference.indices where reference[seed] != 0 {
+                    reference[seed] = 0
+                    var queue = [seed], head = 0
+                    while head < queue.count {
+                        let i = queue[head]; head += 1
+                        for y in max(0, i / width - 1)...min(height - 1, i / width + 1) {
+                            for x in max(0, i % width - 1)...min(width - 1, i % width + 1) {
+                                let j = y * width + x
+                                if reference[j] != 0 { reference[j] = 0; queue.append(j) }
+                            }
+                        }
+                    }
+                    sizes.append(queue.count)
+                }
+                for color: SaberColor? in [nil, .red, .blue] {
+                    let evidence = color.map { SaberEvidence(color: $0,
+                        radiance: Array(repeating: 120, count: mask.count),
+                        value: Array(repeating: 250, count: mask.count),
+                        chroma: Array(repeating: 140, count: mask.count),
+                        colorMask: mask, coreMask: mask, collectObserverEvidence: true) }
+                    var observed: [Int] = []
+                    let candidates = saberCandidates(in: mask, width: width, height: height,
+                        evidence: evidence, componentObserver: { observed.append($0) },
+                        collectEndpointDiagnostics: true)
+                    precondition(observed == sizes && mask == original)
+                    var profiledObserved: [Int] = []
+                    let profiled = saberCandidates(in: mask, width: width, height: height,
+                        evidence: evidence, stageProfile: SaberCandidateStageProfile(),
+                        componentObserver: { profiledObserved.append($0) }, collectEndpointDiagnostics: true)
+                    precondition(profiledObserved == observed)
+                    precondition(losslessSignature(candidates) == losslessSignature(profiled))
+                    if signatures {
+                        print("seed \(width)x\(height) value=\(value) pattern=\(pattern) color=\(String(describing: color)):"
+                            + losslessSignature(candidates) + losslessSignature(observed))
+                    }
+                    cases += 1
+                }
+            }
+        }
+    }
+    print("Seed scan: \(cases) cases, zero/dense/isolated/diagonal/boundary/tail/ties, values 1/127/255, observer and profile PASS")
 }
 
 // 同じテストソースを変更前・変更後の core とリンクし、出力を cmp で厳密に比較できる。
@@ -689,9 +840,17 @@ enum StaticBGRADetectionTests {
             || arguments.first == "--empty-normal-signatures" {
             print("[Settings] shutter=\(mode.shutter) iso=\(mode.iso) emitter=\(mode.enabled) active=\(mode.active) pngSampleStep=\(step) emptyNormalSteps=1,2,3")
         }
+        if arguments.first == "--seed-scan-signatures" {
+            assertSeedScan(signatures: true)
+            return
+        }
         if arguments.first == "--benchmark" {
             nativeBenchmark(path: arguments[1], iterations: arguments.count > 2 ? Int(arguments[2])! : 100,
                             mode: mode, step: step)
+            return
+        }
+        if arguments.first == "--morphology-benchmark" {
+            nativeMorphologyBenchmark(iterations: arguments.count > 1 ? Int(arguments[1])! : 100)
             return
         }
         if arguments.first == "--lossless-signatures" {
@@ -704,6 +863,7 @@ enum StaticBGRADetectionTests {
         }
         precondition(arguments.isEmpty, "unknown arguments")
         assertEmptyNormalMasks(mode: ShutterEmitterMode(shutter: 2000, iso: 160, enabled: true))
+        assertSeedScan()
         assertLosslessPixelScan()
         assertLosslessProposalMembership()
         assertLosslessScoringScratch()
