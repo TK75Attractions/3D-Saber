@@ -106,6 +106,15 @@ public class NoteData
     public float lengthMs = 0f;
     // 見えにくさ(0〜1、覚える裏譜面「M」の「まね」の側)。0 はふつう、1 は見えない。判定は変わらない。
     public float veil = 0f;
+    // 風に流されて来る(青葉騒の裏譜面「W」、2026-10-25)。出現したときの位置のずれ(windX・windY、ワールド単位)は、
+    // 届く WindRules.CalmSeconds 秒前までになめらかに 0 へ戻る。windSpin はずれが戻るあいだに回る角度(ラジアン、+ は左回り)、
+    // windSway は全ノーツがそろって左右に揺れる幅(曲の拍に合わせる)。全部 0 ならふつうのノーツ。判定は変わらない。
+    public float windX = 0f;
+    public float windY = 0f;
+    public float windSpin = 0f;
+    public float windSway = 0f;
+
+    public bool HasWind => windX != 0f || windY != 0f || windSway != 0f;
 
     public double TimeSeconds => time / 1000.0;
 

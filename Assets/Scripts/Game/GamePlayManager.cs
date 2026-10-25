@@ -479,6 +479,8 @@ public class GamePlayManager : MonoBehaviour
             double startDspTime = countdown.Begin(chart.bpm, GameSession.SelectedDifficulty, startCountdownVolume, firstApproach, firstNoteFromPlayStart);
             if (aimMode != null)
                 countdown.ConfigureCaptionHint(AimDodgeRules.RuleCaption, RushESecretState.Magenta, firstNoteFromPlayStart, playRange.Start);
+            else if (noteSpawner.HasWindNotes)
+                countdown.ConfigureCaptionHint(WindRules.RuleCaption, RushESecretState.Leaf, firstNoteFromPlayStart, playRange.Start);
             else if (memoryMode != null)
                 countdown.ConfigureCaptionHint(MemoryVeilRules.RuleCaption, RushESecretState.Amber, firstNoteFromPlayStart, playRange.Start);
             else

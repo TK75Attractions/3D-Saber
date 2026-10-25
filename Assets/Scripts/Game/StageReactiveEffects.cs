@@ -130,7 +130,8 @@ public sealed class StageReactiveEffects : MonoBehaviour
         note.OnRetired += Retired;
         note.OnJudged += Cut;
         note.OnMiss += Miss;
-        int lane = FloorLaneForX(note.transform.position.x);
+        // 出現時の風のずれではなく、切る場所のレーンを記録する。
+        int lane = FloorLaneForX(note.HasWind ? note.LandingPosition.x : note.transform.position.x);
         if (lane < 0 || !Finite(note.HitTime)) return;
         var group = lastGroups[lane];
         if (group == null || Math.Abs(group.time - note.HitTime) > NoteSpawner.SimultaneousEpsilonSeconds)

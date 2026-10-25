@@ -56,6 +56,25 @@ public class StageReactiveEffectsTests
     }
 
     [Test]
+    public void WindNotesRememberTheirLandingLaneBeforeTheyArrive()
+    {
+        var first = N(1800);
+        var second = N(1940);
+        first.windX = second.windX = 3f;
+        Spawn(first, second);
+        Assert.Greater(notes[0].transform.position.x, 0f);
+        Assert.Greater(notes[1].transform.position.x, 0f);
+
+        spawner.Tick(notes[0].HitTime);
+        Cut(0);
+        effects.Tick(notes[1].HitTime);
+        spawner.Tick(notes[1].HitTime);
+        Cut(1);
+        Assert.AreEqual(1, effects.ActiveStitchCount);
+        Assert.AreEqual(1 << StageReactiveEffects.FloorLaneForX(-1f), effects.ActiveWeaveLaneMask);
+    }
+
+    [Test]
     public void RapidPerfectsWeaveOnlyTheirActualLaneAndEachStitchExpiresIndependently()
     {
         Spawn(N(1000), N(1140), N(1280));

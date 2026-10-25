@@ -12,6 +12,24 @@ public partial class CuttableNote : MonoBehaviour
     static readonly List<CuttableNote> activeNotes = new List<CuttableNote>();
     public static IReadOnlyList<CuttableNote> ActiveNotes => activeNotes;
     public uint SpawnVersion { get; private set; }
+    // 着地点は譜面のワールドXY。風は見た目だけに使い、判定条件には使わない。
+    public Vector2 LandingPosition { get; private set; }
+    public bool HasWind { get; private set; }
+    public float WindX { get; private set; }
+    public float WindY { get; private set; }
+    public float WindSpin { get; private set; }
+    public float WindSway { get; private set; }
+
+    internal void ConfigureWind(NoteData data, Vector2 landingPosition)
+    {
+        LandingPosition = landingPosition;
+        WindX = data.windX;
+        WindY = data.windY;
+        WindSpin = data.windSpin;
+        WindSway = data.windSway;
+        HasWind = data.HasWind;
+    }
+
     // 見えにくさは描画だけに使い、判定には使わない。
     public float Veil { get; internal set; }
     internal bool HidesCues => Veil >= MemoryVeilLayers.HideCuesAtVeil;
@@ -47,6 +65,9 @@ public partial class CuttableNote : MonoBehaviour
         OnCut = null; OnJudged = null; OnMiss = null; OnPartialCut = null; OnRetired = null;
         OnWrongDirection = null;
         Veil = 0f;
+        LandingPosition = Vector2.zero;
+        HasWind = false;
+        WindX = WindY = WindSpin = WindSway = 0f;
         wrongDirectionCue.Reset();
         if (Arrow != null) Arrow.ResetCue();
         fragmentTier = null;

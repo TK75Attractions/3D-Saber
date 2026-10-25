@@ -102,6 +102,7 @@ public sealed class FloorTimingGuide : MonoBehaviour
             // 到着後は短く消す。ロングの開始時刻も同じ基準で示す。
             if (remaining < -.13 || MarkerCount >= MaxMarkers) continue;
             var position = note.transform.position;
+            if (note.HasWind) position.x = note.LandingPosition.x;
             float alpha = Mathf.Clamp01((float)((spawner.approachTime - remaining) / .12));
             if (remaining < 0) alpha *= Mathf.Clamp01(1 + (float)remaining / .13f);
             if (alpha <= 0) continue;
@@ -160,7 +161,7 @@ public sealed class FloorTimingGuide : MonoBehaviour
 
     void DrawLongProgress(CuttableNote note, float timeLeft, float visibility)
     {
-        float x = note.transform.position.x;
+        float x = note.HasWind ? note.LandingPosition.x : note.transform.position.x;
         Color tint = note.IsGold ? UISkinPalette.NoteGold : note.RequiredHand == SaberHand.Left ? UISkinPalette.LogoBlue : UISkinPalette.LogoRed;
         tint.a = .85f;
         // 上段は残り時間、下段は残り切断回数。高さを占有せず判定線の手前に収める。

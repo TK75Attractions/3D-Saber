@@ -64,6 +64,9 @@ public class NoteTimingCue : MonoBehaviour
     public Vector3 GhostBaseScale => ghostBaseScale;
 
     private CuttableNote note;
+    // 風のノーツだけ着地点へ固定し、通常ノーツの編集プレビューは従来どおり追う。
+    private Vector2 LandingXY => note != null && note.HasWind
+        ? note.LandingPosition : (Vector2)transform.position;
     private NoteVisuals visuals;
     private Color baseColor = Color.white;
     private Transform ringRoot;
@@ -137,7 +140,8 @@ public class NoteTimingCue : MonoBehaviour
     void ResetRoot(GameObject root,float z)
     {
         if(root == null) return;
-        root.transform.position=new Vector3(transform.position.x,transform.position.y,z);
+        Vector2 p = LandingXY;
+        root.transform.position = new Vector3(p.x, p.y, z);
         root.transform.localScale=ghostBaseScale; root.SetActive(true);
     }
     public void HideForPool()
@@ -174,8 +178,8 @@ public class NoteTimingCue : MonoBehaviour
         if (double.IsNaN(dt) || double.IsInfinity(dt)) { HideForPool(); return; }
         float elapsed = double.IsNaN(lastRemaining) ? 0 : (float)System.Math.Max(0, lastRemaining - dt);
         lastRemaining = dt;
-        // 編集プレビューで位置を動かしても、着地先の枠だけ元の場所に残さない。
-        Vector3 position = transform.position;
+        // 風のずれには追従せず、通常ノーツの編集プレビューには追従する。
+        Vector2 position = LandingXY;
         if (ghostRoot != null) ghostRoot.transform.position = new Vector3(position.x, position.y, targetJudgeZ + ghostZBias);
         if (approachRoot != null) approachRoot.transform.position = new Vector3(position.x, position.y, targetJudgeZ + approachZBias);
 
@@ -370,7 +374,7 @@ public class NoteTimingCue : MonoBehaviour
 
     private void BuildGhost(float judgeZ)
     {
-        Vector3 p = transform.position;
+        Vector2 p = LandingXY;
         // ノーツのワールド XY サイズに合わせる（prefab の scale 0.8 等を吸収。Z 伸長は無視）
         Vector3 ls = transform.lossyScale;
         ghostBaseScale = new Vector3(Mathf.Abs(ls.x) * 1.04f, Mathf.Abs(ls.y) * 1.04f, 1f);

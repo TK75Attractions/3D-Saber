@@ -30,6 +30,11 @@ public static class ChartLoader
                 if (!Finite(note.lengthMs) || note.lengthMs < 0) note.lengthMs = 0;
                 if (!Finite(note.beat)) note.beat = 0;
                 note.veil = Finite(note.veil) ? Math.Max(0f, Math.Min(1f, note.veil)) : 0f;
+                // 風(W)。画面から大きく外れる値や壊れた値は収める。
+                note.windX = Clamp(note.windX, -3f, 3f);
+                note.windY = Clamp(note.windY, -2f, 2f);
+                note.windSpin = Clamp(note.windSpin, -2f * (float)Math.PI, 2f * (float)Math.PI);
+                note.windSway = Clamp(note.windSway, 0f, 1f);
             }
             // 拍ガイドと描画を成立させる最低限の復旧。ノーツ時刻・配置は補正しない。
             if (!Finite(data.bpm) || data.bpm <= 0) data.bpm = 120;
@@ -49,6 +54,9 @@ public static class ChartLoader
     }
 
     static bool Finite(float value) => !float.IsNaN(value) && !float.IsInfinity(value);
+
+    // 壊れた値は 0、範囲の外は端へ。
+    static float Clamp(float value, float min, float max) => Finite(value) ? Math.Max(min, Math.Min(max, value)) : 0f;
 
     // 照準の裏譜面(避)の的とトゲ。壊れた値は捨て、時刻順に並べ、色の名前を小文字にそろえる。
     static AimChartData NormalizeAim(AimChartData aim)

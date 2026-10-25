@@ -8,6 +8,34 @@ using UnityEngine;
 public class RushESecretTests
 {
     [Test]
+    public void AobasouWindUsesTheSharedSecretTableAndLeafAccent()
+    {
+        var secret = RushESecretState.For("Aobasou");
+        Assert.AreSame(RushESecretState.AobasouWind, secret);
+        Assert.AreEqual("W", secret.Difficulty);
+        Assert.AreSame(secret, RushESecretState.ForDifficulty("w"));
+        Assert.AreSame(secret, RushESecretState.ForDifficulty(" W "));
+        Assert.AreEqual(RushESecretState.Leaf, GameHUDSkin.DifficultyColor("W"));
+        Assert.AreEqual(RushESecretState.Leaf, GameStartCountdown.AccentForDifficulty("w"));
+        Assert.AreNotEqual(UISkinPalette.LogoGreen, RushESecretState.Leaf);
+
+        var state = new RushESecretState();
+        state.Select("Aobasou");
+        for (int i = 0; i < 9; i++)
+        {
+            Assert.IsTrue(state.TryHit(i * .2));
+            Assert.IsFalse(state.Transitioning);
+        }
+        Assert.IsTrue(state.TryHit(2));
+        Assert.IsTrue(state.Reveal());
+        Assert.IsTrue(state.Finish());
+        Assert.IsTrue(state.Unlocked);
+        Assert.AreSame(secret, state.Current);
+        state.Select("RushE");
+        Assert.IsFalse(state.Unlocked);
+    }
+
+    [Test]
     public void BenkyouMemoryUsesTheSharedSecretTableAndAmberAccent()
     {
         var secret = RushESecretState.For("BenkyouRemaster");
@@ -20,7 +48,8 @@ public class RushESecretTests
         CollectionAssert.AreEqual(new[]
         {
             RushESecretState.RushE, RushESecretState.ElDoradoG,
-            RushESecretState.PhobiaAvoid, RushESecretState.BenkyouMemory
+            RushESecretState.PhobiaAvoid, RushESecretState.BenkyouMemory,
+            RushESecretState.AobasouWind
         }, RushESecretState.Charts);
 
         var state = new RushESecretState();
