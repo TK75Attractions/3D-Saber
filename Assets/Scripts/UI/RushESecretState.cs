@@ -9,7 +9,8 @@ using UnityEngine;
 // Morning の M(2026-10-25、見本を覚え、ノイズの中で同じ2小節を切る。chart_m.json の memory と notes。最初は勉強に作ったが、
 // ユーザー「BPMが変わんない曲にしてほしい」で 118BPM 一定の Morning へ移した)と、
 // 青葉騒の W(2026-10-25、風に流されて来る。chart_w.json の notes に風の値を持たせる)と、
-// logic!!! の S(2026-10-26、緩急。chart_s.json の scroll でノーツの流れる速さを変える)。
+// logic!!! の S(2026-10-26、緩急。chart_s.json の scroll でノーツの流れる速さを変える)と、
+// Zero の V(2026-10-26、消える・直前に出る。chart_v.json の notes の vanish)。
 // 色はその譜面の目印(難易度の札・盤の縁・背景・幕・本編の HUD とカウントイン)。E は今までの紫のまま。
 public sealed class SecretChart
 {
@@ -85,7 +86,18 @@ public sealed class RushESecretState
         EdgeLight = new Color(.62f, .94f, 1), FanLight = new Color(.50f, .88f, 1),
         CenterHaze = new Color(.16f, .66f, 1, .42f), LeftHaze = new Color(.10f, .52f, .95f, .35f), RightHaze = new Color(.30f, .82f, 1, .35f),
     };
-    public static readonly SecretChart[] Charts = { RushE, ElDoradoG, PhobiaAvoid, MorningMemory, AobasouWind, LogicSpeed };
+    // Zero -狂奏曲-(曲フォルダ「製作中」)の「V」(2026-10-26 ユーザー「zeroはU11の消える案にして」)。
+    // ノーツが消えたり、直前に急に出たりする(chart_v.json の notes の vanish)。色は幽霊の薄紫。
+    public static readonly Color Phantom = new Color(.86f, .80f, 1f);
+    public static readonly SecretChart ZeroVanish = new SecretChart
+    {
+        SongId = "製作中", Difficulty = "V", Accent = Phantom, Glow = new Color(.78f, .70f, 1, .25f), Face = new Color(.12f, .10f, .20f),
+        TileDeep = new Color(.10f, .08f, .18f), TileLight = new Color(.52f, .46f, .70f),
+        Backdrop = new Color(.045f, .035f, .085f), LeftLight = new Color(.70f, .62f, 1), RightLight = new Color(.90f, .84f, 1),
+        EdgeLight = new Color(.92f, .88f, 1), FanLight = new Color(.84f, .78f, 1),
+        CenterHaze = new Color(.66f, .56f, 1, .42f), LeftHaze = new Color(.56f, .46f, .95f, .35f), RightHaze = new Color(.80f, .72f, 1, .35f),
+    };
+    public static readonly SecretChart[] Charts = { RushE, ElDoradoG, PhobiaAvoid, MorningMemory, AobasouWind, LogicSpeed, ZeroVanish };
     public static SecretChart For(string songId)
     {
         foreach (var chart in Charts) if (chart.SongId == songId) return chart;

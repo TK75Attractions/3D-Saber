@@ -39,6 +39,9 @@ public sealed class NoteArrowMaterials : MonoBehaviour
     public static Color FlashColor(Color color, float age)
         => Color.Lerp(color, Color.white, Mathf.Clamp01(age / FlashSeconds));
 
+    // 消える(V)のように見えにくさが毎コマ変わるノーツで、今の Veil に合わせ直す。
+    internal void RefreshVeil() => SetVeil(note != null ? note.Veil : 0f);
+
     void SetVeil(float veil)
     {
         float alpha = NoteVeil.CueAlpha(veil);

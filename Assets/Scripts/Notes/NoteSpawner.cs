@@ -47,6 +47,8 @@ public class NoteSpawner : MonoBehaviour
     // 緩急(logic!!! の「S」)の流れる速さの表。譜面に scroll が無ければ null(いつもの一定の速さ)。
     ScrollSpeedMap scrollMap;
     public bool HasScroll => scrollMap != null;
+    // 消える(Zero の「V」)ノーツがある譜面か。カウントインの一言に使う。
+    public bool HasVanishNotes { get; private set; }
     private int nextIndex;
     private double totalOffsetSeconds; // chart.offsetMs/1000 + extraOffsetSeconds
     private double extraOffsetSeconds; // GamePlayManager から実行時に上書き
@@ -184,9 +186,14 @@ public class NoteSpawner : MonoBehaviour
         if (FloorGuide != null) FloorGuide.Clear();
         chart = data;
         HasWindNotes = false;
+        HasVanishNotes = false;
         if (chart?.notes != null)
             foreach (var note in chart.notes)
-                if (note != null && note.HasWind) { HasWindNotes = true; break; }
+            {
+                if (note == null) continue;
+                if (note.HasWind) HasWindNotes = true;
+                if (VanishRules.Parse(note.vanish) != VanishMode.None) HasVanishNotes = true;
+            }
         // 風の無い譜面では拍の計算用オブジェクトも確保しない。
         windTempoMap = HasWindNotes
             ? new ChartTempoMap(chart.bpm, chart.beatZeroMs, chart.editorTempoMap)
@@ -385,7 +392,10 @@ public class NoteSpawner : MonoBehaviour
         }
         note.ResetForSpawn(); note.IsPooled=Pooling; note.FragmentPool=Pooling?fragmentPool:null;
         note.ConfigureWind(nd, landing);
-        note.Veil = NoteVeil.Clamp(nd.veil);
+        // 消える(V)は出た瞬間の残り時間から見え方を決める(sudden は見えない状態で出る)。合図の見えにくさは矢印・枠・数字より先に決める。
+        note.Vanish = VanishRules.Parse(nd.vanish);
+        double vanishRemaining = warming ? approachTime : EffectiveTime(nd) - songTime;
+        note.Veil = note.Vanish != VanishMode.None ? VanishRules.CueVeil(note.Vanish, vanishRemaining) : NoteVeil.Clamp(nd.veil);
         if(Pooling && !reused) poolKeys.Add(note,key);
         note.HitTime = EffectiveTime(nd);
         note.JudgmentOwner = this;
@@ -406,7 +416,8 @@ public class NoteSpawner : MonoBehaviour
         // NoteVisuals 自身が冪等で、既存プレハブにも安全に被せられる。
         var visuals=go.GetComponent<NoteVisuals>() ?? go.AddComponent<NoteVisuals>();
         visuals.Initialize(); visuals.ResetForReuse();
-        visuals.SetVeil(nd.veil);
+        note.Visuals = visuals;
+        visuals.SetVeil(note.Vanish != VanishMode.None ? VanishRules.BodyVeil(note.Vanish, vanishRemaining) : nd.veil);
         // 使い回しの組は手ごとに分かれているが、縁は出現のたびに付け外しする(ステージをまたいでも残さない)。
         visuals.SetContrastOutline(outlineLeftNotes && note.RequiredHand == SaberHand.Left);
         go.SetActive(true);
@@ -494,6 +505,23 @@ public class NoteSpawner : MonoBehaviour
         float bank = WindRules.BankDegrees(note.WindX, note.WindY, note.WindSpin, note.WindSway,
             remaining, approachTime, windBeat, beatsPerSecond);
         note.transform.rotation = Quaternion.Euler(0f, 0f, bank + WindRules.SpinIn(sinceSpawn));
+    }
+
+    // 消える(Zero の「V」)ノーツの今の見え方。本体は NoteVisuals、合図(矢印・枠・床の印・ロングの数字)は CuttableNote.Veil。
+    static void ApplyVanish(CuttableNote note, double remaining)
+    {
+        float cue = VanishRules.CueVeil(note.Vanish, remaining);
+        if (note.Veil != cue)
+        {
+            note.Veil = cue;
+            if (note.Arrow != null) note.Arrow.RefreshVeil();
+            if (note.countLabel != null && !note.IsMissed)
+            {
+                note.countLabel.alpha = note.CueVisibility;
+                note.countLabel.gameObject.SetActive(!note.HidesCues);
+            }
+        }
+        if (note.Visuals != null) note.Visuals.SetVeil(VanishRules.BodyVeil(note.Vanish, remaining));
     }
 
     // 本体と床でC案の二段シェブロンを共有。輪郭は拡縮せず一定幅にする。
@@ -602,6 +630,9 @@ public class NoteSpawner : MonoBehaviour
             float lateWindow = LateWindowFor(note);
             double judgeDt = note.HitTime - JudgeClock(songTime);
             UpdateJudgmentWindow(note, judgeDt, lateWindow);
+
+            // 消える(V): 残り時間で本体と合図の見え方を決める(切ったノーツは CuttableNote が姿を戻して割る)。
+            if (note.Vanish != VanishMode.None && !note.IsCut) ApplyVanish(note, dt);
 
             // タイミングキュー(着地ゴースト)の駆動。見た目なので曲の時計のまま。
             if (note.TimingCue != null)

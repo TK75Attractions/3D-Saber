@@ -57,6 +57,26 @@ public class RushESecretTests
     }
 
     [Test]
+    public void ZeroVanishUsesTheSharedSecretTableAndPhantomAccent()
+    {
+        var secret = RushESecretState.For("製作中");
+        Assert.AreSame(RushESecretState.ZeroVanish, secret);
+        Assert.AreEqual("V", secret.Difficulty);
+        Assert.AreSame(secret, RushESecretState.ForDifficulty("v"));
+        Assert.AreEqual(RushESecretState.Phantom, GameHUDSkin.DifficultyColor("V"));
+        Assert.AreEqual(RushESecretState.Phantom, GameStartCountdown.AccentForDifficulty("v"));
+        foreach (var other in RushESecretState.Charts)
+            if (!ReferenceEquals(other, secret)) Assert.AreNotEqual(other.Accent, RushESecretState.Phantom, other.Difficulty + " と色を分ける");
+        var state = new RushESecretState();
+        state.Select("製作中");
+        for (int i = 0; i < 9; i++) Assert.IsTrue(state.TryHit(i * .2));
+        Assert.IsTrue(state.TryHit(2));
+        Assert.IsTrue(state.Reveal());
+        Assert.IsTrue(state.Finish());
+        Assert.AreSame(secret, state.Current);
+    }
+
+    [Test]
     public void MorningMemoryUsesTheSharedSecretTableAndAmberAccent()
     {
         var secret = RushESecretState.For("Morning");
@@ -71,7 +91,8 @@ public class RushESecretTests
         {
             RushESecretState.RushE, RushESecretState.ElDoradoG,
             RushESecretState.PhobiaAvoid, RushESecretState.MorningMemory,
-            RushESecretState.AobasouWind, RushESecretState.LogicSpeed
+            RushESecretState.AobasouWind, RushESecretState.LogicSpeed,
+            RushESecretState.ZeroVanish
         }, RushESecretState.Charts);
 
         var state = new RushESecretState();

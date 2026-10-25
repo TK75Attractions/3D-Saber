@@ -131,6 +131,9 @@ public class NoteData
     public float windSway = 0f;
 
     public bool HasWind => windX != 0f || windY != 0f || windSway != 0f;
+    // 消える(Zero の裏譜面「V」、2026-10-26)。"fade"(本体だけ消える)・"sudden"(直前に出る)・"blink"(途中で消えてまた出る)・
+    // "hide"(合図ごと消える)。空ならふつう。見え方の時刻は VanishRules。判定は変わらない。
+    public string vanish = "";
 
     public double TimeSeconds => time / 1000.0;
 

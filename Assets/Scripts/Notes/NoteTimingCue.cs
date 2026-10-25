@@ -188,6 +188,13 @@ public class NoteTimingCue : MonoBehaviour
             TickAfterEnd(elapsed);
             return;
         }
+        // 消える(V)の sudden・blink で合図が戻ったとき、隠していた枠をまた出す(まだ届いていないノーツだけ)。
+        if (buildGhost && ghostRoot != null && !ghostRoot.activeSelf)
+        {
+            ghostRoot.SetActive(true);
+            if (approachRoot != null) approachRoot.SetActive(true);
+        }
+        if (buildRing && ringRoot != null && !ringRoot.gameObject.activeSelf) ringRoot.gameObject.SetActive(true);
 
         if (note != null && note.IsGold && !omenFired && dt <= earlyWindow + OmenLeadSeconds)
         {

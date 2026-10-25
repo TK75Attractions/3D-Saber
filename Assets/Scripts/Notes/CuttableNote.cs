@@ -37,6 +37,9 @@ public partial class CuttableNote : MonoBehaviour
     public float Veil { get; internal set; }
     internal bool HidesCues => Veil >= MemoryVeilLayers.HideCuesAtVeil;
     internal float CueVisibility => NoteVeil.CueAlpha(Veil);
+    // 消える(Zero の「V」)。残り時間で見え方が変わる(NoteSpawner が毎コマ当てる)。切ったら姿を戻して、破片は見えるように割る。
+    public VanishMode Vanish { get; internal set; }
+    [System.NonSerialized] internal NoteVisuals Visuals;
     internal NoteFragmentPool FragmentPool;
     internal NoteArrowMaterials Arrow;
     readonly WrongDirectionCueGate wrongDirectionCue = new WrongDirectionCueGate();
@@ -68,6 +71,7 @@ public partial class CuttableNote : MonoBehaviour
         OnCut = null; OnJudged = null; OnMiss = null; OnPartialCut = null; OnRetired = null;
         OnWrongDirection = null;
         Veil = 0f;
+        Vanish = VanishMode.None;
         LandingPosition = Vector2.zero;
         HasWind = false;
         WindX = WindY = WindSpin = WindSway = 0f;
@@ -324,9 +328,18 @@ public partial class CuttableNote : MonoBehaviour
             IsCut = true;
             IsFinalized = true;
             OnCut?.Invoke(this, hitPoint, cutVelocity);
+            // 消えていたノーツも、破片は見えるように割る(何もない所から破片が出る)。破片は本体の材質の透明度を写すので先に戻す。
+            if (Vanish != VanishMode.None) RevealVanished();
             ShatterAndDestroy(hitPoint, cutVelocity);
         }
         return true;
+    }
+
+    void RevealVanished()
+    {
+        Veil = 0f;
+        var visuals = Visuals != null ? Visuals : GetComponent<NoteVisuals>();
+        if (visuals != null) visuals.SetVeil(0f);
     }
 
     // 判定窓を逃した時のフラグ。

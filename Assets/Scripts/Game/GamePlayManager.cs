@@ -492,6 +492,8 @@ public class GamePlayManager : MonoBehaviour
                 countdown.ConfigureCaptionHint(WindRules.RuleCaption, RushESecretState.Leaf, firstNoteFromPlayStart, playRange.Start);
             else if (noteSpawner.HasScroll)
                 countdown.ConfigureCaptionHint(ScrollSpeedMap.RuleCaption, RushESecretState.Ice, firstNoteFromPlayStart, playRange.Start);
+            else if (noteSpawner.HasVanishNotes)
+                countdown.ConfigureCaptionHint(VanishRules.RuleCaption, RushESecretState.Phantom, firstNoteFromPlayStart, playRange.Start);
             // M(覚える)は下の解説を何も出さない(2026-10-26 ユーザー「下に出る解説いらないから消して」)。
             // 最初の3回でノイズがだんだん強まるのが説明を兼ねる。
             else if (memoryMode == null)

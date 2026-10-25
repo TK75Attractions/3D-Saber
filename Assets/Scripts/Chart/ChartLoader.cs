@@ -35,6 +35,8 @@ public static class ChartLoader
                 note.windY = Clamp(note.windY, -2f, 2f);
                 note.windSpin = Clamp(note.windSpin, -2f * (float)Math.PI, 2f * (float)Math.PI);
                 note.windSway = Clamp(note.windSway, 0f, 1f);
+                // 消える(V)。知らない名前はふつうのノーツ。
+                note.vanish = VanishRules.Name(VanishRules.Parse(note.vanish));
             }
             // 拍ガイドと描画を成立させる最低限の復旧。ノーツ時刻・配置は補正しない。
             if (!Finite(data.bpm) || data.bpm <= 0) data.bpm = 120;
