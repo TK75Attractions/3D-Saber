@@ -5,7 +5,8 @@ using UnityEngine;
 // RUSH E の E(2026-10-14)と、ElDorado の G(2026-10-24 ユーザー「ElDorado のジャケットを10回切ったら、E と同じく裏譜面に」。
 // 長い版(3分43秒)の Hard 譜面を全部金色にしたもの。音源・演出・音量そろえも G 専用の audio_g.mp3・stage_g.json・loudness_g.json)と、
 // Phobia PARTⅠ の 避(2026-10-24、照準でトゲをよけて的を狙う。譜面は chart_避.json の aim、音源・演出は曲の共通のもの)と、
-// 勉強(Remaster)の M(2026-10-25、見本を覚え、ノイズの中で同じ2小節を切る。chart_m.json の memory と notes)と、
+// Morning の M(2026-10-25、見本を覚え、ノイズの中で同じ2小節を切る。chart_m.json の memory と notes。最初は勉強に作ったが、
+// ユーザー「BPMが変わんない曲にしてほしい」で 118BPM 一定の Morning へ移した)と、
 // 青葉騒の W(2026-10-25、風に流されて来る。chart_w.json の notes に風の値を持たせる)。
 // 色はその譜面の目印(難易度の札・盤の縁・背景・幕・本編の HUD とカウントイン)。E は今までの紫のまま。
 public sealed class SecretChart
@@ -53,9 +54,9 @@ public sealed class RushESecretState
         CenterHaze = new Color(1, .15f, .65f, .42f), LeftHaze = new Color(.95f, .10f, .60f, .35f), RightHaze = new Color(1, .30f, .80f, .35f),
     };
     public static readonly Color Amber = new Color(1f, .63f, .24f);
-    public static readonly SecretChart BenkyouMemory = new SecretChart
+    public static readonly SecretChart MorningMemory = new SecretChart
     {
-        SongId = "BenkyouRemaster", Difficulty = "M", Accent = Amber, Glow = new Color(1, .55f, .14f, .25f), Face = new Color(.20f, .09f, .025f),
+        SongId = "Morning", Difficulty = "M", Accent = Amber, Glow = new Color(1, .55f, .14f, .25f), Face = new Color(.20f, .09f, .025f),
         TileDeep = new Color(.19f, .075f, .015f), TileLight = new Color(.72f, .36f, .10f),
         Backdrop = new Color(.09f, .035f, .008f), LeftLight = new Color(1, .46f, .12f), RightLight = new Color(1, .72f, .32f),
         EdgeLight = new Color(1, .78f, .48f), FanLight = new Color(1, .68f, .34f),
@@ -70,7 +71,7 @@ public sealed class RushESecretState
         EdgeLight = new Color(.82f, 1, .54f), FanLight = new Color(.72f, .96f, .40f),
         CenterHaze = new Color(.58f, .88f, .12f, .42f), LeftHaze = new Color(.44f, .78f, .08f, .35f), RightHaze = new Color(.72f, .96f, .24f, .35f),
     };
-    public static readonly SecretChart[] Charts = { RushE, ElDoradoG, PhobiaAvoid, BenkyouMemory, AobasouWind };
+    public static readonly SecretChart[] Charts = { RushE, ElDoradoG, PhobiaAvoid, MorningMemory, AobasouWind };
     public static SecretChart For(string songId)
     {
         foreach (var chart in Charts) if (chart.SongId == songId) return chart;

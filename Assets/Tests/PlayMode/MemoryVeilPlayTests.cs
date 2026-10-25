@@ -12,7 +12,7 @@ using UnityEngine.TestTools;
 // 結果画面へは進めず、失敗時もUnityTearDownで再生と本編を片付ける。
 public class MemoryVeilPlayTests
 {
-    const string SongId = "BenkyouRemaster";
+    const string SongId = "Morning";
     readonly Dictionary<FieldInfo, object> sessionValues = new Dictionary<FieldInfo, object>();
     GamePlayManager manager;
 

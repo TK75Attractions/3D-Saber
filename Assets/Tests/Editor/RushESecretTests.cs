@@ -36,10 +36,11 @@ public class RushESecretTests
     }
 
     [Test]
-    public void BenkyouMemoryUsesTheSharedSecretTableAndAmberAccent()
+    public void MorningMemoryUsesTheSharedSecretTableAndAmberAccent()
     {
-        var secret = RushESecretState.For("BenkyouRemaster");
-        Assert.AreSame(RushESecretState.BenkyouMemory, secret);
+        var secret = RushESecretState.For("Morning");
+        Assert.AreSame(RushESecretState.MorningMemory, secret);
+        Assert.IsNull(RushESecretState.For("BenkyouRemaster"), "M はテンポが一定の Morning へ移した");
         Assert.AreEqual("M", secret.Difficulty);
         Assert.AreSame(secret, RushESecretState.ForDifficulty("m"));
         Assert.AreSame(secret, RushESecretState.ForDifficulty(" M "));
@@ -48,12 +49,12 @@ public class RushESecretTests
         CollectionAssert.AreEqual(new[]
         {
             RushESecretState.RushE, RushESecretState.ElDoradoG,
-            RushESecretState.PhobiaAvoid, RushESecretState.BenkyouMemory,
+            RushESecretState.PhobiaAvoid, RushESecretState.MorningMemory,
             RushESecretState.AobasouWind
         }, RushESecretState.Charts);
 
         var state = new RushESecretState();
-        state.Select("BenkyouRemaster");
+        state.Select("Morning");
         for (int i = 0; i < 9; i++)
         {
             Assert.IsTrue(state.TryHit(i * .2));

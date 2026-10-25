@@ -26,7 +26,7 @@ public class ChartData
     // 照準で遊ぶ裏譜面(Phobia の「避」、2026-10-24)。ノーツの代わりに、照準で狙う的とよけるトゲを置く。
     // ふつうの譜面では空のまま(JsonUtility は無い項目を空の入れ物にする)。譜面エディターは別の型なので、この欄を読み書きしない。
     public AimChartData aim = new AimChartData();
-    // 覚える裏譜面(勉強の「M」、2026-10-25)。見本の2小節のあと、画面にノイズをかけて同じ2小節を切らせる。
+    // 覚える裏譜面(Morning の「M」、2026-10-25)。見本の2小節のあと、画面にノイズをかけて同じ2小節を切らせる。
     // ノイズの時間帯(veils)と、最初の数回だけ出す説明(captions)。ノーツ側の見えにくさは NoteData.veil。
     public MemoryChartData memory = new MemoryChartData();
 }
