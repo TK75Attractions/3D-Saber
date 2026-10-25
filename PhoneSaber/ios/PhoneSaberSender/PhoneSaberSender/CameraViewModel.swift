@@ -1485,6 +1485,7 @@ final class CameraViewModel: NSObject, ObservableObject {
             metrics.lowLatencyTest = lowLatencyCameraSettings
             metrics.controls = MetricsDatagram.controlState(trackLock: trackLockEnabled, exposureBias: exposureBias,
                                                            shutter: shutter, shutterISO: shutterISO)
+            metrics.emitter = shutterEmitter
             if let line = metrics.line() { lanProbe.sendMetrics(line) }
         }
         if debugRecordingActive {

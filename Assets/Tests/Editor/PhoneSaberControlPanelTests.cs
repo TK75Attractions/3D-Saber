@@ -74,6 +74,180 @@ public class PhoneSaberControlPanelTests
         Assert.AreEqual("機種未報告", new PhoneSaberControlPanelPhone("A", null).ModelLabel);
     }
 
+    [TestCase("A")]
+    [TestCase("B")]
+    public void PcStationMismatchWithOnePhoneIsAWarningInPanelJson(string pcStation)
+    {
+        string reported = pcStation == "A" ? "B" : "A";
+        var phone = new PhoneSaberControlPanelPhone(reported, "10.0.0.1");
+        phone.Metrics(new PhoneSaberMetrics { Platform = "ios", Station = reported, Model = "iPhone14_5", ReceivedAt = 10 });
+        var warnings = PhoneSaberControlPanelPhone.StationWarnings(new[] { phone }, 11, pcStation);
+        Assert.AreEqual(1, warnings.Count);
+        StringAssert.Contains("このPCの台 " + pcStation + " とiPhoneの報告台 " + reported + " が一致していません", warnings[0]);
+        StringAssert.Contains("iPhone 13 (10.0.0.1)", warnings[0]);
+        StringAssert.Contains("iPhoneの台・送信先・手動IP優先を確認", warnings[0]);
+        StringAssert.DoesNotContain("混線確定", warnings[0]);
+        var panel = new PhoneSaberControlPanelState { Now = 11 };
+        panel.BeginSection("いまの設定");
+        foreach (string warning in warnings) panel.Label(warning, warning: true);
+        Assert.IsTrue(panel.Sections[0].Items[0].Warning);
+        string json = panel.ToJson();
+        StringAssert.Contains("\"text\":" + PhoneSaberControlPanelState.Quote(warnings[0]), json);
+        StringAssert.Contains("\"warning\":true", json);
+    }
+
+    [TestCase("A")]
+    [TestCase("B")]
+    public void StationMismatchRequiresExplicitStationsAndMetrics(string pcStation)
+    {
+        foreach (string reported in new[] { pcStation, "none", "?", "", null })
+        {
+            var phone = new PhoneSaberControlPanelPhone(pcStation, "10.0.0.1");
+            phone.Metrics(new PhoneSaberMetrics { Platform = "ios", Station = reported, ReceivedAt = 10 }, pcStation);
+            Assert.IsEmpty(PhoneSaberControlPanelPhone.StationWarnings(new[] { phone }, 11, pcStation));
+        }
+        var explicitPhone = new PhoneSaberControlPanelPhone(pcStation, "10.0.0.1");
+        explicitPhone.Metrics(new PhoneSaberMetrics { Platform = "ios", Station = pcStation, ReceivedAt = 10 });
+        foreach (string unspecifiedPc in new[] { "none", "?", "", null })
+            Assert.IsEmpty(PhoneSaberControlPanelPhone.StationWarnings(new[] { explicitPhone }, 11, unspecifiedPc));
+        var missing = new PhoneSaberControlPanelPhone(pcStation == "A" ? "B" : "A", "10.0.0.1");
+        Assert.IsEmpty(PhoneSaberControlPanelPhone.StationWarnings(new[] { missing }, 11, pcStation));
+        Assert.IsEmpty(PhoneSaberControlPanelPhone.StationWarnings(new PhoneSaberControlPanelPhone[0], 11, pcStation));
+        // ACK等に台があっても、metricsの計測がなければ不一致を推測しない。
+        missing.ReportedStation = missing.Station;
+        Assert.IsEmpty(PhoneSaberControlPanelPhone.StationWarnings(new[] { missing }, 11, pcStation));
+        var second = new PhoneSaberControlPanelPhone(pcStation, "10.0.0.2");
+        second.Metrics(new PhoneSaberMetrics { Platform = "ios", Station = pcStation, ReceivedAt = 10 });
+        var collision = PhoneSaberControlPanelPhone.StationWarnings(new[] { explicitPhone, second }, 11, pcStation);
+        Assert.AreEqual(1, collision.Count);
+        StringAssert.Contains("同じ台 " + pcStation, collision[0]);
+    }
+
+    [TestCase("A")]
+    [TestCase("B")]
+    public void StationMismatchUsesOnlyMetricsWithinFifteenSeconds(string pcStation)
+    {
+        string reported = pcStation == "A" ? "B" : "A";
+        var phone = new PhoneSaberControlPanelPhone(reported, "10.0.0.1");
+        phone.Metrics(new PhoneSaberMetrics { Platform = "ios", Station = reported, ReceivedAt = 10 });
+        foreach (double now in new[] { 10d, 25d })
+            Assert.AreEqual(1, PhoneSaberControlPanelPhone.StationWarnings(new[] { phone }, now, pcStation).Count);
+        foreach (double now in new[] { 25.01, 9.99 })
+            Assert.IsEmpty(PhoneSaberControlPanelPhone.StationWarnings(new[] { phone }, now, pcStation));
+    }
+
+    [TestCase("A")]
+    [TestCase("B")]
+    public void StationMismatchUsesLatestSenderReportRegardlessOfEnumerationOrder(string pcStation)
+    {
+        string reported = pcStation == "A" ? "B" : "A";
+        var old = new PhoneSaberControlPanelPhone(reported, "10.0.0.1");
+        old.Metrics(new PhoneSaberMetrics { Platform = "ios", Station = reported, ReceivedAt = 10 });
+        Assert.AreEqual(1, PhoneSaberControlPanelPhone.StationWarnings(new[] { old }, 11, pcStation).Count);
+        foreach (string latestStation in new[] { pcStation, "none" })
+        {
+            var latest = new PhoneSaberControlPanelPhone(pcStation, old.Sender);
+            latest.Metrics(new PhoneSaberMetrics { Platform = "ios", Station = latestStation, ReceivedAt = 11 }, pcStation);
+            foreach (var phones in new[] { new[] { old, latest }, new[] { latest, old } })
+                Assert.IsEmpty(PhoneSaberControlPanelPhone.StationWarnings(phones, 11, pcStation));
+        }
+        // 逆向きの変更では、新しい不一致を古い一致報告で隠さない。
+        var same = new PhoneSaberControlPanelPhone(pcStation, old.Sender);
+        same.Metrics(new PhoneSaberMetrics { Platform = "ios", Station = pcStation, ReceivedAt = 9 });
+        foreach (var phones in new[] { new[] { same, old }, new[] { old, same } })
+            Assert.AreEqual(1, PhoneSaberControlPanelPhone.StationWarnings(phones, 11, pcStation).Count);
+    }
+
+    [TestCase("A")]
+    [TestCase("B")]
+    public void EmitterMetricsConfirmValueSourceAndTimeWithoutAckOrControls(string station)
+    {
+        foreach (bool emitter in new[] { true, false })
+        {
+            var phone = new PhoneSaberControlPanelPhone(station, "10.0.0.1");
+            phone.Metrics(new PhoneSaberMetrics { Platform = "ios", Station = station, ReceivedAt = 9 });
+            Assert.IsFalse(phone.Settings.ContainsKey("colouredEmitter"));
+            phone.Metrics(new PhoneSaberMetrics { Platform = "ios", Station = station, Emitter = emitter, ReceivedAt = 10 });
+            Assert.AreEqual(emitter ? "ON" : "OFF", phone.Value("colouredEmitter"));
+            var report = phone.Settings["colouredEmitter"];
+            Assert.AreEqual("metrics", report.Source);
+            Assert.AreEqual(10, report.At); Assert.AreEqual(10, report.Order);
+            Assert.IsNull(phone.Value("trackLock"));
+            var json = new StringBuilder(); phone.AppendJson(json, 12);
+            StringAssert.Contains("\"colouredEmitter\":{\"value\":\"" + (emitter ? "ON" : "OFF") +
+                "\",\"ageSeconds\":2.0,\"source\":\"metrics\"}", json.ToString());
+            // 旧アプリの省略報告は、確認済みの値・時刻・出典を変えない。
+            phone.Metrics(new PhoneSaberMetrics { Platform = "ios", Station = station, Controls = "1233", ReceivedAt = 11 });
+            Assert.AreSame(report, phone.Settings["colouredEmitter"]);
+        }
+    }
+
+    [TestCase("A")]
+    [TestCase("B")]
+    public void EmitterMetricsAndAcksPreserveNewestReport(string station)
+    {
+        var phone = new PhoneSaberControlPanelPhone(station, "10.0.0.1");
+        phone.Acknowledge(Ack(1, "shutter-emitter", "on", station), 9, 8);
+        Assert.AreEqual("ON", phone.Value("colouredEmitter"));
+        phone.Metrics(new PhoneSaberMetrics { Platform = "ios", Station = station, Emitter = false, ReceivedAt = 10 });
+        Assert.AreEqual("OFF", phone.Value("colouredEmitter"));
+        var report = phone.Settings["colouredEmitter"];
+        phone.Metrics(new PhoneSaberMetrics { Platform = "ios", Station = station, Emitter = true, ReceivedAt = 7 });
+        foreach (double commandAt in new[] { 8, double.NegativeInfinity })
+        {
+            phone.Acknowledge(Ack(1, "shutter-emitter", "on", station), 12, commandAt);
+            phone.Acknowledge(Ack(2, "defaults", "tracklock-on-ev-2-shutter-2000", station), 13, commandAt);
+        }
+        Assert.AreSame(report, phone.Settings["colouredEmitter"]);
+        phone.Acknowledge(Ack(3, "shutter-emitter", "on", station), 15, 14);
+        report = phone.Settings["colouredEmitter"];
+        Assert.AreEqual("ON", report.Value); Assert.AreEqual("ACK確認", report.Source);
+        phone.Metrics(new PhoneSaberMetrics { Platform = "ios", Station = station, Emitter = false, ReceivedAt = 13 });
+        Assert.AreSame(report, phone.Settings["colouredEmitter"]);
+        phone.Acknowledge(Ack(4, "defaults", "tracklock-on-ev-2-shutter-2000", station), 17, 16);
+        Assert.IsNull(phone.Value("colouredEmitter"));
+        phone.Metrics(new PhoneSaberMetrics { Platform = "ios", Station = station, Emitter = true, ReceivedAt = 10 });
+        Assert.IsNull(phone.Value("colouredEmitter"), "リセット前のmetricsを再読込しても復活しない");
+        phone.Metrics(new PhoneSaberMetrics { Platform = "ios", Station = station, Emitter = false, ReceivedAt = 18 });
+        Assert.AreEqual("OFF", phone.Value("colouredEmitter"));
+        Assert.AreEqual(18, phone.Settings["colouredEmitter"].At);
+        Assert.AreEqual("metrics", phone.Settings["colouredEmitter"].Source);
+    }
+
+    [TestCase("A")]
+    [TestCase("B")]
+    public void EmitterMetricsStayWithSenderAndEffectiveStation(string station)
+    {
+        var store = new PhoneSaberMetricsStore();
+        string legacy = Encoding.ASCII.GetString(PhoneSaberLatencyEstimateTests.Valid).Replace("station=A", "station=" + station);
+        void Receive(string suffix, string sender, double at)
+        {
+            var bytes = Encoding.ASCII.GetBytes(legacy + suffix);
+            store.Receive(bytes, bytes.Length, sender, at);
+        }
+        Receive(" emitter=1", "10.0.0.1", 10);
+        Receive(" emitter=0", "10.0.0.2", 11);
+        var phone = new PhoneSaberControlPanelPhone(station, "10.0.0.1");
+        var other = new PhoneSaberControlPanelPhone(station, "10.0.0.2");
+        phone.Metrics(store.Read(phone.Sender, 12));
+        other.Metrics(store.Read(other.Sender, 12));
+        Assert.AreEqual("ON", phone.Value("colouredEmitter"));
+        Assert.AreEqual("OFF", other.Value("colouredEmitter"));
+        Assert.AreEqual(10, phone.Settings["colouredEmitter"].At);
+        phone.Metrics(new PhoneSaberMetrics { Platform = "ios", Station = station == "A" ? "B" : "A", Emitter = false, ReceivedAt = 13 });
+        phone.Metrics(new PhoneSaberMetrics { Platform = "android", Station = station, Emitter = false, ReceivedAt = 13 });
+        phone.Acknowledge(Ack(1, "shutter-emitter", "off", station, "10.0.0.2"), 14, 13);
+        Assert.AreEqual("ON", phone.Value("colouredEmitter"));
+        // 未指定台は既存の呼出側と同じく、このPCの実効台に紐づける。
+        phone.Metrics(new PhoneSaberMetrics { Platform = "ios", Station = "none", Emitter = false, ReceivedAt = 15 }, station);
+        Assert.AreEqual("OFF", phone.Value("colouredEmitter"));
+        Assert.AreEqual("none", phone.ReportedStation);
+        Receive("", "10.0.0.3", 16);
+        var unreported = new PhoneSaberControlPanelPhone(station, "10.0.0.3");
+        unreported.Metrics(store.Read(unreported.Sender, 16));
+        Assert.IsFalse(unreported.Settings.ContainsKey("colouredEmitter"));
+    }
+
     const string Token = "0123456789abcdef0123456789abcdef";
     static byte[] Request(string method = "GET", string target = "/?t=" + Token, string headers = "Host: 127.0.0.1:5010\r\n")
         => Encoding.ASCII.GetBytes(method + " " + target + " HTTP/1.1\r\n" + headers + "\r\n");
@@ -542,6 +716,150 @@ public class PhoneSaberControlPanelTests
         var state = new PhoneSaberControlPanelState(); state.BeginSection("iPhone"); state.Button("1/500", "phone-shutter", "500");
         state.Sections[0].Items[0].Pending = true; state.Sections[0].Items[0].CommandId = 42;
         StringAssert.Contains("\"commandId\":42,\"pending\":true", state.ToJson());
+    }
+
+    static PhoneSaberControlPanelState.Item ResultItem(string name = "phone-learn-area", string value = "")
+        => new PhoneSaberControlPanelState.Item { Name = name, Value = value, Enabled = true };
+
+    [TestCase("A")]
+    [TestCase("B")]
+    public void OperationResultsKeepLateLearningFailureBesideISOSuccess(string station)
+    {
+        var store = new PhoneSaberAcknowledgementStore();
+        var learn = new PhoneSaberOperatorKeys.PhoneAction(1, 0, "", station, "learn-area=10", new[] { "10.0.0.1" });
+        var iso = new PhoneSaberOperatorKeys.PhoneAction(2, 1, "125", station, "shutter-iso=125", new[] { "10.0.0.1" });
+        store.Queue(1, "learn-area=10", 0);
+        store.Receive(Ack(1, "learning", "10s", station), "10.0.0.1");
+        var learning = ResultItem(); learn.Apply(learning, 1, store.Read(1));
+        Assert.IsTrue(learning.Pending);
+        store.Queue(2, "shutter-iso=125", 1);
+        store.Receive(Ack(2, "shutter-iso", "125", station), "10.0.0.1");
+        store.Receive(Ack(1, "failed", "samples0", station), "10.0.0.1");
+        var failed = ResultItem(); learn.Apply(failed, 11, store.Read(1));
+        var success = ResultItem("phone-shutter-iso", "125"); iso.Apply(success, 11, store.Read(2));
+        Assert.IsTrue(failed.Acknowledged); Assert.IsFalse(failed.Succeeded);
+        Assert.IsTrue(failed.ResultWarning); Assert.IsFalse(failed.Pending); Assert.IsTrue(failed.Enabled);
+        StringAssert.Contains("範囲を覚えられませんでした", failed.Result);
+        StringAssert.DoesNotContain("応答なし", failed.Result);
+        Assert.IsTrue(success.Succeeded); Assert.IsFalse(success.ResultWarning);
+        StringAssert.Contains("ISO 125", success.Result);
+        var state = new PhoneSaberControlPanelState(); state.BeginSection("iPhone");
+        state.Sections[0].Items.Add(failed); state.Sections[0].Items.Add(success);
+        string json = state.ToJson();
+        StringAssert.Contains("範囲を覚えられませんでした", json); StringAssert.Contains("ISO 125", json);
+        StringAssert.Contains("\"acknowledged\":true,\"succeeded\":false", json);
+        StringAssert.Contains("\"resultWarning\":true", json);
+        // ACK履歴が32指示を超えても、別操作で過去の結果を消さない。
+        for (int id = 3; id <= 40; id++) store.Queue(id, "shutter-iso=100", 100 + id);
+        Assert.IsEmpty(store.Read(1));
+        var retained = ResultItem(); learn.Apply(retained, 200, store.Read(1));
+        Assert.AreEqual(failed.Result, retained.Result); Assert.IsTrue(retained.ResultWarning);
+    }
+
+    [TestCase("A")]
+    [TestCase("B")]
+    public void OperationLearningWaitsButFailureIsTerminalAndLearnedDoesNotClaimPCApply(string station)
+    {
+        var action = new PhoneSaberOperatorKeys.PhoneAction(7, 10, "", station, "learn-area=10", new[] { "10.0.0.1" });
+        var item = ResultItem(); action.Apply(item, 11, new[] { Ack(7, "learning", "10s", station) });
+        Assert.IsTrue(item.Pending); Assert.IsFalse(item.Enabled);
+        Assert.IsFalse(item.Acknowledged); Assert.IsFalse(item.Succeeded); Assert.IsFalse(item.ResultWarning);
+        var overdue = ResultItem(); action.Apply(overdue, 40, Array.Empty<PhoneSaberAcknowledgement>());
+        Assert.IsFalse(overdue.Pending); Assert.IsTrue(overdue.Enabled); Assert.IsTrue(overdue.ResultWarning);
+        StringAssert.Contains(PhoneSaberOperatorKeys.MissingCompletionMessage, overdue.Result);
+        var failed = ResultItem(); action.Apply(failed, 12, new[] { Ack(7, "failed", "samples0", station) });
+        Assert.IsFalse(failed.Pending); Assert.IsTrue(failed.Enabled); Assert.IsTrue(failed.Acknowledged);
+        Assert.IsFalse(failed.Succeeded); Assert.IsTrue(failed.ResultWarning);
+        var learned = ResultItem(); action.Apply(learned, 13, new[] { Ack(7, "learned", "samples60", station) });
+        Assert.IsTrue(learned.Acknowledged); Assert.IsTrue(learned.Succeeded); Assert.IsFalse(learned.ResultWarning);
+        StringAssert.Contains("プレイ範囲を覚えました", learned.Result);
+        StringAssert.DoesNotContain("PC", learned.Result); StringAssert.DoesNotContain("適用成功", learned.Result);
+    }
+
+    [TestCase("A")]
+    [TestCase("B")]
+    public void OperationNothingIsSpecificTerminalWarningWithoutAddingIgnoreArea(string station)
+    {
+        foreach (string colour in new[] { "red", "blue", "both" })
+        {
+            var action = new PhoneSaberOperatorKeys.PhoneAction(3, 0, colour, station, "ignore=" + colour, new[] { "10.0.0.1" });
+            var item = ResultItem("phone-ignore", colour);
+            action.Apply(item, 4, new[] { Ack(3, "nothing", "red0-blue0", station) });
+            Assert.IsTrue(item.Acknowledged); Assert.IsTrue(item.Enabled); Assert.IsFalse(item.Pending);
+            Assert.IsTrue(item.ResultWarning); Assert.IsFalse(item.Succeeded);
+            StringAssert.Contains("無視する対象なし", item.Result);
+            StringAssert.DoesNotContain("無視しました", item.Result);
+        }
+    }
+
+    [TestCase("A")]
+    [TestCase("B")]
+    public void OperationResultsSeparateStationSenderCommandAndMixedTargets(string station)
+    {
+        string other = station == "A" ? "B" : "A";
+        var action = new PhoneSaberOperatorKeys.PhoneAction(8, 0, "", station, "learn-area=10",
+            new[] { "10.0.0.1", "10.0.0.2", "10.0.0.3" });
+        var wrong = ResultItem(); action.Apply(wrong, 1, new[] {
+            Ack(7, "failed", "samples0", station), Ack(8, "failed", "samples0", other),
+            Ack(8, "failed", "samples0", station, "10.0.0.9"),
+            new PhoneSaberAcknowledgement(8, station, "android", "failed", "samples0", "10.0.0.1") });
+        Assert.IsFalse(wrong.Acknowledged); Assert.IsFalse(wrong.Succeeded); Assert.IsFalse(wrong.ResultWarning);
+        StringAssert.DoesNotContain("覚えられませんでした", wrong.Result);
+        var mixed = ResultItem(); action.Apply(mixed, 11, new[] {
+            Ack(8, "learned", "samples60", station), Ack(8, "failed", "samples0", station, "10.0.0.2") });
+        Assert.IsFalse(mixed.Acknowledged); Assert.IsFalse(mixed.Succeeded); Assert.IsTrue(mixed.Pending);
+        Assert.IsTrue(mixed.ResultWarning);
+        StringAssert.Contains("台" + station + " / 10.0.0.1 / 指示 #8: iPhone", mixed.Result);
+        StringAssert.Contains("覚えました", mixed.Result); StringAssert.Contains("覚えられませんでした", mixed.Result);
+        StringAssert.Contains("10.0.0.3 / 指示 #8: iPhoneの返事を待っています", mixed.Result);
+        var timeout = ResultItem(); action.Apply(timeout, 21, Array.Empty<PhoneSaberAcknowledgement>());
+        Assert.IsFalse(timeout.Pending); Assert.IsTrue(timeout.Enabled); Assert.IsFalse(timeout.Acknowledged);
+        StringAssert.Contains("未確認・応答なし", timeout.Result);
+        var terminal = ResultItem(); action.Apply(terminal, 22, new[] { Ack(8, "learned", "samples60", "none", "10.0.0.3") });
+        Assert.IsTrue(terminal.Acknowledged); Assert.IsFalse(terminal.Succeeded); Assert.IsTrue(terminal.ResultWarning);
+        // 送信元未確認でも、他台・Androidの返事を成功に数えない。
+        var unknown = new PhoneSaberOperatorKeys.PhoneAction(9, 0, "", station, "learn-area=10", Array.Empty<string>());
+        var empty = ResultItem(); unknown.Apply(empty, 1, new[] { Ack(9, "learned", "samples60", other) });
+        Assert.IsFalse(empty.Acknowledged);
+        var matched = ResultItem(); unknown.Apply(matched, 2, new[] { Ack(9, "learned", "samples60", "none") });
+        Assert.IsTrue(matched.Succeeded); StringAssert.Contains("台" + station, matched.Result);
+        var second = ResultItem(); unknown.Apply(second, 3, new[] { Ack(9, "learning", "10s", station, "10.0.0.2") });
+        Assert.IsFalse(second.Acknowledged); Assert.IsFalse(second.Succeeded); Assert.IsTrue(second.Pending);
+        var secondFailed = ResultItem(); unknown.Apply(secondFailed, 4, new[] { Ack(9, "failed", "samples0", station, "10.0.0.2") });
+        Assert.IsTrue(secondFailed.Acknowledged); Assert.IsFalse(secondFailed.Succeeded); Assert.IsTrue(secondFailed.ResultWarning);
+    }
+
+    [TestCase("A")]
+    [TestCase("B")]
+    public void RepeatingOperationReplacesOldResultAndOnlyChosenValueHasResult(string station)
+    {
+        var old = new PhoneSaberOperatorKeys.PhoneAction(1, 0, "red", station, "ignore=red", new[] { "10.0.0.1" });
+        var failed = ResultItem("phone-ignore", "red"); old.Apply(failed, 4, new[] { Ack(1, "nothing", "red0-blue0", station) });
+        Assert.IsTrue(failed.ResultWarning);
+        var retry = new PhoneSaberOperatorKeys.PhoneAction(2, 5, "blue", station, "ignore=blue", new[] { "10.0.0.1" });
+        var waiting = ResultItem("phone-ignore", "blue"); retry.Apply(waiting, 6, new[] { Ack(1, "nothing", "red0-blue0", station) });
+        Assert.IsTrue(waiting.Pending); Assert.IsFalse(waiting.ResultWarning);
+        StringAssert.DoesNotContain("対象なし", waiting.Result); Assert.AreEqual(2, waiting.CommandId);
+        var success = ResultItem("phone-ignore", "blue"); retry.Apply(success, 9, new[] { Ack(2, "ignored", "red0-blue1", station) });
+        Assert.IsTrue(success.Succeeded); Assert.IsFalse(success.ResultWarning);
+        StringAssert.Contains("青を無視しました", success.Result);
+        var sibling = ResultItem("phone-ignore", "red"); retry.Apply(sibling, 9, Array.Empty<PhoneSaberAcknowledgement>());
+        Assert.IsNull(sibling.Result); Assert.IsTrue(sibling.Enabled); Assert.IsFalse(sibling.Succeeded);
+    }
+
+    [Test]
+    public void OperationResultJsonAndWebBindingUseResultAndWarning()
+    {
+        var state = new PhoneSaberControlPanelState(); state.BeginSection("iPhone"); state.Button("学習", "phone-learn-area");
+        var action = new PhoneSaberOperatorKeys.PhoneAction(1, 0, "", "A", "learn-area=10", new[] { "sender\"\n<test>" });
+        var item = state.Sections[0].Items[0];
+        action.Apply(item, 1, new[] { Ack(1, "failed", "samples0", sender: "sender\"\n<test>") });
+        StringAssert.Contains("\"result\":" + PhoneSaberControlPanelState.Quote(item.Result), state.ToJson());
+        StringAssert.Contains("\"resultWarning\":true", state.ToJson());
+        StringAssert.Contains("el.resultNode.textContent=i.result", PhoneSaberControlPanelPage.Html);
+        StringAssert.Contains("i.resultWarning", PhoneSaberControlPanelPage.Html);
+        StringAssert.Contains("message.textContent=item.result", PhoneSaberControlPanelPage.Html);
+        StringAssert.DoesNotContain("iPhoneの返事を反映しました", PhoneSaberControlPanelPage.Html);
     }
 
     // ソケットはこの1件のみ。固定ポートを使用せず、終了時に停止・破棄する。

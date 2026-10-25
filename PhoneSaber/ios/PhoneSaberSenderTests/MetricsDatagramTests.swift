@@ -12,6 +12,7 @@ final class MetricsDatagramTests: XCTestCase {
         m.model = String(repeating: "m", count: 16)
         m.thermal = String(repeating: "t", count: 16)
         m.controls = "1237"; m.lowLatencyTest = true
+        m.emitter = true
         m.fpsMode = 240; m.captureFPS = nil; m.redFPS = 1000; m.blueFPS = 1000
         m.median = 2000; m.p95 = 2000; m.samples = 2400
         m.battery = nil
@@ -19,8 +20,8 @@ final class MetricsDatagramTests: XCTestCase {
     }
 
     func testWorstCaseLengthIncludesAllExtensionsAndMissingValues() throws {
-        // 可変文字列: station/model/thermal各16、app24、ctl4。LANとdetectionも含む。
-        // 数値最大だけでは最長にならない。capture/battery/RTTのunknownが最長の372 byte。
+        // 可変文字列: station/model/thermal各16、app24、ctl4、emitter。LANとdetectionも含む。
+        // 数値最大だけでは最長にならない。capture/battery/RTTのunknownが最長の382 byte。
         var longest = 0
         for station in ["A", "B", "none", String(repeating: "s", count: 16)] {
             var stationLongest = 0
@@ -36,15 +37,34 @@ final class MetricsDatagramTests: XCTestCase {
                     let line = try XCTUnwrap(m.line())
                     XCTAssertLessThanOrEqual(line.utf8.count, 399)
                     XCTAssertTrue(line.contains("app=1234567890.1234567890.12 "))
-                    XCTAssertTrue(line.hasSuffix(" ctl=1237 model=" + String(repeating: "m", count: 16)))
+                    XCTAssertTrue(line.hasSuffix(" ctl=1237 emitter=1 model=" + String(repeating: "m", count: 16)))
                     stationLongest = max(stationLongest, line.utf8.count)
                 }
             }
-            XCTAssertEqual(stationLongest, 356 + station.utf8.count)
+            XCTAssertEqual(stationLongest, 366 + station.utf8.count)
             longest = max(longest, stationLongest)
         }
         XCTAssertEqual(try XCTUnwrap(Self.worstCaseMetrics.line()).utf8.count, longest)
-        XCTAssertEqual(longest, 372)
+        XCTAssertEqual(longest, 382)
+    }
+
+    func testEmitterReportsSettingIndependentlyOfFourDigitControls() throws {
+        for emitter: Bool? in [true, false, nil] {
+            for controls: String? in ["1237", nil] {
+                var m = MetricsDatagram()
+                m.controls = controls; m.emitter = emitter
+                let line = try XCTUnwrap(m.line())
+                XCTAssertEqual(line.contains(" ctl=1237"), controls != nil)
+                if let emitter {
+                    XCTAssertTrue(line.hasSuffix(" emitter=\(emitter ? 1 : 0)"))
+                } else {
+                    XCTAssertFalse(line.contains(" emitter="))
+                }
+            }
+        }
+        var invalid = MetricsDatagram()
+        invalid.controls = "12371"; invalid.emitter = true
+        XCTAssertNil(invalid.line(), "ctlを5桁へ拡張しない")
     }
 
     func testPhoneIdentityAndMetricsExtension() throws {

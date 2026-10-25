@@ -280,6 +280,76 @@ public class TutorialProgramTests
         }
     }
 
+    [TestCase("A", 0)]
+    [TestCase("B", 0)]
+    [TestCase("A", 1)]
+    [TestCase("B", 1)]
+    [TestCase("A", 2)]
+    [TestCase("B", 2)]
+    public void RangeBaseline_TitleRestoresF8MappingAndPhoneAreaUnlessStaffRelearned(string station, int setup)
+    {
+        using var commandScope = new PhoneSaberPositionCalibrationTests.PhoneCommandsScope();
+        string key = PhoneSaberPositionCalibrationStore.DataKey(station), enabledKey = PhoneSaberPositionCalibrationStore.EnabledKey(station);
+        bool hadData = PlayerPrefs.HasKey(key), hadEnabled = PlayerPrefs.HasKey(enabledKey);
+        string savedData = PlayerPrefs.GetString(key); int savedEnabled = PlayerPrefs.GetInt(enabledKey);
+        bool hadBaseline = PlayerPrefs.HasKey(TutorialRangeBaseline.PrefsKey);
+        string savedBaseline = PlayerPrefs.GetString(TutorialRangeBaseline.PrefsKey);
+        bool autoStart = PhoneSaberP2PBridgeProcess.AutoStartEnabled;
+        var savedInput = InputPoint.Instance;
+        var singleton = typeof(InputPoint).GetProperty(nameof(InputPoint.Instance));
+        var root = new GameObject("タイトルで台の範囲へ戻すテスト");
+        try
+        {
+            singleton.SetValue(null, null);
+            var input = root.AddComponent<InputPoint>(); input.enabled = false;
+            typeof(InputPoint).GetField("phoneSaberStation", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(input, station);
+            singleton.SetValue(null, input);
+            PhoneSaberP2PBridgeProcess.AutoStartEnabled = true;
+            TutorialRangeBaseline.Forget();
+            input.ResetPositionCalibration();
+            if (setup != 0)
+                Assert.IsTrue(input.ApplyLearnedPositionCalibration(Rect.MinMaxRect(.4f, .5f, .6f, .7f), "F8", out _));
+            string baseline = PlayerPrefs.GetString(key, "");
+            TutorialRangeBaseline.Remember(station);
+            Assert.IsTrue(TutorialController.ApplyLearnedRange(input, Rect.MinMaxRect(.2f, .1f, .8f, .9f)));
+            TutorialRangeBaseline.Finish(station, true);
+            if (setup == 2)
+                Assert.IsTrue(input.ApplyLearnedPositionCalibration(Rect.MinMaxRect(.3f, .3f, .7f, .7f), "staff", out _));
+            string beforeTitle = PlayerPrefs.GetString(key, "");
+            var commands = PhoneSaberDiscoveryResponder.Acknowledgements;
+            commands.Latest(out int before, out _, out _);
+
+            Assert.AreEqual(setup != 2, TutorialRangeBaseline.RestoreAtTitle());
+
+            commands.Latest(out int after, out string fields, out _, out bool automatic);
+            Assert.IsNull(TutorialRangeBaseline.Load());
+            Assert.AreEqual(setup == 2 ? beforeTitle : baseline, PlayerPrefs.GetString(key, ""));
+            Assert.AreEqual(setup != 0, input.PositionCalibrationEnabled);
+            Assert.AreEqual(before + (setup == 2 ? 0 : 1), after);
+            if (setup != 2)
+            {
+                Assert.IsTrue(automatic);
+                if (setup == 0) Assert.AreEqual(PhoneSaberDiscoveryResponder.ClearAreaCommand, fields);
+                else
+                {
+                    StringAssert.StartsWith("play-area=", fields);
+                    var coordinates = System.Array.ConvertAll(fields.Substring("play-area=".Length).Split(','),
+                        value => float.Parse(value, System.Globalization.CultureInfo.InvariantCulture));
+                    Assert.That(coordinates, Is.EqualTo(new[] { .27f, .37f, .73f, .83f }).Within(1e-5f));
+                }
+            }
+        }
+        finally
+        {
+            PhoneSaberP2PBridgeProcess.AutoStartEnabled = autoStart;
+            Object.DestroyImmediate(root); singleton.SetValue(null, savedInput);
+            if (hadData) PlayerPrefs.SetString(key, savedData); else PlayerPrefs.DeleteKey(key);
+            if (hadEnabled) PlayerPrefs.SetInt(enabledKey, savedEnabled); else PlayerPrefs.DeleteKey(enabledKey);
+            if (hadBaseline) PlayerPrefs.SetString(TutorialRangeBaseline.PrefsKey, savedBaseline); else PlayerPrefs.DeleteKey(TutorialRangeBaseline.PrefsKey);
+            PlayerPrefs.Save();
+        }
+    }
+
     [Test]
     public void RangeLearning_ReadsThisStationsPhoneFirst()
     {

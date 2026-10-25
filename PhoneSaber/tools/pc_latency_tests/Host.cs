@@ -121,6 +121,11 @@ class Frames
         int passed = 0;
         foreach (var method in type.GetMethods())
         {
+#if PHONESABER_CALIBRATION_HOST
+            // コントローラーの生成・Tick は実Editorで検証する。位置補正とタイトル復元はhostでも実行する。
+            if (method.Name == "RangeStep_OnlyReportsOkWhenThePcAppliedTheRange")
+            { Console.WriteLine("SKIP Unity native: " + method.Name + " (6 cases)"); continue; }
+#endif
             if (method.Name == "NoConflictPollingDoesNotWaitForStatisticsWriter") continue; // 前後比較は上で行う。
             var cases = method.GetCustomAttributes(typeof(TestCaseAttribute), false);
             if (cases.Length == 0 && !method.IsDefined(typeof(TestAttribute), false)) continue;

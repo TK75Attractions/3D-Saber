@@ -31,14 +31,7 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
     readonly Dictionary<string, PhoneSaberControlPanelPhone> phoneReports = new Dictionary<string, PhoneSaberControlPanelPhone>();
     readonly HashSet<string> seenPhoneAcks = new HashSet<string>();
     readonly Dictionary<int, double> phoneCommandTimes = new Dictionary<int, double>();
-    sealed class PendingPhoneAction
-    {
-        public int Id;
-        public double At;
-        public string Value;
-        public string[] Senders;
-    }
-    readonly Dictionary<string, PendingPhoneAction> pendingPhoneActions = new Dictionary<string, PendingPhoneAction>();
+    readonly Dictionary<string, PhoneSaberOperatorKeys.PhoneAction> pendingPhoneActions = new Dictionary<string, PhoneSaberOperatorKeys.PhoneAction>();
     bool showDangerous;
     string confirmAction, confirmValue;
     string fallbackStation;
@@ -210,14 +203,14 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         if (name.StartsWith("phone-"))
         {
             var store = PhoneSaberDiscoveryResponder.Acknowledgements;
-            if (store.Latest(out int id, out _, out double at))
+            if (store.Latest(out int id, out string fields, out double at))
             {
                 var senders = new List<string>();
                 var input = InputPoint.Instance;
                 if (input != null)
                     foreach (string sender in new[] { input.RedCoordinateSender, input.BlueCoordinateSender })
                         if (!string.IsNullOrEmpty(sender) && !senders.Contains(sender)) senders.Add(sender);
-                pendingPhoneActions[name] = new PendingPhoneAction { Id = id, At = at, Value = value, Senders = senders.ToArray() };
+                pendingPhoneActions[name] = new PhoneSaberOperatorKeys.PhoneAction(id, at, value, CurrentStation, fields, senders.ToArray());
                 phoneCommandTimes[id] = at;
             }
         }
@@ -678,18 +671,7 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
                 string reported = PhoneChoice(item.Name);
                 item.Selected = reported != null && reported == item.Value;
                 if (pendingPhoneActions.TryGetValue(item.Name, out var pending))
-                {
-                    item.CommandId = pending.Id;
-                    bool acknowledged = PhoneSaberControlPanelPhone.HasAcknowledged(CurrentStation, pending.Senders,
-                        PhoneSaberDiscoveryResponder.Acknowledgements.Read(pending.Id));
-                    item.Acknowledged = acknowledged;
-                    if (!acknowledged && pending.Value == item.Value)
-                    {
-                        item.Pending = now - pending.At < 20;
-                        if (!item.Pending) item.Text += "（未確認・応答なし）";
-                    }
-                    if (!acknowledged && now - pending.At < 20) item.Enabled = false;
-                }
+                    pending.Apply(item, now, PhoneSaberDiscoveryResponder.Acknowledgements.Read(pending.Id));
             }
         return panel;
     }
@@ -731,7 +713,7 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
             }
         panel.BeginSection("いまの設定");
         panel.Label("操作対象: このPCの台 " + (CurrentStation ?? "未指定") + " のiPhone（送信だけでは確定しません）");
-        foreach (string warning in PhoneSaberControlPanelPhone.StationWarnings(phoneReports.Values, now))
+        foreach (string warning in PhoneSaberControlPanelPhone.StationWarnings(phoneReports.Values, now, CurrentStation))
             panel.Label(warning, warning: true);
         foreach (string phoneStation in new[] { "A", "B" })
         {
@@ -859,6 +841,8 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
                         else ExecuteAction(item.Name, item.Value);
                     }
                     GUI.enabled = previousEnabled;
+                    if (!string.IsNullOrEmpty(item.Result))
+                        GUILayout.Label(item.Result, item.ResultWarning ? warningStyle : textStyle);
                     if (confirmAction == item.Name && confirmValue == item.Value)
                     {
                         GUILayout.Label("「" + item.Text + "」を実行しますか？設定が変わります。", warningStyle);

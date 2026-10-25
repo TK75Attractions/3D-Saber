@@ -27,15 +27,16 @@ public class PhoneSaberLatencyEstimateTests
         " fps-mode=240 capture-fps=unknown send-red-fps=1000.0 send-blue-fps=1000.0" +
         " c2s-median-ms=2000.0 c2s-p95-ms=2000.0 c2s-n=2400 rtt-ms=unknown rtt-n=0 rtt-age-s=unknown" +
         " route=LAN thermal=tttttttttttttttt battery=unknown low-latency-test=1 c2s-end=detection" +
-        " ctl=1237 model=mmmmmmmmmmmmmmmm";
+        " ctl=1237 emitter=1 model=mmmmmmmmmmmmmmmm";
     [Test] public void WorstCaseIPhoneMetricsAndByteBoundaryParse() {
         var data = Encoding.ASCII.GetBytes(WorstCaseLine);
-        Assert.AreEqual(372, data.Length);
+        Assert.AreEqual(382, data.Length);
         Assert.IsTrue(PhoneSaberMetrics.TryParse(data, data.Length, out var phone));
         Assert.AreEqual("ssssssssssssssss", phone.Station);
         Assert.AreEqual("1234567890.1234567890.12", phone.App);
         Assert.AreEqual("mmmmmmmmmmmmmmmm", phone.Model);
         Assert.AreEqual("1237", phone.Controls);
+        Assert.AreEqual(true, phone.Emitter);
         Assert.AreEqual(2400, phone.C2sCount);
         Assert.IsNull(phone.Rtt); Assert.IsNull(phone.CaptureFps); Assert.IsNull(phone.Battery);
         // 上限を緩めず、399 byteを受理し400 byteを拒否する。
@@ -66,6 +67,26 @@ public class PhoneSaberLatencyEstimateTests
         foreach (string suffix in new[] { " model=", " model=x model=y", " model=" + new string('x', 17), " model=x=y" }) {
             var bad = Encoding.ASCII.GetBytes(Encoding.ASCII.GetString(Valid) + suffix);
             Assert.IsFalse(PhoneSaberMetrics.TryParse(bad, bad.Length, out _));
+        }
+    }
+    [Test] public void OptionalEmitterAcceptsOnlyExactBitsAndNeverInfersMissingValues() {
+        foreach (string platform in new[] { "ios", "android" }) {
+            string legacy = Encoding.ASCII.GetString(Valid).Replace("platform=ios", "platform=" + platform);
+            var bytes = Encoding.ASCII.GetBytes(legacy);
+            Assert.IsTrue(PhoneSaberMetrics.TryParse(bytes, bytes.Length, out var old));
+            Assert.IsNull(old.Emitter);
+            foreach (string value in new[] { "0", "1" }) {
+                bytes = Encoding.ASCII.GetBytes(legacy + " emitter=" + value);
+                Assert.IsTrue(PhoneSaberMetrics.TryParse(bytes, bytes.Length, out var phone));
+                Assert.AreEqual(value == "1", phone.Emitter);
+                Assert.IsNull(phone.Controls, "emitterはctlから独立した任意項目");
+            }
+            foreach (string suffix in new[] { " emitter=", " emitter=2", " emitter=-1", " emitter=01", " emitter=00",
+                " emitter=1.0", " emitter=true", " emitter=unknown", " emitter=+1", " emitter=1=0",
+                " emitter=0 emitter=1", " emitter=1 emitter=1", " ctl=12371" }) {
+                bytes = Encoding.ASCII.GetBytes(legacy + suffix);
+                Assert.IsFalse(PhoneSaberMetrics.TryParse(bytes, bytes.Length, out _), suffix);
+            }
         }
     }
     [Test] public void FreshSnapshotKeepsBothPhonesWithoutCoordinateTrafficAndExpiresThem() {

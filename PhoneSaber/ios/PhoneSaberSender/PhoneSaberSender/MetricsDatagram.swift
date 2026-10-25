@@ -55,6 +55,8 @@ struct MetricsDatagram {
     var thermal = "unknown", battery: Double?, lowLatencyTest = false
     var c2sEnd = "detection"
     var controls: String?
+    // 設定値の報告であり、認識経路が実際に有効かどうかは表さない。
+    var emitter: Bool?
     var model: String?
 
     // 399 byte上限内で現在値を通知。順に追跡0/1、EVの符号反転、シャッター・ISOの選択index。
@@ -94,6 +96,7 @@ struct MetricsDatagram {
                   controls.last.map({ "01234567".contains($0) }) == true else { return nil }
             text += " ctl=\(controls)"
         }
+        if let emitter { text += " emitter=\(emitter ? 1 : 0)" }
         if let model { text += " model=\(Self.atom(model, limit: 16))" }
         return text.utf8.count < 400 && text.data(using: .ascii) != nil ? text : nil
     }

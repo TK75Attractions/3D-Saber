@@ -48,6 +48,8 @@ public static class HighScoreStore { public static string Key(string s,string d)
 public static class SongAchievementStore { public static string Key(string s,string d) => s+d; }
 public static class DailyRankingStore { public static string Key(string s,string d) => s+d; }
 public static class ScreenTransition { public static bool IsBusy; }
+// 範囲更新は後段の calibration host で実装ごと検証する。frame host で呼ばれたら失敗させる。
+public static class TutorialRangeBaseline { public static void SendPhoneArea(Rect area) { throw new System.InvalidOperationException("Use calibration host"); } public static Rect PhoneAreaFor(Vector2[] corners,float width,float height) { throw new System.InvalidOperationException("Use calibration host"); } }
 public class ScoreManager : MonoBehaviour { public int Score,HitCount,MissCount,MaxCombo,ComboBonus,PerfectCount,GreatCount,GoodCount,BadCount; }
 public class ResultController : MonoBehaviour { public void OnBackButton(){} }
 public class CalibrationController : MonoBehaviour { public bool IsLive; public void DiscardAndExit(){} }
@@ -125,15 +127,24 @@ public class GamePlayManager : MonoBehaviour { public NoteSpawner noteSpawner; p
             if not p.name.startswith('UnityEditor.') and p.name != 'Assembly-CSharp.dll']))
         host_tutorial = build / 'TutorialProgramHost.cs'
         tutorial_program = ROOT / 'Assets/Scripts/Game/TutorialProgram.cs'
-        host_tutorial.write_text(aliases + tutorial_program.read_text())
+        # タイトル復元の実経路を通す。native Object の生成・null判定・破棄だけhostへ置換する。
+        host_tutorial.write_text(aliases + tutorial_program.read_text().replace(
+            'if (input == null || input.StationLabel != s.station)',
+            'if (ReferenceEquals(input, null) || input.StationLabel != s.station)'))
         calibration_sources[calibration_sources.index(tutorial_program)] = host_tutorial
         tutorial_tests = build / 'TutorialProgramTestsHost.cs'
-        tutorial_tests.write_text(aliases + (ROOT / 'Assets/Tests/Editor/TutorialProgramTests.cs').read_text())
+        tutorial_test_source = (ROOT / 'Assets/Tests/Editor/TutorialProgramTests.cs').read_text()
+        tutorial_tests.write_text(aliases + 'using GameObject = CalibrationHostObject;\n' + tutorial_test_source.replace(
+            'input.enabled = false;', '').replace('Object.DestroyImmediate(root);', 'root.Dispose();'))
         if args.learning_only:
             host_input = build / 'InputPointHost.cs'
             host_input.write_text('using Time = FrameClock;\nusing Screen = FrameScreen;\n' +
                                   (INPUT / 'InputPoint.cs').read_text().replace('PhoneSaberPerfLog.Estimate(', 'FramePredictionPerfLog.Estimate('))
         calibration_sources[calibration_sources.index(INPUT / 'InputPoint.cs')] = host_input
+        host_input.write_text(host_input.read_text().replace(
+            'var ip = Instance != null ? Instance : FindFirstObjectByType<InputPoint>();',
+            'var ip = !ReferenceEquals(Instance, null) ? Instance : FindFirstObjectByType<InputPoint>();').replace(
+            'if (ip == null)', 'if (ReferenceEquals(ip, null))'))
         calibration_sources[calibration_sources.index(INPUT / 'PhoneSaberPositionCalibration.cs')] = host_calibration
         discovery_tests = ROOT / 'Assets/Tests/Editor/PhoneSaberDiscoveryResponderTests.cs'
         test_runner = template / 'UnityEngine.TestRunner.dll'

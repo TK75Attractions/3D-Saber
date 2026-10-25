@@ -54,9 +54,9 @@ public sealed class PhoneSaberControlPanelState
 {
     public sealed class Item
     {
-        public string Text, Name, Value, Grade;
+        public string Text, Name, Value, Grade, Result;
         public int CommandId;
-        public bool Enabled, Selected, Warning, Pending, Acknowledged;
+        public bool Enabled, Selected, Warning, Pending, Acknowledged, Succeeded, ResultWarning;
         public bool RequiresConfirmation => PhoneSaberControlPanelActions.RequiresConfirmation(Name, Value);
     }
     public sealed class Section
@@ -115,6 +115,9 @@ public sealed class PhoneSaberControlPanelState
                     .Append(",\"commandId\":").Append(item.CommandId)
                     .Append(",\"pending\":").Append(item.Pending ? "true" : "false")
                     .Append(",\"acknowledged\":").Append(item.Acknowledged ? "true" : "false")
+                    .Append(",\"succeeded\":").Append(item.Succeeded ? "true" : "false")
+                    .Append(",\"result\":").Append(Quote(item.Result))
+                    .Append(",\"resultWarning\":").Append(item.ResultWarning ? "true" : "false")
                     .Append(",\"requiresConfirmation\":").Append(item.RequiresConfirmation ? "true" : "false")
                     .Append(",\"grade\":").Append(Quote(item.Grade)).Append('}');
             }
@@ -170,9 +173,10 @@ public sealed class PhoneSaberControlPanelPhone
     {
         if (phone == null || phone.Platform != "ios" || (effectiveStation ?? phone.Station) != Station) return;
         Model = phone.Model; App = phone.App; ReportedStation = phone.Station; LastMetricsAt = phone.ReceivedAt;
+        void Put(string key, string value) => Set(key, value, phone.ReceivedAt, phone.ReceivedAt, "metrics");
+        if (phone.Emitter.HasValue) Put("colouredEmitter", phone.Emitter.Value ? "ON" : "OFF");
         if (phone.Controls == null) return;
         string ctl = phone.Controls;
-        void Put(string key, string value) => Set(key, value, phone.ReceivedAt, phone.ReceivedAt, "metrics");
         Put("trackLock", ctl[0] == '1' ? "ON" : "OFF");
         Put("exposureEv", new[] { "0", "-1", "-2" }[ctl[1] - '0']);
         Put("shutter", new[] { "OFF", "1/500", "1/1000", "1/2000" }[ctl[2] - '0']);
@@ -228,20 +232,23 @@ public sealed class PhoneSaberControlPanelPhone
     }
     public string Value(string key) => Settings.TryGetValue(key, out var report) ? report.Value : null;
     // 端末交換後の古い報告と、同一IPの台変更を重複警告に数えない。
-    public static List<string> StationWarnings(IEnumerable<PhoneSaberControlPanelPhone> phones, double now)
+    public static List<string> StationWarnings(IEnumerable<PhoneSaberControlPanelPhone> phones, double now, string pcStation = null)
     {
         var latest = new Dictionary<string, PhoneSaberControlPanelPhone>();
         foreach (var phone in phones)
             if (phone.Sender != null && now >= phone.LastMetricsAt && now - phone.LastMetricsAt <= PhoneSaberMetricsStore.FreshSeconds &&
                 (!latest.TryGetValue(phone.Sender, out var old) || phone.LastMetricsAt > old.LastMetricsAt)) latest[phone.Sender] = phone;
         var groups = new Dictionary<string, List<string>>();
+        var warnings = new List<string>();
         foreach (var phone in latest.Values)
         {
             string station = phone.ReportedStation ?? "none";
+            if ((pcStation == "A" || pcStation == "B") && (station == "A" || station == "B") && station != pcStation)
+                warnings.Add("警告: このPCの台 " + pcStation + " とiPhoneの報告台 " + station + " が一致していません: " +
+                    phone.ModelLabel + " (" + phone.Sender + ")。iPhoneの台・送信先・手動IP優先を確認してください（15秒以内の報告）。");
             if (!groups.TryGetValue(station, out var group)) groups[station] = group = new List<string>();
             group.Add(phone.ModelLabel + " (" + phone.Sender + ")");
         }
-        var warnings = new List<string>();
         foreach (var group in groups)
             if (group.Value.Count > 1) warnings.Add("警告: このPCに複数のiPhoneが同じ台 " +
                 (group.Key == "none" || group.Key == "?" ? "未指定" : group.Key) + " を報告しています: " +

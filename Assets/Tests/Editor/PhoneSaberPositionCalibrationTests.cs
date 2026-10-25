@@ -34,6 +34,22 @@ public class PhoneSaberPositionCalibrationTests
         Assert.AreEqual(expected.y, actual.y, 0.01f);
     }
 
+    // 実際の自動指示を検証する間だけ共有キューを隔離し、他のテストの指示・32件の上限に影響させない。
+    public sealed class PhoneCommandsScope : IDisposable
+    {
+        readonly System.Collections.IList commands = (System.Collections.IList)typeof(PhoneSaberAcknowledgementStore)
+            .GetField("commands", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(PhoneSaberDiscoveryResponder.Acknowledgements);
+        readonly object[] saved;
+        public PhoneCommandsScope()
+        {
+            saved = new object[commands.Count]; commands.CopyTo(saved, 0); commands.Clear();
+        }
+        public void Dispose()
+        {
+            commands.Clear(); foreach (var command in saved) commands.Add(command);
+        }
+    }
+
     static PhoneSaberPositionCalibration Create(Vector2[] corners)
     {
         Assert.IsTrue(PhoneSaberPositionCalibration.TryCreate(corners, out var result, out var error), error);
@@ -324,6 +340,62 @@ public class PhoneSaberPositionCalibrationTests
             new Rect(0, 0, float.PositiveInfinity, 1), new Rect(.5f, .5f, .001f, .001f), new Rect(.5f, .5f, -.1f, .5f) })
             Assert.IsFalse(PhoneSaberPositionCalibration.TryFromLearnedArea(bounds, 1920, 1080, out _, out _));
         Assert.IsFalse(PhoneSaberPositionCalibration.TryFromLearnedArea(new Rect(0, 0, 1, 1), float.NaN, 1080, out _, out _));
+    }
+
+    [TestCase("A")]
+    [TestCase("B")]
+    public void LearnedAckAndTutorialSendTheSameWidenedPhoneAreaOnce(string station)
+    {
+        using var commandScope = new PhoneCommandsScope();
+        string key = PhoneSaberPositionCalibrationStore.DataKey(station);
+        string enabledKey = PhoneSaberPositionCalibrationStore.EnabledKey(station);
+        bool hadData = PlayerPrefs.HasKey(key), hadEnabled = PlayerPrefs.HasKey(enabledKey);
+        string original = PlayerPrefs.GetString(key); int enabled = PlayerPrefs.GetInt(enabledKey);
+        bool autoStart = PhoneSaberP2PBridgeProcess.AutoStartEnabled;
+        var go = new GameObject("学習後のスマホ範囲テスト");
+        try
+        {
+            var input = go.AddComponent<InputPoint>(); input.enabled = false;
+            Set(input, "phoneSaberStation", station);
+            PhoneSaberP2PBridgeProcess.AutoStartEnabled = true;
+            var commands = PhoneSaberDiscoveryResponder.Acknowledgements;
+            foreach (string bounds in new[] { "0.2_0.1_0.8_0.9", "0.4_0.5_0.6_0.7" })
+            {
+                var store = new PhoneSaberAcknowledgementStore();
+                int before = PhoneSaberDiscoveryResponder.QueueCommand(PhoneSaberDiscoveryResponder.LearnAreaCommand, automatic: true);
+                store.Queue(before, "learn-area=10", 0);
+                var ack = new PhoneSaberAcknowledgement(before, station, "ios", "learned", "samples300-area" + bounds, "phone");
+                store.Receive(ack, "192.0.2.1");
+                Assert.IsTrue(input.ApplyLearnedPositionCalibration(store, "F8"));
+                commands.Latest(out int sent, out string fields, out _, out bool automatic);
+                Assert.AreEqual(before + 1, sent, "F8 成功時に1回だけ送る");
+                Assert.IsTrue(automatic);
+                // 既知の1.5倍矩形＋余白。大きい範囲はカメラ端、小さい再学習は新しい範囲に置換する。
+                var expected = bounds.StartsWith("0.2") ? new Rect(0, 0, 1, 1) : Rect.MinMaxRect(.27f, .37f, .73f, .83f);
+                StringAssert.StartsWith("play-area=", fields);
+                var coordinates = Array.ConvertAll(fields.Substring("play-area=".Length).Split(','),
+                    value => float.Parse(value, System.Globalization.CultureInfo.InvariantCulture));
+                Assert.That(coordinates, Is.EqualTo(new[] { expected.xMin, expected.yMin, expected.xMax, expected.yMax }).Within(1e-5f));
+                store.Receive(ack, "192.0.2.1");
+                Assert.IsFalse(input.ApplyLearnedPositionCalibration(store, "duplicate"));
+                Assert.IsFalse(input.ApplyLearnedPositionCalibration(new Rect(.5f, .5f, .001f, .001f), "failed", out _));
+                commands.Latest(out int unchanged, out _, out _);
+                Assert.AreEqual(sent, unchanged, "重複ACK・適用失敗は送らない");
+                var learned = bounds.StartsWith("0.2") ? Rect.MinMaxRect(.2f, .1f, .8f, .9f) : Rect.MinMaxRect(.4f, .5f, .6f, .7f);
+                Assert.IsTrue(TutorialController.ApplyLearnedRange(input, learned));
+                commands.Latest(out int tutorial, out string tutorialFields, out _);
+                Assert.AreEqual(sent + 1, tutorial, "チュートリアルにも二重送信がない");
+                Assert.AreEqual(fields, tutorialFields);
+            }
+        }
+        finally
+        {
+            PhoneSaberP2PBridgeProcess.AutoStartEnabled = autoStart;
+            UnityEngine.Object.DestroyImmediate(go);
+            if (hadData) PlayerPrefs.SetString(key, original); else PlayerPrefs.DeleteKey(key);
+            if (hadEnabled) PlayerPrefs.SetInt(enabledKey, enabled); else PlayerPrefs.DeleteKey(enabledKey);
+            PlayerPrefs.Save();
+        }
     }
 
     [TestCase("A", "A")]

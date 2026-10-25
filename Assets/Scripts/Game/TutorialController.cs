@@ -148,7 +148,7 @@ public sealed class TutorialController : MonoBehaviour
 
     static PhoneSaberAcknowledgement[] DefaultReadLearnArea(int id) => PhoneSaberDiscoveryResponder.Acknowledgements.Read(id);
 
-    // F8 と同じ学習矩形の変換・保存を使う。チュートリアルの探す範囲の更新は従来どおり。
+    // F8 と同じ学習矩形の変換・保存・スマホ範囲更新を使う。
     static bool DefaultApplyWidenedRange(Rect learned)
     {
         var input = InputPoint.Instance;
@@ -161,12 +161,7 @@ public sealed class TutorialController : MonoBehaviour
         bool saved = input.ApplyLearnedPositionCalibration(learned, null, out string error);
         if (!saved) Debug.LogWarning("Tutorial: 広げた範囲を保存できませんでした: " + error);
         else
-        {
             PhoneSaberDiscoveryResponder.Acknowledgements.DiscardLearnedAreas(input.StationLabel);
-            var calibration = PhoneSaberPositionCalibrationStore.Load(input.StationLabel, out _);
-            // スマホの探す範囲も広げた枠に合わせる(振りやすい範囲＋余白のままだと拾い落とす)。
-            TutorialRangeBaseline.SendPhoneArea(TutorialRangeBaseline.PhoneAreaFor(calibration.CopyCorners(), input.camWidth, input.camHeight));
-        }
         return saved;
     }
 

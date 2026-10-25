@@ -323,6 +323,7 @@ public sealed class PhoneSaberAcknowledgementStore
         public bool Automatic;
         public bool LearnedAreaTaken;
         public readonly HashSet<string> AppliedStations = new HashSet<string>();
+        public readonly HashSet<string> SupersededPhones = new HashSet<string>();
         public readonly Dictionary<string, PhoneSaberAcknowledgement> Phones = new Dictionary<string, PhoneSaberAcknowledgement>();
     }
     readonly object gate = new object();
@@ -349,6 +350,47 @@ public sealed class PhoneSaberAcknowledgementStore
 
     static double Deadline(Command command) => command.QueuedAt + PhoneSaberDiscoveryResponder.CommandRetrySeconds(command.Fields);
 
+    // 上書き対象の単独設定だけを分類する。複合操作・toggle・学習・defaults自体は対象外。
+    static string AbsoluteSetting(string fields, out string detail)
+    {
+        detail = null;
+        var parts = fields?.Split('=');
+        if (parts == null || parts.Length != 2) return null;
+        switch (parts[0])
+        {
+            case "shutter-iso":
+                return int.TryParse(parts[1], NumberStyles.None, CultureInfo.InvariantCulture, out int iso) &&
+                    PhoneSaberDiscoveryResponder.ShutterISOChoices.Contains(iso) ? "shutter-iso" : null;
+            case "shutter-emitter": case "track-lock":
+                if (parts[1] != "0" && parts[1] != "1") return null;
+                detail = parts[1] == "1" ? "on" : "off";
+                return parts[0] == "track-lock" ? "tracklock" : "shutter-emitter";
+            case "shutter":
+                if (!int.TryParse(parts[1], NumberStyles.None, CultureInfo.InvariantCulture, out int shutter) ||
+                    !PhoneSaberDiscoveryResponder.ShutterChoices.Contains(shutter)) return null;
+                detail = shutter == 0 ? "off" : shutter.ToString(CultureInfo.InvariantCulture);
+                return "shutter";
+            case "exposure-bias":
+                if (parts[1] != "0" && parts[1] != "-1" && parts[1] != "-2") return null;
+                detail = "ev" + parts[1];
+                return "exposure";
+            default: return null;
+        }
+    }
+
+    static bool DefaultsOverwrites(string setting, string detail)
+    {
+        switch (setting)
+        {
+            // 旧detailはshutter未対応版も返すため、明示された2設定だけを保証する。
+            case "tracklock": case "exposure":
+                return detail == "tracklock-on-ev-2" || detail == "tracklock-on-ev-2-shutter-2000";
+            case "shutter": case "shutter-iso": case "shutter-emitter":
+                return detail == "tracklock-on-ev-2-shutter-2000";
+            default: return false;
+        }
+    }
+
     // いずれかの運営指示に再送期限が残っていれば、その残り時間を表示する。
     public double CommandSecondsLeft(double now)
     {
@@ -359,7 +401,7 @@ public sealed class PhoneSaberAcknowledgementStore
     // 別端末のACKには影響させない。learningは開始ACKなので完了まで再送する。
     internal byte[][] PendingCommands(double now, string sender)
     {
-        lock (gate) return commands.Where(c => now < Deadline(c) &&
+        lock (gate) return commands.Where(c => now < Deadline(c) && !c.SupersededPhones.Contains(sender) &&
             (!c.Phones.TryGetValue(sender, out var ack) || ack.Result == "learning"))
             .Select(c => Encoding.ASCII.GetBytes(PhoneSaberDiscoveryResponder.BuildCommand(c.Id, c.Fields))).ToArray();
     }
@@ -375,6 +417,23 @@ public sealed class PhoneSaberAcknowledgementStore
             if (previous != null && (previous.Result == "learned" || previous.Result == "failed" ||
                 previous.Result == "ignored" || previous.Result == "nothing") && ack.Result == "learning") return true;
             command.Phones[sender] = new PhoneSaberAcknowledgement(ack.Id, ack.Station, ack.Platform, ack.Result, ack.Detail, sender);
+            string setting = AbsoluteSetting(command.Fields, out string expectedDetail);
+            // ISOはカメラの上下限で補正した実適用値が返る。他の設定は要求値との一致まで確認する。
+            bool success = setting != null && ack.Platform == "ios" && ack.Result == setting &&
+                (expectedDetail != null ? ack.Detail == expectedDetail :
+                    double.TryParse(ack.Detail, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out double iso) &&
+                    iso > 0 && !double.IsInfinity(iso));
+            bool defaults = command.Fields == PhoneSaberDiscoveryResponder.DefaultsCommand &&
+                ack.Platform == "ios" && ack.Result == "defaults";
+            if (success || defaults)
+                foreach (var older in commands)
+                {
+                    if (ReferenceEquals(older, command)) break;
+                    // IDや時刻ではなく受付順。同じ端末への再送だけを止め、履歴と実ACKは残す。
+                    string olderSetting = AbsoluteSetting(older.Fields, out _);
+                    if (success && olderSetting == setting || defaults && DefaultsOverwrites(olderSetting, ack.Detail))
+                        older.SupersededPhones.Add(sender);
+                }
             Interlocked.Increment(ref revision);
             return true;
         }

@@ -35,6 +35,228 @@ public class PhoneSaberDiscoveryResponderTests
 
     [TestCase("A")]
     [TestCase("B")]
+    public void LaterIsoSuccessStopsLostOlderCommandWithoutInventingItsAck(string station)
+    {
+        var store = new PhoneSaberAcknowledgementStore();
+        store.Queue(71, "shutter-iso=160", 100);
+        store.Queue(72, "shutter-iso=100", 100.01);
+        Assert.AreEqual(2, Commands(store, 101).Length, "後発が未ACKなら先行指示も再送する");
+        store.Receive(new PhoneSaberAcknowledgement(72, station, "ios", "shutter-iso", "100"), "phone");
+        Assert.IsEmpty(Commands(store, 102), "未着のID71でISO160へ巻き戻さない");
+        Assert.IsEmpty(store.Read(71), "再送停止を架空の成功ACKとして履歴に保存しない");
+        Assert.AreEqual(2, Commands(store, 102, "other-phone").Length);
+        store.Receive(new PhoneSaberAcknowledgement(71, station, "ios", "learning", "3s"), "phone");
+        Assert.IsEmpty(Commands(store, 103), "遅延ACKで旧指示の再送を復活させない");
+        store.Receive(new PhoneSaberAcknowledgement(71, station, "ios", "shutter-iso", "160"), "phone");
+        Assert.AreEqual("160", store.Read(71).Single().Detail, "旧指示の実際のACKは保持する");
+        Assert.IsEmpty(Commands(store, 104));
+        store.Receive(new PhoneSaberAcknowledgement(71, station, "ios", "shutter-iso", "160"), "other-phone");
+        CollectionAssert.AreEqual(new[] { PhoneSaberDiscoveryResponder.BuildCommand(72, "shutter-iso=100") },
+            Commands(store, 104, "other-phone"), "先行成功では後発指示を抑止しない");
+        store.Receive(new PhoneSaberAcknowledgement(72, station, "ios", "shutter-iso", "100"), "other-phone");
+        Assert.IsEmpty(Commands(store, 105, "other-phone"));
+        Assert.IsTrue(store.Latest(out int id, out _, out _));
+        Assert.AreEqual(72, id);
+        Assert.AreEqual(1, store.Read(71).Count(a => a.Sender == "phone"));
+    }
+
+    [TestCase("A")]
+    [TestCase("B")]
+    public void DefaultsSuccessStopsLostOlderIsoWithoutInventingItsAck(string station)
+    {
+        var store = new PhoneSaberAcknowledgementStore();
+        store.Queue(71, "shutter-iso=100", 100);
+        store.Queue(72, "defaults=1", 100.01);
+        Assert.AreEqual(2, Commands(store, 101).Length, "defaultsの受付だけでは再送を止めない");
+        Assert.IsTrue(PhoneSaberAcknowledgement.TryParse("PHONESABER_ACK 1 id=72 station=" + station +
+            " platform=ios result=defaults detail=tracklock-on-ev-2-shutter-2000", out var ack));
+        Assert.IsTrue(store.Receive(ack, "phone"));
+        Assert.IsEmpty(Commands(store, 102), "明示リセット後に未着のISO100を再送しない");
+        Assert.IsEmpty(store.Read(71), "旧指示の成功ACKを捏造しない");
+        Assert.AreEqual(ack.Detail, store.Read(72).Single().Detail);
+        Assert.AreEqual(2, Commands(store, 102, "other-phone").Length);
+        store.Receive(new PhoneSaberAcknowledgement(71, station, "ios", "learning", "3s"), "phone");
+        Assert.IsEmpty(Commands(store, 103), "遅延した開始ACKでも再送を復活させない");
+        store.Receive(new PhoneSaberAcknowledgement(71, station, "ios", "shutter-iso", "100"), "phone");
+        Assert.AreEqual("100", store.Read(71).Single().Detail, "実際の旧ACKは履歴に残す");
+        Assert.IsEmpty(Commands(store, 104));
+        Assert.IsTrue(store.Latest(out int id, out string fields, out _));
+        Assert.AreEqual(72, id);
+        Assert.AreEqual("defaults=1", fields);
+    }
+
+    [TestCase("shutter-iso=100")]
+    [TestCase("shutter=500")]
+    [TestCase("shutter-emitter=0")]
+    [TestCase("track-lock=0")]
+    [TestCase("exposure-bias=0")]
+    public void DefaultsSupersedesEachSettingInAcceptanceOrderOnly(string fields)
+    {
+        foreach (string station in new[] { "A", "B" })
+        {
+            var store = new PhoneSaberAcknowledgementStore();
+            // IDの大小・時計の逆転ではなく、defaultsより前の受付だけを抑止する。
+            store.Queue(900, fields, 100);
+            store.Queue(1, "defaults=1", 99);
+            store.Queue(800, fields, 98);
+            store.Receive(new PhoneSaberAcknowledgement(1, station, "ios", "defaults", "tracklock-on-ev-2-shutter-2000"), "phone");
+            CollectionAssert.AreEqual(new[] { PhoneSaberDiscoveryResponder.BuildCommand(800, fields) }, Commands(store, 101));
+            Assert.AreEqual(3, Commands(store, 101, "other-phone").Length);
+            Assert.IsEmpty(store.Read(900));
+        }
+    }
+
+    [TestCase("ignore=both")]
+    [TestCase("clear-ignore=1")]
+    [TestCase("learn-area=10")]
+    [TestCase("clear-area=1")]
+    [TestCase("clip=1")]
+    [TestCase("auto-clip=1")]
+    [TestCase("defaults=1")]
+    [TestCase("track-lock=toggle")]
+    [TestCase("shutter-iso=100 shutter-emitter=0")]
+    public void DefaultsKeepsUnrelatedAndCompoundRetries(string fields)
+    {
+        var store = new PhoneSaberAcknowledgementStore();
+        store.Queue(71, fields, 100);
+        store.Queue(72, "defaults=1", 100.01);
+        store.Receive(new PhoneSaberAcknowledgement(72, "A", "ios", "defaults", "tracklock-on-ev-2-shutter-2000"), "phone");
+        CollectionAssert.AreEqual(new[] { PhoneSaberDiscoveryResponder.BuildCommand(71, fields) }, Commands(store, 101));
+    }
+
+    [TestCase("android", "defaults", "tracklock-on-ev-2-shutter-2000")]
+    [TestCase("android", "defaults", "tracklock-on-ev-2")]
+    [TestCase("ios", "learning", "3s")]
+    [TestCase("ios", "failed", "samples0")]
+    [TestCase("ios", "shutter-iso", "160")]
+    [TestCase("ios", "shutter", "2000")]
+    [TestCase("ios", "defaults", "tracklock-on-ev-2-shutter-500")]
+    [TestCase("ios", "defaults", "tracklock-on-ev-2-shutter-2000-extra")]
+    [TestCase("ios", "defaults", "")]
+    public void DefaultsRequiresMatchingIPhoneCompletionBeforeSuppressing(string platform, string result, string detail)
+    {
+        var store = new PhoneSaberAcknowledgementStore();
+        var settings = new[] { "shutter-iso=100", "shutter=500", "shutter-emitter=0", "track-lock=0", "exposure-bias=0" };
+        for (int i = 0; i < settings.Length; i++) store.Queue(i + 1, settings[i], 100);
+        store.Queue(71, "defaults=1", 100);
+        Assert.AreEqual(6, Commands(store, 101).Length, "ACK未着ならすべて再送する");
+        store.Receive(new PhoneSaberAcknowledgement(71, "B", platform, result, detail), "phone");
+        foreach (string fields in settings)
+            Assert.IsTrue(Commands(store, 102).Any(c => c.EndsWith(" " + fields)), fields);
+    }
+
+    [TestCase("A")]
+    [TestCase("B")]
+    public void LegacyDefaultsOnlySupersedesTrackLockAndExposure(string station)
+    {
+        var store = new PhoneSaberAcknowledgementStore();
+        var settings = new[] { "shutter-iso=100", "shutter-emitter=0", "shutter=500", "track-lock=0", "exposure-bias=0" };
+        for (int i = 0; i < settings.Length; i++) store.Queue(i + 1, settings[i], 100);
+        store.Queue(71, "defaults=1", 100);
+        Assert.IsTrue(PhoneSaberAcknowledgement.TryParse("PHONESABER_ACK 1 id=71 station=" + station +
+            " platform=ios result=defaults detail=tracklock-on-ev-2", out var ack));
+        store.Receive(ack, "phone");
+        // このdetailはshutter未対応版も返すため、ISO・emitter・shutterは推定しない。
+        CollectionAssert.AreEqual(new[] { PhoneSaberDiscoveryResponder.BuildCommand(1, settings[0]),
+            PhoneSaberDiscoveryResponder.BuildCommand(2, settings[1]),
+            PhoneSaberDiscoveryResponder.BuildCommand(3, settings[2]) }, Commands(store, 101));
+        Assert.AreEqual("tracklock-on-ev-2", store.Read(71).Single().Detail, "ISO160・emitter ONの情報を補わない");
+        for (int id = 1; id <= settings.Length; id++) Assert.IsEmpty(store.Read(id));
+        Assert.AreEqual(6, Commands(store, 101, "other-phone").Length);
+    }
+
+    [Test]
+    public void DefaultsSuppressionKeepsHistoryCapacityAndDeadlines()
+    {
+        var store = new PhoneSaberAcknowledgementStore();
+        for (int id = 1; id < PhoneSaberAcknowledgementStore.MaximumCommands; id++) store.Queue(id, "shutter-iso=100", 100);
+        store.Queue(32, "defaults=1", 100);
+        store.Receive(new PhoneSaberAcknowledgement(32, "A", "ios", "defaults", "tracklock-on-ev-2-shutter-2000"), "phone");
+        Assert.IsEmpty(Commands(store, 101));
+        Assert.Throws<InvalidOperationException>(() => store.Queue(33, "shutter-iso=100", 101));
+        Assert.AreEqual(9, store.CommandSecondsLeft(101));
+        Assert.AreEqual(32, Commands(store, 109.999, "other-phone").Length);
+        Assert.IsEmpty(Commands(store, 110, "other-phone"));
+        store.Queue(33, "shutter-iso=100", 110);
+        CollectionAssert.AreEqual(new[] { PhoneSaberDiscoveryResponder.BuildCommand(33, "shutter-iso=100") }, Commands(store, 111));
+        Assert.AreEqual("defaults", store.Read(32).Single().Result);
+    }
+
+    [TestCase("shutter-iso=160", "shutter-iso=100", "shutter-iso", "125.5")]
+    [TestCase("shutter-emitter=1", "shutter-emitter=0", "shutter-emitter", "off")]
+    [TestCase("shutter-emitter=0", "shutter-emitter=1", "shutter-emitter", "on")]
+    [TestCase("shutter=2000", "shutter=0", "shutter", "off")]
+    [TestCase("shutter=0", "shutter=500", "shutter", "500")]
+    [TestCase("shutter=500", "shutter=1000", "shutter", "1000")]
+    [TestCase("exposure-bias=-2", "exposure-bias=0", "exposure", "ev0")]
+    [TestCase("exposure-bias=0", "exposure-bias=-1", "exposure", "ev-1")]
+    [TestCase("track-lock=1", "track-lock=0", "tracklock", "off")]
+    [TestCase("track-lock=0", "track-lock=1", "tracklock", "on")]
+    public void AbsoluteSettingsUseAcceptanceOrderRatherThanIdOrTimestamp(string older, string newer, string result, string detail)
+    {
+        var store = new PhoneSaberAcknowledgementStore();
+        // IDの折り返し・時計の逆転でも、Queueの受付順だけを見る。
+        store.Queue(900, older, 100);
+        store.Queue(1, newer, 99);
+        store.Receive(new PhoneSaberAcknowledgement(1, "B", "ios", result, detail), "phone");
+        Assert.IsEmpty(Commands(store, 101));
+        Assert.AreEqual(2, Commands(store, 101, "other-phone").Length);
+    }
+
+    [TestCase("shutter-iso=100", "learning", "3s")]
+    [TestCase("shutter-iso=100", "failed", "samples0")]
+    [TestCase("shutter-iso=100", "shutter-emitter", "on")]
+    [TestCase("shutter-iso=100", "shutter-iso", "0")]
+    [TestCase("shutter-emitter=0", "shutter-emitter", "on")]
+    [TestCase("shutter=0", "shutter", "2000")]
+    [TestCase("exposure-bias=0", "exposure", "ev-2")]
+    [TestCase("track-lock=0", "tracklock", "on")]
+    public void NonMatchingSuccessDoesNotSuppressOlderCommands(string fields, string result, string detail)
+    {
+        var store = new PhoneSaberAcknowledgementStore();
+        store.Queue(71, fields, 100);
+        store.Queue(72, fields, 100.01);
+        store.Receive(new PhoneSaberAcknowledgement(72, "A", "ios", result, detail), "phone");
+        CollectionAssert.Contains(Commands(store, 101), PhoneSaberDiscoveryResponder.BuildCommand(71, fields));
+    }
+
+    [TestCase("learn-area=10", "learned", "samples300")]
+    [TestCase("ignore=both", "ignored", "red1-blue1")]
+    [TestCase("clear-ignore=1", "cleared", "ignore")]
+    [TestCase("clear-area=1", "cleared", "area")]
+    [TestCase("clip=1", "clip-saved", "saved")]
+    [TestCase("auto-clip=1", "autoclip", "on")]
+    [TestCase("defaults=1", "defaults", "tracklock-on-ev-2-shutter-2000")]
+    [TestCase("track-lock=toggle", "tracklock", "on")]
+    [TestCase("shutter-iso=160 shutter-emitter=1", "shutter-iso", "160")]
+    public void OtherOperationsAndCompoundCommandsKeepTheirOwnRetries(string fields, string result, string detail)
+    {
+        var store = new PhoneSaberAcknowledgementStore();
+        store.Queue(71, fields, 100);
+        store.Queue(72, fields, 100.01);
+        store.Receive(new PhoneSaberAcknowledgement(72, "A", "ios", result, detail), "phone");
+        CollectionAssert.AreEqual(new[] { PhoneSaberDiscoveryResponder.BuildCommand(71, fields) }, Commands(store, 101));
+    }
+
+    [Test]
+    public void SuppressedHistoryKeepsQueueCapacityAndRetryDeadline()
+    {
+        var store = new PhoneSaberAcknowledgementStore();
+        for (int id = 1; id <= PhoneSaberAcknowledgementStore.MaximumCommands; id++)
+            store.Queue(id, "shutter-iso=160", 100);
+        store.Receive(new PhoneSaberAcknowledgement(32, "A", "ios", "shutter-iso", "160"), "phone");
+        Assert.IsEmpty(Commands(store, 101));
+        Assert.Throws<InvalidOperationException>(() => store.Queue(33, "shutter-iso=100", 101));
+        Assert.AreEqual(9, store.CommandSecondsLeft(101));
+        Assert.AreEqual(32, Commands(store, 109.999, "other-phone").Length);
+        Assert.IsEmpty(Commands(store, 110, "other-phone"));
+        store.Queue(33, "shutter-iso=100", 110);
+        CollectionAssert.AreEqual(new[] { PhoneSaberDiscoveryResponder.BuildCommand(33, "shutter-iso=100") }, Commands(store, 111));
+        Assert.AreEqual("160", store.Read(32).Single().Detail);
+    }
+
+    [TestCase("A")]
+    [TestCase("B")]
     public void RapidDifferentOperationsRetryIndependentlyAndCollectOutOfOrderAcks(string station)
     {
         var store = new PhoneSaberAcknowledgementStore();

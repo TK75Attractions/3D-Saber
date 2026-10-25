@@ -10,6 +10,7 @@ h1{font-size:26px;margin:0}#connection{color:#a9c9ff}#message{min-height:28px;co
 main{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;align-items:start}
 section{background:#1b2332;border:1px solid #354259;border-radius:14px;padding:20px}h2{font-size:21px;margin:0 0 14px}
 p{white-space:pre-wrap;overflow-wrap:anywhere;margin:10px 0}.warning{color:#ffd080}
+.result{flex-basis:100%;margin:4px 8px 12px}
 section.current{grid-column:1/-1;border:2px solid #75d9c2}section.current>p{margin:5px 0}
 .phone-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:12px}
 .phone{background:#101b2a;border-radius:10px;padding:14px}.phone h3{margin:0 0 10px;font-size:19px}
@@ -50,6 +51,7 @@ function refreshButtons(){
   el.textContent=(pending?'送信中… ':i.selected?'✓ ':'')+i.text;
   el.className=(i.selected?'selected ':'')+(pending?'pending':'');
   el.disabled=!i.enabled||i.pending||!!local;el.setAttribute('aria-pressed',String(i.selected));
+  el.resultNode.textContent=i.result||'';el.resultNode.hidden=!i.result;el.resultNode.className='result'+(i.resultWarning?' warning':'');
  }
 }
 function render(state){
@@ -70,7 +72,7 @@ function render(state){
    let controls=null,group=null;
    for(const i of s.items){const el=document.createElement(i.name?'button':'p');
     if(i.name){if(!controls||group!==i.name){controls=document.createElement('div');controls.className='controls';controls.setAttribute('role','group');controls.setAttribute('aria-label',i.text);content.append(controls);group=i.name;}
-     el.type='button';el.onclick=()=>action(el.item);controls.append(el);
+     el.type='button';el.onclick=()=>action(el.item);el.resultNode=document.createElement('p');el.resultNode.setAttribute('role','status');controls.append(el,el.resultNode);
     }else{controls=null;group=null;content.append(el);}nodes.push(el);
    }panel.append(section);
   }
@@ -85,8 +87,8 @@ function render(state){
  }
  refreshButtons();
  if(lastPhoneName&&!sending.has(lastPhoneName)){
-  const items=nodes.map(el=>el.item).filter(i=>i.name===lastPhoneName),item=items[0];
-  if(item&&!items.some(i=>i.pending)){message.textContent=item.acknowledged?'iPhoneの返事を反映しました。上の報告値を確認してください。':'未確認・応答なし。iPhoneの接続と状態を確認してください。';lastPhoneName=null;}
+  const items=nodes.map(el=>el.item).filter(i=>i.name===lastPhoneName),item=items.find(i=>i.result);
+  if(item&&!items.some(i=>i.pending)){message.textContent=item.result;lastPhoneName=null;}
  }
 }
 async function poll(){try{const r=await fetch(url('/state'),{cache:'no-store',referrerPolicy:'no-referrer'});

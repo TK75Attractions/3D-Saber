@@ -202,6 +202,26 @@ import CoreVideo
         XCTAssertNil(model.processor.finishPlayAreaLearning())
     }
 
+    func testPCSetAreaIsReplacedByLaterLearningAndClearAreaIsAccepted() async {
+        for station in ["A", "B"] {
+            let model = CameraViewModel(); model.station = station
+            let explicit = LANLivenessProbe.PCCommand.Area(minX: 0, minY: 0, maxX: 0.15, maxY: 1)
+            model.applyPCCommand(.init(id: 1, ignore: nil, clearIgnore: false, playArea: explicit, sourceHost: "192.0.2.1"))
+            XCTAssertEqual(model.playArea, previous)
+            XCTAssertTrue(model.lanProbe.acks.last!.contains("id=1 station=\(station) platform=ios result=area detail=set"))
+            await begin(model, id: 2)
+            // 指定範囲の外で再学習しても、その新しい範囲だけで完全に置換する。
+            let expected = collect(model.processor, x: 155)
+            await LearnSleeper.finish()
+            XCTAssertEqual(model.playArea, expected.area())
+            XCTAssertNotEqual(model.playArea, previous)
+            XCTAssertTrue(model.lanProbe.acks.last!.contains("id=2 station=\(station) platform=ios result=learned"))
+            model.applyPCCommand(.init(id: 3, ignore: nil, clearIgnore: false, clearArea: true, sourceHost: "192.0.2.1"))
+            XCTAssertNil(model.playArea)
+            XCTAssertTrue(model.lanProbe.acks.last!.contains("id=3 station=\(station) platform=ios result=cleared detail=area"))
+        }
+    }
+
     func testInsufficientSamplesAndStoppedRequestKeepPreviousArea() async {
         let model = CameraViewModel(); seed(model)
         await begin(model)

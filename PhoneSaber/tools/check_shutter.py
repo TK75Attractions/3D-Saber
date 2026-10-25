@@ -51,17 +51,14 @@ public class InputPoint {
  public static InputPoint Instance; public string RedCoordinateSender,BlueCoordinateSender,StationLabel;
  public PhoneSaberMetrics ReadPhoneMetrics(string s,double t) => null;
 }
+public static class PhoneSaberControlPanelHealth { public sealed class Check { public string Text,Grade; } }
 ''')
         metrics = (inputs / 'PhoneSaberLatencyEstimate.cs').read_text()
         (tmp / 'Metrics.cs').write_text('using System; using System.Collections.Generic; using System.Globalization; using System.Net; using System.Text;\n' +
             block(metrics, 'public sealed class PhoneSaberMetrics\n') + '\n' + block(metrics, 'public sealed class PhoneSaberMetricsStore'))
         state = (inputs / 'PhoneSaberControlPanelState.cs').read_text()
-        actions = block(state, 'public static class PhoneSaberControlPanelActions')
         # JSON文字列中の波括弧は数えず、クラス/メソッドの境界で実ソースを切り出す。
-        phone = state[state.index('public sealed class PhoneSaberControlPanelPhone'):state.index('// good-20261020')]
-        quote = state[state.index('    public static string Quote('):state.index('\n}\n\n// iPhone')]
-        (tmp / 'Actions.cs').write_text('using System; using System.Collections.Generic; using System.Globalization; using System.Text;\n' +
-            actions + '\n' + phone + '\npublic class PhoneSaberControlPanelState {\n' + quote + '\n}')
+        (tmp / 'Actions.cs').write_text(state[:state.index('// good-20261020')])
         panel_tests = (tests / 'PhoneSaberControlPanelTests.cs').read_text()
         panel = block(panel_tests, 'public void ShutterButtonsDispatchOnlySupportedValues()')
         # 実際の状態クラスを使うA/B回帰試験をすべて実行する。JSON中の波括弧は数えない。
@@ -74,14 +71,33 @@ public class InputPoint {
             'PhoneDefaultsAckPreservesReportsAtTheCommandTime',
             'PhoneDefaultsAndIndividualAcksAreIsolatedByStationAndSender',
             'ReconnectedPhoneReportsSavedChoicesWithoutDefaultsAck',
+            'EmitterMetricsConfirmValueSourceAndTimeWithoutAckOrControls',
+            'EmitterMetricsAndAcksPreserveNewestReport',
+            'EmitterMetricsStayWithSenderAndEffectiveStation',
+            'PcStationMismatchWithOnePhoneIsAWarningInPanelJson',
+            'StationMismatchRequiresExplicitStationsAndMetrics',
+            'StationMismatchUsesOnlyMetricsWithinFifteenSeconds',
+            'StationMismatchUsesLatestSenderReportRegardlessOfEnumerationOrder',
+            'OperationResultsKeepLateLearningFailureBesideISOSuccess',
+            'OperationLearningWaitsButFailureIsTerminalAndLearnedDoesNotClaimPCApply',
+            'OperationNothingIsSpecificTerminalWarningWithoutAddingIgnoreArea',
+            'OperationResultsSeparateStationSenderCommandAndMixedTargets',
+            'RepeatingOperationReplacesOldResultAndOnlyChosenValueHasResult',
         ]:
             method_source = panel_tests[panel_tests.index('    public void ' + method + '('):].split('\n    }', 1)[0] + '\n    }'
             phone_tests += '\n[TestCase("A")]\n[TestCase("B")]\n' + method_source
         ack_helper = panel_tests[panel_tests.index('    static PhoneSaberAcknowledgement Ack('):].split('\n\n', 1)[0]
+        result_helper = panel_tests[panel_tests.index('    static PhoneSaberControlPanelState.Item ResultItem('):].split('\n\n', 1)[0]
         (tmp / 'PanelTests.cs').write_text('using System; using System.Collections.Generic; using System.Text; using NUnit.Framework;\npublic class PanelTests { [Test]\n' +
-            panel + '\n' + ack_helper + phone_tests +
+            panel + '\n' + ack_helper + '\n' + result_helper + phone_tests +
+            '\n[Test]\n' + block(panel_tests, 'public void OperationResultJsonAndWebBindingUseResultAndWarning(') +
+            '\n[Test]\n' + block(panel_tests, 'public void PhoneIdentityAndStationCollisionUseFreshDistinctSenders(') +
             '\n[Test]\n' + block(panel_tests, 'public void PhoneReportsFollowMetricsAndAcksWithoutGuessingUnreportedTotals(') +
             '\n[Test]\n' + block(panel_tests, 'public void F8DefaultsIsAnExplicitAction(') + '\n}')
+        metrics_tests = (tests / 'PhoneSaberLatencyEstimateTests.cs').read_text()
+        (tmp / 'MetricsTests.cs').write_text(metrics_tests[:metrics_tests.index('    [Test] public void SharedContractVectors()')] +
+            '\n[Test]\n' + block(metrics_tests, 'public void SharedContractVectors(') +
+            '\n[Test]\n' + block(metrics_tests, 'public void OptionalEmitterAcceptsOnlyExactBitsAndNeverInfersMissingValues(') + '\n}')
         (tmp / 'Run.cs').write_text('''using System; using System.Reflection; using NUnit.Framework;
 class Run { static int Main() {
  int passed=0, failed=0;
@@ -98,8 +114,9 @@ class Run { static int Main() {
         refs = ['/r:' + str(p) for p in managed.glob('*.dll')]
         refs += ['/r:' + str(template / 'Unity.InputSystem.dll'), '/r:' + str(mono / 'lib/mono/4.5/Facades/netstandard.dll'), '/r:' + str(nunit)]
         run([mono / 'bin/mono', mono / 'lib/mono/4.5/csc.exe', '/nologo', '/langversion:9.0', '/out:' + str(tmp / 'tests.exe'), *refs,
-             tmp / 'Host.cs', tmp / 'Metrics.cs', tmp / 'Actions.cs', tmp / 'PanelTests.cs', tmp / 'Run.cs',
+             tmp / 'Host.cs', tmp / 'Metrics.cs', tmp / 'Actions.cs', tmp / 'PanelTests.cs', tmp / 'MetricsTests.cs', tmp / 'Run.cs',
              inputs / 'PhoneSaberDiscoveryResponder.cs', inputs / 'PhoneSaberOperatorKeys.cs',
+             inputs / 'PhoneSaberControlPanelPage.cs',
              *[tests / n for n in ['PhoneSaberOperatorKeysTests.cs', 'PhoneSaberAcknowledgementTests.cs', 'PhoneSaberPhoneCommandTests.cs']]])
         env = dict(os.environ, MONO_PATH=os.pathsep.join(map(str, [nunit.parent, managed, template])))
         run([mono / 'bin/mono', tmp / 'tests.exe'], env=env)

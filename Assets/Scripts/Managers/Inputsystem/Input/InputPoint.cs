@@ -738,7 +738,7 @@ public class InputPoint : MonoBehaviour
         return ApplyLearnedPositionCalibration(Rect.MinMaxRect(bounds.xMin, bounds.yMin, bounds.xMax, bounds.yMax), learnedAt, out _);
     }
 
-    // F8 の完了ACKとチュートリアルの両方が、同じ変換・保存・診断を使う。
+    // F8 の完了ACKとチュートリアルの両方が、同じ変換・保存・スマホ範囲更新・診断を使う。
     public bool ApplyLearnedPositionCalibration(Rect bounds, string learnedAt, out string error)
     {
         bool applied = PhoneSaberPositionCalibration.TryFromLearnedArea(bounds, camWidth, camHeight, out var calibration, out error);
@@ -752,6 +752,9 @@ public class InputPoint : MonoBehaviour
             positionCalibration = calibration;
             positionCalibrationEnabled = true;
             PredictionRevision++;
+            // 広げた写像の画面端までスマホも探す。タイトル復帰時と同じ余白・0..1 制限を使う。
+            if (StationLabel == "A" || StationLabel == "B")
+                TutorialRangeBaseline.SendPhoneArea(TutorialRangeBaseline.PhoneAreaFor(calibration.CopyCorners(), camWidth, camHeight));
         }
         else failedLearnedPositionCalibration = result;
         PhoneSaberEventLog.Record(StationLabel, "SYSTEM", "learned-area-apply", result);

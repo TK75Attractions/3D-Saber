@@ -16,6 +16,7 @@ public sealed class PhoneSaberMetrics
     public int LowLatencyTest;
     public double ReceivedAt;
     public string Controls;
+    public bool? Emitter;
     public string Model;
     public const int MaximumBytes = 399;
 
@@ -62,6 +63,11 @@ public sealed class PhoneSaberMetrics
                 if (controls.Length != 4 || "01".IndexOf(controls[0]) < 0 || "012".IndexOf(controls[1]) < 0 ||
                     "0123".IndexOf(controls[2]) < 0 || "01234567".IndexOf(controls[3]) < 0) return false;
                 m.Controls = controls;
+            }
+            if (fields.TryGetValue("emitter", out string emitter))
+            {
+                if (emitter != "0" && emitter != "1") return false;
+                m.Emitter = emitter == "1";
             }
             if (fields.TryGetValue("model", out string model)) m.Model = Atom(model, 16);
             metrics = m; return true;

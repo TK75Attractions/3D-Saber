@@ -20,6 +20,8 @@ def run(command, **kwargs):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--before-ref', help='旧EventLogで切捨て回帰FAIL、旧応答Loopで未知datagram無返信を確認')
+    parser.add_argument('--command-before-ref', help='旧再送管理で後発ISO成功後の巻き戻り回帰FAILを確認')
+    parser.add_argument('--commands-only', action='store_true', help='指示再送の合成NUnitのみ実行（socket・Swift統合は対象外）')
     args = parser.parse_args()
     editor = Path(os.environ.get('PHONESABER_UNITY_CONTENTS', '/Applications/Unity/Hub/Editor/6000.3.9f1/Unity.app/Contents'))
     mono = editor / 'Resources/Scripting/MonoBleedingEdge'
@@ -37,6 +39,9 @@ namespace UnityEngine {
 }
 namespace UnityEngine.TestTools { public static class LogAssert { public static void Expect(UnityEngine.LogType t,System.Text.RegularExpressions.Regex r){} } }
 public static class PhoneSaberP2PBridgeProcess { public static bool AutoStartEnabled=true; }
+// このhostでは座標受信・F8表示を起動しない。再送とACKは実ソースを実行する。
+public class InputPoint { public static InputPoint Instance; public double LastReceivedMonotonicTime,LastReceivedMonotonicTime2; }
+public static class PhoneSaberOperatorKeys { public static void ResetDefaultsState(){} }
 public static class SwingMonotonicClock { public static long Timestamp => Stopwatch.GetTimestamp(); public static double ToSeconds(long ticks) => ticks/(double)Stopwatch.Frequency; }
 ''')
         runner = tmp / 'Run.cs'
@@ -60,9 +65,21 @@ class Run { static int Main(string[] args) {
  }
  int passed=0,failed=0;
  foreach(var type in Assembly.GetExecutingAssembly().GetTypes()) foreach(var method in type.GetMethods()) {
-  if(!method.IsDefined(typeof(TestAttribute),false) || (args.Length>0 && method.Name!=args[0])) continue;
-  try { method.Invoke(Activator.CreateInstance(type),new object[0]); passed++; }
-  catch(Exception e) { Console.WriteLine("FAIL "+method.Name+" "+(e.InnerException??e).Message); failed++; }
+  bool commandsOnly=args.Length>0 && args[0]=="commands-only";
+  if(commandsOnly && type!=typeof(PhoneSaberDiscoveryResponderTests)) continue;
+  if(!commandsOnly && args.Length>0 && method.Name!=args[0]) continue;
+  var cases=method.GetCustomAttributes(typeof(TestCaseAttribute),false);
+  if(cases.Length==0 && !method.IsDefined(typeof(TestAttribute),false)) continue;
+  if(commandsOnly && (method.Name=="StartDiscoveryAndRestartNeverQueueDefaults" ||
+     method.Name=="RetiredLoopExitsWhileReplacementIsRunning" || method.Name=="FailedBindClosesSocketOnEveryAttempt")) {
+   Console.WriteLine("SKIP socket lifecycle: "+method.Name); continue;
+  }
+  if(cases.Length==0) cases=new object[]{null};
+  foreach(var item in cases) {
+   var values=item==null ? new object[0] : ((TestCaseAttribute)item).Arguments;
+   try { method.Invoke(Activator.CreateInstance(type),values); passed++; }
+   catch(Exception e) { Console.WriteLine("FAIL "+method.Name+" "+(e.InnerException??e).Message); failed++; }
+  }
  }
  Console.WriteLine("Auto latency NUnit host: "+passed+" PASS / "+failed+" FAIL");
  var store=new PhoneSaberMetricsStore(); var b=PhoneSaberLatencyEstimateTests.Valid; var sw=Stopwatch.StartNew();
@@ -75,6 +92,18 @@ class Run { static int Main(string[] args) {
                    INPUT / 'PhoneSaberDiscoveryResponder.cs', ROOT / 'Assets/Tests/Editor/PhoneSaberLatencyEstimateTests.cs',
                    ROOT / 'Assets/Tests/Editor/PhoneSaberDiscoveryResponderTests.cs']
         env = dict(os.environ, MONO_PATH=str(nunit.parent))
+        if args.command_before_ref:
+            before = tmp / 'BeforeDiscovery.cs'
+            before.write_bytes(subprocess.check_output(['git', 'show', args.command_before_ref +
+                ':Assets/Scripts/Managers/Inputsystem/Input/PhoneSaberDiscoveryResponder.cs'], cwd=ROOT))
+            binary = tmp / 'command-before.exe'
+            old_sources = [before if source == INPUT / 'PhoneSaberDiscoveryResponder.cs' else source for source in sources]
+            run(compiler + ['/out:' + str(binary)] + old_sources + [INPUT / 'PhoneSaberEventLog.cs'])
+            result = subprocess.run([str(mono / 'bin/mono'), str(binary),
+                'LaterIsoSuccessStopsLostOlderCommandWithoutInventingItsAck'], cwd=ROOT, env=env)
+            if result.returncode != 1:
+                raise RuntimeError('旧再送管理でISO巻き戻りFAILが再現しません')
+            print('Before ISO retry regression FAIL reproduced (expected, A/B)', flush=True)
         if args.before_ref:
             before = tmp / 'BeforeEventLog.cs'
             before.write_bytes(subprocess.check_output(['git', 'show', args.before_ref + ':Assets/Scripts/Managers/Inputsystem/Input/PhoneSaberEventLog.cs'], cwd=ROOT))
@@ -114,7 +143,9 @@ class Run {static int Main() {
             run([mono / 'bin/mono', old_binary], env=env)
         binary = tmp / 'after.exe'
         run(compiler + ['/out:' + str(binary)] + sources + [INPUT / 'PhoneSaberEventLog.cs'])
-        run([mono / 'bin/mono', binary], env=env)
+        run([mono / 'bin/mono', binary] + (['commands-only'] if args.commands_only else []), env=env)
+        if args.commands_only:
+            return 0
         developer = Path(subprocess.check_output(['xcode-select', '-p'], text=True).strip()) / 'Platforms/MacOSX.platform/Developer'
         frameworks = developer / 'Library/Frameworks'
         main = tmp / 'main.swift'

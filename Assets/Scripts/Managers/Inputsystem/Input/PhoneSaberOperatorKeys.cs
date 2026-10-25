@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using UnityEngine;
@@ -150,6 +152,61 @@ public sealed class PhoneSaberOperatorKeys : MonoBehaviour
     public static string LastResultText => StatusText(PhoneSaberDiscoveryResponder.Acknowledgements,
         SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp));
 
+    // 操作単位の結果はACK履歴の上限とは別に保持し、同じ操作の再実行で置き換える。
+    public sealed class PhoneAction
+    {
+        public readonly int Id;
+        public readonly double At;
+        public readonly string Value, Station, Command;
+        readonly string[] senders;
+        readonly Dictionary<string, PhoneSaberAcknowledgement> replies = new Dictionary<string, PhoneSaberAcknowledgement>();
+
+        public PhoneAction(int id, double at, string value, string station, string command, string[] targets)
+        { Id = id; At = at; Value = value; Station = station; Command = command; senders = (string[])targets.Clone(); }
+
+        public void Apply(PhoneSaberControlPanelState.Item item, double now, PhoneSaberAcknowledgement[] acknowledgements)
+        {
+            foreach (var ack in acknowledgements)
+                if (ack.Id == Id && ack.Platform == "ios" &&
+                    (ack.Station == Station || ack.Station != "A" && ack.Station != "B") &&
+                    (senders.Length == 0 || Array.IndexOf(senders, ack.Sender) >= 0))
+                    replies[ack.Sender] = ack;
+            var targets = senders.Length > 0 ? new List<string>(senders) : new List<string>(replies.Keys);
+            targets.Sort(StringComparer.Ordinal);
+            if (targets.Count == 0) targets.Add("");
+            bool terminal = true, warning = false;
+            var lines = new List<string>();
+            foreach (string sender in targets)
+            {
+                string text;
+                if (replies.TryGetValue(sender, out var ack))
+                {
+                    bool missing = now >= At + PhoneSaberDiscoveryResponder.CommandRetrySeconds(Command);
+                    terminal &= ack.Result != "learning";
+                    warning |= ack.Result == "failed" || ack.Result == "nothing" || ack.Result == "clip-off" ||
+                        ack.Result == "learning" && missing;
+                    text = PhoneSaberOperatorKeys.ResultText(ack, Command, missing, operationResult: true);
+                }
+                else
+                {
+                    terminal = false;
+                    warning |= now - At >= 20;
+                    text = now - At < 20 ? "iPhoneの返事を待っています" : "未確認・応答なし";
+                }
+                lines.Add("台" + Station + " / " + (sender.Length > 0 ? sender : "送信元未確認") + " / 指示 #" + Id + ": " + text);
+            }
+            item.CommandId = Id;
+            item.Acknowledged = terminal;
+            bool waiting = !terminal && now - At < 20;
+            if (waiting) item.Enabled = false;
+            if (item.Value != Value) return;
+            item.Succeeded = terminal && !warning;
+            item.Pending = waiting;
+            item.Result = string.Join("\n", lines);
+            item.ResultWarning = warning;
+        }
+    }
+
     public static string PendingLabel(string fields)
     {
         switch (fields)
@@ -184,7 +241,7 @@ public sealed class PhoneSaberOperatorKeys : MonoBehaviour
             : PendingLabel(fields) + "（送信中）";
     }
 
-    public static string ResultText(PhoneSaberAcknowledgement ack, string command, bool completionMissing = false)
+    public static string ResultText(PhoneSaberAcknowledgement ack, string command, bool completionMissing = false, bool operationResult = false)
     {
         string phone = ack.Platform == "ios" ? "iPhone" : "Android";
         if (ack.Station != "none") phone += "（台" + ack.Station + "）";
@@ -198,7 +255,7 @@ public sealed class PhoneSaberOperatorKeys : MonoBehaviour
                 break;
             case "nothing":
                 string color = command == "ignore=red" ? "赤が" : command == "ignore=blue" ? "青が" : "赤も青も";
-                result = "今は" + color + "映っていないので無視するものがありません";
+                result = (operationResult ? "無視する対象なし: " : "") + "今は" + color + "映っていないので無視するものがありません";
                 break;
             case "cleared": result = ack.Detail == "area" ? "プレイ範囲を消しました" : "無視をすべて消しました"; break;
             case "learning": result = completionMissing && ack.Platform == "ios" && command.StartsWith("learn-area=") ? MissingCompletionMessage
@@ -206,7 +263,7 @@ public sealed class PhoneSaberOperatorKeys : MonoBehaviour
                 ? "無視する物を覚えています（剣を消して3秒待つ）"
                 : "プレイ範囲を覚えています（" + ack.Detail.TrimEnd('s') + "秒、振りやすい範囲で上下左右に振る）"; break;
             case "learned": result = "プレイ範囲を覚えました（" + ack.SampleCount + "回分）"; break;
-            case "failed": result = "覚えられませんでした（振りが足りません）"; break;
+            case "failed": result = (operationResult ? "範囲を" : "") + "覚えられませんでした（振りが足りません）"; break;
             case "shutter-iso": result = "固定シャッター ISO " + ack.Detail; break;
             case "shutter-emitter": result = "低ISOの色付き発光体 " + (ack.Detail == "on" ? "ON（固定・ISO2000未満で有効）" : "OFF"); break;
             case "shutter": result = "固定シャッター " + (ack.Detail == "off" ? "OFF（自動露出）" : "1/" + ack.Detail + " 秒"); break;
