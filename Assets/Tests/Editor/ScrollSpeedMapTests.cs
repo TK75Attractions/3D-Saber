@@ -74,6 +74,71 @@ public class ScrollSpeedMapTests
         }
     }
 
+    static List<ScrollSpeedData> Eased(params (double time, double speed, double ramp, double ease)[] points)
+    {
+        var list = new List<ScrollSpeedData>();
+        foreach (var p in points) list.Add(new ScrollSpeedData { time = (float)p.time, speed = (float)p.speed, ramp = (float)p.ramp, ease = (float)p.ease });
+        return list;
+    }
+
+    [Test]
+    public void TheEaseBendsTheFlightButKeepsItsEndsAndOrder()
+    {
+        // 2 秒から 1 秒かけて ease 1 → 2(手前でブレーキ)。4 秒から 0.5(奥でためて一気に)。
+        var map = ScrollSpeedMap.Build(Eased((2000, 1, 1000, 2), (4000, 1, 0, .5)));
+        Assert.AreEqual(1, map.EaseAt(1.9), 1e-9);
+        Assert.AreEqual(1.5, map.EaseAt(2.5), 1e-9);
+        Assert.AreEqual(2, map.EaseAt(3.5), 1e-9);
+        Assert.AreEqual(.5, map.EaseAt(4.2), 1e-9);
+        Assert.AreEqual(1, map.SpeedAt(3), 1e-9, "ease は速さを変えない");
+        // 出る所と届く所は同じ。途中は ease 2 なら残りの2乗(手前で遅い)、0.5 なら平方根(奥でためる)。
+        Assert.AreEqual(1, map.Shape(1, 1, 3.5), 1e-12);
+        Assert.AreEqual(0, map.Shape(0, 1, 3.5), 1e-12);
+        Assert.AreEqual(.25, map.Shape(.5, 1, 3.5), 1e-9);
+        Assert.AreEqual(System.Math.Sqrt(.5), map.Shape(.5, 1, 4.2), 1e-9);
+        Assert.AreEqual(.3, map.Shape(.3, 1, 1), 1e-12, "最初の変わり目より前は曲げない");
+        double last = -1;
+        for (int i = 0; i <= 100; i++)
+        {
+            double shaped = map.Shape(i / 100.0, 1, 3.5);
+            Assert.Greater(shaped, last, "並びは入れ替わらない");
+            last = shaped;
+        }
+        // 速さを変える ramp の途中で次が来たら、そこまで変えた ease から次を始める。
+        var cut = ScrollSpeedMap.Build(Eased((0, 1, 2000, 2), (1000, 1, 1000, 1)));
+        Assert.AreEqual(1.5, cut.EaseAt(1), 1e-9);
+        Assert.AreEqual(1.25, cut.EaseAt(1.5), 1e-9);
+        Assert.AreEqual(1, cut.EaseAt(2.5), 1e-9);
+    }
+
+    [Test]
+    public void NotesAndBarLinesUseTheEaseForTheirDepth()
+    {
+        spawner.SetChart(Chart(Eased((0, 1, 0, 2)), 3000));
+        spawner.Tick(2.5);
+        Assert.AreEqual(1, spawner.AliveCount);
+        Assert.AreEqual(5, spawner.LiveNotes[0].transform.position.z, 1e-4, "ease 2: 残り 0.5 秒で奥行き 1/4");
+        Assert.AreEqual(.5, spawner.VisualRemaining(3, 2.5), 1e-9, "出す時刻と見え始めは変わらない");
+        Assert.AreEqual(2, spawner.SpawnTimeFor(3), 1e-9);
+        var chart = ChartLoader.Parse("{\"bpm\":120,\"notes\":[],\"scroll\":[{\"time\":0,\"speed\":1,\"ramp\":0,\"ease\":0},{\"time\":10,\"speed\":1,\"ramp\":0,\"ease\":9},{\"time\":20,\"speed\":1,\"ramp\":0,\"ease\":0.1}]}");
+        Assert.AreEqual(1f, chart.scroll[0].ease, "0 や壊れた値は 1");
+        Assert.AreEqual((float)ScrollSpeedMap.MaxEase, chart.scroll[1].ease);
+        Assert.AreEqual((float)ScrollSpeedMap.MinEase, chart.scroll[2].ease);
+    }
+
+    [Test]
+    public void TheBackgroundClockFollowsTheSameSpeeds()
+    {
+        var map = ScrollSpeedMap.Build(Points((4000, 0, 0), (5000, 2, 0)));
+        Assert.AreEqual(3.5, map.FlowTime(3.5), 1e-9, "最初の変わり目までは曲の時刻そのもの");
+        Assert.AreEqual(4, map.FlowTime(4.6), 1e-9, "止まる間は背景も止まる");
+        Assert.AreEqual(5, map.FlowTime(5.5), 1e-9, "2倍で進む");
+        spawner.SetChart(Chart(Points((4000, 0, 0), (5000, 2, 0)), 9000));
+        Assert.AreEqual(4, spawner.FlowClock(4.6), 1e-9);
+        spawner.SetChart(Chart(null, 9000));
+        Assert.AreEqual(4.6, spawner.FlowClock(4.6), 1e-12, "ふつうの譜面は曲の時刻のまま");
+    }
+
     [Test]
     public void LoaderClampsBrokenOrTooFastPoints()
     {
@@ -149,6 +214,23 @@ public class ScrollSpeedMapTests
     }
 
     [Test]
+    public void AMissedTapDriftsBackAtTheSameSpeedAndStopsWithEverythingElse()
+    {
+        // 1 秒に届いたタップを切らずに通す。1.5〜2.5 秒は止まる。
+        spawner.SetChart(Chart(Points((1500, 0, 0), (2500, 1, 0)), 1000));
+        spawner.Tick(.5);
+        var note = spawner.LiveNotes[0];
+        spawner.Tick(1.4);
+        Assert.IsTrue(note.IsMissed);
+        Assert.AreEqual(-8, note.transform.position.z, 1e-4);
+        spawner.Tick(1.6);
+        float frozen = note.transform.position.z;
+        Assert.AreEqual(-10, frozen, 1e-4);
+        spawner.Tick(2.2);
+        Assert.AreEqual(frozen, note.transform.position.z, 1e-6, "止まる間は後ろへも流れない");
+    }
+
+    [Test]
     public void FastSectionsShowNotesLaterAndSlowSectionsEarlier()
     {
         spawner.SetChart(Chart(Points((0, 2, 0), (5000, .5, 0)), 3000, 8000));
@@ -200,11 +282,17 @@ public class ScrollSpeedMapTests
         foreach (Transform child in lines.transform)
             if (child.gameObject.activeSelf && (lineOf4 == null || child.position.z > lineOf4.position.z)) lineOf4 = child;
         Assert.NotNull(lineOf4);
+        Transform lineOf2 = null;
+        foreach (Transform child in lines.transform)
+            if (child.gameObject.activeSelf && child != lineOf4) lineOf2 = child;
         float frozen = lineOf4.position.z;
         Assert.AreEqual(20, frozen, 1e-4, "止まる間の見かけの残りは 1 秒ぶん");
+        Assert.AreEqual(0, lineOf2.position.z, 1e-4, "止まり始めに届いた線は判定の位置で止まる");
         bars.Tick(2.9);
         Assert.AreEqual(frozen, lineOf4.position.z, 1e-6, "小節線も止まる");
+        Assert.AreEqual(0, lineOf2.position.z, 1e-4, "通り過ぎる線も一緒に止まる");
         bars.Tick(3.5);
         Assert.AreEqual(10, lineOf4.position.z, 1e-4);
+        Assert.AreEqual(-10, lineOf2.position.z, 1e-4, "動き出したら後ろへ");
     }
 }

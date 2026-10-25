@@ -232,6 +232,21 @@ public class NoteSpawner : MonoBehaviour
         return scrollMap.PositionAt(hitTime - totalOffsetSeconds) - scrollMap.PositionAt(songTime - totalOffsetSeconds);
     }
 
+    // 奥行きに使う残り時間。見かけの残り時間を、その時刻の飛び方の曲がり具合で曲げたもの(緩急の無い譜面では hitTime − songTime)。
+    public double ShapedRemaining(double hitTime, double songTime)
+    {
+        double seen = VisualRemaining(hitTime, songTime);
+        return scrollMap == null ? seen : scrollMap.Shape(seen, approachTime, songTime - totalOffsetSeconds);
+    }
+
+    // 背景の可動部を動かす時計。緩急の譜面では、ノーツと同じ速さで進む(止まる間は背景も止まり、速い所は速く流れる)。
+    // ほかの譜面では songTime そのもの。
+    public double FlowClock(double songTime)
+    {
+        if (scrollMap == null) return songTime;
+        return scrollMap.FlowTime(songTime - totalOffsetSeconds) + totalOffsetSeconds;
+    }
+
     // 届く時刻 hitTime のノーツが奥に現れる曲の時刻(緩急の無い譜面では approachTime 前)。
     public double SpawnTimeFor(double hitTime)
     {
@@ -557,9 +572,14 @@ public class NoteSpawner : MonoBehaviour
                 continue;
             }
 
-            // 判定時刻を時間差で表現し、現在の Z をそこから計算する。緩急の譜面では、届く前の奥行きを見かけの残り時間で決める。
+            // 判定時刻を時間差で表現し、現在の Z をそこから計算する。緩急の譜面では、奥行きを見かけの残り時間で決める
+            // (届いたあとに後ろへ流れるタップも同じ速さで、止まる間は一緒に止まる。ロングのとどまりは実際の時刻のまま)。
             double dt = note.HitTime - songTime;
-            float z = ComputeNoteZ(note, dt > 0 && scrollMap != null ? VisualRemaining(note.HitTime, songTime) : dt, speed);
+            double depth = dt;
+            if (scrollMap != null)
+                depth = dt > 0 ? ShapedRemaining(note.HitTime, songTime)
+                    : note.RequiredCutCount <= 1 ? VisualRemaining(note.HitTime, songTime) : dt;
+            float z = ComputeNoteZ(note, depth, speed);
             Vector3 p = note.transform.position;
             if (note.HasWind)
             {

@@ -97,6 +97,8 @@ public static class ChartLoader
         {
             point.speed = Finite(point.speed) ? Math.Max(0f, Math.Min((float)ScrollSpeedMap.MaxSpeed, point.speed)) : 1f;
             point.ramp = Finite(point.ramp) ? Math.Max(0f, point.ramp) : 0f;
+            point.ease = Finite(point.ease) && point.ease > 0f
+                ? Math.Max((float)ScrollSpeedMap.MinEase, Math.Min((float)ScrollSpeedMap.MaxEase, point.ease)) : 1f;
         }
         return result;
     }

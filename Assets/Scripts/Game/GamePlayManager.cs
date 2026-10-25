@@ -874,9 +874,11 @@ public class GamePlayManager : MonoBehaviour
         {
             double time = songPlayer.SongTime;
             float chorus = stagePerformance.Evaluate(time);
-            if (stageFloor != null) stageFloor.Tick(time,chorus,stagePerformance.EvaluateLightFormation(time),stagePerformance.EvaluateVaultCurtain(time));
-            if (foundryStageMotion != null) foundryStageMotion.Tick(time,chorus);
-            if (scenicStageWorld != null) scenicStageWorld.Tick(time,chorus,stagePerformance.EvaluateEclipse(time));
+            // 床や背景の流れは、緩急(S)の譜面ではノーツと同じ速さの時計で動かす(止まると世界ごと止まる)。光の強弱は曲の時刻のまま。
+            double flow = noteSpawner != null ? noteSpawner.FlowClock(time) : time;
+            if (stageFloor != null) stageFloor.Tick(flow,chorus,stagePerformance.EvaluateLightFormation(time),stagePerformance.EvaluateVaultCurtain(time));
+            if (foundryStageMotion != null) foundryStageMotion.Tick(flow,chorus);
+            if (scenicStageWorld != null) scenicStageWorld.Tick(flow,chorus,stagePerformance.EvaluateEclipse(time));
             if (stageReactions != null) stageReactions.Tick(time);
             if (chorusDrop != null && !inCalibration) chorusDrop.Tick(time, Time.unscaledDeltaTime);
             if (feverShow != null) feverShow.Tick(time, Time.unscaledDeltaTime);

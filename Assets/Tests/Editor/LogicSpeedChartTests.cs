@@ -77,4 +77,13 @@ public class LogicSpeedChartTests
         }
         Assert.LessOrEqual(chart.scroll.Max(p => p.speed), 2.0f, "新しく出るノーツが速すぎない");
     }
+
+    [Test]
+    public void SomeSectionsBrakeNearTheGateAndOneDashesIn()
+    {
+        var chart = Read("s");
+        Assert.IsTrue(chart.scroll.Any(p => p.ease > 1.2f), "手前でブレーキする区間がある");
+        Assert.IsTrue(chart.scroll.Any(p => p.ease < .9f), "奥でためて手前で一気に来る区間がある");
+        foreach (var p in chart.scroll) Assert.That(p.ease, Is.InRange(.65f, 1.65f), p.time + "ms");
+    }
 }

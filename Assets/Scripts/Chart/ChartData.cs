@@ -36,12 +36,15 @@ public class ChartData
 
 // 流れる速さの変わり目。time(ミリ秒、ノーツと同じく offsetMs を足して使う)から、speed 倍(0 で止まる)へ
 // ramp ミリ秒かけてまっすぐ変える(0 ならその瞬間に変える)。最初の変わり目より前は 1 倍。
+// ease は飛び方の曲がり具合(1 でまっすぐ同じ速さ、1 より大きいと奥から速く来て手前でブレーキ、小さいと奥でためて手前で一気に)。
+// 同じ ramp で変える。書いていない・壊れた値は 1。
 [Serializable]
 public class ScrollSpeedData
 {
     public float time;
     public float speed = 1f;
     public float ramp;
+    public float ease = 1f;
 }
 
 [Serializable]

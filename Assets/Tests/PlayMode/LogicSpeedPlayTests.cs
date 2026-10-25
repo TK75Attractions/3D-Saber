@@ -101,13 +101,17 @@ public class LogicSpeedPlayTests
         spawnObserver = note => { if (target == null && Math.Abs(note.HitTime - hit) < 1e-6) target = note; };
         spawner.OnNoteSpawned += spawnObserver;
 
+        var floor = Object.FindFirstObjectByType<FloorRenderer>();
         yield return WaitForSong(stopFrom + (stopTo - stopFrom) * .25);
         Assert.NotNull(target, "止まる前に出たノーツがある");
         float frozenZ = target.transform.position.z;
         Assert.Greater(frozenZ, spawner.judgeZ + .5f, "空中で待っている");
         Assert.Less(frozenZ, spawner.spawnZ + .01f);
+        double floorClock = floor != null ? floor.LastTickSeconds : double.NaN;
         yield return WaitForSong(stopFrom + (stopTo - stopFrom) * .75);
         Assert.AreEqual(frozenZ, target.transform.position.z, 1e-4f, "止まっている間は動かない");
+        if (floor != null)
+            Assert.AreEqual(floorClock, floor.LastTickSeconds, 1e-6, "床の流れもノーツと一緒に止まる");
 
         yield return WaitForSong(stopTo + (hit - stopTo) * .5);
         Assert.Less(target.transform.position.z, frozenZ - .5f, "止まりが終わると動き出す");

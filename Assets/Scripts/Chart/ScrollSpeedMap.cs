@@ -6,21 +6,30 @@ using System.Linq;
 // 速さ v(t) を積み上げた「見かけの位置」X(t) = ∫v dt を持ち、ノーツの見かけの残り時間を X(届く時刻) − X(今) で出す。
 // v は 0 以上なので X は減らず、ノーツどうしの追い越しは起きない。v が 0 の間は空中のノーツと小節線が全部止まり、
 // v が 2 なら倍の速さで迫る。届く時刻(判定)は変わらない。
+// 飛び方の曲がり具合(ease)は、出る所と届く所を変えずに途中だけ曲げる(Shape。奥から速く来て手前でブレーキ/奥でためて一気に)。
 // 時刻は譜面の時刻(秒。offsetMs などのずらしは呼び出し側で引く)。最初の変わり目より前は 1 倍。
 public sealed class ScrollSpeedMap
 {
     // 読めなくなるほど速くしない(読み込みでもこの範囲に収める)。
     public const double MaxSpeed = 4;
+    // 飛び方の曲がり具合(ease)の範囲。手前で止まりすぎたり、最後に飛び込みすぎたりしないように。
+    public const double MinEase = .5, MaxEase = 2;
     // カウントインの一言(W と同じ形)。着地の枠は実際の時刻で縮むので、止まって見えても枠で切れる。
     public const string RuleCaption = "止まったり走ったりする。着地の枠で切ろう";
     // 区間ごとの始まりの時刻・見かけの位置・速さと、区間の中の速さの傾き(1秒あたり)。最後の区間は傾き 0。
     readonly double[] start, position, speed, slope;
+    // 飛び方の曲がり具合: 変わり目の時刻・変え始めの値・目標の値・かける秒。
+    readonly double[] easeTime, easeFrom, easeTo, easeRamp;
 
-    ScrollSpeedMap(List<double> start, List<double> speed, List<double> slope)
+    ScrollSpeedMap(List<double> start, List<double> speed, List<double> slope, List<double[]> ease)
     {
         this.start = start.ToArray();
         this.speed = speed.ToArray();
         this.slope = slope.ToArray();
+        easeTime = ease.Select(e => e[0]).ToArray();
+        easeFrom = ease.Select(e => e[1]).ToArray();
+        easeTo = ease.Select(e => e[2]).ToArray();
+        easeRamp = ease.Select(e => e[3]).ToArray();
         position = new double[this.start.Length];
         for (int i = 1; i < position.Length; i++)
         {
@@ -35,7 +44,8 @@ public sealed class ScrollSpeedMap
         var points = (source ?? Enumerable.Empty<ScrollSpeedData>()).Where(p => p != null && Finite(p.time)).OrderBy(p => p.time).ToList();
         if (points.Count == 0) return null;
         var start = new List<double>(); var speed = new List<double>(); var slope = new List<double>();
-        double v = 1;
+        var ease = new List<double[]>();
+        double v = 1, e = 1;
         for (int i = 0; i < points.Count; i++)
         {
             double t = points[i].time / 1000.0;
@@ -44,6 +54,10 @@ public sealed class ScrollSpeedMap
             if (next <= t) continue;
             double target = Finite(points[i].speed) ? Math.Max(0, Math.Min(MaxSpeed, points[i].speed)) : 1;
             double ramp = Finite(points[i].ramp) ? Math.Max(0, points[i].ramp / 1000.0) : 0;
+            // 曲がり具合も同じ時間をかけて変える。次の変わり目が先に来たら、そこまで変えた値から次を始める。
+            double easeTarget = Finite(points[i].ease) && points[i].ease > 0 ? Math.Max(MinEase, Math.Min(MaxEase, points[i].ease)) : 1;
+            ease.Add(new[] { t, e, easeTarget, ramp });
+            e = ramp > 1e-6 && next < t + ramp ? e + (easeTarget - e) * (next - t) / ramp : easeTarget;
             if (ramp > 1e-6 && Math.Abs(target - v) > 1e-9)
             {
                 double a = (target - v) / ramp, end = t + ramp;
@@ -54,7 +68,31 @@ public sealed class ScrollSpeedMap
             }
             else { start.Add(t); speed.Add(target); slope.Add(0); v = target; }
         }
-        return start.Count > 0 ? new ScrollSpeedMap(start, speed, slope) : null;
+        return start.Count > 0 ? new ScrollSpeedMap(start, speed, slope, ease) : null;
+    }
+
+    // 時刻 t の飛び方の曲がり具合(最初の変わり目より前は 1)。
+    public double EaseAt(double t)
+    {
+        if (!Finite(t) || easeTime.Length == 0 || t < easeTime[0]) return 1;
+        int lo = 0, hi = easeTime.Length - 1;
+        while (lo < hi)
+        {
+            int mid = (lo + hi + 1) / 2;
+            if (easeTime[mid] <= t) lo = mid; else hi = mid - 1;
+        }
+        double k = easeRamp[lo] > 1e-6 ? Math.Min(1, (t - easeTime[lo]) / easeRamp[lo]) : 1;
+        return easeFrom[lo] + (easeTo[lo] - easeFrom[lo]) * k;
+    }
+
+    // 見かけの残り時間 remaining(0〜approach)を、時刻 t の曲がり具合で奥行きの割合に直す。
+    // 出る所(approach)と届く所(0)は変えず、そのあいだだけ曲げるので、並び(どれが手前か)は入れ替わらない。
+    public double Shape(double remaining, double approach, double t)
+    {
+        if (!(remaining > 0) || !(approach > 0) || remaining >= approach) return remaining;
+        double p = EaseAt(t);
+        if (Math.Abs(p - 1) < 1e-6) return remaining;
+        return approach * Math.Pow(remaining / approach, p);
     }
 
     public int SegmentCount => start.Length;
@@ -79,6 +117,9 @@ public sealed class ScrollSpeedMap
 
     // now(秒)から hit(秒)までの見かけの残り時間。
     public double Remaining(double now, double hit) => PositionAt(hit) - PositionAt(now);
+
+    // 背景の動きに使う時計。最初の変わり目までは t そのもの、そのあとは速さどおりに進む(止まる間は止まる)。
+    public double FlowTime(double t) => PositionAt(t) + start[0];
 
     // 見かけの位置 x にはじめて着く時刻(止まっている間の位置なら、止まり始め)。最後が止まったままで着かないなら +∞。
     public double TimeAtPosition(double x)

@@ -4858,157 +4858,194 @@
     {
       "time": 7153.0,
       "speed": 0.0,
-      "ramp": 0.0
+      "ramp": 0.0,
+      "ease": 1.0
     },
     {
       "time": 7716.0,
       "speed": 1.0,
-      "ramp": 0.0
+      "ramp": 0.0,
+      "ease": 1.0
     },
     {
       "time": 12028.0,
       "speed": 0.7,
-      "ramp": 375.0
+      "ramp": 375.0,
+      "ease": 1.0
     },
     {
       "time": 15028.0,
       "speed": 1.4,
-      "ramp": 375.0
+      "ramp": 375.0,
+      "ease": 1.0
     },
     {
       "time": 18028.0,
       "speed": 0.7,
-      "ramp": 375.0
+      "ramp": 375.0,
+      "ease": 1.0
     },
     {
       "time": 21028.0,
       "speed": 1.4,
-      "ramp": 375.0
+      "ramp": 375.0,
+      "ease": 1.0
     },
     {
       "time": 24028.0,
       "speed": 1.0,
-      "ramp": 375.0
+      "ramp": 375.0,
+      "ease": 1.0
+    },
+    {
+      "time": 30028.0,
+      "speed": 1.0,
+      "ramp": 375.0,
+      "ease": 1.5
     },
     {
       "time": 36028.0,
       "speed": 1.5,
-      "ramp": 375.0
+      "ramp": 375.0,
+      "ease": 1.0
     },
     {
       "time": 48028.0,
       "speed": 1.0,
-      "ramp": 750.0
+      "ramp": 750.0,
+      "ease": 1.0
     },
     {
       "time": 52403.0,
       "speed": 0.5,
-      "ramp": 500.0
+      "ramp": 500.0,
+      "ease": 1.0
     },
     {
       "time": 54403.0,
       "speed": 1.3,
-      "ramp": 500.0
+      "ramp": 500.0,
+      "ease": 1.0
     },
     {
       "time": 62403.0,
       "speed": 1.0,
-      "ramp": 500.0
+      "ramp": 500.0,
+      "ease": 0.7
     },
     {
       "time": 70403.0,
       "speed": 1.5,
-      "ramp": 500.0
+      "ramp": 500.0,
+      "ease": 1.0
     },
     {
       "time": 78403.0,
       "speed": 1.15,
-      "ramp": 500.0
+      "ramp": 500.0,
+      "ease": 1.0
     },
     {
       "time": 86403.0,
       "speed": 1.6,
-      "ramp": 500.0
+      "ramp": 500.0,
+      "ease": 1.0
     },
     {
       "time": 94403.0,
       "speed": 0.4,
-      "ramp": 4000.0
+      "ramp": 4000.0,
+      "ease": 1.0
     },
     {
       "time": 101903.0,
       "speed": 0.0,
-      "ramp": 0.0
+      "ramp": 0.0,
+      "ease": 1.0
     },
     {
       "time": 102653.0,
       "speed": 1.2,
-      "ramp": 0.0
+      "ramp": 0.0,
+      "ease": 1.0
     },
     {
       "time": 104403.0,
       "speed": 1.0,
-      "ramp": 500.0
+      "ramp": 500.0,
+      "ease": 1.0
     },
     {
       "time": 112153.0,
       "speed": 0.75,
-      "ramp": 500.0
+      "ramp": 500.0,
+      "ease": 1.0
     },
     {
       "time": 116153.0,
       "speed": 1.35,
-      "ramp": 500.0
+      "ramp": 500.0,
+      "ease": 1.0
     },
     {
       "time": 120153.0,
       "speed": 0.75,
-      "ramp": 500.0
+      "ramp": 500.0,
+      "ease": 1.0
     },
     {
       "time": 124153.0,
       "speed": 1.35,
-      "ramp": 500.0
+      "ramp": 500.0,
+      "ease": 1.0
     },
     {
       "time": 128153.0,
       "speed": 1.7,
-      "ramp": 500.0
+      "ramp": 500.0,
+      "ease": 1.0
     },
     {
       "time": 136153.0,
       "speed": 1.0,
-      "ramp": 500.0
+      "ramp": 500.0,
+      "ease": 1.5
     },
     {
       "time": 144153.0,
       "speed": 1.9,
-      "ramp": 32000.0
+      "ramp": 32000.0,
+      "ease": 1.0
     },
     {
       "time": 176153.0,
       "speed": 1.0,
-      "ramp": 1000.0
+      "ramp": 1000.0,
+      "ease": 1.0
     },
     {
       "time": 181403.0,
       "speed": 0.0,
-      "ramp": 0.0
+      "ramp": 0.0,
+      "ease": 1.0
     },
     {
       "time": 182153.0,
       "speed": 1.0,
-      "ramp": 0.0
+      "ramp": 0.0,
+      "ease": 1.0
     },
     {
       "time": 184403.0,
       "speed": 1.7,
-      "ramp": 375.0
+      "ramp": 375.0,
+      "ease": 1.0
     },
     {
       "time": 199215.0,
       "speed": 0.5,
-      "ramp": 750.0
+      "ramp": 750.0,
+      "ease": 1.6
     }
   ]
 }

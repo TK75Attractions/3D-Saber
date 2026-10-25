@@ -161,9 +161,11 @@ public class BarLineSpawner : MonoBehaviour
             var (go, time) = live[i];
             if (go == null) { live.RemoveAt(i); continue; }
             double dt = time - songTime;
-            // 届く前の奥行きは見かけの残り時間(緩急の無い譜面では dt と同じ)。届いたあとはいつもの速さで後ろへ。
-            double seen = dt > 0 ? Seen(time, songTime) : dt;
-            float z = judgeZ + speed * (float)seen;
+            // 奥行きは見かけの残り時間(緩急の無い譜面では dt と同じ)。届く前はノーツと同じ曲がり具合で曲げる。
+            // 届いたあとも同じ速さで後ろへ流れ、止まる間は止まる(止まる間に届く線は、判定の位置で一緒に止まる)。
+            double seen = Seen(time, songTime);
+            double depth = dt > 0 && scrollMap != null ? scrollMap.Shape(seen, approachTime, songTime - scrollOffset) : seen;
+            float z = judgeZ + speed * (float)depth;
             go.transform.position = new Vector3(0f, 0f, z);
             // 生成・退場の境目だけをフェードし、小節の到達時は本来の濃さを保つ。
             if (overrideVisual)
