@@ -103,7 +103,9 @@ public sealed class FloorTimingGuide : MonoBehaviour
             if (remaining < -.13 || MarkerCount >= MaxMarkers) continue;
             var position = note.transform.position;
             if (note.HasWind) position.x = note.LandingPosition.x;
-            float alpha = Mathf.Clamp01((float)((spawner.approachTime - remaining) / .12));
+            // 出てすぐ薄く入る。緩急の譜面では見かけの残り時間で数える(遅い区間は approachTime より前から見えている)。
+            double seen = remaining > 0 ? spawner.VisualRemaining(note.HitTime, songTime) : remaining;
+            float alpha = Mathf.Clamp01((float)((spawner.approachTime - seen) / .12));
             if (remaining < 0) alpha *= Mathf.Clamp01(1 + (float)remaining / .13f);
             if (alpha <= 0) continue;
             var visuals = note.GetComponent<NoteVisuals>();

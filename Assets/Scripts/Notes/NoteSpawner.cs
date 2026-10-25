@@ -44,6 +44,9 @@ public class NoteSpawner : MonoBehaviour
     private ChartTempoMap windTempoMap;
     private double windBeat;
     public bool HasWindNotes { get; private set; }
+    // 緩急(logic!!! の「S」)の流れる速さの表。譜面に scroll が無ければ null(いつもの一定の速さ)。
+    ScrollSpeedMap scrollMap;
+    public bool HasScroll => scrollMap != null;
     private int nextIndex;
     private double totalOffsetSeconds; // chart.offsetMs/1000 + extraOffsetSeconds
     private double extraOffsetSeconds; // GamePlayManager から実行時に上書き
@@ -112,7 +115,7 @@ public class NoteSpawner : MonoBehaviour
             var key=Key(data); if(key.Item1 == null) continue;
             if(!groups.TryGetValue(key,out var group)) group=(data,new List<(double,int)>());
             double linger=data.LingerSeconds(secondsPerLongCut);
-            group.events.Add((EffectiveTime(data)-approachTime,1));
+            group.events.Add((SpawnTimeFor(EffectiveTime(data)),1));
             group.events.Add((EffectiveTime(data)+judgeWindow+linger+missGrace+despawnAfterMissSeconds+.05,-1));
             groups[key]=group;
         }
@@ -189,6 +192,7 @@ public class NoteSpawner : MonoBehaviour
             ? new ChartTempoMap(chart.bpm, chart.beatZeroMs, chart.editorTempoMap)
             : null;
         windBeat = 0;
+        scrollMap = ScrollSpeedMap.Build(chart?.scroll);
         if (cutFeedback != null) cutFeedback.ReserveProtection(TotalNoteCount);
         nextIndex = 0;
         RecomputeTotalOffset();
@@ -218,6 +222,22 @@ public class NoteSpawner : MonoBehaviour
     public double EffectiveTime(NoteData nd)
     {
         return nd.TimeSeconds + totalOffsetSeconds;
+    }
+
+    // 届く時刻 hitTime(曲の時計、ずらし込み)まで、今 songTime から見た見かけの残り時間(秒)。
+    // 緩急の無い譜面では hitTime − songTime そのもの。ノーツの奥行きと出す時刻だけに使い、判定は実際の時刻のまま。
+    public double VisualRemaining(double hitTime, double songTime)
+    {
+        if (scrollMap == null) return hitTime - songTime;
+        return scrollMap.PositionAt(hitTime - totalOffsetSeconds) - scrollMap.PositionAt(songTime - totalOffsetSeconds);
+    }
+
+    // 届く時刻 hitTime のノーツが奥に現れる曲の時刻(緩急の無い譜面では approachTime 前)。
+    public double SpawnTimeFor(double hitTime)
+    {
+        if (scrollMap == null) return hitTime - approachTime;
+        double position = scrollMap.PositionAt(hitTime - totalOffsetSeconds) - approachTime;
+        return scrollMap.TimeAtPosition(position) + totalOffsetSeconds;
     }
 
     private static void SafeDestroy(GameObject go)
@@ -295,7 +315,8 @@ public class NoteSpawner : MonoBehaviour
         {
             NoteData nd = chart.notes[nextIndex];
             double eff = EffectiveTime(nd);
-            if (songTime + approachTime < eff) break;
+            // 緩急の譜面でも見かけの残りは届く時刻の順に並ぶ(速さが 0 以上)ので、最初に遠すぎたノーツで止めてよい。
+            if (VisualRemaining(eff, songTime) > approachTime) break;
             SpawnOne(nd, songTime: songTime);
             nextIndex++;
         }
@@ -536,9 +557,9 @@ public class NoteSpawner : MonoBehaviour
                 continue;
             }
 
-            // 判定時刻を時間差で表現し、現在の Z をそこから計算する。
+            // 判定時刻を時間差で表現し、現在の Z をそこから計算する。緩急の譜面では、届く前の奥行きを見かけの残り時間で決める。
             double dt = note.HitTime - songTime;
-            float z = ComputeNoteZ(note, dt, speed);
+            float z = ComputeNoteZ(note, dt > 0 && scrollMap != null ? VisualRemaining(note.HitTime, songTime) : dt, speed);
             Vector3 p = note.transform.position;
             if (note.HasWind)
             {
@@ -552,6 +573,9 @@ public class NoteSpawner : MonoBehaviour
                 ApplyWindPose(note, songTime >= note.HitTime - WindRules.CalmSeconds ? 0 : dt);
             }
             note.transform.position = new Vector3(p.x, p.y, z);
+            // 緩急の譜面では、割れた破片の勢いも今の流れる速さに合わせる(止まっている間は前へ流さない)。
+            if (scrollMap != null && note.RequiredCutCount <= 1)
+                note.FlowNoteVelocity = new Vector3(0f, 0f, -speed * (float)scrollMap.SpeedAt(songTime - totalOffsetSeconds));
 
             // ロングノーツは複数回切る時間が必要なので、後方の窓を回数に応じて伸ばす。
             // 早め側は earlyJudgeWindow、遅め側は lateWindow。受付窓と Miss は判定の時計(カメラの遅れを引いた時刻)で見る。

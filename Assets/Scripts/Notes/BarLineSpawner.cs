@@ -22,6 +22,9 @@ public class BarLineSpawner : MonoBehaviour
 
     private readonly List<double> barTimes = new List<double>();
     private int nextBarIndex;
+    // 緩急(logic!!! の「S」)の譜面では、小節線もノーツと同じ速さの表で流す(止まる間は一緒に止まる)。
+    ScrollSpeedMap scrollMap;
+    double scrollOffset;
     private Material lineMaterial;
     private Material accentMaterial;
     private readonly List<(GameObject obj, double time)> live = new List<(GameObject, double)>();
@@ -45,8 +48,11 @@ public class BarLineSpawner : MonoBehaviour
         lastSongTime = double.NaN;
         Cleanup();
         barTimes.Clear();
+        scrollMap = null;
         if (chart == null || chart.bpm <= 0 || float.IsNaN(chart.bpm) || float.IsInfinity(chart.bpm)) return;
         double offset = chart.offsetMs / 1000.0 + extraOffsetSeconds;
+        scrollMap = ScrollSpeedMap.Build(chart.scroll);
+        scrollOffset = offset;
         var clock = new ChartTempoMap(chart.bpm, chart.beatZeroMs, chart.editorTempoMap);
         double end = 0;
         if (chart.notes != null && chart.notes.Count > 0)
@@ -89,7 +95,7 @@ public class BarLineSpawner : MonoBehaviour
         while (nextBarIndex < barTimes.Count)
         {
             double barTime = barTimes[nextBarIndex];
-            if (songTime + approachTime + 1e-9 < barTime) break;
+            if (Seen(barTime, songTime) > approachTime + 1e-9) break;
             // 途中からの再生でも、通過済みの線を一度に大量生成しない。頭を飛ばして鳴らす曲は、鳴らさない区間の線を出さない。
             if (barTime >= songTime - despawnAfterSeconds && barTime >= FirstBarTime) SpawnBar(barTime);
             nextBarIndex++;
@@ -155,14 +161,16 @@ public class BarLineSpawner : MonoBehaviour
             var (go, time) = live[i];
             if (go == null) { live.RemoveAt(i); continue; }
             double dt = time - songTime;
-            float z = judgeZ + speed * (float)dt;
+            // 届く前の奥行きは見かけの残り時間(緩急の無い譜面では dt と同じ)。届いたあとはいつもの速さで後ろへ。
+            double seen = dt > 0 ? Seen(time, songTime) : dt;
+            float z = judgeZ + speed * (float)seen;
             go.transform.position = new Vector3(0f, 0f, z);
             // 生成・退場の境目だけをフェードし、小節の到達時は本来の濃さを保つ。
             if (overrideVisual)
             {
                 // Unity のネイティブオブジェクトはシリアライズ時ではなく、実行時に作成する。
                 if (fadeBlock == null) fadeBlock = new MaterialPropertyBlock();
-                float alpha = Mathf.Clamp01((float)(approachTime - dt) / .12f)
+                float alpha = Mathf.Clamp01((float)(approachTime - seen) / .12f)
                     * Mathf.Clamp01((float)(dt + despawnAfterSeconds) / .18f);
                 // 毎フレーム呼ぶので、配列を作らずに使い回しの一覧へ取り、色の名前も ID で引く(曲中に GC のごみを出さない)。
                 go.GetComponentsInChildren(fadeRenderers);
@@ -251,6 +259,10 @@ public class BarLineSpawner : MonoBehaviour
     }
     void OnDisable() { Cleanup(); lastSongTime = double.NaN; nextBarIndex = 0; }
     static bool Finite(double value) => !double.IsNaN(value) && !double.IsInfinity(value);
+
+    // 小節線が届くまでの見かけの残り時間(緩急の無い譜面では time − songTime)。
+    double Seen(double time, double songTime) => scrollMap == null ? time - songTime
+        : scrollMap.PositionAt(time - scrollOffset) - scrollMap.PositionAt(songTime - scrollOffset);
 
     private static void SafeDestroy(Object go)
     {

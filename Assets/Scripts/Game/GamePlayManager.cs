@@ -458,6 +458,13 @@ public class GamePlayManager : MonoBehaviour
         double firstNoteFromPlayStart = chart.notes.Count > 0 ? noteSpawner.EffectiveTime(chart.notes[0]) - playRange.Start : double.NaN;
         // 避は最初の的・トゲが見えはじめる時刻から数える(奥から届くまで AimDodgeRules.LeadSeconds)。
         double firstApproach = noteSpawner.approachTime;
+        // 緩急(S)の譜面で頭がゆっくり流れるなら、最初のノーツが奥に現れる時刻から数える。
+        if (noteSpawner.HasScroll && chart.notes.Count > 0)
+        {
+            double firstHit = noteSpawner.EffectiveTime(chart.notes[0]);
+            double seenFor = firstHit - noteSpawner.SpawnTimeFor(firstHit);
+            if (!double.IsNaN(seenFor) && !double.IsInfinity(seenFor)) firstApproach = System.Math.Max(firstApproach, seenFor);
+        }
         if (aimMode != null && !double.IsInfinity(aimMode.FirstTime))
         {
             firstNoteFromPlayStart = aimMode.FirstTime - playRange.Start;
@@ -483,6 +490,8 @@ public class GamePlayManager : MonoBehaviour
                 countdown.ConfigureCaptionHint(AimDodgeRules.RuleCaption, RushESecretState.Magenta, firstNoteFromPlayStart, playRange.Start);
             else if (noteSpawner.HasWindNotes)
                 countdown.ConfigureCaptionHint(WindRules.RuleCaption, RushESecretState.Leaf, firstNoteFromPlayStart, playRange.Start);
+            else if (noteSpawner.HasScroll)
+                countdown.ConfigureCaptionHint(ScrollSpeedMap.RuleCaption, RushESecretState.Ice, firstNoteFromPlayStart, playRange.Start);
             // M(覚える)は下の解説を何も出さない(2026-10-26 ユーザー「下に出る解説いらないから消して」)。
             // 最初の3回でノイズがだんだん強まるのが説明を兼ねる。
             else if (memoryMode == null)

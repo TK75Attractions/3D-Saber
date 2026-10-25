@@ -29,6 +29,19 @@ public class ChartData
     // 覚える裏譜面(Morning の「M」、2026-10-25)。見本の2小節のあと、画面にノイズをかけて同じ2小節を切らせる。
     // ノイズの時間帯(veils)と、最初の数回だけ出す説明(captions)。ノーツ側の見えにくさは NoteData.veil。
     public MemoryChartData memory = new MemoryChartData();
+    // 緩急の裏譜面(logic!!! の「S」、2026-10-26)。ノーツと小節線の流れる速さを曲の時刻ごとに変える(止まる・速く・遅く)。
+    // 届く時刻と判定は変えない。空ならいつもの一定の速さ。計算は ScrollSpeedMap。
+    public List<ScrollSpeedData> scroll = new List<ScrollSpeedData>();
+}
+
+// 流れる速さの変わり目。time(ミリ秒、ノーツと同じく offsetMs を足して使う)から、speed 倍(0 で止まる)へ
+// ramp ミリ秒かけてまっすぐ変える(0 ならその瞬間に変える)。最初の変わり目より前は 1 倍。
+[Serializable]
+public class ScrollSpeedData
+{
+    public float time;
+    public float speed = 1f;
+    public float ramp;
 }
 
 [Serializable]

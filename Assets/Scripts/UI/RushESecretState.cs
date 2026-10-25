@@ -8,7 +8,8 @@ using UnityEngine;
 // 音源・演出は曲の共通のもの)と、
 // Morning の M(2026-10-25、見本を覚え、ノイズの中で同じ2小節を切る。chart_m.json の memory と notes。最初は勉強に作ったが、
 // ユーザー「BPMが変わんない曲にしてほしい」で 118BPM 一定の Morning へ移した)と、
-// 青葉騒の W(2026-10-25、風に流されて来る。chart_w.json の notes に風の値を持たせる)。
+// 青葉騒の W(2026-10-25、風に流されて来る。chart_w.json の notes に風の値を持たせる)と、
+// logic!!! の S(2026-10-26、緩急。chart_s.json の scroll でノーツの流れる速さを変える)。
 // 色はその譜面の目印(難易度の札・盤の縁・背景・幕・本編の HUD とカウントイン)。E は今までの紫のまま。
 public sealed class SecretChart
 {
@@ -73,7 +74,18 @@ public sealed class RushESecretState
         EdgeLight = new Color(.82f, 1, .54f), FanLight = new Color(.72f, .96f, .40f),
         CenterHaze = new Color(.58f, .88f, .12f, .42f), LeftHaze = new Color(.44f, .78f, .08f, .35f), RightHaze = new Color(.72f, .96f, .24f, .35f),
     };
-    public static readonly SecretChart[] Charts = { RushE, ElDoradoG, PhobiaAvoid, MorningMemory, AobasouWind };
+    // logic!!! の「S」(2026-10-26 ユーザー「緩急でいったん作ってそこからどんどん譜面とかギミックを改善して」「それはlogicの裏にして」)。
+    // ノーツと小節線が空中で止まったり、走ったり、ゆっくりになったりする(chart_s.json の scroll。届く時刻は音楽どおり)。色は氷の水色。
+    public static readonly Color Ice = new Color(.50f, .89f, 1f);
+    public static readonly SecretChart LogicSpeed = new SecretChart
+    {
+        SongId = "logic", Difficulty = "S", Accent = Ice, Glow = new Color(.38f, .84f, 1, .25f), Face = new Color(.025f, .13f, .20f),
+        TileDeep = new Color(.015f, .11f, .19f), TileLight = new Color(.14f, .52f, .72f),
+        Backdrop = new Color(.006f, .055f, .095f), LeftLight = new Color(.22f, .70f, 1), RightLight = new Color(.50f, .92f, 1),
+        EdgeLight = new Color(.62f, .94f, 1), FanLight = new Color(.50f, .88f, 1),
+        CenterHaze = new Color(.16f, .66f, 1, .42f), LeftHaze = new Color(.10f, .52f, .95f, .35f), RightHaze = new Color(.30f, .82f, 1, .35f),
+    };
+    public static readonly SecretChart[] Charts = { RushE, ElDoradoG, PhobiaAvoid, MorningMemory, AobasouWind, LogicSpeed };
     public static SecretChart For(string songId)
     {
         foreach (var chart in Charts) if (chart.SongId == songId) return chart;

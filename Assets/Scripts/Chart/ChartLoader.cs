@@ -44,6 +44,7 @@ public static class ChartLoader
             data.timeSignatures = ChartMeterMap.Normalize(data.timeSignatures);
             data.aim = NormalizeAim(data.aim);
             data.memory = NormalizeMemory(data.memory);
+            data.scroll = NormalizeScroll(data.scroll);
             return data;
         }
         catch (ArgumentException exception)
@@ -86,6 +87,18 @@ public static class ChartLoader
             .Where(c => c != null && Finite(c.time) && Finite(c.endTime) && c.endTime > c.time && !string.IsNullOrWhiteSpace(c.text))
             .OrderBy(c => c.time).ToList();
         return memory;
+    }
+
+    // 緩急(S)の速さの変わり目。壊れた時刻は捨て、速さは 0〜ScrollSpeedMap.MaxSpeed、かける時間は 0 以上にして時刻順に並べる。
+    static List<ScrollSpeedData> NormalizeScroll(List<ScrollSpeedData> scroll)
+    {
+        var result = (scroll ?? new List<ScrollSpeedData>()).Where(s => s != null && Finite(s.time)).OrderBy(s => s.time).ToList();
+        foreach (var point in result)
+        {
+            point.speed = Finite(point.speed) ? Math.Max(0f, Math.Min((float)ScrollSpeedMap.MaxSpeed, point.speed)) : 1f;
+            point.ramp = Finite(point.ramp) ? Math.Max(0f, point.ramp) : 0f;
+        }
+        return result;
     }
 
     static string NormalizeToken(string value, string fallback) =>
