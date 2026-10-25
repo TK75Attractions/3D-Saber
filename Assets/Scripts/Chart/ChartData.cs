@@ -32,6 +32,41 @@ public class ChartData
     // 緩急の裏譜面(logic!!! の「S」、2026-10-26)。ノーツと小節線の流れる速さを曲の時刻ごとに変える(止まる・速く・遅く)。
     // 届く時刻と判定は変えない。空ならいつもの一定の速さ。計算は ScrollSpeedMap。
     public List<ScrollSpeedData> scroll = new List<ScrollSpeedData>();
+    // 闘牛の裏譜面(アンダルシアの「T」、2026-10-26)。ノーツに加えて、刃が触れるとその剣が2秒しびれる「突進」と「弾」が来る。
+    // ふつうの譜面では空のまま。決まりは BullRules。
+    public BullChartData bull = new BullChartData();
+}
+
+[Serializable]
+public class BullChartData
+{
+    public List<BullChargeData> charges = new List<BullChargeData>();
+    public List<BullShotData> shots = new List<BullShotData>();
+
+    public bool HasContent => (charges != null && charges.Count > 0) || (shots != null && shots.Count > 0);
+}
+
+// 突進。time〜endTime(ミリ秒、ノーツと同じく offsetMs を足して使う)に、高さ y の道を判定面の端から端まで横切る。
+// dir は 1 で左から右、-1 で右から左。warn ミリ秒前から道を赤く示す。
+[Serializable]
+public class BullChargeData
+{
+    public float time;
+    public float endTime;
+    public float y;
+    public int dir = 1;
+    public float warn = 1400f;
+}
+
+// 弾。time に判定面の (x, y) へ届く(ノーツと同じく奥から飛んでくる)。follow を red/blue にすると、
+// 見えはじめた瞬間のその色の剣の真ん中へ向かう(その手が見えないときは x・y)。
+[Serializable]
+public class BullShotData
+{
+    public float time;
+    public float x;
+    public float y;
+    public string follow = "";
 }
 
 // 流れる速さの変わり目。time(ミリ秒、ノーツと同じく offsetMs を足して使う)から、speed 倍(0 で止まる)へ

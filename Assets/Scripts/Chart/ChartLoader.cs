@@ -47,6 +47,7 @@ public static class ChartLoader
             data.aim = NormalizeAim(data.aim);
             data.memory = NormalizeMemory(data.memory);
             data.scroll = NormalizeScroll(data.scroll);
+            data.bull = NormalizeBull(data.bull);
             return data;
         }
         catch (ArgumentException exception)
@@ -89,6 +90,29 @@ public static class ChartLoader
             .Where(c => c != null && Finite(c.time) && Finite(c.endTime) && c.endTime > c.time && !string.IsNullOrWhiteSpace(c.text))
             .OrderBy(c => c.time).ToList();
         return memory;
+    }
+
+    // 闘牛(T)の突進と弾。壊れた値・長さの無い突進を捨て、向きは ±1、高さと位置は画面の中に収め、時刻順に並べる。
+    static BullChartData NormalizeBull(BullChartData bull)
+    {
+        bull ??= new BullChartData();
+        bull.charges = (bull.charges ?? new List<BullChargeData>())
+            .Where(c => c != null && Finite(c.time) && Finite(c.endTime) && c.endTime > c.time && Finite(c.y)).OrderBy(c => c.time).ToList();
+        foreach (var charge in bull.charges)
+        {
+            charge.dir = charge.dir < 0 ? -1 : 1;
+            charge.y = Clamp(charge.y, -1.6f, 1.6f);
+            charge.warn = Finite(charge.warn) ? Math.Max(0f, charge.warn) : 0f;
+        }
+        bull.shots = (bull.shots ?? new List<BullShotData>())
+            .Where(s => s != null && Finite(s.time) && Finite(s.x) && Finite(s.y)).OrderBy(s => s.time).ToList();
+        foreach (var shot in bull.shots)
+        {
+            shot.x = Clamp(shot.x, -2.4f, 2.4f);
+            shot.y = Clamp(shot.y, -1.5f, 1.5f);
+            shot.follow = string.IsNullOrWhiteSpace(shot.follow) ? "" : shot.follow.Trim().ToLowerInvariant();
+        }
+        return bull;
     }
 
     // 緩急(S)の速さの変わり目。壊れた時刻は捨て、速さは 0〜ScrollSpeedMap.MaxSpeed、かける時間は 0 以上にして時刻順に並べる。

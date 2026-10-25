@@ -188,6 +188,9 @@ public class GamePlayManager : MonoBehaviour
     // 覚える裏譜面(M)。ノーツと採点は通常どおり、ノイズと字幕だけを重ねる。
     private MemoryVeilMode memoryMode;
     public MemoryVeilMode MemoryMode => memoryMode;
+    // 闘牛(アンダルシアの「T」)の突進と弾。触れた剣は2秒しびれる。
+    private BullfightMode bullMode;
+    public BullfightMode BullMode => bullMode;
     // 避の終わりはコンボ点の演出が無いので、この秒数だけ置いてから結果へ。
     const float AimEndPauseSeconds = 1.2f;
 
@@ -444,6 +447,8 @@ public class GamePlayManager : MonoBehaviour
             aimMode = AimDodgeMode.Create(transform, chart.aim, noteSpawner.TotalOffsetSeconds, audioLen, scoreManager, cutJudge, cutJudge2);
         if (chart.memory != null && chart.memory.HasContent)
             memoryMode = MemoryVeilMode.Create(transform, chart, noteSpawner);
+        if (chart.bull != null && chart.bull.HasContent)
+            bullMode = BullfightMode.Create(transform, chart.bull, noteSpawner, cutJudge, cutJudge2);
         if (longNoteCutSfx != null) longNoteCutSfx.Bind(noteSpawner);
         if (goldNoteSfx != null)
         {
@@ -800,6 +805,7 @@ public class GamePlayManager : MonoBehaviour
     private void OnDestroy()
     {
         if (memoryMode != null) memoryMode.EndPlay();
+        if (bullMode != null) bullMode.EndPlay();
         AbortAudioRequest();
         ReleaseOwnedSongClip();
         FirstNoteHandHintView.Hide();
@@ -912,6 +918,8 @@ public class GamePlayManager : MonoBehaviour
             if (barLineSpawner != null) barLineSpawner.Tick(songTime);
             // 避の的とトゲ。見た目は曲の時計、当たりと的の判定はノーツと同じ判定の時計(カメラの遅れを引いた時刻)。
             if (aimMode != null) aimMode.Tick(songTime, noteSpawner.JudgeClock(songTime));
+            // 闘牛の突進と弾。当たりは判定の時計で見る。
+            if (bullMode != null) bullMode.Tick(songTime, noteSpawner.JudgeClock(songTime));
             // このコマで差し替えた字幕にも直ちに曲時計を反映する。
             // 冒頭のTickは、一時停止でここへ来ないコマの非表示を受け持つ。
             if (memoryMode != null) FirstNoteHandHintView.Tick(songPlayer);
@@ -953,6 +961,7 @@ public class GamePlayManager : MonoBehaviour
         StopAllCoroutines();
         AbortAudioRequest();
         if (memoryMode != null) memoryMode.EndPlay();
+        if (bullMode != null) bullMode.EndPlay();
         if (songPlayer != null) songPlayer.Stop();
         if (goldNoteSfx != null) goldNoteSfx.StopSounds();
         if (chorusDrop != null) chorusDrop.ResetEffects();
@@ -1285,6 +1294,7 @@ public class GamePlayManager : MonoBehaviour
         songPlayer.Stop();
         if (aimMode != null) aimMode.EndPlay();
         if (memoryMode != null) memoryMode.EndPlay();
+        if (bullMode != null) bullMode.EndPlay();
         if (stageReactions != null) stageReactions.ResetState();
         if (chorusDrop != null) chorusDrop.ResetEffects();
         if (feverShow != null) feverShow.ResetState();

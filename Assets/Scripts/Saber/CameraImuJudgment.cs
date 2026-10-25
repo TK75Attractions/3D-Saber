@@ -259,6 +259,8 @@ public class CameraImuJudgment : MonoBehaviour
     bool IsCandidate(CuttableNote note, PendingSwing p, SaberCutJudge judge)
     {
         if (note == null || !note.gameObject.activeInHierarchy || note.IsCut || note.IsMissed || note.IsFinalized) return false;
+        // 闘牛(T)でしびれている棒では切れない。
+        if (judge.Stunned) return false;
         if (!SaberHandHelper.CanCut(note.RequiredHand, judge.EffectiveHand())) return false;
         if (!note.CanBeginCutAt(p.SongTime, judge.EffectiveHand())) return false;
         if (p.OrderBlocked != null)

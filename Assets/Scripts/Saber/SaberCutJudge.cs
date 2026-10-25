@@ -71,6 +71,14 @@ public class SaberCutJudge : MonoBehaviour
     // 自前の Update を止め、外部から1点で呼び出す（GManager 主体パターン）。
     public bool autonomous = true;
 
+    // 闘牛(アンダルシアの「T」)で突進・弾に触れてしびれている間は、この棒では切れない(BullfightMode が立てる)。
+    public bool Stunned
+    {
+        get => stunned;
+        set { if (stunned != value) { pending.Clear(); ResetStroke(); } stunned = value; }
+    }
+    bool stunned;
+
     // 本編のIMU+Camera判定がこの棒を担当する間だけ、従来の接触履歴を止める。
     public bool ExternalJudgment
     {
@@ -164,7 +172,7 @@ public class SaberCutJudge : MonoBehaviour
     public int TryCut(double currentSongTime)
     {
         songTime = currentSongTime;
-        if (ExternalJudgment) { pending.Clear(); ResetStroke(); return 0; }
+        if (ExternalJudgment || stunned) { pending.Clear(); ResetStroke(); return 0; }
         if (ScreenTransition.IsBusy || !isActiveAndEnabled || saber == null || !saber.HasPrevious)
         {
             pending.Clear();
@@ -526,7 +534,7 @@ public class SaberCutJudge : MonoBehaviour
     // NoteSpawner はこの間、締め切りのあとも少しだけ Miss を待つ(そのあいだに通り過ぎれば切れる)。
     public bool IsCuttingThrough(CuttableNote note)
     {
-        if (note == null || !Finite(songTime) || ExternalJudgment) return false;
+        if (note == null || !Finite(songTime) || ExternalJudgment || stunned) return false;
         return pending.TryGetValue(note, out Pending p) && StillCuttable(note, p) && Finite(p.bestSongTime);
     }
 

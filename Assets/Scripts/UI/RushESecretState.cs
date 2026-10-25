@@ -10,7 +10,8 @@ using UnityEngine;
 // ユーザー「BPMが変わんない曲にしてほしい」で 118BPM 一定の Morning へ移した)と、
 // 青葉騒の W(2026-10-25、風に流されて来る。chart_w.json の notes に風の値を持たせる)と、
 // logic!!! の S(2026-10-26、緩急。chart_s.json の scroll でノーツの流れる速さを変える)と、
-// Zero の V(2026-10-26、消える・直前に出る。chart_v.json の notes の vanish)。
+// Zero の V(2026-10-26、消える・直前に出る。chart_v.json の notes の vanish)と、
+// アンダルシアの T(2026-10-26、闘牛。突進と弾に触れた剣は2秒しびれる。chart_t.json の bull)。
 // 色はその譜面の目印(難易度の札・盤の縁・背景・幕・本編の HUD とカウントイン)。E は今までの紫のまま。
 public sealed class SecretChart
 {
@@ -97,7 +98,18 @@ public sealed class RushESecretState
         EdgeLight = new Color(.92f, .88f, 1), FanLight = new Color(.84f, .78f, 1),
         CenterHaze = new Color(.66f, .56f, 1, .42f), LeftHaze = new Color(.56f, .46f, .95f, .35f), RightHaze = new Color(.80f, .72f, 1, .35f),
     };
-    public static readonly SecretChart[] Charts = { RushE, ElDoradoG, PhobiaAvoid, MorningMemory, AobasouWind, LogicSpeed, ZeroVanish };
+    // アンダルシアの「T」(2026-10-26 ユーザー「アンダルシアは裏譜面Tで、まあただ突進だけじゃなくてシンプル弾幕もちょっと飛んできて、
+    // 食らうとその棒が2秒スタンしてしまう感じで」)。ノーツに加えて突進と弾(chart_t.json の bull)。色は闘牛の赤橙。
+    public static readonly Color Toro = new Color(1f, .45f, .2f);
+    public static readonly SecretChart AndalusiaBull = new SecretChart
+    {
+        SongId = "Andalusia", Difficulty = "T", Accent = Toro, Glow = new Color(1, .38f, .12f, .25f), Face = new Color(.22f, .07f, .025f),
+        TileDeep = new Color(.21f, .055f, .015f), TileLight = new Color(.76f, .28f, .10f),
+        Backdrop = new Color(.10f, .025f, .008f), LeftLight = new Color(1, .32f, .10f), RightLight = new Color(1, .56f, .26f),
+        EdgeLight = new Color(1, .66f, .44f), FanLight = new Color(1, .56f, .30f),
+        CenterHaze = new Color(1, .30f, .06f, .42f), LeftHaze = new Color(.95f, .22f, .04f, .35f), RightHaze = new Color(1, .46f, .14f, .35f),
+    };
+    public static readonly SecretChart[] Charts = { RushE, ElDoradoG, PhobiaAvoid, MorningMemory, AobasouWind, LogicSpeed, ZeroVanish, AndalusiaBull };
     public static SecretChart For(string songId)
     {
         foreach (var chart in Charts) if (chart.SongId == songId) return chart;
