@@ -294,7 +294,7 @@ private func frameSignature(_ analysis: SaberFrameAnalysis) -> String {
         losslessSignature(analysis.candidates[color] ?? [])
             + losslessSignature(analysis.selected[color] as Any)
             + losslessSignature(analysis.pipelineDiagnostics?[color] as Any)
-    }.joined(separator: "\n")
+    }.joined(separator: "\n") + losslessSignature(analysis.trackLockSuppressed)
 }
 
 private func profileCountSignature(_ profile: SaberDetectionProfile) -> String {
@@ -304,13 +304,14 @@ private func profileCountSignature(_ profile: SaberDetectionProfile) -> String {
 
 private func staticAnalysis(_ image: StaticImage, step: Int = 2,
                             threshold: ColorThreshold = ColorThreshold(),
-                            profile: Bool = false) -> SaberFrameAnalysis {
+                            profile: Bool = false,
+                            mode: ShutterEmitterMode = ShutterEmitterMode()) -> SaberFrameAnalysis {
     analyzeSabers(in: image.bytes, width: image.width, height: image.height,
                   bytesPerRow: image.bytesPerRow, redThreshold: threshold, blueThreshold: threshold,
-                  sampleStep: step, collectProfile: profile, collectPipelineDiagnostics: true)
+                  sampleStep: step, collectProfile: profile, collectPipelineDiagnostics: true, shutterEmitter: mode)
 }
 
-private func nativeBenchmark(path: String, iterations: Int) {
+private func nativeBenchmark(path: String, iterations: Int, mode: ShutterEmitterMode, step: Int) {
     precondition(iterations > 0)
     let bright = loadStaticPNG(path)
     let blank = StaticImage(width: bright.width, height: bright.height)
@@ -319,7 +320,7 @@ private func nativeBenchmark(path: String, iterations: Int) {
         func run(profile: Bool = false) -> SaberFrameAnalysis {
             analyzeSabers(in: image.bytes, width: image.width, height: image.height,
                           bytesPerRow: image.bytesPerRow, redThreshold: threshold,
-                          blueThreshold: threshold, collectProfile: profile)
+                          blueThreshold: threshold, sampleStep: step, collectProfile: profile, shutterEmitter: mode)
         }
         for _ in 0..<5 { _ = run() }
         var samples: [Double] = []
@@ -331,10 +332,18 @@ private func nativeBenchmark(path: String, iterations: Int) {
             for color in [SaberColor.red, .blue] { candidateCount += analysis.candidates[color]?.count ?? 0 }
         }
         let ordered = samples.sorted()
-        print(String(format: "[NativeTiming] %@ %dx%d n=%d avg=%.3f median=%.3f p90=%.3f max=%.3f ms candidates=%d",
+        print(String(format: "[NativeTiming] %@ %dx%d n=%d avg=%.3f median=%.3f p95=%.3f max=%.3f ms candidates=%d",
                      name, image.width, image.height, iterations,
                      samples.reduce(0, +) / Double(iterations), ordered[iterations / 2],
-                     ordered[Int(ceil(Double(iterations) * 0.9)) - 1], ordered.last!, candidateCount))
+                     ordered[Int(ceil(Double(iterations) * 0.95)) - 1], ordered.last!, candidateCount))
+        let audit = staticAnalysis(image, step: step, mode: mode)
+        let skipped = emptyNormalLowISOColors(image, step: step, mode: mode, analysis: audit)
+        let record: [String: Any] = ["image": path, "case": name, "width": image.width,
+            "height": image.height, "shutter": mode.shutter, "iso": mode.iso,
+            "emitter": mode.enabled, "active": mode.active, "sampleStep": step,
+            "samplesMs": samples, "emptyNormalLowISOColors": skipped,
+            "candidateCount": candidateCount]
+        print("[NativeJSON] " + String(data: try! JSONSerialization.data(withJSONObject: record, options: [.sortedKeys]), encoding: .utf8)!)
         var scan = 0.0, morphology = 0.0, components = 0.0, evidence = 0.0, traversal = 0.0
         var lineProposal = 0.0, lineScore = 0.0, shape = 0.0, endpoints = 0.0
         for _ in 0..<iterations {
@@ -486,7 +495,7 @@ private func assertLosslessScoringScratch() {
 }
 
 // 同じテストソースを変更前・変更後の core とリンクし、出力を cmp で厳密に比較できる。
-private func printLosslessSignatures(paths: [String]) {
+private func printLosslessSignatures(paths: [String], mode: ShutterEmitterMode, step: Int) {
     var state: UInt64 = 0x10_5de7ec72
     for index in 0..<48 {
         var image = StaticImage(width: 33 + index % 5, height: 41 + index % 7, padding: 13)
@@ -505,8 +514,8 @@ private func printLosslessSignatures(paths: [String]) {
                           ColorThreshold(brightness: 255, dominance: 255, saturation: 255),
                           ColorThreshold(brightness: 110, dominance: 8, saturation: 10)]
         let step = [1, 2, 3, 8][index % 4]
-        let result = staticAnalysis(image, step: step, threshold: thresholds[(index / 4) % 4])
-        let profiled = staticAnalysis(image, step: step, threshold: thresholds[(index / 4) % 4], profile: true)
+        let result = staticAnalysis(image, step: step, threshold: thresholds[(index / 4) % 4], mode: mode)
+        let profiled = staticAnalysis(image, step: step, threshold: thresholds[(index / 4) % 4], profile: true, mode: mode)
         precondition(frameSignature(result) == frameSignature(profiled))
         print("synthetic \(index):" + frameSignature(result) + profileCountSignature(profiled.profile!))
     }
@@ -521,12 +530,12 @@ private func printLosslessSignatures(paths: [String]) {
         }
         image.bar(from: PixelPoint(x: 10, y: 50), to: PixelPoint(x: 80, y: 20),
                   color: color, thickness: 2)
-        let result = staticAnalysis(image, step: 1 + index / 12, profile: true)
+        let result = staticAnalysis(image, step: 1 + index / 12, profile: true, mode: mode)
         print("scoring-scratch \(index):" + frameSignature(result) + profileCountSignature(result.profile!))
     }
     for path in paths {
         let image = loadStaticPNG(path)
-        let analysis = staticAnalysis(image, profile: true)
+        let analysis = staticAnalysis(image, step: step, profile: true, mode: mode)
         print(path + ":" + frameSignature(analysis) + profileCountSignature(analysis.profile!))
     }
 }
@@ -553,18 +562,148 @@ private func assertCorelessBlueSurface() {
     print("Coreless blue surface: diffuse emission slice rejected; connected, clipped and supported emitters preserved")
 }
 
+// 通常 mask の実測診断と低ISO画素の独立走査で、省略条件の色数を数える（計測外）。
+private func emptyNormalLowISOColors(_ image: StaticImage, step: Int, mode: ShutterEmitterMode,
+                                     analysis: SaberFrameAnalysis) -> [String] {
+    guard mode.active else { return [] }
+    var pixels: [(UInt8, UInt8, UInt8)] = []
+    var values: [Int] = []
+    for y in stride(from: 0, to: image.height, by: step) {
+        for x in stride(from: 0, to: image.width, by: step) {
+            let i = y * image.bytesPerRow + x * 4
+            let rgb = (image.bytes[i + 2], image.bytes[i + 1], image.bytes[i])
+            pixels.append(rgb); values.append(Int(max(rgb.0, max(rgb.1, rgb.2))))
+        }
+    }
+    let background = values.sorted()[values.count / 2]
+    guard background <= ShutterEmitterThresholds.maximumBackground else { return [] }
+    let floor = max(ShutterEmitterThresholds.minimumValue,
+                    background * ShutterEmitterThresholds.minimumBackgroundRatio)
+    var colors: Set<SaberColor> = []
+    for (i, rgb) in pixels.enumerated() {
+        let value = values[i], chroma = value - Int(min(rgb.0, min(rgb.1, rgb.2)))
+        guard value >= floor, value <= ShutterEmitterThresholds.maximumValue,
+              Double(chroma) / Double(max(value, 1)) >= ShutterEmitterThresholds.minimumPurity else { continue }
+        let hue = saberHSV(rgb.0, rgb.1, rgb.2).hue
+        if hue <= ShutterEmitterThresholds.redHueEdge || hue >= 360 - ShutterEmitterThresholds.redHueEdge { colors.insert(.red) }
+        if ShutterEmitterThresholds.blueHueRange.contains(hue) { colors.insert(.blue) }
+    }
+    return [SaberColor.red, .blue].filter {
+        colors.contains($0) && analysis.pipelineDiagnostics?[$0]?.maskPixelCount == 0
+    }.map { String(describing: $0) }
+}
+
+// 同じソースを前後双方にリンクする。全 stored property・順序・Double bitPattern を比較する。
+private func assertEmptyNormalMasks(mode: ShutterEmitterMode, signatures: Bool = false) {
+    var count = 0
+    for padding in [0, 13] { for step in [1, 2, 3] {
+        let empty = StaticImage(width: 321, height: 241, padding: padding)
+        var red = empty, blue = empty, both = empty, mixed = empty, rejected = empty
+        red.coloredBar(from: PixelPoint(x: 40, y: 60), to: PixelPoint(x: 220, y: 60), red: 96, green: 8, blue: 8, thickness: 2)
+        blue.coloredBar(from: PixelPoint(x: 70, y: 170), to: PixelPoint(x: 270, y: 170), red: 8, green: 16, blue: 96, thickness: 2)
+        both = red
+        both.coloredBar(from: PixelPoint(x: 70, y: 170), to: PixelPoint(x: 270, y: 170), red: 8, green: 16, blue: 96, thickness: 2)
+        mixed = both
+        for color in [SaberColor.red, .blue] {
+            mixed.bar(from: PixelPoint(x: 30, y: color == .red ? 110 : 210),
+                      to: PixelPoint(x: 230, y: color == .red ? 110 : 210), color: color, thickness: 3)
+        }
+        rejected.coloredBar(from: PixelPoint(x: 100, y: 80), to: PixelPoint(x: 100, y: 80), red: 96, green: 8, blue: 8, thickness: 12)
+        rejected.coloredBar(from: PixelPoint(x: 200, y: 160), to: PixelPoint(x: 200, y: 160), red: 8, green: 16, blue: 96, thickness: 12)
+        let cases = [("red", red), ("blue", blue), ("both", both), ("mixed", mixed), ("rejected", rejected), ("empty", empty)]
+        for (name, image) in cases {
+            let result = staticAnalysis(image, step: step, profile: true, mode: mode)
+            let normal = staticAnalysis(image, step: step)
+            if ["red", "blue", "both", "rejected", "empty"].contains(name) {
+                precondition(normal.candidates.values.allSatisfy { $0.isEmpty })
+                precondition(result.candidates.values.allSatisfy { $0.allSatisfy { $0.source == "shutter-color-emitter" } })
+                precondition(result.pipelineDiagnostics!.values.allSatisfy {
+                    $0.maskPixelCount == 0 && $0.morphologyPixelCount == 0 && $0.connectedComponentCount == 0
+                })
+                precondition(normal.pipelineDiagnostics!.values.allSatisfy {
+                    $0.maskPixelCount == 0 && $0.morphologyPixelCount == 0 && $0.connectedComponentCount == 0
+                })
+            }
+            if mode.active {
+                let expected = name == "red" ? ["red"] : name == "blue" ? ["blue"]
+                    : ["both", "rejected"].contains(name) ? ["red", "blue"] : []
+                precondition(emptyNormalLowISOColors(image, step: step, mode: mode, analysis: result) == expected)
+                if name == "rejected" || name == "empty" {
+                    precondition(result.candidates.values.allSatisfy { $0.isEmpty })
+                } else {
+                    for color in [SaberColor.red, .blue] where name == "both" || name == "mixed" || name == String(describing: color) {
+                        precondition(result.candidates[color]!.contains { $0.source == "shutter-color-emitter" })
+                        precondition(result.selected[color] != nil)
+                    }
+                }
+            }
+            if signatures {
+                print("case \(name) padding=\(padding) step=\(step):" + frameSignature(result) + profileCountSignature(result.profile!))
+                for tracking in [false, true] { for constraint in 0...2 {
+                    let lock = tracking ? SaberTrackLock() : nil
+                    let zones: [SaberColor: [SaberIgnoreZone]] = constraint == 1
+                        ? [.red: [SaberIgnoreZone(minX: 0, minY: 0, maxX: 1, maxY: 1)],
+                           .blue: [SaberIgnoreZone(minX: 0, minY: 0, maxX: 1, maxY: 1)]] : [:]
+                    let area = constraint == 2 ? SaberPlayArea(minX: 0.8, minY: 0.8, maxX: 1, maxY: 1) : nil
+                    // 60fps の短い欠落・3回欠落後の取得・0.25秒を超えた再取得を分けて比較する。
+                    let sequence = [image, image, empty, image, empty, empty, empty, image, empty, image]
+                    let times: [Double] = [0, 1.0 / 60, 2.0 / 60, 3.0 / 60, 4.0 / 60,
+                                 5.0 / 60, 6.0 / 60, 7.0 / 60, 0.5, 0.52]
+                    for (frame, scene) in sequence.enumerated() {
+                        let analysis = analyzeSabers(in: scene.bytes, width: scene.width, height: scene.height,
+                            bytesPerRow: scene.bytesPerRow, redThreshold: ColorThreshold(), blueThreshold: ColorThreshold(),
+                            sampleStep: step, collectProfile: true, collectPipelineDiagnostics: true,
+                            collectObserverEvidence: true, ignoreZones: zones, playArea: area,
+                            trackLock: lock, now: times[frame], shutterEmitter: mode)
+                        print("sequence \(name) padding=\(padding) step=\(step) tracking=\(tracking) constraint=\(constraint) frame=\(frame) now=\(times[frame]):"
+                            + frameSignature(analysis) + profileCountSignature(analysis.profile!))
+                    }
+                } }
+            }
+            count += 1
+        }
+    } }
+    print("Empty normal masks: \(count) cases, odd sizes / padding / sampleStep, lowISO accepted/rejected PASS")
+}
+
 @main
 enum StaticBGRADetectionTests {
     static func main() {
-        if CommandLine.arguments.count >= 3, CommandLine.arguments[1] == "--benchmark" {
-            nativeBenchmark(path: CommandLine.arguments[2],
-                            iterations: CommandLine.arguments.count > 3 ? Int(CommandLine.arguments[3])! : 100)
+        var arguments = Array(CommandLine.arguments.dropFirst())
+        var mode = ShutterEmitterMode()
+        var step = 2
+        for option in ["--shutter", "--iso", "--emitter", "--step"] {
+            if let index = arguments.firstIndex(of: option) {
+                precondition(index + 1 < arguments.count)
+                let value = arguments[index + 1]
+                switch option {
+                case "--shutter": mode.shutter = Int(value)!
+                case "--iso": mode.iso = Int(value)!
+                case "--step": step = Int(value)!; precondition(step > 0)
+                default: precondition(["on", "off"].contains(value)); mode.enabled = value == "on"
+                }
+                arguments.removeSubrange(index...index + 1)
+            }
+        }
+        if arguments.first == "--benchmark" || arguments.first == "--lossless-signatures"
+            || arguments.first == "--empty-normal-signatures" {
+            print("[Settings] shutter=\(mode.shutter) iso=\(mode.iso) emitter=\(mode.enabled) active=\(mode.active) pngSampleStep=\(step) emptyNormalSteps=1,2,3")
+        }
+        if arguments.first == "--benchmark" {
+            nativeBenchmark(path: arguments[1], iterations: arguments.count > 2 ? Int(arguments[2])! : 100,
+                            mode: mode, step: step)
             return
         }
-        if CommandLine.arguments.dropFirst().first == "--lossless-signatures" {
-            printLosslessSignatures(paths: Array(CommandLine.arguments.dropFirst(2)))
+        if arguments.first == "--lossless-signatures" {
+            printLosslessSignatures(paths: Array(arguments.dropFirst()), mode: mode, step: step)
             return
         }
+        if arguments.first == "--empty-normal-signatures" {
+            assertEmptyNormalMasks(mode: mode, signatures: true)
+            return
+        }
+        precondition(arguments.isEmpty, "unknown arguments")
+        assertEmptyNormalMasks(mode: ShutterEmitterMode(shutter: 2000, iso: 160, enabled: true))
         assertLosslessPixelScan()
         assertLosslessProposalMembership()
         assertLosslessScoringScratch()

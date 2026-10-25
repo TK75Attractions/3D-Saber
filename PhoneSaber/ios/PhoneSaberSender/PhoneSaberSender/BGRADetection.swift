@@ -1086,7 +1086,8 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
         // Most live frames contain at most one saber color. Do not run several
         // full-mask morphology/component passes for an absent color; this is
         // an exact empty-mask fast path and does not alter candidate scoring.
-        guard rawMask.contains(1) || lowISOMasks[color]?.contains(1) == true else {
+        // 走査済みの通常画素数は rawMask の非空判定と同じ（青の補助画素も加算済み）。
+        guard maskPixelCount > 0 || lowISOMasks[color]?.contains(1) == true else {
             _ = trackLock?.select([], color: color, width: width, height: height, now: now)
             allCandidates[color] = []
             if collectPipelineDiagnostics {
@@ -1097,573 +1098,579 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
             }
             continue
         }
-        let morphologyStart = collectProfile ? ProcessInfo.processInfo.systemUptime : 0
-        let colorNeighborhood = dilateSaberMask(rawMask, width: maskWidth,
-                                                height: maskHeight, radius: 2)
-        var associatedCore = Array(repeating: UInt8(0), count: rawMask.count)
-        for index in rawMask.indices where brightCoreMask[index] != 0
-            && colorNeighborhood[index] != 0 {
-            associatedCore[index] = 1
-        }
-        let coreNeighborhood = dilateSaberMask(associatedCore, width: maskWidth,
-                                               height: maskHeight, radius: 3)
-        var coreAndHaloMask = associatedCore
-        for index in rawMask.indices where rawMask[index] != 0
-            && coreNeighborhood[index] != 0 {
-            coreAndHaloMask[index] = 1
-        }
-        let closed = closeSaberMask(rawMask, width: maskWidth, height: maskHeight,
-                                    radius: closeRadius)
-        let cleaned = openSaberMask(closed, width: maskWidth, height: maskHeight)
-        if collectProfile {
-            profile.morphologyMs += (ProcessInfo.processInfo.systemUptime - morphologyStart) * 1000
-        }
-        let evidence = SaberEvidence(color: color, radiance: radianceMap,
-                                     value: valueMap, chroma: chromaMap,
-                                     colorMask: rawMask, coreMask: associatedCore,
-                                     collectObserverEvidence: collectObserverEvidence)
-        // A dotted or one-sample-wide LED blade can vanish under opening while
-        // a smooth reflection survives it. Always score close-only components
-        // as well, then discard duplicates of components already found in the
-        // cleaned mask. Shape and emitter evidence reject isolated noise.
-        let componentStart = collectProfile ? ProcessInfo.processInfo.systemUptime : 0
+        var candidates: [SaberCandidate] = []
+        var selectionStart = collectProfile ? ProcessInfo.processInfo.systemUptime : 0
         var morphologyPixelCount = 0
         var connectedComponentCount = 0
-        let componentObserver: (Int) -> Void = { count in
-            morphologyPixelCount += count
-            if collectPipelineDiagnostics { connectedComponentCount += 1 }
-            if collectProfile { profile.connectedComponentCount += 1 }
-        }
-        let additionalComponentObserver: ((Int) -> Void)? = collectProfile
-            ? { _ in profile.connectedComponentCount += 1 } : nil
-        var candidates = saberCandidates(in: cleaned, width: maskWidth, height: maskHeight,
-                                         evidence: evidence, stageProfile: candidateStageProfile,
-                                         componentObserver: componentObserver, collectEndpointDiagnostics: collectPipelineDiagnostics)
-        let closedCandidates = saberCandidates(
-            in: closed,
-            width: maskWidth, height: maskHeight, evidence: evidence,
-            stageProfile: candidateStageProfile,
-            componentObserver: additionalComponentObserver
-        , collectEndpointDiagnostics: collectPipelineDiagnostics)
-        for var candidate in closedCandidates where !candidates.contains(where: {
-            candidateAxisDistance($0, candidate) <= 3.0
-        }) {
-            candidate.source = "color-close"
-            candidates.append(candidate)
-        }
-        // Opening can erase a thin but elongated diffuser blade when only a
-        // small number of target-color samples survive exposure or motion.
-        // Only after a severe morphology loss, score the already-built raw
-        // mask as a low-area fallback. Normal masks keep the established path.
-        let standardMinimumArea = max(4, Int(Double(maskWidth * maskHeight) * 0.0005))
-        let sparseMinimumArea = max(6, standardMinimumArea / 3)
-        let morphologyLostMostPixels = morphologyPixelCount * 5 < maskPixelCount * 3
-        if maskPixelCount >= sparseMinimumArea, morphologyLostMostPixels {
-            let sparseCandidates = saberCandidates(
-                in: rawMask, width: maskWidth, height: maskHeight,
-                evidence: evidence, stageProfile: candidateStageProfile,
-                componentObserver: additionalComponentObserver,
-                minimumAreaOverride: sparseMinimumArea
+        // 通常マスクが空なら膨張・収縮・芯の関連付けも空で、通常候補は生成できない。
+        // 低ISO候補と後段の診断・座標拡大・追跡・範囲制約は共通経路を通す。
+        if maskPixelCount > 0 {
+            let morphologyStart = collectProfile ? ProcessInfo.processInfo.systemUptime : 0
+            let colorNeighborhood = dilateSaberMask(rawMask, width: maskWidth,
+                                                    height: maskHeight, radius: 2)
+            var associatedCore = Array(repeating: UInt8(0), count: rawMask.count)
+            for index in rawMask.indices where brightCoreMask[index] != 0
+                && colorNeighborhood[index] != 0 {
+                associatedCore[index] = 1
+            }
+            let coreNeighborhood = dilateSaberMask(associatedCore, width: maskWidth,
+                                                   height: maskHeight, radius: 3)
+            var coreAndHaloMask = associatedCore
+            for index in rawMask.indices where rawMask[index] != 0
+                && coreNeighborhood[index] != 0 {
+                coreAndHaloMask[index] = 1
+            }
+            let closed = closeSaberMask(rawMask, width: maskWidth, height: maskHeight,
+                                        radius: closeRadius)
+            let cleaned = openSaberMask(closed, width: maskWidth, height: maskHeight)
+            if collectProfile {
+                profile.morphologyMs += (ProcessInfo.processInfo.systemUptime - morphologyStart) * 1000
+            }
+            let evidence = SaberEvidence(color: color, radiance: radianceMap,
+                                         value: valueMap, chroma: chromaMap,
+                                         colorMask: rawMask, coreMask: associatedCore,
+                                         collectObserverEvidence: collectObserverEvidence)
+            // A dotted or one-sample-wide LED blade can vanish under opening while
+            // a smooth reflection survives it. Always score close-only components
+            // as well, then discard duplicates of components already found in the
+            // cleaned mask. Shape and emitter evidence reject isolated noise.
+            let componentStart = collectProfile ? ProcessInfo.processInfo.systemUptime : 0
+            let componentObserver: (Int) -> Void = { count in
+                morphologyPixelCount += count
+                if collectPipelineDiagnostics { connectedComponentCount += 1 }
+                if collectProfile { profile.connectedComponentCount += 1 }
+            }
+            let additionalComponentObserver: ((Int) -> Void)? = collectProfile
+                ? { _ in profile.connectedComponentCount += 1 } : nil
+            candidates = saberCandidates(in: cleaned, width: maskWidth, height: maskHeight,
+                                             evidence: evidence, stageProfile: candidateStageProfile,
+                                             componentObserver: componentObserver, collectEndpointDiagnostics: collectPipelineDiagnostics)
+            let closedCandidates = saberCandidates(
+                in: closed,
+                width: maskWidth, height: maskHeight, evidence: evidence,
+                stageProfile: candidateStageProfile,
+                componentObserver: additionalComponentObserver
             , collectEndpointDiagnostics: collectPipelineDiagnostics)
-            for var candidate in sparseCandidates {
-                candidate.source = "color-sparse-raw"
-                if let duplicate = candidates.firstIndex(where: {
-                    candidateAxisDistance($0, candidate) <= 3.0
-                }) {
-                    if candidate.isEmitterEligible && !candidates[duplicate].isEmitterEligible {
-                        candidates[duplicate] = candidate
+            for var candidate in closedCandidates where !candidates.contains(where: {
+                candidateAxisDistance($0, candidate) <= 3.0
+            }) {
+                candidate.source = "color-close"
+                candidates.append(candidate)
+            }
+            // Opening can erase a thin but elongated diffuser blade when only a
+            // small number of target-color samples survive exposure or motion.
+            // Only after a severe morphology loss, score the already-built raw
+            // mask as a low-area fallback. Normal masks keep the established path.
+            let standardMinimumArea = max(4, Int(Double(maskWidth * maskHeight) * 0.0005))
+            let sparseMinimumArea = max(6, standardMinimumArea / 3)
+            let morphologyLostMostPixels = morphologyPixelCount * 5 < maskPixelCount * 3
+            if maskPixelCount >= sparseMinimumArea, morphologyLostMostPixels {
+                let sparseCandidates = saberCandidates(
+                    in: rawMask, width: maskWidth, height: maskHeight,
+                    evidence: evidence, stageProfile: candidateStageProfile,
+                    componentObserver: additionalComponentObserver,
+                    minimumAreaOverride: sparseMinimumArea
+                , collectEndpointDiagnostics: collectPipelineDiagnostics)
+                for var candidate in sparseCandidates {
+                    candidate.source = "color-sparse-raw"
+                    if let duplicate = candidates.firstIndex(where: {
+                        candidateAxisDistance($0, candidate) <= 3.0
+                    }) {
+                        if candidate.isEmitterEligible && !candidates[duplicate].isEmitterEligible {
+                            candidates[duplicate] = candidate
+                        }
+                    } else {
+                        candidates.append(candidate)
                     }
-                } else {
+                }
+            }
+            // A bright LED array can be embedded in a broad colored glow that is
+            // not itself blade-shaped. Extract concentrated, high-purity emitter
+            // pixels as an additional geometry proposal; this changes candidate
+            // generation, not the configurable HSV color gate.
+            let emitterCandidates = emitterMask.contains(1)
+                ? saberCandidates(
+                    in: closeSaberMask(emitterMask, width: maskWidth, height: maskHeight,
+                                       radius: closeRadius),
+                    width: maskWidth, height: maskHeight, evidence: evidence,
+                    stageProfile: candidateStageProfile,
+                    componentObserver: additionalComponentObserver
+                , collectEndpointDiagnostics: collectPipelineDiagnostics) : []
+            for var candidate in emitterCandidates where !candidates.contains(where: {
+                candidateAxisDistance($0, candidate) <= 3.0
+            }) {
+                candidate.source = "color-emitter"
+                candidates.append(candidate)
+            }
+            // Start an additional proposal from bright/white cores, then attach
+            // only the nearby target-color halo. This preserves the saturated LED
+            // center that is intentionally absent from a pure HSV color mask.
+            let hasAssociatedCore = associatedCore.contains(1)
+            let coreCandidates = hasAssociatedCore
+                ? saberCandidates(
+                    in: closeSaberMask(coreAndHaloMask, width: maskWidth, height: maskHeight,
+                                       radius: closeRadius),
+                    width: maskWidth, height: maskHeight, evidence: evidence,
+                    stageProfile: candidateStageProfile,
+                    componentObserver: additionalComponentObserver
+                , collectEndpointDiagnostics: collectPipelineDiagnostics) : []
+            for var candidate in coreCandidates where !candidates.contains(where: {
+                candidateAxisDistance($0, candidate) <= 3.0
+            }) {
+                candidate.source = "core-halo"
+                candidates.append(candidate)
+            }
+            // An empty core cannot produce a candidate; avoid an unnecessary close pass.
+            if hasAssociatedCore {
+                let connectedCore = closeSaberMask(associatedCore, width: maskWidth, height: maskHeight, radius: 4)
+                for var candidate in saberCandidates(in: connectedCore, width: maskWidth, height: maskHeight,
+                                                      evidence: evidence, stageProfile: candidateStageProfile,
+                                                      componentObserver: additionalComponentObserver, collectEndpointDiagnostics: collectPipelineDiagnostics) {
+                    let length = hypot(Double(candidate.comparisonEndpoints.1.x - candidate.comparisonEndpoints.0.x),
+                                       Double(candidate.comparisonEndpoints.1.y - candidate.comparisonEndpoints.0.y))
+                    guard length >= max(12, Double(min(maskWidth, maskHeight)) * 0.10) else { continue }
+                    candidate.source = "connected-core"
                     candidates.append(candidate)
                 }
             }
-        }
-        // A bright LED array can be embedded in a broad colored glow that is
-        // not itself blade-shaped. Extract concentrated, high-purity emitter
-        // pixels as an additional geometry proposal; this changes candidate
-        // generation, not the configurable HSV color gate.
-        let emitterCandidates = emitterMask.contains(1)
-            ? saberCandidates(
-                in: closeSaberMask(emitterMask, width: maskWidth, height: maskHeight,
-                                   radius: closeRadius),
-                width: maskWidth, height: maskHeight, evidence: evidence,
-                stageProfile: candidateStageProfile,
-                componentObserver: additionalComponentObserver
-            , collectEndpointDiagnostics: collectPipelineDiagnostics) : []
-        for var candidate in emitterCandidates where !candidates.contains(where: {
-            candidateAxisDistance($0, candidate) <= 3.0
-        }) {
-            candidate.source = "color-emitter"
-            candidates.append(candidate)
-        }
-        // Start an additional proposal from bright/white cores, then attach
-        // only the nearby target-color halo. This preserves the saturated LED
-        // center that is intentionally absent from a pure HSV color mask.
-        let hasAssociatedCore = associatedCore.contains(1)
-        let coreCandidates = hasAssociatedCore
-            ? saberCandidates(
-                in: closeSaberMask(coreAndHaloMask, width: maskWidth, height: maskHeight,
-                                   radius: closeRadius),
-                width: maskWidth, height: maskHeight, evidence: evidence,
-                stageProfile: candidateStageProfile,
-                componentObserver: additionalComponentObserver
-            , collectEndpointDiagnostics: collectPipelineDiagnostics) : []
-        for var candidate in coreCandidates where !candidates.contains(where: {
-            candidateAxisDistance($0, candidate) <= 3.0
-        }) {
-            candidate.source = "core-halo"
-            candidates.append(candidate)
-        }
-        // An empty core cannot produce a candidate; avoid an unnecessary close pass.
-        if hasAssociatedCore {
-            let connectedCore = closeSaberMask(associatedCore, width: maskWidth, height: maskHeight, radius: 4)
-            for var candidate in saberCandidates(in: connectedCore, width: maskWidth, height: maskHeight,
-                                                  evidence: evidence, stageProfile: candidateStageProfile,
-                                                  componentObserver: additionalComponentObserver, collectEndpointDiagnostics: collectPipelineDiagnostics) {
-                let length = hypot(Double(candidate.comparisonEndpoints.1.x - candidate.comparisonEndpoints.0.x),
-                                   Double(candidate.comparisonEndpoints.1.y - candidate.comparisonEndpoints.0.y))
-                guard length >= max(12, Double(min(maskWidth, maskHeight)) * 0.10) else { continue }
-                candidate.source = "connected-core"
-                candidates.append(candidate)
+            if collectProfile {
+                profile.componentAndScoreMs += (ProcessInfo.processInfo.systemUptime - componentStart) * 1000
             }
-        }
-        if collectProfile {
-            profile.componentAndScoreMs += (ProcessInfo.processInfo.systemUptime - componentStart) * 1000
-        }
-        let proposalStart = collectProfile ? ProcessInfo.processInfo.systemUptime : 0
-        let proposals = coreLineProposals(coreMask: associatedCore, colorMask: rawMask,
-                                          width: maskWidth, height: maskHeight)
-        if collectProfile {
-            profile.lineProposalMs += (ProcessInfo.processInfo.systemUptime - proposalStart) * 1000
-            profile.lineProposalCount += proposals.count
-        }
-        let lineScoreStart = collectProfile ? ProcessInfo.processInfo.systemUptime : 0
-        var proposalWorkspace = SaberProposalWorkspace()
-        for proposal in proposals {
-            if var candidate = saberCandidate(from: proposal, width: maskWidth,
-                                              height: maskHeight, evidence: evidence,
-                                              workspace: &proposalWorkspace, source: "core-line",
-                                              stageProfile: candidateStageProfile, collectEndpointDiagnostics: collectPipelineDiagnostics),
-               !candidates.contains(where: {
-                candidateAxisDistance($0, candidate) <= 10.0
-                    || candidateIsSubsegment(candidate, of: $0)
-               }) {
-                candidate.source = "core-line"
-                // A Hough line can join two unrelated bright objects and then
-                // win on length alone. Keep it available as a fallback for a
-                // genuinely fragmented/foreshortened blade, but rank it below
-                // a complete candidate unless bright core support is spread
-                // along most of the proposed axis.
-                candidate.scoreBreakdown.proposalPenalty -=
-                    (1.0 - candidate.longitudinalCoreCoverage) * 45.0
-                candidate.scoreBreakdown.proposalPenalty -= coreLineRobustGeometryPenalty(
-                    candidate, minimumArea: standardMinimumArea,
-                    minimumFrameDimension: min(maskWidth, maskHeight)
-                )
-                candidate.score = candidate.scoreBreakdown.total
-                if !hasSufficientCoreLineProposalEvidence(candidate) {
-                    candidate.isEmitterEligible = false
-                    candidate.source = "core-line-low-confidence"
-                } else if candidate.longitudinalCoreCoverage < 0.30,
-                   candidate.coreSupportRatio < 0.18 {
-                    candidate.isEmitterEligible = false
-                    candidate.source = "core-line-sparse"
-                }
-                // A line proposal is a fallback for disconnected LEDs. Avoid
-                // cutting a complete connected emitter into competing slices.
-                let overlapsCore = candidates.contains { existing in
-                    guard existing.source == "connected-core" else { return false }
-                    let a = existing.comparisonEndpoints.0, b = existing.comparisonEndpoints.1
-                    let dx = Double(b.x - a.x), dy = Double(b.y - a.y)
-                    let length = hypot(dx, dy)
-                    let cx = Double(candidate.comparisonEndpoints.0.x + candidate.comparisonEndpoints.1.x) / 2 - Double(a.x)
-                    let cy = Double(candidate.comparisonEndpoints.0.y + candidate.comparisonEndpoints.1.y) / 2 - Double(a.y)
-                    let along = (cx * dx + cy * dy) / length
-                    let across = abs(cx * dy - cy * dx) / length
-                    return along >= -4 && along <= length + 4 && across <= 8
-                }
-                if overlapsCore {
-                    candidate.isEmitterEligible = false
-                    candidate.source = "core-line-overlap"
-                    if collectPipelineDiagnostics {
-                        if let body = candidates.first(where: { existing in
-                            guard existing.source == "connected-core" else { return false }
-                            let a = existing.comparisonEndpoints.0
-                            let b = existing.comparisonEndpoints.1
-                            let dx = Double(b.x - a.x), dy = Double(b.y - a.y)
-                            let length = hypot(dx, dy)
-                            guard length > 0 else { return false }
-                            let cx = Double(candidate.comparisonEndpoints.0.x
-                                + candidate.comparisonEndpoints.1.x) / 2 - Double(a.x)
-                            let cy = Double(candidate.comparisonEndpoints.0.y
-                                + candidate.comparisonEndpoints.1.y) / 2 - Double(a.y)
-                            let along = (cx * dx + cy * dy) / length
-                            let across = abs(cx * dy - cy * dx) / length
-                            return along >= -4 && along <= length + 4 && across <= 8
-                        }) {
-                            let a = body.comparisonEndpoints.0, b = body.comparisonEndpoints.1
-                            let dx = Double(b.x - a.x), dy = Double(b.y - a.y)
-                            let length = hypot(dx, dy)
-                            if length > 0 {
+            let proposalStart = collectProfile ? ProcessInfo.processInfo.systemUptime : 0
+            let proposals = coreLineProposals(coreMask: associatedCore, colorMask: rawMask,
+                                              width: maskWidth, height: maskHeight)
+            if collectProfile {
+                profile.lineProposalMs += (ProcessInfo.processInfo.systemUptime - proposalStart) * 1000
+                profile.lineProposalCount += proposals.count
+            }
+            let lineScoreStart = collectProfile ? ProcessInfo.processInfo.systemUptime : 0
+            var proposalWorkspace = SaberProposalWorkspace()
+            for proposal in proposals {
+                if var candidate = saberCandidate(from: proposal, width: maskWidth,
+                                                  height: maskHeight, evidence: evidence,
+                                                  workspace: &proposalWorkspace, source: "core-line",
+                                                  stageProfile: candidateStageProfile, collectEndpointDiagnostics: collectPipelineDiagnostics),
+                   !candidates.contains(where: {
+                    candidateAxisDistance($0, candidate) <= 10.0
+                        || candidateIsSubsegment(candidate, of: $0)
+                   }) {
+                    candidate.source = "core-line"
+                    // A Hough line can join two unrelated bright objects and then
+                    // win on length alone. Keep it available as a fallback for a
+                    // genuinely fragmented/foreshortened blade, but rank it below
+                    // a complete candidate unless bright core support is spread
+                    // along most of the proposed axis.
+                    candidate.scoreBreakdown.proposalPenalty -=
+                        (1.0 - candidate.longitudinalCoreCoverage) * 45.0
+                    candidate.scoreBreakdown.proposalPenalty -= coreLineRobustGeometryPenalty(
+                        candidate, minimumArea: standardMinimumArea,
+                        minimumFrameDimension: min(maskWidth, maskHeight)
+                    )
+                    candidate.score = candidate.scoreBreakdown.total
+                    if !hasSufficientCoreLineProposalEvidence(candidate) {
+                        candidate.isEmitterEligible = false
+                        candidate.source = "core-line-low-confidence"
+                    } else if candidate.longitudinalCoreCoverage < 0.30,
+                       candidate.coreSupportRatio < 0.18 {
+                        candidate.isEmitterEligible = false
+                        candidate.source = "core-line-sparse"
+                    }
+                    // A line proposal is a fallback for disconnected LEDs. Avoid
+                    // cutting a complete connected emitter into competing slices.
+                    let overlapsCore = candidates.contains { existing in
+                        guard existing.source == "connected-core" else { return false }
+                        let a = existing.comparisonEndpoints.0, b = existing.comparisonEndpoints.1
+                        let dx = Double(b.x - a.x), dy = Double(b.y - a.y)
+                        let length = hypot(dx, dy)
+                        let cx = Double(candidate.comparisonEndpoints.0.x + candidate.comparisonEndpoints.1.x) / 2 - Double(a.x)
+                        let cy = Double(candidate.comparisonEndpoints.0.y + candidate.comparisonEndpoints.1.y) / 2 - Double(a.y)
+                        let along = (cx * dx + cy * dy) / length
+                        let across = abs(cx * dy - cy * dx) / length
+                        return along >= -4 && along <= length + 4 && across <= 8
+                    }
+                    if overlapsCore {
+                        candidate.isEmitterEligible = false
+                        candidate.source = "core-line-overlap"
+                        if collectPipelineDiagnostics {
+                            if let body = candidates.first(where: { existing in
+                                guard existing.source == "connected-core" else { return false }
+                                let a = existing.comparisonEndpoints.0
+                                let b = existing.comparisonEndpoints.1
+                                let dx = Double(b.x - a.x), dy = Double(b.y - a.y)
+                                let length = hypot(dx, dy)
+                                guard length > 0 else { return false }
                                 let cx = Double(candidate.comparisonEndpoints.0.x
                                     + candidate.comparisonEndpoints.1.x) / 2 - Double(a.x)
                                 let cy = Double(candidate.comparisonEndpoints.0.y
                                     + candidate.comparisonEndpoints.1.y) / 2 - Double(a.y)
                                 let along = (cx * dx + cy * dy) / length
-                                candidate.diagnosticRejections += [
-                                    SaberEligibilityDecision(name: "core-line-overlap.alongBefore",
-                                        value: along, comparison: "<", threshold: -4),
-                                    SaberEligibilityDecision(name: "core-line-overlap.alongAfter",
-                                        value: along, comparison: ">", threshold: length + 4),
-                                    SaberEligibilityDecision(name: "core-line-overlap.across",
-                                        value: abs(cx * dy - cy * dx) / length,
-                                        comparison: ">", threshold: 8)
+                                let across = abs(cx * dy - cy * dx) / length
+                                return along >= -4 && along <= length + 4 && across <= 8
+                            }) {
+                                let a = body.comparisonEndpoints.0, b = body.comparisonEndpoints.1
+                                let dx = Double(b.x - a.x), dy = Double(b.y - a.y)
+                                let length = hypot(dx, dy)
+                                if length > 0 {
+                                    let cx = Double(candidate.comparisonEndpoints.0.x
+                                        + candidate.comparisonEndpoints.1.x) / 2 - Double(a.x)
+                                    let cy = Double(candidate.comparisonEndpoints.0.y
+                                        + candidate.comparisonEndpoints.1.y) / 2 - Double(a.y)
+                                    let along = (cx * dx + cy * dy) / length
+                                    candidate.diagnosticRejections += [
+                                        SaberEligibilityDecision(name: "core-line-overlap.alongBefore",
+                                            value: along, comparison: "<", threshold: -4),
+                                        SaberEligibilityDecision(name: "core-line-overlap.alongAfter",
+                                            value: along, comparison: ">", threshold: length + 4),
+                                        SaberEligibilityDecision(name: "core-line-overlap.across",
+                                            value: abs(cx * dy - cy * dx) / length,
+                                            comparison: ">", threshold: 8)
+                                    ]
+                                }
+                            }
+                        }
+                        candidate.scoreBreakdown.proposalPenalty = -candidate.score * 0.5
+                        candidate.score = candidate.scoreBreakdown.total
+                    }
+                    candidates.append(candidate)
+                }
+            }
+            if collectProfile {
+                profile.lineScoreMs += (ProcessInfo.processInfo.systemUptime - lineScoreStart) * 1000
+                profile.candidateCount += candidates.count
+            }
+            selectionStart = collectProfile ? ProcessInfo.processInfo.systemUptime : 0
+            if color == .blue {
+                candidates = preferTrustedBlueEmitter(
+                    in: candidates, minimumFrameDimension: min(maskWidth, maskHeight)
+                )
+                // A stronger unsupported Hough slice can expose weak background
+                // candidates. Reject only candidates without their own coherent
+                // color/body or bright connected-core evidence. The rejected line
+                // itself stays ineligible under the existing proposal quality gate.
+                let rejectedLineScore = candidates.lazy.filter { $0.source == "core-line-low-confidence" }.map(\.score).max()
+                let eligibleScore = candidates.lazy.filter(\.isEmitterEligible).map(\.score).max()
+                let hasTrustedEmitter = candidates.contains {
+                    isTrustedBlueEmitter($0, minimumFrameDimension: min(maskWidth, maskHeight))
+                }
+                if let rejectedLineScore, let eligibleScore,
+                   rejectedLineScore >= eligibleScore, !hasTrustedEmitter {
+                    for index in candidates.indices where candidates[index].isEmitterEligible
+                        && !hasIndependentBlueEvidence(candidates[index]) {
+                        candidates[index].isEmitterEligible = false
+                        candidates[index].source += "-unsupported-core-line-candidate"
+                        if collectPipelineDiagnostics {
+                            candidates[index].diagnosticRejections.append(SaberEligibilityDecision(
+                                name: "unsupported-core-line-candidate.rejectedLineScore",
+                                value: rejectedLineScore, comparison: "<", threshold: eligibleScore))
+                            candidates[index].diagnosticRejections += [
+                                SaberEligibilityDecision(name: "unsupported-core-line-candidate.trustedEmitter",
+                                    value: hasTrustedEmitter ? 1 : 0, comparison: "==", threshold: 1),
+                                SaberEligibilityDecision(name: "unsupported-core-line-candidate.independentEvidence",
+                                    value: 0, comparison: "==", threshold: 1)
+                            ]
+                        }
+                    }
+                }
+            }
+            if color == .blue {
+                for index in candidates.indices where candidates[index].isEmitterEligible
+                    && candidates[index].source == "color-emitter" {
+                    let emitter = candidates[index]
+                    let coversBroadRegion = Double(emitter.pointCount)
+                        > Double(maskWidth * maskHeight) * 0.03
+                    if coversBroadRegion && emitter.coreSupportRatio < 0.05
+                        && emitter.axialDensity > 8.0 {
+                        // A broad saturated surface can leave a long bright
+                        // emitter-shaped component without a concentrated core.
+                        candidates[index].isEmitterEligible = false
+                        candidates[index].source = "color-emitter-broad-coreless"
+                        if collectPipelineDiagnostics {
+                            candidates[index].diagnosticRejections += [
+                                SaberEligibilityDecision(name: "color-emitter-broad-coreless.area",
+                                    value: Double(emitter.pointCount), comparison: "<=",
+                                    threshold: Double(maskWidth * maskHeight) * 0.03),
+                                SaberEligibilityDecision(name: "color-emitter-broad-coreless.coreSupport",
+                                    value: emitter.coreSupportRatio, comparison: ">=", threshold: 0.05),
+                                SaberEligibilityDecision(name: "color-emitter-broad-coreless.density",
+                                    value: emitter.axialDensity, comparison: "<=", threshold: 8.0)
+                            ]
+                        }
+                    }
+                }
+            }
+            if color == .blue {
+                for index in candidates.indices where candidates[index].isEmitterEligible
+                    && candidates[index].source == "core-line" {
+                    let line = candidates[index]
+                    guard line.usedPointLEDFallback,
+                          line.rawPCASpan >= line.robustMainIntervalLength * 4.0,
+                          line.retainedBodyRatio < 0.50,
+                          line.coreSupportRatio < 0.30 else { continue }
+                    let hasSupportedLocalBody = candidates.contains { body in
+                        guard body.isEmitterEligible,
+                              body.coreSupportRatio >= line.coreSupportRatio + 0.10,
+                              body.highValueRatio >= 0.35,
+                              body.robustMainIntervalLength
+                                >= line.robustMainIntervalLength * 0.60 else { return false }
+                        let endpoints = [line.endpoints.0, line.endpoints.1]
+                        let bodyEndpoints = [body.endpoints.0, body.endpoints.1]
+                        return endpoints.contains { endpoint in
+                            bodyEndpoints.contains { supported in
+                                hypot(Double(endpoint.x - supported.x),
+                                      Double(endpoint.y - supported.y)) <= 30.0
+                            }
+                        }
+                    }
+                    if hasSupportedLocalBody {
+                        // A sparse raw extension reaches far beyond the local
+                        // bright body. A separate, supported proposal covers the
+                        // actual emitter near one end of that extension.
+                        candidates[index].isEmitterEligible = false
+                        candidates[index].source = "core-line-weak-raw-tail"
+                        if collectPipelineDiagnostics {
+                            candidates[index].diagnosticRejections.append(SaberEligibilityDecision(
+                                name: "core-line-weak-raw-tail.span",
+                                value: line.rawPCASpan, comparison: "<",
+                                threshold: line.robustMainIntervalLength * 4.0))
+                            candidates[index].diagnosticRejections += [
+                                SaberEligibilityDecision(name: "core-line-weak-raw-tail.pointFallback",
+                                    value: line.usedPointLEDFallback ? 1 : 0,
+                                    comparison: "==", threshold: 0),
+                                SaberEligibilityDecision(name: "core-line-weak-raw-tail.retainedBody",
+                                    value: line.retainedBodyRatio, comparison: ">=", threshold: 0.50),
+                                SaberEligibilityDecision(name: "core-line-weak-raw-tail.coreSupport",
+                                    value: line.coreSupportRatio, comparison: ">=", threshold: 0.30),
+                                SaberEligibilityDecision(name: "core-line-weak-raw-tail.localBody",
+                                    value: hasSupportedLocalBody ? 1 : 0,
+                                    comparison: "==", threshold: 0)
+                            ]
+                        }
+                    }
+                }
+            }
+            if color == .red {
+                let connected = Array(candidates.lazy.filter {
+                    $0.isEmitterEligible && !$0.source.hasPrefix("core-line")
+                }.map(CandidateBodySnapshot.init))
+                for index in candidates.indices where candidates[index].isEmitterEligible {
+                    let proposal = candidates[index]
+                    if proposal.source == "core-line",
+                       proposal.rawPCASpan >= proposal.robustMainIntervalLength * 1.8,
+                       proposal.retainedBodyRatio < 0.65,
+                       connected.contains(where: { body in
+                           body.rawPCASpan >= proposal.robustMainIntervalLength * 0.6
+                               && body.meanColorPurity >= proposal.meanColorPurity - 0.10
+                               && body.highValueRatio >= proposal.highValueRatio - 0.20
+                               && body.longitudinalContinuity >= proposal.longitudinalContinuity
+                               && body.axialDensity >= proposal.axialDensity
+                       }) {
+                        // The proposal joins distant bright objects while a
+                        // coherent connected body already explains the blade.
+                        candidates[index].isEmitterEligible = false
+                        candidates[index].source = "core-line-weak-bridge"
+                        if collectPipelineDiagnostics {
+                            candidates[index].diagnosticRejections.append(SaberEligibilityDecision(
+                                name: "core-line-weak-bridge.span",
+                                value: proposal.rawPCASpan, comparison: ">=",
+                                threshold: proposal.robustMainIntervalLength * 1.8))
+                            candidates[index].diagnosticRejections.append(SaberEligibilityDecision(
+                                name: "core-line-weak-bridge.retainedBody",
+                                value: proposal.retainedBodyRatio, comparison: "<", threshold: 0.65))
+                            if let body = connected.first(where: { body in
+                                body.rawPCASpan >= proposal.robustMainIntervalLength * 0.6
+                                    && body.meanColorPurity >= proposal.meanColorPurity - 0.10
+                                    && body.highValueRatio >= proposal.highValueRatio - 0.20
+                                    && body.longitudinalContinuity >= proposal.longitudinalContinuity
+                                    && body.axialDensity >= proposal.axialDensity
+                            }) {
+                                candidates[index].diagnosticRejections += [
+                                    SaberEligibilityDecision(name: "core-line-weak-bridge.bodySpan",
+                                        value: body.rawPCASpan, comparison: ">=",
+                                        threshold: proposal.robustMainIntervalLength * 0.6),
+                                    SaberEligibilityDecision(name: "core-line-weak-bridge.bodyPurity",
+                                        value: body.meanColorPurity, comparison: ">=",
+                                        threshold: proposal.meanColorPurity - 0.10),
+                                    SaberEligibilityDecision(name: "core-line-weak-bridge.bodyHighValue",
+                                        value: body.highValueRatio, comparison: ">=",
+                                        threshold: proposal.highValueRatio - 0.20),
+                                    SaberEligibilityDecision(name: "core-line-weak-bridge.bodyContinuity",
+                                        value: body.longitudinalContinuity, comparison: ">=",
+                                        threshold: proposal.longitudinalContinuity),
+                                    SaberEligibilityDecision(name: "core-line-weak-bridge.bodyDensity",
+                                        value: body.axialDensity, comparison: ">=",
+                                        threshold: proposal.axialDensity)
+                                ]
+                            }
+                        }
+                    } else if proposal.source == "core-halo",
+                              connected.contains(where: { body in
+                                  body.source == "color-mask"
+                                      && body.rawPCASpan >= proposal.rawPCASpan * 1.4
+                                      && body.highValueRatio >= 0.50
+                                      && body.meanColorPurity >= 0.50
+                                      && proposal.boundingBox.minX >= body.boundingBox.minX - 4
+                                      && proposal.boundingBox.maxX <= body.boundingBox.maxX + 4
+                                      && proposal.boundingBox.minY >= body.boundingBox.minY - 4
+                                      && proposal.boundingBox.maxY <= body.boundingBox.maxY + 4
+                              }) {
+                        // A bright core is only a short part of the same red
+                        // component; keep the full color body for endpoints.
+                        candidates[index].isEmitterEligible = false
+                        candidates[index].source = "core-halo-short-subsegment"
+                        if collectPipelineDiagnostics {
+                            if let body = connected.first(where: { body in
+                                body.source == "color-mask"
+                                    && body.rawPCASpan >= proposal.rawPCASpan * 1.4
+                                    && body.highValueRatio >= 0.50
+                                    && body.meanColorPurity >= 0.50
+                                    && proposal.boundingBox.minX >= body.boundingBox.minX - 4
+                                    && proposal.boundingBox.maxX <= body.boundingBox.maxX + 4
+                                    && proposal.boundingBox.minY >= body.boundingBox.minY - 4
+                                    && proposal.boundingBox.maxY <= body.boundingBox.maxY + 4
+                            }) {
+                                candidates[index].diagnosticRejections += [
+                                    SaberEligibilityDecision(name: "core-halo-short-subsegment.span",
+                                        value: body.rawPCASpan, comparison: "<",
+                                        threshold: proposal.rawPCASpan * 1.4),
+                                    SaberEligibilityDecision(name: "core-halo-short-subsegment.highValue",
+                                        value: body.highValueRatio, comparison: "<", threshold: 0.50),
+                                    SaberEligibilityDecision(name: "core-halo-short-subsegment.purity",
+                                        value: body.meanColorPurity, comparison: "<", threshold: 0.50),
+                                    SaberEligibilityDecision(name: "core-halo-short-subsegment.minX",
+                                        value: Double(proposal.boundingBox.minX), comparison: "<",
+                                        threshold: Double(body.boundingBox.minX - 4)),
+                                    SaberEligibilityDecision(name: "core-halo-short-subsegment.maxX",
+                                        value: Double(proposal.boundingBox.maxX), comparison: ">",
+                                        threshold: Double(body.boundingBox.maxX + 4)),
+                                    SaberEligibilityDecision(name: "core-halo-short-subsegment.minY",
+                                        value: Double(proposal.boundingBox.minY), comparison: "<",
+                                        threshold: Double(body.boundingBox.minY - 4)),
+                                    SaberEligibilityDecision(name: "core-halo-short-subsegment.maxY",
+                                        value: Double(proposal.boundingBox.maxY), comparison: ">",
+                                        threshold: Double(body.boundingBox.maxY + 4))
                                 ]
                             }
                         }
                     }
-                    candidate.scoreBreakdown.proposalPenalty = -candidate.score * 0.5
-                    candidate.score = candidate.scoreBreakdown.total
-                }
-                candidates.append(candidate)
-            }
-        }
-        if collectProfile {
-            profile.lineScoreMs += (ProcessInfo.processInfo.systemUptime - lineScoreStart) * 1000
-            profile.candidateCount += candidates.count
-        }
-        let selectionStart = collectProfile ? ProcessInfo.processInfo.systemUptime : 0
-        if color == .blue {
-            candidates = preferTrustedBlueEmitter(
-                in: candidates, minimumFrameDimension: min(maskWidth, maskHeight)
-            )
-            // A stronger unsupported Hough slice can expose weak background
-            // candidates. Reject only candidates without their own coherent
-            // color/body or bright connected-core evidence. The rejected line
-            // itself stays ineligible under the existing proposal quality gate.
-            let rejectedLineScore = candidates.lazy.filter { $0.source == "core-line-low-confidence" }.map(\.score).max()
-            let eligibleScore = candidates.lazy.filter(\.isEmitterEligible).map(\.score).max()
-            let hasTrustedEmitter = candidates.contains {
-                isTrustedBlueEmitter($0, minimumFrameDimension: min(maskWidth, maskHeight))
-            }
-            if let rejectedLineScore, let eligibleScore,
-               rejectedLineScore >= eligibleScore, !hasTrustedEmitter {
-                for index in candidates.indices where candidates[index].isEmitterEligible
-                    && !hasIndependentBlueEvidence(candidates[index]) {
-                    candidates[index].isEmitterEligible = false
-                    candidates[index].source += "-unsupported-core-line-candidate"
-                    if collectPipelineDiagnostics {
-                        candidates[index].diagnosticRejections.append(SaberEligibilityDecision(
-                            name: "unsupported-core-line-candidate.rejectedLineScore",
-                            value: rejectedLineScore, comparison: "<", threshold: eligibleScore))
-                        candidates[index].diagnosticRejections += [
-                            SaberEligibilityDecision(name: "unsupported-core-line-candidate.trustedEmitter",
-                                value: hasTrustedEmitter ? 1 : 0, comparison: "==", threshold: 1),
-                            SaberEligibilityDecision(name: "unsupported-core-line-candidate.independentEvidence",
-                                value: 0, comparison: "==", threshold: 1)
-                        ]
-                    }
                 }
             }
-        }
-        if color == .blue {
-            for index in candidates.indices where candidates[index].isEmitterEligible
-                && candidates[index].source == "color-emitter" {
-                let emitter = candidates[index]
-                let coversBroadRegion = Double(emitter.pointCount)
-                    > Double(maskWidth * maskHeight) * 0.03
-                if coversBroadRegion && emitter.coreSupportRatio < 0.05
-                    && emitter.axialDensity > 8.0 {
-                    // A broad saturated surface can leave a long bright
-                    // emitter-shaped component without a concentrated core.
-                    candidates[index].isEmitterEligible = false
-                    candidates[index].source = "color-emitter-broad-coreless"
-                    if collectPipelineDiagnostics {
-                        candidates[index].diagnosticRejections += [
-                            SaberEligibilityDecision(name: "color-emitter-broad-coreless.area",
-                                value: Double(emitter.pointCount), comparison: "<=",
-                                threshold: Double(maskWidth * maskHeight) * 0.03),
-                            SaberEligibilityDecision(name: "color-emitter-broad-coreless.coreSupport",
-                                value: emitter.coreSupportRatio, comparison: ">=", threshold: 0.05),
-                            SaberEligibilityDecision(name: "color-emitter-broad-coreless.density",
-                                value: emitter.axialDensity, comparison: "<=", threshold: 8.0)
-                        ]
-                    }
-                }
-            }
-        }
-        if color == .blue {
-            for index in candidates.indices where candidates[index].isEmitterEligible
-                && candidates[index].source == "core-line" {
-                let line = candidates[index]
-                guard line.usedPointLEDFallback,
-                      line.rawPCASpan >= line.robustMainIntervalLength * 4.0,
-                      line.retainedBodyRatio < 0.50,
-                      line.coreSupportRatio < 0.30 else { continue }
-                let hasSupportedLocalBody = candidates.contains { body in
-                    guard body.isEmitterEligible,
-                          body.coreSupportRatio >= line.coreSupportRatio + 0.10,
-                          body.highValueRatio >= 0.35,
-                          body.robustMainIntervalLength
-                            >= line.robustMainIntervalLength * 0.60 else { return false }
-                    let endpoints = [line.endpoints.0, line.endpoints.1]
-                    let bodyEndpoints = [body.endpoints.0, body.endpoints.1]
-                    return endpoints.contains { endpoint in
-                        bodyEndpoints.contains { supported in
-                            hypot(Double(endpoint.x - supported.x),
-                                  Double(endpoint.y - supported.y)) <= 30.0
-                        }
-                    }
-                }
-                if hasSupportedLocalBody {
-                    // A sparse raw extension reaches far beyond the local
-                    // bright body. A separate, supported proposal covers the
-                    // actual emitter near one end of that extension.
-                    candidates[index].isEmitterEligible = false
-                    candidates[index].source = "core-line-weak-raw-tail"
-                    if collectPipelineDiagnostics {
-                        candidates[index].diagnosticRejections.append(SaberEligibilityDecision(
-                            name: "core-line-weak-raw-tail.span",
-                            value: line.rawPCASpan, comparison: "<",
-                            threshold: line.robustMainIntervalLength * 4.0))
-                        candidates[index].diagnosticRejections += [
-                            SaberEligibilityDecision(name: "core-line-weak-raw-tail.pointFallback",
-                                value: line.usedPointLEDFallback ? 1 : 0,
-                                comparison: "==", threshold: 0),
-                            SaberEligibilityDecision(name: "core-line-weak-raw-tail.retainedBody",
-                                value: line.retainedBodyRatio, comparison: ">=", threshold: 0.50),
-                            SaberEligibilityDecision(name: "core-line-weak-raw-tail.coreSupport",
-                                value: line.coreSupportRatio, comparison: ">=", threshold: 0.30),
-                            SaberEligibilityDecision(name: "core-line-weak-raw-tail.localBody",
-                                value: hasSupportedLocalBody ? 1 : 0,
-                                comparison: "==", threshold: 0)
-                        ]
-                    }
-                }
-            }
-        }
-        if color == .red {
-            let connected = Array(candidates.lazy.filter {
+            let completeCandidates = Array(candidates.lazy.filter {
                 $0.isEmitterEligible && !$0.source.hasPrefix("core-line")
             }.map(CandidateBodySnapshot.init))
-            for index in candidates.indices where candidates[index].isEmitterEligible {
-                let proposal = candidates[index]
-                if proposal.source == "core-line",
-                   proposal.rawPCASpan >= proposal.robustMainIntervalLength * 1.8,
-                   proposal.retainedBodyRatio < 0.65,
-                   connected.contains(where: { body in
-                       body.rawPCASpan >= proposal.robustMainIntervalLength * 0.6
-                           && body.meanColorPurity >= proposal.meanColorPurity - 0.10
-                           && body.highValueRatio >= proposal.highValueRatio - 0.20
-                           && body.longitudinalContinuity >= proposal.longitudinalContinuity
-                           && body.axialDensity >= proposal.axialDensity
-                   }) {
-                    // The proposal joins distant bright objects while a
-                    // coherent connected body already explains the blade.
+            for index in candidates.indices where candidates[index].isEmitterEligible
+                && candidates[index].source != "connected-core" {
+                if color == .blue,
+                   isTrustedBlueEmitter(candidates[index],
+                                        minimumFrameDimension: min(maskWidth, maskHeight)) { continue }
+                if completeCandidates.contains(where: {
+                    candidateIsSubsegment(candidates[index].comparisonEndpoints, of: $0.comparisonEndpoints)
+                }) {
                     candidates[index].isEmitterEligible = false
-                    candidates[index].source = "core-line-weak-bridge"
+                    candidates[index].source += "-subsegment"
                     if collectPipelineDiagnostics {
-                        candidates[index].diagnosticRejections.append(SaberEligibilityDecision(
-                            name: "core-line-weak-bridge.span",
-                            value: proposal.rawPCASpan, comparison: ">=",
-                            threshold: proposal.robustMainIntervalLength * 1.8))
-                        candidates[index].diagnosticRejections.append(SaberEligibilityDecision(
-                            name: "core-line-weak-bridge.retainedBody",
-                            value: proposal.retainedBodyRatio, comparison: "<", threshold: 0.65))
-                        if let body = connected.first(where: { body in
-                            body.rawPCASpan >= proposal.robustMainIntervalLength * 0.6
-                                && body.meanColorPurity >= proposal.meanColorPurity - 0.10
-                                && body.highValueRatio >= proposal.highValueRatio - 0.20
-                                && body.longitudinalContinuity >= proposal.longitudinalContinuity
-                                && body.axialDensity >= proposal.axialDensity
+                        if let body = completeCandidates.first(where: {
+                            candidateIsSubsegment(candidates[index].comparisonEndpoints, of: $0.comparisonEndpoints)
                         }) {
-                            candidates[index].diagnosticRejections += [
-                                SaberEligibilityDecision(name: "core-line-weak-bridge.bodySpan",
-                                    value: body.rawPCASpan, comparison: ">=",
-                                    threshold: proposal.robustMainIntervalLength * 0.6),
-                                SaberEligibilityDecision(name: "core-line-weak-bridge.bodyPurity",
-                                    value: body.meanColorPurity, comparison: ">=",
-                                    threshold: proposal.meanColorPurity - 0.10),
-                                SaberEligibilityDecision(name: "core-line-weak-bridge.bodyHighValue",
-                                    value: body.highValueRatio, comparison: ">=",
-                                    threshold: proposal.highValueRatio - 0.20),
-                                SaberEligibilityDecision(name: "core-line-weak-bridge.bodyContinuity",
-                                    value: body.longitudinalContinuity, comparison: ">=",
-                                    threshold: proposal.longitudinalContinuity),
-                                SaberEligibilityDecision(name: "core-line-weak-bridge.bodyDensity",
-                                    value: body.axialDensity, comparison: ">=",
-                                    threshold: proposal.axialDensity)
-                            ]
-                        }
-                    }
-                } else if proposal.source == "core-halo",
-                          connected.contains(where: { body in
-                              body.source == "color-mask"
-                                  && body.rawPCASpan >= proposal.rawPCASpan * 1.4
-                                  && body.highValueRatio >= 0.50
-                                  && body.meanColorPurity >= 0.50
-                                  && proposal.boundingBox.minX >= body.boundingBox.minX - 4
-                                  && proposal.boundingBox.maxX <= body.boundingBox.maxX + 4
-                                  && proposal.boundingBox.minY >= body.boundingBox.minY - 4
-                                  && proposal.boundingBox.maxY <= body.boundingBox.maxY + 4
-                          }) {
-                    // A bright core is only a short part of the same red
-                    // component; keep the full color body for endpoints.
-                    candidates[index].isEmitterEligible = false
-                    candidates[index].source = "core-halo-short-subsegment"
-                    if collectPipelineDiagnostics {
-                        if let body = connected.first(where: { body in
-                            body.source == "color-mask"
-                                && body.rawPCASpan >= proposal.rawPCASpan * 1.4
-                                && body.highValueRatio >= 0.50
-                                && body.meanColorPurity >= 0.50
-                                && proposal.boundingBox.minX >= body.boundingBox.minX - 4
-                                && proposal.boundingBox.maxX <= body.boundingBox.maxX + 4
-                                && proposal.boundingBox.minY >= body.boundingBox.minY - 4
-                                && proposal.boundingBox.maxY <= body.boundingBox.maxY + 4
-                        }) {
-                            candidates[index].diagnosticRejections += [
-                                SaberEligibilityDecision(name: "core-halo-short-subsegment.span",
-                                    value: body.rawPCASpan, comparison: "<",
-                                    threshold: proposal.rawPCASpan * 1.4),
-                                SaberEligibilityDecision(name: "core-halo-short-subsegment.highValue",
-                                    value: body.highValueRatio, comparison: "<", threshold: 0.50),
-                                SaberEligibilityDecision(name: "core-halo-short-subsegment.purity",
-                                    value: body.meanColorPurity, comparison: "<", threshold: 0.50),
-                                SaberEligibilityDecision(name: "core-halo-short-subsegment.minX",
-                                    value: Double(proposal.boundingBox.minX), comparison: "<",
-                                    threshold: Double(body.boundingBox.minX - 4)),
-                                SaberEligibilityDecision(name: "core-halo-short-subsegment.maxX",
-                                    value: Double(proposal.boundingBox.maxX), comparison: ">",
-                                    threshold: Double(body.boundingBox.maxX + 4)),
-                                SaberEligibilityDecision(name: "core-halo-short-subsegment.minY",
-                                    value: Double(proposal.boundingBox.minY), comparison: "<",
-                                    threshold: Double(body.boundingBox.minY - 4)),
-                                SaberEligibilityDecision(name: "core-halo-short-subsegment.maxY",
-                                    value: Double(proposal.boundingBox.maxY), comparison: ">",
-                                    threshold: Double(body.boundingBox.maxY + 4))
-                            ]
-                        }
-                    }
-                }
-            }
-        }
-        let completeCandidates = Array(candidates.lazy.filter {
-            $0.isEmitterEligible && !$0.source.hasPrefix("core-line")
-        }.map(CandidateBodySnapshot.init))
-        for index in candidates.indices where candidates[index].isEmitterEligible
-            && candidates[index].source != "connected-core" {
-            if color == .blue,
-               isTrustedBlueEmitter(candidates[index],
-                                    minimumFrameDimension: min(maskWidth, maskHeight)) { continue }
-            if completeCandidates.contains(where: {
-                candidateIsSubsegment(candidates[index].comparisonEndpoints, of: $0.comparisonEndpoints)
-            }) {
-                candidates[index].isEmitterEligible = false
-                candidates[index].source += "-subsegment"
-                if collectPipelineDiagnostics {
-                    if let body = completeCandidates.first(where: {
-                        candidateIsSubsegment(candidates[index].comparisonEndpoints, of: $0.comparisonEndpoints)
-                    }) {
-                        let long = hypot(Double(body.comparisonEndpoints.1.x
-                            - body.comparisonEndpoints.0.x),
-                            Double(body.comparisonEndpoints.1.y
-                            - body.comparisonEndpoints.0.y))
-                        let short = hypot(Double(candidates[index].comparisonEndpoints.1.x
-                            - candidates[index].comparisonEndpoints.0.x),
-                            Double(candidates[index].comparisonEndpoints.1.y
-                            - candidates[index].comparisonEndpoints.0.y))
-                        candidates[index].diagnosticRejections.append(SaberEligibilityDecision(
-                            name: "-subsegment.length", value: long,
-                            comparison: "<", threshold: short * 1.50))
-                        if long > 0 && short > 0 {
-                            let longX = Double(body.comparisonEndpoints.1.x
-                                - body.comparisonEndpoints.0.x) / long
-                            let longY = Double(body.comparisonEndpoints.1.y
-                                - body.comparisonEndpoints.0.y) / long
-                            let shortX = Double(candidates[index].comparisonEndpoints.1.x
-                                - candidates[index].comparisonEndpoints.0.x) / short
-                            let shortY = Double(candidates[index].comparisonEndpoints.1.y
-                                - candidates[index].comparisonEndpoints.0.y) / short
+                            let long = hypot(Double(body.comparisonEndpoints.1.x
+                                - body.comparisonEndpoints.0.x),
+                                Double(body.comparisonEndpoints.1.y
+                                - body.comparisonEndpoints.0.y))
+                            let short = hypot(Double(candidates[index].comparisonEndpoints.1.x
+                                - candidates[index].comparisonEndpoints.0.x),
+                                Double(candidates[index].comparisonEndpoints.1.y
+                                - candidates[index].comparisonEndpoints.0.y))
                             candidates[index].diagnosticRejections.append(SaberEligibilityDecision(
-                                name: "-subsegment.axisAlignment",
-                                value: abs(longX * shortX + longY * shortY),
-                                comparison: "<", threshold: 0.94))
-                            for (endpoint, point) in [candidates[index].comparisonEndpoints.0,
-                                                      candidates[index].comparisonEndpoints.1].enumerated() {
-                                let dx = Double(point.x - body.comparisonEndpoints.0.x)
-                                let dy = Double(point.y - body.comparisonEndpoints.0.y)
-                                let along = dx * longX + dy * longY
-                                let across = abs(-dx * longY + dy * longX)
-                                let prefix = "-subsegment.endpoint\(endpoint)"
-                                candidates[index].diagnosticRejections += [
-                                    SaberEligibilityDecision(name: "\(prefix).before",
-                                        value: along, comparison: "<", threshold: -6),
-                                    SaberEligibilityDecision(name: "\(prefix).after",
-                                        value: along, comparison: ">", threshold: long + 6),
-                                    SaberEligibilityDecision(name: "\(prefix).across",
-                                        value: across, comparison: ">", threshold: 6)
-                                ]
+                                name: "-subsegment.length", value: long,
+                                comparison: "<", threshold: short * 1.50))
+                            if long > 0 && short > 0 {
+                                let longX = Double(body.comparisonEndpoints.1.x
+                                    - body.comparisonEndpoints.0.x) / long
+                                let longY = Double(body.comparisonEndpoints.1.y
+                                    - body.comparisonEndpoints.0.y) / long
+                                let shortX = Double(candidates[index].comparisonEndpoints.1.x
+                                    - candidates[index].comparisonEndpoints.0.x) / short
+                                let shortY = Double(candidates[index].comparisonEndpoints.1.y
+                                    - candidates[index].comparisonEndpoints.0.y) / short
+                                candidates[index].diagnosticRejections.append(SaberEligibilityDecision(
+                                    name: "-subsegment.axisAlignment",
+                                    value: abs(longX * shortX + longY * shortY),
+                                    comparison: "<", threshold: 0.94))
+                                for (endpoint, point) in [candidates[index].comparisonEndpoints.0,
+                                                          candidates[index].comparisonEndpoints.1].enumerated() {
+                                    let dx = Double(point.x - body.comparisonEndpoints.0.x)
+                                    let dy = Double(point.y - body.comparisonEndpoints.0.y)
+                                    let along = dx * longX + dy * longY
+                                    let across = abs(-dx * longY + dy * longX)
+                                    let prefix = "-subsegment.endpoint\(endpoint)"
+                                    candidates[index].diagnosticRejections += [
+                                        SaberEligibilityDecision(name: "\(prefix).before",
+                                            value: along, comparison: "<", threshold: -6),
+                                        SaberEligibilityDecision(name: "\(prefix).after",
+                                            value: along, comparison: ">", threshold: long + 6),
+                                        SaberEligibilityDecision(name: "\(prefix).across",
+                                            value: across, comparison: ">", threshold: 6)
+                                    ]
+                                }
                             }
                         }
                     }
+                    candidates[index].scoreBreakdown.proposalPenalty = -candidates[index].score * 0.5
+                    candidates[index].score = candidates[index].scoreBreakdown.total
                 }
-                candidates[index].scoreBreakdown.proposalPenalty = -candidates[index].score * 0.5
-                candidates[index].score = candidates[index].scoreBreakdown.total
             }
-        }
-        candidates.sort { $0.score > $1.score }
-        // Apply only after every existing eligibility gate and ranking. Scores and
-        // ranked order stay intact; selection below takes the first surviving RED.
-        if color == .red {
-            for index in candidates.indices where candidates[index].isEmitterEligible {
-                let verdict = redWarmNoDeepRedSupport(
-                    points: candidates[index].supportSamplePoints, baseAddress: baseAddress,
-                    width: width, height: height, bytesPerRow: bytesPerRow, sampleStep: step)
-                candidates[index].warmNoDeepRed = verdict
-                candidates[index].endpointDiagnosticTrace?.emitter?.warmNoDeepRed = verdict
-                if verdict.rejected {
-                    candidates[index].isEmitterEligible = false
-                    if collectPipelineDiagnostics {
-                        candidates[index].diagnosticRejections.append(SaberEligibilityDecision(
-                            name: "warmNoDeepRed", value: verdict.warmFrac,
-                            comparison: "<", threshold: 0.30))
+            candidates.sort { $0.score > $1.score }
+            // Apply only after every existing eligibility gate and ranking. Scores and
+            // ranked order stay intact; selection below takes the first surviving RED.
+            if color == .red {
+                for index in candidates.indices where candidates[index].isEmitterEligible {
+                    let verdict = redWarmNoDeepRedSupport(
+                        points: candidates[index].supportSamplePoints, baseAddress: baseAddress,
+                        width: width, height: height, bytesPerRow: bytesPerRow, sampleStep: step)
+                    candidates[index].warmNoDeepRed = verdict
+                    candidates[index].endpointDiagnosticTrace?.emitter?.warmNoDeepRed = verdict
+                    if verdict.rejected {
+                        candidates[index].isEmitterEligible = false
+                        if collectPipelineDiagnostics {
+                            candidates[index].diagnosticRejections.append(SaberEligibilityDecision(
+                                name: "warmNoDeepRed", value: verdict.warmFrac,
+                                comparison: "<", threshold: 0.30))
+                        }
                     }
                 }
             }
-        }
-        // 既存 gate と順位を確定してから青支持を確認し、次の eligible を選ぶ。
-        if color == .blue {
-            for index in candidates.indices where candidates[index].isEmitterEligible {
-                let verdict = blueNoDeepSupport(
-                    points: candidates[index].supportSamplePoints, baseAddress: baseAddress,
-                    width: width, height: height, bytesPerRow: bytesPerRow, sampleStep: step)
-                candidates[index].blueNoDeepSupport = verdict
-                candidates[index].endpointDiagnosticTrace?.emitter?.blueNoDeepSupport = verdict
-                if verdict.rejected {
-                    candidates[index].isEmitterEligible = false
-                    if collectPipelineDiagnostics {
-                        candidates[index].diagnosticRejections.append(SaberEligibilityDecision(
-                            name: "blueNoDeepSupport", value: Double(verdict.deepCount),
-                            comparison: ">=", threshold: 1))
+            // 既存 gate と順位を確定してから青支持を確認し、次の eligible を選ぶ。
+            if color == .blue {
+                for index in candidates.indices where candidates[index].isEmitterEligible {
+                    let verdict = blueNoDeepSupport(
+                        points: candidates[index].supportSamplePoints, baseAddress: baseAddress,
+                        width: width, height: height, bytesPerRow: bytesPerRow, sampleStep: step)
+                    candidates[index].blueNoDeepSupport = verdict
+                    candidates[index].endpointDiagnosticTrace?.emitter?.blueNoDeepSupport = verdict
+                    if verdict.rejected {
+                        candidates[index].isEmitterEligible = false
+                        if collectPipelineDiagnostics {
+                            candidates[index].diagnosticRejections.append(SaberEligibilityDecision(
+                                name: "blueNoDeepSupport", value: Double(verdict.deepCount),
+                                comparison: ">=", threshold: 1))
+                        }
                     }
                 }
             }
-        }
-        if CoreLineGuard.enabled {
-            applyCoreLineGuard(&candidates, evidence: evidence, width: maskWidth, step: step)
-        }
-        if color == .blue {
-            for index in candidates.indices where candidates[index].isEmitterEligible
-                && isCorelessBlueSurface(candidates[index]) {
-                candidates[index].isEmitterEligible = false
-                if collectPipelineDiagnostics {
-                    candidates[index].diagnosticRejections += [
-                        SaberEligibilityDecision(name: "coreless-blue-surface.peak",
-                            value: Double(candidates[index].peakValue), comparison: ">=", threshold: 242),
-                        SaberEligibilityDecision(name: "coreless-blue-surface.coreSupport",
-                            value: candidates[index].coreSupportRatio, comparison: ">=", threshold: 0.05)
-                    ]
+            if CoreLineGuard.enabled {
+                applyCoreLineGuard(&candidates, evidence: evidence, width: maskWidth, step: step)
+            }
+            if color == .blue {
+                for index in candidates.indices where candidates[index].isEmitterEligible
+                    && isCorelessBlueSurface(candidates[index]) {
+                    candidates[index].isEmitterEligible = false
+                    if collectPipelineDiagnostics {
+                        candidates[index].diagnosticRejections += [
+                            SaberEligibilityDecision(name: "coreless-blue-surface.peak",
+                                value: Double(candidates[index].peakValue), comparison: ">=", threshold: 242),
+                            SaberEligibilityDecision(name: "coreless-blue-surface.coreSupport",
+                                value: candidates[index].coreSupportRatio, comparison: ">=", threshold: 0.05)
+                        ]
+                    }
                 }
             }
         }
