@@ -151,7 +151,7 @@ public class ScoreManager : MonoBehaviour
         Score = AimDodgeRules.Score(0, 0);
     }
 
-    // 的1つの結果。tier は Perfect=BULL / Great=INNER / Good=OUTER / Miss。points はその的で取った点。
+    // 的1つの結果。tier は Perfect=HIT / Miss(2026-10-26 精度の段をやめた)。points はその的で取った点。
     public void RegisterAimDart(JudgmentTier tier, int points, SaberHand hand)
     {
         if (IsFinalized || !AimScoring) return;

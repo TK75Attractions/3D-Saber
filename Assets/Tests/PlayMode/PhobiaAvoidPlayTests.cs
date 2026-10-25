@@ -32,7 +32,7 @@ public class PhobiaAvoidPlayTests
         // 前の検証の受信が残っていると、見失いの一時停止が働くので消してから始める。
         if (InputPoint.Instance != null) { Object.Destroy(InputPoint.Instance.gameObject); yield return null; }
         GameSession.SelectedSongId = SongId;
-        GameSession.SelectedDifficulty = "避";
+        GameSession.SelectedDifficulty = "D";
         GameSession.IsCalibrationMode = false;
         GameSession.TutorialPending = false;
         yield return SceneManager.LoadSceneAsync("Game", LoadSceneMode.Single);

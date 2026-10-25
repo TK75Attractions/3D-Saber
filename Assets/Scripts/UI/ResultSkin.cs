@@ -147,23 +147,24 @@ public class ResultSkin : MonoBehaviour
         return sb.ToString();
     }
 
-    // 右の5行の呼び名と数。照準の裏譜面(避、2026-10-24)は PERFECT などが無いので、的の段とトゲに当たった数にする。
-    // (避の回の FinalPerfect / Great / Good / Miss には、的の BULL / INNER / OUTER / MISS が入っている)
+    // 右の行の呼び名と数。照準の裏譜面(D、2026-10-24「避」として作成)は PERFECT などが無いので、
+    // 的に入った数(HIT)・外れた数(MISS)・トゲに当たった数(DAMAGE)の3行にする(2026-10-26 精度の段をやめた)。
+    // (D の回の FinalPerfect / FinalMiss には、的の HIT / MISS が入っている)
     public static string[] JudgeLabels(bool aim) => aim
-        ? new[] { "BULL", "INNER", "OUTER", "MISS", "DAMAGE" }
+        ? new[] { "HIT", "MISS", "DAMAGE" }
         : new[] { "PERFECT", "GREAT", "GOOD", "BAD", "MISS" };
 
     public static int[] JudgeCounts(bool aim) => aim
-        ? new[] { GameSession.FinalPerfect, GameSession.FinalGreat, GameSession.FinalGood, GameSession.FinalMiss, GameSession.FinalAimDamage }
+        ? new[] { GameSession.FinalPerfect, GameSession.FinalMiss, GameSession.FinalAimDamage }
         : new[] { GameSession.FinalPerfect, GameSession.FinalGreat, GameSession.FinalGood, GameSession.FinalBad, GameSession.FinalMiss };
 
     static Color[] JudgeColors(bool aim) => aim
-        ? new[] { UISkinPalette.Cyan, UISkinPalette.Yellow, UISkinPalette.Orange, UISkinPalette.SubtleGray, RushESecretState.Magenta }
+        ? new[] { UISkinPalette.Cyan, UISkinPalette.SubtleGray, RushESecretState.Magenta }
         : new[] { UISkinPalette.Cyan, UISkinPalette.Yellow, UISkinPalette.Orange, UISkinPalette.Magenta, UISkinPalette.SubtleGray };
 
-    // 下の帯の左右の文字。避は的の数と BULL の割合。
+    // 下の帯の左右の文字。D は的の数と、的に入った割合。
     public static string DistributionCountLabel(bool aim, int total) => total.ToString("N0") + (aim ? " TARGETS" : " NOTES");
-    public static string DistributionRateLabel(bool aim, float rate) => (aim ? "BULL RATE " : "PERFECT RATE ") + rate.ToString("F1") + "%";
+    public static string DistributionRateLabel(bool aim, float rate) => (aim ? "HIT RATE " : "PERFECT RATE ") + rate.ToString("F1") + "%";
 
     // 判定分布バーの各セグメント幅。合計 0 のときは全て 0。
     public static float[] DistributionWidths(int[] counts, float totalWidth)

@@ -2,10 +2,11 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-// 照準で遊ぶ裏譜面(Phobia の「避」、2026-10-24 ユーザー指定)の決まり。画面を持たない純粋な計算だけを置く。
-// ・剣は2つの照準(刃の両端の中点)になる。トゲに当たらないようによけ、的の輪が閉じる瞬間に同じ色の照準を真ん中へ合わせる。
+// 照準で遊ぶ裏譜面(Phobia の「避」、2026-10-24 ユーザー指定。2026-10-26 から難易度の表記は「D」)の決まり。画面を持たない純粋な計算だけを置く。
+// ・剣は2つの照準(刃の両端の中点)になる。トゲに当たらないようによけ、的の輪が閉じる瞬間に同じ色の照準を的の中へ入れる。
 // ・点は 50000 から始まり、トゲに当たるたびに 1000 減る(0 より下げない)。的(ダーツ)は全部で最大 50000。満点 100000。
-// ・的は真ん中から BULL(満点)/ INNER(6割)/ OUTER(3割)/ MISS。記録の形をそろえるため PERFECT / GREAT / GOOD / MISS の数に入れる。
+// ・的は中に入ったら HIT(満点)、入らなければ MISS だけ(2026-10-26 ユーザー「照準の精度システムを消して(つまり中にあるかないか)」。
+//   それまでの BULL / INNER / OUTER はやめた)。記録の形をそろえるため HIT を PERFECT の数に入れる。
 // 長さはワールド単位(ノーツと同じ。判定面は x −2.5〜2.5、y −1.5〜1.5)、時刻は秒。
 public static class AimDodgeRules
 {
@@ -13,11 +14,8 @@ public static class AimDodgeRules
     public const int DamagePenalty = 1000;
     public const int DartsTotal = 50000;
 
-    // 的の大きさ(外の縁)と、INNER・BULL の境目。照準の揺れが 0.05〜0.1 あるので、BULL は直径 0.4。
+    // 的の大きさ(外の縁)。照準の芯がこの内側に入れば当たり(HIT)。
     public const float TargetRadius = .62f;
-    public const float InnerRadius = .40f;
-    public const float BullRadius = .20f;
-    public const float InnerShare = .6f, OuterShare = .3f;
 
     // トゲの当たり。見た目(半径約 0.5)より小さくし、照準の芯(0.10)と足して届いたら当たり(Codex・Fable の点検の案)。
     public const float SpikeHitRadius = .34f;
@@ -39,17 +37,15 @@ public static class AimDodgeRules
     public static readonly Vector2 FollowBounds = new Vector2(2.0f, 1.2f);
 
     // 始まる前の一言(3・2・1 の下に出す。ノーツの近くには文字を出さない)。
-    public const string RuleCaption = "トゲはよける・輪の真ん中へ";
+    public const string RuleCaption = "トゲはよける・輪の中へ";
 
     public static float ContactDistance(float size) => SpikeHitRadius * Mathf.Max(.1f, size) + CrosshairCore;
 
-    // 的の中心からの距離 → 段。NaN・無限大(一度も照準が届かなかった)は MISS。
+    // 的の中心からの距離 → 中なら HIT(Perfect)、外なら MISS。NaN・無限大(一度も照準が届かなかった)は MISS。
     public static JudgmentTier Classify(float distance)
     {
         if (float.IsNaN(distance) || float.IsInfinity(distance) || distance > TargetRadius) return JudgmentTier.Miss;
-        if (distance <= BullRadius) return JudgmentTier.Perfect;
-        if (distance <= InnerRadius) return JudgmentTier.Great;
-        return JudgmentTier.Good;
+        return JudgmentTier.Perfect;
     }
 
     // 的の段の呼び名(HUD とリザルト)。
@@ -57,9 +53,7 @@ public static class AimDodgeRules
     {
         switch (tier)
         {
-            case JudgmentTier.Perfect: return "BULL";
-            case JudgmentTier.Great: return "INNER";
-            case JudgmentTier.Good: return "OUTER";
+            case JudgmentTier.Perfect: return "HIT";
             default: return "MISS";
         }
     }
@@ -79,8 +73,6 @@ public static class AimDodgeRules
         switch (tier)
         {
             case JudgmentTier.Perfect: return maxPoints;
-            case JudgmentTier.Great: return Mathf.RoundToInt(maxPoints * InnerShare);
-            case JudgmentTier.Good: return Mathf.RoundToInt(maxPoints * OuterShare);
             default: return 0;
         }
     }
@@ -264,8 +256,8 @@ public sealed class AimDodgeSession
                 target.Best = Mathf.Min(target.Best, Vector2.Distance(sample.Position, target.Position));
                 target.Sampled = true;
             }
-            // BULL より良くはならないので、入った瞬間に決める(輪が閉じるのを待たずに知らせる)。
-            if (target.Best <= AimDodgeRules.BullRadius || now > target.Time + AimDodgeRules.DartWindow)
+            // 中に入った瞬間に HIT と決める(輪が閉じるのを待たずに知らせる)。
+            if (target.Best <= AimDodgeRules.TargetRadius || now > target.Time + AimDodgeRules.DartWindow)
             {
                 // 処理落ちで窓(0.2 秒)をまるごと飛び越えたときは、窓を過ぎた直後の照準の位置で決める
                 // (撮影や読み込みで1コマが長くなっただけで MISS にしない)。

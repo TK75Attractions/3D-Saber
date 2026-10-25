@@ -3,8 +3,9 @@ using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
 
-// Phobia PARTⅠ の裏譜面「避」(2026-10-24): 剣が2つの照準になり、トゲをよけて的(ダーツ)を狙う。
-// 点は 50000 から始まり、トゲで 1000 減り、的は全部で最大 50000(満点 100000)。
+// Phobia PARTⅠ の裏譜面「D」(2026-10-24 に「避」として作成、10/26 に表記を D へ): 剣が2つの照準になり、トゲをよけて的を狙う。
+// 点は 50000 から始まり、トゲで 1000 減り、的は全部で最大 50000(満点 100000)。的は中に入れば HIT、外は MISS だけ(10/26)。
+// サビ(49秒)からは、的の場所の外側を大きなトゲの壁が覆う(外へ逃げてよけるのを防ぐ)。
 public class PhobiaAvoidTests
 {
     const string SongId = "Phobia PARTⅠ";
@@ -14,11 +15,12 @@ public class PhobiaAvoidTests
     {
         var secret = RushESecretState.For(SongId);
         Assert.AreSame(RushESecretState.PhobiaAvoid, secret);
-        Assert.AreEqual("避", secret.Difficulty);
-        Assert.AreSame(secret, RushESecretState.ForDifficulty("避"));
-        Assert.IsTrue(RushESecretState.IsSecretDifficulty(" 避 "));
-        Assert.AreEqual(RushESecretState.Magenta, GameHUDSkin.DifficultyColor("避"));
-        Assert.AreEqual(RushESecretState.Magenta, GameStartCountdown.AccentForDifficulty("避"));
+        Assert.AreEqual("D", secret.Difficulty);
+        Assert.AreSame(secret, RushESecretState.ForDifficulty("d"));
+        Assert.IsTrue(RushESecretState.IsSecretDifficulty(" D "));
+        Assert.IsFalse(RushESecretState.IsSecretDifficulty("避"), "表記は D に変えた");
+        Assert.AreEqual(RushESecretState.Magenta, GameHUDSkin.DifficultyColor("D"));
+        Assert.AreEqual(RushESecretState.Magenta, GameStartCountdown.AccentForDifficulty("D"));
         var state = new RushESecretState();
         state.Select(SongId);
         for (int i = 0; i < 9; i++) Assert.IsTrue(state.TryHit(i * .2));
@@ -26,15 +28,15 @@ public class PhobiaAvoidTests
         Assert.IsTrue(state.Reveal()); Assert.IsTrue(state.Finish()); Assert.IsTrue(state.Unlocked);
         Assert.AreSame(secret, state.Current);
         // 記録は Hard などと別。
-        Assert.AreNotEqual(HighScoreStore.Key(SongId, "避"), HighScoreStore.Key(SongId, "Hard"));
-        Assert.AreNotEqual(SongAchievementStore.Key(SongId, "避"), SongAchievementStore.Key(SongId, "Hard"));
-        Assert.AreNotEqual(DailyRankingStore.Key(SongId, "避"), DailyRankingStore.Key(SongId, "Hard"));
+        Assert.AreNotEqual(HighScoreStore.Key(SongId, "D"), HighScoreStore.Key(SongId, "Hard"));
+        Assert.AreNotEqual(SongAchievementStore.Key(SongId, "D"), SongAchievementStore.Key(SongId, "Hard"));
+        Assert.AreNotEqual(DailyRankingStore.Key(SongId, "D"), DailyRankingStore.Key(SongId, "Hard"));
     }
 
     [Test]
     public void TheChartHasFiftyTargetsWorthFiftyThousandAndNoNotes()
     {
-        var chart = ChartLoader.LoadFromStreamingAssets(SongId, "避");
+        var chart = ChartLoader.LoadFromStreamingAssets(SongId, "D");
         Assert.AreEqual(0, chart.notes.Count, "ノーツは流さない");
         Assert.AreEqual(50, chart.aim.targets.Count);
         Assert.AreEqual(25, chart.aim.targets.Count(t => t.color == "red"));
@@ -46,7 +48,23 @@ public class PhobiaAvoidTests
         Assert.IsTrue(chart.aim.targets.Where(t => t.color == "red").All(t => t.x >= -.2f));
         Assert.IsTrue(chart.aim.targets.Where(t => t.color == "blue").All(t => t.x <= .2f));
         Assert.IsTrue(chart.aim.targets.All(t => Mathf.Abs(t.x) <= 2f && Mathf.Abs(t.y) <= 1.1f));
-        Assert.IsTrue(chart.aim.spikes.All(s => Mathf.Abs(s.x) <= 2.1f && Mathf.Abs(s.y) <= 1.2f));
+        // 内側のトゲは的の場所の中。外側の壁(大きさ 3)は、当たりが的の場所(的の中心のいちばん外 + 的の半径)に入らない。
+        var walls = chart.aim.spikes.Where(s => s.size >= 3f).ToList();
+        Assert.IsTrue(chart.aim.spikes.Where(s => s.size < 3f).All(s => Mathf.Abs(s.x) <= 2.1f && Mathf.Abs(s.y) <= 1.2f));
+        Assert.Greater(walls.Count, 500, "外側には大量のトゲ");
+        Assert.Greater(walls.Min(s => s.time), 45000f, "外側の壁は途中(サビ)から");
+        float safeX = chart.aim.targets.Max(t => Mathf.Abs(t.x)) + AimDodgeRules.TargetRadius;
+        float safeY = chart.aim.targets.Max(t => Mathf.Abs(t.y)) + AimDodgeRules.TargetRadius;
+        foreach (var wall in walls)
+        {
+            float dx = Mathf.Max(Mathf.Abs(wall.x) - safeX, 0), dy = Mathf.Max(Mathf.Abs(wall.y) - safeY, 0);
+            Assert.GreaterOrEqual(Mathf.Sqrt(dx * dx + dy * dy), AimDodgeRules.ContactDistance(wall.size) - 1e-3f,
+                wall.time + " (" + wall.x + "," + wall.y + ") の当たりが的の場所に入る");
+        }
+        // 中盤(サビ)以降は内側のトゲも前半より多い。
+        int earlyInner = chart.aim.spikes.Count(s => s.size < 3f && s.time < 49000f);
+        int lateInner = chart.aim.spikes.Count(s => s.size < 3f && s.time >= 49000f);
+        Assert.Greater(lateInner, earlyInner * 2);
         var session = new AimDodgeSession(chart.aim, chart.offsetMs / 1000.0, 110.9);
         Assert.AreEqual(50, session.Targets.Count);
         CollectionAssert.AreEqual(Enumerable.Repeat(1000, 50), session.Targets.Select(t => t.MaxPoints));
@@ -59,7 +77,7 @@ public class PhobiaAvoidTests
             for (int i = 1; i < times.Count; i++) Assert.GreaterOrEqual(times[i] - times[i - 1], 1.2 - 1e-6, hand.ToString());
         }
         // 的の直前1秒・直後0.6秒には、トゲの絵を的の絵に重ねない(的の真ん中で待てる・見づらくならない)。
-        foreach (var spike in session.Spikes.Where(s => s.Follow == SaberHand.Any))
+        foreach (var spike in session.Spikes.Where(s => s.Follow == SaberHand.Any && s.Size < 3f))
             foreach (var target in session.Targets)
             {
                 double lead = target.Time - spike.Time;
@@ -79,18 +97,15 @@ public class PhobiaAvoidTests
         Assert.AreEqual(50000, AimDodgeRules.Score(60, 50000));
         Assert.AreEqual(50000, AimDodgeRules.DartMaxPoints(7).Sum(), "割り切れなくても的の満点は 50000");
         Assert.AreEqual(0, AimDodgeRules.DartMaxPoints(0).Length);
-        Assert.AreEqual(JudgmentTier.Perfect, AimDodgeRules.Classify(.2f));
-        Assert.AreEqual(JudgmentTier.Great, AimDodgeRules.Classify(.3f));
-        Assert.AreEqual(JudgmentTier.Good, AimDodgeRules.Classify(.62f));
+        // 中にあるかないかだけ(精度の段は無い)。
+        Assert.AreEqual(JudgmentTier.Perfect, AimDodgeRules.Classify(0f));
+        Assert.AreEqual(JudgmentTier.Perfect, AimDodgeRules.Classify(.3f));
+        Assert.AreEqual(JudgmentTier.Perfect, AimDodgeRules.Classify(.62f));
         Assert.AreEqual(JudgmentTier.Miss, AimDodgeRules.Classify(.63f));
         Assert.AreEqual(JudgmentTier.Miss, AimDodgeRules.Classify(float.PositiveInfinity), "一度も照準が来なかった");
         Assert.AreEqual(1000, AimDodgeRules.DartPoints(JudgmentTier.Perfect, 1000));
-        Assert.AreEqual(600, AimDodgeRules.DartPoints(JudgmentTier.Great, 1000));
-        Assert.AreEqual(300, AimDodgeRules.DartPoints(JudgmentTier.Good, 1000));
         Assert.AreEqual(0, AimDodgeRules.DartPoints(JudgmentTier.Miss, 1000));
-        Assert.AreEqual("BULL", AimDodgeRules.DartLabel(JudgmentTier.Perfect));
-        Assert.AreEqual("INNER", AimDodgeRules.DartLabel(JudgmentTier.Great));
-        Assert.AreEqual("OUTER", AimDodgeRules.DartLabel(JudgmentTier.Good));
+        Assert.AreEqual("HIT", AimDodgeRules.DartLabel(JudgmentTier.Perfect));
         Assert.AreEqual("MISS", AimDodgeRules.DartLabel(JudgmentTier.Miss));
         Assert.AreEqual(.878f, AimDodgeRules.DartAccuracy(43900, 50000), 1e-5f);
     }
@@ -112,13 +127,13 @@ public class PhobiaAvoidTests
         var events = new List<AimEvent>();
         var none = default(AimHandSample);
 
-        // 赤の的: 窓の前は数えない。窓の中で BULL に入った瞬間に決まる。
+        // 赤の的: 窓の前は数えない。窓の中で的の中に入った瞬間に HIT と決まる(真ん中でなくてよい)。
         session.Tick(1.85, At(1f, 0), none, events);
         Assert.AreEqual(0, events.Count, "窓(±0.1秒)の前");
-        session.Tick(1.95, At(1.3f, 0), none, events);
-        Assert.AreEqual(0, events.Count, "まだ OUTER より良くなりうる");
-        session.Tick(2.0, At(1.15f, 0), none, events);
-        Assert.AreEqual(1, events.Count);
+        session.Tick(1.92, At(1.7f, 0), none, events);
+        Assert.AreEqual(0, events.Count, "的の外(0.7 ずれ)ではまだ決まらない");
+        session.Tick(1.95, At(1.5f, 0), none, events);
+        Assert.AreEqual(1, events.Count, "縁の内(0.5 ずれ)に入った瞬間に HIT");
         Assert.AreEqual(AimEventKind.Dart, events[0].Kind);
         Assert.AreEqual(JudgmentTier.Perfect, events[0].Target.Tier);
         Assert.AreEqual(events[0].Target.MaxPoints, events[0].Target.Points);
@@ -150,17 +165,15 @@ public class PhobiaAvoidTests
         Assert.AreEqual(AimEventKind.Graze, events.Single().Kind);
         Assert.AreEqual(1, session.DamageCount);
 
-        // 最後の赤の的は INNER(0.3 ずれ)。コンボは MISS とトゲで切れる。
+        // 最後の赤の的は 0.3 ずれでも中なので HIT(精度の段は無い)。コンボは MISS とトゲで切れる。
         events.Clear();
         session.Tick(6.0, At(1.3f, 0), none, events);
-        session.Tick(6.11, At(1.3f, 0), none, events);
-        Assert.AreEqual(JudgmentTier.Great, events.Single(e => e.Kind == AimEventKind.Dart).Target.Tier);
+        Assert.AreEqual(JudgmentTier.Perfect, events.Single(e => e.Kind == AimEventKind.Dart).Target.Tier);
         session.Tick(7.0, none, none, events);
         Assert.IsTrue(session.Completed);
-        CollectionAssert.AreEqual(new[] { 1, 1, 0, 1 }, session.TierCounts);
-        int each = AimDodgeRules.DartMaxPoints(3)[0];
+        CollectionAssert.AreEqual(new[] { 2, 0, 0, 1 }, session.TierCounts);
         Assert.AreEqual(AimDodgeRules.Score(1, session.DartPoints), session.Score);
-        Assert.AreEqual(each + AimDodgeRules.DartPoints(JudgmentTier.Great, AimDodgeRules.DartMaxPoints(3)[2]), session.DartPoints);
+        Assert.AreEqual(AimDodgeRules.DartMaxPoints(3)[0] + AimDodgeRules.DartMaxPoints(3)[2], session.DartPoints);
         Assert.AreEqual(1, session.Combo);
         Assert.AreEqual(1, session.MaxCombo);
     }
@@ -175,7 +188,7 @@ public class PhobiaAvoidTests
         var events = new List<AimEvent>();
         session.Tick(1.5, At(1f, 0), default, events);
         session.Tick(2.4, At(1f, 0), default, events);
-        Assert.AreEqual(JudgmentTier.Perfect, events.Single().Target.Tier, "窓の前と後ろしか見ていなくても、照準が真ん中なら BULL");
+        Assert.AreEqual(JudgmentTier.Perfect, events.Single().Target.Tier, "窓の前と後ろしか見ていなくても、照準が中なら HIT");
         events.Clear();
         session.Tick(3.5, At(1f, 0), default, events);
         session.Tick(4.4, new AimHandSample(false, Vector2.zero), default, events);
@@ -275,15 +288,15 @@ public class PhobiaAvoidTests
         {
             GameSession.ResetResult();
             GameSession.FinalAimMode = true;
-            GameSession.FinalPerfect = 40; GameSession.FinalGreat = 5; GameSession.FinalGood = 3; GameSession.FinalMiss = 2;
+            GameSession.FinalPerfect = 45; GameSession.FinalMiss = 5;
             GameSession.FinalAimDamage = 4;
-            GameSession.FinalAimDartPoints = 40 * 1000 + 5 * 600 + 3 * 300;
+            GameSession.FinalAimDartPoints = 45 * 1000;
             GameSession.FinalAimDartTotal = 50000;
-            Assert.AreEqual(43900 / 50000f, GameSession.FinalAccuracy, 1e-6f);
-            CollectionAssert.AreEqual(new[] { "BULL", "INNER", "OUTER", "MISS", "DAMAGE" }, ResultSkin.JudgeLabels(true));
-            CollectionAssert.AreEqual(new[] { 40, 5, 3, 2, 4 }, ResultSkin.JudgeCounts(true));
+            Assert.AreEqual(45000 / 50000f, GameSession.FinalAccuracy, 1e-6f);
+            CollectionAssert.AreEqual(new[] { "HIT", "MISS", "DAMAGE" }, ResultSkin.JudgeLabels(true));
+            CollectionAssert.AreEqual(new[] { 45, 5, 4 }, ResultSkin.JudgeCounts(true));
             Assert.AreEqual("50 TARGETS", ResultSkin.DistributionCountLabel(true, 50));
-            Assert.AreEqual("BULL RATE 80.0%", ResultSkin.DistributionRateLabel(true, 80f));
+            Assert.AreEqual("HIT RATE 90.0%", ResultSkin.DistributionRateLabel(true, 90f));
             CollectionAssert.AreEqual(new[] { "PERFECT", "GREAT", "GOOD", "BAD", "MISS" }, ResultSkin.JudgeLabels(false));
             Assert.AreEqual("12 NOTES", ResultSkin.DistributionCountLabel(false, 12));
             GameSession.ResetResult();

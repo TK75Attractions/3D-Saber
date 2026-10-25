@@ -4,7 +4,8 @@ using UnityEngine;
 // 隠し譜面の表。選曲の中央のジャケットを10回切ると、その曲だけの裏の譜面へ移る。
 // RUSH E の E(2026-10-14)と、ElDorado の G(2026-10-24 ユーザー「ElDorado のジャケットを10回切ったら、E と同じく裏譜面に」。
 // 長い版(3分43秒)の Hard 譜面を全部金色にしたもの。音源・演出・音量そろえも G 専用の audio_g.mp3・stage_g.json・loudness_g.json)と、
-// Phobia PARTⅠ の 避(2026-10-24、照準でトゲをよけて的を狙う。譜面は chart_避.json の aim、音源・演出は曲の共通のもの)と、
+// Phobia PARTⅠ の D(2026-10-24 に「避」として作成、10/26 に表記を D へ。照準でトゲをよけて的を狙う。譜面は chart_d.json の aim、
+// 音源・演出は曲の共通のもの)と、
 // Morning の M(2026-10-25、見本を覚え、ノイズの中で同じ2小節を切る。chart_m.json の memory と notes。最初は勉強に作ったが、
 // ユーザー「BPMが変わんない曲にしてほしい」で 118BPM 一定の Morning へ移した)と、
 // 青葉騒の W(2026-10-25、風に流されて来る。chart_w.json の notes に風の値を持たせる)。
@@ -42,12 +43,13 @@ public sealed class RushESecretState
         EdgeLight = new Color(1, .88f, .52f), FanLight = new Color(1, .86f, .45f),
         CenterHaze = new Color(1, .62f, .08f, .42f), LeftHaze = new Color(1, .50f, .02f, .35f), RightHaze = new Color(1, .72f, .15f, .35f),
     };
-    // Phobia PARTⅠ の「避」(2026-10-24 ユーザー「24 のトゲと 25 のダーツで融合して」「難易度は避」)。
-    // 剣が2つの照準になり、トゲをよけて的(ダーツ)の真ん中を狙う(AimDodgeMode)。色はトゲの縁と同じ赤紫。
+    // Phobia PARTⅠ の「D」(2026-10-24 ユーザー「24 のトゲと 25 のダーツで融合して」「難易度は避」で作り、
+    // 10/26 ユーザー「避譜面の難易度表記をDに変えて」)。剣が2つの照準になり、トゲをよけて的の中へ照準を入れる(AimDodgeMode)。
+    // 色はトゲの縁と同じ赤紫。
     public static readonly Color Magenta = new Color(1f, .36f, .84f);
     public static readonly SecretChart PhobiaAvoid = new SecretChart
     {
-        SongId = "Phobia PARTⅠ", Difficulty = "避", Accent = Magenta, Glow = new Color(1, .28f, .78f, .25f), Face = new Color(.20f, .03f, .15f),
+        SongId = "Phobia PARTⅠ", Difficulty = "D", Accent = Magenta, Glow = new Color(1, .28f, .78f, .25f), Face = new Color(.20f, .03f, .15f),
         TileDeep = new Color(.19f, .02f, .14f), TileLight = new Color(.62f, .16f, .50f),
         Backdrop = new Color(.10f, .01f, .08f), LeftLight = new Color(1, .25f, .70f), RightLight = new Color(1, .45f, .90f),
         EdgeLight = new Color(1, .62f, .92f), FanLight = new Color(1, .56f, .90f),

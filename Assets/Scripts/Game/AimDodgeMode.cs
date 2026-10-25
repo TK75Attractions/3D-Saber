@@ -42,6 +42,9 @@ public sealed class AimDodgeMode : MonoBehaviour
     sealed class Fx { public Transform t; public MeshRenderer r; public float age, life, from, to; public Color color; public Vector3 velocity; }
     readonly Dictionary<AimTarget, TargetView> targetViews = new Dictionary<AimTarget, TargetView>();
     readonly Dictionary<AimSpike, SpikeView> spikeViews = new Dictionary<AimSpike, SpikeView>();
+    // 外側の壁(2026-10-26)は1回に約60個のトゲが来るので、終わったトゲの絵は捨てずに使い回す。
+    readonly Stack<SpikeView> spikePool = new Stack<SpikeView>();
+    public int PooledSpikeViews => spikePool.Count;
     readonly List<Fx> effects = new List<Fx>();
     int nextTarget, nextSpike;
 
@@ -244,8 +247,19 @@ public sealed class AimDodgeMode : MonoBehaviour
 
     SpikeView BuildSpike(AimSpike spike)
     {
-        var view = new SpikeView { spike = spike };
         float contact = AimDodgeRules.ContactDistance(spike.Size);
+        if (spikePool.Count > 0)
+        {
+            var reused = spikePool.Pop();
+            reused.spike = spike; reused.endAge = -1; reused.shattered = false;
+            reused.marker.position = new Vector3(spike.Position.x, spike.Position.y, PlaneZ + .01f);
+            reused.marker.localScale = Vector3.one * contact;
+            reused.body.localScale = Vector3.zero;
+            reused.marker.gameObject.SetActive(true);
+            reused.body.gameObject.SetActive(true);
+            return reused;
+        }
+        var view = new SpikeView { spike = spike };
         view.marker = new GameObject("AimSpikeMarker_" + spike.Index).transform;
         view.marker.SetParent(transform, false);
         view.marker.position = new Vector3(spike.Position.x, spike.Position.y, PlaneZ + .01f);
@@ -315,7 +329,9 @@ public sealed class AimDodgeMode : MonoBehaviour
         foreach (var spike in finished)
         {
             var view = spikeViews[spike];
-            Destroy(view.body.gameObject); Destroy(view.marker.gameObject);
+            view.body.gameObject.SetActive(false); view.marker.gameObject.SetActive(false);
+            view.spike = null;
+            spikePool.Push(view);
             spikeViews.Remove(spike);
         }
     }
@@ -542,12 +558,9 @@ public static class AimMeshes
     // ダーツの的: 薄い塗り、外の縁、INNER の境目、真ん中の BULL。半径 1 = 的の外の縁。
     public static Mesh Board() => Cached("Board", (v, c, t) =>
     {
-        Fan(v, c, t, 1f, new Color(1, 1, 1, .16f), new Color(1, 1, 1, .1f));
-        Annulus(v, c, t, .9f, 1f, Color.white);
-        float inner = AimDodgeRules.InnerRadius / AimDodgeRules.TargetRadius;
-        Annulus(v, c, t, inner - .035f, inner + .02f, new Color(1, 1, 1, .7f));
-        float bull = AimDodgeRules.BullRadius / AimDodgeRules.TargetRadius;
-        Fan(v, c, t, bull, Color.white, new Color(1, 1, 1, .85f));
+        // 中に入れば当たり(2026-10-26 精度の段をやめた)。中の面を少し濃くし、BULL・INNER の輪は描かない。
+        Fan(v, c, t, 1f, new Color(1, 1, 1, .26f), new Color(1, 1, 1, .18f));
+        Annulus(v, c, t, .88f, 1f, Color.white);
     });
 
     // 照準: 輪と、外へ伸びる4本の目盛り。
