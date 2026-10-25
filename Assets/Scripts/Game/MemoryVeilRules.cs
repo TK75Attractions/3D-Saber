@@ -7,7 +7,6 @@ using System.Collections.Generic;
 // 区間の終わり近くで奥から出てくる次の見本も見える(MemoryVeilMode が並び順を決める)。
 public static class MemoryVeilRules
 {
-    public const string RuleCaption = "2小節の見本 → ノイズの中で同じ2小節";
     public const double FadeIn = .12;
     // 区間の終わり(次の見本の頭)でちょうど消え切る。
     public const double FadeOut = .15;

@@ -483,9 +483,9 @@ public class GamePlayManager : MonoBehaviour
                 countdown.ConfigureCaptionHint(AimDodgeRules.RuleCaption, RushESecretState.Magenta, firstNoteFromPlayStart, playRange.Start);
             else if (noteSpawner.HasWindNotes)
                 countdown.ConfigureCaptionHint(WindRules.RuleCaption, RushESecretState.Leaf, firstNoteFromPlayStart, playRange.Start);
-            else if (memoryMode != null)
-                countdown.ConfigureCaptionHint(MemoryVeilRules.RuleCaption, RushESecretState.Amber, firstNoteFromPlayStart, playRange.Start);
-            else
+            // M(覚える)は下の解説を何も出さない(2026-10-26 ユーザー「下に出る解説いらないから消して」)。
+            // 最初の3回でノイズがだんだん強まるのが説明を兼ねる。
+            else if (memoryMode == null)
                 countdown.ConfigureFirstHandHint(chart, firstNoteFromPlayStart, inTutorial || GameSession.TutorialPending,
                     inCalibration || GameSession.IsCalibrationMode, playRange.Start);
             songPlayer.PlayScheduled(startDspTime, playRange.Start);

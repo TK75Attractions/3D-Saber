@@ -64,7 +64,7 @@ public class MemoryVeilRenderingTests
     {
         try
         {
-            FirstNoteHandHintView.Show(MemoryVeilRules.RuleCaption, RushESecretState.Amber, 0, 3);
+            FirstNoteHandHintView.Show("見えなくても、同じ場所・同じリズムで切ろう", RushESecretState.Amber, 0, 3);
             var first = GameObject.Find("FirstHandHint").GetComponentInChildren<TextMeshProUGUI>();
             Assert.AreEqual(1440, first.rectTransform.sizeDelta.x);
             Assert.IsTrue(first.enableAutoSizing);
