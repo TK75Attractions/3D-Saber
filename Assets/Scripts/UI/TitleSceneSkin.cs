@@ -296,11 +296,16 @@ public class TitleSceneSkin : MonoBehaviour
     void HandlePromptAnswer(bool tutorial)
     {
         if (titleCtl == null) return;
-        GameSession.TutorialPending = tutorial;
-        string scene = tutorial ? TutorialSceneName : titleCtl.songSelectSceneName;
+        // 「いいえ」でも、スマホの座標を受けているときは振る範囲を合わせる段だけ通ってから選曲へ
+        // (2026-10-26 ユーザー「チュートリアルがなくても範囲検査は行うようにして」)。マウスで遊ぶときはそのまま選曲へ。
+        bool rangeOnly = !tutorial && TutorialController.PhoneInputActive != null && TutorialController.PhoneInputActive();
+        GameSession.TutorialPending = tutorial || rangeOnly;
+        GameSession.TutorialRangeOnly = rangeOnly;
+        string scene = tutorial || rangeOnly ? TutorialSceneName : titleCtl.songSelectSceneName;
         if (ScreenTransition.Load(scene, ScreenTransition.Style.Forward)) return;
         // 読み込めないときは問いかけを閉じ、タイトルを操作できる状態に戻す。
         GameSession.TutorialPending = false;
+        GameSession.TutorialRangeOnly = false;
         if (prompt != null) Destroy(prompt.gameObject);
         prompt = null;
         transitioning = false;

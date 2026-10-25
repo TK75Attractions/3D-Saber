@@ -79,9 +79,13 @@ public sealed class TutorialController : MonoBehaviour
     // 譜面の時計(曲時計から判定のずらし分を引いたもの)。NoteData.time と同じ基準。
     double Now => song.SongTime - totalOffset;
 
+    // rangeOnly: チュートリアルで「いいえ」を選んだ人向けに、振る範囲を合わせる段だけを流す(終わったら選曲へ)。
+    public bool RangeOnly { get; private set; }
+
     public void Initialize(SongPlayer player, NoteSpawner notes, ScoreManager scoring, double extraOffset,
-        SaberTracker[] saberTrackers, LongNoteCutSfx longSfx, GoldNoteSfx goldSfx)
+        SaberTracker[] saberTrackers, LongNoteCutSfx longSfx, GoldNoteSfx goldSfx, bool rangeOnly = false)
     {
+        RangeOnly = rangeOnly;
         song = player; spawner = notes; score = scoring;
         sabers = saberTrackers ?? System.Array.Empty<SaberTracker>();
         // 本番と同じ「判定のずらし」を掛けて、曲に入ったときと同じ手触りにする。
@@ -126,7 +130,8 @@ public sealed class TutorialController : MonoBehaviour
         RangeCamera = Camera.main;
         foreach (var bridge in bridges) if (bridge != null && bridge.targetCamera != null) { RangeCamera = bridge.targetCamera; break; }
         station = InputPoint.Instance != null ? InputPoint.Instance.StationLabel : "";
-        steps = TutorialProgram.Build(TutorialProgram.FlowFor(PhoneInputActive != null && PhoneInputActive()), true);
+        bool phone = PhoneInputActive != null && PhoneInputActive();
+        steps = TutorialProgram.Build(rangeOnly ? TutorialProgram.RangeOnlyFlow(phone) : TutorialProgram.FlowFor(phone), true);
     }
 
     // テストの SetUpFixture は自動起動を止める。そのときは指示を送らない(探索応答も開かないので届かない)。
@@ -177,7 +182,8 @@ public sealed class TutorialController : MonoBehaviour
         if (!IsFinished && song != null && song.IsPlaying)
         {
             double now = Now;
-            if (!started) { started = true; startChartTime = now; BeginStep(0, now); }
+            // 範囲だけの回で、タイトルからここへ来るまでにスマホの座標が途切れたら段が無い。そのまま選曲へ。
+            if (!started) { started = true; startChartTime = now; if (steps.Length == 0) Finish("no-steps"); else BeginStep(0, now); }
             var step = Step;
             if (step != null && step.Kind == TutorialStepKind.Practice && !StepDone) ExtendPattern(now, step);
             spawner.Tick(song.SongTime);

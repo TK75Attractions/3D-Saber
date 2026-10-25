@@ -285,8 +285,10 @@ public class GamePlayManager : MonoBehaviour
         // --- チュートリアル(フラグは読んだら消す。終わったら選曲へ) ---
         if (GameSession.TutorialPending)
         {
+            bool rangeOnly = GameSession.TutorialRangeOnly;
             GameSession.TutorialPending = false;
-            StartTutorial();
+            GameSession.TutorialRangeOnly = false;
+            StartTutorial(rangeOnly);
             ready = true;
             yield break;
         }
@@ -1219,7 +1221,8 @@ public class GamePlayManager : MonoBehaviour
 
     // --- チュートリアル実装 ---
 
-    void StartTutorial()
+    // rangeOnly: チュートリアルで「いいえ」を選んだ人の、振る範囲を合わせる段だけの回(終わったら選曲へ)。
+    void StartTutorial(bool rangeOnly = false)
     {
         inTutorial = true;
         // 舞台・刃 2 本・判定・NoteSpawner・床ガイドは上で本番と同じに用意済み。小節線だけ出さない。
@@ -1234,7 +1237,7 @@ public class GamePlayManager : MonoBehaviour
         // 練習でも受信の表示とスタッフ向けの1行は出す(曲は止めない)。左上の見出しを避けて少し下に置く。
         trackingView = PlayTrackingStatus.Create(transform, 340);
         tutorial = gameObject.AddComponent<TutorialController>();
-        tutorial.Initialize(songPlayer, noteSpawner, scoreManager, extraOffsetSeconds, sabers.ToArray(), longNoteCutSfx, goldNoteSfx);
+        tutorial.Initialize(songPlayer, noteSpawner, scoreManager, extraOffsetSeconds, sabers.ToArray(), longNoteCutSfx, goldNoteSfx, rangeOnly);
         gatePerfectPulse = GateBeatPulse.Ensure(TutorialProgram.Bpm, 0, songPlayer, scoreManager);
         if (stageFloor != null) stageReactions = StageReactiveEffects.Create(stageFloor, noteSpawner, stagePerformance);
     }

@@ -82,6 +82,10 @@ public static class TutorialProgram
         return flow;
     }
 
+    // チュートリアルで「いいえ」を選んだ人の回(2026-10-26 ユーザー「チュートリアルがなくても範囲検査は行うようにして」)。
+    // 範囲を合わせる段だけを流して選曲へ。スマホの座標を受けていなければ段は無し(すぐ選曲へ)。
+    public static string[] RangeOnlyFlow(bool phoneInput) => phoneInput ? new[] { RangeStepId } : Array.Empty<string>();
+
     // 学習中の残り秒(切り上げ)。0 以下は出さない。
     public static string RangeTimerText(int seconds) => seconds > 0 ? "あと " + seconds + " 秒" : "";
 

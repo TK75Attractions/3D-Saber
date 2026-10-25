@@ -105,6 +105,9 @@ public static class GameSession
     // タイトルの問いかけで「はい」を選んだとき true。Game シーンの GamePlayManager が読んだら消し、
     // 曲の代わりに練習(TutorialController)を回してから選曲へ進む。得点・実績は残さない。
     public static bool TutorialPending;
+    // チュートリアルで「いいえ」を選んだ人も、スマホで遊ぶときは振る範囲を合わせる段だけ通る
+    // (2026-10-26 ユーザー「チュートリアルがなくても範囲検査は行うようにして」)。TutorialPending と一緒に立て、読んだら消す。
+    public static bool TutorialRangeOnly;
     // 判定調整との往復だけで引き継ぐ選曲時間。時間切れ・受け取り後は null に戻す。
     public static double? CalibrationSelectionSeconds;
     // 判定調整から戻るときだけ復元する曲と難易度。並び順の変更に備えて名前で保持する。

@@ -151,6 +151,8 @@ public sealed class TutorialOverlay : MonoBehaviour
         ShowBanner(step.Title, step.Sub);
         if (handsCard != null) handsCard.SetActive(step.Id == "hands");
         EnsureDots(count); RefreshDots(index); shownStep = index;
+        // 範囲だけの回(段が1つ)では、進み具合の点を出さない。
+        if (dots != null) dots.gameObject.SetActive(count > 1);
         // 範囲を合わせる間は画面の下まで振るので、やめるの的に剣が止まって押されないよう隠す(約10秒)。
         if (SkipButton != null) SkipButton.gameObject.SetActive(step.Kind != TutorialStepKind.Range);
     }
