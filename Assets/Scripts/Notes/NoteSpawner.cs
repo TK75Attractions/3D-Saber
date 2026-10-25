@@ -254,6 +254,7 @@ public class NoteSpawner : MonoBehaviour
             {
                 Vector3 p = note.transform.position;
                 note.transform.position = new Vector3(note.LandingPosition.x, note.LandingPosition.y, p.z);
+                ApplyWindPose(note, 0);
             }
             UpdateJudgmentWindow(note, note.HitTime - JudgeClock(songTime), LateWindowFor(note));
         }
@@ -424,10 +425,39 @@ public class NoteSpawner : MonoBehaviour
             }
         }
 
+        // 風のノーツは本来の大きさを覚え、出た瞬間の小ささ・回り込み・傾きを最初のコマから当てる。
+        if (note.HasWind)
+        {
+            note.WindBaseScale = go.transform.localScale;
+            ApplyWindPose(note, note.HitTime - songTime);
+        }
+
         liveNotes.Add(note);
         if (cutFeedback == null) cutFeedback = GameplayCutFeedback.Create(this);
         cutFeedback.Track(note);
         OnNoteSpawned?.Invoke(note);
+    }
+
+    // 風のノーツの姿勢(2026-10-26 W の出方の改善)。出た瞬間は小さく、回り込みながら本来の大きさになり、
+    // 流れる速さに合わせて葉のように傾く。矢印のノーツは向きを読み違えないよう回さない。
+    // 届く CalmSeconds 前からは本来の大きさ・まっすぐ(判定の窓では今までと同じ姿)。
+    void ApplyWindPose(CuttableNote note, double remaining)
+    {
+        Vector3 baseScale = note.WindBaseScale;
+        if (remaining <= WindRules.CalmSeconds)
+        {
+            note.transform.localScale = baseScale;
+            note.transform.rotation = Quaternion.identity;
+            return;
+        }
+        double sinceSpawn = approachTime - remaining;
+        float grow = WindRules.GrowScale(sinceSpawn);
+        note.transform.localScale = new Vector3(baseScale.x * grow, baseScale.y * grow, baseScale.z);
+        if (note.RequiredDirection != CutDirection.None) { note.transform.rotation = Quaternion.identity; return; }
+        double beatsPerSecond = chart != null && chart.bpm > 0 ? chart.bpm / 60.0 : 2.0;
+        float bank = WindRules.BankDegrees(note.WindX, note.WindY, note.WindSpin, note.WindSway,
+            remaining, approachTime, windBeat, beatsPerSecond);
+        note.transform.rotation = Quaternion.Euler(0f, 0f, bank + WindRules.SpinIn(sinceSpawn));
     }
 
     // 本体と床でC案の二段シェブロンを共有。輪郭は拡縮せず一定幅にする。
@@ -519,6 +549,7 @@ public class NoteSpawner : MonoBehaviour
                         dt, approachTime, windBeat, z);
                 p.x = note.LandingPosition.x + offset.x;
                 p.y = note.LandingPosition.y + offset.y;
+                ApplyWindPose(note, songTime >= note.HitTime - WindRules.CalmSeconds ? 0 : dt);
             }
             note.transform.position = new Vector3(p.x, p.y, z);
 

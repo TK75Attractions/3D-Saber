@@ -30,6 +30,9 @@ public partial class CuttableNote : MonoBehaviour
         HasWind = data.HasWind;
     }
 
+    // 風のノーツの本来の大きさ(ロングの伸ばしまで含む)。出た瞬間の小ささと、静かな区間での戻し先に使う。
+    internal Vector3 WindBaseScale { get; set; }
+
     // 見えにくさは描画だけに使い、判定には使わない。
     public float Veil { get; internal set; }
     internal bool HidesCues => Veil >= MemoryVeilLayers.HideCuesAtVeil;

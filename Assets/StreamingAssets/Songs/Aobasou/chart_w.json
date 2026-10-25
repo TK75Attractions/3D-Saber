@@ -164,7 +164,7 @@
    "direction": "none",
    "count": 1,
    "lengthMs": 0,
-   "windX": -2.0,
+   "windX": -3.0,
    "windY": 0.3,
    "windSway": 0.25
   },
@@ -178,7 +178,7 @@
    "direction": "none",
    "count": 1,
    "lengthMs": 0,
-   "windX": -2.0,
+   "windX": -3.0,
    "windY": 0.3,
    "windSway": 0.25
   },
@@ -192,7 +192,7 @@
    "direction": "none",
    "count": 1,
    "lengthMs": 0,
-   "windX": 2.0,
+   "windX": 3.0,
    "windY": 0.3,
    "windSway": 0.25
   },
@@ -206,7 +206,7 @@
    "direction": "none",
    "count": 1,
    "lengthMs": 0,
-   "windX": 2.0,
+   "windX": 3.0,
    "windY": 0.3,
    "windSway": 0.25
   },
@@ -220,8 +220,8 @@
    "direction": "none",
    "count": 1,
    "lengthMs": 0,
-   "windX": 2.0,
-   "windY": 0.3,
+   "windX": 2.76,
+   "windY": 0.276,
    "windSway": 0.25
   },
   {
@@ -234,7 +234,7 @@
    "direction": "none",
    "count": 1,
    "lengthMs": 0,
-   "windX": 2.0,
+   "windX": 3.0,
    "windY": 0.3,
    "windSway": 0.25
   },
@@ -248,7 +248,7 @@
    "direction": "none",
    "count": 1,
    "lengthMs": 0,
-   "windX": -2.0,
+   "windX": -3.0,
    "windY": 0.3,
    "windSway": 0.25
   },
@@ -262,7 +262,7 @@
    "direction": "none",
    "count": 1,
    "lengthMs": 0,
-   "windX": -2.0,
+   "windX": -3.0,
    "windY": 0.3,
    "windSway": 0.25
   },
@@ -276,7 +276,7 @@
    "direction": "none",
    "count": 1,
    "lengthMs": 0,
-   "windX": -2.0,
+   "windX": -3.0,
    "windY": 0.3,
    "windSway": 0.25
   },
@@ -290,7 +290,7 @@
    "direction": "none",
    "count": 1,
    "lengthMs": 0,
-   "windX": -2.0,
+   "windX": -3.0,
    "windY": 0.3,
    "windSway": 0.25
   },
@@ -304,8 +304,8 @@
    "direction": "none",
    "count": 1,
    "lengthMs": 0,
-   "windX": 2.0,
-   "windY": 0.3,
+   "windX": 2.76,
+   "windY": 0.276,
    "windSway": 0.25
   },
   {
@@ -318,7 +318,7 @@
    "direction": "none",
    "count": 1,
    "lengthMs": 0,
-   "windX": 2.0,
+   "windX": 3.0,
    "windY": 0.3,
    "windSway": 0.25
   },
@@ -332,7 +332,7 @@
    "direction": "none",
    "count": 1,
    "lengthMs": 0,
-   "windX": 2.0,
+   "windX": 3.0,
    "windY": 0.3,
    "windSway": 0.25
   },
@@ -346,7 +346,7 @@
    "direction": "none",
    "count": 1,
    "lengthMs": 0,
-   "windX": 2.0,
+   "windX": 3.0,
    "windY": 0.3,
    "windSway": 0.25
   },
@@ -360,7 +360,7 @@
    "direction": "none",
    "count": 1,
    "lengthMs": 0,
-   "windX": 2.0,
+   "windX": 3.0,
    "windY": 0.3,
    "windSway": 0.25
   },
@@ -2550,7 +2550,7 @@
    "direction": "none",
    "count": 1,
    "lengthMs": 0,
-   "windX": -2.2,
+   "windX": -3.0,
    "windY": 0.4,
    "windSway": 0.3
   },
@@ -2564,8 +2564,8 @@
    "direction": "none",
    "count": 1,
    "lengthMs": 0,
-   "windX": -2.2,
-   "windY": 0.4,
+   "windX": -2.7,
+   "windY": 0.36,
    "windSway": 0.3
   },
   {
@@ -2578,7 +2578,7 @@
    "direction": "none",
    "count": 1,
    "lengthMs": 0,
-   "windX": -2.2,
+   "windX": -3.0,
    "windY": 0.4,
    "windSway": 0.3
   },
@@ -2592,7 +2592,7 @@
    "direction": "none",
    "count": 1,
    "lengthMs": 0,
-   "windX": -2.2,
+   "windX": -3.0,
    "windY": 0.4,
    "windSway": 0.3
   },
@@ -2606,7 +2606,7 @@
    "direction": "none",
    "count": 1,
    "lengthMs": 0,
-   "windX": -2.2,
+   "windX": -3.0,
    "windY": 0.4,
    "windSway": 0.3
   },
@@ -2620,8 +2620,8 @@
    "direction": "none",
    "count": 1,
    "lengthMs": 0,
-   "windX": -2.2,
-   "windY": 0.4,
+   "windX": -2.7,
+   "windY": 0.36,
    "windSway": 0.3
   },
   {
@@ -2634,7 +2634,7 @@
    "direction": "none",
    "count": 1,
    "lengthMs": 0,
-   "windX": 2.2,
+   "windX": 3.0,
    "windY": -0.4,
    "windSway": 0.3
   },
@@ -2648,7 +2648,7 @@
    "direction": "none",
    "count": 1,
    "lengthMs": 0,
-   "windX": 2.2,
+   "windX": 3.0,
    "windY": -0.4,
    "windSway": 0.3
   },
@@ -2662,8 +2662,8 @@
    "direction": "none",
    "count": 1,
    "lengthMs": 0,
-   "windX": 2.2,
-   "windY": -0.4,
+   "windX": 2.7,
+   "windY": -0.36,
    "windSway": 0.3
   },
   {
@@ -2676,7 +2676,7 @@
    "direction": "none",
    "count": 1,
    "lengthMs": 0,
-   "windX": 2.2,
+   "windX": 3.0,
    "windY": -0.4,
    "windSway": 0.3
   },
@@ -2690,8 +2690,8 @@
    "direction": "none",
    "count": 1,
    "lengthMs": 0,
-   "windX": 2.2,
-   "windY": -0.4,
+   "windX": 2.7,
+   "windY": -0.36,
    "windSway": 0.3
   },
   {
@@ -2704,7 +2704,7 @@
    "direction": "none",
    "count": 1,
    "lengthMs": 0,
-   "windX": 2.2,
+   "windX": 3.0,
    "windY": -0.4,
    "windSway": 0.3
   },
@@ -2718,7 +2718,7 @@
    "direction": "none",
    "count": 1,
    "lengthMs": 0,
-   "windX": 2.2,
+   "windX": 3.0,
    "windY": -0.4,
    "windSway": 0.3
   },
@@ -2732,7 +2732,7 @@
    "direction": "none",
    "count": 1,
    "lengthMs": 0,
-   "windX": 2.2,
+   "windX": 3.0,
    "windY": -0.4,
    "windSway": 0.3
   },
@@ -2746,7 +2746,7 @@
    "direction": "none",
    "count": 1,
    "lengthMs": 0,
-   "windX": -2.2,
+   "windX": -3.0,
    "windY": 0.4,
    "windSway": 0.3
   },
@@ -2760,7 +2760,7 @@
    "direction": "none",
    "count": 1,
    "lengthMs": 0,
-   "windX": -2.2,
+   "windX": -3.0,
    "windY": 0.4,
    "windSway": 0.3
   },
@@ -2774,7 +2774,7 @@
    "direction": "none",
    "count": 1,
    "lengthMs": 0,
-   "windX": -2.2,
+   "windX": -3.0,
    "windY": 0.4,
    "windSway": 0.3
   },
@@ -2788,8 +2788,8 @@
    "direction": "none",
    "count": 1,
    "lengthMs": 0,
-   "windX": -2.2,
-   "windY": 0.4,
+   "windX": -2.7,
+   "windY": 0.36,
    "windSway": 0.3
   },
   {
@@ -2802,7 +2802,7 @@
    "direction": "none",
    "count": 1,
    "lengthMs": 0,
-   "windX": 2.2,
+   "windX": 3.0,
    "windY": -0.4,
    "windSway": 0.3
   },
@@ -2816,8 +2816,8 @@
    "direction": "none",
    "count": 1,
    "lengthMs": 0,
-   "windX": 2.2,
-   "windY": -0.4,
+   "windX": 2.7,
+   "windY": -0.36,
    "windSway": 0.3
   },
   {
@@ -2830,7 +2830,7 @@
    "direction": "none",
    "count": 1,
    "lengthMs": 0,
-   "windX": 2.2,
+   "windX": 3.0,
    "windY": -0.4,
    "windSway": 0.3
   },
@@ -2844,8 +2844,8 @@
    "direction": "none",
    "count": 1,
    "lengthMs": 0,
-   "windX": 2.2,
-   "windY": -0.4,
+   "windX": 2.7,
+   "windY": -0.36,
    "windSway": 0.3
   },
   {
@@ -2858,7 +2858,7 @@
    "direction": "none",
    "count": 1,
    "lengthMs": 0,
-   "windX": 2.2,
+   "windX": 3.0,
    "windY": -0.4,
    "windSway": 0.3
   },
@@ -2872,7 +2872,7 @@
    "direction": "none",
    "count": 1,
    "lengthMs": 0,
-   "windX": -2.2,
+   "windX": -3.0,
    "windY": 0.4,
    "windSway": 0.3
   },
@@ -2886,7 +2886,7 @@
    "direction": "none",
    "count": 1,
    "lengthMs": 0,
-   "windX": -2.2,
+   "windX": -3.0,
    "windY": 0.4,
    "windSway": 0.3
   },
@@ -2900,7 +2900,7 @@
    "direction": "none",
    "count": 1,
    "lengthMs": 0,
-   "windX": -2.2,
+   "windX": -3.0,
    "windY": 0.4,
    "windSway": 0.3
   },
@@ -2914,7 +2914,7 @@
    "direction": "none",
    "count": 1,
    "lengthMs": 0,
-   "windX": -2.2,
+   "windX": -3.0,
    "windY": 0.4,
    "windSway": 0.3
   },
@@ -2928,7 +2928,7 @@
    "type": "tap",
    "count": 1,
    "lengthMs": 0,
-   "windX": 2.2,
+   "windX": 3.0,
    "windY": -0.4,
    "windSway": 0.3
   },
@@ -2942,7 +2942,7 @@
    "direction": "none",
    "count": 1,
    "lengthMs": 0,
-   "windX": 2.2,
+   "windX": 3.0,
    "windY": -0.4,
    "windSway": 0.3
   },
@@ -2956,7 +2956,7 @@
    "direction": "none",
    "count": 1,
    "lengthMs": 0,
-   "windX": 2.2,
+   "windX": 3.0,
    "windY": -0.4,
    "windSway": 0.3
   },
@@ -2970,7 +2970,7 @@
    "direction": "none",
    "count": 1,
    "lengthMs": 0,
-   "windX": 2.2,
+   "windX": 3.0,
    "windY": -0.4,
    "windSway": 0.3
   },
@@ -2984,8 +2984,8 @@
    "direction": "none",
    "count": 1,
    "lengthMs": 0,
-   "windX": 2.2,
-   "windY": -0.4,
+   "windX": 2.7,
+   "windY": -0.36,
    "windSway": 0.3
   },
   {
@@ -2998,7 +2998,7 @@
    "type": "tap",
    "count": 1,
    "lengthMs": 0,
-   "windX": -2.2,
+   "windX": -3.0,
    "windY": 0.4,
    "windSway": 0.3
   },
@@ -3012,7 +3012,7 @@
    "direction": "none",
    "count": 1,
    "lengthMs": 0,
-   "windX": -2.2,
+   "windX": -3.0,
    "windY": 0.4,
    "windSway": 0.3
   },
@@ -3026,7 +3026,7 @@
    "direction": "none",
    "count": 1,
    "lengthMs": 0,
-   "windX": -2.2,
+   "windX": -3.0,
    "windY": 0.4,
    "windSway": 0.3
   },
@@ -3040,7 +3040,7 @@
    "type": "tap",
    "count": 1,
    "lengthMs": 0,
-   "windX": -2.2,
+   "windX": -3.0,
    "windY": 0.4,
    "windSway": 0.3
   },
@@ -3054,7 +3054,7 @@
    "direction": "none",
    "count": 1,
    "lengthMs": 0,
-   "windX": -2.2,
+   "windX": -3.0,
    "windY": 0.4,
    "windSway": 0.3
   },
@@ -3068,8 +3068,8 @@
    "direction": "none",
    "count": 1,
    "lengthMs": 0,
-   "windX": -2.2,
-   "windY": 0.4,
+   "windX": -2.7,
+   "windY": 0.36,
    "windSway": 0.3
   },
   {
@@ -3082,7 +3082,7 @@
    "direction": "none",
    "count": 1,
    "lengthMs": 0,
-   "windX": -2.2,
+   "windX": -3.0,
    "windY": 0.4,
    "windSway": 0.3
   },
@@ -3096,7 +3096,7 @@
    "direction": "none",
    "count": 1,
    "lengthMs": 0,
-   "windX": 2.2,
+   "windX": 3.0,
    "windY": -0.4,
    "windSway": 0.3
   },
@@ -3110,7 +3110,7 @@
    "direction": "none",
    "count": 1,
    "lengthMs": 0,
-   "windX": 2.2,
+   "windX": 3.0,
    "windY": -0.4,
    "windSway": 0.3
   },
@@ -3124,7 +3124,7 @@
    "direction": "none",
    "count": 1,
    "lengthMs": 0,
-   "windX": 2.2,
+   "windX": 3.0,
    "windY": -0.4,
    "windSway": 0.3
   },
@@ -3138,7 +3138,7 @@
    "direction": "none",
    "count": 1,
    "lengthMs": 0,
-   "windX": 2.2,
+   "windX": 3.0,
    "windY": -0.4,
    "windSway": 0.3
   },
@@ -3152,7 +3152,7 @@
    "direction": "none",
    "count": 1,
    "lengthMs": 0,
-   "windX": 2.2,
+   "windX": 3.0,
    "windY": -0.4,
    "windSway": 0.3
   },
