@@ -11,24 +11,33 @@ public static class PhoneSaberTriageReceiverLauncher
 {
     public const string LauncherRelativePath = "ios/PhoneSaberSender/Tools/phone_saber_receiver_launcher.py";
     public const string DisableEnvironmentVariable = "PHONESABER_TRIAGE_RECEIVER";
+    public const string ScriptEnvironmentVariable = "PHONESABER_TRIAGE_LAUNCHER";
     // Finder から起動した Unity の PATH には Homebrew がない(codex は node 製で /opt/homebrew/bin にある)。
     const string ExtraPath = "/opt/homebrew/bin:/usr/local/bin";
     // 受信 thread の再起動などで続けて呼ばれても、launcher を何度も起動しない。
     const double MinimumIntervalSeconds = 30;
     static DateTime lastLaunchUtc = DateTime.MinValue;
 
-    // Unity project の Assets から、プロジェクト内の PhoneSaber の launcher を探す。
-    public static string ResolveLauncherPath(string dataPath)
+    // Editor の Assets と Player の Contents の両方から repo まで遡る。
+    public static string ResolveLauncherPath(string dataPath, Func<string, string> environment = null)
     {
+        string configured = (environment ?? Environment.GetEnvironmentVariable)(ScriptEnvironmentVariable);
+        if (!string.IsNullOrWhiteSpace(configured)) return Path.GetFullPath(configured.Trim());
         if (string.IsNullOrEmpty(dataPath)) return null;
-        string projectRoot = Path.GetFullPath(Path.Combine(dataPath, ".."));
-        return Path.Combine(projectRoot, "PhoneSaber", LauncherRelativePath);
+        var directory = new DirectoryInfo(Path.GetFullPath(dataPath));
+        while (directory != null)
+        {
+            string candidate = Path.Combine(directory.FullName, "PhoneSaber", LauncherRelativePath);
+            if (File.Exists(candidate)) return candidate;
+            directory = directory.Parent;
+        }
+        return null;
     }
 
     // sh で裏に回し、出力は捨てる(launcher 自身が ~/Library/Logs/PhoneSaber に記録する)。
     public static string BuildShellCommand(string launcherPath)
     {
-        return "nohup /usr/bin/python3 " + ShellQuote(launcherPath) + " >/dev/null 2>&1 &";
+        return "nohup /usr/bin/python3 " + ShellQuote(launcherPath) + " --no-codex >/dev/null 2>&1 </dev/null &";
     }
 
     public static string ShellQuote(string text)
@@ -47,15 +56,12 @@ public static class PhoneSaberTriageReceiverLauncher
         if (!PhoneSaberP2PBridgeProcess.AutoStartEnabled) return false;
         if (IsDisabled(Environment.GetEnvironmentVariable(DisableEnvironmentVariable))) return false;
         if ((DateTime.UtcNow - lastLaunchUtc).TotalSeconds < MinimumIntervalSeconds) return false;
-        string launcher = ResolveLauncherPath(dataPath);
-        if (launcher == null || !File.Exists(launcher))
-        {
-            UnityEngine.Debug.LogWarning($"[PhoneSaber][DIAG] 受信側の launcher が見つかりません: {launcher}。" +
-                                         "診断の自動受信は使わず、ゲームはそのまま動きます");
-            return false;
-        }
+        lastLaunchUtc = DateTime.UtcNow;
         try
         {
+            string launcher = ResolveLauncherPath(dataPath);
+            // repo 外へ移した Player は自動起動の対象外。watchdog 等の既存受信機はそのまま使う。
+            if (launcher == null || !File.Exists(launcher)) return false;
             var info = new ProcessStartInfo
             {
                 FileName = "/bin/sh",

@@ -21,6 +21,31 @@ public class PhoneSaberLatencyEstimateTests
         }
     }
     public static byte[] Valid => Encoding.ASCII.GetBytes(File.ReadAllLines(FixturePath)[1].Split('\t')[1]);
+    // SwiftのworstCaseMetricsと同じ。RTT/capture/batteryの欠測は数値最大より長い。
+    public static string WorstCaseLine =>
+        "PHONESABER_METRICS 1 station=ssssssssssssssss platform=ios app=1234567890.1234567890.12" +
+        " fps-mode=240 capture-fps=unknown send-red-fps=1000.0 send-blue-fps=1000.0" +
+        " c2s-median-ms=2000.0 c2s-p95-ms=2000.0 c2s-n=2400 rtt-ms=unknown rtt-n=0 rtt-age-s=unknown" +
+        " route=LAN thermal=tttttttttttttttt battery=unknown low-latency-test=1 c2s-end=detection" +
+        " ctl=1237 model=mmmmmmmmmmmmmmmm";
+    [Test] public void WorstCaseIPhoneMetricsAndByteBoundaryParse() {
+        var data = Encoding.ASCII.GetBytes(WorstCaseLine);
+        Assert.AreEqual(372, data.Length);
+        Assert.IsTrue(PhoneSaberMetrics.TryParse(data, data.Length, out var phone));
+        Assert.AreEqual("ssssssssssssssss", phone.Station);
+        Assert.AreEqual("1234567890.1234567890.12", phone.App);
+        Assert.AreEqual("mmmmmmmmmmmmmmmm", phone.Model);
+        Assert.AreEqual("1237", phone.Controls);
+        Assert.AreEqual(2400, phone.C2sCount);
+        Assert.IsNull(phone.Rtt); Assert.IsNull(phone.CaptureFps); Assert.IsNull(phone.Battery);
+        // 上限を緩めず、399 byteを受理し400 byteを拒否する。
+        string boundary = WorstCaseLine + " future=" + new string('x', 399 - data.Length - 8);
+        data = Encoding.ASCII.GetBytes(boundary);
+        Assert.AreEqual(PhoneSaberMetrics.MaximumBytes, data.Length);
+        Assert.IsTrue(PhoneSaberMetrics.TryParse(data, data.Length, out _));
+        data = Encoding.ASCII.GetBytes(boundary + "x");
+        Assert.IsFalse(PhoneSaberMetrics.TryParse(data, data.Length, out _));
+    }
     [Test] public void SharedContractVectors() {
         foreach (var row in File.ReadAllLines(FixturePath)) {
             var f = row.Split('\t'); if (f[0] == "id") continue;

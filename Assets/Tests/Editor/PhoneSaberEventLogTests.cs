@@ -6,6 +6,61 @@ using System.Text;
 using NUnit.Framework;
 
 // Unity API・ソケットを使わず、運営ログの形式・容量・接続遷移を確認する。
+public class PhoneSaberDiagnosticsTests
+{
+    [Test]
+    public void LauncherResolvesEditorPlayerAndExplicitPathsWithoutCwd()
+    {
+        string root = Path.Combine(Path.GetTempPath(), "診断 worktree " + Guid.NewGuid().ToString("N"));
+        string launcher = Path.Combine(root, "PhoneSaber", PhoneSaberTriageReceiverLauncher.LauncherRelativePath);
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(launcher));
+            File.WriteAllText(launcher, "fixture");
+            foreach (string relative in new[] { "Assets", "Builds/Mac/3D-Saber.app/Contents", "Builds/Mac/3D-Saber.app/Contents/Resources/Data" })
+                Assert.AreEqual(launcher, PhoneSaberTriageReceiverLauncher.ResolveLauncherPath(Path.Combine(root, relative), _ => null));
+            Assert.AreEqual(launcher, PhoneSaberTriageReceiverLauncher.ResolveLauncherPath(null, _ => " " + launcher + " "));
+            Assert.IsNull(PhoneSaberTriageReceiverLauncher.ResolveLauncherPath(null, _ => null));
+            File.Delete(launcher);
+            Assert.IsNull(PhoneSaberTriageReceiverLauncher.ResolveLauncherPath(Path.Combine(root, "Builds/Mac/3D-Saber.app/Contents"), _ => null));
+            StringAssert.Contains("--no-codex", PhoneSaberTriageReceiverLauncher.BuildShellCommand(launcher));
+        }
+        finally { if (Directory.Exists(root)) Directory.Delete(root, true); }
+    }
+
+    [Test]
+    public void UncleanRunRetainsLastStateAndWatchdogObservationButCleanQuitDoesNotWarn()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), "phonesaber-run-" + Guid.NewGuid().ToString("N"));
+        string path = Path.Combine(directory, "run.state");
+        try
+        {
+            var first = new PhoneSaberRunJournal(path);
+            Assert.IsNull(first.Begin());
+            first.Note("pause=True scene=Game");
+            string watchdog = Path.Combine(directory, "last-exit");
+            File.WriteAllText(watchdog, "exit-code=1 clean-quit=no");
+            var second = new PhoneSaberRunJournal(path);
+            string previous = second.Begin(watchdog);
+            StringAssert.Contains("cause=unknown", previous);
+            StringAssert.Contains("pause=True scene=Game", previous);
+            StringAssert.Contains("exit-code=1 clean-quit=no", previous);
+            second.End(1);
+            second.Note("focus=False");
+            var third = new PhoneSaberRunJournal(path);
+            StringAssert.Contains("quit-callback exit-code=1", third.Begin());
+            third.End(0);
+            third.Note("focus=False");
+            Assert.IsNull(new PhoneSaberRunJournal(path).Begin(watchdog));
+            Assert.IsFalse(File.Exists(path + ".tmp"));
+            // 保存不能な場所でも起動・終了を妨げない。
+            var blocked = new PhoneSaberRunJournal(Path.Combine(path, "child"));
+            Assert.DoesNotThrow(() => { blocked.Begin(); blocked.Note("quit", true); });
+        }
+        finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
+    }
+}
+
 public class PhoneSaberEventLogTests
 {
     [Test]

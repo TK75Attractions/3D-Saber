@@ -100,6 +100,14 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
             if (args[i] == "-phonesaberQuitMarker") overlay.quitMarker = args[++i];
         PhoneSaberEventLog.Record(overlay.fallbackStation, "SYSTEM", "session-start",
             "run-in-background=true sleep=never");
+        PhoneSaberRunJournal.Current = new PhoneSaberRunJournal(Path.Combine(Application.persistentDataPath,
+            "PhoneSaber", "run-" + (overlay.fallbackStation == "B" ? "B" : "A") + (Application.isEditor ? "-editor" : "-player") + ".state"));
+        string previous = PhoneSaberRunJournal.Current.Begin(Environment.GetEnvironmentVariable("PHONESABER_WATCHDOG_EXIT_FILE"));
+        if (previous != null)
+        {
+            PhoneSaberEventLog.Record(overlay.fallbackStation, "SYSTEM", "previous-run-end", previous);
+            Debug.Log("[PhoneSaber][DIAG] previous-run-end " + previous);
+        }
         PhoneSaberEventLog.Current?.Flush();
     }
 
@@ -256,6 +264,7 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
             { "phone-clear-ignore", _ => PhoneSaberDiscoveryResponder.QueueCommand("clear-ignore=1") },
             { "phone-learn-area", _ => PhoneSaberDiscoveryResponder.QueueCommand(PhoneSaberDiscoveryResponder.LearnAreaCommand) },
             { "phone-clear-area", _ => PhoneSaberDiscoveryResponder.QueueCommand(PhoneSaberDiscoveryResponder.ClearAreaCommand) },
+            { "phone-defaults", _ => PhoneSaberDiscoveryResponder.QueueCommand(PhoneSaberDiscoveryResponder.DefaultsCommand) },
             { "phone-shutter-iso", v => PhoneSaberOperatorKeys.SelectShutterISO(int.Parse(v, CultureInfo.InvariantCulture)) },
             { "phone-shutter-emitter", v => PhoneSaberDiscoveryResponder.QueueCommand("shutter-emitter=" + v) },
             { "phone-shutter", v => PhoneSaberOperatorKeys.SelectShutter(int.Parse(v, CultureInfo.InvariantCulture)) },
@@ -534,18 +543,19 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         // プレイ範囲（2026-10-18）: 赤い服の人など動く物は無視範囲では外せないので、剣を振る範囲の外の候補を選ばせない。
         panel.Label("スマホのプレイ範囲（赤い服の人など、動く赤・青の物の対策。押してから10秒、振りやすい範囲で上下左右に振る）");
         panel.Button("スマホ: プレイ範囲を消す", "phone-clear-area");
-        // 露出補正（試験、既定 0 = OFF）。−1・−2 で光らない服などが暗くなる。認識に入る画像が変わるので比べて使う。
+        // 露出補正（既定 −2）。認識に入る画像が変わるので比べて使う。
         foreach (int ev in PhoneSaberDiscoveryResponder.ExposureBiasChoices)
             panel.Button(ev == 0 ? "スマホ露出: 0" : $"スマホ露出: −{-ev}", "phone-exposure", ev.ToString(CultureInfo.InvariantCulture));
-        panel.Label("iPhone固定シャッター [Ctrl+Shift+S]: 既定 1/2000 → OFF（自動露出）→ 1/500 → 1/1000 → 1/2000。起動時の既定: 追跡 ON・露出 −2・1/2000 秒");
+        panel.Label("iPhone固定シャッター [Ctrl+Shift+S]: 1/2000 → OFF（自動露出）→ 1/500 → 1/1000 → 1/2000。初回の既定: 追跡 ON・露出 −2・1/2000 秒。再接続・PC再起動では保存値を維持");
         foreach (int value in PhoneSaberDiscoveryResponder.ShutterChoices)
             panel.Button(value == 0 ? "固定シャッター: OFF" : $"固定シャッター: 1/{value} 秒", "phone-shutter", value.ToString(CultureInfo.InvariantCulture));
-        panel.Label("固定シャッターの明るさ [Ctrl+Shift+D]: ISO 2000 → 250 → 200 → 160 → 125 → 100 → 80 → 64。起動時の既定はISO 160");
+        panel.Label("固定シャッターの明るさ [Ctrl+Shift+D]: ISO 2000 → 250 → 200 → 160 → 125 → 100 → 80 → 64。初回の既定はISO 160");
         foreach (int value in PhoneSaberDiscoveryResponder.ShutterISOChoices)
             panel.Button(PhoneSaberOperatorKeys.ShutterISOLabel(value), "phone-shutter-iso", value.ToString(CultureInfo.InvariantCulture));
         panel.Label("低ISOの色付き発光体: 既定ON、固定シャッター・ISO2000未満のときだけ有効（試験）");
         panel.Button("色付き発光体 OFF", "phone-shutter-emitter", "0");
         panel.Button("色付き発光体 ON", "phone-shutter-emitter", "1");
+        panel.Button("既定に戻す（追跡 ON・露出 −2・1/2000 秒・ISO 160・色付き発光体 ON）", "phone-defaults");
         panel.Label($"PC 側で無視（予備）: {count} か所（この台に保存）{ignored}");
         string warning = input != null ? IgnoreDominanceWarning(input) : "";
         if (warning.Length > 0) panel.Label(warning, true);
@@ -595,6 +605,7 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
     void OnApplicationQuit()
     {
         StopControlPanel();
+        PhoneSaberRunJournal.Current?.End(Environment.ExitCode);
         PhoneSaberEventLog.Record(fallbackStation, "SYSTEM", "session-quit", "exit-code=" + Environment.ExitCode);
         // 満杯のキューも終了時は全部書き出す(通常時は1回128件まで)。
         for (int i = 0; i < 5; i++) PhoneSaberEventLog.Current?.Flush();
@@ -605,6 +616,17 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
                 File.WriteAllText(quitMarker, "clean-quit\n");
         }
         catch { /* launcher の診断失敗でも正常終了を妨げない。 */ }
+    }
+
+    void OnApplicationFocus(bool focused) => RecordLifecycle("focus=" + focused);
+    void OnApplicationPause(bool paused) => RecordLifecycle("pause=" + paused);
+
+    void RecordLifecycle(string state)
+    {
+        if (!initialized) return;
+        string detail = state + " scene=" + UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+        PhoneSaberEventLog.Record(fallbackStation, "SYSTEM", "application-state", detail);
+        PhoneSaberRunJournal.Current?.Note(detail);
     }
 
     static string State(bool supported, bool running) => !supported ? "未対応" : running ? "ON" : "停止";

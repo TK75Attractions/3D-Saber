@@ -7,11 +7,11 @@ using System.Text;
 using System.Threading;
 using System.Globalization;
 
-// Android 版 PhoneSaberSender が、同じ Wi-Fi 上で Unity の PC(Windows / Mac)を見つけるための応答役。
+// iPhone が、同じ Wi-Fi 上で Unity の PC(Windows / Mac)を見つけ、生存確認するための応答役。
 // Windows には Mac の dns-sd に当たる標準コマンドがないので、全 OS 共通の UDP broadcast で答える。
 //   要求: "PHONESABER_DISCOVER 1"(UDP 5007 へ broadcast)
 //   応答: "PHONESABER_UNITY 1 red=5005 blue=5006 name=<PC名>"(送信元へ unicast)
-// 座標は従来どおり InputPoint が UDP 5005 / 5006 で受ける。iPhone は従来の Bonjour を使う。
+// 座標は従来どおり InputPoint が UDP 5005 / 5006 で受ける。Bonjour の探索と併用する。
 public sealed class PhoneSaberDiscoveryResponder : IDisposable
 {
     public const int Port = 5007;
@@ -22,11 +22,9 @@ public sealed class PhoneSaberDiscoveryResponder : IDisposable
     // iPhone は同じ id を一度だけ実行する。古いアプリや Android は知らない datagram として捨てる。
     public const string CommandPrefix = "PHONESABER_COMMAND 1";
     public const double CommandSeconds = 10;
-    // PC起動・新規接続時の自動指示もF8も、保存済みの選択を1/2000秒・ISO160・色付き発光体ONへ戻す。
+    // F8「既定に戻す」の明示操作専用。初回の既定値と保存値の復元はiPhoneが担当する。
     public const string DefaultsCommand = "defaults=1";
-    const double NewSenderSeconds = 60;
     static readonly object commandGate = new object();
-    static int automaticDefaultsRequested;
     static string commandStation = "";
     static int commandId = (int)(DateTime.UtcNow.Ticks % 1000000) * 1000;
     public static readonly PhoneSaberAcknowledgementStore Acknowledgements = new PhoneSaberAcknowledgementStore();
@@ -69,21 +67,6 @@ public sealed class PhoneSaberDiscoveryResponder : IDisposable
             return id;
         }
     }
-
-    // 受信側は要求フラグだけを立て、実際の自動指示は運営キーの main thread で送る。
-    public static void ProcessAutomaticDefaults()
-    {
-        if (Interlocked.Exchange(ref automaticDefaultsRequested, 0) == 0 ||
-            !PhoneSaberP2PBridgeProcess.AutoStartEnabled) return;
-        lock (commandGate)
-            if (CommandSecondsLeft(SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp)) == 0)
-                QueueCommand(DefaultsCommand, automatic: true);
-    }
-
-    // 判定は時刻と値だけ。送信元 port が変わっても同じ IP は同じ端末として扱う。
-    public static bool ShouldQueueDefaults(IReadOnlyDictionary<string, double> lastSeen, string sender,
-        double now, double pendingSeconds) => pendingSeconds == 0 &&
-        (!lastSeen.TryGetValue(sender, out double seen) || now - seen >= NewSenderSeconds);
 
     public static double CommandSecondsLeft(double now) => Acknowledgements.CommandSecondsLeft(now);
 
@@ -143,12 +126,12 @@ public sealed class PhoneSaberDiscoveryResponder : IDisposable
                 client.Client.Bind(new IPEndPoint(IPAddress.Any, listenPort));
                 client.Client.ReceiveTimeout = 500;
                 Volatile.Write(ref commandStation, station);
-                QueueCommand(DefaultsCommand, automatic: true);
+                // PC再起動・再接続で運営の保存値を上書きしない。表示は既存のctl計測から同期する。
                 running = true;
                 byte[] reply = Encoding.ASCII.GetBytes(BuildReply(redPort, bluePort, Environment.MachineName, station));
                 thread = new Thread(() => Loop(client, reply)) { IsBackground = true, Name = "PhoneSaberDiscovery" };
                 thread.Start();
-                UnityEngine.Debug.Log($"[PhoneSaber] Android discovery responder on UDP {listenPort} station={station}");
+                UnityEngine.Debug.Log($"[PhoneSaber] iPhone discovery responder on UDP {listenPort} station={station}");
                 return true;
             }
             catch (Exception exception)
@@ -156,8 +139,8 @@ public sealed class PhoneSaberDiscoveryResponder : IDisposable
                 running = false;
                 socket?.Close();
                 socket = null;
-                UnityEngine.Debug.LogWarning($"[PhoneSaber] Android discovery responder failed: {exception.Message}." +
-                                             " Android では PC の IP を手入力してください");
+                UnityEngine.Debug.LogWarning($"[PhoneSaber] iPhone discovery responder failed: {exception.Message}." +
+                                             " iPhone では PC の IP を手入力してください");
                 return false;
             }
         }
@@ -167,7 +150,6 @@ public sealed class PhoneSaberDiscoveryResponder : IDisposable
     {
         EndPoint remote = new IPEndPoint(IPAddress.Any, 0);
         var data = new byte[PhoneSaberMetrics.MaximumBytes + 1];
-        var lastSeen = new Dictionary<string, double>();
         // Stop の Join 時間切れ後に再起動しても、閉じた旧 socket で例外を繰り返さない。
         while (running && ReferenceEquals(Volatile.Read(ref socket), client))
         {
@@ -177,10 +159,6 @@ public sealed class PhoneSaberDiscoveryResponder : IDisposable
                 if (IsRequest(data, length))
                 {
                     string sender = ((IPEndPoint)remote).Address.ToString();
-                    double now = SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp);
-                    if (ShouldQueueDefaults(lastSeen, sender, now, CommandSecondsLeft(now)))
-                        Interlocked.Exchange(ref automaticDefaultsRequested, 1);
-                    lastSeen[sender] = now;
                     client.Send(reply, reply.Length, (IPEndPoint)remote);
                     foreach (byte[] command in CurrentCommands(sender))
                         client.Send(command, command.Length, (IPEndPoint)remote);
@@ -210,7 +188,6 @@ public sealed class PhoneSaberDiscoveryResponder : IDisposable
         lock (gate)
         {
             running = false;
-            Interlocked.Exchange(ref automaticDefaultsRequested, 0);
             socket?.Close();
             socket = null;
             active = thread;
@@ -372,7 +349,7 @@ public sealed class PhoneSaberAcknowledgementStore
 
     static double Deadline(Command command) => command.QueuedAt + PhoneSaberDiscoveryResponder.CommandRetrySeconds(command.Fields);
 
-    // 自動defaultsは、いずれかの再送期限が残っている間は既存操作へ割り込ませない。
+    // いずれかの運営指示に再送期限が残っていれば、その残り時間を表示する。
     public double CommandSecondsLeft(double now)
     {
         lock (gate) return commands.Count == 0 ? 0 : Math.Max(0, commands.Max(Deadline) - now);

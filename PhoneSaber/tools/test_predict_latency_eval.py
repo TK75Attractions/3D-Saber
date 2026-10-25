@@ -56,6 +56,10 @@ public static class SwingMonotonicClock { public static long Timestamp=>(long)(U
 public static class PhoneSaberP2PBridgeProcess { public static bool AutoStartEnabled=false; }
 public static class PhoneSaberPlayerSmoke { public static float ResolveSeconds(string[] args)=>0; }
 public static class PhoneSaberEventLog { public static string Detail; public static void Record(string station,string colour,string kind,string detail) { Detail=detail; } }
+public static class GameSession { public static string SelectedSongId="host-song"; }
+public static class ScreenTransition { public static bool IsBusy; }
+public class PhoneSaberRunJournal { public static PhoneSaberRunJournal Current; public void Note(string state) {} }
+public static class PhoneSaberEndpointFilter { public const int Off=0, Weak=1, Medium=2, Steady=3, Responsive=4; }
 '''
 
 SMOKE = r'''
@@ -68,9 +72,9 @@ class Program {
         return new PhoneSaberInputStats(true,60,age,"",true,oneWayDelay:new PhoneSaberTimingStats(samples));
     }
     static void Main(string[] args) {
-        Require(PhoneSaberPredictionSettings.Load("new")==0&&!PhoneSaberPredictionSettings.LoadAutomatic("new"),"default off");
-        PhoneSaberPredictionSettings.SaveAutomatic("A",true);
-        Require(PhoneSaberPredictionSettings.LoadAutomatic("A")&&!PhoneSaberPredictionSettings.LoadAutomatic("B"),"station isolation");
+        Require(PhoneSaberPredictionSettings.Load("new")==0&&PhoneSaberPredictionSettings.LoadAutomatic("new"),"default auto");
+        PhoneSaberPredictionSettings.SaveAutomatic("A",false);
+        Require(!PhoneSaberPredictionSettings.LoadAutomatic("A")&&PhoneSaberPredictionSettings.LoadAutomatic("B"),"station isolation");
         Require(PhoneSaberPredictionSettings.AutomaticLead(Stats(32),true,out var used)==32&&used,"measured");
         foreach(var stats in new[] { default(PhoneSaberInputStats), Stats(-1), Stats(32,.2), Stats(double.NaN), Stats(double.PositiveInfinity) })
             Require(PhoneSaberPredictionSettings.AutomaticLead(stats,true,out used)==0&&!used,"fallback");
@@ -102,7 +106,7 @@ class ForecastTests(unittest.TestCase):
         root = parity.ROOT / 'Assets/Scripts/Managers/Inputsystem/Input'
         discovery = (root / 'PhoneSaberDiscoveryResponder.cs').read_text()
         sources = {name: (root / name).read_text() for name in
-                   ('PhoneSaberPredictionSettings.cs', 'PhoneSaberInputStats.cs', 'PhoneSaberPerfLog.cs', 'PhoneSaberLatencyEstimate.cs')}
+                   ('PhoneSaberPredictionSettings.cs', 'PhoneSaberFilterSettings.cs', 'PhoneSaberInputStats.cs', 'PhoneSaberPerfLog.cs', 'PhoneSaberLatencyEstimate.cs')}
         sources['Stubs.cs'] = STUBS
         sources['Station.cs'] = 'using System;\n' + discovery[discovery.index('public static class PhoneSaberStation'):]
         self.assertIn('300000 frames = 0 B', parity.check_csharp(extra_sources=sources, program=SMOKE))

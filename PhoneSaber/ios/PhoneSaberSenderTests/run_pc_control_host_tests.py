@@ -168,7 +168,7 @@ enum PlayAreaSettings { static let exposureBiasKey = "unused" }
             model.setShutterEmitter(false)
             XCTAssertEqual(model.shutterISO, 64)
             XCTAssertFalse(model.shutterEmitter)
-            // PC起動・接続時の自動指示とF8は同じdefaults。明示選択も上書きする。
+            // F8の明示リセットだけが保存済みの運営の選択も上書きする。
             model.applyPCCommand(.init(id: 81, ignore: nil, clearIgnore: false, defaults: true, sourceHost: model.host))
             XCTAssertEqual(model.shutterISO, 160)
             XCTAssertTrue(model.shutterEmitter)
@@ -176,6 +176,30 @@ enum PlayAreaSettings { static let exposureBiasKey = "unused" }
             XCTAssertTrue(model.trackLockEnabled)
             XCTAssertEqual(model.exposureBias, -2)
             XCTAssertEqual(model.lanProbe.acks.last, "PHONESABER_ACK 1 id=81 station=\\(station) platform=ios result=defaults detail=tracklock-on-ev-2-shutter-2000")
+        }
+    }
+    func testReconnectProcessorResetPreservesOperatorChoicesForBothStations() {
+        for station in ["A", "B"] {
+            let model = CameraViewModel()
+            model.station = station
+            model.setTrackLockEnabled(false)
+            model.setExposureBias(0)
+            XCTAssertTrue(model.setShutter(1000))
+            XCTAssertTrue(model.setShutterISO(100))
+            model.setShutterEmitter(false)
+            model.autoClipEnabled = true
+            model.ignoreZones = [.red: [SaberIgnoreZone(value: 42)]]
+            for _ in 0..<3 {
+                model.resetForTesting()
+                XCTAssertFalse(model.trackLockEnabled)
+                XCTAssertEqual(model.exposureBias, 0)
+                XCTAssertEqual(model.shutter, 1000)
+                XCTAssertEqual(model.shutterISO, 100)
+                XCTAssertFalse(model.shutterEmitter)
+                XCTAssertTrue(model.autoClipEnabled)
+                XCTAssertEqual(model.ignoreZones[.red], [SaberIgnoreZone(value: 42)])
+                XCTAssertTrue(model.lanProbe.acks.isEmpty, "再接続にdefaults ACKは発生しない")
+            }
         }
     }
     func begin(_ model: CameraViewModel, _ color: SaberColor, completion: ((Int, Int) -> Void)? = nil) async {
@@ -270,7 +294,7 @@ enum PlayAreaSettings { static let exposureBiasKey = "unused" }
 import Darwin
 let suite = PCControlTests.defaultTestSuite
 suite.run()
-guard let run = suite.testRun, run.executionCount >= 8, run.hasSucceeded else { exit(1) }
+guard let run = suite.testRun, run.executionCount >= 9, run.hasSucceeded else { exit(1) }
 ''')
         subprocess.run(['xcrun', 'swiftc', '-O', '-module-cache-path', str(tmp / 'cache'),
                         *[str(tmp / name) for name in ['Support.swift', 'Tests.swift', 'main.swift']],

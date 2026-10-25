@@ -157,7 +157,8 @@ def pack_bundle(bundle_dir: Path, destination: Path) -> dict[str, Any]:
 
 
 def receive_bundle(source: BinaryIO, content_length: int, inbox: Path,
-                   destination_for: Callable[[dict[str, Any]], Path] | None = None) -> Path:
+                   destination_for: Callable[[dict[str, Any]], Path] | None = None,
+                   session_identified: Callable[[str], None] | None = None) -> Path:
     """Read and validate one bounded envelope into an atomic inbox directory.
 
     ``destination_for`` may pick another directory on the same volume from the
@@ -180,6 +181,8 @@ def receive_bundle(source: BinaryIO, content_length: int, inbox: Path,
     session_id = manifest.get("sessionID")
     if not isinstance(session_id, str) or not SESSION_RE.fullmatch(session_id):
         raise BundleError("invalid session id")
+    if session_identified is not None:
+        session_identified(session_id)
     files = manifest.get("files")
     if not isinstance(files, list) or not 2 <= len(files) <= MAX_FILES:
         raise BundleError("file count is outside the permitted range")

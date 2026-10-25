@@ -10,6 +10,40 @@ using UnityEngine;
 
 public class PhoneSaberControlPanelTests
 {
+    [Test]
+    public void F8DefaultsIsAnExplicitAction()
+    {
+        int calls = 0;
+        var handlers = new Dictionary<string, Action<string>> {
+            { "phone-defaults", _ => { calls++; PhoneSaberDiscoveryResponder.QueueCommand(PhoneSaberDiscoveryResponder.DefaultsCommand); } }
+        };
+        Assert.IsTrue(PhoneSaberControlPanelActions.Dispatch("phone-defaults", "", handlers));
+        Assert.AreEqual(1, calls);
+        Assert.IsTrue(PhoneSaberDiscoveryResponder.Acknowledgements.Latest(out _, out string fields, out _, out bool automatic));
+        Assert.AreEqual("defaults=1", fields);
+        Assert.IsFalse(automatic);
+        Assert.IsFalse(PhoneSaberControlPanelActions.Dispatch("phone-defaults", "1", handlers));
+        Assert.AreEqual(1, calls);
+    }
+
+    [TestCase("A")]
+    [TestCase("B")]
+    public void ReconnectedPhoneReportsSavedChoicesWithoutDefaultsAck(string station)
+    {
+        var phone = new PhoneSaberControlPanelPhone(station, "10.0.0.1");
+        phone.Metrics(new PhoneSaberMetrics { Platform = "ios", Station = station, Controls = "0025", ReceivedAt = 100 });
+        Assert.AreEqual("OFF", phone.Value("trackLock"));
+        Assert.AreEqual("0", phone.Value("exposureEv"));
+        Assert.AreEqual("1/1000", phone.Value("shutter"));
+        Assert.AreEqual("100", phone.Value("iso"));
+        Assert.IsNull(phone.Value("colouredEmitter"), "ctlにない項目を既定ONと推測しない");
+        // 操作ACKでOFFを確認してから再接続しても、その値を既定ONへ戻さない。
+        phone.Acknowledge(new PhoneSaberAcknowledgement(1, station, "ios", "shutter-emitter", "off", "10.0.0.1"), 101, 101);
+        phone.Metrics(new PhoneSaberMetrics { Platform = "ios", Station = station, Controls = "0025", ReceivedAt = 200 });
+        Assert.AreEqual("100", phone.Value("iso"));
+        Assert.AreEqual("OFF", phone.Value("colouredEmitter"));
+    }
+
     [Test] public void PhoneIdentityAndStationCollisionUseFreshDistinctSenders() {
         PhoneSaberControlPanelPhone Phone(string sender, string station, double at, string model = "iPhone14_5") {
             var phone = new PhoneSaberControlPanelPhone(station, sender);
@@ -213,6 +247,12 @@ public class PhoneSaberControlPanelTests
             Assert.AreEqual(before + 1, PhoneSaberDiscoveryResponder.Acknowledgements.Revision);
             Assert.AreEqual(key.command, fields);
             StringAssert.EndsWith(" learn-area=10", PhoneSaberDiscoveryResponder.BuildCommand(after, fields));
+            var reset = state.Sections.SelectMany(s => s.Items).Single(i => i.Name == "phone-defaults");
+            Assert.IsTrue(reset.Enabled);
+            Assert.IsTrue(PhoneSaberControlPanelActions.Dispatch(reset.Name, reset.Value, overlay.ControlPanelHandlers));
+            Assert.IsTrue(PhoneSaberDiscoveryResponder.Acknowledgements.Latest(out _, out fields, out _, out bool automatic));
+            Assert.AreEqual(PhoneSaberDiscoveryResponder.DefaultsCommand, fields);
+            Assert.IsFalse(automatic, "F8で押したときだけ明示リセットを送る");
         }
         finally { UnityEngine.Object.DestroyImmediate(go); }
     }
@@ -322,8 +362,8 @@ public class PhoneSaberControlPanelTests
     {
         var phone = new PhoneSaberControlPanelPhone("A", "10.0.0.1");
         phone.Acknowledge(Ack(1, "defaults", "tracklock-on-ev-2-shutter-2000"), 8, 7);
-        Assert.AreEqual("ON", phone.Value("colouredEmitter"));
-        Assert.AreEqual("160", phone.Value("iso"));
+        Assert.IsNull(phone.Value("colouredEmitter"));
+        Assert.IsNull(phone.Value("iso"));
         phone.Metrics(new PhoneSaberMetrics { Platform = "ios", Station = "A", Controls = "0011", ReceivedAt = 10 });
         Assert.AreEqual("OFF", phone.Value("trackLock"));
         Assert.AreEqual("1/500", phone.Value("shutter"));
@@ -346,23 +386,148 @@ public class PhoneSaberControlPanelTests
 
     [TestCase("A")]
     [TestCase("B")]
-    public void PhoneDefaultsAckDisplaysISO160AndEmitterOnForBothStations(string station)
+    public void PhoneDefaultsAckLeavesUnreportedISOAndEmitterUnknown(string station)
     {
-        const string sender = "10.0.0.1";
-        var phone = new PhoneSaberControlPanelPhone(station, sender);
-        phone.Metrics(new PhoneSaberMetrics { Platform = "ios", Station = station, Controls = "0000", ReceivedAt = 5 });
-        phone.Acknowledge(new PhoneSaberAcknowledgement(1, station, "ios", "shutter-emitter", "off", sender), 6, 6);
-        phone.Acknowledge(new PhoneSaberAcknowledgement(2, station, "ios", "defaults", "tracklock-on-ev-2-shutter-2000", sender), 8, 7);
-        Assert.AreEqual("160", phone.Value("iso"));
-        Assert.AreEqual("ON", phone.Value("colouredEmitter"));
-        var json = new StringBuilder();
-        phone.AppendJson(json, 9);
-        StringAssert.Contains("\"station\":\"" + station + "\"", json.ToString());
-        StringAssert.Contains("\"iso\":{\"value\":\"160\"", json.ToString());
-        StringAssert.Contains("\"colouredEmitter\":{\"value\":\"ON\"", json.ToString());
-        phone.Metrics(new PhoneSaberMetrics { Platform = "ios", Station = station, Controls = "1233", ReceivedAt = 10 });
-        Assert.AreEqual("160", phone.Value("iso"));
-        Assert.AreEqual("ON", phone.Value("colouredEmitter"), "通常metricsに発光体情報がなくてもACK表示を保持する");
+        foreach (string detail in new[] { "tracklock-on-ev-2-shutter-2000", "tracklock-on-ev-2" })
+        {
+            var phone = new PhoneSaberControlPanelPhone(station, "10.0.0.1");
+            phone.Acknowledge(Ack(1, "defaults", detail, station), 8, 7);
+            Assert.AreEqual("ON", phone.Value("trackLock"));
+            Assert.AreEqual("-2", phone.Value("exposureEv"));
+            Assert.AreEqual(detail.EndsWith("shutter-2000") ? "1/2000" : null, phone.Value("shutter"));
+            Assert.IsNull(phone.Value("iso"));
+            Assert.IsNull(phone.Value("colouredEmitter"));
+            var json = new StringBuilder(); phone.AppendJson(json, 9);
+            StringAssert.Contains("\"station\":\"" + station + "\"", json.ToString());
+            StringAssert.Contains("\"iso\":{\"value\":null", json.ToString());
+            StringAssert.Contains("\"colouredEmitter\":{\"value\":null", json.ToString());
+        }
+    }
+
+    [TestCase("A")]
+    [TestCase("B")]
+    public void PhoneDefaultsAckInvalidatesOnlyPreResetISOAndEmitterReports(string station)
+    {
+        foreach (string detail in new[] { "tracklock-on-ev-2-shutter-2000", "tracklock-on-ev-2" })
+        {
+            var phone = new PhoneSaberControlPanelPhone(station, "10.0.0.1");
+            var before = new PhoneSaberMetrics { Platform = "ios", Station = station, Controls = "0025", ReceivedAt = 5 };
+            phone.Metrics(before);
+            phone.Acknowledge(Ack(1, "shutter-emitter", "off", station), 6, 6);
+            Assert.AreEqual("100", phone.Value("iso"));
+            Assert.AreEqual("OFF", phone.Value("colouredEmitter"));
+            var reset = Ack(2, "defaults", detail, station);
+            phone.Acknowledge(reset, 8, 7);
+            Assert.IsNull(phone.Value("iso"));
+            Assert.IsNull(phone.Value("colouredEmitter"));
+            Assert.AreEqual(7, phone.Settings["iso"].Order);
+            Assert.AreEqual(7, phone.Settings["colouredEmitter"].Order);
+            // パネルが同じ古いmetricsを再読込しても、リセット前の値を復活させない。
+            phone.Metrics(before);
+            Assert.IsNull(phone.Value("iso"));
+            var json = new StringBuilder(); phone.AppendJson(json, 9);
+            StringAssert.Contains("\"iso\":{\"value\":null", json.ToString());
+            StringAssert.Contains("\"colouredEmitter\":{\"value\":null", json.ToString());
+            phone.Metrics(new PhoneSaberMetrics { Platform = "ios", Station = station, Controls = "1234", ReceivedAt = 10 });
+            Assert.AreEqual("125", phone.Value("iso"));
+            Assert.IsNull(phone.Value("colouredEmitter"), "通常metricsから発光体ONを推測しない");
+            phone.Acknowledge(reset, 11, 7);
+            Assert.AreEqual("125", phone.Value("iso"));
+            Assert.IsNull(phone.Value("colouredEmitter"));
+        }
+    }
+
+    [TestCase("A")]
+    [TestCase("B")]
+    public void PhoneDefaultsAckPreservesNewerMetricsAndIndividualAcks(string station)
+    {
+        foreach (string emitter in new[] { "on", "off" })
+        {
+            var phone = new PhoneSaberControlPanelPhone(station, "10.0.0.1");
+            phone.Acknowledge(Ack(1, "defaults", "tracklock-on-ev-2-shutter-2000", station), 8, 7);
+            phone.Metrics(new PhoneSaberMetrics { Platform = "ios", Station = station, Controls = "0024", ReceivedAt = 10 });
+            phone.Acknowledge(Ack(3, "shutter-emitter", emitter, station), 12, 11);
+            Assert.AreEqual(emitter == "on" ? "ON" : "OFF", phone.Value("colouredEmitter"));
+            // 遅延初着と重複到着の両方で、新しい報告とその時刻・出典を保持する。
+            var iso = phone.Settings["iso"];
+            var light = phone.Settings["colouredEmitter"];
+            foreach (int id in new[] { 2, 2, 1 })
+            {
+                phone.Acknowledge(Ack(id, "defaults", "tracklock-on-ev-2-shutter-2000", station), 14, 9);
+                Assert.AreSame(iso, phone.Settings["iso"]);
+                Assert.AreSame(light, phone.Settings["colouredEmitter"]);
+                Assert.AreEqual("OFF", phone.Value("trackLock"));
+                Assert.AreEqual("0", phone.Value("exposureEv"));
+                Assert.AreEqual("1/1000", phone.Value("shutter"));
+            }
+            // ISOの個別ACKも、後から観測した古いdefaultsより優先する。
+            phone.Acknowledge(Ack(4, "shutter-iso", "100", station), 16, 15);
+            phone.Acknowledge(Ack(2, "defaults", "tracklock-on-ev-2-shutter-2000", station), 17, 9);
+            Assert.AreEqual("100", phone.Value("iso"));
+            Assert.AreSame(light, phone.Settings["colouredEmitter"]);
+            var json = new StringBuilder(); phone.AppendJson(json, 18);
+            StringAssert.Contains("\"iso\":{\"value\":\"100\"", json.ToString());
+            StringAssert.Contains("\"colouredEmitter\":{\"value\":\"" + (emitter == "on" ? "ON" : "OFF") + "\"", json.ToString());
+        }
+    }
+
+    [TestCase("A")]
+    [TestCase("B")]
+    public void PhoneDefaultsAckWithUnknownCommandTimePreservesReports(string station)
+    {
+        var phone = new PhoneSaberControlPanelPhone(station, "10.0.0.1");
+        var reset = Ack(1, "defaults", "tracklock-on-ev-2-shutter-2000", station);
+        phone.Acknowledge(reset, 8, double.NegativeInfinity);
+        Assert.IsNull(phone.Value("iso"));
+        Assert.IsNull(phone.Value("colouredEmitter"));
+        // 操作時刻不明のACK観測時刻より前でも、metricsを排除しない。
+        phone.Metrics(new PhoneSaberMetrics { Platform = "ios", Station = station, Controls = "0024", ReceivedAt = 7 });
+        Assert.AreEqual("125", phone.Value("iso"));
+        phone.Metrics(new PhoneSaberMetrics { Platform = "ios", Station = station, Controls = "0024", ReceivedAt = 10 });
+        phone.Acknowledge(Ack(2, "shutter-emitter", "off", station), 12, 11);
+        var iso = phone.Settings["iso"];
+        var light = phone.Settings["colouredEmitter"];
+        phone.Acknowledge(reset, 13, double.NegativeInfinity);
+        phone.Acknowledge(reset, 14, double.NegativeInfinity);
+        Assert.AreSame(iso, phone.Settings["iso"]);
+        Assert.AreSame(light, phone.Settings["colouredEmitter"]);
+        Assert.AreEqual("125", phone.Value("iso"));
+        Assert.AreEqual("OFF", phone.Value("colouredEmitter"));
+        Assert.AreEqual("OFF", phone.Value("trackLock"));
+        Assert.AreEqual("1/1000", phone.Value("shutter"));
+        phone.Acknowledge(Ack(3, "shutter-iso", "100", station), 16, 15);
+        phone.Acknowledge(reset, 17, double.NegativeInfinity);
+        Assert.AreEqual("100", phone.Value("iso"));
+    }
+
+    [TestCase("A")]
+    [TestCase("B")]
+    public void PhoneDefaultsAckPreservesReportsAtTheCommandTime(string station)
+    {
+        var phone = new PhoneSaberControlPanelPhone(station, "10.0.0.1");
+        phone.Metrics(new PhoneSaberMetrics { Platform = "ios", Station = station, Controls = "1234", ReceivedAt = 10 });
+        phone.Acknowledge(Ack(2, "shutter-emitter", "off", station), 11, 10);
+        phone.Acknowledge(Ack(1, "defaults", "tracklock-on-ev-2-shutter-2000", station), 12, 10);
+        Assert.AreEqual("125", phone.Value("iso"));
+        Assert.AreEqual("OFF", phone.Value("colouredEmitter"));
+    }
+
+    [TestCase("A")]
+    [TestCase("B")]
+    public void PhoneDefaultsAndIndividualAcksAreIsolatedByStationAndSender(string station)
+    {
+        var phone = new PhoneSaberControlPanelPhone(station, "10.0.0.1");
+        phone.Metrics(new PhoneSaberMetrics { Platform = "ios", Station = station, Controls = "0025", ReceivedAt = 5 });
+        phone.Acknowledge(Ack(1, "shutter-emitter", "off", station), 6, 6);
+        var before = new StringBuilder(); phone.AppendJson(before, 20);
+        foreach (string result in new[] { "defaults", "shutter-iso", "shutter-emitter" })
+        {
+            string detail = result == "defaults" ? "tracklock-on-ev-2-shutter-2000" : result == "shutter-iso" ? "160" : "on";
+            phone.Acknowledge(Ack(2, result, detail, station == "A" ? "B" : "A"), 9, 8);
+            phone.Acknowledge(Ack(2, result, detail, station, "10.0.0.2"), 9, 8);
+        }
+        var after = new StringBuilder(); phone.AppendJson(after, 20);
+        Assert.AreEqual(before.ToString(), after.ToString());
     }
 
     [Test]

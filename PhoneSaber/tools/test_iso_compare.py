@@ -211,6 +211,117 @@ class IsoCompareTests(unittest.TestCase):
         self.assertEqual(iso.recommend(groups), {})
         self.assertIn('保留', iso.render(groups))
 
+    def test_false_positive_requires_absent_truth_and_actual_output(self):
+        cases = [
+            (dict(truth='absent'), (1, 1, 0)),
+            (dict(truth='absent', selected=None, candidates=[]), (0, 1, 0)),
+            (dict(truth='absent', selected=None, candidates=[candidate(flags=7)]), (0, 1, 0)),
+            (dict(truth=None), (0, 0, 1)),
+            (dict(truth=None, selected=None, candidates=[], total=None, eligible=None,
+                  truncated=True), (0, 0, 1)),
+            (dict(), (0, 0, 0)),
+        ]
+        for changes, expected in cases:
+            with self.subTest(changes=changes):
+                row = observation()
+                row.update(changes)
+                group = iso.summarize([row])
+                self.assertEqual((group['false_positive'], group['absent'], group['unknown']), expected)
+                self.assertEqual(group['missed'], 0)
+
+    def test_false_positive_in_either_color_blocks_otherwise_valid_recommendation(self):
+        for bad_colors in (('red',), ('blue',), iso.COLORS):
+            with self.subTest(bad_colors=bad_colors):
+                groups = {}
+                for color in iso.COLORS:
+                    rows = [observation(i+1) for i in range(5)]
+                    rows.append(observation(6, truth='absent',
+                                            selected=BLADE if color in bad_colors else None))
+                    groups['A', .0005, 500., True, color] = iso.summarize(rows)
+                self.assertTrue(all(g['present'] == 5 and g['missed'] == 0 and
+                                    len(g['complete_margins']) == 5 for g in groups.values()))
+                self.assertEqual(iso.recommend(groups), {})
+                report = iso.render(groups)
+                for color in bad_colors:
+                    self.assertIn(f'推奨除外 A | 0.5 | 500 | ON | {color}: 剣なし時の誤出力 1/1', report)
+                self.assertIn('保留', report)
+
+    def test_false_positive_exclusion_is_local_and_can_choose_lower_margin(self):
+        groups = {}
+        for station in ('A', 'B'):
+            for exposure in (.0005, .001):
+                for emitter in (True, False):
+                    for gain in (500., 1000.):
+                        for color in iso.COLORS:
+                            rows = [observation(i+1, candidates=[candidate(mean=220 if gain == 500 else 200),
+                                    candidate(OTHER, mean=100)]) for i in range(5)]
+                            bad = (station, exposure, gain, emitter, color) == ('A', .0005, 500., True, 'red')
+                            rows.append(observation(6, truth='absent', selected=BLADE if bad else None))
+                            groups[station, exposure, gain, emitter, color] = iso.summarize(rows)
+        choices = iso.recommend(groups)
+        self.assertEqual(len(choices), 8)
+        for stratum, (score, condition) in choices.items():
+            self.assertEqual((score, condition[2]), (100, 1000) if stratum == ('A', .0005, True)
+                             else (120, 500))
+
+    def test_negative_evaluation_report_zero_samples_clean_and_partial(self):
+        key = ('A', .0005, 500., True)
+        groups = {(*key, color): iso.summarize([observation(i+1) for i in range(5)])
+                  for color in iso.COLORS}
+        self.assertIn('剣なし時の誤出力/剣なし真値', iso.render(groups))
+        self.assertIn('背景誤検出は未評価', iso.render(groups))
+        for color in iso.COLORS:
+            clean = iso.summarize([observation(6, truth='absent', selected=None),
+                                   observation(7, truth='absent', selected=None, candidates=[])])
+            report = iso.render({(*key, color): clean})
+            self.assertIn('|0/2|', report)
+            self.assertNotIn('|未評価|', report)
+            groups[*key, color] = iso.summarize([observation(i+1) for i in range(5)] +
+                [observation(6, truth='absent', selected=None)])
+            report = iso.render(groups)
+            self.assertIn('推奨 A | 0.5 | 500 | ON', report)
+            self.assertEqual('背景誤検出は未評価' in report, color == 'red')
+        unknown = iso.summarize([dict(observation(truth=None, selected=None, candidates=[]),
+                                     total=None, eligible=None, truncated=True)])
+        self.assertIn('|未評価|', iso.render({(*key, 'red'): unknown}))
+
+    def test_cli_absent_labels_use_final_output_and_remain_read_only(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            path, summary = bundle(root)
+            (path / 'images').mkdir()
+            (path / 'frames').mkdir()
+            template = summary['autoClip']['frames'][0]
+            frames, labels = [], []
+            points = [dict(x=10, y=10), dict(x=10, y=110)]
+            for frame_id in range(1, 7):
+                image = f'images/{frame_id}.png'
+                context = f'frames/{frame_id}.json'
+                (path / image).write_bytes(b'synthetic, no image decoding')
+                (path / context).write_text(json.dumps(dict(frames=[
+                    dict(frameID=frame_id, timestamp=frame_id/60)])))
+                summary['images'].append(dict(frameID=frame_id, timestamp=frame_id/60, path=image,
+                                              frameContextPath=context))
+                frames.append({**template, 'f': frame_id, 't': frame_id/60})
+                truth = points if frame_id < 6 else 'absent'
+                labels.append(dict(sourceClip=path.name, image=Path(image).name, red=truth, blue=truth))
+            # 赤は候補のみ、青は候補欠落でも最終出力あり。候補の有無から推測しない。
+            frames[-1]['red'] = {**template['red'], 'sel': None}
+            frames[-1]['blue'] = dict(n=0, e=0, sel=BLADE, c=[])
+            summary['autoClip']['frames'] = frames
+            save(path, summary)
+            labels_path = root / 'labels.json'
+            labels_path.write_text(json.dumps(dict(frames=labels)))
+            before = {p: p.read_bytes() for p in root.rglob('*') if p.is_file()}
+            with contextlib.redirect_stdout(io.StringIO()) as output:
+                self.assertEqual(iso.main(['A='+str(path), '--labels', str(labels_path)]), 0)
+            report = output.getvalue()
+            self.assertIn('推奨除外 A | 0.497 | 499.8 | ON | blue: 剣なし時の誤出力 1/1', report)
+            self.assertNotIn('ON | red: 剣なし時の誤出力', report)
+            self.assertIn('|0/1|', report)
+            self.assertIn('保留', report)
+            self.assertEqual(before, {p: p.read_bytes() for p in root.rglob('*') if p.is_file()})
+
     def test_cli_date_station_dedup_and_read_only(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)

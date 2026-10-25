@@ -5,6 +5,48 @@ import XCTest
 #endif
 
 final class MetricsDatagramTests: XCTestCase {
+    static var worstCaseMetrics: MetricsDatagram {
+        var m = MetricsDatagram()
+        m.station = String(repeating: "s", count: 16)
+        m.app = "1234567890.1234567890.1234567890.20261025"
+        m.model = String(repeating: "m", count: 16)
+        m.thermal = String(repeating: "t", count: 16)
+        m.controls = "1237"; m.lowLatencyTest = true
+        m.fpsMode = 240; m.captureFPS = nil; m.redFPS = 1000; m.blueFPS = 1000
+        m.median = 2000; m.p95 = 2000; m.samples = 2400
+        m.battery = nil
+        return m
+    }
+
+    func testWorstCaseLengthIncludesAllExtensionsAndMissingValues() throws {
+        // 可変文字列: station/model/thermal各16、app24、ctl4。LANとdetectionも含む。
+        // 数値最大だけでは最長にならない。capture/battery/RTTのunknownが最長の372 byte。
+        var longest = 0
+        for station in ["A", "B", "none", String(repeating: "s", count: 16)] {
+            var stationLongest = 0
+            for end in ["detection", "os-send"] {
+                for missing in 0..<16 {
+                    var m = Self.worstCaseMetrics
+                    m.station = station; m.c2sEnd = end
+                    m.captureFPS = missing & 1 == 0 ? 1000 : nil
+                    m.battery = missing & 2 == 0 ? 100 : nil
+                    m.median = missing & 4 == 0 ? 2000 : nil; m.p95 = m.median
+                    m.rtt = missing & 8 == 0 ? 1000 : nil
+                    m.rttAge = missing & 8 == 0 ? 10 : nil; m.rttSamples = 2400
+                    let line = try XCTUnwrap(m.line())
+                    XCTAssertLessThanOrEqual(line.utf8.count, 399)
+                    XCTAssertTrue(line.contains("app=1234567890.1234567890.12 "))
+                    XCTAssertTrue(line.hasSuffix(" ctl=1237 model=" + String(repeating: "m", count: 16)))
+                    stationLongest = max(stationLongest, line.utf8.count)
+                }
+            }
+            XCTAssertEqual(stationLongest, 356 + station.utf8.count)
+            longest = max(longest, stationLongest)
+        }
+        XCTAssertEqual(try XCTUnwrap(Self.worstCaseMetrics.line()).utf8.count, longest)
+        XCTAssertEqual(longest, 372)
+    }
+
     func testPhoneIdentityAndMetricsExtension() throws {
         for (station, model, name) in [("A", "iPhone14,5", "iPhone 13"), ("B", "iPhone16,2", "iPhone 15 Pro Max")] {
             let phone = PhoneSaberIdentity(deviceModel: model, deviceID: "test-device", appVersion: "1.0",

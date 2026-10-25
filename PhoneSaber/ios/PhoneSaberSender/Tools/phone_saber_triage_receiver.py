@@ -9,10 +9,12 @@ import ipaddress
 import json
 import os
 import queue
+import re
 import shutil
 import subprocess
 import sys
 import time
+import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -310,6 +312,50 @@ class TriageHTTPServer(ThreadingHTTPServer):
                       flush=True)
 
 
+class UploadTrace:
+    """Count returned bytes, including a short final read before EOF/timeout."""
+
+    def __init__(self, source, expected: int, peer: str, headers=None) -> None:
+        self.source = source
+        self.expected = expected
+        self.peer = peer
+        self.received = 0
+        self.session_id = "unknown-before-manifest"
+        # Unique across receiver restarts; sessionID joins this attempt to retries.
+        self.attempt = uuid.uuid4().hex
+        # 申告値はログ専用。manifestのID・保存先・受理判定には渡さない。
+        self.claimed_session_id = self._header(headers, "X-PhoneSaber-Session-ID", r"[A-Za-z0-9_-]{1,100}")
+        self.transfer_id = self._header(headers, "X-PhoneSaber-Transfer-ID",
+                                        r"[0-9A-Fa-f]{8}(?:-[0-9A-Fa-f]{4}){3}-[0-9A-Fa-f]{12}")
+        self.sender_attempt = self._header(headers, "X-PhoneSaber-Attempt", r"[1-9][0-9]{0,8}")
+        self.started = time.monotonic()
+
+    @staticmethod
+    def _header(headers, name: str, pattern: str) -> str | None:
+        value = headers.get(name) if headers is not None else None
+        return value if isinstance(value, str) and len(value) <= 100 and re.fullmatch(pattern, value) else None
+
+    def read(self, count: int) -> bytes:
+        data = getattr(self.source, "read1", self.source.read)(count)
+        self.received += len(data)
+        return data
+
+    def identified(self, session_id: str) -> None:
+        self.session_id = session_id
+        self.log("identified")
+
+    def log(self, outcome: str, reason: str = "") -> None:
+        stamp = datetime.now().astimezone().isoformat(timespec="milliseconds")
+        match = ("unknown" if self.claimed_session_id is None or self.session_id == "unknown-before-manifest"
+                 else "yes" if self.claimed_session_id == self.session_id else "no")
+        print(f"[triage-upload] time={stamp} sessionID={self.session_id} attempt={self.attempt} "
+              f"claimed-sessionID={self.claimed_session_id or 'unknown'} transferID={self.transfer_id or 'unknown'} "
+              f"sender-attempt={self.sender_attempt or 'unknown'} sessionID-match={match} "
+              f"peer={self.peer} expected-bytes={self.expected} received-bytes={self.received} "
+              f"elapsed-ms={(time.monotonic() - self.started) * 1000:.1f} outcome={outcome} "
+              f"reason={json.dumps(reason, ensure_ascii=False)}", flush=True)
+
+
 class TriageRequestHandler(BaseHTTPRequestHandler):
     server: TriageHTTPServer
     protocol_version = "HTTP/1.1"
@@ -351,21 +397,29 @@ class TriageRequestHandler(BaseHTTPRequestHandler):
             self.server.upload_finished()
 
     def _receive(self, length: int) -> None:
+        trace = UploadTrace(self.rfile, length, self.client_address[0], getattr(self, "headers", None))
+        self._upload_trace = trace
+        trace.log("started")
         try:
-            bundle = receive_bundle(self.rfile, length, self.server.inbox,
-                                    destination_for=auto_clip_destination(self.server.inbox))
+            bundle = receive_bundle(trace, length, self.server.inbox,
+                                    destination_for=auto_clip_destination(self.server.inbox),
+                                    session_identified=trace.identified)
         except DuplicateBundle as exc:
+            trace.log("duplicate-200")
             print(f"[triage] confirmed duplicate from {self.client_address[0]}: {exc.session_id}", flush=True)
             self._reply(200, {"status": "duplicate", "sessionID": exc.session_id})
             return
         except FileExistsError as exc:
+            trace.log("conflict-409", str(exc))
             print(f"[triage] rejected duplicate upload from {self.client_address[0]} (409): {exc}", flush=True)
             self._reply(409, {"error": str(exc)})
             return
         except (BundleError, OSError) as exc:
+            trace.log("failed-400-awaiting-retry", str(exc))
             print(f"[triage] rejected upload from {self.client_address[0]} (400): {exc}", flush=True)
             self._reply(400, {"error": str(exc)})
             return
+        trace.log("stored-201")
         if _is_auto_clip(bundle):
             # Auto clips go to <inbox>/autoclips/, get a local report and contact
             # sheet, and never enter the Codex analysis / repair queue or the overview.
@@ -388,14 +442,23 @@ class TriageRequestHandler(BaseHTTPRequestHandler):
         print(f"[http] {self.address_string()} {fmt % args}", flush=True)
 
     def _reply(self, status: int, payload: dict[str, Any]) -> None:
-        body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
-        self.send_response(status)
-        self.send_header("Content-Type", "application/json; charset=utf-8")
-        self.send_header("Content-Length", str(len(body)))
-        self.send_header("Connection", "close")
-        self.end_headers()
-        self.wfile.write(body)
         self.close_connection = True
+        body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+        try:
+            self.send_response(status)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Connection", "close")
+            self.end_headers()
+            self.wfile.write(body)
+        except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError, TimeoutError) as exc:
+            # 返信先の切断で、保存済みbundleの後処理を中断しない。
+            reason = f"{type(exc).__name__}: {exc}"
+            trace = getattr(self, "_upload_trace", None)
+            if trace is not None:
+                trace.log(f"reply-failed-{status}", reason)
+            else:
+                print(f"[http] reply-failed-{status} peer={self.client_address[0]} {reason}", flush=True)
 
 
 def _is_auto_clip(bundle: Path) -> bool:

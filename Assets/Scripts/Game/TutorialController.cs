@@ -276,9 +276,17 @@ public sealed class TutorialController : MonoBehaviour
         if (range == null) { Complete(now, "noanswer"); return; }
         var acks = ReadLearnArea != null ? ReadLearnArea(range.CommandId) : null;
         var state = range.Update(now, acks, station);
-        if (state == TutorialRangeLearning.Phase.Learned && TutorialRangeLearning.TryLearnedBounds(acks, station, out Rect learned)
-            && ApplyWidenedRange != null && ApplyWidenedRange(learned))
+        Rect learned = default;
+        bool applied = state == TutorialRangeLearning.Phase.Learned && TutorialRangeLearning.TryLearnedBounds(acks, station, out learned)
+            && ApplyWidenedRange != null && ApplyWidenedRange(learned);
+        if (applied)
             AppliedRange = PhoneSaberPositionCalibration.WidenLearnedArea(learned);
+        else if (state == TutorialRangeLearning.Phase.Learned)
+        {
+            var input = InputPoint.Instance;
+            Debug.LogWarning("Tutorial: 範囲を適用できませんでした: " +
+                (input != null ? input.LearnedPositionCalibrationResult : "InputPoint がありません"));
+        }
         if (state == TutorialRangeLearning.Phase.Learning)
         {
             GrowRangeCover();
@@ -289,7 +297,7 @@ public sealed class TutorialController : MonoBehaviour
             }
         }
         if (range.Finished)
-            Complete(now, state == TutorialRangeLearning.Phase.Learned ? "ok"
+            Complete(now, applied ? "ok"
                 : state == TutorialRangeLearning.Phase.NoAnswer ? "noanswer" : "failed");
     }
 

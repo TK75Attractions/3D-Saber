@@ -64,9 +64,24 @@ public class InputPoint {
             actions + '\n' + phone + '\npublic class PhoneSaberControlPanelState {\n' + quote + '\n}')
         panel_tests = (tests / 'PhoneSaberControlPanelTests.cs').read_text()
         panel = block(panel_tests, 'public void ShutterButtonsDispatchOnlySupportedValues()')
-        defaults = panel_tests[panel_tests.index('    public void PhoneDefaultsAckDisplaysISO160AndEmitterOnForBothStations('):].split('\n    }', 1)[0] + '\n    }'
+        # 実際の状態クラスを使うA/B回帰試験をすべて実行する。JSON中の波括弧は数えない。
+        phone_tests = ''
+        for method in [
+            'PhoneDefaultsAckLeavesUnreportedISOAndEmitterUnknown',
+            'PhoneDefaultsAckInvalidatesOnlyPreResetISOAndEmitterReports',
+            'PhoneDefaultsAckPreservesNewerMetricsAndIndividualAcks',
+            'PhoneDefaultsAckWithUnknownCommandTimePreservesReports',
+            'PhoneDefaultsAckPreservesReportsAtTheCommandTime',
+            'PhoneDefaultsAndIndividualAcksAreIsolatedByStationAndSender',
+            'ReconnectedPhoneReportsSavedChoicesWithoutDefaultsAck',
+        ]:
+            method_source = panel_tests[panel_tests.index('    public void ' + method + '('):].split('\n    }', 1)[0] + '\n    }'
+            phone_tests += '\n[TestCase("A")]\n[TestCase("B")]\n' + method_source
+        ack_helper = panel_tests[panel_tests.index('    static PhoneSaberAcknowledgement Ack('):].split('\n\n', 1)[0]
         (tmp / 'PanelTests.cs').write_text('using System; using System.Collections.Generic; using System.Text; using NUnit.Framework;\npublic class PanelTests { [Test]\n' +
-            panel + '\n[TestCase("A")]\n[TestCase("B")]\n' + defaults + '\n}')
+            panel + '\n' + ack_helper + phone_tests +
+            '\n[Test]\n' + block(panel_tests, 'public void PhoneReportsFollowMetricsAndAcksWithoutGuessingUnreportedTotals(') +
+            '\n[Test]\n' + block(panel_tests, 'public void F8DefaultsIsAnExplicitAction(') + '\n}')
         (tmp / 'Run.cs').write_text('''using System; using System.Reflection; using NUnit.Framework;
 class Run { static int Main() {
  int passed=0, failed=0;

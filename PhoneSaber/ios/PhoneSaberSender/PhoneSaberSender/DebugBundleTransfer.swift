@@ -50,6 +50,8 @@ struct DebugBundleOutbox: Codable {
         let createdAt: Date
         var state: State = .pending
         var attempts = 0
+        // 診断用の累計HTTP試行数。手動再送でも戻さず、旧outboxはattemptsから引き継ぐ。
+        var uploadAttempts: Int? = nil
         var reason: String?
         var nextAttemptAt = Date.distantPast
         var receivedAt: Date?
@@ -142,6 +144,13 @@ struct DebugBundleOutbox: Codable {
         return entries[index]
     }
 
+    mutating func beginUpload(sessionID: String) -> Int {
+        guard let index = entries.firstIndex(where: { $0.sessionID == sessionID }) else { return 1 }
+        let number = (entries[index].uploadAttempts ?? entries[index].attempts) + 1
+        entries[index].uploadAttempts = number
+        return number
+    }
+
     mutating func finish(sessionID: String, now: Date, reason: String?, attempts: Int) {
         guard let index = entries.firstIndex(where: { $0.sessionID == sessionID }) else { return }
         entries[index].attempts += attempts
@@ -162,6 +171,7 @@ struct DebugBundleOutbox: Codable {
     mutating func retryNow() -> Set<String> {
         let ids = Set(entries.filter(\.isPending).map(\.sessionID))
         for index in entries.indices where entries[index].isPending {
+            if entries[index].uploadAttempts == nil { entries[index].uploadAttempts = entries[index].attempts }
             entries[index].attempts = 0
             entries[index].nextAttemptAt = .distantPast
             entries[index].automatic = true
@@ -187,6 +197,29 @@ struct DebugBundleOutbox: Codable {
 
     func save(to url: URL) throws {
         try JSONEncoder().encode(self).write(to: url, options: .atomic)
+    }
+}
+
+/// HTTPヘッダーと開始・終了ログで共有する。本文・受理判定には使わない。
+struct DebugBundleUploadTrace {
+    let sessionID: String
+    let attempt: Int
+    let destination: URL
+    let packageBytes: Int
+    let transferID = UUID().uuidString
+
+    func apply(to request: inout URLRequest) {
+        request.setValue(sessionID, forHTTPHeaderField: "X-PhoneSaber-Session-ID")
+        request.setValue(transferID, forHTTPHeaderField: "X-PhoneSaber-Transfer-ID")
+        request.setValue(String(attempt), forHTTPHeaderField: "X-PhoneSaber-Attempt")
+    }
+
+    func message(_ outcome: String, reason: String = "", now: Date = Date()) -> String {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return "[DebugTriageTransfer] time=\(formatter.string(from: now)) sessionID=\(sessionID) "
+            + "transferID=\(transferID) sender-attempt=\(attempt) destination=\(destination.absoluteString) "
+            + "package-bytes=\(packageBytes) outcome=\(outcome) reason=\(String(reflecting: reason))"
     }
 }
 
@@ -552,18 +585,29 @@ final class DebugBundleTransfer: NSObject {
     }
 
     private func upload(to url: URL, attemptNumber: Int) {
-        guard let packageURL = activePackageURL else { finishCurrentBundle(); return }
+        guard let packageURL = activePackageURL, let sessionID = activeSessionID else { finishCurrentBundle(); return }
+        let trace = DebugBundleUploadTrace(sessionID: sessionID, attempt: outbox.beginUpload(sessionID: sessionID),
+                                          destination: url,
+                                          packageBytes: (try? packageURL.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? -1)
+        persist()
         var request = URLRequest(url: url, timeoutInterval: 120)
         request.httpMethod = "POST"
         request.setValue("application/vnd.phonesaber.triage-v1", forHTTPHeaderField: "Content-Type")
         request.setValue("close", forHTTPHeaderField: "Connection")
+        trace.apply(to: &request)
         let configuration = URLSessionConfiguration.ephemeral
         configuration.timeoutIntervalForRequest = 120
         configuration.timeoutIntervalForResource = 180
         let session = URLSession(configuration: configuration)
         lanSession = session
         let token = generation
+        print(trace.message("started"))
         session.uploadTask(with: request, fromFile: packageURL) { [weak self] data, response, error in
+            let status = (response as? HTTPURLResponse)?.statusCode ?? -1
+            let accepted = error == nil && DebugBundleReceipt.accepts(status: status, body: data ?? Data(), sessionID: sessionID)
+            // 中断後の旧世代でも、このHTTP転送の終了だけは同じIDで記録する。
+            print(trace.message(accepted ? "uploaded-\(status)" : "failed-\(status)",
+                                reason: error?.localizedDescription ?? (accepted ? "" : "invalid status or receipt")))
             DispatchQueue.main.async {
                 guard let self, self.generation == token, self.attempt == attemptNumber, self.phase == .uploading else { return }
                 if let error {
@@ -577,7 +621,6 @@ final class DebugBundleTransfer: NSObject {
                         ? DebugBundleTransferError.invalidReceipt : DebugBundleTransferError.httpStatus(status))
                     return
                 }
-                print("[DebugTriageTransfer] uploaded selected bundle to \(url.host ?? "receiver")")
                 self.recordOutcome(reason: nil)
                 self.finishCurrentBundle()
             }
@@ -588,7 +631,9 @@ final class DebugBundleTransfer: NSObject {
         precondition(Thread.isMainThread)
         stopDiscovery()
         // 再試行はoutboxが期限と総回数を管理し、待機中は手動clipへ送信権を譲る。
-        print("[DebugTriageTransfer] attempt failed; local bundle preserved: \(error.localizedDescription)")
+        if phase != .uploading {
+            print("[DebugTriageTransfer] attempt failed; local bundle preserved: \(error.localizedDescription)")
+        }
         recordOutcome(reason: error.localizedDescription)
         finishCurrentBundle()
     }

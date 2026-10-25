@@ -22,6 +22,7 @@ public static class PhoneSaberControlPanelActions
         { "phone-shutter", new[] { "0", "500", "1000", "2000" } },
         { "phone-exposure", new[] { "0", "-1", "-2" } },
         { "phone-track-lock", new[] { "", "0", "1" } }, { "phone-clip", new[] { "" } },
+        { "phone-defaults", new[] { "" } },
         { "pc-ignore", new[] { "red", "blue" } }, { "pc-clear-ignore", new[] { "" } },
         { "clocks-synchronized", new[] { "0", "1" } }
     };
@@ -186,6 +187,14 @@ public sealed class PhoneSaberControlPanelPhone
             if (double.IsNegativeInfinity(commandAt) && Settings.TryGetValue(key, out var old) && old.Source == "metrics") return;
             Set(key, value, observedAt, double.IsNegativeInfinity(commandAt) ? observedAt : commandAt, "ACK確認");
         }
+        void Unconfirm(string key)
+        {
+            // 操作時刻不明なら前後を判定できないため、既存の報告を消さない。
+            // 同時刻以降の報告を守り、古いmetricsの再読込でも復活しないよう順序を残す。
+            if (!double.IsNegativeInfinity(commandAt) &&
+                (!Settings.TryGetValue(key, out var old) || old.Order < commandAt))
+                Set(key, null, observedAt, commandAt, "ACK確認");
+        }
         switch (ack.Result)
         {
             case "tracklock": Put("trackLock", ack.Detail == "on" ? "ON" : "OFF"); break;
@@ -195,8 +204,9 @@ public sealed class PhoneSaberControlPanelPhone
             case "shutter-emitter": Put("colouredEmitter", ack.Detail == "on" ? "ON" : "OFF"); break;
             case "defaults":
                 Put("trackLock", "ON"); Put("exposureEv", "-2");
-                if (ack.Detail.EndsWith("shutter-2000"))
-                { Put("shutter", "1/2000"); Put("iso", "160"); Put("colouredEmitter", "ON"); }
+                if (ack.Detail.EndsWith("shutter-2000")) Put("shutter", "1/2000");
+                // 新旧アプリで共通のACKはISO・発光体の適用値を証明しない。
+                Unconfirm("iso"); Unconfirm("colouredEmitter");
                 break;
             case "cleared":
                 if (ack.Detail == "area") Put("playArea", "なし");
@@ -302,23 +312,15 @@ public static class PhoneSaberControlPanelHealth
             Add(thermal == "serious" || thermal == "critical" ? "BAD" : thermal == "nominal" ? "OK" : "WARN", colour + " 発熱: " + thermal);
             string route = e?.Sender == "127.0.0.1" || e?.Sender == "::1" ? "P2P / loopback（スマホ計測なし）" : fresh ? phone.Route : "未確認";
             Add(fresh && route == "LAN" ? "OK" : "WARN", colour + " 経路: " + route + " / " + (e?.Sender ?? "未接続"));
-            // 最新defaultsの後に別操作のACKが来たら、それも反映する。送信しただけでは確定しない。
-            PhoneSaberAcknowledgement defaults = null, track = null, exposure = null;
-            foreach (var ack in acknowledgements ?? Array.Empty<PhoneSaberAcknowledgement>())
-            {
-                if (ack.Sender != e?.Sender) continue;
-                if (ack.Result == "defaults" && (defaults == null || ack.Id > defaults.Id)) defaults = ack;
-                if (ack.Result == "tracklock" && (track == null || ack.Id > track.Id)) track = ack;
-                if (ack.Result == "exposure" && (exposure == null || ack.Id > exposure.Id)) exposure = ack;
-            }
-            bool? locked = defaults != null ? true : (bool?)null;
-            int? ev = defaults != null ? -2 : (int?)null;
-            if (track != null && (defaults == null || track.Id > defaults.Id)) locked = track.Detail == "on";
-            if (exposure != null && (defaults == null || exposure.Id > defaults.Id))
-                ev = exposure.Detail == "ev-2" ? -2 : exposure.Detail == "ev-1" ? -1 : 0;
-            Add(defaults != null && locked == true && ev == -2 ? "OK" : "WARN", colour + " 最終スマホACK: track lock " +
+            // この色の推定に紐づく新鮮なiPhone報告だけを使う。過去のACKは現在設定の根拠にしない。
+            string ctl = fresh && phone.Platform == "ios" ? phone.Controls : null;
+            bool reported = ctl != null && ctl.Length == 4 && "01".IndexOf(ctl[0]) >= 0 &&
+                "012".IndexOf(ctl[1]) >= 0 && "0123".IndexOf(ctl[2]) >= 0 && "01234567".IndexOf(ctl[3]) >= 0;
+            bool? locked = reported ? ctl[0] == '1' : (bool?)null;
+            int? ev = reported ? -(ctl[1] - '0') : (int?)null;
+            Add(locked == true && ev == -2 ? "OK" : "WARN", colour + " スマホ設定（metrics報告）: 追跡ロック " +
                 (locked.HasValue ? locked.Value ? "ON" : "OFF" : "未確認") + " / 露出 " + (ev?.ToString() ?? "未確認") +
-                " / defaults " + (defaults != null ? "確認済 id=" + defaults.Id : "未確認") + "（現在値の再取得ではありません）");
+                "（基準 ON / -2）");
         }
         Add(bothGaps > 0 ? "BAD" : wholeSong || !inGame ? "OK" : "WARN",
             "曲中の両色同時途切れ >1秒: " + bothGaps + "（基準0）" + (!wholeSong && inGame ? "・監視開始前は未確認" : ""));

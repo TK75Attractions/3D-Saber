@@ -635,6 +635,9 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
         help="resolve the repository and show Git status without starting the receiver",
     )
     parser.add_argument(
+        "--no-codex", action="store_true", help="receive and report without Codex analysis",
+    )
+    parser.add_argument(
         "--no-restart", action="store_true",
         help=f"never stop a running receiver, even an idle one running stale code (also {NO_RESTART_ENV}=1)",
     )
@@ -659,7 +662,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 2
     try:
         allow_restart = not args.no_restart and os.environ.get(NO_RESTART_ENV) != "1"
-        return run_receiver(repo_root, snapshot, LOG_DIR, allow_restart=allow_restart)
+        command = [sys.executable, "-u", str(RECEIVER_SCRIPT), "--no-codex"] if args.no_codex else None
+        return run_receiver(repo_root, snapshot, LOG_DIR, allow_restart=allow_restart, receiver_command=command)
     except (LauncherError, OSError) as exc:
         print(f"PhoneSaber launcher error: {exc}", file=sys.stderr)
         return 2

@@ -75,6 +75,27 @@ exit 2
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIn("PHONESABER_P2P_BRIDGE_SCRIPT=" + str(bridge.resolve()), self.arguments.read_text().splitlines())
 
+    def test_triage_path_and_previous_exit_observation_are_passed_to_player(self):
+        launcher = self.root / "diagnostics tools/launcher.py"
+        launcher.parent.mkdir()
+        launcher.touch()
+        self.env["PHONESABER_TRIAGE_LAUNCHER"] = str(launcher)
+        result = self.run_script("Start-Saber-B.command")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        arguments = self.arguments.read_text().splitlines()
+        self.assertIn("PHONESABER_TRIAGE_LAUNCHER=" + str(launcher.resolve()), arguments)
+        exit_file = self.mac / "Start-Saber-B.last-exit.log"
+        self.assertIn("PHONESABER_WATCHDOG_EXIT_FILE=" + str(exit_file.resolve()), arguments)
+        self.assertIn("exit-code=0 open-exit-code=0 clean-quit=yes hang-detected=0", exit_file.read_text())
+
+    def test_abnormal_exit_is_saved_even_when_staff_stop_restarts(self):
+        self.env["WATCHDOG_TEST_STOP"] = str(self.mac / "STOP")
+        (self.root / "fake-open").write_text('#!/bin/bash\ntouch "$WATCHDOG_TEST_STOP"\nexit 1\n')
+        result = self.run_script("Start-Saber-A.command")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("exit-code=1 open-exit-code=1 clean-quit=no hang-detected=0",
+                      (self.mac / "Start-Saber-A.last-exit.log").read_text())
+
     def test_rotation_does_not_move_a_log_into_a_generation_directory(self):
         log = self.mac / "Start-Saber-A.log"
         log.write_bytes(b"x" * (1048576 + 1))

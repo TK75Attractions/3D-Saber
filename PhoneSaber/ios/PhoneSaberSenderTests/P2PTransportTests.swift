@@ -48,6 +48,34 @@ final class DiagnosticsDestinationTests: XCTestCase {
 final class DebugBundleOutboxTests: XCTestCase {
     private let now = Date(timeIntervalSince1970: 1_000)
 
+    func testUploadAttemptHistorySurvivesManualRetryRelaunchAndLegacyOutbox() throws {
+        var outbox = DebugBundleOutbox()
+        outbox.register(sessionID: "clip", bundlePath: "clip", now: now)
+        XCTAssertEqual(outbox.beginUpload(sessionID: "clip"), 1)
+        outbox.finish(sessionID: "clip", now: now, reason: "offline", attempts: 1)
+        _ = outbox.retryNow()
+        XCTAssertEqual(outbox.latest?.attempts, 0, "再送制御用の上限は従来どおりリセットする")
+        outbox = try JSONDecoder().decode(DebugBundleOutbox.self, from: JSONEncoder().encode(outbox))
+        XCTAssertEqual(outbox.beginUpload(sessionID: "clip"), 2)
+        // 201返信の切断から、重複200を受ける次のHTTP試行まで履歴を保持する。
+        outbox.finish(sessionID: "clip", now: now, reason: "reply disconnected", attempts: 1)
+        XCTAssertEqual(outbox.beginUpload(sessionID: "clip"), 3)
+        outbox.finish(sessionID: "clip", now: now, reason: nil, attempts: 1)
+        XCTAssertEqual(outbox.latest?.state, .received)
+
+        var legacy = DebugBundleOutbox()
+        legacy.register(sessionID: "legacy", bundlePath: "legacy", now: now)
+        legacy.finish(sessionID: "legacy", now: now, reason: "offline", attempts: 4)
+        let data = try JSONEncoder().encode(legacy)
+        XCTAssertFalse(String(decoding: data, as: UTF8.self).contains("uploadAttempts"))
+        legacy = try JSONDecoder().decode(DebugBundleOutbox.self, from: data)
+        _ = legacy.retryNow()
+        XCTAssertEqual(legacy.beginUpload(sessionID: "legacy"), 5)
+        // HTTP開始後、finish前の中断・再起動でも試行番号を再利用しない。
+        legacy = try JSONDecoder().decode(DebugBundleOutbox.self, from: JSONEncoder().encode(legacy))
+        XCTAssertEqual(legacy.beginUpload(sessionID: "legacy"), 6)
+    }
+
     func testAutoClipsWaitForIdleAndRecordingCompletion() {
         var outbox = DebugBundleOutbox()
         outbox.register(sessionID: "clip", bundlePath: "clip", now: now, deferDuringPlay: true)
@@ -2506,6 +2534,34 @@ final class SendGapTests: XCTestCase {
 
 #if !PIPELINE_ROUTING_STANDALONE
 final class DebugBundleLogTests: XCTestCase {
+    func testUploadHeadersAndStartEndLogsShareIdentityWithoutChangingBody() throws {
+        let url = try XCTUnwrap(URL(string: "http://127.0.0.1:8765/v1/bundle"))
+        var ids = Set<String>()
+        for (index, outcome) in ["failed--1", "uploaded-201", "uploaded-200"].enumerated() {
+            let trace = DebugBundleUploadTrace(sessionID: "sample_session", attempt: index + 1,
+                                              destination: url, packageBytes: 1234)
+            var request = URLRequest(url: url)
+            request.httpBody = Data("unchanged package".utf8)
+            trace.apply(to: &request)
+            XCTAssertEqual(request.httpBody, Data("unchanged package".utf8))
+            XCTAssertEqual(request.value(forHTTPHeaderField: "X-PhoneSaber-Session-ID"), "sample_session")
+            XCTAssertEqual(request.value(forHTTPHeaderField: "X-PhoneSaber-Transfer-ID"), trace.transferID)
+            XCTAssertEqual(request.value(forHTTPHeaderField: "X-PhoneSaber-Attempt"), String(index + 1))
+            XCTAssertNotNil(UUID(uuidString: trace.transferID))
+            ids.insert(trace.transferID)
+            for state in ["started", outcome] {
+                let line = trace.message(state, now: Date(timeIntervalSince1970: 1_000))
+                for field in ["time=1970-01-01T00:16:40.000Z", "sessionID=sample_session",
+                              "transferID=\(trace.transferID)", "sender-attempt=\(index + 1)",
+                              "destination=\(url.absoluteString)", "package-bytes=1234", "outcome=\(state)"] {
+                    XCTAssertTrue(line.contains(field), line)
+                }
+                XCTAssertFalse(line.contains("received-bytes"))
+            }
+        }
+        XCTAssertEqual(ids.count, 3)
+    }
+
     func testOptionalLogTravelsInPackageAndOldBundlesStillPackage() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)

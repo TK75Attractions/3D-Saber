@@ -272,6 +272,56 @@ public sealed class PhoneSaberEventLog
     }
 }
 
+// main thread の状態変更時だけ保存する。正常終了しなかった理由自体は推測しない。
+public sealed class PhoneSaberRunJournal
+{
+    public static PhoneSaberRunJournal Current { get; set; }
+    readonly string path;
+    bool finished;
+    readonly string run = "run=" + Guid.NewGuid().ToString("N") + " started-utc=" + DateTime.UtcNow.ToString("O");
+    public PhoneSaberRunJournal(string path) { this.path = path; }
+
+    public string Begin(string watchdogExitFile = null)
+    {
+        string previous = null;
+        try
+        {
+            if (File.Exists(path))
+            {
+                string saved = File.ReadAllText(path);
+                if (!saved.StartsWith("clean-quit\n", StringComparison.Ordinal))
+                    previous = "reason=no-clean-quit-observed cause=unknown previous=" + saved.Replace('\n', ' ');
+            }
+            if (previous != null && !string.IsNullOrEmpty(watchdogExitFile) && File.Exists(watchdogExitFile))
+                previous += " watchdog-last-observation=" + File.ReadAllText(watchdogExitFile).Trim();
+        }
+        catch { previous = "reason=previous-run-state-unreadable cause=unknown"; }
+        Note("startup");
+        return previous;
+    }
+
+    public void Note(string state, bool clean = false)
+    {
+        if (finished) return;
+        finished = clean;
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(path));
+            File.WriteAllText(path + ".tmp", (clean ? "clean-quit\n" : "unclean-or-running\n") +
+                run + " state-utc=" + DateTime.UtcNow.ToString("O") + " state=" + state);
+            if (File.Exists(path)) File.Replace(path + ".tmp", path, null);
+            else File.Move(path + ".tmp", path);
+        }
+        catch { } // 診断保存の失敗でゲームを止めない。
+    }
+
+    public void End(int exitCode)
+    {
+        Note("quit-callback exit-code=" + exitCode, exitCode == 0);
+        finished = true;
+    }
+}
+
 // datagram の到着と main thread の監視を同期し、短い途絶も復帰時に残す。
 // 座標や payload 解析には触れず、不正な payload も「到着」として扱う。
 public sealed class PhoneSaberConnectionEvents

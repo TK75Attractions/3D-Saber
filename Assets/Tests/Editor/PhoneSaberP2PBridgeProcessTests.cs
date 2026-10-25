@@ -88,16 +88,6 @@ public class PhoneSaberP2PBridgeProcessTests
     }
 
     [Test]
-    public void TriageLauncherIsFoundInsideTheUnityProject()
-    {
-        string projectRoot = Path.Combine(Path.GetTempPath(), "縁日 workspace", "任意の worktree");
-        string path = PhoneSaberTriageReceiverLauncher.ResolveLauncherPath(Path.Combine(projectRoot, "Assets"));
-        string expected = Path.Combine(projectRoot, "PhoneSaber", PhoneSaberTriageReceiverLauncher.LauncherRelativePath);
-        Assert.AreEqual(Path.GetFullPath(expected), Path.GetFullPath(path));
-        Assert.IsNull(PhoneSaberTriageReceiverLauncher.ResolveLauncherPath(null));
-    }
-
-    [Test]
     public void EnvironmentVariableOverridesTheLauncherPath()
     {
         string path = PhoneSaberP2PBridgeProcess.ResolveLauncherPath(

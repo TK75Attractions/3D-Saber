@@ -51,7 +51,7 @@ class Frames
         var discovery = new PhoneSaberDiscoveryResponderTests();
         foreach (int seconds in new[] { 1, 10, 60 })
             discovery.LearningRetriesPastCompletionWithTheSameIdAndStopsWithinIPhoneCache(seconds);
-        discovery.DefaultsCommandAndNewSenderRule();
+        discovery.DefaultsCommandIsAnExplicitReset();
         foreach (string station in new[] { "A", "B" })
             discovery.RapidDifferentOperationsRetryIndependentlyAndCollectOutOfOrderAcks(station);
         discovery.LearningAndAnotherCommandKeepTheirOwnDeadlineAndFinalAck("learned", "samples300-area0.2_0.1_0.8_0.9");
@@ -91,6 +91,9 @@ class Frames
         CheckRegression(statsTests.NoConflictPollingDoesNotWaitForStatisticsWriter, 4,
             "競合のない frame は受信統計の lock を待たない");
         statsTests.PollingStillExpiresConflictsAfterResetAndRebind();
+#if PHONESABER_DIAGNOSTICS_HOST
+        RunFixture(typeof(PhoneSaberDiagnosticsTests));
+#endif
         RunFixture(typeof(PhoneSaberInputStatsTests));
         RunFixture(typeof(PhoneSaberSenderGateTests));
         var input = PhoneSaberReceiverStateReadTests.CreateIdleInput();
@@ -388,11 +391,19 @@ public static class PhoneSaberPlayerSmoke { public static float ResolveSeconds(s
 public static class PhoneSaberP2PBridgeProcess { public static bool AutoStartEnabled; }
 public static class PhoneSaberStation { public static string Read() => "TEST"; public static string Normalize(string s) => PhoneSaberStationPolicy(s);
     static string PhoneSaberStationPolicy(string s) { s=(s??"").Trim(); return s.Length<=16?s:""; } }
+public static class GameSession { public static string SelectedSongId = "host-song"; }
+public static class ScreenTransition { public static bool IsBusy; }
+public static class PhoneSaberRunJournal { public static PhoneSaberRunJournalStub Current; }
+public class PhoneSaberRunJournalStub { public void Note(string state) {} }
 public static class PhoneSaberEventLog
 {
     public static readonly List<string> Lines = new List<string>();
     public static readonly List<string> Kinds = new List<string>();
-    public static void Record(string station, string colour, string kind, string detail) { Lines.Add(detail); Kinds.Add(colour + ":" + kind); }
+    public static readonly List<string> Hitches = new List<string>();
+    public static void Record(string station, string colour, string kind, string detail) {
+        if (kind == "hitch") { Hitches.Add(detail); return; }
+        Lines.Add(detail); Kinds.Add(colour + ":" + kind);
+    }
 }
 public static class SwingMonotonicClock { public static long Timestamp => (long)(UnityEngine.Time.realtimeSinceStartupAsDouble * 1000000); public static double ToSeconds(long ticks) => ticks / 1000000.0; }
 

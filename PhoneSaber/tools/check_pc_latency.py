@@ -75,7 +75,7 @@ public class GamePlayManager : MonoBehaviour { public NoteSpawner noteSpawner; p
         frame_tests = ROOT / 'Assets/Tests/Editor/PhoneSaberReceiverStateReadTests.cs'
         stats_tests = ROOT / 'Assets/Tests/Editor/PhoneSaberInputStatsTests.cs'
         sender_tests = ROOT / 'Assets/Tests/Editor/PhoneSaberSenderGateTests.cs'
-        frame_sources = sources + [frame_tests, stats_tests, sender_tests, HOST / 'Host.cs']
+        frame_sources = sources + [frame_tests, stats_tests, sender_tests, ROOT / 'Assets/Tests/Editor/PhoneSaberEventLogTests.cs', HOST / 'Host.cs']
         runtime = dict(os.environ, MONO_PATH=os.pathsep.join(map(str, (
             nunit.parent, build, editor / 'Resources/Scripting/Managed/UnityEngine', template))))
         for before in ([] if args.learning_only else [True, False] if args.frame_before_ref or args.sender_before_ref or args.prediction_before_ref else [False]):
@@ -95,7 +95,7 @@ public class GamePlayManager : MonoBehaviour { public NoteSpawner noteSpawner; p
                     ':Assets/Scripts/Managers/Inputsystem/Input/PhoneSaberInputStats.cs'], cwd=ROOT))
                 current[current.index(INPUT / 'PhoneSaberInputStats.cs')] = old
             exe = build / ('frames-before.exe' if before else 'frames.exe')
-            if run(compiler + ['/optimize+', '/define:UNITY_EDITOR,UNITY_EDITOR_WIN,PHONESABER_FRAME_HOST',
+            if run(compiler + ['/optimize+', '/define:UNITY_EDITOR,UNITY_EDITOR_WIN,PHONESABER_FRAME_HOST,PHONESABER_DIAGNOSTICS_HOST',
                               '/r:' + str(nunit), '/out:' + str(exe)] + refs + list(map(str, current))):
                 return 1
             expected = (3 if before and args.frame_before_ref else 0) | (4 if before and args.sender_before_ref else 0)

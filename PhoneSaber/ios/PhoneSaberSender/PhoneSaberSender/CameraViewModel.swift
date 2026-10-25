@@ -1720,7 +1720,7 @@ final class CameraViewModel: NSObject, ObservableObject {
             if let host = command.sourceHost { self.lanProbe.sendAck(to: host, line: line) }
         }
         if command.defaults {
-            // PC起動・接続時の自動指示もF8も同じリセット。保存済みの運営の選択も上書きする。
+            // F8「既定に戻す」の明示操作だけで保存値をリセット。PC起動・再接続・探索では送らない。
             guard setShutterISO(160), setShutter(2000) else { return }
             setShutterEmitter(true)
             setTrackLockEnabled(true)
@@ -1986,14 +1986,14 @@ final class CameraViewModel: NSObject, ObservableObject {
     @Published private(set) var shutterEmitter = NSClassFromString("XCTestCase") == nil
         && CameraViewModel.storedShutterEmitter(in: .standard)
 
-    // 更新・単独起動では保存値を移行しない。PCのdefaults受信時だけ上の処理で既定へ戻す。
+    // 初回だけISO160。保存済みの運営の選択はPC再起動・再接続でも維持し、明示defaultsだけで戻す。
     nonisolated static func storedShutterISO(in defaults: UserDefaults) -> Int {
         let value = defaults.integer(forKey: shutterISOKey)
         if value == 1000 || value == 500 { return 250 }
         return LANLivenessProbe.shutterISOChoices.contains(value) ? value : 160
     }
 
-    // キーなしだけ新既定ON。保存済みOFFも更新・単独起動では維持する。
+    // キーなしだけ既定ON。保存済みOFFもPC再起動・再接続で維持する。
     nonisolated static func storedShutterEmitter(in defaults: UserDefaults) -> Bool {
         guard defaults.object(forKey: shutterEmitterKey) != nil else { return true }
         return defaults.bool(forKey: shutterEmitterKey)

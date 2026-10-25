@@ -195,7 +195,7 @@ def collect_evidence(result, blade, competitors, prefix=''):
 def summarize(rows):
     result = dict(frames=len(rows), selected=sum(r['selected'] is not None for r in rows),
                   clips=len({r['clip'] for r in rows}), labelled=0, present=0, absent=0,
-                  missed=0, no_output=0, wrong_output=0, uncertain_output=0,
+                  false_positive=0, missed=0, no_output=0, wrong_output=0, uncertain_output=0,
                   unknown=0, truncated=0, snapshot=0, switches=0, switch_pairs=0,
                   switch_proxy=0, proxy_pairs=0, jitter=[], motion_proxy=[],
                   eligible=[], blade=defaultdict(list), competitor=defaultdict(list),
@@ -213,7 +213,10 @@ def summarize(rows):
         else:
             result['labelled'] += 1
             result['absent' if truth == 'absent' else 'present'] += 1
-            if truth != 'absent':
+            if truth == 'absent':
+                # 候補フラグではなく、記録された最終出力だけを誤出力として数える。
+                result['false_positive'] += selected is not None
+            else:
                 kind = identity(selected, truth) if selected is not None else None
                 if selected is None or kind == 'competitor':
                     result['missed'] += 1
@@ -278,6 +281,7 @@ def recommend(groups, min_labelled=5):
         if condition[0] not in ('A', 'B') or any(v is None for v in condition[1:]):
             continue
         if all(color in colors and colors[color]['present'] >= min_labelled and
+               colors[color]['false_positive'] == 0 and
                colors[color]['missed'] == colors[color]['uncertain_output'] == 0 and
                len(colors[color]['complete_margins']) >= min_labelled for color in COLORS):
             score = min(quantile10(colors[c]['complete_margins']) for c in COLORS)
@@ -315,17 +319,20 @@ def render(groups, min_labelled=5):
             lines.append(f'|{condition_text(key)}|{key[-1]}|{evidence}|'
                          f'{g["frames"]}/{g["selected"]}/{g["labelled"]}|{fields}|'
                          f'{fmt(quantile10(margins))}({len(margins)})|')
-    lines += ['', '|局|露光ms|実測ISO|emitter|色|eligible中央/最大|未検出(未出力+競合)/端点保留/剣あり真値|真値切替/対|切替proxy/対|jitter px(n)|運動proxy px(n)|真値不明/候補欠落/露光snapshot|',
-              '|---|---:|---:|---|---|---:|---:|---:|---:|---:|---:|---:|']
+    lines += ['', '|局|露光ms|実測ISO|emitter|色|eligible中央/最大|未検出(未出力+競合)/端点保留/剣あり真値|剣なし時の誤出力/剣なし真値|真値切替/対|切替proxy/対|jitter px(n)|運動proxy px(n)|真値不明/候補欠落/露光snapshot|',
+              '|---|---:|---:|---|---|---:|---:|---:|---:|---:|---:|---:|---:|']
     for key, g in sorted(groups.items(), key=lambda item: str(item[0])):
+        negative = f'{g["false_positive"]}/{g["absent"]}' if g['absent'] else '未評価'
         lines.append(f'|{condition_text(key)}|{key[-1]}|{fmt(median(g["eligible"]))}/'
                      f'{fmt(max(g["eligible"]) if g["eligible"] else None)}|'
                      f'{g["missed"]}({g["no_output"]}+{g["wrong_output"]})/{g["uncertain_output"]}/{g["present"]}|'
+                     f'{negative}|'
                      f'{g["switches"]}/{g["switch_pairs"]}|{g["switch_proxy"]}/{g["proxy_pairs"]}|'
                      f'{fmt(median(g["jitter"]))}({len(g["jitter"])})|'
                      f'{fmt(median(g["motion_proxy"]))}({len(g["motion_proxy"])})|'
                      f'{g["unknown"]}/{g["truncated"]}/{g["snapshot"]}|')
     lines += ['', '未ラベル参考は実winnerとその遠方候補の記録。winnerを本物の剣とは断定せず、推奨には使わない。',
+              '剣なし時の誤出力は明示的なabsent真値で最終出力selectedがある枚数。候補のみは数えず、未ラベル・欠測を剣なし真値で補わない。剣なし真値0枚は未評価。',
               '競合は真値の剣線分から離れた保存候補（ineligible含む）。反射・衣服・背景の内訳はラベルがなく不明。',
               '剣は端点誤差≤max(12px,剣長×15%)。近傍の部分候補/出力は保留し未検出に算入しない。競合値は指標ごとのフレーム内最大。',
               '差は同じフレームの剣平均V−最大競合平均V。欠測は0にせず—。候補欠落時の差は暫定。',
@@ -334,16 +341,22 @@ def render(groups, min_labelled=5):
               '隣接frameIDかつ時間差≤100msのみ。クリップ/条件境界は分離。重複した入力フォルダは1回だけ集計。',
               '露光snapshotはトリガー時の値を使用した枚数。条件ごとに設定が安定してから手動保存する。',
               f'推奨規則: 同じ局・実測露光・emitter状態ごとに赤青各{min_labelled}枚以上の剣あり真値・完全候補の同時比較があり、未検出/端点保留0、',
-              '赤青の弱い側の明度差p10が正となる条件から最大を選ぶ。同点なら低ISO。真値のある標本内の暫定推奨。']
+              '赤青いずれも剣なし時の誤出力0で、弱い側の明度差p10が正となる条件から最大を選ぶ。同点なら低ISO。真値のある標本内の暫定推奨。']
+    for key, g in sorted(groups.items(), key=lambda item: str(item[0])):
+        if g['false_positive'] > 0:
+            lines.append(f'推奨除外 {condition_text(key)} | {key[-1]}: '
+                         f'剣なし時の誤出力 {g["false_positive"]}/{g["absent"]}')
     choices = recommend(groups, min_labelled)
     for stratum in sorted({(k[0], k[1], k[3]) for k in groups}, key=str):
         if stratum in choices:
             score, condition = choices[stratum]
-            lines.append(f'推奨 {condition_text(condition)}（弱い側の差p10={fmt(score)}）')
+            unevaluated = [c for c in COLORS if groups[(*condition, c)]['absent'] == 0]
+            caveat = f'、背景誤検出は未評価（{"/".join(unevaluated)}の剣なし真値なし）' if unevaluated else ''
+            lines.append(f'推奨 {condition_text(condition)}（弱い側の差p10={fmt(score)}{caveat}）')
         else:
             station, duration, emitter = stratum
             context = condition_text((station, duration, None, emitter))
-            lines.append(f'推奨 {context}: 保留（局・真値・完全候補・設定記録・検出維持・正の差を満たす条件なし）')
+            lines.append(f'推奨 {context}: 保留（局・真値・完全候補・設定記録・検出維持・剣なし時の誤出力0・正の差を満たす条件なし）')
     if not groups:
         lines.append('対象クリップなし。推奨は保留。')
     return '\n'.join(lines)

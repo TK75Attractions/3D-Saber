@@ -97,17 +97,54 @@ public class PhoneSaberDiscoveryResponderTests
     }
 
     [Test]
-    public void DefaultsCommandAndNewSenderRule()
+    public void DefaultsCommandIsAnExplicitReset()
     {
         Assert.AreEqual("PHONESABER_COMMAND 1 id=81 defaults=1",
             PhoneSaberDiscoveryResponder.BuildCommand(81, PhoneSaberDiscoveryResponder.DefaultsCommand));
-        var seen = new Dictionary<string, double> { ["10.0.0.1"] = 100 };
-        Assert.IsTrue(PhoneSaberDiscoveryResponder.ShouldQueueDefaults(seen, "10.0.0.2", 101, 0));
-        Assert.IsFalse(PhoneSaberDiscoveryResponder.ShouldQueueDefaults(seen, "10.0.0.1", 159.999, 0));
-        Assert.IsTrue(PhoneSaberDiscoveryResponder.ShouldQueueDefaults(seen, "10.0.0.1", 160, 0));
-        Assert.IsFalse(PhoneSaberDiscoveryResponder.ShouldQueueDefaults(seen, "10.0.0.2", 101, 0.001));
-        Assert.IsFalse(PhoneSaberDiscoveryResponder.ShouldQueueDefaults(seen, "10.0.0.1", 200, 10));
-        Assert.AreEqual(1, seen.Count, "判定だけでは最終探索時刻を更新しない");
+    }
+
+    [TestCase("A")]
+    [TestCase("B")]
+    public void StartDiscoveryAndRestartNeverQueueDefaults(string station)
+    {
+        bool savedAutoStart = PhoneSaberP2PBridgeProcess.AutoStartEnabled;
+        var store = PhoneSaberDiscoveryResponder.Acknowledgements;
+        int revision = store.Revision;
+        using (var responder = new PhoneSaberDiscoveryResponder())
+        {
+            try
+            {
+                PhoneSaberP2PBridgeProcess.AutoStartEnabled = true;
+                // PC起動、探索、新しい送信元port、受信機の再起動を通して操作を増やさない。
+                for (int restart = 0; restart < 2; restart++)
+                {
+                    UdpClient server = null;
+                    Assert.IsTrue(responder.Start(5005, 5006,
+                        () => server = new UdpClient(AddressFamily.InterNetwork), station, 0));
+                    Assert.AreEqual(revision, store.Revision, "PC起動時にdefaultsをキューへ入れない");
+                    for (int connection = 0; connection < 2; connection++)
+                    using (var phone = new UdpClient(0))
+                    {
+                        phone.Client.ReceiveTimeout = 2000;
+                        var destination = (System.Net.IPEndPoint)server.Client.LocalEndPoint;
+                        destination.Address = System.Net.IPAddress.Loopback;
+                        byte[] request = Encoding.ASCII.GetBytes(PhoneSaberDiscoveryResponder.Request);
+                        for (int probe = 0; probe < 2; probe++)
+                        {
+                            phone.Send(request, request.Length, destination);
+                            var remote = new System.Net.IPEndPoint(System.Net.IPAddress.Any, 0);
+                            string reply;
+                            do { reply = Encoding.ASCII.GetString(phone.Receive(ref remote)); }
+                            while (reply.StartsWith(PhoneSaberDiscoveryResponder.CommandPrefix));
+                            Assert.AreEqual(PhoneSaberDiscoveryResponder.BuildReply(5005, 5006, Environment.MachineName, station), reply);
+                            Assert.AreEqual(revision, store.Revision, "探索・再接続で保存値をリセットしない");
+                        }
+                    }
+                    responder.Stop();
+                }
+            }
+            finally { PhoneSaberP2PBridgeProcess.AutoStartEnabled = savedAutoStart; }
+        }
     }
 
     [Test]
@@ -168,7 +205,7 @@ public class PhoneSaberDiscoveryResponderTests
             PhoneSaberP2PBridgeProcess.AutoStartEnabled = true;
             using (var responder = new PhoneSaberDiscoveryResponder())
             {
-                LogAssert.Expect(LogType.Warning, new Regex("Android discovery responder failed:"));
+                LogAssert.Expect(LogType.Warning, new Regex("iPhone discovery responder failed:"));
                 Assert.IsFalse(responder.Start(5005, 5006, () => client, "A"));
                 Assert.IsFalse(responder.IsRunning);
                 Assert.IsTrue(client.Closed, "初期化途中で失敗しても、取得済み client を解放する");
@@ -195,7 +232,7 @@ public class PhoneSaberDiscoveryResponderTests
                     using (var client = new UdpClient(0))
                     {
                         Socket socket = client.Client;
-                        LogAssert.Expect(LogType.Warning, new Regex("Android discovery responder failed:"));
+                        LogAssert.Expect(LogType.Warning, new Regex("iPhone discovery responder failed:"));
                         Assert.IsFalse(responder.Start(5005, 5006, () => client, "A"));
                         Assert.IsFalse(responder.IsRunning);
                         Assert.Throws<ObjectDisposedException>(() => socket.Poll(0, SelectMode.SelectRead),

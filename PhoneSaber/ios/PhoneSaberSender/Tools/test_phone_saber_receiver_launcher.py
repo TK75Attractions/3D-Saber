@@ -68,6 +68,15 @@ def snapshot_for(repo: Path, *, dirty: bool = False) -> launcher.GitSnapshot:
 
 
 class PhoneSaberReceiverLauncherTests(unittest.TestCase):
+    def test_no_codex_uses_the_same_health_and_lock_launcher(self) -> None:
+        with mock.patch.object(launcher, "resolve_repository_root", return_value=Path("/fixture/PhoneSaber")), \
+                mock.patch.object(launcher, "collect_git_snapshot"), \
+                mock.patch.object(Path, "is_file", return_value=True), \
+                mock.patch.object(launcher, "run_receiver", return_value=0) as run:
+            self.assertEqual(launcher.main(["--no-codex"]), 0)
+            self.assertEqual(run.call_args.kwargs["receiver_command"],
+                             [sys.executable, "-u", str(launcher.RECEIVER_SCRIPT), "--no-codex"])
+
     def test_dry_run_resolves_japanese_path_and_reports_dirty_main(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

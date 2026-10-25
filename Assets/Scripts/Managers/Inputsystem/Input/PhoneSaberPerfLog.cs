@@ -25,6 +25,10 @@ public sealed class PhoneSaberPerfLog : MonoBehaviour
     static InputPoint estimateInput;
     static int redEstimateRevision, blueEstimateRevision;
     double nextLatencyLog;
+    PhoneSaberHitchSample hitch;
+    int hitchSceneHandle = int.MinValue, hitchRed, hitchBlue;
+    string hitchScene = "startup";
+    bool focused = true, paused;
     public static string LatencyLine(bool blue, double now)
     {
         var estimate = blue ? blueEstimate : redEstimate;
@@ -55,6 +59,8 @@ public sealed class PhoneSaberPerfLog : MonoBehaviour
     }
 
     void OnDisable() => Application.onBeforeRender -= BeforeRender;
+    void OnApplicationFocus(bool value) => focused = value;
+    void OnApplicationPause(bool value) => paused = value;
 
     // 座標の取り込みや消費者を動かさず、公開済み / 読み出し済みの値だけ測る。
     [BeforeRenderOrder(10000)]
@@ -82,6 +88,7 @@ public sealed class PhoneSaberPerfLog : MonoBehaviour
         double now = Time.realtimeSinceStartupAsDouble;
         var input = InputPoint.Instance;
         var scene = SceneManager.GetActiveScene();
+        ObserveHitch(now, scene, input);
         // 切替前の低fpsや別のvsync条件を、新しいシーン名で報告しない。
         var currentContext = new PhoneSaberPerfContext(scene.handle, QualitySettings.vSyncCount,
             Application.targetFrameRate, Screen.currentResolution.refreshRateRatio.value, Screen.width, Screen.height,
@@ -159,6 +166,33 @@ public sealed class PhoneSaberPerfLog : MonoBehaviour
         predictionsAtStart = predictions; suppressedAtStart = suppressed;
     }
 
+    // 通常フレームは数値と既存参照のみ。文字列・ファイル書込みは hitch / scene 変更時だけ。
+    void ObserveHitch(double now, Scene scene, InputPoint input)
+    {
+        bool changed = scene.handle != hitchSceneHandle;
+        string previousScene = hitchScene;
+        if (changed) { hitchSceneHandle = scene.handle; hitchScene = scene.name; }
+        int red = input != null ? input.ReceivedPacketCount : 0;
+        int blue = input != null ? input.ReceivedPacketCount2 : 0;
+        bool slow = hitch.Observe(now, GC.GetAllocatedBytesForCurrentThread(),
+            GC.CollectionCount(0), GC.CollectionCount(1), GC.CollectionCount(2));
+        if (slow)
+        {
+            string detail = string.Format(CultureInfo.InvariantCulture,
+                "scene={0} previous-scene={1} scene-changed={2} frame={3} interval-ms={4:0.###} " +
+                "gc0-delta={5} gc1-delta={6} gc2-delta={7} main-thread-allocated-bytes={8} " +
+                "focused={9} paused={10} transition-busy={11} song={12} red-packets={13} blue-packets={14} target-fps={15} vsync={16}",
+                hitchScene, previousScene, changed, Time.frameCount, hitch.IntervalMs,
+                hitch.Gc0, hitch.Gc1, hitch.Gc2, hitch.AllocatedBytes, focused, paused,
+                ScreenTransition.IsBusy, GameSession.SelectedSongId, Math.Max(0, red - hitchRed), Math.Max(0, blue - hitchBlue),
+                Application.targetFrameRate, QualitySettings.vSyncCount);
+            PhoneSaberEventLog.Record(PhoneSaberStation.Read(), "SYSTEM", "hitch", detail);
+            PhoneSaberRunJournal.Current?.Note("hitch " + detail);
+        }
+        else if (changed) PhoneSaberRunJournal.Current?.Note("scene=" + hitchScene + " previous-scene=" + previousScene);
+        hitchRed = red; hitchBlue = blue;
+    }
+
     // perf窓がシーン切替で再開しても、診断行は10秒ごとに残す。
     void UpdateLatency(InputPoint input, double now)
     {
@@ -194,6 +228,32 @@ public sealed class PhoneSaberPerfLog : MonoBehaviour
 
     static string AgeLabel(PhoneSaberTimingStats stats) => stats.Count == 0 ? "未測定" :
         string.Format(CultureInfo.InvariantCulture, "{0:0.0}/{1:0.0}ms(中央値/p95)", stats.MedianMs, stats.P95Ms);
+}
+
+// Update 間の実時間。計測窓の reset や scene 切替でも標本を捨てない。
+// GC は世代別の回数差、allocated は main thread の累積差分。生存 heap サイズではない。
+public struct PhoneSaberHitchSample
+{
+    bool started;
+    double previous;
+    long allocated;
+    int gc0, gc1, gc2;
+    public double IntervalMs { get; private set; }
+    public long AllocatedBytes { get; private set; }
+    public int Gc0 { get; private set; }
+    public int Gc1 { get; private set; }
+    public int Gc2 { get; private set; }
+
+    public bool Observe(double now, long bytes, int count0, int count1, int count2)
+    {
+        IntervalMs = started ? (now - previous) * 1000 : 0;
+        AllocatedBytes = started ? Math.Max(0, bytes - allocated) : 0;
+        Gc0 = started ? count0 - gc0 : 0;
+        Gc1 = started ? count1 - gc1 : 0;
+        Gc2 = started ? count2 - gc2 : 0;
+        previous = now; allocated = bytes; gc0 = count0; gc1 = count1; gc2 = count2; started = true;
+        return IntervalMs > 50;
+    }
 }
 
 public readonly struct PhoneSaberPerfContext

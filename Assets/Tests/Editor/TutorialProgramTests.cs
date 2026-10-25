@@ -1,6 +1,8 @@
 using System.Linq;
+using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.TestTools;
 
 // チュートリアルの進行表(純粋データ)と、タイトルの問いかけ・Game シーンのフラグの約束事。
 public class TutorialProgramTests
@@ -62,6 +64,89 @@ public class TutorialProgramTests
 
     static PhoneSaberAcknowledgement RangeAck(string result, string detail, string station = "B") =>
         new PhoneSaberAcknowledgement(7, station, "ios", result, detail, "phone");
+
+    [TestCase("A", false, false)]
+    [TestCase("B", false, false)]
+    [TestCase("A", true, false)]
+    [TestCase("B", true, false)]
+    [TestCase("A", false, true)]
+    [TestCase("B", false, true)]
+    public void RangeStep_OnlyReportsOkWhenThePcAppliedTheRange(string station, bool rejected, bool missingInput)
+    {
+        const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
+        var savedRead = TutorialController.ReadLearnArea;
+        var savedApply = TutorialController.ApplyWidenedRange;
+        var savedInput = InputPoint.Instance;
+        var singleton = typeof(InputPoint).GetProperty(nameof(InputPoint.Instance));
+        string key = PhoneSaberPositionCalibrationStore.DataKey(station);
+        string enabledKey = PhoneSaberPositionCalibrationStore.EnabledKey(station);
+        bool hadData = PlayerPrefs.HasKey(key), hadEnabled = PlayerPrefs.HasKey(enabledKey);
+        string savedData = PlayerPrefs.GetString(key); int savedEnabled = PlayerPrefs.GetInt(enabledKey);
+        bool hadBaseline = PlayerPrefs.HasKey(TutorialRangeBaseline.PrefsKey);
+        string savedBaseline = PlayerPrefs.GetString(TutorialRangeBaseline.PrefsKey);
+        var root = new GameObject("TutorialRangeApply");
+        try
+        {
+            // 実運用の A/B 設定と受信機を退避し、指示・ソケットを使わず本番の適用経路を通す。
+            singleton.SetValue(null, null);
+            TutorialRangeBaseline.Forget();
+            var input = missingInput ? null : root.AddComponent<InputPoint>();
+            if (input != null)
+            {
+                input.enabled = false;
+                typeof(InputPoint).GetField("phoneSaberStation", flags).SetValue(input, station);
+                singleton.SetValue(null, input);
+                Assert.IsTrue(input.ApplyLearnedPositionCalibration(Rect.MinMaxRect(.1f, .1f, .9f, .9f), "before", out _));
+            }
+            string before = PlayerPrefs.GetString(key);
+            var learned = rejected ? new Rect(.5f, .5f, .001f, .001f) : Rect.MinMaxRect(.2f, .1f, .8f, .9f);
+            string detail = rejected ? "samples300-area0.5_0.5_0.501_0.501" : "samples300-area0.2_0.1_0.8_0.9";
+            TutorialController.ReadLearnArea = _ => new[] { RangeAck("learned", detail, station) };
+            TutorialController.ApplyWidenedRange = (System.Func<Rect, bool>)System.Delegate.CreateDelegate(
+                typeof(System.Func<Rect, bool>), typeof(TutorialController).GetMethod("DefaultApplyWidenedRange", BindingFlags.Static | BindingFlags.NonPublic));
+            var controller = root.AddComponent<TutorialController>();
+            typeof(TutorialController).GetField("steps", flags).SetValue(controller, TutorialProgram.Build(TutorialProgram.FlowFor(true), true));
+            typeof(TutorialController).GetField("stepIndex", flags).SetValue(controller, 0);
+            typeof(TutorialController).GetField("station", flags).SetValue(controller, station);
+            typeof(TutorialController).GetField("stepStart", flags).SetValue(controller, 100d);
+            typeof(TutorialController).GetField("range", flags).SetValue(controller, new TutorialRangeLearning(7, 100));
+            if (missingInput) LogAssert.Expect(LogType.Warning, "Tutorial: 範囲を適用できませんでした: InputPoint がありません");
+            else if (rejected)
+            {
+                PhoneSaberPositionCalibration.TryFromLearnedArea(learned, input.camWidth, input.camHeight, out _, out string error);
+                LogAssert.Expect(LogType.Warning, "Tutorial: 広げた範囲を保存できませんでした: " + error);
+                LogAssert.Expect(LogType.Warning, "Tutorial: 範囲を適用できませんでした: " + PhoneSaberPositionCalibration.LearnedAreaResult(learned, false, error));
+            }
+
+            typeof(TutorialController).GetMethod("TickRange", flags).Invoke(controller, new object[] { 101d });
+
+            bool applied = !rejected && !missingInput;
+            Assert.IsTrue(controller.StepDone);
+            Assert.AreEqual(TutorialRangeLearning.Phase.Learned, controller.Range.State, "iPhone はどの場合も学習完了");
+            Assert.AreEqual(applied ? TutorialProgram.RangeLearnedTitle : TutorialProgram.RangeKeptTitle, controller.BannerTitle);
+            Assert.AreEqual("", controller.BannerSub);
+            Assert.AreEqual(applied ? "ok" : "failed", controller.Records.Single().Reason);
+            Assert.AreEqual(1d, controller.Records.Single().Seconds);
+            Assert.AreEqual(101d + TutorialProgram.RangeEndSeconds, typeof(TutorialController).GetField("stepEndAt", flags).GetValue(controller));
+            Assert.AreEqual(applied, controller.AppliedRange.HasValue);
+            if (applied)
+            {
+                Assert.AreEqual(PhoneSaberPositionCalibration.WidenLearnedArea(learned), controller.AppliedRange.Value);
+                Assert.AreNotEqual(before, PlayerPrefs.GetString(key));
+                StringAssert.Contains("PC適用: 成功", input.LearnedPositionCalibrationResult);
+            }
+            else Assert.AreEqual(before, PlayerPrefs.GetString(key), "適用できなければ保存済みの補正を維持する");
+        }
+        finally
+        {
+            TutorialController.ReadLearnArea = savedRead; TutorialController.ApplyWidenedRange = savedApply;
+            Object.DestroyImmediate(root); singleton.SetValue(null, savedInput);
+            if (hadData) PlayerPrefs.SetString(key, savedData); else PlayerPrefs.DeleteKey(key);
+            if (hadEnabled) PlayerPrefs.SetInt(enabledKey, savedEnabled); else PlayerPrefs.DeleteKey(enabledKey);
+            if (hadBaseline) PlayerPrefs.SetString(TutorialRangeBaseline.PrefsKey, savedBaseline); else PlayerPrefs.DeleteKey(TutorialRangeBaseline.PrefsKey);
+            PlayerPrefs.Save();
+        }
+    }
 
     [Test]
     public void RangeLearning_CountsDownFromThePhonesStartAndEndsOnItsAnswer()

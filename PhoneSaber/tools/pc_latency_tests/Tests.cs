@@ -6,6 +6,52 @@ using UnityEngine.SceneManagement;
 
 public class PerfBoundaryTests
 {
+    [Test]
+    public void HitchSamplerUsesStrictThresholdAndCumulativeAllocationAndGcDeltas()
+    {
+        var sample = new PhoneSaberHitchSample();
+        Assert.IsFalse(sample.Observe(0, 100, 1, 2, 3));
+        Assert.IsFalse(sample.Observe(.05, 150, 1, 2, 3));
+        Assert.IsTrue(sample.Observe(.101, 850, 3, 3, 4));
+        Assert.AreEqual(51, sample.IntervalMs, .000001);
+        Assert.AreEqual(700, sample.AllocatedBytes);
+        Assert.AreEqual(2, sample.Gc0); Assert.AreEqual(1, sample.Gc1); Assert.AreEqual(1, sample.Gc2);
+        long before = GC.GetAllocatedBytesForCurrentThread();
+        for (int i = 0; i < 100000; i++) sample.Observe(i * .008, 850, 3, 3, 4);
+        long bytes = GC.GetAllocatedBytesForCurrentThread() - before;
+        Assert.AreEqual(0, bytes);
+    }
+
+    [Test]
+    public void SteadyHitchObservationAllocatesZeroBytes()
+    {
+        var log = new PhoneSaberPerfLog();
+        var observe = (Action<double, Scene, InputPoint>)Delegate.CreateDelegate(typeof(Action<double, Scene, InputPoint>), log,
+            typeof(PhoneSaberPerfLog).GetMethod("ObserveHitch", BindingFlags.Instance | BindingFlags.NonPublic));
+        var scene = new Scene { name="Menu", handle=1 };
+        for (int i = 0; i < 1000; i++) observe(i * .000001, scene, null);
+        long before = GC.GetAllocatedBytesForCurrentThread();
+        for (int i = 1000; i < 101000; i++) observe(i * .000001, scene, null);
+        long bytes = GC.GetAllocatedBytesForCurrentThread() - before;
+        Assert.AreEqual(0, bytes);
+    }
+
+    [Test]
+    public void SceneTransitionHitchIsLoggedBeforeWindowResetWithActivity()
+    {
+        PhoneSaberEventLog.Hitches.Clear();
+        SceneManager.Active = new Scene { name="Menu", handle=1 };
+        var log = new PhoneSaberPerfLog();
+        Tick(log, 0); Tick(log, .008);
+        SceneManager.Active = new Scene { name="Game", handle=2 };
+        Tick(log, .108);
+        Assert.AreEqual(1, PhoneSaberEventLog.Hitches.Count);
+        string line = PhoneSaberEventLog.Hitches[0];
+        foreach (string field in new[] { "scene=Game", "previous-scene=Menu", "scene-changed=True", "interval-ms=100",
+            "gc0-delta=", "main-thread-allocated-bytes=", "song=host-song", "transition-busy=", "red-packets=" })
+            StringAssert.Contains(field, line);
+    }
+
     void Tick(PhoneSaberPerfLog log, double at)
     {
         Time.realtimeSinceStartupAsDouble = at;

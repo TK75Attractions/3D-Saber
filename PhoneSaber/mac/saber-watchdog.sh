@@ -36,12 +36,18 @@ fi
 # iPhone の自動クリップ（c81113d）を受け取る受信機を、窓なし・Codex なしで裏に立てる（無ければ）。
 # 届いたクリップは ~/Library/Application Support/PhoneSaber/diagnostics-inbox/autoclips/ に入り、まとめ（.report.md・.contact.png）が横に書かれる。
 # PHONESABER_TRIAGE_RECEIVER=0 で立てない。
-TRIAGE_RECEIVER="$SCRIPT_DIR/../ios/PhoneSaberSender/Tools/phone_saber_triage_receiver.py"
+TRIAGE_LAUNCHER="${PHONESABER_TRIAGE_LAUNCHER:-$SCRIPT_DIR/../ios/PhoneSaberSender/Tools/phone_saber_receiver_launcher.py}"
+if [[ -f "$TRIAGE_LAUNCHER" ]]; then
+    TRIAGE_LAUNCHER="$(CDPATH='' cd "$(dirname "$TRIAGE_LAUNCHER")" && pwd -P)/$(basename "$TRIAGE_LAUNCHER")"
+    OPEN_ENV+=(--env "PHONESABER_TRIAGE_LAUNCHER=$TRIAGE_LAUNCHER")
+fi
+EXIT_FILE="$SCRIPT_DIR/Start-Saber-$STATION.last-exit.log"
+OPEN_ENV+=(--env "PHONESABER_WATCHDOG_EXIT_FILE=$EXIT_FILE")
 start_triage_receiver() {
-    [[ "${PHONESABER_TRIAGE_RECEIVER:-1}" == 0 || ! -f "$TRIAGE_RECEIVER" ]] && return 0
-    pgrep -f "phone_saber_triage_receiver.py" >/dev/null 2>&1 && return 0
-    mkdir -p "$HOME/Library/Logs/PhoneSaber"
-    nohup python3 "$TRIAGE_RECEIVER" --no-codex >> "$HOME/Library/Logs/PhoneSaber/triage-receiver.log" 2>&1 < /dev/null &
+    case "${PHONESABER_TRIAGE_RECEIVER:-1}" in 0|[oO][fF][fF]) return 0 ;; esac
+    [[ -f "$TRIAGE_LAUNCHER" ]] || return 0
+    # Unity と同じ lock / health / 安全な更新判定を使う。
+    nohup /usr/bin/python3 "$TRIAGE_LAUNCHER" --no-codex >/dev/null 2>&1 < /dev/null &
 }
 log() { printf '[%s] station=%s %s restart=%s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" "$STATION" "$*" "$RESTART_COUNT" >> "$LOG_FILE"; }
 stop_file() {
@@ -276,6 +282,11 @@ while ! stopped; do
     if [[ "$HANG_DETECTED" -eq 1 ]]; then GAME_EXIT=1; fi
     if [[ "$GAME_EXIT" -eq 0 && ! -f "$QUIT_MARKER" ]]; then GAME_EXIT=1; fi
     log "exit-code=$GAME_EXIT open-exit-code=$OPEN_EXIT clean-quit=$([[ -f "$QUIT_MARKER" ]] && echo yes || echo no)"
+    # 次の Player が前回の監視結果を報告できるよう、台ごとに最後の結果を保存する。
+    printf 'utc=%s exit-code=%s open-exit-code=%s clean-quit=%s hang-detected=%s\n' \
+        "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" "$GAME_EXIT" "$OPEN_EXIT" \
+        "$([[ -f "$QUIT_MARKER" ]] && echo yes || echo no)" "$HANG_DETECTED" > "$EXIT_FILE.tmp" &&
+        mv -f "$EXIT_FILE.tmp" "$EXIT_FILE"
     if [[ "$GAME_EXIT" -eq 0 ]]; then
         printf 'ゲームが正常終了しました。監視を終了します。\n'
         exit 0

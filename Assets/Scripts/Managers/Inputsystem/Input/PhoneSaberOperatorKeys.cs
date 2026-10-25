@@ -26,7 +26,8 @@ public sealed class PhoneSaberOperatorKeys : MonoBehaviour
 
     static PhoneSaberMetrics lastPhoneState;
 
-    // 同じ台の新しいiPhone計測だけを使う。古い計測で直前のPC操作を巻き戻さない。
+    // 旧自動defaultsによるキーの状態合わせはやめ、同じ台の新しいiPhone計測を使う。
+    // 古い計測で直前のPC操作を巻き戻さない。
     public static bool FollowPhoneState(PhoneSaberMetrics phone, string station, double now, double queuedAt)
     {
         if (phone == null || ReferenceEquals(phone, lastPhoneState) || phone.Platform != "ios" ||
@@ -41,7 +42,7 @@ public sealed class PhoneSaberOperatorKeys : MonoBehaviour
         return true;
     }
 
-    // Unity API を使わず、defaults のキュー投入と一緒に Mac 側も既定に戻す。
+    // PC内の初期値と明示リセット。起動・探索ではiPhoneへdefaultsを送らず、ctl計測で同期する。
     public static void ResetDefaultsState()
     {
         lastPhoneState = null;
@@ -262,7 +263,6 @@ public sealed class PhoneSaberOperatorKeys : MonoBehaviour
 
     void Update()
     {
-        PhoneSaberDiscoveryResponder.ProcessAutomaticDefaults();
         RefreshToast();
         var keyboard = Keyboard.current;
         if (keyboard == null) return;

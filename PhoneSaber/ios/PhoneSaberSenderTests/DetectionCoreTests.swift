@@ -147,13 +147,13 @@ final class DetectionCoreTests: XCTestCase {
     }
 
     func testFixedShutterISOAndEmitterPreserveStoredChoices() throws {
-        // PCからdefaultsを受け取らないアプリ更新・単独起動の再読込。
+        // PC再起動・再接続でも保存値を復元する。キーなしの初回だけ既定を使う。
         let name = "PhoneSaber.emitter.tests." + UUID().uuidString
         let defaults = try XCTUnwrap(UserDefaults(suiteName: name))
         defer { defaults.removePersistentDomain(forName: name) }
         XCTAssertTrue(CameraViewModel.storedShutterEmitter(in: defaults))
         XCTAssertNil(defaults.object(forKey: "PhoneSaber.shutterEmitter.v1"))
-        for iso in [2000, 160, 64] { for emitter in [false, true] {
+        for iso in [2000, 160, 100, 64] { for emitter in [false, true] {
             defaults.set(iso, forKey: "PhoneSaber.shutterISO.v1")
             defaults.set(emitter, forKey: "PhoneSaber.shutterEmitter.v1")
             let reopened = try XCTUnwrap(UserDefaults(suiteName: name))
@@ -178,7 +178,7 @@ final class DetectionCoreTests: XCTestCase {
         model.applyPCCommand(.init(id: 802, ignore: nil, clearIgnore: false, shutterEmitter: true))
         XCTAssertTrue(model.shutterEmitter)
         model.setShutterEmitter(false)
-        // 自動・手動とも同じdefaults=1で、それまでの明示選択もリセットする。
+        // F8の明示defaults=1だけで、それまでの明示選択をリセットする。
         model.applyPCCommand(try XCTUnwrap(LANLivenessProbe.parseCommand("PHONESABER_COMMAND 1 id=803 defaults=1")))
         XCTAssertEqual(model.shutter, 2000)
         XCTAssertEqual(model.shutterISO, 160)
