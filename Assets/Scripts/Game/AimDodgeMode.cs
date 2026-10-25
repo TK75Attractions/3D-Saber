@@ -15,6 +15,11 @@ public sealed class AimDodgeMode : MonoBehaviour
     const int QueueTarget = 3020, QueueSpike = 3022, QueueFx = 3026, QueueCrosshair = 3032;
     const float CrosshairScale = .3f, PlaneZ = -.03f, CrosshairZ = -.16f, SpawnZ = 20f;
     const float TargetFadeIn = .2f, ResultSeconds = .42f, DisarmSeconds = .25f, ShatterSeconds = .3f;
+    // 当たりの無い間のトゲの濃さと、当たりの窓の手前で濃くなるまでの秒。
+    public const float SpikeFaintAlpha = .22f, SpikeLiveRamp = .1f;
+    // 外側の壁(大きさ 3 以上のトゲが一度に約60個)。画面の大半を一度に覆うので、強い明滅にしないよう
+    // 濃さを抑え(薄い間 0.15・当たりの間 0.6)、ゆっくり濃くし、絵は当たり程度に小さく、着地点の輪は出さない。
+    public const float WallSize = 3f, WallFaintAlpha = .15f, WallLiveAlpha = .6f, WallLiveRamp = .2f, WallVisualScale = .75f;
     static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
     static readonly Color SpikeEdge = new Color(1f, .36f, .84f);
     static readonly Color GrazeColor = new Color(1f, .92f, .55f);
@@ -283,7 +288,8 @@ public sealed class AimDodgeMode : MonoBehaviour
             var view = pair.Value;
             var spike = view.spike;
             float remaining = (float)(spike.Time - songTime);
-            float visualRadius = AimDodgeRules.SpikeVisualRadius * spike.Size;
+            bool wall = spike.Size >= WallSize;
+            float visualRadius = AimDodgeRules.SpikeVisualRadius * spike.Size * (wall ? WallVisualScale : 1f);
             float spin = (float)songTime * 140f + spike.Index * 37f;
             if (view.endAge < 0)
             {
@@ -293,12 +299,15 @@ public sealed class AimDodgeMode : MonoBehaviour
                 float pulse = remaining < 0 ? 1f + .08f * Mathf.Sin((float)songTime * 40f) : 1f;
                 view.body.localScale = Vector3.one * visualRadius * pulse;
                 float appear = Mathf.Clamp01((float)(AimDodgeRules.LeadSeconds - remaining) / .25f);
-                Tint(view.bodyRenderer, Color.white, appear);
-                // 着地点の当たりの輪は見えた時から薄く、届く0.3秒前から縮む輪で「もうすぐ」を知らせる。
-                Tint(view.markerRenderer, SpikeEdge, (.18f + (remaining < .3f ? .35f : 0f)) * appear);
+                // 当たりがある間(届く前後 SpikeWindow)だけはっきり描き、それ以外は薄く
+                // (2026-10-26 ユーザー「とげはさ、判定ない間は薄くしといて」)。窓の SpikeLiveRamp 秒前から濃くなる。
+                float live = Mathf.Clamp01(1f - (Mathf.Abs(remaining) - (float)AimDodgeRules.SpikeWindow) / (wall ? WallLiveRamp : SpikeLiveRamp));
+                Tint(view.bodyRenderer, Color.white, (wall ? Mathf.Lerp(WallFaintAlpha, WallLiveAlpha, live) : Mathf.Lerp(SpikeFaintAlpha, 1f, live)) * appear);
+                // 着地点の当たりの輪も薄く、届く0.3秒前から縮む輪で「もうすぐ」を知らせる(壁には出さない)。
+                Tint(view.markerRenderer, SpikeEdge, wall ? 0f : (.12f + .43f * live) * appear);
                 float arm = Mathf.Clamp01(1f - remaining / .3f);
                 view.arming.localScale = Vector3.one * Mathf.Lerp(1.8f, 1f, arm);
-                Tint(view.armingRenderer, SpikeEdge, remaining <= .3f ? .9f * arm : 0f);
+                Tint(view.armingRenderer, SpikeEdge, !wall && remaining <= .3f ? .9f * arm : 0f);
                 continue;
             }
             view.endAge += Time.deltaTime;
@@ -307,8 +316,8 @@ public sealed class AimDodgeMode : MonoBehaviour
                 float k = Mathf.Clamp01(view.endAge / ShatterSeconds);
                 view.body.position = new Vector3(spike.Position.x, spike.Position.y, PlaneZ);
                 view.body.localScale = Vector3.one * visualRadius * (1f + .5f * k);
-                Tint(view.bodyRenderer, Color.white, 1f - k);
-                Tint(view.markerRenderer, SpikeEdge, .8f * (1f - k));
+                Tint(view.bodyRenderer, Color.white, (wall ? .8f : 1f) * (1f - k));
+                Tint(view.markerRenderer, SpikeEdge, wall ? 0f : .8f * (1f - k));
                 Tint(view.armingRenderer, SpikeEdge, 0);
                 if (k >= 1f) (finished ??= new List<AimSpike>()).Add(spike);
             }
@@ -319,8 +328,9 @@ public sealed class AimDodgeMode : MonoBehaviour
                 view.body.position = new Vector3(spike.Position.x, spike.Position.y, PlaneZ);
                 view.body.localRotation = Quaternion.Euler(0, 0, spin);
                 view.body.localScale = Vector3.one * visualRadius * (1f - k);
-                Tint(view.bodyRenderer, Color.white, 1f - k);
-                Tint(view.markerRenderer, SpikeEdge, .3f * (1f - k));
+                // 壁は当たりの間の濃さ(0.6)から消す。いっせいに濃くならないように。
+                Tint(view.bodyRenderer, Color.white, (wall ? WallLiveAlpha : 1f) * (1f - k));
+                Tint(view.markerRenderer, SpikeEdge, wall ? 0f : .3f * (1f - k));
                 Tint(view.armingRenderer, SpikeEdge, 0);
                 if (k >= 1f) (finished ??= new List<AimSpike>()).Add(spike);
             }
