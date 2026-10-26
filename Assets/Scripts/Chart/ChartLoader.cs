@@ -41,6 +41,7 @@ public static class ChartLoader
             // 拍ガイドと描画を成立させる最低限の復旧。ノーツ時刻・配置は補正しない。
             if (!Finite(data.bpm) || data.bpm <= 0) data.bpm = 120;
             if (!Finite(data.coordScale) || data.coordScale <= 0) data.coordScale = 1;
+            foreach (var note in data.notes) LongSlideRules.Normalize(note, data.coordScale);
             if (!Finite(data.offsetMs)) data.offsetMs = 0;
             if (!Finite(data.beatZeroMs)) data.beatZeroMs = 0;
             data.timeSignatures = ChartMeterMap.Normalize(data.timeSignatures);
@@ -48,6 +49,10 @@ public static class ChartLoader
             data.memory = NormalizeMemory(data.memory);
             data.scroll = NormalizeScroll(data.scroll);
             data.bull = NormalizeBull(data.bull);
+            // JsonUtility が省略・null を空オブジェクトにしても、旧譜面を有効にしない。
+            data.heat = HasHeatObject(json)
+                ? HeatRules.Normalize(data.heat ?? new HeatChartData()) : null;
+            data.fall = FallRules.Normalize(data.fall);
             return data;
         }
         catch (ArgumentException exception)
@@ -55,6 +60,35 @@ public static class ChartLoader
             Debug.LogWarning("ChartLoader: 譜面を読み込めません。" + exception.Message);
             return new ChartData();
         }
+    }
+
+    // ノーツ内の heat:true や文字列中の heat を、譜面全体の設定と取り違えない。
+    static bool HasHeatObject(string json)
+    {
+        int depth = 0;
+        bool found = false;
+        for (int i = 0; i < json.Length; i++)
+        {
+            char token = json[i];
+            if (token == '"')
+            {
+                int end = StringEnd(json, i);
+                if (depth == 1 && end - i == 5
+                    && string.CompareOrdinal(json, i + 1, "heat", 0, 4) == 0)
+                {
+                    int colon = SkipWhiteSpace(json, end + 1);
+                    if (colon < json.Length && json[colon] == ':')
+                    {
+                        int value = SkipWhiteSpace(json, colon + 1);
+                        found = value < json.Length && json[value] == '{';
+                    }
+                }
+                i = end;
+            }
+            else if (token == '{' || token == '[') depth++;
+            else if (token == '}' || token == ']') depth--;
+        }
+        return found;
     }
 
     static bool Finite(float value) => !float.IsNaN(value) && !float.IsInfinity(value);

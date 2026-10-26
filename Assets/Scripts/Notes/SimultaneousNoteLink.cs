@@ -138,7 +138,10 @@ public class SimultaneousNoteLink : MonoBehaviour
         ApplyNoteGlow();
         if (line != null)
         {
-            Vector3 a = noteA.transform.position, b = noteB.transform.position;
+            Color linkColor = new Color(1f, 1f, 1f, DefaultAlpha * NoteVeil.CueAlpha(pairVeil));
+            line.startColor = DarkRules.Rgb(linkColor, noteA.Brightness);
+            line.endColor = DarkRules.Rgb(linkColor, noteB.Brightness);
+            Vector3 a = noteA.VisualTransform.position, b = noteB.VisualTransform.position;
             Vector3 direction = b - a;
             float distance = direction.magnitude;
             float trimA = EdgeDistance(noteA, direction.normalized);

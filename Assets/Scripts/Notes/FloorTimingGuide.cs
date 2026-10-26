@@ -10,6 +10,7 @@ public sealed class FloorTimingGuide : MonoBehaviour
     static readonly Color Ink = new Color(.018f, .023f, .05f, 1);
     readonly List<Vector3> vertices = new List<Vector3>(8192);
     readonly List<Color> colors = new List<Color>(8192);
+    readonly List<Color> brightColors = new List<Color>(8192);
     readonly List<int> triangles = new List<int>(16384);
     readonly List<CuttableNote> candidates = new List<CuttableNote>(MaxMarkers);
     double priorityTime;
@@ -25,6 +26,7 @@ public sealed class FloorTimingGuide : MonoBehaviour
     public int LongProgressCount { get; private set; }
     public float JudgmentZ { get; private set; }
     public float CountTintAmount => Mathf.Max(countLeftAmount, countRightAmount);
+    public float DarkBrightness { get; set; } = 1f;
 
     public void SetCountTint(Color left, float leftAmount, Color right, float rightAmount)
     {
@@ -58,7 +60,7 @@ public sealed class FloorTimingGuide : MonoBehaviour
     {
         if (!isActiveAndEnabled || spawner == null || !spawner.isActiveAndEnabled ||
             double.IsNaN(songTime) || double.IsInfinity(songTime)) { Clear(); return; }
-        vertices.Clear(); colors.Clear(); triangles.Clear(); MarkerCount = LongProgressCount = 0;
+        vertices.Clear(); colors.Clear(); brightColors.Clear(); triangles.Clear(); MarkerCount = LongProgressCount = 0;
         JudgmentZ = spawner.judgeZ;
         if (!Finite(JudgmentZ)) { Clear(); return; }
         // 中央の白い固定線と暗い下敷き。中心がノーツの判定面と一致する。
@@ -71,6 +73,7 @@ public sealed class FloorTimingGuide : MonoBehaviour
             Bar(-1.8f, JudgmentZ, 3.6f, .065f * visibility, Color.Lerp(lineColor, countLeft, countLeftAmount), .003f);
             Bar(1.8f, JudgmentZ, 3.6f, .065f * visibility, Color.Lerp(lineColor, countRight, countRightAmount), .003f);
         }
+        DimColors(0, DarkBrightness);
         candidates.Clear();
         var live = spawner.LiveNotes;
         for (int i = 0; i < live.Count; i++)
@@ -95,6 +98,7 @@ public sealed class FloorTimingGuide : MonoBehaviour
                 {
                     DrawLongProgress(note, Mathf.Clamp01((float)(1 + remaining / duration)), visibility);
                     if (note.Veil > 0f) FadeNoteColors(firstColor, note.CueVisibility);
+                    DimColors(firstColor, note.Brightness);
                     LongProgressCount++;
                 }
                 continue;
@@ -131,10 +135,30 @@ public sealed class FloorTimingGuide : MonoBehaviour
                 Arrow(position, note.RequiredDirection, size, Color.Lerp(tint, new Color(1, 1, 1, alpha), .75f), .009f);
             }
             if (note.Veil > 0f) FadeNoteColors(firstColor, note.CueVisibility);
+            DimColors(firstColor, note.Brightness);
             MarkerCount++;
         }
         mesh.Clear(); mesh.SetVertices(vertices); mesh.SetColors(colors); mesh.SetTriangles(triangles, 0, true);
         display.enabled = true;
+    }
+
+    void DimColors(int first, float brightness)
+    {
+        for (int i = first; i < colors.Count; i++)
+        {
+            // 透明度・カウントイン・V の薄さを保った、停電を掛ける前の色を保存する。
+            brightColors.Add(colors[i]);
+            if (brightness != 1f) colors[i] = DarkRules.Rgb(colors[i], brightness);
+        }
+    }
+
+    // 曲が止まったまま離脱しても、位置・形・判定を進めず色だけを戻す。
+    public void RestoreDarkBrightness()
+    {
+        DarkBrightness = 1f;
+        colors.Clear();
+        colors.AddRange(brightColors);
+        if (mesh != null) mesh.SetColors(colors);
     }
 
     // 白い印だけでなく、黒い下敷き・方向矢印・ロングの残量も同じ比率で薄くする。
@@ -212,6 +236,8 @@ public sealed class FloorTimingGuide : MonoBehaviour
     {
         MarkerCount = LongProgressCount = 0;
         candidates.Clear();
+        colors.Clear();
+        brightColors.Clear();
         if (mesh != null) mesh.Clear();
         if (display != null) display.enabled = false;
     }

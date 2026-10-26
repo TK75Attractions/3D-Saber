@@ -79,6 +79,15 @@ public class SaberCutJudge : MonoBehaviour
     }
     bool stunned;
 
+    // 熱交換はノーツごとに拒否する。Stunned は他のギミックの状態として保持する。
+    public HeatMode Heat { get; internal set; }
+
+    public bool CanCutNote(CuttableNote note)
+        => note != null && !Stunned && (Heat == null || Heat.Allows(this, note));
+
+    public SaberHand CutterHandFor(CuttableNote note)
+        => Heat != null ? Heat.CutterHand(this, note) : EffectiveHand();
+
     // 本編のIMU+Camera判定がこの棒を担当する間だけ、従来の接触履歴を止める。
     public bool ExternalJudgment
     {
@@ -548,11 +557,13 @@ public class SaberCutJudge : MonoBehaviour
 
     void Finish(CuttableNote note, Pending p, CutDirection imuHint, Vector3 velocity)
     {
+        // 同じフレームの先のカットで上限に達した場合も、ここで再確認する。
+        if (!CanCutNote(note)) return;
         bool clocked = Finite(songTime);
         Vector2 motion = new Vector2(velocity.x, velocity.y);
         double? judged = clocked ? ScoreTime(note, p, motion) : Finite(p.bestSongTime) ? p.bestSongTime : (double?)null;
         Vector2? direction = clocked ? CutDirectionFor(note, p, motion) : (Vector2?)null;
-        bool accepted = note.CutAtSongTime(p.hitPoint, velocity, imuHint, EffectiveHand(), judged, DirectionTolerance(), direction, feedbackSwingId);
+        bool accepted = note.CutAtSongTime(p.hitPoint, velocity, imuHint, CutterHandFor(note), judged, DirectionTolerance(), direction, feedbackSwingId);
         if (!accepted || !Grouped(note)) return;
         // この振りで切った時刻を進める(同時のノーツは最初の1つで決まる)。次のなぞりの間隔は、刃がこのノーツに届いた時刻から測る。
         if (double.IsNaN(strokeGroupTime) || note.HitTime - strokeGroupTime > SimultaneousSeconds)
@@ -794,7 +805,7 @@ public class SaberCutJudge : MonoBehaviour
 
     private bool IsCandidate(CuttableNote n, bool checkCutOrder = true)
     {
-        if (n == null) return false;
+        if (!CanCutNote(n)) return false;
         if (n.IsCut || n.IsMissed) return false;
         if (!n.IsJudgeable && !Finite(EntryTime(n))) return false;
         if (!n.gameObject.activeInHierarchy) return false;
@@ -805,9 +816,9 @@ public class SaberCutJudge : MonoBehaviour
     // 抜けた(通り過ぎた)時点でまだ切ってよいか。曲時計がある本編では、近づいたのが判定窓の中なら窓が閉じたあとでも、
     // Miss が決まるまでは切れる(刃がノーツの上を通っている最中は、NoteSpawner が Miss を少し待つ)。
     // 時計がない(タイトル・単体テスト)ときは従来どおり、今の判定窓で決める。
-    static bool StillCuttable(CuttableNote note, Pending p)
+    bool StillCuttable(CuttableNote note, Pending p)
     {
-        if (note == null || note.SpawnVersion != p.version) return false;
+        if (!CanCutNote(note) || note.SpawnVersion != p.version) return false;
         if (note.IsCut || note.IsMissed || !note.gameObject.activeInHierarchy) return false;
         return note.IsJudgeable || Finite(p.bestSongTime);
     }

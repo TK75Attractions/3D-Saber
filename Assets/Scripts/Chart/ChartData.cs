@@ -35,6 +35,20 @@ public class ChartData
     // 闘牛の裏譜面(アンダルシアの「T」、2026-10-26)。ノーツに加えて、刃が触れるとその剣が2秒しびれる「突進」と「弾」が来る。
     // ふつうの譜面では空のまま。決まりは BullRules。
     public BullChartData bull = new BullChartData();
+    // 熱交換。null は無効。JSON に heat のオブジェクトがあるときだけ有効にする。
+    public HeatChartData heat;
+    // 停電(2:23 AM の「L」)。ノーツ・判定は変えず、曲時計で背景と懐中電灯の強さを変える。
+    public List<DarkPointData> dark = new List<DarkPointData>();
+    // 校歌の裏譜面 F。判定の根元は着地点、見た目だけを真上から等速で落とす。
+    public FallChartData fall = new FallChartData();
+}
+
+[Serializable]
+public class FallChartData
+{
+    // 無い項目を読む旧譜面では有効にしない。
+    public bool enabled;
+    public float height = 3.2f;
 }
 
 [Serializable]
@@ -167,6 +181,10 @@ public class NoteData
     // long 用の実長さ（ミリ秒）。0 なら従来通り (count-1) × NoteSpawner.secondsPerLongCut で自動決定。
     // 「カット回数は少ないが長く滞留する」ようなロングを作れる。
     public float lengthMs = 0f;
+    // U47 流星。slide が true のロングだけ、到着から明示長の間に終点へ滑る。
+    // 終点は x/y と同じ譜面座標。旧譜面は slide=false のまま動かない。
+    public bool slide;
+    public float slideToX, slideToY;
     // 見えにくさ(0〜1、覚える裏譜面「M」の「まね」の側)。0 はふつう、1 は見えない。判定は変わらない。
     public float veil = 0f;
     // 風に流されて来る(青葉騒の裏譜面「W」、2026-10-25)。出現したときの位置のずれ(windX・windY、ワールド単位)は、
@@ -181,6 +199,8 @@ public class NoteData
     // 消える(Zero の裏譜面「V」、2026-10-26)。"fade"(本体だけ消える)・"sudden"(直前に出る)・"blink"(途中で消えてまた出る)・
     // "hide"(合図ごと消える)。空ならふつう。見え方の時刻は VanishRules。判定は変わらない。
     public string vanish = "";
+    // 熱交換の特殊ノーツ。両手で切る場合は既存の color:"gold" と組み合わせる。
+    public bool heat;
 
     public double TimeSeconds => time / 1000.0;
 

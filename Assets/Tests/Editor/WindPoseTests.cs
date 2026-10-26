@@ -29,6 +29,8 @@ public class WindPoseTests
         Assert.LessOrEqual(Mathf.Abs(WindRules.BankDegrees(3f, 0, 0, 1f, .6, 1, .3, 2)), WindRules.MaxBankDegrees);
         Assert.AreEqual(0f, WindRules.BankDegrees(2f, 0, 0, .5f, WindRules.CalmSeconds, 1, 0, 2), "静かな区間はまっすぐ");
         Assert.AreEqual(0f, WindRules.BankDegrees(2f, 0, 0, .5f, -.2, 1, 0, 2), "届いたあともまっすぐ");
+        Assert.AreEqual(2.519246f, WindRules.BankDegrees(0, 0, 0, .4f, .5, 1, .3, 2), 1e-4f,
+            "傾きには従来の減衰する揺れの速度を使う");
     }
 
     GameObject root;
@@ -91,6 +93,10 @@ public class WindPoseTests
         spawner.Tick(3.0 - WindRules.CalmSeconds);
         Assert.AreEqual(baseScale, note.transform.localScale);
         Assert.AreEqual(Quaternion.identity, note.transform.rotation, "判定の前はまっすぐ");
+        Assert.Greater(Mathf.Abs(note.VisualTransform.position.x - note.transform.position.x), .001f,
+            "姿勢が戻っても見た目の揺れは続く");
+        spawner.Tick(3.0 - WindRules.StillSeconds);
+        Assert.AreEqual(Vector3.zero, note.VisualTransform.localPosition);
         spawner.Tick(3.0);
         Assert.AreEqual(Quaternion.identity, note.transform.rotation);
     }

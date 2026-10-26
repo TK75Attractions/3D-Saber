@@ -62,6 +62,19 @@ public partial class NoteVisuals
         if (bodyDimmed) ApplyEmissionStrength(runtimeBodyMat, .2f);
     }
 
+    // 風の描画用の子へ本体を移したあとも、消える・見えにくい設定の復元先をそろえる。
+    internal void MoveBodyRenderer(MeshRenderer before, MeshRenderer after)
+    {
+        if (veilRenderers == null) return;
+        for (int i = 0; i < veilRenderers.Length; i++)
+        {
+            var state = veilRenderers[i];
+            if (state.renderer != before) continue;
+            state.renderer = after;
+            veilRenderers[i] = state;
+        }
+    }
+
     void CacheVeilState()
     {
         veilMaterials = new VeilMaterialState[ownedSubMaterials.Count + 1];

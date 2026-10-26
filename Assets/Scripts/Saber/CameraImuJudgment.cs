@@ -259,8 +259,8 @@ public class CameraImuJudgment : MonoBehaviour
     bool IsCandidate(CuttableNote note, PendingSwing p, SaberCutJudge judge)
     {
         if (note == null || !note.gameObject.activeInHierarchy || note.IsCut || note.IsMissed || note.IsFinalized) return false;
-        // 闘牛(T)でしびれている棒では切れない。
-        if (judge.Stunned) return false;
+        // 闘牛のしびれと、熱交換のノーツ別の制限を同じ入口で確認する。
+        if (!judge.CanCutNote(note)) return false;
         if (!SaberHandHelper.CanCut(note.RequiredHand, judge.EffectiveHand())) return false;
         if (!note.CanBeginCutAt(p.SongTime, judge.EffectiveHand())) return false;
         if (p.OrderBlocked != null)
@@ -319,7 +319,8 @@ public class CameraImuJudgment : MonoBehaviour
         bool direction = best.DirectionVisualOnly || CutDirectionHelper.Matches(best.RequiredDirection,
             contact.Velocity, Mathf.Cos(directionToleranceDegrees * Mathf.Deg2Rad));
         string detail = $"seq={p.Swing.Sequence} side={p.Swing.Side} camera={color} receive={p.Swing.ReceiveTime:F6} xiao={p.Swing.XiaoTimestampUs} song={p.SongTime:F6} sample={contact.SampleTime:F6} sampleAgeMs={(now - contact.ReceiveTime) * 1000:F1} latencyMs={cameraLatencyCompensationMs:F1} deltaMs={(contact.SampleTime - p.Swing.ReceiveTime) * 1000:F1} note={noteId} position=pass swept={contact.Swept} direction={direction}";
-        bool accepted = best.TryCutWithCameraTiming(contact.Point, contact.Velocity, judge.EffectiveHand(),
+        if (!judge.CanCutNote(best)) return false;
+        bool accepted = best.TryCutWithCameraTiming(contact.Point, contact.Velocity, judge.CutterHandFor(best),
             p.SongTime, Mathf.Cos(directionToleranceDegrees * Mathf.Deg2Rad), p.FeedbackSwingId);
         if (!direction)
         {
@@ -348,6 +349,8 @@ public class CameraImuJudgment : MonoBehaviour
         foreach (var (note, hit) in touched)
         {
             if (note == best || note.IsCut || note.IsMissed || note.IsFinalized) continue;
+            // 最初の一切りで上限になった場合、残りの同時ノーツへ制限を反映する。
+            if (!judge.CanCutNote(note)) continue;
             if (Math.Abs(note.HitTime - best.HitTime) > SaberCutJudge.SimultaneousSeconds) continue;
             Contact c = hit;
             if (note.RequiredDirection != CutDirection.None && !note.DirectionVisualOnly)
@@ -357,7 +360,7 @@ public class CameraImuJudgment : MonoBehaviour
                 c.Velocity = directionVelocity;
             }
             c.Point.z = spawner.ComputeNoteZ(note, note.HitTime - p.SongTime, spawner.Speed);
-            note.TryCutWithCameraTiming(c.Point, c.Velocity, judge.EffectiveHand(), p.SongTime, tolerance, p.FeedbackSwingId);
+            note.TryCutWithCameraTiming(c.Point, c.Velocity, judge.CutterHandFor(note), p.SongTime, tolerance, p.FeedbackSwingId);
         }
         touched.Clear();
     }

@@ -109,7 +109,56 @@ public sealed class RushESecretState
         EdgeLight = new Color(1, .66f, .44f), FanLight = new Color(1, .56f, .30f),
         CenterHaze = new Color(1, .30f, .06f, .42f), LeftHaze = new Color(.95f, .22f, .04f, .35f), RightHaze = new Color(1, .46f, .14f, .35f),
     };
-    public static readonly SecretChart[] Charts = { RushE, ElDoradoG, PhobiaAvoid, MorningMemory, AobasouWind, LogicSpeed, ZeroVanish, AndalusiaBull };
+    // 2:23 AM の「L」(Light、U13 闇と灯り)。二本の刃で夜を照らす。目印は暖かい懐中電灯の色。
+    public static readonly Color Lamp = new Color(1f, .86f, .5f);
+    public static readonly SecretChart TwoTwentyThreeLight = new SecretChart
+    {
+        SongId = "2_23_AM", Difficulty = "Y", Accent = Lamp,
+        Glow = new Color(1, .82f, .40f, .25f), Face = new Color(.18f, .13f, .045f),
+        TileDeep = new Color(.16f, .11f, .025f), TileLight = new Color(.72f, .57f, .22f),
+        Backdrop = new Color(.035f, .035f, .055f),
+        LeftLight = new Color(1, .76f, .36f), RightLight = new Color(1, .90f, .60f),
+        EdgeLight = new Color(1, .91f, .66f), FanLight = new Color(1, .84f, .48f),
+        CenterHaze = new Color(1, .78f, .32f, .42f),
+        LeftHaze = new Color(.80f, .63f, .26f, .35f), RightHaze = new Color(1, .86f, .48f, .35f),
+    };
+    // 校歌の F(U66 花吹雪)。Hard と同じノーツが真上から等速で降る。色は淡い桜。
+    public static readonly Color Sakura = new Color(1f, .72f, .86f);
+    public static readonly SecretChart EpilogueFall = new SecretChart
+    {
+        SongId = "Epilogue", Difficulty = "F", Accent = Sakura, Glow = new Color(1, .62f, .80f, .25f), Face = new Color(.20f, .08f, .14f),
+        TileDeep = new Color(.19f, .065f, .13f), TileLight = new Color(.72f, .38f, .56f),
+        Backdrop = new Color(.09f, .025f, .06f), LeftLight = new Color(1, .56f, .75f), RightLight = new Color(1, .78f, .88f),
+        EdgeLight = new Color(1, .84f, .92f), FanLight = new Color(1, .74f, .86f),
+        CenterHaze = new Color(1, .52f, .73f, .42f), LeftHaze = new Color(.95f, .44f, .66f, .35f), RightHaze = new Color(1, .68f, .82f, .35f),
+    };
+    // Manic Sonic の X(熱交換)。目印は冷却の青緑、左右の光は熱い銅色と冷たい青緑。
+    public static readonly Color Thermal = new Color(.18f, .88f, .68f);
+    public static readonly SecretChart ManicSonicHeat = new SecretChart
+    {
+        SongId = "ManicSonic", Difficulty = "X", Accent = Thermal,
+        Glow = new Color(.12f, .88f, .66f, .25f), Face = new Color(.025f, .16f, .12f),
+        TileDeep = new Color(.015f, .13f, .10f), TileLight = new Color(.08f, .60f, .44f),
+        Backdrop = new Color(.008f, .055f, .045f),
+        LeftLight = new Color(1f, .34f, .16f), RightLight = new Color(.10f, .94f, .76f),
+        EdgeLight = new Color(.42f, 1f, .78f), FanLight = new Color(.24f, .92f, .65f),
+        CenterHaze = new Color(.10f, .76f, .55f, .42f),
+        LeftHaze = new Color(1f, .28f, .08f, .35f), RightHaze = new Color(.08f, .86f, .66f, .35f),
+    };
+    // escapade の L(U47 流星)。逃げるロングを追う。目印は鮮やかなコバルト。
+    public static readonly Color Cobalt = new Color(.28f, .46f, 1f);
+    public static readonly SecretChart EscapadeLong = new SecretChart
+    {
+        SongId = "escapade", Difficulty = "L", Accent = Cobalt,
+        Glow = new Color(.20f, .38f, 1f, .25f), Face = new Color(.025f, .055f, .22f),
+        TileDeep = new Color(.015f, .035f, .20f), TileLight = new Color(.12f, .26f, .78f),
+        Backdrop = new Color(.006f, .015f, .10f),
+        LeftLight = new Color(.18f, .34f, 1f), RightLight = new Color(.40f, .58f, 1f),
+        EdgeLight = new Color(.54f, .68f, 1f), FanLight = new Color(.36f, .54f, 1f),
+        CenterHaze = new Color(.12f, .28f, 1f, .42f),
+        LeftHaze = new Color(.08f, .20f, .95f, .35f), RightHaze = new Color(.28f, .44f, 1f, .35f),
+    };
+    public static readonly SecretChart[] Charts = { RushE, ElDoradoG, PhobiaAvoid, MorningMemory, AobasouWind, LogicSpeed, ZeroVanish, AndalusiaBull, TwoTwentyThreeLight, EpilogueFall, ManicSonicHeat, EscapadeLong };
     public static SecretChart For(string songId)
     {
         foreach (var chart in Charts) if (chart.SongId == songId) return chart;

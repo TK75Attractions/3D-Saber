@@ -18,14 +18,14 @@ public class WindRulesTests
         Vector2 far = WindRules.WorldOffset(1.5f, -.4f, 0, .3f, 1, 1, .5, 20f);
         Assert.AreEqual(plain.x * 27f / 7f, far.x, 1e-5f);
         Assert.AreEqual(plain.y * 27f / 7f, far.y, 1e-5f);
-        Assert.AreEqual(Vector2.zero, WindRules.WorldOffset(1.5f, -.4f, 0, .3f, .2, 1, .5, 4f), "静かな区間は奥行きに関係なく 0");
+        Assert.AreEqual(Vector2.zero, WindRules.WorldOffset(1.5f, -.4f, 0, 0, .2, 1, .5, 4f), "流されは静かな区間で 0");
     }
 
     [TestCase(-10d)]
     [TestCase(-.01d)]
     [TestCase(0d)]
-    [TestCase(.35d)]
-    public void CalmAndPastArrivalAreExactlyZero(double remaining)
+    [TestCase(.06d)]
+    public void StillAndPastArrivalAreExactlyZero(double remaining)
     {
         Assert.AreEqual(Vector2.zero,
             WindRules.Offset(2, -1, 3, .8f, remaining, 2, .5));
@@ -38,7 +38,7 @@ public class WindRulesTests
     public void ShortApproachIsExactlyZero(double approach)
     {
         Assert.AreEqual(Vector2.zero,
-            WindRules.Offset(2, -1, 3, .8f, 2, approach, .5));
+            WindRules.Offset(2, -1, 3, 0, 2, approach, .5));
     }
 
     [Test]
@@ -69,6 +69,22 @@ public class WindRulesTests
         Assert.AreEqual(.8f, WindRules.Offset(0, 0, 0, .8f, 2, 2, 2.5).x, 1e-6f);
         Assert.AreEqual(0, WindRules.Offset(0, 0, 0, .8f, 2, 2, 0).x, 1e-6f);
         Assert.AreEqual(0, WindRules.Offset(0, 0, 0, .8f, 2, 2, 1).x, 1e-6f);
+    }
+
+    [Test]
+    public void SwayKeepsItsAmplitudeUntilTheLastShortFade()
+    {
+        Assert.AreEqual(Vector2.zero, WindRules.Offset(2, -1, 3, 0, WindRules.CalmSeconds, 1, .5));
+        foreach (double remaining in new[] { 1d, .6, .35, .25, .18 })
+            Assert.AreEqual(.8f, WindRules.SwayOffset(.8f, remaining, 1, .5), 1e-6f);
+        Assert.AreEqual(.4f, WindRules.SwayOffset(.8f, .12, 1, .5), 1e-6f);
+        Assert.Greater(WindRules.SwayOffset(.8f, .061, 1, .5), 0f);
+        Assert.AreEqual(0f, WindRules.SwayOffset(.8f, .06, 1, .5));
+        Assert.AreEqual(0f, WindRules.SwayOffset(.8f, 1, .06, .5));
+        Assert.AreEqual(.8f, WindRules.SwayOffset(.8f, .1, .1, .5), 1e-6f);
+        // フェードの両端の傾きも 0 へ近づく。
+        Assert.Less(.8f - WindRules.SwayOffset(.8f, .18 - 1e-5, 1, .5), 1e-6f);
+        Assert.Less(WindRules.SwayOffset(.8f, .06 + 1e-5, 1, .5), 1e-6f);
     }
 
     [Test]
@@ -252,6 +268,7 @@ public class WindNoteTests
 
     [TestCase(0d)]
     [TestCase(.17d)]
+    [TestCase(1.8d)]
     public void SpawnEventAlreadySeesWindAndBothGhostsSeeLanding(double delay)
     {
         var data = Wind();
@@ -270,8 +287,8 @@ public class WindNoteTests
         spawner.OnNoteSpawned += note =>
         {
             observed = true;
-            NearXY(expected, note.transform.position);
-            Assert.AreNotEqual(landing, (Vector2)note.transform.position);
+            NearXY(expected, note.VisualTransform.position);
+            Assert.AreNotEqual(landing, (Vector2)note.VisualTransform.position);
             Assert.AreEqual(landing, note.LandingPosition);
             GhostsAtLanding(note);
         };
@@ -279,7 +296,7 @@ public class WindNoteTests
         spawner.Tick(now);
         Assert.IsTrue(observed);
         var live = spawner.LiveNotes[0];
-        NearXY(expected, live.transform.position);
+        NearXY(expected, live.VisualTransform.position);
         Assert.AreEqual(spawner.judgeZ + spawner.Speed * (float)(hit - now),
             live.transform.position.z, 1e-5f);
 
@@ -307,11 +324,11 @@ public class WindNoteTests
         double beat = (now - spawner.TotalOffsetSeconds) * chart.bpm / 60.0;
         NearXY(note.LandingPosition + WindRules.WorldOffset(
             data.windX, data.windY, data.windSpin, data.windSway,
-            hit - now, spawner.approachTime, beat, note.transform.position.z), note.transform.position);
+            hit - now, spawner.approachTime, beat, note.transform.position.z), note.VisualTransform.position);
         Assert.AreNotEqual(note.LandingPosition, (Vector2)note.transform.position);
         GhostsAtLanding(note);
 
-        foreach (double remaining in new[] { WindRules.CalmSeconds, .2, 0, -.3 })
+        foreach (double remaining in new[] { WindRules.CalmSeconds, .2, .12, .061, WindRules.StillSeconds, 0, -.3 })
         {
             spawner.Tick(hit - remaining);
             ExactXY(note.LandingPosition, note.transform.position);
@@ -392,11 +409,9 @@ public class WindNoteTests
         Assert.AreEqual(2, spawner.AliveCount);
         foreach (var note in spawner.LiveNotes)
         {
-            double p = (note.HitTime - now - WindRules.CalmSeconds)
-                / (spawner.approachTime - WindRules.CalmSeconds);
-            double e = p * p * (3 - 2 * p);
-            float sway = (float)(e * Math.Sin(Math.PI * 4.2)) * WindRules.DepthScale(note.transform.position.z);
-            NearXY(note.LandingPosition + new Vector2(sway, 0), note.transform.position);
+            float sway = (float)Math.Sin(Math.PI * 4.2) * WindRules.DepthScale(note.transform.position.z);
+            ExactXY(note.LandingPosition, note.transform.position);
+            NearXY(note.LandingPosition + new Vector2(sway, 0), note.VisualTransform.position);
         }
         spawner.Tick(now + .05);
         Assert.AreSame(map, field.GetValue(spawner), "Tickでは拍の地図を作り直さない");
@@ -441,6 +456,7 @@ public class WindNoteTests
         Assert.AreEqual(0f, note.WindY);
         Assert.AreEqual(0f, note.WindSpin);
         Assert.AreEqual(0f, note.WindSway);
+        Assert.AreEqual(Vector3.zero, note.VisualTransform.localPosition);
 
         var landing = new Vector2(.4f, -.8f);
         note.ConfigureWind(new NoteData(), landing);
@@ -458,6 +474,129 @@ public class WindNoteTests
         GhostsAtLanding(note);
     }
 
+    [TestCase(1, "none")]
+    [TestCase(4, "up")]
+    public void VisualsSwayInsideTheWindowWhileJudgmentAndGuidesStayAtLanding(int cuts, string direction)
+    {
+        var data = Wind(cuts);
+        data.direction = direction;
+        var chart = Chart(data);
+        chart.bpm = 60;
+        chart.beatZeroMs = 3300;
+        spawner.JudgeLatencySeconds = -.15;
+        spawner.SetChart(chart);
+        double hit = spawner.EffectiveTime(data);
+        spawner.Tick(hit - .8);
+        var note = spawner.LiveNotes[0];
+        Assert.AreNotSame(note.transform, note.VisualTransform);
+        Assert.IsFalse(note.GetComponent<MeshRenderer>().enabled);
+        Assert.IsTrue(note.BodyRenderer.enabled);
+
+        foreach (double remaining in new[] { .35, .249, .18, .12, .061, .06, 0d })
+        {
+            double now = hit - remaining;
+            spawner.Tick(now);
+            ExactXY(note.LandingPosition, note.transform.position);
+            GhostsAtLanding(note);
+            if (remaining > .06)
+            {
+                double beat = (now - spawner.TotalOffsetSeconds) - 3.3;
+                float x = WindRules.SwayOffset(data.windSway, remaining, spawner.approachTime, beat)
+                    * WindRules.DepthScale(note.transform.position.z);
+                Assert.Greater(Mathf.Abs(x), 1e-6f);
+                NearXY(note.LandingPosition + new Vector2(x, 0), note.VisualTransform.position);
+            }
+            else
+            {
+                Assert.AreEqual(Vector3.zero, note.VisualTransform.localPosition);
+                ExactXY(note.LandingPosition, note.VisualTransform.position);
+            }
+            if (remaining == .249) Assert.IsTrue(note.IsJudgeable);
+            if (note.Arrow != null) Assert.AreSame(note.VisualTransform, note.Arrow.transform.parent);
+            if (note.countLabel != null)
+            {
+                Assert.AreSame(note.VisualTransform, note.countLabel.GetComponent<FollowTransformWorldOffset>().target);
+                Assert.AreEqual(note.VisualTransform.position + LongNoteCountStyle.WorldOffset, note.countLabel.transform.position);
+            }
+        }
+
+        // Tickを挟まない判定前の更新も、今の拍・前のZで見た目を進める。
+        spawner.Tick(hit - .8);
+        float previousZ = note.transform.position.z;
+        spawner.RefreshJudgmentWindows(hit - .12);
+        Assert.IsTrue(note.IsJudgeable);
+        ExactXY(note.LandingPosition, note.transform.position);
+        Assert.AreEqual(previousZ, note.transform.position.z);
+        float expected = WindRules.SwayOffset(data.windSway, .12, spawner.approachTime, .58)
+            * WindRules.DepthScale(previousZ);
+        NearXY(note.LandingPosition + new Vector2(expected, 0), note.VisualTransform.position);
+        if (cuts > 1)
+        {
+            note.Cut(note.transform.position, Vector3.up * 5f, CutDirection.Up);
+            Assert.AreEqual(cuts - 1, note.RemainingCuts);
+            var crack = note.VisualTransform.Find("Crack");
+            Assert.NotNull(crack);
+            NearXY(note.VisualTransform.position, crack.position);
+        }
+        spawner.RefreshJudgmentWindows(hit - WindRules.StillSeconds);
+        Assert.AreEqual(Vector3.zero, note.VisualTransform.localPosition);
+    }
+
+    [Test]
+    public void EarlyCutKeepsLogicalHitPointAndCreatesSlicesAndLightAtTheVisibleBody()
+    {
+        var data = Wind();
+        var chart = Chart(data);
+        chart.bpm = 60;
+        chart.beatZeroMs = 3300;
+        spawner.JudgeLatencySeconds = -.15;
+        spawner.SetChart(chart);
+        spawner.Tick(spawner.EffectiveTime(data) - .2);
+        var note = spawner.LiveNotes[0];
+        Assert.IsTrue(note.IsJudgeable);
+        Vector3 logical = note.transform.position;
+        Vector3 visible = note.VisualTransform.position;
+        Assert.Greater((visible - logical).sqrMagnitude, .01f);
+        // 破片を調べるまで本体を残す。破片はfinallyで必ず片付ける。
+        note.IsPooled = true;
+        bool observed = false;
+        note.OnCut += (n, point, velocity) =>
+        {
+            observed = true;
+            Assert.AreEqual(logical, n.transform.position);
+            Assert.AreEqual(logical, point);
+            n.NotifyJudgment(JudgmentTier.Great, point, velocity);
+        };
+        try
+        {
+            note.Cut(logical, Vector3.right * 5f);
+            Assert.IsTrue(observed);
+            foreach (string name in new[] { "firstPiece", "secondPiece" })
+            {
+                var piece = (SlicePieceDecay)typeof(CuttableNote).GetField(name,
+                    BindingFlags.Instance | BindingFlags.NonPublic).GetValue(note);
+                Assert.NotNull(piece);
+                Assert.AreEqual(visible, piece.transform.position);
+            }
+            var feedback = root.GetComponentInChildren<GameplayCutFeedback>();
+            Assert.AreEqual(1, feedback.ActiveCount);
+            var bursts = (Array)typeof(GameplayCutFeedback).GetField("bursts",
+                BindingFlags.Instance | BindingFlags.NonPublic).GetValue(feedback);
+            object burst = bursts.GetValue(0);
+            var position = (Vector3)burst.GetType().GetField("position").GetValue(burst);
+            NearXY(visible, position);
+        }
+        finally
+        {
+            foreach (string name in new[] { "firstPiece", "secondPiece" })
+            {
+                var piece = (SlicePieceDecay)typeof(CuttableNote).GetField(name,
+                    BindingFlags.Instance | BindingFlags.NonPublic).GetValue(note);
+                if (piece != null) Object.DestroyImmediate(piece.gameObject);
+            }
+        }
+    }
+
     [Test]
     public void ReducedEffectsAndMemoryVeilDoNotAlterWindMotion()
     {
@@ -468,11 +607,19 @@ public class WindNoteTests
         spawner.Tick(now);
         var note = spawner.LiveNotes[0];
         Vector3 ordinary = note.transform.position;
+        Vector3 visible = note.VisualTransform.position;
         Assert.AreNotEqual(note.LandingPosition, (Vector2)ordinary);
 
         DisplaySettings.SetReducedEffectsForTest(true);
         spawner.Tick(now);
         Assert.AreEqual(ordinary, note.transform.position);
+        Assert.AreEqual(visible, note.VisualTransform.position);
+        var visuals = note.GetComponent<NoteVisuals>();
+        visuals.SetVeil(1f);
+        Assert.IsFalse(note.BodyRenderer.enabled);
+        visuals.SetVeil(.95f);
+        Assert.IsTrue(note.BodyRenderer.enabled);
+        Assert.IsFalse(note.GetComponent<MeshRenderer>().enabled, "根元の本体を二重に描画しない");
         Assert.AreEqual(.95f, note.Veil);
         Assert.AreEqual(.95f, note.GetComponent<NoteVisuals>().Veil);
         Assert.IsFalse(note.TimingCue.GhostRoot.activeSelf);

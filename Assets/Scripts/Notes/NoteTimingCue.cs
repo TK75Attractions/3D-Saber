@@ -440,10 +440,24 @@ public class NoteTimingCue : MonoBehaviour
         return m;
     }
 
+    float darkBrightness = 1f;
+    public void SetDarkBrightness(float brightness)
+    {
+        brightness = DarkRules.ClampBrightness(brightness);
+        if (darkBrightness == brightness) return;
+        float ratio = brightness / darkBrightness;
+        darkBrightness = brightness;
+        DarkRules.MultiplyMaterialRgb(ringMat, ratio);
+        DarkRules.MultiplyMaterialRgb(ghostMat, ratio);
+        DarkRules.MultiplyMaterialRgb(approachMat, ratio);
+        DarkRules.MultiplyMaterialRgb(omenMat, ratio);
+    }
+
     // 発光はアルファに連動させ、フェードアウト時に光だけ残らないようにする。
     private void ApplyColor(Material m, Color c, float alpha, float emission)
     {
         if (m == null) return;
+        c = DarkRules.Rgb(c, darkBrightness);
         if (note != null && note.Veil > 0f) alpha *= note.CueVisibility;
         Color baseC = c;
         baseC.a = Mathf.Clamp01(alpha);

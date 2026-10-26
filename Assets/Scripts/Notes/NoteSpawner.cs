@@ -1,10 +1,10 @@
-using PoolKey = System.ValueTuple<UnityEngine.GameObject, CutDirection, int, SaberHand, bool, bool, bool>;
+using PoolKey = System.ValueTuple<UnityEngine.GameObject, CutDirection, int, SaberHand, bool, bool, System.ValueTuple<bool, bool>>;
 using System.Collections.Generic;
 using UnityEngine;
 
 // chart.json のノーツを approachTime だけ先読みで生成し、
 // spawnZ → judgeZ に向けて Z 軸で流す。判定ウィンドウも更新する。
-public class NoteSpawner : MonoBehaviour
+public partial class NoteSpawner : MonoBehaviour
 {
     public GameObject notePrefab;       // デフォルト（color が red/blue のどちらでもない場合）
     public GameObject notePrefabRed;    // color="red"
@@ -86,7 +86,7 @@ public class NoteSpawner : MonoBehaviour
 
     PoolKey Key(NoteData data) => (PickPrefab(data.color), CutDirectionHelper.Parse(data.direction),
         Mathf.Clamp(data.count,1,8), SaberHandHelper.FromColor(data.color),
-        string.Equals(data.color,"gold",System.StringComparison.OrdinalIgnoreCase), DisplaySettings.ProjectorMode, buildTimingCues);
+        string.Equals(data.color,"gold",System.StringComparison.OrdinalIgnoreCase), DisplaySettings.ProjectorMode, (buildTimingCues, HasFall));
     void EnsurePool()
     {
         if(idleRoot == null) {
@@ -141,7 +141,7 @@ public class NoteSpawner : MonoBehaviour
         Material material=null;
         foreach(var note in poolKeys.Keys) {
             if(note == null) continue;
-            var renderer=note.GetComponent<MeshRenderer>();
+            var renderer=note.BodyRenderer;
             if(renderer != null) material=renderer.sharedMaterial;
             if(material != null) break;
         }
@@ -156,6 +156,8 @@ public class NoteSpawner : MonoBehaviour
     public System.Func<CuttableNote, double, bool> ShouldDeferMiss { get; set; }
     // セーバー判定が「刃がこのノーツの上を通っている最中」と答えたら、passHoldSeconds まで Miss を待つ(GamePlayManager が設定)。
     public System.Func<CuttableNote, bool> HoldMiss { get; set; }
+    // 停電(L)の見た目だけの倍率。位置更新のあと、合図を描く前に読む。未設定は通常の明るさ。
+    public System.Func<CuttableNote, float> BrightnessFor { get; set; }
     // 判定の時計の遅れ(秒)。カメラの入力の遅れを、受付窓と Miss の確定だけで差し引く。
     // ノーツの位置・着地枠などの見た目は曲の時計のまま。GamePlayManager が毎フレーム設定する(既定 0)。
     public double JudgeLatencySeconds { get; set; }
@@ -184,6 +186,7 @@ public class NoteSpawner : MonoBehaviour
         OnChartReset?.Invoke();
         if (cutFeedback != null) cutFeedback.ResetState();
         if (FloorGuide != null) FloorGuide.Clear();
+        if (fallPetals != null) fallPetals.Clear();
         chart = data;
         HasWindNotes = false;
         HasVanishNotes = false;
@@ -191,6 +194,8 @@ public class NoteSpawner : MonoBehaviour
             foreach (var note in chart.notes)
             {
                 if (note == null) continue;
+                // F と W は描画の親を共有できないため、プールの準備より前に風を無効にする。
+                if (HasFall) note.windX = note.windY = note.windSpin = note.windSway = 0f;
                 if (note.HasWind) HasWindNotes = true;
                 if (VanishRules.Parse(note.vanish) != VanishMode.None) HasVanishNotes = true;
             }
@@ -199,7 +204,8 @@ public class NoteSpawner : MonoBehaviour
             ? new ChartTempoMap(chart.bpm, chart.beatZeroMs, chart.editorTempoMap)
             : null;
         windBeat = 0;
-        scrollMap = ScrollSpeedMap.Build(chart?.scroll);
+        // F は実時間で等速落下する。出現時刻も通常と同じ approach 秒前。
+        scrollMap = HasFall ? null : ScrollSpeedMap.Build(chart?.scroll);
         if (cutFeedback != null) cutFeedback.ReserveProtection(TotalNoteCount);
         nextIndex = 0;
         RecomputeTotalOffset();
@@ -276,6 +282,7 @@ public class NoteSpawner : MonoBehaviour
             windBeat = windTempoMap.BeatAt((songTime - TotalOffsetSeconds) * 1000.0);
         SpawnDue(songTime);
         UpdateLive(songTime);
+        TickFallPetals(songTime);
         if (FloorGuide != null) FloorGuide.Tick(this, songTime);
         if (cutFeedback != null)
         {
@@ -288,6 +295,8 @@ public class NoteSpawner : MonoBehaviour
     // 生成・Z移動・Miss通知は従来どおり判定後のTickで行う。
     public void RefreshJudgmentWindows(double songTime)
     {
+        if (HasWindNotes)
+            windBeat = windTempoMap.BeatAt((songTime - TotalOffsetSeconds) * 1000.0);
         foreach (CuttableNote note in liveNotes)
         {
             if (note == null) continue;
@@ -298,6 +307,10 @@ public class NoteSpawner : MonoBehaviour
                 note.transform.position = new Vector3(note.LandingPosition.x, note.LandingPosition.y, p.z);
                 ApplyWindPose(note, 0);
             }
+            // 判定前の飛び越しでも、揺れの位相と静止境界は今の曲時計へ進める。Zの更新順は保つ。
+            if (note.HasWind) ApplyWindSway(note, songTime, note.transform.position.z);
+            if (HasFall) UpdateFallNote(note, note.HitTime - songTime);
+            UpdateSlideNote(note, songTime);
             UpdateJudgmentWindow(note, note.HitTime - JudgeClock(songTime), LateWindowFor(note));
         }
     }
@@ -312,6 +325,7 @@ public class NoteSpawner : MonoBehaviour
     {
         if (cutFeedback != null) cutFeedback.ClearEffects();
         if (FloorGuide != null) FloorGuide.Clear();
+        if (fallPetals != null) fallPetals.Clear();
     }
 
     void OnDestroy()
@@ -320,6 +334,7 @@ public class NoteSpawner : MonoBehaviour
         if (cutFeedback != null) SafeDestroy(cutFeedback.gameObject);
         cutFeedback = null;
         if (FloorGuide != null) SafeDestroy(FloorGuide.gameObject);
+        if (fallPetals != null) SafeDestroy(fallPetals.gameObject);
         // 非プールノーツや外部noteRootも、このSpawnerの破棄で確実に片付ける。
         foreach (var note in liveNotes)
             if (note != null && !poolKeys.ContainsKey(note)) SafeDestroy(note.gameObject);
@@ -357,7 +372,7 @@ public class NoteSpawner : MonoBehaviour
             double remaining = EffectiveTime(nd) - songTime;
             // このコマで UpdateLive が置く奥行きと同じ倍率にする(遅れて出たノーツも同じ見た目のずれ)。
             float depth = Mathf.Min(spawnZ, judgeZ + Speed * (float)remaining);
-            Vector2 offset = WindRules.WorldOffset(nd.windX, nd.windY, nd.windSpin, nd.windSway,
+            Vector2 offset = WindRules.WorldOffset(nd.windX, nd.windY, nd.windSpin, 0f,
                 remaining, approachTime, windBeat, depth);
             pos.x += offset.x;
             pos.y += offset.y;
@@ -398,12 +413,15 @@ public class NoteSpawner : MonoBehaviour
         note.Veil = note.Vanish != VanishMode.None ? VanishRules.CueVeil(note.Vanish, vanishRemaining) : NoteVeil.Clamp(nd.veil);
         if(Pooling && !reused) poolKeys.Add(note,key);
         note.HitTime = EffectiveTime(nd);
+        note.IsHeat = nd.heat;
         note.JudgmentOwner = this;
         note.RequiredDirection = CutDirectionHelper.Parse(nd.direction);
         note.RequiredCutCount = Mathf.Max(1, nd.count);
         note.RemainingCuts = note.RequiredCutCount;
         // 長さの直接指定（lengthMs）。未指定(0)なら従来の回数×secondsPerLongCut。
         note.OverrideLingerSeconds = nd.lengthMs > 0f && note.RequiredCutCount > 1 ? nd.lengthMs / 1000f : 0f;
+        note.ConfigureSlide(nd, scale);
+        UpdateSlideNote(note, warming ? note.HitTime - approachTime : songTime);
         // 金ノーツ判定（chart.json の color:"gold"）
         note.IsGold = !string.IsNullOrEmpty(nd.color) && nd.color.ToLowerInvariant() == "gold";
         // 担当ハンド（blue=左手 / red=右手 / gold・無色=どちらでも）。ロングにも同じルールを適用。
@@ -457,6 +475,11 @@ public class NoteSpawner : MonoBehaviour
             note.TimingCue = cue;
         }
 
+        // 本体・矢印・ひびを描画用の子へまとめる。着地枠と床の印は別の着地点に残す。
+        note.EnsureWindVisual();
+
+        if (HasFall) PrepareFallNote(note, warming ? approachTime : note.HitTime - songTime);
+
         if(warming) { Recycle(note); return; }
 
         // 同時押しガイド: 同時刻のノーツを明るい白線で結び、本体も少し光らせる。
@@ -477,6 +500,7 @@ public class NoteSpawner : MonoBehaviour
         {
             note.WindBaseScale = go.transform.localScale;
             ApplyWindPose(note, note.HitTime - songTime);
+            ApplyWindSway(note, songTime, ComputeNoteZ(note, note.HitTime - songTime, Speed));
         }
 
         liveNotes.Add(note);
@@ -505,6 +529,15 @@ public class NoteSpawner : MonoBehaviour
         float bank = WindRules.BankDegrees(note.WindX, note.WindY, note.WindSpin, note.WindSway,
             remaining, approachTime, windBeat, beatsPerSecond);
         note.transform.rotation = Quaternion.Euler(0f, 0f, bank + WindRules.SpinIn(sinceSpawn));
+    }
+
+    void ApplyWindSway(CuttableNote note, double songTime, float z)
+    {
+        // 絶対時刻でも比較し、引き算の丸めで静止境界に微小なずれを残さない。
+        float x = songTime >= note.HitTime - WindRules.StillSeconds ? 0f
+            : WindRules.SwayOffset(note.WindSway, note.HitTime - songTime, approachTime, windBeat)
+                * WindRules.DepthScale(z);
+        note.SetWindSway(new Vector3(x, 0f, 0f));
     }
 
     // 消える(Zero の「V」)ノーツの今の見え方。本体は NoteVisuals、合図(矢印・枠・床の印・ロングの数字)は CuttableNote.Veil。
@@ -614,13 +647,15 @@ public class NoteSpawner : MonoBehaviour
                 // 絶対時刻でも境界を比べ、引き算の丸めで静止区間に微小なずれを残さない。
                 Vector2 offset = songTime >= note.HitTime - WindRules.CalmSeconds
                     ? Vector2.zero
-                    : WindRules.WorldOffset(note.WindX, note.WindY, note.WindSpin, note.WindSway,
+                    : WindRules.WorldOffset(note.WindX, note.WindY, note.WindSpin, 0f,
                         dt, approachTime, windBeat, z);
                 p.x = note.LandingPosition.x + offset.x;
                 p.y = note.LandingPosition.y + offset.y;
                 ApplyWindPose(note, songTime >= note.HitTime - WindRules.CalmSeconds ? 0 : dt);
             }
             note.transform.position = new Vector3(p.x, p.y, z);
+            if (HasFall) UpdateFallNote(note, dt);
+            UpdateSlideNote(note, songTime);
             // 緩急の譜面では、割れた破片の勢いも今の流れる速さに合わせる(止まっている間は前へ流さない)。
             if (scrollMap != null && note.RequiredCutCount <= 1)
                 note.FlowNoteVelocity = new Vector3(0f, 0f, -speed * (float)scrollMap.SpeedAt(songTime - totalOffsetSeconds));
@@ -633,6 +668,9 @@ public class NoteSpawner : MonoBehaviour
 
             // 消える(V): 残り時間で本体と合図の見え方を決める(切ったノーツは CuttableNote が姿を戻して割る)。
             if (note.Vanish != VanishMode.None && !note.IsCut) ApplyVanish(note, dt);
+            if (note.HasWind) ApplyWindSway(note, songTime, z);
+
+            if (!note.IsCut) note.SetDarkBrightness(BrightnessFor?.Invoke(note) ?? 1f);
 
             // タイミングキュー(着地ゴースト)の駆動。見た目なので曲の時計のまま。
             if (note.TimingCue != null)
@@ -694,6 +732,7 @@ public class NoteSpawner : MonoBehaviour
     // テスト用に公開（純粋関数）。
     public float ComputeNoteZ(CuttableNote note, double dt, float speed)
     {
+        if (HasFall) return judgeZ;
         if (note == null || note.RequiredCutCount <= 1 || dt >= 0)
         {
             return judgeZ + speed * (float)dt;

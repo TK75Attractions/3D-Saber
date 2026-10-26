@@ -36,6 +36,17 @@ public class BarLineSpawner : MonoBehaviour
     double lastSongTime = double.NaN;
     public int PooledCount => pool.Count;
     public int CreatedCount { get; private set; }
+    float darkBrightness = 1f;
+    bool darkBrightnessTouched;
+    public float DarkBrightness
+    {
+        get => darkBrightness;
+        set
+        {
+            darkBrightness = DarkRules.Finite(value) ? Mathf.Clamp01(value) : 1f;
+            darkBrightnessTouched = true;
+        }
+    }
 
     public float Speed => approachTime > 0.0001f ? (spawnZ - judgeZ) / approachTime : 0f;
 
@@ -49,6 +60,7 @@ public class BarLineSpawner : MonoBehaviour
         Cleanup();
         barTimes.Clear();
         scrollMap = null;
+        if (FallRules.Enabled(chart?.fall)) return;
         if (chart == null || chart.bpm <= 0 || float.IsNaN(chart.bpm) || float.IsInfinity(chart.bpm)) return;
         double offset = chart.offsetMs / 1000.0 + extraOffsetSeconds;
         scrollMap = ScrollSpeedMap.Build(chart.scroll);
@@ -167,29 +179,45 @@ public class BarLineSpawner : MonoBehaviour
             double depth = dt > 0 && scrollMap != null ? scrollMap.Shape(seen, approachTime, songTime - scrollOffset) : seen;
             float z = judgeZ + speed * (float)depth;
             go.transform.position = new Vector3(0f, 0f, z);
-            // 生成・退場の境目だけをフェードし、小節の到達時は本来の濃さを保つ。
-            if (overrideVisual)
-            {
-                // Unity のネイティブオブジェクトはシリアライズ時ではなく、実行時に作成する。
-                if (fadeBlock == null) fadeBlock = new MaterialPropertyBlock();
-                float alpha = Mathf.Clamp01((float)(approachTime - seen) / .12f)
-                    * Mathf.Clamp01((float)(dt + despawnAfterSeconds) / .18f);
-                // 毎フレーム呼ぶので、配列を作らずに使い回しの一覧へ取り、色の名前も ID で引く(曲中に GC のごみを出さない)。
-                go.GetComponentsInChildren(fadeRenderers);
-                foreach (var renderer in fadeRenderers)
-                {
-                    var mat = renderer.sharedMaterial;
-                    if (mat == null || !mat.HasProperty(BaseColorId)) continue;
-                    Color color = mat.GetColor(BaseColorId); color.a *= alpha;
-                    fadeBlock.Clear(); fadeBlock.SetColor(BaseColorId, color);
-                    renderer.SetPropertyBlock(fadeBlock);
-                }
-            }
+            ApplyColors(go, dt, seen);
             if (dt < -despawnAfterSeconds)
             {
                 Recycle(go);
                 live.RemoveAt(i);
             }
+        }
+    }
+
+    // 最後に描いた時刻の透明度を保ち、生成・移動・回収をせずに色だけ更新する。
+    public void RefreshDarkBrightness()
+    {
+        if (!Finite(lastSongTime)) return;
+        for (int i = 0; i < live.Count; i++)
+        {
+            var (go, time) = live[i];
+            if (go != null) ApplyColors(go, time - lastSongTime, Seen(time, lastSongTime));
+        }
+    }
+
+    void ApplyColors(GameObject go, double dt, double seen)
+    {
+        if (!overrideVisual && !darkBrightnessTouched) return;
+        // Unity のネイティブオブジェクトは実行時に作成する。
+        if (fadeBlock == null) fadeBlock = new MaterialPropertyBlock();
+        float alpha = Mathf.Clamp01((float)(approachTime - seen) / .12f)
+            * Mathf.Clamp01((float)(dt + despawnAfterSeconds) / .18f);
+        // 配列を作らずに使い回しの一覧へ取り、曲中の割り当てを避ける。
+        go.GetComponentsInChildren(fadeRenderers);
+        foreach (var renderer in fadeRenderers)
+        {
+            var mat = renderer.sharedMaterial;
+            if (mat == null || !mat.HasProperty(BaseColorId)) continue;
+            Color color = DarkRules.Rgb(mat.GetColor(BaseColorId), DarkBrightness);
+            if (overrideVisual) color.a *= alpha;
+            fadeBlock.Clear(); fadeBlock.SetColor(BaseColorId, color);
+            if (mat.HasProperty("_EmissionColor"))
+                fadeBlock.SetColor("_EmissionColor", DarkRules.Rgb(mat.GetColor("_EmissionColor"), DarkBrightness));
+            renderer.SetPropertyBlock(fadeBlock);
         }
     }
 

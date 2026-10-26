@@ -117,7 +117,7 @@ public sealed partial class GameplayCutFeedback : MonoBehaviour
     public void Track(CuttableNote note)
     {
         if (note == null || !tracked.Add(note)) return;
-        protectionTargets[note] = note.GetComponent<MeshRenderer>();
+        protectionTargets[note] = note.BodyRenderer;
         ReserveProtection(tracked.Count);
         note.OnRetired += Untrack;
         note.OnJudged += HandleCut;
@@ -144,10 +144,12 @@ public sealed partial class GameplayCutFeedback : MonoBehaviour
             || owner == null || !owner.isActiveAndEnabled || mesh == null) return;
         if (!Finite(hitPoint) || !Finite(velocity)) return;
 
-        Vector3 center = note.transform.position;
-        Vector3 size = note.transform.lossyScale;
+        // 採点へ渡す着弾点は変えず、光だけを見た目の切断位置へ移す。
+        hitPoint = note.VisualPoint(hitPoint);
+        Vector3 center = note.VisualTransform.position;
+        Vector3 size = note.VisualTransform.lossyScale;
         float scale = Mathf.Clamp(Mathf.Max(Mathf.Abs(size.x), Mathf.Abs(size.y)), .6f, 1.5f);
-        var renderer = note.GetComponent<MeshRenderer>();
+        var renderer = note.BodyRenderer;
         // ノーツ破棄後はTransformを参照しない。正面へ少しだけ出して二分割片とZ競合を避ける。
         Vector3 position = new Vector3(
             Mathf.Clamp(hitPoint.x, center.x - scale * .5f, center.x + scale * .5f),

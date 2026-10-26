@@ -3,6 +3,7 @@ Shader "Saber/Scenic World Surface"
     Properties
     {
         _BaseColor ("Surface", Color) = (.2,.25,.3,1)
+        _DarkBrightness ("Dark brightness", Range(0,1)) = 1
         _HazeColor ("Distance", Color) = (.03,.06,.09,1)
         _AccentColor ("Detail", Color) = (.3,.4,.5,1)
         _Emission ("Emission", Range(0,1)) = 0
@@ -29,6 +30,7 @@ Shader "Saber/Scenic World Surface"
             float _Chorus;
             half4 _ChorusColor;
             float _Eclipse;
+            half _DarkBrightness;
             float4 _EclipsePlanet;
         CBUFFER_END
         struct Attributes { float4 positionOS : POSITION; float3 normalOS : NORMAL; };
@@ -79,7 +81,7 @@ Shader "Saber/Scenic World Surface"
                 color += _ChorusColor.rgb * _Chorus * (.12 + .10 * pow(cloud,3));
                 // スコアと曲名の背後は静かな濃色にして白文字の視認性を保つ。
                 color *= 1 - smoothstep(.72,.96, screen.y) * .68;
-                return half4(color,1);
+                return half4(color * _DarkBrightness,1);
             }
             if (_Mode > 3.5)
             {
@@ -106,7 +108,7 @@ Shader "Saber/Scenic World Surface"
                 float shadow = 1 - smoothstep(.96,1.04,length(disc - shadowCenter));
                 color *= 1 - insidePlanet * shadow * .78;
             }
-            return half4(color,1);
+            return half4(color * _DarkBrightness,1);
         }
         ENDHLSL
         Pass

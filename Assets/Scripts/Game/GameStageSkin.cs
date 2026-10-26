@@ -42,6 +42,14 @@ public static class GameStageSkin
         RestyleJudgeGuide(GameObject.Find("JudgeGuide"));
     }
 
+    // 停電用。呼び出し元が通常時の色を保持し、重ね掛けで黒くなっていかないようにする。
+    public static void SetDarkBrightness(Camera cam, Color background, Color fog, float brightness)
+    {
+        brightness = DarkRules.Finite(brightness) ? Mathf.Clamp01(brightness) : 1f;
+        if (cam != null) cam.backgroundColor = DarkRules.Rgb(background, brightness);
+        RenderSettings.fogColor = DarkRules.Rgb(fog, brightness);
+    }
+
     // ---- カメラ+フォグ ----
 
     public static void ApplyCameraAndFog(Camera cam)

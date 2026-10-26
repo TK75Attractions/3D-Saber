@@ -5,10 +5,36 @@ using UnityEngine;
 public static class WindRules
 {
     public const double CalmSeconds = .35;
+    public const double StillSeconds = .06;
+    public const double SwayFadeSeconds = .12;
     public const double SwayBeats = 2;
     public const string RuleCaption = "風に流されて来る。着地の枠で切ろう";
 
+    // 見た目全体のずれ。流され・回転と、直前まで振幅を保つ揺れを別々に収める。
     public static Vector2 Offset(float windX, float windY, float windSpin, float windSway,
+        double remainingSeconds, double approachSeconds, double beat)
+    {
+        if (!Finite(windX) || !Finite(windY) || !Finite(windSpin) || !Finite(windSway)
+            || !Finite(remainingSeconds) || !Finite(approachSeconds) || !Finite(beat))
+            return Vector2.zero;
+        Vector2 drift = CalmOffset(windX, windY, windSpin, 0f, remainingSeconds, approachSeconds, beat);
+        float x = drift.x + SwayOffset(windSway, remainingSeconds, approachSeconds, beat);
+        return Finite(x) ? new Vector2(x, drift.y) : Vector2.zero;
+    }
+
+    public static float SwayOffset(float windSway, double remainingSeconds, double approachSeconds, double beat)
+    {
+        if (!Finite(windSway) || !Finite(remainingSeconds) || !Finite(approachSeconds) || !Finite(beat)
+            || remainingSeconds <= StillSeconds || approachSeconds <= StillSeconds)
+            return 0f;
+        double fade = Math.Min(SwayFadeSeconds, approachSeconds - StillSeconds);
+        double p = Math.Max(0, Math.Min(1, (remainingSeconds - StillSeconds) / fade));
+        double phase = 2 * Math.PI * (beat % SwayBeats) / SwayBeats;
+        return (float)(windSway * (p * p * (3 - 2 * p)) * Math.Sin(phase));
+    }
+
+    // 傾きは従来の速度から求める。新しい揺れの終端で急に傾かせない。
+    static Vector2 CalmOffset(float windX, float windY, float windSpin, float windSway,
         double remainingSeconds, double approachSeconds, double beat)
     {
         if (!Finite(windX) || !Finite(windY) || !Finite(windSpin) || !Finite(windSway)
@@ -56,8 +82,8 @@ public static class WindRules
     {
         if (remainingSeconds <= CalmSeconds) return 0f;
         const double h = 1.0 / 60.0;
-        float now = Offset(windX, windY, windSpin, windSway, remainingSeconds, approachSeconds, beat).x;
-        float next = Offset(windX, windY, windSpin, windSway, remainingSeconds - h, approachSeconds,
+        float now = CalmOffset(windX, windY, windSpin, windSway, remainingSeconds, approachSeconds, beat).x;
+        float next = CalmOffset(windX, windY, windSpin, windSway, remainingSeconds - h, approachSeconds,
             beat + h * (Finite(beatsPerSecond) ? beatsPerSecond : 0)).x;
         float speed = (float)((next - now) / h);
         return Mathf.Clamp(-speed * BankDegreesPerSpeed, -MaxBankDegrees, MaxBankDegrees);

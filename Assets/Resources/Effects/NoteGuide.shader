@@ -1,6 +1,10 @@
 Shader "Saber/Note Guide"
 {
-    Properties { _BaseColor ("Color", Color) = (1,1,1,1) }
+    Properties
+    {
+        _BaseColor ("Color", Color) = (1,1,1,1)
+        _DarkBrightness ("Dark brightness", Range(0,1)) = 1
+    }
     SubShader
     {
         Tags { "RenderPipeline"="UniversalPipeline" "Queue"="Transparent+20" "RenderType"="Transparent" }
@@ -12,6 +16,7 @@ Shader "Saber/Note Guide"
         #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
         CBUFFER_START(UnityPerMaterial)
             half4 _BaseColor;
+            half _DarkBrightness;
         CBUFFER_END
         struct Attributes { float4 positionOS : POSITION; half4 color : COLOR; };
         struct Varyings { float4 positionCS : SV_POSITION; half4 color : COLOR; };
@@ -20,6 +25,7 @@ Shader "Saber/Note Guide"
             Varyings output;
             output.positionCS = TransformObjectToHClip(input.positionOS.xyz);
             output.color = input.color * _BaseColor;
+            output.color.rgb *= _DarkBrightness;
             return output;
         }
         half4 Frag(Varyings input) : SV_Target { return input.color; }

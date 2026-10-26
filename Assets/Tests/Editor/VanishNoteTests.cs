@@ -156,7 +156,7 @@ public class VanishNoteTests
     }
 }
 
-// Zero の裏譜面 V。ノーツは Hard そのまま、見え方(vanish)だけが足してある。
+// Zero の裏譜面 V。Normal/Hardの音源上の時刻をそろえ、区間ごとの見え方を付ける。
 // 譜面は C:\Users\shike\dev\tools\ChartZeroVanish\gen_vanish.py --write で作る。
 public class ZeroVanishChartTests
 {
@@ -168,21 +168,17 @@ public class ZeroVanishChartTests
     }
 
     [Test]
-    public void NotesAreTheHardChartWithVisibilityModes()
+    public void NotesSwitchFromNormalToHardWithVisibilityModes()
     {
         var vanish = Read("v");
-        var hard = Read("hard");
         Assert.AreEqual(10, vanish.displayLevel);
-        Assert.AreEqual(hard.notes.Count, vanish.notes.Count);
-        for (int i = 0; i < hard.notes.Count; i++)
+        MixedSecretChartAssertions.Check("製作中", vanish, "v", 48889.59183673469, 50, 244);
+        foreach (var note in vanish.notes)
         {
-            NoteData a = hard.notes[i], b = vanish.notes[i];
-            Assert.AreEqual(a.time, b.time);
-            Assert.AreEqual(a.x, b.x);
-            Assert.AreEqual(a.color, b.color);
-            Assert.AreEqual(a.direction, b.direction);
-            Assert.AreEqual(a.count, b.count);
-            Assert.AreEqual("", a.vanish, "Hard はふつう");
+            double t = note.TimeSeconds;
+            string expected = note.IsLong ? "" : t < 37 ? "fade" : t < 76 ? "sudden"
+                : t < 134.7 ? "blink" : t < 164.2 ? (note.color == "gold" ? "fade" : "hide") : "";
+            Assert.AreEqual(expected, note.vanish, note.time + "ms");
         }
         foreach (var mode in new[] { "fade", "sudden", "blink", "hide" })
             Assert.IsTrue(vanish.notes.Any(n => n.vanish == mode), mode + " の区間がある");

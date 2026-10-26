@@ -1,5 +1,6 @@
 Shader "Saber/Gameplay Cut Accent"
 {
+    Properties { _DarkBrightness ("Dark brightness", Range(0,1)) = 1 }
     SubShader
     {
         Tags { "RenderPipeline"="UniversalPipeline" "Queue"="Transparent+10" "RenderType"="Transparent" }
@@ -9,6 +10,9 @@ Shader "Saber/Gameplay Cut Accent"
         Cull Off
         HLSLINCLUDE
         #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+        CBUFFER_START(UnityPerMaterial)
+            half _DarkBrightness;
+        CBUFFER_END
         struct Attributes { float4 positionOS : POSITION; float3 uv : TEXCOORD0; half4 color : COLOR; };
         struct Varyings { float4 positionCS : SV_POSITION; float3 uv : TEXCOORD0; half4 color : COLOR; };
         Varyings Vert(Attributes input)
@@ -26,7 +30,7 @@ Shader "Saber/Gameplay Cut Accent"
             float edge = saturate(1 - abs(input.uv.y * 2 - 1));
             // 刃の軌跡(uv.z=1)は隣の時刻の面へ連続させ、縞模様にしない。
             edge = lerp(edge, 1, saturate(input.uv.z));
-            return half4(input.color.rgb, input.color.a * tip * edge);
+            return half4(input.color.rgb * _DarkBrightness, input.color.a * tip * edge);
         }
         ENDHLSL
         Pass

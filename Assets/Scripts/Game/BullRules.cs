@@ -265,46 +265,62 @@ public sealed class BullSession
         }
     }
 
-    // 判定の時計 judgeTime で、刃が突進・弾に触れたか見る。しびれた・解けたは events に足す。
+    // 同じ時計を使う既存の呼び出し口。左右で位置入力が違うときは下の口へ渡す。
     public void Tick(double judgeTime, BladeSample red, BladeSample blue, List<BullEvent> events)
+        => Tick(judgeTime, judgeTime, red, blue, events);
+
+    public void Tick(double redTime, double blueTime, BladeSample red, BladeSample blue, List<BullEvent> events)
     {
-        if (double.IsNaN(judgeTime) || double.IsInfinity(judgeTime)) return;
-        for (int i = 0; i < 2; i++)
-        {
-            if (recovered[i] || judgeTime < stunnedUntil[i]) continue;
-            recovered[i] = true;
-            events?.Add(new BullEvent { Kind = BullEventKind.Recover, Hand = i == 1 ? SaberHand.Left : SaberHand.Right, Time = stunnedUntil[i] });
-        }
+        Recover(0, redTime, events);
+        Recover(1, blueTime, events);
         foreach (var charge in Charges)
         {
-            if (judgeTime < charge.Start || judgeTime > charge.End) continue;
-            Vector2 center = BullRules.ChargePosition(charge, judgeTime);
-            Check(center, BullRules.ChargeRadius, judgeTime, red, blue, events);
+            CheckCharge(charge, 0, redTime, red, events);
+            CheckCharge(charge, 1, blueTime, blue, events);
         }
         foreach (var shot in Shots)
         {
-            if (!BullRules.Active(shot, judgeTime)) continue;
-            // 地雷も含め、最初に刃が触れたTickで消費する。しびれ中の刃で触れても再判定しない。
-            if (Check(shot.Position, BullRules.Radius(shot, judgeTime), judgeTime, red, blue, events, shot))
-                shot.Spent = true;
+            if (shot.Spent) continue;
+            // 両手を調べ終えてから消費する。同じコマで触れた片方だけを優先しない。
+            bool hitRed = CheckShot(shot, 0, redTime, red, events);
+            bool hitBlue = CheckShot(shot, 1, blueTime, blue, events);
+            if (hitRed || hitBlue) shot.Spent = true;
         }
     }
 
-    bool Check(Vector2 center, float radius, double time, BladeSample red, BladeSample blue, List<BullEvent> events, BullShot shot = null)
+    static bool Finite(double time) => !double.IsNaN(time) && !double.IsInfinity(time);
+
+    void Recover(int i, double time, List<BullEvent> events)
     {
-        bool hit = false;
-        for (int i = 0; i < 2; i++)
-        {
-            var blade = i == 1 ? blue : red;
-            if (!(shot != null ? BullRules.Touches(shot, blade, time) : BullRules.Touches(center, radius, blade))) continue;
-            hit = true;
-            if (time < stunnedUntil[i] + BullRules.GraceSeconds) continue;
-            stunnedUntil[i] = time + BullRules.StunSeconds;
-            recovered[i] = false;
-            StunCount++;
-            events?.Add(new BullEvent { Kind = BullEventKind.Stun, Hand = i == 1 ? SaberHand.Left : SaberHand.Right, Position = center, Time = time });
-        }
-        return hit;
+        if (!Finite(time) || recovered[i] || time < stunnedUntil[i]) return;
+        recovered[i] = true;
+        events?.Add(new BullEvent { Kind = BullEventKind.Recover,
+            Hand = i == 1 ? SaberHand.Left : SaberHand.Right, Time = stunnedUntil[i] });
+    }
+
+    void CheckCharge(BullCharge charge, int i, double time, BladeSample blade, List<BullEvent> events)
+    {
+        if (!Finite(time) || time < charge.Start || time > charge.End) return;
+        Vector2 center = BullRules.ChargePosition(charge, time);
+        if (BullRules.Touches(center, BullRules.ChargeRadius, blade))
+            Stun(i, time, center, events);
+    }
+
+    bool CheckShot(BullShot shot, int i, double time, BladeSample blade, List<BullEvent> events)
+    {
+        if (!Finite(time) || !BullRules.Touches(shot, blade, time)) return false;
+        Stun(i, time, shot.Position, events);
+        return true;
+    }
+
+    void Stun(int i, double time, Vector2 center, List<BullEvent> events)
+    {
+        if (time < stunnedUntil[i] + BullRules.GraceSeconds) return;
+        stunnedUntil[i] = time + BullRules.StunSeconds;
+        recovered[i] = false;
+        StunCount++;
+        events?.Add(new BullEvent { Kind = BullEventKind.Stun,
+            Hand = i == 1 ? SaberHand.Left : SaberHand.Right, Position = center, Time = time });
     }
 
     // 最後の突進・弾の時刻(曲の終わりの確認用)。

@@ -70,11 +70,14 @@ public partial class CuttableNote : MonoBehaviour
         OnRetired?.Invoke(this);
         OnCut = null; OnJudged = null; OnMiss = null; OnPartialCut = null; OnRetired = null;
         OnWrongDirection = null;
+        SetDarkBrightness(1f);
         Veil = 0f;
         Vanish = VanishMode.None;
         LandingPosition = Vector2.zero;
+        HasSlide = false;
         HasWind = false;
         WindX = WindY = WindSpin = WindSway = 0f;
+        SetWindSway(Vector3.zero);
         wrongDirectionCue.Reset();
         if (Arrow != null) Arrow.ResetCue();
         fragmentTier = null;
@@ -83,6 +86,7 @@ public partial class CuttableNote : MonoBehaviour
         MinimumCutSpeed = 0; RequireJudgeableOnCut = DirectionVisualOnly = false;
         LastCutterHand = SaberHand.Any;
         LastCutSongTime = null;
+        IsHeat = false;
         firstPiece = secondPiece = null;
         hasPendingFlash = false;
         FlowDebris = false; FlowNoteVelocity = Vector3.zero;
@@ -131,6 +135,8 @@ public partial class CuttableNote : MonoBehaviour
     public double? LastCutSongTime { get; private set; }
     // 金ノーツ：切ったときに豪華音を鳴らすため NoteSpawner が立てる。
     public bool IsGold { get; set; }
+    // 熱交換の印。設定の無い譜面では判定・表示に影響しない。
+    public bool IsHeat { get; set; }
 
     [Header("Note kind")]
     public CutDirection RequiredDirection = CutDirection.None;
@@ -329,6 +335,8 @@ public partial class CuttableNote : MonoBehaviour
             IsFinalized = true;
             OnCut?.Invoke(this, hitPoint, cutVelocity);
             // 消えていたノーツも、破片は見えるように割る(何もない所から破片が出る)。破片は本体の材質の透明度を写すので先に戻す。
+            // 切れた手応えと破片は光らせる。次のプール利用にも暗さを持ち越さない。
+            SetDarkBrightness(1f);
             if (Vanish != VanishMode.None) RevealVanished();
             ShatterAndDestroy(hitPoint, cutVelocity);
         }
@@ -425,7 +433,7 @@ public partial class CuttableNote : MonoBehaviour
         for (int i = ownedCracks.Count; i < count; i++)
         {
             var crack = new GameObject("Crack", typeof(MeshFilter), typeof(MeshRenderer));
-            crack.transform.SetParent(transform, false);
+            crack.transform.SetParent(VisualTransform, false);
             crack.GetComponent<MeshFilter>().sharedMesh = NoteFragmentPool.CubeMesh;
             var mat = MakeCrackMaterial();
             var renderer = crack.GetComponent<MeshRenderer>();
@@ -452,11 +460,11 @@ public partial class CuttableNote : MonoBehaviour
                 : UnityEngine.Rendering.ShadowCastingMode.On;
             crack.veiled = translucent;
         }
-        PlaceCrack(crack.transform, index, transform.InverseTransformPoint(lastHitPoint),
-            transform.InverseTransformDirection(lastVelocity));
+        PlaceCrack(crack.transform, index, VisualTransform.InverseTransformPoint(VisualPoint(lastHitPoint)),
+            VisualTransform.InverseTransformDirection(lastVelocity));
         crack.fullScale = CrackScale(index, Mathf.Clamp01(CutsAchieved / (float)Mathf.Max(1, RequiredCutCount - 1)));
         crack.age = 0f;
-        ApplyCrack(crack.transform, crack.material, crack.fullScale, 0f, Veil);
+        ApplyCrack(crack.transform, crack.material, crack.fullScale, 0f, Veil, Brightness);
         crack.visual.SetActive(true);
         // この直後の OnPartialCut で刻み音も始まる。過去のひびの時計は戻さない。
     }
@@ -495,7 +503,7 @@ public partial class CuttableNote : MonoBehaviour
 
     private void SpawnDebris(Vector3 cutVelocity)
     {
-        var renderer = GetComponent<MeshRenderer>();
+        var renderer = BodyRenderer;
         var material = renderer != null ? renderer.sharedMaterial : null;
         Vector3 motion = new Vector3(cutVelocity.x, cutVelocity.y, 0f).normalized;
         if (motion.sqrMagnitude < .0001f) motion = Vector3.right;
@@ -504,7 +512,7 @@ public partial class CuttableNote : MonoBehaviour
         for (int i = 0; i < shatterDebrisCount; i++)
         {
             var piece = RentPiece(material, false);
-            piece.transform.position = transform.position + Random.insideUnitSphere * .3f;
+            piece.transform.position = VisualTransform.position + Random.insideUnitSphere * .3f;
             piece.transform.rotation = Random.rotation;
             piece.transform.localScale = Vector3.one * Random.Range(.06f,.14f);
             // 最終打だけ、切断面の両側へ扇状に開いてから振った先へ抜ける。
@@ -542,8 +550,8 @@ public partial class CuttableNote : MonoBehaviour
 
     private bool TrySpawnSlices(Vector3 hitPoint, Vector3 cutVelocity)
     {
-        MeshFilter mf = GetComponent<MeshFilter>();
-        MeshRenderer mr = GetComponent<MeshRenderer>();
+        MeshFilter mf = VisualTransform.GetComponent<MeshFilter>();
+        MeshRenderer mr = BodyRenderer;
         if (mf == null || mr == null || mf.sharedMesh == null) return false;
 
         Vector3 motionDir = cutVelocity;
@@ -552,8 +560,8 @@ public partial class CuttableNote : MonoBehaviour
         motionDir.Normalize();
 
         Vector3 cutNormalWorld = Vector3.Cross(motionDir, Vector3.forward).normalized;
-        Vector3 hitLocal = transform.InverseTransformPoint(hitPoint);
-        Vector3 normalLocal = transform.InverseTransformDirection(cutNormalWorld).normalized;
+        Vector3 hitLocal = VisualTransform.InverseTransformPoint(VisualPoint(hitPoint));
+        Vector3 normalLocal = VisualTransform.InverseTransformDirection(cutNormalWorld).normalized;
 
         Bounds b = mf.sharedMesh.bounds;
         float halfExtent = Mathf.Max(b.extents.x, Mathf.Max(b.extents.y, b.extents.z)) * 0.7f;
@@ -593,8 +601,8 @@ public partial class CuttableNote : MonoBehaviour
     }
     private void SpawnPiece(SlicePieceDecay piece, Vector3 velocity, Vector3 spinAxis)
     {
-        piece.transform.position = transform.position; piece.transform.rotation = transform.rotation;
-        piece.transform.localScale = transform.lossyScale;
+        piece.transform.position = VisualTransform.position; piece.transform.rotation = VisualTransform.rotation;
+        piece.transform.localScale = VisualTransform.lossyScale;
         Vector3 spin = FlowDebris
             ? spinAxis * FlowSpin + Random.insideUnitSphere * (pieceAngularImpulse * .25f)
             : Random.insideUnitSphere * pieceAngularImpulse;

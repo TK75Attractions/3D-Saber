@@ -859,7 +859,8 @@ public partial class AndalusiaBullChartTests
     {
         var session = new BullSession(Read("t", true).bull, 0);
         var edges = session.Shots.SelectMany(s => new[] { BullRules.HitStart(s), BullRules.HitEnd(s) })
-            .Concat(session.Charges.SelectMany(c => new[] { c.Start, c.End })).Distinct().OrderBy(t => t).ToArray();
+            .Concat(session.Charges.SelectMany(c => Enumerable.Range(0, 33)
+                .Select(i => c.Start + (c.End - c.Start) * i / 32))).Distinct().OrderBy(t => t).ToArray();
         for (int i = 0; i < edges.Length; i++)
         {
             CheckSpan(session, edges[i], edges[i]);
@@ -876,46 +877,82 @@ public partial class AndalusiaBullChartTests
         Assert.Throws<AssertionException>(() => CheckSpan(new BullSession(chart, 0), 1, 2));
     }
 
+    // 長さ1.6の刃を包む円。短い刃と水平・斜め・縦を含む全角度を同時に守る。
+    const float SafetyHalfLength = .8f, SafetyPadding = .13f;
+
+    static bool SafeCenter(Vector2 p, BullShot[] shots, BullCharge[] charges, double lo, double hi)
+    {
+        foreach (var c in charges)
+        {
+            var a = BullRules.ChargePosition(c, System.Math.Max(lo, c.Start));
+            var b = BullRules.ChargePosition(c, System.Math.Min(hi, c.End));
+            if (BullRules.DistanceToSegment(p, a, b)
+                <= BullRules.ChargeRadius + SafetyPadding + SafetyHalfLength) return false;
+        }
+        foreach (var s in shots.Where(s => s.Follow == SaberHand.Any))
+        {
+            float distance, radius;
+            if (s.Kind == "spear")
+            {
+                BullRules.SpearEnds(s, out var a, out var b);
+                distance = BullRules.DistanceToSegment(p, a, b);
+                radius = BullRules.SpearRadius;
+            }
+            else
+            {
+                distance = Vector2.Distance(p, s.Position);
+                radius = s.Kind == "bomb" ? s.Blast : BullRules.Radius(s);
+            }
+            if (distance <= radius + SafetyPadding + SafetyHalfLength) return false;
+        }
+        return true;
+    }
+
+    static List<Vector2> ChooseCenters(List<Vector2> selected, List<Vector2> rest, int needed, float spacing)
+    {
+        if (selected.Count == needed) return selected;
+        if (selected.Count + rest.Count < needed) return null;
+        for (int i = 0; i < rest.Count; i++)
+        {
+            var p = rest[i];
+            var next = new List<Vector2>(selected) { p };
+            var found = ChooseCenters(next,
+                rest.Skip(i + 1).Where(q => Vector2.Distance(p, q) > spacing).ToList(), needed, spacing);
+            if (found != null) return found;
+        }
+        return null;
+    }
+
     static void CheckSpan(BullSession session, double lo, double hi, Vector2? anchor = null)
     {
         bool Overlap(double start, double end) => anchor.HasValue ? start <= hi && end >= lo
             : lo == hi ? start <= lo && lo <= end : start < hi && end > lo;
         var shots = session.Shots.Where(s => Overlap(BullRules.HitStart(s), BullRules.HitEnd(s))).ToArray();
         var charges = session.Charges.Where(c => Overlap(c.Start, c.End)).ToArray();
-        // 金の検査は前後0.25秒の危険物をまとめる。同時数は時刻で分割した通常の検査で見る。
         if (!anchor.HasValue)
             Assert.LessOrEqual(shots.Length + charges.Length, lo >= ExtensionMs / 1000 ? 10 : 8);
         int followers = shots.Count(s => s.Follow != SaberHand.Any);
-        if (anchor.HasValue) Assert.AreEqual(0, followers, "追う弾と金の受付を重ねない");
+        if (anchor.HasValue)
+        {
+            Assert.AreEqual(0, followers, "追う弾と金の受付を重ねない");
+            Assert.IsTrue(SafeCenter(anchor.Value, shots, charges, lo, hi), "金を切る全角度の刃の安全");
+        }
         var safe = new List<Vector2>();
-        var candidates = new List<Vector2>();
-        if (anchor.HasValue) candidates.Add(anchor.Value);
         for (int ix = 0; ix < 12; ix++)
         for (int iy = 0; iy < 9; iy++)
-            candidates.Add(new Vector2(-1.65f + ix * .3f, -1.2f + iy * .3f));
-        // 長さ1.0の水平な刃、刃半径0.05と余白0.08。金は最初の安全候補として必ず確保する。
-        foreach (var p in candidates)
         {
-            var left = p + Vector2.left * .5f;
-            var right = p + Vector2.right * .5f;
-            if (safe.Any(q => Vector2.Distance(p, q) <= 1.7f)) continue;
-            bool blocked = charges.Any(c => BullRules.ChargeLaneDistance(c, left, right)
-                <= BullRules.ChargeRadius + .13f);
-            foreach (var s in shots.Where(s => s.Follow == SaberHand.Any))
-            {
-                if (s.Kind == "spear")
-                {
-                    BullRules.SpearEnds(s, out var a, out var b);
-                    blocked |= BullRules.SegmentDistance(left, right, a, b) <= BullRules.SpearRadius + .13f;
-                }
-                else
-                    blocked |= BullRules.DistanceToSegment(s.Position, left, right)
-                        <= (s.Kind == "bomb" ? s.Blast : BullRules.Radius(s)) + .13f;
-            }
-            if (anchor.HasValue && p == anchor.Value) Assert.IsFalse(blocked, "金を切る刃の安全");
-            if (!blocked) safe.Add(p);
+            var p = new Vector2(-1.65f + ix * .3f, -1.2f + iy * .3f);
+            if (SafeCenter(p, shots, charges, lo, hi)) safe.Add(p);
         }
-        // 1.7以上離れた候補なら、追う弾1発で失う候補は最大1つ。
-        Assert.GreaterOrEqual(safe.Count, followers + 2, lo + "〜" + hi + "秒の両手用安全地帯");
+        // 長い刃でも追う弾1発が候補を2つ同時に塞がない距離。
+        float spacing = followers > 0 ? 2 * (SafetyHalfLength + BullRules.ShotRadius + SafetyPadding) : 1.7f;
+        var selected = new List<Vector2>();
+        if (anchor.HasValue)
+        {
+            selected.Add(anchor.Value);
+            safe.RemoveAll(p => Vector2.Distance(p, anchor.Value) <= spacing);
+        }
+        Assert.NotNull(ChooseCenters(selected, safe, followers + 2, spacing),
+            lo + "〜" + hi + "秒の両手用安全地帯");
     }
 }

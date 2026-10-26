@@ -9,7 +9,7 @@ using UnityEngine.Rendering;
 //   頭の上を回る星はしびれの定番の印(ストリートファイターの「ピヨり」、スマブラ・モンハンの気絶)。解けたら白い輪と短い音。
 // 文字は出さない。曲の時計で動くもの(突進・弾・当たり)は本編の GamePlayManager.Update が Tick で進め、
 // 星と点は剣について LateUpdate で描く(曲が止まっている間はしびれの残りも止まる)。
-public sealed class BullfightMode : MonoBehaviour
+public sealed partial class BullfightMode : MonoBehaviour
 {
     const int QueueBand = 3016, QueueShot = 3022, QueueBull = 3024, QueueFx = 3026, QueueStun = 3034;
     const float PlaneZ = -.03f, StunZ = -.2f, SpawnZ = 20f, MarkerTighten = .3f;
@@ -35,7 +35,8 @@ public sealed class BullfightMode : MonoBehaviour
     static readonly Color BigColor = new Color(1f, .4f, .06f);
     readonly HashSet<BullSplitGroup> splitBursts = new HashSet<BullSplitGroup>();
     public int SplitBurstCount { get; private set; }
-    double lastJudgeTime = double.NegativeInfinity;
+    readonly double[] lastJudgeTimes = { double.NegativeInfinity, double.NegativeInfinity };
+    public double MaxPositionLatencySeconds { get; private set; }
     bool ended;
 
     sealed class ChargeView { public BullCharge charge; public Transform root, band, bull, trail; public MeshRenderer bandR, glowR, coreR, hornR, trailR; public MeshRenderer[] chevrons; }
@@ -86,9 +87,25 @@ public sealed class BullfightMode : MonoBehaviour
         audioSource.playOnAwake = false; audioSource.spatialBlend = 0;
         stunViews[0] = BuildStun("RightStun");
         stunViews[1] = BuildStun("LeftStun");
+        WarmPools();
     }
 
-    public bool IsStunned(SaberHand hand) => Session != null && Session.IsStunned(hand, lastJudgeTime);
+    public bool IsStunned(SaberHand hand) => Session != null
+        && Session.IsStunned(hand, lastJudgeTimes[hand == SaberHand.Left ? 1 : 0]);
+
+    // ノーツの ExternalJudgment ではなく、刃の端点を供給した入力で時計を決める。
+    public static double PositionLatency(SaberInputBridge bridge, double cameraLatency)
+        => bridge != null && bridge.isActiveAndEnabled && !bridge.UsingMouseFallback
+            && bridge.ReceivingCamera ? System.Math.Max(0, cameraLatency) : 0;
+
+    public void TickFromInput(double songTime, double cameraLatency)
+    {
+        double redDelay = PositionLatency(bridges[0], cameraLatency);
+        double blueDelay = PositionLatency(bridges[1], cameraLatency);
+        // 最後の入力を見失ったコマにも、曲終了の待ち時間を短くしない。
+        MaxPositionLatencySeconds = System.Math.Max(MaxPositionLatencySeconds, System.Math.Max(redDelay, blueDelay));
+        Tick(songTime, songTime - redDelay, songTime - blueDelay);
+    }
 
     BladeSample SampleFor(SaberHand hand)
     {
@@ -106,7 +123,9 @@ public sealed class BullfightMode : MonoBehaviour
     }
 
     // 曲の時計 songTime(見た目)と判定の時計 judgeTime(カメラの遅れを引いた時刻)で進める。
-    public void Tick(double songTime, double judgeTime)
+    public void Tick(double songTime, double judgeTime) => Tick(songTime, judgeTime, judgeTime);
+
+    public void Tick(double songTime, double redTime, double blueTime)
     {
         if (Session == null || ended) return;
         var red = SampleFor(SaberHand.Right);
@@ -115,8 +134,9 @@ public sealed class BullfightMode : MonoBehaviour
         Session.PlaceFollowers(songTime, approach, red, blue);
         SpawnViews(songTime, approach);
         events.Clear();
-        Session.Tick(judgeTime, red, blue, events);
-        lastJudgeTime = judgeTime;
+        Session.Tick(redTime, blueTime, red, blue, events);
+        lastJudgeTimes[0] = redTime;
+        lastJudgeTimes[1] = blueTime;
         foreach (var e in events) Handle(e);
         UpdateCharges(songTime);
         UpdateShots(songTime, approach);
@@ -128,7 +148,10 @@ public sealed class BullfightMode : MonoBehaviour
         ended = true;
         for (int i = 0; i < 2; i++) SetStunned(i, false);
         foreach (var v in chargeViews) if (v.root != null) Discard(v.root.gameObject);
-        foreach (var v in shotViews) { if (v.body != null) Discard(v.body.gameObject); if (v.marker != null) Discard(v.marker.gameObject); }
+        foreach (var v in shotViews) ReturnShot(v);
+        foreach (var fx in effects) ReturnFx(fx);
+        effects.Clear();
+        splitBursts.Clear();
         chargeViews.Clear(); shotViews.Clear();
     }
 
@@ -181,7 +204,11 @@ public sealed class BullfightMode : MonoBehaviour
             chargeViews.Add(BuildCharge(charges[nextCharge++]));
         var shots = Session.Shots;
         while (nextShot < shots.Count && shots[nextShot].Time - approach <= songTime)
-            shotViews.Add(BuildShot(shots[nextShot++]));
+        {
+            var shot = shots[nextShot++];
+            // 大きく時刻が進んだテスト・再開時にも、通過済みの見た目を一括生成しない。
+            if (songTime <= ShotVisualEnd(shot)) shotViews.Add(RentShot(shot));
+        }
     }
 
     ChargeView BuildCharge(BullCharge charge)
@@ -332,8 +359,7 @@ public sealed class BullfightMode : MonoBehaviour
             {
                 if (!UpdateSpecialShot(v, songTime, approach))
                 {
-                    Discard(v.body.gameObject);
-                    Discard(v.marker.gameObject);
+                    ReturnShot(v);
                     shotViews.RemoveAt(i);
                 }
                 continue;
@@ -349,8 +375,7 @@ public sealed class BullfightMode : MonoBehaviour
                     AddFx(AimMeshes.Ring(.75f), new Vector3(s.Position.x, s.Position.y, PlaneZ),
                         radius, radius * 3f, .25f, color);
                 }
-                Discard(v.body.gameObject);
-                Discard(v.marker.gameObject);
+                ReturnShot(v);
                 shotViews.RemoveAt(i);
                 continue;
             }
@@ -525,19 +550,11 @@ public sealed class BullfightMode : MonoBehaviour
                 v.stars[k].localRotation = Quaternion.Euler(0, 0, -a * Mathf.Rad2Deg * .5f);
                 Tint(v.starR[k], StarColor, 1f);
             }
-            double remaining = Session != null ? Session.StunRemaining(i == 1 ? SaberHand.Left : SaberHand.Right, lastJudgeTime) : 0;
+            double remaining = Session != null ? Session.StunRemaining(i == 1 ? SaberHand.Left : SaberHand.Right, lastJudgeTimes[i]) : 0;
             int lit = Mathf.CeilToInt((float)(StunDots * remaining / BullRules.StunSeconds));
             for (int k = 0; k < StunDots; k++) Tint(v.dotR[k], StarColor, k < lit ? .9f : 0f);
         }
-        for (int i = effects.Count - 1; i >= 0; i--)
-        {
-            var fx = effects[i];
-            fx.age += Time.unscaledDeltaTime;
-            float k = Mathf.Clamp01(fx.age / fx.life);
-            if (k >= 1f) { Discard(fx.t.gameObject); effects.RemoveAt(i); continue; }
-            fx.t.localScale = Vector3.one * Mathf.Lerp(fx.from, fx.to, 1 - (1 - k) * (1 - k));
-            Tint(fx.r, fx.color, 1 - k);
-        }
+        AdvanceEffects(Time.unscaledDeltaTime);
     }
 
     // ---- 小道具 ----
@@ -577,13 +594,18 @@ public sealed class BullfightMode : MonoBehaviour
 
     void AddFx(Mesh mesh, Vector3 at, float from, float to, float life, Color color)
     {
-        var holder = new GameObject("BullFx").transform;
-        holder.SetParent(transform, false);
-        holder.position = at;
-        var r = Renderer(holder, "Shape", mesh, QueueFx);
-        holder.localScale = Vector3.one * from;
-        Tint(r, color, 1f);
-        effects.Add(new Fx { t = holder, r = r, life = life, from = from, to = to, color = color });
+        // 同時FXは上限付き。足りない場合は飾りだけ省き、判定は変えない。
+        if (idleFx.Count == 0) return;
+        var fx = idleFx.Pop();
+        fx.t.SetParent(transform, false);
+        fx.t.position = at;
+        fx.t.localRotation = Quaternion.identity;
+        fx.t.localScale = Vector3.one * from;
+        fx.r.GetComponent<MeshFilter>().sharedMesh = mesh;
+        fx.age = 0; fx.life = life; fx.from = from; fx.to = to; fx.color = color;
+        fx.t.gameObject.SetActive(true);
+        Tint(fx.r, color, 1f);
+        effects.Add(fx);
     }
 
     // 爆弾は低く小さな「ボン」。画面全体の光は足さない。

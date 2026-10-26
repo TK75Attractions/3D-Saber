@@ -105,7 +105,11 @@ public class RushESecretTests
             RushESecretState.RushE, RushESecretState.ElDoradoG,
             RushESecretState.PhobiaAvoid, RushESecretState.MorningMemory,
             RushESecretState.AobasouWind, RushESecretState.LogicSpeed,
-            RushESecretState.ZeroVanish, RushESecretState.AndalusiaBull
+            RushESecretState.ZeroVanish, RushESecretState.AndalusiaBull,
+            RushESecretState.TwoTwentyThreeLight,
+            RushESecretState.EpilogueFall,
+            RushESecretState.ManicSonicHeat,
+            RushESecretState.EscapadeLong
         }, RushESecretState.Charts);
 
         var state = new RushESecretState();
@@ -236,7 +240,7 @@ public class RushESecretTests
         Assert.IsTrue(state.TryHit(2)); Assert.IsTrue(state.Transitioning);
         Assert.IsTrue(state.Reveal()); Assert.IsTrue(state.Finish()); Assert.IsTrue(state.Unlocked);
         state.Select("RushE"); Assert.AreSame(RushESecretState.RushE, state.Current); Assert.IsFalse(state.Unlocked, "曲を変えたら最初から");
-        state.Select("Epilogue"); Assert.IsNull(state.Current); Assert.IsFalse(state.TryHit(10), "隠し譜面の無い曲は数えない");
+        state.Select("Other"); Assert.IsNull(state.Current); Assert.IsFalse(state.TryHit(10), "隠し譜面の無い曲は数えない");
         Assert.AreSame(RushESecretState.ElDoradoG, RushESecretState.ForDifficulty("g"));
         Assert.AreSame(RushESecretState.RushE, RushESecretState.ForDifficulty("E"));
         Assert.IsFalse(RushESecretState.IsSecretDifficulty("Hard"));
@@ -245,7 +249,7 @@ public class RushESecretTests
         Assert.AreEqual(RushESecretState.Purple, GameStartCountdown.AccentForDifficulty("E"), "E は今までの紫");
         var restored = new RushESecretState(); restored.Select("ElDorado"); restored.RestoreUnlocked();
         Assert.IsTrue(restored.Unlocked, "判定調整との往復で G のまま戻る");
-        var none = new RushESecretState(); none.Select("Epilogue"); none.RestoreUnlocked();
+        var none = new RushESecretState(); none.Select("Other"); none.RestoreUnlocked();
         Assert.IsFalse(none.Unlocked);
     }
 

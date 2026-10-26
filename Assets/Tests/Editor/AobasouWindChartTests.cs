@@ -3,7 +3,7 @@ using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
 
-// 青葉騒の裏譜面 W(風に流されて来る、2026-10-25)。ノーツは Hard そのまま、風の値だけが足してある。
+// 青葉騒の裏譜面 W。序盤Normal・拍108以後Hardへ風を付け直す。
 // 譜面は C:\Users\shike\dev\tools\ChartAobasouWind\gen_wind.py --write で作る。
 public class AobasouWindChartTests
 {
@@ -15,26 +15,12 @@ public class AobasouWindChartTests
     }
 
     [Test]
-    public void NotesAreTheHardChartWithWindAdded()
+    public void NotesSwitchFromNormalToHardWithWindAdded()
     {
         var wind = Read("w");
-        var hard = Read("hard");
         Assert.AreEqual(9, wind.displayLevel);
-        Assert.AreEqual(hard.bpm, wind.bpm);
-        Assert.AreEqual(hard.notes.Count, wind.notes.Count);
-        for (int i = 0; i < hard.notes.Count; i++)
-        {
-            NoteData a = hard.notes[i], b = wind.notes[i];
-            string label = b.beat + "拍";
-            Assert.AreEqual(a.time, b.time, label);
-            Assert.AreEqual(a.x, b.x, label);
-            Assert.AreEqual(a.y, b.y, label);
-            Assert.AreEqual(a.color, b.color, label);
-            Assert.AreEqual(a.type, b.type, label);
-            Assert.AreEqual(a.direction, b.direction, label);
-            Assert.AreEqual(a.count, b.count, label);
-            Assert.IsFalse(a.HasWind, "Hard には風が無い");
-        }
+        MixedSecretChartAssertions.Check("Aobasou", wind, "w", 46285.7143, 58, 258);
+        Assert.IsTrue(Read("hard").notes.All(n => !n.HasWind));
     }
 
     [Test]

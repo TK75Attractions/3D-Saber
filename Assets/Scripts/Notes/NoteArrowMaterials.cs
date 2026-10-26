@@ -39,6 +39,11 @@ public sealed class NoteArrowMaterials : MonoBehaviour
     public static Color FlashColor(Color color, float age)
         => Color.Lerp(color, Color.white, Mathf.Clamp01(age / FlashSeconds));
 
+    internal void RefreshDarkBrightness()
+    {
+        if (bars != null) bars.SetColor(BaseColorId, WithVeil(FlashColor(noteColor, flashAge)));
+    }
+
     // 消える(V)のように見えにくさが毎コマ変わるノーツで、今の Veil に合わせ直す。
     internal void RefreshVeil() => SetVeil(note != null ? note.Veil : 0f);
 
@@ -57,7 +62,7 @@ public sealed class NoteArrowMaterials : MonoBehaviour
     Color WithVeil(Color color)
     {
         if (cueAlpha != 1f) color.a *= cueAlpha;
-        return color;
+        return DarkRules.Rgb(color, note != null ? note.Brightness : 1f);
     }
 
     void Flash(CuttableNote source)

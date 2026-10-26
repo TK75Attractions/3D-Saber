@@ -30,11 +30,11 @@ public partial class CuttableNote
         return Mathf.Lerp(1f, CrackRestStrength, fade);
     }
 
-    public static void ApplyCrack(Transform target, Material material, Vector3 fullScale, float age, float veil = 0f)
+    public static void ApplyCrack(Transform target, Material material, Vector3 fullScale, float age, float veil = 0f, float brightness = 1f)
     {
         fullScale.y *= Mathf.Clamp01(age / CrackGrowSeconds);
         target.localScale = fullScale;
-        float strength = CrackStrength(age, DisplaySettings.ReducedEffects);
+        float strength = CrackStrength(age, DisplaySettings.ReducedEffects) * DarkRules.ClampBrightness(brightness);
         float visibility = NoteVeil.CueAlpha(veil);
         Color c = new Color(strength, strength, strength, visibility);
         if (material.HasProperty(CrackBaseId)) material.SetColor(CrackBaseId, c);
@@ -54,7 +54,7 @@ public partial class CuttableNote
             // 終了値は通常・LOW共通。最後の反映を終えたひびは触らない。
             if (crack.age >= end) continue;
             crack.age = Mathf.Min(end, crack.age + Mathf.Max(0f, deltaTime));
-            ApplyCrack(crack.transform, crack.material, crack.fullScale, crack.age, Veil);
+            ApplyCrack(crack.transform, crack.material, crack.fullScale, crack.age, Veil, Brightness);
         }
     }
 }

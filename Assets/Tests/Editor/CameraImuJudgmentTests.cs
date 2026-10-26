@@ -74,6 +74,50 @@ public class CameraImuJudgmentTests
     }
 
     [Test]
+    public void HeatRejectsImuCutsAndCoolingAllowsANewSwing()
+    {
+        Create(count: 3);
+        notes[0].IsHeat = true;
+        spawner.CurrentChart.bpm = 120;
+        spawner.CurrentChart.heat = new HeatChartData { max = 1, coolBeats = .25f };
+        var heat = HeatMode.Create(root.transform, spawner.CurrentChart, spawner, judge, judge2, false);
+        heat.Tick(1, 1);
+        heat.Session.RecordCut(HeatHand.Right, 1);
+        Swing();
+        Path();
+        heat.Tick(1.12, 1.12);
+        Advance(.12);
+        Assert.AreEqual(0, notes[0].CutsAchieved);
+        Advance(.31);
+        heat.Tick(1.4, 1.4);
+        Assert.IsTrue(judge.CanCutNote(notes[0]));
+        Swing(.4, seq: 2);
+        Path(.4);
+        heat.Tick(1.57, 1.57);
+        Advance(.57);
+        Assert.AreEqual(1, notes[0].CutsAchieved);
+        Assert.AreEqual(1, heat.Session.HeatOf(HeatHand.Right));
+    }
+
+    [Test]
+    public void ImuSimultaneousCutsRecheckHeatAfterEachAcceptedNote()
+    {
+        Create(twoNotes: true, secondTime: 1000);
+        notes[0].IsHeat = notes[1].IsHeat = true;
+        spawner.CurrentChart.bpm = 120;
+        spawner.CurrentChart.heat = new HeatChartData { max = 1 };
+        var heat = HeatMode.Create(root.transform, spawner.CurrentChart, spawner, judge, judge2, false);
+        heat.Tick(1, 1);
+        Swing();
+        Path();
+        heat.Tick(1.17, 1.17);
+        Advance(.17);
+        Assert.AreEqual(1, notes.FindAll(n => n.IsCut).Count);
+        Assert.AreEqual(1, score.HitCount);
+        Assert.AreEqual(1, heat.Session.HeatOf(HeatHand.Right));
+    }
+
+    [Test]
     public void CameraCrossingWithoutSwingDoesNotHitInStrictMode()
     {
         Create(); Path(); Advance(.17);

@@ -3,7 +3,7 @@ using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
 
-// logic!!! の裏譜面 S(緩急、2026-10-26)。ノーツは Hard そのまま、流れる速さの表(scroll)だけが足してある。
+// logic!!! の裏譜面 S。序盤Normal・中盤以降Hardに、はっちゃけ版の速さの表を適用。
 // 譜面は C:\Users\shike\dev\tools\ChartLogicSpeed\gen_speed.py --write で作る。
 public class LogicSpeedChartTests
 {
@@ -17,27 +17,15 @@ public class LogicSpeedChartTests
     }
 
     [Test]
-    public void NotesAreTheHardChartWithASpeedTable()
+    public void NotesSwitchFromNormalToHardWithASpeedTable()
     {
         var speed = Read("s");
         var hard = Read("hard");
         Assert.AreEqual(9, speed.displayLevel);
-        Assert.AreEqual(hard.bpm, speed.bpm);
+        MixedSecretChartAssertions.Check("logic", speed, "s", 62403, 63, 270);
         Assert.AreEqual(hard.editorTempoMap.Count, speed.editorTempoMap.Count);
-        Assert.AreEqual(hard.notes.Count, speed.notes.Count);
-        for (int i = 0; i < hard.notes.Count; i++)
-        {
-            NoteData a = hard.notes[i], b = speed.notes[i];
-            string label = b.beat + "拍";
-            Assert.AreEqual(a.time, b.time, label);
-            Assert.AreEqual(a.x, b.x, label);
-            Assert.AreEqual(a.y, b.y, label);
-            Assert.AreEqual(a.color, b.color, label);
-            Assert.AreEqual(a.direction, b.direction, label);
-            Assert.AreEqual(a.count, b.count, label);
-        }
-        Assert.AreEqual(0, hard.scroll.Count, "Hard はいつもの速さ");
-        Assert.Greater(speed.scroll.Count, 10);
+        Assert.AreEqual(0, hard.scroll.Count);
+        Assert.AreEqual(80, speed.scroll.Count, "はっちゃけ版の速さの表を維持");
         Assert.AreSame(RushESecretState.LogicSpeed, RushESecretState.ForDifficulty("S"));
     }
 
@@ -73,7 +61,7 @@ public class LogicSpeedChartTests
         {
             double hit = note.TimeSeconds;
             double seen = hit - map.TimeAtPosition(map.PositionAt(hit) - Approach);
-            Assert.GreaterOrEqual(seen, .45, hit + " 秒のノーツは 0.45 秒以上見える");
+            Assert.GreaterOrEqual(seen - 1.0 / 30, .45, hit + " 秒のノーツは1コマ遅れても0.45秒以上見える");
         }
         Assert.LessOrEqual(chart.scroll.Max(p => p.speed), 3.0f, "音が戻る瞬間の叩き込みでも速さ 3 まで");
     }
@@ -85,5 +73,19 @@ public class LogicSpeedChartTests
         Assert.IsTrue(chart.scroll.Any(p => p.ease > 1.2f), "手前でブレーキする区間がある");
         Assert.IsTrue(chart.scroll.Any(p => p.ease < .9f), "奥でためて手前で一気に来る区間がある");
         foreach (var p in chart.scroll) Assert.That(p.ease, Is.InRange(.6f, 1.7f), p.time + "ms");
+    }
+
+    // 止まり始め・動き出しで曲がり具合を変えると、空中のノーツがその瞬間に跳ぶか逆に戻る(10/26 見直し)。
+    [Test]
+    public void StopsKeepTheCurveSoNothingJumpsAtTheEdge()
+    {
+        var chart = Read("s");
+        for (int i = 1; i < chart.scroll.Count; i++)
+        {
+            var p = chart.scroll[i];
+            var prev = chart.scroll[i - 1];
+            if (p.speed == 0 || prev.speed == 0)
+                Assert.AreEqual(prev.ease, p.ease, 1e-6f, p.time + "ms の止まり・動き出しで曲がり具合が変わる");
+        }
     }
 }

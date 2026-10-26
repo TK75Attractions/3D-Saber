@@ -228,6 +228,7 @@ public partial class NoteVisuals : MonoBehaviour
 
     public void ResetForReuse()
     {
+        SetBrightness(1f);
         bodyDimmed = false;
         simultaneousLinkCount = 0;
         simultaneousVeils?.Clear();
@@ -272,7 +273,8 @@ public partial class NoteVisuals : MonoBehaviour
 
     public Transform FindChildByName(string name)
     {
-        foreach (Transform child in transform)
+        var note = GetComponent<CuttableNote>();
+        foreach (Transform child in note != null ? note.VisualTransform : transform)
         {
             if (child.name == name) return child;
         }
@@ -432,7 +434,8 @@ public partial class NoteVisuals : MonoBehaviour
         contrastOutlineMesh.triangles = new[] { 0, 1, 5, 0, 5, 4, 1, 2, 6, 1, 6, 5, 2, 3, 7, 2, 7, 6, 3, 0, 4, 3, 4, 7 };
         contrastOutlineMesh.RecalculateBounds();
         contrastOutline = new GameObject("ContrastOutline", typeof(MeshFilter), typeof(MeshRenderer));
-        contrastOutline.transform.SetParent(transform, false);
+        var note = GetComponent<CuttableNote>();
+        contrastOutline.transform.SetParent(note != null ? note.VisualTransform : transform, false);
         contrastOutline.transform.localPosition = new Vector3(0f, 0f, -.505f);
         contrastOutline.GetComponent<MeshFilter>().sharedMesh = contrastOutlineMesh;
         // 矢印の黒い縁取りと同じ NoteGuide(照明なし・両面)。矢印(3021〜)より先に描く。

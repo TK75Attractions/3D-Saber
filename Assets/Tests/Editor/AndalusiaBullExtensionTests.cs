@@ -9,13 +9,13 @@ using UnityEngine;
 public partial class AndalusiaBullChartTests
 {
     [Test]
-    public void PrefixIsExactlyTheV126NotesChargesAndShots()
+    public void PrefixOnlyContainsTheReviewedLongAndChargeChanges()
     {
         var chart = Read("t");
-        Assert.AreEqual(213, chart.notes.Count);
+        Assert.AreEqual(209, chart.notes.Count);
         Assert.AreEqual(30, chart.bull.charges.Count);
         Assert.AreEqual(142, chart.bull.shots.Count);
-        // v1.26を読み込んだ各フィールドをBinaryWriterの順番で固定する。
+        // v1.26からロング4個を除き、拍249の上段をy=1.35にした結果を固定する。
         // JSONの空白やキー順、現在のカルチャーに依存しない。
         using (var buffer = new MemoryStream())
         using (var writer = new BinaryWriter(buffer))
@@ -45,8 +45,8 @@ public partial class AndalusiaBullChartTests
             }
             writer.Flush();
             using (var sha = SHA256.Create())
-                Assert.AreEqual("936e345b3f8fc67fca9e3894d8801ae2a3d5dd21d677c60b7e9f8187a00ea7b9",
-                    Hex(sha.ComputeHash(buffer.ToArray())), "拍295.5付近の最後の金も含めて変更しない");
+                Assert.AreEqual("41737ed3127cc09e8df91febb05a3b59be4ad544b6a789b4a9edd810fc341274",
+                    Hex(sha.ComputeHash(buffer.ToArray())), "指定の安全修正以外は拍295.5まで変更しない");
         }
     }
 
@@ -131,18 +131,19 @@ public partial class AndalusiaBullChartTests
     static void CheckNoteClearance(BullSession session, NoteData n)
     {
         var p = new Vector2(n.x, n.y);
-        double t = n.TimeSeconds;
-        foreach (var c in session.Charges.Where(c => c.Start - .3 <= t && t <= c.End + .3))
+        double lo = n.TimeSeconds - .25;
+        double hi = n.TimeSeconds + n.LingerSeconds(NoteSpawner.DefaultSecondsPerLongCut) + .25;
+        foreach (var c in session.Charges.Where(c => c.Start <= hi + .05 && c.End >= lo - .05))
             Assert.GreaterOrEqual(BullRules.ChargeLaneDistance(c, p, p), BullRules.ChargeRadius + .65f - 1e-5f);
         foreach (var s in session.Shots)
         {
             if (s.Follow != SaberHand.Any)
             {
                 if (n.color == "gold" || n.color == (s.Follow == SaberHand.Left ? "blue" : "red"))
-                    Assert.Greater(Math.Abs(t - s.Time), .4);
+                    Assert.IsFalse(lo - .15 <= s.Time && s.Time <= hi + .15, "滞在中に同じ手を追う弾");
                 continue;
             }
-            if (t < BullRules.HitStart(s) - .25 || t > BullRules.HitEnd(s) + .25) continue;
+            if (hi < BullRules.HitStart(s) || lo > BullRules.HitEnd(s)) continue;
             float distance, margin;
             if (s.Kind == "spear")
             {

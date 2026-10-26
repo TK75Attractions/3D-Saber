@@ -120,7 +120,7 @@ public class WindNotePlayTests
                 return;
             target = note;
             version = note.SpawnVersion;
-            spawnPosition = note.transform.position;
+            spawnPosition = note.VisualTransform.position;
             spawnRemaining = note.HitTime - manager.songPlayer.SongTime;
             if (note.TimingCue != null)
             {
@@ -206,6 +206,16 @@ public class WindNotePlayTests
         });
         Assert.IsTrue(first.HasWind);
         AssertGhosts(first);
+        spawner.JudgeLatencySeconds = -.15;
+        spawner.Tick(first.HitTime - .2);
+        Assert.IsTrue(first.IsJudgeable);
+        Assert.AreEqual(first.LandingPosition, (Vector2)first.transform.position);
+        Assert.Greater(Mathf.Abs(first.VisualTransform.position.x - first.transform.position.x), .001f);
+        spawner.RefreshJudgmentWindows(first.HitTime - WindRules.StillSeconds);
+        Assert.AreEqual(Vector3.zero, first.VisualTransform.localPosition);
+        // 揺れたまま回収しても、次の通常ノーツへ持ち越さない。
+        spawner.Tick(first.HitTime - .12);
+        Assert.AreNotEqual(Vector3.zero, first.VisualTransform.localPosition);
         int created = spawner.CreatedNoteCount;
 
         var ordinary = SpawnSingle(spawner, new NoteData {
@@ -220,6 +230,9 @@ public class WindNotePlayTests
         Assert.AreEqual(0f, ordinary.WindSway);
         Assert.AreEqual(new Vector2(-.7f, .2f), ordinary.LandingPosition);
         Assert.AreEqual(ordinary.LandingPosition, (Vector2)ordinary.transform.position);
+        Assert.AreEqual(Vector3.zero, ordinary.VisualTransform.localPosition);
+        Assert.AreEqual(ordinary.transform.position, ordinary.VisualTransform.position);
+        Assert.IsTrue(ordinary.BodyRenderer.enabled);
         AssertGhosts(ordinary);
 
         var windyAgain = SpawnSingle(spawner, new NoteData {

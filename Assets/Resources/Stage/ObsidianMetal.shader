@@ -3,6 +3,7 @@ Shader "Saber/Obsidian Stage Metal"
     Properties
     {
         _BaseColor ("Surface", Color) = (0.06, 0.08, 0.10, 1)
+        _DarkBrightness ("Dark brightness", Range(0,1)) = 1
         _EmissionColor ("Inlay", Color) = (0, 0, 0, 1)
         _Smoothness ("Satin finish", Range(0,1)) = 0.35
         _Metallic ("Metal", Range(0,1)) = 0.32
@@ -23,6 +24,7 @@ Shader "Saber/Obsidian Stage Metal"
             half4 _EmissionColor;
             half _Smoothness;
             half _Metallic;
+            half _DarkBrightness;
             float _MotionStyle, _MotionTime, _FloorY, _Chorus;
         CBUFFER_END
         struct Attributes
@@ -99,7 +101,8 @@ Shader "Saber/Obsidian Stage Metal"
             float sweep = pow(saturate(.5 + .5 * sin(input.positionWS.z * .48 - _MotionTime * 1.4)), 5);
             color += edge * _Chorus * (_BaseColor.rgb * .20 + _EmissionColor.rgb * (.30 + sweep * .55));
             color += half3(0.032, 0.048, 0.062) * (rim + highlight * 0.45h);
-            color = MixFog(color, input.fog);
+            // 霧色は GameStageSkin 側で暗くしているため、面の色だけに倍率を掛ける。
+            color = MixFog(color * _DarkBrightness, input.fog);
             return half4(color, 1);
         }
         ENDHLSL

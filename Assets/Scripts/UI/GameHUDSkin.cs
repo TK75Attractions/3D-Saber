@@ -82,6 +82,43 @@ public class GameHUDSkin : MonoBehaviour
 
     public bool IsBuilt { get; private set; }
 
+    // F の落下経路と重なる上中央の表示だけを薄くする。通常譜面では元へ戻す。
+    // 薄くしたのは F のときだけ。ふつうの譜面では、ほかの演出(画面遷移など)が使う透明度に触らない。
+    bool fallHeaderDimmed;
+    public void SetFallHeaderDim(bool fall)
+    {
+        if (!fall && !fallHeaderDimmed) return;
+        fallHeaderDimmed = fall;
+        foreach (string name in new[] { "SongTitleEn", "SongTitle", "Difficulty" })
+        {
+            var item = transform.Find(name);
+            if (item == null) continue;
+            // GetComponent は Unity の「偽の null」を返すことがあり ?? が効かないので、== null で確かめる。
+            var group = item.GetComponent<CanvasGroup>();
+            if (group == null)
+            {
+                if (!fall) continue;
+                group = item.gameObject.AddComponent<CanvasGroup>();
+            }
+            group.alpha = fall ? .28f : 1f;
+        }
+    }
+
+    CanvasGroup darkGroup;
+    float darkOriginalAlpha;
+    // HUDのアニメーションが文字色を更新しても、停電の倍率を上書きしない。
+    // カウントインや追跡の警告は別のCanvasなので暗くしない。
+    public void SetDarkBrightness(float brightness)
+    {
+        if (darkGroup == null)
+        {
+            darkGroup = GetComponent<CanvasGroup>();
+            if (darkGroup == null) darkGroup = gameObject.AddComponent<CanvasGroup>();
+            darkOriginalAlpha = darkGroup.alpha;
+        }
+        darkGroup.alpha = darkOriginalAlpha * (DarkRules.Finite(brightness) ? Mathf.Clamp01(brightness) : 1f);
+    }
+
     private ScoreManager score;
     private SongPlayer songPlayer;
 

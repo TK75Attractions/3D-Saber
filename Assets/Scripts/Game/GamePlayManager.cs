@@ -191,6 +191,10 @@ public class GamePlayManager : MonoBehaviour
     // 闘牛(アンダルシアの「T」)の突進と弾。触れた剣は2秒しびれる。
     private BullfightMode bullMode;
     public BullfightMode BullMode => bullMode;
+    private HeatMode heatMode;
+    public HeatMode HeatMode => heatMode;
+    private DarkMode darkMode;
+    public DarkMode DarkMode => darkMode;
     // 避の終わりはコンボ点の演出が無いので、この秒数だけ置いてから結果へ。
     const float AimEndPauseSeconds = 1.2f;
 
@@ -407,6 +411,7 @@ public class GamePlayManager : MonoBehaviour
         // オフセットを先に NoteSpawner に渡してから SetChart
         noteSpawner.SetExtraOffsetSeconds(effectiveExtraOffset);
         noteSpawner.SetChart(chart);
+        if (useOverhauledStage) GameHUDSkin.Ensure().SetFallHeaderDim(noteSpawner.HasFall);
         playFeedback = GameplayFeedbackPresenter.Create(noteSpawner, scoreManager);
         if (stageFloor != null) stageFloor.SetRhythm(chart);
         if (stageFloor != null) stageReactions = StageReactiveEffects.Create(stageFloor, noteSpawner, stagePerformance);
@@ -422,7 +427,7 @@ public class GamePlayManager : MonoBehaviour
         }
 
         // 小節線：BPM ガイドとして薄く流す
-        if ((disableBarLines || stagePerformance.hideBarLines) && barLineSpawner != null)
+        if ((disableBarLines || stagePerformance.hideBarLines || noteSpawner.HasFall) && barLineSpawner != null)
         {
             barLineSpawner.gameObject.SetActive(false);
             barLineSpawner = null;
@@ -449,6 +454,10 @@ public class GamePlayManager : MonoBehaviour
             memoryMode = MemoryVeilMode.Create(transform, chart, noteSpawner);
         if (chart.bull != null && chart.bull.HasContent)
             bullMode = BullfightMode.Create(transform, chart.bull, noteSpawner, cutJudge, cutJudge2);
+        if (chart.heat != null)
+            heatMode = global::HeatMode.Create(transform, chart, noteSpawner, cutJudge, cutJudge2);
+        if (chart.dark != null && chart.dark.Count > 0)
+            darkMode = global::DarkMode.Create(transform, chart, noteSpawner, cutJudge, cutJudge2, stageFloor, barLineSpawner);
         if (longNoteCutSfx != null) longNoteCutSfx.Bind(noteSpawner);
         if (goldNoteSfx != null)
         {
@@ -497,8 +506,16 @@ public class GamePlayManager : MonoBehaviour
                 countdown.ConfigureCaptionHint(WindRules.RuleCaption, RushESecretState.Leaf, firstNoteFromPlayStart, playRange.Start);
             else if (noteSpawner.HasScroll)
                 countdown.ConfigureCaptionHint(ScrollSpeedMap.RuleCaption, RushESecretState.Ice, firstNoteFromPlayStart, playRange.Start);
+            else if (noteSpawner.HasFall)
+                countdown.ConfigureCaptionHint(FallRules.RuleCaption, RushESecretState.Sakura, firstNoteFromPlayStart, playRange.Start);
             else if (noteSpawner.HasVanishNotes)
                 countdown.ConfigureCaptionHint(VanishRules.RuleCaption, RushESecretState.Phantom, firstNoteFromPlayStart, playRange.Start);
+            else if (darkMode != null)
+                countdown.ConfigureCaptionHint(DarkRules.RuleCaption, RushESecretState.Lamp, firstNoteFromPlayStart, playRange.Start);
+            else if (heatMode != null)
+                countdown.ConfigureCaptionHint(global::HeatMode.RuleCaption, RushESecretState.Thermal, firstNoteFromPlayStart, playRange.Start);
+            else if (noteSpawner.HasSlideNotes)
+                countdown.ConfigureCaptionHint(LongSlideRules.RuleCaption, RushESecretState.Cobalt, firstNoteFromPlayStart, playRange.Start);
             // M(覚える)は下の解説を何も出さない(2026-10-26 ユーザー「下に出る解説いらないから消して」)。
             // 最初の3回でノイズがだんだん強まるのが説明を兼ねる。
             else if (memoryMode == null)
@@ -804,6 +821,8 @@ public class GamePlayManager : MonoBehaviour
 
     private void OnDestroy()
     {
+        if (heatMode != null) heatMode.EndPlay();
+        if (darkMode != null) darkMode.EndPlay();
         if (memoryMode != null) memoryMode.EndPlay();
         if (bullMode != null) bullMode.EndPlay();
         AbortAudioRequest();
@@ -849,6 +868,10 @@ public class GamePlayManager : MonoBehaviour
         TickTrackingWatch();
         // 最初の手の予告は曲の時計で出し入れする(止まっている間は隠す)。
         FirstNoteHandHintView.Tick(songPlayer);
+        // 停止中も刃の追跡状態を読む。曲時計が止まっていれば停電の区間は進まない。
+        if (ready && !finished && darkMode != null && songPlayer != null)
+            darkMode.Tick(songPlayer.SongTime, refreshNotes:
+                !songPlayer.IsScheduled || songPlayer.IsPaused || songPlayer.IsWaitingForAudio);
         if (finished || !ready || (songPlayer != null &&
             (songPlayer.IsPaused || songPlayer.IsWaitingForAudio)))
         {
@@ -864,6 +887,11 @@ public class GamePlayManager : MonoBehaviour
         // 負の開始予約時刻にも対応し、停止時の SongTime=0 では巻き戻さない。
         if (songPlayer != null && songPlayer.IsScheduled && noteSpawner != null)
             noteSpawner.RefreshJudgmentWindows(songPlayer.SongTime);
+
+        // 熱は両方の判定経路より先に冷やす。見た目と判定の時計を分け、オフセットは一度だけ使う。
+        if (heatMode != null && songPlayer != null && songPlayer.IsScheduled)
+            heatMode.Tick(songPlayer.SongTime,
+                noteSpawner != null ? noteSpawner.JudgeClock(songPlayer.SongTime) : songPlayer.SongTime);
 
         // 1. セーバー判定(2本構成なら両方)
         if (cameraImuJudgment != null)
@@ -918,8 +946,8 @@ public class GamePlayManager : MonoBehaviour
             if (barLineSpawner != null) barLineSpawner.Tick(songTime);
             // 避の的とトゲ。見た目は曲の時計、当たりと的の判定はノーツと同じ判定の時計(カメラの遅れを引いた時刻)。
             if (aimMode != null) aimMode.Tick(songTime, noteSpawner.JudgeClock(songTime));
-            // 闘牛の突進と弾。当たりは判定の時計で見る。
-            if (bullMode != null) bullMode.Tick(songTime, noteSpawner.JudgeClock(songTime));
+            // 闘牛は刃の位置入力に合わせた左右別の時計を使う。IMUのノーツ判定とは独立。
+            if (bullMode != null) bullMode.TickFromInput(songTime, cameraJudgeLatencySeconds);
             // このコマで差し替えた字幕にも直ちに曲時計を反映する。
             // 冒頭のTickは、一時停止でここへ来ないコマの非表示を受け持つ。
             if (memoryMode != null) FirstNoteHandHintView.Tick(songPlayer);
@@ -932,7 +960,7 @@ public class GamePlayManager : MonoBehaviour
         // 曲の終わりは「音が鳴り終わる秒」(曲ごと。無ければ音源の長さ)から待つ(仕様面の点検 7)。
         double endThreshold = ResolveEndThreshold(MusicEnd, lastNoteTime,
             bullMode != null ? bullMode.LastTime : double.NegativeInfinity,
-            noteSpawner.JudgeLatencySeconds, endWaitSeconds, outroSeconds);
+            bullMode != null ? bullMode.MaxPositionLatencySeconds : 0, endWaitSeconds, outroSeconds);
         if (songPlayer.IsPlaying && songPlayer.SongTime >= endThreshold
             && noteSpawner.AliveCount == 0 && noteSpawner.NextIndex >= noteSpawner.TotalNoteCount
             && (aimMode == null || aimMode.Completed))
@@ -965,6 +993,8 @@ public class GamePlayManager : MonoBehaviour
     private void ReturnToTitle()
     {
         if (!ScreenTransition.Load("Title", ScreenTransition.Style.Back)) return;
+        if (heatMode != null) heatMode.EndPlay();
+        if (darkMode != null) darkMode.EndPlay();
         // 途中離脱は終了処理へ流さず、結果・実績を保存しない。開始待ちや終了演出も打ち切る。
         finished = true;
         leaving = true;
@@ -1297,6 +1327,8 @@ public class GamePlayManager : MonoBehaviour
 
     private void FinishGame()
     {
+        if (heatMode != null) heatMode.EndPlay();
+        if (darkMode != null) darkMode.EndPlay();
         // 「なぜ今終わったか」を後から追えるように記録する(途中終了バグの診断用)
         Debug.Log($"GamePlayManager: FinishGame songTime={songPlayer.SongTime:F1}s " +
             $"duration={songPlayer.Duration:F1}s lastNote={lastNoteTime:F1}s alive={noteSpawner.AliveCount}");
