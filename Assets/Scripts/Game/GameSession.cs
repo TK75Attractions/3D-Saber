@@ -1,7 +1,7 @@
 using UnityEngine;
 
 // シーン間で譜面選択とリザルトを受け渡す薄い静的ストア。
-// 調整値はその回の画面間で共有し、タイトルまたは結果からの新しい選曲で標準へ戻す。
+// 調整値は同じ来場者の曲間でも共有し、タイトルで次の人の標準へ戻す。
 public static class GameSession
 {
     public static string SelectedSongId;
@@ -125,12 +125,27 @@ public static class GameSession
     public const int JudgmentOffsetMaxMs = 1000;
     public const int JudgmentOffsetDefaultMs = -20;
 
+    // 画面遷移テストでは判定値・速度もメモリー内だけで扱う。
+    // タイトルでのリセットを通しても、本物の保存値を消さない。
+    // 判定調整の下書き・出力先別の値(CalibrationDraft の3キー)は差し替えない。判定調整を往復するテストでは使わないこと。
+    static bool playerSettingsForTest;
+    static int testJudgmentOffset;
+    static float testApproachTime;
+    public static void SetPlayerSettingsForTest(bool enabled)
+    {
+        playerSettingsForTest = enabled;
+        testJudgmentOffset = JudgmentOffsetDefaultMs;
+        testApproachTime = NoteApproachTimeDefault;
+    }
+
     public static int JudgmentOffsetMs
     {
-        get => Mathf.Clamp(PlayerPrefs.GetInt(JudgmentOffsetMsKey, JudgmentOffsetDefaultMs), JudgmentOffsetMinMs, JudgmentOffsetMaxMs);
+        get => playerSettingsForTest ? testJudgmentOffset
+            : Mathf.Clamp(PlayerPrefs.GetInt(JudgmentOffsetMsKey, JudgmentOffsetDefaultMs), JudgmentOffsetMinMs, JudgmentOffsetMaxMs);
         set
         {
             int clamped = Mathf.Clamp(value, JudgmentOffsetMinMs, JudgmentOffsetMaxMs);
+            if (playerSettingsForTest) { testJudgmentOffset = clamped; return; }
             PlayerPrefs.SetInt(JudgmentOffsetMsKey, clamped);
             PlayerPrefs.Save();
         }
@@ -138,6 +153,7 @@ public static class GameSession
 
     public static void ResetJudgmentOffset()
     {
+        if (playerSettingsForTest) { testJudgmentOffset = JudgmentOffsetDefaultMs; return; }
         PlayerPrefs.DeleteKey(JudgmentOffsetMsKey);
         PlayerPrefs.Save();
     }
@@ -152,10 +168,12 @@ public static class GameSession
 
     public static float NoteApproachTime
     {
-        get => SafeApproachTime(PlayerPrefs.GetFloat(NoteApproachTimeKey, NoteApproachTimeDefault));
+        get => playerSettingsForTest ? testApproachTime
+            : SafeApproachTime(PlayerPrefs.GetFloat(NoteApproachTimeKey, NoteApproachTimeDefault));
         set
         {
             float clamped = SafeApproachTime(value);
+            if (playerSettingsForTest) { testApproachTime = clamped; return; }
             PlayerPrefs.SetFloat(NoteApproachTimeKey, clamped);
             PlayerPrefs.Save();
         }
@@ -166,6 +184,7 @@ public static class GameSession
 
     public static void ResetNoteApproachTime()
     {
+        if (playerSettingsForTest) { testApproachTime = NoteApproachTimeDefault; return; }
         PlayerPrefs.DeleteKey(NoteApproachTimeKey);
         PlayerPrefs.Save();
     }
@@ -175,6 +194,12 @@ public static class GameSession
     // 端末の位置補正・表示設定・スコア記録は対象外。
     public static void ResetPlayerSettings()
     {
+        if (playerSettingsForTest)
+        {
+            ResetJudgmentOffset();
+            ResetNoteApproachTime();
+            return;
+        }
         PlayerPrefs.DeleteKey(JudgmentOffsetMsKey);
         PlayerPrefs.DeleteKey(NoteApproachTimeKey);
         PlayerPrefs.DeleteKey(CalibrationDraft.ActiveKey);

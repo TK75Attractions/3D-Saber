@@ -30,6 +30,7 @@ public class SongSelectSkin : MonoBehaviour
     readonly TextMeshProUGUI[] difficultyLabels = new TextMeshProUGUI[3];
     readonly SongSelectRubyText[] counts = new SongSelectRubyText[4];
     TextMeshProUGUI sourceCredit, composerName, timer, timerNotice, achievementDifficulty, libraryPosition, startHint, holdHint;
+    SongSelectDiscGraphic visitorProgress;
     // 残り時間の音(盤5): 30秒で1回の知らせ、10秒から1秒ごとの刻み。鳴らすのは MenuSfx。
     int lastBeepSecond = -1, previousSecond = -1;
     // ためている間の表示(盤2): 難易度の円は円周、判定調整・タイトルへのボタンは下の線が満ちる。
@@ -97,6 +98,8 @@ public class SongSelectSkin : MonoBehaviour
         ctl.startButton = null;
         corridor = SongSelectCorridor.Build(layout, ctl);
         BuildHeader(); BuildDiscs(); BuildTitle(); BuildDifficulties(); BuildSecretDifficulty(); BuildAchievements(); BuildActions();
+        // 2曲モードの何曲目の札は盤より手前に描く(スタートで盤が1.25倍になっても点が隠れない。砂嵐などの覆いはこの後に作るので上に乗る)。
+        if (visitorProgress != null) visitorProgress.transform.SetAsLastSibling();
         // 選曲の音は幕の裏で作っておき、最初の操作で処理落ちしないようにする。
         MenuSfx.PrepareSongSelect();
         hardNoise = MenuSignalNoise.BuildScreenOverlay(canvas, layout);
@@ -212,14 +215,39 @@ public class SongSelectSkin : MonoBehaviour
 
     void BuildHeader()
     {
-        var header = Graphic(layout, "InstructionTab", Position(490, 92), new Vector2(860, 112), SongSelectDiscGraphic.Shape.Tab, Panel);
+        bool twoSongs = VisitorPlays.SongsPerVisitor == 2;
+        var header = Graphic(layout, "InstructionTab", Position(twoSongs ? 430 : 490, 92),
+            new Vector2(twoSongs ? 740 : 860, 112), SongSelectDiscGraphic.Shape.Tab, Panel);
         header.Width = 6; header.Edge = new Color(1, .18f, .30f); header.EdgeRight = new Color(.25f, .43f, 1); header.Bottom = Ink;
-        var title = Label(header.transform, "Instruction", "", 48, new Vector2(0, -7), new Vector2(825, 80), UISkinKit.JapaneseFallbackFontAsset());
+        var title = Label(header.transform, "Instruction", "", 48, new Vector2(0, -7),
+            new Vector2(twoSongs ? 705 : 825, 80), UISkinKit.JapaneseFallbackFontAsset());
         title.fontStyle = FontStyles.Bold;
         Ruby(title, "<ruby=なんいど>難易度</ruby>と<ruby=がっきょく>楽曲</ruby>を<ruby=えら>選</ruby>んでね");
         timer = BuildCountdownDisplay(layout);
         timerNotice = Label(layout, "TimerConsequence", "この曲が自動で始まるまで", 25, Position(1600, 171), new Vector2(560, 40), UISkinKit.JapaneseFallbackFontAsset(), White);
+        if (twoSongs)
+        {
+            // 上段の見出しと戻るボタンの間。移動中の盤にも重ならない。
+            var progress = visitorProgress = PanelAt("VisitorProgress", 925, 92, 210, 112, Cyan, 2, 16);
+            var text = Label(progress.transform, "VisitorProgressText", "", 32,
+                new Vector2(0, 10), new Vector2(186, 50), UISkinKit.JapaneseFallbackFontAsset());
+            Ruby(text, VisitorProgressText(VisitorPlays.CurrentSongNumber));
+            Label(progress.transform, "VisitorProgressDots",
+                VisitorProgressDots(VisitorPlays.CurrentSongNumber, VisitorPlays.SongsPerVisitor), 26,
+                new Vector2(0, -32), new Vector2(186, 32), UISkinKit.JapaneseFallbackFontAsset(), Cyan);
+        }
     }
+    public static string VisitorProgressText(int songNumber) =>
+        Mathf.Max(1, songNumber) + "<ruby=きょくめ>曲目</ruby>";
+    // 何曲目かを点でも(遊ぶ曲までを●、残りを○)。字を読まなくても「全部でいくつのうちの何番目か」が分かる。
+    public static string VisitorProgressDots(int songNumber, int songs)
+    {
+        songs = Mathf.Max(1, songs); songNumber = Mathf.Clamp(songNumber, 1, songs);
+        var dots = new string[songs];
+        for (int i = 0; i < songs; i++) dots[i] = i < songNumber ? "●" : "○";
+        return string.Join(" ", dots);
+    }
+
     // 選曲と判定調整で同じ位置・図形・文字を使い、表示仕様を一か所で管理する。
     public static TextMeshProUGUI BuildCountdownDisplay(Transform parent)
     {

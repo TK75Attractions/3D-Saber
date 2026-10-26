@@ -150,8 +150,11 @@ public sealed class PhoneSaberPlayerSoak : MonoBehaviour
             string exit = "scene-load";
             if (SceneManager.GetActiveScene().name == "Result")
             {
+                // 自然に曲が終わったときは、結果への幕が開ききってから出る(幕の間はタイトルへの Load が断られる)。
+                yield return WaitScene("Result");
                 var result = FindFirstObjectByType<ResultController>();
-                if (result != null) { exit = "result-return"; result.OnBackButton(); }
+                // 2曲モードの1曲目は中央ボタン(OnBackButton)が選曲へ進むので、スタッフの出口で毎回タイトルへ戻して1周とする。
+                if (result != null) { exit = "result-return"; result.ReturnToTitle(); }
                 else { flowOk = false; SceneManager.LoadScene("Title"); }
             }
             else

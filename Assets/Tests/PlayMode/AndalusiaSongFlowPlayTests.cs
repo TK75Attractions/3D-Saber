@@ -177,7 +177,8 @@ public class AndalusiaSongFlowPlayTests
     {
         yield return OpenSelection();
         controller.SetDifficulty(0);
-        controller.startButton.onClick.Invoke();
+        // アンダルシアには隠し譜面(T)があり、中央の盤のクリックはジャケットを切る1回に数えられる。照準で2秒ためたときと同じ入口で始める。
+        controller.StartGame();
         yield return null;
         yield return AwaitGame();
         Assert.AreEqual("Game", SceneManager.GetActiveScene().name);

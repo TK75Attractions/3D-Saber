@@ -4,12 +4,13 @@ using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using TMPro;
 
-// ロゴと切れるキューブに視線を集める。説明文やモードカードは置かない。
+// ロゴと切れるキューブに視線を集める。説明文やモードカードは置かず、1回に遊べる曲数だけ左下の隅に小さく出す(2キーで切り替え)。
 public class TitleSceneSkin : MonoBehaviour
 {
     public Vector3 startNoteWorldPos = new Vector3(0f, -1.82f, 0f);
 
     private TitleMenuController titleCtl;
+    private VisitorModeBadge visitorMode;
     private RectTransform titleContainer;
     private TitlePresentationMotion presentationMotion;
     private CanvasGroup startTargetGroup;
@@ -65,6 +66,7 @@ public class TitleSceneSkin : MonoBehaviour
         titleContainer = TitleConceptA.BuildLogo(canvas.transform);
         BuildStartTarget(canvas, cam != null);
         BuildExitButton(canvas);
+        visitorMode = VisitorModeBadge.Build(canvas.transform);
 
         if (cam != null)
         {
@@ -83,6 +85,7 @@ public class TitleSceneSkin : MonoBehaviour
 
     void Update()
     {
+        visitorMode?.Tick(Time.unscaledDeltaTime, !transitioning);
         startProximity?.Tick(canvasRef, Camera.main, InputPoint.Instance, titleBlades,
             !transitioning && !ScreenTransition.IsBusy, Time.unscaledDeltaTime);
         if (ScreenTransition.IsBusy) return;
@@ -96,9 +99,15 @@ public class TitleSceneSkin : MonoBehaviour
             }
             return;
         }
-        if (!transitioning && TitleConceptSelection.ReadSelectionKeys())
+        var keys = Keyboard.current;
+        if (!transitioning && prompt == null && keys != null
+            && !SongSelectController.OperatorChordHeld(keys)
+            && (keys.digit2Key.wasPressedThisFrame || keys.numpad2Key.wasPressedThisFrame))
         {
-            ScreenTransition.Load(SceneManager.GetActiveScene().name);
+            VisitorPlays.ToggleSongsPerVisitor();
+            visitorMode?.Refresh(true);
+            OperatorNotice.Show(VisitorModeBadge.NoticeText(VisitorPlays.SongsPerVisitor));
+            MenuSfx.Difficulty(VisitorPlays.SongsPerVisitor - 1);
             return;
         }
         if (!transitioning && Keyboard.current != null &&

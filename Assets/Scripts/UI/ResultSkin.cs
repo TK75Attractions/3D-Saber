@@ -9,7 +9,7 @@ using TMPro;
 //   ・中央: RANK ワードマーク + 六角形ランクバッジ(クライマックス、Slam+衝撃波リング) + ACCURACY
 //   ・左  : SCORE(シアングラデ大数字) + MAX COMBO + HI-SCORE(+NEW RECORD!)
 //   ・右  : 判定内訳 5 行(罫線付き)
-//   ・下  : 判定分布バー + タイトルへ
+//   ・下  : 判定分布バー + 次の曲へ(残りがある回) / タイトルへ
 // 数字・判定ラベル・ランク文字は Chakra Petch Bold Italic、見出し系は Oxanium。
 // 背景(グラデ・中央グロー・パース床グリッド)もコードで生成し、画像アセットは使わない。
 public class ResultSkin : MonoBehaviour
@@ -107,8 +107,8 @@ public class ResultSkin : MonoBehaviour
     void Update()
     {
         if (controller == null || ScreenTransition.IsBusy || !InputManager.EscapeGetDown) return;
-        // 「タイトルへ」のボタン・照準と同じ出口へ。同時に押されても幕の受付が1回にまとめる。
-        if (escapeGate.PressAndNotify(Time.unscaledTimeAsDouble, EscapeTwiceGate.ToTitleNotice)) controller.OnBackButton();
+        // 運営の Esc は残り曲数にかかわらずタイトルへ。中央ボタンの次曲への出口とは分ける。
+        if (escapeGate.PressAndNotify(Time.unscaledTimeAsDouble, EscapeTwiceGate.ToTitleNotice)) controller.ReturnToTitle();
     }
 
     // ---- 純関数(テストから直接叩く) ----
@@ -631,8 +631,11 @@ public class ResultSkin : MonoBehaviour
                 rt.sizeDelta = new Vector2(420f, 96f);
                 var dwell = btn.gameObject.GetComponent<SaberDwellTarget>() ?? btn.gameObject.AddComponent<SaberDwellTarget>();
                 dwell.dwellSeconds = 1.5f;
-                var parts = UISkinKit.RestyleButton(btn, UISkinPalette.Cyan, 40f, "タイトルへ");
+                bool next = controller.HasNextSong;
+                var parts = UISkinKit.RestyleButton(btn, UISkinPalette.Cyan, 40f,
+                    next ? "次の曲へ" : "タイトルへ");
                 if (parts.label != null) parts.label.characterSpacing = 0f;
+                if (next) BuildNextSongBadge(btn.transform);
                 Reveal(btn.gameObject, DailyRankingPresentation.CompletionTime(GameSession.FinalDailyRanking), 0.45f, FromBelow);
                 // 暗転中は入力を止めているため、無効化中のEventSystemにも戻る先を設定する。
                 var events = EventSystem.current ?? Object.FindFirstObjectByType<EventSystem>();
@@ -645,6 +648,19 @@ public class ResultSkin : MonoBehaviour
                 }
             }
         }
+    }
+
+    // 「次の曲へ」の右上の角に重ねる札(2曲モードの1曲目だけ)。ボタンの子なので、出現・スキップ・操作の解禁がボタンとそろう。
+    // ボタンの下は画面の下端に近く(投影で切れやすい)、上は判定分布の帯なので角に置く。照準の当たりはボタンのまま。
+    public const string NextSongBadgeText = "あと1曲";
+    static void BuildNextSongBadge(Transform button)
+    {
+        var badge = SongSelectVisuals.Panel(button, "NextSongBadge", new Vector2(176f, 46f), new Vector2(150f, 44f),
+            UISkinPalette.Yellow, Color.white, 8f);
+        var text = UISkinKit.MakeTMP(badge.transform, "NextSongNotice", NextSongBadgeText, 27f, BadgeInner,
+            TextAlignmentOptions.Center, Vector2.zero, new Vector2(140f, 40f), FontStyles.Bold, 0f,
+            UISkinKit.JapaneseFallbackFontAsset());
+        text.raycastTarget = false;
     }
 
     // ---- 小物 ----

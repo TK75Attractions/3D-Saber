@@ -1,8 +1,7 @@
 using System;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
-// タイトルを開くたび背景を抽選する。数字キーは次の表示1回だけを指定する比較用。
+// タイトルを開くたび背景を抽選する。撮影・テストの指定だけ次の表示1回に適用する。
 public static class TitleConceptSelection
 {
     public const int Count = 4;
@@ -48,19 +47,6 @@ public static class TitleConceptSelection
     {
         if (value < 0 || value >= Count) throw new ArgumentOutOfRangeException(nameof(value));
         nextPreview = value;
-    }
-
-    public static bool ReadSelectionKeys()
-    {
-        var keys = Keyboard.current;
-        if (keys == null) return false;
-        int requested = keys.digit0Key.wasPressedThisFrame || keys.numpad0Key.wasPressedThisFrame ? 0
-            : keys.digit1Key.wasPressedThisFrame || keys.numpad1Key.wasPressedThisFrame ? 1
-            : keys.digit2Key.wasPressedThisFrame || keys.numpad2Key.wasPressedThisFrame ? 2
-            : keys.digit3Key.wasPressedThisFrame || keys.numpad3Key.wasPressedThisFrame ? 3 : -1;
-        if (requested < 0) return false;
-        Select(requested);
-        return true;
     }
 
     public static void Build(Transform parent)
