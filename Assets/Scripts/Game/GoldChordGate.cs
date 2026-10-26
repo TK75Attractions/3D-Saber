@@ -13,7 +13,7 @@ internal sealed class GoldChordGate
         public int step;
         public bool started, bellPlayed;
     }
-    internal struct Decision { public bool main, bell, coin; public int step; }
+    internal struct Decision { public bool main, bell, coin, advance; public int step; }
     readonly List<Group> groups = new List<Group>();
 
     public void Reserve(int count)
@@ -37,7 +37,7 @@ internal sealed class GoldChordGate
         if (!group.started)
         {
             group.started = true; group.firstCut = cutTime; group.step = step;
-            result = new Decision { main = true, coin = true, step = step };
+            result = new Decision { main = true, coin = true, advance = true, step = step };
         }
         else if (Math.Abs(cutTime - group.firstCut) <= CutWindow + Epsilon)
         {

@@ -96,7 +96,8 @@ public class CutFeelTests
         Vector3 centerAfter = (after[0] + after[1] + after[2] + after[3]) * .25f;
         Assert.Greater(Vector3.Dot(centerAfter - centerBefore, direction), .3f);
         Assert.Less((after[1] - after[2]).magnitude, (after[0] - after[3]).magnitude, "進行方向の先端が細い");
-        feedback.Tick(.3f); Assert.AreEqual(0, feedback.ActiveCount);
+        // Perfect の寿命は 0.36 秒(光1)。
+        feedback.Tick(.34f); Assert.AreEqual(0, feedback.ActiveCount);
     }
 
     [Test] public void LongPitchBuildsWithinFourSemitonesAndRestartsForTheNextNote()

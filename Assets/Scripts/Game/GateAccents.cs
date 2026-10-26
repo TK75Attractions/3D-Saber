@@ -11,7 +11,7 @@ using UnityEngine.Rendering;
 //   波1 コンボの節目で、ゲートの外を輪が広がる(0.7秒、100 と 300 は二重)。ゲートの内側には描かない。
 // 独自の Update は持たず、GamePlayManager が Tick する。ノーツの判定・点数・音は変えない。成功ごとの物体は作らない。
 // 演出控えめ(LOW)では光の筋と X を出さず、ほかは弱める。投影モードでは明るさを抑える。
-public sealed class GateAccents : MonoBehaviour
+public sealed partial class GateAccents : MonoBehaviour
 {
     public const float StreakSeconds = .34f, StreakSpeed = 24f, StreakLength = 2.8f;
     public const float StarSeconds = .35f, CrossSeconds = .4f, CrossMarkSeconds = .2f;
@@ -27,7 +27,8 @@ public sealed class GateAccents : MonoBehaviour
 
     struct Streak { public bool active; public Vector2 origin, direction; public float age; public Color color; }
     struct Star { public bool active; public Vector2 center; public float age; }
-    struct Ring { public bool active, twin; public float age; }
+    struct Ring { public bool active, twin; public float age; public MilestoneChoice choice; }
+    double lastRingTime = double.NaN;
 
     readonly Streak[] streaks = new Streak[MaxStreaks];
     readonly Star[] stars = new Star[MaxStars];
@@ -193,7 +194,8 @@ public sealed class GateAccents : MonoBehaviour
     public void Milestone(int combo)
     {
         int slot = Slot(rings, r => r.active, r => r.age);
-        rings[slot] = new Ring { active = true, twin = GameplayFeedbackPresenter.IsBigMilestone(combo) };
+        var choice = feedback != null ? feedback.LastMilestoneChoice : default;
+        rings[slot] = new Ring { active = true, twin = GameplayFeedbackPresenter.IsBigMilestone(combo) || choice.Jackpot, choice = choice };
         RingCount++;
     }
 
@@ -203,12 +205,16 @@ public sealed class GateAccents : MonoBehaviour
     {
         if (!isActiveAndEnabled) return;
         dt = Mathf.Clamp(float.IsNaN(dt) ? 0 : dt, 0, .1f);
+        feedback?.SyncMilestonePause();
+        float ringDt = score != null && score.songPlayer != null && Application.isPlaying
+            ? DopamineFlourish.SongDelta(score.songPlayer, ref lastRingTime) : dt;
         for (int i = 0; i < streaks.Length; i++)
             if (streaks[i].active && (streaks[i].age += dt) >= StreakSeconds) streaks[i].active = false;
         for (int i = 0; i < stars.Length; i++)
             if (stars[i].active && (stars[i].age += dt) >= StarSeconds) stars[i].active = false;
         for (int i = 0; i < rings.Length; i++)
-            if (rings[i].active && (rings[i].age += dt) >= MilestoneSeconds + (rings[i].twin ? .08f : 0)) rings[i].active = false;
+            if (rings[i].active && ((rings[i].choice.Enabled && DisplaySettings.ReducedEffects) ||
+                (rings[i].age += ringDt) >= MilestoneSeconds + (rings[i].twin ? .08f : 0))) rings[i].active = false;
         if (burstAge >= 0 && (burstAge += dt) >= BurstSeconds) burstAge = -1;
         if (crossMarkAge >= 0 && (crossMarkAge += dt) >= CrossMarkSeconds) crossMarkAge = -1;
         TickEdges(dt);
@@ -294,15 +300,17 @@ public sealed class GateAccents : MonoBehaviour
 
         foreach (var r in rings)
         {
-            if (!r.active) continue;
+            if (!r.active || r.choice.Enabled && (low || DopamineFlourish.Veiled(spawner))) continue;
             for (int twin = 0; twin < (r.twin ? 2 : 1); twin++)
             {
                 float age = r.age - twin * .08f;
                 if (age < 0) continue;
                 float p = Mathf.Clamp01(age / MilestoneSeconds), ease = 1 - (1 - p) * (1 - p) * (1 - p);
                 float radius = Mathf.Lerp(RingFrom, RingTo, ease) * (twin == 0 ? 1 : .86f);
-                Color tint = Color.Lerp(SongSelectSkin.Gold, Color.white, .35f);
-                DrawRing(Vector2.zero, radius, .16f * (1 - p * .5f), WithAlpha(tint, Mathf.Pow(1 - p, 1.2f) * .85f * gain), true);
+                Color tint = r.choice.Enabled ? MilestoneTint(r.choice.Color) : Color.Lerp(SongSelectSkin.Gold, Color.white, .35f);
+                float alpha = Mathf.Pow(1 - p, 1.2f) * .85f * (r.choice.Enabled ? 1f : gain);
+                if (r.choice.Enabled) DrawMilestoneShape(r.choice.Shape, radius, .16f * (1 - p * .5f), WithAlpha(tint, alpha));
+                else DrawRing(Vector2.zero, radius, .16f * (1 - p * .5f), WithAlpha(tint, alpha), true);
             }
         }
 

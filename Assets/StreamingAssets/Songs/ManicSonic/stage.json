@@ -2,6 +2,7 @@
   "schemaVersion": 1,
   "displayName": "Manic Sonic",
   "stageTheme": "ObsidianRelay",
+  "key": "F minor",
   "composer": "浜Bay",
   "timeOrigin": "audio-file-start",
   "audioSha256": "c14d865027b435813886f8b25dd119c8ec835c6719840b42bd942327d7d62176",

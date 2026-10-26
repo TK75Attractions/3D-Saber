@@ -33,6 +33,8 @@ public sealed class GameplayFeedbackPresenter : MonoBehaviour
     AudioSource milestoneSource;
     readonly AudioClip[] milestoneClips = new AudioClip[4];
     AudioClip crowdClip;
+    MilestoneLottery lottery;
+    public MilestoneChoice LastMilestoneChoice { get; private set; }
 
     public static GameplayFeedbackPresenter Create(NoteSpawner spawner, ScoreManager score)
     {
@@ -45,6 +47,7 @@ public sealed class GameplayFeedbackPresenter : MonoBehaviour
     void Build(NoteSpawner owner, ScoreManager scoring)
     {
         spawner = owner; score = scoring;
+        lottery = new MilestoneLottery(GameSession.SelectedSongId, GameSession.AchievementRunId);
         var canvas = GetComponent<Canvas>(); canvas.renderMode = RenderMode.ScreenSpaceOverlay; canvas.sortingOrder = 505;
         var scaler = GetComponent<CanvasScaler>(); scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920, 1080); scaler.matchWidthOrHeight = .5f;
@@ -119,7 +122,8 @@ public sealed class GameplayFeedbackPresenter : MonoBehaviour
 
     void Scored(JudgmentTier tier, int award)
     {
-        if (score == null || !isActiveAndEnabled) return;
+        if (score == null || !isActiveAndEnabled || score.songPlayer != null &&
+            (score.songPlayer.IsPaused || score.songPlayer.IsWaitingForAudio)) return;
         if (score.Combo > 0 && IsMilestone(score.Combo) && score.Combo != latestMilestone)
         {
             latestMilestone = score.Combo; milestoneAge = 0; milestone.text = score.Combo + " COMBO";
@@ -131,12 +135,31 @@ public sealed class GameplayFeedbackPresenter : MonoBehaviour
 
     void PlayMilestone(int combo)
     {
+        bool lucky = !DisplaySettings.ReducedEffects && !DopamineFlourish.Veiled(spawner);
+        LastMilestoneChoice = lucky ? lottery.Next() : default;
         MilestoneSoundCount++;
+        if (LastMilestoneChoice.Jackpot)
+            PlayExcitement.Current?.TryLargeFlash(LargeFlashKind.Full, LargeFlashTint.Gold, .35f, .15f);
         if (milestoneSource == null) return;
-        // 作った音は鳴らす前に中身を確かめる(音の出力先が変わると消えるため。ProceduralSfx.Revive)。
-        var clip = ProceduralSfx.Revive(ref milestoneClips[MilestoneStep(combo)]);
+        int step = lucky ? LastMilestoneChoice.Inversion : MilestoneStep(combo);
+        var clip = ProceduralSfx.Revive(ref milestoneClips[step]);
         if (clip != null) milestoneSource.PlayOneShot(clip, 1f);
-        if (IsBigMilestone(combo) && crowdClip != null) milestoneSource.PlayOneShot(ProceduralSfx.Revive(ref crowdClip), 1f);
+        if ((IsBigMilestone(combo) || LastMilestoneChoice.Jackpot) && crowdClip != null)
+            milestoneSource.PlayOneShot(ProceduralSfx.Revive(ref crowdClip), 1f);
+    }
+
+    public void SyncMilestonePause()
+    {
+        bool paused = score != null && score.songPlayer != null &&
+            (score.songPlayer.IsPaused || score.songPlayer.IsWaitingForAudio);
+        if (milestoneSource != null) { if (paused) milestoneSource.Pause(); else milestoneSource.UnPause(); }
+        DopamineFlourish.SyncPause(spawner, paused);
+    }
+
+    void OnDisable()
+    {
+        if (milestoneSource != null) milestoneSource.Stop();
+        DopamineFlourish.StopFor(spawner);
     }
 
     public void Tick(float delta, double songTime, double duration, double lastNote)

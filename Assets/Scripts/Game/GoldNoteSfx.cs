@@ -5,7 +5,7 @@ using UnityEngine;
 // 金ノーツを切った瞬間に、同梱の短い金属音「シャン」を単独で鳴らす。
 // 同梱音源が無い場合は従来の合成金属音を使用する。
 // 2026-10-20(派手さカタログ 斬2「会心の一撃」): 本編では Perfect と Great だけ、専用の「キィン」(FlourishSfx.GoldCut)を鳴らす。
-// 続けて金を切ると G → B → D と一段ずつ上がる(3段まで、間に普通のノーツの判定が入ったら戻す)。
+// 金を切ると G → B → D と上がる。4拍金を切らないか、Bad・Miss で戻す(普通の成功では戻さない)。
 // 0.15秒遅れてスコアの所で「チャリン」。Good と Bad は JudgmentSfx が判定ごとの普通の切断音を鳴らす。
 // 判定の窓に入る0.2秒前の「チリッ」は NoteTimingCue.GoldOmen を受けて鳴らす。
 [RequireComponent(typeof(AudioSource))]
@@ -34,7 +34,11 @@ public class GoldNoteSfx : MonoBehaviour
     public int PairBellCount { get; private set; }
     public int CoinCount { get; private set; }
     private ScoreManager boundScore;
-    private int criticalStep;
+    readonly GoldStaircase staircase = new GoldStaircase();
+    ChartData tempoChart;
+    ChartTempoMap tempo;
+    private int criticalStep => staircase.NextStep;
+    public int StairCount => staircase.Count;
     public int CriticalCount { get; private set; }
     public int OmenCount { get; private set; }
     // 次の会心の音の段(0〜2)。
@@ -88,7 +92,7 @@ public class GoldNoteSfx : MonoBehaviour
         }
     }
 
-    // 普通のノーツの判定が間に入ったら、会心の音の段を戻す。
+    // 失敗だけで段を戻す。期限は曲時計から別に確かめる。
     public void BindScore(ScoreManager score)
     {
         if (boundScore != null) boundScore.OnJudgment -= HandleAnyJudgment;
@@ -98,7 +102,7 @@ public class GoldNoteSfx : MonoBehaviour
 
     void HandleAnyJudgment(JudgmentTier tier, int award)
     {
-        if (boundScore != null && !boundScore.LastCutWasGold) criticalStep = 0;
+        staircase.Judge(tier);
     }
 
     void OnDestroy()
@@ -153,7 +157,8 @@ public class GoldNoteSfx : MonoBehaviour
         }
         tracked.Clear();
         chordGate.Reset();
-        criticalStep = 0;
+        staircase.Reset();
+        tempoChart = null; tempo = null;
         if (coinSource != null) coinSource.Stop();
     }
 
@@ -173,16 +178,38 @@ public class GoldNoteSfx : MonoBehaviour
         if (note == null || !tracked.TryGetValue(note, out int group)) return;
         Untrack(note);
         if (!isActiveAndEnabled || note.IsMissed || !note.IsCut) return;
-        if (!IsCritical(tier)) { criticalStep = 0; return; }
-        double cutTime = note.LastCutSongTime ?? (boundScore != null && boundScore.songPlayer != null
-            ? boundScore.songPlayer.SongTime : AudioSettings.dspTime);
+        double cutTime = note.LastCutSongTime ?? CurrentSongTime;
+        double beat = BeatAt(CurrentSongTime);
+        staircase.Tick(beat);
+        if (!IsCritical(tier))
+        {
+            staircase.Judge(tier);
+            if (tier == JudgmentTier.Good) staircase.Gold(beat, false);
+            return;
+        }
         PlayCritical(point, chordGate.Decide(group, cutTime, criticalStep));
     }
 
+    double CurrentSongTime => boundScore != null && boundScore.songPlayer != null ? boundScore.songPlayer.SongTime : 0;
+
+    double BeatAt(double time)
+    {
+        var chart = bound != null ? bound.CurrentChart : null;
+        if (tempo == null || !ReferenceEquals(chart, tempoChart))
+        {
+            tempoChart = chart;
+            tempo = new ChartTempoMap(chart != null ? chart.bpm : 120, chart != null ? chart.beatZeroMs : 0, chart?.editorTempoMap);
+        }
+        return tempo.BeatAt((time - (bound != null ? bound.TotalOffsetSeconds : 0)) * 1000);
+    }
+
+    public void TickStaircase(double songTime) => staircase.Tick(BeatAt(songTime));
+
     public void PlayCritical(Vector3 point)
     {
+        TickStaircase(CurrentSongTime);
         PlayCritical(point, new GoldChordGate.Decision {
-            main = true, coin = true, step = Mathf.Clamp(criticalStep, 0, CriticalSteps - 1)
+            main = true, coin = true, advance = true, step = Mathf.Clamp(criticalStep, 0, CriticalSteps - 1)
         });
     }
 
@@ -191,6 +218,7 @@ public class GoldNoteSfx : MonoBehaviour
         if (!isActiveAndEnabled) return;
         if (source == null) source = GetComponent<AudioSource>();
         int step = decision.step;
+        staircase.Gold(BeatAt(CurrentSongTime), decision.advance);
         CriticalCount++;
         if (decision.main)
         {
@@ -198,7 +226,6 @@ public class GoldNoteSfx : MonoBehaviour
             AudioClip clip = cutClip != null ? cutClip : ProceduralSfx.Revive(ref criticalClips[step]);
             if (clip != null) source.PlayOneShot(clip, volume);
             else PlayLuxury();
-            criticalStep = Mathf.Min(CriticalSteps - 1, criticalStep + 1);
         }
         if (decision.bell)
         {

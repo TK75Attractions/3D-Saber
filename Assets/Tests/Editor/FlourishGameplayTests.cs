@@ -119,13 +119,13 @@ public class FlourishGameplayTests
         Cut(1, 0, SaberHand.Left); Cut(2, 0, SaberHand.Right);
         CollectionAssert.AreEqual(new[] { 0, 1, 2 }, points, "続けて切ると一段ずつ上がる(3段まで)");
         Cut(3);
-        Assert.AreEqual(0, gold.CriticalStep, "間に普通のノーツが入ったら戻す");
+        Assert.AreEqual(2, gold.CriticalStep, "普通の成功では金の段を戻さない");
         Cut(4, .14, SaberHand.Left);
         Assert.AreEqual(JudgmentTier.Good, score.LastTier, "ずれた金");
         Assert.IsNotNull(judgment.ClipForCurrentJudgment(score.LastTier), "Good・Bad の金は判定ごとの普通の切断音");
         Assert.AreEqual(3, gold.CriticalCount, "Good・Bad では会心の音を鳴らさない");
         Cut(5, 0, SaberHand.Left);
-        Assert.AreEqual(0, points[points.Count - 1], "外したあとは最初の段から");
+        Assert.AreEqual(2, points[points.Count - 1], "金の Good は段を保ち、期限だけ更新する");
         gold.Bind(null); gold.BindScore(null);
     }
 
@@ -335,13 +335,12 @@ public class FlourishGameplayTests
     public void MilestonesStartAtThirty(int combo, bool expected) => Assert.AreEqual(expected, GameplayFeedbackPresenter.IsMilestone(combo));
 
     [Test]
-    public void MilestoneSoundsClimbOneShapeAtATime()
+    public void MilestonesChooseThreeInversionsAndKeepTheBigMilestones()
     {
-        Assert.AreEqual(0, GameplayFeedbackPresenter.MilestoneStep(30));
-        Assert.AreEqual(1, GameplayFeedbackPresenter.MilestoneStep(50));
-        Assert.AreEqual(2, GameplayFeedbackPresenter.MilestoneStep(100));
-        Assert.AreEqual(3, GameplayFeedbackPresenter.MilestoneStep(150));
-        Assert.AreEqual(3, GameplayFeedbackPresenter.MilestoneStep(1000), "4段で上限");
+        var lottery = new MilestoneLottery("FlourishTest", "Milestones");
+        var inversions = new HashSet<int>();
+        for (int i = 0; i < 100; i++) inversions.Add(lottery.Next().Inversion);
+        CollectionAssert.AreEquivalent(new[] { 0, 1, 2 }, inversions);
         Assert.IsTrue(GameplayFeedbackPresenter.IsBigMilestone(100));
         Assert.IsTrue(GameplayFeedbackPresenter.IsBigMilestone(300));
         Assert.IsFalse(GameplayFeedbackPresenter.IsBigMilestone(200));

@@ -10,7 +10,7 @@ using UnityEngine.Rendering;
 // サビの間は刃の軌跡を長くし(SaberBladeVisual.ChorusBoost)、成功したカットに明るい余韻を足す(JudgmentSfx.ChorusLevel)。
 // 成績に関係なく全員に出す。独自の Update は持たず、GamePlayManager の曲時計から Tick する。
 // ノーツ・ゲート・床の接近ガイド・HUD・セーバーの表示・曲の時刻は動かさない。演出控えめ(LOW)では押しとリングを出さない。
-public sealed class ChorusDrop : MonoBehaviour
+public sealed partial class ChorusDrop : MonoBehaviour
 {
     public const float DuckDb = -2f;
     public static float DuckFactor => Mathf.Pow(10f, DuckDb / 20f);
@@ -35,7 +35,7 @@ public sealed class ChorusDrop : MonoBehaviour
     double scheduledFor = double.NaN, lastTime = double.NaN;
     bool ducking;
     float duckBase = 1f;
-    float ringAge = -1f, kickAge = -1f;
+    float ringAge = -1f;
     AudioSource dropSource;
     AudioClip donClip;
     Mesh ringMesh;
@@ -183,7 +183,7 @@ public sealed class ChorusDrop : MonoBehaviour
         FiredCount++;
         if (DisplaySettings.ReducedEffects) return;
         if (ringMesh != null) ringAge = 0f;
-        if (stage != null) { stageBase = kickAge >= 0 ? stageBase : stage.position; kickAge = 0f; }
+        PushBackground(KickSeconds, KickDistance);
     }
 
     void BeginDuck()
@@ -210,18 +210,7 @@ public sealed class ChorusDrop : MonoBehaviour
             if (p >= 1f) { ringAge = -1f; if (ringRenderer != null) ringRenderer.enabled = false; if (ringMesh != null) ringMesh.Clear(); }
             else DrawRing(p);
         }
-        if (kickAge >= 0 && stage != null)
-        {
-            kickAge += dt;
-            float p = kickAge / KickSeconds;
-            if (p >= 1f) { kickAge = -1f; KickOffset = 0; stage.position = stageBase; }
-            else
-            {
-                // 奥へ押して戻す(ランダムな揺れにはしない)。
-                KickOffset = KickDistance * Mathf.Sin(Mathf.PI * p);
-                stage.position = stageBase + Vector3.forward * KickOffset;
-            }
-        }
+        AnimateBackground(dt);
     }
 
     void DrawRing(float p)
@@ -273,8 +262,7 @@ public sealed class ChorusDrop : MonoBehaviour
         ringAge = -1f;
         if (ringRenderer != null) ringRenderer.enabled = false;
         if (ringMesh != null) ringMesh.Clear();
-        if (kickAge >= 0 && stage != null) stage.position = stageBase;
-        kickAge = -1f; KickOffset = 0;
+        ClearBackgroundPushes();
     }
 
     void OnDisable() { ResetEffects(); }

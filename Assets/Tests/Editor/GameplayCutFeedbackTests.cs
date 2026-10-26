@@ -51,7 +51,7 @@ public class GameplayCutFeedbackTests
         Assert.True(renderer.enabled);
         Assert.True(renderer.sharedMaterial.shader.isSupported);
         Assert.Greater(feedback.GetComponent<MeshFilter>().sharedMesh.vertexCount, 0);
-        feedback.Tick(.25f);
+        feedback.Tick(.37f);
         Assert.AreEqual(0, feedback.ActiveCount);
         Assert.False(renderer.enabled);
     }
@@ -117,7 +117,7 @@ public class GameplayCutFeedbackTests
         Assert.Greater(perfect, great, "Perfect は Great より多い形を描く");
         Assert.Greater(great, good, "Great は Good より多い形を描く");
         Assert.Greater(good, 0, "Good も演出を描く");
-        Assert.LessOrEqual(perfect, GameplayCutFeedback.VerticesPerBurst, "1バーストの頂点上限を守る");
+        Assert.LessOrEqual(perfect, GameplayCutFeedback.MaximumVerticesPerBurst, "追加の白い輪を含む頂点上限を守る");
         Judge(Note(), JudgmentTier.Bad);
         Judge(Note(), JudgmentTier.Miss);
         Assert.AreEqual(0, feedback.ActiveCount, "Bad と Miss は演出を出さない");
@@ -182,7 +182,7 @@ public class GameplayCutFeedbackTests
             Note(i).Cut(new Vector3(i, 0, 0), Vector3.right * 8);
         Assert.AreEqual(GameplayCutFeedback.MaxBursts, feedback.ActiveCount);
         Assert.LessOrEqual(feedback.GetComponent<MeshFilter>().sharedMesh.vertexCount,
-            GameplayCutFeedback.MaxBursts * GameplayCutFeedback.VerticesPerBurst);
+            GameplayCutFeedback.MaxBursts * GameplayCutFeedback.MaximumVerticesPerBurst);
         feedback.Tick(1);
         Assert.AreEqual(0, feedback.ActiveCount);
     }

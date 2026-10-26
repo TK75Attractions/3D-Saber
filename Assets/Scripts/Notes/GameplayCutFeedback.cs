@@ -7,16 +7,16 @@ using UnityEngine.Rendering;
 // 画面全体のフラッシュやカメラ揺れ、物理判定は追加しない。ノーツ付近に文字は出さない。
 public sealed partial class GameplayCutFeedback : MonoBehaviour
 {
-    public const int MaxBursts = 12;
-    public const float BurstLifetime = .24f;
+    public const int MaxBursts = 16;
+    public const float BurstLifetime = .36f;
     const float SlashLifetime = .11f;
-    const float FlashLifetime = .07f;
-    public const int SparkCount = 12;      // Perfect の火花本数(Great 8 / Good 4 / LOW 2)
-    public const int ShardCount = 6;       // Perfect だけの光片
+    const float FlashLifetime = .10f;
+    public const int SparkCount = 20;      // Perfect の火花本数(Great 8 / Good 4 / LOW 2)
+    public const int ShardCount = 10;      // Perfect だけの光片
     public const int RingSegments = 20;
     public const int RingCount = 2;        // Perfect は二重、Great/Good は一重
     // 1バーストの最大四角形数 = 斬撃2 + 火花 + 光片 + リング + 中心フラッシュ2
-    public const int VerticesPerBurst = (2 + SparkCount + ShardCount + RingSegments * RingCount + 2) * 4;
+    public const int VerticesPerBurst = (2 + SparkCount + 4 * VoltageMeter.MaximumLevel + ShardCount + RingSegments * RingCount + 2) * 4;
     public const float SliceFlashSeconds = .30f;
 
     struct Burst
@@ -38,7 +38,7 @@ public sealed partial class GameplayCutFeedback : MonoBehaviour
         switch (tier)
         {
             case JudgmentTier.Perfect:
-                style = new TierStyle { sparks = SparkCount, shards = ShardCount, rings = RingCount, size = 1.25f, gain = 1f, rainbow = true, flash = true };
+                style = new TierStyle { sparks = SparkCount, shards = ShardCount, rings = RingCount, size = 2f, gain = 1f, rainbow = true, flash = true };
                 break;
             case JudgmentTier.Great:
                 style = new TierStyle { sparks = 8, shards = 0, rings = 1, size = .85f, gain = .8f };
@@ -59,10 +59,10 @@ public sealed partial class GameplayCutFeedback : MonoBehaviour
 
     readonly Burst[] bursts = new Burst[MaxBursts];
     readonly HashSet<CuttableNote> tracked = new HashSet<CuttableNote>();
-    readonly List<Vector3> vertices = new List<Vector3>(MaxBursts * VerticesPerBurst);
-    readonly List<Color> colors = new List<Color>(MaxBursts * VerticesPerBurst);
-    readonly List<Vector2> uvs = new List<Vector2>(MaxBursts * VerticesPerBurst);
-    readonly List<int> triangles = new List<int>(MaxBursts * VerticesPerBurst * 3 / 2);
+    readonly List<Vector3> vertices = new List<Vector3>(MaxBursts * MaximumVerticesPerBurst);
+    readonly List<Color> colors = new List<Color>(MaxBursts * MaximumVerticesPerBurst);
+    readonly List<Vector2> uvs = new List<Vector2>(MaxBursts * MaximumVerticesPerBurst);
+    readonly List<int> triangles = new List<int>(MaxBursts * MaximumVerticesPerBurst * 3 / 2);
     NoteSpawner owner;
     Mesh mesh;
     Material material;
@@ -79,6 +79,7 @@ public sealed partial class GameplayCutFeedback : MonoBehaviour
             ordinarySortingOrder = meshRenderer.sortingOrder;
             ordinaryRenderQueue = material.renderQueue;
         }
+        // M(記憶)では、切った光は今までどおりノイズの上に出す(v1.15 の決まり)。
         meshRenderer.sortingOrder = enabled ? MemoryVeilLayers.AboveSortingOrder : ordinarySortingOrder;
         material.renderQueue = enabled ? MemoryVeilLayers.AboveRenderQueue + 5 : ordinaryRenderQueue;
         memoryVeilMode = enabled;
@@ -187,7 +188,7 @@ public sealed partial class GameplayCutFeedback : MonoBehaviour
         if (!bursts[slot].active) ActiveCount++;
         bursts[slot] = new Burst {
             active = true, tier = drawn, position = position, direction = direction, color = accent,
-            scale = scale, age = 0f, gain = 1f / Mathf.Sqrt(1f + .12f * (ActiveCount - 1)),
+            scale = scale * DensityScale(ActiveCount), age = 0f, gain = 1f / Mathf.Sqrt(1f + .12f * (ActiveCount - 1)),
             release = note.RequiredCutCount > 1 ? 1.18f : 1f,
             hue = Mathf.Repeat(position.x * .37f + position.y * .61f + .13f, 1f)
         };
@@ -201,11 +202,12 @@ public sealed partial class GameplayCutFeedback : MonoBehaviour
         if (owner != null) SetMemoryVeilMode(owner.MemoryVeilMode);
         if (!isActiveAndEnabled || ActiveCount == 0) return;
         if (float.IsNaN(deltaTime) || float.IsInfinity(deltaTime)) return;
+        deltaTime = DopamineFlourish.CutDelta(owner, deltaTime, ref lastCutClock);
         for (int i = 0; i < bursts.Length; i++)
         {
             if (!bursts[i].active) continue;
             bursts[i].age += Mathf.Max(0f, deltaTime);
-            if (bursts[i].age >= BurstLifetime)
+            if (bursts[i].age >= LifetimeFor(bursts[i].tier))
             {
                 bursts[i].active = false;
                 ActiveCount--;
@@ -233,14 +235,14 @@ public sealed partial class GameplayCutFeedback : MonoBehaviour
         for (int i = 0; items != null && i < items.Count && ActiveCount < bursts.Length; i++)
         {
             StaticBurst item = items[i];
-            if (!Draws(item.tier) || item.age < 0f || item.age >= BurstLifetime || !Finite(item.position)) continue;
+            if (!Draws(item.tier) || item.age < 0f || item.age >= LifetimeFor(item.tier) || !Finite(item.position)) continue;
             Vector2 direction = item.direction.sqrMagnitude > .0001f ? item.direction.normalized : Vector2.right;
             Color color = item.color;
             color.a = 1f;
             // 同時に出ている数で弱める係数は HandleCut と同じ(何番目に出たか)。
             bursts[ActiveCount] = new Burst {
                 active = true, tier = item.tier, position = item.position, direction = direction, color = color,
-                scale = Mathf.Clamp(item.scale, .6f, 1.5f), age = item.age,
+                scale = Mathf.Clamp(item.scale, .6f, 1.5f) * DensityScale(ActiveCount + 1), age = item.age,
                 gain = 1f / Mathf.Sqrt(1f + .12f * ActiveCount),
                 release = item.release > 0f ? item.release : 1f,
                 hue = Mathf.Repeat(item.position.x * .37f + item.position.y * .61f + .13f, 1f)
@@ -258,13 +260,17 @@ public sealed partial class GameplayCutFeedback : MonoBehaviour
         float accentScale = DisplaySettings.AccentScale;
         foreach (var burst in bursts)
         {
+            float BurstLifetime = LifetimeFor(burst.tier);
             if (!burst.active) continue;
             protectionWeight = 0f;
             TierStyle style = StyleFor(burst.tier, reduced);
+            // 演出控えめ(LOW)では段で増やさない。
+            int voltage = reduced ? 0 : PlayExcitement.VisualLevel;
+            style.sparks += 4 * voltage;
             float t = Mathf.Clamp01(burst.age / BurstLifetime);
             float life = 1f - t;
             float eased = 1f - life * life;          // 立ち上がりを速く、終わりをゆっくり
-            float size = burst.scale * style.size * (reduced ? 1f : burst.release);
+            float size = burst.scale * style.size * (reduced ? 1f : burst.release) * (1f + .15f * voltage);
             float gain = burst.gain * style.gain * accentScale;
             Vector3 direction = new Vector3(burst.direction.x, burst.direction.y, 0f);
             Vector3 normal = new Vector3(-direction.y, direction.x, 0f);
@@ -304,6 +310,7 @@ public sealed partial class GameplayCutFeedback : MonoBehaviour
                 }
             }
 
+            DrawOuterShock(burst, reduced, gain);
             protectionWeight = 0f;
             // 光片(Perfect のみ): 回転しながら放射状に離れ、先端が細くなる。
             for (int i = 0; i < style.shards; i++)
@@ -318,11 +325,13 @@ public sealed partial class GameplayCutFeedback : MonoBehaviour
                     WithAlpha(Color.Lerp(tint, Color.white, .25f), Mathf.Pow(life, 1.2f) * gain * .95f));
             }
 
+            // 延びた十字も次のノーツの保護を通す。
+            protectionWeight = burst.age >= ProtectionDelaySeconds ? 1f : 0f;
             // 中心の白いフラッシュ(Perfect のみ): 十字が一瞬広がって消える。
             float flashT = Mathf.Clamp01(burst.age / FlashLifetime);
             if (style.flash && flashT < 1f)
             {
-                float flashLength = size * (.9f + flashT * .5f), flashWidth = size * .3f * (1f - flashT * .5f);
+                float flashLength = size * (.9f + flashT * .5f) * 1.5f, flashWidth = size * .3f * (1f - flashT * .5f);
                 Color white = WithAlpha(Color.white, (1f - flashT) * (1f - flashT) * gain * .85f);
                 Streak(burst.position, direction, flashLength, flashWidth, white);
                 Streak(burst.position, normal, flashLength * .38f, flashWidth * .6f, WithAlpha(white, white.a * .6f));
@@ -422,6 +431,7 @@ public sealed partial class GameplayCutFeedback : MonoBehaviour
         tracked.Clear();
         protectionTargets.Clear();
         protectionSongTime = double.NaN;
+        lastCutClock = double.NaN;
         ClearEffects();
     }
 

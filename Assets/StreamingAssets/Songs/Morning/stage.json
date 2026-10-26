@@ -2,6 +2,7 @@
   "schemaVersion": 1,
   "displayName": "Morning",
   "stageTheme": "SkySanctuary",
+  "key": "D major",
   "composer": "???",
   "timeOrigin": "audio-file-start",
   "previewStartSeconds": 113.898,

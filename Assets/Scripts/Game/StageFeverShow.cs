@@ -373,16 +373,17 @@ public sealed partial class StageFeverShow : MonoBehaviour
             float thick = 1f + (laserDownbeat ? .9f : .35f) * laserPulse;
             float fan = LaserFanAt(laser.poseTime);
             float sway = LaserSwayAt(laser.poseTime, 0, 1);
-            for (int k = 0; k < LasersPerSide; k++)
-                for (int side = -1; side <= 1; side += 2)
-                {
-                    Vector3 origin = new Vector3(side * 6.5f, floor + .05f, 6 + k * 8);
-                    Vector3 direction = LaserDirection(fan, sway, k, side);
-                    Color tint = (k + (side > 0 ? 1 : 0)) % 2 == 0 ? boostA : boostB;
-                    if (laser.length > 0f && laser.width > 0f)
-                        Beam(origin, origin + direction * laser.length, .06f * thick * laser.width,
-                            tint, beat * Fever * projector, Vector3.zero);
-                }
+            if (VoltageLevel == 0)
+                for (int k = 0; k < LasersPerSide; k++)
+                    for (int side = -1; side <= 1; side += 2)
+                    {
+                        Vector3 origin = new Vector3(side * 6.5f, floor + .05f, 6 + k * 8);
+                        Vector3 direction = LaserDirection(fan, sway, k, side);
+                        Color tint = (k + (side > 0 ? 1 : 0)) % 2 == 0 ? boostA : boostB;
+                        if (laser.length > 0f && laser.width > 0f)
+                            Beam(origin, origin + direction * laser.length, .06f * thick * laser.width,
+                                tint, beat * Fever * projector, Vector3.zero);
+                    }
 
             // 通路の外の柱を手前へ流して速さを出す(拍ごとに1本ぶん進む)。
             for (int k = 0; k < PostsPerSide; k++)

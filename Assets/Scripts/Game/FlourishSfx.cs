@@ -5,7 +5,7 @@ using static SfxLab;
 // 派手さカタログ(2026-10-20)で試聴した効果音を、同じ式でコードから作る。外部音源は使わない。
 // どれも鳴らす大きさ(ピーク dBFS)まで作り込んであるので、音量 1 で鳴らす(ゲームの音量 1 = 0dBFS、曲は -18 LUFS)。
 // 案の音はカウントイン(G)にそろえて G の長調で組む。作った波形は種ごとに一度だけ作って使い回す(Cached)。
-public static class FlourishSfx
+public static partial class FlourishSfx
 {
     static readonly Dictionary<string, float[]> cache = new Dictionary<string, float[]>();
 
@@ -51,6 +51,7 @@ public static class FlourishSfx
     {
         Cached("ChorusDrop", ChorusDrop); Cached("ChorusEnd", ChorusEnd);
         Cached("CrossCut", CrossCut); Cached("CrowdShort", CrowdShort);
+        PrewarmDopamine();
         for (int i = 0; i < 4; i++) { int k = i; Cached("Milestone" + k, () => Milestone(k)); }
         for (int i = 0; i < 3; i++) { int k = i; Cached("GoldCut" + k, () => GoldCut(k)); }
         Cached("GoldCoin", GoldCoin); Cached("GoldOmen", GoldOmen);
@@ -61,6 +62,7 @@ public static class FlourishSfx
         // 曲の終わり(FULL COMBO・ALL PERFECT の幕、TRACK CLEAR)とサビの余韻も、その場で合成すると1コマ引っかかるので作り置く。
         Cached("FullComboChord", () => ProceduralSfx.Chord(false)); Cached("AllPerfectChord", () => ProceduralSfx.Chord(true));
         Cached("ChorusSparkle", () => ProceduralSfx.Sparkle()); Cached("TrackClearRise", () => ProceduralSfx.Rise());
+        PrewarmVoltage();
     }
 
     // ---- 共通の部品 ----

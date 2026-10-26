@@ -2,6 +2,7 @@
     "schemaVersion": 1,
     "displayName": "ElDorado",
     "stageTheme": "AmberFoundry",
+    "key": "F major",
     "composer": "???",
     "timeOrigin": "audio-file-start",
     "previewStartSeconds": 100.203,

@@ -7,6 +7,19 @@ public static class VisitorPlays
     public const string PreferenceKey = "visitorSongsPerPlay_v1";
     static int? songsForTest;
     static readonly HashSet<string> completedRuns = new HashSet<string>();
+    static string voltageRun;
+    static int pendingVoltageMax, firstSongVoltageMax;
+
+    public static int StartingVoltageLevel => SongsPerVisitor == 2 && CompletedSongs == 1 && firstSongVoltageMax >= 3 ? 1 : 0;
+
+    // 途中離脱した別の回の最大段を、完走した回へ混ぜない。
+    public static void RecordVoltagePeak(string runId, int maximumLevel)
+    {
+        if (SongsPerVisitor != 2 || CompletedSongs != 0) return;
+        string id = string.IsNullOrWhiteSpace(runId) ? "" : runId;
+        if (voltageRun != id) { voltageRun = id; pendingVoltageMax = 0; }
+        pendingVoltageMax = Mathf.Max(pendingVoltageMax, Mathf.Clamp(maximumLevel, 0, 4));
+    }
 
     public static int SongsPerVisitor => songsForTest
         ?? ResolveSongsPerVisitor(PlayerPrefs.GetInt(PreferenceKey, 2));
@@ -38,6 +51,8 @@ public static class VisitorPlays
     {
         CompletedSongs = 0;
         completedRuns.Clear();
+        voltageRun = null;
+        pendingVoltageMax = firstSongVoltageMax = 0;
     }
 
     // 結果の作り直しは同じ回。IDなしも、その来場者につき一度だけ数える。
@@ -46,6 +61,8 @@ public static class VisitorPlays
     {
         string id = string.IsNullOrWhiteSpace(runId) ? "" : runId;
         if (!completedRuns.Add(id)) return false;
+        if (CompletedSongs == 0)
+            firstSongVoltageMax = SongsPerVisitor == 2 && voltageRun == id ? pendingVoltageMax : 0;
         CompletedSongs++;
         return true;
     }

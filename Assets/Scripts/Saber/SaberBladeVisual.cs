@@ -7,7 +7,7 @@ using UnityEngine.Rendering;
 [ExecuteAlways]
 public sealed class SaberBladeVisual : MonoBehaviour
 {
-    public const int PoseCapacity = 16;
+    public const int PoseCapacity = 64;
     public const float TrailLifetime = .12f;
     // 切れた瞬間の反応(爽快感カタログ 手8)。刃の太さは変えず、濃さと白さだけを変える。
     public const float CutGlowSeconds = .15f;   // 軌跡を濃くする時間(切った瞬間は約3倍)
@@ -15,7 +15,9 @@ public sealed class SaberBladeVisual : MonoBehaviour
     public const float CoreFlashSeconds = .06f; // 刃の芯を白くする時間
     // サビの間は軌跡を長く・少し濃くする(山1)。ChorusDrop が本編で毎フレーム設定し、終わったら 0 に戻す。
     public static float ChorusBoost;
-    public static float LifetimeFor(float boost) => TrailLifetime * (1f + .6f * Mathf.Clamp01(boost));
+    public static float LifetimeFor(float boost) => LifetimeFor(boost, DisplaySettings.ReducedEffects ? 0 : PlayExcitement.VisualLevel);
+    public static float LifetimeFor(float boost, int voltage)
+        => TrailLifetime * (1f + .6f * Mathf.Clamp01(boost)) * (1f + .15f * Mathf.Clamp(voltage, 0, 4));
     float cutTime = float.NegativeInfinity, slashTime = float.NegativeInfinity;
     readonly Vector3[] slash = new Vector3[PoseCapacity];
     int slashCount;

@@ -612,6 +612,7 @@ public partial class CuttableNote : MonoBehaviour
     }
     void HoldLongRelease(SlicePieceDecay piece)
     {
+        if (DopamineFlourish.HoldPiece(this, piece)) return;
         if (FlowDebris && RequiredCutCount > 1 && piece != null) piece.Hold(LongReleaseHoldSeconds, LongReleaseHoldSpeed);
     }
 }

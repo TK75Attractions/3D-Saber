@@ -330,6 +330,7 @@ public class GamePlayManager : MonoBehaviour
         GameSession.ResetResult();
         // 難易度ごとの演出・音源(ElDorado の隠し譜面 G は長い版の stage_g.json・audio_g.mp3)。無ければ曲の共通のもの。
         stagePerformance = StagePerformanceTimeline.Load(songId, GameSession.SelectedDifficulty);
+        PlayExcitement.Create(this, stagePerformance);
 
         // 音源を先にロードして、譜面長を音源に合わせて切り詰められるようにする。
         loadedSongId = songId;
@@ -467,6 +468,7 @@ public class GamePlayManager : MonoBehaviour
             float beat = chart.bpm > 0 ? 60f / chart.bpm : .5f;
             goldNoteSfx.OnCritical += (point, step) => { if (feverShow != null) feverShow.GoldFlash(beat); };
         }
+        DopamineFlourish.Create(this, chart, stagePerformance, MusicEnd);
         // 冒頭にも通常と同じ移動時間を確保する。譜面の時刻・オフセットは変えない。
         // 頭を飛ばす曲は、鳴らし始める位置から最初のノーツまでの秒で考える。
         double firstNoteFromPlayStart = chart.notes.Count > 0 ? noteSpawner.EffectiveTime(chart.notes[0]) - playRange.Start : double.NaN;
@@ -863,6 +865,7 @@ public class GamePlayManager : MonoBehaviour
     // 順序：Esc → 受信の見張り(止める・再開) → 現在の受付窓 → 判定 → 譜面進行 → 終了チェック。
     void Update()
     {
+        PlayExcitement.TickFor(this, ready && !finished);
         if (HandleEscape()) return;
         LockMouseFallbackOnceCameraSeen();
         TickTrackingWatch();
@@ -956,6 +959,7 @@ public class GamePlayManager : MonoBehaviour
         if (playFeedback != null)
             playFeedback.Tick(Time.unscaledDeltaTime, songPlayer.SongTime, MusicEnd, lastNoteTime);
 
+        DopamineFlourish.TickFor(this);
         // 3. 終了判定：最終ノーツ通過＋余韻、かつアクティブなノーツがゼロ。
         // 曲の終わりは「音が鳴り終わる秒」(曲ごと。無ければ音源の長さ)から待つ(仕様面の点検 7)。
         double endThreshold = ResolveEndThreshold(MusicEnd, lastNoteTime,

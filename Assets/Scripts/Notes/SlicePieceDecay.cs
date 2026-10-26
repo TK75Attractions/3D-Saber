@@ -8,6 +8,7 @@ public class SlicePieceDecay : MonoBehaviour
     // ロングの最後の一振り(派手さカタログ 斬5)で、破片を一瞬ほぼ止めてから飛ばす。止めている間は holdSpeed 倍で進み、寿命もその分のばす。
     float holdLeft, holdSpeed = 1f;
     public bool IsHolding => holdLeft > 0;
+    public bool FlourishDriven { get; set; }
     Vector3 velocity, angularVelocity;
     bool gravity, released;
     public Vector3 Velocity => velocity;
@@ -85,6 +86,7 @@ public class SlicePieceDecay : MonoBehaviour
     {
         // 通常の切断片とロングの細片を共通で速く飛ばす。寿命と回転は維持する。
         Pool=pool; velocity=speed * 1.9f; angularVelocity=spin; gravity=useGravity; gravityScale=1f; life=duration; fadeStart=fade;
+        FlourishDriven=false;
         damping=drag; age=0; released=false; flashAge=float.PositiveInfinity; holdLeft=0; holdSpeed=1f; gameObject.SetActive(true);
     }
     // Launch の後に呼ぶ。seconds の間は speed 倍(ほぼ止まる)で進め、その後は元の速さで飛ぶ。初速の 1.9 倍は変えない。
@@ -100,7 +102,7 @@ public class SlicePieceDecay : MonoBehaviour
         if(released) return;
         velocity+=drift; gravity=true; this.gravityScale=Mathf.Max(0f,gravityScale);
     }
-    void Update() { Step(Time.deltaTime); }
+    void Update() { if (!FlourishDriven) Step(Time.deltaTime); }
     public void Step(float dt)
     {
         if(released || dt < 0 || float.IsNaN(dt) || float.IsInfinity(dt)) return;

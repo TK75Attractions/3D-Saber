@@ -66,7 +66,7 @@ public class GameplayCutFeedbackLifetimeTests
         owner.enabled = true;
         notes[1].Cut(notes[1].transform.position, Vector3.up * 8);
         Assert.AreEqual(1, effect.ActiveCount);
-        effect.Tick(.3f);
+        effect.Tick(.37f);
         Assert.AreEqual(0, effect.ActiveCount);
     }
 }

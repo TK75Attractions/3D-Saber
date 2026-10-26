@@ -4,7 +4,7 @@ using UnityEngine;
 // AudioClip が未指定なら同梱の判定別の切断音(Saber_NoteCut_Perfect など)を使い、無ければ共通の切断音、
 // 素材が無い場合だけ合成音へ戻す。判定別の音は Perfect ほど重く明るい(爽快感カタログ 手1)。
 [RequireComponent(typeof(AudioSource))]
-public class JudgmentSfx : MonoBehaviour
+public partial class JudgmentSfx : MonoBehaviour
 {
     public ScoreManager scoreManager;
 
@@ -50,7 +50,7 @@ public class JudgmentSfx : MonoBehaviour
         source.playOnAwake = false;
         LoadDefaultCutClip();
         // 曲中に合成して処理落ちしないよう、読み込みの時点で作っておく。
-        if (Application.isPlaying) CrossCutClip();
+        if (Application.isPlaying) { CrossCutClip(); PreparePerfectBag(); }
     }
 
     // 作った音は鳴らす前に中身を確かめる(音の出力先が変わると消えるため。ProceduralSfx.Revive)。
@@ -80,6 +80,7 @@ public class JudgmentSfx : MonoBehaviour
         UISkinKit.SafeDestroy(genMiss);
         UISkinKit.SafeDestroy(genSparkle);
         UISkinKit.SafeDestroy(genCross);
+        ReleasePerfectBag();
         genPerfect = genGreat = genGood = genBad = genMiss = genSparkle = genCross = null;
     }
 
@@ -93,6 +94,7 @@ public class JudgmentSfx : MonoBehaviour
         }
         AudioClip clip = ClipForCurrentJudgment(tier);
         if (clip == null) return;
+        clip = ChoosePerfectCut(tier, clip);
         source.PlayOneShot(clip, VolumeFor(tier));
         if (WantsChorusSparkle(tier, clip))
         {
@@ -107,7 +109,7 @@ public class JudgmentSfx : MonoBehaviour
     {
         if (ChorusLevel < ChorusSparkleThreshold || played == null) return false;
         if (tier != JudgmentTier.Perfect && tier != JudgmentTier.Great && tier != JudgmentTier.Good) return false;
-        return !(tier == JudgmentTier.Perfect && played == ClipFor(JudgmentTier.Perfect));
+        return !(tier == JudgmentTier.Perfect && (played == ClipFor(JudgmentTier.Perfect) || IsPerfectVariation(played)));
     }
 
     // 再生音量。Miss だけ missVolumeScale で抑える。

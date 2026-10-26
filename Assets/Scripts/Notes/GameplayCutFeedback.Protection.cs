@@ -11,7 +11,7 @@ public sealed partial class GameplayCutFeedback
     static readonly int RectsId = Shader.PropertyToID("_NoteMaskRects");
     static readonly int RectCountId = Shader.PropertyToID("_NoteMaskCount");
     readonly Dictionary<CuttableNote, MeshRenderer> protectionTargets = new Dictionary<CuttableNote, MeshRenderer>();
-    readonly List<Vector2> protectionUVs = new List<Vector2>(MaxBursts * VerticesPerBurst);
+    readonly List<Vector2> protectionUVs = new List<Vector2>(MaxBursts * MaximumVerticesPerBurst);
     readonly Vector3[] protectionCorners = new Vector3[8];
     Vector4[] protectionRects;
     ComputeBuffer protectionBuffer;

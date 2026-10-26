@@ -98,8 +98,9 @@ public class Round2EffectsTests
         burst.age = .07f;
         feedback.DrawBursts(new[] { burst });
         mesh.GetUVs(1, uv);
+        // 光1 で Perfect の白い十字は 0.10 秒まで残るので、0.07 秒からは十字の2枚も保護の対象になる(LOW は十字なし)。
         Assert.AreEqual(((reduced ? 1 : 2) * GameplayCutFeedback.RingSegments
-            + (reduced ? 2 : GameplayCutFeedback.SparkCount)) * 4, uv.Count(v => v.x == 1));
+            + (reduced ? 2 : GameplayCutFeedback.SparkCount) + (reduced ? 0 : 2)) * 4, uv.Count(v => v.x == 1));
         Assert.True(uv.Take(8).All(v => v.x == 0), "切断の帯には保護マスクを掛けない");
         Assert.False(ShaderUtil.ShaderHasError(feedback.GetComponent<MeshRenderer>().sharedMaterial.shader));
     }
