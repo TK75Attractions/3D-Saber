@@ -7,6 +7,8 @@ public partial class NoteSpawner
     FallPetals fallPetals;
 
     public bool HasFall => FallRules.Enabled(chart?.fall);
+    // 譜面全体の演出と、個々のノーツの飛来方式を分ける。
+    public bool UsesFall(NoteData data) => HasFall && data != null && data.fall;
     public int FallPetalCount => fallPetals != null ? fallPetals.PetalCount : 0;
     public bool FallLineVisible => fallPetals != null && fallPetals.LineVisible;
 

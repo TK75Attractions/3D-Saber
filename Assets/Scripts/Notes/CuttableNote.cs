@@ -72,9 +72,11 @@ public partial class CuttableNote : MonoBehaviour
         OnWrongDirection = null;
         SetDarkBrightness(1f);
         Veil = 0f;
+        ResetReveal();
         Vanish = VanishMode.None;
         LandingPosition = Vector2.zero;
-        HasSlide = false;
+        ResetSlide();
+        HasOvertake = false;
         HasWind = false;
         WindX = WindY = WindSpin = WindSway = 0f;
         SetWindSway(Vector3.zero);
@@ -447,8 +449,10 @@ public partial class CuttableNote : MonoBehaviour
     private void AddCrack()
     {
         if (HidesCues) return;
-        WarmCracks(cracksUsed + 1);
-        int index = cracksUsed++;
+        // 1000回の経路付きロングでも、ひびのオブジェクトを増やし続けない。
+        int index = HasSlidePath ? (CutsAchieved - 1) % LongSlideRules.MaxPathCracks : cracksUsed;
+        WarmCracks(index + 1);
+        cracksUsed = Mathf.Max(cracksUsed, index + 1);
         var crack = ownedCracks[index];
         // 通常ノーツでは従来の不透明材質を維持する。使い回した半透明材質だけ元へ戻す。
         bool translucent = Veil > 0f;

@@ -55,7 +55,8 @@ public sealed class NoteArrowMaterials : MonoBehaviour
             cueAlpha = alpha;
             foreach (var material in owned) NoteVeil.SetAlpha(material, alpha);
         }
-        bool shown = veil < MemoryVeilLayers.HideCuesAtVeil;
+        bool shown = veil < MemoryVeilLayers.HideCuesAtVeil
+            && (note == null || !note.HidesRevealArrow);
         if (gameObject.activeSelf != shown) gameObject.SetActive(shown);
     }
 

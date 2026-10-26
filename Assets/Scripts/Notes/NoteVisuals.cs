@@ -176,7 +176,8 @@ public partial class NoteVisuals : MonoBehaviour
             pulse = 1f + (pulse - 1f) * (1f - Veil);
             windowBoost = Mathf.Lerp(1f, emissionBoost, NoteVeil.CueAlpha(Veil));
         }
-        float combined = pulse * windowBoost * simultaneousBoost;
+        float combined = pulse * windowBoost * simultaneousBoost
+            * (1f + .65f * revealFlash * NoteVeil.CueAlpha(Veil));
         float strength = baseEmissionStrength * combined;
         // 脈動もブーストも変化していなければ SetColor を呼ばない
         if (Mathf.Approximately(strength, lastAppliedStrength)) return;
@@ -230,6 +231,7 @@ public partial class NoteVisuals : MonoBehaviour
     {
         SetBrightness(1f);
         bodyDimmed = false;
+        SetReveal(1f, 0f);
         simultaneousLinkCount = 0;
         simultaneousVeils?.Clear();
         SetVeil(0f);

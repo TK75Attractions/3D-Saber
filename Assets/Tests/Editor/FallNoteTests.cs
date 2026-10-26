@@ -66,7 +66,7 @@ public class FallNoteTests
     }
 
     [Test]
-    public void FUsesMixedNotesOnOneLineAndTheSharedSecretTable()
+    public void FUsesMixedDirectionsAndTheSharedSecretTable()
     {
         string path = Path.Combine(Application.streamingAssetsPath, "Songs", "Epilogue", "chart_f.json");
         Assert.IsTrue(File.Exists(path), "先に gen_fall.py --write を実行する。フォールバックで通さない");
@@ -76,16 +76,19 @@ public class FallNoteTests
         Assert.AreEqual(90, fall.notes.Count(n => n.IsDirection));
         Assert.AreEqual(9, fall.notes.Count(n => n.IsLong));
         Assert.AreEqual(17, fall.notes.Count(n => n.color == "gold"));
+        AssertMixedGeometry(fall);
+        AssertRatio(fall, 0, 96, .10, .20);
+        AssertRatio(fall, 96, 196, .30, .50);
+        AssertRatio(fall, 196, 244, .60, .70);
+        AssertRatio(fall, 244, 268, .60, .70);
+        AssertRatio(fall, 268, 304, 0, 0);
+        Assert.IsFalse(fall.notes[0].fall);
+        Assert.IsFalse(fall.notes.Any(n => n.HasOvertake));
+        var clock = new ChartTempoMap(fall.bpm, fall.beatZeroMs, fall.editorTempoMap);
+        Assert.IsNotEmpty(fall.editorTempoMap, "加速後の小節線も音に合わせる");
         foreach (var note in fall.notes)
-            Assert.AreEqual(FallRules.LineY, note.y * fall.coordScale, 1e-6);
-        for (int i = 0; i < fall.notes.Count; i++)
-        {
-            var a = fall.notes[i];
-            double window = System.Math.Max(.01, a.LingerSeconds(.7f) > 0 ? a.LingerSeconds(.7f) + .24 : .01);
-            foreach (var b in fall.notes.Skip(i + 1).TakeWhile(b => b.TimeSeconds - a.TimeSeconds <= window))
-                Assert.GreaterOrEqual(Mathf.Abs(a.x - b.x) * fall.coordScale,
-                    FallRules.MinimumNoteGap - 1e-5f, a.time + "ms の横間隔");
-        }
+            // 譜面の時刻は混合元の値、拍表は pulse-map から作るので 0.1ms 未満の丸めの差が出る。小節線には十分小さい。
+            Assert.AreEqual(note.time, clock.TimeAt(note.beat), .5, "小節線の拍表");
         Assert.AreEqual(hard.bpm, fall.bpm);
         Assert.AreEqual(hard.coordScale, fall.coordScale);
         Assert.AreEqual(hard.offsetMs, fall.offsetMs);
@@ -201,15 +204,15 @@ public class FallNoteTests
     }
 
     [Test]
-    public void FallChartDoesNotScheduleBarLines()
+    public void FallChartSchedulesBarLines()
     {
         MakeSpawner();
         var bars = root.AddComponent<BarLineSpawner>();
         bars.barLinePrefab = prefab;
         bars.SetChart(OneNote(true));
         bars.Tick(0);
-        Assert.AreEqual(0, bars.AliveCount);
-        Assert.AreEqual(0, bars.NextIndex);
+        Assert.Greater(bars.AliveCount, 0);
+        Assert.Greater(bars.NextIndex, 0);
     }
 
     [TestCase(true)]
@@ -291,6 +294,32 @@ public class FallNoteTests
         finally { mode.EndPlay(); }
     }
 
+    [TestCase(true)]
+    [TestCase(false)]
+    public void OneFrameLateSpawnAlreadyHasItsCorrectVisualPosition(bool falling)
+    {
+        MakeSpawner();
+        var chart = OneNote(true);
+        chart.notes[0].fall = falling;
+        spawner.SetChart(chart);
+        double now = 1.0 / 30;
+        spawner.Tick(now);
+        var note = spawner.LiveNotes.Single();
+        Assert.AreEqual(1 - now, note.HitTime - now, 1e-8);
+        if (falling)
+        {
+            AssertLanding(note);
+            Assert.AreEqual(FallRules.LineY + 2.4f * (float)(1 - now),
+                note.VisualTransform.position.y, 1e-5f);
+        }
+        else
+        {
+            Assert.AreSame(note.transform, note.VisualTransform);
+            Assert.AreEqual(spawner.judgeZ + spawner.Speed * (float)(1 - now),
+                note.transform.position.z, 1e-5f);
+        }
+    }
+
     static void AssertPetalColors(Color[] bright, Color[] actual, float brightness)
     {
         Assert.AreEqual(bright.Length, actual.Length);
@@ -300,6 +329,159 @@ public class FallNoteTests
             Assert.AreEqual(bright[i].g * brightness, actual[i].g, 1e-6f);
             Assert.AreEqual(bright[i].b * brightness, actual[i].b, 1e-6f);
             Assert.AreEqual(bright[i].a, actual[i].a, 1e-6f);
+        }
+    }
+
+    [Test]
+    public void FrontNotesInFallStillDisableWindScrollAndOvertakeForTheWholeChart()
+    {
+        MakeSpawner();
+        var chart = OneNote(true);
+        chart.notes[0].fall = false;
+        chart.notes[0].windX = .4f;
+        chart.notes[0].approachScale = 2f;
+        chart.scroll.Add(new ScrollSpeedData { time = 0, speed = 2f });
+        spawner.SetChart(chart);
+        Assert.IsFalse(spawner.HasWindNotes);
+        Assert.IsFalse(spawner.HasScroll);
+        Assert.IsFalse(spawner.HasOvertakeNotes);
+        spawner.Tick(.5);
+        var note = spawner.LiveNotes.Single();
+        Assert.IsFalse(note.IsFall);
+        Assert.AreSame(note.transform, note.VisualTransform);
+        Assert.AreEqual(spawner.judgeZ + spawner.Speed * .5f, note.transform.position.z, 1e-5f);
+    }
+
+    [TestCase(false, false)]
+    [TestCase(false, true)]
+    [TestCase(true, false)]
+    [TestCase(true, true)]
+    public void OnlyOptedInNotesUseFallAndNormalLongsKeepAllTheirVisuals(bool chartFall, bool noteFall)
+    {
+        MakeSpawner();
+        var chart = OneNote(chartFall);
+        var source = chart.notes[0];
+        source.fall = noteFall;
+        source.count = 3;
+        source.type = "long";
+        source.lengthMs = 900;
+        source.y = chartFall && noteFall ? FallRules.LineY : .65f;
+        // JSONを往復しても、ノーツの指定と省略時の既定値を保つ。
+        chart = ChartLoader.Parse(JsonUtility.ToJson(chart));
+        Assert.AreEqual(noteFall, chart.notes[0].fall);
+        Assert.IsFalse(ChartLoader.Parse("{\"bpm\":120,\"notes\":[{\"time\":1000}]}").notes[0].fall);
+        spawner.SetChart(chart);
+        spawner.Tick(.5);
+        var note = spawner.LiveNotes.Single();
+        Assert.AreEqual(chartFall && noteFall, note.IsFall);
+        if (note.IsFall)
+        {
+            AssertLanding(note);
+            Assert.AreEqual(1.2f, note.VisualTransform.position.y - source.y, 1e-5f);
+        }
+        else
+        {
+            Assert.AreSame(note.transform, note.VisualTransform);
+            Assert.AreSame(note.transform, note.BodyRenderer.transform);
+            Assert.AreEqual(new Vector2(source.x, source.y), (Vector2)note.transform.position);
+            Assert.AreEqual(spawner.judgeZ + spawner.Speed * .5f, note.transform.position.z, 1e-5f);
+            Assert.NotNull(note.TimingCue);
+            Assert.AreEqual(note.LandingPosition, (Vector2)note.TimingCue.GhostRoot.transform.position);
+            Assert.IsTrue(note.countLabel.gameObject.activeSelf);
+            Assert.AreEqual("3", note.countLabel.text);
+            Assert.AreEqual(.8f * (1f + .9f / spawner.secondsPerLongCut),
+                note.transform.localScale.z, 1e-5f);
+            Assert.AreEqual(0, spawner.FallPetalCount);
+            spawner.Tick(1);
+            Assert.AreEqual(spawner.judgeZ, note.transform.position.z, 1e-5f);
+            spawner.Tick(1.45);
+            Assert.AreEqual(spawner.judgeZ - spawner.longLingerDriftZ * .5f,
+                note.transform.position.z, 1e-5f);
+        }
+    }
+
+    [Test]
+    public void PoolKeysSeparateFallFromNormalInsideTheSameChart()
+    {
+        MakeSpawner();
+        spawner.SetChart(OneNote(true));
+        var key = typeof(NoteSpawner).GetMethod("Key",
+            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+        var normal = new NoteData { color = "red" };
+        var falling = new NoteData { color = "red", fall = true };
+        object normalKey = key.Invoke(spawner, new object[] { normal });
+        object fallKey = key.Invoke(spawner, new object[] { falling });
+        Assert.AreNotEqual(normalKey, fallKey);
+        spawner.SetChart(OneNote(false));
+        Assert.AreEqual(normalKey, key.Invoke(spawner, new object[] { normal }));
+        Assert.AreEqual(normalKey, key.Invoke(spawner, new object[] { falling }));
+    }
+
+    [Test]
+    public void MixedChartProducesPetalsOnlyAroundFallingNotes()
+    {
+        MakeSpawner();
+        var chart = OneNote(true);
+        chart.notes.Add(new NoteData { time = 1000, x = 1.5f, y = .8f, color = "blue" });
+        spawner.SetChart(chart);
+        spawner.Tick(.5);
+        Assert.AreEqual(2, spawner.AliveCount);
+        Assert.AreEqual(1, spawner.LiveNotes.Count(n => n.IsFall));
+        Assert.AreEqual(3, spawner.FallPetalCount);
+        var plain = spawner.LiveNotes.Single(n => !n.IsFall);
+        Assert.AreEqual(.8f, plain.transform.position.y);
+        Assert.Greater(plain.transform.position.z, spawner.judgeZ);
+    }
+
+    static void AssertRatio(ChartData chart, float start, float end, double minimum, double maximum)
+    {
+        var notes = chart.notes.Where(n => n.beat >= start && n.beat < end).ToList();
+        Assert.IsNotEmpty(notes);
+        double ratio = notes.Count(n => n.fall) / (double)notes.Count;
+        Assert.That(ratio, Is.InRange(minimum, maximum), "拍" + start + ".." + end);
+    }
+
+    static void AssertMixedGeometry(ChartData chart)
+    {
+        const double approach = 1;
+        float gap = FallRules.MinimumNoteGap;
+        double End(NoteData n) => n.TimeSeconds + n.LingerSeconds(.7f)
+            + (n.LingerSeconds(.7f) > 0 ? .24 : 0);
+        foreach (var n in chart.notes.Where(n => n.fall))
+        {
+            Assert.AreEqual(FallRules.LineY, n.y * chart.coordScale, 1e-6);
+            Assert.LessOrEqual(Mathf.Abs(n.x * chart.coordScale), 2.4f);
+        }
+        for (int i = 0; i < chart.notes.Count; i++)
+        {
+            var a = chart.notes[i];
+            foreach (var b in chart.notes.Skip(i + 1))
+            {
+                if (b.time - a.time <= 10)
+                    Assert.AreEqual(a.fall, b.fall, "同時組: " + a.time);
+                bool separate = false;
+                if (a.fall && b.fall)
+                {
+                    double end = System.Math.Min(End(a), End(b));
+                    double start = b.TimeSeconds - approach;
+                    double dy = chart.fall.height * (System.Math.Max(0, b.TimeSeconds - end)
+                        - System.Math.Max(0, a.TimeSeconds - end)) / approach;
+                    separate = start <= end && dy < gap - 1e-5;
+                }
+                else if (a.fall || b.fall)
+                {
+                    var falling = a.fall ? a : b;
+                    var normal = a.fall ? b : a;
+                    float y = normal.y * chart.coordScale;
+                    separate = normal.TimeSeconds <= End(falling)
+                        && End(normal) >= falling.TimeSeconds - approach
+                        && y > FallRules.LineY - gap
+                        && y < FallRules.LineY + chart.fall.height + gap;
+                }
+                if (separate)
+                    Assert.GreaterOrEqual(Mathf.Abs(a.x - b.x) * chart.coordScale,
+                        gap - 1e-5f, "落下の柱・横間隔: " + a.time + "/" + b.time);
+            }
         }
     }
 
@@ -325,7 +507,7 @@ public class FallNoteTests
             bpm = 120,
             fall = new FallChartData { enabled = fall, height = 2.4f }
         };
-        chart.notes.Add(new NoteData { time = 1000, x = -.7f, y = fall ? FallRules.LineY : .3f, color = "red" });
+        chart.notes.Add(new NoteData { time = 1000, x = -.7f, y = fall ? FallRules.LineY : .3f, color = "red", fall = fall });
         return chart;
     }
 

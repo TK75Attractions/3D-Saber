@@ -36,8 +36,6 @@ public static class AimDodgeRules
     // 追尾トゲの置き場所の範囲(腕の届く所。足を動かさせない)。
     public static readonly Vector2 FollowBounds = new Vector2(2.0f, 1.2f);
 
-    // 始まる前の一言(3・2・1 の下に出す。ノーツの近くには文字を出さない)。
-    public const string RuleCaption = "トゲはよける・輪の中へ";
 
     public static float ContactDistance(float size) => SpikeHitRadius * Mathf.Max(.1f, size) + CrosshairCore;
 

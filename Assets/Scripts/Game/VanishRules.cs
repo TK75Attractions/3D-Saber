@@ -9,8 +9,6 @@ public enum VanishMode { None, Fade, Sudden, Blink, Hide }
 
 public static class VanishRules
 {
-    // カウントインの一言(W・S と同じ形)。
-    public const string RuleCaption = "消えたり急に出たりする。見えるうちに読もう";
     // 消え始め・消えきる残り時間(秒)。投影で灰色に沈まないよう、消すときは 0 まで落とす。
     public const float FadeFrom = .5f, FadeTo = .3f;
     public const float SuddenAt = .5f, SuddenTo = .42f;

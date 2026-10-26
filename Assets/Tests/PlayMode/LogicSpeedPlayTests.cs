@@ -80,13 +80,7 @@ public class LogicSpeedPlayTests
         Assert.IsNull(manager.AimMode);
         Assert.IsNull(manager.MemoryMode);
 
-        var hint = GameObject.Find("FirstHandHint");
-        Assert.NotNull(hint, "カウントインの下にルール字幕を出す");
-        var label = hint.GetComponentInChildren<TMPro.TextMeshProUGUI>();
-        Assert.NotNull(label);
-        Assert.AreEqual(ScrollSpeedMap.RuleCaption, label.text);
-        Assert.AreEqual(RushESecretState.Ice.r, label.color.r, 1e-6f);
-        Assert.AreEqual(RushESecretState.Ice.b, label.color.b, 1e-6f);
+        Assert.IsNull(GameObject.Find("FirstHandHint"), "裏譜面は始まりに決まりの一言も手の予告も出さない");
 
         // 最初の「止」と、その間に空中で待つノーツ。
         var stop = chart.scroll.First(p => p.speed == 0);

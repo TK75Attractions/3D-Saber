@@ -256,11 +256,11 @@ public class CameraImuJudgment : MonoBehaviour
         AddCameraSample(sample);
     }
 
-    bool IsCandidate(CuttableNote note, PendingSwing p, SaberCutJudge judge)
+    bool IsCandidate(CuttableNote note, PendingSwing p, SaberCutJudge judge, bool includeHeatBlocked = false)
     {
         if (note == null || !note.gameObject.activeInHierarchy || note.IsCut || note.IsMissed || note.IsFinalized) return false;
-        // 闘牛のしびれと、熱交換のノーツ別の制限を同じ入口で確認する。
-        if (!judge.CanCutNote(note)) return false;
+        // 接触を探すときだけ熱ノーツを含める。ミス保留の照会は演出を起こさない。
+        if (judge.Stunned || (!includeHeatBlocked && !judge.CanCutNote(note))) return false;
         if (!SaberHandHelper.CanCut(note.RequiredHand, judge.EffectiveHand())) return false;
         if (!note.CanBeginCutAt(p.SongTime, judge.EffectiveHand())) return false;
         if (p.OrderBlocked != null)
@@ -287,13 +287,21 @@ public class CameraImuJudgment : MonoBehaviour
         for (int n = 0; n < spawner.LiveNotes.Count; n++)
         {
             CuttableNote note = spawner.LiveNotes[n];
-            if (!IsCandidate(note, p, judge)) continue;
+            if (!IsCandidate(note, p, judge, includeHeatBlocked: true)) continue;
             p.NoteId = note.GetInstanceID();
             p.Original = note.RequiredCutCount > 1
                 ? ScoreManager.TierByCompletionRatio((note.CutsAchieved + 1f) / note.RequiredCutCount)
                 : JudgmentTierHelper.Classify(p.SongTime - note.HitTime);
             p.Failure = "position_fail";
             if (!FindContact(history, p.Swing.ReceiveTime, note, judge, out var hit)) continue;
+            if (!judge.CanCutNote(note))
+            {
+                // 遅れて届いた接触でも、火花は今表示しているノーツの奥行きへ出す。
+                Vector3 point = hit.Point;
+                point.z = note.transform.position.z;
+                judge.Heat?.RejectedContact(judge, note, point);
+                continue;
+            }
             touched.Add((note, hit));
             double error = Math.Abs(p.SongTime - note.HitTime);
             if (best != null && (error > bestError || (error == bestError && note.GetInstanceID() >= best.GetInstanceID()))) continue;
@@ -349,9 +357,15 @@ public class CameraImuJudgment : MonoBehaviour
         foreach (var (note, hit) in touched)
         {
             if (note == best || note.IsCut || note.IsMissed || note.IsFinalized) continue;
-            // 最初の一切りで上限になった場合、残りの同時ノーツへ制限を反映する。
-            if (!judge.CanCutNote(note)) continue;
             if (Math.Abs(note.HitTime - best.HitTime) > SaberCutJudge.SimultaneousSeconds) continue;
+            // 最初の一切りで上限になった場合、実際に触れた同時ノーツにも拒否を伝える。
+            if (!judge.CanCutNote(note))
+            {
+                Vector3 point = hit.Point;
+                point.z = note.transform.position.z;
+                judge.Heat?.RejectedContact(judge, note, point);
+                continue;
+            }
             Contact c = hit;
             if (note.RequiredDirection != CutDirection.None && !note.DirectionVisualOnly)
             {

@@ -11,7 +11,6 @@ public static class FallRules
     public const float LineHalfWidth = 3.15f;
     public const float LineThickness = .024f;
     public const float MinimumNoteGap = 1.3f;
-    public const string RuleCaption = "上から降ってくる。薄い線に着いたら切ろう";
 
     public static bool Enabled(FallChartData data) => data != null && data.enabled;
 

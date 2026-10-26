@@ -10,7 +10,7 @@ using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 using Object = UnityEngine.Object;
 
-// 校歌の F を本編で読み、最初のノーツ・カウントイン・再利用を確かめる。
+// 校歌の F を本編で読み、二つの飛来方式・カウントイン・再利用を確かめる。
 // 失敗時もシーンと選択状態、保存された接近時間を戻す。
 public class EpilogueFallPlayTests
 {
@@ -51,7 +51,7 @@ public class EpilogueFallPlayTests
     }
 
     [UnityTest]
-    public IEnumerator FirstNoteFallsOntoItsFixedLandingAndCaptionExplainsTheRule()
+    public IEnumerator BothKindsArriveCorrectlyInTheGameWithoutRestoringTheRemovedCaption()
     {
         string path = Path.Combine(Application.streamingAssetsPath, "Songs", "Epilogue", "chart_f.json");
         Assert.IsTrue(File.Exists(path), "chart_f.json は必須。先に生成する");
@@ -84,7 +84,8 @@ public class EpilogueFallPlayTests
         Assert.IsTrue(spawner.HasFall);
         Assert.IsFalse(spawner.HasWindNotes);
         Assert.IsFalse(spawner.HasScroll);
-        Assert.IsNull(manager.barLineSpawner);
+        Assert.NotNull(manager.barLineSpawner);
+        Assert.IsTrue(manager.barLineSpawner.isActiveAndEnabled);
         Assert.IsNull(manager.AimMode);
         Assert.IsNull(manager.MemoryMode);
 
@@ -93,74 +94,92 @@ public class EpilogueFallPlayTests
             judge.enabled = false;
         manager.cameraImuJudgment = null;
 
-        var hint = GameObject.Find("FirstHandHint");
-        Assert.NotNull(hint);
-        var label = hint.GetComponentInChildren<TMPro.TextMeshProUGUI>();
-        Assert.NotNull(label);
-        Assert.AreEqual(FallRules.RuleCaption, label.text);
-        Assert.AreEqual(RushESecretState.Sakura.r, label.color.r, 1e-6f);
-        Assert.AreEqual(RushESecretState.Sakura.g, label.color.g, 1e-6f);
-        Assert.AreEqual(RushESecretState.Sakura.b, label.color.b, 1e-6f);
+        Assert.IsNull(GameObject.Find("FirstHandHint"), "裏譜面は始まりに決まりの一言も手の予告も出さない");
         var hud = Object.FindFirstObjectByType<GameHUDSkin>();
         Assert.NotNull(hud);
         Assert.AreEqual(.28f, hud.transform.Find("SongTitle").GetComponent<CanvasGroup>().alpha);
 
         var chart = spawner.CurrentChart;
-        var source = chart.notes[0];
-        double hit = spawner.EffectiveTime(source);
-        Vector2 landing = new Vector2(source.x, source.y) * chart.coordScale;
-        CuttableNote target = null;
-        Vector3 spawnView = Vector3.zero;
-        double spawnRemaining = 0;
-        uint version = 0;
-        spawnObserver = note =>
+        Assert.IsFalse(chart.notes[0].fall);
+        Assert.IsTrue(chart.notes.Any(n => n.fall));
+        // 実際の曲時計で最初の通常ノーツ、最初の落下ノーツを順に観測する。
+        foreach (var source in new[] { chart.notes.First(n => !n.fall), chart.notes.First(n => n.fall) })
         {
-            if (target != null || Math.Abs(note.HitTime - hit) > 1e-6
-                || !note.LandingPosition.Equals(landing)) return;
-            target = note;
-            version = note.SpawnVersion;
-            spawnView = note.VisualTransform.position;
-            spawnRemaining = hit - manager.songPlayer.SongTime;
-        };
-        spawner.OnNoteSpawned += spawnObserver;
-        deadline = Time.realtimeSinceStartupAsDouble
-            + Math.Max(0, hit - spawner.approachTime - manager.songPlayer.SongTime) + 20;
-        while (target == null && Time.realtimeSinceStartupAsDouble < deadline)
-            yield return null;
+            double hit = spawner.EffectiveTime(source);
+            Vector2 landing = new Vector2(source.x, source.y) * chart.coordScale;
+            CuttableNote target = null;
+            Vector3 spawnView = Vector3.zero;
+            double spawnRemaining = 0;
+            uint version = 0;
+            spawnObserver = note =>
+            {
+                if (target != null || Math.Abs(note.HitTime - hit) > 1e-6
+                    || !note.LandingPosition.Equals(landing)) return;
+                target = note;
+                version = note.SpawnVersion;
+                spawnView = note.VisualTransform.position;
+                spawnRemaining = hit - manager.songPlayer.SongTime;
+            };
+            spawner.OnNoteSpawned += spawnObserver;
+            deadline = Time.realtimeSinceStartupAsDouble
+                + Math.Max(0, hit - spawner.approachTime - manager.songPlayer.SongTime) + 20;
+            while (target == null && Time.realtimeSinceStartupAsDouble < deadline)
+                yield return null;
 
-        Assert.NotNull(target, "最初のノーツそのものを観測する");
-        Assert.IsTrue(spawner.FallLineVisible);
-        Assert.AreEqual(FallRules.LineY, target.LandingPosition.y, 1e-6);
-        Assert.IsTrue(chart.notes.All(n => Mathf.Abs(n.y * chart.coordScale - FallRules.LineY) < 1e-6));
-        Assert.Greater(spawnRemaining, .7, "出現の区間をコマ飛びで失っていない");
-        Assert.Greater(spawnView.y, landing.y + 1f);
-        Assert.AreEqual(landing.x, spawnView.x);
-        Assert.AreEqual(spawner.judgeZ, spawnView.z);
-        Assert.AreEqual(FallRules.Offset(chart.fall.height, spawnRemaining, spawner.approachTime),
-            spawnView.y - landing.y, .04f);
-        AssertLanding(target, spawner);
+            Assert.NotNull(target, "先頭の通常・落下ノーツそのものを観測する");
+            Assert.AreEqual(source.fall, target.IsFall);
+            Assert.IsTrue(spawner.FallLineVisible);
+            Assert.Greater(manager.barLineSpawner.NextIndex, 0);
+            Assert.Greater(spawnRemaining, .7, "出現区間をコマ飛びで失っていない");
+            if (source.fall)
+            {
+                Assert.AreEqual(FallRules.LineY, landing.y, 1e-6);
+                Assert.Greater(spawnView.y, landing.y + 1f);
+                Assert.AreEqual(spawner.judgeZ, spawnView.z);
+                Assert.AreEqual(FallRules.Offset(chart.fall.height, spawnRemaining, spawner.approachTime),
+                    spawnView.y - landing.y, .04f);
+                AssertLanding(target, spawner);
+            }
+            else
+            {
+                Assert.AreSame(target.transform, target.VisualTransform);
+                Assert.AreEqual(landing, (Vector2)spawnView);
+                Assert.Greater(spawnView.z, spawner.judgeZ);
+            }
 
-        yield return WaitForSong(hit - .45);
-        Assert.AreEqual(version, target.SpawnVersion);
-        Assert.Greater(target.VisualTransform.position.y, landing.y);
-        Assert.Less(target.VisualTransform.position.y, spawnView.y);
-        AssertLanding(target, spawner);
+            yield return WaitForSong(hit - .45);
+            Assert.AreEqual(version, target.SpawnVersion);
+            if (source.fall)
+            {
+                Assert.Greater(target.VisualTransform.position.y, landing.y);
+                Assert.Less(target.VisualTransform.position.y, spawnView.y);
+                AssertLanding(target, spawner);
+            }
+            else
+            {
+                Assert.AreEqual(landing, (Vector2)target.transform.position);
+                Assert.Greater(target.transform.position.z, spawner.judgeZ);
+                Assert.Less(target.transform.position.z, spawnView.z);
+            }
 
-        yield return WaitForSong(hit + .02);
-        Assert.AreEqual(version, target.SpawnVersion);
-        Assert.IsFalse(target.IsCut);
-        Assert.IsFalse(target.IsMissed);
-        Assert.AreEqual(target.transform.position, target.VisualTransform.position);
-        AssertLanding(target, spawner);
+            yield return WaitForSong(hit + .02);
+            Assert.AreEqual(version, target.SpawnVersion);
+            Assert.IsFalse(target.IsCut);
+            Assert.IsFalse(target.IsMissed);
+            if (source.fall) AssertLanding(target, spawner);
+            else Assert.AreEqual(spawner.judgeZ + spawner.Speed * (float)(hit - manager.songPlayer.SongTime),
+                target.transform.position.z, spawner.Speed * .05f);
+            spawner.OnNoteSpawned -= spawnObserver;
+            spawnObserver = null;
 
-        spawner.OnNoteSpawned -= spawnObserver;
-        spawnObserver = null;
+            // 音声フレームの端数に依存せず、到着時刻ちょうども同じ本体で確かめる。
+            spawner.Tick(hit);
+            Assert.AreEqual(target.transform.position, target.VisualTransform.position);
+            AssertLanding(target, spawner);
+        }
+
         manager.enabled = false;
         manager.songPlayer.Stop();
-
-        // 音声フレームの端数に依存せず、到着時刻ちょうども検査する。
-        spawner.Tick(hit);
-        Assert.AreEqual(target.transform.position, target.VisualTransform.position);
         CheckPoolAndNormalChart(spawner);
         hud.SetFallHeaderDim(false);
         Assert.AreEqual(1f, hud.transform.Find("SongTitle").GetComponent<CanvasGroup>().alpha);
@@ -193,7 +212,8 @@ public class EpilogueFallPlayTests
             bpm = 120,
             fall = new FallChartData { enabled = true, height = 2.4f }
         };
-        fall.notes.Add(new NoteData { time = 4000, color = "red", x = .25f, y = -.2f });
+        fall.notes.Add(new NoteData { time = 4000, color = "red", x = .25f, y = -.2f, fall = true });
+        fall.notes.Add(new NoteData { time = 8000, color = "red", x = .25f, y = -.2f });
         spawner.SetChart(fall);
         spawner.Tick(3);
         var first = spawner.LiveNotes.Single();
@@ -218,12 +238,23 @@ public class EpilogueFallPlayTests
         Assert.IsTrue(reused.BodyRenderer.enabled);
         Assert.AreEqual(2.4f, reused.VisualTransform.position.y - reused.LandingPosition.y, 1e-5f);
 
+        // 同じFの中で通常ノーツも借りる。外形が同じでも落下の個体を使わない。
+        spawner.Tick(7.5);
+        var front = spawner.LiveNotes.Single();
+        Assert.AreNotSame(reused, front);
+        Assert.IsFalse(front.IsFall);
+        Assert.AreSame(front.transform, front.VisualTransform);
+        Assert.AreEqual(0, spawner.FallPetalCount);
+        Assert.IsTrue(spawner.FallLineVisible);
+        Assert.AreEqual(spawner.judgeZ + spawner.Speed * .5f, front.transform.position.z, 1e-5f);
+
         var normal = new ChartData { bpm = 120 };
         normal.notes.Add(new NoteData { time = 4000, color = "red", x = .25f, y = -.2f });
         spawner.SetChart(normal);
         spawner.Tick(3.5);
         var plain = spawner.LiveNotes.Single();
         Assert.IsFalse(spawner.HasFall);
+        Assert.AreSame(front, plain, "F内の通常個体は通常譜面でもそのまま再利用する");
         Assert.AreSame(plain.transform, plain.VisualTransform);
         Assert.Greater(plain.transform.position.z, spawner.judgeZ + .1f);
         Assert.AreEqual(0, spawner.FallPetalCount);

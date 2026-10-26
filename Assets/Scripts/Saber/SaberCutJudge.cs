@@ -231,7 +231,7 @@ public class SaberCutJudge : MonoBehaviour
         for (int i=0;i<notes.Count;i++)
         {
             var note = notes[i];
-            if (!IsCandidate(note)) continue;
+            if (!IsCandidate(note, includeHeatBlocked: true)) continue;
             // 担当外の手のノーツはそもそも判定対象にしない(誤った手のスイングは無反応)
             if (!SaberHandHelper.CanCut(note.RequiredHand, EffectiveHand())) continue;
             if (pending.ContainsKey(note) || ExcludedFromStroke(note)) continue;
@@ -248,7 +248,8 @@ public class SaberCutJudge : MonoBehaviour
             }
             // 広げた当たりで入るのは、近くに時刻の違う受付中のノーツがないときだけ(巻き込みを増やさない)。
             float range = d > hitRange && d <= thinRange && !Crowded(note) ? thinRange : hitRange;
-            if (d <= range) pending[note] = NewPending(note, closest, d, anchor, center, range);
+            if (d <= range && AcceptContact(note, closest))
+                pending[note] = NewPending(note, closest, d, anchor, center, range);
         }
         sweepA = a; sweepB = b; hasSweep = true;
         return CheckPending(true);
@@ -271,7 +272,7 @@ public class SaberCutJudge : MonoBehaviour
         for (int i=0;i<notes.Count;i++)
         {
             var note = notes[i];
-            if (!IsCandidate(note)) continue;
+            if (!IsCandidate(note, includeHeatBlocked: true)) continue;
             // 担当外の手のノーツはそもそも判定対象にしない(誤った手のスイングは無反応)
             if (!SaberHandHelper.CanCut(note.RequiredHand, EffectiveHand())) continue;
             if (pending.ContainsKey(note) || ExcludedFromStroke(note)) continue;
@@ -279,7 +280,8 @@ public class SaberCutJudge : MonoBehaviour
             Vector2 allowedFrom = Vector2.Lerp(from, to, OrderEntryFraction(note));
             float d = DistPointToSegment(noteXY, allowedFrom, to, out Vector2 closest);
             // 点は1フレームの軌跡で入るので、起点はその軌跡の始まり。
-            if (d <= hitRange) pending[note] = NewPending(note, closest, d, allowedFrom, to, hitRange);
+            if (d <= hitRange && AcceptContact(note, closest))
+                pending[note] = NewPending(note, closest, d, allowedFrom, to, hitRange);
         }
 
         return CheckPending(false);
@@ -323,6 +325,16 @@ public class SaberCutJudge : MonoBehaviour
             Pending p = kv.Value;
             if (!StillCuttable(note, p))
             {
+                // 同時ノーツの一切り目で上限になったときも、まだ刃が触れていれば拒否を伝える。
+                if (note != null && note.SpawnVersion == p.version
+                    && IsCandidate(note, includeHeatBlocked: true))
+                {
+                    Vector2 xy = note.transform.position;
+                    Vector2 hit = center;
+                    float distance = blade ? DistPointToSegment(xy, a, b, out hit)
+                        : Vector2.Distance(xy, center);
+                    if (distance <= p.range) AcceptContact(note, hit);
+                }
                 toRemove.Add(note);
                 continue;
             }
@@ -803,9 +815,18 @@ public class SaberCutJudge : MonoBehaviour
             && time <= note.HitTime + owner.LateWindowFor(note) ? time : double.NaN;
     }
 
-    private bool IsCandidate(CuttableNote n, bool checkCutOrder = true)
+    // 熱で拒むノーツも接触までは調べる。順位選び・ミス保留の可否は従来どおり。
+    bool AcceptContact(CuttableNote note, Vector2 point)
     {
-        if (!CanCutNote(n)) return false;
+        if (CanCutNote(note)) return true;
+        Heat?.RejectedContact(this, note,
+            new Vector3(point.x, point.y, note.transform.position.z));
+        return false;
+    }
+
+    private bool IsCandidate(CuttableNote n, bool checkCutOrder = true, bool includeHeatBlocked = false)
+    {
+        if (n == null || Stunned || (!includeHeatBlocked && !CanCutNote(n))) return false;
         if (n.IsCut || n.IsMissed) return false;
         if (!n.IsJudgeable && !Finite(EntryTime(n))) return false;
         if (!n.gameObject.activeInHierarchy) return false;

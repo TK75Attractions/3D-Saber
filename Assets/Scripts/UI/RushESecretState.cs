@@ -158,7 +158,33 @@ public sealed class RushESecretState
         CenterHaze = new Color(.12f, .28f, 1f, .42f),
         LeftHaze = new Color(.08f, .20f, .95f, .35f), RightHaze = new Color(.28f, .44f, 1f, .35f),
     };
-    public static readonly SecretChart[] Charts = { RushE, ElDoradoG, PhobiaAvoid, MorningMemory, AobasouWind, LogicSpeed, ZeroVanish, AndalusiaBull, TwoTwentyThreeLight, EpilogueFall, ManicSonicHeat, EscapadeLong };
+    // 揺籠のP(U72 Pass)。二速の流れが奥で追い越し、着地前にそろう。目印は月夜の銀青。
+    public static readonly Color MoonSilver = new Color(.70f, .74f, .82f);
+    public static readonly SecretChart YurikagoOvertake = new SecretChart
+    {
+        SongId = "揺籠", Difficulty = "P", Accent = MoonSilver,
+        Glow = new Color(.60f, .68f, .82f, .25f), Face = new Color(.055f, .07f, .12f),
+        TileDeep = new Color(.035f, .05f, .10f), TileLight = new Color(.36f, .42f, .56f),
+        Backdrop = new Color(.018f, .024f, .06f),
+        LeftLight = new Color(.42f, .54f, .76f), RightLight = new Color(.78f, .82f, .92f),
+        EdgeLight = new Color(.80f, .85f, .96f), FanLight = new Color(.62f, .72f, .88f),
+        CenterHaze = new Color(.42f, .52f, .74f, .42f),
+        LeftHaze = new Color(.30f, .42f, .66f, .35f), RightHaze = new Color(.64f, .70f, .84f, .35f),
+    };
+    // 勉強(Remaster)のC(U12 Chameleon)。白いチョークが直前に赤・青・金へ化ける。
+    public static readonly Color Chalk = new Color(.94f, .93f, .86f);
+    public static readonly SecretChart BenkyouChameleon = new SecretChart
+    {
+        SongId = "BenkyouRemaster", Difficulty = "C", Accent = Chalk,
+        Glow = new Color(.94f, .93f, .86f, .25f), Face = new Color(.13f, .13f, .10f),
+        TileDeep = new Color(.09f, .09f, .065f), TileLight = new Color(.62f, .61f, .51f),
+        Backdrop = new Color(.035f, .035f, .025f),
+        LeftLight = new Color(.84f, .83f, .74f), RightLight = new Color(.98f, .97f, .91f),
+        EdgeLight = Chalk, FanLight = new Color(.88f, .87f, .78f),
+        CenterHaze = new Color(.78f, .77f, .65f, .42f),
+        LeftHaze = new Color(.68f, .67f, .55f, .35f), RightHaze = new Color(.90f, .89f, .78f, .35f),
+    };
+    public static readonly SecretChart[] Charts = { RushE, ElDoradoG, PhobiaAvoid, MorningMemory, AobasouWind, LogicSpeed, ZeroVanish, AndalusiaBull, TwoTwentyThreeLight, EpilogueFall, ManicSonicHeat, EscapadeLong, YurikagoOvertake, BenkyouChameleon };
     public static SecretChart For(string songId)
     {
         foreach (var chart in Charts) if (chart.SongId == songId) return chart;

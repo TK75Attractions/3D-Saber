@@ -8,7 +8,6 @@ public static class WindRules
     public const double StillSeconds = .06;
     public const double SwayFadeSeconds = .12;
     public const double SwayBeats = 2;
-    public const string RuleCaption = "風に流されて来る。着地の枠で切ろう";
 
     // 見た目全体のずれ。流され・回転と、直前まで振幅を保つ揺れを別々に収める。
     public static Vector2 Offset(float windX, float windY, float windSpin, float windSway,

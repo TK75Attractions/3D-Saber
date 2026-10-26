@@ -166,6 +166,15 @@ public class AimSpikeData
     public string follow = "";
 }
 
+// 滑るロングの通過点。座標はノーツと同じ譜面座標、msは到着からの経過。
+[Serializable]
+public class SlidePathPoint
+{
+    public float ms;
+    public float x;
+    public float y;
+}
+
 [Serializable]
 public class NoteData
 {
@@ -185,8 +194,22 @@ public class NoteData
     // 終点は x/y と同じ譜面座標。旧譜面は slide=false のまま動かない。
     public bool slide;
     public float slideToX, slideToY;
+    // 到着からの経過ミリ秒と通過点。空なら従来の slideToX/Y、点の間は等速。
+    public List<SlidePathPoint> slidePath = new List<SlidePathPoint>();
+    // P/U72。0・省略は従来どおり。正の値は奥の滞在時間の倍率(1はPの基準)。
+    // laneXは出現位置のワールドX。着地点はx/yのまま、到着0.73秒前までに合流する。
+    public float approachScale;
+    public float laneX;
+    public bool HasOvertake => OvertakeRules.NormalizeScale(approachScale) > 0f;
+    // F のうち上から降るノーツ。譜面側の fall.enabled も有効なときだけ使う。
+    // 省略・false は元の x/y へ奥から来る通常ノーツ。
+    public bool fall;
     // 見えにくさ(0〜1、覚える裏譜面「M」の「まね」の側)。0 はふつう、1 は見えない。判定は変わらない。
     public float veil = 0f;
+    // C/U12。届く何秒前から本来の色を出すか。0・省略は通常表示。判定・手・配置は変えない。
+    public float reveal;
+    // サビの方向ノーツだけ、色が決まる時刻まで本体と床の矢印も隠す。
+    public bool revealArrow;
     // 風に流されて来る(青葉騒の裏譜面「W」、2026-10-25)。出現したときの位置のずれ(windX・windY、ワールド単位)は、
     // 届く WindRules.CalmSeconds 秒前までになめらかに 0 へ戻る。windSpin はずれが戻るあいだに回る角度(ラジアン、+ は左回り)、
     // windSway は全ノーツがそろって左右に揺れる幅(曲の拍に合わせる)。全部 0 ならふつうのノーツ。判定は変わらない。

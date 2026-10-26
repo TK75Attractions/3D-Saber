@@ -30,11 +30,18 @@ public static class ChartLoader
                 if (!Finite(note.lengthMs) || note.lengthMs < 0) note.lengthMs = 0;
                 if (!Finite(note.beat)) note.beat = 0;
                 note.veil = Finite(note.veil) ? Math.Max(0f, Math.Min(1f, note.veil)) : 0f;
+                // 化ける(C)。無効値は通常表示、正の値は発色後の余裕がある範囲へ収める。
+                note.reveal = ChameleonRules.Normalize(note.reveal);
+                note.revealArrow = note.reveal > 0f && note.IsDirection && note.revealArrow;
                 // 風(W)。画面から大きく外れる値や壊れた値は収める。
                 note.windX = Clamp(note.windX, -3f, 3f);
                 note.windY = Clamp(note.windY, -2f, 2f);
                 note.windSpin = Clamp(note.windSpin, -2f * (float)Math.PI, 2f * (float)Math.PI);
                 note.windSway = Clamp(note.windSway, 0f, 1f);
+                // 追い越し(P)。省略は無効、奥の時間と出発位置は安全な範囲へ収める。
+                note.approachScale = OvertakeRules.NormalizeScale(note.approachScale);
+                note.laneX = note.approachScale > 0f
+                    ? OvertakeRules.NormalizeLane(note.laneX) : 0f;
                 // 消える(V)。知らない名前はふつうのノーツ。
                 note.vanish = VanishRules.Name(VanishRules.Parse(note.vanish));
             }

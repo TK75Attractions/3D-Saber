@@ -428,7 +428,7 @@ public class GamePlayManager : MonoBehaviour
         }
 
         // 小節線：BPM ガイドとして薄く流す
-        if ((disableBarLines || stagePerformance.hideBarLines || noteSpawner.HasFall) && barLineSpawner != null)
+        if ((disableBarLines || stagePerformance.hideBarLines) && barLineSpawner != null)
         {
             barLineSpawner.gameObject.SetActive(false);
             barLineSpawner = null;
@@ -440,7 +440,8 @@ public class GamePlayManager : MonoBehaviour
             barLineSpawner.lineAlpha = useOverhauledStage ? GameStageSkin.BarLineAlpha : barLineAlpha;
             barLineSpawner.lineThickness = useOverhauledStage ? GameStageSkin.BarLineThickness : barLineThickness;
             // 小節線はノーツと同じ速度で流す(シーンに古い値が焼き込まれていても揃うように)。
-            barLineSpawner.approachTime = noteSpawner.approachTime;
+            barLineSpawner.approachTime = noteSpawner.HasOvertakeNotes
+                ? (float)noteSpawner.OvertakeApproach : noteSpawner.approachTime;
             barLineSpawner.SetChart(chart, effectiveExtraOffset);
             barLineSpawner.FirstBarTime = playRange.Start;
         }
@@ -468,12 +469,16 @@ public class GamePlayManager : MonoBehaviour
             float beat = chart.bpm > 0 ? 60f / chart.bpm : .5f;
             goldNoteSfx.OnCritical += (point, step) => { if (feverShow != null) feverShow.GoldFlash(beat); };
         }
-        DopamineFlourish.Create(this, chart, stagePerformance, MusicEnd);
+        DopamineFlourish.Create(this, chart, stagePerformance);
         // 冒頭にも通常と同じ移動時間を確保する。譜面の時刻・オフセットは変えない。
         // 頭を飛ばす曲は、鳴らし始める位置から最初のノーツまでの秒で考える。
         double firstNoteFromPlayStart = chart.notes.Count > 0 ? noteSpawner.EffectiveTime(chart.notes[0]) - playRange.Start : double.NaN;
         // 避は最初の的・トゲが見えはじめる時刻から数える(奥から届くまで AimDodgeRules.LeadSeconds)。
         double firstApproach = noteSpawner.approachTime;
+        // Pは後のノーツが最初に現れる場合もある。最早出現まで助走を確保する。
+        if (noteSpawner.HasOvertakeNotes && chart.notes.Count > 0)
+            firstApproach = System.Math.Max(firstApproach,
+                noteSpawner.EffectiveTime(chart.notes[0]) - noteSpawner.EarliestSpawnTime);
         // 緩急(S)の譜面で頭がゆっくり流れるなら、最初のノーツが奥に現れる時刻から数える。
         if (noteSpawner.HasScroll && chart.notes.Count > 0)
         {
@@ -502,25 +507,9 @@ public class GamePlayManager : MonoBehaviour
             // 楽曲開始を予約し、冒頭のノーツが文字や光に隠れたままゲートへ着くのを防ぐ。
             var countdown = GameStartCountdown.Ensure();
             double startDspTime = countdown.Begin(chart.bpm, GameSession.SelectedDifficulty, startCountdownVolume, firstApproach, firstNoteFromPlayStart);
-            if (aimMode != null)
-                countdown.ConfigureCaptionHint(AimDodgeRules.RuleCaption, RushESecretState.Magenta, firstNoteFromPlayStart, playRange.Start);
-            else if (noteSpawner.HasWindNotes)
-                countdown.ConfigureCaptionHint(WindRules.RuleCaption, RushESecretState.Leaf, firstNoteFromPlayStart, playRange.Start);
-            else if (noteSpawner.HasScroll)
-                countdown.ConfigureCaptionHint(ScrollSpeedMap.RuleCaption, RushESecretState.Ice, firstNoteFromPlayStart, playRange.Start);
-            else if (noteSpawner.HasFall)
-                countdown.ConfigureCaptionHint(FallRules.RuleCaption, RushESecretState.Sakura, firstNoteFromPlayStart, playRange.Start);
-            else if (noteSpawner.HasVanishNotes)
-                countdown.ConfigureCaptionHint(VanishRules.RuleCaption, RushESecretState.Phantom, firstNoteFromPlayStart, playRange.Start);
-            else if (darkMode != null)
-                countdown.ConfigureCaptionHint(DarkRules.RuleCaption, RushESecretState.Lamp, firstNoteFromPlayStart, playRange.Start);
-            else if (heatMode != null)
-                countdown.ConfigureCaptionHint(global::HeatMode.RuleCaption, RushESecretState.Thermal, firstNoteFromPlayStart, playRange.Start);
-            else if (noteSpawner.HasSlideNotes)
-                countdown.ConfigureCaptionHint(LongSlideRules.RuleCaption, RushESecretState.Cobalt, firstNoteFromPlayStart, playRange.Start);
-            // M(覚える)は下の解説を何も出さない(2026-10-26 ユーザー「下に出る解説いらないから消して」)。
-            // 最初の3回でノイズがだんだん強まるのが説明を兼ねる。
-            else if (memoryMode == null)
+            // 裏譜面は、カウントインの下に決まりの一言も最初の手の予告も出さない
+            // (2026-10-26 M「下に出る解説いらないから消して」、10/27 全部「裏譜面の、曲開始時に画面に出る一言みたいなやついらんから消して」)。
+            if (!RushESecretState.IsSecretDifficulty(GameSession.SelectedDifficulty))
                 countdown.ConfigureFirstHandHint(chart, firstNoteFromPlayStart, inTutorial || GameSession.TutorialPending,
                     inCalibration || GameSession.IsCalibrationMode, playRange.Start);
             songPlayer.PlayScheduled(startDspTime, playRange.Start);
@@ -1151,9 +1140,7 @@ public class GamePlayManager : MonoBehaviour
         if (aimMode != null) return aimMode.Needs(songTime, hand);
         if (noteSpawner == null) return false;
         if (PlayTrackingWatch.LiveNeeds(noteSpawner.LiveNotes, hand)) return true;
-        var chart = noteSpawner.CurrentChart;
-        return chart != null && PlayTrackingWatch.UpcomingNeeds(chart.notes, noteSpawner.NextIndex, noteSpawner.EffectiveTime,
-            noteSpawner.approachTime, songTime, hand);
+        return noteSpawner.UpcomingNeeds(songTime, hand);
     }
 
     // ノーツが画面にあるか、1 秒以内に流れ始めるか。休みの区間で剣を下ろしているだけなら曲を止めない。

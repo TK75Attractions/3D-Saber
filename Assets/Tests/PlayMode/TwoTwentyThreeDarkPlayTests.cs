@@ -69,9 +69,7 @@ public class TwoTwentyThreeDarkPlayTests
         var chart = spawner.CurrentChart;
         Assert.AreEqual(13, chart.dark.Count);
         Assert.AreEqual(10, chart.displayLevel);
-        var hint = GameObject.Find("FirstHandHint");
-        Assert.NotNull(hint);
-        Assert.AreEqual(DarkRules.RuleCaption, hint.GetComponentInChildren<TMPro.TextMeshProUGUI>().text);
+        Assert.IsNull(GameObject.Find("FirstHandHint"), "裏譜面は始まりに決まりの一言も手の予告も出さない");
 
         manager.enabled = false;
         manager.songPlayer.Stop();

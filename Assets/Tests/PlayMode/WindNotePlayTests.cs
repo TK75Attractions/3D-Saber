@@ -83,14 +83,7 @@ public class WindNotePlayTests
         Assert.IsNull(manager.MemoryMode);
         Assert.Greater(spawner.approachTime, WindRules.CalmSeconds);
 
-        var hint = GameObject.Find("FirstHandHint");
-        Assert.NotNull(hint, "カウントインの下にルール字幕を出す");
-        var label = hint.GetComponentInChildren<TMPro.TextMeshProUGUI>();
-        Assert.NotNull(label);
-        Assert.AreEqual(WindRules.RuleCaption, label.text);
-        Assert.AreEqual(RushESecretState.Leaf.r, label.color.r, 1e-6f);
-        Assert.AreEqual(RushESecretState.Leaf.g, label.color.g, 1e-6f);
-        Assert.AreEqual(RushESecretState.Leaf.b, label.color.b, 1e-6f);
+        Assert.IsNull(GameObject.Find("FirstHandHint"), "裏譜面は始まりに決まりの一言も手の予告も出さない");
 
         var tempo = new ChartTempoMap(chart.bpm, chart.beatZeroMs, chart.editorTempoMap);
         double current = manager.songPlayer.SongTime;

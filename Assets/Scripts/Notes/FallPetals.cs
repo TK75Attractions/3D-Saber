@@ -93,7 +93,7 @@ public sealed class FallPetals : MonoBehaviour
         {
             if (PetalCount >= MaxPetals) break;
             var note = notes[noteIndex];
-            if (note == null || !note.gameObject.activeInHierarchy
+            if (note == null || !note.IsFall || !note.gameObject.activeInHierarchy
                 || note.IsCut || note.IsMissed || note.IsFinalized || note.CutsAchieved > 0)
                 continue;
             double remaining = note.HitTime - songTime;

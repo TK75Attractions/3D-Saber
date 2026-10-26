@@ -12,17 +12,28 @@ public partial class NoteVisuals
         Initialize();
         brightness = DarkRules.ClampBrightness(brightness);
         if (Brightness == brightness) return;
+        RememberDisplayColors();
+        Brightness = brightness;
+        ApplyDisplayColors();
+    }
+
+    // 暗さと化ける色替えが、同じ不変の元色を使う。白や暗いRGBを復元色として覚えない。
+    void RememberDisplayColors()
+    {
         darkOriginalColors ??= new Dictionary<Material, Color>();
         RememberDarkColor(runtimeBodyMat);
         foreach (var material in ownedSubMaterials) RememberDarkColor(material);
         RememberDarkColor(contrastOutlineMaterial);
-        Brightness = brightness;
+    }
+
+    void ApplyDisplayColors()
+    {
         foreach (var pair in darkOriginalColors)
         {
             var material = pair.Key;
             if (material == null) continue;
-            float factor = brightness * (material == runtimeBodyMat && bodyDimmed ? .4f : 1f);
-            Color color = DarkRules.Rgb(pair.Value, factor);
+            float factor = Brightness * (material == runtimeBodyMat && bodyDimmed ? .4f : 1f);
+            Color color = DarkRules.Rgb(RevealedMaterialColor(material, pair.Value), factor);
             color.a = ReadBaseColor(material).a;
             SetBaseColor(material, color);
         }

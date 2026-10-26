@@ -16,7 +16,7 @@ public class ManicSonicHeatPlayTests
 {
     readonly Dictionary<FieldInfo, object> sessionValues = new Dictionary<FieldInfo, object>();
     GamePlayManager manager;
-    bool hadApproach;
+    bool hadApproach, oldReducedEffects;
     float oldApproach, oldTimeScale;
 
     [SetUp]
@@ -29,6 +29,8 @@ public class ManicSonicHeatPlayTests
         hadApproach = PlayerPrefs.HasKey("noteApproachTime");
         oldApproach = GameSession.NoteApproachTime;
         oldTimeScale = Time.timeScale;
+        oldReducedEffects = DisplaySettings.ReducedEffects;
+        DisplaySettings.SetReducedEffectsForTest(false);
         Time.timeScale = 1;
     }
 
@@ -47,6 +49,7 @@ public class ManicSonicHeatPlayTests
         if (hadApproach) GameSession.NoteApproachTime = oldApproach;
         else GameSession.ResetNoteApproachTime();
         Time.timeScale = oldTimeScale;
+        DisplaySettings.SetReducedEffectsForTest(oldReducedEffects);
         manager = null;
     }
 
@@ -90,14 +93,7 @@ public class ManicSonicHeatPlayTests
         Assert.IsNull(manager.MemoryMode);
         Assert.IsNull(manager.BullMode);
 
-        var hint = GameObject.Find("FirstHandHint");
-        Assert.NotNull(hint);
-        var label = hint.GetComponentInChildren<TMPro.TextMeshProUGUI>();
-        Assert.NotNull(label);
-        Assert.AreEqual(HeatMode.RuleCaption, label.text);
-        Assert.AreEqual(RushESecretState.Thermal.r, label.color.r, 1e-6f);
-        Assert.AreEqual(RushESecretState.Thermal.g, label.color.g, 1e-6f);
-        Assert.AreEqual(RushESecretState.Thermal.b, label.color.b, 1e-6f);
+        Assert.IsNull(GameObject.Find("FirstHandHint"), "裏譜面は始まりに決まりの一言も手の予告も出さない");
 
         manager.enabled = false;
         manager.songPlayer.Stop();
@@ -115,6 +111,9 @@ public class ManicSonicHeatPlayTests
         driver.transform.SetParent(manager.transform, false);
         var tracker = driver.AddComponent<SaberTracker>();
         tracker.enabled = false;
+        var visualBridge = driver.AddComponent<SaberInputBridge>();
+        visualBridge.useInputPoint = visualBridge.fallbackToMouse = false;
+        visualBridge.enabled = false;
         judge.saber = tracker;
         judge.bladeProvider = null;
         judge.hand = SaberHand.Right;
@@ -152,6 +151,10 @@ public class ManicSonicHeatPlayTests
         Assert.AreEqual(3, heat.Session.HeatOf(HeatHand.Right));
         Assert.AreEqual(0, heat.Session.HeatOf(HeatHand.Left));
         Assert.IsTrue(judge.CanCutNote(ordinary), "blockAll=falseなので通常ノーツは切れる");
+        heat.DrawFeedback();
+        Assert.NotNull(heat.View);
+        Assert.NotNull(heat.Sfx);
+        Assert.AreEqual(1, heat.Sfx.Played(HeatCue.Full));
 
         spawner.Tick(blockedTime);
         heat.Tick(blockedTime, blockedTime);
@@ -161,9 +164,20 @@ public class ManicSonicHeatPlayTests
             Math.Abs(n.HitTime - hit) < 1e-6);
         Assert.IsTrue(right.IsHeat && left.IsHeat);
         Assert.IsTrue(right.IsJudgeable);
+        PresentBlade(heat, judge, visualBridge, right.transform.position);
+        Assert.GreaterOrEqual(heat.View.VisibleFlameNotes, 2, "本編の赤・青の炎枠を描く");
+        Assert.AreEqual(3, heat.View.LitBladeSegments(HeatHand.Right));
+        Assert.AreEqual(3, heat.View.GaugeSegments(HeatHand.Right));
+        Assert.AreEqual(3, heat.View.LitGaugeSegments(HeatHand.Right));
+        Assert.Greater(heat.View.VertexCount, 0);
         double cooling = heat.Session.NextCoolTime(HeatHand.Right);
         Assert.IsFalse(judge.CanCutNote(right));
+        Vector3 blockedPosition = right.transform.position;
         Swing(judge, right, blockedTime);
+        heat.DrawFeedback();
+        Assert.AreEqual(blockedPosition, right.transform.position);
+        Assert.AreEqual(1, heat.View.SparkBursts);
+        Assert.AreEqual(1, heat.Sfx.Played(HeatCue.Reject));
         Assert.IsFalse(right.IsCut);
         Assert.IsFalse(right.IsMissed);
         Assert.AreEqual(0, right.CutsAchieved);
@@ -186,6 +200,11 @@ public class ManicSonicHeatPlayTests
         Assert.AreEqual(2, heat.Session.HeatOf(HeatHand.Right));
         Assert.IsTrue(right.IsJudgeable);
         Assert.IsTrue(judge.CanCutNote(right));
+        PresentBlade(heat, judge, visualBridge, right.transform.position);
+        Assert.AreEqual(2, heat.View.LitBladeSegments(HeatHand.Right));
+        Assert.AreEqual(2, heat.View.LitGaugeSegments(HeatHand.Right));
+        Assert.Greater(heat.View.CoolingRings, 0);
+        Assert.AreEqual(1, heat.Sfx.Played(HeatCue.Cool));
         Swing(judge, right, recovered);
         Assert.IsTrue(right.IsCut);
         Assert.AreEqual(1, right.CutsAchieved);
@@ -194,6 +213,17 @@ public class ManicSonicHeatPlayTests
 
         heat.EndPlay();
         Assert.IsNull(judge.Heat);
+    }
+
+    // 通信だけを置き換え、本編に接続されたHeatViewで実際のメッシュを作る。
+    static void PresentBlade(HeatMode heat, SaberCutJudge judge, SaberInputBridge bridge, Vector3 center)
+    {
+        bridge.enabled = true;
+        bridge.OverrideBlade(center - Vector3.up * .75f, center + Vector3.up * .75f);
+        judge.bladeProvider = bridge;
+        heat.DrawFeedback();
+        bridge.enabled = false;
+        judge.bladeProvider = null;
     }
 
     static void Swing(SaberCutJudge judge, CuttableNote note, double time)

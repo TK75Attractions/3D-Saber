@@ -8,6 +8,9 @@ public partial class CuttableNote
     Transform fallVisual;
     MeshRenderer fallBody;
 
+    // プールは落下の有無で分けるため、この描画先を通常ノーツへ持ち越さない。
+    public bool IsFall => fallVisual != null;
+
     internal void EnsureFallVisual()
     {
         if (fallVisual == null)

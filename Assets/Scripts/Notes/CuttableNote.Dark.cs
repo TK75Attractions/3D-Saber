@@ -13,7 +13,8 @@ public partial class CuttableNote
         if (Visuals != null) Visuals.SetBrightness(brightness);
         if (Arrow != null) Arrow.RefreshDarkBrightness();
         if (TimingCue != null) TimingCue.SetDarkBrightness(brightness);
-        if (countLabel != null)
+        if (RevealSeconds > 0f) RefreshRevealCountColor();
+        else if (countLabel != null)
         {
             Color color = countLabel.color;
             countLabel.color = new Color(brightness, brightness, brightness, color.a);

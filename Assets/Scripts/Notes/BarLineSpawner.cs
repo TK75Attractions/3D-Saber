@@ -60,10 +60,10 @@ public class BarLineSpawner : MonoBehaviour
         Cleanup();
         barTimes.Clear();
         scrollMap = null;
-        if (FallRules.Enabled(chart?.fall)) return;
         if (chart == null || chart.bpm <= 0 || float.IsNaN(chart.bpm) || float.IsInfinity(chart.bpm)) return;
         double offset = chart.offsetMs / 1000.0 + extraOffsetSeconds;
-        scrollMap = ScrollSpeedMap.Build(chart.scroll);
+        // F の通常ノーツも一定速。小節線だけ緩急を適用しない。
+        scrollMap = FallRules.Enabled(chart.fall) ? null : ScrollSpeedMap.Build(chart.scroll);
         scrollOffset = offset;
         var clock = new ChartTempoMap(chart.bpm, chart.beatZeroMs, chart.editorTempoMap);
         double end = 0;

@@ -1,10 +1,8 @@
 using System;
 using System.Collections.Generic;
-using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 
-// 最後の組と金の印を曲時計で駆動する。採点・ノーツの位置には書き込まない。
+// 最後の組と金の音の階段を曲時計で駆動する。採点・ノーツの位置には書き込まない。
 public sealed class DopamineFlourish : MonoBehaviour
 {
     static DopamineFlourish current;
@@ -17,23 +15,20 @@ public sealed class DopamineFlourish : MonoBehaviour
     StageFeverShow fever;
     JudgeGateFrame gate;
     Camera view;
-    PlayExcitementMesh marks, frames, stageLight;
-    Canvas stampCanvas;
-    TextMeshProUGUI stamp;
+    PlayExcitementMesh frames, stageLight;
     AudioSource source;
     AudioClip chord;
     readonly HashSet<CuttableNote> tracked = new HashSet<CuttableNote>();
     readonly Dictionary<CuttableNote, uint> successful = new Dictionary<CuttableNote, uint>();
     readonly List<(SlicePieceDecay piece, double time)> pieces = new List<(SlicePieceDecay, double)>();
-    readonly float[] markAlpha = new float[3];
-    double lastClock = double.NaN, finishAt = double.NaN, musicEnd;
+    double finishAt = double.NaN;
     int resolved;
     bool failed, enabledFinale, stopped;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     static void ResetStatics() { current = null; }
 
-    public static void Create(GamePlayManager owner, ChartData chart, StagePerformanceTimeline timeline, double musicEnd)
+    public static void Create(GamePlayManager owner, ChartData chart, StagePerformanceTimeline timeline)
     {
         if (owner.GetComponent<DopamineFlourish>() != null) return;
         var show = owner.gameObject.AddComponent<DopamineFlourish>();
@@ -42,7 +37,6 @@ public sealed class DopamineFlourish : MonoBehaviour
         show.spawner = owner.noteSpawner;
         show.song = owner.songPlayer;
         show.gold = owner.goldNoteSfx;
-        show.musicEnd = musicEnd;
         show.tempo = new ChartTempoMap(chart.bpm, chart.beatZeroMs, chart.editorTempoMap);
         show.finalGroup = new FinalNoteGroup(chart, show.spawner.TotalOffsetSeconds, show.spawner.secondsPerLongCut);
         show.enabledFinale = show.finalGroup.Indices.Count > 0 && !(chart.aim?.HasContent ?? false)
@@ -59,27 +53,12 @@ public sealed class DopamineFlourish : MonoBehaviour
 
     void Build(VoltageMusicKey key)
     {
-        if (gate != null)
-            marks = new PlayExcitementMesh(gate.transform, "GoldStairs", 3011, 0);
+        // ゲートの上(難易度の札の横)に出していた金の階段の印(最大3つの四角)は、じゃまなのでやめた(10/27 ユーザー指示)。
+        // 金の音の階段(GoldNoteSfx)はそのまま鳴らす。
         frames = new PlayExcitementMesh(transform, "FinalNoteFrames", 3009, -1);
         if (fever != null)
             stageLight = new PlayExcitementMesh(fever.transform, "FinalStageLight", 3000, -190);
-
-        var go = new GameObject("ClearStamp", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler));
-        go.transform.SetParent(transform, false);
-        stampCanvas = go.GetComponent<Canvas>();
-        stampCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        stampCanvas.sortingOrder = 504;
-        var scaler = go.GetComponent<CanvasScaler>();
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1920, 1080);
-        scaler.matchWidthOrHeight = .5f;
-        // 締めの判子なので大きく出す(画面のまん中より少し上)。
-        stamp = UISkinKit.MakeTMP(go.transform, "Stamp", "CLEAR", 120, UISkinPalette.NoteGold,
-            TextAlignmentOptions.Center, Vector2.zero, new Vector2(620, 170),
-            FontStyles.Bold, 0, UISkinKit.FontAsset("Oxanium-Bold"));
-        stamp.raycastTarget = false;
-        stampCanvas.enabled = false;
+        // 最後に出していた CLEAR の判子は、すぐに出てじゃまなのでやめた(10/27 ユーザー指示)。光・和音・破片の減速は残す。
 
         if (Application.isPlaying)
         {
@@ -184,7 +163,6 @@ public sealed class DopamineFlourish : MonoBehaviour
 
     void Tick()
     {
-        float dt = SongDelta(song, ref lastClock);
         double now = song.SongTime;
         gold?.TickStaircase(now);
         for (int i = pieces.Count - 1; i >= 0; i--)
@@ -200,31 +178,8 @@ public sealed class DopamineFlourish : MonoBehaviour
             if (elapsed >= 0 && elapsed <= .5) item.piece.Step((float)elapsed);
             pieces[i] = (item.piece, now);
         }
-        DrawMarks(dt);
         DrawFrames(now);
         DrawEnding(now);
-    }
-
-    void DrawMarks(float dt)
-    {
-        if (marks == null) return;
-        marks.Clear();
-        for (int i = 0; i < 3; i++)
-        {
-            markAlpha[i] = gold != null && i < gold.StairCount
-                ? 1 : Mathf.Max(0, markAlpha[i] - dt / .25f);
-            if (markAlpha[i] == 0) continue;
-            Vector3 center = new Vector3((i - 1) * .32f, gate.HalfHeight + .62f, -.12f);
-            Color tint = UISkinPalette.NoteGold;
-            tint.a = markAlpha[i];
-            for (int side = 0; side < 4; side++)
-            {
-                float a = side * Mathf.PI * .5f, b = (side + 1) * Mathf.PI * .5f;
-                marks.Band(center + new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0) * .11f,
-                    center + new Vector3(Mathf.Cos(b), Mathf.Sin(b), 0) * .11f, .045f, tint);
-            }
-        }
-        marks.Flush();
     }
 
     void DrawFrames(double now)
@@ -249,10 +204,13 @@ public sealed class DopamineFlourish : MonoBehaviour
                         new Vector3(bounds.max.x + pad, bounds.max.y + pad, z));
                     Vector3 d = transform.InverseTransformPoint(
                         new Vector3(bounds.min.x - pad, bounds.max.y + pad, z));
-                    frames.Band(a, b, .025f, UISkinPalette.NoteGold);
-                    frames.Band(b, c, .025f, UISkinPalette.NoteGold);
-                    frames.Band(c, d, .025f, UISkinPalette.NoteGold);
-                    frames.Band(d, a, .025f, UISkinPalette.NoteGold);
+                    // Cの白い間は、最後の強調枠も中立色に合わせる。
+                    Color tint = note.RevealSeconds > 0f && note.Visuals != null
+                        ? note.Visuals.DisplayColor : UISkinPalette.NoteGold;
+                    frames.Band(a, b, .025f, tint);
+                    frames.Band(b, c, .025f, tint);
+                    frames.Band(c, d, .025f, tint);
+                    frames.Band(d, a, .025f, tint);
                 }
             }
         frames.Flush();
@@ -292,23 +250,6 @@ public sealed class DopamineFlourish : MonoBehaviour
             fever.DrawFinale(stageLight, now, 1 - (float)(age / .3));
         }
         stageLight?.Flush();
-
-        bool show = visible && (hit ? age >= .3 : now >= musicEnd && musicEnd > 0);
-        stampCanvas.enabled = show;
-        if (!show) return;
-        bool small = !hit;
-        float scale = small ? .65f : DisplaySettings.ReducedEffects ? 1
-            : 1 + .18f * Mathf.Clamp01(1 - (float)(age - .3) / .18f);
-        stamp.rectTransform.localScale = Vector3.one * scale;
-        // 最後のノーツのあとなので、ノーツを隠す心配はない。ゲートは画面のほぼ全体を囲み、上に置く場所が無いため、
-        // 画面のまん中より少し上(高さの 62%)に出す。
-        float y = view.pixelRect.y + view.pixelHeight * .62f;
-        // 撮影の道具などで画面のカメラの UI に切り替えられても同じ位置になるよう、カメラを渡す。
-        Camera uiCamera = stampCanvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : stampCanvas.worldCamera;
-        if (RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            (RectTransform)stampCanvas.transform, new Vector2(view.pixelRect.x + view.pixelRect.width * .5f, y),
-            uiCamera, out var local))
-            stamp.rectTransform.anchoredPosition = local;
     }
 
     public static void SyncPause(NoteSpawner spawner, bool paused)
@@ -331,10 +272,8 @@ public sealed class DopamineFlourish : MonoBehaviour
             if (item.piece != null) item.piece.FlourishDriven = false;
         pieces.Clear();
         successful.Clear();
-        marks?.Hide();
         frames?.Hide();
         stageLight?.Hide();
-        if (stampCanvas != null) stampCanvas.enabled = false;
         if (source != null) source.Stop();
     }
 
@@ -348,12 +287,10 @@ public sealed class DopamineFlourish : MonoBehaviour
             spawner.OnNoteSpawned -= Track;
             spawner.OnChartReset -= StopPresentation;
         }
-        marks?.Dispose();
         frames?.Dispose();
         stageLight?.Dispose();
         UISkinKit.SafeDestroy(chord);
         UISkinKit.SafeDestroy(source);
-        if (stampCanvas != null) UISkinKit.SafeDestroy(stampCanvas.gameObject);
         if (current == this) current = null;
     }
 }

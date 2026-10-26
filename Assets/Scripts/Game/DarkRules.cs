@@ -14,7 +14,6 @@ public sealed class DarkPointData
 
 public static class DarkRules
 {
-    public const string RuleCaption = "二本の剣が懐中電灯。照らして切ろう";
     // 投影する台に合わせる調整箇所。透明度ではなく、元の色に掛ける明るさ。
     public const float NoteMinimum = .15f;
     public const float StageMinimum = .14f;

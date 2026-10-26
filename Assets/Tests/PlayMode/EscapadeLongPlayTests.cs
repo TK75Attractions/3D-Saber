@@ -10,23 +10,24 @@ using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 using Object = UnityEngine.Object;
 
-// 本編の選曲・読込・説明を通し、実際の SaberCutJudge で動いたロングを切る。
+// 本編のLを読み、実際のSaberCutJudgeで追跡・連続切断・曲末の残数確定を通す。
 public class EscapadeLongPlayTests
 {
     readonly Dictionary<FieldInfo, object> sessionValues = new Dictionary<FieldInfo, object>();
     GamePlayManager manager;
     GameObject saberObject;
-    float oldApproach;
-    bool hadApproach;
 
     [SetUp]
     public void SetUp()
     {
         sessionValues.Clear();
-        foreach (var field in typeof(GameSession).GetFields(BindingFlags.Public | BindingFlags.Static))
+        foreach (var field in typeof(GameSession).GetFields(
+            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static))
             if (!field.IsLiteral && !field.IsInitOnly) sessionValues[field] = field.GetValue(null);
-        hadApproach = PlayerPrefs.HasKey("noteApproachTime");
-        oldApproach = GameSession.NoteApproachTime;
+        // 実際の保存値を変更せず、譜面の5.0〜107.85秒を検査する。
+        GameSession.SetPlayerSettingsForTest(true);
+        GameSession.JudgmentOffsetMs = 0;
+        GameSession.NoteApproachTime = 1f;
     }
 
     [UnityTearDown]
@@ -41,14 +42,12 @@ public class EscapadeLongPlayTests
         if (SceneManager.GetActiveScene().name == "Game")
             yield return SceneManager.LoadSceneAsync("Title", LoadSceneMode.Single);
         foreach (var pair in sessionValues) pair.Key.SetValue(null, pair.Value);
-        if (hadApproach) GameSession.NoteApproachTime = oldApproach;
-        else GameSession.ResetNoteApproachTime();
         manager = null;
         saberObject = null;
     }
 
     [UnityTest]
-    public IEnumerator LLoadsMovesDuringLingerAndCanBeCutAtItsCurrentPosition()
+    public IEnumerator LLoadsMovesCanBeCutByEitherHandAndKeepsRemainderUntilSongEnd()
     {
         Assert.IsTrue(File.Exists(Path.Combine(Application.streamingAssetsPath,
             "Songs", "escapade", "chart_l.json")), "先に gen_long.py --write");
@@ -62,7 +61,6 @@ public class EscapadeLongPlayTests
         GameSession.SelectedDifficulty = "L";
         GameSession.IsCalibrationMode = false;
         GameSession.TutorialPending = false;
-        GameSession.NoteApproachTime = 1f;
         yield return SceneManager.LoadSceneAsync("Game", LoadSceneMode.Single);
         manager = Object.FindFirstObjectByType<GamePlayManager>();
         Assert.NotNull(manager);
@@ -71,7 +69,6 @@ public class EscapadeLongPlayTests
             || manager.noteSpawner == null || manager.noteSpawner.CurrentChart == null
             || ScreenTransition.IsBusy) && Time.realtimeSinceStartupAsDouble < deadline)
             yield return null;
-
         Assert.NotNull(manager.songPlayer);
         Assert.IsTrue(manager.songPlayer.IsScheduled);
         Assert.IsFalse(ScreenTransition.IsBusy);
@@ -79,12 +76,13 @@ public class EscapadeLongPlayTests
         Assert.NotNull(spawner);
         Assert.IsTrue(spawner.HasSlideNotes);
         Assert.IsFalse(spawner.HasFall);
-        var label = GameObject.Find("FirstHandHint")?.GetComponentInChildren<TMPro.TextMeshProUGUI>();
-        Assert.NotNull(label);
-        Assert.AreEqual(LongSlideRules.RuleCaption, label.text);
-        Assert.AreEqual(RushESecretState.Cobalt.r, label.color.r, 1e-6f);
-        Assert.AreEqual(RushESecretState.Cobalt.g, label.color.g, 1e-6f);
-        Assert.AreEqual(RushESecretState.Cobalt.b, label.color.b, 1e-6f);
+        Assert.IsNull(GameObject.Find("FirstHandHint"), "裏譜面の始まりに文字を出さない");
+        var chart = spawner.CurrentChart;
+        Assert.AreEqual(250, chart.notes.Count, "本編の切り詰めでも追加ロングを落とさない");
+        var source = chart.notes.Single(n => n.slide);
+        Assert.AreSame(source, chart.notes[0]);
+        Assert.AreEqual(1000, source.count);
+        Assert.AreEqual("gold", source.color);
 
         foreach (var judge in Object.FindObjectsByType<SaberCutJudge>(FindObjectsSortMode.None))
             judge.enabled = false;
@@ -92,27 +90,39 @@ public class EscapadeLongPlayTests
         manager.enabled = false;
         manager.songPlayer.Stop();
 
-        // 本編で読み込んだデータとプレハブを使い、音声フレームの端数だけを取り除く。
-        var chart = spawner.CurrentChart;
+        // 読込済みの本編データ・プレハブを使い、曲時計だけを手動で進める。
         spawner.SetChart(chart);
-        var source = chart.notes.First();
+        spawner.JudgeLatencySeconds = 0;
+        spawner.ShouldDeferMiss = null;
+        spawner.HoldMiss = null;
+        manager.scoreManager.Reset();
+        manager.scoreManager.Bind(spawner);
         double hit = spawner.EffectiveTime(source);
-        double duration = source.lengthMs / 1000.0;
+        double end = hit + source.lengthMs / 1000.0;
+        Assert.AreEqual(5, hit, .0001);
+        Assert.AreEqual(107.85, end, .0001);
         spawner.Tick(hit - .5);
-        var target = spawner.LiveNotes.First(n => Math.Abs(n.HitTime - hit) < .001
-            && Vector2.Distance(n.LandingPosition, new Vector2(source.x, source.y) * chart.coordScale) < .001f);
-        var start = target.LandingPosition;
+        var target = spawner.LiveNotes.Single(n => n.HasSlidePath);
         uint version = target.SpawnVersion;
+        var start = target.LandingPosition;
+        Assert.AreEqual("1000", target.countLabel.text);
+        Assert.AreEqual(SaberHand.Any, target.RequiredHand);
+        Assert.IsTrue(target.IsGold);
+        Assert.AreEqual(spawner.notePrefab.transform.localScale.z, target.transform.localScale.z, 1e-5f);
         spawner.Tick(hit);
         Assert.AreEqual(start, target.LandingPosition);
-        spawner.Tick(hit + duration * .5);
-        Assert.AreEqual(version, target.SpawnVersion);
+
+        // 複数の折れ点を実際の生成物で確認する。数字・着地枠も追従する。
+        foreach (var point in source.slidePath.Take(8))
+        {
+            spawner.Tick(hit + point.ms / 1000.0);
+            var expected = new Vector2(point.x, point.y) * chart.coordScale;
+            Assert.Less(Vector2.Distance(expected, target.LandingPosition), .001f);
+            Assert.Less(Vector2.Distance(expected, target.transform.position), .001f);
+            Assert.Less(Vector2.Distance(expected, target.TimingCue.GhostRoot.transform.position), .001f);
+            Assert.AreEqual(target.transform.position + LongNoteCountStyle.WorldOffset, target.countLabel.transform.position);
+        }
         Assert.Greater(Vector2.Distance(start, target.LandingPosition), .1f);
-        Assert.AreEqual(target.LandingPosition, (Vector2)target.transform.position);
-        Assert.AreEqual(target.LandingPosition, (Vector2)target.TimingCue.GhostRoot.transform.position);
-        Assert.AreEqual(target.transform.position + LongNoteCountStyle.WorldOffset, target.countLabel.transform.position);
-        Assert.IsTrue(target.IsJudgeable);
-        Assert.IsFalse(target.IsMissed);
 
         saberObject = new GameObject("LongSlideSaber");
         var tracker = saberObject.AddComponent<SaberTracker>();
@@ -120,13 +130,20 @@ public class EscapadeLongPlayTests
         var testJudge = saberObject.AddComponent<SaberCutJudge>();
         testJudge.autonomous = false;
         testJudge.saber = tracker;
-        testJudge.hand = source.x < 0 ? SaberHand.Left : SaberHand.Right;
-        // 点の軌跡で実際の接触判定を通す。Cut を直接呼んで位置検査を飛ばさない。
-        for (int cut = 0; cut < target.RequiredCutCount; cut++)
+        const int cuts = 24;
+        double firstCut = hit + source.slidePath[7].ms / 1000.0 + .2;
+        for (int cut = 0; cut < cuts; cut++)
         {
-            double now = hit + duration * (.5 + .5 * cut / (target.RequiredCutCount - 1));
+            double now = firstCut + (end - .2 - firstCut) * cut / (cuts - 1);
             spawner.RefreshJudgmentWindows(now);
             spawner.Tick(now);
+            Assert.AreEqual(version, target.SpawnVersion);
+            Assert.IsTrue(target.IsJudgeable);
+            Assert.IsFalse(target.IsMissed);
+            // 接触試験はこの1本を対象にする。混合元との離隔はEditModeで線分全体を検査する。
+            foreach (var other in spawner.LiveNotes)
+                if (other != target) other.IsJudgeable = false;
+            testJudge.hand = cut % 2 == 0 ? SaberHand.Left : SaberHand.Right;
             Vector3 center = target.transform.position;
             tracker.ResetTo(center - Vector3.up * 2);
             for (int step = 1; step <= 8; step++)
@@ -134,32 +151,44 @@ public class EscapadeLongPlayTests
                 tracker.Tick(center + Vector3.up * (-2 + step * .5f), .025f);
                 testJudge.RunJudge(now);
             }
-            Assert.AreEqual(cut + 1, target.CutsAchieved, "動いた位置で1振り1カット");
+            Assert.AreEqual(cut + 1, target.CutsAchieved, "左右どちらでも現在位置で1振り1カット");
+            Assert.AreEqual(testJudge.hand, target.LastCutterHand);
+            Assert.AreEqual((1000 - cut - 1).ToString(), target.countLabel.text);
+            yield return null;
         }
-        Assert.IsTrue(target.IsCut);
-        Assert.IsFalse(target.IsMissed);
 
-        // 同じプールへ戻した後、滑り指定の無いロングへ状態を持ち越さない。
-        var plain = new ChartData { bpm = 120 };
-        plain.notes.Add(new NoteData
+        spawner.Tick(end - .001);
+        Assert.AreEqual(version, target.SpawnVersion);
+        Assert.IsTrue(target.gameObject.activeInHierarchy);
+        Assert.IsTrue(target.IsJudgeable);
+        Assert.IsFalse(target.IsMissed);
+        Assert.AreEqual("976", target.countLabel.text);
+        int misses = manager.scoreManager.MissCount;
+        spawner.Tick(end + .001);
+        Assert.IsTrue(target.IsMissed);
+        Assert.IsFalse(target.IsJudgeable);
+        Assert.AreEqual(misses + 976, manager.scoreManager.MissCount);
+        spawner.Tick(end + .002);
+        Assert.AreEqual(misses + 976, manager.scoreManager.MissCount);
+
+        // 同じプールの1000回ロングへ戻しても経路・位置・薄いZを持ち越さない。
+        var plain = JsonUtility.FromJson<NoteData>(JsonUtility.ToJson(source));
+        plain.slide = false;
+        plain.slidePath.Clear();
+        spawner.SetChart(new ChartData
         {
-            time = 10000, x = -.7f, y = 0, color = "gold",
-            type = "long", count = 4, lengthMs = 900,
-            slide = true, slideToX = -1.7f, slideToY = .4f
+            bpm = chart.bpm, coordScale = chart.coordScale, offsetMs = chart.offsetMs,
+            notes = new List<NoteData> { plain }
         });
-        spawner.SetChart(plain);
-        double plainHit = spawner.EffectiveTime(plain.notes[0]);
-        spawner.Tick(plainHit);
-        var moving = spawner.LiveNotes.Single();
-        spawner.Tick(plainHit + .4);
-        plain.notes[0].slide = false;
-        spawner.SetChart(plain);
-        spawner.Tick(plainHit);
+        spawner.Tick(hit);
         var reused = spawner.LiveNotes.Single();
-        Assert.AreSame(moving, reused);
+        Assert.AreSame(target, reused);
         Assert.IsFalse(reused.HasSlide);
-        Assert.AreEqual(new Vector2(-.7f, 0), reused.LandingPosition);
-        spawner.Tick(plainHit + .5);
-        Assert.AreEqual(new Vector2(-.7f, 0), (Vector2)reused.transform.position);
+        Assert.IsFalse(reused.HasSlidePath);
+        Assert.AreEqual(start, reused.LandingPosition);
+        spawner.Tick(hit + 2);
+        Assert.AreEqual(start, (Vector2)reused.transform.position);
+        Assert.Greater(reused.transform.localScale.z, spawner.notePrefab.transform.localScale.z);
+        Assert.AreEqual("1000", reused.countLabel.text);
     }
 }

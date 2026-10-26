@@ -65,7 +65,7 @@ public class NoteTimingCue : MonoBehaviour
 
     private CuttableNote note;
     // 風のノーツだけ着地点へ固定し、通常ノーツの編集プレビューは従来どおり追う。
-    private Vector2 LandingXY => note != null && note.HasWind
+    private Vector2 LandingXY => note != null && (note.HasWind || note.HasOvertake)
         ? note.LandingPosition : (Vector2)transform.position;
     private NoteVisuals visuals;
     private Color baseColor = Color.white;
@@ -93,7 +93,7 @@ public class NoteTimingCue : MonoBehaviour
         visuals = GetComponent<NoteVisuals>();
         if (visuals != null)
         {
-            baseColor = visuals.baseColor;
+            baseColor = visuals.DisplayColor;
         }
         else
         {
@@ -166,6 +166,7 @@ public class NoteTimingCue : MonoBehaviour
     public void Tick(double dt, float approachTime, float earlyWindow, float lateWindow)
     {
         if (!initialized) return;
+        if (visuals != null) baseColor = visuals.DisplayColor;
         if (note != null && note.HidesCues)
         {
             HideForPool();

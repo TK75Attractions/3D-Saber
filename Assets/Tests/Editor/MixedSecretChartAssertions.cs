@@ -47,6 +47,11 @@ public static class MixedSecretChartAssertions
             var restored = JsonUtility.FromJson<NoteData>(JsonUtility.ToJson(b));
             restored.time = a.time; // floatでの110ms補正の丸めだけを許す。
             if (mode == "v") restored.vanish = a.vanish;
+            if (mode == "c")
+            {
+                restored.reveal = a.reveal;
+                restored.revealArrow = a.revealArrow;
+            }
             if (mode == "w")
             {
                 restored.windX = a.windX;
@@ -54,10 +59,20 @@ public static class MixedSecretChartAssertions
                 restored.windSpin = a.windSpin;
                 restored.windSway = a.windSway;
             }
+            if (mode == "p")
+            {
+                restored.approachScale = a.approachScale;
+                restored.laneX = a.laneX;
+            }
             if (mode == "f")
             {
-                restored.x = a.x;
-                restored.y = a.y;
+                // 通常ノーツの x/y は補正せず、そのまま混合元と比較する。
+                if (b.fall)
+                {
+                    restored.x = a.x;
+                    restored.y = a.y;
+                }
+                restored.fall = a.fall;
             }
             if (mode == "x")
             {

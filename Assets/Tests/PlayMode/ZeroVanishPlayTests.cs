@@ -78,12 +78,7 @@ public class ZeroVanishPlayTests
         Assert.IsTrue(spawner.HasVanishNotes, "V の譜面は見え方の変わるノーツを持つ");
         Assert.IsFalse(spawner.HasScroll);
 
-        var hint = GameObject.Find("FirstHandHint");
-        Assert.NotNull(hint, "カウントインの下にルール字幕を出す");
-        var label = hint.GetComponentInChildren<TMPro.TextMeshProUGUI>();
-        Assert.NotNull(label);
-        Assert.AreEqual(VanishRules.RuleCaption, label.text);
-        Assert.AreEqual(RushESecretState.Phantom.g, label.color.g, 1e-6f);
+        Assert.IsNull(GameObject.Find("FirstHandHint"), "裏譜面は始まりに決まりの一言も手の予告も出さない");
 
         double now = manager.songPlayer.SongTime;
         var source = chart.notes.First(n => n.vanish == "fade" && spawner.EffectiveTime(n) - spawner.approachTime > now + .1);

@@ -16,6 +16,8 @@ public class PerfectSliceFlashPathTests
     [SetUp]
     public void Setup()
     {
+        // ほかのテストが残した破片(EditMode では時間が進まず光ったまま)を数えないよう、先に片づける。
+        DestroyPieces();
         var root = new GameObject("SliceFlashPathTest"); objects.Add(root);
         var prefab = GameObject.CreatePrimitive(PrimitiveType.Cube); objects.Add(prefab);
         prefab.name = "SliceFlashNotePrefab";
@@ -36,10 +38,15 @@ public class PerfectSliceFlashPathTests
     [TearDown]
     public void Cleanup()
     {
-        foreach (var piece in Object.FindObjectsByType<SlicePieceDecay>(FindObjectsInactive.Include, FindObjectsSortMode.None))
-            if (piece != null) Object.DestroyImmediate(piece.gameObject);
+        DestroyPieces();
         foreach (var item in objects) if (item != null) Object.DestroyImmediate(item);
         objects.Clear(); notes.Clear();
+    }
+
+    static void DestroyPieces()
+    {
+        foreach (var piece in Object.FindObjectsByType<SlicePieceDecay>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            if (piece != null) Object.DestroyImmediate(piece.gameObject);
     }
 
     void SpawnAndCut(double error)

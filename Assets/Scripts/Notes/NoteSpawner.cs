@@ -84,9 +84,10 @@ public partial class NoteSpawner : MonoBehaviour
     public NoteFragmentPool FragmentPool => fragmentPool;
     bool Pooling => reuseNotes && Application.isPlaying;
 
+    // revealは見た目の構造を変えない。通常ノーツと同じキーで借り、出現ごとに色と矢印を戻す。
     PoolKey Key(NoteData data) => (PickPrefab(data.color), CutDirectionHelper.Parse(data.direction),
         Mathf.Clamp(data.count,1,8), SaberHandHelper.FromColor(data.color),
-        string.Equals(data.color,"gold",System.StringComparison.OrdinalIgnoreCase), DisplaySettings.ProjectorMode, (buildTimingCues, HasFall));
+        string.Equals(data.color,"gold",System.StringComparison.OrdinalIgnoreCase), DisplaySettings.ProjectorMode, (buildTimingCues, UsesFall(data)));
     void EnsurePool()
     {
         if(idleRoot == null) {
@@ -117,7 +118,7 @@ public partial class NoteSpawner : MonoBehaviour
             var key=Key(data); if(key.Item1 == null) continue;
             if(!groups.TryGetValue(key,out var group)) group=(data,new List<(double,int)>());
             double linger=data.LingerSeconds(secondsPerLongCut);
-            group.events.Add((SpawnTimeFor(EffectiveTime(data)),1));
+            group.events.Add((SpawnTimeFor(data),1));
             group.events.Add((EffectiveTime(data)+judgeWindow+linger+missGrace+despawnAfterMissSeconds+.05,-1));
             groups[key]=group;
         }
@@ -214,6 +215,7 @@ public partial class NoteSpawner : MonoBehaviour
             if (n != null) Recycle(n);
         }
         liveNotes.Clear();
+        ResetOvertakeSchedule();
         Prewarm();
     }
 
@@ -309,8 +311,10 @@ public partial class NoteSpawner : MonoBehaviour
             }
             // 判定前の飛び越しでも、揺れの位相と静止境界は今の曲時計へ進める。Zの更新順は保つ。
             if (note.HasWind) ApplyWindSway(note, songTime, note.transform.position.z);
-            if (HasFall) UpdateFallNote(note, note.HitTime - songTime);
+            if (note.IsFall) UpdateFallNote(note, note.HitTime - songTime);
             UpdateSlideNote(note, songTime);
+            // コマ飛びでも、刃の判定より先に共通経路へ戻す。
+            UpdateOvertakeNote(note, songTime);
             UpdateJudgmentWindow(note, note.HitTime - JudgeClock(songTime), LateWindowFor(note));
         }
     }
@@ -348,6 +352,7 @@ public partial class NoteSpawner : MonoBehaviour
     private void SpawnDue(double songTime)
     {
         if (chart == null) return;
+        if (SpawnOvertakeDue(songTime)) return;
         while (nextIndex < chart.notes.Count)
         {
             NoteData nd = chart.notes[nextIndex];
@@ -407,6 +412,7 @@ public partial class NoteSpawner : MonoBehaviour
         }
         note.ResetForSpawn(); note.IsPooled=Pooling; note.FragmentPool=Pooling?fragmentPool:null;
         note.ConfigureWind(nd, landing);
+        note.ConfigureOvertake(nd, UsesOvertake(nd), overtakeApproach);
         // 消える(V)は出た瞬間の残り時間から見え方を決める(sudden は見えない状態で出る)。合図の見えにくさは矢印・枠・数字より先に決める。
         note.Vanish = VanishRules.Parse(nd.vanish);
         double vanishRemaining = warming ? approachTime : EffectiveTime(nd) - songTime;
@@ -435,6 +441,7 @@ public partial class NoteSpawner : MonoBehaviour
         var visuals=go.GetComponent<NoteVisuals>() ?? go.AddComponent<NoteVisuals>();
         visuals.Initialize(); visuals.ResetForReuse();
         note.Visuals = visuals;
+        note.ConfigureReveal(nd, vanishRemaining);
         visuals.SetVeil(note.Vanish != VanishMode.None ? VanishRules.BodyVeil(note.Vanish, vanishRemaining) : nd.veil);
         // 使い回しの組は手ごとに分かれているが、縁は出現のたびに付け外しする(ステージをまたいでも残さない)。
         visuals.SetContrastOutline(outlineLeftNotes && note.RequiredHand == SaberHand.Left);
@@ -456,7 +463,9 @@ public partial class NoteSpawner : MonoBehaviour
             float virtualCount = secondsPerLongCut > 0.0001f
                 ? 1f + LingerSecondsFor(note) / secondsPerLongCut
                 : note.RequiredCutCount;
-            float zFactor = Mathf.Clamp(virtualCount, 1f, longMaxVisualZScale);
+            // Pと滑るロングは長い本体で後続を隠さない。滞留時間・床・回数の数字は保つ。
+            float zFactor = note.HasOvertake || note.HasSlide
+                ? 1f : Mathf.Clamp(virtualCount, 1f, longMaxVisualZScale);
             go.transform.localScale = new Vector3(sc.x, sc.y, sc.z * zFactor);
             if(note.countLabel == null) BuildCountLabel(go.transform,note);
             note.countLabel.text=note.RequiredCutCount.ToString();
@@ -478,8 +487,12 @@ public partial class NoteSpawner : MonoBehaviour
         // 本体・矢印・ひびを描画用の子へまとめる。着地枠と床の印は別の着地点に残す。
         note.EnsureWindVisual();
 
-        if (HasFall) PrepareFallNote(note, warming ? approachTime : note.HitTime - songTime);
+        if (UsesFall(nd)) PrepareFallNote(note, warming ? approachTime : note.HitTime - songTime);
+        // 通知・同時線を作る前に、遅れて生成されたコマも正しい位置へ置く。
+        UpdateOvertakeNote(note, warming ? SpawnTimeFor(nd) : songTime);
 
+        // 新しく作った数字・矢印にも、通知より前に同じ残り時間の表示を当てる。
+        note.TickReveal(vanishRemaining);
         if(warming) { Recycle(note); return; }
 
         // 同時押しガイド: 同時刻のノーツを明るい白線で結び、本体も少し光らせる。
@@ -654,8 +667,9 @@ public partial class NoteSpawner : MonoBehaviour
                 ApplyWindPose(note, songTime >= note.HitTime - WindRules.CalmSeconds ? 0 : dt);
             }
             note.transform.position = new Vector3(p.x, p.y, z);
-            if (HasFall) UpdateFallNote(note, dt);
+            if (note.IsFall) UpdateFallNote(note, dt);
             UpdateSlideNote(note, songTime);
+            UpdateOvertakeNote(note, songTime);
             // 緩急の譜面では、割れた破片の勢いも今の流れる速さに合わせる(止まっている間は前へ流さない)。
             if (scrollMap != null && note.RequiredCutCount <= 1)
                 note.FlowNoteVelocity = new Vector3(0f, 0f, -speed * (float)scrollMap.SpeedAt(songTime - totalOffsetSeconds));
@@ -670,7 +684,11 @@ public partial class NoteSpawner : MonoBehaviour
             if (note.Vanish != VanishMode.None && !note.IsCut) ApplyVanish(note, dt);
             if (note.HasWind) ApplyWindSway(note, songTime, z);
 
-            if (!note.IsCut) note.SetDarkBrightness(BrightnessFor?.Invoke(note) ?? 1f);
+            if (!note.IsCut)
+            {
+                note.TickReveal(dt);
+                note.SetDarkBrightness(BrightnessFor?.Invoke(note) ?? 1f);
+            }
 
             // タイミングキュー(着地ゴースト)の駆動。見た目なので曲の時計のまま。
             if (note.TimingCue != null)
@@ -688,9 +706,13 @@ public partial class NoteSpawner : MonoBehaviour
             }
 
             // 判定窓を過ぎた瞬間に Miss を1回だけ発火するが、ノーツは消さずに後ろへ流し続ける。
-            if (!note.IsMissed && judgeDt < -(lateWindow + missGrace)
-                && !(ShouldDeferMiss?.Invoke(note, songTime) ?? false)
-                && !HoldsMiss(note, judgeDt, lateWindow))
+            // 経路付きは経路の終端で残りを確定する。カメラ遅延はJudgeClockで従来どおり扱う。
+            bool expired = note.HasSlidePath
+                ? judgeDt < -lateWindow
+                : judgeDt < -(lateWindow + missGrace)
+                    && !(ShouldDeferMiss?.Invoke(note, songTime) ?? false)
+                    && !HoldsMiss(note, judgeDt, lateWindow);
+            if (!note.IsMissed && expired)
             {
                 note.MarkMiss();
                 OnNoteMissed?.Invoke(note);
@@ -719,6 +741,8 @@ public partial class NoteSpawner : MonoBehaviour
     public float LateWindowFor(CuttableNote note)
     {
         if (note == null) return judgeWindow;
+        // 経路付きロングは明示した終端まで。旧ロング・旧slideToには従来の猶予を残す。
+        if (note.HasSlidePath) return LingerSecondsFor(note);
         return judgeWindow + LingerSecondsFor(note);
     }
 
@@ -732,7 +756,7 @@ public partial class NoteSpawner : MonoBehaviour
     // テスト用に公開（純粋関数）。
     public float ComputeNoteZ(CuttableNote note, double dt, float speed)
     {
-        if (HasFall) return judgeZ;
+        if (note != null && note.IsFall) return judgeZ;
         if (note == null || note.RequiredCutCount <= 1 || dt >= 0)
         {
             return judgeZ + speed * (float)dt;

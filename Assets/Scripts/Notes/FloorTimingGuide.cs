@@ -109,15 +109,19 @@ public sealed class FloorTimingGuide : MonoBehaviour
             if (note.HasWind) position.x = note.LandingPosition.x;
             // 出てすぐ薄く入る。緩急の譜面では見かけの残り時間で数える(遅い区間は approachTime より前から見えている)。
             double seen = remaining > 0 ? spawner.VisualRemaining(note.HitTime, songTime) : remaining;
-            float alpha = Mathf.Clamp01((float)((spawner.approachTime - seen) / .12));
+            float alpha = note.HasOvertake
+                ? Mathf.Clamp01((float)((OvertakeRules.Duration(
+                    note.OvertakeApproach, note.OvertakeScale) - remaining) / .12))
+                : Mathf.Clamp01((float)((spawner.approachTime - seen) / .12));
             if (remaining < 0) alpha *= Mathf.Clamp01(1 + (float)remaining / .13f);
             if (alpha <= 0) continue;
             var visuals = note.GetComponent<NoteVisuals>();
-            Color tint = visuals != null ? visuals.baseColor : UISkinPalette.NoteFlick;
+            Color tint = visuals != null ? visuals.DisplayColor : UISkinPalette.NoteFlick;
             tint = Color.Lerp(tint, Color.white, .22f); tint.a = alpha;
             Color ink = Ink; ink.a = alpha;
             float size = Mathf.Clamp(Mathf.Abs(note.transform.lossyScale.x), .65f, 1.05f);
-            if (note.RequiredDirection == CutDirection.None)
+            // 矢印を伏せている間も、位置と到着時刻は中立の横線で見せる。
+            if (note.RequiredDirection == CutDirection.None || note.HidesRevealArrow)
             {
                 Bar(position.x, position.z, size * 1.22f, .24f, ink, .006f);
                 Bar(position.x, position.z, size * 1.12f, .12f, tint, .009f);
@@ -189,6 +193,7 @@ public sealed class FloorTimingGuide : MonoBehaviour
     {
         float x = note.HasWind ? note.LandingPosition.x : note.transform.position.x;
         Color tint = note.IsGold ? UISkinPalette.NoteGold : note.RequiredHand == SaberHand.Left ? UISkinPalette.LogoBlue : UISkinPalette.LogoRed;
+        if (note.RevealSeconds > 0f && note.Visuals != null) tint = note.Visuals.DisplayColor;
         tint.a = .85f;
         // 上段は残り時間、下段は残り切断回数。高さを占有せず判定線の手前に収める。
         const float width = 1.1f;
