@@ -110,7 +110,14 @@ public static class ChartLoader
         {
             shot.x = Clamp(shot.x, -2.4f, 2.4f);
             shot.y = Clamp(shot.y, -1.5f, 1.5f);
+            shot.kind = BullRules.ShotKind(shot.kind);
+            shot.fromX = Clamp(shot.fromX, -3.4f, 3.4f);
+            shot.fromY = Clamp(shot.fromY, -1.8f, 1.8f);
+            shot.lead = Finite(shot.lead) ? Math.Max(0f, shot.lead) : 0f;
+            shot.angle = Finite(shot.angle) ? shot.angle : 0f;
             shot.follow = string.IsNullOrWhiteSpace(shot.follow) ? "" : shot.follow.Trim().ToLowerInvariant();
+            // 追う弾は曲がらないふつうの玉だけ。
+            if (shot.kind != "" || shot.lead > 0) shot.follow = "";
         }
         return bull;
     }

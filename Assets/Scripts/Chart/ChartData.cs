@@ -67,6 +67,12 @@ public class BullShotData
     public float x;
     public float y;
     public string follow = "";
+    // 空はふつう、big は大玉、spear は槍、split は分裂。
+    public string kind = "";
+    // lead ミリ秒前から横へ寄り、届く0.25秒前に止まる。0なら今までどおり。
+    public float fromX, fromY, lead;
+    // 槍の向き(度)。0は横、90は縦。
+    public float angle;
 }
 
 // 流れる速さの変わり目。time(ミリ秒、ノーツと同じく offsetMs を足して使う)から、speed 倍(0 で止まる)へ

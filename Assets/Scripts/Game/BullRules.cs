@@ -12,7 +12,8 @@ public static class BullRules
 {
     public const double StunSeconds = 2.0, GraceSeconds = .4;
     public const float ChargeRadius = .4f, ShotRadius = .2f, BladeRadius = .05f;
-    public const double ShotWindow = .1;
+    public const double ShotWindow = .1, CurveSettle = .25;
+    public const float BigRadius = .45f, SpearHalf = .55f, SpearRadius = .06f;
     // 突進は画面の外(±ChargeSpan)から出て、反対の外へ抜ける。
     public const float ChargeSpan = 3.4f;
 
@@ -36,6 +37,60 @@ public static class BullRules
     public static bool Touches(Vector2 center, float radius, BladeSample blade)
         => blade.Valid && DistanceToSegment(center, blade.A, blade.B) <= radius + BladeRadius;
 
+    static double Cross(Vector2 a, Vector2 b) => (double)a.x * b.y - (double)a.y * b.x;
+
+    // 交差は0。平行・重なり・長さ0の線分も、端から相手までの距離で扱う。
+    public static float SegmentDistance(Vector2 a, Vector2 b, Vector2 c, Vector2 d)
+    {
+        Vector2 ab = b - a, cd = d - c;
+        double den = Cross(ab, cd);
+        if (Math.Abs(den) > 1e-12)
+        {
+            double t = Cross(c - a, cd) / den, u = Cross(c - a, ab) / den;
+            if (t >= 0 && t <= 1 && u >= 0 && u <= 1) return 0;
+        }
+        return Mathf.Min(Mathf.Min(DistanceToSegment(a, c, d), DistanceToSegment(b, c, d)),
+            Mathf.Min(DistanceToSegment(c, a, b), DistanceToSegment(d, a, b)));
+    }
+
+    public static string ShotKind(string value)
+    {
+        string kind = value == null ? "" : value.Trim().ToLowerInvariant();
+        return kind == "big" || kind == "spear" || kind == "split" ? kind : "";
+    }
+
+    public static float Radius(BullShot shot) => shot.Kind == "big" ? BigRadius : ShotRadius;
+
+    public static void SpearEnds(BullShot shot, out Vector2 a, out Vector2 b)
+    {
+        float angle = (shot.Angle % 360f) * Mathf.Deg2Rad;
+        Vector2 half = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * SpearHalf;
+        a = shot.Position - half;
+        b = shot.Position + half;
+    }
+
+    public static bool Touches(BullShot shot, BladeSample blade)
+    {
+        if (!blade.Valid) return false;
+        if (shot.Kind != "spear") return Touches(shot.Position, Radius(shot), blade);
+        SpearEnds(shot, out var a, out var b);
+        return SegmentDistance(a, b, blade.A, blade.B) <= SpearRadius + BladeRadius;
+    }
+
+    // 短すぎる lead でも当たりの窓へ動きを持ち込まない。0は旧譜面の直進。
+    public static double CurveLead(BullShot shot) => shot.Lead > 0 ? Math.Max(CurveSettle, shot.Lead) : 0;
+
+    public static Vector2 ShotPosition(BullShot shot, double songTime)
+    {
+        if (shot.Lead <= 0) return shot.Position;
+        double remaining = shot.Time - songTime;
+        if (remaining <= CurveSettle) return shot.Position;
+        double lead = CurveLead(shot);
+        if (remaining >= lead) return shot.From;
+        float k = (float)((lead - remaining) / (lead - CurveSettle));
+        return Vector2.Lerp(shot.From, shot.Position, 1f - (1f - k) * (1f - k));
+    }
+
     // 追う弾の向かう先(画面の中に収める)。
     public static Vector2 ClampFollow(Vector2 p) => new Vector2(Mathf.Clamp(p.x, -2.2f, 2.2f), Mathf.Clamp(p.y, -1.3f, 1.3f));
 }
@@ -58,10 +113,20 @@ public sealed class BullCharge
 
 public sealed class BullShot
 {
-    public double Time;
-    public Vector2 Position;
+    public double Time, Lead;
+    public Vector2 Position, From;
+    public string Kind;
+    public float Angle;
     public SaberHand Follow;
     public bool Placed, Spent;
+    public BullSplitGroup Split;
+}
+
+// 同じ時刻・出発点の子を束ねる。見た目の代表と割れる時刻を共有する。
+public sealed class BullSplitGroup
+{
+    public BullShot Leader;
+    public double Lead;
 }
 
 public enum BullEventKind { Stun, Recover }
@@ -92,12 +157,32 @@ public sealed class BullSession
                 Start = c.time / 1000.0 + offsetSeconds, End = c.endTime / 1000.0 + offsetSeconds,
                 WarnFrom = (c.time - c.warn) / 1000.0 + offsetSeconds, Y = c.y, Dir = c.dir < 0 ? -1 : 1
             });
+        var groups = new Dictionary<(double, float, float), BullSplitGroup>();
         foreach (var s in chart.shots)
-            Shots.Add(new BullShot
+        {
+            var shot = new BullShot
             {
                 Time = s.time / 1000.0 + offsetSeconds, Position = new Vector2(s.x, s.y),
-                Follow = AimDodgeRules.FollowOf(s.follow)
-            });
+                From = new Vector2(s.fromX, s.fromY), Lead = s.lead / 1000.0,
+                Kind = BullRules.ShotKind(s.kind), Angle = s.angle
+            };
+            shot.Follow = shot.Kind == "" && shot.Lead <= 0 ? AimDodgeRules.FollowOf(s.follow) : SaberHand.Any;
+            if (shot.Kind == "split")
+            {
+                var key = (shot.Time, shot.From.x, shot.From.y);
+                if (!groups.TryGetValue(key, out var group))
+                {
+                    group = new BullSplitGroup { Leader = shot };
+                    groups.Add(key, group);
+                }
+                group.Lead = Math.Max(group.Lead, shot.Lead);
+                shot.Split = group;
+            }
+            Shots.Add(shot);
+        }
+        // 同じ組に違う lead が書かれていても、全員が一緒に割れる。
+        foreach (var shot in Shots)
+            if (shot.Split != null) shot.Lead = shot.Split.Lead;
     }
 
     static int Index(SaberHand hand) => hand == SaberHand.Left ? 1 : 0;
@@ -139,17 +224,17 @@ public sealed class BullSession
         foreach (var shot in Shots)
         {
             if (shot.Spent || Math.Abs(judgeTime - shot.Time) > BullRules.ShotWindow) continue;
-            if (Check(shot.Position, BullRules.ShotRadius, judgeTime, red, blue, events)) shot.Spent = true;
+            if (Check(shot.Position, BullRules.Radius(shot), judgeTime, red, blue, events, shot)) shot.Spent = true;
         }
     }
 
-    bool Check(Vector2 center, float radius, double time, BladeSample red, BladeSample blue, List<BullEvent> events)
+    bool Check(Vector2 center, float radius, double time, BladeSample red, BladeSample blue, List<BullEvent> events, BullShot shot = null)
     {
         bool hit = false;
         for (int i = 0; i < 2; i++)
         {
             var blade = i == 1 ? blue : red;
-            if (!BullRules.Touches(center, radius, blade)) continue;
+            if (!(shot != null ? BullRules.Touches(shot, blade) : BullRules.Touches(center, radius, blade))) continue;
             hit = true;
             if (time < stunnedUntil[i] + BullRules.GraceSeconds) continue;
             stunnedUntil[i] = time + BullRules.StunSeconds;

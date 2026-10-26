@@ -29,12 +29,16 @@ public sealed class BullfightMode : MonoBehaviour
     Material material;
     MaterialPropertyBlock block;
     AudioSource audioSource;
-    AudioClip stunClip, recoverClip;
+    AudioClip stunClip, recoverClip, splitClip;
+    // 大玉は弾と同じ橙の仲間で濃く(赤ノーツと見分けるため、赤には寄せない)。
+    static readonly Color BigColor = new Color(1f, .4f, .06f);
+    readonly HashSet<BullSplitGroup> splitBursts = new HashSet<BullSplitGroup>();
+    public int SplitBurstCount { get; private set; }
     double lastJudgeTime = double.NegativeInfinity;
     bool ended;
 
     sealed class ChargeView { public BullCharge charge; public Transform root, band, bull, trail; public MeshRenderer bandR, glowR, coreR, hornR, trailR; public MeshRenderer[] chevrons; }
-    sealed class ShotView { public BullShot shot; public Transform body, marker; public MeshRenderer glowR, coreR, rimR, markerR; public bool burst; }
+    sealed class ShotView { public BullShot shot; public Transform body, marker; public MeshRenderer glowR, coreR, rimR, markerR; public MeshRenderer[] papers; public bool burst; }
     sealed class StunView { public Transform root; public Transform[] stars; public MeshRenderer[] starR, dotR; }
     sealed class Fx { public Transform t; public MeshRenderer r; public float age, life, from, to; public Color color; }
     readonly List<ChargeView> chargeViews = new List<ChargeView>();
@@ -258,16 +262,38 @@ public sealed class BullfightMode : MonoBehaviour
         var v = new ShotView { shot = shot };
         v.body = new GameObject("Shot").transform;
         v.body.SetParent(transform, false);
-        // 形で「危ない」と分かるよう、トゲのある玉(白い棘・暗い芯)を橙に染めて回す。着地点の輪とも見分けられる。
-        v.body.localScale = Vector3.one * BullRules.ShotRadius * 1.4f;
-        v.glowR = Renderer(v.body, "Glow", AimMeshes.Glow(), QueueShot);
-        v.glowR.transform.localScale = Vector3.one * 1.8f;
-        v.rimR = Renderer(v.body, "Spike", AimMeshes.Spike(), QueueShot + 1);
-        v.coreR = Renderer(v.body, "Core", AimMeshes.Disc(), QueueShot + 2);
-        v.coreR.transform.localScale = Vector3.one * .3f;
+        if (shot.Kind == "spear")
+        {
+            // バンデリージャ: 明るい柄、先端、片側の端に赤黄の飾り紙。向きは固定する。
+            v.body.localRotation = Quaternion.Euler(0, 0, shot.Angle % 360f);
+            // 投影でも細い柄を見失わないよう、柄に沿った細長い橙の光を下に敷く。柄の太さは当たりと同じ。
+            v.glowR = Renderer(v.body, "Glow", AimMeshes.Glow(), QueueShot);
+            v.glowR.transform.localScale = new Vector3(BullRules.SpearHalf * 2.4f, BullRules.SpearRadius * 6, 1);
+            v.rimR = Renderer(v.body, "Shaft", BullMeshes.Rect(), QueueShot + 1);
+            v.rimR.transform.localScale = new Vector3(BullRules.SpearHalf * 2, BullRules.SpearRadius * 2, 1);
+            v.coreR = Renderer(v.body, "Point", BullMeshes.Pennant(), QueueShot + 2);
+            v.coreR.transform.localPosition = new Vector3(-BullRules.SpearHalf + .11f, 0, 0);
+            v.coreR.transform.localRotation = Quaternion.Euler(0, 0, -90);
+            v.coreR.transform.localScale = Vector3.one * .5f;
+            v.papers = new MeshRenderer[3];
+            for (int k = 0; k < v.papers.Length; k++)
+            {
+                v.papers[k] = Renderer(v.body, "Paper" + k, BullMeshes.Pennant(), QueueShot + 2);
+                v.papers[k].transform.localPosition = new Vector3(.36f - k * .14f, 0, 0);
+                v.papers[k].transform.localRotation = Quaternion.Euler(0, 0, k % 2 == 0 ? 0 : 180);
+            }
+        }
+        else
+        {
+            v.glowR = Renderer(v.body, "Glow", AimMeshes.Glow(), QueueShot);
+            v.glowR.transform.localScale = Vector3.one * 1.8f;
+            v.rimR = Renderer(v.body, "Spike", AimMeshes.Spike(), QueueShot + 1);
+            v.coreR = Renderer(v.body, "Core", AimMeshes.Disc(), QueueShot + 2);
+        }
         v.marker = new GameObject("ShotMarker").transform;
         v.marker.SetParent(transform, false);
-        v.markerR = Renderer(v.marker, "Ring", AimMeshes.Ring(.82f), QueueShot - 1);
+        v.markerR = Renderer(v.marker, shot.Kind == "spear" ? "Band" : "Ring",
+            shot.Kind == "spear" ? BullMeshes.Rect() : AimMeshes.Ring(.82f), QueueShot - 1);
         return v;
     }
 
@@ -278,12 +304,15 @@ public sealed class BullfightMode : MonoBehaviour
             var v = shotViews[i];
             var s = v.shot;
             double remaining = s.Time - songTime;
+            float radius = BullRules.Radius(s);
+            Color color = s.Kind == "big" ? BigColor : ShotColor;
             if (remaining < -.12)
             {
                 if (!v.burst)
                 {
                     v.burst = true;
-                    AddFx(AimMeshes.Ring(.75f), new Vector3(s.Position.x, s.Position.y, PlaneZ), .2f, .6f, .25f, ShotColor);
+                    AddFx(AimMeshes.Ring(.75f), new Vector3(s.Position.x, s.Position.y, PlaneZ),
+                        radius, radius * 3f, .25f, color);
                 }
                 Discard(v.body.gameObject);
                 Discard(v.marker.gameObject);
@@ -291,16 +320,52 @@ public sealed class BullfightMode : MonoBehaviour
                 continue;
             }
             float z = (float)(SpawnZ * System.Math.Max(0, remaining) / System.Math.Max(.05, approach));
-            v.body.position = new Vector3(s.Position.x, s.Position.y, z + PlaneZ);
-            v.rimR.transform.localRotation = Quaternion.Euler(0, 0, (float)songTime * 160f);
-            Tint(v.glowR, ShotColor, .5f);
-            Tint(v.rimR, ShotColor, 1f);
-            Tint(v.coreR, ShotCore, 1f);
-            // 着地点の輪: 見えた時から薄く、届く0.3秒前から当たりの大きさへ縮める。
+            Vector2 p = BullRules.ShotPosition(s, songTime);
+            v.body.position = new Vector3(p.x, p.y, z + PlaneZ);
+            bool splitting = s.Split != null && s.Lead > 0;
+            bool joined = splitting && remaining > BullRules.CurveLead(s);
+            // 子は同じ所に重ね、代表だけ描く。半透明の光が人数分重なって明るくなるのを防ぐ。
+            v.body.gameObject.SetActive(!joined || s.Split.Leader == s);
+            v.marker.gameObject.SetActive(!joined);
+            if (splitting && !joined && splitBursts.Add(s.Split))
+            {
+                SplitBurstCount++;
+                AddFx(AimMeshes.Ring(.78f), new Vector3(s.From.x, s.From.y, z + PlaneZ), .08f, .38f, .16f, ShotColor);
+                Play(ref splitClip, CreateSplitClip, .28f);
+            }
+            if (s.Kind == "spear")
+            {
+                Tint(v.glowR, ShotColor, .45f);
+                Tint(v.rimR, new Color(1f, .92f, .65f), 1);
+                Tint(v.coreR, Color.white, 1);
+                for (int k = 0; k < v.papers.Length; k++)
+                    Tint(v.papers[k], k % 2 == 0 ? BullColor : StarColor, 1);
+            }
+            else
+            {
+                v.body.localScale = Vector3.one * radius * 1.4f * (joined ? 1.6f : 1f);
+                v.rimR.transform.localRotation = Quaternion.Euler(0, 0, (float)songTime * (s.Kind == "big" ? 55f : 160f));
+                float pulse = joined ? .5f + .5f * Mathf.Sin((float)songTime * 40f) : 0;
+                v.coreR.transform.localScale = Vector3.one * (joined ? Mathf.Lerp(.28f, .48f, pulse) : .3f);
+                Tint(v.glowR, color, .5f);
+                Tint(v.rimR, color, 1f);
+                Tint(v.coreR, joined ? Color.Lerp(ShotCore, ShotColor, pulse * .7f) : ShotCore, 1f);
+            }
             float tighten = Mathf.Clamp01((float)(1 - remaining / MarkerTighten));
             v.marker.position = new Vector3(s.Position.x, s.Position.y, PlaneZ);
-            v.marker.localScale = Vector3.one * Mathf.Lerp(BullRules.ShotRadius * 2.2f, BullRules.ShotRadius * 1.1f, tighten);
-            Tint(v.markerR, ShotColor, Mathf.Lerp(.2f, .65f, tighten));
+            if (s.Kind == "spear")
+            {
+                // 当たりの線分と同じ向きの帯。長さは変えず、最後の0.3秒で濃くする。
+                v.marker.localRotation = Quaternion.Euler(0, 0, s.Angle % 360f);
+                v.marker.localScale = new Vector3((BullRules.SpearHalf + BullRules.SpearRadius) * 2,
+                    BullRules.SpearRadius * 2, 1);
+                Tint(v.markerR, color, Mathf.Lerp(.08f, .65f, tighten));
+            }
+            else
+            {
+                v.marker.localScale = Vector3.one * Mathf.Lerp(radius * 2.2f, radius * 1.1f, tighten);
+                Tint(v.markerR, color, Mathf.Lerp(.2f, .65f, tighten));
+            }
         }
     }
 
@@ -415,6 +480,20 @@ public sealed class BullfightMode : MonoBehaviour
         effects.Add(new Fx { t = holder, r = r, life = life, from = from, to = to, color = color });
     }
 
+    // 分裂の音: 小さく短い「ポン」。組ごとに1回だけ鳴らす。
+    static AudioClip CreateSplitClip()
+    {
+        const int rate = 44100;
+        var data = new float[Mathf.CeilToInt(rate * .10f)];
+        for (int i = 0; i < data.Length; i++)
+        {
+            float t = i / (float)rate;
+            data[i] = .5f * Mathf.Sin(2 * Mathf.PI * (380f * t - 700f * t * t))
+                * Mathf.Exp(-t * 50f) * Mathf.Clamp01(t / .003f) * Mathf.Clamp01((.10f - t) / .01f);
+        }
+        return ProceduralSfx.Clip("BullSplit", data, rate);
+    }
+
     // しびれた音: 低い「ゴン」と、星が回る高い音のさざ波(0.45 秒)。
     static AudioClip CreateStunClip()
     {
@@ -461,6 +540,7 @@ public sealed class BullfightMode : MonoBehaviour
         if (material != null) Discard(material);
         if (stunClip != null) Discard(stunClip);
         if (recoverClip != null) Discard(recoverClip);
+        if (splitClip != null) Discard(splitClip);
     }
 }
 
@@ -529,6 +609,13 @@ public static class BullMeshes
         c.Add(head); c.Add(head); c.Add(tail); c.Add(tail);
         t.Add(s); t.Add(s + 2); t.Add(s + 1); t.Add(s + 1); t.Add(s + 2); t.Add(s + 3);
         t.Add(s); t.Add(s + 1); t.Add(s + 2); t.Add(s + 1); t.Add(s + 3); t.Add(s + 2);
+    });
+
+    // 槍の飾り紙と先端。柄に沿う辺から小さな三角を下げる。
+    public static Mesh Pennant() => Cached("Pennant", (v, c, t) =>
+    {
+        Tri(v, c, t, new Vector3(-.10f, 0), new Vector3(.10f, 0), new Vector3(0, -.22f),
+            Color.white, Color.white, Color.white);
     });
 
     // 5つの角の星(しびれの印)。
