@@ -6,11 +6,21 @@ using UnityEngine.UI;
 public class ComboBonusPresentation : MonoBehaviour
 {
     public const float LandingTime = .42f;
-    public float Duration => maximum == 0 ? 1.8f : 3.3f + Tier(maximum) * .15f;
+    public float Duration => maximum == 0 ? 1.8f : 3.3f + tier * .15f;
+    // プレイ中のコンボ表示の色は、続いた数の節目(10・30・100・300)で変える。
     public static int Tier(int combo) => combo >= 300 ? 4 : combo >= 100 ? 3 : combo >= 30 ? 2 : combo >= 10 ? 1 : 0;
-    public static Color Accent(int combo)
+    // 曲終わりのこの演出の段は、最大コンボ ÷ 満コンボ の割合で決める(2026-10-26 ユーザー「ノーツ数じゃなくて割合で」)。
+    // 曲ごとのノーツ数の差で、短い曲だけ上の段に届かない、ということが起きないように。9割で虹、6割で金、3割で黄、1割で水色。
+    public static int RatioTier(int combo, int possible)
     {
-        switch (Tier(combo))
+        if (combo <= 0) return 0;
+        float ratio = possible > 0 ? Mathf.Min(1f, combo / (float)possible) : 1f;
+        return ratio >= .9f ? 4 : ratio >= .6f ? 3 : ratio >= .3f ? 2 : ratio >= .1f ? 1 : 0;
+    }
+    public static Color Accent(int combo) => TierAccent(Tier(combo));
+    public static Color TierAccent(int tier)
+    {
+        switch (tier)
         {
             case 4: return new Color(1f, .47f, .91f);
             case 3: return new Color(1f, .76f, .16f);
@@ -19,15 +29,16 @@ public class ComboBonusPresentation : MonoBehaviour
             default: return new Color(.76f, .85f, 1f);
         }
     }
-    public static VertexGradient Gradient(int combo)
+    public static VertexGradient Gradient(int combo) => TierGradient(Tier(combo));
+    public static VertexGradient TierGradient(int tier)
     {
-        if (Tier(combo) == 4)
+        if (tier == 4)
             return new VertexGradient(new Color(1f, .94f, .38f), new Color(.35f, 1f, .96f),
                 new Color(.40f, .38f, 1f), new Color(1f, .30f, .74f));
-        return new VertexGradient(Color.white, Color.white, Accent(combo), Accent(combo));
+        return new VertexGradient(Color.white, Color.white, TierAccent(tier), TierAccent(tier));
     }
 
-    int maximum, possible, bonus;
+    int maximum, possible, bonus, tier;
     RectTransform lettering;
     CanvasGroup letteringAlpha;
     ComboBonusBurstGraphic burst;
@@ -52,6 +63,7 @@ public class ComboBonusPresentation : MonoBehaviour
         maximum = Mathf.Max(0, maxCombo);
         possible = Mathf.Max(maximum, possibleCombo);
         bonus = bonusPoints >= 0 ? bonusPoints : maximum > 0 ? ScoreManager.ComboScore : 0;
+        tier = RatioTier(maximum, possible);
         var canvas = gameObject.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
         canvas.sortingOrder = 800;
@@ -61,7 +73,7 @@ public class ComboBonusPresentation : MonoBehaviour
         scaler.matchWidthOrHeight = .5f;
 
         scrim = Image("Dim", transform, new Vector2(3000, 2200), null, new Color(.012f, .018f, .055f, .86f));
-        glow = Image("Halo", transform, new Vector2(1700, 1100), UISkinKit.SoftGlow(), Accent(maximum));
+        glow = Image("Halo", transform, new Vector2(1700, 1100), UISkinKit.SoftGlow(), TierAccent(tier));
         var rays = new GameObject("MedalBurst", typeof(RectTransform), typeof(CanvasRenderer));
         rays.transform.SetParent(transform, false);
         rays.GetComponent<RectTransform>().sizeDelta = new Vector2(1920, 1080);
@@ -76,7 +88,7 @@ public class ComboBonusPresentation : MonoBehaviour
         letteringAlpha.blocksRaycasts = false;
         letteringAlpha.interactable = false;
 
-        float level = Tier(maximum);
+        float level = tier;
         PrizeText("Headline", "COMBO BONUS!", 88 + level * 9, 160, new Vector2(1500, 170));
         var font = UISkinKit.FontAsset("Oxanium-Bold");
         // コンボ点は 最大コンボ ÷ 満コンボ × 10000。
@@ -114,7 +126,7 @@ public class ComboBonusPresentation : MonoBehaviour
             layer.outlineColor = new Color32(10, 12, 29, 255);
         }
         text.enableVertexGradient = true;
-        text.colorGradient = Gradient(maximum);
+        text.colorGradient = TierGradient(tier);
     }
 
     static Image Image(string name, Transform parent, Vector2 size, Sprite sprite, Color color)
@@ -134,20 +146,20 @@ public class ComboBonusPresentation : MonoBehaviour
         bool low = DisplaySettings.ReducedEffects;
         float approach = Mathf.Clamp01(elapsed / LandingTime);
         float after = Mathf.Max(0, elapsed - LandingTime);
-        float scale = low ? 1f : Mathf.Lerp(1.85f + .06f * Tier(maximum), 1f, approach * approach);
+        float scale = low ? 1f : Mathf.Lerp(1.85f + .06f * tier, 1f, approach * approach);
         if (!low && elapsed >= LandingTime)
             scale = 1f + .11f * Mathf.Sin(Mathf.Clamp01(after / .24f) * Mathf.PI) * Mathf.Clamp01(1f - after / .24f);
         lettering.localScale = Vector3.one * scale;
         // 短い着地振動は文字だけに適用し、カメラを動かさない。
-        float shake = !low && maximum > 0 ? (3 + Tier(maximum) * 2) * Mathf.Clamp01(1f - after / .22f) : 0;
+        float shake = !low && maximum > 0 ? (3 + tier * 2) * Mathf.Clamp01(1f - after / .22f) : 0;
         lettering.anchoredPosition = elapsed < LandingTime ? Vector2.zero : new Vector2(0, Mathf.Sin(after * 75) * shake);
         letteringAlpha.alpha = Mathf.Clamp01(elapsed / .14f);
         scrim.color = new Color(.012f, .018f, .055f, Mathf.Lerp(0, .87f, (continueFromDim ? 1f : Mathf.Clamp01(elapsed / .18f))));
-        var tint = Accent(maximum);
+        var tint = TierAccent(tier);
         tint.a = (low ? .15f : .48f) * Mathf.Clamp01(elapsed / .2f);
         glow.color = tint;
         glow.rectTransform.localScale = Vector3.one * (low ? 1 : 1 + .05f * Mathf.Sin(after * 2));
-        burst.SetFrame(maximum, after, elapsed >= LandingTime, low);
+        burst.SetFrame(maximum, tier, after, elapsed >= LandingTime, low);
         if (!landed && elapsed >= LandingTime)
         {
             landed = true;

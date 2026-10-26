@@ -4,13 +4,14 @@ using UnityEngine.UI;
 // 放射光・衝撃波・メダルを一枚のUIメッシュで描く。粒ごとのオブジェクトは生成しない。
 public class ComboBonusBurstGraphic : MaskableGraphic
 {
-    int maximum;
+    int maximum, tier;
     float age;
     bool visible, reduced;
 
-    public void SetFrame(int combo, float elapsed, bool show, bool low)
+    // level は ComboBonusPresentation.RatioTier(最大コンボ ÷ 満コンボ の段)。コインの数・星・色が決まる。
+    public void SetFrame(int combo, int level, float elapsed, bool show, bool low)
     {
-        maximum = combo; age = elapsed; visible = show; reduced = low;
+        maximum = combo; tier = level; age = elapsed; visible = show; reduced = low;
         SetVerticesDirty();
     }
 
@@ -18,8 +19,7 @@ public class ComboBonusBurstGraphic : MaskableGraphic
     {
         mesh.Clear();
         if (!visible || maximum <= 0) return;
-        int tier = ComboBonusPresentation.Tier(maximum);
-        Color accent = ComboBonusPresentation.Accent(maximum);
+        Color accent = ComboBonusPresentation.TierAccent(tier);
         int rays = 14 + tier * 6;
         for (int i = 0; i < rays; i++)
         {

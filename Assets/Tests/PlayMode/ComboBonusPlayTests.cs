@@ -151,9 +151,10 @@ public class ComboBonusPlayTests
     [UnityTest]
     public IEnumerator PresentationTiersAndReducedEffectsRenderWithoutClipping()
     {
-        foreach (int combo in new[] { 0, 8, 20, 60, 120, 404, 9999 })
+        // 段は 最大コンボ ÷ 満コンボ の割合で決まる。各段(0〜4)と大きな数を一通り描く。
+        foreach (var (combo, possible) in new[] { (0, 300), (20, 300), (40, 300), (120, 300), (200, 300), (404, 404), (9999, 9999) })
         {
-            var view = ComboBonusPresentation.Create(combo);
+            var view = ComboBonusPresentation.Create(combo, false, possible);
             yield return null;
             view.Tick(1.25f);
             Canvas.ForceUpdateCanvases();
