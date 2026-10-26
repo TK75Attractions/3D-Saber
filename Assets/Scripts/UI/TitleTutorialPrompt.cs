@@ -15,8 +15,10 @@ public sealed class TitleTutorialPrompt : MonoBehaviour
     public const float ProceedDelaySeconds = .3f;
     public const float InputDelaySeconds = .5f;
     public bool CanAnswer => IsOpen && !Answered && Time.unscaledTime - openedAt >= InputDelaySeconds;
-    public static readonly Vector3 YesPosition = new Vector3(-2.4f, -.25f, 0f);
-    public static readonly Vector3 NoPosition = new Vector3(2.4f, -.25f, 0f);
+    // 2026-10-27 ユーザー「はい と いいえ の間をもっともっと空けて」: ±2.4 → ±6.0(すき間が約3倍)。
+    // タイトルのカメラ(z=-10・縦の画角60°)で z=0 の画面の端は約±10.3。剣が届く画面の中央91%(約±9.3)の内側に収める。
+    public static readonly Vector3 YesPosition = new Vector3(-6.0f, -.25f, 0f);
+    public static readonly Vector3 NoPosition = new Vector3(6.0f, -.25f, 0f);
     public static readonly Color NoColor = new Color(.55f, .62f, .75f);
 
     public bool IsOpen { get; private set; }          // 問いかけが見えて、答えを受け付けている

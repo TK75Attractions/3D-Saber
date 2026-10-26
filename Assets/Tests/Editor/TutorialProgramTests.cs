@@ -525,6 +525,11 @@ public class TutorialProgramTests
         Assert.AreEqual(TitlePresentationMotion.DepartureDuration, TitleTutorialPrompt.RevealDelaySeconds, .001f);
         Assert.Less(TitleTutorialPrompt.YesPosition.x, 0f, "はい は画面の左");
         Assert.Greater(TitleTutorialPrompt.NoPosition.x, 0f, "いいえ は画面の右");
+        // 2026-10-27: 間を大きく空ける(中心どうし 12)。どちらも剣が届く画面の中央91%に収まる(z=0 で約±9.3)。
+        Assert.GreaterOrEqual(TitleTutorialPrompt.NoPosition.x - TitleTutorialPrompt.YesPosition.x, 12f - .001f);
+        float reach = .91f * 10f * Mathf.Tan(30f * Mathf.Deg2Rad) * 16f / 9f;
+        Assert.Less(Mathf.Abs(TitleTutorialPrompt.YesPosition.x) + .6f, reach);
+        Assert.Less(Mathf.Abs(TitleTutorialPrompt.NoPosition.x) + .6f, reach);
         Assert.AreEqual("Game", TitleSceneSkin.TutorialSceneName);
     }
 
