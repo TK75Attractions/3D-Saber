@@ -115,6 +115,9 @@ public static class ChartLoader
             shot.fromY = Clamp(shot.fromY, -1.8f, 1.8f);
             shot.lead = Finite(shot.lead) ? Math.Max(0f, shot.lead) : 0f;
             shot.angle = Finite(shot.angle) ? shot.angle : 0f;
+            shot.stay = Finite(shot.stay) ? Clamp(shot.stay, 0f, 2000f) : 700f;
+            shot.blast = Finite(shot.blast) ? Clamp(shot.blast, .3f, 1.4f) : .9f;
+            shot.amp = Finite(shot.amp) ? Clamp(shot.amp, 0f, 1.2f) : .6f;
             shot.follow = string.IsNullOrWhiteSpace(shot.follow) ? "" : shot.follow.Trim().ToLowerInvariant();
             // 追う弾は曲がらないふつうの玉だけ。
             if (shot.kind != "" || shot.lead > 0) shot.follow = "";

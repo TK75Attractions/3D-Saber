@@ -29,7 +29,8 @@ public sealed class BullfightMode : MonoBehaviour
     Material material;
     MaterialPropertyBlock block;
     AudioSource audioSource;
-    AudioClip stunClip, recoverClip, splitClip;
+    AudioClip stunClip, recoverClip, splitClip, bombClip;
+    static readonly Color MineColor = new Color(.8f, .45f, 1f), WaveColor = new Color(.35f, 1f, .65f);
     // 大玉は弾と同じ橙の仲間で濃く(赤ノーツと見分けるため、赤には寄せない)。
     static readonly Color BigColor = new Color(1f, .4f, .06f);
     readonly HashSet<BullSplitGroup> splitBursts = new HashSet<BullSplitGroup>();
@@ -38,7 +39,7 @@ public sealed class BullfightMode : MonoBehaviour
     bool ended;
 
     sealed class ChargeView { public BullCharge charge; public Transform root, band, bull, trail; public MeshRenderer bandR, glowR, coreR, hornR, trailR; public MeshRenderer[] chevrons; }
-    sealed class ShotView { public BullShot shot; public Transform body, marker; public MeshRenderer glowR, coreR, rimR, markerR; public MeshRenderer[] papers; public bool burst; }
+    sealed class ShotView { public BullShot shot; public Transform body, marker; public MeshRenderer glowR, coreR, rimR, markerR, timerR, blastR, fuseR; public MeshRenderer[] papers, tail; public bool burst; }
     sealed class StunView { public Transform root; public Transform[] stars; public MeshRenderer[] starR, dotR; }
     sealed class Fx { public Transform t; public MeshRenderer r; public float age, life, from, to; public Color color; }
     readonly List<ChargeView> chargeViews = new List<ChargeView>();
@@ -287,13 +288,30 @@ public sealed class BullfightMode : MonoBehaviour
         {
             v.glowR = Renderer(v.body, "Glow", AimMeshes.Glow(), QueueShot);
             v.glowR.transform.localScale = Vector3.one * 1.8f;
-            v.rimR = Renderer(v.body, "Spike", AimMeshes.Spike(), QueueShot + 1);
+            v.rimR = Renderer(v.body, shot.Kind == "mine" ? "MineTeeth" : shot.Kind == "bomb" ? "BombShell" : "Spike",
+                shot.Kind == "mine" ? BullMeshes.Star() : shot.Kind == "bomb" ? AimMeshes.Ring(.75f) : AimMeshes.Spike(), QueueShot + 1);
             v.coreR = Renderer(v.body, "Core", AimMeshes.Disc(), QueueShot + 2);
+            if (shot.Kind == "bomb")
+            {
+                v.fuseR = Renderer(v.body, "Fuse", BullMeshes.Pennant(), QueueShot + 2);
+                v.fuseR.transform.localPosition = Vector3.up;
+                v.fuseR.transform.localRotation = Quaternion.Euler(0, 0, 180);
+            }
+            if (shot.Kind == "wave")
+            {
+                v.tail = new MeshRenderer[6];
+                for (int i = 0; i < v.tail.Length; i++)
+                    v.tail[i] = Renderer(v.body, "WaveTail" + i, AimMeshes.Disc(), QueueShot - 1);
+            }
         }
         v.marker = new GameObject("ShotMarker").transform;
         v.marker.SetParent(transform, false);
-        v.markerR = Renderer(v.marker, shot.Kind == "spear" ? "Band" : "Ring",
-            shot.Kind == "spear" ? BullMeshes.Rect() : AimMeshes.Ring(.82f), QueueShot - 1);
+        v.markerR = Renderer(v.marker, shot.Kind == "spear" ? "Band" : shot.Kind == "bomb" ? "BombWarning" : "Ring",
+            shot.Kind == "spear" ? BullMeshes.Rect() : AimMeshes.Ring(shot.Kind == "bomb" ? .97f : .82f), QueueShot - 1);
+        if (shot.Kind == "mine")
+            v.timerR = Renderer(v.marker, "MineTimer", AimMeshes.Ring(.93f), QueueShot);
+        if (shot.Kind == "bomb")
+            v.blastR = Renderer(v.marker, "BombBlast", AimMeshes.Ring(.88f), QueueShot + 1);
         return v;
     }
 
@@ -303,6 +321,16 @@ public sealed class BullfightMode : MonoBehaviour
         {
             var v = shotViews[i];
             var s = v.shot;
+            if (s.Kind == "mine" || s.Kind == "bomb" || s.Kind == "wave")
+            {
+                if (!UpdateSpecialShot(v, songTime, approach))
+                {
+                    Discard(v.body.gameObject);
+                    Discard(v.marker.gameObject);
+                    shotViews.RemoveAt(i);
+                }
+                continue;
+            }
             double remaining = s.Time - songTime;
             float radius = BullRules.Radius(s);
             Color color = s.Kind == "big" ? BigColor : ShotColor;
@@ -367,6 +395,77 @@ public sealed class BullfightMode : MonoBehaviour
                 Tint(v.markerR, color, Mathf.Lerp(.2f, .65f, tighten));
             }
         }
+    }
+
+    // 地雷・爆弾・うねりの見た目。判定はSessionがjudgeTimeで済ませる。
+    bool UpdateSpecialShot(ShotView v, double songTime, double approach)
+    {
+        var s = v.shot;
+        double remaining = s.Time - songTime;
+        Color color = s.Kind == "mine" ? MineColor : s.Kind == "wave" ? WaveColor : ShotColor;
+        if (songTime > BullRules.HitEnd(s) + .02 || (s.Spent && s.Kind != "bomb"))
+        {
+            if (s.Kind != "bomb")
+                AddFx(AimMeshes.Ring(.8f), new Vector3(s.Position.x, s.Position.y, PlaneZ),
+                    .18f, .4f, .2f, color);
+            return false;
+        }
+        Vector2 p = BullRules.ShotPosition(s, songTime);
+        float z = (float)(SpawnZ * System.Math.Max(0, remaining) / System.Math.Max(.05, approach));
+        v.body.position = new Vector3(p.x, p.y, z + PlaneZ);
+        v.marker.position = new Vector3(s.Position.x, s.Position.y, PlaneZ);
+        v.marker.localScale = Vector3.one;
+        float pulse = s.Kind == "mine" && remaining <= 0 ? 1 + .10f * Mathf.Sin((float)songTime * 18f) : 1;
+        v.body.localScale = Vector3.one * BullRules.ShotRadius * 1.4f * pulse;
+        v.coreR.transform.localScale = Vector3.one * (s.Kind == "bomb" ? .72f : .3f);
+        Tint(v.glowR, color, .3f);
+        Tint(v.rimR, color, 1);
+        Tint(v.coreR, ShotCore, 1);
+        if (s.Kind == "bomb")
+        {
+            // 最大範囲を最初から薄い細輪で示す。破裂は着地点の輪だけ。
+            v.markerR.transform.localScale = Vector3.one * s.Blast;
+            Tint(v.markerR, color, .25f);
+            bool arrived = remaining <= 0;
+            v.body.gameObject.SetActive(!arrived);
+            Tint(v.fuseR, StarColor, 1);
+            if (arrived && !v.burst)
+            {
+                v.burst = true;
+                Play(ref bombClip, CreateBombClip, .22f);
+            }
+            float k = Mathf.Clamp01((float)(-remaining / BullRules.BombExpand));
+            v.blastR.transform.localScale = Vector3.one * BullRules.Radius(s, songTime);
+            Tint(v.blastR, color, arrived ? Mathf.Lerp(.65f, .18f, k) : 0);
+        }
+        else
+        {
+            float tighten = Mathf.Clamp01((float)(1 - remaining / MarkerTighten));
+            v.markerR.transform.localScale = Vector3.one * Mathf.Lerp(.44f, .22f, tighten);
+            Tint(v.markerR, color, Mathf.Lerp(.25f, .6f, tighten));
+            if (s.Kind == "mine")
+            {
+                // 外輪が当たり半径へ縮む。0msの地雷も割り算をしない。
+                float left = s.Stay > 0 ? Mathf.Clamp01((float)((BullRules.HitEnd(s) - songTime) / s.Stay)) : 0;
+                v.timerR.transform.localScale = Vector3.one * (.22f + .4f * left);
+                Tint(v.timerR, color, remaining <= 0 ? .75f : 0);
+            }
+            else
+            {
+                v.rimR.transform.localRotation = Quaternion.Euler(0, 0, (float)songTime * 160f);
+                for (int i = 0; i < v.tail.Length; i++)
+                {
+                    // 過去0.15秒分の位置に短い尾を置く。着地0.25秒前には尾も消す。
+                    double past = songTime - (i + 1) * .025;
+                    Vector2 q = BullRules.ShotPosition(s, past);
+                    float tailZ = (float)(SpawnZ * System.Math.Max(0, s.Time - past) / System.Math.Max(.05, approach));
+                    v.tail[i].transform.position = new Vector3(q.x, q.y, tailZ + PlaneZ);
+                    v.tail[i].transform.localScale = Vector3.one * (.55f - i * .07f);
+                    Tint(v.tail[i], color, remaining > BullRules.CurveSettle ? .35f - i * .045f : 0);
+                }
+            }
+        }
+        return true;
     }
 
     // ---- しびれの星と残り時間 ----
@@ -480,6 +579,20 @@ public sealed class BullfightMode : MonoBehaviour
         effects.Add(new Fx { t = holder, r = r, life = life, from = from, to = to, color = color });
     }
 
+    // 爆弾は低く小さな「ボン」。画面全体の光は足さない。
+    static AudioClip CreateBombClip()
+    {
+        const int rate = 44100;
+        var data = new float[Mathf.CeilToInt(rate * .18f)];
+        for (int i = 0; i < data.Length; i++)
+        {
+            float t = i / (float)rate;
+            data[i] = .45f * Mathf.Sin(2 * Mathf.PI * (140f * t - 180f * t * t))
+                * Mathf.Exp(-t * 25f) * Mathf.Clamp01(t / .004f) * Mathf.Clamp01((.18f - t) / .02f);
+        }
+        return ProceduralSfx.Clip("BullBomb", data, rate);
+    }
+
     // 分裂の音: 小さく短い「ポン」。組ごとに1回だけ鳴らす。
     static AudioClip CreateSplitClip()
     {
@@ -541,6 +654,7 @@ public sealed class BullfightMode : MonoBehaviour
         if (stunClip != null) Discard(stunClip);
         if (recoverClip != null) Discard(recoverClip);
         if (splitClip != null) Discard(splitClip);
+        if (bombClip != null) Discard(bombClip);
     }
 }
 

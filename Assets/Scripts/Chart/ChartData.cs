@@ -67,8 +67,12 @@ public class BullShotData
     public float x;
     public float y;
     public string follow = "";
-    // 空はふつう、big は大玉、spear は槍、split は分裂。
+    // 空はふつう、big は大玉、spear は槍、split は分裂、mine は地雷、bomb は爆弾、wave はうねり。
     public string kind = "";
+    // 地雷の滞在時間(ミリ秒)、爆弾の最大半径、うねりの振幅。省略時は従来の弾にも無害な既定値。
+    public float stay = 700f;
+    public float blast = .9f;
+    public float amp = .6f;
     // lead ミリ秒前から横へ寄り、届く0.25秒前に止まる。0なら今までどおり。
     public float fromX, fromY, lead;
     // 槍の向き(度)。0は横、90は縦。

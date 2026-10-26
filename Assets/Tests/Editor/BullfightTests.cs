@@ -7,6 +7,106 @@ using UnityEngine;
 // 闘牛(アンダルシアの「T」、2026-10-26)。突進と弾に刃が触れた剣は2秒しびれて切れない。
 public class BullRulesTests
 {
+    [TestCase(2.899, false)]
+    [TestCase(2.95, true)]
+    [TestCase(3.0, true)]
+    [TestCase(3.5, true)]
+    [TestCase(3.701, false)]
+    public void MineHasAWindowBeforeArrivalAndStaysForSevenHundredMs(double time, bool hit)
+    {
+        var chart = new BullChartData();
+        chart.shots.Add(new BullShotData { time = 3000, kind = "mine" });
+        var session = new BullSession(chart, 0);
+        session.Tick(time, Vertical(0, 0), default, null);
+        Assert.AreEqual(hit ? 1 : 0, session.StunCount);
+        Assert.AreEqual(3.7, session.LastTime, 1e-6);
+    }
+
+    [Test]
+    public void MineIsConsumedOnceAndZeroStayEndsAtArrival()
+    {
+        var chart = new BullChartData();
+        chart.shots.Add(new BullShotData { time = 3000, kind = "mine", stay = 2000 });
+        var session = new BullSession(chart, .5);
+        session.Tick(3.5, Vertical(0, 0), default, null);
+        Assert.IsTrue(session.Shots[0].Spent);
+        session.Tick(4.0, default, Vertical(0, 0), null);
+        Assert.IsFalse(session.IsStunned(SaberHand.Left, 4));
+        Assert.AreEqual(1, session.StunCount);
+        Assert.AreEqual(5.5, session.LastTime, 1e-6);
+        chart.shots[0].stay = 0;
+        session = new BullSession(chart, 0);
+        session.Tick(3.001, Vertical(0, 0), default, null);
+        Assert.AreEqual(0, session.StunCount);
+    }
+
+    [Test]
+    public void BombExpandsOnlyAfterArrivalUsingTheJudgeClock()
+    {
+        var chart = new BullChartData();
+        chart.shots.Add(new BullShotData { time = 3000, kind = "bomb" });
+        var session = new BullSession(chart, 0);
+        var shot = session.Shots[0];
+        session.Tick(2.999, Vertical(0, 0), default, null);
+        Assert.AreEqual(0, session.StunCount);
+        Assert.IsFalse(BullRules.Touches(shot, Vertical(0, 0), 2.999));
+        Assert.AreEqual(.2f, BullRules.Radius(shot, 3), 1e-5);
+        Assert.AreEqual(.55f, BullRules.Radius(shot, 3.15), 1e-5);
+        Assert.AreEqual(.9f, BullRules.Radius(shot, 3.3), 1e-5);
+        Assert.IsTrue(BullRules.Touches(shot, Vertical(.59f, 0), 3.15));
+        Assert.IsFalse(BullRules.Touches(shot, Vertical(.61f, 0), 3.15));
+        Assert.IsFalse(BullRules.Touches(shot, Vertical(0, 0), 3.301));
+        session.Tick(3.15, Vertical(.59f, 0), default, null);
+        session.Tick(3.2, default, Vertical(0, 0), null);
+        Assert.AreEqual(1, session.StunCount);
+        Assert.IsTrue(shot.Spent);
+    }
+
+    [Test]
+    public void WaveMovesWithDefaultLeadAndSettlesBeforeTheWindow()
+    {
+        var s = new BullShot { Time = 3, Kind = "wave", Position = new Vector2(.4f, -.2f) };
+        Assert.Greater(Vector2.Distance(s.Position, BullRules.ShotPosition(s, 2.25)), .1f);
+        Assert.AreEqual(s.Position.y, BullRules.ShotPosition(s, 2.25).y, 1e-6);
+        foreach (double t in new[] { 2.75, 2.9, 3.0, 3.1 })
+            Assert.AreEqual(s.Position, BullRules.ShotPosition(s, t));
+        s.Angle = 90;
+        Assert.AreEqual(s.Position.x, BullRules.ShotPosition(s, 2.25).x, 1e-6);
+        s.Amp = 0;
+        Assert.AreEqual(s.Position, BullRules.ShotPosition(s, 2.25));
+        s.Lead = .1;
+        Assert.AreEqual(s.Position, BullRules.ShotPosition(s, 2.75));
+    }
+
+    [Test]
+    public void LoaderDefaultsAndClampsMineBombAndWaveFields()
+    {
+        var parsed = ChartLoader.Parse("{\"notes\":[],\"bull\":{\"shots\":[{\"time\":1000},"
+            + "{\"time\":2000,\"kind\":\" MINE \",\"stay\":-1,\"blast\":0,\"amp\":-1},"
+            + "{\"time\":3000,\"kind\":\" BOMB \",\"stay\":9000,\"blast\":9,\"amp\":9},"
+            + "{\"time\":4000,\"kind\":\" WAVE \"}]}}");
+        Assert.AreEqual(700, parsed.bull.shots[0].stay);
+        Assert.AreEqual(.9f, parsed.bull.shots[0].blast);
+        Assert.AreEqual(.6f, parsed.bull.shots[0].amp);
+        Assert.AreEqual("mine", parsed.bull.shots[1].kind);
+        Assert.AreEqual(0, parsed.bull.shots[1].stay);
+        Assert.AreEqual(.3f, parsed.bull.shots[1].blast);
+        Assert.AreEqual(0, parsed.bull.shots[1].amp);
+        Assert.AreEqual("bomb", parsed.bull.shots[2].kind);
+        Assert.AreEqual(2000, parsed.bull.shots[2].stay);
+        Assert.AreEqual(1.4f, parsed.bull.shots[2].blast);
+        Assert.AreEqual(1.2f, parsed.bull.shots[2].amp);
+        Assert.AreEqual("wave", parsed.bull.shots[3].kind);
+        var raw = new BullChartData();
+        raw.shots.Add(new BullShotData { stay = float.NaN, blast = float.PositiveInfinity, amp = float.NaN });
+        var normalize = typeof(ChartLoader).GetMethod("NormalizeBull",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+        var normalized = (BullChartData)normalize.Invoke(null, new object[] { raw });
+        Assert.AreEqual(700, normalized.shots[0].stay);
+        Assert.AreEqual(.9f, normalized.shots[0].blast);
+        Assert.AreEqual(.6f, normalized.shots[0].amp);
+    }
+
     [Test]
     public void SegmentDistanceHandlesCrossingParallelEndsAndPoints()
     {
@@ -371,6 +471,71 @@ public class BullfightModeTests
     }
 
     [Test]
+    public void MineTimerShrinksAndTheMineDisappearsInEditMode()
+    {
+        ReplaceShots(new BullShotData { time = 3000, kind = "mine" });
+        mode.Tick(2.2, 2.2);
+        var timer = mode.transform.Find("ShotMarker/MineTimer");
+        Assert.NotNull(timer);
+        Assert.IsFalse(timer.GetComponent<MeshRenderer>().enabled);
+        mode.Tick(3, 3);
+        Assert.IsTrue(timer.GetComponent<MeshRenderer>().enabled);
+        float start = timer.localScale.x;
+        mode.Tick(3.35, 3.35);
+        Assert.Less(timer.localScale.x, start);
+        Assert.AreEqual(.42f, timer.localScale.x, 1e-5);
+        mode.Tick(3.73, 3.73);
+        Assert.IsNull(mode.transform.Find("Shot"));
+        Assert.IsNull(mode.transform.Find("ShotMarker"));
+        Assert.NotNull(mode.transform.Find("BullFx"));
+    }
+
+    [Test]
+    public void BombShowsMaximumWarningBeforeItsExpandingRing()
+    {
+        ReplaceShots(new BullShotData { time = 3000, kind = "bomb", blast = 1.1f });
+        mode.Tick(2.1, 2.1);
+        var warning = mode.transform.Find("ShotMarker/BombWarning");
+        var blast = mode.transform.Find("ShotMarker/BombBlast");
+        Assert.NotNull(warning);
+        Assert.IsTrue(warning.GetComponent<MeshRenderer>().enabled);
+        Assert.AreEqual(1.1f, warning.localScale.x, 1e-5);
+        Assert.IsFalse(blast.GetComponent<MeshRenderer>().enabled);
+        mode.Tick(3, 3);
+        Assert.IsFalse(mode.transform.Find("Shot").gameObject.activeSelf);
+        Assert.IsTrue(blast.GetComponent<MeshRenderer>().enabled);
+        Assert.AreEqual(.2f, blast.localScale.x, 1e-5);
+        mode.Tick(3.15, 3.15);
+        Assert.AreEqual(.65f, blast.localScale.x, 1e-5);
+        Assert.AreEqual(1.1f, warning.localScale.x, 1e-5);
+    }
+
+    [Test]
+    public void SpecialShotCollisionUsesJudgeTimeEvenWhenThePictureHasArrived()
+    {
+        ReplaceShots(new BullShotData { time = 3000, kind = "bomb" });
+        mode.BladeOverride = hand => hand == SaberHand.Right
+            ? new BladeSample(new Vector2(.55f, -.1f), new Vector2(.55f, .1f))
+            : default(BladeSample);
+        mode.Tick(3.15, 2.99);
+        Assert.AreEqual(0, mode.StunCount);
+        mode.Tick(3.15, 3.15);
+        Assert.AreEqual(1, mode.StunCount);
+    }
+
+    [Test]
+    public void WaveHasALandingRingAndAShortTailThatSettles()
+    {
+        ReplaceShots(new BullShotData { time = 3000, kind = "wave" });
+        mode.Tick(2.25, 2.25);
+        Assert.IsTrue(mode.transform.Find("ShotMarker/Ring").GetComponent<MeshRenderer>().enabled);
+        var tail = mode.transform.Find("Shot/WaveTail0").GetComponent<MeshRenderer>();
+        Assert.IsTrue(tail.enabled);
+        mode.Tick(2.75, 2.75);
+        Assert.IsFalse(tail.enabled);
+    }
+
+    [Test]
     public void EndingThePlayClearsTheStun()
     {
         mode.BladeOverride = hand => new BladeSample(new Vector2(0, -1.3f), new Vector2(0, -.9f));
@@ -382,10 +547,12 @@ public class BullfightModeTests
     }
 }
 
-// アンダルシアの裏譜面 T。ノーツは Hard から突進の通る側と弾のまわりを抜いたもの。
+// アンダルシア T v1.25。拍96より前はNormal、以後はHardから安全なノーツを残す。
 // 譜面は C:\Users\shike\dev\tools\ChartAndalusiaBull\gen_bull.py --write で作る。
 public class AndalusiaBullChartTests
 {
+    const double BeatMs = 60000.0 / 173, SwitchMs = 96 * BeatMs, LateMs = 151 * BeatMs;
+
     static ChartData Read(string difficulty)
     {
         string path = Path.Combine(Application.streamingAssetsPath, "Songs", "Andalusia", "chart_" + difficulty + ".json");
@@ -394,70 +561,141 @@ public class AndalusiaBullChartTests
     }
 
     [Test]
-    public void TheChartHasMoreVariedLateShotsAndFewerFlicks()
+    public void NotesComeFromNormalThenHardAndStayWithinRemovalBudgets()
     {
         var bull = Read("t");
+        var normal = Read("normal");
         var hard = Read("hard");
-        Assert.AreEqual(9, bull.displayLevel);
-        Assert.That(bull.bull.charges.Count, Is.InRange(10, 20));
-        const double beatMs = 60000.0 / 173;
-        double latterFrom = 151 * beatMs;
-        var earlyShots = bull.bull.shots.Where(s => s.time < latterFrom).ToArray();
-        var lateShots = bull.bull.shots.Where(s => s.time >= latterFrom).ToArray();
-        var lateNotes = bull.notes.Where(n => n.time >= latterFrom).ToArray();
-        Assert.That(bull.bull.shots.Count, Is.InRange(66, 120), "後半は種類を増やした弾幕");
-        Assert.AreEqual(16, earlyShots.Length, "前半の弾は維持");
-        Assert.That(lateShots.Length, Is.InRange(50, 70));
-        Assert.Greater(lateShots.Length, earlyShots.Length);
-        Assert.GreaterOrEqual(lateNotes.Length, 88, "後半のノーツを抜きすぎない");
-        Assert.LessOrEqual(lateNotes.Count(n => n.type == "direction" && n.direction != "none"), 6);
-        Assert.IsTrue(lateShots.Any(s => s.kind == "big"));
-        Assert.IsTrue(lateShots.Any(s => s.kind == "" && s.lead > 0));
-        Assert.IsTrue(lateShots.Any(s => s.kind == "split"));
-        Assert.IsTrue(lateShots.Any(s => s.kind == "spear"));
-        foreach (var s in bull.bull.shots)
-        {
-            Assert.That(s.x, Is.InRange(-2.2f, 2.2f));
-            Assert.That(s.y, Is.InRange(-1.3f, 1.3f));
-            Assert.IsFalse(bull.bull.charges.Any(c => s.time >= c.time - 350 && s.time <= c.endTime + 350),
-                "弾の着地と突進を重ねない");
-        }
-        var introductions = new System.Func<BullShotData, bool>[]
-        {
-            s => s.kind == "big", s => s.kind == "" && s.lead > 0,
-            s => s.kind == "split", s => s.kind == "spear"
-        };
-        foreach (var kind in introductions)
-        {
-            var first = lateShots.First(kind);
-            Assert.IsFalse(bull.bull.shots.Any(s => System.Math.Abs(s.time - first.time) <= 3 * beatMs
-                && !(kind(s) && System.Math.Abs(s.time - first.time) < .1)), "初登場の前後3拍は空ける");
-        }
+        Assert.AreEqual(10, bull.displayLevel);
         foreach (var n in bull.notes)
         {
-            var original = hard.notes.First(h => h.time == n.time && h.x == n.x && h.y == n.y);
-            Assert.AreEqual(original.color, n.color, "色と金は変えない");
+            var source = n.time < SwitchMs ? normal : hard;
+            var original = source.notes.FirstOrDefault(h => h.time == n.time && h.x == n.x && h.y == n.y && h.color == n.color);
+            Assert.NotNull(original, n.time + "ms のノーツが元譜面にない");
             Assert.AreEqual(original.count, n.count);
             Assert.AreEqual(original.lengthMs, n.lengthMs);
-            if (n.time < latterFrom)
+            if (n.time < LateMs || !original.IsDirection)
             {
                 Assert.AreEqual(original.type, n.type);
                 Assert.AreEqual(original.direction, n.direction);
             }
-            if (n.time >= latterFrom && n.type == "direction" && n.direction != "none" && n.time < 293 * beatMs)
-            {
-                Assert.IsFalse(bull.bull.shots.Any(s => System.Math.Abs(s.time - n.time) <= 2 * beatMs));
-                Assert.IsFalse(bull.bull.charges.Any(c => n.time >= c.time - 2 * beatMs && n.time <= c.endTime + 2 * beatMs));
-            }
+            else
+                Assert.IsTrue((n.type == original.type && n.direction == original.direction)
+                    || (n.type == "tap" && n.direction == "none"));
         }
-        var hardKeys = new HashSet<string>(hard.notes.Select(n => n.time + "/" + n.x + "/" + n.y));
-        foreach (var n in bull.notes) Assert.IsTrue(hardKeys.Contains(n.time + "/" + n.x + "/" + n.y), "Hard にあるノーツだけ");
-        foreach (var c in bull.bull.charges)
+        Assert.GreaterOrEqual(bull.notes.Count(n => n.time < SwitchMs),
+            Mathf.CeilToInt(normal.notes.Count(n => n.time < SwitchMs) * .8f));
+        Assert.GreaterOrEqual(bull.notes.Count(n => n.time >= SwitchMs && n.time < LateMs),
+            Mathf.CeilToInt(hard.notes.Count(n => n.time >= SwitchMs && n.time < LateMs) * .7f));
+        Assert.GreaterOrEqual(bull.notes.Count(n => n.time < LateMs),
+            Mathf.CeilToInt(normal.notes.Count(n => n.time < LateMs) * .8f));
+        Assert.GreaterOrEqual(bull.notes.Count(n => n.time >= LateMs),
+            Mathf.CeilToInt(hard.notes.Count(n => n.time >= LateMs) * .7f));
+        foreach (var a in bull.notes.Where(n => n.time < SwitchMs))
+            Assert.IsFalse(bull.notes.Any(b => b.time >= SwitchMs && b.time - a.time <= 120
+                && (a.color == b.color || a.color == "gold" || b.color == "gold")), "境目の同色が120ms以内");
+        var flicks = bull.notes.Where(n => n.time >= LateMs && n.IsDirection).ToArray();
+        Assert.LessOrEqual(flicks.Length, 6);
+        var session = new BullSession(bull.bull, 0);
+        foreach (var n in flicks)
         {
-            Assert.That(System.Math.Abs(c.y), Is.GreaterThan(1f), "突進は上段か下段");
-            foreach (var n in bull.notes.Where(n => n.time >= c.time && n.time <= c.endTime))
-                Assert.IsTrue(c.y > 0 ? n.y <= -.25f : n.y >= .25f, n.time + "ms のノーツは突進の通らない側");
+            double t = n.TimeSeconds, margin = 2 * BeatMs / 1000;
+            Assert.IsFalse(session.Shots.Any(s => t >= BullRules.HitStart(s) - margin && t <= BullRules.HitEnd(s) + margin));
+            Assert.IsFalse(session.Charges.Any(c => t >= c.Start - margin && t <= c.End + margin));
         }
+        foreach (var c in bull.bull.charges)
+            foreach (var n in bull.notes.Where(n => n.time >= c.time - 300 && n.time <= c.endTime + 300))
+                Assert.IsTrue(c.y > 0 ? n.y <= -.25f : n.y >= .25f, "突進の通らない側に残す");
         Assert.AreSame(RushESecretState.AndalusiaBull, RushESecretState.ForDifficulty("T"));
+    }
+
+    [Test]
+    public void SevenKindsHaveQuietIntroductionsAndAvoidAllChargeWindows()
+    {
+        var bull = Read("t");
+        var shots = bull.bull.shots;
+        Assert.That(shots.Count, Is.LessThanOrEqualTo(200));
+        Assert.That(shots.Count(s => s.time < LateMs), Is.InRange(30, 40));
+        Assert.That(shots.Count(s => s.time >= LateMs), Is.InRange(90, 120));
+        CollectionAssert.AreEquivalent(new[] { "", "big", "spear", "split", "mine", "bomb", "wave" },
+            shots.Select(s => s.kind).Distinct().ToArray());
+        Assert.IsTrue(shots.Any(s => s.follow == "red"));
+        Assert.IsTrue(shots.Any(s => s.follow == "blue"));
+        var intros = new List<System.Func<BullShotData, bool>>();
+        foreach (string kind in new[] { "", "big", "spear", "split", "mine", "bomb", "wave" })
+        {
+            string k = kind;
+            intros.Add(s => s.kind == k);
+        }
+        intros.Add(s => s.kind == "" && s.lead > 0);
+        foreach (var predicate in intros)
+        {
+            var first = shots.First(predicate);
+            Assert.IsFalse(shots.Any(s => System.Math.Abs(s.time - first.time) <= 3 * BeatMs + .2
+                && !(predicate(s) && System.Math.Abs(s.time - first.time) < .1)), "初登場の前後3拍");
+        }
+        Assert.IsTrue(shots.Where(s => s.kind == "mine" || s.kind == "bomb" || s.kind == "wave")
+            .All(s => s.time >= LateMs));
+        var session = new BullSession(bull.bull, 0);
+        foreach (var s in session.Shots)
+        {
+            Assert.That(s.Position.x, Is.InRange(-2.2f, 2.2f));
+            Assert.That(s.Position.y, Is.InRange(-1.3f, 1.3f));
+            Assert.IsFalse(session.Charges.Any(c =>
+                BullRules.HitStart(s) <= c.End + .35 && BullRules.HitEnd(s) >= c.Start - .35),
+                "地雷の滞在・爆弾の広がりも突進と重ねない");
+        }
+        var beats = new[] { 24, 64, 96, 108, 132, 151, 175, 199, 217, 233, 249, 267, 275, 283 };
+        Assert.AreEqual(beats.Length, bull.bull.charges.Count);
+        for (int i = 0; i < beats.Length; i++)
+            Assert.AreEqual(beats[i] * BeatMs, bull.bull.charges[i].time, .1);
+    }
+
+    [Test]
+    public void EveryTimeIntervalLeavesSpaceForBothBladesEvenWithFollowers()
+    {
+        var session = new BullSession(Read("t").bull, 0);
+        var edges = session.Shots.SelectMany(s => new[] { BullRules.HitStart(s), BullRules.HitEnd(s) })
+            .Concat(session.Charges.SelectMany(c => new[] { c.Start, c.End })).Distinct().OrderBy(t => t).ToArray();
+        for (int i = 0; i < edges.Length; i++)
+        {
+            CheckSpan(session, edges[i], edges[i]);
+            if (i + 1 < edges.Length) CheckSpan(session, edges[i], edges[i + 1]);
+        }
+    }
+
+    static void CheckSpan(BullSession session, double lo, double hi)
+    {
+        bool Overlap(double start, double end) => lo == hi ? start <= lo && lo <= end : start < hi && end > lo;
+        var shots = session.Shots.Where(s => Overlap(BullRules.HitStart(s), BullRules.HitEnd(s))).ToArray();
+        var charges = session.Charges.Where(c => Overlap(c.Start, c.End)).ToArray();
+        Assert.LessOrEqual(shots.Length + charges.Length, 8);
+        int followers = shots.Count(s => s.Follow != SaberHand.Any);
+        var safe = new List<Vector2>();
+        // 長さ1.0の水平な刃。刃半径0.05に余白0.08を加えて検査する。
+        for (int ix = 0; ix < 12; ix++)
+        for (int iy = 0; iy < 9; iy++)
+        {
+            var p = new Vector2(-1.65f + ix * .3f, -1.2f + iy * .3f);
+            var left = p + Vector2.left * .5f;
+            var right = p + Vector2.right * .5f;
+            if (safe.Any(q => Vector2.Distance(p, q) <= 1.7f)) continue;
+            if (charges.Any(c => BullRules.SegmentDistance(left, right, BullRules.ChargePosition(c, lo),
+                BullRules.ChargePosition(c, hi)) <= BullRules.ChargeRadius + .13f)) continue;
+            bool blocked = false;
+            foreach (var s in shots.Where(s => s.Follow == SaberHand.Any))
+            {
+                if (s.Kind == "spear")
+                {
+                    BullRules.SpearEnds(s, out var a, out var b);
+                    blocked |= BullRules.SegmentDistance(left, right, a, b) <= BullRules.SpearRadius + .13f;
+                }
+                else
+                    blocked |= BullRules.DistanceToSegment(s.Position, left, right) <= (s.Kind == "bomb" ? s.Blast : BullRules.Radius(s)) + .13f;
+            }
+            if (!blocked) safe.Add(p);
+        }
+        // 候補の間隔は1.7、追う弾と刃の包絡円の直径は1.66。追う弾1発で失う候補は最大1つ。
+        Assert.GreaterOrEqual(safe.Count, followers + 2, lo + "〜" + hi + "秒の両手用安全地帯");
     }
 }
