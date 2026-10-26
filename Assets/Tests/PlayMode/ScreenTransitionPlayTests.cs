@@ -260,7 +260,8 @@ public class ScreenTransitionPlayTests
         Assert.AreEqual("Title", SceneManager.GetActiveScene().name);
     }
 
-    static void Capture(string name)
+    // tips のテスト(TransitionTipsPlayTests)からも使う。
+    public static void Capture(string name)
     {
         string[] args = Environment.GetCommandLineArgs();
         int index = Array.IndexOf(args, "-transitionCapture");
@@ -269,8 +270,9 @@ public class ScreenTransitionPlayTests
         // バッチではScreenCaptureが保存しないため、実カメラとUIを描画先へ一時的に接続する。
         var camera = Camera.main;
         Assert.NotNull(camera);
+        // タイトルの前進演出の途中など、幕がまだ出ていないときにも撮る。
         var curtain = Object.FindFirstObjectByType<ScreenTransitionGraphic>();
-        Assert.NotNull(curtain.GetComponent<CanvasRenderer>());
+        if (curtain != null) Assert.NotNull(curtain.GetComponent<CanvasRenderer>());
         var overlays = new List<Canvas>();
         var cameras = new List<Camera>();
         var distances = new List<float>();
