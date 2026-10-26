@@ -102,6 +102,8 @@ public static class ChartLoader
         {
             charge.dir = charge.dir < 0 ? -1 : 1;
             charge.y = Clamp(charge.y, -1.6f, 1.6f);
+            charge.x = Clamp(charge.x, -2f, 2f);
+            charge.angle = Clamp(charge.angle, -180f, 180f);
             charge.warn = Finite(charge.warn) ? Math.Max(0f, charge.warn) : 0f;
         }
         bull.shots = (bull.shots ?? new List<BullShotData>())

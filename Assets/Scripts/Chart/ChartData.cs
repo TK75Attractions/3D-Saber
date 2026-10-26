@@ -46,14 +46,16 @@ public class BullChartData
     public bool HasContent => (charges != null && charges.Count > 0) || (shots != null && shots.Count > 0);
 }
 
-// 突進。time〜endTime(ミリ秒、ノーツと同じく offsetMs を足して使う)に、高さ y の道を判定面の端から端まで横切る。
-// dir は 1 で左から右、-1 で右から左。warn ミリ秒前から道を赤く示す。
+// 突進。time〜endTime(ミリ秒、ノーツと同じく offsetMs を足して使う)に、(x, y)を通る直線を横切る。
+// angle は右向きから反時計回りの度数。dir=1 はその向き、-1 は逆向き。warn ミリ秒前から道を赤く示す。
 [Serializable]
 public class BullChargeData
 {
     public float time;
     public float endTime;
+    public float x;
     public float y;
+    public float angle;
     public int dir = 1;
     public float warn = 1400f;
 }

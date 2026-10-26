@@ -43,6 +43,7 @@ public sealed class BullfightMode : MonoBehaviour
     sealed class StunView { public Transform root; public Transform[] stars; public MeshRenderer[] starR, dotR; }
     sealed class Fx { public Transform t; public MeshRenderer r; public float age, life, from, to; public Color color; }
     readonly List<ChargeView> chargeViews = new List<ChargeView>();
+    readonly List<BullCharge> chargeSchedule = new List<BullCharge>();
     readonly List<ShotView> shotViews = new List<ShotView>();
     readonly StunView[] stunViews = new StunView[2];
     readonly List<Fx> effects = new List<Fx>();
@@ -67,6 +68,9 @@ public sealed class BullfightMode : MonoBehaviour
     {
         spawner = noteSpawner;
         Session = new BullSession(chart, noteSpawner != null ? noteSpawner.TotalOffsetSeconds : 0);
+        // 知らせが長い後続の突進を、開始時刻順の待ち行列で遅らせない。
+        chargeSchedule.AddRange(Session.Charges);
+        chargeSchedule.Sort((a, b) => a.WarnFrom.CompareTo(b.WarnFrom));
         foreach (var judge in new[] { judgeA, judgeB })
         {
             if (judge == null) continue;
@@ -172,7 +176,7 @@ public sealed class BullfightMode : MonoBehaviour
 
     void SpawnViews(double songTime, double approach)
     {
-        var charges = Session.Charges;
+        var charges = chargeSchedule;
         while (nextCharge < charges.Count && charges[nextCharge].WarnFrom <= songTime)
             chargeViews.Add(BuildCharge(charges[nextCharge++]));
         var shots = Session.Shots;
@@ -185,10 +189,12 @@ public sealed class BullfightMode : MonoBehaviour
         var v = new ChargeView { charge = charge };
         v.root = new GameObject("Charge").transform;
         v.root.SetParent(transform, false);
+        v.root.position = new Vector3(charge.X, charge.Y, 0);
+        v.root.rotation = Quaternion.Euler(0, 0, charge.Angle);
         v.band = new GameObject("Lane").transform;
         v.band.SetParent(v.root, false);
-        v.band.position = new Vector3(0, charge.Y, PlaneZ + .01f);
-        v.band.localScale = new Vector3(BullRules.ChargeSpan * 2f, BullRules.ChargeRadius * 2f, 1);
+        v.band.localPosition = new Vector3(0, 0, PlaneZ + .01f);
+        v.band.localScale = new Vector3(BullRules.ChargeHalfSpan(charge) * 2f, BullRules.ChargeRadius * 2f, 1);
         v.bandR = Renderer(v.band, "Band", BullMeshes.Rect(), QueueBand);
         v.chevrons = new MeshRenderer[3];
         for (int k = 0; k < 3; k++)
@@ -233,19 +239,20 @@ public sealed class BullfightMode : MonoBehaviour
             {
                 // 山形は進む向きへ流れる(知らせの間だけ)。
                 float phase = Mathf.Repeat((float)songTime * 1.6f + k / 3f, 1f);
-                float x = c.Dir * (-2.4f + 4.8f * phase);
-                v.chevrons[k].transform.parent.position = new Vector3(x, c.Y, PlaneZ);
+                float span = BullRules.ChargeHalfSpan(c) - 1f;
+                float x = c.Dir * span * (2f * phase - 1f);
+                v.chevrons[k].transform.parent.localPosition = new Vector3(x, 0, PlaneZ);
                 Tint(v.chevrons[k], BullColor, songTime < c.Start ? .55f * Mathf.Sin(phase * Mathf.PI) * Mathf.Min(1, warn * 3) : 0);
             }
             if (crossing)
             {
-                Vector2 p = BullRules.ChargePosition(c, songTime);
-                v.bull.position = new Vector3(p.x, p.y, PlaneZ - .02f);
+                float travel = BullRules.ChargeTravel(c, songTime);
+                v.bull.localPosition = new Vector3(travel, 0, PlaneZ - .02f);
                 v.bull.localScale = Vector3.one * BullRules.ChargeRadius;
                 Tint(v.glowR, BullColor, .85f);
                 Tint(v.coreR, BullCore, 1f);
                 Tint(v.hornR, Color.white, 1f);
-                v.trail.position = new Vector3(p.x, p.y, PlaneZ - .01f);
+                v.trail.localPosition = new Vector3(travel, 0, PlaneZ - .01f);
                 v.trail.localScale = new Vector3(c.Dir * BullRules.ChargeRadius * 4f, BullRules.ChargeRadius, 1);
                 Tint(v.trailR, BullColor, .7f);
             }

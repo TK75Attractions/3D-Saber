@@ -4,7 +4,7 @@ using UnityEngine;
 
 // 闘牛の裏譜面(アンダルシアの「T」、2026-10-26 ユーザー「ただ突進だけじゃなくてシンプル弾幕もちょっと飛んできて、
 // 食らうとその棒が2秒スタンしてしまう感じで」)の決まり。画面は BullfightMode。
-// ・突進: 高さ y の道を、判定面の端から端まで time〜endTime に横切る丸(半径 ChargeRadius)。
+// ・突進: (x, y)を通る angle 度の道を、判定面の外から外まで time〜endTime に横切る丸(半径 ChargeRadius)。
 // ・弾: 奥から飛び、判定面で当たる。ふつうは前後 ShotWindow 秒、地雷は滞在中、爆弾は着地後の広がり中。1つの弾は1回だけ当たる。
 // ・刃(両端を結ぶ線分)が丸に触れたら、その剣は StunSeconds 秒しびれて切れない。しびれが解けてから GraceSeconds 秒は当たらない。
 // 当たりは判定の時計(カメラの遅れを引いた時刻)で見る。点は引かない(しびれている間に来たノーツが切れないことが罰)。
@@ -15,16 +15,46 @@ public static class BullRules
     public const double ShotWindow = .1, CurveSettle = .25;
     public const double BombExpand = .3, WavePeriod = .4;
     public const float BigRadius = .45f, SpearHalf = .55f, SpearRadius = .06f;
-    // 突進は画面の外(±ChargeSpan)から出て、反対の外へ抜ける。
+    // 従来の水平突進の端。全方向でこの正方形の外周まで進め、判定面の外へ抜ける。
     public const float ChargeSpan = 3.4f;
 
-    // 突進の今の中心。始まる前と終わったあとは端の外。
-    public static Vector2 ChargePosition(BullCharge charge, double time)
+    public static Vector2 ChargeAxis(BullCharge charge)
+    {
+        float angle = charge.Angle * Mathf.Deg2Rad;
+        return new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
+    }
+
+    // 中心がずれても両端が外へ出る長さ。水平・x=0 は従来どおり ±3.4。
+    public static float ChargeHalfSpan(BullCharge charge)
+    {
+        Vector2 axis = ChargeAxis(charge);
+        float x = Mathf.Abs(axis.x), y = Mathf.Abs(axis.y);
+        float alongX = x > 1e-6f ? (ChargeSpan + Mathf.Abs(charge.X)) / x : float.PositiveInfinity;
+        float alongY = y > 1e-6f ? (ChargeSpan + Mathf.Abs(charge.Y)) / y : float.PositiveInfinity;
+        return Mathf.Min(alongX, alongY);
+    }
+
+    public static Vector2 ChargePoint(BullCharge charge, float distance)
+        => new Vector2(charge.X, charge.Y) + ChargeAxis(charge) * distance;
+
+    public static float ChargeTravel(BullCharge charge, double time)
     {
         double k = charge.End > charge.Start ? (time - charge.Start) / (charge.End - charge.Start) : 1;
         k = Math.Max(0, Math.Min(1, k));
-        float x = (float)(-charge.Dir * ChargeSpan + charge.Dir * 2 * ChargeSpan * k);
-        return new Vector2(x, charge.Y);
+        return (float)(charge.Dir * ChargeHalfSpan(charge) * (2 * k - 1));
+    }
+
+    // 突進の今の中心。始まる前と終わったあとは端の外。
+    public static Vector2 ChargePosition(BullCharge charge, double time)
+        => ChargePoint(charge, ChargeTravel(charge, time));
+
+    // 道の直線と刃の線分の距離。ノーツなら a=b として使う。
+    public static float ChargeLaneDistance(BullCharge charge, Vector2 a, Vector2 b)
+    {
+        Vector2 axis = ChargeAxis(charge), center = new Vector2(charge.X, charge.Y);
+        Vector2 normal = new Vector2(-axis.y, axis.x);
+        float da = Vector2.Dot(a - center, normal), db = Vector2.Dot(b - center, normal);
+        return da * db <= 0 ? 0 : Mathf.Min(Mathf.Abs(da), Mathf.Abs(db));
     }
 
     public static float DistanceToSegment(Vector2 p, Vector2 a, Vector2 b)
@@ -133,7 +163,7 @@ public struct BladeSample
 public sealed class BullCharge
 {
     public double WarnFrom, Start, End;
-    public float Y;
+    public float X, Y, Angle;
     public int Dir;
 }
 
@@ -183,7 +213,8 @@ public sealed class BullSession
             Charges.Add(new BullCharge
             {
                 Start = c.time / 1000.0 + offsetSeconds, End = c.endTime / 1000.0 + offsetSeconds,
-                WarnFrom = (c.time - c.warn) / 1000.0 + offsetSeconds, Y = c.y, Dir = c.dir < 0 ? -1 : 1
+                WarnFrom = (c.time - c.warn) / 1000.0 + offsetSeconds,
+                X = c.x, Y = c.y, Angle = c.angle, Dir = c.dir < 0 ? -1 : 1
             });
         var groups = new Dictionary<(double, float, float), BullSplitGroup>();
         foreach (var s in chart.shots)

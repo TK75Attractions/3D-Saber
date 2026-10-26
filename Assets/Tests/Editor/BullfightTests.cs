@@ -237,6 +237,100 @@ public class BullRulesTests
 
     static BladeSample Vertical(float x, float y, float half = .5f) => new BladeSample(new Vector2(x, y - half), new Vector2(x, y + half));
 
+    [TestCase(30f, 1)]
+    [TestCase(-55f, -1)]
+    [TestCase(90f, 1)]
+    [TestCase(90f, -1)]
+    public void AngledChargesFollowTheirLineAndDirection(float angle, int dir)
+    {
+        var c = new BullSession(Chart(new BullChargeData
+            { time = 1000, endTime = 3000, x = .7f, y = -.2f, angle = angle, dir = dir }), .5).Charges[0];
+        var center = new Vector2(.7f, -.2f);
+        Assert.AreEqual(angle, c.Angle);
+        Assert.Less(Vector2.Distance(center, BullRules.ChargePosition(c, 2.5)), 1e-5f);
+        float radians = angle * Mathf.Deg2Rad;
+        Vector2 axis = new Vector2(Mathf.Cos(radians), Mathf.Sin(radians));
+        Vector2 before = BullRules.ChargePosition(c, 2) - center;
+        Assert.AreEqual(-dir * BullRules.ChargeHalfSpan(c) * .5f, Vector2.Dot(before, axis), 1e-5f);
+        Assert.AreEqual(0, Vector2.Dot(before, new Vector2(-axis.y, axis.x)), 1e-5f);
+        Assert.AreEqual(BullRules.ChargePosition(c, c.Start), BullRules.ChargePosition(c, -10));
+        Assert.AreEqual(BullRules.ChargePosition(c, c.End), BullRules.ChargePosition(c, 10));
+    }
+
+    [Test]
+    public void EveryAngleAndOffsetStartsAndEndsOutsideTheGate()
+    {
+        foreach (float x in new[] { -2f, 0f, 2f })
+        foreach (float y in new[] { -1.6f, 0f, 1.6f })
+        foreach (int dir in new[] { -1, 1 })
+        for (int angle = -180; angle <= 180; angle++)
+        {
+            var c = new BullCharge { Start = 1, End = 2, X = x, Y = y, Angle = angle, Dir = dir };
+            foreach (double t in new[] { c.Start, c.End })
+            {
+                Vector2 p = BullRules.ChargePosition(c, t);
+                Assert.IsTrue(Mathf.Abs(p.x) >= BullRules.ChargeSpan - 1e-4f
+                    || Mathf.Abs(p.y) >= BullRules.ChargeSpan - 1e-4f, angle + "度の端");
+                Assert.AreEqual(0, BullRules.ChargeLaneDistance(c, p, p), 1e-4f);
+            }
+            Vector2 motion = BullRules.ChargePosition(c, 2) - BullRules.ChargePosition(c, 1);
+            Assert.Greater(Vector2.Dot(motion, BullRules.ChargeAxis(c)) * dir, 0);
+        }
+    }
+
+    [Test]
+    public void ChargeLoaderPreservesOldDefaultsAndClampsNewFields()
+    {
+        var chart = ChartLoader.Parse("{\"notes\":[],\"bull\":{\"charges\":["
+            + "{\"time\":1000,\"endTime\":2000,\"y\":-1.15,\"dir\":1},"
+            + "{\"time\":3000,\"endTime\":4000,\"x\":9,\"angle\":270},"
+            + "{\"time\":5000,\"endTime\":6000,\"x\":-9,\"angle\":-270}]}}");
+        var old = chart.bull.charges[0];
+        Assert.AreEqual(0, old.x);
+        Assert.AreEqual(0, old.angle);
+        var session = new BullSession(chart.bull, 0);
+        Assert.AreEqual(-3.4f, BullRules.ChargePosition(session.Charges[0], 1).x, 1e-5f);
+        Assert.AreEqual(3.4f, BullRules.ChargePosition(session.Charges[0], 2).x, 1e-5f);
+        Assert.AreEqual(2, chart.bull.charges[1].x);
+        Assert.AreEqual(180, chart.bull.charges[1].angle);
+        Assert.AreEqual(-2, chart.bull.charges[2].x);
+        Assert.AreEqual(-180, chart.bull.charges[2].angle);
+        var raw = Chart(new BullChargeData { time = 1000, endTime = 2000,
+            x = float.NaN, angle = float.PositiveInfinity });
+        var method = typeof(ChartLoader).GetMethod("NormalizeBull",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+        var normalized = (BullChartData)method.Invoke(null, new object[] { raw });
+        Assert.AreEqual(0, normalized.charges[0].x);
+        Assert.AreEqual(0, normalized.charges[0].angle);
+    }
+
+    [Test]
+    public void SimultaneousChargesHitBothHandsUsingRoundBodies()
+    {
+        var session = new BullSession(Chart(
+            new BullChargeData { time = 1000, endTime = 2000, x = -1, angle = 90 },
+            new BullChargeData { time = 1000, endTime = 2000, x = 1, angle = -35 }), 0);
+        session.Tick(1.5, Vertical(-1, 0), Vertical(1, 0), null);
+        Assert.AreEqual(2, session.StunCount);
+        Assert.IsTrue(session.IsStunned(SaberHand.Right, 1.5));
+        Assert.IsTrue(session.IsStunned(SaberHand.Left, 1.5));
+        var c = session.Charges[0];
+        Vector2 p = BullRules.ChargePosition(c, 1.5);
+        Assert.IsTrue(BullRules.Touches(p, BullRules.ChargeRadius, Vertical(p.x + .44f, p.y)));
+        Assert.IsFalse(BullRules.Touches(p, BullRules.ChargeRadius, Vertical(p.x + .46f, p.y)));
+    }
+
+    [Test]
+    public void LaneDistanceUsesTheWholeLineAndDetectsBladeCrossings()
+    {
+        var c = new BullCharge { X = .5f, Y = .2f, Angle = 90 };
+        Assert.AreEqual(0, BullRules.ChargeLaneDistance(c, Vector2.zero, Vector2.right), 1e-5f);
+        Assert.AreEqual(.5f, BullRules.ChargeLaneDistance(c, Vector2.zero, Vector2.up), 1e-5f);
+        c.Angle = 45;
+        Assert.AreEqual(Mathf.Sqrt(.5f), BullRules.ChargeLaneDistance(c,
+            new Vector2(.5f, 1.2f), new Vector2(.5f, 1.2f)), 1e-5f);
+    }
+
     [Test]
     public void TheChargeCrossesTheGateFromEdgeToEdge()
     {
@@ -382,6 +476,64 @@ public class BullfightModeTests
     public void TearDown()
     {
         if (root != null) Object.DestroyImmediate(root);
+    }
+
+    [TestCase(35f, 1)]
+    [TestCase(90f, -1)]
+    public void ChargeBandChevronsHornsAndTrailTurnWithTheLane(float angle, int dir)
+    {
+        Object.DestroyImmediate(mode.gameObject);
+        var chart = new BullChartData();
+        chart.charges.Add(new BullChargeData
+            { time = 1000, endTime = 2000, warn = 500, x = .5f, y = .2f, angle = angle, dir = dir });
+        mode = BullfightMode.Create(root.transform, chart, null, right, left);
+        mode.BladeOverride = hand => default(BladeSample);
+        mode.Tick(.75, .75);
+        var charge = mode.transform.Find("Charge");
+        var lane = charge.Find("Lane");
+        var c = mode.Session.Charges[0];
+        var rotation = Quaternion.Euler(0, 0, angle);
+        Assert.Less(Quaternion.Angle(rotation, lane.rotation), .001f);
+        Assert.AreEqual(.5f, lane.position.x, 1e-5f);
+        Assert.AreEqual(.2f, lane.position.y, 1e-5f);
+        Assert.AreEqual(2 * BullRules.ChargeHalfSpan(c), lane.localScale.x, 1e-5f);
+        Assert.AreEqual(2 * BullRules.ChargeRadius, lane.localScale.y, 1e-5f);
+        foreach (var chevron in charge.Cast<Transform>().Where(t => t.name == "Chevron"))
+        {
+            Assert.Less(Quaternion.Angle(rotation, chevron.rotation), .001f);
+            Vector2 p = chevron.position;
+            Assert.AreEqual(0, BullRules.ChargeLaneDistance(c, p, p), 1e-5f);
+            Vector2 forward = chevron.TransformVector(Vector3.right).normalized;
+            Assert.Greater(Vector2.Dot(forward, BullRules.ChargeAxis(c)) * dir, .999f);
+        }
+        mode.Tick(1.25, 1.25);
+        var body = charge.Find("Bull");
+        var trail = charge.Find("Trail");
+        Assert.Less(Vector2.Distance(BullRules.ChargePosition(c, 1.25), body.position), 1e-5f);
+        Assert.Less(Quaternion.Angle(rotation, body.rotation), .001f);
+        Assert.Less(Quaternion.Angle(rotation, trail.rotation), .001f);
+        Vector2 horns = body.Find("Horns").TransformVector(Vector3.right).normalized;
+        Vector2 tail = trail.TransformVector(Vector3.left).normalized;
+        Assert.Greater(Vector2.Dot(horns, BullRules.ChargeAxis(c)) * dir, .999f);
+        Assert.Less(Vector2.Dot(tail, BullRules.ChargeAxis(c)) * dir, -.999f);
+    }
+
+    [Test]
+    public void LongerWarningsCanAppearBeforeEarlierChargesAndAllThreeSpawn()
+    {
+        Object.DestroyImmediate(mode.gameObject);
+        var chart = new BullChartData();
+        chart.charges.Add(new BullChargeData { time = 4000, endTime = 4500, warn = 0 });
+        for (int i = 0; i < 3; i++)
+            chart.charges.Add(new BullChargeData
+                { time = 5000, endTime = 6000, warn = 4000, y = i - 1, angle = i * 30 });
+        mode = BullfightMode.Create(root.transform, chart, null, right, left);
+        mode.BladeOverride = hand => default(BladeSample);
+        mode.Tick(1.5, 1.5);
+        Assert.AreEqual(3, mode.transform.Cast<Transform>().Count(t => t.name == "Charge"));
+        mode.Tick(4, 4);
+        Assert.AreEqual(4, mode.transform.Cast<Transform>().Count(t => t.name == "Charge"));
+        Assert.AreEqual(4, mode.Session.Charges[0].Start, "判定用の開始順は変えない");
     }
 
     [Test]
@@ -547,7 +699,7 @@ public class BullfightModeTests
     }
 }
 
-// アンダルシア T v1.25。拍96より前はNormal、以後はHardから安全なノーツを残す。
+// アンダルシア T v1.26。拍96より前はNormal、以後はHardから安全なノーツを残す。
 // 譜面は C:\Users\shike\dev\tools\ChartAndalusiaBull\gen_bull.py --write で作る。
 public class AndalusiaBullChartTests
 {
@@ -603,9 +755,13 @@ public class AndalusiaBullChartTests
             Assert.IsFalse(session.Shots.Any(s => t >= BullRules.HitStart(s) - margin && t <= BullRules.HitEnd(s) + margin));
             Assert.IsFalse(session.Charges.Any(c => t >= c.Start - margin && t <= c.End + margin));
         }
-        foreach (var c in bull.bull.charges)
-            foreach (var n in bull.notes.Where(n => n.time >= c.time - 300 && n.time <= c.endTime + 300))
-                Assert.IsTrue(c.y > 0 ? n.y <= -.25f : n.y >= .25f, "突進の通らない側に残す");
+        foreach (var c in session.Charges)
+            foreach (var n in bull.notes.Where(n => n.TimeSeconds >= c.Start - .3 && n.TimeSeconds <= c.End + .3))
+            {
+                var p = new Vector2(n.x, n.y);
+                Assert.GreaterOrEqual(BullRules.ChargeLaneDistance(c, p, p),
+                    BullRules.ChargeRadius + .65f - 1e-5f, "突進の直線から余白を残す");
+            }
         Assert.AreSame(RushESecretState.AndalusiaBull, RushESecretState.ForDifficulty("T"));
     }
 
@@ -645,10 +801,48 @@ public class AndalusiaBullChartTests
                 BullRules.HitStart(s) <= c.End + .35 && BullRules.HitEnd(s) >= c.Start - .35),
                 "地雷の滞在・爆弾の広がりも突進と重ねない");
         }
-        var beats = new[] { 24, 64, 96, 108, 132, 151, 175, 199, 217, 233, 249, 267, 275, 283 };
-        Assert.AreEqual(beats.Length, bull.bull.charges.Count);
-        for (int i = 0; i < beats.Length; i++)
-            Assert.AreEqual(beats[i] * BeatMs, bull.bull.charges[i].time, .1);
+    }
+
+    [Test]
+    public void ChargesIntroduceAnglesThenPairsAndLateTriplesWithGapsBetweenGroups()
+    {
+        var charges = Read("t").bull.charges;
+        var groups = charges.GroupBy(c => c.time).OrderBy(g => g.Key).ToArray();
+        Assert.That(groups.Length, Is.InRange(18, 24));
+        Assert.IsTrue(charges.Any(c => c.angle != 0));
+        Assert.IsTrue(charges.Any(c => Mathf.Abs(c.angle) == 90));
+        Assert.IsTrue(groups.Any(g => g.Count() == 2));
+        Assert.That(groups.Count(g => g.Count() == 3), Is.InRange(1, 2));
+        for (int i = 0; i < groups.Length; i++)
+        {
+            var group = groups[i];
+            Assert.That(group.Count(), Is.InRange(1, group.Key >= 249 * BeatMs - .1 ? 3 : 2));
+            Assert.AreEqual(1, group.Select(c => c.endTime).Distinct().Count());
+            if (i > 0)
+                Assert.GreaterOrEqual(group.Key - groups[i - 1].Max(c => c.endTime), 2000,
+                    "同時の組の中を除き、前の組が抜けてから2秒以上");
+            float warnBeats = group.Count() > 1 || group.Any(c => Mathf.Abs(c.angle) >= 80) ? 6
+                : group.Any(c => Mathf.Abs(c.angle) >= 50) ? 5 : 4;
+            foreach (var c in group)
+            {
+                Assert.That(c.x, Is.InRange(-2f, 2f));
+                Assert.That(c.angle, Is.InRange(-180f, 180f));
+                Assert.GreaterOrEqual(c.warn, warnBeats * BeatMs - .1);
+            }
+        }
+        for (int i = 0; i < 2; i++)
+        {
+            Assert.AreEqual(1, groups[i].Count());
+            var c = groups[i].Single();
+            int beat = i == 0 ? 24 : 64;
+            Assert.AreEqual(beat * BeatMs, c.time, .1);
+            Assert.AreEqual((beat + 2) * BeatMs, c.endTime, .1);
+            Assert.AreEqual(0, c.x);
+            Assert.AreEqual(0, c.angle);
+            Assert.AreEqual(i == 0 ? -1.15f : 1.15f, c.y);
+            Assert.AreEqual(i == 0 ? 1 : -1, c.dir);
+            Assert.AreEqual(4 * BeatMs, c.warn, .1);
+        }
     }
 
     [Test]
@@ -662,6 +856,15 @@ public class AndalusiaBullChartTests
             CheckSpan(session, edges[i], edges[i]);
             if (i + 1 < edges.Length) CheckSpan(session, edges[i], edges[i + 1]);
         }
+    }
+
+    [Test]
+    public void SafetyRejectsThreeLanesThatLeaveNoRoom()
+    {
+        var chart = new BullChartData();
+        foreach (float y in new[] { -.8f, 0f, .8f })
+            chart.charges.Add(new BullChargeData { time = 1000, endTime = 2000, y = y });
+        Assert.Throws<AssertionException>(() => CheckSpan(new BullSession(chart, 0), 1, 2));
     }
 
     static void CheckSpan(BullSession session, double lo, double hi)
@@ -680,8 +883,9 @@ public class AndalusiaBullChartTests
             var left = p + Vector2.left * .5f;
             var right = p + Vector2.right * .5f;
             if (safe.Any(q => Vector2.Distance(p, q) <= 1.7f)) continue;
-            if (charges.Any(c => BullRules.SegmentDistance(left, right, BullRules.ChargePosition(c, lo),
-                BullRules.ChargePosition(c, hi)) <= BullRules.ChargeRadius + .13f)) continue;
+            // 横切る間は直線全体を危険とみなす。端の時刻も斜め・縦・同時を同じ条件で調べる。
+            if (charges.Any(c => BullRules.ChargeLaneDistance(c, left, right)
+                <= BullRules.ChargeRadius + .13f)) continue;
             bool blocked = false;
             foreach (var s in shots.Where(s => s.Follow == SaberHand.Any))
             {
