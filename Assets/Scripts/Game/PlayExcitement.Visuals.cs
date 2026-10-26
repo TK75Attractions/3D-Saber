@@ -77,6 +77,35 @@ public sealed partial class PlayExcitement
         => tint == LargeFlashTint.Gold ? new Color(1, .78f, .25f)
             : tint == LargeFlashTint.Cyan ? new Color(.25f, 1, 1) : Color.white;
 
+    // まだ判定の済んでいないノーツの本体を、画面上で囲む矩形(+24px、1920×1080 基準)。
+    bool TryNoteRect(out FlashRect rect)
+    {
+        rect = default;
+        var spawner = owner != null ? owner.noteSpawner : null;
+        if (spawner == null || view == null) return false;
+        double left = double.PositiveInfinity, bottom = double.PositiveInfinity;
+        double right = double.NegativeInfinity, top = double.NegativeInfinity;
+        foreach (var note in spawner.LiveNotes)
+        {
+            if (note == null || note.IsCut || note.IsMissed || note.IsFinalized) continue;
+            var body = note.BodyRenderer;
+            if (body == null || !body.enabled || !body.gameObject.activeInHierarchy) continue;
+            Bounds b = body.bounds;
+            for (int i = 0; i < 8; i++)
+            {
+                Vector3 corner = b.center + Vector3.Scale(b.extents,
+                    new Vector3((i & 1) == 0 ? -1 : 1, (i & 2) == 0 ? -1 : 1, (i & 4) == 0 ? -1 : 1));
+                Vector3 p = view.WorldToViewportPoint(corner);
+                if (!Finite(p.x) || !Finite(p.y) || p.z <= view.nearClipPlane) continue;
+                left = System.Math.Min(left, p.x); right = System.Math.Max(right, p.x);
+                bottom = System.Math.Min(bottom, p.y); top = System.Math.Max(top, p.y);
+            }
+        }
+        if (!(left < right && bottom < top)) return false;
+        rect = LargeFlashLayout.ProtectedGate(new FlashRect(left, bottom, right, top));
+        return true;
+    }
+
     bool TryGateRect(out FlashRect rect)
     {
         rect = default;
@@ -262,8 +291,10 @@ public sealed partial class PlayExcitement
     {
         if (largeLight == null) return;
         largeLight.Clear();
-        if (DisplaySettings.ReducedEffects || !TryGateRect(out var rawGate)) { largeLight.Flush(); return; }
-        var protectedGate = LargeFlashLayout.ProtectedGate(rawGate);
+        if (DisplaySettings.ReducedEffects || view == null) { largeLight.Flush(); return; }
+        // 判定ゲートは画面のほぼ全体を囲むので、ゲートを抜くと光が縁の額縁だけになる。
+        // 抜くのは、いま画面にあるノーツの範囲(+24px)だけにする。ノーツが無ければ画面全体を光らせる。
+        var protectedGate = TryNoteRect(out var notes) ? notes : new FlashRect(0, 0, 0, 0);
         largeLight.Protect(protectedGate);
         foreach (var pulse in flashes)
         {
@@ -290,14 +321,9 @@ public sealed partial class PlayExcitement
         bool fits = y + 17 < 1064;
         if (!fits)
         {
-            x = (float)gate.Left * 1920 - 120;
-            y = Mathf.Clamp((float)(gate.Top + gate.Bottom) * 540, 40, 1040);
-            fits = x - 90 >= 16;
-            if (!fits)
-            {
-                x = (float)gate.Right * 1920 + 120;
-                fits = x + 90 <= 1904;
-            }
+            // ゲートは画面のほぼ全体を囲むので、外に置く場所が無い。ゲートの内側の上(ノーツの通らない遠景の空)に出す。
+            y = (float)gate.Top * 1080 - 70;
+            fits = y > 540;
         }
         tag.rectTransform.anchoredPosition = new Vector2(x, y);
         tagCanvas.enabled = advancing && tagLeft > 0 && fits;

@@ -74,8 +74,9 @@ public sealed class DopamineFlourish : MonoBehaviour
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920, 1080);
         scaler.matchWidthOrHeight = .5f;
-        stamp = UISkinKit.MakeTMP(go.transform, "Stamp", "CLEAR", 56, UISkinPalette.NoteGold,
-            TextAlignmentOptions.Center, Vector2.zero, new Vector2(260, 80),
+        // 締めの判子なので大きく出す(画面のまん中より少し上)。
+        stamp = UISkinKit.MakeTMP(go.transform, "Stamp", "CLEAR", 120, UISkinPalette.NoteGold,
+            TextAlignmentOptions.Center, Vector2.zero, new Vector2(620, 170),
             FontStyles.Bold, 0, UISkinKit.FontAsset("Oxanium-Bold"));
         stamp.raycastTarget = false;
         stampCanvas.enabled = false;
@@ -299,18 +300,14 @@ public sealed class DopamineFlourish : MonoBehaviour
         float scale = small ? .65f : DisplaySettings.ReducedEffects ? 1
             : 1 + .18f * Mathf.Clamp01(1 - (float)(age - .3) / .18f);
         stamp.rectTransform.localScale = Vector3.one * scale;
-        float unit = stampCanvas.scaleFactor;
-        float half = 40 * 1.18f * unit;
-        float y = Mathf.Max(Screen.height * .78f,
-            view.pixelRect.y + (float)rect.Top * view.pixelHeight + 24 * unit + half);
-        if (y + half > Screen.height - 12 * unit)
-        {
-            stampCanvas.enabled = false;
-            return;
-        }
+        // 最後のノーツのあとなので、ノーツを隠す心配はない。ゲートは画面のほぼ全体を囲み、上に置く場所が無いため、
+        // 画面のまん中より少し上(高さの 62%)に出す。
+        float y = view.pixelRect.y + view.pixelHeight * .62f;
+        // 撮影の道具などで画面のカメラの UI に切り替えられても同じ位置になるよう、カメラを渡す。
+        Camera uiCamera = stampCanvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : stampCanvas.worldCamera;
         if (RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            (RectTransform)stampCanvas.transform, new Vector2(Screen.width * .5f, y),
-            null, out var local))
+            (RectTransform)stampCanvas.transform, new Vector2(view.pixelRect.x + view.pixelRect.width * .5f, y),
+            uiCamera, out var local))
             stamp.rectTransform.anchoredPosition = local;
     }
 
