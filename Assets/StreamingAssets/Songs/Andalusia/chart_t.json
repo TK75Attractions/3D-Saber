@@ -2404,6 +2404,270 @@
       "direction": "none",
       "count": 1,
       "lengthMs": 0.0
+    },
+    {
+      "beat": 298,
+      "time": 103352.6,
+      "x": -0.15,
+      "y": -1.2,
+      "type": "tap",
+      "color": "gold",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 300,
+      "time": 104046.2,
+      "x": -0.15,
+      "y": 0.6,
+      "type": "tap",
+      "color": "gold",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 302,
+      "time": 104739.9,
+      "x": -0.15,
+      "y": 0.0,
+      "type": "tap",
+      "color": "gold",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 306,
+      "time": 106127.2,
+      "x": -0.15,
+      "y": -0.9,
+      "type": "tap",
+      "color": "gold",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 308,
+      "time": 106820.8,
+      "x": -0.15,
+      "y": -0.9,
+      "type": "tap",
+      "color": "gold",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 310,
+      "time": 107514.5,
+      "x": -0.15,
+      "y": -0.9,
+      "type": "tap",
+      "color": "gold",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 314,
+      "time": 108901.7,
+      "x": -0.15,
+      "y": 1.2,
+      "type": "tap",
+      "color": "gold",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 316,
+      "time": 109595.4,
+      "x": -0.15,
+      "y": 1.2,
+      "type": "tap",
+      "color": "gold",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 318,
+      "time": 110289.0,
+      "x": -1.65,
+      "y": -0.3,
+      "type": "tap",
+      "color": "gold",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 320,
+      "time": 110982.7,
+      "x": -1.65,
+      "y": -0.9,
+      "type": "tap",
+      "color": "gold",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 322,
+      "time": 111676.3,
+      "x": -1.65,
+      "y": 0.9,
+      "type": "tap",
+      "color": "gold",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 324,
+      "time": 112369.9,
+      "x": -1.65,
+      "y": -0.9,
+      "type": "tap",
+      "color": "gold",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 326,
+      "time": 113063.6,
+      "x": -1.65,
+      "y": 0.3,
+      "type": "tap",
+      "color": "gold",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 327.5,
+      "time": 113583.8,
+      "x": -1.65,
+      "y": 1.2,
+      "type": "tap",
+      "color": "gold",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 330,
+      "time": 114450.9,
+      "x": -1.65,
+      "y": -1.2,
+      "type": "tap",
+      "color": "gold",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 334,
+      "time": 115838.2,
+      "x": -0.75,
+      "y": -1.2,
+      "type": "tap",
+      "color": "gold",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 336,
+      "time": 116531.8,
+      "x": -0.75,
+      "y": -1.2,
+      "type": "tap",
+      "color": "gold",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 338,
+      "time": 117225.4,
+      "x": -0.75,
+      "y": -1.2,
+      "type": "tap",
+      "color": "gold",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 340,
+      "time": 117919.1,
+      "x": -0.75,
+      "y": -1.2,
+      "type": "tap",
+      "color": "gold",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 342,
+      "time": 118612.7,
+      "x": -0.75,
+      "y": -1.2,
+      "type": "tap",
+      "color": "gold",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 344,
+      "time": 119306.4,
+      "x": -1.65,
+      "y": 0.6,
+      "type": "tap",
+      "color": "gold",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 346,
+      "time": 120000.0,
+      "x": -1.65,
+      "y": 0.6,
+      "type": "tap",
+      "color": "gold",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 348,
+      "time": 120693.6,
+      "x": -1.65,
+      "y": 0.6,
+      "type": "tap",
+      "color": "gold",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 350,
+      "time": 121387.3,
+      "x": -0.75,
+      "y": -0.6,
+      "type": "tap",
+      "color": "gold",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
     }
   ],
   "bull": {
@@ -2675,6 +2939,177 @@
         "x": 1.8,
         "y": 0,
         "angle": 90,
+        "dir": 1,
+        "warn": 2080.9
+      },
+      {
+        "time": 104739.9,
+        "endTime": 105433.5,
+        "x": 0,
+        "y": 1.25,
+        "angle": 0,
+        "dir": 1,
+        "warn": 2080.9
+      },
+      {
+        "time": 104739.9,
+        "endTime": 105433.5,
+        "x": 0,
+        "y": -1.25,
+        "angle": 0,
+        "dir": -1,
+        "warn": 2080.9
+      },
+      {
+        "time": 107514.5,
+        "endTime": 108208.1,
+        "x": -1.8,
+        "y": 0,
+        "angle": 90,
+        "dir": -1,
+        "warn": 2080.9
+      },
+      {
+        "time": 107514.5,
+        "endTime": 108208.1,
+        "x": 1.8,
+        "y": 0,
+        "angle": 90,
+        "dir": 1,
+        "warn": 2080.9
+      },
+      {
+        "time": 110289.0,
+        "endTime": 110982.7,
+        "x": 0,
+        "y": 1.25,
+        "angle": 15,
+        "dir": 1,
+        "warn": 2080.9
+      },
+      {
+        "time": 110289.0,
+        "endTime": 110982.7,
+        "x": 0,
+        "y": 1.25,
+        "angle": -15,
+        "dir": -1,
+        "warn": 2080.9
+      },
+      {
+        "time": 113063.6,
+        "endTime": 113757.2,
+        "x": 0,
+        "y": -1.25,
+        "angle": 15,
+        "dir": -1,
+        "warn": 2080.9
+      },
+      {
+        "time": 113063.6,
+        "endTime": 113757.2,
+        "x": 0,
+        "y": -1.25,
+        "angle": -15,
+        "dir": 1,
+        "warn": 2080.9
+      },
+      {
+        "time": 115838.2,
+        "endTime": 116531.8,
+        "x": -1.8,
+        "y": 0,
+        "angle": 90,
+        "dir": 1,
+        "warn": 2080.9
+      },
+      {
+        "time": 115838.2,
+        "endTime": 116531.8,
+        "x": 1.8,
+        "y": 0,
+        "angle": 90,
+        "dir": -1,
+        "warn": 2080.9
+      },
+      {
+        "time": 117919.1,
+        "endTime": 118612.7,
+        "x": 0,
+        "y": 1.25,
+        "angle": 0,
+        "dir": 1,
+        "warn": 2080.9
+      },
+      {
+        "time": 117919.1,
+        "endTime": 118612.7,
+        "x": -1.8,
+        "y": 0,
+        "angle": 90,
+        "dir": -1,
+        "warn": 2080.9
+      },
+      {
+        "time": 117919.1,
+        "endTime": 118612.7,
+        "x": 0,
+        "y": 1.25,
+        "angle": 15,
+        "dir": -1,
+        "warn": 2080.9
+      },
+      {
+        "time": 120000.0,
+        "endTime": 120693.6,
+        "x": 0,
+        "y": -1.25,
+        "angle": 0,
+        "dir": -1,
+        "warn": 2080.9
+      },
+      {
+        "time": 120000.0,
+        "endTime": 120693.6,
+        "x": 1.8,
+        "y": 0,
+        "angle": 90,
+        "dir": 1,
+        "warn": 2080.9
+      },
+      {
+        "time": 120000.0,
+        "endTime": 120693.6,
+        "x": 0,
+        "y": -1.25,
+        "angle": 15,
+        "dir": 1,
+        "warn": 2080.9
+      },
+      {
+        "time": 121387.3,
+        "endTime": 122080.9,
+        "x": 0,
+        "y": 1.25,
+        "angle": 0,
+        "dir": -1,
+        "warn": 2080.9
+      },
+      {
+        "time": 121387.3,
+        "endTime": 122080.9,
+        "x": -1.8,
+        "y": 0,
+        "angle": 90,
+        "dir": 1,
+        "warn": 2080.9
+      },
+      {
+        "time": 121387.3,
+        "endTime": 122080.9,
+        "x": 0,
+        "y": 1.25,
+        "angle": 15,
         "dir": 1,
         "warn": 2080.9
       }
@@ -3871,8 +4306,1064 @@
         "fromX": 1.8,
         "fromY": 1.8,
         "lead": 1000
+      },
+      {
+        "time": 102659.0,
+        "x": 0.2,
+        "y": 1.1,
+        "kind": "",
+        "follow": ""
+      },
+      {
+        "time": 102659.0,
+        "x": 0.8,
+        "y": 1.1,
+        "kind": "",
+        "follow": ""
+      },
+      {
+        "time": 102659.0,
+        "x": 1.4,
+        "y": 1.1,
+        "kind": "",
+        "follow": ""
+      },
+      {
+        "time": 102659.0,
+        "x": 2,
+        "y": 1.1,
+        "kind": "",
+        "follow": ""
+      },
+      {
+        "time": 103352.6,
+        "x": -1.8,
+        "y": 0.4,
+        "kind": "wave",
+        "follow": "",
+        "amp": 0.6,
+        "angle": 0
+      },
+      {
+        "time": 103439.3,
+        "x": -0.9,
+        "y": 0.4,
+        "kind": "wave",
+        "follow": "",
+        "amp": 0.6,
+        "angle": 90
+      },
+      {
+        "time": 103526.0,
+        "x": 0.0,
+        "y": 0.4,
+        "kind": "wave",
+        "follow": "",
+        "amp": 0.6,
+        "angle": 0
+      },
+      {
+        "time": 103612.7,
+        "x": 0.9,
+        "y": 0.4,
+        "kind": "wave",
+        "follow": "",
+        "amp": 0.6,
+        "angle": 90
+      },
+      {
+        "time": 103699.4,
+        "x": 1.8,
+        "y": 0.4,
+        "kind": "wave",
+        "follow": "",
+        "amp": 0.6,
+        "angle": 0
+      },
+      {
+        "time": 104046.2,
+        "x": -1.1,
+        "y": -0.6,
+        "kind": "big",
+        "follow": ""
+      },
+      {
+        "time": 104046.2,
+        "x": 1.1,
+        "y": -0.6,
+        "kind": "big",
+        "follow": ""
+      },
+      {
+        "time": 105433.5,
+        "x": -0.9,
+        "y": -0.7,
+        "kind": "",
+        "follow": "",
+        "fromX": -2.8,
+        "fromY": 0.9,
+        "lead": 1000
+      },
+      {
+        "time": 105433.5,
+        "x": -0.45,
+        "y": -0.7,
+        "kind": "",
+        "follow": "",
+        "fromX": -1.4,
+        "fromY": 0.9,
+        "lead": 1000
+      },
+      {
+        "time": 105433.5,
+        "x": 0.0,
+        "y": -0.7,
+        "kind": "",
+        "follow": "",
+        "fromX": 0.0,
+        "fromY": 0.9,
+        "lead": 1000
+      },
+      {
+        "time": 105433.5,
+        "x": 0.45,
+        "y": -0.7,
+        "kind": "",
+        "follow": "",
+        "fromX": 1.3999999999999995,
+        "fromY": 0.9,
+        "lead": 1000
+      },
+      {
+        "time": 105433.5,
+        "x": 0.9,
+        "y": -0.7,
+        "kind": "",
+        "follow": "",
+        "fromX": 2.8,
+        "fromY": 0.9,
+        "lead": 1000
+      },
+      {
+        "time": 106127.2,
+        "x": -0.6,
+        "y": 0.4,
+        "kind": "mine",
+        "follow": ""
+      },
+      {
+        "time": 106127.2,
+        "x": 0.6,
+        "y": 0.4,
+        "kind": "mine",
+        "follow": ""
+      },
+      {
+        "time": 106474.0,
+        "x": -1.8,
+        "y": 0.9,
+        "kind": "",
+        "follow": ""
+      },
+      {
+        "time": 106560.7,
+        "x": -0.9,
+        "y": 0.9,
+        "kind": "",
+        "follow": ""
+      },
+      {
+        "time": 106647.4,
+        "x": 0.0,
+        "y": 0.9,
+        "kind": "",
+        "follow": ""
+      },
+      {
+        "time": 106734.1,
+        "x": 0.9,
+        "y": 0.9,
+        "kind": "",
+        "follow": ""
+      },
+      {
+        "time": 106820.8,
+        "x": 1.8,
+        "y": 0.9,
+        "kind": "",
+        "follow": ""
+      },
+      {
+        "time": 107861.3,
+        "x": 0,
+        "y": 0,
+        "kind": "bomb",
+        "follow": ""
+      },
+      {
+        "time": 108381.5,
+        "x": 1.5,
+        "y": 0,
+        "kind": "",
+        "follow": "red"
+      },
+      {
+        "time": 108468.2,
+        "x": -1.5,
+        "y": 0,
+        "kind": "",
+        "follow": "blue"
+      },
+      {
+        "time": 108901.7,
+        "x": -1.8,
+        "y": -0.4,
+        "kind": "spear",
+        "follow": "",
+        "angle": 90
+      },
+      {
+        "time": 108901.7,
+        "x": -0.6,
+        "y": -0.4,
+        "kind": "spear",
+        "follow": "",
+        "angle": 90
+      },
+      {
+        "time": 108901.7,
+        "x": 0.6,
+        "y": -0.4,
+        "kind": "spear",
+        "follow": "",
+        "angle": 90
+      },
+      {
+        "time": 108901.7,
+        "x": 1.8,
+        "y": -0.4,
+        "kind": "spear",
+        "follow": "",
+        "angle": 90
+      },
+      {
+        "time": 109595.4,
+        "x": -1.8,
+        "y": -0.6,
+        "kind": "",
+        "follow": ""
+      },
+      {
+        "time": 109595.4,
+        "x": -0.9,
+        "y": -0.847487,
+        "kind": "",
+        "follow": ""
+      },
+      {
+        "time": 109595.4,
+        "x": 0.0,
+        "y": -0.95,
+        "kind": "",
+        "follow": ""
+      },
+      {
+        "time": 109595.4,
+        "x": 0.9,
+        "y": -0.847487,
+        "kind": "",
+        "follow": ""
+      },
+      {
+        "time": 109595.4,
+        "x": 1.8,
+        "y": -0.6,
+        "kind": "",
+        "follow": ""
+      },
+      {
+        "time": 110289.0,
+        "x": 0.8,
+        "y": 0.65,
+        "kind": "split",
+        "follow": "",
+        "fromX": 0,
+        "fromY": 0.65,
+        "lead": 500
+      },
+      {
+        "time": 110289.0,
+        "x": 0.4,
+        "y": 1.126314,
+        "kind": "split",
+        "follow": "",
+        "fromX": 0,
+        "fromY": 0.65,
+        "lead": 500
+      },
+      {
+        "time": 110289.0,
+        "x": -0.4,
+        "y": 1.126314,
+        "kind": "split",
+        "follow": "",
+        "fromX": 0,
+        "fromY": 0.65,
+        "lead": 500
+      },
+      {
+        "time": 110289.0,
+        "x": -0.8,
+        "y": 0.65,
+        "kind": "split",
+        "follow": "",
+        "fromX": 0,
+        "fromY": 0.65,
+        "lead": 500
+      },
+      {
+        "time": 110289.0,
+        "x": -0.4,
+        "y": 0.173686,
+        "kind": "split",
+        "follow": "",
+        "fromX": 0,
+        "fromY": 0.65,
+        "lead": 500
+      },
+      {
+        "time": 110289.0,
+        "x": 0.4,
+        "y": 0.173686,
+        "kind": "split",
+        "follow": "",
+        "fromX": 0,
+        "fromY": 0.65,
+        "lead": 500
+      },
+      {
+        "time": 110982.7,
+        "x": -1.8,
+        "y": 0.6,
+        "kind": "",
+        "follow": "",
+        "fromX": -1.8,
+        "fromY": 1.6,
+        "lead": 1000
+      },
+      {
+        "time": 111069.4,
+        "x": -0.9,
+        "y": 0.45,
+        "kind": "",
+        "follow": "",
+        "fromX": -0.9,
+        "fromY": 1.6,
+        "lead": 1000
+      },
+      {
+        "time": 111156.1,
+        "x": 0.0,
+        "y": 0.3,
+        "kind": "",
+        "follow": "",
+        "fromX": 0.0,
+        "fromY": 1.6,
+        "lead": 1000
+      },
+      {
+        "time": 111242.8,
+        "x": 0.9,
+        "y": 0.6,
+        "kind": "",
+        "follow": "",
+        "fromX": 0.9000000000000001,
+        "fromY": 1.6,
+        "lead": 1000
+      },
+      {
+        "time": 111329.5,
+        "x": 1.8,
+        "y": 0.45,
+        "kind": "",
+        "follow": "",
+        "fromX": 1.8,
+        "fromY": 1.6,
+        "lead": 1000
+      },
+      {
+        "time": 111676.3,
+        "x": -1.8,
+        "y": -0.4,
+        "kind": "wave",
+        "follow": "",
+        "amp": 0.6,
+        "angle": 0
+      },
+      {
+        "time": 111763.0,
+        "x": -0.9,
+        "y": -0.4,
+        "kind": "wave",
+        "follow": "",
+        "amp": 0.6,
+        "angle": -90
+      },
+      {
+        "time": 111849.7,
+        "x": 0.0,
+        "y": -0.4,
+        "kind": "wave",
+        "follow": "",
+        "amp": 0.6,
+        "angle": 0
+      },
+      {
+        "time": 111936.4,
+        "x": 0.9,
+        "y": -0.4,
+        "kind": "wave",
+        "follow": "",
+        "amp": 0.6,
+        "angle": -90
+      },
+      {
+        "time": 112023.1,
+        "x": 1.8,
+        "y": -0.4,
+        "kind": "wave",
+        "follow": "",
+        "amp": 0.6,
+        "angle": 0
+      },
+      {
+        "time": 112369.9,
+        "x": -1.1,
+        "y": 0.6,
+        "kind": "big",
+        "follow": ""
+      },
+      {
+        "time": 112369.9,
+        "x": 1.1,
+        "y": 0.6,
+        "kind": "big",
+        "follow": ""
+      },
+      {
+        "time": 113063.6,
+        "x": 0.8,
+        "y": -0.65,
+        "kind": "split",
+        "follow": "",
+        "fromX": 0,
+        "fromY": -0.65,
+        "lead": 500
+      },
+      {
+        "time": 113063.6,
+        "x": 0.4,
+        "y": -0.173686,
+        "kind": "split",
+        "follow": "",
+        "fromX": 0,
+        "fromY": -0.65,
+        "lead": 500
+      },
+      {
+        "time": 113063.6,
+        "x": -0.4,
+        "y": -0.173686,
+        "kind": "split",
+        "follow": "",
+        "fromX": 0,
+        "fromY": -0.65,
+        "lead": 500
+      },
+      {
+        "time": 113063.6,
+        "x": -0.8,
+        "y": -0.65,
+        "kind": "split",
+        "follow": "",
+        "fromX": 0,
+        "fromY": -0.65,
+        "lead": 500
+      },
+      {
+        "time": 113063.6,
+        "x": -0.4,
+        "y": -1.126314,
+        "kind": "split",
+        "follow": "",
+        "fromX": 0,
+        "fromY": -0.65,
+        "lead": 500
+      },
+      {
+        "time": 113063.6,
+        "x": 0.4,
+        "y": -1.126314,
+        "kind": "split",
+        "follow": "",
+        "fromX": 0,
+        "fromY": -0.65,
+        "lead": 500
+      },
+      {
+        "time": 113757.2,
+        "x": -1.2,
+        "y": 0,
+        "kind": "mine",
+        "follow": ""
+      },
+      {
+        "time": 113757.2,
+        "x": 0,
+        "y": 0,
+        "kind": "mine",
+        "follow": ""
+      },
+      {
+        "time": 113757.2,
+        "x": 1.2,
+        "y": 0,
+        "kind": "mine",
+        "follow": ""
+      },
+      {
+        "time": 114104.0,
+        "x": -1.2,
+        "y": 0.5,
+        "kind": "",
+        "follow": "",
+        "fromX": 1.2,
+        "fromY": -1.2,
+        "lead": 1000
+      },
+      {
+        "time": 114104.0,
+        "x": 0,
+        "y": 0.5,
+        "kind": "",
+        "follow": "",
+        "fromX": 0,
+        "fromY": -1.2,
+        "lead": 1000
+      },
+      {
+        "time": 114104.0,
+        "x": 1.2,
+        "y": 0.5,
+        "kind": "",
+        "follow": "",
+        "fromX": -1.2,
+        "fromY": -1.2,
+        "lead": 1000
+      },
+      {
+        "time": 114450.9,
+        "x": 1.25,
+        "y": 0.0,
+        "kind": "",
+        "follow": ""
+      },
+      {
+        "time": 114537.6,
+        "x": 0.625,
+        "y": 0.476314,
+        "kind": "",
+        "follow": ""
+      },
+      {
+        "time": 114624.3,
+        "x": -0.625,
+        "y": 0.476314,
+        "kind": "",
+        "follow": ""
+      },
+      {
+        "time": 114711.0,
+        "x": -1.25,
+        "y": 0.0,
+        "kind": "",
+        "follow": ""
+      },
+      {
+        "time": 114797.7,
+        "x": 0,
+        "y": 0,
+        "kind": "bomb",
+        "follow": ""
+      },
+      {
+        "time": 114797.7,
+        "x": -0.625,
+        "y": -0.476314,
+        "kind": "",
+        "follow": ""
+      },
+      {
+        "time": 114884.4,
+        "x": 0.625,
+        "y": -0.476314,
+        "kind": "",
+        "follow": ""
+      },
+      {
+        "time": 114971.1,
+        "x": 1.25,
+        "y": 0.0,
+        "kind": "",
+        "follow": ""
+      },
+      {
+        "time": 115057.8,
+        "x": 0.625,
+        "y": 0.476314,
+        "kind": "",
+        "follow": ""
+      },
+      {
+        "time": 115317.9,
+        "x": 1.5,
+        "y": 0,
+        "kind": "",
+        "follow": "red"
+      },
+      {
+        "time": 115404.6,
+        "x": -1.5,
+        "y": 0,
+        "kind": "",
+        "follow": "blue"
+      },
+      {
+        "time": 116531.8,
+        "x": -1.8,
+        "y": 0.7,
+        "kind": "",
+        "follow": "",
+        "fromX": -1.8,
+        "fromY": 1.7,
+        "lead": 1000
+      },
+      {
+        "time": 116618.5,
+        "x": -1.2,
+        "y": 0.55,
+        "kind": "",
+        "follow": "",
+        "fromX": -1.2000000000000002,
+        "fromY": 1.7,
+        "lead": 1000
+      },
+      {
+        "time": 116705.2,
+        "x": -0.6,
+        "y": 0.4,
+        "kind": "",
+        "follow": "",
+        "fromX": -0.6000000000000001,
+        "fromY": 1.7,
+        "lead": 1000
+      },
+      {
+        "time": 116791.9,
+        "x": 0.0,
+        "y": 0.7,
+        "kind": "",
+        "follow": "",
+        "fromX": 0.0,
+        "fromY": 1.7,
+        "lead": 1000
+      },
+      {
+        "time": 116878.6,
+        "x": 0.6,
+        "y": 0.55,
+        "kind": "",
+        "follow": "",
+        "fromX": 0.5999999999999999,
+        "fromY": 1.7,
+        "lead": 1000
+      },
+      {
+        "time": 116965.3,
+        "x": 1.2,
+        "y": 0.4,
+        "kind": "",
+        "follow": "",
+        "fromX": 1.2,
+        "fromY": 1.7,
+        "lead": 1000
+      },
+      {
+        "time": 117052.0,
+        "x": 1.8,
+        "y": 0.7,
+        "kind": "",
+        "follow": "",
+        "fromX": 1.8,
+        "fromY": 1.7,
+        "lead": 1000
+      },
+      {
+        "time": 117919.1,
+        "x": 0.5,
+        "y": 0.85,
+        "kind": "split",
+        "follow": "",
+        "fromX": 0,
+        "fromY": 0.85,
+        "lead": 500
+      },
+      {
+        "time": 117919.1,
+        "x": 0.25,
+        "y": 1.066506,
+        "kind": "split",
+        "follow": "",
+        "fromX": 0,
+        "fromY": 0.85,
+        "lead": 500
+      },
+      {
+        "time": 117919.1,
+        "x": -0.25,
+        "y": 1.066506,
+        "kind": "split",
+        "follow": "",
+        "fromX": 0,
+        "fromY": 0.85,
+        "lead": 500
+      },
+      {
+        "time": 117919.1,
+        "x": -0.5,
+        "y": 0.85,
+        "kind": "split",
+        "follow": "",
+        "fromX": 0,
+        "fromY": 0.85,
+        "lead": 500
+      },
+      {
+        "time": 117919.1,
+        "x": -0.25,
+        "y": 0.633494,
+        "kind": "split",
+        "follow": "",
+        "fromX": 0,
+        "fromY": 0.85,
+        "lead": 500
+      },
+      {
+        "time": 117919.1,
+        "x": 0.25,
+        "y": 0.633494,
+        "kind": "split",
+        "follow": "",
+        "fromX": 0,
+        "fromY": 0.85,
+        "lead": 500
+      },
+      {
+        "time": 117919.1,
+        "x": 1.7,
+        "y": 1.1,
+        "kind": "",
+        "follow": "",
+        "fromX": 2.2,
+        "fromY": 1.7,
+        "lead": 1000
+      },
+      {
+        "time": 118612.7,
+        "x": -1.8,
+        "y": 0.4,
+        "kind": "wave",
+        "follow": "",
+        "amp": 0.6,
+        "angle": 0
+      },
+      {
+        "time": 118699.4,
+        "x": -0.9,
+        "y": 0.4,
+        "kind": "wave",
+        "follow": "",
+        "amp": 0.6,
+        "angle": 90
+      },
+      {
+        "time": 118786.1,
+        "x": 0.0,
+        "y": 0.4,
+        "kind": "wave",
+        "follow": "",
+        "amp": 0.6,
+        "angle": 0
+      },
+      {
+        "time": 118872.8,
+        "x": 0.9,
+        "y": 0.4,
+        "kind": "wave",
+        "follow": "",
+        "amp": 0.6,
+        "angle": 90
+      },
+      {
+        "time": 118959.5,
+        "x": 1.8,
+        "y": 0.4,
+        "kind": "wave",
+        "follow": "",
+        "amp": 0.6,
+        "angle": 0
+      },
+      {
+        "time": 119306.4,
+        "x": -0.9,
+        "y": -0.4,
+        "kind": "",
+        "follow": "",
+        "fromX": -2.8,
+        "fromY": 1.2,
+        "lead": 1000
+      },
+      {
+        "time": 119306.4,
+        "x": -0.45,
+        "y": -0.4,
+        "kind": "",
+        "follow": "",
+        "fromX": -1.4,
+        "fromY": 1.2,
+        "lead": 1000
+      },
+      {
+        "time": 119306.4,
+        "x": 0.0,
+        "y": -0.4,
+        "kind": "",
+        "follow": "",
+        "fromX": 0.0,
+        "fromY": 1.2,
+        "lead": 1000
+      },
+      {
+        "time": 119306.4,
+        "x": 0.45,
+        "y": -0.4,
+        "kind": "",
+        "follow": "",
+        "fromX": 1.3999999999999995,
+        "fromY": 1.2,
+        "lead": 1000
+      },
+      {
+        "time": 119306.4,
+        "x": 0.9,
+        "y": -0.4,
+        "kind": "",
+        "follow": "",
+        "fromX": 2.8,
+        "fromY": 1.2,
+        "lead": 1000
+      },
+      {
+        "time": 120000.0,
+        "x": 0.5,
+        "y": -0.85,
+        "kind": "split",
+        "follow": "",
+        "fromX": 0,
+        "fromY": -0.85,
+        "lead": 500
+      },
+      {
+        "time": 120000.0,
+        "x": 0.25,
+        "y": -1.066506,
+        "kind": "split",
+        "follow": "",
+        "fromX": 0,
+        "fromY": -0.85,
+        "lead": 500
+      },
+      {
+        "time": 120000.0,
+        "x": -0.25,
+        "y": -1.066506,
+        "kind": "split",
+        "follow": "",
+        "fromX": 0,
+        "fromY": -0.85,
+        "lead": 500
+      },
+      {
+        "time": 120000.0,
+        "x": -0.5,
+        "y": -0.85,
+        "kind": "split",
+        "follow": "",
+        "fromX": 0,
+        "fromY": -0.85,
+        "lead": 500
+      },
+      {
+        "time": 120000.0,
+        "x": -0.25,
+        "y": -0.633494,
+        "kind": "split",
+        "follow": "",
+        "fromX": 0,
+        "fromY": -0.85,
+        "lead": 500
+      },
+      {
+        "time": 120000.0,
+        "x": 0.25,
+        "y": -0.633494,
+        "kind": "split",
+        "follow": "",
+        "fromX": 0,
+        "fromY": -0.85,
+        "lead": 500
+      },
+      {
+        "time": 120000.0,
+        "x": -1.7,
+        "y": -1.1,
+        "kind": "",
+        "follow": "",
+        "fromX": -2.2,
+        "fromY": -1.7,
+        "lead": 1000
+      },
+      {
+        "time": 120693.6,
+        "x": -1.8,
+        "y": -0.7,
+        "kind": "",
+        "follow": "",
+        "fromX": -1.8,
+        "fromY": -1.7,
+        "lead": 1000
+      },
+      {
+        "time": 120780.3,
+        "x": -0.9,
+        "y": -0.55,
+        "kind": "",
+        "follow": "",
+        "fromX": -0.9,
+        "fromY": -1.7,
+        "lead": 1000
+      },
+      {
+        "time": 120867.1,
+        "x": 0.0,
+        "y": -0.4,
+        "kind": "",
+        "follow": "",
+        "fromX": 0.0,
+        "fromY": -1.7,
+        "lead": 1000
+      },
+      {
+        "time": 120953.8,
+        "x": 0.9,
+        "y": -0.7,
+        "kind": "",
+        "follow": "",
+        "fromX": 0.9000000000000001,
+        "fromY": -1.7,
+        "lead": 1000
+      },
+      {
+        "time": 121040.5,
+        "x": 1.8,
+        "y": -0.55,
+        "kind": "",
+        "follow": "",
+        "fromX": 1.8,
+        "fromY": -1.7,
+        "lead": 1000
+      },
+      {
+        "time": 121387.3,
+        "x": 0.5,
+        "y": 0.85,
+        "kind": "split",
+        "follow": "",
+        "fromX": 0,
+        "fromY": 0.85,
+        "lead": 500
+      },
+      {
+        "time": 121387.3,
+        "x": 0.25,
+        "y": 1.066506,
+        "kind": "split",
+        "follow": "",
+        "fromX": 0,
+        "fromY": 0.85,
+        "lead": 500
+      },
+      {
+        "time": 121387.3,
+        "x": -0.25,
+        "y": 1.066506,
+        "kind": "split",
+        "follow": "",
+        "fromX": 0,
+        "fromY": 0.85,
+        "lead": 500
+      },
+      {
+        "time": 121387.3,
+        "x": -0.5,
+        "y": 0.85,
+        "kind": "split",
+        "follow": "",
+        "fromX": 0,
+        "fromY": 0.85,
+        "lead": 500
+      },
+      {
+        "time": 121387.3,
+        "x": -0.25,
+        "y": 0.633494,
+        "kind": "split",
+        "follow": "",
+        "fromX": 0,
+        "fromY": 0.85,
+        "lead": 500
+      },
+      {
+        "time": 121387.3,
+        "x": 0.25,
+        "y": 0.633494,
+        "kind": "split",
+        "follow": "",
+        "fromX": 0,
+        "fromY": 0.85,
+        "lead": 500
+      },
+      {
+        "time": 121387.3,
+        "x": 1.7,
+        "y": 1.1,
+        "kind": "",
+        "follow": "",
+        "fromX": 2.2,
+        "fromY": 1.7,
+        "lead": 1000
       }
     ]
   },
-  "_comment": "アンダルシア T v1.26。拍96より前はNormal、以後Hard。角度の違う突進は同時3本まで。後半は7種類の弾、矢印は最大6個。生成: gen_bull.py"
+  "_comment": "アンダルシア T v1.27。拍295.5まではv1.26のまま。拍296〜350は延長の弾幕、金14個。拍290からの4/4を継続。生成: gen_bull.py"
 }

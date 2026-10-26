@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "sourceFile": "audio_t.ogg",
+  "sourceSha256": "d3eacf90ec68949bbbbdc429cbe9a6efe0a972bb359d93c43d2297e96595b570",
+  "targetLufs": -18.0,
+  "inputLufs": -8.74,
+  "inputTruePeakDbtp": 0.91,
+  "gainDb": -9.26,
+  "outputLufs": -18.0,
+  "outputTruePeakDbtp": -8.35
+}

@@ -699,17 +699,26 @@ public class BullfightModeTests
     }
 }
 
-// アンダルシア T v1.26。拍96より前はNormal、以後はHardから安全なノーツを残す。
+// アンダルシア T v1.27。元の区間は従来の検査、延長は別ファイルの同じ部分クラスで検査する。
 // 譜面は C:\Users\shike\dev\tools\ChartAndalusiaBull\gen_bull.py --write で作る。
-public class AndalusiaBullChartTests
+public partial class AndalusiaBullChartTests
 {
     const double BeatMs = 60000.0 / 173, SwitchMs = 96 * BeatMs, LateMs = 151 * BeatMs;
+    const double ExtensionMs = 296 * BeatMs;
 
-    static ChartData Read(string difficulty)
+    static ChartData Read(string difficulty, bool includeExtension = false)
     {
         string path = Path.Combine(Application.streamingAssetsPath, "Songs", "Andalusia", "chart_" + difficulty + ".json");
         Assert.IsTrue(File.Exists(path), "必須の譜面がありません: " + path);
-        return ChartLoader.Parse(File.ReadAllText(path));
+        var chart = ChartLoader.Parse(File.ReadAllText(path));
+        // 既存の導入・ノーツ削減率・2秒間隔の検査は拍296より前にだけ適用する。
+        if (difficulty == "t" && !includeExtension)
+        {
+            chart.notes.RemoveAll(n => n.time >= ExtensionMs);
+            chart.bull.charges.RemoveAll(c => c.time >= ExtensionMs);
+            chart.bull.shots.RemoveAll(s => s.time >= ExtensionMs);
+        }
+        return chart;
     }
 
     [Test]
@@ -848,7 +857,7 @@ public class AndalusiaBullChartTests
     [Test]
     public void EveryTimeIntervalLeavesSpaceForBothBladesEvenWithFollowers()
     {
-        var session = new BullSession(Read("t").bull, 0);
+        var session = new BullSession(Read("t", true).bull, 0);
         var edges = session.Shots.SelectMany(s => new[] { BullRules.HitStart(s), BullRules.HitEnd(s) })
             .Concat(session.Charges.SelectMany(c => new[] { c.Start, c.End })).Distinct().OrderBy(t => t).ToArray();
         for (int i = 0; i < edges.Length; i++)
@@ -867,26 +876,31 @@ public class AndalusiaBullChartTests
         Assert.Throws<AssertionException>(() => CheckSpan(new BullSession(chart, 0), 1, 2));
     }
 
-    static void CheckSpan(BullSession session, double lo, double hi)
+    static void CheckSpan(BullSession session, double lo, double hi, Vector2? anchor = null)
     {
-        bool Overlap(double start, double end) => lo == hi ? start <= lo && lo <= end : start < hi && end > lo;
+        bool Overlap(double start, double end) => anchor.HasValue ? start <= hi && end >= lo
+            : lo == hi ? start <= lo && lo <= end : start < hi && end > lo;
         var shots = session.Shots.Where(s => Overlap(BullRules.HitStart(s), BullRules.HitEnd(s))).ToArray();
         var charges = session.Charges.Where(c => Overlap(c.Start, c.End)).ToArray();
-        Assert.LessOrEqual(shots.Length + charges.Length, 8);
+        // 金の検査は前後0.25秒の危険物をまとめる。同時数は時刻で分割した通常の検査で見る。
+        if (!anchor.HasValue)
+            Assert.LessOrEqual(shots.Length + charges.Length, lo >= ExtensionMs / 1000 ? 10 : 8);
         int followers = shots.Count(s => s.Follow != SaberHand.Any);
+        if (anchor.HasValue) Assert.AreEqual(0, followers, "追う弾と金の受付を重ねない");
         var safe = new List<Vector2>();
-        // 長さ1.0の水平な刃。刃半径0.05に余白0.08を加えて検査する。
+        var candidates = new List<Vector2>();
+        if (anchor.HasValue) candidates.Add(anchor.Value);
         for (int ix = 0; ix < 12; ix++)
         for (int iy = 0; iy < 9; iy++)
+            candidates.Add(new Vector2(-1.65f + ix * .3f, -1.2f + iy * .3f));
+        // 長さ1.0の水平な刃、刃半径0.05と余白0.08。金は最初の安全候補として必ず確保する。
+        foreach (var p in candidates)
         {
-            var p = new Vector2(-1.65f + ix * .3f, -1.2f + iy * .3f);
             var left = p + Vector2.left * .5f;
             var right = p + Vector2.right * .5f;
             if (safe.Any(q => Vector2.Distance(p, q) <= 1.7f)) continue;
-            // 横切る間は直線全体を危険とみなす。端の時刻も斜め・縦・同時を同じ条件で調べる。
-            if (charges.Any(c => BullRules.ChargeLaneDistance(c, left, right)
-                <= BullRules.ChargeRadius + .13f)) continue;
-            bool blocked = false;
+            bool blocked = charges.Any(c => BullRules.ChargeLaneDistance(c, left, right)
+                <= BullRules.ChargeRadius + .13f);
             foreach (var s in shots.Where(s => s.Follow == SaberHand.Any))
             {
                 if (s.Kind == "spear")
@@ -895,11 +909,13 @@ public class AndalusiaBullChartTests
                     blocked |= BullRules.SegmentDistance(left, right, a, b) <= BullRules.SpearRadius + .13f;
                 }
                 else
-                    blocked |= BullRules.DistanceToSegment(s.Position, left, right) <= (s.Kind == "bomb" ? s.Blast : BullRules.Radius(s)) + .13f;
+                    blocked |= BullRules.DistanceToSegment(s.Position, left, right)
+                        <= (s.Kind == "bomb" ? s.Blast : BullRules.Radius(s)) + .13f;
             }
+            if (anchor.HasValue && p == anchor.Value) Assert.IsFalse(blocked, "金を切る刃の安全");
             if (!blocked) safe.Add(p);
         }
-        // 候補の間隔は1.7、追う弾と刃の包絡円の直径は1.66。追う弾1発で失う候補は最大1つ。
+        // 1.7以上離れた候補なら、追う弾1発で失う候補は最大1つ。
         Assert.GreaterOrEqual(safe.Count, followers + 2, lo + "〜" + hi + "秒の両手用安全地帯");
     }
 }

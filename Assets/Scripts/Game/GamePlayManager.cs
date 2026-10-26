@@ -930,8 +930,9 @@ public class GamePlayManager : MonoBehaviour
 
         // 3. 終了判定：最終ノーツ通過＋余韻、かつアクティブなノーツがゼロ。
         // 曲の終わりは「音が鳴り終わる秒」(曲ごと。無ければ音源の長さ)から待つ(仕様面の点検 7)。
-        double endThreshold = System.Math.Max(MusicEnd + endWaitSeconds,
-                                              lastNoteTime + outroSeconds);
+        double endThreshold = ResolveEndThreshold(MusicEnd, lastNoteTime,
+            bullMode != null ? bullMode.LastTime : double.NegativeInfinity,
+            noteSpawner.JudgeLatencySeconds, endWaitSeconds, outroSeconds);
         if (songPlayer.IsPlaying && songPlayer.SongTime >= endThreshold
             && noteSpawner.AliveCount == 0 && noteSpawner.NextIndex >= noteSpawner.TotalNoteCount
             && (aimMode == null || aimMode.Completed))
@@ -939,6 +940,15 @@ public class GamePlayManager : MonoBehaviour
             finished = true;
             FinishGame();
         }
+    }
+
+    // 闘牛の最後の当たりも余韻の起点にする。LastTimeは譜面・プレイヤーのオフセット込み。
+    // 危険物の判定はカメラ遅延ぶん後なので、曲時計へ戻してから比較する。
+    public static double ResolveEndThreshold(double musicEnd, double lastNote, double lastBull,
+        double judgeLatency, double endWait, double outro)
+    {
+        double last = System.Math.Max(lastNote, lastBull + System.Math.Max(0, judgeLatency));
+        return System.Math.Max(musicEnd + endWait, last + outro);
     }
 
     // カメラ(PhoneSaber)の値で従来の判定を使っている棒があるか。マウス・IMU 判定・入力なしでは false。
