@@ -14,8 +14,8 @@ public sealed class ScrollSpeedMap
     public const double MaxSpeed = 4;
     // 飛び方の曲がり具合(ease)の範囲。手前で止まりすぎたり、最後に飛び込みすぎたりしないように。
     public const double MinEase = .5, MaxEase = 2;
-    // カウントインの一言(W と同じ形)。着地の枠は実際の時刻で縮むので、止まって見えても枠で切れる。
-    public const string RuleCaption = "止まったり走ったりする。着地の枠で切ろう";
+    // カウントインの一言。枠は実際の時刻で縮み、固定枠と重なる瞬間が切る時刻。
+    public const string RuleCaption = "速さが変わっても、枠が重なる瞬間に切ろう";
     // 区間ごとの始まりの時刻・見かけの位置・速さと、区間の中の速さの傾き(1秒あたり)。最後の区間は傾き 0。
     readonly double[] start, position, speed, slope;
     // 飛び方の曲がり具合: 変わり目の時刻・変え始めの値・目標の値・かける秒。

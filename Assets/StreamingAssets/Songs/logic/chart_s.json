@@ -1,5 +1,5 @@
 {
-  "_comment": "logic!!! の裏譜面「S」(緩急、2026-10-26)。ノーツは Hard そのまま。scroll でノーツと小節線の流れる速さを変える(止まる・速く・遅く)。届く時刻は音楽どおり。生成 C:\\Users\\shike\\dev\\tools\\ChartLogicSpeed\\gen_speed.py",
+  "_comment": "logic!!! の裏譜面「S」(緩急、2026-10-26)。Hardの424ノーツは変更しない。静寂で3回止まり、着地前0.7秒は等速。枠は実時刻。生成: C:\\Users\\shike\\dev\\tools\\ChartLogicSpeed\\gen_speed.py",
   "bpm": 160,
   "coordScale": 1,
   "offsetMs": 0,
@@ -4856,196 +4856,136 @@
   "melodyDesignVersion": 2,
   "scroll": [
     {
-      "time": 7153.0,
-      "speed": 0.0,
-      "ramp": 0.0,
-      "ease": 1.0
-    },
-    {
-      "time": 7716.0,
+      "time": 0.0,
       "speed": 1.0,
-      "ramp": 0.0,
+      "ramp": 0,
       "ease": 1.0
     },
     {
-      "time": 12028.0,
-      "speed": 0.7,
-      "ramp": 375.0,
-      "ease": 1.0
-    },
-    {
-      "time": 15028.0,
-      "speed": 1.4,
-      "ramp": 375.0,
-      "ease": 1.0
-    },
-    {
-      "time": 18028.0,
-      "speed": 0.7,
-      "ramp": 375.0,
-      "ease": 1.0
-    },
-    {
-      "time": 21028.0,
-      "speed": 1.4,
-      "ramp": 375.0,
-      "ease": 1.0
-    },
-    {
-      "time": 24028.0,
-      "speed": 1.0,
-      "ramp": 375.0,
-      "ease": 1.0
-    },
-    {
-      "time": 30028.0,
-      "speed": 1.0,
-      "ramp": 375.0,
-      "ease": 1.5
-    },
-    {
-      "time": 36028.0,
-      "speed": 1.5,
-      "ramp": 375.0,
-      "ease": 1.0
-    },
-    {
-      "time": 48028.0,
-      "speed": 1.0,
-      "ramp": 750.0,
-      "ease": 1.0
-    },
-    {
-      "time": 52403.0,
-      "speed": 0.5,
-      "ramp": 500.0,
-      "ease": 1.0
-    },
-    {
-      "time": 54403.0,
-      "speed": 1.3,
-      "ramp": 500.0,
-      "ease": 1.0
-    },
-    {
-      "time": 62403.0,
-      "speed": 1.0,
-      "ramp": 500.0,
-      "ease": 0.7
-    },
-    {
-      "time": 70403.0,
-      "speed": 1.5,
-      "ramp": 500.0,
-      "ease": 1.0
-    },
-    {
-      "time": 78403.0,
-      "speed": 1.15,
-      "ramp": 500.0,
-      "ease": 1.0
-    },
-    {
-      "time": 86403.0,
-      "speed": 1.6,
-      "ramp": 500.0,
-      "ease": 1.0
-    },
-    {
-      "time": 94403.0,
-      "speed": 0.4,
-      "ramp": 4000.0,
-      "ease": 1.0
-    },
-    {
-      "time": 101903.0,
-      "speed": 0.0,
-      "ramp": 0.0,
-      "ease": 1.0
-    },
-    {
-      "time": 102653.0,
+      "time": 10403.0,
       "speed": 1.2,
-      "ramp": 0.0,
-      "ease": 1.0
-    },
-    {
-      "time": 104403.0,
-      "speed": 1.0,
-      "ramp": 500.0,
-      "ease": 1.0
-    },
-    {
-      "time": 112153.0,
-      "speed": 0.75,
-      "ramp": 500.0,
-      "ease": 1.0
-    },
-    {
-      "time": 116153.0,
-      "speed": 1.35,
-      "ramp": 500.0,
-      "ease": 1.0
-    },
-    {
-      "time": 120153.0,
-      "speed": 0.75,
-      "ramp": 500.0,
-      "ease": 1.0
-    },
-    {
-      "time": 124153.0,
-      "speed": 1.35,
-      "ramp": 500.0,
-      "ease": 1.0
-    },
-    {
-      "time": 128153.0,
-      "speed": 1.7,
-      "ramp": 500.0,
-      "ease": 1.0
-    },
-    {
-      "time": 136153.0,
-      "speed": 1.0,
-      "ramp": 500.0,
-      "ease": 1.5
-    },
-    {
-      "time": 144153.0,
-      "speed": 1.9,
-      "ramp": 32000.0,
-      "ease": 1.0
-    },
-    {
-      "time": 176153.0,
-      "speed": 1.0,
-      "ramp": 1000.0,
-      "ease": 1.0
-    },
-    {
-      "time": 181403.0,
-      "speed": 0.0,
-      "ramp": 0.0,
-      "ease": 1.0
-    },
-    {
-      "time": 182153.0,
-      "speed": 1.0,
-      "ramp": 0.0,
-      "ease": 1.0
-    },
-    {
-      "time": 184403.0,
-      "speed": 1.7,
       "ramp": 375.0,
       "ease": 1.0
     },
     {
-      "time": 199215.0,
+      "time": 27028.0,
+      "speed": 1.1,
+      "ramp": 500.0,
+      "ease": 1.0
+    },
+    {
+      "time": 55103.0,
+      "speed": 0.8,
+      "ramp": 50.0,
+      "ease": 1.0
+    },
+    {
+      "time": 63103.0,
+      "speed": 0.75,
+      "ramp": 50.0,
+      "ease": 1.0
+    },
+    {
+      "time": 68903.0,
+      "speed": 0.0,
+      "ramp": 0,
+      "ease": 1.0
+    },
+    {
+      "time": 69403.0,
+      "speed": 1.05,
+      "ramp": 0,
+      "ease": 1.0
+    },
+    {
+      "time": 96153.0,
+      "speed": 0.625,
+      "ramp": 150.0,
+      "ease": 1.0
+    },
+    {
+      "time": 97653.0,
       "speed": 0.5,
-      "ramp": 750.0,
-      "ease": 1.6
+      "ramp": 100.0,
+      "ease": 1.0
+    },
+    {
+      "time": 100803.0,
+      "speed": 0.0,
+      "ramp": 0,
+      "ease": 1.0
+    },
+    {
+      "time": 101800.0,
+      "speed": 0.5,
+      "ramp": 0,
+      "ease": 1.0
+    },
+    {
+      "time": 102153.0,
+      "speed": 0.75,
+      "ramp": 250.0,
+      "ease": 1.0
+    },
+    {
+      "time": 115603.0,
+      "speed": 0.9,
+      "ramp": 50.0,
+      "ease": 1.0
+    },
+    {
+      "time": 120603.0,
+      "speed": 0.75,
+      "ramp": 50.0,
+      "ease": 1.0
+    },
+    {
+      "time": 125603.0,
+      "speed": 1.05,
+      "ramp": 50.0,
+      "ease": 1.0
+    },
+    {
+      "time": 134603.0,
+      "speed": 0.85,
+      "ramp": 50.0,
+      "ease": 1.0
+    },
+    {
+      "time": 141853.0,
+      "speed": 0.0,
+      "ramp": 0,
+      "ease": 1.0
+    },
+    {
+      "time": 142153.0,
+      "speed": 1.0,
+      "ramp": 0,
+      "ease": 1.0
+    },
+    {
+      "time": 168603.0,
+      "speed": 1.05,
+      "ramp": 50.0,
+      "ease": 1.0
+    },
+    {
+      "time": 176603.0,
+      "speed": 0.75,
+      "ramp": 50.0,
+      "ease": 1.0
+    },
+    {
+      "time": 184103.0,
+      "speed": 1.35,
+      "ramp": 250.0,
+      "ease": 1.0
+    },
+    {
+      "time": 200028.0,
+      "speed": 0.85,
+      "ramp": 500.0,
+      "ease": 1.0
     }
   ]
 }
