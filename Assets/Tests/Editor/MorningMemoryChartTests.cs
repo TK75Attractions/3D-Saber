@@ -8,6 +8,7 @@ using UnityEngine;
 // 2026-10-25 勉強(テンポが変わる)から 118BPM 一定の Morning へ移した。
 // 2026-10-26 ユーザー「下に出る解説いらないから消して」で字幕なし、「後半に面白みがないから直してもっとむずくしてもいい」で
 // 後半(160拍〜)は見本4小節 → まね4小節(上級3回・超上級2回)。最後は超上級のまねで曲が終わる。
+// 2026-10-27 ユーザー「morning裏の1小節目のノーツをなくして(覚えに関係しないので紛らわしい)」で、前奏のノーツを無くした。
 // 譜面は C:\Users\shike\dev\tools\ChartMorningMemory\gen_memory.py --write で作る。
 public class MorningMemoryChartTests
 {
@@ -22,13 +23,12 @@ public class MorningMemoryChartTests
     const double Bpm = 118, Beat0Ms = 524;
     const double TimeToleranceMs = .03;
 
-    ChartData chart, normal;
+    ChartData chart;
 
     [SetUp]
     public void Load()
     {
         chart = Read("m");
-        normal = Read("normal");
     }
 
     static ChartData Read(string difficulty)
@@ -109,16 +109,13 @@ public class MorningMemoryChartTests
     }
 
     [Test]
-    public void OnlyTheIntroStaysVisibleAndTheSongEndsInsideTheLastRecall()
+    public void TheIntroHasNoNotesAndTheSongEndsInsideTheLastRecall()
     {
-        var expected = normal.notes.Where(Intro).OrderBy(n => n.time).ToArray();
-        var actual = chart.notes.Where(Intro).OrderBy(n => n.time).ToArray();
-        Assert.AreEqual(expected.Length, actual.Length);
-        for (int i = 0; i < expected.Length; i++)
-        {
-            Assert.AreEqual(expected[i].time, actual[i].time);
-            Assert.AreEqual(0f, actual[i].veil);
-        }
+        // 見本・まねと関係ないノーツが前奏にあると、それを最初の見本と取り違える。最初に見えるノーツは1回目の見本。
+        Assert.IsEmpty(chart.notes.Where(Intro).ToArray(), "前奏(16拍まで)にノーツを置かない");
+        var first = chart.notes.OrderBy(n => n.time).First();
+        Assert.AreEqual(Loops[0].start, first.beat, 1e-4f, "最初のノーツは1回目の見本");
+        Assert.AreEqual(0f, first.veil);
         var last = chart.notes.OrderBy(n => n.time).Last();
         Assert.Greater(last.veil, 0f, "最後のノーツは超上級のまね");
         Assert.LessOrEqual(last.time, chart.memory.veils.Last().endTime);
