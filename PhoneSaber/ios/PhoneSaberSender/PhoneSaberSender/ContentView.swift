@@ -9,6 +9,7 @@ struct ContentView: View {
     @AppStorage("phoneSaberAutoTransferDebugBundles") private var autoTransferDebugBundles = true
     @State private var recordingPreviewURL: URL?
     @State private var showRecordingCleanupConfirmation = false
+    @State private var showIgnoreInspection = false
 #if DEBUG
     @State private var showDebugPerformance = false
 #endif
@@ -59,7 +60,13 @@ struct ContentView: View {
             model.sceneDidChange(isActive: phase == .active)
         }
         .onChange(of: recordingPreviewURL) { url in
-            model.setLowHeatInhibitedByUI(url != nil)
+            model.setLowHeatInhibitedByUI(url != nil || showIgnoreInspection)
+        }
+        .onChange(of: showIgnoreInspection) { shown in
+            model.setLowHeatInhibitedByUI(shown || recordingPreviewURL != nil)
+        }
+        .sheet(isPresented: $showIgnoreInspection) {
+            IgnoreZoneInspectionView(model: model)
         }
     }
 
@@ -500,6 +507,7 @@ struct ContentView: View {
                                 set: { model.setTrackLockEnabled($0) }
                             ))
                             Text("無視する赤・青の物: \(model.ignoreZoneSummary)")
+                            Button("登録ゾーンを確認・個別解除") { showIgnoreInspection = true }
                             Text(model.ignoreLearning ? "学習中：剣を消して3秒待つ" : "剣を消して3秒待つ")
                             HStack {
                                 Button("今の赤を無視") { model.ignoreCurrentDetection(.red) }
@@ -776,3 +784,105 @@ private struct DebugPerformanceRowView: View {
     }
 }
 #endif
+
+/// カメラ画像は保持せず、検出フレームの正規化座標だけを図示する。
+private struct IgnoreZoneInspectionView: View {
+    @ObservedObject var model: CameraViewModel
+    @Environment(\.dismiss) private var dismiss
+    @State private var session: UUID?
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("カメラを動かした後は、色・番号・位置を確認してください。選んだ1件だけ解除できます。学習中の解除は学習も中止します。")
+                    Text("検出フレームを縦向き・左右反転なしで表示。左上が(0,0)、右がX、下がY、各軸0〜100%。送信用の反転・プレイ範囲への拡大は適用しません。")
+                        .font(.caption)
+                    coordinateDiagram
+                        .aspectRatio(1, contentMode: .fit)
+                        .accessibilityLabel("登録ゾーンと無視設定で除外中の候補の正規化フレーム座標図")
+                    Text("破線の枠＝登録ゾーン、太線と丸＝無視設定で除外中の候補。枠内でも登録形状に一致しなければ除外されません。実刃かどうかは自動判定しません。")
+                        .font(.caption)
+                    if let snapshot = model.ignoreInspectionSnapshot {
+                        Text("最新処理フレーム \(snapshot.sequence)（\(snapshot.width)×\(snapshot.height)）")
+                            .font(.caption.monospacedDigit())
+                        if snapshot.matches.isEmpty {
+                            Text("現在、表示対象の除外候補はありません。")
+                        }
+                        ForEach(snapshot.matches.indices, id: \.self) { index in
+                            let match = snapshot.matches[index]
+                            let zones = match.zoneIndices.map { "\(match.color == .red ? "赤" : "青")\($0 + 1)" }.joined(separator: "・")
+                            Text("\(match.label)：無視設定で除外中 → \(zones)\n端点(px)：(\(match.endpoints.0.x), \(match.endpoints.0.y)) → (\(match.endpoints.1.x), \(match.endpoints.1.y))")
+                                .font(.caption.monospacedDigit())
+                        }
+                    } else {
+                        Text("最新の処理フレームを待っています。送信停止中は候補を表示しません。")
+                    }
+                    Text("プレイ範囲内のeligible候補だけを表示します。追跡など他の条件による未選択は表示対象外です。複数の登録に一致する場合は、すべての番号を表示します。")
+                        .font(.caption).foregroundStyle(.secondary)
+                    Text("登録：\(model.ignoreZoneSummary)").font(.headline)
+                    ForEach(model.ignoreZoneEntries) { entry in
+                        HStack(alignment: .top) {
+                            VStack(alignment: .leading) {
+                                Text(entry.label).bold().foregroundStyle(tint(entry.id.color))
+                                Text(String(format: "X %.1f〜%.1f%% / Y %.1f〜%.1f%%",
+                                            entry.zone.minX * 100, entry.zone.maxX * 100,
+                                            entry.zone.minY * 100, entry.zone.maxY * 100))
+                                    .font(.caption.monospacedDigit())
+                            }
+                            Spacer()
+                            Button("\(entry.label)を解除", role: .destructive) {
+                                if let session { model.removeIgnoreZone(entry, session: session) }
+                            }
+                            .buttonStyle(.bordered)
+                        }
+                    }
+                }
+                .padding()
+            }
+            .navigationTitle("無視する赤・青の物")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { Button("閉じる") { dismiss() } }
+        }
+        .onAppear { session = model.beginIgnoreInspection() }
+        .onDisappear {
+            if let session { model.endIgnoreInspection(session) }
+            session = nil
+        }
+    }
+
+    private func tint(_ color: SaberColor) -> Color { color == .red ? .red : .blue }
+
+    private var coordinateDiagram: some View {
+        Canvas { context, size in
+            let bounds = CGRect(origin: .zero, size: size)
+            context.fill(Path(bounds), with: .color(.black.opacity(0.06)))
+            context.stroke(Path(bounds), with: .color(.secondary))
+            for entry in model.ignoreZoneEntries {
+                let z = entry.zone
+                let rect = CGRect(x: z.minX * size.width, y: z.minY * size.height,
+                                  width: (z.maxX - z.minX) * size.width, height: (z.maxY - z.minY) * size.height)
+                context.stroke(Path(rect), with: .color(tint(entry.id.color)), style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
+                context.draw(Text(entry.label).font(.caption).foregroundColor(tint(entry.id.color)),
+                             at: CGPoint(x: max(14, min(size.width - 14, rect.midX)),
+                                         y: max(10, min(size.height - 10, rect.minY))), anchor: .center)
+            }
+            if let snapshot = model.ignoreInspectionSnapshot {
+                for match in snapshot.matches {
+                    let a = snapshot.diagramPoint(match.endpoints.0)
+                    let b = snapshot.diagramPoint(match.endpoints.1)
+                    let p = CGPoint(x: a.x * size.width, y: a.y * size.height)
+                    let q = CGPoint(x: b.x * size.width, y: b.y * size.height)
+                    var line = Path(); line.move(to: p); line.addLine(to: q)
+                    context.stroke(line, with: .color(tint(match.color)), lineWidth: 3)
+                    for point in [p, q] {
+                        context.fill(Path(ellipseIn: CGRect(x: point.x - 3, y: point.y - 3, width: 6, height: 6)),
+                                     with: .color(tint(match.color)))
+                    }
+                    context.draw(Text(match.label).font(.caption2).foregroundColor(tint(match.color)),
+                                 at: CGPoint(x: (p.x + q.x) / 2, y: (p.y + q.y) / 2), anchor: .bottom)
+                }
+            }
+        }
+    }
+}

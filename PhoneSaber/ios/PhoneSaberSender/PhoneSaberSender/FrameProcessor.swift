@@ -102,6 +102,83 @@ protocol FrameAnalysisObserver: AnyObject {
     func observe(_ frame: ObservedFrame)
 }
 
+/// 添字は設定の世代と組にする。同じ形の重複登録も別々に解除できる。
+struct SaberIgnoreZoneEntry: Identifiable {
+    struct ID: Hashable {
+        let revision: UUID
+        let color: SaberColor
+        let index: Int
+    }
+    let id: ID
+    let zone: SaberIgnoreZone
+    var label: String { "\(id.color == .red ? "赤" : "青")\(id.index + 1)" }
+}
+
+/// 画像を持たない確認用の値。認識・選択・追跡・送信には戻さない。
+struct SaberIgnoreInspectionSnapshot {
+    struct Match {
+        let color: SaberColor
+        let candidateIndex: Int
+        let endpoints: (PixelPoint, PixelPoint)
+        let zoneIndices: [Int]
+        var label: String { "\(color == .red ? "赤" : "青")候補\(candidateIndex + 1)" }
+    }
+    let width: Int
+    let height: Int
+    let sequence: UInt64
+    let matches: [Match]
+
+    func diagramPoint(_ point: PixelPoint) -> (x: Double, y: Double) {
+        (Double(point.x) / Double(max(width, 1)), Double(point.y) / Double(max(height, 1)))
+    }
+
+    init(analysis: SaberFrameAnalysis, width: Int, height: Int, sequence: UInt64,
+         zones: [SaberColor: [SaberIgnoreZone]], playArea: SaberPlayArea?) {
+        self.width = width; self.height = height; self.sequence = sequence
+        var matches: [Match] = []
+        for color: SaberColor in [.red, .blue] {
+            let registered = zones[color] ?? []
+            guard !registered.isEmpty else { continue }
+            for (index, candidate) in (analysis.candidates[color] ?? []).enumerated() {
+                guard candidate.isEmitterEligible,
+                      playArea?.containsMidpoint(candidate.endpoints, width: width, height: height) ?? true else { continue }
+                let indices = registered.indices.filter {
+                    registered[$0].ignores(candidate.endpoints, width: width, height: height)
+                }
+                if !indices.isEmpty {
+                    matches.append(Match(color: color, candidateIndex: index, endpoints: candidate.endpoints, zoneIndices: indices))
+                }
+            }
+        }
+        self.matches = matches
+    }
+}
+
+/// pendingLock で保護。通知は投入せず、既存のUIタイマーが最新1件を取得する。
+struct SaberIgnoreInspectionMailbox {
+    private var session: UUID?
+    private var revision = UUID()
+    private var latest: (snapshot: SaberIgnoreInspectionSnapshot, time: TimeInterval)?
+    var ticket: UUID? { session == nil ? nil : revision }
+    var pendingCount: Int { latest == nil ? 0 : 1 }
+
+    mutating func open(_ session: UUID?) {
+        self.session = session
+        invalidate()
+    }
+    mutating func invalidate() { revision = UUID(); latest = nil }
+    mutating func offer(_ snapshot: SaberIgnoreInspectionSnapshot, ticket: UUID, at time: TimeInterval) {
+        guard self.ticket == ticket else { return }
+        latest = (snapshot, time)
+    }
+    mutating func take(session: UUID, at time: TimeInterval) -> SaberIgnoreInspectionSnapshot? {
+        guard self.session == session else { return nil }
+        defer { latest = nil }
+        guard let latest, time >= latest.time, time - latest.time < 0.5 else { return nil }
+        return latest.snapshot
+    }
+}
+
 final class FrameProcessor: @unchecked Sendable {
     let queue = DispatchQueue(label: "PhoneSaberSender.frames", qos: .userInteractive)
     /// Accessed only on `queue`. Skipped while a Debug Recording runs.
@@ -129,6 +206,7 @@ final class FrameProcessor: @unchecked Sendable {
     private var trackLockEnabled = false // pendingLock で保護。
     func setTrackLockEnabled(_ enabled: Bool) {
         pendingLock.lock()
+        ignoreInspection.invalidate()
         if trackLockEnabled != enabled { playAreaRevision &+= 1; trackLockRevision &+= 1 }
         trackLockEnabled = enabled
         pendingLock.unlock()
@@ -146,10 +224,18 @@ final class FrameProcessor: @unchecked Sendable {
     /// カメラ設定のスナップショット。低ISOの明示ON以外では従来経路を維持する。
     private var shutterEmitterMode = ShutterEmitterMode()
     func setShutterEmitterMode(_ mode: ShutterEmitterMode) {
-        pendingLock.lock(); shutterEmitterMode = mode; pendingLock.unlock()
+        pendingLock.lock(); shutterEmitterMode = mode; ignoreInspection.invalidate(); pendingLock.unlock()
     }
     /// 無視する範囲（SaberIgnoreZone）。main から設定し、検出スレッドで読む（pendingLock で保護）。
     private var ignoreZones: [SaberColor: [SaberIgnoreZone]] = [:]
+    private var ignoreInspection = SaberIgnoreInspectionMailbox()
+    func setIgnoreInspectionSession(_ session: UUID?) {
+        pendingLock.lock(); ignoreInspection.open(session); pendingLock.unlock()
+    }
+    func takeIgnoreInspection(session: UUID) -> SaberIgnoreInspectionSnapshot? {
+        pendingLock.lock(); defer { pendingLock.unlock() }
+        return ignoreInspection.take(session: session, at: clock())
+    }
     private var ignoreLearners: [UUID: SaberIgnoreLearner] = [:]
     func startIgnoreLearning(_ colors: [SaberColor]) -> UUID {
         pendingLock.lock(); defer { pendingLock.unlock() }
@@ -165,7 +251,7 @@ final class FrameProcessor: @unchecked Sendable {
         pendingLock.lock(); ignoreLearners.removeAll(); pendingLock.unlock()
     }
     func setIgnoreZones(_ zones: [SaberColor: [SaberIgnoreZone]]) {
-        pendingLock.lock(); ignoreZones = zones; pendingLock.unlock()
+        pendingLock.lock(); ignoreZones = zones; ignoreInspection.invalidate(); pendingLock.unlock()
     }
     /// プレイ範囲（SaberPlayArea）と、その学習。main から設定し、検出スレッドで読む（pendingLock で保護）。
     /// 学習中は範囲で絞らない（前の範囲より広く覚えられるように）。無視範囲は学習中も効く。
@@ -179,17 +265,20 @@ final class FrameProcessor: @unchecked Sendable {
     private var lastPlayAreaGrowthNotification = -Double.infinity // 実通知時刻。pendingLock で保護。
     func setPlayArea(_ area: SaberPlayArea?) {
         pendingLock.lock()
+        ignoreInspection.invalidate()
         playArea = area; playAreaRevision &+= 1; playAreaGrowthPending = false
         pendingLock.unlock()
     }
     func startPlayAreaLearning() {
         pendingLock.lock()
+        ignoreInspection.invalidate()
         playAreaLearner = SaberPlayAreaLearner(); positionLearningBounds = nil; playAreaRevision &+= 1
         pendingLock.unlock()
     }
     /// 学習を終えて結果を返す。学習していなければ nil。
     func finishPlayAreaLearning(reportBounds: ((SaberPlayArea?) -> Void)? = nil) -> SaberPlayAreaLearner? {
         pendingLock.lock(); defer { pendingLock.unlock() }
+        ignoreInspection.invalidate()
         let learner = playAreaLearner
         reportBounds?(positionLearningBounds)
         positionLearningBounds = nil
@@ -288,6 +377,7 @@ final class FrameProcessor: @unchecked Sendable {
     @discardableResult
     func reset() -> Int {
         pendingLock.lock()
+        ignoreInspection.invalidate()
         // 検出キューを待つ前に旧学習・範囲通知を無効化し、処理中フレームの書き戻しも拒否する。
         playAreaLearner = nil
         positionLearningBounds = nil
@@ -624,6 +714,7 @@ final class FrameProcessor: @unchecked Sendable {
         let lockEnabled = trackLockEnabled
         let lockRevision = trackLockRevision
         let zones = ignoreZones
+        let inspectionTicket = ignoreInspection.ticket
         let learningArea = playAreaLearner != nil
         let area = learningArea ? nil : playArea
         let areaRevision = playAreaRevision
@@ -769,6 +860,13 @@ final class FrameProcessor: @unchecked Sendable {
         let emitted = emitResults(detected, width: width, height: height,
                                   processingStart: processingStart,
                                   generation: generation, trace: trace, recordingFrameID: sequence)
+        if let inspectionTicket, let observedAnalysis {
+            let snapshot = SaberIgnoreInspectionSnapshot(analysis: observedAnalysis, width: width, height: height,
+                sequence: sequence, zones: zones, playArea: area)
+            pendingLock.lock()
+            ignoreInspection.offer(snapshot, ticket: inspectionTicket, at: processingStart)
+            pendingLock.unlock()
+        }
         // 統計ロックを待つ前に座標を送信する。従来の撮影→認識完了の測定終点は維持。
         onHealthSample?(ProcessInfo.processInfo.systemUptime, max(0, (detectionEnd - processingStart) * 1000), generation,
                         captureHostTime.map { (detectionEnd - $0) * 1000 })

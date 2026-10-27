@@ -22,6 +22,9 @@ labels.json の形式（合成座標の例）:
 absent の新規誤検出も FAIL。既知失敗の自動登録・更新はしない。
 run は lossless と同じ本番 analyzeSabers の静止画ホストビルドを使用する。
 FrameProcessor の追跡状態・無視範囲・送信抑制・UDP の再現ではない。
+任意の shutterEmitter: {"shutter": 2000, "iso": 250, "enabled": true} は
+記録された camera.shutter / shutterISO / shutterEmitter と一致する場合だけ登録する。
+iso は要求値。未記録時は省略し、従来のホスト既定動作を保持する。
 """
 
 from __future__ import annotations
@@ -88,6 +91,8 @@ def validate_label(label: dict, size: tuple[int, int]) -> None:
     if not isinstance(label.get("date"), str):
         raise ValueError("date は ISO 8601 日時が必要です")
     datetime.fromisoformat(label["date"])
+    if "shutterEmitter" in label:
+        lossless.validate_shutter_emitter(label["shutterEmitter"])
     for color in COLORS:
         truth = label.get(color)
         if truth == "absent":
@@ -140,6 +145,21 @@ def add_frames(labels_path: Path, inbox: Path, destination: Path) -> int:
             raise ValueError(f"フル解像度の event 画像が必要です: {source.name}")
         if label["exposure"] != metadata["camera"]["exposureBias"]:
             raise ValueError(f"露出がクリップの記録と異なります: {source.name}")
+        if "shutterEmitter" in label:
+            camera = metadata["camera"]
+            recorded = {"shutter": camera.get("shutter"), "iso": camera.get("shutterISO"),
+                        "enabled": camera.get("shutterEmitter")}
+            lossless.validate_shutter_emitter(recorded)
+            if label["shutterEmitter"] != recorded:
+                raise ValueError(f"shutterEmitter がクリップの記録と異なります: {source.name}")
+        image = next(image for image in summary["images"] if image["path"] == "images/" + label["image"])
+        # 設定と原資料を結果から追跡できるようにする。旧ラベルは変更しない。
+        label = {**label, "captureSource": {
+            "summarySHA256": hashlib.sha256((bundle / "summary.json").read_bytes()).hexdigest(),
+            "frameContextSHA256": hashlib.sha256((bundle / image["frameContextPath"]).read_bytes()).hexdigest(),
+            "frameID": image["frameID"], "timestamp": image["timestamp"],
+            "camera": metadata["camera"],
+        }}
         name = label["sourceClip"] + "--" + label["image"]
         target = destination / name
         sidecar = target.with_suffix(".json")
@@ -204,6 +224,10 @@ def evaluate(label: dict, color: str, selected: list | None) -> dict:
 def run_set(directory: Path) -> list[dict]:
     frames = load_set(directory)
     rows = []
+    sources = {str(path.relative_to(lossless.REPO)): hashlib.sha256(path.read_bytes()).hexdigest()
+               for path in (lossless.REPO / "ios/PhoneSaberSender/PhoneSaberSender/DetectionCore.swift",
+                            lossless.REPO / "ios/PhoneSaberSender/PhoneSaberSender/BGRADetection.swift",
+                            lossless.REPO / "ios/PhoneSaberSenderTests/VideoDetectionDiagnostic.swift")}
     with tempfile.TemporaryDirectory(prefix="phonesaber-field-host-") as temporary:
         # sandbox でも既定のホーム側キャッシュへの書込みを必要としない。
         previous = {key: os.environ.get(key) for key in ("CLANG_MODULE_CACHE_PATH", "SWIFT_MODULECACHE_PATH")}
@@ -213,9 +237,16 @@ def run_set(directory: Path) -> list[dict]:
             harness = Path(temporary) / "detector"
             lossless.compile_harness(harness)
             for path, label in frames:
-                analysis = lossless.analyze_png(harness, path)
+                mode = label.get("shutterEmitter")
+                analysis = lossless.analyze_png(harness, path, shutter_emitter=mode)
                 for color in COLORS:
-                    rows.append({"frame": path.stem, **evaluate(label, color, analysis["colors"][color]["selected"])})
+                    rows.append({"frame": path.stem, "imageSHA256": label["sha256"],
+                                 "labelSHA256": hashlib.sha256(path.with_suffix(".json").read_bytes()).hexdigest(),
+                                 "captureSource": label.get("captureSource"),
+                                 "requestedShutterEmitter": mode,
+                                 "effectiveShutterEmitter": analysis.get("shutterEmitter"),
+                                 "detectorSources": sources, "swiftFlags": lossless.guard_build.swift_flags(),
+                                 **evaluate(label, color, analysis["colors"][color]["selected"])})
         finally:
             for key, value in previous.items():
                 if value is None:

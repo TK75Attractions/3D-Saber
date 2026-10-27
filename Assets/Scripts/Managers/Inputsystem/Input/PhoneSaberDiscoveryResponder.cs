@@ -57,6 +57,8 @@ public sealed class PhoneSaberDiscoveryResponder : IDisposable
         {
             int id = Interlocked.Increment(ref commandId);
             double now = SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp);
+            // 期限切れの枠が再利用される前に、残った重複数も記録する。
+            RecordSuppressedAcknowledgements();
             Acknowledgements.Queue(id, fields, now, automatic);
             if (fields == DefaultsCommand)
             {
@@ -166,9 +168,12 @@ public sealed class PhoneSaberDiscoveryResponder : IDisposable
                 else if (PhoneSaberAcknowledgement.TryParse(data, length, out var ack))
                 {
                     string from = ((IPEndPoint)remote).Address.ToString();
-                    if (Acknowledgements.Receive(ack, from))
+                    if (Acknowledgements.Receive(ack, from, out bool changed) && changed)
+                    {
                         PhoneSaberEventLog.Record(ack.Station, "SYSTEM", "phone-ack",
                             $"id={ack.Id} result={ack.Result} detail={ack.Detail} from={from}");
+                        RecordSuppressedAcknowledgements();
+                    }
                 }
                 else if (length <= PhoneSaberMetrics.MaximumBytes)
                     Metrics.Receive(data, length, ((IPEndPoint)remote).Address,
@@ -194,6 +199,14 @@ public sealed class PhoneSaberDiscoveryResponder : IDisposable
             thread = null;
         }
         active?.Join(1000);
+        RecordSuppressedAcknowledgements();
+    }
+
+    static void RecordSuppressedAcknowledgements()
+    {
+        foreach (var count in Acknowledgements.TakeSuppressedCounts())
+            PhoneSaberEventLog.Record(Volatile.Read(ref commandStation), "SYSTEM", "phone-ack-duplicates",
+                $"id={count.Key} suppressed={count.Value}");
     }
 
     public void Dispose()
@@ -315,13 +328,24 @@ public sealed class PhoneSaberAcknowledgement
 public sealed class PhoneSaberAcknowledgementStore
 {
     public const int MaximumCommands = 32;
+    public const int MaximumSuppressedCount = 1000000;
+    // 適用はmain threadだけ。指示・選択台・送信元に紐づく成功／失敗を両入口で共有する。
+    internal sealed class LearnedAreaApplication
+    {
+        public readonly PhoneSaberAcknowledgement Ack;
+        public readonly string Station;
+        public bool Attempted, Success;
+        public string Error;
+        public LearnedAreaApplication(PhoneSaberAcknowledgement ack, string station) { Ack = ack; Station = station; }
+    }
     sealed class Command
     {
         public int Id;
         public string Fields;
         public double QueuedAt;
         public bool Automatic;
-        public bool LearnedAreaTaken;
+        public LearnedAreaApplication Application;
+        public int SuppressedCount, ReportedSuppressedCount;
         public readonly HashSet<string> AppliedStations = new HashSet<string>();
         public readonly HashSet<string> SupersededPhones = new HashSet<string>();
         public readonly Dictionary<string, PhoneSaberAcknowledgement> Phones = new Dictionary<string, PhoneSaberAcknowledgement>();
@@ -406,16 +430,29 @@ public sealed class PhoneSaberAcknowledgementStore
             .Select(c => Encoding.ASCII.GetBytes(PhoneSaberDiscoveryResponder.BuildCommand(c.Id, c.Fields))).ToArray();
     }
 
-    public bool Receive(PhoneSaberAcknowledgement ack, string sender)
+    public bool Receive(PhoneSaberAcknowledgement ack, string sender) => Receive(ack, sender, out _);
+
+    // 受理と状態更新を分離する。再送は期限を延ばさず、Revision・個別ログも増やさない。
+    public bool Receive(PhoneSaberAcknowledgement ack, string sender, out bool changed)
     {
+        changed = false;
         lock (gate)
         {
             var command = commands.Find(c => c.Id == ack.Id);
             if (command == null) return false;
             if (!command.Phones.TryGetValue(sender, out var previous) && command.Phones.Count >= 8) return false;
             // 開始の再送が完了より遅れて届いても、学習中へ戻さない。
-            if (previous != null && (previous.Result == "learned" || previous.Result == "failed" ||
-                previous.Result == "ignored" || previous.Result == "nothing") && ack.Result == "learning") return true;
+            bool same = previous != null && previous.Station == ack.Station && previous.Platform == ack.Platform &&
+                previous.Result == ack.Result && previous.Detail == ack.Detail;
+            bool finished = previous != null && (previous.Result == "learned" || previous.Result == "failed" ||
+                previous.Result == "ignored" || previous.Result == "nothing");
+            bool areaFinished = previous != null && command.Fields.StartsWith("learn-area=") &&
+                (previous.Result == "failed" || previous.Result == "learned" && previous.TryLearnedBounds(out _));
+            if (same || finished && ack.Result == "learning" || areaFinished)
+            {
+                command.SuppressedCount = Math.Min(MaximumSuppressedCount, command.SuppressedCount + 1);
+                return true;
+            }
             command.Phones[sender] = new PhoneSaberAcknowledgement(ack.Id, ack.Station, ack.Platform, ack.Result, ack.Detail, sender);
             string setting = AbsoluteSetting(command.Fields, out string expectedDetail);
             // ISOはカメラの上下限で補正した実適用値が返る。他の設定は要求値との一致まで確認する。
@@ -435,6 +472,50 @@ public sealed class PhoneSaberAcknowledgementStore
                         older.SupersededPhones.Add(sender);
                 }
             Interlocked.Increment(ref revision);
+            changed = true;
+            return true;
+        }
+    }
+
+    public int ReadSuppressedCount(int id)
+    {
+        lock (gate) return commands.Find(c => c.Id == id)?.SuppressedCount ?? 0;
+    }
+
+    // 最大32指示・各100万件で飽和。次の状態変化か停止時に差分をまとめて記録する。
+    internal KeyValuePair<int, int>[] TakeSuppressedCounts()
+    {
+        lock (gate)
+        {
+            var counts = commands.Where(c => c.SuppressedCount > c.ReportedSuppressedCount)
+                .Select(c => new KeyValuePair<int, int>(c.Id, c.SuppressedCount - c.ReportedSuppressedCount)).ToArray();
+            foreach (var c in commands) c.ReportedSuppressedCount = c.SuppressedCount;
+            return counts;
+        }
+    }
+
+    internal bool TryLearnedAreaApplication(string station, bool uniqueSender, out LearnedAreaApplication application)
+    {
+        application = null;
+        if (station != "A" && station != "B") return false;
+        lock (gate)
+        {
+            var command = commands.LastOrDefault(c => c.Fields.StartsWith("learn-area="));
+            if (command == null || command.AppliedStations.Contains(station)) return false;
+            var phones = command.Phones.Values.Where(a => a.Platform == "ios").ToArray();
+            // 同じ台の開始ACKも優先する。台なしは送信元が一意の場合だけ代用し、別台は使わない。
+            var matching = phones.Where(a => a.Station == station).ToArray();
+            var candidates = matching.Length > 0 ? matching : phones.Where(a => a.Station == "none").ToArray();
+            if ((matching.Length == 0 || uniqueSender) && candidates.Length != 1) return false;
+            var ack = candidates.OrderBy(a => a.Sender, StringComparer.Ordinal).FirstOrDefault(a =>
+                a.Result == "learned" && a.TryLearnedBounds(out _));
+            if (ack == null) return false;
+            // Rect不一致などで未適用なら、後から来た台一致ACKを選び直せる。
+            if (command.Application == null || !command.Application.Attempted)
+                command.Application = new LearnedAreaApplication(ack, station);
+            // 選択後の台名変更・別送信元で保存済み成功を流用しない。
+            if (command.Application.Station != station || !ReferenceEquals(command.Application.Ack, ack)) return false;
+            application = command.Application;
             return true;
         }
     }
@@ -443,23 +524,11 @@ public sealed class PhoneSaberAcknowledgementStore
     public bool TakeLearnedArea(string station, out PhoneSaberAcknowledgement.LearnedBounds bounds)
     {
         bounds = default;
-        if (station != "A" && station != "B") return false;
         lock (gate)
         {
-            var command = commands.LastOrDefault(c => c.Fields.StartsWith("learn-area="));
-            if (command == null || command.LearnedAreaTaken || command.AppliedStations.Contains(station)) return false;
-            var phones = command.Phones.Values.Where(a => a.Platform == "ios").ToArray();
-            // 同じ台の送信元が開始ACKだけでも返していれば、その端末の完了を待つ。
-            // 台未設定は送信元を一意に選べる場合だけ代用し、別の台のACKは使わない。
-            var matching = phones.Where(a => a.Station == station).ToArray();
-            var candidates = matching.Length > 0 ? matching : phones.Where(a => a.Station == "none").ToArray();
-            if (matching.Length == 0 && candidates.Length != 1) return false;
-            var ack = candidates.OrderBy(a => a.Sender, StringComparer.Ordinal).FirstOrDefault(a =>
-                a.Result == "learned" && a.TryLearnedBounds(out _));
-            if (ack == null || !ack.TryLearnedBounds(out bounds)) return false;
-            // 台名変更や遅延ACKでも、同じ指示から別の矩形を再適用しない。
-            command.LearnedAreaTaken = true;
-            return true;
+            if (!TryLearnedAreaApplication(station, false, out var application) || application.Attempted) return false;
+            application.Attempted = true;
+            return application.Ack.TryLearnedBounds(out bounds);
         }
     }
 

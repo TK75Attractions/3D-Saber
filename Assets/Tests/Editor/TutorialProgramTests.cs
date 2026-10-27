@@ -73,6 +73,7 @@ public class TutorialProgramTests
     [TestCase("B", false, true)]
     public void RangeStep_OnlyReportsOkWhenThePcAppliedTheRange(string station, bool rejected, bool missingInput)
     {
+        using var commands = new PhoneSaberPositionCalibrationTests.PhoneCommandsScope();
         const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
         var savedRead = TutorialController.ReadLearnArea;
         var savedApply = TutorialController.ApplyWidenedRange;
@@ -96,12 +97,15 @@ public class TutorialProgramTests
                 input.enabled = false;
                 typeof(InputPoint).GetField("phoneSaberStation", flags).SetValue(input, station);
                 singleton.SetValue(null, input);
+                PhoneSaberPositionCalibrationTests.QueueLearnedRect(station, Rect.MinMaxRect(.1f, .1f, .9f, .9f));
                 Assert.IsTrue(input.ApplyLearnedPositionCalibration(Rect.MinMaxRect(.1f, .1f, .9f, .9f), "before", out _));
             }
             string before = PlayerPrefs.GetString(key);
             var learned = rejected ? new Rect(.5f, .5f, .001f, .001f) : Rect.MinMaxRect(.2f, .1f, .8f, .9f);
             string detail = rejected ? "samples300-area0.5_0.5_0.501_0.501" : "samples300-area0.2_0.1_0.8_0.9";
-            TutorialController.ReadLearnArea = _ => new[] { RangeAck("learned", detail, station) };
+            PhoneSaberDiscoveryResponder.Acknowledgements.Queue(7, "learn-area=10", 100);
+            PhoneSaberDiscoveryResponder.Acknowledgements.Receive(RangeAck("learned", detail, station), "phone");
+            TutorialController.ReadLearnArea = _ => PhoneSaberDiscoveryResponder.Acknowledgements.Read(7);
             TutorialController.ApplyWidenedRange = (System.Func<Rect, bool>)System.Delegate.CreateDelegate(
                 typeof(System.Func<Rect, bool>), typeof(TutorialController).GetMethod("DefaultApplyWidenedRange", BindingFlags.Static | BindingFlags.NonPublic));
             var controller = root.AddComponent<TutorialController>();
@@ -308,13 +312,20 @@ public class TutorialProgramTests
             TutorialRangeBaseline.Forget();
             input.ResetPositionCalibration();
             if (setup != 0)
+            {
+                PhoneSaberPositionCalibrationTests.QueueLearnedRect(station, Rect.MinMaxRect(.4f, .5f, .6f, .7f));
                 Assert.IsTrue(input.ApplyLearnedPositionCalibration(Rect.MinMaxRect(.4f, .5f, .6f, .7f), "F8", out _));
+            }
             string baseline = PlayerPrefs.GetString(key, "");
             TutorialRangeBaseline.Remember(station);
+            PhoneSaberPositionCalibrationTests.QueueLearnedRect(station, Rect.MinMaxRect(.2f, .1f, .8f, .9f));
             Assert.IsTrue(TutorialController.ApplyLearnedRange(input, Rect.MinMaxRect(.2f, .1f, .8f, .9f)));
             TutorialRangeBaseline.Finish(station, true);
             if (setup == 2)
+            {
+                PhoneSaberPositionCalibrationTests.QueueLearnedRect(station, Rect.MinMaxRect(.3f, .3f, .7f, .7f));
                 Assert.IsTrue(input.ApplyLearnedPositionCalibration(Rect.MinMaxRect(.3f, .3f, .7f, .7f), "staff", out _));
+            }
             string beforeTitle = PlayerPrefs.GetString(key, "");
             var commands = PhoneSaberDiscoveryResponder.Acknowledgements;
             commands.Latest(out int before, out _, out _);

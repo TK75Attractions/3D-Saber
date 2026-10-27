@@ -149,7 +149,13 @@ public class PhoneSaberAcknowledgementTests
         store.Receive(Ack(1, result, detail, station: "A"), "phoneA");
         store.Receive(Ack(1, "learned", "samples300-area0.4_0.5_0.6_0.7"), "phoneNone");
         Assert.IsFalse(store.TakeLearnedArea("A", out _));
-        store.Receive(Ack(1, "learned", "samples300-area0.2_0.1_0.8_0.9", station: "A"), "phoneA");
+        if (result == "failed")
+        {
+            store.Receive(Ack(1, "learned", "samples300-area0.2_0.1_0.8_0.9", station: "A"), "phoneA");
+            Assert.IsFalse(store.TakeLearnedArea("A", out _), "失敗後の遅延成功は採用しない");
+            store.Queue(2, "learn-area=10", 20);
+        }
+        store.Receive(Ack(result == "failed" ? 2 : 1, "learned", "samples300-area0.2_0.1_0.8_0.9", station: "A"), "phoneA");
         Assert.IsTrue(store.TakeLearnedArea("A", out var bounds));
         Assert.AreEqual(.2f, bounds.xMin);
     }
@@ -211,6 +217,9 @@ public class PhoneSaberAcknowledgementTests
         Assert.IsFalse(store.TakeLearnedArea("A", out _));
         store.Receive(Ack(2, "learned", detail, station: "A"), "192.0.2.1");
         store.Receive(Ack(2, "learning", "10s", station: "A"), "192.0.2.1");
+        Assert.IsFalse(store.TakeLearnedArea("A", out _), "failedの指示を遅延ACKで復活させない");
+        store.Queue(4, "learn-area=10", 20);
+        store.Receive(Ack(4, "learned", detail, station: "A"), "192.0.2.1");
         Assert.IsTrue(store.TakeLearnedArea("A", out _));
         Assert.IsFalse(store.TakeLearnedArea("A", out _));
     }
@@ -440,4 +449,53 @@ public class PhoneSaberAcknowledgementTests
         StringAssert.Contains("プレイ範囲を覚えています（10秒、振りやすい範囲で上下左右に振る）",
             PhoneSaberOperatorKeys.ResultText(Ack(8, "learning", "10s"), "learn-area=10"));
     }
+    [TestCase("learned", "samples300-area0.2_0.1_0.8_0.9")]
+    [TestCase("failed", "samples2")]
+    public void DuplicateStartsAndTerminalRepliesOnlyChangeRevisionOnTransitions(string result, string detail)
+    {
+        var store = new PhoneSaberAcknowledgementStore();
+        store.Queue(1, "learn-area=10", 0);
+        int queued = store.Revision;
+        for (int i = 0; i < 63; i++)
+        {
+            Assert.IsTrue(store.Receive(Ack(1, "learning", "10s", station: "A"), "phone", out bool changed));
+            Assert.AreEqual(i == 0, changed);
+        }
+        Assert.AreEqual(queued + 1, store.Revision);
+        Assert.AreEqual(62, store.ReadSuppressedCount(1));
+        Assert.AreEqual(1, store.PendingCommands(14.999, "phone").Length);
+        Assert.IsEmpty(store.PendingCommands(15, "phone"), "重複開始は再送期限を延長しない");
+        Assert.IsTrue(store.Receive(Ack(1, result, detail, station: "A"), "phone", out bool completed));
+        Assert.IsTrue(completed);
+        Assert.AreEqual(queued + 2, store.Revision);
+        Assert.IsEmpty(store.PendingCommands(1, "phone"), "完了すれば期限前でも再送停止");
+        Assert.IsTrue(store.Receive(Ack(1, result, detail, station: "A"), "phone", out bool duplicate));
+        Assert.IsFalse(duplicate);
+        Assert.IsTrue(store.Receive(Ack(1, "learning", "10s", station: "A"), "phone", out bool late));
+        Assert.IsFalse(late);
+        Assert.AreEqual(result, store.Read(1)[0].Result);
+        Assert.AreEqual(queued + 2, store.Revision);
+        Assert.AreEqual(64, store.ReadSuppressedCount(1));
+        CollectionAssert.AreEqual(new[] { new System.Collections.Generic.KeyValuePair<int, int>(1, 64) }, store.TakeSuppressedCounts());
+        Assert.IsEmpty(store.TakeSuppressedCounts(), "集計ログも同じ数を二度回収しない");
+        Assert.AreEqual(64, store.ReadSuppressedCount(1));
+        Assert.IsTrue(store.Receive(Ack(1, "learning", "10s", station: "B"), "other", out bool other));
+        Assert.IsTrue(other, "別送信元の状態・再送は独立");
+        Assert.AreEqual(1, store.PendingCommands(1, "other").Length);
+    }
+
+    [Test]
+    public void SuppressedCountsSaturateWithoutChangingState()
+    {
+        var store = new PhoneSaberAcknowledgementStore();
+        store.Queue(1, "learn-area=10", 0);
+        var ack = Ack(1, "learning", "10s");
+        store.Receive(ack, "phone");
+        int revision = store.Revision;
+        for (int i = 0; i < PhoneSaberAcknowledgementStore.MaximumSuppressedCount + 2; i++) store.Receive(ack, "phone");
+        Assert.AreEqual(PhoneSaberAcknowledgementStore.MaximumSuppressedCount, store.ReadSuppressedCount(1));
+        Assert.AreEqual(revision, store.Revision);
+        Assert.AreEqual(1, store.Read(1).Length);
+    }
+
 }

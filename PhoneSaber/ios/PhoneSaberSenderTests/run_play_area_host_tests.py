@@ -59,6 +59,7 @@ final class LANLivenessProbe {
     var connectivityClock: () -> Double { { self.now } }
     var running = true, autoClipEnabled = false, mirrorX = false, mirrorY = false
     var playArea: SaberPlayArea?, playAreaLearning = false
+    var ignoreInspectionSnapshot: SaberIgnoreInspectionSnapshot?
     var savedAreas: [SaberPlayArea?] = []
     var clipAcknowledgements: [String: (String, String) -> Void] = [:]
     func persistPlayArea(_ area: SaberPlayArea?) { playArea = area; savedAreas.append(area) }

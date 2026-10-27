@@ -82,6 +82,7 @@ enum PlayAreaSettings { static let exposureBiasKey = "unused" }
     var running = true, autoClipEnabled = false, shutterEmitter = false
     var ignoreZones: [SaberColor: [SaberIgnoreZone]] = [:]
     var ignoreLearning = false
+    var ignoreInspectionSnapshot: Any?
     static let maximumIgnoreZones = 8
     var clipAcknowledgements: [String: (String, String) -> Void] = [:]
     var trackLockEnabled = true, exposureBias = -2, shutter = 2000, shutterISO = 2000

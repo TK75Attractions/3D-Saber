@@ -286,7 +286,7 @@ public class InputPoint : MonoBehaviour
     public bool SavePositionCalibration(Vector2[] corners, out string error)
     {
         if (!PhoneSaberPositionCalibration.TryCreate(corners, out var calibration, out error)) return false;
-        PhoneSaberDiscoveryResponder.Acknowledgements.DiscardLearnedAreas(StationLabel);
+        DiscardLearnedPositionCalibrations();
         PhoneSaberPositionCalibrationStore.Save(StationLabel, calibration);
         failedLearnedPositionCalibration = null;
         positionCalibration = calibration;
@@ -305,7 +305,7 @@ public class InputPoint : MonoBehaviour
     public void ResetPositionCalibration()
     {
         PositionCapture.Cancel();
-        PhoneSaberDiscoveryResponder.Acknowledgements.DiscardLearnedAreas(StationLabel);
+        DiscardLearnedPositionCalibrations();
         PhoneSaberPositionCalibrationStore.Reset(StationLabel);
         failedLearnedPositionCalibration = null;
         positionCalibration = null;
@@ -728,19 +728,45 @@ public class InputPoint : MonoBehaviour
     }
 
     // ACK の適用も保存も main thread。再送ACKでリセット済みの補正を復活させない。
+    void DiscardLearnedPositionCalibrations()
+    {
+        PhoneSaberDiscoveryResponder.Acknowledgements.DiscardLearnedAreas(StationLabel);
+        if (!ReferenceEquals(learnedAreaStore, PhoneSaberDiscoveryResponder.Acknowledgements))
+            learnedAreaStore?.DiscardLearnedAreas(StationLabel);
+        learnedAreaRevision = -1;
+    }
+
     public bool ApplyLearnedPositionCalibration(PhoneSaberAcknowledgementStore store, string learnedAt)
     {
         int revision = store.Revision;
         if (ReferenceEquals(learnedAreaStore, store) && learnedAreaRevision == revision) return false;
         learnedAreaStore = store;
         learnedAreaRevision = revision;
-        if (!store.TakeLearnedArea(StationLabel, out var bounds)) return false;
-        return ApplyLearnedPositionCalibration(Rect.MinMaxRect(bounds.xMin, bounds.yMin, bounds.xMax, bounds.yMax), learnedAt, out _);
+        if (!store.TryLearnedAreaApplication(StationLabel, false, out var application) || application.Attempted) return false;
+        application.Ack.TryLearnedBounds(out var bounds);
+        return ApplyLearnedPositionCalibration(application,
+            Rect.MinMaxRect(bounds.xMin, bounds.yMin, bounds.xMax, bounds.yMax), learnedAt, out _);
     }
 
     // F8 の完了ACKとチュートリアルの両方が、同じ変換・保存・スマホ範囲更新・診断を使う。
     public bool ApplyLearnedPositionCalibration(Rect bounds, string learnedAt, out string error)
     {
+        // 既存のRect契約にはIDが無い。最新指示の一意な端末のACKと一致するときだけ接続する。
+        // 矩形一致は指示を探すキーにはせず、古い指示へ遡らない。
+        var store = learnedAreaStore ?? PhoneSaberDiscoveryResponder.Acknowledgements;
+        error = "最新の学習指示と送信元を一意に確認できません。";
+        if (!store.TryLearnedAreaApplication(StationLabel, true, out var application) ||
+            !application.Ack.TryLearnedBounds(out var learned) ||
+            bounds != Rect.MinMaxRect(learned.xMin, learned.yMin, learned.xMax, learned.yMax)) return false;
+        return ApplyLearnedPositionCalibration(application, bounds, learnedAt, out error);
+    }
+
+    bool ApplyLearnedPositionCalibration(PhoneSaberAcknowledgementStore.LearnedAreaApplication application,
+        Rect bounds, string learnedAt, out string error)
+    {
+        if (application.Attempted) { error = application.Error; return application.Success; }
+        application.Attempted = true;
+        application.Error = "学習範囲の適用を完了できませんでした。";
         bool applied = PhoneSaberPositionCalibration.TryFromLearnedArea(bounds, camWidth, camHeight, out var calibration, out error);
         string result = PhoneSaberPositionCalibration.LearnedAreaResult(bounds, applied, error);
         if (applied)
@@ -757,7 +783,10 @@ public class InputPoint : MonoBehaviour
                 TutorialRangeBaseline.SendPhoneArea(TutorialRangeBaseline.PhoneAreaFor(calibration.CopyCorners(), camWidth, camHeight));
         }
         else failedLearnedPositionCalibration = result;
-        PhoneSaberEventLog.Record(StationLabel, "SYSTEM", "learned-area-apply", result);
+        PhoneSaberEventLog.Record(StationLabel, "SYSTEM", "learned-area-apply",
+            $"id={application.Ack.Id} from={application.Ack.Sender} " + result);
+        application.Success = applied;
+        application.Error = error;
         return applied;
     }
 

@@ -342,9 +342,11 @@ public class PhoneSaberPositionCalibrationTests
         Assert.IsFalse(PhoneSaberPositionCalibration.TryFromLearnedArea(new Rect(0, 0, 1, 1), float.NaN, 1080, out _, out _));
     }
 
-    [TestCase("A")]
-    [TestCase("B")]
-    public void LearnedAckAndTutorialSendTheSameWidenedPhoneAreaOnce(string station)
+    [TestCase("A", false)]
+    [TestCase("B", false)]
+    [TestCase("A", true)]
+    [TestCase("B", true)]
+    public void LearnedAckAndTutorialSendTheSameWidenedPhoneAreaOnce(string station, bool tutorialFirst)
     {
         using var commandScope = new PhoneCommandsScope();
         string key = PhoneSaberPositionCalibrationStore.DataKey(station);
@@ -359,14 +361,17 @@ public class PhoneSaberPositionCalibrationTests
             Set(input, "phoneSaberStation", station);
             PhoneSaberP2PBridgeProcess.AutoStartEnabled = true;
             var commands = PhoneSaberDiscoveryResponder.Acknowledgements;
-            foreach (string bounds in new[] { "0.2_0.1_0.8_0.9", "0.4_0.5_0.6_0.7" })
+            foreach (string bounds in new[] { "0.2_0.1_0.8_0.9", "0.2_0.1_0.8_0.9", "0.4_0.5_0.6_0.7" })
             {
-                var store = new PhoneSaberAcknowledgementStore();
+                var store = commands;
                 int before = PhoneSaberDiscoveryResponder.QueueCommand(PhoneSaberDiscoveryResponder.LearnAreaCommand, automatic: true);
-                store.Queue(before, "learn-area=10", 0);
                 var ack = new PhoneSaberAcknowledgement(before, station, "ios", "learned", "samples300-area" + bounds, "phone");
                 store.Receive(ack, "192.0.2.1");
-                Assert.IsTrue(input.ApplyLearnedPositionCalibration(store, "F8"));
+                var learned = bounds.StartsWith("0.2") ? Rect.MinMaxRect(.2f, .1f, .8f, .9f) : Rect.MinMaxRect(.4f, .5f, .6f, .7f);
+                int revision = input.PredictionRevision;
+                if (tutorialFirst) Assert.IsTrue(TutorialController.ApplyLearnedRange(input, learned));
+                else Assert.IsTrue(input.ApplyLearnedPositionCalibration(store, "F8"));
+                string firstSave = PlayerPrefs.GetString(key);
                 commands.Latest(out int sent, out string fields, out _, out bool automatic);
                 Assert.AreEqual(before + 1, sent, "F8 成功時に1回だけ送る");
                 Assert.IsTrue(automatic);
@@ -381,10 +386,12 @@ public class PhoneSaberPositionCalibrationTests
                 Assert.IsFalse(input.ApplyLearnedPositionCalibration(new Rect(.5f, .5f, .001f, .001f), "failed", out _));
                 commands.Latest(out int unchanged, out _, out _);
                 Assert.AreEqual(sent, unchanged, "重複ACK・適用失敗は送らない");
-                var learned = bounds.StartsWith("0.2") ? Rect.MinMaxRect(.2f, .1f, .8f, .9f) : Rect.MinMaxRect(.4f, .5f, .6f, .7f);
-                Assert.IsTrue(TutorialController.ApplyLearnedRange(input, learned));
+                if (tutorialFirst) Assert.IsFalse(input.ApplyLearnedPositionCalibration(store, "F8"));
+                else Assert.IsTrue(TutorialController.ApplyLearnedRange(input, learned), "自動適用済みでもチュートリアルは成功");
                 commands.Latest(out int tutorial, out string tutorialFields, out _);
-                Assert.AreEqual(sent + 1, tutorial, "チュートリアルにも二重送信がない");
+                Assert.AreEqual(sent, tutorial, "両入口を通っても送信は1回");
+                Assert.AreEqual(revision + 1, input.PredictionRevision, "予測リセットは1回");
+                Assert.AreEqual(firstSave, PlayerPrefs.GetString(key), "2番目の入口は保存日時も上書きしない");
                 Assert.AreEqual(fields, tutorialFields);
             }
         }
@@ -489,27 +496,38 @@ public class PhoneSaberPositionCalibrationTests
     [Test]
     public void FailedLearnedMappingIsShownAndLoggedWithoutReplacingSavedMapping()
     {
+        using var commands = new PhoneCommandsScope();
+        using var preferences = new CalibrationPrefsScope("A");
         var go = new GameObject("学習適用診断テスト");
         string path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "phonesaber-range-" + Guid.NewGuid().ToString("N"), "events.log");
         var previousLog = PhoneSaberEventLog.Current;
         try
         {
             var input = go.AddComponent<InputPoint>(); input.enabled = false;
-            Set(input, "phoneSaberStation", stationA);
+            Set(input, "phoneSaberStation", "A");
+            var store = PhoneSaberDiscoveryResponder.Acknowledgements;
+            store.Queue(9001, "learn-area=10", 0);
+            store.Receive(new PhoneSaberAcknowledgement(9001, "A", "ios", "learned", "samples300-area0.2_0.1_0.8_0.9"), "phone");
             PhoneSaberEventLog.Current = new PhoneSaberEventLog(path);
             var bounds = Rect.MinMaxRect(.2f, .1f, .8f, .9f);
             Assert.IsTrue(input.ApplyLearnedPositionCalibration(bounds, "ok", out _));
-            string saved = PlayerPrefs.GetString(PhoneSaberPositionCalibrationStore.DataKey(stationA));
+            string saved = PlayerPrefs.GetString(PhoneSaberPositionCalibrationStore.DataKey("A"));
+            store.Queue(9002, "learn-area=10", 20);
+            store.Receive(new PhoneSaberAcknowledgement(9002, "A", "ios", "learned", "samples300-area0.2_0.1_0.8_0.9"), "phone");
             input.camWidth = 1; // PC 側の変換条件だけを壊す。iPhone の学習ACKとは区別する。
             Assert.IsFalse(input.ApplyLearnedPositionCalibration(bounds, "failed", out _));
-            Assert.AreEqual(saved, PlayerPrefs.GetString(PhoneSaberPositionCalibrationStore.DataKey(stationA)));
+            Assert.AreEqual(saved, PlayerPrefs.GetString(PhoneSaberPositionCalibrationStore.DataKey("A")));
             Assert.IsTrue(input.PositionCalibrationEnabled);
+            input.camWidth = 1920;
+            Assert.IsFalse(input.ApplyLearnedPositionCalibration(bounds, "retry", out _), "同じ指示の失敗を再試行しない");
+            Assert.IsFalse(input.ApplyLearnedPositionCalibration(store, "retry"));
             StringAssert.Contains("PC適用: 失敗", input.LearnedPositionCalibrationResult);
             StringAssert.Contains("学習矩形(0..1): (0.200000, 0.100000)–(0.800000, 0.900000)", input.LearnedPositionCalibrationResult);
             StringAssert.Contains("適用矩形: (0.050000, -0.100000)–(0.950000, 1.100000)", input.LearnedPositionCalibrationResult);
             Assert.IsTrue(PhoneSaberEventLog.Current.FlushAndWait(5000));
             string log = System.IO.File.ReadAllText(path);
-            StringAssert.Contains("learned-area-apply", log);
+            Assert.AreEqual(2, System.Text.RegularExpressions.Regex.Matches(log, "event=learned-area-apply ").Count,
+                "成功・失敗は各1回だけ記録し、再試行では増やさない");
             StringAssert.Contains("倍率: 1.5", log);
             StringAssert.Contains("PC適用: 成功", log);
             StringAssert.Contains("PC適用: 失敗", log);
@@ -524,6 +542,118 @@ public class PhoneSaberPositionCalibrationTests
             if (System.IO.Directory.Exists(System.IO.Path.GetDirectoryName(path)))
                 System.IO.Directory.Delete(System.IO.Path.GetDirectoryName(path), true);
         }
+    }
+
+    // Rect入口も本番と同じ指示ID・送信元付きACKを使う。
+    public static int QueueLearnedRect(string station, Rect rect)
+    {
+        int id = PhoneSaberDiscoveryResponder.QueueCommand("learn-area=10", automatic: true);
+        string detail = string.Format(System.Globalization.CultureInfo.InvariantCulture,
+            "samples300-area{0}_{1}_{2}_{3}", rect.xMin, rect.yMin, rect.xMax, rect.yMax);
+        PhoneSaberDiscoveryResponder.Acknowledgements.Receive(
+            new PhoneSaberAcknowledgement(id, station, "ios", "learned", detail), "test-phone");
+        return id;
+    }
+
+    public sealed class CalibrationPrefsScope : IDisposable
+    {
+        readonly string key, enabledKey, data;
+        readonly bool hadData, hadEnabled;
+        readonly int enabled;
+        public CalibrationPrefsScope(string station)
+        {
+            key = PhoneSaberPositionCalibrationStore.DataKey(station);
+            enabledKey = PhoneSaberPositionCalibrationStore.EnabledKey(station);
+            hadData = PlayerPrefs.HasKey(key); data = PlayerPrefs.GetString(key);
+            hadEnabled = PlayerPrefs.HasKey(enabledKey); enabled = PlayerPrefs.GetInt(enabledKey);
+        }
+        public void Dispose()
+        {
+            if (hadData) PlayerPrefs.SetString(key, data); else PlayerPrefs.DeleteKey(key);
+            if (hadEnabled) PlayerPrefs.SetInt(enabledKey, enabled); else PlayerPrefs.DeleteKey(enabledKey);
+            PlayerPrefs.Save();
+        }
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public void ResetOrManualSaveRejectsDelayedCompletionAndCachedSuccess(bool manual)
+    {
+        using var commands = new PhoneCommandsScope();
+        using var preferences = new CalibrationPrefsScope("A");
+        var go = new GameObject("古い学習は復活させない");
+        try
+        {
+            var input = go.AddComponent<InputPoint>(); input.enabled = false;
+            Set(input, "phoneSaberStation", "A");
+            var store = PhoneSaberDiscoveryResponder.Acknowledgements;
+            var rect = Rect.MinMaxRect(.2f, .1f, .8f, .9f);
+            for (int id = 1; id <= 2; id++)
+            {
+                store.Queue(id, "learn-area=10", id * 20);
+                var ack = new PhoneSaberAcknowledgement(id, "A", "ios", "learned", "samples300-area0.2_0.1_0.8_0.9");
+                if (id == 1) { store.Receive(ack, "phone"); Assert.IsTrue(input.ApplyLearnedPositionCalibration(store, "ok")); }
+                if (manual) Assert.IsTrue(input.SavePositionCalibration(Rectangle, out _));
+                else input.ResetPositionCalibration();
+                string saved = PlayerPrefs.GetString(PhoneSaberPositionCalibrationStore.DataKey("A"));
+                int revision = input.PredictionRevision;
+                store.Receive(ack, "phone");
+                Assert.IsFalse(input.ApplyLearnedPositionCalibration(store, "late"));
+                Assert.IsFalse(input.ApplyLearnedPositionCalibration(rect, "late", out _));
+                Assert.AreEqual(revision, input.PredictionRevision);
+                Assert.AreEqual(saved, PlayerPrefs.GetString(PhoneSaberPositionCalibrationStore.DataKey("A")));
+            }
+            store.Queue(3, "learn-area=10", 60);
+            store.Receive(new PhoneSaberAcknowledgement(3, "A", "ios", "learned", "samples300-area0.2_0.1_0.8_0.9"), "phone");
+            Assert.IsTrue(input.ApplyLearnedPositionCalibration(rect, "new", out _), "同じ矩形でも次指示は新規");
+        }
+        finally { UnityEngine.Object.DestroyImmediate(go); }
+    }
+
+    [Test]
+    public void CachedSuccessCannotBeReusedForAnotherSenderEvenWithTheSameRectangle()
+    {
+        using var commands = new PhoneCommandsScope();
+        using var preferences = new CalibrationPrefsScope("A");
+        var go = new GameObject("適用結果の送信元照合");
+        try
+        {
+            var input = go.AddComponent<InputPoint>(); input.enabled = false;
+            Set(input, "phoneSaberStation", "A");
+            var store = PhoneSaberDiscoveryResponder.Acknowledgements;
+            store.Queue(1, "learn-area=10", 0);
+            store.Receive(new PhoneSaberAcknowledgement(1, "none", "ios", "learned", "samples300-area0.2_0.1_0.8_0.9"), "phone-none");
+            Assert.IsTrue(input.ApplyLearnedPositionCalibration(store, "first"));
+            int revision = input.PredictionRevision;
+            store.Receive(new PhoneSaberAcknowledgement(1, "A", "ios", "learned", "samples300-area0.2_0.1_0.8_0.9"), "phone-A");
+            Assert.IsFalse(input.ApplyLearnedPositionCalibration(Rect.MinMaxRect(.2f, .1f, .8f, .9f), "other", out _));
+            Assert.IsFalse(input.ApplyLearnedPositionCalibration(store, "other"));
+            Assert.AreEqual(revision, input.PredictionRevision);
+        }
+        finally { UnityEngine.Object.DestroyImmediate(go); }
+    }
+
+    [TestCase("B", null)]
+    [TestCase("none", "none")]
+    [TestCase("A", "A")]
+    public void RectEntryRejectsOtherStationAndAmbiguousSenders(string first, string second)
+    {
+        using var commands = new PhoneCommandsScope();
+        using var preferences = new CalibrationPrefsScope("A");
+        var go = new GameObject("Rect入口の送信元照合");
+        try
+        {
+            var input = go.AddComponent<InputPoint>(); input.enabled = false;
+            Set(input, "phoneSaberStation", "A");
+            var store = PhoneSaberDiscoveryResponder.Acknowledgements;
+            store.Queue(1, "learn-area=10", 0);
+            store.Receive(new PhoneSaberAcknowledgement(1, first, "ios", "learned", "samples300-area0.2_0.1_0.8_0.9"), "phone1");
+            if (second != null) store.Receive(new PhoneSaberAcknowledgement(1, second, "ios", "learned", "samples300-area0.2_0.1_0.8_0.9"), "phone2");
+            int revision = input.PredictionRevision;
+            Assert.IsFalse(input.ApplyLearnedPositionCalibration(Rect.MinMaxRect(.2f, .1f, .8f, .9f), "ambiguous", out _));
+            Assert.AreEqual(revision, input.PredictionRevision);
+        }
+        finally { UnityEngine.Object.DestroyImmediate(go); }
     }
 
     static void Set(InputPoint input, string name, object value) =>

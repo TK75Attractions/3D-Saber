@@ -1079,6 +1079,7 @@ final class CameraViewModel: NSObject, ObservableObject {
                        leeway: .milliseconds(5))
         timer.setEventHandler { [weak self] in
             MainActor.assumeIsolated {
+                self?.publishIgnoreInspection()
                 self?.publishPendingUI()
                 self?.publishDeviceHealth(at: ProcessInfo.processInfo.systemUptime)
             }
@@ -1628,8 +1629,50 @@ final class CameraViewModel: NSObject, ObservableObject {
     private var ignoreZones: [SaberColor: [SaberIgnoreZone]] = CameraViewModel.storedIgnoreZones()
     @Published private(set) var ignoreZoneSummary = CameraViewModel.summary(CameraViewModel.storedIgnoreZones())
     @Published private(set) var ignoreLearning = false
+    @Published private(set) var ignoreZoneRevision = UUID()
+    @Published private(set) var ignoreInspectionSnapshot: SaberIgnoreInspectionSnapshot?
+    private var ignoreInspectionSession: UUID?
     private var ignoreLearningIDs: Set<UUID> = []
     static let maximumIgnoreZones = 8
+
+    var ignoreZoneEntries: [SaberIgnoreZoneEntry] {
+        [SaberColor.red, .blue].flatMap { color in
+            (ignoreZones[color] ?? []).enumerated().map {
+                SaberIgnoreZoneEntry(id: .init(revision: ignoreZoneRevision, color: color, index: $0.offset), zone: $0.element)
+            }
+        }
+    }
+
+    func beginIgnoreInspection() -> UUID {
+        let session = UUID()
+        ignoreInspectionSession = session
+        ignoreInspectionSnapshot = nil
+        processor.setIgnoreInspectionSession(session)
+        return session
+    }
+
+    func endIgnoreInspection(_ session: UUID) {
+        guard ignoreInspectionSession == session else { return }
+        ignoreInspectionSession = nil
+        ignoreInspectionSnapshot = nil
+        processor.setIgnoreInspectionSession(nil)
+    }
+
+    private func publishIgnoreInspection() {
+        if let session = ignoreInspectionSession {
+            ignoreInspectionSnapshot = processor.takeIgnoreInspection(session: session)
+        }
+    }
+
+    func removeIgnoreZone(_ entry: SaberIgnoreZoneEntry, session: UUID) {
+        guard ignoreInspectionSession == session, entry.id.revision == ignoreZoneRevision,
+              ignoreZones[entry.id.color]?.indices.contains(entry.id.index) == true else { return }
+        // 学習完了の遅延Taskも無効にしてから変更する。残りの順序・形状は変えない。
+        cancelIgnoreLearning()
+        ignoreZones[entry.id.color]?.remove(at: entry.id.index)
+        applyIgnoreZones()
+        ConnectivityLog.shared.record("IGNORE_ZONE", "remove \(entry.label)")
+    }
 
     nonisolated private static func storedIgnoreZones() -> [SaberColor: [SaberIgnoreZone]] {
         guard NSClassFromString("XCTestCase") == nil,
@@ -1693,6 +1736,7 @@ final class CameraViewModel: NSObject, ObservableObject {
         && (UserDefaults.standard.object(forKey: CameraViewModel.trackLockKey) as? Bool ?? true)
 
     func setTrackLockEnabled(_ enabled: Bool) {
+        ignoreInspectionSnapshot = nil
         trackLockEnabled = enabled
         processor.setTrackLockEnabled(enabled)
         if NSClassFromString("XCTestCase") == nil { UserDefaults.standard.set(enabled, forKey: Self.trackLockKey) }
@@ -1909,6 +1953,7 @@ final class CameraViewModel: NSObject, ObservableObject {
 
     /// 保存済み範囲は残し、採取・表示・未完了通知を一度だけ終了する。
     private func cancelPlayAreaLearning() {
+        ignoreInspectionSnapshot = nil
         playAreaLearningID = nil
         playAreaLearningTask?.cancel()
         playAreaLearningTask = nil
@@ -1963,6 +2008,7 @@ final class CameraViewModel: NSObject, ObservableObject {
     }
 
     private func applyPlayArea(_ area: SaberPlayArea?) {
+        ignoreInspectionSnapshot = nil
         processor.setPlayArea(area)
         persistPlayArea(area)
     }
@@ -2085,6 +2131,7 @@ final class CameraViewModel: NSObject, ObservableObject {
     }
 
     private func refreshShutterStatus() {
+        ignoreInspectionSnapshot = nil
         processor.setShutterEmitterMode(ShutterEmitterMode(shutter: shutterController.active ? shutter : 0,
                                                          iso: shutterISO, enabled: shutterEmitter))
         let title = "固定シャッター: " + Self.shutterLabel(shutter)
@@ -2154,6 +2201,8 @@ final class CameraViewModel: NSObject, ObservableObject {
     }
 
     private func applyIgnoreZones() {
+        ignoreZoneRevision = UUID()
+        ignoreInspectionSnapshot = nil
         processor.setIgnoreZones(ignoreZones)
         ignoreZoneSummary = Self.summary(ignoreZones)
         guard NSClassFromString("XCTestCase") == nil else { return }
@@ -2630,6 +2679,7 @@ final class CameraViewModel: NSObject, ObservableObject {
     }
 
     private func resetProcessor() {
+        ignoreInspectionSnapshot = nil
         cancelIgnoreLearning()
         cancelPlayAreaLearning()
         // reset が検出キューの終了を待つ間も旧世代の送信・fallback を拒否する。

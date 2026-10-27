@@ -7,6 +7,7 @@ import io
 import json
 import os
 from pathlib import Path
+import shutil
 import struct
 import subprocess
 import tempfile
@@ -107,6 +108,52 @@ class FieldRegressionTests(unittest.TestCase):
             self.add()
         self.assertFalse(self.destination.exists())
 
+    def test_explicit_mode_requires_complete_recorded_requested_settings(self):
+        mode = {"shutter": 2000, "iso": 250, "enabled": True}
+        self.label["shutterEmitter"] = mode
+        self.save_labels()
+        summary_path = self.source.parent.parent / "summary.json"
+        summary = json.loads(summary_path.read_text())
+        # 実測ISOだけから要求ISOやenabledを推測しない。
+        summary["autoClip"]["camera"].update({"shutter": 2000, "iso": 249.58})
+        summary_path.write_text(json.dumps(summary))
+        with self.assertRaises(ValueError):
+            self.add()
+        self.assertFalse(self.destination.exists())
+        summary["autoClip"]["camera"].update({"shutterISO": 160, "shutterEmitter": True})
+        summary_path.write_text(json.dumps(summary))
+        with self.assertRaisesRegex(ValueError, "記録と異なります"):
+            self.add()
+        summary["autoClip"]["camera"]["shutterISO"] = 250
+        summary_path.write_text(json.dumps(summary))
+        self.add()
+        [(path, label)] = field.load_set(self.destination)
+        self.assertEqual(label["shutterEmitter"], mode)
+        self.assertEqual(label["captureSource"]["frameID"], 1)
+        self.assertEqual(label["captureSource"]["summarySHA256"],
+                         hashlib.sha256(summary_path.read_bytes()).hexdigest())
+        analysis = {"colors": {"red": {"selected": None}, "blue": {"selected": points()}},
+                    "shutterEmitter": {**mode, "active": True}}
+        with patch.object(field.lossless, "compile_harness"), \
+                patch.object(field.lossless, "analyze_png", return_value=analysis) as analyze:
+            rows = field.run_set(self.destination)
+        self.assertEqual(analyze.call_args.kwargs, {"shutter_emitter": mode})
+        self.assertEqual(rows[1]["effectiveShutterEmitter"], analysis["shutterEmitter"])
+        self.assertEqual(rows[1]["captureSource"], label["captureSource"])
+        self.assertEqual(rows[1]["imageSHA256"], label["sha256"])
+        self.assertEqual(len(rows[1]["detectorSources"]), 3)
+
+    def test_invalid_or_partial_modes_are_rejected(self):
+        for mode in (None, {}, {"shutter": 2000, "iso": 250},
+                     {"shutter": 2000, "iso": 249.58, "enabled": True},
+                     {"shutter": -1, "iso": 250, "enabled": True},
+                     {"shutter": 2000, "iso": True, "enabled": True},
+                     {"shutter": 2000, "iso": 250, "enabled": 1},
+                     {"shutter": 2000, "iso": 0, "enabled": True}):
+            with self.subTest(mode=mode):
+                with self.assertRaises(ValueError):
+                    field.validate_label({**self.label, "shutterEmitter": mode}, (160, 120))
+
     def test_git_directories_and_symlink_alias_are_rejected(self):
         repo = self.root / "repo"
         repo.mkdir()
@@ -159,6 +206,7 @@ class FieldRegressionTests(unittest.TestCase):
             self.assertEqual(field.main(["run", "--set-dir", str(self.destination)]), 0)
             compile_host.assert_called_once()
             analyze.assert_called_once()
+            self.assertEqual(analyze.call_args.kwargs, {"shutter_emitter": None})
             self.assertIn("赤 | PASS", output.getvalue())
             self.assertIn("青 | PASS", output.getvalue())
             analysis["colors"]["blue"]["selected"] = None
@@ -213,6 +261,68 @@ class FieldRegressionTests(unittest.TestCase):
                 contextlib.redirect_stderr(io.StringIO()):
             self.assertEqual(field.main(["run", "--set-dir", str(self.destination)]), 2)
         self.assertEqual(previous, {key: os.environ.get(key) for key in previous})
+
+    def test_real_swift_host_receives_mode_and_preserves_default(self):
+        # 同じ暗い合成青棒を実ホストで実行。JSONのechoだけでなく追加候補の出現を検証する。
+        self.enterContext(patch.dict(os.environ, {key: str(self.root / "cache")
+                                                for key in ("CLANG_MODULE_CACHE_PATH", "SWIFT_MODULECACHE_PATH")}))
+        host = self.root / "host"
+        field.lossless.compile_harness(host)
+        raw = bytearray([8, 8, 8, 255] * (160 * 120))
+        for y in range(60, 64):
+            for x in range(30, 110):
+                offset = (y * 160 + x) * 4
+                raw[offset:offset + 4] = bytes([128, 24, 12, 255])
+        png = self.root / "emitter.png"
+        field.lossless.command_output(["ffmpeg", "-loglevel", "error", "-f", "rawvideo", "-pixel_format", "bgra",
+                                       "-video_size", "160x120", "-i", "-", "-frames:v", "1", str(png)], input_data=raw)
+        from_png = field.lossless.analyze_png(host, png, shutter_emitter={"shutter": 2000, "iso": 250, "enabled": True})
+        def run(args):
+            return json.loads(field.lossless.command_output([str(host), "160", "120", "2", *args], input_data=raw))
+        legacy = run([])
+        explicit_default = run(["0", "2000", "0"])
+        self.assertEqual(legacy["colors"], explicit_default["colors"])
+        self.assertEqual(legacy["shutterEmitter"], {"shutter": 0, "iso": 2000, "enabled": False, "active": False})
+        for shutter, iso, enabled, active in ((2000, 250, 1, True), (1000, 160, 1, True),
+                                              (2000, 250, 0, False), (0, 250, 1, False),
+                                              (2000, 2000, 1, False)):
+            with self.subTest(shutter=shutter, iso=iso, enabled=enabled):
+                output = run(list(map(str, (shutter, iso, enabled))))
+                self.assertEqual(output["shutterEmitter"], {"shutter": shutter, "iso": iso,
+                                                          "enabled": bool(enabled), "active": active})
+                emitters = [c for c in output["colors"]["blue"]["candidates"] if c["source"] == "shutter-color-emitter"]
+                self.assertEqual(bool(emitters), active)
+                if (shutter, iso, enabled) == (2000, 250, 1):
+                    self.assertEqual(from_png["colors"], output["colors"])
+                    self.assertEqual(from_png["shutterEmitter"], output["shutterEmitter"])
+        self.source.write_bytes(png.read_bytes())
+        self.label.update(blue=points(30, 62, 108, 62),
+                          shutterEmitter={"shutter": 2000, "iso": 250, "enabled": True})
+        self.save_labels()
+        summary_path = self.source.parent.parent / "summary.json"
+        summary = json.loads(summary_path.read_text())
+        summary["autoClip"]["camera"].update(shutter=2000, shutterISO=250, shutterEmitter=True)
+        summary_path.write_text(json.dumps(summary))
+        self.add()
+        # コンパイル済みの実Swiftホストを再利用し、ラベル読込から画像解析まで実行する。
+        with patch.object(field.lossless, "compile_harness", side_effect=lambda path: shutil.copy2(host, path)):
+            rows = field.run_set(self.destination)
+        self.assertEqual(rows[1]["effectiveShutterEmitter"], from_png["shutterEmitter"])
+        self.assertEqual(rows[1]["selected"], from_png["colors"]["blue"]["selected"])
+        self.assertTrue(all(row["status"] == "PASS" for row in rows))
+        sidecar = next(self.destination.glob("*.json"))
+        old_label = json.loads(sidecar.read_text())
+        del old_label["shutterEmitter"]
+        sidecar.write_text(json.dumps(old_label))
+        with patch.object(field.lossless, "compile_harness", side_effect=lambda path: shutil.copy2(host, path)):
+            legacy_rows = field.run_set(self.destination)
+        # 原資料に設定があっても、旧ラベルへ暗黙に補わない。
+        self.assertIsNone(legacy_rows[1]["requestedShutterEmitter"])
+        self.assertEqual(legacy_rows[1]["effectiveShutterEmitter"], legacy["shutterEmitter"])
+        self.assertEqual(legacy_rows[1]["selected"], legacy["colors"]["blue"]["selected"])
+        for args in (["2000"], ["2000", "250", "true"], ["2000", "0", "1"]):
+            result = subprocess.run([str(host), "160", "120", "2", *args], input=raw, capture_output=True)
+            self.assertEqual(result.returncode, 2)
 
 
 if __name__ == "__main__":

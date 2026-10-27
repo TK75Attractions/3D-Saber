@@ -65,13 +65,28 @@ def dimensions(path: Path) -> tuple[int, int]:
     return int(width), int(height)
 
 
-def analyze_png(harness: Path, path: Path) -> dict[str, Any]:
+def validate_shutter_emitter(mode: Any) -> None:
+    # 実測ISOを丸めたり、不足した設定を既定値で補ったりしない。
+    if (not isinstance(mode, dict) or set(mode) != {"shutter", "iso", "enabled"}
+            or type(mode["shutter"]) is not int or mode["shutter"] < 0
+            or type(mode["iso"]) is not int or mode["iso"] <= 0
+            or type(mode["enabled"]) is not bool):
+        raise ValueError("shutterEmitter requires shutter >= 0, iso > 0 (integers), enabled (boolean)")
+
+
+def analyze_png(harness: Path, path: Path, *, shutter_emitter: dict | None = None) -> dict[str, Any]:
+    if shutter_emitter is not None:
+        validate_shutter_emitter(shutter_emitter)
     width, height = dimensions(path)
     raw = command_output([
         "ffmpeg", "-loglevel", "error", "-i", str(path),
         "-frames:v", "1", "-f", "rawvideo", "-pix_fmt", "bgra", "-",
     ])
-    line = command_output([str(harness), str(width), str(height), "2"], input_data=raw).splitlines()[0]
+    command = [str(harness), str(width), str(height), "2"]
+    if shutter_emitter is not None:
+        command += [str(shutter_emitter["shutter"]), str(shutter_emitter["iso"]),
+                    "1" if shutter_emitter["enabled"] else "0"]
+    line = command_output(command, input_data=raw).splitlines()[0]
     return json.loads(line)
 
 

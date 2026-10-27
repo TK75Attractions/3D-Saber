@@ -893,3 +893,129 @@ final class AutoClipTests: XCTestCase {
         XCTAssertLessThan(data.count, 512 * 1024)
     }
 }
+
+extension AutoClipTests {
+    func testIgnoreInspectionUsesOnlySameColorEligibleShapeMatchesInPlayArea() throws {
+        let target = Self.candidate((150, 100), (400, 350))
+        let crossing = Self.candidate((170, 320), (380, 130))
+        let ineligible = Self.candidate((150, 100), (400, 350), eligible: false)
+        let outside = Self.candidate((500, 400), (600, 450))
+        let zone = SaberIgnoreZone(around: target.endpoints, width: 640, height: 480)
+        let outer = SaberIgnoreZone(around: outside.endpoints, width: 640, height: 480)
+        let analysis = SaberFrameAnalysis(candidates: [.red: [target], .blue: [target, crossing, ineligible, outside]],
+                                          selected: [:], trackLockSuppressed: [.blue])
+        let snapshot = SaberIgnoreInspectionSnapshot(analysis: analysis, width: 640, height: 480, sequence: 7,
+            zones: [.blue: [zone, zone, outer]], playArea: .init(minX: 0, minY: 0, maxX: 0.7, maxY: 1))
+        XCTAssertEqual(snapshot.matches.count, 1)
+        let match = try XCTUnwrap(snapshot.matches.first)
+        XCTAssertEqual(match.color, .blue)
+        XCTAssertEqual(match.candidateIndex, 0)
+        XCTAssertEqual(match.zoneIndices, [0, 1])
+        XCTAssertEqual(match.label, "青候補1")
+        // 左上原点・反転なし。矩形と候補は同じ width/height の正規化を使う。
+        XCTAssertEqual(snapshot.diagramPoint(target.endpoints.0).x, 150.0 / 640)
+        XCTAssertEqual(snapshot.diagramPoint(target.endpoints.1).y, 350.0 / 480)
+        XCTAssertEqual(snapshot.diagramPoint(PixelPoint(x: 0, y: 0)).x, 0)
+        XCTAssertEqual(snapshot.diagramPoint(PixelPoint(x: 640, y: 480)).y, 1)
+        let trackingOnly = SaberIgnoreInspectionSnapshot(analysis: analysis, width: 640, height: 480, sequence: 8,
+                                                         zones: [:], playArea: nil)
+        XCTAssertTrue(trackingOnly.matches.isEmpty)
+    }
+
+    func testIgnoreInspectionMailboxRejectsOldFramesAndKeepsOnlyLatest() throws {
+        var mailbox = SaberIgnoreInspectionMailbox()
+        let snapshot = SaberIgnoreInspectionSnapshot(analysis: .init(candidates: [:], selected: [:]),
+            width: 480, height: 640, sequence: 1, zones: [:], playArea: nil)
+        XCTAssertNil(mailbox.ticket)
+        let session = UUID()
+        mailbox.open(session)
+        let first = try XCTUnwrap(mailbox.ticket)
+        for frame in 0..<1000 {
+            let latest = SaberIgnoreInspectionSnapshot(analysis: .init(candidates: [:], selected: [:]),
+                width: 480, height: 640, sequence: UInt64(frame), zones: [:], playArea: nil)
+            mailbox.offer(latest, ticket: first, at: 10)
+            XCTAssertEqual(mailbox.pendingCount, 1)
+        }
+        XCTAssertEqual(mailbox.take(session: session, at: 10.1)?.sequence, 999)
+        XCTAssertEqual(mailbox.pendingCount, 0)
+        mailbox.invalidate()
+        mailbox.offer(snapshot, ticket: first, at: 10.2)
+        XCTAssertNil(mailbox.take(session: session, at: 10.2))
+        let changed = try XCTUnwrap(mailbox.ticket)
+        mailbox.offer(snapshot, ticket: changed, at: 11)
+        XCTAssertNil(mailbox.take(session: session, at: 11.5))
+        mailbox.open(nil)
+        mailbox.offer(snapshot, ticket: changed, at: 12)
+        XCTAssertEqual(mailbox.pendingCount, 0)
+        let reopened = UUID()
+        mailbox.open(reopened)
+        mailbox.offer(snapshot, ticket: changed, at: 12)
+        XCTAssertNil(mailbox.take(session: reopened, at: 12))
+        mailbox.offer(snapshot, ticket: try XCTUnwrap(mailbox.ticket), at: 12)
+        XCTAssertNil(mailbox.take(session: session, at: 12))
+        XCTAssertEqual(mailbox.take(session: reopened, at: 12)?.sequence, 1)
+    }
+
+    func testBlueIgnoreRemovalRecoversNextProductionFrameAndRetainsBackgroundAndRed() throws {
+        let width = 480, height = 640
+        var bytes = [UInt8](repeating: 0, count: width * height * 4)
+        func paint(_ x: Int, _ y1: Int, _ y2: Int, color: SaberColor) {
+            for y in y1...y2 { for dx in -3...3 {
+                let i = (y * width + x + dx) * 4
+                bytes[i] = color == .blue ? 245 : 30
+                bytes[i + 1] = 45
+                bytes[i + 2] = color == .red ? 245 : 30
+                bytes[i + 3] = 255
+            } }
+        }
+        paint(100, 100, 300, color: .blue)
+        paint(380, 450, 600, color: .blue)
+        paint(260, 100, 300, color: .red)
+        let threshold = ColorThreshold(brightness: 140, dominance: 20)
+        let original = analyzeSabers(in: bytes, width: width, height: height, bytesPerRow: width * 4,
+                                    redThreshold: threshold, blueThreshold: threshold)
+        let blue = original.candidates[.blue] ?? []
+        let target = try XCTUnwrap(blue.first { $0.isEmitterEligible && $0.endpoints.0.x < 200 })
+        let background = try XCTUnwrap(blue.first { $0.isEmitterEligible && $0.endpoints.0.x > 300 })
+        let red = try XCTUnwrap(original.candidates[.red]?.first { $0.isEmitterEligible })
+        let targetZone = SaberIgnoreZone(around: target.endpoints, width: width, height: height, candidates: blue)
+        let backgroundZone = SaberIgnoreZone(around: background.endpoints, width: width, height: height, candidates: blue)
+        let redZone = SaberIgnoreZone(around: red.endpoints, width: width, height: height, candidates: original.candidates[.red] ?? [])
+        for track in [nil, SaberTrackLock()] as [SaberTrackLock?] {
+            var zones: [SaberColor: [SaberIgnoreZone]] = [.red: [redZone], .blue: [targetZone, backgroundZone]]
+            func process(_ frame: Int, inspect: Bool = true) -> SaberFrameAnalysis {
+                let a = analyzeSabers(in: bytes, width: width, height: height, bytesPerRow: width * 4,
+                    redThreshold: threshold, blueThreshold: threshold, ignoreZones: zones,
+                    trackLock: track, now: Double(frame) / 60)
+                if inspect {
+                    _ = SaberIgnoreInspectionSnapshot(analysis: a, width: width, height: height,
+                        sequence: UInt64(frame), zones: zones, playArea: nil)
+                }
+                return a
+            }
+            var before = 0, after = 0
+            for frame in 1...25 { if process(frame).selected[.blue] != nil { before += 1 } }
+            XCTAssertEqual(before, 0)
+            zones[.blue]?.remove(at: 0)
+            for frame in 26...50 {
+                let a = process(frame)
+                let selected = try XCTUnwrap(a.selected[.blue], "解除直後の26コマ目から選択可能")
+                XCTAssertLessThan(selected.0.x, 200)
+                XCTAssertNil(a.selected[.red])
+                XCTAssertTrue(backgroundZone.ignores(background.endpoints, width: width, height: height))
+                after += 1
+                // 確認処理を行わない同じ本番経路とも、候補・端点・UDP座標が一致する。
+                let plain = analyzeSabers(in: bytes, width: width, height: height, bytesPerRow: width * 4,
+                    redThreshold: threshold, blueThreshold: threshold, ignoreZones: zones)
+                XCTAssertEqual(a.candidates[.blue]?.map(\.score), plain.candidates[.blue]?.map(\.score))
+                XCTAssertEqual(payload(for: selected, source: (width, height), output: (1920, 1080), mirrorX: true, mirrorY: false),
+                    payload(for: try XCTUnwrap(plain.selected[.blue]), source: (width, height), output: (1920, 1080), mirrorX: true, mirrorY: false))
+            }
+            XCTAssertEqual(after, 25)
+            zones[.blue] = [targetZone, targetZone, backgroundZone]
+            zones[.blue]?.remove(at: 0)
+            XCTAssertNil(process(51).selected[.blue], "重複する登録が残れば引き続き除外")
+            print("ignore-removal track=\(track != nil) blue output before=\(before)/25 after=\(after)/25 next-frame=26 overlap=0/1")
+        }
+    }
+}

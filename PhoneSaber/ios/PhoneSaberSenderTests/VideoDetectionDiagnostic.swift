@@ -4,15 +4,24 @@ private struct Arguments {
     let width: Int
     let height: Int
     let sampleStep: Int
+    let shutterEmitter: ShutterEmitterMode
 
     init?(_ values: [String]) {
-        guard values.count == 4,
+        guard values.count == 4 || values.count == 7,
               let width = Int(values[1]), width > 0,
               let height = Int(values[2]), height > 0,
               let sampleStep = Int(values[3]), sampleStep > 0 else { return nil }
         self.width = width
         self.height = height
         self.sampleStep = sampleStep
+        if values.count == 7 {
+            guard let shutter = Int(values[4]), shutter >= 0,
+                  let iso = Int(values[5]), iso > 0,
+                  ["0", "1"].contains(values[6]) else { return nil }
+            shutterEmitter = ShutterEmitterMode(shutter: shutter, iso: iso, enabled: values[6] == "1")
+        } else {
+            shutterEmitter = ShutterEmitterMode()
+        }
     }
 }
 
@@ -91,7 +100,7 @@ private func readExactly(_ handle: FileHandle, count: Int) throws -> Data? {
 private enum VideoDetectionDiagnostic {
     static func main() throws {
         guard let arguments = Arguments(CommandLine.arguments) else {
-            FileHandle.standardError.write(Data("usage: video-detection-diagnostic WIDTH HEIGHT SAMPLE_STEP\n".utf8))
+            FileHandle.standardError.write(Data("usage: video-detection-diagnostic WIDTH HEIGHT SAMPLE_STEP [SHUTTER ISO EMITTER_0_OR_1]\n".utf8))
             Foundation.exit(2)
         }
         let frameByteCount = arguments.width * arguments.height * 4
@@ -111,7 +120,8 @@ private enum VideoDetectionDiagnostic {
                     blueThreshold: ColorThreshold(),
                     sampleStep: arguments.sampleStep,
                     collectProfile: true,
-                    collectPipelineDiagnostics: true
+                    collectPipelineDiagnostics: true,
+                    shutterEmitter: arguments.shutterEmitter
                 )
             }
             var colors: [String: Any] = [:]
@@ -124,6 +134,10 @@ private enum VideoDetectionDiagnostic {
             let profile = analysis.profile
             let output: [String: Any] = [
                 "frame": frameIndex,
+                "shutterEmitter": ["shutter": arguments.shutterEmitter.shutter,
+                                   "iso": arguments.shutterEmitter.iso,
+                                   "enabled": arguments.shutterEmitter.enabled,
+                                   "active": arguments.shutterEmitter.active],
                 "colors": colors,
                 "profile": [
                     "total_ms": profile?.totalMs ?? 0,
