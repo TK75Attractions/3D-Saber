@@ -899,6 +899,11 @@ enum ShutterEmitterThresholds {
     static let minimumPixels = 6
     static let maximumAreaRatio = 0.03
     static let minimumAspect = 4.0
+    // 10/27 実機: 赤刃がカメラ側へ傾くと短く写り、PCA長/平均幅が 2.5〜3.9 で全フレームの約2割が消えた。
+    // 背景の固定した橙の点は 19〜29 画素だったので、赤で 32 画素以上のときだけ 2.4 まで認める
+    // （録画の再計算: 赤が取れるフレーム 10/24 77%→95%、10/27 79%→99%）。
+    static let relaxedRedAspect = 2.4
+    static let relaxedRedAspectMinimumPixels = 32
     static let maximumWidthRatio = 0.07
 }
 
@@ -928,6 +933,11 @@ private func shutterEmitterMasks(baseAddress: UnsafePointer<UInt8>, width: Int, 
     return [.red: red, .blue: blue]
 }
 
+func minimumShutterEmitterAspect(color: SaberColor, pixels: Int) -> Double {
+    color == .red && pixels >= ShutterEmitterThresholds.relaxedRedAspectMinimumPixels
+        ? ShutterEmitterThresholds.relaxedRedAspect : ShutterEmitterThresholds.minimumAspect
+}
+
 private func shutterEmitterCandidates(mask: [UInt8], width: Int, height: Int,
                                       color: SaberColor, values: [UInt8], chroma: [UInt8],
                                       radiance: [UInt8], collectEvidence: Bool) -> [SaberCandidate] {
@@ -939,7 +949,7 @@ private func shutterEmitterCandidates(mask: [UInt8], width: Int, height: Int,
         let length = max(candidate.rawPCASpan, 1)
         let meanWidth = Double(candidate.pointCount) / length
         guard Double(candidate.pointCount) <= Double(width * height) * ShutterEmitterThresholds.maximumAreaRatio,
-              length / max(meanWidth, 1) >= ShutterEmitterThresholds.minimumAspect,
+              length / max(meanWidth, 1) >= minimumShutterEmitterAspect(color: color, pixels: candidate.pointCount),
               meanWidth <= Double(min(width, height)) * ShutterEmitterThresholds.maximumWidthRatio else { return nil }
         var emitter = candidate
         emitter.source = "shutter-color-emitter"

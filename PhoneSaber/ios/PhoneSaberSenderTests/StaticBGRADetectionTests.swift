@@ -1557,14 +1557,20 @@ enum StaticBGRADetectionTests {
                 } }
                 return image
             }
-            let shapeCases = [(6, 1, true), (5, 1, false), // 最小6画素
-                              (24, 6, true), (23, 6, false), // PCA長/平均幅4
-                              (100, 11, true), (90, 12, false), // 平均幅は短辺の7%以内
-                              (150, 7, true), (166, 7, false)] // 画像面積の3%以内
-            for (length, thickness, expected) in shapeCases {
-                let result = run(rectangle(length, thickness), on, step: 1)
-                guard !emitters(result, .red).isEmpty == expected else {
-                    fatalError("shutter emitter shape boundary \(length)x\(thickness), expected \(expected)")
+            let blueRGB: (UInt8, UInt8, UInt8) = (12, 24, 128)
+            let shapeCases: [(Int, Int, SaberColor, Bool)] = [
+                (6, 1, .red, true), (5, 1, .red, false), // 最小6画素
+                (24, 6, .blue, true), (23, 6, .blue, false), // 青は PCA長/平均幅4
+                (15, 6, .red, true), (14, 6, .red, false), // 赤は32画素以上なら2.4（傾いて短く写る刃）
+                (11, 3, .red, true), (10, 3, .red, false), // 33画素は2.4、30画素の赤は4のまま
+                (8, 2, .red, true), (7, 2, .red, false),
+                (100, 11, .red, true), (90, 12, .red, false), // 平均幅は短辺の7%以内
+                (150, 7, .red, true), (166, 7, .red, false)] // 画像面積の3%以内
+            for (length, thickness, color, expected) in shapeCases {
+                let image = color == .red ? rectangle(length, thickness) : rectangle(length, thickness, rgb: blueRGB)
+                let result = run(image, on, step: 1)
+                guard !emitters(result, color).isEmpty == expected else {
+                    fatalError("shutter emitter shape boundary \(color) \(length)x\(thickness), expected \(expected)")
                 }
             }
             let colorCases: [((UInt8, UInt8, UInt8), SaberColor, Bool)] = [
