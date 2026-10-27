@@ -89,6 +89,7 @@ public partial class CuttableNote : MonoBehaviour
         LastCutterHand = SaberHand.Any;
         LastCutSongTime = null;
         IsHeat = false;
+        ResetQuiz();
         firstPiece = secondPiece = null;
         hasPendingFlash = false;
         FlowDebris = false; FlowNoteVelocity = Vector3.zero;

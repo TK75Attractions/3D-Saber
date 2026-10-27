@@ -60,6 +60,8 @@ public static class ChartLoader
             data.heat = HasHeatObject(json)
                 ? HeatRules.Normalize(data.heat ?? new HeatChartData()) : null;
             data.fall = FallRules.Normalize(data.fall);
+            // 勉強の裏譜面 Q の試験用紙と問題。壊れた値は捨て、時刻順に並べる(ふつうの譜面では空のまま)。
+            data.quiz = QuizRules.Normalize(data.quiz);
             return data;
         }
         catch (ArgumentException exception)

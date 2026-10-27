@@ -63,9 +63,23 @@ public partial class NoteSpawner : MonoBehaviour
         {
             if (memoryVeilMode == value) return;
             memoryVeilMode = value;
-            if (cutFeedback != null) cutFeedback.SetMemoryVeilMode(value);
+            if (cutFeedback != null) cutFeedback.SetMemoryVeilMode(LiftsCutFeedback);
         }
     }
+    // Q の試験用紙(QuizMode)の上へ、切った光を描く。M のほかの決まり(DopamineFlourish.Veiled など)は持ち込まない。
+    [System.NonSerialized] bool cutFeedbackAbovePaper;
+    public bool CutFeedbackAbovePaper
+    {
+        get => cutFeedbackAbovePaper;
+        set
+        {
+            if (cutFeedbackAbovePaper == value) return;
+            cutFeedbackAbovePaper = value;
+            if (cutFeedback != null) cutFeedback.SetMemoryVeilMode(LiftsCutFeedback);
+        }
+    }
+    // 切った光を幕(M のノイズ・Q の試験用紙)より上に描くか。
+    public bool LiftsCutFeedback => memoryVeilMode || cutFeedbackAbovePaper;
     public FloorTimingGuide FloorGuide { get; private set; }
     public void ConfigureFloorGuide(float floorY)
     {
@@ -417,6 +431,14 @@ public partial class NoteSpawner : MonoBehaviour
         note.Vanish = VanishRules.Parse(nd.vanish);
         double vanishRemaining = warming ? approachTime : EffectiveTime(nd) - songTime;
         note.Veil = note.Vanish != VanishMode.None ? VanishRules.CueVeil(note.Vanish, vanishRemaining) : NoteVeil.Clamp(nd.veil);
+        // Q の見えないノーツ(QuizRules)。合図ごと隠し(Veil 1)、消える(V)の見え方は使わない。判定・採点はふつうのノーツと同じ。
+        note.IsHidden = nd.hidden;
+        note.HitScale = QuizRules.HitScale(nd.hitScale);
+        if (note.IsHidden)
+        {
+            note.Vanish = VanishMode.None;
+            note.Veil = 1f;
+        }
         if(Pooling && !reused) poolKeys.Add(note,key);
         note.HitTime = EffectiveTime(nd);
         note.IsHeat = nd.heat;
@@ -442,7 +464,8 @@ public partial class NoteSpawner : MonoBehaviour
         visuals.Initialize(); visuals.ResetForReuse();
         note.Visuals = visuals;
         note.ConfigureReveal(nd, vanishRemaining);
-        visuals.SetVeil(note.Vanish != VanishMode.None ? VanishRules.BodyVeil(note.Vanish, vanishRemaining) : nd.veil);
+        visuals.SetVeil(note.IsHidden ? 1f
+            : note.Vanish != VanishMode.None ? VanishRules.BodyVeil(note.Vanish, vanishRemaining) : nd.veil);
         // 使い回しの組は手ごとに分かれているが、縁は出現のたびに付け外しする(ステージをまたいでも残さない)。
         visuals.SetContrastOutline(outlineLeftNotes && note.RequiredHand == SaberHand.Left);
         go.SetActive(true);

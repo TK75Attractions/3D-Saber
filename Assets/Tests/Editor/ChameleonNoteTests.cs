@@ -245,43 +245,6 @@ public class ChameleonChartTests
         Assert.GreaterOrEqual(.4 - ChameleonRules.TransitionSeconds - 1d / 30, .3);
     }
 
-    [Test]
-    public void CPreservesTheNormalHardMixAndIsLastInTheSecretTable()
-    {
-        string folder = Path.Combine(Application.streamingAssetsPath, "Songs", "BenkyouRemaster");
-        string path = Path.Combine(folder, "chart_c.json");
-        Assert.IsTrue(File.Exists(path), "先にgen_chameleon.py --writeで生成する");
-        var chart = ChartLoader.Parse(File.ReadAllText(path));
-        MixedSecretChartAssertions.Check("BenkyouRemaster", chart, "c", 50424, 53, 208);
-        Assert.AreEqual(9, chart.displayLevel, "位置から手が読めるため、後半HardのLv9を維持");
-        var stage = JsonUtility.FromJson<StagePerformanceTimeline>(File.ReadAllText(Path.Combine(folder, "stage.json")));
-        Assert.AreEqual(4, stage.sections.Length);
-        foreach (var note in chart.notes)
-        {
-            Assert.AreEqual(.4f, note.reveal);
-            double t = note.TimeSeconds + chart.offsetMs / 1000d;
-            bool chorus = stage.sections.Any(s => s.startSeconds <= t && t < s.endSeconds);
-            Assert.AreEqual(note.IsDirection && chorus, note.revealArrow, note.time + "ms");
-            Assert.GreaterOrEqual(note.reveal - ChameleonRules.TransitionSeconds - 1d / 30, .3);
-            if (note.color == "red") Assert.Greater(note.x, 0f);
-            if (note.color == "blue") Assert.Less(note.x, 0f);
-        }
-        Assert.AreEqual(2, chart.notes.Count(n => n.revealArrow));
-        var secret = RushESecretState.BenkyouChameleon;
-        Assert.AreSame(secret, RushESecretState.For("BenkyouRemaster"));
-        Assert.AreSame(secret, RushESecretState.ForDifficulty(" c "));
-        Assert.AreSame(secret, RushESecretState.Charts.Last());
-        Assert.AreSame(RushESecretState.YurikagoOvertake,
-            RushESecretState.Charts[RushESecretState.Charts.Length - 2]);
-        Assert.AreEqual("C", secret.Difficulty);
-        Assert.AreEqual(ChameleonRules.Chalk, secret.Accent);
-        Assert.AreEqual(secret.Accent, GameHUDSkin.DifficultyColor("C"));
-        Assert.AreEqual(secret.Accent, GameStartCountdown.AccentForDifficulty("c"));
-        var state = new RushESecretState();
-        state.Select("BenkyouRemaster");
-        for (int i = 0; i < 10; i++) Assert.IsTrue(state.TryHit(i * .2));
-        Assert.IsTrue(state.Reveal());
-        Assert.IsTrue(state.Finish());
-        Assert.AreSame(secret, state.Current);
-    }
+    // 勉強の裏譜面は 2026-10-27 に C(化ける)から Q(クイズ)へ置き換えた。chart_c.json と表の確認は
+    // BenkyouQuizTests(QChartAndSecretTable)へ移した。化ける仕組み(ChameleonRules・reveal)は上のテストで残す。
 }

@@ -398,7 +398,8 @@ public class CameraImuJudgment : MonoBehaviour
             Vector3 a1 = Vector3.Lerp(prev.EndA, nextA, alpha1), b1 = Vector3.Lerp(prev.EndB, nextB, alpha1);
             Vector3 velocity = ((a1 + b1) - (a0 + b0)) * (.5f / (float)(end - begin));
             float distance = CameraSaberHistory.SweptDistance(note.transform.position, a0, b0, a1, b1, out Vector2 point);
-            float range = Mathf.Max(0, judge.bladeRadius + judge.noteHitRadiusXY);
+            // ノーツごとの当たり(Q の行列の的は hitScale で小さい)。倍率 1 は今までと同じ値。
+            float range = Mathf.Max(0, judge.HitRangeFor(note));
             if (distance > range) continue;
             bool swept = SaberCutJudge.DistPointToSegment(note.transform.position, a0, b0, out _) > range
                 && SaberCutJudge.DistPointToSegment(note.transform.position, a1, b1, out _) > range;

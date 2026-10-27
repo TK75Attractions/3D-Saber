@@ -101,4 +101,54 @@ public static class MixedSecretChartAssertions
                 Assert.Greater(b.time - (double)a.time, 120.05, "境目の同じ手が120ms以内");
         }
     }
+
+    // 勉強の Q のように、混合元(switchMs で Normal → Hard)の一部の時間帯を別の中身(試験用紙)に置き換えた譜面。
+    // ordinary が true のノーツ(置き換えていない所のふつうのノーツ)が、混合元の順序付き部分列か(試験用紙の前後で抜いた分の数は問わない)。
+    // 前の C の化ける見え方(reveal・revealArrow)は問わない。確かめたふつうのノーツの数を返す。
+    public static int CheckOrdinarySubsequence(string song, ChartData chart, double switchMs, Func<NoteData, bool> ordinary)
+    {
+        ChartData Read(string difficulty)
+        {
+            string path = Path.Combine(Application.streamingAssetsPath, "Songs", song,
+                "chart_" + difficulty + ".json");
+            Assert.IsTrue(File.Exists(path), path);
+            return ChartLoader.Parse(File.ReadAllText(path));
+        }
+
+        var normal = Read("normal");
+        var hard = Read("hard");
+        Assert.AreEqual(hard.bpm, chart.bpm);
+        Assert.AreEqual(hard.coordScale, chart.coordScale);
+        Assert.AreEqual(hard.offsetMs, chart.offsetMs);
+        Assert.AreEqual(hard.beatZeroMs, chart.beatZeroMs);
+        float shift = normal.offsetMs - hard.offsetMs;
+        var early = normal.notes.Select(n =>
+        {
+            var copy = JsonUtility.FromJson<NoteData>(JsonUtility.ToJson(n));
+            copy.time += shift;
+            return copy;
+        }).Where(n => n.time < switchMs - .05);
+        var later = hard.notes.Where(n => n.time >= switchMs - .05);
+        var source = early.Concat(later).OrderBy(n => n.time).ToList();
+
+        bool Matches(NoteData a, NoteData b)
+        {
+            if (Math.Abs((double)a.time - b.time) > .03) return false;
+            var restored = JsonUtility.FromJson<NoteData>(JsonUtility.ToJson(b));
+            restored.time = a.time;
+            restored.reveal = a.reveal;
+            restored.revealArrow = a.revealArrow;
+            return JsonUtility.ToJson(a) == JsonUtility.ToJson(restored);
+        }
+
+        int cursor = 0, checkedNotes = 0;
+        foreach (var note in chart.notes.Where(ordinary))
+        {
+            while (cursor < source.Count && !Matches(source[cursor], note)) cursor++;
+            Assert.Less(cursor, source.Count, "混合元にない、または順序の違うふつうのノーツ: " + note.time);
+            cursor++;
+            checkedNotes++;
+        }
+        return checkedNotes;
+    }
 }

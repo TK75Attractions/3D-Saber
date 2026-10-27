@@ -92,7 +92,7 @@ public sealed partial class GameplayCutFeedback : MonoBehaviour
         var feedback = go.AddComponent<GameplayCutFeedback>();
         feedback.owner = spawner;
         feedback.BuildRenderer();
-        feedback.SetMemoryVeilMode(spawner.MemoryVeilMode);
+        feedback.SetMemoryVeilMode(spawner.LiftsCutFeedback);
         return feedback;
     }
 
@@ -141,7 +141,8 @@ public sealed partial class GameplayCutFeedback : MonoBehaviour
     {
         Untrack(note);
         // 部分達成ロングのタイムアウトもOnCutを通知するため、実際に切れた時だけ描く。
-        if (!Draws(tier) || note == null || !note.IsCut || note.IsMissed || !isActiveAndEnabled
+        // Q の見えないノーツは描かない(弾けは QuizMode が的に描く)。
+        if (!Draws(tier) || note == null || !note.IsCut || note.IsMissed || note.IsHidden || !isActiveAndEnabled
             || owner == null || !owner.isActiveAndEnabled || mesh == null) return;
         if (!Finite(hitPoint) || !Finite(velocity)) return;
 
@@ -198,8 +199,8 @@ public sealed partial class GameplayCutFeedback : MonoBehaviour
     // NoteSpawner.Tickからだけ呼ぶ。既存の破片と同じTime.deltaTimeで寿命を進める。
     public void Tick(float deltaTime)
     {
-        // プレビューなど、Create を直接使った所有者でも次の Tick で設定をそろえる。
-        if (owner != null) SetMemoryVeilMode(owner.MemoryVeilMode);
+        // プレビューなど、Create を直接使った所有者でも次の Tick で設定をそろえる(M のノイズ・Q の試験用紙の上へ)。
+        if (owner != null) SetMemoryVeilMode(owner.LiftsCutFeedback);
         if (!isActiveAndEnabled || ActiveCount == 0) return;
         if (float.IsNaN(deltaTime) || float.IsInfinity(deltaTime)) return;
         deltaTime = DopamineFlourish.CutDelta(owner, deltaTime, ref lastCutClock);

@@ -214,9 +214,7 @@ public class SaberCutJudge : MonoBehaviour
 
         Vector2 a = EndA, b = EndB;
         Vector2 center = (a + b) * .5f;
-        float hitRange = bladeRadius + noteHitRadiusXY;
-        // 細い側で振っているときに広げた当たり(広げないときは hitRange と同じ)。
-        float thinRange = ThinRange(a, b, hitRange);
+        // 当たりはノーツごと(Q の行列の的は hitScale で小さい)。細い側で振っているときに広げた当たりも、その倍率で広げる。
         // 曲時計があるときは、前に調べたときの刃から今の刃までが通った面でも入ったかを見る(速い振りで円を飛び越えても拾う)。
         // 端の向きはそろえる。誤認識で刃が飛んだとき(中心が maxCutDistance より動いた)は使わない。
         Vector2 a0 = sweepA, b0 = sweepB;
@@ -236,6 +234,9 @@ public class SaberCutJudge : MonoBehaviour
             if (!SaberHandHelper.CanCut(note.RequiredHand, EffectiveHand())) continue;
             if (pending.ContainsKey(note) || ExcludedFromStroke(note)) continue;
             Vector2 noteXY = new Vector2(note.transform.position.x, note.transform.position.y);
+            float hitRange = HitRangeFor(note);
+            // 細い側で振っているときに広げた当たり(広げないときは hitRange と同じ)。
+            float thinRange = ThinRange(a, b, hitRange, note.HitScale);
             float d = DistPointToSegment(noteXY, a, b, out Vector2 closest);
             Vector2 anchor = center;
             if (d > hitRange && sweep)
@@ -266,8 +267,6 @@ public class SaberCutJudge : MonoBehaviour
         if (dist <= 0.0001f) return CheckPending(false);
         if (dist > maxCutDistance) return CheckPending(false);
 
-        float hitRange = bladeRadius + noteHitRadiusXY;
-
         var notes = CuttableNote.ActiveNotes;
         for (int i=0;i<notes.Count;i++)
         {
@@ -279,6 +278,7 @@ public class SaberCutJudge : MonoBehaviour
             Vector2 noteXY = new Vector2(note.transform.position.x, note.transform.position.y);
             Vector2 allowedFrom = Vector2.Lerp(from, to, OrderEntryFraction(note));
             float d = DistPointToSegment(noteXY, allowedFrom, to, out Vector2 closest);
+            float hitRange = HitRangeFor(note);
             // 点は1フレームの軌跡で入るので、起点はその軌跡の始まり。
             if (d <= hitRange && AcceptContact(note, closest))
                 pending[note] = NewPending(note, closest, d, allowedFrom, to, hitRange);
@@ -479,14 +479,37 @@ public class SaberCutJudge : MonoBehaviour
 
     // 細い側で振っているときの当たり。振りを横切る刃の幅(動く向きに直交する広がり)が minSwingWidth に届くまで広げる。
     // 曲時計があり、カメラの値が届いているときだけ(それ以外は hitRange のまま)。
-    float ThinRange(Vector2 a, Vector2 b, float hitRange)
+    // scale はノーツの当たりの倍率(CuttableNote.HitScale)。小さくした的は、広げる量も同じ倍率にする(隣の的まで届かせない)。
+    float ThinRange(Vector2 a, Vector2 b, float hitRange, float scale = 1f)
     {
         if (!Finite(songTime) || !ReceivingCamera) return hitRange;
-        Vector2 v = new Vector2(saber.Velocity.x, saber.Velocity.y);
-        if (v.sqrMagnitude < 1e-8f) return hitRange;
-        Vector2 m = v.normalized, blade = b - a;
+        return ThinRangeFor(a, b, new Vector2(saber.Velocity.x, saber.Velocity.y), hitRange, scale, minSwingWidth);
+    }
+
+    // 当たりを小さくしたノーツ(hitScale が 1 より小さい)は、細い側の振りで広げてもこの値まで。
+    // Q の行列の的(間隔 1.2・丸の半径 0.3)では、正しい的の中心から隣の丸の縁まで 0.9 なので、隣の丸の中を振っても切れない。
+    public const float ScaledThinRangeLimit = .85f;
+
+    // ThinRange の計算(純関数)。a-b は刃、velocity は刃の動き、hitRange はふだんの当たり(HitRangeFor)。
+    // 倍率 1 のノーツは今までと同じ値(広げた当たりとふだんの当たりの大きいほう)。
+    public static float ThinRangeFor(Vector2 a, Vector2 b, Vector2 velocity, float hitRange, float scale, float minSwingWidth)
+    {
+        if (velocity.sqrMagnitude < 1e-8f) return hitRange;
+        Vector2 m = velocity.normalized, blade = b - a;
         float across = Mathf.Abs(blade.x * m.y - blade.y * m.x);
-        return Mathf.Max(hitRange, (minSwingWidth - across) * .5f);
+        float widened = (minSwingWidth - across) * .5f;
+        if (scale == 1f) return Mathf.Max(hitRange, widened);
+        float scaled = widened * scale;
+        if (scale < 1f) scaled = Mathf.Min(scaled, ScaledThinRangeLimit);
+        return Mathf.Max(hitRange, scaled);
+    }
+
+    // このノーツの当たり(刃の半径 + ノーツの当たり半径 × 倍率)。倍率は CuttableNote.HitScale(Q の行列の的は 0.45)。
+    // 倍率 1 のノーツは今までと同じ値。CameraImuJudgment も同じ値を使う。
+    public float HitRangeFor(CuttableNote note)
+    {
+        float scale = note != null ? note.HitScale : 1f;
+        return bladeRadius + (scale == 1f ? noteHitRadiusXY : noteHitRadiusXY * scale);
     }
 
     // このノーツから widenGuardDistance 以内に、時刻の違う受付中のノーツ(この手で切れるもの)があるか。
@@ -806,10 +829,10 @@ public class SaberCutJudge : MonoBehaviour
         double time = stepFromTime + span * t;
         float distance = DistPointToSegment(xy, Vector2.Lerp(stepFromA, stepToA, t),
             Vector2.Lerp(stepFromB, stepToB, t), out _);
-        float range = bladeRadius + noteHitRadiusXY;
+        float range = HitRangeFor(note);
         // カメラの値で細い側から振ったときは、入りと同じく広げた当たりで見る(混雑していれば TryCutBlade が広げずに見る)。
         if (bladeProvider != null && bladeProvider.HasBlade)
-            range = ThinRange(stepToA, stepToB, range);
+            range = ThinRange(stepToA, stepToB, range, note.HitScale);
         return distance <= range
             && time >= note.HitTime - owner.earlyJudgeWindow
             && time <= note.HitTime + owner.LateWindowFor(note) ? time : double.NaN;

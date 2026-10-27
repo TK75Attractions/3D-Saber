@@ -94,8 +94,8 @@ public class RushESecretTests
     {
         var secret = RushESecretState.For("Morning");
         Assert.AreSame(RushESecretState.MorningMemory, secret);
-        Assert.AreSame(RushESecretState.BenkyouChameleon, RushESecretState.For("BenkyouRemaster"),
-            "M は Morning、勉強は独立した C");
+        Assert.AreSame(RushESecretState.BenkyouQuiz, RushESecretState.For("BenkyouRemaster"),
+            "M は Morning、勉強は独立した Q");
         Assert.AreEqual("M", secret.Difficulty);
         Assert.AreSame(secret, RushESecretState.ForDifficulty("m"));
         Assert.AreSame(secret, RushESecretState.ForDifficulty(" M "));
@@ -112,7 +112,7 @@ public class RushESecretTests
             RushESecretState.ManicSonicHeat,
             RushESecretState.EscapadeLong,
             RushESecretState.YurikagoOvertake,
-            RushESecretState.BenkyouChameleon
+            RushESecretState.BenkyouQuiz
         }, RushESecretState.Charts);
 
         var state = new RushESecretState();

@@ -195,6 +195,9 @@ public class GamePlayManager : MonoBehaviour
     public HeatMode HeatMode => heatMode;
     private DarkMode darkMode;
     public DarkMode DarkMode => darkMode;
+    // 勉強の裏譜面 Q(試験用紙と問題)。譜面に quiz があるときだけ作る。ノーツ・判定・採点はふつうどおり、絵を重ねる。
+    private QuizMode quizMode;
+    public QuizMode QuizMode => quizMode;
     // 避の終わりはコンボ点の演出が無いので、この秒数だけ置いてから結果へ。
     const float AimEndPauseSeconds = 1.2f;
 
@@ -454,6 +457,10 @@ public class GamePlayManager : MonoBehaviour
             aimMode = AimDodgeMode.Create(transform, chart.aim, noteSpawner.TotalOffsetSeconds, audioLen, scoreManager, cutJudge, cutJudge2);
         if (chart.memory != null && chart.memory.HasContent)
             memoryMode = MemoryVeilMode.Create(transform, chart, noteSpawner);
+        // 画像は譜面と同じ曲フォルダ(StreamingAssets/Songs/<曲>)の quiz/ から読む。
+        if (chart.quiz != null && chart.quiz.HasContent)
+            quizMode = global::QuizMode.Create(transform, chart, noteSpawner,
+                Path.Combine(Application.streamingAssetsPath, "Songs", songId));
         if (chart.bull != null && chart.bull.HasContent)
             bullMode = BullfightMode.Create(transform, chart.bull, noteSpawner, cutJudge, cutJudge2);
         if (chart.heat != null)
@@ -815,6 +822,7 @@ public class GamePlayManager : MonoBehaviour
         if (heatMode != null) heatMode.EndPlay();
         if (darkMode != null) darkMode.EndPlay();
         if (memoryMode != null) memoryMode.EndPlay();
+        if (quizMode != null) quizMode.EndPlay();
         if (bullMode != null) bullMode.EndPlay();
         AbortAudioRequest();
         ReleaseOwnedSongClip();
@@ -869,6 +877,9 @@ public class GamePlayManager : MonoBehaviour
         {
             // 一時停止中(剣の見失い・音の立て直し・鳴らし直した音が進むのを待つ間)・終了後も、ゲートまわりの光は最後まで消えていく(広がりかけの形で固めない)。
             if (ready && gateAccents != null) gateAccents.Tick(Time.deltaTime);
+            // Q の試験用紙は止まっている間も曲の時計どおりに描く(時計が止まれば絵も止まる)。
+            if (ready && !finished && quizMode != null && songPlayer != null && songPlayer.IsScheduled)
+                quizMode.Tick(songPlayer.SongTime);
             return;
         }
 
@@ -935,6 +946,8 @@ public class GamePlayManager : MonoBehaviour
             double songTime = songPlayer.SongTime;
             if (memoryMode != null) memoryMode.Tick(songTime);
             noteSpawner.Tick(songTime);
+            // 試験用紙と問題の絵。判定(このコマで切ったノーツ)とノーツの位置のあとに、同じ曲時計で描く。
+            if (quizMode != null) quizMode.Tick(songTime);
             if (barLineSpawner != null) barLineSpawner.Tick(songTime);
             // 避の的とトゲ。見た目は曲の時計、当たりと的の判定はノーツと同じ判定の時計(カメラの遅れを引いた時刻)。
             if (aimMode != null) aimMode.Tick(songTime, noteSpawner.JudgeClock(songTime));
@@ -994,6 +1007,7 @@ public class GamePlayManager : MonoBehaviour
         StopAllCoroutines();
         AbortAudioRequest();
         if (memoryMode != null) memoryMode.EndPlay();
+        if (quizMode != null) quizMode.EndPlay();
         if (bullMode != null) bullMode.EndPlay();
         if (songPlayer != null) songPlayer.Stop();
         if (goldNoteSfx != null) goldNoteSfx.StopSounds();
@@ -1327,6 +1341,7 @@ public class GamePlayManager : MonoBehaviour
         songPlayer.Stop();
         if (aimMode != null) aimMode.EndPlay();
         if (memoryMode != null) memoryMode.EndPlay();
+        if (quizMode != null) quizMode.EndPlay();
         if (bullMode != null) bullMode.EndPlay();
         if (stageReactions != null) stageReactions.ResetState();
         if (chorusDrop != null) chorusDrop.ResetEffects();

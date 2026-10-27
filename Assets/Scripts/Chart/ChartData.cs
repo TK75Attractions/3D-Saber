@@ -41,6 +41,8 @@ public class ChartData
     public List<DarkPointData> dark = new List<DarkPointData>();
     // 校歌の裏譜面 F。判定の根元は着地点、見た目だけを真上から等速で落とす。
     public FallChartData fall = new FallChartData();
+    // 勉強の裏譜面 Q(試験用紙と問題)。決まりは QuizChartData。
+    public QuizChartData quiz = new QuizChartData();
 }
 
 [Serializable]
@@ -224,6 +226,10 @@ public class NoteData
     public string vanish = "";
     // 熱交換の特殊ノーツ。両手で切る場合は既存の color:"gold" と組み合わせる。
     public bool heat;
+    // Q の見えないノーツ。本体・矢印・着地の枠・床の印を出さずに切れる(見た目は QuizMode の玉と的)。
+    public bool hidden;
+    // 当たりの大きさの倍率。0・省略は 1。Q の行列の的は小さくして、隣の的では切れないようにする。
+    public float hitScale;
 
     public double TimeSeconds => time / 1000.0;
 

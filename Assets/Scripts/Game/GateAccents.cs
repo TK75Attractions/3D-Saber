@@ -107,7 +107,9 @@ public sealed partial class GateAccents : MonoBehaviour
 
     void Track(CuttableNote note)
     {
-        if (note == null || !tracked.Add(note)) return;
+        // Q の見えないノーツは見張らない(斬撃の筋・金の星・ロングの満ち引きを出さない。試験用紙が薄れる間や終わった直後に漏らさない)。
+        // 採点と音は ScoreManager・効果音の側がそのまま扱う。
+        if (note == null || note.IsHidden || !tracked.Add(note)) return;
         note.OnJudged += Judged;
         note.OnPartialCut += PartialCut;
         note.OnMiss += Missed;
@@ -143,6 +145,8 @@ public sealed partial class GateAccents : MonoBehaviour
     void Judged(CuttableNote note, JudgmentTier tier, Vector3 point, Vector3 velocity)
     {
         if (note == null) return;
+        // 見えないノーツの判定では光を出さない(見張りの外し忘れの保険)。
+        if (note.IsHidden) { Untrack(note); return; }
         bool cut = note.IsCut && !note.IsMissed;
         if (cut && note.RequiredCutCount > 1 && JudgmentTierHelper.StageReactionGain(tier) > 0)
         {

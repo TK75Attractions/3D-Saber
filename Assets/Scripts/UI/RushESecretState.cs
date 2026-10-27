@@ -171,11 +171,13 @@ public sealed class RushESecretState
         CenterHaze = new Color(.42f, .52f, .74f, .42f),
         LeftHaze = new Color(.30f, .42f, .66f, .35f), RightHaze = new Color(.64f, .70f, .84f, .35f),
     };
-    // 勉強(Remaster)のC(U12 Chameleon)。白いチョークが直前に赤・青・金へ化ける。
+    // 勉強(Remaster)のQ(2026-10-27、Milthm「Algebra」のクイズ。chart_q.json の quiz と見えないノーツ)。
+    // 曲の途中で黒い試験用紙に切り替わり、リズム・置換行列・数える・最後の大問で答える(QuizMode)。
+    // 前の C(U12 Chameleon、白いチョークが化ける)を置き換えた。色は C のチョークの一式のまま。
     public static readonly Color Chalk = new Color(.94f, .93f, .86f);
-    public static readonly SecretChart BenkyouChameleon = new SecretChart
+    public static readonly SecretChart BenkyouQuiz = new SecretChart
     {
-        SongId = "BenkyouRemaster", Difficulty = "C", Accent = Chalk,
+        SongId = "BenkyouRemaster", Difficulty = "Q", Accent = Chalk,
         Glow = new Color(.94f, .93f, .86f, .25f), Face = new Color(.13f, .13f, .10f),
         TileDeep = new Color(.09f, .09f, .065f), TileLight = new Color(.62f, .61f, .51f),
         Backdrop = new Color(.035f, .035f, .025f),
@@ -184,7 +186,7 @@ public sealed class RushESecretState
         CenterHaze = new Color(.78f, .77f, .65f, .42f),
         LeftHaze = new Color(.68f, .67f, .55f, .35f), RightHaze = new Color(.90f, .89f, .78f, .35f),
     };
-    public static readonly SecretChart[] Charts = { RushE, ElDoradoG, PhobiaAvoid, MorningMemory, AobasouWind, LogicSpeed, ZeroVanish, AndalusiaBull, TwoTwentyThreeLight, EpilogueFall, ManicSonicHeat, EscapadeLong, YurikagoOvertake, BenkyouChameleon };
+    public static readonly SecretChart[] Charts = { RushE, ElDoradoG, PhobiaAvoid, MorningMemory, AobasouWind, LogicSpeed, ZeroVanish, AndalusiaBull, TwoTwentyThreeLight, EpilogueFall, ManicSonicHeat, EscapadeLong, YurikagoOvertake, BenkyouQuiz };
     public static SecretChart For(string songId)
     {
         foreach (var chart in Charts) if (chart.SongId == songId) return chart;

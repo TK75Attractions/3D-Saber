@@ -214,7 +214,7 @@ public class YurikagoOvertakeTests
         var secret = RushESecretState.YurikagoOvertake;
         Assert.AreSame(secret, RushESecretState.For("揺籠"));
         Assert.AreSame(secret, RushESecretState.ForDifficulty(" p "));
-        // 並び順は RushESecretTests が見る(P のあとに勉強の C が続く)。
+        // 並び順は RushESecretTests が見る(P のあとに勉強の Q が続く)。
         CollectionAssert.Contains(RushESecretState.Charts, secret);
         Assert.AreEqual("P", secret.Difficulty);
         Assert.AreEqual(RushESecretState.MoonSilver, GameHUDSkin.DifficultyColor("P"));
