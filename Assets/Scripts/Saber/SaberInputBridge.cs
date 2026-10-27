@@ -69,6 +69,9 @@ public class SaberInputBridge : MonoBehaviour
     public Vector3 WorldEndB { get; private set; }
     // ブレードデータが有効か（線分判定を使うか）。
     public bool HasBlade { get; private set; }
+    // R の天地返しで、このコマのカメラの入力に掛けた回転(度。WorldTurn.InputDegrees)。カメラの経路でないコマは 0。
+    // ReverseMode が値の跳び(F3 の段の切り替え)を見て、剣の速さの履歴とカメラの履歴を捨てる。
+    public float AppliedTurnDegrees { get; private set; }
     // 刃を描くか。照準で遊ぶ裏譜面(避、2026-10-24)では刃を描かず、照準は AimDodgeMode が中点に描く。
     // 端点・HasBlade・中点の位置はふだんどおり更新する。
     public bool DrawBlade { get; set; } = true;
@@ -438,6 +441,7 @@ public class SaberInputBridge : MonoBehaviour
     {
         if (!useBladeMode && HasBlade) HideBlade();
         bool consumed = false;
+        AppliedTurnDegrees = 0f;
 
         // UDP データが「最近」来てるなら、それを使う。無音ならマウスフォールバック(なければ非表示)。
         var ip = useInputPoint ? InputPoint.Instance : null;
@@ -464,6 +468,19 @@ public class SaberInputBridge : MonoBehaviour
                 else ResetPrediction();
                 Vector3 a = new Vector3(endA.x, endA.y, fixedZ);
                 Vector3 b = new Vector3(endB.x, endB.y, fixedZ);
+                // R の天地返し: 世界の絵を回す間は、揺れ止め・フィルタ・予測の後、写像とクランプの前に、入力を写す
+                // (回す前の投影で画面の位置を求めて逆に回し、同じ平面へ戻す。剣は手のとおりに画面で動く)。
+                // 観測の端点にも同じ写しを掛け、WorldEndA/B・中点・カメラの履歴(IMU 用)をそろえる。
+                // 録画とテストの直接の差し込み(ApplyBladeImmediate・OverrideBlade)とマウスには掛けない。
+                float turn = WorldTurn.InputDegrees;
+                AppliedTurnDegrees = turn;
+                if (ReverseRules.Wrap(turn) != 0f)
+                {
+                    a = WorldTurn.MapInput(a, turn);
+                    b = WorldTurn.MapInput(b, turn);
+                    observedA = WorldTurn.MapInput(observedA, turn);
+                    observedB = WorldTurn.MapInput(observedB, turn);
+                }
                 if (remapToCameraView && ResolveViewExtents())
                 {
                     // 中点だけ写像して端点は平行移動(棒の長さ・角度を保つ)
@@ -497,6 +514,10 @@ public class SaberInputBridge : MonoBehaviour
                 ResetEndpointProcessing();
                 Vector2 mid = stickIndex == 2 ? ip.LocalPosition2 : ip.LocalPosition;
                 Vector3 p = new Vector3(mid.x, mid.y, fixedZ);
+                // 単点のカメラの経路も、天地返しの間は同じく写す。
+                float turn = WorldTurn.InputDegrees;
+                AppliedTurnDegrees = turn;
+                if (ReverseRules.Wrap(turn) != 0f) p = WorldTurn.MapInput(p, turn);
                 if (remapToCameraView && ResolveViewExtents())
                 {
                     p = RemapPoint(p, sourceHalfExtents, viewCenter, viewHalfExtents, fixedZ);

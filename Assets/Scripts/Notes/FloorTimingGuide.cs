@@ -114,6 +114,8 @@ public sealed class FloorTimingGuide : MonoBehaviour
                     note.OvertakeApproach, note.OvertakeScale) - remaining) / .12))
                 : Mathf.Clamp01((float)((spawner.approachTime - seen) / .12));
             if (remaining < 0) alpha *= Mathf.Clamp01(1 + (float)remaining / .13f);
+            // R の鏡のノーツは、門を通るまで印を薄く(位置は最初から本当の位置)。
+            if (note.IsMirror && remaining > ReverseRules.CrossSeconds) alpha *= ReverseRules.FloorMarkBeforeCross;
             if (alpha <= 0) continue;
             var visuals = note.GetComponent<NoteVisuals>();
             Color tint = visuals != null ? visuals.DisplayColor : UISkinPalette.NoteFlick;

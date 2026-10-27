@@ -132,18 +132,19 @@ public sealed class RushESecretState
         EdgeLight = new Color(1, .84f, .92f), FanLight = new Color(1, .74f, .86f),
         CenterHaze = new Color(1, .52f, .73f, .42f), LeftHaze = new Color(.95f, .44f, .66f, .35f), RightHaze = new Color(1, .68f, .82f, .35f),
     };
-    // Manic Sonic の X(熱交換)。目印は冷却の青緑、左右の光は熱い銅色と冷たい青緑。
-    public static readonly Color Thermal = new Color(.18f, .88f, .68f);
-    public static readonly SecretChart ManicSonicHeat = new SecretChart
+    // Manic Sonic の R(反転、2026-10-28。前の X の熱交換を置き換えた)。逆再生(割れた2片が閉じる)・鏡門(サビで左右が入れ替わる)・
+    // 天地返し(BPM60 で世界が 180° 回り、最後に一回転して戻る)。目印は鏡銀。左右の光は手の色の側を入れ替えた紅紫と水色。
+    public static readonly Color MirrorSilver = new Color(.80f, .92f, 1f);
+    public static readonly SecretChart ManicSonicReverse = new SecretChart
     {
-        SongId = "ManicSonic", Difficulty = "X", Accent = Thermal,
-        Glow = new Color(.12f, .88f, .66f, .25f), Face = new Color(.025f, .16f, .12f),
-        TileDeep = new Color(.015f, .13f, .10f), TileLight = new Color(.08f, .60f, .44f),
-        Backdrop = new Color(.008f, .055f, .045f),
-        LeftLight = new Color(1f, .34f, .16f), RightLight = new Color(.10f, .94f, .76f),
-        EdgeLight = new Color(.42f, 1f, .78f), FanLight = new Color(.24f, .92f, .65f),
-        CenterHaze = new Color(.10f, .76f, .55f, .42f),
-        LeftHaze = new Color(1f, .28f, .08f, .35f), RightHaze = new Color(.08f, .86f, .66f, .35f),
+        SongId = "ManicSonic", Difficulty = "R", Accent = MirrorSilver,
+        Glow = new Color(.66f, .86f, 1f, .25f), Face = new Color(.06f, .08f, .14f),
+        TileDeep = new Color(.04f, .06f, .12f), TileLight = new Color(.46f, .58f, .74f),
+        Backdrop = new Color(.016f, .022f, .050f),
+        LeftLight = new Color(.96f, .46f, .84f), RightLight = new Color(.40f, .88f, 1f),
+        EdgeLight = new Color(.90f, .96f, 1f), FanLight = new Color(.72f, .86f, 1f),
+        CenterHaze = new Color(.56f, .72f, 1f, .42f),
+        LeftHaze = new Color(.86f, .34f, .78f, .32f), RightHaze = new Color(.28f, .78f, .98f, .32f),
     };
     // escapade の L(U47 流星)。逃げるロングを追う。目印は鮮やかなコバルト。
     public static readonly Color Cobalt = new Color(.28f, .46f, 1f);
@@ -186,7 +187,7 @@ public sealed class RushESecretState
         CenterHaze = new Color(.78f, .77f, .65f, .42f),
         LeftHaze = new Color(.68f, .67f, .55f, .35f), RightHaze = new Color(.90f, .89f, .78f, .35f),
     };
-    public static readonly SecretChart[] Charts = { RushE, ElDoradoG, PhobiaAvoid, MorningMemory, AobasouWind, LogicSpeed, ZeroVanish, AndalusiaBull, TwoTwentyThreeLight, EpilogueFall, ManicSonicHeat, EscapadeLong, YurikagoOvertake, BenkyouQuiz };
+    public static readonly SecretChart[] Charts = { RushE, ElDoradoG, PhobiaAvoid, MorningMemory, AobasouWind, LogicSpeed, ZeroVanish, AndalusiaBull, TwoTwentyThreeLight, EpilogueFall, ManicSonicReverse, EscapadeLong, YurikagoOvertake, BenkyouQuiz };
     public static SecretChart For(string songId)
     {
         foreach (var chart in Charts) if (chart.SongId == songId) return chart;

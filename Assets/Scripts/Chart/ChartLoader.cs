@@ -62,6 +62,8 @@ public static class ChartLoader
             data.fall = FallRules.Normalize(data.fall);
             // 勉強の裏譜面 Q の試験用紙と問題。壊れた値は捨て、時刻順に並べる(ふつうの譜面では空のまま)。
             data.quiz = QuizRules.Normalize(data.quiz);
+            // Manic Sonic の裏譜面 R。区間を時刻順に並べ、壊れた値を収め、門を通る時刻が鏡の区間に入らないノーツは鏡を外す。
+            data.reverse = ReverseRules.Normalize(data.reverse, data.notes);
             return data;
         }
         catch (ArgumentException exception)

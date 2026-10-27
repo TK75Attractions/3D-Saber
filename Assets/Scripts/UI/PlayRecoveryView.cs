@@ -92,14 +92,19 @@ public sealed class PlayRecoveryView
         return screen.z > 0 && RectTransformUtility.ScreenPointToLocalPointInRectangle(canvas, screen, null, out local);
     }
 
+    // R の天地返しの間は、画面の絵が回り、剣の入力もカメラの経路で写されている(WorldTurn.MapInput)。
+    // ワールドの点を同じ写しで写してから画面に写すと、回す前と同じ画面の位置に出る(輪は画面の左右のまま、カメラの映像の点は反転しない)。
+    static Vector3 Turned(Vector3 world) => WorldTurn.MapInput(world, WorldTurn.CurrentDegrees);
+
     // 輪と判定に同じ画面座標を使う。表示中の剣の両端の中点を取り、感度を二重に掛けない。
     public int InsideMask()
     {
         int inside = 0;
         for (int i = 0; i < 2; i++)
         {
-            if (!Project(targets[i], out Vector2 center) ||
-                !Project(targets[i] + Vector3.right * diameters[i], out Vector2 end)) continue;
+            Vector3 target = Turned(targets[i]);
+            if (!Project(target, out Vector2 center) ||
+                !Project(target + Vector3.right * diameters[i], out Vector2 end)) continue;
             float diameter = Vector2.Distance(center, end);
             poses[i].rectTransform.anchoredPosition = center;
             poses[i].rectTransform.sizeDelta = Vector2.one * diameter;
@@ -122,9 +127,10 @@ public sealed class PlayRecoveryView
         bool flipY = input != null && input.useDirectWorldMapping && input.worldScale.y < 0;
         if (camera != null)
         {
-            Vector3 origin = camera.WorldToScreenPoint(Vector3.zero);
-            flipX ^= camera.WorldToScreenPoint(Vector3.right).x < origin.x;
-            flipY ^= camera.WorldToScreenPoint(Vector3.up).y < origin.y;
+            // 天地返しの間も、回す前の画面の向きで決める(入力も回っているので、カメラの映像の点は反転しない)。
+            Vector3 origin = camera.WorldToScreenPoint(Turned(Vector3.zero));
+            flipX ^= camera.WorldToScreenPoint(Turned(Vector3.right)).x < origin.x;
+            flipY ^= camera.WorldToScreenPoint(Turned(Vector3.up)).y < origin.y;
         }
         // InputPoint/SaberInputBridge と同じ左右・上下。iPhoneの鏡像設定と4隅補正を含む実機の向きは要確認。
         string line = "";

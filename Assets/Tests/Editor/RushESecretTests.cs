@@ -69,6 +69,36 @@ public class RushESecretTests
         Assert.AreNotEqual(UISkinPalette.LogoRed, RushESecretState.Toro, "Hard の赤と分ける");
     }
 
+    // 2026-10-28: Manic Sonic の R(反転)が前の X(熱交換)の場所に入る。X は表から外れ、R は chart_r.json を読む。
+    [Test]
+    public void ManicSonicReverseReplacesXWithTheMirrorSilverAccent()
+    {
+        var secret = RushESecretState.For("ManicSonic");
+        Assert.AreSame(RushESecretState.ManicSonicReverse, secret);
+        Assert.AreEqual("R", secret.Difficulty);
+        Assert.AreSame(secret, RushESecretState.ForDifficulty(" r "));
+        Assert.IsNull(RushESecretState.ForDifficulty("X"), "X(熱交換)は表から外れた");
+        Assert.AreEqual(RushESecretState.MirrorSilver, secret.Accent);
+        Assert.AreEqual(RushESecretState.MirrorSilver, GameHUDSkin.DifficultyColor("R"));
+        Assert.AreEqual(RushESecretState.MirrorSilver, GameStartCountdown.AccentForDifficulty("r"));
+        foreach (var other in RushESecretState.Charts)
+            if (!ReferenceEquals(other, secret)) Assert.AreNotEqual(other.Accent, secret.Accent, other.Difficulty + " と色を分ける");
+        Assert.AreNotEqual(SongAchievementStore.Key("ManicSonic", "R"), SongAchievementStore.Key("ManicSonic", "X"), "X の記録と混ざらない");
+        Assert.AreNotEqual(HighScoreStore.Key("ManicSonic", "R"), HighScoreStore.Key("ManicSonic", "X"));
+        var state = new RushESecretState();
+        state.Select("ManicSonic");
+        for (int i = 0; i < 9; i++)
+        {
+            Assert.IsTrue(state.TryHit(i * .2));
+            Assert.IsFalse(state.Transitioning);
+        }
+        Assert.IsTrue(state.TryHit(2));
+        Assert.IsTrue(state.Reveal());
+        Assert.IsTrue(state.Finish());
+        Assert.AreSame(secret, state.Current);
+        Assert.IsTrue(ChartLoader.LoadFromStreamingAssets("ManicSonic", "R").reverse.enabled, "R は chart_r.json を読む");
+    }
+
     [Test]
     public void ZeroVanishUsesTheSharedSecretTableAndPhantomAccent()
     {
@@ -109,7 +139,7 @@ public class RushESecretTests
             RushESecretState.ZeroVanish, RushESecretState.AndalusiaBull,
             RushESecretState.TwoTwentyThreeLight,
             RushESecretState.EpilogueFall,
-            RushESecretState.ManicSonicHeat,
+            RushESecretState.ManicSonicReverse,
             RushESecretState.EscapadeLong,
             RushESecretState.YurikagoOvertake,
             RushESecretState.BenkyouQuiz

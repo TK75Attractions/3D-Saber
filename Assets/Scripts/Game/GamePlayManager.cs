@@ -198,6 +198,9 @@ public class GamePlayManager : MonoBehaviour
     // 勉強の裏譜面 Q(試験用紙と問題)。譜面に quiz があるときだけ作る。ノーツ・判定・採点はふつうどおり、絵を重ねる。
     private QuizMode quizMode;
     public QuizMode QuizMode => quizMode;
+    // Manic Sonic の裏譜面 R(逆再生・鏡門・天地返し)。譜面に reverse.enabled があるときだけ作る。判定・採点はふつうどおり。
+    private ReverseMode reverseMode;
+    public ReverseMode ReverseMode => reverseMode;
     // 避の終わりはコンボ点の演出が無いので、この秒数だけ置いてから結果へ。
     const float AimEndPauseSeconds = 1.2f;
 
@@ -412,6 +415,9 @@ public class GamePlayManager : MonoBehaviour
             lastNoteTime = System.Math.Max(lastNoteTime, preview.LastTime);
         }
 
+        // R は実効の接近時間を 1.5〜2.0 秒に収める(保存値は変えない。小節線とカウントインの助走もこの値に合わせる)。
+        if (ReverseRules.Enabled(chart.reverse))
+            noteSpawner.approachTime = (float)ReverseRules.EffectiveApproach(noteSpawner.approachTime);
         // オフセットを先に NoteSpawner に渡してから SetChart
         noteSpawner.SetExtraOffsetSeconds(effectiveExtraOffset);
         noteSpawner.SetChart(chart);
@@ -465,6 +471,11 @@ public class GamePlayManager : MonoBehaviour
             bullMode = BullfightMode.Create(transform, chart.bull, noteSpawner, cutJudge, cutJudge2);
         if (chart.heat != null)
             heatMode = global::HeatMode.Create(transform, chart, noteSpawner, cutJudge, cutJudge2);
+        // 剣の入力の回転は、Bridge が自分の Update で同じ曲の時計から求める(始まる前・止めたあとは NaN で回さない)。
+        if (ReverseRules.Enabled(chart.reverse))
+            reverseMode = global::ReverseMode.Create(transform, chart, noteSpawner,
+                () => songPlayer != null && songPlayer.IsScheduled ? songPlayer.SongTime : double.NaN,
+                cutJudge, cutJudge2, cameraImuJudgment);
         if (chart.dark != null && chart.dark.Count > 0)
             darkMode = global::DarkMode.Create(transform, chart, noteSpawner, cutJudge, cutJudge2, stageFloor, barLineSpawner);
         if (longNoteCutSfx != null) longNoteCutSfx.Bind(noteSpawner);
@@ -820,6 +831,7 @@ public class GamePlayManager : MonoBehaviour
     private void OnDestroy()
     {
         if (heatMode != null) heatMode.EndPlay();
+        if (reverseMode != null) reverseMode.EndPlay();
         if (darkMode != null) darkMode.EndPlay();
         if (memoryMode != null) memoryMode.EndPlay();
         if (quizMode != null) quizMode.EndPlay();
@@ -862,6 +874,9 @@ public class GamePlayManager : MonoBehaviour
     // 順序：Esc → 受信の見張り(止める・再開) → 現在の受付窓 → 判定 → 譜面進行 → 終了チェック。
     void Update()
     {
+        // R の天地返し: 角度と投影(と F3 の暗転)をフレームの最初に決める。大きな光の描画と保護の矩形・復帰の表示・判定が、
+        // このコマの同じ投影を使うように。一時停止中(剣の見失い・音の鳴らし直しを待つ間)も、止まった曲の時刻で作り直す(画面の比を追う)。
+        if (reverseMode != null && songPlayer != null && songPlayer.IsScheduled) reverseMode.ApplyView(songPlayer.SongTime);
         PlayExcitement.TickFor(this, ready && !finished);
         if (HandleEscape()) return;
         LockMouseFallbackOnceCameraSeen();
@@ -880,6 +895,9 @@ public class GamePlayManager : MonoBehaviour
             // Q の試験用紙は止まっている間も曲の時計どおりに描く(時計が止まれば絵も止まる)。
             if (ready && !finished && quizMode != null && songPlayer != null && songPlayer.IsScheduled)
                 quizMode.Tick(songPlayer.SongTime);
+            // R の効果音は、曲の時計が止まっている間(見失い・鳴らし直した音が進むのを待つ間)に DSP の時計で先に鳴らないよう、
+            // 予約と鳴っている音を取り消す(動き出したら今の曲の時刻で予約し直す)。
+            if (reverseMode != null) reverseMode.ResetSounds();
             return;
         }
 
@@ -895,6 +913,9 @@ public class GamePlayManager : MonoBehaviour
         if (heatMode != null && songPlayer != null && songPlayer.IsScheduled)
             heatMode.Tick(songPlayer.SongTime,
                 noteSpawner != null ? noteSpawner.JudgeClock(songPlayer.SongTime) : songPlayer.SongTime);
+        // R の鏡門の絵・筋・音・光。見た目なので曲の時計(投影はフレームの最初に当ててある)。
+        if (reverseMode != null && songPlayer != null && songPlayer.IsScheduled)
+            reverseMode.Advance(songPlayer.SongTime);
 
         // 1. セーバー判定(2本構成なら両方)
         if (cameraImuJudgment != null)
@@ -1000,6 +1021,7 @@ public class GamePlayManager : MonoBehaviour
     {
         if (!ScreenTransition.Load("Title", ScreenTransition.Style.Back)) return;
         if (heatMode != null) heatMode.EndPlay();
+        if (reverseMode != null) reverseMode.EndPlay();
         if (darkMode != null) darkMode.EndPlay();
         // 途中離脱は終了処理へ流さず、結果・実績を保存しない。開始待ちや終了演出も打ち切る。
         finished = true;
@@ -1168,6 +1190,8 @@ public class GamePlayManager : MonoBehaviour
         songPlayer.HeldByTracking = true;
         // 予約したサビの音や下げた音量を戻す(再開後、まだ来ていない入口は ChorusDrop が予約し直す)。
         if (chorusDrop != null) chorusDrop.ResetEffects();
+        // R の予約した音も取り消す(再開のあと今の時刻から予約し直す)。天地返しの角度は曲の時計と一緒に止まったまま。
+        if (reverseMode != null) reverseMode.ResetSounds();
         // 区間の終わりで鳴り始めた「シュー」も止める(止めたあとまで鳴り続けていた。Codex の点検で 2026-10-22 に追加)。
         if (feverShow != null) feverShow.StopEndSound();
     }
@@ -1197,6 +1221,7 @@ public class GamePlayManager : MonoBehaviour
         if (audioReload != null) { StopCoroutine(audioReload); audioReload = null; AbortAudioRequest(); }
         if (chorusDrop != null) chorusDrop.ResetEffects();
         if (feverShow != null) feverShow.StopEndSound();
+        if (reverseMode != null) reverseMode.ResetSounds();
     }
 
     // 音の出力先が変わった(AudioOutputRecovery、2026-10-22)。画面は戻さない(同日ユーザー「戻るのやめて」)。
@@ -1333,6 +1358,8 @@ public class GamePlayManager : MonoBehaviour
     private void FinishGame()
     {
         if (heatMode != null) heatMode.EndPlay();
+        // 投影と剣の入力の写しを戻してから、終わりの演出へ。
+        if (reverseMode != null) reverseMode.EndPlay();
         if (darkMode != null) darkMode.EndPlay();
         // 「なぜ今終わったか」を後から追えるように記録する(途中終了バグの診断用)
         Debug.Log($"GamePlayManager: FinishGame songTime={songPlayer.SongTime:F1}s " +
