@@ -2,9 +2,10 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-public enum ReverseCue { Swell, Cue, FlipIn, FlipOut, Shatter, Creak, Rumble, Landing, FinaleSwell, FinaleHit }
+public enum ReverseCue { Cue, FlipIn, FlipOut, Shatter, Creak, Rumble, Landing, FinaleSwell, FinaleHit }
 
-// Manic Sonic の裏譜面 R の音。逆シンバル・鏡門の予告音・裏返り・割れる・きしみ・回転のうなり・着地・最後の一打。
+// Manic Sonic の裏譜面 R の音。鏡門の予告音・裏返り・割れる・きしみ・回転のうなり・着地・最後の一回転の逆シンバルと一打。
+// 2026-10-28: 逆再生(U102)を外したので、句の頭の逆シンバル(swell)も鳴らさない。
 // 鳴らす時刻は譜面から前もって決めておき(BuildEvents)、曲の時計で少し前に予約して鳴らす(ChorusDrop の予約と同じやり方)。
 // 止まったら取り消し(ResetSounds)、次のコマで今の時刻から予約し直す(途中まで鳴っていた長い音は途中から)。
 // 波形と8声は開始時に作る。EditMode では出音の代わりに、実際に声へ渡した再生要求を数える。
@@ -15,14 +16,12 @@ public sealed class ReverseSfx : IDisposable
         // 鳴り始める曲の時刻(秒、オフセット込み)。
         public double At;
         public ReverseCue Cue;
-        // 波形の頭を飛ばす秒(短い逆シンバルは頭を飛ばして、終わりの頂点を届く時刻にそろえる)。
-        public double Skip;
         // 鳴っている長さ(秒)。
         public double Length;
     }
 
     public const double LookAheadSeconds = .12;
-    const int CueKinds = 10;
+    const int CueKinds = 9;
     readonly List<Event> events;
     readonly GameObject root;
     readonly AudioSource[] voices = new AudioSource[8];
@@ -51,7 +50,6 @@ public sealed class ReverseSfx : IDisposable
             if (e.Cue == ReverseCue.FinaleSwell) finale = Math.Max(finale, e.Length);
         }
         // 曲中に合成して処理落ちしないよう、開始時(幕の閉じている間)に作る。同じ長さの音は作り置きを使う。
-        Make(ReverseCue.Swell, "Reverse.Swell", () => FlourishSfx.ReverseCymbal());
         Make(ReverseCue.Cue, "Reverse.Cue", FlourishSfx.MirrorCue);
         Make(ReverseCue.FlipIn, "Reverse.FlipIn", FlourishSfx.MirrorFlipIn);
         Make(ReverseCue.FlipOut, "Reverse.FlipOut", FlourishSfx.MirrorFlipOut);
@@ -90,20 +88,6 @@ public sealed class ReverseSfx : IDisposable
         if (!ReverseRules.Enabled(data)) return result;
         var tempo = new ChartTempoMap(chart.bpm, chart.beatZeroMs, chart.editorTempoMap);
         double Seconds(double ms) => ms / 1000.0 + offset;
-
-        // 逆シンバル: swell のノーツ(同時の組は1つ)。長さは2拍(遅い所は 1 秒まで)、届く時刻でいちばん大きい。
-        double lastSwell = double.NegativeInfinity;
-        if (chart.notes != null)
-            foreach (var note in chart.notes)
-            {
-                if (note == null || !note.swell || Math.Abs(note.time - lastSwell) <= 10) continue;
-                lastSwell = note.time;
-                double beat = tempo.BeatAt(note.time);
-                double beatSeconds = (tempo.TimeAt(beat) - tempo.TimeAt(beat - 1)) / 1000.0;
-                double length = ReverseRules.SwellSeconds(beatSeconds);
-                result.Add(new Event { At = Seconds(note.time) - length, Cue = ReverseCue.Swell,
-                    Skip = FlourishSfx.ReverseCymbalSeconds - length, Length = length });
-            }
 
         // 鏡門: 鏡にする拍の前の3拍に予告音、裏返る瞬間にシャン(鏡)・フォッ(素通し)、割れるときにパリーン。門を通る瞬間には鳴らさない
         // (届く 1.5 拍前で曲の拍からずれ、切る音より早い別のリズムに聞こえるため)。
@@ -174,7 +158,8 @@ public sealed class ReverseSfx : IDisposable
     void Play(Event e, double songTime)
     {
         double delay = e.At - songTime;
-        double skip = e.Skip + Math.Max(0, -delay);
+        // 遅れて予約した長い音(止まったあとのうなりなど)は、途中から鳴らす。
+        double skip = Math.Max(0, -delay);
         if (skip >= clipSeconds[(int)e.Cue] - .02 || clips[(int)e.Cue] == null) return;
         played[(int)e.Cue]++;
         LastPlayed = e;

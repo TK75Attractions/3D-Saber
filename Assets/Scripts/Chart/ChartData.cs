@@ -43,7 +43,7 @@ public class ChartData
     public FallChartData fall = new FallChartData();
     // 勉強の裏譜面 Q(試験用紙と問題)。決まりは QuizChartData。
     public QuizChartData quiz = new QuizChartData();
-    // Manic Sonic の裏譜面 R(逆再生・鏡門・天地返し)。enabled が false ならふつうの譜面。決まりは ReverseRules。
+    // Manic Sonic の裏譜面 R(鏡門・天地返し)。enabled が false ならふつうの譜面。決まりは ReverseRules。
     public ReverseChartData reverse = new ReverseChartData();
 }
 
@@ -234,8 +234,6 @@ public class NoteData
     public float hitScale;
     // R の鏡門。x・矢印は本当の(門を通ったあとの)値で、門を通るまでは左右の鏡像の側に見せる。判定・着地の枠・床の印は本当の位置。
     public bool mirror;
-    // R の逆シンバル(届く時刻でいちばん大きくなる音)を鳴らすノーツ。
-    public bool swell;
 
     public double TimeSeconds => time / 1000.0;
 

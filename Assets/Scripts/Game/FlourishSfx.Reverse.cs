@@ -5,10 +5,10 @@ using static SfxLab;
 // 部品は派手さカタログと同じ(シンバル・鐘・シャキン・パリーン・シャッ・立ち上がるノイズ・トッ・ドン)。
 public static partial class FlourishSfx
 {
-    // 逆シンバルの長さ。短い逆シンバル(180 BPM の2拍 0.667 秒など)は、頭を飛ばして鳴らす(終わりの頂点は同じ)。
+    // 逆シンバルの既定の長さ。
     public const double ReverseCymbalSeconds = 1.0;
 
-    // 逆シンバル: シンバルを逆向きに並べ、届く時刻でいちばん大きくなって、ぷつっと切れる(終わりは 4ms で切る)。
+    // 逆シンバル: シンバルを逆向きに並べ、終わりでいちばん大きくなって、ぷつっと切れる(終わりは 4ms で切る)。最後の一回転のせり上がりに使う。
     public static float[] ReverseCymbal(double seconds = ReverseCymbalSeconds)
     {
         double sec = Math.Max(.2, seconds);

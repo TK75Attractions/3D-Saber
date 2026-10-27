@@ -6,7 +6,7 @@ using NUnit.Framework;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-// Manic Sonic の裏譜面 R(反転)の決まり(ReverseRules)。すき間・鏡・門・予告音・角度・入力の写し・接近時間・割れ目・破片。
+// Manic Sonic の裏譜面 R(反転)の決まり(ReverseRules)。鏡・門・予告音・角度・入力の写し・接近時間。
 public class ReverseRulesTests
 {
     // Manic Sonic のテンポ表(180 → 160 → 180 → 60 → 180 → 約 200 BPM)。
@@ -31,22 +31,6 @@ public class ReverseRulesTests
 
     [TearDown]
     public void TearDown() => DisplaySettings.ResetReducedEffectsCacheForTest();
-
-    [Test]
-    public void GapClosesInAStraightLineAndIsZeroOnArrival()
-    {
-        Assert.AreEqual(.45f, ReverseRules.Gap(1.5, 1.5, .45f), 1e-6, "出現時に最大");
-        Assert.AreEqual(.45f, ReverseRules.Gap(2.0, 1.5, .45f), 1e-6);
-        Assert.AreEqual(.225f, ReverseRules.Gap(.75, 1.5, .45f), 1e-6);
-        Assert.AreEqual(0f, ReverseRules.Gap(0, 1.5, .45f), "届く瞬間に 0");
-        Assert.AreEqual(0f, ReverseRules.Gap(-.1, 1.5, .45f));
-        Assert.AreEqual(0f, ReverseRules.Gap(double.NaN, 1.5, .45f));
-        float a = ReverseRules.Gap(1.2, 1.5, .6f), b = ReverseRules.Gap(.9, 1.5, .6f), c = ReverseRules.Gap(.6, 1.5, .6f);
-        Assert.AreEqual(a - b, b - c, 1e-6, "同じ速さで閉じる(閉じる量で残りが読める)");
-        Assert.AreEqual(ReverseRules.ReducedGap, ReverseRules.EffectiveGap(.45f, true), 1e-6, "F3 は 0.3 まで");
-        Assert.AreEqual(.2f, ReverseRules.EffectiveGap(.2f, true), 1e-6);
-        Assert.AreEqual(.45f, ReverseRules.EffectiveGap(.45f, false), 1e-6);
-    }
 
     [TestCase(CutDirection.None, CutDirection.None)]
     [TestCase(CutDirection.Up, CutDirection.Up)]
@@ -245,101 +229,45 @@ public class ReverseRulesTests
         Assert.AreEqual(4f, v3.z, "奥行きは変えない");
     }
 
-    [TestCase(.5, 1.5)]
-    [TestCase(1.0, 1.5)]
+    // 2026-10-28: 下限 1.5 秒をやめ、設定の速さ(3段 2.0・1.0・0.8 秒、既定 1.0 秒)のまま。上限 2.0 秒だけ残す。
+    [TestCase(.5, .5)]
+    [TestCase(.8, .8)]
+    [TestCase(1.0, 1.0)]
     [TestCase(1.8, 1.8)]
     [TestCase(2.0, 2.0)]
     [TestCase(4.0, 2.0)]
-    [TestCase(double.NaN, 1.5)]
-    public void ApproachIsKeptBetweenOneAndAHalfAndTwoSeconds(double requested, double expected)
+    [TestCase(0.0, 1.0)]
+    [TestCase(-1.0, 1.0)]
+    [TestCase(double.NaN, 1.0)]
+    public void ApproachFollowsTheSettingUpToTwoSeconds(double requested, double expected)
     {
         Assert.AreEqual(expected, ReverseRules.EffectiveApproach(requested), 1e-12);
     }
 
     [Test]
-    public void PiecesComeFromTheSectionOfTheHitTime()
+    public void TheDefaultSpeedIsNotSlowedDown()
     {
-        var data = new ReverseChartData { enabled = true, gap = .45f };
-        data.pieces.Add(new ReversePieceData { time = 0, endTime = 5333.3333f, count = 4, gap = .6f, spin = 0 });
-        data.pieces.Add(new ReversePieceData { time = 53333.3333f, endTime = 67500, count = 6, gap = -1, spin = 1 });
-        var intro = ReverseRules.PiecesFor(data, 1000);
-        Assert.AreEqual(4, intro.Count);
-        Assert.AreEqual(.6f, intro.Gap, 1e-6);
-        var none = ReverseRules.PiecesFor(data, 20000);
-        Assert.AreEqual(0, none.Count, "区間の外は破片なし");
-        Assert.AreEqual(.45f, none.Gap, 1e-6, "既定のすき間");
-        var swirl = ReverseRules.PiecesFor(data, 60000);
-        Assert.AreEqual(6, swirl.Count);
-        Assert.AreEqual(.45f, swirl.Gap, 1e-6, "gap を書かない区間は既定のすき間");
-        Assert.AreEqual(1f, swirl.Spin);
-        Assert.AreEqual(0, ReverseRules.PiecesFor(data, 5333.4).Count, "区間の終わりは含まない");
+        Assert.AreEqual(GameSession.NoteApproachTimeDefault, (float)ReverseRules.DefaultApproach, 1e-6, "壊れた設定は既定の速さ");
+        foreach (float seconds in NoteSpeedPreset.Seconds)
+            Assert.AreEqual(seconds, (float)ReverseRules.EffectiveApproach(seconds), 1e-6, "設定の段はそのまま: " + seconds);
     }
 
     [Test]
-    public void CracksFollowArrowsAndCycleForPlainNotes()
-    {
-        Assert.AreEqual(0, ReverseRules.CrackIndex(CutDirection.Down, 5), "下向きは縦の割れ目");
-        Assert.AreEqual(0, ReverseRules.CrackIndex(CutDirection.Up, 1));
-        Assert.AreEqual(4, ReverseRules.CrackIndex(CutDirection.Left, 0), "横向きは横の割れ目");
-        Assert.AreEqual(2, ReverseRules.CrackIndex(CutDirection.UpRight, 0));
-        Assert.AreEqual(6, ReverseRules.CrackIndex(CutDirection.DownRight, 0));
-        CollectionAssert.AreEqual(new[] { 0, 1, 7, 0, 1, 7 },
-            Enumerable.Range(0, 6).Select(i => ReverseRules.CrackIndex(CutDirection.None, i)).ToArray(), "縦・+22.5°・−22.5° を順に");
-        for (int i = 0; i < ReverseRules.CrackAngleCount; i++)
-        {
-            Vector2 line = ReverseRules.CrackLine(i), normal = ReverseRules.CrackNormal(i);
-            Assert.AreEqual(0f, Vector2.Dot(line, normal), 1e-5, "2片は割れ目に垂直に離れる");
-            Assert.AreEqual(1f, normal.magnitude, 1e-5);
-        }
-        Vector2 diagonal = ReverseRules.CrackLine(ReverseRules.CrackIndex(CutDirection.UpRight, 0));
-        Assert.AreEqual(1f, Mathf.Abs(Vector2.Dot(diagonal, CutDirectionHelper.ToVector(CutDirection.UpRight))), 1e-5, "割れ目は矢印に沿う");
-    }
-
-    [Test]
-    public void SwellIsTwoBeatsUpToOneSecond()
-    {
-        Assert.AreEqual(2 / 3.0, ReverseRules.SwellSeconds(1 / 3.0), 1e-9, "180 BPM で2拍");
-        Assert.AreEqual(.75, ReverseRules.SwellSeconds(.375), 1e-9, "160 BPM で2拍");
-        Assert.AreEqual(1.0, ReverseRules.SwellSeconds(1.0), 1e-9, "60 BPM は1拍(1秒)");
-    }
-
-    [Test]
-    public void ShardsAreDrawnInToTheCoreAndMeltJustBeforeArrival()
-    {
-        Assert.AreEqual(1f, ReverseRules.ShardReach(1.5, 1.5), 1e-6);
-        Assert.AreEqual(.5f, ReverseRules.ShardReach(.8, 1.5), 1e-4);
-        Assert.Less(ReverseRules.ShardReach(.1001, 1.5), .001f);
-        Assert.Less(ReverseRules.ShardReach(.1, 1.5), 0f, "届く 0.1 秒前に芯へ溶けて消える");
-        Assert.Less(ReverseRules.ShardReach(-.2, 1.5), 0f);
-        for (int i = 0; i < 6; i++)
-            Assert.AreEqual(ReverseRules.ShardRadius, ReverseRules.ShardOffset(i, 6, 1f, 0f, 3).magnitude, 1e-5, "周り(半径 1.2)から");
-        Assert.AreEqual(.6f, ReverseRules.ShardOffset(2, 6, .5f, 0f, 3).magnitude, 1e-5);
-        Vector2 still = ReverseRules.ShardOffset(0, 4, .5f, 0f, 0), swirl = ReverseRules.ShardOffset(0, 4, .5f, 1f, 0);
-        Assert.AreEqual(-1f, Vector2.Dot(still.normalized, swirl.normalized), 1e-4, "渦: 半分まで来ると半周");
-        Assert.AreEqual(0f, ReverseRules.ShardScale(0f));
-        Assert.AreEqual(1f, ReverseRules.ShardScale(.5f));
-    }
-
-    [Test]
-    public void TheFinalHitIsTheLastBeatOfTheSongAndTheSeamFlashesOnArrival()
+    public void TheFinalHitIsTheLastBeatOfTheSong()
     {
         var turn = Turns().turns[1];
         Assert.AreEqual(151451.93, ReverseRules.FinalHitMs(turn, ManicTempo()), .05, "151.45 秒(曲の最後の拍)");
         Assert.AreEqual(turn.endTime, ReverseRules.FinalHitMs(turn, new ChartTempoMap(180, 0, null)), 1e-3, "テンポ表の点が無ければ回り終わり");
-        Assert.AreEqual(1f, ReverseRules.SeamFlash(0, false), 1e-6);
-        Assert.AreEqual(.5f, ReverseRules.SeamFlash(.04, false), 1e-4);
-        Assert.AreEqual(.5f, ReverseRules.SeamFlash(-.04, false), 1e-4);
-        Assert.AreEqual(0f, ReverseRules.SeamFlash(.08, false));
-        Assert.AreEqual(0f, ReverseRules.SeamFlash(0, true), "F3 では閉じた瞬間の光をやめる");
     }
 }
 
-// ChartLoader が reverse とノーツの mirror・swell を読み、壊れた値を収めること。ほかの譜面は今までどおり。
+// ChartLoader が reverse とノーツの mirror を読み、壊れた値を収めること。ほかの譜面は今までどおり。
 public class ReverseLoaderTests
 {
     [Test]
     public void LoaderReadsReverseSortsSpansAndDropsMirrorsWithoutAGate()
     {
+        // swell・gap・pieces は v1.35 の逆再生の項目(2026-10-28 に外した)。古い譜面に残っていても読み飛ばす。
         string json = @"{""bpm"":180,""notes"":[
             {""time"":6333.3,""x"":-1.05,""y"":-0.15,""color"":""gold"",""mirror"":true,""swell"":true},
             {""time"":4000,""x"":1,""y"":0,""color"":""red"",""mirror"":true},
@@ -354,10 +282,6 @@ public class ReverseLoaderTests
         var chart = ChartLoader.Parse(json);
         var reverse = chart.reverse;
         Assert.IsTrue(reverse.enabled);
-        Assert.AreEqual(ReverseRules.MaxGap, reverse.gap, 1e-6, "大きすぎるすき間は収める");
-        Assert.AreEqual(2, reverse.pieces.Count, "長さの無い区間は捨てる");
-        Assert.AreEqual(0f, reverse.pieces[0].time, "時刻順");
-        Assert.AreEqual(ReverseRules.MaxShards, reverse.pieces[1].count, "破片は 6 個まで");
         Assert.AreEqual(1, reverse.gates[0].on.Count, "門の時間の外の鏡は捨てる");
         Assert.AreEqual(5333.3f, reverse.gates[0].on[0].time, 1e-3);
         Assert.AreEqual(10000f, reverse.gates[0].on[0].endTime, 1e-3, "鏡は門の時間の中へ収める");
@@ -366,7 +290,6 @@ public class ReverseLoaderTests
 
         var gold = chart.notes.Single(n => Math.Abs(n.time - 6333.3f) < .1f);
         Assert.IsTrue(gold.mirror, "門を通る時刻(5833.3)が鏡の区間にある");
-        Assert.IsTrue(gold.swell);
         Assert.IsFalse(chart.notes.Single(n => Math.Abs(n.time - 4000) < .1f).mirror, "門を通る時刻が鏡の区間の外なら鏡を外す");
         Assert.IsFalse(chart.notes.Single(n => n.IsLong).mirror, "ロングは鏡にしない");
     }
@@ -377,16 +300,14 @@ public class ReverseLoaderTests
         var plain = ChartLoader.Parse(@"{""bpm"":120,""notes"":[{""time"":1000,""x"":0,""y"":0,""mirror"":true}]}");
         Assert.IsFalse(plain.reverse.enabled, "reverse の無い譜面は無効");
         Assert.IsFalse(plain.notes[0].mirror, "門の無い譜面で鏡にしない");
-        Assert.AreEqual(ReverseRules.DefaultGap, plain.reverse.gap, 1e-6);
         CollectionAssert.IsEmpty(plain.reverse.gates);
-        var broken = ChartLoader.Parse(@"{""bpm"":120,""notes"":[],""reverse"":{""enabled"":true,""gap"":-3,""turns"":[{""time"":5,""endTime"":1,""degrees"":180}]}}");
-        Assert.AreEqual(0f, broken.reverse.gap, "負のすき間は 0");
+        var broken = ChartLoader.Parse(@"{""bpm"":120,""notes"":[],""reverse"":{""enabled"":true,""turns"":[{""time"":5,""endTime"":1,""degrees"":180}]}}");
         Assert.AreEqual(broken.reverse.turns[0].time, broken.reverse.turns[0].endTime, "終わりが頭より前の回転は、その場で切り替える");
         foreach (var difficulty in new[] { "Normal", "Hard" })
         {
             var chart = ChartLoader.LoadFromStreamingAssets("ManicSonic", difficulty);
             Assert.IsFalse(chart.reverse.enabled, difficulty);
-            Assert.IsFalse(chart.notes.Any(n => n.mirror || n.swell), difficulty);
+            Assert.IsFalse(chart.notes.Any(n => n.mirror), difficulty);
         }
     }
 }
@@ -622,7 +543,7 @@ public class ReverseProjectionTests
     }
 }
 
-// 逆再生の2片と鏡門の鏡像(CuttableNote.Reverse・NoteSpawner.Reverse)。プールの無い EditMode で毎回作るノーツを使う。
+// 鏡門の鏡像(CuttableNote.Reverse・NoteSpawner.Reverse)。プールの無い EditMode で毎回作るノーツを使う。
 public class ReverseNoteTests
 {
     GameObject root;
@@ -667,13 +588,11 @@ public class ReverseNoteTests
         DisplaySettings.ResetReducedEffectsCacheForTest();
     }
 
-    // 見せ場(0〜3 秒、破片 4・すき間 0.6・渦)のふつうのノーツ、門(4〜9 秒、鏡は 5 秒から)の鏡のノーツ2つ、ロング1つ。
+    // 門の前のふつうのノーツ、門(4〜9 秒、鏡は 5 秒から)の鏡のノーツ2つ、ロング1つ。
     internal static ChartData Chart()
     {
         var chart = new ChartData { bpm = 180 };
         chart.reverse.enabled = true;
-        chart.reverse.gap = .45f;
-        chart.reverse.pieces.Add(new ReversePieceData { time = 0, endTime = 3000, count = 4, gap = .6f, spin = 1 });
         var gate = new ReverseGateData { time = 4000, endTime = 9000 };
         gate.on.Add(new ReverseSpanData { time = 5000, endTime = 9000 });
         chart.reverse.gates.Add(gate);
@@ -757,113 +676,101 @@ public class ReverseNoteTests
         Assert.Greater(marks.Max(i => colors[i].a), .9f, "通ったら等倍");
     }
 
+    // 2026-10-28: 逆再生(2片)を外したので、鏡でないノーツは見た目の子を持たないふつうのノーツ。
     [Test]
-    public void TheShellOpensInTwoHalvesAndClosesOnArrival()
+    public void PlainNotesInTheReverseChartAreOrdinaryNotes()
     {
         spawner.SetChart(Chart());
         spawner.Tick(.51);
         var note = Live(2.0);
         Assert.NotNull(note);
-        Assert.IsTrue(note.ReverseHalvesShown, "割れた2片で来る");
-        Assert.IsTrue(note.BodyRenderer.enabled, "本体の描画先は enabled のまま(光の保護から外さない)");
-        Assert.IsTrue(note.BodyRenderer.forceRenderingOff, "本体は forceRenderingOff で隠す");
-        Assert.AreEqual(.6f * (1.49f / 1.5f), note.ReverseGapShown, .01f, "見せ場の区間のすき間");
-        Assert.AreEqual(note.ReverseGapShown,
-            Vector3.Distance(note.ReverseHalfA.position, note.ReverseHalfB.position), .01f, "2片のすき間はワールドで");
-        Assert.AreSame(note.BodyRenderer.sharedMaterial, note.ReverseHalfA.GetComponent<MeshRenderer>().sharedMaterial, "材質は本体と同じ");
-        var bodyMesh = note.VisualTransform.GetComponent<MeshFilter>().sharedMesh;
-        Assert.AreNotSame(bodyMesh, note.ReverseHalfA.GetComponent<MeshFilter>().sharedMesh, "本体のメッシュはそのまま(切断は立方体全体で)");
-        Assert.AreEqual(24, bodyMesh.vertexCount);
-        Assert.IsNotNull(note.VisualTransform.Find("InnerCore"), "芯は真ん中に1つのまま");
+        Assert.IsFalse(note.HasReverse, "鏡でないノーツは R の見た目を使わない");
+        Assert.IsFalse(note.IsMirror);
+        Assert.AreSame(note.transform, note.VisualTransform, "見た目は根元のまま");
+        Assert.AreSame(note.GetComponent<MeshRenderer>(), note.BodyRenderer, "本体は根元の立方体");
+        Assert.IsNull(note.transform.Find("ReverseVisual"), "見た目の子を作らない");
+        spawner.Tick(1.9);
+        Assert.AreEqual(-1.2f, note.VisualTransform.position.x, 1e-5);
+    }
 
-        spawner.Tick(1.25);
-        Assert.AreEqual(.3f, note.ReverseGapShown, .01f, "残り時間に比例して閉じる");
-        spawner.Tick(2.0);
-        Assert.IsFalse(note.ReverseHalvesShown, "届く瞬間に元の形");
-        Assert.IsFalse(note.BodyRenderer.forceRenderingOff);
-        Assert.AreEqual(1f, note.ReverseSeamShown, 1e-6, "閉じた瞬間に割れ目が光る");
+    // 設定の既定の速さ(接近 1.0 秒)でも、門(届く 0.5 秒前)より奥では鏡像の側に見える。
+    [Test]
+    public void AtTheDefaultSpeedMirrorNotesStillShowTheReflectionBeforeTheGate()
+    {
+        spawner.approachTime = (float)ReverseRules.EffectiveApproach(GameSession.NoteApproachTimeDefault);
+        Assert.AreEqual(1f, spawner.approachTime, 1e-6, "R でも既定の速さのまま");
+        spawner.SetChart(Chart());
+        spawner.Tick(5.51);
+        var note = Live(6.5);
+        Assert.NotNull(note, "接近 1.0 秒なので 5.5 秒に出る");
+        Assert.AreEqual(1.1f, note.VisualTransform.position.x, 1e-4, "出てから門までは鏡像の側");
+        Assert.AreEqual(-1.1f, note.transform.position.x, 1e-5, "根元は本当の位置");
+        spawner.Tick(5.95);
+        Assert.AreEqual(1.1f, note.VisualTransform.position.x, 1e-4, "門を通る 0.5 秒前までは鏡像のまま");
+        spawner.Tick(6.1);
+        Assert.AreEqual(-1.1f, note.VisualTransform.position.x, 1e-4, "門を通ったら本当の位置");
     }
 
     [Test]
-    public void CuttingSlicesTheWholeCubeAndScoresNormally()
+    public void CuttingAMirrorNoteSlicesTheWholeCubeAndScoresNormally()
     {
         spawner.SetChart(Chart());
-        spawner.Tick(.51);
-        var note = Live(2.0);
-        spawner.Tick(1.97);
-        Assert.IsTrue(note.ReverseHalvesShown);
+        spawner.Tick(5.01);
+        var note = Live(6.5);
+        spawner.Tick(6.47);
+        Assert.IsTrue(note.IsMirror);
+        Assert.AreNotSame(note.transform, note.VisualTransform);
         var earlier = new HashSet<SlicePieceDecay>(Object.FindObjectsByType<SlicePieceDecay>(FindObjectsInactive.Include, FindObjectsSortMode.None));
-        Assert.IsTrue(note.CutAtSongTime(note.transform.position, Vector3.down * 8f, CutDirection.None, SaberHand.Left, 1.99));
+        Assert.IsTrue(note.CutAtSongTime(note.transform.position, Vector3.down * 8f, CutDirection.None, SaberHand.Right, 6.49));
         var pieces = Object.FindObjectsByType<SlicePieceDecay>(FindObjectsInactive.Include, FindObjectsSortMode.None)
             .Where(p => !earlier.Contains(p) && p.GetComponent<MeshFilter>().sharedMesh == p.ReusableMesh).ToList();
-        Assert.AreEqual(2, pieces.Count, "本体の立方体を振った向きで2つに切る");
+        Assert.AreEqual(2, pieces.Count, "見た目の子の本体の立方体を振った向きで2つに切る");
         var bounds = pieces[0].ReusableMesh.bounds;
         bounds.Encapsulate(pieces[1].ReusableMesh.bounds);
-        Assert.AreEqual(1f, bounds.size.x, 1e-3, "半分ではなく立方体全体");
+        Assert.AreEqual(1f, bounds.size.x, 1e-3, "立方体全体");
         Assert.AreEqual(1f, bounds.size.y, 1e-3);
         Assert.AreEqual(1, score.PerfectCount, "判定・採点はふつう");
     }
 
     [Test]
-    public void ShardsGatherOnlyInTheShowSectionAndNotWithReducedEffects()
-    {
-        spawner.SetChart(Chart());
-        spawner.Tick(.51);
-        var note = Live(2.0);
-        Assert.AreEqual(4, note.ReverseShardCount);
-        Assert.AreEqual(4, note.ReverseShardsShown, "見せ場の区間は破片が吸い込まれる");
-        Assert.AreEqual(ReverseRules.ShardRadius, Vector3.Distance(note.ReverseShards[0].position, note.VisualTransform.position), .05f);
-        spawner.Tick(1.95);
-        Assert.AreEqual(0, note.ReverseShardsShown, "届く 0.1 秒前に芯へ溶けて消える");
-
-        DisplaySettings.SetReducedEffectsForTest(true);
-        spawner.Tick(1.2);
-        Assert.AreEqual(0, note.ReverseShardsShown, "F3 では破片を出さない");
-        Assert.LessOrEqual(note.ReverseGapShown, ReverseRules.ReducedGap * (.8f / 1.5f) + 1e-4f, "F3 ではすき間を 0.3 まで");
-        Assert.IsTrue(note.ReverseHalvesShown, "2片そのものは残す(時刻の手がかり)");
-        spawner.Tick(2.0);
-        Assert.AreEqual(0f, note.ReverseSeamShown, "F3 では閉じた瞬間の光をやめる");
-    }
-
-    [Test]
-    public void LongNotesAreNotSplitAndPoolKeysKeepReverseNotesApart()
+    public void LongNotesStayOrdinaryAndPoolKeysKeepMirrorNotesApart()
     {
         var chart = Chart();
         spawner.SetChart(chart);
         spawner.Tick(6.6);
         var longNote = Live(8.0);
         Assert.NotNull(longNote);
-        Assert.IsFalse(longNote.HasReverse, "ロングは割らない");
+        Assert.IsFalse(longNote.HasReverse, "ロングは鏡にしない");
         Assert.AreSame(longNote.transform, longNote.VisualTransform);
 
         var key = typeof(NoteSpawner).GetMethod("Key", BindingFlags.Instance | BindingFlags.NonPublic);
         var tap = new NoteData { color = "red" };
+        var mirror = new NoteData { color = "red", mirror = true };
         var hold = new NoteData { color = "red", type = "long", count = 2 };
         object reverseTap = key.Invoke(spawner, new object[] { tap });
+        object reverseMirror = key.Invoke(spawner, new object[] { mirror });
         object reverseHold = key.Invoke(spawner, new object[] { hold });
+        Assert.AreNotEqual(reverseTap, reverseMirror, "見た目の子を持つ鏡のノーツは別のプール");
         spawner.SetChart(new ChartData { bpm = 120 });
-        Assert.AreNotEqual(reverseTap, key.Invoke(spawner, new object[] { tap }), "2片の子を持つノーツをほかの曲へ持ち越さない");
-        Assert.AreEqual(reverseHold, key.Invoke(spawner, new object[] { hold }), "割らないロングはふつうのロングと同じ");
+        Assert.AreEqual(reverseTap, key.Invoke(spawner, new object[] { tap }), "鏡でないタップはふつうのタップと同じ");
+        Assert.AreNotEqual(reverseMirror, key.Invoke(spawner, new object[] { mirror }), "鏡のノーツをほかの曲へ持ち越さない");
+        Assert.AreEqual(reverseHold, key.Invoke(spawner, new object[] { hold }), "ロングはふつうのロングと同じ");
     }
 
     [Test]
-    public void ReuseClearsTheHalvesTheOffsetAndTheNegativeScale()
+    public void ReuseClearsTheOffsetAndTheNegativeScale()
     {
         spawner.SetChart(Chart());
         spawner.Tick(5.01);
         var note = Live(6.5);
         spawner.Tick(5.3);
-        Assert.IsTrue(note.ReverseHalvesShown);
         Assert.AreEqual(-1f, note.VisualTransform.localScale.x, 1e-6);
         note.ResetForSpawn();
         Assert.IsFalse(note.HasReverse);
         Assert.IsFalse(note.IsMirror);
         Assert.AreEqual(Vector3.zero, note.VisualTransform.localPosition, "鏡のずれを持ち越さない");
         Assert.AreEqual(Vector3.one, note.VisualTransform.localScale, "負の拡縮を持ち越さない");
-        Assert.IsFalse(note.ReverseHalvesShown, "2片を持ち越さない");
-        Assert.IsFalse(note.BodyRenderer.forceRenderingOff, "本体を描く");
-        Assert.IsTrue(note.ReverseShards.All(s => !s.gameObject.activeSelf));
-        Assert.AreEqual(0, note.ReverseShardsShown);
+        Assert.IsTrue(note.BodyRenderer.enabled, "本体を描く");
     }
 }
 
@@ -927,8 +834,8 @@ public class ReverseModeTests
         chart.reverse.turns = turns.turns;
         chart.reverse.creaks = turns.creaks;
         chart.editorTempoMap = new List<ChartTempoPoint>(ReverseRulesTests.ManicTempo().Points);
-        chart.notes.Add(new NoteData { time = 127500, x = 0f, y = -.15f, color = "gold", swell = true });
-        chart.notes.Add(new NoteData { time = 135500, x = 1.9f, y = -.15f, color = "blue", swell = true });
+        chart.notes.Add(new NoteData { time = 127500, x = 0f, y = -.15f, color = "gold" });
+        chart.notes.Add(new NoteData { time = 135500, x = 1.9f, y = -.15f, color = "blue" });
         chart.notes = chart.notes.OrderBy(n => n.time).ToList();
         chart.reverse = ReverseRules.Normalize(chart.reverse, chart.notes);
         return chart;
@@ -1132,11 +1039,12 @@ public class ReverseSfxTests
     [Test]
     public void TheReverseCymbalPeaksAtItsEndAndStopsShort()
     {
+        // 最後の一回転のせり上がり(WorldFinaleSwell)に使う。
         var samples = FlourishSfx.ReverseCymbal();
         Assert.AreEqual(FlourishSfx.ReverseCymbalSeconds * SfxLab.Rate, samples.Length, 2);
         int peak = 0;
         for (int i = 1; i < samples.Length; i++) if (Mathf.Abs(samples[i]) > Mathf.Abs(samples[peak])) peak = i;
-        Assert.Greater(peak, samples.Length * .9, "届く時刻(終わり)でいちばん大きい");
+        Assert.Greater(peak, samples.Length * .9, "終わりでいちばん大きい");
         Assert.LessOrEqual(SfxLab.PeakDb(samples), -13.9);
         Assert.AreEqual(0f, samples[samples.Length - 1], 1e-3, "ぷつっと切れる(最後は 0)");
     }
@@ -1150,7 +1058,7 @@ public class ReverseSfxTests
             new ReverseSfx.Event { At = 10, Cue = ReverseCue.Cue, Length = .09 },
             new ReverseSfx.Event { At = 11, Cue = ReverseCue.Rumble, Length = 4 },
             new ReverseSfx.Event { At = 12, Cue = ReverseCue.Creak, Length = .32 },
-            new ReverseSfx.Event { At = 20 - .667, Cue = ReverseCue.Swell, Skip = 1 - .667, Length = .667 },
+            new ReverseSfx.Event { At = 20 - .667, Cue = ReverseCue.FinaleSwell, Length = .667 },
         });
         sfx.Tick(9.0);
         Assert.AreEqual(0, sfx.Played(ReverseCue.Cue));
@@ -1172,8 +1080,8 @@ public class ReverseSfxTests
         Assert.AreEqual(0, sfx.Played(ReverseCue.Creak), "F3 ではきしみを出さない");
         DisplaySettings.SetReducedEffectsForTest(false);
         sfx.Tick(19.3);
-        Assert.AreEqual(1, sfx.Played(ReverseCue.Swell));
-        Assert.AreEqual(1 - .667, sfx.LastPlayed.Skip, 1e-9, "短い逆シンバルは頭を飛ばす");
+        Assert.AreEqual(1, sfx.Played(ReverseCue.FinaleSwell));
+        Assert.AreEqual(20 - .667 - 19.3, sfx.LastDelay, 1e-9, "最後の一回転のせり上がりも少し前に予約する");
         sfx.Tick(25);
         sfx.Tick(5);
         Assert.AreEqual(1, sfx.Played(ReverseCue.Cue), "時計が戻っても、まだ来ていない音だけ");

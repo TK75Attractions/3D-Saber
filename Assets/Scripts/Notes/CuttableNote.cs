@@ -80,7 +80,7 @@ public partial class CuttableNote : MonoBehaviour
         HasWind = false;
         WindX = WindY = WindSpin = WindSway = 0f;
         SetWindSway(Vector3.zero);
-        // R の2片・破片・鏡のずれと負の拡縮を持ち越さない。
+        // R の鏡のずれと負の拡縮を持ち越さない。
         ResetReverse();
         wrongDirectionCue.Reset();
         if (Arrow != null) Arrow.ResetCue();

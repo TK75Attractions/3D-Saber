@@ -104,7 +104,7 @@ public static class MixedSecretChartAssertions
 
     // 勉強の Q のように、混合元(switchMs で Normal → Hard)の一部の時間帯を別の中身(試験用紙)に置き換えた譜面。
     // ordinary が true のノーツ(置き換えていない所のふつうのノーツ)が、混合元の順序付き部分列か(試験用紙の前後で抜いた分の数は問わない)。
-    // 前の C の化ける見え方(reveal・revealArrow)と、R の逆シンバルの印(swell。音だけで配置は変えない)は問わない。
+    // 前の C の化ける見え方(reveal・revealArrow)は問わない。
     // 確かめたふつうのノーツの数を返す。
     public static int CheckOrdinarySubsequence(string song, ChartData chart, double switchMs, Func<NoteData, bool> ordinary)
     {
@@ -139,7 +139,6 @@ public static class MixedSecretChartAssertions
             restored.time = a.time;
             restored.reveal = a.reveal;
             restored.revealArrow = a.revealArrow;
-            restored.swell = a.swell;
             return JsonUtility.ToJson(a) == JsonUtility.ToJson(restored);
         }
 

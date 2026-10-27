@@ -40,8 +40,6 @@ public class ManicSonicReverseChartTests
         Assert.AreEqual(237, chart.notes.Count(n => n.time >= SwitchMs - .05), "後ろは Hard 由来");
         Assert.AreEqual(53, chart.notes.Count(n => n.mirror), "鏡: 高揚1 9・主題A 11+11・高揚3 12+10");
         Assert.AreEqual(38, Inverted(chart).Count, "逆さ: 新しい13個 + 拍395 からの Hard 25");
-        Assert.AreEqual(43, chart.notes.Count(n => n.swell));
-        Assert.AreEqual(37, chart.notes.Where(n => n.swell).Select(n => Math.Round(n.time)).Distinct().Count(), "逆シンバルは届く時刻で37か所");
         Assert.AreEqual(10, chart.notes.Count(n => n.color == "gold"));
         Assert.AreEqual(8, chart.notes.Count(n => n.IsDirection));
         Assert.AreEqual(4, chart.notes.Count(n => n.IsLong));
@@ -62,15 +60,11 @@ public class ManicSonicReverseChartTests
     {
         var chart = Load();
         var reverse = chart.reverse;
-        Assert.AreEqual(.45f, reverse.gap, 1e-6);
-        Assert.AreEqual(5, reverse.pieces.Count);
-        CollectionAssert.AreEqual(new[] { 4, 2, 2, 6, 6 }, reverse.pieces.Select(p => p.count).ToArray(), "見せ場は導入・BPM160・BPM60");
-        CollectionAssert.AreEqual(new[] { 0f, 0f, 0f, 1f, 1f }, reverse.pieces.Select(p => p.spin).ToArray(), "BPM160 と BPM60 は渦");
         Assert.AreEqual(3, reverse.gates.Count, "3つのサビ");
         var stages = new ChartTempoMap(chart.bpm, chart.beatZeroMs, chart.editorTempoMap);
         double[][] expected =
         {
-            new double[] { 15, 30, 16, 30 },
+            new double[] { 13, 30, 16, 30 },
             new double[] { 64, 126, 78, 94, 110, 126 },
             new double[] { 240, 318, 254, 270, 302, 318 },
         };
@@ -104,7 +98,7 @@ public class ManicSonicReverseChartTests
         var chart = Load();
         int ordinary = MixedSecretChartAssertions.CheckOrdinarySubsequence(Song, chart, SwitchMs,
             n => !n.mirror && n.beat < 379 - .001);
-        Assert.AreEqual(238, ordinary, "鏡でも逆さでもないノーツは、混合元の順序付き部分列(逆シンバルの印だけ戻して比べる)");
+        Assert.AreEqual(238, ordinary, "鏡でも逆さでもないノーツは、混合元の順序付き部分列(元のまま)");
     }
 
     [Test]
@@ -242,14 +236,6 @@ public class ManicSonicReverseChartTests
     {
         var chart = Load();
         var events = ReverseSfx.BuildEvents(chart, 0);
-        var swells = events.Where(e => e.Cue == ReverseCue.Swell).ToList();
-        Assert.AreEqual(37, swells.Count, "同時の組は1回");
-        var hits = chart.notes.Where(n => n.swell).Select(n => n.TimeSeconds).ToList();
-        foreach (var swell in swells)
-            Assert.IsTrue(hits.Any(h => Math.Abs(swell.At + swell.Length - h) < 1e-6), "届く時刻でいちばん大きい " + swell.At);
-        Assert.AreEqual(20, swells.Count(e => Math.Abs(e.Length - 2 / 3.0) < 1e-3), "180 BPM は2拍");
-        Assert.AreEqual(6, swells.Count(e => Math.Abs(e.Length - .75) < 1e-3), "160 BPM は2拍");
-        Assert.AreEqual(11, swells.Count(e => Math.Abs(e.Length - 1) < 1e-3), "60 BPM は1拍(1秒)");
         Assert.AreEqual(15, events.Count(e => e.Cue == ReverseCue.Cue), "鏡にする5回 × 3拍");
         Assert.AreEqual(5, events.Count(e => e.Cue == ReverseCue.FlipIn));
         Assert.AreEqual(2, events.Count(e => e.Cue == ReverseCue.FlipOut), "主題A と高揚3 の、拍の土台の句へ戻すとき");

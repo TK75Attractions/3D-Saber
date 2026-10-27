@@ -10,7 +10,7 @@ using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 using Object = UnityEngine.Object;
 
-// Manic Sonic の裏譜面 R(chart_r.json)を本編で読み、鏡門・天地返し・逆再生が判定とそろうことを確かめる。
+// Manic Sonic の裏譜面 R(chart_r.json)を本編で読み、鏡門・天地返しが判定とそろうことを確かめる。
 // 曲は止め、時刻を選んで同じ本体(NoteSpawner・ReverseMode)を進める。結果画面には進めず、失敗時もシーン・選曲・設定を戻す。
 // 本物の判定のずらし・速度などのプレイヤー設定は GameSession.SetPlayerSettingsForTest で守る(このテストの中だけの値にする)。
 public class ManicSonicReversePlayTests
@@ -135,7 +135,7 @@ public class ManicSonicReversePlayTests
         Assert.IsNull(manager.BullMode);
         Assert.IsNull(manager.AimMode);
         Assert.IsTrue(spawner.HasReverse);
-        Assert.AreEqual(1.5f, spawner.approachTime, 1e-6, "R の実効の接近時間(設定 1.0 → 1.5)");
+        Assert.AreEqual(1f, spawner.approachTime, 1e-6, "R でも設定どおりの速さ(既定 1.0 秒。2026-10-28 に下限 1.5 秒をやめた)");
         Assert.AreEqual(1f, GameSession.NoteApproachTime, 1e-6, "保存されている設定は変えない");
         if (manager.barLineSpawner != null)
             Assert.AreEqual(spawner.approachTime, manager.barLineSpawner.approachTime, 1e-6, "小節線も同じ接近時間");
@@ -149,8 +149,8 @@ public class ManicSonicReversePlayTests
         // 鏡門: 根元は最初から本当の位置。届く時刻に、剣を鏡像の位置に置いても切れず、本当の位置なら切れる。
         var mirror = chart.notes.First(n => n.mirror && n.color == "red");
         double hit = spawner.EffectiveTime(mirror);
-        spawner.Tick(hit - 1.0);
-        mode.Tick(hit - 1.0);
+        spawner.Tick(hit - .9);
+        mode.Tick(hit - .9);
         var note = Find(spawner, hit, "red");
         Assert.IsTrue(note.IsMirror);
         Assert.AreEqual(mirror.x, note.transform.position.x, 1e-4, "根元は本当の位置");
@@ -237,7 +237,7 @@ public class ManicSonicReversePlayTests
     }
 
     [UnityTest]
-    public IEnumerator ReducedEffectsDropShardsAndStreaksAndSwitchTheWorldInTheDark()
+    public IEnumerator ReducedEffectsDropStreaksAndSwitchTheWorldInTheDark()
     {
         yield return LoadReverse();
         var mode = manager.ReverseMode;
@@ -245,15 +245,13 @@ public class ManicSonicReversePlayTests
         var chart = spawner.CurrentChart;
         DisplaySettings.SetReducedEffectsForTest(true);
 
-        var intro = chart.notes.First(n => !n.IsLong);
+        // 鏡でないノーツは、R でもふつうのノーツ(2026-10-28 に逆再生の2片を外した)。
+        var intro = chart.notes.First(n => !n.IsLong && !n.mirror);
         double hit = spawner.EffectiveTime(intro);
-        spawner.Tick(hit - 1.4);
+        spawner.Tick(hit - .9);
         var note = Find(spawner, hit, intro.color);
-        Assert.IsTrue(note.HasReverse);
-        Assert.AreEqual(4, note.ReverseShardCount, "導入は見せ場(破片4)");
-        Assert.AreEqual(0, note.ReverseShardsShown, "F3 では破片を出さない");
-        Assert.IsTrue(note.ReverseHalvesShown, "2片そのものは残す");
-        Assert.LessOrEqual(note.ReverseGapShown, ReverseRules.ReducedGap + 1e-4f, "すき間は 0.3 まで");
+        Assert.IsFalse(note.HasReverse, "鏡でないノーツは R の見た目を使わない");
+        Assert.AreSame(note.transform, note.VisualTransform);
 
         var mirror = chart.notes.First(n => n.mirror);
         double mirrorHit = spawner.EffectiveTime(mirror);

@@ -198,7 +198,7 @@ public class GamePlayManager : MonoBehaviour
     // 勉強の裏譜面 Q(試験用紙と問題)。譜面に quiz があるときだけ作る。ノーツ・判定・採点はふつうどおり、絵を重ねる。
     private QuizMode quizMode;
     public QuizMode QuizMode => quizMode;
-    // Manic Sonic の裏譜面 R(逆再生・鏡門・天地返し)。譜面に reverse.enabled があるときだけ作る。判定・採点はふつうどおり。
+    // Manic Sonic の裏譜面 R(鏡門・天地返し)。譜面に reverse.enabled があるときだけ作る。判定・採点はふつうどおり。
     private ReverseMode reverseMode;
     public ReverseMode ReverseMode => reverseMode;
     // 避の終わりはコンボ点の演出が無いので、この秒数だけ置いてから結果へ。
@@ -415,7 +415,7 @@ public class GamePlayManager : MonoBehaviour
             lastNoteTime = System.Math.Max(lastNoteTime, preview.LastTime);
         }
 
-        // R は実効の接近時間を 1.5〜2.0 秒に収める(保存値は変えない。小節線とカウントインの助走もこの値に合わせる)。
+        // R は実効の接近時間を 2.0 秒までにする(回っている間にノーツを出さない。保存値は変えない。小節線とカウントインの助走もこの値に合わせる)。
         if (ReverseRules.Enabled(chart.reverse))
             noteSpawner.approachTime = (float)ReverseRules.EffectiveApproach(noteSpawner.approachTime);
         // オフセットを先に NoteSpawner に渡してから SetChart

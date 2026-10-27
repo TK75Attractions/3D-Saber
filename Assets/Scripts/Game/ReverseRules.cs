@@ -5,7 +5,6 @@ using UnityEngine;
 
 // Manic Sonic の裏譜面「R(反転)」の決まり(純関数。テストは主にここで取る)。
 // 時刻の引数は、ミリ秒(ms と付くもの。譜面の time と同じ)か、譜面の時計の秒(曲の時計 − offset)。
-//   ・逆再生(U102): 2片のすき間は残り時間に比例して閉じ、届く瞬間に 0。破片は周りから芯へ吸い込まれ、届く 0.1 秒前に溶ける。
 //   ・鏡門(U105): 門は届く 0.5 秒前の深さに立ち、そこを通るノーツが本当の位置へ 0.08 秒で滑る(見た目だけ。根元は最初から本当の位置)。
 //   ・天地返し(U103): 画面の絵(投影の行列)をノーツの帯の中心のまわりに回し、剣の入力はカメラの経路で逆に回す。
 public static class ReverseRules
@@ -32,17 +31,6 @@ public static class ReverseRules
     // 鏡の矢印の拡縮が 0 にならないよう(0 の行列は逆行列が作れない)、押しつぶれる最小の大きさ。
     public const float MinMirrorScale = .04f;
 
-    // ---- 逆再生 ----
-    public const float DefaultGap = .45f, MaxGap = 1.5f, ReducedGap = .3f;
-    // すき間がこれより狭ければ、2片をやめて本体の立方体をそのまま描く。
-    public const float ClosedGap = .004f;
-    public const int MaxShards = 6;
-    public const float ShardRadius = 1.2f, ShardSize = .13f;
-    public const double ShardVanishSeconds = .1;
-    // 閉じる瞬間の割れ目の光(届く ±0.08 秒の三角)。
-    public const double SeamSeconds = .08;
-    public const int CrackAngleCount = 8;
-
     // ---- 天地返し ----
     // ノーツの帯の中心。回転の軸で、門の中心。
     public static readonly Vector2 BandCenter = new Vector2(0f, -.15f);
@@ -52,17 +40,17 @@ public static class ReverseRules
     // F3 では回る動きを見せず、回転の真ん中で 0.5 秒だけ画面を暗くして(70%)、暗い間に向きを切り替える。
     public const double ReducedDimSeconds = .5, ReducedDimRampSeconds = .1;
     public const float ReducedDimAlpha = .7f;
-    // R の実効の接近時間は clamp(設定, 1.5 秒, 2.0 秒)。下は、鏡のノーツが門より奥で「反対側の姿」として十分に見えるように。
-    // 上は、天地返しで回っている間(127.5〜131.5 秒)にノーツが見えないように(133.5 秒のノーツは接近 2.0 秒で回り終わりちょうどに出る。
-    // 2026-10-28 b1 の指示)。保存されている設定は変えない。
-    public const double MinimumApproach = 1.5;
+    // R の実効の接近時間は min(設定, 2.0 秒)。天地返しで回っている間(127.5〜131.5 秒)にノーツが見えないように
+    // (133.5 秒のノーツは接近 2.0 秒で回り終わりちょうどに出る)。設定の3段(2.0・1.0・0.8 秒)はそのまま使う。保存されている設定は変えない。
+    // 2026-10-28: 下限 1.5 秒(鏡のノーツを門より奥で長く見せるため)は、既定の 1.0 秒が遅くなるのでやめた(ユーザー「理由ないならもとのに戻して」)。
     public const double MaximumApproach = 2.0;
+    // 設定が壊れているときの接近時間(GameSession.NoteApproachTimeDefault と同じ)。
+    public const double DefaultApproach = 1.0;
 
     public static bool Enabled(ReverseChartData data) => data != null && data.enabled;
 
     public static bool Finite(double value) => !double.IsNaN(value) && !double.IsInfinity(value);
     static bool Finite(float value) => !float.IsNaN(value) && !float.IsInfinity(value);
-    static float Clamp(float value, float min, float max, float fallback) => Finite(value) ? Mathf.Clamp(value, min, max) : fallback;
     static float Ease(double u)
     {
         float k = Mathf.Clamp01((float)u);
@@ -76,16 +64,6 @@ public static class ReverseRules
     public static ReverseChartData Normalize(ReverseChartData data, List<NoteData> notes)
     {
         data ??= new ReverseChartData();
-        data.gap = Clamp(data.gap, 0f, MaxGap, DefaultGap);
-        data.pieces = (data.pieces ?? new List<ReversePieceData>())
-            .Where(p => p != null && Finite(p.time) && Finite(p.endTime) && p.endTime > p.time)
-            .OrderBy(p => p.time).ToList();
-        foreach (var piece in data.pieces)
-        {
-            piece.count = Mathf.Clamp(piece.count, 0, MaxShards);
-            piece.gap = Finite(piece.gap) && piece.gap >= 0f ? Mathf.Min(piece.gap, MaxGap) : -1f;
-            piece.spin = Clamp(piece.spin, -4f, 4f, 0f);
-        }
         data.gates = (data.gates ?? new List<ReverseGateData>())
             .Where(g => g != null && Finite(g.time) && Finite(g.endTime) && g.endTime > g.time)
             .OrderBy(g => g.time).ToList();
@@ -119,95 +97,7 @@ public static class ReverseRules
 
     // R の実効の接近時間(秒)。プレイヤーの保存値は変えず、R の流れる速さだけに使う。
     public static double EffectiveApproach(double requested)
-        => Finite(requested) && requested > 0 ? Math.Min(MaximumApproach, Math.Max(MinimumApproach, requested)) : MinimumApproach;
-
-    // ---- 逆再生 ----
-
-    // 2片のすき間(ワールド)。出現時(残り = 接近時間)に最大で、残り時間に比例してまっすぐ閉じ、届く瞬間に 0。
-    public static float Gap(double remaining, double approach, float gap)
-    {
-        if (!Finite(remaining) || !Finite(approach) || approach <= 1e-4 || !(gap > 0f)) return 0f;
-        return gap * Mathf.Clamp01((float)(remaining / approach));
-    }
-
-    // F3 ではすき間を 0.3 までにする(2片そのものは時刻の手がかりなので残す)。
-    public static float EffectiveGap(float gap, bool reduced) => reduced ? Mathf.Min(gap, ReducedGap) : gap;
-
-    public struct Pieces
-    {
-        public int Count;
-        public float Gap;
-        public float Spin;
-    }
-
-    // 届く時刻(ms)の見せ場の区間の破片の数・すき間・渦。区間の外は破片なし・既定のすき間。
-    public static Pieces PiecesFor(ReverseChartData data, double hitMs)
-    {
-        var result = new Pieces { Count = 0, Gap = data != null ? data.gap : DefaultGap, Spin = 0f };
-        if (data?.pieces == null || !Finite(hitMs)) return result;
-        foreach (var piece in data.pieces)
-            if (hitMs >= piece.time && hitMs < piece.endTime)
-                return new Pieces { Count = piece.count, Gap = piece.gap >= 0f ? piece.gap : data.gap, Spin = piece.spin };
-        return result;
-    }
-
-    // 割れ目の向き。番号 × 22.5° が縦から右回りの角度。矢印のノーツは矢印に沿わせ(閉じた割れ目をそのまま切り開く)、
-    // 矢印の無いノーツは縦・縦から +22.5°・−22.5° をノーツの番号で順に使う(横の割れ目は使わない。横に振りたくなるため)。
-    public static int CrackIndex(CutDirection direction, int ordinal)
-    {
-        switch (direction)
-        {
-            case CutDirection.Up: case CutDirection.Down: return 0;
-            case CutDirection.Left: case CutDirection.Right: return 4;
-            case CutDirection.UpRight: case CutDirection.DownLeft: return 2;
-            case CutDirection.UpLeft: case CutDirection.DownRight: return 6;
-        }
-        int k = ((ordinal % 3) + 3) % 3;
-        return k == 0 ? 0 : k == 1 ? 1 : 7;
-    }
-
-    public static float CrackDegrees(int index) => (((index % CrackAngleCount) + CrackAngleCount) % CrackAngleCount) * 22.5f;
-
-    // 割れ目の線の向き(ノーツの中の座標)。
-    public static Vector2 CrackLine(int index)
-    {
-        float a = CrackDegrees(index) * Mathf.Deg2Rad;
-        return new Vector2(Mathf.Sin(a), Mathf.Cos(a));
-    }
-
-    // 2片が離れる向き(割れ目に垂直)。HalfA はこの向き、HalfB は逆向きへ。
-    public static Vector2 CrackNormal(int index)
-    {
-        float a = CrackDegrees(index) * Mathf.Deg2Rad;
-        return new Vector2(Mathf.Cos(a), -Mathf.Sin(a));
-    }
-
-    // 閉じる瞬間の割れ目の光(0〜1)。届く ±0.08 秒の三角。F3 では出さない。
-    public static float SeamFlash(double remaining, bool reduced)
-        => reduced || !Finite(remaining) ? 0f : Mathf.Clamp01(1f - (float)(Math.Abs(remaining) / SeamSeconds));
-
-    // 破片の中心からの距離(1 が ShardRadius)。出現時に 1、届く 0.1 秒前に 0(芯へ溶けて消える)。それより後と壊れた値は −1(出さない)。
-    public static float ShardReach(double remaining, double approach)
-    {
-        if (!Finite(remaining) || !Finite(approach) || remaining <= ShardVanishSeconds) return -1f;
-        double span = Math.Max(1e-4, approach - ShardVanishSeconds);
-        return Mathf.Clamp01((float)((remaining - ShardVanishSeconds) / span));
-    }
-
-    // index 番目の破片の、ノーツの中心からのずれ(ワールド)。spin 回転しながら吸い込む(渦)。seed はノーツごとの並びのずらし。
-    public static Vector2 ShardOffset(int index, int count, float reach, float spin, int seed)
-    {
-        if (count <= 0 || reach < 0f) return Vector2.zero;
-        float angle = index * 2f * Mathf.PI / count + (seed % 7) * .9f + spin * 2f * Mathf.PI * (1f - reach);
-        return new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * (ShardRadius * reach);
-    }
-
-    // 破片の大きさの倍率。中心の近く(残りの 1/3)で小さく溶ける。
-    public static float ShardScale(float reach) => reach < 0f ? 0f : Mathf.Clamp01(reach * 3f);
-
-    // 逆シンバルの長さ: 2拍(遅い所は 1 秒まで)。180 BPM で 0.667 秒、160 BPM で 0.75 秒、60 BPM で 1 秒(1拍)。
-    public static double SwellSeconds(double beatSeconds)
-        => !Finite(beatSeconds) || beatSeconds <= 0 ? 1.0 : Math.Min(2 * beatSeconds, 1.0);
+        => Finite(requested) && requested > 0 ? Math.Min(MaximumApproach, requested) : DefaultApproach;
 
     // ---- 鏡門 ----
 

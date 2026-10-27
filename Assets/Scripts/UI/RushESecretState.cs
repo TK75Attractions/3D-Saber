@@ -132,7 +132,7 @@ public sealed class RushESecretState
         EdgeLight = new Color(1, .84f, .92f), FanLight = new Color(1, .74f, .86f),
         CenterHaze = new Color(1, .52f, .73f, .42f), LeftHaze = new Color(.95f, .44f, .66f, .35f), RightHaze = new Color(1, .68f, .82f, .35f),
     };
-    // Manic Sonic の R(反転、2026-10-28。前の X の熱交換を置き換えた)。逆再生(割れた2片が閉じる)・鏡門(サビで左右が入れ替わる)・
+    // Manic Sonic の R(反転、2026-10-28。前の X の熱交換を置き換えた)。鏡門(サビで左右が入れ替わる)・
     // 天地返し(BPM60 で世界が 180° 回り、最後に一回転して戻る)。目印は鏡銀。左右の光は手の色の側を入れ替えた紅紫と水色。
     public static readonly Color MirrorSilver = new Color(.80f, .92f, 1f);
     public static readonly SecretChart ManicSonicReverse = new SecretChart

@@ -6,7 +6,7 @@ using UnityEngine;
 // 譜面に reverse.enabled があるときだけ GamePlayManager が作る。GamePlayManager の Update で、フレームの最初に ApplyView(角度と投影。
 // 一時停止中も)、判定の前に Advance(門・音・光。曲が進んでいる間だけ)を呼ぶ。どちらも曲の時計。
 //   ・天地返しの絵(WorldTurn)、鏡門の絵と床の塗り分け(MirrorGateView)、音(ReverseSfx)をまとめる。
-//   ・ノーツの2片と鏡の見た目は NoteSpawner(NoteSpawner.Reverse)が毎コマ当てる。判定・採点・満点 100000 は変えない。
+//   ・ノーツの鏡の見た目は NoteSpawner(NoteSpawner.Reverse)が毎コマ当てる。判定・採点・満点 100000 は変えない。
 //   ・鏡のノーツが門を通った瞬間に筋と波紋を出す(残り時間で見るので、コマ飛びで飛び越しても少し遅れて出る)。
 //   ・大きな光は PlayExcitement.TryLargeFlash の予算に乗せる(縁の光だけ。ゲートの内側は光らせない。F3 では出ない):
 //     ちょうつがいの金を切った瞬間、門が割れるとき、最後の一回転が着いたとき。
@@ -137,7 +137,7 @@ public sealed class ReverseMode : MonoBehaviour
         double seconds = songTime - OffsetSeconds;
         TrackCrossings(songTime);
         float speed = spawner != null ? spawner.Speed : 0f;
-        double approach = spawner != null ? spawner.approachTime : ReverseRules.MinimumApproach;
+        double approach = spawner != null ? spawner.approachTime : ReverseRules.DefaultApproach;
         float judgeZ = spawner != null ? spawner.judgeZ : 0f;
         Gates.Draw(seconds, approach, speed, judgeZ);
         Sfx?.Tick(songTime);

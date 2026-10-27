@@ -99,7 +99,7 @@ public partial class NoteSpawner : MonoBehaviour
     bool Pooling => reuseNotes && Application.isPlaying;
 
     // revealは見た目の構造を変えない。通常ノーツと同じキーで借り、出現ごとに色と矢印を戻す。
-    // R の2片の子を持つノーツ(UsesReverse)は別のキーにして、ほかの曲へ持ち越さない。
+    // R の鏡のノーツ(UsesReverse。見た目の子を持つ)は別のキーにして、ほかのノーツへ持ち越さない。
     PoolKey Key(NoteData data) => (PickPrefab(data.color), CutDirectionHelper.Parse(data.direction),
         Mathf.Clamp(data.count,1,8), SaberHandHelper.FromColor(data.color),
         string.Equals(data.color,"gold",System.StringComparison.OrdinalIgnoreCase), DisplaySettings.ProjectorMode,
@@ -331,7 +331,7 @@ public partial class NoteSpawner : MonoBehaviour
             UpdateSlideNote(note, songTime);
             // コマ飛びでも、刃の判定より先に共通経路へ戻す。
             UpdateOvertakeNote(note, songTime);
-            // R の2片と鏡の見た目も今の曲時計へ(根元は動かさない)。
+            // R の鏡の見た目も今の曲時計へ(根元は動かさない)。
             UpdateReverseNote(note, songTime);
             UpdateJudgmentWindow(note, note.HitTime - JudgeClock(songTime), LateWindowFor(note));
         }
@@ -515,8 +515,8 @@ public partial class NoteSpawner : MonoBehaviour
         note.EnsureWindVisual();
 
         if (UsesFall(nd)) PrepareFallNote(note, warming ? approachTime : note.HitTime - songTime);
-        // R の2片・破片・鏡の見た目(cutFeedback.Track より前。Track は出現時の BodyRenderer を覚える)。
-        if (UsesReverse(nd)) PrepareReverseNote(note, nd, nextIndex, warming ? approachTime : note.HitTime - songTime);
+        // R の鏡の見た目(cutFeedback.Track より前。Track は出現時の BodyRenderer を覚える)。
+        if (UsesReverse(nd)) PrepareReverseNote(note, nd, warming ? approachTime : note.HitTime - songTime);
         // 通知・同時線を作る前に、遅れて生成されたコマも正しい位置へ置く。
         UpdateOvertakeNote(note, warming ? SpawnTimeFor(nd) : songTime);
 
