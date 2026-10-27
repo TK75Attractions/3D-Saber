@@ -106,7 +106,7 @@ struct StubDiscovery { func start() {} }
                    "func recordLANReplyForTesting("]:
         support += block(camera, marker) + "\n"
     support += "}\n"
-    for marker in ["private struct DebugBundleManifestFile", "private struct DebugBundleManifest:", "private enum DebugBundleTransferError"]:
+    for marker in ["private struct DebugBundleManifestFile", "private struct DebugBundleManifest:", "private enum DebugBundleTransferError", "struct DebugBundleUploadTrace"]:
         support += block(transfer, marker) + "\n"
     support += '''
 enum DebugRecordingLimits { static let maximumDiskUsageBytes: Int64 = 1024 * 1024 * 1024 }

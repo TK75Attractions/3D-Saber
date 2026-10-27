@@ -248,12 +248,15 @@ public sealed class PhoneSaberLatencyProbe : MonoBehaviour
     // Play 停止・シーン破棄でも途中結果を残す。
     void OnDisable()
     {
-        if (active) Finish();
+        FinishForShutdown();
         resultUntil = 0;
         if (guiRenderer != null) guiRenderer.enabled = false;
     }
 
-    void OnDestroy() { if (active) Finish(); }
+    void OnDestroy() => FinishForShutdown();
+
+    // Overlay がログ受付を閉じる前にも呼ぶ。Unity の callback 順によらず一度だけ確定する。
+    internal void FinishForShutdown() { if (active) Finish(); }
 
     void Finish()
     {

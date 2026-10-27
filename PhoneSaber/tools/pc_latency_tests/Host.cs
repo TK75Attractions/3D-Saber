@@ -11,6 +11,23 @@ public static class FrameClock
 }
 public static class FrameScreen { public static int width => 1920; public static int height => 1080; }
 
+#if PHONESABER_DIAGNOSTICS_HOST
+// Unity native の検索・画面情報だけを代役にする。終了順序と記録・保存は本番コード。
+public static class EventLogLifecycleHost
+{
+    public static PhoneSaberLatencyProbe[] Probes = Array.Empty<PhoneSaberLatencyProbe>();
+    public static string Station;
+    public static string Read() => Station;
+    public static string DisplayConfiguration() => "shutdown-fixture";
+    public static UnityEngine.RuntimePlatform platform => UnityEngine.RuntimePlatform.OSXEditor;
+    public static bool isEditor => true;
+    public static int maxQueuedFrames => 1;
+    public static float smoothDeltaTime => 1f / 60;
+    public static void Log(object message) { }
+    public static void Quit() => throw new InvalidOperationException("終了試験でアプリ終了を呼ばない");
+}
+#endif
+
 // 座標取込みhostでは、画面・PlayerPrefsを読む推定入口だけを欠測に固定する。
 public static class FramePredictionPerfLog
 {
@@ -93,6 +110,7 @@ class Frames
         statsTests.PollingStillExpiresConflictsAfterResetAndRebind();
 #if PHONESABER_DIAGNOSTICS_HOST
         RunFixture(typeof(PhoneSaberDiagnosticsTests));
+        RunFixture(typeof(PhoneSaberEventLogTests));
 #endif
         RunFixture(typeof(PhoneSaberInputStatsTests));
         RunFixture(typeof(PhoneSaberSenderGateTests));

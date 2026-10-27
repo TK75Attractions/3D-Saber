@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Text;
+using System.Threading;
+using System.Diagnostics;
 
-// 受信側はキューへの追加だけ。Flush は main thread から呼ぶ。
+// 受信側はキューへの追加だけ。main thread の Flush は単一 writer へ通知する。
 public sealed class PhoneSaberEventLog
 {
     public const long MaximumFileBytes = 2 * 1024 * 1024;
@@ -14,23 +16,53 @@ public sealed class PhoneSaberEventLog
     public const int QueueCapacity = 512;
     const int FlushBatchSize = 128;
     static readonly Encoding Utf8 = new UTF8Encoding(false);
-    public static PhoneSaberEventLog Current { get; set; }
+    static volatile PhoneSaberEventLog current;
+    public static PhoneSaberEventLog Current { get => current; set => current = value; }
     readonly object gate = new object();
     readonly Queue<string> pending = new Queue<string>();
     volatile bool hasPending;
+    Thread writer;
+    bool requested, writing, stopping;
+    bool accepting = true;
+    readonly Action beforeSave;
+    volatile string lastError = "";
     int dropped;
-    // 書込に失敗した行。Flush(main thread)だけが触り、次回の Flush で最初に書き直す(失敗で行を失わない)。
+    // 以下の保存状態は writer だけが触る。失敗行は次の要求で最初に再試行する。
     string retryLine;
     bool retryWritten, retryArchiveStarted;
     string archivePath;
     long archiveBytesSincePrune;
     bool pruneArchives;
-    readonly PhoneSaberLogActivity activity = new PhoneSaberLogActivity(
+    PhoneSaberLogActivity activity = new PhoneSaberLogActivity(
         SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp));
     public string LogPath { get; }
-    public string LastError { get; private set; } = "";
+    public string LastError => lastError;
 
-    public PhoneSaberEventLog(string logPath) { LogPath = logPath; }
+    // beforeSave は同期ゲート・I/O停滞を再現する試験用。通常は指定しない。
+    public PhoneSaberEventLog(string logPath, Action beforeSave = null)
+    { LogPath = logPath; this.beforeSave = beforeSave; }
+
+    // Domain Reload 無効時も同じ保存先の所有者を再利用する。停止期限切れでも二重 writer にしない。
+    public static void InitializeCurrent(string logPath)
+    {
+        var log = Current;
+        if (log != null && log.LogPath == logPath)
+        {
+            lock (log.gate)
+            {
+                log.stopping = false;
+                log.accepting = true;
+                log.activity = new PhoneSaberLogActivity(
+                    SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp));
+            }
+        }
+        else
+        {
+            if (log != null && !log.StopAndDrain(1000))
+                throw new InvalidOperationException("Previous event log is not drained");
+            Current = new PhoneSaberEventLog(logPath);
+        }
+    }
 
     public static void Record(string station, string colour, string kind, string detail = "")
     {
@@ -52,7 +84,7 @@ public sealed class PhoneSaberEventLog
             string line = Format(timestamp, station, colour, kind, detail);
             lock (gate)
             {
-                if (activity.IsIdle && PhoneSaberLogActivity.IsPeriodic(kind)) return;
+                if (!accepting || (activity.IsIdle && PhoneSaberLogActivity.IsPeriodic(kind))) return;
                 if (pending.Count >= QueueCapacity) { pending.Dequeue(); dropped++; }
                 pending.Enqueue(line);
                 hasPending = true;
@@ -84,18 +116,105 @@ public sealed class PhoneSaberEventLog
     public static string GenerationPath(string path, int generation)
         => generation == 0 ? path : path + "." + generation.ToString(CultureInfo.InvariantCulture);
 
-    // 1回の仕事量も制限。容量上限は UTF-8 バイト数で判断する。
+    // Unity オブジェクトの参照は呼出元に残す。I/O 用のロックや Task キューを作らない。
     public void Flush()
     {
         try
         {
             if (ReferenceEquals(Current, this)) RefreshActivity(null);
-            // 空の定期 Flush はロック不要。フラグの更新はキューと同じ lock 内で行う。
-            if (!hasPending && retryLine == null && !pruneArchives) return;
+            if (!hasPending) return;
             lock (gate)
             {
-                if (pending.Count == 0 && dropped == 0 && retryLine == null && !pruneArchives) { hasPending = false; return; }
+                if (!accepting) return;
+                RequestLocked();
             }
+        }
+        catch (Exception e) { lastError = e.GetType().Name; }
+    }
+
+    void RequestLocked()
+    {
+        if (!hasPending) return;
+        requested = true; // 停滞中の何万回の要求も1ビットに集約する。
+        if (writer == null)
+        {
+            try
+            {
+                writer = new Thread(WriteLoop) { IsBackground = true, Name = "PhoneSaber event log" };
+                writer.Start();
+            }
+            catch (Exception e)
+            {
+                writer = null;
+                requested = false;
+                lastError = e.GetType().Name;
+            }
+        }
+        Monitor.PulseAll(gate);
+    }
+
+    // 試験・明示的な保存確認用。通常の Update からは呼ばない。失敗時は次の要求で再試行する。
+    public bool FlushAndWait(int timeoutMilliseconds = 1000)
+    {
+        var elapsed = Stopwatch.StartNew();
+        Flush();
+        lock (gate) return WaitLocked(timeoutMilliseconds, elapsed);
+    }
+
+    // 受付を閉じて終了行まで保存する。期限は呼出元の待機だけに適用し、I/O を強制中断しない。
+    // 期限切れでも所有者は残り、background writer は解放後に残りを保存して停止する。
+    public bool StopAndDrain(int timeoutMilliseconds = 1000)
+    {
+        var elapsed = Stopwatch.StartNew();
+        lock (gate)
+        {
+            accepting = false;
+            stopping = true;
+            RequestLocked();
+            Monitor.PulseAll(gate);
+            return WaitLocked(timeoutMilliseconds, elapsed);
+        }
+    }
+
+    bool WaitLocked(int timeoutMilliseconds, Stopwatch elapsed)
+    {
+        while (writing || requested || (stopping && writer != null))
+        {
+            long remaining = (long)Math.Max(0, timeoutMilliseconds) - elapsed.ElapsedMilliseconds;
+            if (remaining <= 0) return false;
+            Monitor.Wait(gate, (int)remaining);
+        }
+        return !hasPending;
+    }
+
+    void WriteLoop()
+    {
+        while (true)
+        {
+            lock (gate)
+            {
+                while (!requested && !stopping) Monitor.Wait(gate);
+                if (!requested && stopping) { writer = null; Monitor.PulseAll(gate); return; }
+                requested = false;
+                writing = true;
+            }
+            // 保存中は gate を持たず、enqueue と通知がディスクを待たないようにする。
+            while (SaveBatch() && hasPending) { }
+            lock (gate)
+            {
+                writing = false;
+                Monitor.PulseAll(gate);
+            }
+        }
+    }
+
+    // 1バッチ128行。キュー・再試行・archive 状態の所有者はこの writer だけ。
+    bool SaveBatch()
+    {
+        try
+        {
+            if (!hasPending) return true;
+            beforeSave?.Invoke();
             Directory.CreateDirectory(Path.GetDirectoryName(LogPath));
             string rotationError = null;
             for (int i = 0; i < FlushBatchSize; i++)
@@ -141,13 +260,17 @@ public sealed class PhoneSaberEventLog
                 pruneArchives = false;
                 archiveBytesSincePrune = 0;
             }
-            LastError = rotationError ?? "";
-            lock (gate) hasPending = pending.Count != 0 || dropped != 0;
+            lastError = rotationError ?? "";
+            return true;
         }
-        catch (Exception e) { LastError = e.GetType().Name; }
+        catch (Exception e) { lastError = e.GetType().Name; return false; }
+        finally
+        {
+            lock (gate) hasPending = pending.Count != 0 || dropped != 0 || retryLine != null || pruneArchives;
+        }
     }
 
-    // Flush と定期診断からのみ呼ぶ。最後の有効座標を保持し、受信停止時の時刻リセットも跨ぐ。
+    // main thread の Flush と定期診断からのみ呼ぶ。最後の有効座標を保持し、受信停止時の時刻リセットも跨ぐ。
     void RefreshActivity(string station)
     {
         var input = InputPoint.Instance;
@@ -272,53 +395,250 @@ public sealed class PhoneSaberEventLog
     }
 }
 
-// main thread の状態変更時だけ保存する。正常終了しなかった理由自体は推測しない。
+// 最後の状態だけを単一 writer に渡す。開始時の読取り・開始印と終了待ちは通常通知から分離する。
 public sealed class PhoneSaberRunJournal
 {
     public static PhoneSaberRunJournal Current { get; set; }
-    readonly string path;
-    bool finished;
+    // Domain Reload 無効時の再開始でも、同じ保存先の I/O と .tmp の所有者は1個だけ。
+    static readonly Dictionary<string, Storage> stores = new Dictionary<string, Storage>(StringComparer.OrdinalIgnoreCase);
+    readonly Storage storage;
+    readonly Action beforeSave;
     readonly string run = "run=" + Guid.NewGuid().ToString("N") + " started-utc=" + DateTime.UtcNow.ToString("O");
-    public PhoneSaberRunJournal(string path) { this.path = path; }
+    bool begun, finished;
+    long version, savedVersion = -1;
+    volatile string lastError = "";
+    public string LastError => lastError;
 
-    public string Begin(string watchdogExitFile = null)
+    sealed class Snapshot
     {
-        string previous = null;
+        public PhoneSaberRunJournal journal;
+        public long version;
+        public string text;
+    }
+
+    sealed class Storage
+    {
+        public readonly string path;
+        public readonly object gate = new object(), ioGate = new object(), beginGate = new object(), markerGate = new object();
+        public PhoneSaberRunJournal active;
+        public Snapshot pending;
+        public Thread writer;
+        public bool requested, writing;
+        public Storage(string path) { this.path = path; }
+
+        public void StartLocked()
+        {
+            if (writer != null) return;
+            try
+            {
+                writer = new Thread(WriteLoop) { IsBackground = true, Name = "PhoneSaber run journal" };
+                writer.Start();
+            }
+            catch (Exception e) { writer = null; active.lastError = e.GetType().Name; }
+        }
+
+        void WriteLoop()
+        {
+            while (true)
+            {
+                Snapshot next;
+                lock (gate)
+                {
+                    while (!requested && !active.finished) Monitor.Wait(gate);
+                    if (!requested)
+                    {
+                        writer = null;
+                        Monitor.PulseAll(gate);
+                        return;
+                    }
+                    next = pending;
+                    pending = null;
+                    requested = false;
+                    writing = true;
+                }
+                bool saved = false;
+                // 開始印と置換までを直列化する。受付 gate は I/O 中に保持しない。
+                lock (ioGate)
+                {
+                    bool current;
+                    lock (gate) current = ReferenceEquals(active, next.journal);
+                    if (current) saved = next.journal.Save(next);
+                }
+                lock (gate)
+                {
+                    if (ReferenceEquals(active, next.journal))
+                    {
+                        if (saved) next.journal.savedVersion = next.version;
+                        // 失敗は次の通知・明示的要求まで再試行しない。新しい状態を優先する。
+                        else if (pending == null) pending = next;
+                    }
+                    writing = false;
+                    Monitor.PulseAll(gate);
+                }
+            }
+        }
+    }
+
+    // beforeSave は実保存直前の停滞・障害を再現する試験用。通常は指定しない。
+    public PhoneSaberRunJournal(string path, Action beforeSave = null)
+    {
+        string fullPath = Path.GetFullPath(path);
+        lock (stores)
+        {
+            if (!stores.TryGetValue(fullPath, out storage)) stores.Add(fullPath, storage = new Storage(fullPath));
+        }
+        this.beforeSave = beforeSave;
+    }
+
+    public string Begin(string watchdogExitFile = null, int timeoutMilliseconds = 1000)
+    {
+        // 開始処理だけを直列化する。通常通知の受付 lock は I/O 中に保持しない。
+        lock (storage.beginGate)
+        {
+            lock (storage.gate) { if (begun) return null; }
+            string previous = null;
+            lock (storage.markerGate)
+            {
+                try
+                {
+                    // 未完了の開始印は旧 writer が後から書いた clean-quit より優先する。
+                    string path = File.Exists(storage.path + ".starting") ? storage.path + ".starting" : storage.path;
+                    if (File.Exists(path))
+                    {
+                        string saved = File.ReadAllText(path);
+                        if (!saved.StartsWith("clean-quit\n", StringComparison.Ordinal))
+                            previous = "reason=no-clean-quit-observed cause=unknown previous=" + saved.Replace('\n', ' ');
+                    }
+                    if (previous != null && !string.IsNullOrEmpty(watchdogExitFile) && File.Exists(watchdogExitFile))
+                        previous += " watchdog-last-observation=" + File.ReadAllText(watchdogExitFile).Trim();
+                }
+                catch { previous = "reason=previous-run-state-unreadable cause=unknown"; }
+                // .tmp を共有せず、新 run の意図を I/O 所有権の待機前に残す。
+                WriteStartMarker("journal-start-pending");
+            }
+            bool ownsIo = Monitor.TryEnter(storage.ioGate, Math.Max(0, timeoutMilliseconds));
+            try
+            {
+                if (!ownsIo)
+                {
+                    lock (storage.markerGate) WriteStartMarker("journal-start-unavailable previous-writer-timeout");
+                    lastError = "PreviousWriterTimeout" + (lastError.Length == 0 ? "" : " marker-error=" + lastError);
+                }
+                var startup = CreateSnapshot("startup", false);
+                lock (storage.gate)
+                {
+                    if (storage.active != null) storage.active.finished = true;
+                    storage.active = this;
+                    storage.pending = ownsIo ? null : startup;
+                    storage.requested = !ownsIo;
+                    // 期限切れ時は開始状態の投入と同時に受付を開き、後続の End を巻き戻さない。
+                    begun = !ownsIo;
+                }
+                // 通常開始は同期保存。旧 I/O の期限切れ後も受付を開き、同じ writer が復帰して保存する。
+                bool savedStartup = ownsIo && Save(startup);
+                lock (storage.gate)
+                {
+                    begun = true;
+                    if (savedStartup) savedVersion = startup.version;
+                    else if (ownsIo) storage.pending = startup;
+                    storage.StartLocked();
+                    Monitor.PulseAll(storage.gate);
+                }
+                return ownsIo ? previous : "reason=journal-start-unavailable cause=unknown" +
+                    (previous == null ? "" : " " + previous);
+            }
+            finally { if (ownsIo) Monitor.Exit(storage.ioGate); }
+        }
+    }
+
+    // 起動時だけの補助印。writer の .tmp と分離し、途中失敗の空ファイルも異常扱いにする。
+    void WriteStartMarker(string state)
+    {
         try
         {
-            if (File.Exists(path))
-            {
-                string saved = File.ReadAllText(path);
-                if (!saved.StartsWith("clean-quit\n", StringComparison.Ordinal))
-                    previous = "reason=no-clean-quit-observed cause=unknown previous=" + saved.Replace('\n', ' ');
-            }
-            if (previous != null && !string.IsNullOrEmpty(watchdogExitFile) && File.Exists(watchdogExitFile))
-                previous += " watchdog-last-observation=" + File.ReadAllText(watchdogExitFile).Trim();
+            Directory.CreateDirectory(Path.GetDirectoryName(storage.path));
+            File.WriteAllText(storage.path + ".starting", CreateSnapshot(state, false).text);
+            lastError = "";
         }
-        catch { previous = "reason=previous-run-state-unreadable cause=unknown"; }
-        Note("startup");
-        return previous;
+        catch (Exception e) { lastError = e.GetType().Name; }
     }
+
+    Snapshot CreateSnapshot(string state, bool clean) => new Snapshot {
+        journal = this, version = version,
+        text = (clean ? "clean-quit\n" : "unclean-or-running\n") + run +
+            " state-utc=" + DateTime.UtcNow.ToString("O") + " state=" + state
+    };
 
     public void Note(string state, bool clean = false)
     {
-        if (finished) return;
-        finished = clean;
-        try
+        lock (storage.gate)
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(path));
-            File.WriteAllText(path + ".tmp", (clean ? "clean-quit\n" : "unclean-or-running\n") +
-                run + " state-utc=" + DateTime.UtcNow.ToString("O") + " state=" + state);
-            if (File.Exists(path)) File.Replace(path + ".tmp", path, null);
-            else File.Move(path + ".tmp", path);
+            if (!begun || finished || !ReferenceEquals(storage.active, this)) return;
+            version++;
+            storage.pending = CreateSnapshot(state, clean);
+            finished = clean;
+            storage.requested = true;
+            Monitor.PulseAll(storage.gate);
         }
-        catch { } // 診断保存の失敗でゲームを止めない。
     }
 
-    public void End(int exitCode)
+    bool Save(Snapshot snapshot)
     {
-        Note("quit-callback exit-code=" + exitCode, exitCode == 0);
-        finished = true;
+        try
+        {
+            beforeSave?.Invoke();
+            Directory.CreateDirectory(Path.GetDirectoryName(storage.path));
+            File.WriteAllText(storage.path + ".tmp", snapshot.text);
+            if (File.Exists(storage.path)) File.Replace(storage.path + ".tmp", storage.path, null);
+            else File.Move(storage.path + ".tmp", storage.path);
+            lock (storage.markerGate)
+            {
+                string marker = storage.path + ".starting";
+                // 旧 run の保存完了で新 run の開始印を消さない。
+                if (File.Exists(marker) && File.ReadAllText(marker).StartsWith("unclean-or-running\n" + run + " state-utc=", StringComparison.Ordinal))
+                    File.Delete(marker);
+            }
+            lastError = "";
+            return true;
+        }
+        catch (Exception e) { lastError = e.GetType().Name; return false; }
+    }
+
+    // 試験・明示的な保存確認用。通常の Note / Update から呼ばない。
+    public bool FlushAndWait(int timeoutMilliseconds = 1000)
+    {
+        var elapsed = Stopwatch.StartNew();
+        lock (storage.gate)
+        {
+            if (!begun || !ReferenceEquals(storage.active, this)) return false;
+            if (storage.pending != null) storage.requested = true;
+            storage.StartLocked();
+            Monitor.PulseAll(storage.gate);
+            while (storage.writing || storage.requested || (finished && storage.writer != null))
+            {
+                long remaining = (long)Math.Max(0, timeoutMilliseconds) - elapsed.ElapsedMilliseconds;
+                if (remaining <= 0) return false;
+                Monitor.Wait(storage.gate, (int)Math.Min(int.MaxValue, remaining));
+            }
+            return savedVersion == version;
+        }
+    }
+
+    public bool End(int exitCode, int timeoutMilliseconds = 1000)
+    {
+        lock (storage.gate)
+        {
+            if (!begun || !ReferenceEquals(storage.active, this)) return false;
+            if (!finished)
+            {
+                version++;
+                storage.pending = CreateSnapshot("quit-callback exit-code=" + exitCode, exitCode == 0);
+                finished = true;
+                storage.requested = true;
+                Monitor.PulseAll(storage.gate);
+            }
+        }
+        return FlushAndWait(timeoutMilliseconds);
     }
 }
 

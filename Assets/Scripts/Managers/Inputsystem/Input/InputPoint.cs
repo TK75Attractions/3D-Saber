@@ -1259,7 +1259,7 @@ public class InputPoint : MonoBehaviour
         return false;
     }
 
-    void StopAndFlushEvents()
+    internal void StopAndFlushEvents()
     {
         StopNetworkServices();
         // 未反映の旧パケットと公開済みの鮮度を破棄し、再開後は新しい受信を待つ。
@@ -1282,7 +1282,7 @@ public class InputPoint : MonoBehaviour
         RedCoordinateSender = BlueCoordinateSender = null;
         RedCoordinateTiming.ResetSource();
         BlueCoordinateTiming.ResetSource();
-        // Join 後に main thread で書き出す。終了時の受信機停止も保存する。
+        // Join 後に保存を通知する。disable では共有 writer を停止しない。
         PhoneSaberEventLog.Current?.Flush();
     }
 

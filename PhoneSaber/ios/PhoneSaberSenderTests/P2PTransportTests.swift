@@ -2597,3 +2597,430 @@ final class DebugBundleLogTests: XCTestCase {
 }
 
 #endif
+
+// 実 UDPSender のキューを止め、入口での集約と復帰時の送信を観測する。
+final class UDPIngressTests: XCTestCase {
+    private func barrier(_ sender: UDPSender) -> DispatchSemaphore {
+        let entered = DispatchSemaphore(value: 0)
+        let release = DispatchSemaphore(value: 0)
+        sender.enqueueControlForTesting {
+            entered.signal()
+            _ = release.wait(timeout: .now() + 10)
+        }
+        XCTAssertEqual(entered.wait(timeout: .now() + 2), .success)
+        return release
+    }
+
+    private func report(_ row: [String: Any]) {
+        let data = try! JSONSerialization.data(withJSONObject: row, options: [.sortedKeys])
+        print("UDP_BENCH " + String(decoding: data, as: UTF8.self))
+    }
+
+    func testPausedQueueStartsWithLatestRedAndBlue() {
+        let repetitions = ProcessInfo.processInfo.environment["PHONESABER_UDP_BENCHMARK"] == "1" ? 5 : 1
+        for hz in [60, 120] {
+            for pauseMs in [100, 250] {
+                for repetition in 0..<repetitions {
+                    let count = hz * pauseMs / 1000
+                    let starts = PipelineLockedValue<[(String, Int, Double)]>([])
+                    let requested = PipelineLockedValue<[String: Double]>([:])
+                    let reportedWait = PipelineLockedValue<[String: (Double, Int)]>([:])
+                    let latestStarted = DispatchGroup()
+                    latestStarted.enter(); latestStarted.enter()
+                    let sender = UDPSender { text, port, complete in
+                        starts.mutate { $0.append((text, port, HostMonotonicClock.now())) }
+                        if text == "\(count - 1),\(port),3,4" { latestStarted.leave() }
+                        complete(.success(HostMonotonicClock.now()))
+                    }
+                    sender.configure(host: "127.0.0.1")
+                    let release = barrier(sender)
+                    let beganAt = HostMonotonicClock.now()
+                    // 合成入力の周期だけ短時間spinで与え、OSのtimer coalescingを避ける。
+                    // 停止/解除/送信完了の判定はbarrierと通知で同期する（本番コードでは使わない）。
+                    for index in 0..<count {
+                        while HostMonotonicClock.now() < beganAt + Double(index) / Double(hz) {}
+                        for port in [5005, 5006] {
+                            let text = "\(index),\(port),3,4"
+                            requested.mutate { $0[text] = HostMonotonicClock.now() }
+                            sender.send(text, to: port, onSendStarted: { wait, replaced in
+                                reportedWait.mutate { $0[text] = (wait, replaced) }
+                            }) { _ in }
+                        }
+                    }
+                    while HostMonotonicClock.now() < beganAt + Double(pauseMs) / 1000 {}
+                    let held = sender.ingressSnapshotForTesting
+                    let releasedAt = HostMonotonicClock.now()
+                    release.signal()
+                    XCTAssertEqual(latestStarted.wait(timeout: .now() + 2), .success)
+                    // getter をバリアとして、完了通知と後続drainまで処理する。
+                    _ = sender.pendingCountForTesting
+                    let drained = sender.ingressSnapshotForTesting
+                    XCTAssertEqual(drained.drains, 1, "解除までの要求は1予約で処理する")
+                    for port in [5005, 5006] {
+                        let packets = starts.value.filter { $0.1 == port }
+                        let latest = "\(count - 1),\(port),3,4"
+                        XCTAssertEqual(packets.first?.0, latest, "復帰時に古い先頭要求を送らない")
+                        let first = packets.first!
+                        let last = packets.first { $0.0 == latest }!
+                        let timing = reportedWait.value[latest]!
+                        XCTAssertGreaterThanOrEqual(timing.0, releasedAt - requested.value[latest]! - 0.001,
+                                                    "元の要求時刻からキュー停止中の待ち時間も測る")
+                        XCTAssertEqual(timing.1, 2 * (count - 1))
+                        let cadenceError = (0..<count).map {
+                            abs(requested.value["\($0),\(port),3,4"]! - beganAt - Double($0) / Double(hz)) * 1000
+                        }.max()!
+                        report(["kind": "pause", "hz": hz, "pauseMs": pauseMs, "run": repetition,
+                                "port": port, "first": first.0, "expected": latest,
+                                "actualPauseMs": (releasedAt - beganAt) * 1000,
+                                "cadenceMaxErrorMs": cadenceError, "reportedWaitMs": timing.0 * 1000,
+                                "replaced": timing.1,
+                                "inputSpanMs": (requested.value[latest]! - requested.value["0,\(port),3,4"]!) * 1000,
+                                "firstAgeMs": (first.2 - requested.value[first.0]!) * 1000,
+                                "latestStartAfterReleaseMs": (last.2 - releasedAt) * 1000,
+                                "latestWaitMs": (last.2 - requested.value[latest]!) * 1000,
+                                "held": held.pending, "scheduled": held.scheduled, "drains": drained.drains])
+                    }
+                    XCTAssertLessThanOrEqual(held.pending, 2)
+                    XCTAssertLessThanOrEqual(held.scheduled, 1)
+                    sender.stop()
+                }
+            }
+        }
+    }
+
+    func testUnloadedPayloadPortsTimingAndInlineOrOtherQueueCompletion() {
+        let repetitions = ProcessInfo.processInfo.environment["PHONESABER_UDP_BENCHMARK"] == "1" ? 5 : 1
+        for otherQueue in [false, true] {
+            for repetition in 0..<repetitions {
+                let packets = PipelineLockedValue<[(String, Int)]>([])
+                let waits = PipelineLockedValue<[Double]>([])
+                let successes = PipelineLockedValue(0)
+                let completionQueue = DispatchQueue(label: "UDPIngressTests.completion")
+                let sender = UDPSender { text, port, complete in
+                    packets.mutate { $0.append((text, port)) }
+                    if otherQueue { completionQueue.async { complete(.success(1)) } }
+                    else { complete(.success(1)) }
+                }
+                sender.configure(host: "127.0.0.1")
+                for index in 0..<300 {
+                    let done = DispatchSemaphore(value: 0)
+                    sender.send("\(index),2,3,4", to: 5005 + index % 2, onSendStarted: { wait, replaced in
+                        waits.mutate { $0.append(wait * 1000) }
+                        XCTAssertEqual(replaced, 0)
+                    }) { result in
+                        if case .success = result { successes.mutate { $0 += 1 } }
+                        else { XCTFail("通常送信が失敗") }
+                        done.signal()
+                    }
+                    XCTAssertEqual(done.wait(timeout: .now() + 2), .success)
+                }
+                XCTAssertEqual(successes.value, 300)
+                XCTAssertEqual(packets.value.map { $0.0 }, (0..<300).map { "\($0),2,3,4" })
+                XCTAssertEqual(packets.value.map { $0.1 }, (0..<300).map { 5005 + $0 % 2 })
+                let values = waits.value.sorted()
+                let ingress = sender.ingressSnapshotForTesting
+                report(["kind": "normal", "otherQueue": otherQueue, "run": repetition, "count": values.count,
+                        "p50Ms": values[values.count / 2], "p95Ms": values[Int(Double(values.count) * 0.95)],
+                        "maxMs": values.last!, "heldMax": ingress.maximumPending,
+                        "scheduledMax": ingress.maximumScheduled, "drains": ingress.drains])
+                sender.stop()
+            }
+        }
+    }
+
+    func testLargeBurstIsBoundedAndReplacementsAreNotSuccesses() {
+        let packets = PipelineLockedValue<[(String, Int)]>([])
+        let successes = PipelineLockedValue(0)
+        let replacements = PipelineLockedValue<[Int]>([])
+        let sender = UDPSender { text, port, complete in
+            packets.mutate { $0.append((text, port)) }
+            complete(.success(1))
+        }
+        defer { sender.stop() }
+        sender.configure(host: "127.0.0.1")
+        let release = barrier(sender)
+        for index in 0..<20_000 {
+            sender.send("\(index),2,3,4", to: 5005 + index % 2, onSendStarted: { _, replaced in
+                replacements.mutate { $0.append(replaced) }
+            }) { _ in successes.mutate { $0 += 1 } }
+        }
+        let held = sender.ingressSnapshotForTesting
+        release.signal()
+        _ = sender.pendingCountForTesting
+        _ = sender.pendingCountForTesting
+        XCTAssertEqual(held.pending, 2)
+        XCTAssertEqual(held.scheduled, 1)
+        XCTAssertEqual(sender.ingressSnapshotForTesting.drains, 1)
+        XCTAssertEqual(packets.value.map { $0.0 }.sorted(), ["19998,2,3,4", "19999,2,3,4"])
+        XCTAssertEqual(successes.value, 2)
+        XCTAssertEqual(sender.supersededPendingCountForTesting, 19_998)
+        XCTAssertEqual(replacements.value, [19_998, 19_998])
+    }
+}
+
+extension UDPIngressTests {
+    func testContinuousRedInputLetsBlueAndControlWorkProceed() {
+        let running = PipelineLockedValue(true)
+        let inputCount = PipelineLockedValue(0)
+        let blue = DispatchSemaphore(value: 0)
+        let producerStarted = DispatchSemaphore(value: 0)
+        let producerFinished = DispatchSemaphore(value: 0)
+        let control = DispatchSemaphore(value: 0)
+        let sender = UDPSender { _, port, complete in
+            if port == 5006 { blue.signal() }
+            complete(.success(1))
+        }
+        sender.configure(host: "127.0.0.1")
+        let release = barrier(sender)
+        DispatchQueue.global(qos: .userInteractive).async {
+            sender.send("0,2,3,4", to: 5005) { _ in }
+            producerStarted.signal()
+            while running.value {
+                inputCount.mutate { $0 += 1 }
+                sender.send("\(inputCount.value),2,3,4", to: 5005) { _ in }
+            }
+            producerFinished.signal()
+        }
+        XCTAssertEqual(producerStarted.wait(timeout: .now() + 2), .success)
+        sender.send("5,6,7,8", to: 5006) { _ in }
+        sender.snapshot { _ in
+            XCTAssertTrue(running.value)
+            control.signal()
+        }
+        release.signal()
+        XCTAssertEqual(blue.wait(timeout: .now() + 2), .success)
+        XCTAssertEqual(control.wait(timeout: .now() + 2), .success)
+        // 連続入力中でも停止処理がキューを取得できる。
+        sender.stop()
+        running.mutate { $0 = false }
+        XCTAssertEqual(producerFinished.wait(timeout: .now() + 2), .success)
+        let snapshot = sender.ingressSnapshotForTesting
+        XCTAssertLessThanOrEqual(snapshot.maximumPending, 2)
+        XCTAssertLessThanOrEqual(snapshot.maximumScheduled, 1)
+    }
+
+    func testQueuedCoordinatesRevalidateProcessorAndLifecycleGenerations() {
+        for lifecycle in [false, true] {
+            let sender = UDPSender { _, _, _ in XCTFail("旧世代の送信") }
+            let p2p = P2PSender()
+            let probe = LANLivenessProbe()
+            defer { sender.stop(); p2p.stop(); probe.stop() }
+            sender.configure(host: "127.0.0.1")
+            let delivery = CoordinateDelivery(sender: sender, p2pSender: p2p, lanProbe: probe)
+            var config = CoordinateDelivery.Settings()
+            config.running = true; config.lanConfigured = true; config.p2pEnabled = false
+            config.processorGeneration = 7; config.lifecycleGeneration = 3
+            delivery.update(config)
+            let release = barrier(sender)
+            for port in [5005, 5006] {
+                delivery.route("1,2,3,4", port: port, settings: config, onSendStarted: nil,
+                               completion: { _ in XCTFail("旧世代の完了通知") }, noRoute: { XCTFail("経路あり") })
+            }
+            if lifecycle { config.lifecycleGeneration += 1 } else { config.processorGeneration += 1 }
+            delivery.update(config)
+            release.signal()
+            XCTAssertEqual(sender.pendingCountForTesting, 0)
+        }
+    }
+
+    func testWaitingStopAndDestinationChangeDropCoordinatesButSameConfigurationKeepsLatest() {
+        for action in ["stop", "destination", "same"] {
+            let packets = PipelineLockedValue<[String]>([])
+            let sender = UDPSender { text, _, complete in
+                packets.mutate { $0.append(text) }
+                complete(.success(1))
+            }
+            defer { sender.stop() }
+            sender.configure(host: "127.0.0.1")
+            sender.simulateConnectionStateForTesting(port: 5005, state: .waiting)
+            _ = sender.pendingCountForTesting
+            let release = barrier(sender)
+            sender.send("1,2,3,4", to: 5005) { _ in XCTFail("置換済み") }
+            sender.send("5,6,7,8", to: 5005) { _ in }
+            release.signal()
+            XCTAssertEqual(sender.pendingCountForTesting, 1)
+            let generation = sender.connectionGenerationForTesting(port: 5005)
+            if action == "stop" { sender.stop() }
+            sender.configure(host: action == "destination" ? "127.0.0.2" : "127.0.0.1")
+            sender.simulateConnectionStateForTesting(port: 5005, state: .ready)
+            XCTAssertEqual(sender.pendingCountForTesting, 0)
+            if action == "same" {
+                XCTAssertEqual(packets.value, ["5,6,7,8"])
+                XCTAssertEqual(sender.connectionGenerationForTesting(port: 5005), generation)
+            } else {
+                XCTAssertTrue(packets.value.isEmpty)
+                XCTAssertGreaterThan(sender.connectionGenerationForTesting(port: 5005), generation)
+            }
+        }
+    }
+
+    func testP2PSwitchDropsIngressBeforeReservedDrainAndPreservesNewFallback() {
+        let packets = PipelineLockedValue<[String]>([])
+        let sender = UDPSender { text, _, complete in
+            packets.mutate { $0.append(text) }
+            complete(.success(1))
+        }
+        defer { sender.stop() }
+        sender.configure(host: "127.0.0.1")
+        let release = barrier(sender)
+        sender.send("1,2,3,4", to: 5005) { _ in XCTFail("P2P切替前のLAN待機") }
+        sender.discardPendingCoordinates()
+        sender.send("5,6,7,8", to: 5005) { _ in }
+        release.signal()
+        _ = sender.pendingCountForTesting
+        _ = sender.pendingCountForTesting
+        XCTAssertEqual(packets.value, ["5,6,7,8"])
+        XCTAssertEqual(sender.discardedForP2PCountForTesting, 1)
+    }
+
+    func testP2PSwitchAlsoDropsActiveMovedToRecoveryByEarlierQueuedFailure() {
+        let packets = PipelineLockedValue<[String]>([])
+        let callback = PipelineLockedValue<((Result<TimeInterval, Error>) -> Void)?>(nil)
+        let sender = UDPSender(sendHandler: { text, _, complete in
+            packets.mutate { $0.append(text) }
+            callback.mutate { $0 = complete }
+        }, timing: UDPSender.Timing(reconnectInitialDelay: 0.01, reconnectMaximumDelay: 0.01))
+        defer { sender.stop() }
+        sender.configure(host: "127.0.0.1")
+        sender.send("1,2,3,4", to: 5005) { _ in }
+        _ = sender.pendingCountForTesting
+        let release = barrier(sender)
+        // failed は discard の同期破棄より後に実行され、active を待機へ戻す。
+        sender.simulateConnectionStateForTesting(port: 5005, state: .failed)
+        sender.simulateConnectionStateForTesting(port: 5005, state: .ready)
+        sender.discardPendingCoordinates()
+        release.signal()
+        XCTAssertEqual(sender.pendingCountForTesting, 0)
+        let ready = expectation(description: "再接続がreadyになる")
+        var readyNotifications = 0
+        let beforeRecovery = sender.connectionGenerationForTesting(port: 5005)
+        sender.configure(host: "127.0.0.1") { states, _, _ in
+            if states[5005]?.hasPrefix("ready") == true {
+                readyNotifications += 1
+                if readyNotifications == 2 { ready.fulfill() }
+            }
+        }
+        wait(for: [ready], timeout: 2)
+        XCTAssertGreaterThan(sender.connectionGenerationForTesting(port: 5005), beforeRecovery)
+        callback.value?(.success(1))
+        XCTAssertEqual(sender.rejectedCompletionCountForTesting, 1)
+        XCTAssertEqual(packets.value, ["1,2,3,4"], "一度開始済みの座標を復帰後に再送しない")
+    }
+
+    func testCallbacksAndIsCurrentCanReadIngressWithoutHoldingItsLock() {
+        let done = expectation(description: "再入可能なコールバック")
+        done.expectedFulfillmentCount = 2
+        var sender: UDPSender!
+        sender = UDPSender { _, _, complete in
+            _ = sender.ingressSnapshotForTesting
+            complete(.success(1))
+        }
+        defer { sender.stop(); sender = nil }
+        sender.configure(host: "127.0.0.1")
+        sender.send("1,2,3,4", to: 5005, onSendStarted: { _, _ in
+            _ = sender.ingressSnapshotForTesting
+            sender.send("5,6,7,8", to: 5006) { _ in done.fulfill() }
+        }, isCurrent: {
+            _ = sender.ingressSnapshotForTesting
+            return true
+        }) { _ in
+            _ = sender.ingressSnapshotForTesting
+            done.fulfill()
+        }
+        wait(for: [done], timeout: 2)
+    }
+}
+
+extension UDPIngressTests {
+    func testP2PSwitchDuringIsCurrentDoesNotSendTakenOldRequest() {
+        let checking = DispatchSemaphore(value: 0)
+        let release = DispatchSemaphore(value: 0)
+        let latest = expectation(description: "P2P切替後の新しいLANフォールバック")
+        let packets = PipelineLockedValue<[String]>([])
+        let sender = UDPSender { text, _, complete in
+            packets.mutate { $0.append(text) }
+            complete(.success(1))
+        }
+        defer { sender.stop() }
+        sender.configure(host: "127.0.0.1")
+        sender.send("1,2,3,4", to: 5005, isCurrent: {
+            checking.signal()
+            _ = release.wait(timeout: .now() + 2)
+            return true
+        }) { _ in XCTFail("取り出し済みでもP2P切替前の座標を送らない") }
+        XCTAssertEqual(checking.wait(timeout: .now() + 2), .success)
+        sender.discardPendingCoordinates()
+        sender.send("5,6,7,8", to: 5005) { _ in latest.fulfill() }
+        release.signal()
+        wait(for: [latest], timeout: 2)
+        XCTAssertEqual(packets.value, ["5,6,7,8"])
+        XCTAssertEqual(sender.discardedForP2PCountForTesting, 1)
+    }
+
+    func testWatchdogRecoversLatestIngressAndRejectsOldCompletion() {
+        let packets = PipelineLockedValue<[String]>([])
+        let callbacks = PipelineLockedValue<[(Result<TimeInterval, Error>) -> Void]>([])
+        let started = expectation(description: "最初の座標")
+        let recovered = expectation(description: "watchdog復帰後の最新座標")
+        let completed = expectation(description: "最新座標の成功通知")
+        let timing = UDPSender.Timing(sendWatchdogTimeout: 0.05,
+                                      reconnectInitialDelay: 0.01, reconnectMaximumDelay: 0.01)
+        let sender = UDPSender(sendHandler: { text, _, complete in
+            packets.mutate { $0.append(text) }
+            callbacks.mutate { $0.append(complete) }
+            if text == "1,2,3,4" { started.fulfill() } else { recovered.fulfill() }
+        }, timing: timing)
+        defer { sender.stop() }
+        sender.configure(host: "127.0.0.1")
+        let blueGeneration = sender.connectionGenerationForTesting(port: 5006)
+        sender.send("1,2,3,4", to: 5005) { _ in XCTFail("旧送信の成功通知は無効") }
+        wait(for: [started], timeout: 2)
+        let release = barrier(sender)
+        sender.send("5,6,7,8", to: 5005) { _ in XCTFail("置換済み") }
+        sender.send("9,10,11,12", to: 5005, onSendStarted: { wait, replaced in
+            XCTAssertGreaterThan(wait, 0.01, "要求元の時刻から、watchdog復帰までの待機を測る")
+            XCTAssertEqual(replaced, 1)
+        }) { _ in completed.fulfill() }
+        release.signal()
+        wait(for: [recovered], timeout: 2)
+        XCTAssertEqual(packets.value, ["1,2,3,4", "9,10,11,12"])
+        XCTAssertEqual(sender.watchdogTimeoutCountForTesting(port: 5005), 1)
+        XCTAssertEqual(sender.connectionGenerationForTesting(port: 5006), blueGeneration)
+        callbacks.value[0](.success(1))
+        XCTAssertEqual(sender.rejectedCompletionCountForTesting, 1)
+        callbacks.value[1](.success(2))
+        wait(for: [completed], timeout: 2)
+    }
+}
+
+extension UDPIngressTests {
+    func testNewDestinationDropsActiveAndPendingAndRejectsOldCompletion() {
+        let callbacks = PipelineLockedValue<[(Result<TimeInterval, Error>) -> Void]>([])
+        let packets = PipelineLockedValue<[String]>([])
+        let started = expectation(description: "旧宛先の送信開始")
+        let latest = expectation(description: "新宛先の送信開始")
+        let completed = expectation(description: "新宛先の成功通知")
+        let sender = UDPSender { text, _, complete in
+            packets.mutate { $0.append(text) }
+            callbacks.mutate { $0.append(complete) }
+            if text == "1,2,3,4" { started.fulfill() } else { latest.fulfill() }
+        }
+        defer { sender.stop() }
+        sender.configure(host: "127.0.0.1")
+        sender.send("1,2,3,4", to: 5005) { _ in XCTFail("旧宛先の完了通知") }
+        wait(for: [started], timeout: 2)
+        let release = barrier(sender)
+        sender.send("5,6,7,8", to: 5005) { _ in XCTFail("旧宛先の待機座標") }
+        release.signal()
+        XCTAssertEqual(sender.pendingCountForTesting, 1)
+        sender.configure(host: "127.0.0.2")
+        sender.send("9,10,11,12", to: 5005) { _ in completed.fulfill() }
+        wait(for: [latest], timeout: 2)
+        callbacks.value[0](.failure(NWError.posix(.ENETDOWN)))
+        XCTAssertEqual(sender.rejectedCompletionCountForTesting, 1)
+        XCTAssertEqual(sender.reconnectCountForTesting(port: 5005), 0)
+        callbacks.value[1](.success(1))
+        wait(for: [completed], timeout: 2)
+        XCTAssertEqual(packets.value, ["1,2,3,4", "9,10,11,12"])
+    }
+}

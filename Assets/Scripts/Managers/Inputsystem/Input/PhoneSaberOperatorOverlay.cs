@@ -67,10 +67,10 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
             Screen.sleepTimeout = SleepTimeout.NeverSleep;
         try
         {
-            PhoneSaberEventLog.Current = new PhoneSaberEventLog(
+            PhoneSaberEventLog.InitializeCurrent(
                 Path.Combine(Application.persistentDataPath, "PhoneSaber", "events.log"));
         }
-        catch { PhoneSaberEventLog.Current = null; }
+        catch { /* 旧 writer の所有権を保持し、次の初期化で再利用する。 */ }
         var overlay = FindFirstObjectByType<PhoneSaberOperatorOverlay>();
         if (overlay == null)
             overlay = new GameObject("PhoneSaber Operator Overlay").AddComponent<PhoneSaberOperatorOverlay>();
@@ -598,10 +598,15 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
     void OnApplicationQuit()
     {
         StopControlPanel();
+        // 計測の途中結果を受付終了前に確定する。後続の disable/destroy では再記録しない。
+        foreach (var probe in FindObjectsByType<PhoneSaberLatencyProbe>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            probe.FinishForShutdown();
+        // callback 順に依存せず、受信機停止の行を session-quit より前に確定する。
+        InputPoint.Instance?.StopAndFlushEvents();
         PhoneSaberRunJournal.Current?.End(Environment.ExitCode);
         PhoneSaberEventLog.Record(fallbackStation, "SYSTEM", "session-quit", "exit-code=" + Environment.ExitCode);
-        // 満杯のキューも終了時は全部書き出す(通常時は1回128件まで)。
-        for (int i = 0; i < 5; i++) PhoneSaberEventLog.Current?.Flush();
+        // 通常要求と区別し、終了時だけ最大1秒待つ。停止中の I/O は強制中断しない。
+        PhoneSaberEventLog.Current?.StopAndDrain(1000);
         // open -W はアプリの crash status を返さないため、正常終了の印を launcher に返す。
         try
         {

@@ -86,7 +86,18 @@ final class UDPSender {
     private var waitingWork: [Int: DispatchWorkItem] = [:]
     private var watchdogWork: [Int: DispatchWorkItem] = [:]
     private var activeByPort: [Int: PendingSend] = [:]
+    // 待機座標は入口と送信キューで共用する。送信中の active 以外に複製しない。
+    // 以下の入口状態は ingressLock、接続・active は queue だけで保護する。
+    private let ingressLock = NSLock()
+    private var ingressPorts: Set<Int> = []
+    private var ingressHost = ""
+    private var drainScheduled = false
+    private var discardedThroughID: UInt64 = 0
     private var pendingByPort: [Int: PendingSend] = [:]
+#if DEBUG
+    private var maximumIngressPending = 0
+    private var drainExecutionCount = 0
+#endif
     private var nextSendID: UInt64 = 0
     private var updateHandler: (([Int: String], [Int: String], String?) -> Void)?
 #if DEBUG
@@ -137,7 +148,11 @@ final class UDPSender {
             phases = Dictionary(uniqueKeysWithValues: ports.map { ($0, .preparing) })
             connectionErrors = [:]
             sendErrors = [:]
+            ingressLock.lock()
+            ingressPorts = Set(ports)
+            ingressHost = host
             supersededPendingCount = 0
+            ingressLock.unlock()
             for port in ports { createConnection(port: port, isReconnect: false) }
             publish()
         }
@@ -148,6 +163,9 @@ final class UDPSender {
             guard let self, self.isRunning, !host.isEmpty, host != self.configuredHost else { return }
             self.configurationGeneration += 1
             self.configuredHost = host
+            self.ingressLock.lock()
+            self.ingressHost = host
+            self.ingressLock.unlock()
             for port in self.configuredPorts {
                 self.prepareLatestForRecovery(port: port)
                 self.cancelPortWork(port: port)
@@ -166,24 +184,73 @@ final class UDPSender {
               isCurrent: (() -> Bool)? = nil,
               completion: @escaping (Result<TimeInterval, Error>) -> Void) {
         let enqueuedAt = HostMonotonicClock.now()
-        queue.async { [weak self] in
-            guard let self, isCurrent?() != false else { return }
-            self.nextSendID &+= 1
-            let request = PendingSend(id: self.nextSendID, text: text,
-                                      enqueuedAt: enqueuedAt,
-                                      onSendStarted: onSendStarted, isCurrent: isCurrent, completion: completion)
-            guard self.isRunning, self.configuredPorts.contains(port) else {
-                completion(.failure(SendError.notConfigured(host: self.configuredHost, port: port)))
-                return
+        ingressLock.lock()
+        guard ingressPorts.contains(port) else {
+            let host = ingressHost
+            ingressLock.unlock()
+            queue.async { [weak self] in
+                guard self != nil, isCurrent?() != false else { return }
+                completion(.failure(SendError.notConfigured(host: host, port: port)))
             }
-            if self.activeByPort[port] != nil || self.phases[port] != .ready {
-                if self.pendingByPort.updateValue(request, forKey: port) != nil {
-                    self.supersededPendingCount += 1
-                }
-            } else {
-                self.start(request, port: port)
-            }
+            return
         }
+        nextSendID &+= 1
+        let request = PendingSend(id: nextSendID, text: text, enqueuedAt: enqueuedAt,
+                                  onSendStarted: onSendStarted, isCurrent: isCurrent, completion: completion)
+        let replaced = pendingByPort.updateValue(request, forKey: port)
+        if replaced != nil { supersededPendingCount += 1 }
+#if DEBUG
+        maximumIngressPending = max(maximumIngressPending, pendingByPort.count)
+#endif
+        let reserveDrain = !drainScheduled
+        drainScheduled = true
+        ingressLock.unlock()
+        if reserveDrain { enqueueDrain() }
+        // 置換されたクロージャの解放も含め、ロック中に外部コードを呼ばない。
+        withExtendedLifetime(replaced) {}
+    }
+
+    private func enqueueDrain() {
+        queue.async { [weak self] in self?.drain() }
+    }
+
+    private func drain() {
+#if DEBUG
+        ingressLock.lock()
+        drainExecutionCount += 1
+        ingressLock.unlock()
+#endif
+        // 1回につき各ポートを1回だけ処理する。連続入力でも接続通知・stopへ譲る。
+        for port in configuredPorts.sorted() { startLatest(port: port) }
+        ingressLock.lock()
+        let needsDrain = pendingByPort.keys.contains { activeByPort[$0] == nil && phases[$0] == .ready }
+        if !needsDrain { drainScheduled = false }
+        ingressLock.unlock()
+        if needsDrain { enqueueDrain() }
+    }
+
+    private func takePending(port: Int) -> PendingSend? {
+        ingressLock.lock(); defer { ingressLock.unlock() }
+        return pendingByPort.removeValue(forKey: port)
+    }
+
+    private func retainForRecovery(_ request: PendingSend, port: Int) {
+        ingressLock.lock(); defer { ingressLock.unlock() }
+        // P2P切替より前の active は、後発の接続通知でも待機へ戻さない。
+        if request.id <= discardedThroughID { discardedForP2PCount += 1; return }
+        // 入口に新しい座標があれば、送信中だった古い座標で上書きしない。
+        if pendingByPort[port] == nil { pendingByPort[port] = request }
+    }
+
+    private func startLatest(port: Int) {
+        guard activeByPort[port] == nil, phases[port] == .ready,
+              let latest = takePending(port: port) else { return }
+        start(latest, port: port)
+    }
+
+    private var supersededCount: Int {
+        ingressLock.lock(); defer { ingressLock.unlock() }
+        return supersededPendingCount
     }
 
     private func createConnection(port: Int, isReconnect: Bool) {
@@ -254,9 +321,7 @@ final class UDPSender {
             reconnectAttempts[port] = 0
             states[port] = sendHandler == nil ? "ready (送信可能)" : "ready (テスト送信)"
             connectionErrors[port] = nil
-            if activeByPort[port] == nil, let latest = pendingByPort.removeValue(forKey: port) {
-                start(latest, port: port)
-            }
+            startLatest(port: port)
         case .waiting:
             states[port] = "waiting"
             connectionErrors[port] = "UDP接続待機 (\(configuredHost):\(port)): \(reason ?? "reason unavailable")"
@@ -325,13 +390,18 @@ final class UDPSender {
     private func prepareLatestForRecovery(port: Int) {
         guard let active = activeByPort.removeValue(forKey: port) else { return }
         watchdogWork.removeValue(forKey: port)?.cancel()
-        if pendingByPort[port] == nil { pendingByPort[port] = active }
+        retainForRecovery(active, port: port)
     }
 
     private func start(_ request: PendingSend, port: Int) {
         guard request.isCurrent?() != false else { return }
+        ingressLock.lock()
+        let discarded = request.id <= discardedThroughID
+        ingressLock.unlock()
+        // isCurrent の実行中に経路が切り替わっても、取り出し済みの旧座標を送らない。
+        if discarded { discardedForP2PCount += 1; return }
         guard isRunning, phases[port] == .ready else {
-            pendingByPort[port] = request
+            retainForRecovery(request, port: port)
             return
         }
         let configureGeneration = configurationGeneration
@@ -346,13 +416,13 @@ final class UDPSender {
                     let color = port == 5005 ? "RED" : port == 5006 ? "BLUE" : "PORT\(port)"
                     let queueWaitMs = max(0, sendStartedAt - request.enqueuedAt) * 1000
                     print(String(format: "[FREEZE_DIAG][UDP] sendGap=%.1fms color=%@ queueWait=%.1fms replaced=%d",
-                                 gapMs, color, queueWaitMs, supersededPendingCount))
+                                 gapMs, color, queueWaitMs, supersededCount))
                 }
             }
             lastSendStartByPort[port] = sendStartedAt
         }
 #endif
-        request.onSendStarted?(max(0, sendStartedAt - request.enqueuedAt), supersededPendingCount)
+        request.onSendStarted?(max(0, sendStartedAt - request.enqueuedAt), supersededCount)
         scheduleSendWatchdog(requestID: request.id, port: port,
                              configurationGeneration: configureGeneration,
                              portGeneration: portGeneration)
@@ -436,7 +506,7 @@ final class UDPSender {
             }
             publish()
         }
-        if let latest = pendingByPort.removeValue(forKey: port) { start(latest, port: port) }
+        startLatest(port: port)
     }
 
     func recoverIfNeeded() {
@@ -468,11 +538,23 @@ final class UDPSender {
     /// that becomes ready later never delivers them after newer coordinates went
     /// over the P2P link. Called only by the P2P route; unused while P2P is off.
     func discardPendingCoordinates() {
+        // 経路切替時点で入口を空にする。先に予約済みの drain でも古いLAN座標を拾わせない。
+        ingressLock.lock()
+        let discarded = pendingByPort
+        let cutoff = nextSendID
+        discardedThroughID = cutoff
+        pendingByPort = [:]
+        ingressLock.unlock()
+        let discardedCount = discarded.count
+        withExtendedLifetime(discarded) {}
         queue.async { [weak self] in
             guard let self, self.isRunning else { return }
+            self.discardedForP2PCount += discardedCount
             for port in self.configuredPorts {
-                if self.pendingByPort.removeValue(forKey: port) != nil { self.discardedForP2PCount += 1 }
-                if self.phases[port] != .ready, self.activeByPort.removeValue(forKey: port) != nil {
+                // 切替後にLANへフォールバックした新しい要求は保持する。
+                if self.phases[port] != .ready,
+                   let active = self.activeByPort[port], active.id <= cutoff {
+                    self.activeByPort[port] = nil
                     self.watchdogWork.removeValue(forKey: port)?.cancel()
                     self.discardedForP2PCount += 1
                 }
@@ -510,7 +592,15 @@ final class UDPSender {
         for item in waitingWork.values { item.cancel() }
         for item in watchdogWork.values { item.cancel() }
         reconnectWork.removeAll(); waitingWork.removeAll(); watchdogWork.removeAll()
-        activeByPort.removeAll(); pendingByPort.removeAll()
+        activeByPort.removeAll()
+        ingressLock.lock()
+        let discarded = pendingByPort
+        pendingByPort = [:]
+        ingressPorts = []
+        ingressHost = ""
+        // 既に予約済みの drain は残す。停止・再設定を挟んでも二重予約しない。
+        ingressLock.unlock()
+        withExtendedLifetime(discarded) {}
         configuredPorts.removeAll(); phases.removeAll(); waitingSince.removeAll(); connectionCreatedAt.removeAll()
         states.removeAll(); connectionErrors.removeAll(); sendErrors.removeAll()
         reconnectAttempts.removeAll()
@@ -556,10 +646,25 @@ final class UDPSender {
     var connectionsForTesting: [Int: NWConnection] { queue.sync { connections } }
 #endif
 
+#if DEBUG
+    // semaphore/barrier により、固定 sleep に依存せず送信キューを停止する。
+    func enqueueControlForTesting(_ body: @escaping () -> Void) { queue.async(execute: body) }
+    var ingressSnapshotForTesting: (pending: Int, scheduled: Int, maximumPending: Int, maximumScheduled: Int, drains: Int) {
+        ingressLock.lock(); defer { ingressLock.unlock() }
+        return (pendingByPort.count, drainScheduled ? 1 : 0, maximumIngressPending,
+                drainExecutionCount > 0 || drainScheduled ? 1 : 0, drainExecutionCount)
+    }
+#endif
+
     var rejectedCompletionCountForTesting: Int { queue.sync { rejectedCompletionCount } }
-    var supersededPendingCountForTesting: Int { queue.sync { supersededPendingCount } }
+    var supersededPendingCountForTesting: Int { queue.sync { supersededCount } }
     var discardedForP2PCountForTesting: Int { queue.sync { discardedForP2PCount } }
-    var pendingCountForTesting: Int { queue.sync { pendingByPort.count } }
+    var pendingCountForTesting: Int {
+        queue.sync {
+            ingressLock.lock(); defer { ingressLock.unlock() }
+            return pendingByPort.count
+        }
+    }
     func connectionGenerationForTesting(port: Int) -> Int { queue.sync { portGenerations[port, default: 0] } }
     func reconnectCountForTesting(port: Int) -> Int { queue.sync { reconnectCounts[port, default: 0] } }
     func watchdogTimeoutCountForTesting(port: Int) -> Int { queue.sync { watchdogTimeoutCounts[port, default: 0] } }

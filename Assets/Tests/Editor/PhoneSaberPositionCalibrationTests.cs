@@ -507,7 +507,7 @@ public class PhoneSaberPositionCalibrationTests
             StringAssert.Contains("PC適用: 失敗", input.LearnedPositionCalibrationResult);
             StringAssert.Contains("学習矩形(0..1): (0.200000, 0.100000)–(0.800000, 0.900000)", input.LearnedPositionCalibrationResult);
             StringAssert.Contains("適用矩形: (0.050000, -0.100000)–(0.950000, 1.100000)", input.LearnedPositionCalibrationResult);
-            PhoneSaberEventLog.Current.Flush();
+            Assert.IsTrue(PhoneSaberEventLog.Current.FlushAndWait(5000));
             string log = System.IO.File.ReadAllText(path);
             StringAssert.Contains("learned-area-apply", log);
             StringAssert.Contains("倍率: 1.5", log);
@@ -518,6 +518,7 @@ public class PhoneSaberPositionCalibrationTests
         }
         finally
         {
+            PhoneSaberEventLog.Current?.StopAndDrain(5000);
             PhoneSaberEventLog.Current = previousLog;
             UnityEngine.Object.DestroyImmediate(go);
             if (System.IO.Directory.Exists(System.IO.Path.GetDirectoryName(path)))

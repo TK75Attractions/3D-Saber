@@ -60,6 +60,8 @@ public class SongSelectController : MonoBehaviour {
 }
 public class SaberBladeVisual : MonoBehaviour { public int VertexCount; public void Clear(){} public void NotifyCut(){} public void Show(Vector3 a,Vector3 b,float w,Color c,float t){} }
 public static class DisplaySettings { public static bool ProjectorMode; }
+// 描画順のゲーム依存は frame host の測定対象外。実ソースは後段の全ゲームAPI compileで確認する。
+public static class SaberMemoryVeilOrder { public static bool IsAbove(Component c)=>false; public static void Set(Component c,bool above){} public static void RefreshFor(Component c){} }
 public static class SaberCutJudge { public static float DistPointToSegment(Vector2 p,Vector2 a,Vector2 b,out Vector2 q){q=a;return 0;} }
 public enum CameraSaberColor { Red, Blue }
 public static class ProjectorMode { public const float BladeWidthScale=1,BladeOutlineScale=1,BladeOutlineZOffset=0; public static Color BladeOutlineColor; }
@@ -91,6 +93,24 @@ public class GamePlayManager : MonoBehaviour { public NoteSpawner noteSpawner; p
             source = source.replace('PhoneSaberPerfLog.Estimate(', 'FramePredictionPerfLog.Estimate(')
             host_input.write_text('using Time = FrameClock;\nusing Screen = FrameScreen;\n' + source)
             current[current.index(INPUT / 'InputPoint.cs')] = host_input
+            # 終了callbackと計測のFinish/RecordBlockは実ソースを実行する。
+            # native検索・画面設定・PlayerPrefsだけ代役にし、ログ保存は置換しない。
+            for name in ('PhoneSaberOperatorOverlay.cs', 'PhoneSaberLatencyProbe.cs'):
+                lifecycle = (INPUT / name).read_text()
+                if name == 'PhoneSaberOperatorOverlay.cs':
+                    lifecycle = lifecycle.replace(
+                        'FindObjectsByType<PhoneSaberLatencyProbe>(FindObjectsInactive.Include, FindObjectsSortMode.None)',
+                        'EventLogLifecycleHost.Probes')
+                else:
+                    lifecycle = ('using Application = EventLogLifecycleHost;\n'
+                                 'using QualitySettings = EventLogLifecycleHost;\n'
+                                 'using Time = EventLogLifecycleHost;\n'
+                                 'using Debug = EventLogLifecycleHost;\n' + lifecycle)
+                    lifecycle = lifecycle.replace('PhoneSaberPerfLog.DisplayConfiguration()', 'EventLogLifecycleHost.DisplayConfiguration()')
+                    lifecycle = lifecycle.replace('PhoneSaberStation.Read()', 'EventLogLifecycleHost.Read()')
+                host_lifecycle = build / ('Host' + name)
+                host_lifecycle.write_text(lifecycle)
+                current[current.index(INPUT / name)] = host_lifecycle
             if before and args.sender_before_ref:
                 old = build / 'InputStatsBefore.cs'
                 old.write_bytes(subprocess.check_output(['git', 'show', args.sender_before_ref +

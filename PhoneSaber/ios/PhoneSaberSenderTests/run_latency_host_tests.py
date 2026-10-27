@@ -2,6 +2,7 @@
 """実ソースと既存XCTestを macOS で実行する（AVCapture設定・認識だけstub）。"""
 from pathlib import Path
 import argparse
+import os
 import re
 import subprocess
 import tempfile
@@ -55,11 +56,102 @@ def capture_setup(camera, name):
 '''
 
 
+def observe_legacy_udp(content):
+    """旧実装にはbarrierとDEBUG計数だけを補う。送信・集約・完了処理は変えない。"""
+    if "ingressSnapshotForTesting" in content:
+        return content
+    send = block(content, "func send(_ text:")
+    if "self.pendingByPort.updateValue(request, forKey: port)" not in send:
+        raise ValueError("入口観測に未対応の旧UDPSenderです")
+    fields = """#if DEBUG
+    private let ingressTestLock = NSLock()
+    private var ingressTestPending = 0
+    private var ingressTestMaximum = 0
+    private var ingressTestDrains = 0
+#endif
+"""
+    content = content.replace("    private var nextSendID:", fields + "    private var nextSendID:", 1)
+    observed = send.replace("        queue.async { [weak self] in", """#if DEBUG
+        ingressTestLock.lock()
+        ingressTestPending += 1
+        ingressTestMaximum = max(ingressTestMaximum, ingressTestPending)
+        ingressTestLock.unlock()
+#endif
+        queue.async { [weak self] in
+#if DEBUG
+            if let self {
+                self.ingressTestLock.lock()
+                self.ingressTestPending -= 1
+                self.ingressTestDrains += 1
+                self.ingressTestLock.unlock()
+            }
+#endif""", 1)
+    content = content.replace(send, observed, 1)
+    hooks = """#if DEBUG
+    func enqueueControlForTesting(_ body: @escaping () -> Void) { queue.async(execute: body) }
+    var ingressSnapshotForTesting: (pending: Int, scheduled: Int, maximumPending: Int, maximumScheduled: Int, drains: Int) {
+        ingressTestLock.lock(); defer { ingressTestLock.unlock() }
+        return (ingressTestPending, ingressTestPending, ingressTestMaximum, ingressTestMaximum, ingressTestDrains)
+    }
+#endif
+"""
+    return content.replace("    var rejectedCompletionCountForTesting:", hooks + "    var rejectedCompletionCountForTesting:", 1)
+
+
+def run_routing_tests(udp_source=None, ingress_benchmark=False):
+    developer = Path(subprocess.check_output(["xcode-select", "-p"], text=True).strip()) / "Platforms/MacOSX.platform/Developer"
+    frameworks = developer / "Library/Frameworks"
+    with tempfile.TemporaryDirectory(prefix="phonesaber-routing-") as directory:
+        tmp = Path(directory)
+        sources = []
+        for name in ["UDPSender.swift", "P2PSender.swift", "P2PProtocol.swift", "MetricsDatagram.swift"]:
+            copied = tmp / name
+            content = (Path(udp_source) if udp_source and name == "UDPSender.swift" else SOURCE / name).read_text()
+            if udp_source and name == "UDPSender.swift":
+                content = observe_legacy_udp(content)
+            if name == "UDPSender.swift" and "var currentRoute:" not in content:
+                # 既存の旧版比較用adapterも維持する（route本体は変更しない）。
+                getter = block((SOURCE / name).read_text(), "var currentRoute:")
+                content = content.replace("    func update(_ settings: Settings)", getter + "\n    func update(_ settings: Settings)")
+            copied.write_text(content)
+            sources.append(str(copied))
+        frames = (SOURCE / "FrameProcessor.swift").read_text()
+        (tmp / "Clock.swift").write_text("import CoreMedia\nimport Foundation\n" + block(frames, "enum HostMonotonicClock"))
+        (tmp / "main.swift").write_text('''import XCTest
+import Darwin
+let suite = XCTestSuite(name: "Production LAN/routing regression")
+suite.addTest(CoordinateDeliveryTests.defaultTestSuite)
+suite.addTest(SendGapTests.defaultTestSuite)
+let ingress = UDPIngressTests.defaultTestSuite
+guard ingress.testCaseCount >= 12 else { exit(1) }
+suite.addTest(ingress)
+suite.run()
+guard let run = suite.testRun, run.executionCount == suite.testCaseCount, run.executionCount >= 26,
+      let ingressRun = ingress.testRun, ingressRun.executionCount == ingress.testCaseCount,
+      run.hasSucceeded else { exit(1) }
+''')
+        subprocess.run(["xcrun", "swiftc", "-O", "-D", "DEBUG", "-D", "PIPELINE_ROUTING_STANDALONE",
+                        *sources, str(tmp / "Clock.swift"), str(TESTS / "P2PTransportTests.swift"),
+                        str(tmp / "main.swift"), "-I", str(developer / "usr/lib"), "-L", str(developer / "usr/lib"),
+                        "-F", str(frameworks), "-Xlinker", "-rpath", "-Xlinker", str(frameworks),
+                        "-Xlinker", "-rpath", "-Xlinker", str(developer / "usr/lib"),
+                        "-module-cache-path", str(tmp / "cache"), "-o", str(tmp / "routing-tests")], check=True)
+        env = dict(os.environ)
+        if ingress_benchmark:
+            env["PHONESABER_UDP_BENCHMARK"] = "1"
+        return subprocess.run([str(tmp / "routing-tests")], env=env).returncode
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--baseline", help="比較する旧ソースのディレクトリ（*-before.swift）")
     parser.add_argument("--benchmark", action="store_true", help="統計待ち3msを与えた送信までのhost比較を出す")
+    parser.add_argument("--routing-only", action="store_true", help="本番LAN/routing送信回帰だけ実行")
+    parser.add_argument("--udp-source", type=Path, help="before/after比較用の実UDPSender.swift")
+    parser.add_argument("--ingress-benchmark", action="store_true", help="キュー停止各条件5回と通常時5回を計測")
     args = parser.parse_args()
+    if args.routing_only:
+        return run_routing_tests(args.udp_source, args.ingress_benchmark)
 
     def source(name):
         return (Path(args.baseline) / (name.removesuffix('.swift') + '-before.swift') if args.baseline
@@ -284,31 +376,9 @@ guard let run = suite.testRun, run.executionCount > 0, run.hasSucceeded else { e
                         "-Xlinker", "-rpath", "-Xlinker", str(developer / "usr/lib"),
                         "-module-cache-path", str(tmp / "cache"), "-o", str(tmp / "tests")], check=True)
         camera_result = subprocess.run([str(tmp / "tests")]).returncode
-        # P2P internalsは変更せず、本番の経路選択とLAN退避時のログを既存XCTestで検証する。
-        routing_sources = []
-        for name in ["UDPSender.swift", "P2PSender.swift", "P2PProtocol.swift", "MetricsDatagram.swift"]:
-            copied = tmp / name
-            content = source(name) if name == "UDPSender.swift" else (SOURCE / name).read_text()
-            if "var currentRoute:" not in content and name == "UDPSender.swift":
-                # 旧lastRouteを読み出すだけのadapter。旧route本体は変更しない。
-                getter = block((SOURCE / name).read_text(), "var currentRoute:")
-                content = content.replace("    func update(_ settings: Settings)", getter + "\n    func update(_ settings: Settings)")
-            copied.write_text(content)
-            routing_sources.append(str(copied))
-        (tmp / "Clock.swift").write_text("import CoreMedia\nimport Foundation\n" + block(frames, "enum HostMonotonicClock"))
-        (tmp / "main.swift").write_text('''import XCTest
-import Darwin
-let suite = CoordinateDeliveryTests.defaultTestSuite
-suite.run()
-guard let run = suite.testRun, run.executionCount > 0, run.hasSucceeded else { exit(1) }
-''')
-        subprocess.run(["xcrun", "swiftc", "-O", "-D", "DEBUG", "-D", "PIPELINE_ROUTING_STANDALONE",
-                        *routing_sources, str(tmp / "Clock.swift"), str(TESTS / "P2PTransportTests.swift"),
-                        str(tmp / "main.swift"), "-I", str(developer / "usr/lib"), "-L", str(developer / "usr/lib"),
-                        "-F", str(frameworks), "-Xlinker", "-rpath", "-Xlinker", str(frameworks),
-                        "-Xlinker", "-rpath", "-Xlinker", str(developer / "usr/lib"),
-                        "-module-cache-path", str(tmp / "cache"), "-o", str(tmp / "routing-tests")], check=True)
-        routing_result = subprocess.run([str(tmp / "routing-tests")]).returncode
+        # 新規LAN入口試験と既存の送信エラー回帰も、通常のhostコマンドで必ず実行する。
+        udp_source = args.udp_source or (Path(args.baseline) / "UDPSender-before.swift" if args.baseline else None)
+        routing_result = run_routing_tests(udp_source, args.ingress_benchmark)
         return camera_result or routing_result
 
 
