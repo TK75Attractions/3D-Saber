@@ -20,6 +20,19 @@ public sealed class DarkMode : MonoBehaviour
     readonly DarkStageMaterials gateMaterials = new DarkStageMaterials();
     Func<CuttableNote, float> brightnessFor;
     bool ended;
+    // 暗幕(2026-10-27)。剣とノーツは暗幕の上に描き、ノーツは自分の明るさ(BrightnessFor)で隠れる。
+    DarkVeil veil;
+    Action<CuttableNote> onNoteSpawned;
+    readonly List<(SaberInputBridge bridge, bool above)> saberLayers = new List<(SaberInputBridge, bool)>();
+    readonly List<(MouseSaberInput mouse, bool above)> mouseLayers = new List<(MouseSaberInput, bool)>();
+    readonly Dictionary<Renderer, int> originalNoteOrders = new Dictionary<Renderer, int>();
+    readonly List<Renderer> noteRenderers = new List<Renderer>();
+    readonly List<Renderer> partRenderers = new List<Renderer>();
+    // 判定の文字・コンボの炎(GameplayFeedbackPresenter の Overlay)も HUD と同じだけ暗くする。
+    CanvasGroup feedbackGroup;
+    float feedbackOriginalAlpha = 1f;
+
+    public DarkVeil Veil => veil;
 
     public float Level { get; private set; }
     public Func<SaberHand, BladeSample?> BladeOverride { get; set; }
@@ -50,7 +63,66 @@ public sealed class DarkMode : MonoBehaviour
         spawner.OnChartReset += mode.EndPlay;
         mode.lamps[0] = new DarkLamp(go.transform, "RedLamp");
         mode.lamps[1] = new DarkLamp(go.transform, "BlueLamp");
+        mode.veil = DarkVeil.Create(mode.view, spawner.judgeZ);
+        mode.LiftSabers(go.scene);
+        mode.onNoteSpawned = mode.LiftNote;
+        spawner.OnNoteSpawned += mode.onNoteSpawned;
+        foreach (var note in spawner.LiveNotes) mode.LiftNote(note);
+        var feedback = UnityEngine.Object.FindFirstObjectByType<GameplayFeedbackPresenter>();
+        if (feedback != null)
+        {
+            mode.feedbackGroup = feedback.GetComponent<CanvasGroup>();
+            if (mode.feedbackGroup == null) mode.feedbackGroup = feedback.gameObject.AddComponent<CanvasGroup>();
+            mode.feedbackOriginalAlpha = mode.feedbackGroup.alpha;
+        }
         return mode;
+    }
+
+    // 剣(刃・縁・残光)は暗幕の上。M のノイズと同じ仕組み(SaberMemoryVeilOrder)を使い、終わりに元へ戻す。
+    void LiftSabers(UnityEngine.SceneManagement.Scene scene)
+    {
+        foreach (var bridge in UnityEngine.Object.FindObjectsByType<SaberInputBridge>(
+            FindObjectsInactive.Include, FindObjectsSortMode.None))
+        {
+            if (bridge.gameObject.scene != scene) continue;
+            saberLayers.Add((bridge, bridge.DrawAboveMemoryVeil));
+            bridge.DrawAboveMemoryVeil = true;
+        }
+        foreach (var mouse in UnityEngine.Object.FindObjectsByType<MouseSaberInput>(
+            FindObjectsInactive.Include, FindObjectsSortMode.None))
+        {
+            if (mouse.gameObject.scene != scene) continue;
+            mouseLayers.Add((mouse, mouse.DrawAboveMemoryVeil));
+            mouse.DrawAboveMemoryVeil = true;
+        }
+    }
+
+    // ノーツ(本体・矢印・着地の枠・残り回数)は暗幕と剣のあいだ。遠いノーツは自分の明るさで黒くなる。
+    void LiftNote(CuttableNote note)
+    {
+        if (note == null || ended) return;
+        noteRenderers.Clear();
+        note.GetComponentsInChildren(true, noteRenderers);
+        if (note.TimingCue != null)
+        {
+            AddRenderers(note.TimingCue.GhostRoot);
+            AddRenderers(note.TimingCue.ApproachRoot);
+        }
+        if (note.countLabel != null) AddRenderers(note.countLabel.gameObject);
+        foreach (var renderer in noteRenderers)
+        {
+            if (renderer == null) continue;
+            if (!originalNoteOrders.ContainsKey(renderer)) originalNoteOrders[renderer] = renderer.sortingOrder;
+            renderer.sortingOrder = MemoryVeilLayers.AboveNoteSortingOrder;
+        }
+    }
+
+    void AddRenderers(GameObject part)
+    {
+        if (part == null) return;
+        partRenderers.Clear();
+        part.GetComponentsInChildren(true, partRenderers);
+        noteRenderers.AddRange(partRenderers);
     }
 
     BladeSample SampleFor(SaberHand hand)
@@ -88,10 +160,13 @@ public sealed class DarkMode : MonoBehaviour
         gateMaterials.Apply(gate, stage);
         GameStageSkin.SetDarkBrightness(view, originalBackground, originalFog, stage);
         if (bars != null) bars.DarkBrightness = stage;
-        if (hud != null) hud.SetDarkBrightness(DarkRules.HudBrightness(Level));
+        float hudBrightness = DarkRules.HudBrightness(Level);
+        if (hud != null) hud.SetDarkBrightness(hudBrightness);
+        if (feedbackGroup != null) feedbackGroup.alpha = feedbackOriginalAlpha * hudBrightness;
         if (spawner.FloorGuide != null) spawner.FloorGuide.DarkBrightness = stage;
         lamps[0]?.Show(red, Level, spawner.judgeZ + .12f);
         lamps[1]?.Show(blue, Level, spawner.judgeZ + .12f);
+        veil?.Show(DarkRules.VeilDarkness(Level), red, blue);
 
         // 再生中は位置更新後の NoteSpawner.Tick に任せ、停止中だけここで補う。
         if (refreshNotes)
@@ -114,9 +189,22 @@ public sealed class DarkMode : MonoBehaviour
         ended = true;
         Level = 0;
         BladeOverride = null;
+        veil?.Dispose();
+        veil = null;
+        foreach (var item in saberLayers)
+            if (item.bridge != null) item.bridge.DrawAboveMemoryVeil = item.above;
+        foreach (var item in mouseLayers)
+            if (item.mouse != null) item.mouse.DrawAboveMemoryVeil = item.above;
+        saberLayers.Clear();
+        mouseLayers.Clear();
+        foreach (var pair in originalNoteOrders)
+            if (pair.Key != null) pair.Key.sortingOrder = pair.Value;
+        originalNoteOrders.Clear();
+        if (feedbackGroup != null) feedbackGroup.alpha = feedbackOriginalAlpha;
         if (spawner != null)
         {
             spawner.OnChartReset -= EndPlay;
+            if (onNoteSpawned != null) spawner.OnNoteSpawned -= onNoteSpawned;
             if (spawner.BrightnessFor == brightnessFor) spawner.BrightnessFor = null;
             var notes = spawner.LiveNotes;
             for (int i = 0; i < notes.Count; i++)

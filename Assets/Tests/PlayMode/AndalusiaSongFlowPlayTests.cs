@@ -163,7 +163,7 @@ public class AndalusiaSongFlowPlayTests
             Assert.AreEqual(53.44, preview.Window.Start, .001);
             Assert.AreEqual(63.815197, preview.Window.Start + preview.Window.Duration, .001);
             Assert.IsNotNull(controller.previewSource.clip);
-            Assert.That(controller.previewSource.clip.length, Is.InRange(112.15f, 112.30f));
+            Assert.That(controller.previewSource.clip.length, Is.InRange(130.35f, 130.45f));
             Assert.IsNull(preview.View, "ディスク画面では譜面ウィンドウなしで試聴する");
             Assert.That(controller.previewSource.time, Is.EqualTo(preview.SongTime).Within(.35));
         }
@@ -185,7 +185,7 @@ public class AndalusiaSongFlowPlayTests
         Assert.AreEqual(SongId, GameSession.SelectedSongId);
         Assert.AreEqual("アンダルシア", GameSession.SelectedSongTitle);
         Assert.AreEqual("Easy", GameSession.SelectedDifficulty);
-        Assert.That(manager.songPlayer.Duration, Is.InRange(112.15, 112.30));
+        Assert.That(manager.songPlayer.Duration, Is.InRange(130.35, 130.45));
         var chart = ChartLoader.LoadFromStreamingAssets(SongId, "easy");
         Assert.AreEqual(chart.notes.Count, manager.noteSpawner.TotalNoteCount);
         Assert.IsNotNull(manager.barLineSpawner, "推定小節マップを本編でも表示する");
@@ -275,7 +275,9 @@ public class AndalusiaArrangementPlayTests
             note.OnMiss += n => missed++;
         };
         spawner.SetChart(chart);
-        for (int step = 0; step <= 5500; step++)
+        // 延長の最後のノーツ(121.4 秒)のあとも 3 秒回し、切り終わりと回収まで見る。
+        int lastStep = (int)Math.Ceiling((chart.notes.Max(n => n.TimeSeconds) + 3) / .02);
+        for (int step = 0; step <= lastStep; step++)
         {
             double now = step * .02;
             spawner.Tick(now);

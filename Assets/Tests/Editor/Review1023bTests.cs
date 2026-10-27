@@ -140,7 +140,7 @@ public class Review1023bTests
     [TestCase("escapade", "normal", 119)]
     [TestCase("Phobia PARTⅠ", "easy", 79)]
     [TestCase("Phobia PARTⅠ", "normal", 138)]
-    [TestCase("Andalusia", "easy", 105)]
+    [TestCase("Andalusia", "easy", 123)]
     [TestCase("Epilogue", "easy", 131)]
     [TestCase("揺籠", "easy", 106)]
     [TestCase("Aobasou", "normal", 176)]
@@ -158,29 +158,33 @@ public class Review1023bTests
     }
 
     [Test]
-    public void AndalusiaHasTheTwoSelectedSections()
+    // 2026-10-27 ユーザー「アンダルシアの表譜面の音源を、裏と同じにして」: 音源は裏 T の長い版だけになり、区間も T と同じ3つ
+    // (10/23 に選んだ2区間の最終展開は 102.9 秒まで伸び、そのあと延長 102.9〜121.75 秒)。
+    public void AndalusiaHasTheSelectedSectionsAndTheExtension()
     {
         var t = StagePerformanceTimeline.Load("Andalusia");
-        Assert.AreEqual(2, t.sections.Length);
-        var starts = new[] { 52.370, 86.358 };
-        var ends = new[] { 75.260, 100.578 };
-        var levels = new[] { .85, 1.0 };
-        var labels = new[] { "主部", "最終展開" };
+        Assert.AreEqual(3, t.sections.Length);
+        var starts = new[] { 52.370, 86.358, 102.9 };
+        var ends = new[] { 75.260, 102.9, 121.75 };
+        var levels = new[] { .85, 1.0, 1.0 };
+        var labels = new[] { "主部", "最終展開", "延長" };
+        var fadeIns = new[] { .8, .8, .6 };
+        var fadeOuts = new[] { 1.4, 1.4, .8 };
         var saved = JsonUtility.FromJson<Labels>(File.ReadAllText(Path.Combine(
             Application.streamingAssetsPath, "Songs", "Andalusia", "stage.json")));
-        for (int i = 0; i < 2; i++)
+        for (int i = 0; i < 3; i++)
         {
             var s = t.sections[i];
             Assert.AreEqual(labels[i], saved.sections[i].label);
             Assert.AreEqual(starts[i], s.startSeconds, .00001);
             Assert.AreEqual(ends[i], s.endSeconds, .00001);
             Assert.AreEqual(levels[i], s.intensity, .00001);
-            Assert.AreEqual(.8, s.fadeInSeconds, .00001);
-            Assert.AreEqual(1.4, s.fadeOutSeconds, .00001);
+            Assert.AreEqual(fadeIns[i], s.fadeInSeconds, .00001);
+            Assert.AreEqual(fadeOuts[i], s.fadeOutSeconds, .00001);
             Assert.AreEqual(levels[i], t.Evaluate((starts[i] + ends[i]) / 2), .00001);
         }
         Assert.AreEqual(0, t.Evaluate(80));
-        Assert.AreEqual(0, t.Evaluate(103));
+        Assert.AreEqual(0, t.Evaluate(123));
     }
 
     [TestCase("Phobia PARTⅠ", 50925.0909, 54561.4545)]

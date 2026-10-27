@@ -1789,6 +1789,312 @@
       "phaseErrorMs": 4.4355,
       "cell": null,
       "handRepair": false
+    },
+    {
+      "index": 105,
+      "timesMs": [
+        103005.7803
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "extension-2026-10-27",
+      "sourceIndex": null,
+      "sourceLong": null,
+      "added": true,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 106,
+      "timesMs": [
+        103699.422
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "extension-2026-10-27",
+      "sourceIndex": null,
+      "sourceLong": null,
+      "added": true,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 107,
+      "timesMs": [
+        104393.0636
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "extension-2026-10-27",
+      "sourceIndex": null,
+      "sourceLong": null,
+      "added": true,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 108,
+      "timesMs": [
+        105433.526
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "extension-2026-10-27",
+      "sourceIndex": null,
+      "sourceLong": null,
+      "added": true,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 109,
+      "timesMs": [
+        106473.9884
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "extension-2026-10-27",
+      "sourceIndex": null,
+      "sourceLong": null,
+      "added": true,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 110,
+      "timesMs": [
+        109595.3757
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "extension-2026-10-27",
+      "sourceIndex": null,
+      "sourceLong": null,
+      "added": true,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 111,
+      "timesMs": [
+        110289.0173
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "extension-2026-10-27",
+      "sourceIndex": null,
+      "sourceLong": null,
+      "added": true,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 112,
+      "timesMs": [
+        111329.4798
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "extension-2026-10-27",
+      "sourceIndex": null,
+      "sourceLong": null,
+      "added": true,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 113,
+      "timesMs": [
+        112369.9422
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "extension-2026-10-27",
+      "sourceIndex": null,
+      "sourceLong": null,
+      "added": true,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 114,
+      "timesMs": [
+        113063.5838
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "extension-2026-10-27",
+      "sourceIndex": null,
+      "sourceLong": null,
+      "added": true,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 115,
+      "timesMs": [
+        115491.3295
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "extension-2026-10-27",
+      "sourceIndex": null,
+      "sourceLong": null,
+      "added": true,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 116,
+      "timesMs": [
+        116531.7919
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "extension-2026-10-27",
+      "sourceIndex": null,
+      "sourceLong": null,
+      "added": true,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 117,
+      "timesMs": [
+        117572.2543
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "extension-2026-10-27",
+      "sourceIndex": null,
+      "sourceLong": null,
+      "added": true,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 118,
+      "timesMs": [
+        118612.7168
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "extension-2026-10-27",
+      "sourceIndex": null,
+      "sourceLong": null,
+      "added": true,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 119,
+      "timesMs": [
+        119306.3584
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "extension-2026-10-27",
+      "sourceIndex": null,
+      "sourceLong": null,
+      "added": true,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 120,
+      "timesMs": [
+        120000.0
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "extension-2026-10-27",
+      "sourceIndex": null,
+      "sourceLong": null,
+      "added": true,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 121,
+      "timesMs": [
+        121387.2832
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "blue",
+      "source": "extension-2026-10-27",
+      "sourceIndex": null,
+      "sourceLong": null,
+      "added": true,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
+    },
+    {
+      "index": 122,
+      "timesMs": [
+        121387.2832
+      ],
+      "directions": [
+        "down"
+      ],
+      "hand": "red",
+      "source": "extension-2026-10-27",
+      "sourceIndex": null,
+      "sourceLong": null,
+      "added": true,
+      "phaseErrorMs": 0.0,
+      "cell": null,
+      "handRepair": false
     }
   ]
 }

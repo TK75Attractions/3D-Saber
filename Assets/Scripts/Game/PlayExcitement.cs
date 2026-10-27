@@ -144,6 +144,10 @@ public sealed partial class PlayExcitement : MonoBehaviour
         if (!Advancing || DisplaySettings.ReducedEffects || !Finite(alpha) || !Finite(seconds)
             || alpha <= 0 || seconds <= 0 || flashes.Count >= 32
             || largeLight == null || !largeLight.Available || !TryGateRect(out _)) return false;
+        // Y(闇と灯り)の暗い区間では暗さの分だけ弱める。暗幕の穴(剣のまわり)だけが光って見えるのを防ぐ。
+        float dark = owner.DarkMode != null ? owner.DarkMode.Level : 0f;
+        alpha *= 1f - DarkRules.Level(dark);
+        if (alpha < .02f) return false;
         if (!flashBudget.TryTake(Time.realtimeSinceStartupAsDouble)) return false;
         flashes.Add(new ScreenPulse { kind = kind, color = FlashColor(tint), alpha = Mathf.Clamp01(alpha), seconds = seconds });
         DrawScreenFlashes();

@@ -22,6 +22,8 @@ public class TwoTwentyThreeDarkPlayTests
         sessionValues.Clear();
         foreach (var field in typeof(GameSession).GetFields(BindingFlags.Public | BindingFlags.Static))
             if (!field.IsLiteral && !field.IsInitOnly) sessionValues[field] = field.GetValue(null);
+        // 後始末でタイトルへ入る(ResetPlayerSettings)。本物の判定のずらし・速度は消さない。
+        GameSession.SetPlayerSettingsForTest(true);
     }
 
     [UnityTearDown]
@@ -36,6 +38,7 @@ public class TwoTwentyThreeDarkPlayTests
         if (SceneManager.GetActiveScene().name == "Game")
             yield return SceneManager.LoadSceneAsync("Title", LoadSceneMode.Single);
         foreach (var pair in sessionValues) pair.Key.SetValue(null, pair.Value);
+        GameSession.SetPlayerSettingsForTest(false);
         manager = null;
     }
 
@@ -88,6 +91,17 @@ public class TwoTwentyThreeDarkPlayTests
         Assert.IsFalse(target.IsMissed);
         Assert.AreEqual(1, mode.Level, 1e-6);
         Assert.AreEqual(DarkRules.NoteMinimum, target.Brightness, 1e-6);
+        // 2026-10-27 暗幕: 画面は黒く覆い、ノーツと剣だけを上に描く(遠いノーツは自分の明るさで黒い)。
+        Assert.NotNull(mode.Veil, "暗幕を作る");
+        Assert.IsTrue(mode.Veil.Visible);
+        Assert.AreEqual(DarkRules.VeilDarkness(1), mode.Veil.Darkness, 1e-6);
+        Assert.AreEqual(MemoryVeilLayers.AboveNoteSortingOrder, target.BodyRenderer.sortingOrder, "ノーツは暗幕の上");
+        var bridges = Object.FindObjectsByType<SaberInputBridge>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        Assert.IsNotEmpty(bridges);
+        Assert.IsTrue(bridges.All(b => b.DrawAboveMemoryVeil), "剣は暗幕の上");
+        var feedback = Object.FindFirstObjectByType<GameplayFeedbackPresenter>();
+        Assert.NotNull(feedback);
+        Assert.AreEqual(DarkRules.HudBrightness(1), feedback.GetComponent<CanvasGroup>().alpha, 1e-6, "判定の文字も HUD と同じだけ暗い");
         var body = target.BodyRenderer.sharedMaterial;
         var frame = target.TimingCue.GhostRoot.GetComponentInChildren<MeshRenderer>().sharedMaterial;
         Color darkBody = body.GetColor("_BaseColor");
@@ -121,7 +135,7 @@ public class TwoTwentyThreeDarkPlayTests
         Assert.AreEqual(DarkRules.StageMinimum, manager.barLineSpawner.DarkBrightness, 1e-6);
         var hud = Object.FindFirstObjectByType<GameHUDSkin>();
         Assert.NotNull(hud);
-        Assert.AreEqual(DarkRules.HudMinimum, hud.GetComponent<CanvasGroup>().alpha, 1e-6);
+        Assert.AreEqual(DarkRules.HudBrightness(1), hud.GetComponent<CanvasGroup>().alpha, 1e-6);
 
         // リセットの通知で停止し、次の通常譜面へ倍率・コールバックを持ち越さない。
         var plain = new ChartData { bpm = 90 };
@@ -131,6 +145,9 @@ public class TwoTwentyThreeDarkPlayTests
         Assert.AreEqual(1, floor.DarkBrightness, 1e-6);
         Assert.AreEqual(1, manager.barLineSpawner.DarkBrightness, 1e-6);
         Assert.AreEqual(1, hud.GetComponent<CanvasGroup>().alpha, 1e-6);
+        Assert.IsNull(mode.Veil, "終わったら暗幕を片付ける");
+        Assert.IsTrue(bridges.All(b => b == null || !b.DrawAboveMemoryVeil), "剣の並び順を戻す");
+        Assert.AreEqual(1, feedback.GetComponent<CanvasGroup>().alpha, 1e-6);
         spawner.Tick(2 + spawner.TotalOffsetSeconds - .18);
         Assert.IsTrue(spawner.LiveNotes.All(n => n.Brightness == 1f && n.GetComponent<NoteVisuals>().Brightness == 1f));
     }

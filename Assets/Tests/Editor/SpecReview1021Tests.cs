@@ -205,7 +205,7 @@ public class SpecReview1021Tests
     }
 
     [TestCase("2_23_AM", 0, 194.45)]
-    [TestCase("Andalusia", 0, 105.15)]
+    [TestCase("Andalusia", 0, 122.8)]
     [TestCase("BenkyouRemaster", 0, 137.55)]
     [TestCase("Epilogue", 0, 164.45)]
     [TestCase("Phobia PARTⅠ", 0, 108.85)]

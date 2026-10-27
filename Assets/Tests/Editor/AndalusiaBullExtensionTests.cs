@@ -173,13 +173,18 @@ public partial class AndalusiaBullChartTests
     {
         string folder = Path.Combine(Application.streamingAssetsPath, "Songs", "Andalusia");
         var stage = StagePerformanceTimeline.Load("Andalusia", "T");
-        Assert.AreEqual("_t", SongLoudness.VariantSuffix(folder, "T"));
+        // 2026-10-27 ユーザー「アンダルシアの表譜面の音源を、裏と同じにして(つまり裏の音源のみになる)」:
+        // 長い音源は audio.ogg だけになり、T も表の難易度も同じ音源・同じ stage.json を使う。
+        Assert.AreEqual("", SongLoudness.VariantSuffix(folder, "T"));
         Assert.AreEqual("", SongLoudness.VariantSuffix(folder, "Hard"));
+        Assert.IsFalse(File.Exists(Path.Combine(folder, "audio_t.ogg")));
+        Assert.IsFalse(File.Exists(Path.Combine(folder, "stage_t.json")));
         using (var sha = SHA256.Create())
-        using (var stream = File.OpenRead(Path.Combine(folder, "audio_t.ogg")))
+        using (var stream = File.OpenRead(Path.Combine(folder, "audio.ogg")))
             Assert.AreEqual(stage.audioSha256.ToLowerInvariant(), Hex(sha.ComputeHash(stream)));
         Assert.IsTrue(SongLoudness.SourceMatches(folder, stage.audioSha256, "T"));
-        Assert.IsFalse(SongLoudness.SourceMatches(folder, stage.audioSha256, "Hard"));
+        Assert.IsTrue(SongLoudness.SourceMatches(folder, stage.audioSha256, "Hard"));
+        Assert.AreEqual(stage.musicEndSeconds, StagePerformanceTimeline.Load("Andalusia", "Hard").musicEndSeconds, 1e-9);
         var range = stage.ResolvePlayRange(130.4, true);
         Assert.AreEqual(122.8, range.End, 1e-6);
         var chart = Read("t", true);

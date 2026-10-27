@@ -27,13 +27,74 @@ public class DarkRulesTests
         var far = Blade(30, 30);
         float At(float y) => DarkRules.Brightness(1, SaberHand.Right, new Vector2(4, y), blade, far);
         Assert.AreEqual(1, At(DarkRules.FullRadius), 1e-6);
-        Assert.AreEqual((1 + DarkRules.NoteMinimum) / 2,
+        // 暗さは見た目の割合。中間の外れ具合 0.5 は見た目 50% → ノーツは線形で 0.5 の3乗。
+        Assert.AreEqual(DarkRules.Linear(.5f, DarkRules.NoteGamma),
             At((DarkRules.FullRadius + DarkRules.FadeRadius) / 2), 1e-5);
         Assert.AreEqual(DarkRules.NoteMinimum, At(DarkRules.FadeRadius), 1e-6);
         Assert.AreEqual(DarkRules.NoteMinimum, At(100), 1e-6);
         Assert.AreEqual(At(DarkRules.FullRadius - .0001f), At(DarkRules.FullRadius + .0001f), 1e-5);
         Assert.AreEqual(1, DarkRules.Brightness(0, SaberHand.Right, Vector2.zero, far, far), 1e-6);
-        Assert.AreEqual(.575f, DarkRules.Brightness(.5f, SaberHand.Right, Vector2.zero, far, far), 1e-6);
+        Assert.AreEqual(.125f, DarkRules.Brightness(.5f, SaberHand.Right, Vector2.zero, far, far), 1e-6);
+        // 下限は0にしない(着地の枠が比で掛け直す)が、強い発光(本体の6倍)を掛けても見た目5%未満。
+        Assert.Greater(DarkRules.NoteMinimum, 0f);
+        Assert.Less(DarkRules.NoteMinimum * 6f, DarkRules.Linear(.05f, DarkRules.PerceptualGamma));
+    }
+
+    [Test]
+    public void DarknessIsAPerceivedFractionNotALinearOne()
+    {
+        // 2026-10-27「本来暗くなるところが…明るすぎて普通に見えてる」: 旧来の線形 14% は見た目で約4割だった。
+        Assert.Greater(Mathf.Pow(DarkRules.StageBrightness(1), 1f / DarkRules.PerceptualGamma), .4f);
+        Assert.AreEqual(0, DarkRules.VeilDarkness(0), 1e-6);
+        Assert.AreEqual(1, DarkRules.VeilDarkness(1), 1e-6);
+        Assert.Greater(DarkRules.VeilDarkness(.96f), .999f, "1回目のサビ(0.96)の外側は線形で 0.1% 未満");
+        float previous = -1f;
+        for (int i = 0; i <= 20; i++)
+        {
+            float level = i / 20f, darkness = DarkRules.VeilDarkness(level);
+            Assert.Greater(darkness, previous);
+            Assert.AreEqual(1f - Mathf.Pow(1f - level, DarkRules.PerceptualGamma), darkness, 1e-5);
+            previous = darkness;
+        }
+        Assert.AreEqual(1, DarkRules.HudBrightness(0), 1e-6);
+        Assert.AreEqual(Mathf.Pow(DarkRules.HudMinimum, DarkRules.PerceptualGamma), DarkRules.HudBrightness(1), 1e-6);
+        Assert.Less(DarkRules.HudBrightness(1), .01f, "HUD も最暗では見た目 10%");
+        Assert.LessOrEqual(DarkRules.Brightness(.96f, SaberHand.Right, new Vector2(4, 4),
+            Blade(-4, -4), Blade(-4, -4)), DarkRules.NoteMinimum + 1e-6f);
+    }
+
+    [Test]
+    public void TheLightNoLongerCoversTheWholeField()
+    {
+        // Y のノーツは横 ±2.5・縦 -0.375〜0.75。旧 1.8/2.65 では、休めの位置(x=±1.25)に立てた左右の剣だけで全部が明るかった。
+        var right = new BladeSample(new Vector2(1.25f, -.6f), new Vector2(1.25f, .6f));
+        var far = Blade(30, 30);
+        Assert.AreEqual(1, DarkRules.Brightness(1, SaberHand.Right, new Vector2(1.25f, 0), right, far), 1e-6);
+        // 右手の光は、左半分のいちばん内側の列(x=-0.9)まで届かない。
+        Assert.Less(DarkRules.FadeRadius, 1.25f + .9f);
+        Assert.AreEqual(DarkRules.NoteMinimum,
+            DarkRules.Brightness(1, SaberHand.Any, new Vector2(-.9f, 0), right, far), 1e-6);
+        // 同じ側でも外側の列(x=2.5)はほとんど暗い。
+        Assert.Less(DarkRules.Brightness(1, SaberHand.Right, new Vector2(2.5f, 0), right, far), .001f);
+        Assert.Less(DarkRules.FullRadius, DarkRules.FadeRadius);
+    }
+
+    [Test]
+    public void VeilOpensOnlyAroundTheBladesThatAreAvailable()
+    {
+        var red = new BladeSample(new Vector2(1, -.5f), new Vector2(1, .5f));
+        var blue = new BladeSample(new Vector2(-1, -.5f), new Vector2(-1, .5f));
+        Assert.AreEqual(0, DarkRules.VeilAlpha(1, new Vector2(1, 0), red, blue), 1e-6);
+        Assert.AreEqual(0, DarkRules.VeilAlpha(1, new Vector2(1 + DarkRules.FullRadius, 0), red, blue), 1e-6);
+        Assert.AreEqual(.5f, DarkRules.VeilAlpha(1,
+            new Vector2(1 + (DarkRules.FullRadius + DarkRules.FadeRadius) / 2, 0), red, blue), 1e-5);
+        Assert.AreEqual(1, DarkRules.VeilAlpha(1, new Vector2(1 + DarkRules.FadeRadius, 0), red, blue), 1e-6);
+        Assert.AreEqual(.8f, DarkRules.VeilAlpha(.8f, new Vector2(0, 5), red, blue), 1e-6);
+        // 見失った剣のまわりは開けない。両方なければ全面が同じ濃さ(局所の明滅を作らない)。
+        Assert.AreEqual(1, DarkRules.VeilAlpha(1, new Vector2(1, 0), default, blue), 1e-6);
+        Assert.AreEqual(0, DarkRules.VeilAlpha(1, new Vector2(-1, 0), default, blue), 1e-6);
+        Assert.AreEqual(.7f, DarkRules.VeilAlpha(.7f, Vector2.zero, default, default), 1e-6);
+        Assert.AreEqual(1, DarkRules.VeilAlpha(1, new Vector2(float.NaN, 0), red, blue), 1e-6);
     }
 
     [Test]
@@ -243,6 +304,24 @@ public class DarkRefreshTests
     }
 
     [Test]
+    public void NotesAreDrawnAboveTheVeilUntilTheEnd()
+    {
+        // 暗幕(DarkVeil)はノーツより下。遠いノーツは自分の明るさで黒くなり、近いノーツは暗幕に隠れない。
+        spawner.Tick(TimeAt);
+        var note = spawner.LiveNotes.Last();
+        var parts = note.GetComponentsInChildren<Renderer>(true);
+        Assert.IsNotEmpty(parts);
+        Assert.IsTrue(parts.All(r => r.sortingOrder == MemoryVeilLayers.AboveNoteSortingOrder));
+        Renderer ghost = note.TimingCue != null && note.TimingCue.GhostRoot != null
+            ? note.TimingCue.GhostRoot.GetComponentInChildren<Renderer>(true) : null;
+        if (ghost != null) Assert.AreEqual(MemoryVeilLayers.AboveNoteSortingOrder, ghost.sortingOrder, "着地の枠も上");
+        mode.EndPlay();
+        Assert.IsTrue(parts.All(r => r.sortingOrder == 0), "終わったら元の並び順へ戻す");
+        if (ghost != null) Assert.AreEqual(0, ghost.sortingOrder);
+        Assert.IsNull(mode.Veil);
+    }
+
+    [Test]
     public void PlayingRefreshesAfterMovementAndPauseOnlyChangesAppearance()
     {
         spawner.Tick(TimeAt);
@@ -431,5 +510,76 @@ public class TwoTwentyThreeDarkChartTests
         Assert.IsTrue(state.Finish());
         Assert.AreSame(secret, state.Current);
         Assert.IsTrue(state.Unlocked);
+    }
+}
+
+// 2026-10-27 Y の暗幕。画面を黒く覆い、剣のまわりだけ穴を開ける(DarkRules.VeilAlpha と同じ式のシェーダー)。
+public class DarkVeilTests
+{
+    GameObject cameraObject;
+    Camera view;
+
+    [SetUp]
+    public void SetUp()
+    {
+        cameraObject = new GameObject("DarkVeilTestCamera");
+        view = cameraObject.AddComponent<Camera>();
+        view.transform.position = new Vector3(0, 0, -10);
+    }
+
+    [TearDown]
+    public void TearDown()
+    {
+        if (cameraObject != null) Object.DestroyImmediate(cameraObject);
+    }
+
+    [Test]
+    public void ShaderHasTheVeilProperties()
+    {
+        var shader = Resources.Load<Shader>("Effects/DarkVeil");
+        Assert.NotNull(shader);
+        var material = new Material(shader);
+        try
+        {
+            foreach (string name in new[] { "_Darkness", "_RedSegment", "_BlueSegment", "_BladeMask", "_Radii", "_JudgeZ" })
+                Assert.IsTrue(material.HasProperty(name), name);
+            Assert.AreEqual(0, material.GetFloat("_Darkness"), 1e-6, "既定は透明");
+        }
+        finally { Object.DestroyImmediate(material); }
+    }
+
+    [Test]
+    public void VeilSitsAboveTheWorldAndBelowNotesAndBlades()
+    {
+        var veil = DarkVeil.Create(view, 0f);
+        Assert.NotNull(veil, "暗幕のshaderが使える");
+        try
+        {
+            Assert.AreEqual(MemoryVeilLayers.NoiseSortingOrder, veil.Renderer.sortingOrder);
+            Assert.Less(veil.Renderer.sortingOrder, MemoryVeilLayers.AboveNoteSortingOrder);
+            Assert.Less(MemoryVeilLayers.AboveNoteSortingOrder, MemoryVeilLayers.AboveSortingOrder);
+            Assert.AreSame(view.transform, veil.Renderer.transform.parent);
+            Assert.IsFalse(veil.Visible, "暗さ0では描かない");
+
+            var red = new BladeSample(new Vector2(1, -.5f), new Vector2(1, .5f));
+            veil.Show(1f, red, default);
+            Assert.IsTrue(veil.Visible);
+            var material = veil.Renderer.sharedMaterial;
+            Assert.AreEqual(1, material.GetFloat("_Darkness"), 1e-6);
+            Assert.AreEqual(new Vector4(1, 0, 0, 0), material.GetVector("_BladeMask"), "見失った青の側は穴を開けない");
+            Assert.AreEqual(new Vector4(1, -.5f, 1, .5f), material.GetVector("_RedSegment"));
+            Assert.AreEqual(new Vector4(DarkRules.FullRadius, DarkRules.FadeRadius, 0, 0), material.GetVector("_Radii"));
+            // 板はカメラの前にあり、画角より広い(撮影で縦横比が変わっても端が欠けない)。
+            var bounds = veil.Renderer.GetComponent<MeshFilter>().sharedMesh.bounds;
+            Assert.Greater(bounds.center.z, view.nearClipPlane);
+            float halfHeight = bounds.center.z * Mathf.Tan(view.fieldOfView * .5f * Mathf.Deg2Rad);
+            Assert.Greater(bounds.extents.y, halfHeight * 1.5f);
+            Assert.Greater(bounds.extents.x, halfHeight * view.aspect * 1.5f);
+
+            veil.Show(0f, red, default);
+            Assert.IsFalse(veil.Visible);
+        }
+        finally { veil.Dispose(); }
+        Assert.AreEqual(0, view.transform.childCount, "片付けで板を残さない");
     }
 }

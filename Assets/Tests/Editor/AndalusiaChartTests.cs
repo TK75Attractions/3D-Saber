@@ -36,7 +36,8 @@ public class AndalusiaChartTests
         foreach (var note in chart.notes)
         {
             Assert.IsFalse(float.IsNaN(note.time) || float.IsInfinity(note.time));
-            Assert.That(note.time, Is.InRange(0f, 112220.6f));
+            // 2026-10-27 音源は裏 T の長い版(122.8秒で鳴り終わる)だけになった。延長の拍350(121.387秒)まで置く。
+            Assert.That(note.time, Is.InRange(0f, 122800f));
             Assert.GreaterOrEqual(note.time, previous);
             if (note.IsLong)
             {
@@ -182,8 +183,8 @@ public class AndalusiaChartTests
     {
         var stage = StagePerformanceTimeline.Load(SongId);
         Assert.IsFalse(stage.hideBarLines);
-        Assert.AreEqual(2, stage.sections.Length, "2026-10-23に採用した2区間");
-        var window = SongSelectChartPreview.ResolveWindow(SongId, stage, 112.22059);
+        Assert.AreEqual(3, stage.sections.Length, "2026-10-23に採用した2区間と、10/27 に音源を統一してからの延長");
+        var window = SongSelectChartPreview.ResolveWindow(SongId, stage, 130.40181);
         Assert.AreEqual(53.44, window.Start, .001);
         Assert.AreEqual(63.815197, window.Start + window.Duration, .001);
         foreach (string difficulty in new[] { "easy", "normal", "hard" })

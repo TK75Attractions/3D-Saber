@@ -4,7 +4,7 @@ using NUnit.Framework;
 public class SongPreviewWindowTests
 {
     [TestCase("2_23_AM",129.333,196.075,140.026203)]
-    [TestCase("Andalusia",53.44,112.22059,63.815197)]
+    [TestCase("Andalusia",53.44,130.40181,63.815197)]
     [TestCase("Aobasou",109.714286,138.857052,120.000012)]
     [TestCase("BenkyouRemaster",6.024,138.762449,16.524000)]
     [TestCase("ElDorado",100.203,144.065306,110.400200)]

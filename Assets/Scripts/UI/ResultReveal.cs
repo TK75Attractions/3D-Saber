@@ -167,6 +167,8 @@ public class ResultReveal : MonoBehaviour
 
     private static bool SkipRequested()
     {
+        // 印の一言を打っている間(ChartMarkCommentPanel)は、その文字で演出を飛ばさない。
+        if (ChartMarkCommentPanel.IsOpen) return false;
         // 投影の切替(F4)など運営のキーでは飛ばさない。
         if (PhoneSaberOperatorKeys.VisitorKeyPressedThisFrame(Keyboard.current)) return true;
         if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame) return true;

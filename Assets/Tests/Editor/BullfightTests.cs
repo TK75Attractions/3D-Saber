@@ -750,8 +750,9 @@ public partial class AndalusiaBullChartTests
             Mathf.CeilToInt(hard.notes.Count(n => n.time >= SwitchMs && n.time < LateMs) * .7f));
         Assert.GreaterOrEqual(bull.notes.Count(n => n.time < LateMs),
             Mathf.CeilToInt(normal.notes.Count(n => n.time < LateMs) * .8f));
+        // 表譜面にも延長(拍296〜)ができた(10/27、音源の統一)。T の延長は別に作ったので、比べるのは拍296より前だけ。
         Assert.GreaterOrEqual(bull.notes.Count(n => n.time >= LateMs),
-            Mathf.CeilToInt(hard.notes.Count(n => n.time >= LateMs) * .7f));
+            Mathf.CeilToInt(hard.notes.Count(n => n.time >= LateMs && n.time < ExtensionMs) * .7f));
         foreach (var a in bull.notes.Where(n => n.time < SwitchMs))
             Assert.IsFalse(bull.notes.Any(b => b.time >= SwitchMs && b.time - a.time <= 120
                 && (a.color == b.color || a.color == "gold" || b.color == "gold")), "境目の同色が120ms以内");

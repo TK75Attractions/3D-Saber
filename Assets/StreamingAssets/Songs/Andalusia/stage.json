@@ -7,9 +7,9 @@
   "composer": "???",
   "timeOrigin": "audio-file-start",
   "previewStartSeconds": 53.44,
-  "musicEndSeconds": 105.15,
+  "musicEndSeconds": 122.8,
   "hideBarLines": false,
-  "audioSha256": "b68e6874dfca9f7e48b5449b404b002a8712a5009b909a7e97b8b85d92d24cb0",
+  "audioSha256": "d3eacf90ec68949bbbbdc429cbe9a6efe0a972bb359d93c43d2297e96595b570",
   "sections": [
     {
       "label": "主部",
@@ -22,9 +22,17 @@
     {
       "label": "最終展開",
       "startSeconds": 86.358,
-      "endSeconds": 100.578,
+      "endSeconds": 102.9,
       "fadeInSeconds": 0.8,
       "fadeOutSeconds": 1.4,
+      "intensity": 1.0
+    },
+    {
+      "label": "延長",
+      "startSeconds": 102.9,
+      "endSeconds": 121.75,
+      "fadeInSeconds": 0.6,
+      "fadeOutSeconds": 0.8,
       "intensity": 1.0
     }
   ]
