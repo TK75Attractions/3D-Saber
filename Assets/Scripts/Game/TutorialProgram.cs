@@ -17,6 +17,7 @@ public sealed class TutorialPatternNote
     public string direction = "none";
     public int count = 1;
     public float lengthMs;
+    public string kind;           // 「練習してみよう」で数える種類(TutorialProgram.AllKinds)。ほかの段では空
 
     public NoteData ToNote(double patternStartSeconds) => new NoteData
     {
@@ -36,6 +37,7 @@ public sealed class TutorialStep
     public bool NeedDirection;                        // 向きが合った切りだけを数える
     public CutDirection[] RequiredDirections = Array.Empty<CutDirection>();
     public bool Simultaneous;
+    public string[] Kinds = Array.Empty<string>();    // 種類ごとに1回ずつ数える段(Goal は種類の数)
     public double PatternLengthSeconds => Pattern.Length == 0 ? 0 : Pattern[Pattern.Length - 1].dt;
 }
 
@@ -57,8 +59,15 @@ public static class TutorialProgram
     public const float LongPracticeTimeoutSeconds = 30f;
     public const float RightX = 1.65f, LeftX = -1.65f, BaseY = .5f, LowY = -.4f;
 
+    // 最後の「練習してみよう」(2026-10-28 ユーザー「練習してみようで今までの練習したやつが全部出てくるチュートリアルも入れて」)。
+    // 赤・青・金・両手・上矢印・下矢印・ロングを 12 秒の型に1つずつ並べ、種類ごとに1回 PERFECT を取れば合格。両手は左右とも PERFECT の組で1回。
+    public const string AllStepId = "all";
+    public const string SimulKind = "simul";
+    public static readonly string[] AllKinds = { "red", "blue", "gold", SimulKind, "up", "down", "long" };
+    public const float AllPracticeTimeoutSeconds = 30f;   // 型2周ぶん。できなくても列を待たせない
+
     // 難易度を選ぶ前に挟まるので、Easy / Normal に共通の型。左右・斜めの矢印は曲の中で覚える。
-    public static readonly string[] CommonFlow = { "hands", "tapRed", "tapBlue", "tapMix", "gold", "simul", "arrowEasy", "long", "ready" };
+    public static readonly string[] CommonFlow = { "hands", "tapRed", "tapBlue", "tapMix", "gold", "simul", "arrowEasy", "long", AllStepId, "ready" };
 
     // 振る範囲を合わせる段(2026-10-24 ユーザー指示「チュートリアルの最初に、剣をふる範囲の設定」)。
     // 台の準備(F8)の「範囲を覚える」と同じ指示(learn-area=10)をスマホへ送る。限界まででなく、振りやすい範囲で振ってもらう
@@ -92,6 +101,7 @@ public static class TutorialProgram
     static TutorialPatternNote Tap(float x, float y, string color, float dt) => new TutorialPatternNote { dt = dt, x = x, y = y, color = color, type = "tap" };
     static TutorialPatternNote Arrow(float x, float y, string color, string direction, float dt) => new TutorialPatternNote { dt = dt, x = x, y = y, color = color, type = "direction", direction = direction };
     static TutorialPatternNote Long(float x, float y, string color, int count, float lengthMs, float dt) => new TutorialPatternNote { dt = dt, x = x, y = y, color = color, type = "long", count = count, lengthMs = lengthMs };
+    static TutorialPatternNote Kind(string kind, TutorialPatternNote note) { note.kind = kind; return note; }
 
     // 説明や成功の時刻が拍の途中でも、次の練習は音源の小節頭から始める。
     // 引数・戻り値は判定調整を除いた譜面時刻。調整分は NoteSpawner が一度だけ加える。
@@ -122,6 +132,15 @@ public static class TutorialProgram
                 Pattern = new[] { Tap(0f, BaseY, "gold", 0f) }, PeriodSeconds = LoopSeconds, Goal = 1 };
             case "simul": return new TutorialStep { Id = id, Kind = TutorialStepKind.Practice, Title = "赤と青がいっしょに来たら、両手で同時に", Sub = "青は左手、赤は右手",
                 Pattern = new[] { Tap(LeftX, BaseY, "blue", 0f), Tap(RightX, BaseY, "red", 0f) }, PeriodSeconds = LoopSeconds, Goal = 2, Simultaneous = true };
+            case AllStepId: return new TutorialStep { Id = id, Kind = TutorialStepKind.Practice, Title = "練習してみよう！ 今までのノーツが全部出てくるよ", Sub = "全部の種類を PERFECT で切ろう",
+                Pattern = new[]
+                {
+                    Kind("red", Tap(RightX, BaseY, "red", 0f)), Kind("blue", Tap(LeftX, BaseY, "blue", 1f)), Kind("gold", Tap(0f, BaseY, "gold", 2f)),
+                    Kind(SimulKind, Tap(LeftX, BaseY, "blue", 4f)), Kind(SimulKind, Tap(RightX, BaseY, "red", 4f)),
+                    Kind("up", Arrow(RightX, BaseY, "red", "up", 6f)), Kind("down", Arrow(LeftX, BaseY, "blue", "down", 7f)),
+                    Kind("long", Long(RightX, BaseY, "red", 3, 1000f, 9f)),
+                },
+                PeriodSeconds = 3 * LoopSeconds, Goal = AllKinds.Length, Kinds = AllKinds, TimeoutSeconds = AllPracticeTimeoutSeconds };
             case "ready": return new TutorialStep { Id = id, Kind = TutorialStepKind.Ready, Title = "準備OK!", Sub = "曲を選びに行こう", TimeoutSeconds = ReadyTimeoutSeconds };
         }
         return null;
@@ -139,19 +158,20 @@ public static class TutorialProgram
         return steps.ToArray();
     }
 
-    // 1 回の判定が「成功」に数えられるか。矢印の練習は向きが合った切りだけを数える
-    // (2026-10-22 から向きの合わない振りではそもそも切れないので、切れた矢印はいつも向きが合っている)。
-    // ロングは必要回数を切り切ったときだけ成功。割合による緩和はしない。
+    // 1 回の判定が「成功」(残り回数が減る)に数えられるか。PERFECT だけを数える
+    // (2026-10-28 ユーザー「残り回数が減る条件が切れたことじゃなくてperfectのときのみ」。時間で次へ進むのは今までどおり)。
+    // 矢印の練習は向きが合った切りだけを数える(2026-10-22 から向きの合わない振りではそもそも切れないので、切れた矢印はいつも向きが合っている)。
+    // ロングは必要回数を切り切ったときだけ成功(切り切ると PERFECT、残すと MISS になる)。割合による緩和はしない。
     public static bool CountsAsSuccess(TutorialStep step, JudgmentTier tier, bool correctDirection, int requiredCuts, int achievedCuts)
     {
-        if (step == null || step.Kind != TutorialStepKind.Practice) return false;
-        if (requiredCuts > 1)
-        {
-            return tier != JudgmentTier.Miss && achievedCuts >= requiredCuts;
-        }
-        if (tier == JudgmentTier.Miss) return false;
+        if (step == null || step.Kind != TutorialStepKind.Practice || tier != JudgmentTier.Perfect) return false;
+        if (requiredCuts > 1) return achievedCuts >= requiredCuts;
         return !step.NeedDirection || correctDirection;
     }
+
+    // 切れたが PERFECT でなかったときの一言(上の行に出す)。誤差は曲の時計で、負が早い。
+    public static string NotPerfectHint(double errorMs) => errorMs < 0
+        ? "少し早い！ もう少し引きつけて振ろう" : "少し遅い！ 少し早めに振り始めよう";
 
     internal static int RemainingDirections(TutorialStep step, ISet<CutDirection> completed)
     {
@@ -166,13 +186,15 @@ public static class TutorialProgram
         => step != null && step.Kind == TutorialStepKind.Practice && successes >= step.Goal
             && RemainingDirections(step, completed) == 0;
 
+    // 残りの表示。PERFECT だけが減らすので、それを書く(ロングは切り切れば PERFECT なので数だけ)。
     internal static string RemainingText(TutorialStep step, int successes, int directions, bool done)
     {
-        if (step == null || step.Kind != TutorialStepKind.Practice || step.Goal <= 1 || done) return "";
-        if (directions > 0) return "あと " + directions + " 方向";
+        if (step == null || step.Kind != TutorialStepKind.Practice || done) return "";
+        if (directions > 0) return "PERFECT であと " + directions + " 方向";
         int left = Mathf.Max(0, step.Goal - successes);
-        return step.Id == "long" ? "あと " + left + " 種類"
-            : step.Simultaneous ? "あと " + ((left + 1) / 2) + " 組" : "あと " + left + " 回";
+        if (step.Id == "long") return "あと " + left + " 種類";
+        return "PERFECT であと " + (step.Kinds.Length > 0 ? left + " 種類"
+            : step.Simultaneous ? ((left + 1) / 2) + " 組" : left + " 回");
     }
 
     public static string DirectionJapanese(CutDirection direction)

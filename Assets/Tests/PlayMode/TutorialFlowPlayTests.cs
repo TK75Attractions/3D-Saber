@@ -57,7 +57,7 @@ public class TutorialFlowPlayTests
         Assert.IsTrue(t.Overlay.HandsVisible, "持ち方の絵が出る");
         StringAssert.Contains("右手", t.Overlay.TitleText);
         Assert.AreEqual(0, m.noteSpawner.TotalNoteCount, "説明の間はノーツを出さない");
-        Assert.AreEqual(9, t.StepCount);
+        Assert.AreEqual(10, t.StepCount);
         double beforeLoop = m.songPlayer.SongTime;
         yield return new WaitForSecondsRealtime(4.1f);
         Assert.Greater(m.songPlayer.SongTime, beforeLoop + 4, "音源が一周しても譜面時計は戻らない");

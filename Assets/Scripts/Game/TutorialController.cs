@@ -65,6 +65,9 @@ public sealed class TutorialController : MonoBehaviour
     readonly TutorialPairProgress pairs = new TutorialPairProgress();
     readonly HashSet<int> completedLongCounts = new HashSet<int>();
     readonly HashSet<CutDirection> completedDirections = new HashSet<CutDirection>();
+    // 「練習してみよう」: 型の種類を届く時刻(ミリ秒)で引き、PERFECT を取った種類を覚える。
+    readonly Dictionary<long, string> kindByHit = new Dictionary<long, string>();
+    readonly HashSet<string> completedKinds = new HashSet<string>();
     bool timedOutPractice;
     TutorialRangeLearning range;
     SaberInputBridge[] bridges = System.Array.Empty<SaberInputBridge>();
@@ -224,10 +227,18 @@ public sealed class TutorialController : MonoBehaviour
         int guard = 0;
         while (nextPatternAt <= horizon && guard++ < 8)
         {
-            foreach (var p in step.Pattern) liveChart.notes.Add(p.ToNote(nextPatternAt));
+            foreach (var p in step.Pattern)
+            {
+                var note = p.ToNote(nextPatternAt);
+                liveChart.notes.Add(note);
+                // 出たノーツの HitTime は spawner.EffectiveTime と同じ値になる
+                if (!string.IsNullOrEmpty(p.kind)) kindByHit[HitKey(spawner.EffectiveTime(note))] = p.kind;
+            }
             nextPatternAt += System.Math.Max(.5, step.PeriodSeconds);
         }
     }
+
+    static long HitKey(double hitTime) => (long)System.Math.Round(hitTime * 1000.0);
 
     void BeginStep(int index, double now)
     {
@@ -236,6 +247,8 @@ public sealed class TutorialController : MonoBehaviour
         pairs.Clear();
         completedLongCounts.Clear();
         completedDirections.Clear();
+        kindByHit.Clear();
+        completedKinds.Clear();
         var step = Step;
         range = null; HasRangeCover = false; rangeCheered = false; AppliedRange = null;
         if (step.Kind == TutorialStepKind.Range && SendLearnArea != null)
@@ -370,7 +383,15 @@ public sealed class TutorialController : MonoBehaviour
         if (step == null || StepDone || IsFinished || !noteSteps.TryGetValue(note, out int owner) || owner != stepIndex) return;
         if (TutorialProgram.CountsAsSuccess(step, tier, note.LastCutCorrectDirection, note.RequiredCutCount, note.CutsAchieved))
         {
-            if (step.Id == "long")
+            if (step.Kinds.Length > 0)
+            {
+                // 練習してみよう: 種類ごとに1回。両手は左右とも PERFECT の組がそろったときに数える。
+                if (kindByHit.TryGetValue(HitKey(note.HitTime), out string kind)
+                    && (kind != TutorialProgram.SimulKind || pairs.Register(note.HitTime, note.RequiredHand)))
+                    completedKinds.Add(kind);
+                Successes = completedKinds.Count;
+            }
+            else if (step.Id == "long")
             {
                 // 同じ回数だけ繰り返しても通過させず、2・3・4 回をそれぞれ切り切る。
                 if (completedLongCounts.Add(note.RequiredCutCount)) Successes++;
@@ -384,6 +405,8 @@ public sealed class TutorialController : MonoBehaviour
             return;
         }
         if (note.RequiredCutCount > 1) SetHint("数字がなくなるまで、同じ場所を切ろう");
+        // 切れたが PERFECT でなかった(数えない)。早い・遅いを知らせる。
+        else if (tier != JudgmentTier.Miss && score != null && score.LastErrorValid) SetHint(TutorialProgram.NotPerfectHint(score.LastErrorMs));
     }
 
     void Missed(CuttableNote note)

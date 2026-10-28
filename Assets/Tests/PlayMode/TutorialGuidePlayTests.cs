@@ -104,10 +104,21 @@ public class TutorialGuidePlayTests
         Assert.True(tutorial.StepDone); Assert.AreEqual(0, tutorial.Successes);
         Assert.AreEqual("timeout", tutorial.Records[tutorial.Records.Count - 1].Reason);
         Assert.AreNotEqual("OK!", tutorial.BannerTitle);
-        // 終了表示の待ちだけを省き、Tick の次段処理で準備へ進む。
+        // 終了表示の待ちだけを省き、Tick の次段処理で「練習してみよう」へ進む(2026-10-28 から準備の前に入る)。
         typeof(TutorialController).GetField("stepEndAt", Private).SetValue(tutorial, now - .1);
         tutorial.Tick(.016f);
-        Assert.AreEqual(8, tutorial.StepIndex); Assert.AreEqual("ready", tutorial.Step.Id);
+        Assert.AreEqual(8, tutorial.StepIndex); Assert.AreEqual("all", tutorial.Step.Id);
+        Assert.False(tutorial.StepDone);
+        tutorial.Overlay.Tick(.016f);
+        StringAssert.Contains("練習してみよう", tutorial.Overlay.TitleText);
+        // 練習してみようも時間では次へ進み、準備へ。
+        typeof(TutorialController).GetMethod("BeginStep", Private).Invoke(tutorial,
+            new object[] { 8, now - TutorialProgram.AllPracticeTimeoutSeconds - .1 });
+        tutorial.Tick(.016f);
+        Assert.True(tutorial.StepDone); Assert.AreEqual("timeout", tutorial.Records[tutorial.Records.Count - 1].Reason);
+        typeof(TutorialController).GetField("stepEndAt", Private).SetValue(tutorial, now - .1);
+        tutorial.Tick(.016f);
+        Assert.AreEqual(9, tutorial.StepIndex); Assert.AreEqual("ready", tutorial.Step.Id);
         Assert.False(tutorial.StepDone);
         tutorial.Overlay.Tick(.016f);
         Assert.AreEqual("曲を選びに行こう", tutorial.Overlay.TitleText);

@@ -10,7 +10,8 @@ public class TutorialGuideTests
         var step = TutorialProgram.Get("long");
         for (int cut = 0; cut < count; cut++)
             Assert.False(TutorialProgram.CountsAsSuccess(step, JudgmentTier.Perfect, true, count, cut));
-        Assert.True(TutorialProgram.CountsAsSuccess(step, JudgmentTier.Good, true, count, count));
+        // 切り切ったロングは ScoreManager が PERFECT にする(残すと MISS)。
+        Assert.True(TutorialProgram.CountsAsSuccess(step, JudgmentTier.Perfect, true, count, count));
         Assert.False(TutorialProgram.CountsAsSuccess(step, JudgmentTier.Miss, true, count, count));
     }
 
