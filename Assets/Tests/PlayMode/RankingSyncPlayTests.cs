@@ -13,12 +13,23 @@ using UnityEngine.TestTools;
 public class RankingSyncPlayTests
 {
     const string Song = "__RankingSyncTest";
+    // 保存先はすべて専用のキー(本番の RankingSync.Log.v1・RankingSync.Pending.v1・機械 ID には触れない)。
     const string KeyA = "RankingSync.Log.v1.__RankingSyncPlayTestA";
     const string KeyB = "RankingSync.Log.v1.__RankingSyncPlayTestB";
+    const string PendingKeyA = "RankingSync.Pending.v1.__RankingSyncPlayTestA";
+    const string PendingKeyB = "RankingSync.Pending.v1.__RankingSyncPlayTestB";
     readonly List<RankingSync> created = new List<RankingSync>();
+    static readonly string[] ProductionKeys =
+        { RankingSyncLog.PreferenceKey, RankingSync.PendingPreferenceKey, RankingSync.MachinePreferenceKey, RankingSync.PeersPreferenceKey };
+    readonly Dictionary<string, string> production = new Dictionary<string, string>();
 
     [SetUp]
-    public void Setup() => ClearPrefs();
+    public void Setup()
+    {
+        ClearPrefs();
+        production.Clear();
+        foreach (string key in ProductionKeys) production[key] = PlayerPrefs.HasKey(key) ? PlayerPrefs.GetString(key) : null;
+    }
 
     [TearDown]
     public void Cleanup()
@@ -31,11 +42,13 @@ public class RankingSyncPlayTests
         }
         created.Clear();
         ClearPrefs();
+        foreach (var pair in production)
+            Assert.AreEqual(pair.Value, PlayerPrefs.HasKey(pair.Key) ? PlayerPrefs.GetString(pair.Key) : null, "本番のキーに触れない: " + pair.Key);
     }
 
     static void ClearPrefs()
     {
-        foreach (string key in new[] { KeyA, KeyB, DailyRankingStore.Key(Song, "Normal"), HighScoreStore.Key(Song, "Normal") })
+        foreach (string key in new[] { KeyA, KeyB, PendingKeyA, PendingKeyB, DailyRankingStore.Key(Song, "Normal"), HighScoreStore.Key(Song, "Normal") })
             PlayerPrefs.DeleteKey(key);
         PlayerPrefs.Save();
     }
@@ -45,7 +58,8 @@ public class RankingSyncPlayTests
         var sync = RankingSync.Create(new RankingSync.Settings
         {
             Port = port, Broadcast = false, LoopbackOnly = true, Peers = peers,
-            MachineId = "test-" + station + "-" + Guid.NewGuid().ToString("N"), Station = station, LogKey = logKey, ShowNotices = false,
+            MachineId = "test-" + station + "-" + Guid.NewGuid().ToString("N"), Station = station, LogKey = logKey,
+            PendingKey = logKey == KeyA ? PendingKeyA : PendingKeyB, ShowNotices = false,
         });
         created.Add(sync);
         return sync;

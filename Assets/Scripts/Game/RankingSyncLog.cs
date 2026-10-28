@@ -548,10 +548,12 @@ public sealed class RankingSyncLog
     };
 
     // 同じ表へ書く回をまとめるための鍵(曲 × 難易度。難易度は表と同じく小文字にそろえる)。
-    public static string ChartKey(RankingPlay play)
+    public static string ChartKey(RankingPlay play) => ChartKey(play.song, play.diff);
+
+    public static string ChartKey(string song, string difficulty)
     {
-        string difficulty = string.IsNullOrWhiteSpace(play.diff) ? "normal" : play.diff.Trim().ToLowerInvariant();
-        return play.song + "\n" + difficulty;
+        string diff = string.IsNullOrWhiteSpace(difficulty) ? "normal" : difficulty.Trim().ToLowerInvariant();
+        return song + "\n" + diff;
     }
 
     // ---- 送り先 ----

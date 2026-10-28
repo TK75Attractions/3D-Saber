@@ -93,6 +93,8 @@ public static class GameSession
     public static void RecordCompletedDailyRanking()
     {
         if (FinalDailyRanking != null || !ShouldRecordRun) return;
+        // 演奏中に届いて待っていたこの曲×難易度の記録を、順位を決める前に表へ足す(結果画面の順位が、届いていた記録を入れた表で決まる)。
+        RankingSync.ApplyWaitingFor(SelectedSongId, SelectedDifficulty);
         var now = System.DateTime.Now;
         FinalDailyRanking = DailyRankingStore.Record(SelectedSongId, SelectedDifficulty,
             AchievementRunId, FinalScore, now);

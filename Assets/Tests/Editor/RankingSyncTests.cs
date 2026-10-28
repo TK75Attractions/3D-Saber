@@ -22,6 +22,17 @@ public class RankingSyncTests
     static readonly DateTime PlayedAt = new DateTime(2026, 10, 28, 13, 0, 0);
     static readonly IPEndPoint From = new IPEndPoint(IPAddress.Parse("192.168.137.20"), RankingSync.DefaultPort);
     readonly List<RankingSync> created = new List<RankingSync>();
+    // 本番のキー(ログ・足し直し待ち・機械 ID・手で入れた相手)には触れないことを、どのテストでも確かめる。
+    static readonly string[] ProductionKeys =
+        { RankingSyncLog.PreferenceKey, RankingSync.PendingPreferenceKey, RankingSync.MachinePreferenceKey, RankingSync.PeersPreferenceKey };
+    readonly Dictionary<string, string> production = new Dictionary<string, string>();
+
+    [SetUp]
+    public void RememberProductionKeys()
+    {
+        production.Clear();
+        foreach (string key in ProductionKeys) production[key] = PlayerPrefs.HasKey(key) ? PlayerPrefs.GetString(key) : null;
+    }
 
     [TearDown]
     public void Cleanup()
@@ -42,6 +53,8 @@ public class RankingSyncTests
         PlayerPrefs.DeleteKey(LogKey);
         PlayerPrefs.DeleteKey(PendingKey);
         PlayerPrefs.Save();
+        foreach (var pair in production)
+            Assert.AreEqual(pair.Value, PlayerPrefs.HasKey(pair.Key) ? PlayerPrefs.GetString(pair.Key) : null, "本番のキーに触れない: " + pair.Key);
     }
 
     static string NewId() => Guid.NewGuid().ToString("N");
@@ -704,6 +717,84 @@ public class RankingSyncTests
         Assert.AreEqual(1, DailyTable(Song, "Normal").entries.Count, "通算の表に二重に足さない");
         Assert.IsFalse(PlayerPrefs.HasKey(PendingKey), "足せたら別のキーから消す");
         Assert.AreEqual(1, RankingSyncLog.Load(LogKey).Count);
+    }
+
+    // 終了のときも保存の順番を守る: ログを書けないまま終わっても、足せた回を足し直し待ちの別のキーから消さない。
+    [Test]
+    public void ShuttingDownWhileTheLogCannotBeWrittenKeepsTheWaitingCopy()
+    {
+        var earlier = Play(score: 64000, station: "B");
+        PlayerPrefs.SetString(PendingKey, RankingSyncLog.PlaysJson(new[] { earlier })); // 前回の足し直し待ち
+        var sync = Offline(NewId());
+        sync.FailLogWritesForTest = true;
+        double t0 = Time.realtimeSinceStartupAsDouble;
+        sync.Tick(t0); // 表は直っているので足せる(ログはメモリにだけ入り、書けない)
+        Assert.AreEqual(1, sync.Count);
+        Assert.AreEqual(earlier.id, HighScoreStore.Load(Song, "Normal").entries.Single().runId);
+        // 別の相手の回は表が壊れていて足せない(別のキーを書き直すきっかけになる)
+        PlayerPrefs.SetString(HighScoreStore.Key(JapaneseSong, "Normal"), "{ broken");
+        var waitingPlay = Play(score: 65000, song: JapaneseSong, station: "B");
+        Assert.AreEqual(0, sync.ReceiveForTest(PlaysMessage(NewId(), "B", waitingPlay), From, t0 + 1));
+        sync.Shutdown(); // ログは書けないまま終わる
+        CollectionAssert.AreEquivalent(new[] { earlier.id, waitingPlay.id }, RankingSyncLog.Load(PendingKey).Plays.Select(p => p.id),
+            "ログに書けなかった回も、別のキーに残る");
+        Assert.AreEqual(0, RankingSyncLog.Load(LogKey).Count);
+        // 起動し直して(ログを書ければ)両方を足してログへ入れ、別のキーから消す
+        PlayerPrefs.DeleteKey(HighScoreStore.Key(JapaneseSong, "Normal"));
+        var restarted = Offline(NewId());
+        restarted.Tick(Time.realtimeSinceStartupAsDouble);
+        Assert.AreEqual(2, RankingSyncLog.Load(LogKey).Count);
+        Assert.IsFalse(PlayerPrefs.HasKey(PendingKey));
+    }
+
+    // 演奏中に束で届いて待っていた回・足し直し待ちの回も、曲が終わって順位を決める前に、その曲×難易度の分だけ先に足す
+    // (結果画面の順位に入る。ほかの曲の分は待ったまま)。
+    [Test]
+    public void TheWaitingPlaysOfTheFinishedChartAreAddedBeforeItsRankIsDecided()
+    {
+        var sync = Offline(NewId());
+        double t0 = Time.realtimeSinceStartupAsDouble;
+        string other = NewId();
+        PlayerPrefs.SetString(DailyRankingStore.Key(Song, "Normal"), "not json");
+        var waitingPlay = Play(score: 91000, station: "B");
+        Assert.AreEqual(0, sync.ReceiveForTest(PlaysMessage(other, "B", waitingPlay), From, t0));
+        Assert.AreEqual(1, sync.PendingCount, "表が壊れていて足し直し待ち");
+        PlayerPrefs.DeleteKey(DailyRankingStore.Key(Song, "Normal")); // 表を直す(消す)
+        sync.BusyForTest = true; // 曲の演奏中
+        var bundled = new[] { Play(score: 95000, station: "B"), Play(score: 60000, station: "B") };
+        var elsewhere = new[] { Play(score: 99000, song: JapaneseSong, station: "B"), Play(score: 98000, song: JapaneseSong, station: "B") };
+        Assert.AreEqual(0, sync.ReceiveForTest(PlaysMessage(other, "B", bundled), From, t0 + 1), "束は演奏中は待つ");
+        Assert.AreEqual(0, sync.ReceiveForTest(PlaysMessage(other, "B", elsewhere), From, t0 + 2));
+        // 曲が終わった(GameSession.RecordCompletedDailyRanking の前の RankingSync.ApplyWaitingFor と同じ)
+        Assert.AreEqual(3, sync.ApplyChart(Song, "Normal", t0 + 3));
+        Assert.AreEqual(0, sync.PendingCount);
+        Assert.AreEqual(2, sync.QueuedCount, "ほかの曲の束は待ったまま");
+        Assert.IsFalse(PlayerPrefs.HasKey(DailyRankingStore.Key(JapaneseSong, "Normal")));
+        var local = DailyRankingStore.Record(Song, "Normal", NewId(), 80000, PlayedAt);
+        Assert.AreEqual(3, local.Rank, "届いていた 95000・91000 を入れた順位");
+        Assert.AreEqual(4, local.TotalPlays);
+    }
+
+    // 束で待っている回に、同じ回の新しい1回の知らせが届いたら、新しい回の待ちへ移す(演奏中でも足す。二重には足さない)。
+    [Test]
+    public void ANewNoticeForAPlayWaitingInABundleMovesItAhead()
+    {
+        var sync = Offline(NewId());
+        double t0 = Time.realtimeSinceStartupAsDouble;
+        sync.BusyForTest = true;
+        string other = NewId();
+        var first = Play(score: 70000, station: "B");
+        var second = Play(score: 71000, station: "B");
+        Assert.AreEqual(0, sync.ReceiveForTest(PlaysMessage(other, "B", first, second), From, t0), "束は演奏中は待つ");
+        Assert.AreEqual(1, sync.ReceiveForTest(PlaysMessage(other, "B", second), From, t0 + 1), "同じ回の新しい1回の知らせで、すぐ足す");
+        Assert.AreEqual(1, sync.Count);
+        Assert.AreEqual(second.id, DailyTable(Song, "Normal").entries.Single().runId);
+        sync.BusyForTest = false;
+        sync.Tick(t0 + 2);
+        Assert.AreEqual(2, sync.Count, "束の残りはあとで足す");
+        Assert.AreEqual(2, DailyTable(Song, "Normal").entries.Count, "移した回を二重に足さない");
+        Assert.AreEqual(2, HighScoreStore.Load(Song, "Normal").entries.Count);
+        Assert.AreEqual(0, sync.ConflictingPlays);
     }
 
     // 曲の演奏中は、新しい1回だけを足し、束の併合・ディスクへの保存は止める(結果・選曲・タイトルの間にまとめて行う)。

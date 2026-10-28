@@ -128,11 +128,21 @@ public sealed class RankingSync : MonoBehaviour
     }
 
     // 表へ足す1回と、まだ足していない表(通算の順位 Daily・上位5件 High)。Persist は、相手の回で足し直し待ちを別のキーに残したもの。
+    // Chart は同じ表へ書く回をまとめる鍵。Where はいまどの待ちにいるか。Ticket は待ちに入れ直すたびに増やす番号
+    // (束の待ちにある回を新しい1回の待ちへ移したとき、束の待ちに残った古い入れ物を飛ばすため)。
     sealed class ApplyItem
     {
         public RankingPlay Play;
+        public string Chart;
         public bool Daily, High, Persist;
+        public ApplyWhere Where;
+        public int Ticket;
     }
+
+    enum ApplyWhere { None, Fresh, Bulk, Reconcile, Pending }
+
+    // 待ちに入れた1つ(入れたときの番号つき)。
+    struct Queued { public ApplyItem Item; public int Ticket; }
 
     struct Inbound { public string Text; public IPEndPoint From; }
     struct Outgoing { public byte[] Bytes; public IPEndPoint Target; public int Plays; }
@@ -162,11 +172,14 @@ public sealed class RankingSync : MonoBehaviour
     readonly List<Transfer> transfers = new List<Transfer>();
     // 表へ足す待ち: 新しい1回 → 束で届いた回 → 起動時の照合 の順に足す。pending は表に書けずに足し直しを待つ回。
     // waiting は、待ちと足し直し待ちのすべての回(id で引く。同じ回を重ねて入れない)。
-    readonly Queue<ApplyItem> freshApply = new Queue<ApplyItem>();
-    readonly Queue<ApplyItem> bulkApply = new Queue<ApplyItem>();
-    readonly Queue<ApplyItem> reconcileApply = new Queue<ApplyItem>();
+    readonly Queue<Queued> freshApply = new Queue<Queued>();
+    readonly Queue<Queued> bulkApply = new Queue<Queued>();
+    readonly Queue<Queued> reconcileApply = new Queue<Queued>();
     readonly List<ApplyItem> pending = new List<ApplyItem>();
     readonly Dictionary<string, ApplyItem> waiting = new Dictionary<string, ApplyItem>(StringComparer.Ordinal);
+    // 別のキーに残していた足し直し待ちのうち、足せてログ(メモリ)に入れた回。ログの保存に成功するまでは別のキーから消さない
+    // (ログを書けないまま終わっても、ログにも別のキーにも残らない回を作らない)。
+    readonly List<RankingPlay> releasedPending = new List<RankingPlay>();
     BroadcastScan scan = new BroadcastScan();
     int refreshingBroadcasts;
     int? busySceneHandle;
@@ -178,8 +191,10 @@ public sealed class RankingSync : MonoBehaviour
     readonly Queue<Inbound> bulkInbox = new Queue<Inbound>();
     int droppedMessages;
     // 送信スレッドと分け合うもの(送る待ちと droppedSends は sendGate の中だけ。数は Interlocked)。
+    // 送る待ちは2つ: 新しい1回と要約(先に送る)/全部の記録の束(あとで送る)。
     readonly object sendGate = new object();
-    readonly Queue<Outgoing> sendQueue = new Queue<Outgoing>();
+    readonly Queue<Outgoing> sendFresh = new Queue<Outgoing>();
+    readonly Queue<Outgoing> sendBulk = new Queue<Outgoing>();
     int droppedSends, sentPlays, sendSuccesses, sendFailures;
     string sendError;
     UdpClient socket;
@@ -241,8 +256,8 @@ public sealed class RankingSync : MonoBehaviour
     public int NoticeCount { get; private set; }
     public int DroppedMessages { get { lock (gate) return droppedMessages; } }
     // 保存の失敗を起こす(テスト用)。FailSavesForTest はログ・足し直し待ちの書き出しとディスクへの保存、
-    // FailDiskSavesForTest はディスクへの保存(PlayerPrefs.Save)だけを失敗させる。
-    public bool FailSavesForTest, FailDiskSavesForTest;
+    // FailLogWritesForTest はログの書き出しだけ、FailDiskSavesForTest はディスクへの保存(PlayerPrefs.Save)だけを失敗させる。
+    public bool FailSavesForTest, FailLogWritesForTest, FailDiskSavesForTest;
     // 曲の演奏中かを決める(テスト用。null なら Game シーンにいるか)。
     public bool? BusyForTest;
 
@@ -355,19 +370,58 @@ public sealed class RankingSync : MonoBehaviour
         {
             // もうログにある回(前回、ログを書いたあと別のキーを書く前に止まった)は、別のキーから消すだけ。
             if (log.Contains(play.id) || waiting.ContainsKey(play.id)) { pendingStoreDirty = true; continue; }
-            var item = new ApplyItem { Play = play, Daily = true, High = true, Persist = true };
+            var item = NewItem(play, true, true);
+            item.Persist = true;
             waiting.Add(play.id, item);
-            bulkApply.Enqueue(item);
+            Put(bulkApply, item, ApplyWhere.Bulk);
         }
         foreach (var play in log.Plays)
         {
             if (waiting.ContainsKey(play.id)) continue;
-            var item = new ApplyItem { Play = play, Daily = true, High = true };
+            var item = NewItem(play, true, true);
             waiting.Add(play.id, item);
-            reconcileApply.Enqueue(item);
+            Put(reconcileApply, item, ApplyWhere.Reconcile);
         }
         CheckNearFull();
         if (!settings.Offline) OpenNetwork(now);
+    }
+
+    static ApplyItem NewItem(RankingPlay play, bool daily, bool high) =>
+        new ApplyItem { Play = play, Chart = RankingSyncLog.ChartKey(play), Daily = daily, High = high };
+
+    // 待ちに入れる(入れ直すたびに番号を増やし、前に入れた古い入れ物は取り出すときに飛ばす)。
+    static void Put(Queue<Queued> queue, ApplyItem item, ApplyWhere where)
+    {
+        item.Ticket++;
+        item.Where = where;
+        queue.Enqueue(new Queued { Item = item, Ticket = item.Ticket });
+    }
+
+    // 待ちから1つ取り出す(入れ直された古い入れ物は飛ばす)。
+    static bool TryTake(Queue<Queued> queue, out ApplyItem item)
+    {
+        while (queue.Count > 0)
+        {
+            var entry = queue.Dequeue();
+            if (entry.Ticket != entry.Item.Ticket) continue;
+            item = entry.Item;
+            return true;
+        }
+        item = null;
+        return false;
+    }
+
+    // 待ちから、ある曲×難易度の回だけを取り出す(ほかの回は順のまま残す。古い入れ物は捨てる)。
+    static void TakeChart(Queue<Queued> queue, string chart, List<ApplyItem> batch)
+    {
+        int count = queue.Count;
+        for (int i = 0; i < count; i++)
+        {
+            var entry = queue.Dequeue();
+            if (entry.Ticket != entry.Item.Ticket) continue;
+            if (entry.Item.Chart == chart) batch.Add(entry.Item);
+            else queue.Enqueue(entry);
+        }
     }
 
     // この起動で同期を動かすか(作る前に決める)。テストを回す起動(-runTests)・-rankingSync off・試験の起動では動かさない。
@@ -456,6 +510,40 @@ public sealed class RankingSync : MonoBehaviour
         }
     }
 
+    // 曲が終わって通算の順位を決める直前(GameSession.RecordCompletedDailyRanking から)。その曲×難易度で、表へ足す待ち・束の待ち・
+    // 足し直し待ちにある回を、演奏中でも先に表へ足す(その1曲ぶんだけなので軽い)。結果画面の順位が、届いていた記録を入れた表で決まるように。
+    public static void ApplyWaitingFor(string song, string difficulty)
+    {
+        try
+        {
+            var sync = Instance;
+            if (sync == null || (sync.autoStarted && !AutoStartEnabled) || string.IsNullOrWhiteSpace(song)) return;
+            sync.ApplyChart(song, difficulty, Time.realtimeSinceStartupAsDouble);
+        }
+        catch (Exception exception)
+        {
+            Debug.LogWarning("RankingSync: 届いていた記録を先に足せませんでした。" + exception.GetType().Name + ": " + exception.Message);
+        }
+    }
+
+    // ある曲×難易度の待ちの回を、いますぐ表へ足す(ApplyWaitingFor。テストからも呼ぶ)。新しくログに足した回の数を返す。
+    public int ApplyChart(string song, string difficulty, double now)
+    {
+        if (!configured) return 0;
+        string chart = RankingSyncLog.ChartKey(song, difficulty);
+        var batch = new List<ApplyItem>();
+        TakeChart(freshApply, chart, batch);
+        TakeChart(bulkApply, chart, batch);
+        TakeChart(reconcileApply, chart, batch);
+        for (int i = 0; i < pending.Count;)
+        {
+            if (pending[i].Chart != chart) { i++; continue; }
+            batch.Add(pending[i]);
+            pending.RemoveAt(i);
+        }
+        return batch.Count == 0 ? 0 : ApplyBatch(batch, now);
+    }
+
     // この台で遊んだ回をログに残して、すぐ送る(0・0.3・1.0 秒の3回)。表(通算・上位5件)へは書かない(GameSession が残す)。
     // dailyStored が false(通算の表に書けなかった)なら、通算の表だけを足し直し待ちにする。
     public bool Record(RankingPlay play, bool dailyStored = true)
@@ -507,7 +595,8 @@ public sealed class RankingSync : MonoBehaviour
     {
         if (!waiting.TryGetValue(play.id, out var item))
         {
-            item = new ApplyItem { Play = play };
+            item = NewItem(play, false, false);
+            item.Where = ApplyWhere.Pending;
             waiting.Add(play.id, item);
             pending.Add(item);
         }
@@ -549,7 +638,8 @@ public sealed class RankingSync : MonoBehaviour
             Activate(now);
         }
         bool busy = Busy;
-        if (socket != null && receiverExited) { CloseNetwork(); nextBindAt = now + ReceiverRestartSeconds; }
+        // 受信が止まったときの立て直し(スレッドの Join をメインスレッドで待つ)は、演奏中は待たずに、明けてからにする。
+        if (socket != null && receiverExited && !busy) { CloseNetwork(); nextBindAt = now + ReceiverRestartSeconds; }
         if (socket == null && !settings.Offline && now >= nextBindAt) OpenNetwork(now);
         FlushThreadNotes(now);
         FlushBroadcastNotes();
@@ -654,15 +744,28 @@ public sealed class RankingSync : MonoBehaviour
         foreach (var play in message.plays)
         {
             if (!RankingSyncLog.IsValid(play)) continue;
-            var known = log.Find(play.id) ?? (waiting.TryGetValue(play.id, out var queuedItem) ? queuedItem.Play : null);
-            if (known != null)
+            var logged = log.Find(play.id);
+            if (logged != null)
             {
-                if (!RankingSyncLog.SameContent(known, play)) WarnConflict();
+                if (!RankingSyncLog.SameContent(logged, play)) WarnConflict();
                 continue;
             }
-            var item = new ApplyItem { Play = RankingSyncLog.Copy(play), Daily = true, High = true };
+            if (waiting.TryGetValue(play.id, out var waitingItem))
+            {
+                if (!RankingSyncLog.SameContent(waitingItem.Play, play)) { WarnConflict(); continue; }
+                // 束の待ちにある回へ、同じ回の新しい1回の知らせが届いた。新しい回の待ちへ移す
+                // (二重には足さない。束の待ちに残った古い入れ物は、取り出すときに飛ばす)。
+                if (fresh && waitingItem.Where == ApplyWhere.Bulk)
+                {
+                    Put(freshApply, waitingItem, ApplyWhere.Fresh);
+                    queued++;
+                }
+                continue;
+            }
+            var item = NewItem(RankingSyncLog.Copy(play), true, true);
             waiting.Add(item.Play.id, item);
-            (fresh ? freshApply : bulkApply).Enqueue(item);
+            if (fresh) Put(freshApply, item, ApplyWhere.Fresh);
+            else Put(bulkApply, item, ApplyWhere.Bulk);
             queued++;
         }
         return queued;
@@ -675,19 +778,24 @@ public sealed class RankingSync : MonoBehaviour
     {
         if (QueuedCount == 0) return 0;
         var batch = new List<ApplyItem>();
-        while (batch.Count < ApplyPerFrame && freshApply.Count > 0) batch.Add(freshApply.Dequeue());
+        ApplyItem taken;
+        while (batch.Count < ApplyPerFrame && TryTake(freshApply, out taken)) batch.Add(taken);
         if (!busy)
         {
-            while (batch.Count < ApplyPerFrame && bulkApply.Count > 0) batch.Add(bulkApply.Dequeue());
-            while (batch.Count < ApplyPerFrame && reconcileApply.Count > 0) batch.Add(reconcileApply.Dequeue());
+            while (batch.Count < ApplyPerFrame && TryTake(bulkApply, out taken)) batch.Add(taken);
+            while (batch.Count < ApplyPerFrame && TryTake(reconcileApply, out taken)) batch.Add(taken);
         }
-        if (batch.Count == 0) return 0;
+        return batch.Count == 0 ? 0 : ApplyBatch(batch, now);
+    }
+
+    // 取り出した回を、曲×難易度ごとにまとめて表へ足す(ApplyQueued と、曲の終わりの ApplyChart で共通)。新しくログに足した回の数を返す。
+    int ApplyBatch(List<ApplyItem> batch, double now)
+    {
         var groups = new Dictionary<string, List<ApplyItem>>(StringComparer.Ordinal);
         var order = new List<string>();
         foreach (var item in batch)
         {
-            string key = RankingSyncLog.ChartKey(item.Play);
-            if (!groups.TryGetValue(key, out var group)) { groups.Add(key, group = new List<ApplyItem>()); order.Add(key); }
+            if (!groups.TryGetValue(item.Chart, out var group)) { groups.Add(item.Chart, group = new List<ApplyItem>()); order.Add(item.Chart); }
             group.Add(item);
         }
         int added = 0;
@@ -710,6 +818,7 @@ public sealed class RankingSync : MonoBehaviour
                 {
                     item.Daily = dailyFailed;
                     item.High = highFailed;
+                    item.Where = ApplyWhere.Pending;
                     pending.Add(item);
                     if (pendingRetryAt == double.NegativeInfinity) pendingRetryAt = now + PendingRetrySeconds;
                     // 相手の回(ログにまだ無い)は、終了しても失われないよう別のキーにも残す。
@@ -718,8 +827,10 @@ public sealed class RankingSync : MonoBehaviour
                     continue;
                 }
                 item.Daily = item.High = false;
+                item.Where = ApplyWhere.None;
                 waiting.Remove(item.Play.id);
-                if (item.Persist) pendingStoreDirty = true;
+                // 別のキーに残していた回は、ログの保存に成功するまで、別のキーからは消さない(TryWriteLog が成功したら消す)。
+                if (item.Persist) releasedPending.Add(item.Play);
                 // 自分の回・起動時の照合の回(もうログにある)は足さない。
                 if (log.Contains(item.Play.id)) continue;
                 if (!log.Add(item.Play)) { WarnFull(); continue; }
@@ -778,7 +889,7 @@ public sealed class RankingSync : MonoBehaviour
     {
         if (pending.Count == 0 || now < pendingRetryAt) return;
         pendingRetryAt = double.NegativeInfinity;
-        foreach (var item in pending) bulkApply.Enqueue(item);
+        foreach (var item in pending) Put(bulkApply, item, ApplyWhere.Bulk);
         pending.Clear();
     }
 
@@ -916,14 +1027,20 @@ public sealed class RankingSync : MonoBehaviour
     // ---- 保存 ----
 
     // ログを PlayerPrefs へ書く。成功したときだけ書きかけの印を下ろす(失敗したら Tick が少し待って書き直す)。
+    // 成功したら、足せてログへ入れた回を、足し直し待ちの別のキーから消してよくなる(次の TryWritePending で消す)。
     bool TryWriteLog()
     {
         try
         {
-            if (FailSavesForTest) throw new InvalidOperationException("テスト用の保存失敗");
+            if (FailSavesForTest || FailLogWritesForTest) throw new InvalidOperationException("テスト用の保存失敗");
             log.Save(settings.LogKey);
             logDirty = false;
             saveDirty = true;
+            if (releasedPending.Count > 0)
+            {
+                releasedPending.Clear();
+                pendingStoreDirty = true;
+            }
             return true;
         }
         catch (Exception exception)
@@ -933,13 +1050,14 @@ public sealed class RankingSync : MonoBehaviour
         }
     }
 
-    // 足し直し待ちの相手の回(ログにまだ無い)を、別のキーへ書く(無くなったら消す)。
+    // 足し直し待ちの相手の回(ログにまだ無い)を、別のキーへ書く(無くなったら消す)。足せてもログの保存がまだの回
+    // (releasedPending)も残す(ログを書けないまま終わっても、ログにも別のキーにも残らない回を作らない)。
     bool TryWritePending()
     {
         try
         {
             if (FailSavesForTest) throw new InvalidOperationException("テスト用の保存失敗");
-            var plays = new List<RankingPlay>();
+            var plays = new List<RankingPlay>(releasedPending);
             foreach (var item in waiting.Values) if (item.Persist) plays.Add(item.Play);
             if (plays.Count == 0) PlayerPrefs.DeleteKey(settings.PendingKey);
             else PlayerPrefs.SetString(settings.PendingKey, RankingSyncLog.PlaysJson(plays));
@@ -1014,19 +1132,22 @@ public sealed class RankingSync : MonoBehaviour
     }
 
     // 送る待ちに入れる(メインスレッド)。送るのは送信スレッド(メインスレッドは送信を待たない)。待ちが満杯なら捨てる。
-    bool Enqueue(byte[] bytes, IPEndPoint target, int plays)
+    // bulk(全部の記録の束)は、新しい1回と要約のあとに送る。
+    bool Enqueue(byte[] bytes, IPEndPoint target, int plays, bool bulk = false)
     {
         if (socket == null || target == null || !ReadyToSend()) return false;
         lock (sendGate)
         {
-            if (sendQueue.Count >= SendQueueCapacity) { droppedSends++; return false; }
-            sendQueue.Enqueue(new Outgoing { Bytes = bytes, Target = target, Plays = plays });
+            var queue = bulk ? sendBulk : sendFresh;
+            if (queue.Count >= SendQueueCapacity) { droppedSends++; return false; }
+            queue.Enqueue(new Outgoing { Bytes = bytes, Target = target, Plays = plays });
         }
         sendSignal?.Set();
         return true;
     }
 
-    int SendQueueCount { get { lock (sendGate) return sendQueue.Count; } }
+    int SendQueueCount { get { lock (sendGate) return sendFresh.Count + sendBulk.Count; } }
+    int BulkSendCount { get { lock (sendGate) return sendBulk.Count; } }
 
     void SendDue(double now)
     {
@@ -1039,11 +1160,11 @@ public sealed class RankingSync : MonoBehaviour
         }
     }
 
-    // 全部の記録を、相手ごとに少しずつ作って送る待ちへ入れる(送る待ちが少ないときだけ、1コマ SendsPerFrame 通まで。
-    // 相手が複数なら順番に。演奏中は呼ばない)。送り終えたら自分の要約も返す(相手も、自分に足りない分をすぐ送り返せるように)。
+    // 全部の記録を、相手ごとに少しずつ作って束の送る待ちへ入れる(束の送る待ちが少ないときだけ、1コマ SendsPerFrame 通まで。
+    // 相手が複数なら順番に。演奏中は呼ばない)。送り終えたら自分の要約も、束のあとに返す(相手も、自分に足りない分をすぐ送り返せるように)。
     void PumpTransfers()
     {
-        int budget = Math.Min(SendsPerFrame, TransferQueueRoom - SendQueueCount);
+        int budget = Math.Min(SendsPerFrame, TransferQueueRoom - BulkSendCount);
         while (budget > 0 && transfers.Count > 0)
         {
             var transfer = transfers[0];
@@ -1053,14 +1174,14 @@ public sealed class RankingSync : MonoBehaviour
             var datagrams = log.Bundles(machineId, station, transfer.Next, Math.Min(budget, DatagramsPerTransferStep), out int next);
             foreach (var datagram in datagrams)
             {
-                Enqueue(Encoding.UTF8.GetBytes(datagram.Text), target, datagram.Plays);
+                Enqueue(Encoding.UTF8.GetBytes(datagram.Text), target, datagram.Plays, true);
                 budget--;
             }
             if (datagrams.Count == 0) budget--; // 必ず進む(同じコマで回り続けない)
             transfer.Next = next;
             if (next >= log.Count)
             {
-                Enqueue(Encoding.UTF8.GetBytes(DigestMessage()), target, 0);
+                Enqueue(Encoding.UTF8.GetBytes(DigestMessage()), target, 0, true);
                 budget--;
             }
             else transfers.Add(transfer);
@@ -1086,7 +1207,8 @@ public sealed class RankingSync : MonoBehaviour
         return true;
     }
 
-    // 送信スレッド。送る待ちから1通ずつ送る(UdpClient の送信は別スレッドで呼んでよい)。成功・失敗は数だけを残す。
+    // 送信スレッド。送る待ちから1通ずつ送る(新しい1回と要約を、全部の記録の束より先に。UdpClient の送信は別スレッドで呼んでよい)。
+    // 成功・失敗は数だけを残す。
     void SendLoop(UdpClient client, AutoResetEvent signal)
     {
         try
@@ -1097,8 +1219,9 @@ public sealed class RankingSync : MonoBehaviour
                 bool has;
                 lock (sendGate)
                 {
-                    has = sendQueue.Count > 0;
-                    if (has) item = sendQueue.Dequeue();
+                    var queue = sendFresh.Count > 0 ? sendFresh : sendBulk;
+                    has = queue.Count > 0;
+                    if (has) item = queue.Dequeue();
                 }
                 if (!has)
                 {
@@ -1279,7 +1402,11 @@ public sealed class RankingSync : MonoBehaviour
         bool joined = Join(receiveThread) & Join(sendThread);
         // スレッドが残っていたら、合図は閉じない(残ったスレッドが待っている)。
         if (joined) signal?.Dispose();
-        lock (sendGate) sendQueue.Clear();
+        lock (sendGate)
+        {
+            sendFresh.Clear();
+            sendBulk.Clear();
+        }
         receiverExited = false;
     }
 
@@ -1376,6 +1503,8 @@ public sealed class RankingSync : MonoBehaviour
         Flush();
     }
 
+    // 終了するときも、ふだんの保存(FlushSaves)と同じ順番: ログ → 足し直し待ちの別のキー → ディスクへの保存。
+    // ログを書けなかったときは、足せた回を別のキーから消さない(releasedPending が残るので、TryWritePending はその回も書く)。
     void Flush()
     {
         CloseNetwork();
