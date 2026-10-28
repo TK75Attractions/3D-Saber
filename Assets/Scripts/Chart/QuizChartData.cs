@@ -27,13 +27,16 @@ public class QuizPaperData
     public float startMs, endMs;
 }
 
-// 飾りの金。ms は届く時刻(ミリ秒、ノーツの time と同じ時計)、x・y は着地点(譜面の座標)。
+// 飾りのノーツ。ms は届く時刻(ミリ秒、ノーツの time と同じ時計)、x・y は着地点(譜面の座標)。
 // veil は見えにくさ(NoteData.veil と同じ。練習の問題で 0.7)。
+// color("gold"・"red"・"blue")と direction(NoteData.direction と同じ)は第4版(2026-10-28 夜)から。書いていなければ金のタップ。
 [Serializable]
 public class QuizDecoyData
 {
     public float ms, x, y;
     public float veil;
+    public string color = "gold";
+    public string direction = "none";
 }
 
 [Serializable]

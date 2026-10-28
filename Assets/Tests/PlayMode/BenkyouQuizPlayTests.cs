@@ -149,32 +149,37 @@ public class BenkyouQuizPlayTests
         double hit = spawner.EffectiveTime(realSource);
         var real = Spawn(spawner, hit);
         Assert.IsFalse(real.IsDecoy);
-        Assert.IsTrue(real.IsGold, "流れてくるのは金のノーツ");
+        // 第4版(2026-10-28 夜「赤、青、フリックも解禁」): 答えの柱は赤・青の上下の矢印。
+        Assert.IsFalse(real.IsGold, "答えの柱は赤・青");
+        Assert.AreNotEqual(SaberHand.Any, real.RequiredHand);
+        Assert.That(real.RequiredDirection, Is.EqualTo(CutDirection.Up).Or.EqualTo(CutDirection.Down), "上か下の矢印");
         Assert.AreEqual(QuizRules.PillarX[rhythm.answer], real.LandingPosition.x, 1e-4, "本物は正しい答えの柱だけ");
         Assert.AreEqual(QuizRules.PillarHitScale, real.HitScale, 1e-6, "隣の柱では切れない当たり");
         Assert.AreEqual(MemoryVeilLayers.AboveNoteSortingOrder, real.BodyRenderer.sortingOrder, "本物は試験用紙の上");
-        Assert.Greater(spawner.LiveDecoys.Count, 0, "ほかの柱からは飾りの金");
+        Assert.Greater(spawner.LiveDecoys.Count, 0, "ほかの柱からは飾り");
         foreach (var decoy in spawner.LiveDecoys)
         {
             Assert.IsTrue(decoy.IsDecoy);
-            Assert.IsTrue(decoy.IsGold, "飾りも同じ金");
+            Assert.IsFalse(decoy.IsGold, "飾りも赤・青");
+            Assert.AreNotEqual(SaberHand.Any, decoy.RequiredHand);
+            Assert.That(decoy.RequiredDirection, Is.EqualTo(CutDirection.Up).Or.EqualTo(CutDirection.Down), "飾りも上か下の矢印");
+            Assert.NotNull(decoy.GetComponentInChildren<NoteArrowMaterials>(true), "飾りにも本物と同じ矢印");
             Assert.IsFalse(spawner.LiveNotes.Contains(decoy), "飾りは生きているノーツの一覧に入らない");
-            Assert.AreEqual(QuizRules.PillarHitScale, decoy.HitScale, 1e-6, "飾りの当たりも柱と同じ");
+            Assert.IsFalse(CuttableNote.ActiveNotes.Contains(decoy), "飾りは判定の候補に入らない");
             Assert.AreEqual(MemoryVeilLayers.AboveNoteSortingOrder, decoy.BodyRenderer.sortingOrder, "飾りも本物と同じく試験用紙の上");
             Assert.Greater(Mathf.Abs(decoy.LandingPosition.x - QuizRules.PillarX[rhythm.answer]), 1f, "飾りは正しくない柱");
             Assert.AreEqual(real.transform.localScale, decoy.transform.localScale, "同じ大きさ");
         }
-        var target = spawner.LiveDecoys.OrderBy(d => Math.Abs(d.HitTime - hit)).First();
-        int hits = score.HitCount, missed = score.MissCount;
-        Swing(cutter, tracker, target.LandingPosition.x, hit);
-        Assert.IsFalse(target.IsCut, "飾りの柱を振っても割れない");
-        Assert.IsTrue(target.DecoyHit, "違う答えの柱を切った");
+        var target = spawner.LiveDecoys[0];
+        int hits = score.HitCount, misses = score.MissCount, combo = score.Combo;
+        SwingAlong(cutter, tracker, target, hit);
+        Assert.IsFalse(target.IsCut, "飾りの柱を矢印の向きに振っても割れない");
         Assert.IsFalse(real.IsCut, "隣の柱の本物も切れない");
         Assert.AreEqual(hits, score.HitCount, "飾りは点にならない");
-        Assert.AreEqual(missed + 1, score.MissCount, "飾りを切ったら MISS");
-        Assert.AreEqual(0, score.Combo, "コンボが切れる");
-        Swing(cutter, tracker, real.LandingPosition.x, hit);
-        Assert.IsTrue(real.IsCut, "正しい柱を振ると本物が切れる");
+        Assert.AreEqual(misses, score.MissCount, "飾りを切ってもミスにしない(第4版で v1.37.2 をやめた)");
+        Assert.AreEqual(combo, score.Combo, "コンボも切れない");
+        SwingAlong(cutter, tracker, real, hit);
+        Assert.IsTrue(real.IsCut, "正しい柱を矢印の向きに振ると本物が切れる");
         Assert.AreEqual(hits + 1, score.HitCount);
         quiz.Tick(hit + .02);
         string option = rhythm.options[rhythm.answer];
@@ -231,7 +236,7 @@ public class BenkyouQuizPlayTests
         double dotHit = spawner.EffectiveTime(dotSource);
         var dotNote = Spawn(spawner, dotHit);
         Assert.IsFalse(dotNote.IsDecoy);
-        Assert.IsTrue(dotNote.IsGold);
+        Assert.AreNotEqual(CutDirection.None, dotNote.RequiredDirection, "C も赤・青の矢印");
         Assert.AreEqual(QuizRules.PillarX[dots.answer], dotNote.LandingPosition.x, 1e-4, "本物は正しい札の柱だけ");
         Assert.AreEqual(QuizRules.PillarHitScale, dotNote.HitScale, 1e-6);
         var sameTime = spawner.LiveDecoys.Where(d => Math.Abs(d.HitTime - dotHit) < 1e-6).ToList();
@@ -242,7 +247,7 @@ public class BenkyouQuizPlayTests
         Swing(cutter, tracker, sameTime[0].LandingPosition.x, dotHit);
         Assert.IsFalse(dotNote.IsCut, "飾りの柱を振っても本物は切れない");
         Assert.AreEqual(dotHits, score.HitCount, "飾りは点にならない");
-        Swing(cutter, tracker, dotNote.LandingPosition.x, dotHit);
+        SwingAlong(cutter, tracker, dotNote, dotHit);
         Assert.IsTrue(dotNote.IsCut, "正しい札の柱で切れる");
         Assert.AreEqual(dotHits + 1, score.HitCount);
         quiz.Tick(dotHit + .02);
@@ -306,6 +311,16 @@ public class BenkyouQuizPlayTests
     {
         tracker.ResetTo(new Vector3(x, 1.4f, 0f));
         tracker.Tick(new Vector3(x, -1.6f, 0f), .05f);
+        judge.TryCut(songTime);
+    }
+
+    // ノーツの矢印の向き(上・下)に、その柱を一息に通る振り(答えの柱の第4版は上下の矢印)。
+    static void SwingAlong(SaberCutJudge judge, SaberTracker tracker, CuttableNote note, double songTime)
+    {
+        bool up = note.RequiredDirection == CutDirection.Up;
+        float x = note.LandingPosition.x;
+        tracker.ResetTo(new Vector3(x, up ? -1.6f : 1.4f, 0f));
+        tracker.Tick(new Vector3(x, up ? 1.4f : -1.6f, 0f), .05f);
         judge.TryCut(songTime);
     }
 

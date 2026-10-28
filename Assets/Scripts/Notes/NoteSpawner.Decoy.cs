@@ -1,26 +1,30 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// 勉強の裏譜面 Q の飾りの金(quiz.decoys。第3版の「答えの柱」の、正しくない3本の柱)。
-// 本物の金ノーツと見分けがつくと答えがばれるので、SpawnOne のノーツの作り方をなぞる: 同じプレハブ・同じ大きさ(投影の拡大も)・
+// 勉強の裏譜面 Q の飾りのノーツ(quiz.decoys。「答えの柱」の、正しくない3本の柱)。
+// 第4版(2026-10-28 夜、ユーザー「ノーツを、選択肢ごとに配置を変えて同時押しですべてとれてしまわないようにする、赤、青、フリックも解禁」)で
+//   金のタップだけでなく、赤・青・矢印の飾りも出す(QuizDecoyData の color・direction)。使い回しは色と向きごとに分ける。
+// 本物のノーツと見分けがつくと答えがばれるので、SpawnOne のノーツの作り方をなぞる: 同じプレハブ・同じ大きさ(投影の拡大も)・
 //   同じ色と発光(NoteVisuals)・同じ接近(ComputeNoteZ)・同じ着地の枠と判定窓の光と金の予兆(NoteTimingCue。予兆の「チリッ」も
 //   GoldNoteSfx が JudgmentOwner を見て同じに鳴らす)・同じ光の保護(GameplayCutFeedback.Track)。試験用紙の上へ上げるのは
 //   QuizMode(OnDecoySpawned)。床の印は飾りに無いので、紙の間は QuizMode が本物の側も止める。
-// 違う答え: 飾りも SaberCutJudge の候補に入り(当たりは本物と同じ PillarHitScale)、判定の窓の中で刃が通ったら割れずに暗くなって
-//   OnDecoyHit を出す。ScoreManager がそれを MISS にしてコンボを切る(10/28 ユーザー「違うやつ切ったらミスになるようにして」)。
-//   liveNotes(取り逃しの MISS・曲の終わり・CameraImuJudgment・同時押しの線)には入れず、OnNoteSpawned も出さない
-//   (ScoreManager・GoldNoteSfx・GateAccents など十数か所が聞いている)。満点の分母(chart.notes)・判定したノーツの数・
-//   早切り防止(CutOrderStartTime)・譜面の lint には関係しない。録画の自動切りは IsDecoy を見て飾りを切らない。
+// 判定には入らない: CuttableNote.IsDecoy で ActiveNotes(SaberCutJudge の候補)に登録せず、刃が通っても切れない(CutCore)。
+//   liveNotes(MISS・曲の終わり・CameraImuJudgment・同時押しの線)にも入れず、OnNoteSpawned も出さない
+//   (ScoreManager・GoldNoteSfx・GateAccents など十数か所が聞いている)。点・コンボ・満点の分母・リザルト・録画の自動切り・
+//   譜面の lint(どれも chart.notes か ActiveNotes を見る)のどれにも関係しない。
 // 届いたら判定面を少し過ぎながら 0.3 秒で薄れて消える(MISS の暗くなる見た目は出さない。届くまでは本物と同じ姿)。
 // 姿は届く時刻と曲の時計だけで決めるので、止まれば止まり、時計が戻れば戻る。
 // 片付け: 譜面のやり直し(SetChart)・QuizMode の終わり(ClearDecoys。曲の終わり・途中でやめたとき)・Spawner の破棄。
 public partial class NoteSpawner
 {
-    const int MaxIdleDecoys = 32;
-    // 風・流星などを持たない、金のタップの形(ConfigureWind が読むだけで、書き換えない)。
-    static readonly NoteData DecoyShape = new NoteData { type = "tap", color = "gold", direction = "none" };
+    // 使い回しの上限(色と向きの組ごと)。
+    const int MaxIdleDecoys = 16;
     readonly List<CuttableNote> liveDecoys = new List<CuttableNote>();
-    readonly Stack<CuttableNote> idleDecoys = new Stack<CuttableNote>();
+    // 使い回しは色と向きの組ごと(プレハブの色と矢印の子を作り直さない)。
+    readonly Dictionary<(string color, CutDirection direction), Stack<CuttableNote>> idleDecoys =
+        new Dictionary<(string color, CutDirection direction), Stack<CuttableNote>>();
+    readonly Dictionary<CuttableNote, (string color, CutDirection direction)> decoyKinds =
+        new Dictionary<CuttableNote, (string color, CutDirection direction)>();
     readonly List<QuizDecoyData> decoySchedule = new List<QuizDecoyData>();
     int nextDecoy;
     // 飾りを作るときの親(有効でない。作った直後に OnEnable を走らせない)。使い回しの飾りは noteRoot の下で止めておく。
@@ -30,14 +34,24 @@ public partial class NoteSpawner
 
     // 飾りの金が出たとき(QuizMode が試験用紙の上へ上げる)。OnNoteSpawned は出さない。
     public event System.Action<CuttableNote> OnDecoySpawned;
-    // 飾りの金を間違えて切ったとき(ScoreManager が MISS にする)。
-    public event System.Action<CuttableNote> OnDecoyHit;
-    void HandleDecoyHit(CuttableNote decoy) => OnDecoyHit?.Invoke(decoy);
     public IReadOnlyList<CuttableNote> LiveDecoys => liveDecoys;
     public int DecoyCount => decoySchedule.Count;
     public int NextDecoyIndex => nextDecoy;
     public int CreatedDecoyCount { get; private set; }
-    public int PooledDecoyCount => idleDecoys.Count;
+    public int PooledDecoyCount
+    {
+        get { int n = 0; foreach (var stack in idleDecoys.Values) n += stack.Count; return n; }
+    }
+
+    static (string color, CutDirection direction) DecoyKind(QuizDecoyData data) =>
+        (QuizRules.DecoyColor(data.color), CutDirectionHelper.Parse(data.direction));
+
+    // 風・流星などを持たない、その色と向きの形(ConfigureWind が読むだけで、書き換えない)。
+    static NoteData DecoyShape(QuizDecoyData data, (string color, CutDirection direction) kind) => new NoteData
+    {
+        type = kind.direction == CutDirection.None ? "tap" : "direction", color = kind.color,
+        direction = kind.direction == CutDirection.None ? "none" : data.direction,
+    };
 
     // 譜面のやり直し(SetChart)。飛んでいる飾りを片付け、新しい譜面の飾りを時刻順に並べ、使い回す分を先に作る。
     void ResetDecoys()
@@ -100,9 +114,10 @@ public partial class NoteSpawner
 
     CuttableNote SpawnDecoy(QuizDecoyData data, double hit, double songTime, bool warming)
     {
-        GameObject prefab = PickPrefab(DecoyShape.color);
+        var kind = DecoyKind(data);
+        GameObject prefab = PickPrefab(kind.color);
         if (prefab == null) return null;
-        var note = warming ? CreateDecoy(prefab) : RentDecoy(prefab);
+        var note = warming ? CreateDecoy(kind, prefab) : RentDecoy(kind, prefab);
         var go = note.gameObject;
         float scale = chart != null ? chart.coordScale : 1f;
         var landing = new Vector2(data.x * scale, data.y * scale);
@@ -119,23 +134,20 @@ public partial class NoteSpawner
         // 前の飛行の購読と印を外してから飾りの印を立て直す(有効にする前。OnEnable の登録を IsDecoy で止める)。
         note.ResetForSpawn();
         note.IsDecoy = true;
-        // 当たりは本物の答えの柱と同じ大きさ(正しい柱を振って隣の飾りまで届かない。間を振れば両方に届く)。
-        note.HitScale = QuizRules.PillarHitScale;
-        note.OnDecoyHit += HandleDecoyHit;
         note.IsPooled = false;
         note.FragmentPool = null;
-        note.ConfigureWind(DecoyShape, landing);
+        note.ConfigureWind(DecoyShape(data, kind), landing);
         note.Veil = NoteVeil.Clamp(data.veil);
         note.DecoyVeil = note.Veil;
         note.HitTime = hit;
         // 金の予兆の「チリッ」は、自分の Spawner のノーツだけ鳴らす(GoldNoteSfx.HandleOmen)。本物と同じに鳴らす。
         note.JudgmentOwner = this;
-        note.RequiredDirection = CutDirection.None;
+        note.RequiredDirection = kind.direction;
         note.RequiredCutCount = 1;
         note.RemainingCuts = 1;
         note.OverrideLingerSeconds = 0f;
-        note.IsGold = true;
-        note.RequiredHand = SaberHand.Any;
+        note.IsGold = kind.color == "gold";
+        note.RequiredHand = SaberHandHelper.FromColor(kind.color);
         var visuals = go.GetComponent<NoteVisuals>();
         if (visuals == null) visuals = go.AddComponent<NoteVisuals>();
         visuals.Initialize(); visuals.ResetForReuse();
@@ -143,6 +155,9 @@ public partial class NoteSpawner
         visuals.SetVeil(note.Veil);
         visuals.SetContrastOutline(outlineLeftNotes && note.RequiredHand == SaberHand.Left);
         go.SetActive(true);
+        // 矢印は本物と同じ作り(SpawnOne)。使い回しは同じ向きの組なので、矢印の子はそのまま色だけ合わせ直す。
+        if (note.Arrow == null && kind.direction != CutDirection.None) BuildArrow(go.transform, kind.direction);
+        else if (note.Arrow != null) note.Arrow.Bind(note, visuals.baseColor);
         if (buildTimingCues)
         {
             var cue = go.GetComponent<NoteTimingCue>();
@@ -169,9 +184,6 @@ public partial class NoteSpawner
         double depth = dt;
         if (scrollMap != null) depth = dt > 0 ? ShapedRemaining(decoy.HitTime, songTime) : VisualRemaining(decoy.HitTime, songTime);
         decoy.transform.position = new Vector3(decoy.LandingPosition.x, decoy.LandingPosition.y, ComputeNoteZ(decoy, depth, Speed));
-        // 本物と同じ判定の窓の中だけ刃を受ける(間違えて切られたあとは受けない)。
-        UpdateJudgmentWindow(decoy, decoy.HitTime - JudgeClock(songTime), LateWindowFor(decoy));
-        if (decoy.DecoyHit) decoy.IsJudgeable = false;
         float veil = QuizRules.DecoyVeil(decoy.DecoyVeil, visibility);
         if (decoy.Veil != veil)
         {
@@ -184,7 +196,7 @@ public partial class NoteSpawner
     }
 
     // 有効でない親の下に作り、飾りの印を立てる前に OnEnable(判定の候補への登録)を走らせない。
-    CuttableNote CreateDecoy(GameObject prefab)
+    CuttableNote CreateDecoy((string color, CutDirection direction) kind, GameObject prefab)
     {
         EnsureDecoyRoot();
         var go = Instantiate(prefab, new Vector3(0f, 0f, spawnZ), Quaternion.identity, decoyIdleRoot);
@@ -194,17 +206,19 @@ public partial class NoteSpawner
         var note = go.GetComponent<CuttableNote>();
         if (note == null) note = go.AddComponent<CuttableNote>();
         note.IsDecoy = true;
+        decoyKinds[note] = kind;
         return note;
     }
 
-    CuttableNote RentDecoy(GameObject prefab)
+    CuttableNote RentDecoy((string color, CutDirection direction) kind, GameObject prefab)
     {
-        while (idleDecoys.Count > 0)
-        {
-            var cached = idleDecoys.Pop();
-            if (cached != null) return cached;
-        }
-        return CreateDecoy(prefab);
+        if (idleDecoys.TryGetValue(kind, out var stack))
+            while (stack.Count > 0)
+            {
+                var cached = stack.Pop();
+                if (cached != null) return cached;
+            }
+        return CreateDecoy(kind, prefab);
     }
 
     void EnsureDecoyRoot()
@@ -222,8 +236,15 @@ public partial class NoteSpawner
     {
         if (decoy == null) return;
         decoy.Retire();
-        if (!Pooling || idleDecoys.Count >= MaxIdleDecoys) { SafeDestroy(decoy.gameObject); return; }
-        idleDecoys.Push(decoy);
+        if (!decoyKinds.TryGetValue(decoy, out var kind)) { SafeDestroy(decoy.gameObject); return; }
+        if (!idleDecoys.TryGetValue(kind, out var stack)) idleDecoys[kind] = stack = new Stack<CuttableNote>();
+        if (!Pooling || stack.Count >= MaxIdleDecoys)
+        {
+            decoyKinds.Remove(decoy);
+            SafeDestroy(decoy.gameObject);
+            return;
+        }
+        stack.Push(decoy);
     }
 
     void RecycleLiveDecoys()
@@ -232,34 +253,49 @@ public partial class NoteSpawner
         liveDecoys.Clear();
     }
 
-    // 同時に飛ぶ飾りの数を見積もり、曲の前に作っておく(問題の途中で作って処理落ちしない)。保持は 32 個まで。
+    // 同時に飛ぶ飾りの数を色と向きの組ごとに見積もり、曲の前に作っておく(問題の途中で作って処理落ちしない)。保持は組ごとに 16 個まで。
     void PrewarmDecoys()
     {
         if (!Pooling || decoySchedule.Count == 0) return;
-        var events = new List<(double time, int delta)>(decoySchedule.Count * 2);
+        var byKind = new Dictionary<(string color, CutDirection direction), List<QuizDecoyData>>();
         foreach (var data in decoySchedule)
         {
-            double hit = DecoyHitTime(data);
-            events.Add((SpawnTimeFor(hit), 1));
-            events.Add((hit + QuizRules.DecoyFadeSeconds + .05, -1));
+            var kind = DecoyKind(data);
+            if (!byKind.TryGetValue(kind, out var list)) byKind[kind] = list = new List<QuizDecoyData>();
+            list.Add(data);
         }
-        events.Sort((a, b) => { int c = a.time.CompareTo(b.time); return c != 0 ? c : a.delta.CompareTo(b.delta); });
-        int live = 0, peak = 0;
-        foreach (var e in events) { live += e.delta; peak = Mathf.Max(peak, live); }
-        int want = Mathf.Min(MaxIdleDecoys, peak + 1);
-        var sample = decoySchedule[0];
-        double sampleHit = DecoyHitTime(sample);
-        for (int guard = 0; idleDecoys.Count < want && guard < MaxIdleDecoys; guard++)
-            SpawnDecoy(sample, sampleHit, sampleHit - approachTime, warming: true);
+        foreach (var pair in byKind)
+        {
+            var events = new List<(double time, int delta)>(pair.Value.Count * 2);
+            foreach (var data in pair.Value)
+            {
+                double hit = DecoyHitTime(data);
+                events.Add((SpawnTimeFor(hit), 1));
+                events.Add((hit + QuizRules.DecoyFadeSeconds + .05, -1));
+            }
+            events.Sort((a, b) => { int c = a.time.CompareTo(b.time); return c != 0 ? c : a.delta.CompareTo(b.delta); });
+            int live = 0, peak = 0;
+            foreach (var e in events) { live += e.delta; peak = Mathf.Max(peak, live); }
+            int want = Mathf.Min(MaxIdleDecoys, peak + 1);
+            var sample = pair.Value[0];
+            double sampleHit = DecoyHitTime(sample);
+            for (int guard = 0; IdleCount(pair.Key) < want && guard < MaxIdleDecoys; guard++)
+                SpawnDecoy(sample, sampleHit, sampleHit - approachTime, warming: true);
+        }
     }
+
+    int IdleCount((string color, CutDirection direction) kind) => idleDecoys.TryGetValue(kind, out var stack) ? stack.Count : 0;
 
     void DestroyIdleDecoys()
     {
-        while (idleDecoys.Count > 0)
-        {
-            var decoy = idleDecoys.Pop();
-            if (decoy != null) SafeDestroy(decoy.gameObject);
-        }
+        foreach (var stack in idleDecoys.Values)
+            while (stack.Count > 0)
+            {
+                var decoy = stack.Pop();
+                if (decoy == null) continue;
+                decoyKinds.Remove(decoy);
+                SafeDestroy(decoy.gameObject);
+            }
     }
 
     // Spawner の破棄(OnDestroy)。
@@ -268,6 +304,7 @@ public partial class NoteSpawner
         foreach (var decoy in liveDecoys) if (decoy != null) SafeDestroy(decoy.gameObject);
         liveDecoys.Clear();
         DestroyIdleDecoys();
+        decoyKinds.Clear();
         if (decoyIdleRoot != null) SafeDestroy(decoyIdleRoot.gameObject);
         decoyIdleRoot = null;
     }

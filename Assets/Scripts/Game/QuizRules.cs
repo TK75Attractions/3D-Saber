@@ -214,8 +214,20 @@ public static class QuizRules
         }
         quiz.decoys = (quiz.decoys ?? new List<QuizDecoyData>())
             .Where(d => d != null && Finite(d.ms) && Finite(d.x) && Finite(d.y)).OrderBy(d => d.ms).ToList();
-        foreach (var decoy in quiz.decoys) decoy.veil = Finite(decoy.veil) ? Mathf.Clamp01(decoy.veil) : 0f;
+        foreach (var decoy in quiz.decoys)
+        {
+            decoy.veil = Finite(decoy.veil) ? Mathf.Clamp01(decoy.veil) : 0f;
+            decoy.color = DecoyColor(decoy.color);
+            decoy.direction = string.IsNullOrWhiteSpace(decoy.direction) ? "none" : decoy.direction.Trim().ToLowerInvariant();
+        }
         return quiz;
+    }
+
+    // 飾りの色(第4版)。赤・青のほかは金(書いていない古い譜面も金)。
+    public static string DecoyColor(string color)
+    {
+        string c = (color ?? "").Trim().ToLowerInvariant();
+        return c == "red" || c == "blue" ? c : "gold";
     }
 
     static string File(string file) => file == null ? "" : file.Trim();

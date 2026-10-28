@@ -88,7 +88,7 @@ public abstract class BenkyouQuizSpawnerFixture
 public class BenkyouQuizDecoyTests : BenkyouQuizSpawnerFixture
 {
     [Test]
-    public void DecoysFlyExactlyLikeTheRealGoldNoteAndCuttingOneIsAMiss()
+    public void DecoysFlyExactlyLikeTheRealGoldNoteButAreNeverJudgedOrScored()
     {
         var chart = new ChartData { bpm = 100 };
         chart.notes.Add(new NoteData { time = 2000, x = -.6f, y = -.15f, color = "gold", hitScale = QuizRules.PillarHitScale });
@@ -115,58 +115,81 @@ public class BenkyouQuizDecoyTests : BenkyouQuizSpawnerFixture
         Assert.AreEqual(real.Visuals.DisplayColor, decoy.Visuals.DisplayColor, "同じ色");
         Assert.AreEqual(real.Veil, decoy.Veil);
         Assert.AreSame(spawner, decoy.JudgmentOwner, "金の予兆の「チリッ」も本物と同じに鳴る");
-        Assert.AreEqual(QuizRules.PillarHitScale, decoy.HitScale, 1e-6, "当たりは本物の柱と同じ大きさ");
-        Assert.IsFalse(decoy.IsJudgeable, "判定の窓の外では刃を受けない");
+        Assert.IsFalse(CuttableNote.ActiveNotes.Contains(decoy), "判定の候補(SaberCutJudge)に入れない");
 
         spawner.Tick(1.95);
         Assert.IsTrue(real.IsJudgeable);
         Assert.IsTrue(CuttableNote.ActiveNotes.Contains(real));
-        Assert.IsTrue(decoy.IsJudgeable, "飾りも本物と同じ判定の窓で刃を受ける(切ったら MISS)");
-        Assert.IsTrue(CuttableNote.ActiveNotes.Contains(decoy), "判定の候補(SaberCutJudge)に入る");
+        Assert.IsFalse(decoy.IsJudgeable);
+        Assert.IsFalse(CuttableNote.ActiveNotes.Contains(decoy));
         Assert.IsTrue(decoy.TimingCue.InWindow, "判定窓の光も本物と同じ");
         Assert.AreEqual(real.TimingCue.InWindow, decoy.TimingCue.InWindow);
         Assert.AreEqual(real.TimingCue.GhostRoot.activeSelf, decoy.TimingCue.GhostRoot.activeSelf, "着地の枠");
         Assert.AreEqual(real.TimingCue.ApproachRoot.transform.localScale, decoy.TimingCue.ApproachRoot.transform.localScale, "縮む枠");
         Assert.AreEqual(decoy.LandingPosition, (Vector2)decoy.TimingCue.GhostRoot.transform.position, "枠は飾りの着地点");
 
-        // 本物を切ってコンボを作ってから、飾りの柱を本編の当たりで振る → 飾りは割れずに暗くなり、MISS でコンボが切れる。
-        spawner.Tick(2.0);
-        Assert.IsTrue(real.CutAtSongTime(real.transform.position, Vector3.down * 8f, CutDirection.None, SaberHand.Any, 2.0));
-        Assert.AreEqual(1, score.Combo);
-        var misses = new List<JudgmentTier>();
-        score.OnJudgment += (tier, _) => { if (tier == JudgmentTier.Miss) misses.Add(tier); };
+        // 飾りの柱を本編の当たりで振っても、何も切れない(本物は 1.2 離れ、当たり 0.45 倍では届かない)。
         var (judge, tracker) = Saber();
         Swing(judge, tracker, .6f, 2.0);
-        Assert.IsTrue(decoy.DecoyHit, "違う答えの柱を切った");
-        Assert.IsFalse(decoy.IsCut, "飾りは割れない(切った音・光・点は出ない)");
-        Assert.AreEqual(1, score.MissCount, "MISS になる");
-        Assert.AreEqual(0, score.Combo, "コンボが切れる");
-        Assert.AreEqual(1, misses.Count, "MISS の知らせ(判定の字・音)");
-        Assert.IsFalse(decoy.CutAtSongTime(decoy.transform.position, Vector3.down * 8f, CutDirection.None, SaberHand.Any, 2.0));
-        Assert.AreEqual(1, score.MissCount, "同じ飾りを二度は数えない");
-        Assert.AreEqual(1, score.HitCount);
-        Assert.AreEqual(1, score.JudgedNoteCount, "判定したノーツの数に飾りは入らない(曲の終わりの判断を変えない)");
+        Assert.IsFalse(decoy.IsCut, "刃が通っても割れない");
+        Assert.IsFalse(real.IsCut, "隣の柱の本物は切れない");
+        Assert.IsFalse(decoy.CutAtSongTime(decoy.transform.position, Vector3.down * 8f, CutDirection.None, SaberHand.Any, 2.0),
+            "直接切ろうとしても割れない(録画の自動切りも同じ)");
+        Assert.AreEqual(0, score.HitCount, "点・コンボに関係しない");
 
+        spawner.Tick(2.0);
+        Assert.IsTrue(real.CutAtSongTime(real.transform.position, Vector3.down * 8f, CutDirection.None, SaberHand.Any, 2.0));
         spawner.Tick(3.0);
         Assert.AreEqual(0, spawner.LiveDecoys.Count, "届いて薄れたら消える");
+        Assert.AreEqual(1, score.HitCount);
+        Assert.AreEqual(0, score.MissCount, "飾りは MISS にならない");
         Assert.AreEqual(1, score.ComboUnits, "満コンボの数に飾りを数えない");
-        Assert.AreEqual(ScoreManager.NoteScore, score.Score, "ノーツの点は 90000(分母に飾りは入らない)");
+        Assert.AreEqual(ScoreManager.NoteScore, score.Score, "全部 Perfect でノーツの点 90000(分母に飾りは入らない)");
+        score.FinalizeScore();
+        Assert.AreEqual(ScoreManager.MaxScore, score.Score, "満点は 100000 のまま");
     }
 
+    // 第4版(2026-10-28 夜「赤、青、フリックも解禁」): 赤・青・矢印の飾り。同じ色・向きの本物と同じ姿で、判定・点・MISS に入らない。
     [Test]
-    public void DecoysOutsideTheJudgmentWindowAreNotAMiss()
+    public void ColoredArrowDecoysLookLikeTheRealNoteOfTheSameKindAndAreNeverJudged()
     {
         var chart = new ChartData { bpm = 100 };
-        chart.quiz.decoys.Add(new QuizDecoyData { ms = 2000, x = .6f, y = -.15f });
+        chart.notes.Add(new NoteData { time = 2000, x = -1.8f, y = -.15f, color = "red", type = "direction", direction = "up",
+            hitScale = QuizRules.PillarHitScale });
+        chart.quiz.decoys.Add(new QuizDecoyData { ms = 2000, x = .6f, y = -.15f, color = "red", direction = "down" });
+        chart.quiz.decoys.Add(new QuizDecoyData { ms = 2000, x = -.6f, y = -.15f, color = "blue", direction = "up" });
+        chart.quiz.decoys.Add(new QuizDecoyData { ms = 2000, x = 1.8f, y = -.15f, color = "Blue", direction = "Down" });
         spawner.SetChart(chart);
-        spawner.Tick(1.5);
-        var decoy = spawner.LiveDecoys.Single();
-        Assert.IsFalse(decoy.IsJudgeable);
-        Assert.IsFalse(decoy.CutAtSongTime(decoy.transform.position, Vector3.down * 8f, CutDirection.None, SaberHand.Any, 1.5));
-        Assert.IsFalse(decoy.DecoyHit, "判定の窓より前に刃が通っても MISS にしない");
+        spawner.Tick(1.2);
+        var real = spawner.LiveNotes.Single();
+        var red = spawner.LiveDecoys.Single(d => Math.Abs(d.LandingPosition.x - .6f) < 1e-4);
+        var blue = spawner.LiveDecoys.Single(d => Math.Abs(d.LandingPosition.x + .6f) < 1e-4);
+        var blueDown = spawner.LiveDecoys.Single(d => Math.Abs(d.LandingPosition.x - 1.8f) < 1e-4);
+        Assert.IsFalse(red.IsGold);
+        Assert.AreEqual(SaberHand.Right, red.RequiredHand, "赤は右手");
+        Assert.AreEqual(CutDirection.Down, red.RequiredDirection);
+        Assert.AreEqual(SaberHand.Left, blue.RequiredHand, "青は左手");
+        Assert.AreEqual(CutDirection.Up, blue.RequiredDirection);
+        Assert.AreEqual(SaberHand.Left, blueDown.RequiredHand, "大文字でも青");
+        Assert.AreEqual(CutDirection.Down, blueDown.RequiredDirection);
+        Assert.AreEqual(real.Visuals.DisplayColor, red.Visuals.DisplayColor, "赤の飾りは本物の赤と同じ色");
+        Assert.AreNotEqual(red.Visuals.DisplayColor, blue.Visuals.DisplayColor);
+        Assert.AreEqual(real.transform.localScale, red.transform.localScale, "同じ大きさ");
+        foreach (var decoy in new[] { red, blue, blueDown })
+        {
+            Assert.AreEqual(1, decoy.GetComponentsInChildren<NoteArrowMaterials>(true).Length, "本物と同じ矢印が1つ");
+            Assert.IsFalse(CuttableNote.ActiveNotes.Contains(decoy), "判定の候補に入れない");
+        }
+        // 刃が通っても、飾りは割れず、点にもミスにもならない(第3.1版の v1.37.2「違うやつ切ったらミス」をやめた)。
+        spawner.Tick(2.0);
+        red.Cut(red.transform.position, Vector3.down * 8, CutDirection.Down, SaberHand.Right);
+        Assert.IsFalse(red.IsCut);
         Assert.AreEqual(0, score.MissCount);
-        spawner.Tick(3.0);
-        Assert.AreEqual(0, score.MissCount, "切らずに通した飾りは MISS にならない");
+        Assert.AreEqual(0, score.HitCount);
+        // 書いていない古い飾りは金のタップのまま。
+        Assert.AreEqual("gold", QuizRules.DecoyColor(null));
+        Assert.AreEqual("gold", QuizRules.DecoyColor("green"));
+        Assert.AreEqual("red", QuizRules.DecoyColor(" RED "));
     }
 
     [Test]

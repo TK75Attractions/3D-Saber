@@ -21,8 +21,7 @@ public class ScoreManager : MonoBehaviour
     // ランクと HUD 用。曲の途中でも「今の最大コンボで終わったときの点」。
     public int ScoreWithCombo => IsFinalized ? Score : Score + ComboBonus;
     // 満コンボ(=判定の数。ロングは切る回数)。譜面が分からないときは判定済みの数。避は的の数。
-    // Q の飾りの金を切った MISS(WrongCutCount)は譜面のノーツではないので、満コンボの数には数えない。
-    public int ComboUnits { get { int judged = HitCount + MissCount - WrongCutCount; if (AimScoring) return Mathf.Max(aimTargetCount, judged); RefreshTotals(); return Mathf.Max(chartComboUnits, judged); } }
+    public int ComboUnits { get { if (AimScoring) return Mathf.Max(aimTargetCount, HitCount + MissCount); RefreshTotals(); return Mathf.Max(chartComboUnits, HitCount + MissCount); } }
 
     // ---- 照準の裏譜面(Phobia の「避」、2026-10-24) ----
     // ノーツの代わりに AimDodgeMode が的とトゲを知らせる。点は 50000 から始まり、トゲに当たると 1000 減り(0 より下げない)、
@@ -40,8 +39,6 @@ public class ScoreManager : MonoBehaviour
     public bool IsFinalized { get; private set; }
     public int HitCount { get; private set; }
     public int MissCount { get; private set; }
-    // MissCount のうち、Q の飾りの金(違う答え)を切った回数。
-    public int WrongCutCount { get; private set; }
     public int PerfectCount { get; private set; }
     public int GreatCount { get; private set; }
     public int GoodCount { get; private set; }
@@ -101,14 +98,12 @@ public class ScoreManager : MonoBehaviour
         {
             bound.OnNoteSpawned -= HandleSpawned;
             bound.OnNoteMissed -= HandleMissed;
-            bound.OnDecoyHit -= HandleDecoyHit;
         }
         bound = spawner;
         if (bound != null)
         {
             bound.OnNoteSpawned += HandleSpawned;
             bound.OnNoteMissed += HandleMissed;
-            bound.OnDecoyHit += HandleDecoyHit;
             // 生成後にUIや採点コンポーネントが再接続されても、表示中のノーツを採点する。
             foreach (var note in bound.LiveNotes) HandleSpawned(note);
         }
@@ -127,7 +122,6 @@ public class ScoreManager : MonoBehaviour
         IsFinalized = false;
         HitCount = 0;
         MissCount = 0;
-        WrongCutCount = 0;
         PerfectCount = 0;
         GreatCount = 0;
         GoodCount = 0;
@@ -425,23 +419,6 @@ public class ScoreManager : MonoBehaviour
     }
 
     public void RegisterMiss() => RegisterMiss(1, 1);
-
-    // Q の飾りの金(違う答えの柱)を切ったとき。MISS を出してコンボを切る(2026-10-28 ユーザー「違うやつ切ったらミスになるようにして」)。
-    // 譜面のノーツではないので、判定した重み(点の割合)と判定したノーツの数には入れない(曲の終わりの判断も変えない)。
-    void HandleDecoyHit(CuttableNote decoy) => RegisterWrongCut();
-
-    public void RegisterWrongCut()
-    {
-        if (IsFinalized) return;
-        MissCount++;
-        WrongCutCount++;
-        Combo = 0;
-        LastTier = JudgmentTier.Miss;
-        ClearLastCut();
-        Recalculate();
-        OnJudgment?.Invoke(JudgmentTier.Miss, 0);
-        OnJudgmentEx?.Invoke(JudgmentTier.Miss, 0, false);
-    }
 
     // cuts 回分の MISS をまとめて1回の通知で数え、コンボを切る(ロングの残りの回など)。
     private void RegisterMiss(int cuts, int weight)

@@ -1461,12 +1461,12 @@ public class BenkyouQuizChartTests
     }
 
     [Test]
-    public void RhythmRealGoldsComeOnlyOnTheAnswerPillarAndDecoysOnTheOthers()
+    public void RhythmRealNotesComeOnlyOnTheAnswerPillarAndDecoysOnTheOthers()
     {
         var chart = Load();
         var rhythm = Items(chart, QuizRules.Rhythm);
         var decoys = chart.quiz.decoys;
-        Assert.Greater(decoys.Count, 0, "飾りの金");
+        Assert.Greater(decoys.Count, 0, "飾り");
         for (int i = 0; i < rhythm.Count; i++)
         {
             var item = rhythm[i];
@@ -1474,12 +1474,14 @@ public class BenkyouQuizChartTests
             Assert.Greater(real.Count, 0, "本物 " + i);
             foreach (var note in real)
             {
-                Assert.AreEqual("gold", note.color, "流れてくるのは金 " + i);
+                // 第4版(2026-10-28 夜「赤、青、フリックも解禁」): 答えの柱は赤・青の上下の矢印。
+                Assert.That(note.color, Is.EqualTo("red").Or.EqualTo("blue"), "答えの柱は赤・青 " + i);
+                Assert.AreEqual("direction", note.type, "矢印 " + i);
+                Assert.That(note.direction, Is.EqualTo("up").Or.EqualTo("down"), "上か下 " + i);
                 Assert.AreEqual(QuizRules.PillarX[item.answer], note.x, 1e-4, "本物は正しい答えの柱だけ " + i);
                 Assert.AreEqual(QuizRules.PillarY, note.y, 1e-4);
                 Assert.AreEqual(QuizRules.PillarHitScale, note.hitScale, 1e-4, "隣の柱では切れない当たり");
                 Assert.AreEqual(1, note.count);
-                Assert.AreEqual("none", note.direction);
                 Assert.IsFalse(note.launch);
                 Assert.IsFalse(note.hidden, "第3版は見えないノーツを使わない");
             }
@@ -1490,12 +1492,14 @@ public class BenkyouQuizChartTests
 
             // 飾りはほかの3本の柱に、本物と同じ時刻(4本の柱は同じリズム。形・数で正解の柱を当てられないように。9a、10/28)。
             var mine = decoys.Where(d => d.ms >= item.showMs - .5f && d.ms < item.endMs - .5f).ToList();
+            var shapes = new string[4][];
             for (int p = 0; p < 4; p++)
             {
                 var pillar = mine.Where(d => Math.Abs(d.x - QuizRules.PillarX[p]) < 1e-4).OrderBy(d => d.ms).ToList();
                 if (p == item.answer)
                 {
                     Assert.IsEmpty(pillar, "正しい柱に飾りは来ない " + i);
+                    shapes[p] = real.Select(n => n.color + " " + n.direction).ToArray();
                     continue;
                 }
                 Assert.AreEqual(real.Count, pillar.Count, $"飾りの柱も本物と同じ数 {i}/{p}");
@@ -1506,8 +1510,19 @@ public class BenkyouQuizChartTests
                     Assert.AreEqual(QuizRules.PillarY, d.y, 1e-4);
                     Assert.AreEqual(item.hint ? .7f : 0f, d.veil, 1e-4, "練習の飾りだけ veil 0.7");
                 }
+                shapes[p] = pillar.Select(d => d.color + " " + d.direction).ToArray();
             }
             Assert.AreEqual(3 * real.Count, mine.Count, "飾りは柱の上だけ " + i);
+            // 第4版: 同時に取れる選択肢は2つまで。どの瞬間も隣の柱は別の色、同じ色の柱は逆向き(赤も青も上と下が1本ずつ)。
+            for (int k = 0; k < real.Count; k++)
+            {
+                var row = Enumerable.Range(0, 4).Select(p => shapes[p][k].Split(' ')).ToArray();
+                for (int p = 0; p < 3; p++) Assert.AreNotEqual(row[p][0], row[p + 1][0], $"隣の柱は別の色 {i}/{k}");
+                foreach (var color in new[] { "red", "blue" })
+                    CollectionAssert.AreEquivalent(new[] { "up", "down" }, row.Where(r => r[0] == color).Select(r => r[1]),
+                        $"同じ色の2本は逆向き {i}/{k}");
+            }
+            Assert.AreEqual(4, shapes.Select(s => string.Join(",", s)).Distinct().Count(), "4つの選択肢は色と向きの並びがみな違う " + i);
 
             if (i >= APart) continue;
             // A のリズムの形(第3版): 16分の格子で 4〜6 打、1拍目(小節の頭)を必ず含み、表拍を多めに、16分の連続は2つまで。
@@ -1676,7 +1691,10 @@ public class BenkyouQuizChartTests
             Assert.IsFalse(note.hidden, "第3版は見えないノーツを使わない " + note.time);
             if (QuizRules.InPaper(papers, t))
             {
-                Assert.AreEqual("gold", note.color, "試験用紙の中で流れてくるのは金のノーツ " + note.time);
+                // 斬り分けは金、答えの柱は赤・青の矢印(第4版、2026-10-28 夜「赤、青、フリックも解禁」)。
+                bool pillar = Math.Abs(note.hitScale - QuizRules.PillarHitScale) < 1e-4;
+                if (pillar) Assert.That(note.color, Is.EqualTo("red").Or.EqualTo("blue"), "答えの柱は赤・青 " + note.time);
+                else Assert.AreEqual("gold", note.color, "斬り分けは金のノーツ " + note.time);
                 continue;
             }
             foreach (var paper in papers)
