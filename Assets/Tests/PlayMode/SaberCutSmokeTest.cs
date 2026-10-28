@@ -1,11 +1,21 @@
 using System.Collections;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 
 // XY 距離ベースの新判定で、CuttableNote.Cut が実際に発火することを確認。
 public class SaberCutSmokeTest
 {
+    // 前のテストが開いたままにした場面(本物の Game のノーツ)まで切って数がずれないよう、空の場面で始める。
+    [UnitySetUp]
+    public IEnumerator StartInAnEmptyScene()
+    {
+        var previous = SceneManager.GetActiveScene();
+        SceneManager.SetActiveScene(SceneManager.CreateScene("SaberCutSmoke_" + System.Guid.NewGuid().ToString("N")));
+        if (previous.IsValid() && previous.isLoaded) yield return SceneManager.UnloadSceneAsync(previous);
+    }
+
     [UnityTest]
     public IEnumerator SaberTrajectoryCutsNote_SingleFrame()
     {

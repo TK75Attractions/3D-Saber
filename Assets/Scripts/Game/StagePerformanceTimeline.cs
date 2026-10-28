@@ -17,6 +17,8 @@ public sealed class StagePerformanceTimeline
         // サビ前の収束と、頭の開放。低強度の助走区間には適用しない。
         public float anticipationSeconds = 2.4f;
         public float impactSeconds = .8f;
+        // 区間の名前(stage.json の label)。演出には使わない(実績の「転調の合図」が校歌の転調の区間を探す)。
+        public string label = "";
     }
 
     public Section[] sections = Array.Empty<Section>();

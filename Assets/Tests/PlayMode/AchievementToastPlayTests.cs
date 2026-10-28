@@ -353,6 +353,14 @@ public class AchievementToastPlayTests
         Assert.AreSame(stats, tracker.CurrentStats, "曲の途中で作り直さない");
         var snapshot = tracker.SnapshotNow();
         for (int k = 0; k < 7; k++) Assert.AreEqual(JudgmentTier.Perfect, snapshot.Notes[k].Result, "ノーツ " + k);
+        // 第2弾の記録: 届く時刻ちょうどの振りなので誤差は 0ms、結果が出た台の時刻と、切った手(青は左の剣)。
+        for (int k = 0; k < 7; k++)
+        {
+            Assert.AreEqual(0, snapshot.Notes[k].ErrorMs.Value, 1e-6, "誤差 " + k);
+            Assert.IsTrue(snapshot.Notes[k].JudgedAt.HasValue, "結果の時刻 " + k);
+        }
+        Assert.AreEqual(SaberHand.Left, snapshot.Notes[0].Hand, "青は左の剣");
+        Assert.AreEqual(SaberHand.Right, snapshot.Notes[1].Hand);
         Assert.IsTrue(snapshot.AllPerfect(snapshot.FirstGroup), "初太刀(最初の組の青と赤)");
         Assert.AreEqual(2, snapshot.FirstGroup.Count);
         Assert.AreEqual(2, snapshot.CrossCuts, "青と赤の組を2回一緒に切った");

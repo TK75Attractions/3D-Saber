@@ -228,7 +228,7 @@ public class RankingSyncPlayTests
         var log = new RankingSyncLog();
         Assert.IsTrue(log.Add(play));
         string current = log.Bundles("test-old-" + Guid.NewGuid().ToString("N"), "B")[0].Text;
-        byte[] old = Encoding.UTF8.GetBytes("BTSRANK1 " + current.Substring(RankingSyncLog.Prefix.Length).Replace("\"v\":2", "\"v\":1"));
+        byte[] old = Encoding.UTF8.GetBytes("BTSRANK1 " + current.Substring(RankingSyncLog.Prefix.Length).Replace("\"v\":3", "\"v\":1"));
         using (var sender = new UdpClient(AddressFamily.InterNetwork))
         {
             for (int i = 0; i < 3; i++)

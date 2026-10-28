@@ -10,7 +10,7 @@ using UnityEngine;
 // ・遊び終わった1回(RankingPlay)を、PlayerPrefs の1キー(RankingSync.Log.v1)に JSON で残す。壊れた値は捨てる(偽の記録を作らない)。
 // ・併合は id(= GameSession.AchievementRunId)が無いものだけ足す。同じ回は何度届いても1回。同じ id で中身が違えば先のものを残す。
 // ・要約(digest)は件数と、id の 64bit ハッシュ(FNV-1a)の XOR。足した順に依らないので、同じ記録を持つ2台は同じ要約になる。
-// ・送る形は "BTSRANK2 " + JSON。種類は plays(プレイの束)と digest(件数と要約、最近聞こえた相手)。1データグラムは 1200 バイト以下に分ける。
+// ・送る形は "BTSRANK3 " + JSON。種類は plays(プレイの束)と digest(件数と要約、最近聞こえた相手)。1データグラムは 1200 バイト以下に分ける。
 // ・版 2(2026-10-29 運営モードと実績): 1回の記録に ns(名前空間。"" はふだん、"fes" は運営モードの表)と ach(その回の実績の ID)。
 //   ほかの版(BTSRANK1 など)のメッセージは合流しない(RankingSync が運営に1回知らせる)。保存の形は版 1(ns・ach なし = ふだん)も読む。
 
@@ -60,10 +60,11 @@ public readonly struct RankingSyncDatagram
 public sealed class RankingSyncLog
 {
     public const string PreferenceKey = "RankingSync.Log.v1";
-    // 通信の版(2026-10-29 に 2: ns・ach を足した)。目印の数字と JSON の v。ほかの版のメッセージは合流しない。
+    // 通信の版(2026-10-29 に 2: ns・ach を足した。同じ日に 3: 実績の第2弾で数が76個・上限80になった)。目印の数字と JSON の v。
+    // ほかの版のメッセージは合流しない(v2.0 と v2.1 の台をまぜると、知らせが出て同期しない)。
     public const string PrefixStem = "BTSRANK";
-    public const string Prefix = "BTSRANK2 ";
-    public const int Version = 2;
+    public const string Prefix = "BTSRANK3 ";
+    public const int Version = 3;
     // 保存(ログ・足し直し待ち)の形の版。書くのは 2、読むのは 1(ns・ach なし = ふだんの表)と 2。
     public const int SavedVersion = 2;
     public const int OldestSavedVersion = 1;
@@ -79,9 +80,9 @@ public sealed class RankingSyncLog
     public const int MaxHeard = 8;
     public const int MinIdLength = 8, MaxIdLength = 64, MaxSongLength = 64, MaxDifficultyLength = 16, MaxRankLength = 8;
     public const int MaxStationLength = 16;
-    // 1回の記録に入れる実績の数の上限(実績は全部で44個)。12 字の ID が48個でも、ふつうの回(32 字の回の ID・曲 ID 15 字ほど・
-    // 台名 16 字まで)は1通に入る(1回分が束に入る大きさ MaxPlayBytes は下で確かめる)。
-    public const int MaxAchievementsPerPlay = 48;
+    // 1回の記録に入れる実績の数の上限(実績は全部で76個。2026-10-29 の第2弾で 48 から上げた)。一覧の76個を全部入れても、
+    // どの曲の回(32 字の回の ID・台名 16 字まで)も1通に入る(RankingSyncTests で全曲を確かめる。1回分が束に入る大きさは MaxPlayBytes)。
+    public const int MaxAchievementsPerPlay = 80;
     public const long MaxUnixMilliseconds = 32503680000000; // 3000-01-01(この台の時刻へ直しても桁があふれない範囲)
 
     static readonly UTF8Encoding Utf8 = new UTF8Encoding(false);

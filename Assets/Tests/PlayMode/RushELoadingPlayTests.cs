@@ -8,6 +8,16 @@ using UnityEngine.TestTools;
 
 public class RushELoadingPlayTests
 {
+    // 本物の Game 場面を開いたままにしない(次のテストの剣が、残ったノーツを切ってしまう)。
+    [UnityTearDown]
+    public IEnumerator CloseTheGame()
+    {
+        yield return ScreenTransitionPlayTests.WaitForTransition();
+        var scene = SceneManager.GetActiveScene();
+        SceneManager.SetActiveScene(SceneManager.CreateScene("RushELoadingCleanup_" + System.Guid.NewGuid().ToString("N")));
+        if (scene.IsValid() && scene.isLoaded) yield return SceneManager.UnloadSceneAsync(scene);
+    }
+
     [UnityTest]
     public IEnumerator EBeatSaberGridLongsAndFinalChordRenderInTheGame()
     {

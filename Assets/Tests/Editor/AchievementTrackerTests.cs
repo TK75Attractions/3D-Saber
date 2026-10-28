@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.TestTools;
 
 // 実績の判定と解除(AchievementTracker・AchievementRunInfo、2026-10-29)。1回の演奏で1回だけ解除して番号(○人目)を出す・
 // clear を先に・キリ番・名前空間ごと・今日の clear の数・結果の写し・選曲の秒と練習の終わり方。
+// 第2弾: clear の番号を見る実績(双子の素数・背番号)と、最後に決める初物・大収穫(保存は合わせて3回まで)、裏の扉とタイトルの手。
 // 実績の記録は専用の鍵だけを使い、テストの後で消す(本番の Achievements.Log.v1 には触れない)。
 public class AchievementTrackerTests
 {
@@ -16,6 +18,7 @@ public class AchievementTrackerTests
     string savedKey;
     Func<IReadOnlyList<RankingPlay>> savedPlays;
     Func<string, long, int> savedClears;
+    Func<IReadOnlyCollection<string>> savedSongs;
 
     [SetUp]
     public void UseTestKey()
@@ -27,6 +30,8 @@ public class AchievementTrackerTests
         AchievementStore.UseKeyForTest(Key);
         savedPlays = AchievementTracker.PlaysSource;
         savedClears = AchievementTracker.ClearsSince;
+        savedSongs = AchievementTracker.SongsSource;
+        AchievementTracker.SongsSource = () => Array.Empty<string>();
         GameSession.FinalAchievements = new List<string>();
         AchievementRunInfo.Clear();
     }
@@ -39,6 +44,7 @@ public class AchievementTrackerTests
         AchievementStore.UseKeyForTest(savedKey);
         AchievementTracker.PlaysSource = savedPlays;
         AchievementTracker.ClearsSince = savedClears;
+        AchievementTracker.SongsSource = savedSongs;
         AchievementRunInfo.Clear();
         foreach (var entry in session) entry.Key.SetValue(null, entry.Value);
         session.Clear();
@@ -69,7 +75,8 @@ public class AchievementTrackerTests
     {
         string run = NewId();
         var unlocks = AchievementTracker.Record(Ctx(run, change: Excellent));
-        CollectionAssert.AreEqual(new[] { "ap", "fc", "splus", "combo100", "ranks", "combo50", "clear" }, Ids(unlocks), "珍しい順、clear が最後");
+        CollectionAssert.AreEqual(new[] { "ap", "fc", "firstever", "splus", "combo100", "ranks", "combo50", "clear" }, Ids(unlocks),
+            "珍しい順、clear が最後(どれも2台で初めてなので初物も)");
         foreach (var unlock in unlocks) Assert.AreEqual(1, unlock.Number, unlock.Id + " の1人目");
         Assert.AreEqual("clear", GameSession.FinalAchievements[0], "相手の台へ送る記録では clear を先に");
         CollectionAssert.AreEquivalent(Ids(unlocks), GameSession.FinalAchievements);
@@ -92,17 +99,85 @@ public class AchievementTrackerTests
         CollectionAssert.AreEqual(new[] { "clear" }, GameSession.FinalAchievements);
     }
 
-    // 曲の終わりの保存は、clear(キリ番の番号のため先に)と残りのまとめての2回まで。
+    // 曲の終わりの保存は、clear(番号を使う実績のため先に)・残りのまとめて・初物と大収穫(ほかの番号を見てから)の3回まで。
     [Test]
-    public void ARunSavesTheRecordAtMostTwice()
+    public void ARunSavesTheRecordAtMostThreeTimes()
     {
         int before = AchievementStore.WriteCountForTest;
         var unlocks = AchievementTracker.Record(Ctx(NewId(), change: Excellent));
-        Assert.AreEqual(7, unlocks.Count);
-        Assert.LessOrEqual(AchievementStore.WriteCountForTest - before, 2);
+        Assert.AreEqual(8, unlocks.Count);
+        Assert.AreEqual(3, AchievementStore.WriteCountForTest - before);
+        before = AchievementStore.WriteCountForTest;
+        Assert.AreEqual(7, AchievementTracker.Record(Ctx(NewId(), change: Excellent)).Count, "2人目は初物なし");
+        Assert.AreEqual(2, AchievementStore.WriteCountForTest - before);
         before = AchievementStore.WriteCountForTest;
         Assert.AreEqual(1, AchievementTracker.Record(Ctx(NewId())).Count);
         Assert.LessOrEqual(AchievementStore.WriteCountForTest - before, 1, "clear だけの回は1回");
+    }
+
+    // clear を解除したあと、その番号で双子の素数・背番号(とキリ番)を見て、残りとまとめて解除する。
+    [Test]
+    public void TwinPrimeAndSebangoUseTheNumberOfThisRunsClear()
+    {
+        long at = new DateTimeOffset(Noon.AddDays(-1)).ToUnixTimeMilliseconds();
+        for (int i = 0; i < 4; i++) AchievementStore.Merge("", NewId(), new[] { "clear" }, "B", at);
+        void Numbered(AchievementContext c) => c.Score = 30005;   // 下3桁 005
+        var fifth = AchievementTracker.Record(Ctx(NewId(), change: Numbered));
+        CollectionAssert.AreEqual(new[] { "sebango", "firstever", "twinprime", "clear" }, Ids(fifth), "5人目: 5 と 3 は素数、点の下3桁が 005");
+        CollectionAssert.AreEqual(new[] { 1, 1, 1, 5 }, fifth.ConvertAll(u => u.Number));
+        Assert.AreEqual(1, AchievementTracker.Record(Ctx(NewId(), change: Numbered)).Count, "6人目");
+        var seventh = AchievementTracker.Record(Ctx(NewId(), change: Numbered));
+        CollectionAssert.AreEqual(new[] { "twinprime", "clear" }, Ids(seventh), "7人目(双子の素数の2人目なので初物は無い)");
+        CollectionAssert.AreEqual(new[] { 2, 7 }, seventh.ConvertAll(u => u.Number));
+        Assert.AreEqual("clear", GameSession.FinalAchievements[0]);
+    }
+
+    // 初物・大収穫は、ほかを全部解除して番号が決まってから見る。同じ回をもう一度決めても数は増えない。
+    [Test]
+    public void FirsteverAndHarvestAreDecidedLastFromTheOtherNumbers()
+    {
+        void HardExcellent(AchievementContext c) { Excellent(c); c.Difficulty = "Hard"; }
+        string run = NewId();
+        int before = AchievementStore.WriteCountForTest;
+        var unlocks = AchievementTracker.Record(Ctx(run, change: HardExcellent));
+        CollectionAssert.AreEqual(new[] { "ap", "hardsplus", "fc", "firstever", "splus", "combo100", "harvest", "ranks", "hard", "combo50", "clear" },
+            Ids(unlocks), "初物・大収穫も珍しい順の位置に");
+        foreach (var unlock in unlocks) Assert.AreEqual(1, unlock.Number, unlock.Id);
+        Assert.AreEqual(3, AchievementStore.WriteCountForTest - before);
+        Assert.AreEqual("clear", GameSession.FinalAchievements[0]);
+        CollectionAssert.AreEquivalent(Ids(unlocks), GameSession.FinalAchievements);
+        CollectionAssert.AreEquivalent(Ids(unlocks), AchievementStore.UnlockedIn("", run));
+
+        // 同じ回をもう一度: 同じ番号のまま、保存もしない
+        before = AchievementStore.WriteCountForTest;
+        var again = AchievementTracker.Record(Ctx(run, change: HardExcellent));
+        CollectionAssert.AreEqual(Ids(unlocks), Ids(again));
+        foreach (var unlock in again) Assert.AreEqual(1, unlock.Number, unlock.Id);
+        Assert.AreEqual(0, AchievementStore.WriteCountForTest - before);
+        Assert.AreEqual(unlocks.Count, GameSession.FinalAchievements.Count);
+
+        // 2人目: どれも2人目なので初物は無い。大収穫は2人目
+        GameSession.FinalAchievements = new List<string>();
+        var next = AchievementTracker.Record(Ctx(NewId(), change: HardExcellent));
+        CollectionAssert.DoesNotContain(Ids(next), "firstever");
+        Assert.AreEqual(2, next.Find(u => u.Id == "harvest").Number);
+        // 運営モードの回: そのモードでは初めてなので初物(番号はモードごと)
+        GameSession.FinalAchievements = new List<string>();
+        var festival = AchievementTracker.Record(Ctx(NewId(), Fes, c => { Excellent(c); c.MaxCombo = 60; }));
+        CollectionAssert.Contains(Ids(festival), "firstever");
+        Assert.AreEqual(1, festival.Find(u => u.Id == "firstever").Number);
+    }
+
+    // 番号が出せない(記録が読めない)ときは初物を出さない。
+    [Test]
+    public void FirsteverNeedsRealNumbers()
+    {
+        PlayerPrefs.SetString(Key, "{\"v\":1,\"entries\":[{\"broken\":true}]}");
+        AchievementStore.UseKeyForTest(Key);
+        LogAssert.Expect(LogType.Warning, AchievementStore.UnreadableWarning(Key));
+        var unlocks = AchievementTracker.Record(Ctx(NewId(), change: Excellent));
+        CollectionAssert.DoesNotContain(Ids(unlocks), "firstever");
+        foreach (var unlock in unlocks) Assert.AreEqual(0, unlock.Number, unlock.Id + " は番号を出さない");
     }
 
     [Test]
@@ -185,7 +260,10 @@ public class AchievementTrackerTests
         GameSession.FinalDailyRanking = new DailyRankingStore.Result { Rank = 2, TotalPlays = 9, TiedPlays = 1 };
         var plays = new List<RankingPlay> { new RankingPlay { id = NewId(), song = "x", ns = Fes } };
         AchievementTracker.PlaysSource = () => plays;
-        AchievementRunInfo.SongChosen(AchievementRunInfo.SelectionStartSeconds - 12, false);
+        var songs = new[] { "Andalusia", "ElDorado" };
+        AchievementTracker.SongsSource = () => songs;
+        AchievementRunInfo.TitleCut(SaberHand.Left);
+        AchievementRunInfo.SongChosen(AchievementRunInfo.SelectionStartSeconds - 12, false, true);
         AchievementRunInfo.PracticeFinished(false, "done", null);
         AchievementRunInfo.BeginRun(run);
         var stats = PlayStatsTests.Stats(PlayStatsTests.Chart(PlayStatsTests.Note(1000)));
@@ -212,6 +290,9 @@ public class AchievementTrackerTests
         Assert.AreEqual(run, c.RunId);
         Assert.AreEqual(12, c.SelectionSeconds.Value, 1e-9);
         Assert.IsTrue(c.PracticedBefore);
+        Assert.IsTrue(c.OpenedSecretHere, "その選曲で裏譜面を出した");
+        Assert.AreEqual(SaberHand.Left, c.TitleHand, "タイトルを青の剣で切った");
+        Assert.AreSame(songs, c.ListedSongs);
         Assert.AreSame(plays, c.Plays);
         Assert.AreEqual(0, c.ClearsToday);
         CollectionAssert.AreEqual(new[] { (Fes, new DateTimeOffset(Noon.Date).ToUnixTimeMilliseconds()) }, asked, "その回のモードの、終えた日の分");
@@ -224,7 +305,51 @@ public class AchievementTrackerTests
         Assert.AreEqual(Noon, noRanking.StartedLocal, "始めた時刻が分からなければ終わりの時刻");
         Assert.AreEqual(-1, noRanking.ClearsToday);
         GameSession.ResetResult();
-        Assert.IsFalse(AchievementTracker.BuildContext(null, Noon).PracticedBefore, "別の回には練習を付けない");
+        var other = AchievementTracker.BuildContext(null, Noon);
+        Assert.IsFalse(other.PracticedBefore, "別の回には練習を付けない");
+        Assert.IsFalse(other.OpenedSecretHere);
+        Assert.AreEqual(SaberHand.Any, other.TitleHand);
+    }
+
+    // 選曲で裏譜面を出したかは次に始めた本編の曲だけに付ける。タイトルを切った手は、記録された最初の曲(RunRecorded)まで持ち、
+    // 1回も切らずに終えた曲では使い切らない。どちらも来場者が替わったら消す。
+    [Test]
+    public void TheOpenedSecretAndTheTitleHandGoOnlyToTheNextSong()
+    {
+        Assert.AreEqual(SaberHand.Any, AchievementRunInfo.PendingTitleHand);
+        AchievementRunInfo.TitleCut(SaberHand.Left);
+        AchievementRunInfo.SongChosen(50, false, true);
+        Assert.IsTrue(AchievementRunInfo.PendingOpenedSecret);
+        AchievementRunInfo.SongChosen(40, true, true);
+        Assert.IsTrue(AchievementRunInfo.PendingOpenedSecret, "判定調整から戻った選曲でも、その選曲で開いたものは数える");
+        AchievementRunInfo.SongChosen(30, false);
+        Assert.IsFalse(AchievementRunInfo.PendingOpenedSecret, "選び直したら、その選曲の分だけ");
+        AchievementRunInfo.SongChosen(30, false, true);
+        AchievementRunInfo.BeginRun("first-song");
+        Assert.IsTrue(AchievementRunInfo.ForRun("first-song", out _, out _, out bool opened, out SaberHand hand));
+        Assert.IsTrue(opened);
+        Assert.AreEqual(SaberHand.Left, hand);
+        Assert.IsFalse(AchievementRunInfo.PendingOpenedSecret, "曲を始めたら使い切る");
+        Assert.AreEqual(SaberHand.Left, AchievementRunInfo.PendingTitleHand, "タイトルの手は記録されるまで持つ");
+        // 1曲目を1回も切らずに終えた(記録されない)→ 2曲目が記録された最初の曲
+        AchievementRunInfo.BeginRun("second-song");
+        AchievementRunInfo.ForRun("second-song", out _, out _, out bool openedAgain, out SaberHand handAgain);
+        Assert.IsFalse(openedAgain, "2曲目には付けない");
+        Assert.AreEqual(SaberHand.Left, handAgain, "記録されなかった1曲目のあとの曲に付く");
+        AchievementRunInfo.RunRecorded("first-song");
+        Assert.AreEqual(SaberHand.Left, AchievementRunInfo.PendingTitleHand, "別の回の記録では使い切らない");
+        AchievementRunInfo.RunRecorded("second-song");
+        Assert.AreEqual(SaberHand.Any, AchievementRunInfo.PendingTitleHand, "記録された曲で使い切る");
+        AchievementRunInfo.BeginRun("third-song");
+        AchievementRunInfo.ForRun("third-song", out _, out _, out _, out SaberHand handThird);
+        Assert.AreEqual(SaberHand.Any, handThird, "記録された曲のあとには付けない");
+        Assert.IsFalse(AchievementRunInfo.ForRun("first-song", out _, out _, out bool stale, out SaberHand staleHand) || stale || staleHand != SaberHand.Any,
+            "前の回の分は返さない");
+        AchievementRunInfo.TitleCut(SaberHand.Left);
+        AchievementRunInfo.SongChosen(30, false, true);
+        AchievementRunInfo.BeginVisitor();
+        Assert.AreEqual(SaberHand.Any, AchievementRunInfo.PendingTitleHand, "次の来場者へ持ち越さない");
+        Assert.IsFalse(AchievementRunInfo.PendingOpenedSecret);
     }
 
     // となりの台と同じ曲(duet)は、RankingSync がメモリに持つ同期の記録(演奏中に届いた相手の台の回も入っている)を読む。

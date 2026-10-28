@@ -16,7 +16,7 @@ public static class AchievementStore
     public const string PreferenceKey = "Achievements.Log.v1";
     public const int Version = 1;
     public const int MaxEntries = 50000;
-    // 実績の ID の長さの上限(一覧で一番長い ID は hardsplus の 9 字)。48 個でも1回の同期の記録に入る長さ。
+    // 実績の ID の長さの上限(一覧で一番長い ID は vanish_four の 11 字)。
     public const int MaxIdLength = 12;
 
     [Serializable]

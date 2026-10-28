@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 
 // 実績の条件(AchievementCatalog)が見る、1回の演奏の結果の写し(2026-10-29)。結果が決まったとき(GameSession.RunRecording)に
 // AchievementTracker が GameSession の Final*・PlayStats・その回の情報(AchievementRunInfo)・記録(AchievementStore・RankingSync)から作る。
@@ -29,8 +30,16 @@ public sealed class AchievementContext
     public int ClearsToday = -1;
     // 同期の記録(この台と相手の台の回。この回はまだ入っていない)。
     public IReadOnlyList<RankingPlay> Plays = Array.Empty<RankingPlay>();
-    // この回の clear の番号(○人目)。clear を解除したあとに入れる(キリ番)。
+    // この回の clear の番号(○人目)。clear を解除したあとに入れる(キリ番・双子の素数・背番号)。
     public int ClearNumber;
+    // 選曲で、この回の曲のジャケットを切って裏譜面を出したか(その選曲で開いたもの。判定調整から戻って解除し直した分は入らない)。
+    public bool OpenedSecretHere;
+    // タイトルの開始ノーツを切った手(同じ来場者の最初の本編の曲だけ。キーボード・マウスと、ほかの曲は Any)。
+    public SaberHand TitleHand = SaberHand.Any;
+    // 選曲に出る全曲(最後のピース。分からなければ空)。
+    public IReadOnlyCollection<string> ListedSongs = Array.Empty<string>();
+    // この回でほかに解除した実績と番号(初物・大収穫)。AchievementTracker.Record がほかを解除したあとに入れる。
+    public IReadOnlyList<AchievementUnlock> Unlocked = Array.Empty<AchievementUnlock>();
 
     public bool Secret => RushESecretState.IsSecretDifficulty(Difficulty);
     public bool IsHard => string.Equals(Difficulty, AchievementCatalog.HardDifficulty, StringComparison.OrdinalIgnoreCase);
@@ -72,6 +81,42 @@ public sealed class AchievementContext
             if (play.at > 0 && Math.Abs(EndedUnixMs - play.at) <= window) return true;
         }
         return false;
+    }
+
+    // となりの回: このモードで台が自分と違い、終えた時刻がこの回の終わりの前後 seconds 秒以内の回のうち、差がいちばん小さい1回(無ければ null)。
+    public RankingPlay Neighbor(double seconds)
+    {
+        if (Plays == null) return null;
+        long window = (long)Math.Round(seconds * 1000.0), best = long.MaxValue;
+        RankingPlay found = null;
+        foreach (var play in Plays)
+        {
+            if (play == null || play.id == RunId || (play.ns ?? "") != (Namespace ?? "") || (play.st ?? "") == (Station ?? "") || play.at <= 0)
+                continue;
+            long gap = Math.Abs(EndedUnixMs - play.at);
+            if (gap <= window && gap < best) { best = gap; found = play; }
+        }
+        return found;
+    }
+
+    // このモードで、今日(この回を終えた日。RankingPlay.date と同じ yyyy/MM/dd)に2台で終えた回(この回は入れない)の曲が、
+    // 選曲に出る全曲のうちこの回の曲だけを欠いているか(難易度は問わない)。
+    public bool CompletesTodaysSongs()
+    {
+        if (ListedSongs == null || Plays == null || string.IsNullOrEmpty(SongId)) return false;
+        string today = EndedLocal.ToString("yyyy/MM/dd", CultureInfo.InvariantCulture);
+        var played = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var play in Plays)
+            if (play != null && play.id != RunId && (play.ns ?? "") == (Namespace ?? "") && play.date == today && play.song != null)
+                played.Add(play.song);
+        if (played.Contains(SongId)) return false;
+        bool listed = false;
+        foreach (string song in ListedSongs)
+        {
+            if (song == SongId) listed = true;
+            else if (!played.Contains(song)) return false;
+        }
+        return listed;
     }
 
     // 赤・青(金は除く)がどちらも min 個以上で、色ごとに PERFECT の数 ÷ その色の数 ≥ rate。

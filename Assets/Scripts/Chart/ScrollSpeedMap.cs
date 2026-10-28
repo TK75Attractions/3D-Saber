@@ -113,6 +113,21 @@ public sealed class ScrollSpeedMap
         return speed[i] + slope[i] * (t - start[i]);
     }
 
+    // 止まっている区間 [始まり, 終わり)(秒)。続けて止まる区間はつなぎ、最後まで止まったままなら終わりは +∞(実績の「時を動かす剣」)。
+    public List<(double Start, double End)> Stops()
+    {
+        var stops = new List<(double Start, double End)>();
+        for (int i = 0; i < start.Length; i++)
+        {
+            if (Math.Abs(speed[i]) > 1e-9 || Math.Abs(slope[i]) > 1e-12) continue;
+            double end = i + 1 < start.Length ? start[i + 1] : double.PositiveInfinity;
+            int last = stops.Count - 1;
+            if (last >= 0 && stops[last].End == start[i]) stops[last] = (stops[last].Start, end);
+            else stops.Add((start[i], end));
+        }
+        return stops;
+    }
+
     // now(秒)から hit(秒)までの見かけの残り時間。
     public double Remaining(double now, double hit) => PositionAt(hit) - PositionAt(now);
 

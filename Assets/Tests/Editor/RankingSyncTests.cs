@@ -293,13 +293,15 @@ public class RankingSyncTests
 
         Assert.IsFalse(RankingSyncLog.TryParse(null, out _));
         Assert.IsFalse(RankingSyncLog.TryParse("PHONESABER_DISCOVER 1", out _), "ほかの目印");
-        Assert.AreEqual("BTSRANK2 ", RankingSyncLog.Prefix, "通信の版は 2");
+        Assert.AreEqual("BTSRANK3 ", RankingSyncLog.Prefix, "通信の版は 3(実績の第2弾、v2.1)");
         Assert.IsFalse(RankingSyncLog.TryParse("BTSRANK1 " + digest.Substring(RankingSyncLog.Prefix.Length), out _), "版の違う目印(古い版)");
-        Assert.IsFalse(RankingSyncLog.TryParse("BTSRANK3 " + digest.Substring(RankingSyncLog.Prefix.Length), out _), "版の違う目印(新しい版)");
+        Assert.IsFalse(RankingSyncLog.TryParse("BTSRANK2 " + digest.Substring(RankingSyncLog.Prefix.Length), out _), "版の違う目印(v2.0)");
+        Assert.IsFalse(RankingSyncLog.TryParse("BTSRANK4 " + digest.Substring(RankingSyncLog.Prefix.Length), out _), "版の違う目印(新しい版)");
         Assert.IsFalse(RankingSyncLog.TryParse(RankingSyncLog.Prefix + "{broken", out _), "JSON として読めない");
         Assert.IsFalse(RankingSyncLog.TryParse(RankingSyncLog.Prefix + "{}", out _), "版が無い");
-        Assert.IsFalse(RankingSyncLog.TryParse(digest.Replace("\"v\":2", "\"v\":1"), out _), "版が違う");
-        Assert.IsFalse(RankingSyncLog.TryParse(digest.Replace("\"v\":2", "\"v\":3"), out _), "版が違う");
+        StringAssert.Contains("\"v\":3", digest);
+        Assert.IsFalse(RankingSyncLog.TryParse(digest.Replace("\"v\":3", "\"v\":2"), out _), "版が違う");
+        Assert.IsFalse(RankingSyncLog.TryParse(digest.Replace("\"v\":3", "\"v\":4"), out _), "版が違う");
         Assert.IsFalse(RankingSyncLog.TryParse(digest.Replace("\"digest\"", "\"hello\""), out _), "知らない種類");
         Assert.IsFalse(RankingSyncLog.TryParse(digest.Replace(from, "bad id!"), out _), "差出人の ID が壊れている");
         Assert.IsFalse(RankingSyncLog.TryParse(digest.Replace("\"st\":\"A\"", "\"st\":\"A B\""), out _), "台名が壊れている");
@@ -1207,26 +1209,30 @@ public class RankingSyncTests
         Assert.AreEqual(0, RankingSyncLog.Copy(ok).ach.Count);
     }
 
-    // 実績の一覧(44個、2026-10-29 b1 の catalog.md)。
-    static readonly string[] CatalogIds =
+    // 実績の一覧(2026-10-29 の第1弾44個と第2弾32個、表示の順)と、相手の台へ送る並び(clear を先に。GameSession.FinalAchievements)。
+    static List<string> CatalogIds() => AchievementCatalog.All.Select(d => d.Id).ToList();
+
+    static List<string> SentIds()
     {
-        "ap", "senbon", "quiz", "bullseye", "fubuki", "mirror", "shingan", "memory", "matador", "clock", "hardsplus", "secret_s", "wind",
-        "overtake", "dark", "ichiban", "streak50", "fc", "kiriban", "zorome", "splus", "combo100", "streak20", "top", "secret", "pioneer",
-        "jackpot", "comeback", "duet", "school", "ranks", "hard", "chorus", "quick", "combo50", "goldall", "dual", "arrows", "rainbow",
-        "firstcut", "finale", "xcut", "practice", "clear",
-    };
+        var ids = new List<string> { AchievementCatalog.ClearId };
+        ids.AddRange(CatalogIds().Where(id => id != AchievementCatalog.ClearId));
+        return ids;
+    }
 
     // 長さの上限(12 字)の ID を n 個。
     static List<string> LongIds(int count) => Enumerable.Range(0, count)
         .Select(i => i.ToString("D2", CultureInfo.InvariantCulture) + new string('x', AchievementStore.MaxIdLength - 2)).ToList();
 
-    // 1回の記録に、どの曲でも(長い曲 ID・日本語の曲 ID・16 字の台名)、一覧の44個も、12 字の ID の44個・48個(上限)も、外さずに入り、1通で送れる。
+    // 1回の記録に、どの曲でも(長い曲 ID・日本語の曲 ID・16 字の台名)、一覧の76個を全部(表示の順でも、clear を先にした送る並びでも)
+    // 外さずに入れ、1通で送れる。上限(MaxAchievementsPerPlay)は一覧の数以上。12 字の ID を上限の数だけは入らないので、実際の一覧で確かめる。
     [Test]
-    public void AllFortyFourAchievementsFitInOneDatagramForEverySong()
+    public void EveryAchievementOfTheCatalogFitsInOneDatagramForEverySong()
     {
-        Assert.AreEqual(44, CatalogIds.Length);
-        Assert.AreEqual(48, RankingSyncLog.MaxAchievementsPerPlay);
+        var catalog = CatalogIds();
+        Assert.AreEqual(76, catalog.Count);
+        Assert.GreaterOrEqual(RankingSyncLog.MaxAchievementsPerPlay, catalog.Count);
         Assert.AreEqual(12, AchievementStore.MaxIdLength);
+        foreach (string id in catalog) Assert.IsTrue(AchievementStore.IsValidId(id), id);
         var songs = System.IO.Directory.GetDirectories(System.IO.Path.Combine(Application.streamingAssetsPath, "Songs"))
             .Select(System.IO.Path.GetFileName).ToList();
         Assert.GreaterOrEqual(songs.Count, 10, "曲のフォルダを読めた");
@@ -1235,10 +1241,11 @@ public class RankingSyncTests
         Application.LogCallback collect = (condition, stack, type) => { if (type == LogType.Warning) warnings.Add(condition); };
         RankingSyncLog.ResetWarningsForTest();
         Application.logMessageReceived += collect;
+        int largest = 0;
         try
         {
             foreach (string song in songs)
-                foreach (var ids in new[] { CatalogIds.ToList(), LongIds(44), LongIds(RankingSyncLog.MaxAchievementsPerPlay) })
+                foreach (var ids in new[] { catalog, SentIds() })
                 {
                     var play = RankingSyncLog.NewPlay(NewId(), song, "Normal", ScoreManager.MaxScore, "S+", 1f / 3f, PlayedAt,
                         new string('B', RankingSyncLog.MaxStationLength), Fes, ids);
@@ -1249,13 +1256,17 @@ public class RankingSyncTests
                     // 束の頭が一番大きな形(64 字の差出人・16 字の台名)でも1通
                     var bundles = log.Bundles(new string('f', RankingSyncLog.MaxIdLength), new string('A', RankingSyncLog.MaxStationLength));
                     Assert.AreEqual(1, bundles.Count, song);
-                    Assert.LessOrEqual(Encoding.UTF8.GetByteCount(bundles[0].Text), RankingSyncLog.MaxDatagramBytes, song);
+                    int bytes = Encoding.UTF8.GetByteCount(bundles[0].Text);
+                    Assert.LessOrEqual(bytes, RankingSyncLog.MaxDatagramBytes, song);
+                    largest = Math.Max(largest, bytes);
                     Assert.IsTrue(RankingSyncLog.TryParse(bundles[0].Text, out var message), song);
                     CollectionAssert.AreEqual(ids, message.plays.Single().ach, song);
                 }
         }
         finally { Application.logMessageReceived -= collect; }
         Assert.IsFalse(warnings.Any(w => w.StartsWith("RankingSync: この回の実績のうち", StringComparison.Ordinal)), "外さないので警告しない");
+        // 2026-10-29 の計算: 1回分の大きさの見積もり(EstimatedPlayBytes)は 製作中 の 945 バイトがいちばん大きく、上限(MaxPlayBytes)は 1020。
+        TestContext.WriteLine("76個を入れた1通のいちばん大きいもの: " + largest + " / " + RankingSyncLog.MaxDatagramBytes + " バイト");
     }
 
     // 入れられない実績(形が違う・上限を超える・1通に収まらない)は黙って外さず、起動の間に1回だけ警告する。外しても送れる回にする。
@@ -1384,7 +1395,7 @@ public class RankingSyncTests
         double t0 = Time.realtimeSinceStartupAsDouble;
         string other = NewId();
         string current = PlaysMessage(other, "B", Play(station: "B"));
-        string old = "BTSRANK1 " + current.Substring(RankingSyncLog.Prefix.Length).Replace("\"v\":2", "\"v\":1");
+        string old = "BTSRANK1 " + current.Substring(RankingSyncLog.Prefix.Length).Replace("\"v\":3", "\"v\":1");
         Assert.IsTrue(RankingSyncLog.IsOtherVersion(old, out int oldVersion));
         Assert.AreEqual(1, oldVersion);
         Assert.IsFalse(RankingSyncLog.IsOtherVersion(current, out _), "今の版");
@@ -1410,7 +1421,7 @@ public class RankingSyncTests
         sync.Tick(t0 + 40);
         Assert.AreEqual(1, sync.NoticeCount, "1回だけ。相手が見つからないの知らせも重ねない");
         // 新しい版の相手
-        Assert.AreEqual(0, sync.ReceiveForTest("BTSRANK3 " + current.Substring(RankingSyncLog.Prefix.Length), From, t0 + 41));
+        Assert.AreEqual(0, sync.ReceiveForTest("BTSRANK4 " + current.Substring(RankingSyncLog.Prefix.Length), From, t0 + 41));
         Assert.AreEqual(RankingSync.NewerPeerNotice, sync.LastNotice);
         Assert.AreEqual(2, sync.NoticeCount);
         // 今の版の相手とは、そのまま合わせる
