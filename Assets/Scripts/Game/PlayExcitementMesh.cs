@@ -14,7 +14,8 @@ public sealed class PlayExcitementMesh : IDisposable
     Mesh mesh;
     Material material;
     MeshRenderer renderer;
-    public bool Available => mesh != null && material != null;
+    // 置いた GameObject が親ごと壊れたあとは(メッシュと材質も PlayExcitementMeshOwner が一緒に壊す)何もしない。
+    public bool Available => mesh != null && material != null && renderer != null;
 
     public PlayExcitementMesh(Transform parent, string name, int queue, int order, bool ignoreDepth = false)
     {
@@ -35,6 +36,8 @@ public sealed class PlayExcitementMesh : IDisposable
         renderer.lightProbeUsage = LightProbeUsage.Off;
         renderer.reflectionProbeUsage = ReflectionProbeUsage.Off;
         renderer.enabled = false;
+        var owner = root.AddComponent<PlayExcitementMeshOwner>();
+        owner.Mesh = mesh; owner.Material = material;
     }
 
     public void Protect(FlashRect rect)

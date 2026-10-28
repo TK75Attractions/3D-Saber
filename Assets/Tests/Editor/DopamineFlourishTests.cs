@@ -213,4 +213,24 @@ public class DopamineFlourishTests
         Assert.False(group.Contains(3.248));
         Assert.AreEqual(0, new FinalNoteGroup(new ChartData(), 0, .7f).Indices.Count);
     }
+
+    // 2026-10-28 夜の全件テスト: 大きい光(FinalStageLight)は舞台の下に置くので、舞台ごと壊れたらメッシュと材質も壊す。
+    // 壊れたあとに持ち主が描いても・片付けても例外にしない。
+    [Test]
+    public void ExcitementMeshDiesWithTheObjectItIsPlacedUnder()
+    {
+        var stage = new GameObject("Stage");
+        objects.Add(stage);
+        var light = new PlayExcitementMesh(stage.transform, "FinalStageLight", 3000, -190);
+        Assume.That(light.Available, "PlayExcitement のシェーダーが読める");
+        var filter = stage.GetComponentInChildren<MeshFilter>(true);
+        Mesh mesh = filter.sharedMesh;
+        Material material = filter.GetComponent<MeshRenderer>().sharedMaterial;
+        UnityEngine.Object.DestroyImmediate(stage);
+        Assert.IsTrue(mesh == null, "舞台ごと壊れたらメッシュも壊す");
+        Assert.IsTrue(material == null, "材質も壊す");
+        Assert.IsFalse(light.Available);
+        light.Clear(); light.Quad(Vector3.zero, Vector3.right, Vector3.one, Vector3.up, Color.white, true);
+        Assert.DoesNotThrow(() => { light.Flush(); light.Hide(); light.Dispose(); });
+    }
 }
