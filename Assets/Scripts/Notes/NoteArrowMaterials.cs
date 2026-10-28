@@ -22,6 +22,76 @@ public sealed class NoteArrowMaterials : MonoBehaviour
         if (isBars) bars = material;
     }
 
+    // Q の隠した向き(CuttableNote.HidesSideArrow)。本当の矢印の代わりに左右の両矢印(↔)を出す。部品は本当の矢印と同じ
+    // 2つの材質(黒い縁取り・白い棒)を使うので、見えにくさ・暗さ・光り方は本当の矢印と同じ。違う向きに振られたら
+    // (Flash)本当の矢印へ戻して光らせる。使い回しの矢印は出現のたびに NoteSpawner が SetSideArrow で決め直す。
+    GameObject[] arrowParts, sideParts;
+    public bool SideShown { get; private set; }
+
+    internal void SetSideArrow(bool side)
+    {
+        FindArrowParts();
+        if (side && sideParts == null) BuildSideParts();
+        SideShown = side && sideParts != null;
+        if (arrowParts != null)
+            foreach (var part in arrowParts) if (part != null && part.activeSelf == SideShown) part.SetActive(!SideShown);
+        if (sideParts != null)
+            foreach (var part in sideParts) if (part != null && part.activeSelf != SideShown) part.SetActive(SideShown);
+    }
+
+    // 部品(テスト用)。side が false なら本当の矢印、layer 0 が黒い縁取り・1 が白い棒。
+    internal GameObject Part(bool side, int layer)
+    {
+        FindArrowParts();
+        var parts = side ? sideParts : arrowParts;
+        return parts != null && layer >= 0 && layer < parts.Length ? parts[layer] : null;
+    }
+
+    // NoteSpawner.BuildArrow が作った本当の矢印の2枚。
+    void FindArrowParts()
+    {
+        if (arrowParts != null) return;
+        var backingPart = transform.Find("ArrowBacking");
+        var barsPart = transform.Find("Bars");
+        arrowParts = new[] { backingPart != null ? backingPart.gameObject : null, barsPart != null ? barsPart.gameObject : null };
+    }
+
+    void BuildSideParts()
+    {
+        Material backing = null;
+        foreach (var material in owned)
+            if (material != null && material != bars) { backing = material; break; }
+        if (bars == null || backing == null) return;
+        var parts = new GameObject[2];
+        for (int layer = 0; layer < 2; layer++)
+        {
+            var mesh = FlickArrowShape.CreateSideMesh(layer == 0);
+            Register(mesh);
+            var part = new GameObject(layer == 0 ? "SideBacking" : "SideBars", typeof(MeshFilter), typeof(MeshRenderer));
+            part.layer = gameObject.layer;
+            part.transform.SetParent(transform, false);
+            // 矢印の根は本当の向きへ回してあるので、両矢印はその回転を打ち消してノーツの横に向ける。
+            part.transform.localRotation = Quaternion.Inverse(transform.localRotation);
+            part.transform.localPosition = new Vector3(0, 0, layer == 0 ? .008f : -.008f);
+            part.transform.localScale = Vector3.one;
+            part.GetComponent<MeshFilter>().sharedMesh = mesh;
+            var renderer = part.GetComponent<MeshRenderer>();
+            renderer.sharedMaterial = layer == 0 ? backing : bars;
+            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            renderer.receiveShadows = false;
+            // 並び順は本当の矢印の部品に合わせる(試験用紙の上へ上げた値も写す)。
+            var source = arrowParts != null && arrowParts[layer] != null ? arrowParts[layer].GetComponent<MeshRenderer>() : null;
+            if (source != null)
+            {
+                renderer.sortingLayerID = source.sortingLayerID;
+                renderer.sortingOrder = source.sortingOrder;
+            }
+            part.SetActive(false);
+            parts[layer] = part;
+        }
+        sideParts = parts;
+    }
+
     internal void Bind(CuttableNote target, Color color)
     {
         if (note != null) note.OnWrongDirection -= Flash;
@@ -69,6 +139,12 @@ public sealed class NoteArrowMaterials : MonoBehaviour
     void Flash(CuttableNote source)
     {
         if (source.DirectionVisualOnly || source.IsMissed || source.HidesCues || bars == null) return;
+        // 隠した向き: 違う向きに振られたら、両矢印を本当の向きの矢印へ戻して光らせる(どちらが正しかったかを見せる)。
+        if (SideShown)
+        {
+            source.RevealSideArrow();
+            SetSideArrow(false);
+        }
         flashAge = 0f;
         bars.SetColor(BaseColorId, WithVeil(FlashColor(noteColor, flashAge)));
     }

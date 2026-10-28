@@ -44,6 +44,15 @@ public static class ChartLoader
                     ? OvertakeRules.NormalizeLane(note.laneX) : 0f;
                 // 消える(V)。知らない名前はふつうのノーツ。
                 note.vanish = VanishRules.Name(VanishRules.Parse(note.vanish));
+                // Q の発射点。壊れた札の位置は着地点から出す(見た目が動かないだけ)。発射点でないノーツは 0 にそろえる。
+                if (note.launch)
+                {
+                    note.fromX = Finite(note.fromX) ? Math.Max(-8f, Math.Min(8f, note.fromX)) : note.x;
+                    note.fromY = Finite(note.fromY) ? Math.Max(-4f, Math.Min(6f, note.fromY)) : note.y;
+                }
+                else note.fromX = note.fromY = 0f;
+                // Q の隠した向き。左右の矢印だけ。知らない名前・ほかの向きはふつうの矢印。
+                note.sideArrow = QuizRules.SideArrow(note.sideArrow, note.direction);
             }
             // 拍ガイドと描画を成立させる最低限の復旧。ノーツ時刻・配置は補正しない。
             if (!Finite(data.bpm) || data.bpm <= 0) data.bpm = 120;
@@ -60,7 +69,7 @@ public static class ChartLoader
             data.heat = HasHeatObject(json)
                 ? HeatRules.Normalize(data.heat ?? new HeatChartData()) : null;
             data.fall = FallRules.Normalize(data.fall);
-            // 勉強の裏譜面 Q の試験用紙と問題。壊れた値は捨て、時刻順に並べる(ふつうの譜面では空のまま)。
+            // 勉強の裏譜面 Q の試験用紙・問題・飾りの金。壊れた値は捨て、時刻順に並べる(ふつうの譜面では空のまま)。
             data.quiz = QuizRules.Normalize(data.quiz);
             // Manic Sonic の裏譜面 R。区間を時刻順に並べ、壊れた値を収め、門を通る時刻が鏡の区間に入らないノーツは鏡を外す。
             data.reverse = ReverseRules.Normalize(data.reverse, data.notes);

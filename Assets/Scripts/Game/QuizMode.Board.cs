@@ -1,12 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using TMPro;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-// 試験用紙の上の絵(問題・楽譜・行列・凡例・数式の画像、線・的・玉・レーン・輪、的の上の文字)。毎コマ曲の時計から描き直す。
-// 画像は曲フォルダの quiz/ の PNG(File.ReadAllBytes + Texture2D.LoadImage)。読めない画像は出さず、一度だけ知らせる。
+// 試験用紙の上の絵。毎コマ曲の時計と、切った・逃したの記録から描き直す。
+//   画像(問題・札・箱の語・数・桁・点・「…」・「?」・花丸)は曲フォルダの quiz/ の PNG(File.ReadAllBytes + Texture2D.LoadImage)。
+//   同じ画像を同じコマに何枚も置ける(π の桁など)。読めない画像は出さず、一度だけ知らせる。
+//   線・四角・箱・赤ペンの丸は QuizMesh(marks)。赤ペンの丸と花丸は画像より手前(MarkSortingOrder)。
 public sealed partial class QuizMode
 {
     sealed class BoardImage
@@ -14,21 +15,23 @@ public sealed partial class QuizMode
         public string file;
         public Texture2D texture;
         public float aspect = 1f;   // 幅 ÷ 高さ
-        public GameObject go;
-        public Material material;
-        public bool used;
+        public int pixels;          // 高さの画素(同じ字の大きさで書き出した画像どうしの大きさの比に使う)
+        public readonly List<BoardSprite> sprites = new List<BoardSprite>();
+        public int used;            // このコマで置いた枚数
     }
 
-    // 的の上の文字(行列の答えの列)とレーンの下の字の大きさ(TextMeshPro の 3D は 10 で 1 単位の字)。
-    const float TargetLabelSize = 3.7f, LaneLetterSize = 2.4f;
-    const string LabelFont = "Oxanium-Bold";
+    sealed class BoardSprite
+    {
+        public GameObject go;
+        public Material material;
+        public MeshRenderer renderer;
+    }
 
+    static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
     readonly Dictionary<string, BoardImage> images = new Dictionary<string, BoardImage>(StringComparer.Ordinal);
     readonly HashSet<string> missingImages = new HashSet<string>(StringComparer.Ordinal);
-    readonly TextMeshPro[] targetLabels = new TextMeshPro[QuizRules.LaneCount];
-    readonly TextMeshPro[] laneLetters = new TextMeshPro[QuizRules.LaneCount];
-    readonly bool[] targetLabelUsed = new bool[QuizRules.LaneCount];
-    readonly bool[] laneLetterUsed = new bool[QuizRules.LaneCount];
+    // 無くてもよい画像(qmark.png)が無かったとき。知らせず、毎コマ読み直さない。
+    readonly HashSet<string> absentOptional = new HashSet<string>(StringComparer.Ordinal);
     Shader boardShader;
     bool boardShaderFallback, boardShaderChecked;
     Mesh quad;
@@ -37,21 +40,48 @@ public sealed partial class QuizMode
     public IReadOnlyCollection<string> MissingImages => missingImages;
     public bool UsesFallbackImageShader => boardShaderFallback;
 
-    // 画像が今出ているか・その色(濃さ)・中心・大きさ(テスト用)。
-    public bool ImageShown(string file) => file != null && images.TryGetValue(file, out var image)
-        && image.go != null && image.go.activeSelf;
-    public Color ImageColor(string file) => file != null && images.TryGetValue(file, out var image)
-        && image.material != null && image.material.HasProperty("_BaseColor")
-            ? image.material.GetColor("_BaseColor") : Color.clear;
-    public Vector3 ImagePosition(string file) => file != null && images.TryGetValue(file, out var image) && image.go != null
-        ? image.go.transform.position : Vector3.zero;
-    public Vector3 ImageSize(string file) => file != null && images.TryGetValue(file, out var image) && image.go != null
-        ? image.go.transform.lossyScale : Vector3.zero;
-    public Renderer ImageRenderer(string file) => file != null && images.TryGetValue(file, out var image) && image.go != null
-        ? image.go.GetComponent<MeshRenderer>() : null;
-    // 行列の的の上の文字(出ていなければ null)。
-    public TextMeshPro TargetLabel(int target) => target >= 0 && target < targetLabels.Length
-        && targetLabels[target] != null && targetLabels[target].gameObject.activeSelf ? targetLabels[target] : null;
+    // 画像が今出ている枚数と、index 枚目(このコマに置いた順)の色(濃さ)・中心・大きさ・描画(テスト用)。
+    public int ImageCount(string file)
+    {
+        if (file == null || !images.TryGetValue(file, out var image)) return 0;
+        int count = 0;
+        foreach (var sprite in image.sprites) if (sprite.go != null && sprite.go.activeSelf) count++;
+        return count;
+    }
+    public bool ImageShown(string file) => ImageCount(file) > 0;
+    public Color ImageColor(string file, int index = 0)
+    {
+        var sprite = ShownSprite(file, index);
+        return sprite != null && sprite.material != null && sprite.material.HasProperty(BaseColorId)
+            ? sprite.material.GetColor(BaseColorId) : Color.clear;
+    }
+    public Vector3 ImagePosition(string file, int index = 0)
+    {
+        var sprite = ShownSprite(file, index);
+        return sprite != null ? sprite.go.transform.position : Vector3.zero;
+    }
+    public Vector3 ImageSize(string file, int index = 0)
+    {
+        var sprite = ShownSprite(file, index);
+        return sprite != null ? sprite.go.transform.lossyScale : Vector3.zero;
+    }
+    public Renderer ImageRenderer(string file, int index = 0)
+    {
+        var sprite = ShownSprite(file, index);
+        return sprite != null ? sprite.renderer : null;
+    }
+
+    BoardSprite ShownSprite(string file, int index)
+    {
+        if (file == null || !images.TryGetValue(file, out var image)) return null;
+        int seen = 0;
+        foreach (var sprite in image.sprites)
+        {
+            if (sprite.go == null || !sprite.go.activeSelf) continue;
+            if (seen++ == index) return sprite;
+        }
+        return null;
+    }
 
     // ---- 画像 ----
 
@@ -61,51 +91,37 @@ public sealed partial class QuizMode
         foreach (var item in quiz.items)
         {
             Load(item.question);
-            Load(item.answerImage);
-            foreach (var row in item.rows) Load(row);
-            if (item.kind == QuizRules.Count) LegendImage(item);
+            foreach (var file in item.options) Load(file);
+            foreach (var file in item.boxes) Load(file);
+            foreach (var file in item.numbers) Load(file);
+            if (item.kind == QuizRules.Count) MarkImage(item);
+            Load(item.pointImage);
+            Load(item.ellipsisImage);
+            Load(item.flowerImage);
         }
     }
 
-    // 数える問題の凡例: QuizItemData.legend、無ければ rows の最初、それも無ければ quiz/legend.png。
-    BoardImage LegendImage(QuizItemData item)
-    {
-        BoardImage image = null;
-        if (!string.IsNullOrWhiteSpace(item.legend)) image = Load(item.legend);
-        if (image == null && item.rows.Count > 0) image = Load(item.rows[0]);
-        if (image == null) image = Load(QuizRules.DefaultLegendImage, warn: false);
-        return image;
-    }
+    // count の「?」: QuizItemData.markImage、無ければ quiz/qmark.png(無くてもよい)。
+    BoardImage MarkImage(QuizItemData item)
+        => !string.IsNullOrWhiteSpace(item.markImage) ? Load(item.markImage) : Load(QuizRules.DefaultMarkImage, optional: true);
 
-    BoardImage Load(string file, bool warn = true)
+    BoardImage Load(string file, bool optional = false)
     {
         if (string.IsNullOrWhiteSpace(file)) return null;
         if (images.TryGetValue(file, out var cached)) return cached;
-        if (missingImages.Contains(file)) return null;
-        var texture = ReadTexture(file, warn);
+        if (missingImages.Contains(file) || absentOptional.Contains(file)) return null;
+        var texture = ReadTexture(file, !optional);
         if (texture == null)
         {
-            missingImages.Add(file);
+            if (optional) absentOptional.Add(file);
+            else missingImages.Add(file);
             return null;
         }
         var image = new BoardImage
         {
-            file = file, texture = texture,
+            file = file, texture = texture, pixels = texture.height,
             aspect = texture.height > 0 ? (float)texture.width / texture.height : 1f
         };
-        image.go = new GameObject("QuizImage " + file, typeof(MeshFilter), typeof(MeshRenderer));
-        image.go.transform.SetParent(board, false);
-        image.go.GetComponent<MeshFilter>().sharedMesh = Quad();
-        image.material = ImageMaterial(texture);
-        var renderer = image.go.GetComponent<MeshRenderer>();
-        renderer.sharedMaterial = image.material;
-        renderer.sortingLayerID = 0;
-        renderer.sortingOrder = ImageSortingOrder;
-        renderer.shadowCastingMode = ShadowCastingMode.Off;
-        renderer.receiveShadows = false;
-        renderer.lightProbeUsage = LightProbeUsage.Off;
-        renderer.reflectionProbeUsage = ReflectionProbeUsage.Off;
-        image.go.SetActive(false);
         images[file] = image;
         return image;
     }
@@ -155,7 +171,7 @@ public sealed partial class QuizMode
             {
                 boardShader = Shader.Find("Universal Render Pipeline/Unlit");
                 boardShaderFallback = true;
-                Debug.LogWarning("[Quiz] 黒板の画像の shader が無いか未対応です。URP Unlit で代えます。");
+                Debug.LogWarning("[Quiz] 試験用紙の画像の shader が無いか未対応です。URP Unlit で代えます。");
             }
         }
         if (boardShader == null) return null;
@@ -188,14 +204,41 @@ public sealed partial class QuizMode
         return quad;
     }
 
-    // 中心 center(ワールド)・大きさ size(ワールド)で出す。色の a は濃さ。
-    void Place(BoardImage image, Vector3 center, Vector2 size, Color color)
+    // 1枚ぶんの板(材質は1枚ごと。同じ画像を違う濃さで並べるため)。
+    BoardSprite NewSprite(BoardImage image)
     {
-        if (image == null || image.go == null) return;
-        image.used = true;
-        if (!image.go.activeSelf) image.go.SetActive(true);
-        PlaceWorld(image.go.transform, center, new Vector3(size.x, size.y, 1f));
-        if (image.material != null && image.material.HasProperty("_BaseColor")) image.material.SetColor("_BaseColor", color);
+        var material = ImageMaterial(image.texture);
+        if (material == null) return null;
+        var go = new GameObject("QuizImage " + image.file + " " + image.sprites.Count, typeof(MeshFilter), typeof(MeshRenderer));
+        go.transform.SetParent(board, false);
+        go.GetComponent<MeshFilter>().sharedMesh = Quad();
+        var renderer = go.GetComponent<MeshRenderer>();
+        renderer.sharedMaterial = material;
+        renderer.sortingLayerID = 0;
+        renderer.sortingOrder = ImageSortingOrder;
+        renderer.shadowCastingMode = ShadowCastingMode.Off;
+        renderer.receiveShadows = false;
+        renderer.lightProbeUsage = LightProbeUsage.Off;
+        renderer.reflectionProbeUsage = ReflectionProbeUsage.Off;
+        go.SetActive(false);
+        return new BoardSprite { go = go, material = material, renderer = renderer };
+    }
+
+    // このコマの次の1枚を、中心 center(ワールド)・大きさ size(ワールド)で出す。色の a は濃さ。
+    void Place(BoardImage image, Vector3 center, Vector2 size, Color color, int order = ImageSortingOrder)
+    {
+        if (image == null || image.texture == null || board == null) return;
+        if (image.used >= image.sprites.Count)
+        {
+            var created = NewSprite(image);
+            if (created == null) return;
+            image.sprites.Add(created);
+        }
+        var sprite = image.sprites[image.used++];
+        if (!sprite.go.activeSelf) sprite.go.SetActive(true);
+        PlaceWorld(sprite.go.transform, center, new Vector3(size.x, size.y, 1f));
+        if (sprite.renderer.sortingOrder != order) sprite.renderer.sortingOrder = order;
+        if (sprite.material != null && sprite.material.HasProperty(BaseColorId)) sprite.material.SetColor(BaseColorId, color);
     }
 
     // 親の拡大に左右されず、ワールドの位置と大きさで置く。
@@ -208,66 +251,14 @@ public sealed partial class QuizMode
 
     static float Divide(float value, float by) => Mathf.Abs(by) > 1e-6f ? value / by : value;
 
-    // count・formula などは revealMs から答えの入った画像に差し替える。
-    BoardImage QuestionImage(QuizItemData item, double time)
+    void HideUnusedSprites()
     {
-        if (QuizRules.Revealed(item, offset, time))
-        {
-            var answer = Load(item.answerImage);
-            if (answer != null) return answer;
-        }
-        return Load(item.question);
-    }
-
-    // ---- 字 ----
-
-    void PrepareLabels()
-    {
-        if (!hasMatrix) return;
-        for (int i = 0; i < QuizRules.LaneCount; i++)
-        {
-            targetLabels[i] = MakeLabel("QuizTargetLabel" + i, TargetLabelSize);
-            laneLetters[i] = MakeLabel("QuizLaneLetter" + i, LaneLetterSize);
-            if (laneLetters[i] != null) laneLetters[i].text = LaneNames[i];
-        }
-    }
-
-    TextMeshPro MakeLabel(string name, float size)
-    {
-        var go = new GameObject(name);
-        go.transform.SetParent(board, false);
-        var text = go.AddComponent<TextMeshPro>();
-        var font = UISkinKit.FontAsset(LabelFont);
-        if (font != null) text.font = font;
-        text.fontSize = size;
-        text.fontStyle = FontStyles.Normal;
-        text.alignment = TextAlignmentOptions.Center;
-        text.textWrappingMode = TextWrappingModes.NoWrap;
-        text.overflowMode = TextOverflowModes.Overflow;
-        text.isOrthographic = false;
-        text.color = Color.white;
-        text.rectTransform.sizeDelta = new Vector2(1.2f, .6f);
-        // 前後は sortingOrder で決める(試験用紙の上、ノーツと剣の下)。字の材質は共有のまま変えない。
-        var renderer = go.GetComponent<MeshRenderer>();
-        if (renderer != null)
-        {
-            renderer.sortingLayerID = 0;
-            renderer.sortingOrder = MarkSortingOrder;
-        }
-        go.SetActive(false);
-        return text;
-    }
-
-    static readonly string[] LaneNames = { "A", "B", "C", "D" };
-
-    static void ShowLabel(TextMeshPro text, string value, Vector3 position, float alpha)
-    {
-        if (text == null) return;
-        if (!text.gameObject.activeSelf) text.gameObject.SetActive(true);
-        if (text.text != value) text.text = value;
-        PlaceWorld(text.transform, position, Vector3.one);
-        var color = new Color(1f, 1f, 1f, alpha);
-        if (text.color != color) text.color = color;
+        foreach (var image in images.Values)
+            for (int i = image.used; i < image.sprites.Count; i++)
+            {
+                var sprite = image.sprites[i];
+                if (sprite.go != null && sprite.go.activeSelf) sprite.go.SetActive(false);
+            }
     }
 
     // ---- 毎コマの描き直し ----
@@ -275,26 +266,20 @@ public sealed partial class QuizMode
     void DrawBoard(double time, float visibility)
     {
         if (marks != null) marks.Clear();
-        foreach (var image in images.Values) image.used = false;
-        Array.Clear(targetLabelUsed, 0, targetLabelUsed.Length);
-        Array.Clear(laneLetterUsed, 0, laneLetterUsed.Length);
-        ActivePops = ActiveRings = BallsDrawn = GuidesDrawn = 0;
+        foreach (var image in images.Values) image.used = 0;
+        RedCircles = Squares = 0;
+        GateOutlineDrawn = false;
         if (visibility > 0f && quiz?.items != null && marks != null)
         {
-            if (hasRhythm) DrawRhythm(time, visibility);
-            if (hasMatrix) DrawMatrix(time, visibility);
-            if (hasCount) DrawCount(time, visibility);
-            if (hasFormula) DrawFormula(time, visibility);
-            DrawPops(time, visibility);
+            DrawGateOutline(visibility);
+            if (hasRhythm && InSection(rhythmSpan, time, QuizRules.PaperFadeSeconds)) DrawRhythm(time, visibility);
+            // 斬り分けの板は、接近 2.0 秒では最初の問題より前から出る。
+            if (hasSort && InSection(sortSpan, time, QuizRules.SortCoverLeadSeconds)) DrawSort(time, visibility);
+            if (hasCount && InSection(countSpan, time, QuizRules.PaperFadeSeconds)) DrawCount(time, visibility);
+            if (hasPi && InSection(piSpan, time, QuizRules.PaperFadeSeconds)) DrawPi(time, visibility);
         }
         if (marks != null) marks.Flush();
-        foreach (var image in images.Values)
-            if (!image.used && image.go != null && image.go.activeSelf) image.go.SetActive(false);
-        for (int i = 0; i < QuizRules.LaneCount; i++)
-        {
-            if (!targetLabelUsed[i] && targetLabels[i] != null && targetLabels[i].gameObject.activeSelf) targetLabels[i].gameObject.SetActive(false);
-            if (!laneLetterUsed[i] && laneLetters[i] != null && laneLetters[i].gameObject.activeSelf) laneLetters[i].gameObject.SetActive(false);
-        }
+        HideUnusedSprites();
     }
 
     // 頂点色は線形の値としてそのまま使われるので、材質の色と同じ見え方になるよう直す(白と黒は変わらない)。
@@ -305,249 +290,292 @@ public sealed partial class QuizMode
         return linear;
     }
 
-    static bool InSection(QuizRules.Span span, double time)
-        => time >= span.Start - QuizRules.PaperFadeSeconds && time < span.End + QuizRules.PassFadeSeconds;
+    static Color White(float alpha) => new Color(1f, 1f, 1f, alpha);
 
-    // rhythm: 横の線・的・右から流れる玉(本物と飾り)、出ている問題の画像と答えの行(正しい行の緑)。
+    static bool InSection(QuizRules.Span span, double time, double lead)
+        => time >= span.Start - lead && time < span.End + QuizRules.PaperFadeSeconds;
+
+    // 判定面のゲートの枠(紙の間だけ、白い細線)。奥行きと判定面の場所を見せる。
+    void DrawGateOutline(float visibility)
+    {
+        marks.Frame(QuizRules.GateCenter, judgeZ - MarkLift, QuizRules.GateHalfWidth * 2f, QuizRules.GateTopY - QuizRules.GateBottomY,
+            QuizRules.GateLineWidth, Vertex(Color.white, QuizRules.GateLineAlpha * visibility));
+        GateOutlineDrawn = true;
+    }
+
+    // 赤ペンの丸(札・数のまわり)。start から一筆で描く。
+    void DrawPenCircle(Vector2 center, Vector2 size, double start, double time, float visibility)
+    {
+        float progress = QuizRules.PenProgress(time, start);
+        if (progress <= 0f) return;
+        RedCircles++;
+        marks.PenEllipse(center, judgeZ - MarkLift, size.x * .5f + QuizRules.PenCirclePad, size.y * .5f + QuizRules.PenCirclePad,
+            QuizRules.RedPenWidth, Vertex(QuizRules.RedPen, visibility), progress, QuizRules.PenOvershoot);
+    }
+
+    // 赤ペン・「…」・花丸を出す時刻。revealMs(譜面)、無ければその問題の最後のノーツが届く時刻。どちらも無ければ出さない。
+    double RevealTime(int index, QuizItemData item)
+    {
+        if (item.revealMs > 0f) return QuizRules.Seconds(item.revealMs, offset);
+        var times = itemTimes[index];
+        return times.Count > 0 ? times[times.Count - 1] : double.NaN;
+    }
+
+    // ---- rhythm「答えの柱」 ----
+
+    // 柱の判定面の薄い四角と、出ている問題の板(問題・札・赤ペン)。
     void DrawRhythm(double time, float visibility)
     {
-        if (!InSection(rhythmSpan, time)) return;
         float z = judgeZ - MarkLift;
-        marks.Line(new Vector3(QuizRules.RhythmTargetX - QuizRules.RhythmLineLeftMargin, QuizRules.RhythmLineY, z),
-            new Vector3(rightEdgeX + QuizRules.BallRadius * 2f, QuizRules.RhythmLineY, z),
-            QuizRules.LineWidth, Vertex(Color.white, QuizRules.LineAlpha * visibility));
-        marks.Ring(new Vector2(QuizRules.RhythmTargetX, QuizRules.RhythmLineY), z, QuizRules.RhythmTargetRadius,
-            QuizRules.TargetWidth, Vertex(Color.white, visibility));
-        double lead = QuizRules.LeadSeconds(QuizRules.RhythmTargetX, rightEdgeX + QuizRules.BallRadius, QuizRules.RhythmSpeed);
+        for (int p = 0; p < QuizRules.PillarX.Length; p++)
+        {
+            marks.Square(new Vector2(QuizRules.PillarX[p], QuizRules.PillarY), z, QuizRules.PillarSquareSize,
+                Vertex(Color.white, QuizRules.PillarSquareAlpha * visibility));
+            Squares++;
+        }
         for (int i = 0; i < quiz.items.Count; i++)
         {
             var item = quiz.items[i];
-            if (item.kind != QuizRules.Rhythm) continue;
-            // その問題が出る前は玉を出さず、出てから薄く現れる。
-            float appear = QuizRules.AppearFade(item, offset, time);
-            for (int d = 0; appear > 0f && d < item.dots.Count; d++)
-            {
-                var dot = item.dots[d];
-                double arrival = QuizRules.Seconds(dot.ms, offset);
-                if (!QuizRules.BallShown(arrival, time, lead) || popped.Contains(Key(i, d))) continue;
-                float alpha = QuizRules.BallAlpha(item.hint, dot.real, arrival, time) * appear * visibility;
-                marks.Disc(new Vector2(QuizRules.BallX(arrival, time), QuizRules.RhythmLineY), z, QuizRules.BallRadius,
-                    Vertex(Color.white, alpha));
-                BallsDrawn++;
-            }
-            if (QuizRules.Active(item, offset, time)) DrawRhythmBoard(item, time, visibility);
+            if (item.kind == QuizRules.Rhythm && QuizRules.Active(item, offset, time)) DrawRhythmBoard(i, item, time, visibility);
         }
     }
 
-    void DrawRhythmBoard(QuizItemData item, double time, float visibility)
+    void DrawRhythmBoard(int index, QuizItemData item, double time, float visibility)
     {
         float z = judgeZ - ImageLift;
-        int rows = item.rows.Count;
-        var question = QuestionImage(item, time);
+        var question = Load(item.question);
         if (question != null)
-            Place(question, new Vector3(0f, QuizRules.QuestionCenterY(rows), z),
-                new Vector2(QuizRules.QuestionHeight * question.aspect, QuizRules.QuestionHeight), new Color(1f, 1f, 1f, visibility));
-        // 答えの行は左をそろえ、まとまりを真ん中に置く。
-        float widest = 0f;
-        for (int r = 0; r < rows; r++)
+            Place(question, new Vector3(0f, QuizRules.RhythmQuestionY, z),
+                QuizRules.FitSize(question.aspect, QuizRules.RhythmQuestionHeight, QuizRules.BoardMaxWidth), White(visibility));
+        // 練習は最初から、ほかは最後の本物が届いたら、正しい札を赤い丸で囲む(end まで)。
+        double penStart = item.hint ? QuizRules.Seconds(item.showMs, offset) : RevealTime(index, item);
+        for (int p = 0; p < QuizRules.PillarX.Length && p < item.options.Count; p++)
         {
-            var row = Load(item.rows[r]);
-            if (row != null) widest = Mathf.Max(widest, QuizRules.RowHeight * row.aspect);
-        }
-        float left = -widest * .5f;
-        bool green = QuizRules.Green(item, offset, time);
-        for (int r = 0; r < rows; r++)
-        {
-            var row = Load(item.rows[r]);
-            if (row == null) continue;
-            float width = QuizRules.RowHeight * row.aspect;
-            Color color = green && r == item.answer ? QuizRules.AnswerGreen : Color.white;
+            var option = Load(item.options[p]);
+            if (option == null) continue;
+            // 背の高い札(分数)は画素の比で大きくして、ほかの札と字の大きさをそろえる。
+            Vector2 size = QuizRules.LabelSize(option.pixels, option.aspect, QuizRules.OptionHeight,
+                QuizRules.OptionReferencePixels, QuizRules.OptionMaxWidth);
+            var center = new Vector2(QuizRules.PillarX[p], QuizRules.OptionY);
+            bool flash = optionFlashPillar[index] == p && QuizRules.OptionFlashing(time, optionFlashStart[index]);
+            Color color = flash ? UISkinPalette.NoteGold : Color.white;
             color.a = visibility;
-            Place(row, new Vector3(left + width * .5f, QuizRules.RowCenterY(r, rows), z), new Vector2(width, QuizRules.RowHeight), color);
+            Place(option, new Vector3(center.x, center.y, z), size, color);
+            if (p == item.answer) DrawPenCircle(center, size, penStart, time, visibility);
         }
     }
 
-    // matrix: 左の小さなレーン(縦線・小さな丸・A B C D)と落ちる印、4つの的、出ている行列の画像と的の上の文字。
-    // レーンと印の道は画面でまっすぐ縦(MeasureLanes)。ノーツが来ても的には何も出さない(切ったら輪が広がるだけ)。
-    void DrawMatrix(double time, float visibility)
+    // ---- sort「斬り分け」 ----
+
+    // 左右の端の箱と真ん中の的の薄い四角、出ている問題の板(見出し・箱の語・札)。
+    void DrawSort(double time, float visibility)
     {
-        if (!InSection(matrixSpan, time)) return;
+        int active = ActiveSortItem(time);
+        if (active < 0) return;
         float z = judgeZ - MarkLift;
-        Color lane = Vertex(Color.white, QuizRules.LineAlpha * .8f * visibility);
-        for (int l = 0; l < QuizRules.LaneCount; l++)
-        {
-            Vector2 bottom = laneBottoms[l], top = laneTops[l];
-            float stopY = QuizRules.LaneBottomY + QuizRules.LaneDotRadius;
-            marks.Line(new Vector3(top.x, top.y, z), new Vector3(QuizRules.LaneXAt(bottom, top, stopY), stopY, z),
-                QuizRules.LaneLineWidth, lane);
-            marks.Ring(bottom, z, QuizRules.LaneDotRadius, QuizRules.LaneLineWidth * 1.4f, Vertex(Color.white, visibility), 24);
-            laneLetterUsed[l] = true;
-            ShowLabel(laneLetters[l], LaneNames[l],
-                new Vector3(QuizRules.LaneXAt(bottom, top, QuizRules.LaneLetterY), QuizRules.LaneLetterY, judgeZ - ImageLift), visibility);
-        }
-        double lead = QuizRules.LeadSeconds(QuizRules.LaneBottomY, laneTops[0].y + QuizRules.GuideRadius, QuizRules.GuideSpeed);
-        for (int i = 0; i < quiz.items.Count; i++)
-        {
-            var item = quiz.items[i];
-            if (item.kind != QuizRules.Matrix) continue;
-            // その問題が出る前は印を出さず、出てから薄く現れる(最初の印はレーンの途中から)。
-            float appear = QuizRules.AppearFade(item, offset, time);
-            if (appear <= 0f) continue;
-            foreach (var guide in item.guides)
-            {
-                double arrival = QuizRules.Seconds(guide.ms, offset);
-                if (!QuizRules.BallShown(arrival, time, lead)) continue;
-                float y = QuizRules.FallY(QuizRules.LaneBottomY, QuizRules.GuideSpeed, arrival, time);
-                var center = new Vector2(QuizRules.LaneXAt(laneBottoms[guide.lane], laneTops[guide.lane], y), y);
-                marks.Disc(center, z, QuizRules.GuideRadius,
-                    Vertex(Color.white, QuizRules.PassFade(arrival, time) * appear * visibility), 20);
-                GuidesDrawn++;
-            }
-        }
-        for (int t = 0; t < QuizRules.MatrixTargetX.Length; t++)
-            marks.Ring(new Vector2(QuizRules.MatrixTargetX[t], QuizRules.MatrixTargetY), z, QuizRules.MatrixTargetRadius,
-                QuizRules.TargetWidth, Vertex(Color.white, visibility));
-        foreach (var item in quiz.items)
-            if (item.kind == QuizRules.Matrix && QuizRules.Active(item, offset, time)) DrawMatrixBoard(item, time, visibility);
+        Color frame = Vertex(Color.white, QuizRules.BoxAlpha * visibility);
+        for (int s = -1; s <= 1; s += 2)
+            marks.Frame(QuizRules.BoxCenter(s), z, QuizRules.BoxWidth, QuizRules.BoxHeight, QuizRules.BoxLineWidth, frame);
+        marks.Square(QuizRules.SortTarget, z, QuizRules.PillarSquareSize, Vertex(Color.white, QuizRules.PillarSquareAlpha * visibility));
+        Squares++;
+        DrawSortBoard(active, quiz.items[active], time, visibility);
     }
 
-    void DrawMatrixBoard(QuizItemData item, double time, float visibility)
+    // 札は、その金が出るときに少し明るくなり、届く時刻に答えの箱へ 0.25 秒で滑り込む。切れていれば金、逃した・違う向きなら灰色で積む。
+    void DrawSortBoard(int index, QuizItemData item, double time, float visibility)
     {
         float z = judgeZ - ImageLift;
-        var image = QuestionImage(item, time);
-        if (image != null)
-            Place(image, new Vector3(0f, QuizRules.MatrixBoardBottomY + QuizRules.MatrixImageHeight * .5f, z),
-                new Vector2(QuizRules.MatrixImageHeight * image.aspect, QuizRules.MatrixImageHeight), new Color(1f, 1f, 1f, visibility));
-        // 空の文字は出さない(「= ?」の問題)。
-        for (int t = 0; t < QuizRules.MatrixTargetX.Length && t < item.labels.Count; t++)
+        var header = Load(item.question);
+        if (header != null)
+            Place(header, new Vector3(0f, QuizRules.SortHeaderY, z),
+                QuizRules.FitSize(header.aspect, QuizRules.SortHeaderHeight, QuizRules.BoardMaxWidth), White(visibility));
+        for (int s = 0; s < 2 && s < item.boxes.Count; s++)
         {
-            if (string.IsNullOrEmpty(item.labels[t])) continue;
-            targetLabelUsed[t] = true;
-            ShowLabel(targetLabels[t], item.labels[t], new Vector3(QuizRules.MatrixTargetX[t], QuizRules.MatrixLabelY, z), visibility);
+            var word = Load(item.boxes[s]);
+            if (word == null) continue;
+            Vector2 center = QuizRules.BoxWordCenter(s == 0 ? -1f : 1f);
+            Place(word, new Vector3(center.x, center.y, z), QuizRules.LabelSize(word.pixels, word.aspect, QuizRules.BoxWordHeight,
+                QuizRules.BoxWordReferencePixels, QuizRules.BoxWordMaxWidth), White(visibility));
+        }
+        int left = 0, right = 0;
+        for (int k = 0; k < QuizRules.SortLabelX.Length && k < item.options.Count; k++)
+        {
+            float sign = QuizRules.SideSign(k < item.sides.Count ? item.sides[k] : "");
+            int stack = sign < 0f ? left++ : sign > 0f ? right++ : 0;
+            var label = Load(item.options[k]);
+            if (label == null) continue;
+            double hit = k < itemSlotCount[index] ? itemTimes[index][k]
+                : QuizRules.Seconds(item.playMs, offset) + k * QuizRules.SortStepSeconds;
+            double spawn = spawner != null ? spawner.SpawnTimeFor(hit) : hit - 1.0;
+            var home = new Vector2(QuizRules.SortLabelX[k], QuizRules.SortLabelY);
+            Vector2 fromSize = QuizRules.LabelSize(label.pixels, label.aspect, QuizRules.SortLabelHeight,
+                QuizRules.SortLabelReferencePixels, QuizRules.SortLabelMaxWidth);
+            float slide = sign != 0f ? QuizRules.SortSlide(time, hit) : 0f;
+            Vector2 to = sign != 0f ? QuizRules.BoxSlot(sign, stack) : home;
+            Vector2 toSize = QuizRules.LabelSize(label.pixels, label.aspect, QuizRules.BoxLabelHeight,
+                QuizRules.SortLabelReferencePixels, QuizRules.BoxLabelMaxWidth);
+            Vector2 center = Vector2.Lerp(home, to, slide);
+            Vector2 size = Vector2.Lerp(fromSize, toSize, slide);
+            int state = SlotState(index, k);
+            Color color = state == SlotCut ? UISkinPalette.NoteGold : state == SlotMissed ? QuizRules.MissGray : Color.white;
+            color.a = QuizRules.SortLabelAlpha(time, spawn) * visibility;
+            Place(label, new Vector3(center.x, center.y, z), size, color);
         }
     }
 
-    // count: 縦の線・的・上から落ちる玉(金は数える玉)、左上の凡例、左の問題(revealMs から答え)、切った金の玉の数だけ金の小さな丸。
+    // ---- count「答えの形」 ----
+
     void DrawCount(double time, float visibility)
     {
-        if (!InSection(countSpan, time)) return;
-        float z = judgeZ - MarkLift;
-        marks.Line(new Vector3(QuizRules.CountLineX, topEdgeY + .3f, z),
-            new Vector3(QuizRules.CountLineX, QuizRules.CountTargetY, z), QuizRules.LineWidth,
-            Vertex(Color.white, QuizRules.LineAlpha * visibility));
-        marks.Ring(new Vector2(QuizRules.CountLineX, QuizRules.CountTargetY), z, QuizRules.CountTargetRadius,
-            QuizRules.TargetWidth, Vertex(Color.white, visibility));
-        double lead = QuizRules.LeadSeconds(QuizRules.CountTargetY, topEdgeY + QuizRules.BallRadius, QuizRules.CountSpeed);
         for (int i = 0; i < quiz.items.Count; i++)
         {
             var item = quiz.items[i];
-            if (item.kind != QuizRules.Count) continue;
-            // その問題が出る前は玉を出さず、出てから薄く現れる。
-            float appear = QuizRules.AppearFade(item, offset, time);
-            for (int d = 0; appear > 0f && d < item.dots.Count; d++)
-            {
-                var dot = item.dots[d];
-                double arrival = QuizRules.Seconds(dot.ms, offset);
-                if (!QuizRules.BallShown(arrival, time, lead) || popped.Contains(Key(i, d))) continue;
-                var center = new Vector2(QuizRules.CountLineX, QuizRules.FallY(QuizRules.CountTargetY, QuizRules.CountSpeed, arrival, time));
-                float alpha = QuizRules.BallAlpha(item.hint, dot.real, arrival, time) * appear * visibility;
-                marks.Disc(center, z, QuizRules.BallRadius, Vertex(dot.unit ? UISkinPalette.NoteGold : Color.white, alpha));
-                BallsDrawn++;
-            }
-            if (QuizRules.Active(item, offset, time)) DrawCountBoard(i, item, time, visibility);
+            if (item.kind == QuizRules.Count && QuizRules.Active(item, offset, time)) DrawCountBoard(i, item, time, visibility);
         }
     }
 
-    // 動画のように、左上の大きな凡例「● = 1」と、縦の線の左の大きな式(CountScale 倍)。
+    // 問題の「?」の所(slotX・slotY)に、最初は赤い「?」、金が届くたびに白い 1, 2, 3 …。最後の金のあと赤い丸。
     void DrawCountBoard(int index, QuizItemData item, double time, float visibility)
     {
         float z = judgeZ - ImageLift;
-        var legend = LegendImage(item);
-        if (legend != null)
-        {
-            var size = new Vector2(QuizRules.LegendHeight * legend.aspect, QuizRules.LegendHeight);
-            float left = leftEdgeX + QuizRules.LegendMargin, top = topEdgeY - QuizRules.LegendMargin;
-            Place(legend, new Vector3(left + size.x * .5f, top - size.y * .5f, z), size, new Color(1f, 1f, 1f, visibility));
-        }
-        // 問題は右の端を縦の線の少し左にそろえる(横に長い式は画面の左の端に収まるよう縮める)。
-        // 金の小さな丸は問題(差し替える前)の左下から並べる。
+        var center = new Vector2(0f, QuizRules.CountQuestionY);
         var question = Load(item.question);
-        Vector2 size0 = QuizRules.CountQuestionSize(question != null ? question.aspect : 1f, countLeftEdgeX);
-        float questionLeft = QuizRules.CountQuestionRightX - size0.x;
-        float questionBottom = QuizRules.CountQuestionCenterY - size0.y * .5f;
-        var shown = QuestionImage(item, time);
-        if (shown != null)
+        Vector2 size = question != null ? QuizRules.FitSize(question.aspect, QuizRules.CountQuestionHeight, QuizRules.BoardMaxWidth)
+            : new Vector2(0f, QuizRules.CountQuestionHeight);
+        if (question != null) Place(question, new Vector3(center.x, center.y, z), size, White(visibility));
+        // 「?」の所。slotX・slotY が無ければ問題の右の端の外。
+        Vector2 slot = item.slotX > 0f || item.slotY > 0f
+            ? QuizRules.SlotPoint(center, size, item.slotX, item.slotY)
+            : new Vector2(center.x + size.x * .5f + QuizRules.CountQuestionHeight * .4f, center.y);
+        // 途中の数は等号の右に出さない(「1 dozen = 8」のような間違った式になる。Codex の点検、10/28)。
+        // 最後の金が届くまでは赤い「?」、そのあと答えの数と赤い丸。
+        int count = time >= RevealTime(index, item) ? CountShown(index, time) : 0;
+        BoardImage glyph;
+        Color color;
+        if (count <= 0)
         {
-            Vector2 shownSize = QuizRules.CountQuestionSize(shown.aspect, countLeftEdgeX);
-            Place(shown, new Vector3(QuizRules.CountQuestionRightX - shownSize.x * .5f, QuizRules.CountQuestionCenterY, z),
-                shownSize, new Color(1f, 1f, 1f, visibility));
+            glyph = MarkImage(item);
+            color = QuizRules.RedPen;
         }
-        int count = UnitMarks(index);
-        for (int k = 0; k < count; k++)
-            marks.Disc(QuizRules.UnitMark(k, questionLeft, questionBottom), judgeZ - MarkLift, QuizRules.UnitMarkRadius,
-                Vertex(UISkinPalette.NoteGold, visibility), 36);
+        else
+        {
+            glyph = item.numbers.Count > 0 ? Load(item.numbers[Mathf.Min(count, item.numbers.Count - 1)]) : null;
+            color = Color.white;
+        }
+        if (glyph == null) return;
+        float height = QuizRules.GlyphHeight(glyph.pixels, question != null ? question.pixels : 0, size.y,
+            QuizRules.CountQuestionHeight * QuizRules.CountNumberScale,
+            QuizRules.CountQuestionHeight * QuizRules.CountNumberMinScale, QuizRules.CountQuestionHeight * QuizRules.CountNumberMaxScale);
+        var glyphSize = new Vector2(height * glyph.aspect, height);
+        color.a = visibility;
+        Place(glyph, new Vector3(slot.x, slot.y, z), glyphSize, color);
+        if (count > 0) DrawPenCircle(slot, glyphSize, RevealTime(index, item), time, visibility);
     }
 
-    // formula: 数式の画像(revealMs から答え)をゲートの中央のわずかに奥へ、幅 QuizRules.FormulaWidth(9.0)・濃さ 0.55。
-    // ノーツはその上(手前)に描かれる。輪は予算に通ったものだけ。
-    void DrawFormula(double time, float visibility)
+    // ---- pi「π を書く」 ----
+
+    void DrawPi(double time, float visibility)
     {
-        if (!InSection(formulaSpan, time)) return;
-        foreach (var item in quiz.items)
+        for (int i = 0; i < quiz.items.Count; i++)
         {
-            if (item.kind != QuizRules.Formula || !QuizRules.Active(item, offset, time)) continue;
-            var image = QuestionImage(item, time);
-            if (image == null) continue;
-            float height = QuizRules.FormulaWidth / Mathf.Max(.01f, image.aspect);
-            Place(image, new Vector3(QuizRules.GateCenter.x, QuizRules.GateCenter.y, judgeZ + QuizRules.FormulaDepth),
-                new Vector2(QuizRules.FormulaWidth, height), new Color(1f, 1f, 1f, QuizRules.FormulaAlpha * visibility));
-        }
-        if (DisplaySettings.ReducedEffects) return;
-        float z = judgeZ - MarkLift;
-        foreach (double start in ringStarts)
-        {
-            double age = time - start;
-            if (!QuizRules.RingShown(age)) continue;
-            ActiveRings++;
-            marks.Ring(QuizRules.GateCenter, z, QuizRules.RingRadius(age), QuizRules.RingWidth,
-                Vertex(Color.white, QuizRules.RingOpacity(age) * visibility), 96);
+            var item = quiz.items[i];
+            if (item.kind == QuizRules.Pi && QuizRules.Active(item, offset, time)) DrawPiBoard(i, item, time, visibility);
         }
     }
 
-    // 見えないノーツを切った所の弾け。F3 の弱める設定では輪を広げず、的を一瞬明るくするだけ。
-    void DrawPops(double time, float visibility)
+    // 1行目の左に「π =」。切ったマスに白い桁(逃したら灰色)、最初のマスは「3.」。行は埋まるたびに上へ送る。
+    // マスの間隔は行の長さで決まる(QuizRules.PiPitch。11 マスの行は詰める)。
+    // 最後のノーツのあと、最後の桁の右に「…」と、「π」の赤い花丸。字の下の端(並ぶ線)は行の高さ − 桁の高さの半分にそろえる。
+    void DrawPiBoard(int index, QuizItemData item, double time, float visibility)
     {
-        bool reduced = DisplaySettings.ReducedEffects;
-        float z = judgeZ - MarkLift;
-        foreach (var pop in pops)
+        float z = judgeZ - ImageLift;
+        var zero = item.numbers.Count > 0 ? Load(item.numbers[0]) : null;
+        int reference = zero != null ? zero.pixels : 0;
+        var label = Load(item.question);
+        Vector2 labelCenter = default, labelSize = default;
+        if (label != null)
         {
-            if (!QuizRules.Finite(pop.start)) continue;
-            double age = time - pop.start;
-            if (!QuizRules.PopShown(age)) continue;
-            ActivePops++;
-            if (reduced)
-                marks.Disc(pop.center, z, pop.radius, Vertex(pop.color, .35f * (1f - (float)(age / QuizRules.PopSeconds)) * visibility));
-            else
-                marks.Ring(pop.center, z, QuizRules.PopRadius(pop.radius, age), QuizRules.PopWidth,
-                    Vertex(pop.color, QuizRules.PopOpacity(age) * visibility));
+            float h = PiGlyphHeight(label, reference);
+            labelSize = new Vector2(h * label.aspect, h);
+            // 中心は x −2.45。広い画像でも最初のマスに重ねない。
+            int firstRow = QuizRules.RowLength(item.rows, 0);
+            float right = Mathf.Min(QuizRules.PiLabelX + labelSize.x * .5f,
+                QuizRules.CellX(0, firstRow) - QuizRules.PiPitch(firstRow) * .5f - QuizRules.PiLabelGap);
+            float baseline = RowY(0, time) - QuizRules.PiDigitHeight * .5f;
+            labelCenter = new Vector2(right - labelSize.x * .5f, baseline + h * .5f);
+            Place(label, new Vector3(labelCenter.x, labelCenter.y, z), labelSize, White(visibility));
         }
+        int first = itemFirstSlot[index], cells = itemSlotCount[index];
+        for (int k = 0; k < cells; k++)
+        {
+            int state = slotState[first + k];
+            if (state == SlotWaiting) continue;
+            QuizRules.CellOf(item.rows, k, out int row, out int column);
+            int length = QuizRules.RowLength(item.rows, row);
+            float baseline = RowY(row, time) - QuizRules.PiDigitHeight * .5f;
+            float x = QuizRules.CellX(column, length);
+            float alpha = (state == SlotCut ? 1f : QuizRules.PiMissAlpha) * visibility;
+            int digit = QuizRules.Digit(item.digits, k);
+            if (digit >= 0 && digit < item.numbers.Count) PlaceGlyph(Load(item.numbers[digit]), reference, x, baseline, alpha, z);
+            // 最初のマスは「3.」。点は次のマスとのあいだ。
+            if (k == 0) PlaceGlyph(Load(item.pointImage), reference, x + QuizRules.PiPitch(length) * .5f, baseline, alpha, z);
+        }
+        double reveal = RevealTime(index, item);
+        if (cells <= 0 || !QuizRules.Finite(reveal) || time < reveal) return;
+        QuizRules.CellOf(item.rows, cells - 1, out int lastRow, out int lastColumn);
+        int lastLength = QuizRules.RowLength(item.rows, lastRow);
+        var ellipsis = Load(item.ellipsisImage);
+        if (ellipsis != null)
+        {
+            float h = PiGlyphHeight(ellipsis, reference);
+            float leftEdge = QuizRules.CellX(lastColumn, lastLength) + QuizRules.PiPitch(lastLength) * .5f;
+            float baseline = RowY(lastRow, time) - QuizRules.PiDigitHeight * .5f;
+            Place(ellipsis, new Vector3(leftEdge + h * ellipsis.aspect * .5f, baseline + h * .5f, z),
+                new Vector2(h * ellipsis.aspect, h), White(visibility));
+        }
+        var flower = Load(item.flowerImage);
+        if (flower != null && label != null)
+        {
+            // 花丸の画像は赤で描いてある(色は掛けない)。「π」の中心(slotX・slotY、無ければ左寄り)に、膨らみながら出る。
+            float amount = QuizRules.FlowerAmount(time, reveal);
+            bool given = item.slotX > 0f || item.slotY > 0f;
+            Vector2 at = QuizRules.SlotPoint(labelCenter, labelSize, given ? item.slotX : QuizRules.PiGlyphX,
+                given ? item.slotY : QuizRules.PiGlyphY);
+            float h = QuizRules.FlowerHeight * Mathf.Lerp(.7f, 1f, amount);
+            Place(flower, new Vector3(at.x, at.y, z), new Vector2(h * flower.aspect, h), White(amount * visibility), MarkSortingOrder);
+        }
+    }
+
+    float PiGlyphHeight(BoardImage glyph, int reference)
+        => QuizRules.GlyphHeight(glyph.pixels, reference, QuizRules.PiDigitHeight, QuizRules.PiDigitHeight, .05f, QuizRules.PiDigitHeight * 2.5f);
+
+    // 字を x を中心に、下の端を baseline にそろえて置く。
+    void PlaceGlyph(BoardImage glyph, int reference, float x, float baseline, float alpha, float z)
+    {
+        if (glyph == null) return;
+        float h = PiGlyphHeight(glyph, reference);
+        Place(glyph, new Vector3(x, baseline + h * .5f, z), new Vector2(h * glyph.aspect, h), White(alpha));
     }
 
     // ---- 片付け ----
 
     void HideBoard()
     {
-        foreach (var image in images.Values) if (image.go != null) image.go.SetActive(false);
-        foreach (var text in targetLabels) if (text != null) text.gameObject.SetActive(false);
-        foreach (var text in laneLetters) if (text != null) text.gameObject.SetActive(false);
+        foreach (var image in images.Values)
+            foreach (var sprite in image.sprites)
+                if (sprite.go != null) sprite.go.SetActive(false);
     }
 
     void DisposeBoard()
     {
         foreach (var image in images.Values)
         {
-            UISkinKit.SafeDestroy(image.go);
-            UISkinKit.SafeDestroy(image.material);
+            foreach (var sprite in image.sprites)
+            {
+                UISkinKit.SafeDestroy(sprite.go);
+                UISkinKit.SafeDestroy(sprite.material);
+            }
+            image.sprites.Clear();
             UISkinKit.SafeDestroy(image.texture);
         }
         images.Clear();

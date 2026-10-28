@@ -48,4 +48,39 @@ public static class FlickArrowShape
         mesh.RecalculateBounds();
         return mesh;
     }
+
+    // Q の隠した向きの左右の両矢印(↔)。大きい方の山形(Points の 0〜5)を縮めて左右へ向け、短い軸でつなぐ。
+    // 幅 0.88・高さ 0.49(上向きの矢印の長さ 0.735 と同じくらい)。縁取りは同じ縮みの OutlineWidth で外へ。
+    // 軸の太さは 0.06(0.04 では投影で細かった。Codex の点検、10/28)。
+    public const float SideHeadScale = .7f, SideHeadOffset = .174f, SideShaftHalfLength = .32f, SideShaftHalfWidth = .06f;
+
+    public static Mesh CreateSideMesh(bool outline = false)
+    {
+        var source = outline ? OutlinePoints : Points;
+        var vertices = new Vector3[16];
+        var colors = new Color[16];
+        for (int i = 0; i < 6; i++)
+        {
+            Vector2 p = source[i] * SideHeadScale;
+            vertices[i] = new Vector3(p.y + SideHeadOffset, -p.x, 0f);        // 右向き(上向きを右へ回す)
+            vertices[6 + i] = new Vector3(-p.y - SideHeadOffset, p.x, 0f);    // 左向き
+        }
+        float grow = outline ? OutlineWidth * SideHeadScale : 0f;
+        float hx = SideShaftHalfLength + grow, hy = SideShaftHalfWidth + grow;
+        vertices[12] = new Vector3(-hx, -hy, 0f);
+        vertices[13] = new Vector3(hx, -hy, 0f);
+        vertices[14] = new Vector3(hx, hy, 0f);
+        vertices[15] = new Vector3(-hx, hy, 0f);
+        for (int i = 0; i < colors.Length; i++) colors[i] = Color.white;
+        // 山形は元の三角形(回しても向きは変わらない)、軸は同じ回り方の2枚。
+        var triangles = new int[12 * 2 + 6];
+        for (int head = 0; head < 2; head++)
+            for (int t = 0; t < 12; t++) triangles[head * 12 + t] = head * 6 + Triangles[t];
+        int[] shaft = { 12, 15, 14, 12, 14, 13 };
+        for (int t = 0; t < shaft.Length; t++) triangles[24 + t] = shaft[t];
+        var mesh = new Mesh { name = outline ? "SideArrowOutline" : "SideArrow", hideFlags = HideFlags.DontSave };
+        mesh.vertices = vertices; mesh.colors = colors; mesh.triangles = triangles;
+        mesh.RecalculateBounds();
+        return mesh;
+    }
 }

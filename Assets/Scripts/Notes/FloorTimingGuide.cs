@@ -136,8 +136,8 @@ public sealed class FloorTimingGuide : MonoBehaviour
             tint = Color.Lerp(tint, Color.white, .22f); tint.a = alpha;
             Color ink = Ink; ink.a = alpha;
             float size = Mathf.Clamp(Mathf.Abs(note.transform.lossyScale.x), .65f, 1.05f);
-            // 矢印を伏せている間も、位置と到着時刻は中立の横線で見せる。
-            if (note.RequiredDirection == CutDirection.None || note.HidesRevealArrow)
+            // 矢印を伏せている間も、位置と到着時刻は中立の横線で見せる(Q の隠した向きも本当の向きを床に出さない)。
+            if (note.RequiredDirection == CutDirection.None || note.HidesRevealArrow || note.HidesSideArrow)
             {
                 Bar(position.x, position.z, size * 1.22f, .24f, ink, .006f);
                 Bar(position.x, position.z, size * 1.12f, .12f, tint, .009f);

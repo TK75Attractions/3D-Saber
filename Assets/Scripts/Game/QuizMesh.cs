@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-// 勉強の裏譜面 Q の試験用紙と、黒板の線・玉・的・輪を描く1枚のメッシュ(毎コマ作り直す)。
+// 勉強の裏譜面 Q の試験用紙(と紙の縁の光)と、板の線・四角・箱・赤ペンの丸を描く1枚のメッシュ(毎コマ作り直す)。
 // 色は頂点色だけ(Effects/PlayExcitement の材質。霧・光・発光が無いので、黒は 0 のまま黒く、プロジェクターの露出でも浮かない)。
 // 深さは見ない。前後は sortingOrder(2D レンダラーでは材質の queue より先に効く)と、同じメッシュの中では足した順で決まる。
 public sealed class QuizMesh : IDisposable
@@ -119,6 +119,63 @@ public sealed class QuizMesh : IDisposable
             indices.Add(a); indices.Add(a + 1); indices.Add(b + 1);
             indices.Add(a); indices.Add(b + 1); indices.Add(b);
         }
+    }
+
+    // 赤ペンの丸(楕円を一筆で)。progress 0〜1 で描き進め、描き終わりは書き始めを overshoot(割合)だけ越えて少し外へずれる。
+    // 線は途切れない帯(内側と外側の点を並べる)。太さは楕円の法線の向きにとり、どこでも同じ。
+    public void PenEllipse(Vector2 center, float z, float radiusX, float radiusY, float width, Color color, float progress,
+        float overshoot = .08f, int segments = 64)
+    {
+        progress = Mathf.Clamp01(progress);
+        if (progress <= 0f || radiusX <= 0f || radiusY <= 0f || width <= 0f || color.a <= 0f || segments < 3) return;
+        float turns = (1f + Mathf.Max(0f, overshoot)) * progress;
+        int steps = Mathf.Max(2, Mathf.CeilToInt(segments * turns));
+        if (!Room((steps + 1) * 2)) return;
+        // 左下から時計回りに書き始め、一周で 7% 外へ広がる(重なった所が二重に見える赤ペンの丸)。
+        const float start = Mathf.PI * 1.2f;
+        float half = width * .5f;
+        int first = vertices.Count;
+        for (int i = 0; i <= steps; i++)
+        {
+            float t = turns * i / steps;
+            float angle = start - t * Mathf.PI * 2f;
+            float grow = 1f + .07f * t;
+            float cos = Mathf.Cos(angle), sin = Mathf.Sin(angle);
+            Vector2 normal = new Vector2(cos * radiusY, sin * radiusX).normalized;
+            Vector2 point = new Vector2(center.x + cos * radiusX * grow, center.y + sin * radiusY * grow);
+            Add(new Vector3(point.x - normal.x * half, point.y - normal.y * half, z), color);
+            Add(new Vector3(point.x + normal.x * half, point.y + normal.y * half, z), color);
+        }
+        for (int i = 0; i < steps; i++)
+        {
+            int a = first + i * 2, b = a + 2;
+            indices.Add(a); indices.Add(a + 1); indices.Add(b + 1);
+            indices.Add(a); indices.Add(b + 1); indices.Add(b);
+        }
+    }
+
+    // 縁だけの四角(中心 center・幅 width・高さ height、線の太さ lineWidth)。
+    public void Frame(Vector2 center, float z, float width, float height, float lineWidth, Color color)
+    {
+        float hx = width * .5f, hy = height * .5f;
+        var a = new Vector3(center.x - hx, center.y - hy, z);
+        var b = new Vector3(center.x + hx, center.y - hy, z);
+        var c = new Vector3(center.x + hx, center.y + hy, z);
+        var d = new Vector3(center.x - hx, center.y + hy, z);
+        // 角を欠かさないよう、横の線を太さの半分だけ外へのばす。
+        var dx = new Vector3(lineWidth * .5f, 0f, 0f);
+        Line(a - dx, b + dx, lineWidth, color);
+        Line(d - dx, c + dx, lineWidth, color);
+        Line(a, d, lineWidth, color);
+        Line(b, c, lineWidth, color);
+    }
+
+    // 塗りつぶした四角(中心 center・一辺 size)。
+    public void Square(Vector2 center, float z, float size, Color color)
+    {
+        float h = size * .5f;
+        Quad(new Vector3(center.x - h, center.y - h, z), new Vector3(center.x - h, center.y + h, z),
+            new Vector3(center.x + h, center.y + h, z), new Vector3(center.x + h, center.y - h, z), color);
     }
 
     public void Flush()

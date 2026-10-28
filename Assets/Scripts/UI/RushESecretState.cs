@@ -172,8 +172,8 @@ public sealed class RushESecretState
         CenterHaze = new Color(.42f, .52f, .74f, .42f),
         LeftHaze = new Color(.30f, .42f, .66f, .35f), RightHaze = new Color(.64f, .70f, .84f, .35f),
     };
-    // 勉強(Remaster)のQ(2026-10-27、Milthm「Algebra」のクイズ。chart_q.json の quiz と見えないノーツ)。
-    // 曲の途中で黒い試験用紙に切り替わり、リズム・置換行列・数える・最後の大問で答える(QuizMode)。
+    // 勉強(Remaster)のQ(2026-10-27 初版、2026-10-28 第3版。chart_q.json の quiz と金のノーツ・飾りの金)。
+    // 曲の途中で黒い試験用紙に切り替わり、答えの柱・斬り分け・答えの形・π を書くの4つで答える(QuizMode)。
     // 前の C(U12 Chameleon、白いチョークが化ける)を置き換えた。色は C のチョークの一式のまま。
     public static readonly Color Chalk = new Color(.94f, .93f, .86f);
     public static readonly SecretChart BenkyouQuiz = new SecretChart

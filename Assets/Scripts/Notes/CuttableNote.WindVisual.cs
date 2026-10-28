@@ -7,11 +7,12 @@ public partial class CuttableNote
     Transform windVisual;
     MeshRenderer windBody;
 
-    // R の描画先(CuttableNote.Reverse)は F・W の次。プールを分けるので、F・W と同じノーツに並ぶことはない。
+    // R の描画先(CuttableNote.Reverse)は F・W の次、Q の発射点(CuttableNote.Launch)はその次。
+    // プールを分けるので、ほかの描画先と同じノーツに並ぶことはない。
     public Transform VisualTransform => fallVisual != null ? fallVisual : windVisual != null ? windVisual
-        : reverseVisual != null ? reverseVisual : transform;
+        : reverseVisual != null ? reverseVisual : launchVisual != null ? launchVisual : transform;
     public MeshRenderer BodyRenderer => fallVisual != null ? fallBody : windVisual != null ? windBody
-        : reverseVisual != null ? reverseBody : GetComponent<MeshRenderer>();
+        : reverseVisual != null ? reverseBody : launchVisual != null ? launchBody : GetComponent<MeshRenderer>();
 
     // 判定・採点へ渡した座標は保存し、描画するときだけ同じ相対位置へ移す。
     public Vector3 VisualPoint(Vector3 point) => point + (VisualTransform.position - transform.position);

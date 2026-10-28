@@ -10,8 +10,8 @@ using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 using Object = UnityEngine.Object;
 
-// 勉強の裏譜面 Q(chart_q.json)を本編で読み、試験用紙で黒い紙が出て HUD が消え剣が上に描かれること、
-// 見えないノーツを切るとその玉が的で弾けること、行列の的は隣では切れないこと、最後の大問の数式と見えるノーツを確かめる。
+// 勉強の裏譜面 Q 第3版(chart_q.json)を本編で読み、試験用紙で黒い紙が出て HUD と床の印が消え剣が上に描かれること、
+// 答えの柱(本物は正しい柱だけ、ほかは判定に入らない飾りの金)、斬り分け(札から発射・隠した向き)、答えの形、π を書くを確かめる。
 // 曲は止め、時刻を選んで同じ本体(NoteSpawner・QuizMode)を進める。結果画面には進めず、失敗時もシーン・選曲・設定を戻す。
 public class BenkyouQuizPlayTests
 {
@@ -51,7 +51,7 @@ public class BenkyouQuizPlayTests
     }
 
     [UnityTest]
-    public IEnumerator PaperHiddenNotesMatrixAndFormulaWorkInTheGame()
+    public IEnumerator PaperPillarsDecoysSortCountAndPiWorkInTheGame()
     {
         string folder = Path.Combine(Application.streamingAssetsPath, "Songs", SongId);
         Assert.IsTrue(File.Exists(Path.Combine(folder, "chart_q.json")), "chart_q.json は必須。通常譜面へのフォールバックで通さない");
@@ -78,14 +78,18 @@ public class BenkyouQuizPlayTests
             yield return null;
         var spawner = manager.noteSpawner;
         var quiz = manager.QuizMode;
+        var score = manager.scoreManager;
         Assert.NotNull(quiz, "Q の譜面では QuizMode を作る");
         Assert.IsTrue(manager.songPlayer.IsScheduled);
         Assert.IsTrue(spawner.CurrentChart.quiz.HasContent);
         Assert.IsNull(GameObject.Find("FirstHandHint"), "裏譜面は始まりの一言を出さない");
         CollectionAssert.IsEmpty(quiz.MissingImages, "quiz/ の画像がそろっている");
         Assert.Greater(quiz.LoadedImageCount, 20);
-        Assert.IsFalse(quiz.UsesFallbackImageShader, "黒板の画像の shader(Effects/QuizBoard)が使える");
-        Assert.IsTrue(spawner.CutFeedbackAbovePaper, "見えるノーツを切った光は試験用紙の上");
+        Assert.IsFalse(quiz.UsesFallbackImageShader, "試験用紙の画像の shader(Effects/QuizBoard)が使える");
+        Assert.IsTrue(spawner.CutFeedbackAbovePaper, "切った光は試験用紙の上");
+        Assert.Greater(spawner.DecoyCount, 0, "答えの柱の飾りの金");
+        Assert.AreSame(Camera.main, spawner.LaunchView, "発射点は札を描くカメラから");
+        Assert.IsFalse(spawner.CurrentChart.notes.Any(n => n.hidden), "第3版は見えないノーツを使わない");
 
         // 実機やマウスの入力で切らない。曲を止め、時刻を選んで同じ本体を進める。
         var sceneJudge = manager.cutJudge;
@@ -123,6 +127,9 @@ public class BenkyouQuizPlayTests
             Assert.AreEqual(1f, color.a);
         }
         Assert.AreEqual(0f, hudGroup.alpha, 1e-5, "HUD(点・コンボ)は消える");
+        Assert.IsTrue(quiz.FloorGuideStopped, "床の印は紙の間だけ止める(飾りの金には床の印が無い)");
+        Assert.IsFalse(spawner.FloorGuide.gameObject.activeSelf);
+        Assert.IsTrue(quiz.GateOutlineDrawn, "判定面のゲートの枠を白い細線で");
         foreach (var bridge in Object.FindObjectsByType<SaberInputBridge>(FindObjectsSortMode.None))
             Assert.IsTrue(bridge.DrawAboveMemoryVeil, "剣は試験用紙の上");
         var gate = GameObject.Find("JudgeGate");
@@ -130,90 +137,130 @@ public class BenkyouQuizPlayTests
             foreach (var renderer in gate.GetComponentsInChildren<Renderer>())
                 Assert.Less(renderer.sortingOrder, paper.sortingOrder, "ゲートの枠は試験用紙の下");
 
-        // 1問目(練習): 問題と答えの行。
         var items = quiz.Quiz.items;
-        int r0 = items.FindIndex(i => i.kind == QuizRules.Rhythm);
-        Assert.GreaterOrEqual(r0, 0);
-        var rhythm = items[r0];
-        quiz.Tick(QuizRules.Seconds(rhythm.showMs, offset) + .5);
-        Assert.IsTrue(quiz.ImageShown(rhythm.question), "問題の画像");
-        foreach (var row in rhythm.rows) Assert.IsTrue(quiz.ImageShown(row), "答えの行 " + row);
-
-        // 見えないノーツ: 最初の本物の玉と同じ時刻のノーツを、的を通る振りで切ると、その玉が的で弾けて消える。
         var (cutter, tracker) = Rig(sceneJudge);
-        int dot = rhythm.dots.FindIndex(d => d.real);
-        double hit = QuizRules.Seconds(rhythm.dots[dot].ms, offset);
-        var note = Spawn(spawner, hit);
-        Assert.IsTrue(note.IsHidden);
-        Assert.IsFalse(note.BodyRenderer.enabled, "本体を出さない");
-        Assert.IsFalse(note.TimingCue.GhostRoot.activeSelf, "着地の枠を出さない");
-        Assert.IsTrue(note.IsJudgeable, "受付窓はふつうどおり");
-        Swing(cutter, tracker, QuizRules.RhythmTargetX, hit);
-        Assert.IsTrue(note.IsCut, "見えないノーツを切れる");
-        quiz.Tick(hit + .05);
-        Assert.IsTrue(quiz.IsDotPopped(r0, dot), "その玉は的で弾けて消える");
-        Assert.GreaterOrEqual(quiz.ActivePops, 1, "的で輪が広がる");
 
-        // 行列: 当たりを MatrixHitScale(0.45)倍にした的は、隣の丸の内側の縁(的の中心から 1.2 − 0.3 = 0.9)を
-        // 縦に通る振りでは切れず、正しい的の丸の中(中心から 0.25)を通る振りで切れる。
-        int m0 = items.FindIndex(i => i.kind == QuizRules.Matrix);
-        Assert.GreaterOrEqual(m0, 0);
-        var matrix = items[m0];
-        double matrixHit = QuizRules.Seconds(matrix.guides[0].ms, offset);
-        var target = Spawn(spawner, matrixHit);
-        Assert.IsTrue(target.IsHidden);
-        Assert.AreEqual(QuizRules.MatrixHitScale, target.HitScale, 1e-6);
-        float neighbourEdge = QuizRules.MatrixTargetSpacing - QuizRules.MatrixTargetRadius;
-        Assert.Less(cutter.HitRangeFor(target), neighbourEdge, "隣の丸の縁まで届かない当たり");
-        float x = target.LandingPosition.x;
-        Assert.AreEqual(QuizRules.MatrixTargetX[QuizRules.NearestMatrixTarget(x)], x, 1e-4, "見えないノーツは的の上");
-        float toward = x < 0f ? 1f : -1f; // まん中の側には必ず隣の的がある
-        Swing(cutter, tracker, x + toward * neighbourEdge, matrixHit);
-        Assert.IsFalse(target.IsCut, "隣の丸の内側の縁では切れない");
-        Swing(cutter, tracker, x + toward * (QuizRules.MatrixTargetRadius - .05f), matrixHit);
-        Assert.IsTrue(target.IsCut, "正しい的の丸の中で切れる");
-        quiz.Tick(matrixHit + .05);
-        Assert.GreaterOrEqual(quiz.ActivePops, 1, "切った的で輪が広がる");
-        Assert.IsTrue(quiz.ImageShown(matrix.question), "行列の式");
-        for (int t = 0; t < QuizRules.MatrixTargetX.Length; t++)
+        // 答えの柱(2問目、練習でない): 本物は正しい柱だけ。ほかの柱から来る金は飾りで、判定・点に入らない。
+        int r = items.FindIndex(i => i.kind == QuizRules.Rhythm && !i.hint);
+        Assert.GreaterOrEqual(r, 0);
+        var rhythm = items[r];
+        var realSource = spawner.CurrentChart.notes.First(n => n.time >= rhythm.playMs - .5f && n.time < rhythm.endMs - .5f);
+        double hit = spawner.EffectiveTime(realSource);
+        var real = Spawn(spawner, hit);
+        Assert.IsFalse(real.IsDecoy);
+        Assert.IsTrue(real.IsGold, "流れてくるのは金のノーツ");
+        Assert.AreEqual(QuizRules.PillarX[rhythm.answer], real.LandingPosition.x, 1e-4, "本物は正しい答えの柱だけ");
+        Assert.AreEqual(QuizRules.PillarHitScale, real.HitScale, 1e-6, "隣の柱では切れない当たり");
+        Assert.AreEqual(MemoryVeilLayers.AboveNoteSortingOrder, real.BodyRenderer.sortingOrder, "本物は試験用紙の上");
+        Assert.Greater(spawner.LiveDecoys.Count, 0, "ほかの柱からは飾りの金");
+        foreach (var decoy in spawner.LiveDecoys)
         {
-            string label = t < matrix.labels.Count ? matrix.labels[t] : "";
-            var text = quiz.TargetLabel(t);
-            if (string.IsNullOrEmpty(label)) Assert.IsNull(text, "空の文字は出さない");
-            else
-            {
-                Assert.NotNull(text);
-                Assert.AreEqual(label, text.text);
-            }
+            Assert.IsTrue(decoy.IsDecoy);
+            Assert.IsTrue(decoy.IsGold, "飾りも同じ金");
+            Assert.IsFalse(spawner.LiveNotes.Contains(decoy), "飾りは生きているノーツの一覧に入らない");
+            Assert.IsFalse(CuttableNote.ActiveNotes.Contains(decoy), "飾りは判定の候補に入らない");
+            Assert.AreEqual(MemoryVeilLayers.AboveNoteSortingOrder, decoy.BodyRenderer.sortingOrder, "飾りも本物と同じく試験用紙の上");
+            Assert.Greater(Mathf.Abs(decoy.LandingPosition.x - QuizRules.PillarX[rhythm.answer]), 1f, "飾りは正しくない柱");
+            Assert.AreEqual(real.transform.localScale, decoy.transform.localScale, "同じ大きさ");
         }
+        var target = spawner.LiveDecoys[0];
+        int hits = score.HitCount;
+        Swing(cutter, tracker, target.LandingPosition.x, hit);
+        Assert.IsFalse(target.IsCut, "飾りの柱を振っても割れない");
+        Assert.IsFalse(real.IsCut, "隣の柱の本物も切れない");
+        Assert.AreEqual(hits, score.HitCount, "飾りは点にならない");
+        Swing(cutter, tracker, real.LandingPosition.x, hit);
+        Assert.IsTrue(real.IsCut, "正しい柱を振ると本物が切れる");
+        Assert.AreEqual(hits + 1, score.HitCount);
+        quiz.Tick(hit + .02);
+        string option = rhythm.options[rhythm.answer];
+        Assert.IsTrue(quiz.ImageShown(rhythm.question), "問題");
+        Assert.IsTrue(quiz.ImageShown(option), "札");
+        Assert.AreEqual(UISkinPalette.NoteGold.b, quiz.ImageColor(option).b, 1e-3, "切った柱の札が金に光る");
+        Assert.AreEqual(QuizMode.SlotCut, quiz.SlotState(r, 0));
+        Assert.AreEqual(4, quiz.Squares, "柱の判定面の薄い四角");
 
-        // 最後の大問: 数式の画像(幅 FormulaWidth・濃さ FormulaAlpha)と、試験用紙の上に描く見えるノーツ。
-        var formula = items.Find(i => i.kind == QuizRules.Formula);
-        Assert.NotNull(formula);
-        var source = spawner.CurrentChart.notes.First(n => !n.hidden && n.time >= formula.showMs);
-        double finaleHit = spawner.EffectiveTime(source);
-        var visible = Spawn(spawner, finaleHit);
-        Assert.IsFalse(visible.IsHidden);
-        Assert.IsTrue(visible.BodyRenderer.enabled);
-        Assert.AreEqual(MemoryVeilLayers.AboveNoteSortingOrder, visible.BodyRenderer.sortingOrder, "見えるノーツは試験用紙の上");
-        double shown = Math.Max(finaleHit, QuizRules.Seconds(formula.showMs, offset) + .3);
-        quiz.Tick(shown);
+        // 斬り分け(2問目、隠した向き): 出る瞬間は札の上、本体には左右の両矢印。違う向きでは割れず本当の向きが見え、本当の向きで切れる。
+        var sorts = items.Where(i => i.kind == QuizRules.Sort).ToList();
+        Assert.AreEqual(4, sorts.Count);
+        var sort = sorts[1];
+        int s = items.IndexOf(sort);
+        var sortSource = spawner.CurrentChart.notes.First(n => n.time >= sort.playMs - .5f && n.time < sort.endMs - .5f);
+        double sortHit = spawner.EffectiveTime(sortSource);
+        double launch = sortHit - spawner.approachTime + .01;
+        spawner.Tick(launch);
+        var launched = spawner.LiveNotes.First(n => n != null && Math.Abs(n.HitTime - sortHit) < 1e-6);
+        Assert.IsTrue(launched.HasLaunch, "札から発射");
+        Assert.IsTrue(launched.HidesSideArrow, "本当の向きは隠す");
+        Assert.IsTrue(launched.ShowsSideArrow, "本体には左右の両矢印");
+        Assert.AreEqual(QuizRules.SortTarget.x, launched.LandingPosition.x, 1e-4, "真ん中の的へ");
+        Assert.AreEqual(QuizRules.SortTarget.y, launched.LandingPosition.y, 1e-4);
+        var cam = Camera.main;
+        Vector3 label = cam.WorldToViewportPoint(new Vector3(sortSource.fromX, sortSource.fromY, spawner.judgeZ));
+        Vector3 body = cam.WorldToViewportPoint(launched.VisualTransform.position);
+        Assert.AreEqual(label.x, body.x, .02, "出る瞬間は画面で札の上");
+        Assert.AreEqual(label.y, body.y, .02);
+        quiz.Tick(launch);
+        Assert.AreEqual(s, quiz.ActiveSortItem(launch));
+        Assert.IsTrue(quiz.ImageShown(sort.question), "見出し");
+        Assert.IsTrue(quiz.ImageShown(sort.options[0]), "札");
+        Assert.IsTrue(quiz.ImageShown(sort.boxes[0]), "左の箱の語");
+        spawner.Tick(sortHit);
+        Assert.AreEqual(0f, launched.VisualTransform.position.x - launched.LandingPosition.x, 1e-3, "届く時刻に的の上");
+        float wrong = launched.RequiredDirection == CutDirection.Left ? 1f : -1f;
+        SwingSide(cutter, tracker, launched.LandingPosition.y, wrong, sortHit);
+        Assert.IsFalse(launched.IsCut, "違う向きでは割れない");
+        Assert.IsFalse(launched.ShowsSideArrow, "本当の向きの矢印に変わる");
+        SwingSide(cutter, tracker, launched.LandingPosition.y, -wrong, sortHit);
+        Assert.IsTrue(launched.IsCut, "本当の向きで切れる");
+        quiz.Tick(sortHit + .3);
+        Assert.AreEqual(QuizMode.SlotCut, quiz.SlotState(s, 0));
+        Assert.AreEqual(UISkinPalette.NoteGold.b, quiz.ImageColor(sort.options[0]).b, 1e-3, "切れた札は金で箱へ");
+
+        // 答えの形: 金が届くたびに(切っても逃しても)数が増え、最後の金で答えの数。
+        var count = items.First(i => i.kind == QuizRules.Count);
+        int c = items.IndexOf(count);
+        double show = QuizRules.Seconds(count.showMs, offset);
+        Assert.AreEqual(0, quiz.CountShown(c, show + .1), "最初は「?」");
+        double lastGold = QuizRules.Seconds(count.revealMs, offset);
+        Assert.AreEqual(count.count, quiz.CountShown(c, lastGold + .01), "最後の金で答えの数");
+        quiz.Tick(show + .1);
+        Assert.IsTrue(quiz.ImageShown(count.markImage), "赤い「?」");
+        quiz.Tick(lastGold + .05);
+        Assert.IsTrue(quiz.ImageShown(count.numbers[count.count]), "答えの数の画像");
+        Assert.GreaterOrEqual(quiz.RedCircles, 1, "答えの数を赤い丸で囲む");
+
+        // π を書く: 最初の金を切ると、最初のマスに「3.」。
+        var pi = items.First(i => i.kind == QuizRules.Pi);
+        int p = items.IndexOf(pi);
+        var piSource = spawner.CurrentChart.notes.First(n => n.time >= pi.showMs - .5f);
+        double piHit = spawner.EffectiveTime(piSource);
+        Spawn(spawner, piHit);
+        // 最初のマス(同時の2つなら左)のノーツ。
+        float firstCell = QuizRules.CellX(0, QuizRules.RowLength(pi.rows, 0));
+        var piNote = spawner.LiveNotes.First(n => n != null && Math.Abs(n.HitTime - piHit) < 1e-6
+            && Math.Abs(n.LandingPosition.x - firstCell) < 1e-3);
+        Assert.IsTrue(piNote.IsGold);
+        Swing(cutter, tracker, piNote.LandingPosition.x, piHit);
+        Assert.IsTrue(piNote.IsCut);
+        quiz.Tick(piHit + .05);
         Assert.AreEqual(1f, quiz.PaperVisibility, "C と D のあいだも黒いまま");
-        string image = QuizRules.Revealed(formula, offset, shown) ? formula.answerImage : formula.question;
-        Assert.IsTrue(quiz.ImageShown(image), "数式の画像");
-        Assert.AreEqual(QuizRules.FormulaAlpha, quiz.ImageColor(image).a, 1e-4);
-        Assert.AreEqual(QuizRules.FormulaWidth, quiz.ImageSize(image).x, 1e-3);
+        Assert.AreEqual(QuizMode.SlotCut, quiz.SlotState(p, 0));
+        Assert.IsTrue(quiz.ImageShown(pi.question), "「π =」");
+        Assert.IsTrue(quiz.ImageShown(pi.numbers[3]), "最初のマスに 3");
+        Assert.IsTrue(quiz.ImageShown(pi.pointImage), "「3.」");
 
-        // 試験用紙の外(ふつうの Hard の所)では、黒い紙と HUD を戻す。
+        // 試験用紙の外(ふつうの Hard の所)では、黒い紙・HUD・床の印を戻す。
         quiz.Tick(65);
         Assert.AreEqual(0f, quiz.PaperVisibility);
         Assert.AreEqual(1f, hudGroup.alpha, 1e-5);
+        Assert.IsTrue(spawner.FloorGuide.gameObject.activeSelf);
 
         quiz.EndPlay();
         Assert.IsFalse(quiz.PaperRenderer.enabled);
         Assert.AreEqual(1f, hudGroup.alpha, 1e-5);
         Assert.IsFalse(spawner.CutFeedbackAbovePaper);
-        Assert.AreEqual(0, visible.BodyRenderer.sortingOrder, "終わりに元の並び順へ戻す");
+        Assert.AreEqual(0, spawner.LiveDecoys.Count, "終わりに飾りを片付ける");
     }
 
     // 刃の無い点の剣(本編と同じ当たりの大きさ)。位置はテストが入れるので、毎コマの追従は止める。
@@ -238,6 +285,14 @@ public class BenkyouQuizPlayTests
     {
         tracker.ResetTo(new Vector3(x, 1.4f, 0f));
         tracker.Tick(new Vector3(x, -1.6f, 0f), .05f);
+        judge.TryCut(songTime);
+    }
+
+    // 高さ y を横に一息に通る振り(direction が +1 なら右へ、−1 なら左へ)。
+    static void SwingSide(SaberCutJudge judge, SaberTracker tracker, float y, float direction, double songTime)
+    {
+        tracker.ResetTo(new Vector3(-1.5f * direction, y, 0f));
+        tracker.Tick(new Vector3(1.5f * direction, y, 0f), .05f);
         judge.TryCut(songTime);
     }
 

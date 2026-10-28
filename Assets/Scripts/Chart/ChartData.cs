@@ -228,10 +228,17 @@ public class NoteData
     public string vanish = "";
     // 熱交換の特殊ノーツ。両手で切る場合は既存の color:"gold" と組み合わせる。
     public bool heat;
-    // Q の見えないノーツ。本体・矢印・着地の枠・床の印を出さずに切れる(見た目は QuizMode の玉と的)。
+    // 見えないノーツ。本体・矢印・着地の枠・床の印を出さずに切れる(Q の第2版で使った。今の Q では使わない)。
     public bool hidden;
-    // 当たりの大きさの倍率。0・省略は 1。Q の行列の的は小さくして、隣の的では切れないようにする。
+    // 当たりの大きさの倍率。0・省略は 1。Q の答えの柱は小さくして、隣の柱では切れないようにする。
     public float hitScale;
+    // Q の発射点(第3版の「斬り分け」)。launch が true のノーツは、見た目だけが札の位置(判定面の fromX・fromY)から出て
+    // 着地点(x・y)へまっすぐ飛ぶ。判定の根元・着地の枠・床の印・当たりは x・y のまま。
+    public bool launch;
+    public float fromX, fromY;
+    // Q の隠した向き。"hidden" は本当の向き(direction の left / right)を判定にだけ使い、本体には左右の両矢印を出す。
+    // "" はふつう。違う向きに振られたら本当の矢印に変えて光らせる。
+    public string sideArrow = "";
     // R の鏡門。x・矢印は本当の(門を通ったあとの)値で、門を通るまでは左右の鏡像の側に見せる。判定・着地の枠・床の印は本当の位置。
     public bool mirror;
 

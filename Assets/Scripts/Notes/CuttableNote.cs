@@ -50,6 +50,8 @@ public partial class CuttableNote : MonoBehaviour
     int registryIndex = -1;
     void Register()
     {
+        // Q の飾りの金は判定の候補(SaberCutJudge が読む一覧)に入れない。
+        if (IsDecoy) return;
         if (registryIndex >= 0 && registryIndex < activeNotes.Count && activeNotes[registryIndex] == this) return;
         registryIndex = activeNotes.Count; activeNotes.Add(this);
     }
@@ -291,7 +293,8 @@ public partial class CuttableNote : MonoBehaviour
         double? swingSongTime, float directionTolerance, double? judgedSongTime = null, Vector2? judgedDirection = null,
         ulong swingId = 0)
     {
-        if (!isActiveAndEnabled || IsCut || IsMissed || IsFinalized) return false;
+        // Q の飾りの金は刃が通っても何も起きない(割れない・音・光・点なし。録画の自動切りもここで止まる)。
+        if (IsDecoy || !isActiveAndEnabled || IsCut || IsMissed || IsFinalized) return false;
 
         if (RequireJudgeableOnCut && !IsJudgeable && !swingSongTime.HasValue) return false;
         if (MinimumCutSpeed > 0f && !(cutVelocity.magnitude >= MinimumCutSpeed)) return false;

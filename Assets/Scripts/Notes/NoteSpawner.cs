@@ -1,4 +1,4 @@
-using PoolKey = System.ValueTuple<UnityEngine.GameObject, CutDirection, int, SaberHand, bool, bool, System.ValueTuple<bool, bool, bool>>;
+using PoolKey = System.ValueTuple<UnityEngine.GameObject, CutDirection, int, SaberHand, bool, bool, System.ValueTuple<bool, bool, bool, bool>>;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -80,6 +80,8 @@ public partial class NoteSpawner : MonoBehaviour
     }
     // 切った光を幕(M のノイズ・Q の試験用紙)より上に描くか。
     public bool LiftsCutFeedback => memoryVeilMode || cutFeedbackAbovePaper;
+    // 切った光の大きさの倍率(Q の試験用紙の間だけ QuizMode が下げる。ほかは 1)。
+    public float CutFeedbackSizeScale { get; set; } = 1f;
     public FloorTimingGuide FloorGuide { get; private set; }
     public void ConfigureFloorGuide(float floorY)
     {
@@ -99,11 +101,11 @@ public partial class NoteSpawner : MonoBehaviour
     bool Pooling => reuseNotes && Application.isPlaying;
 
     // revealは見た目の構造を変えない。通常ノーツと同じキーで借り、出現ごとに色と矢印を戻す。
-    // R の鏡のノーツ(UsesReverse。見た目の子を持つ)は別のキーにして、ほかのノーツへ持ち越さない。
+    // R の鏡のノーツ(UsesReverse)と Q の発射点のノーツ(UsesLaunch)は見た目の子を持つので、別のキーにしてほかのノーツへ持ち越さない。
     PoolKey Key(NoteData data) => (PickPrefab(data.color), CutDirectionHelper.Parse(data.direction),
         Mathf.Clamp(data.count,1,8), SaberHandHelper.FromColor(data.color),
         string.Equals(data.color,"gold",System.StringComparison.OrdinalIgnoreCase), DisplaySettings.ProjectorMode,
-        (buildTimingCues, UsesFall(data), UsesReverse(data)));
+        (buildTimingCues, UsesFall(data), UsesReverse(data), UsesLaunch(data)));
     void EnsurePool()
     {
         if(idleRoot == null) {
@@ -233,6 +235,8 @@ public partial class NoteSpawner : MonoBehaviour
         liveNotes.Clear();
         ResetOvertakeSchedule();
         Prewarm();
+        // Q の飾りの金(NoteSpawner.Decoy)。飛んでいる飾りを片付け、新しい譜面の飾りを並べ直す。
+        ResetDecoys();
     }
 
     public void SetExtraOffsetSeconds(double seconds)
@@ -300,6 +304,8 @@ public partial class NoteSpawner : MonoBehaviour
             windBeat = windTempoMap.BeatAt((songTime - TotalOffsetSeconds) * 1000.0);
         SpawnDue(songTime);
         UpdateLive(songTime);
+        // Q の飾りの金。本物と同じ時計で出して動かす(liveNotes には入れない)。
+        TickDecoys(songTime);
         TickFallPetals(songTime);
         if (FloorGuide != null) FloorGuide.Tick(this, songTime);
         if (cutFeedback != null)
@@ -361,6 +367,7 @@ public partial class NoteSpawner : MonoBehaviour
         foreach (var note in liveNotes)
             if (note != null && !poolKeys.ContainsKey(note)) SafeDestroy(note.gameObject);
         liveNotes.Clear();
+        DestroyDecoys();
         foreach(var note in poolKeys.Keys) if(note != null) SafeDestroy(note.gameObject);
         poolKeys.Clear(); idleNotes.Clear(); idleCount=0;
         if(idleRoot != null) SafeDestroy(idleRoot.gameObject);
@@ -438,6 +445,8 @@ public partial class NoteSpawner : MonoBehaviour
         // Q の見えないノーツ(QuizRules)。合図ごと隠し(Veil 1)、消える(V)の見え方は使わない。判定・採点はふつうのノーツと同じ。
         note.IsHidden = nd.hidden;
         note.HitScale = QuizRules.HitScale(nd.hitScale);
+        // Q の隠した向き(NoteSpawner.Quiz)。判定は本当の向きのまま、本体には左右の両矢印、床の印は中立の横線。
+        note.SideArrowHidden = QuizRules.HidesSide(nd);
         if (note.IsHidden)
         {
             note.Vanish = VanishMode.None;
@@ -480,6 +489,7 @@ public partial class NoteSpawner : MonoBehaviour
             BuildArrow(go.transform, note.RequiredDirection);
         }
         if (reused && note.Arrow != null) note.Arrow.Bind(note, visuals.baseColor);
+        ApplySideArrow(note);
         // ロングは Z 方向に伸ばし、上に残カウント数字を浮かべる。
         // count が大きすぎる（50 など）と視野を覆い尽くすので longMaxVisualZScale でキャップする。
         if (note.RequiredCutCount > 1)
@@ -517,6 +527,8 @@ public partial class NoteSpawner : MonoBehaviour
         if (UsesFall(nd)) PrepareFallNote(note, warming ? approachTime : note.HitTime - songTime);
         // R の鏡の見た目(cutFeedback.Track より前。Track は出現時の BodyRenderer を覚える)。
         if (UsesReverse(nd)) PrepareReverseNote(note, nd, warming ? approachTime : note.HitTime - songTime);
+        // Q の発射点の見た目(同じく cutFeedback.Track より前)。
+        if (UsesLaunch(nd)) PrepareLaunchNote(note, nd);
         // 通知・同時線を作る前に、遅れて生成されたコマも正しい位置へ置く。
         UpdateOvertakeNote(note, warming ? SpawnTimeFor(nd) : songTime);
 
@@ -700,6 +712,8 @@ public partial class NoteSpawner : MonoBehaviour
             UpdateSlideNote(note, songTime);
             UpdateOvertakeNote(note, songTime);
             UpdateReverseNote(note, songTime);
+            // Q の発射点: 根元の奥行きが決まったあとに、見た目の子のずれを当てる。
+            UpdateLaunchNote(note);
             // 緩急の譜面では、割れた破片の勢いも今の流れる速さに合わせる(止まっている間は前へ流さない)。
             if (scrollMap != null && note.RequiredCutCount <= 1)
                 note.FlowNoteVelocity = new Vector3(0f, 0f, -speed * (float)scrollMap.SpeedAt(songTime - totalOffsetSeconds));

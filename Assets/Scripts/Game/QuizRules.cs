@@ -1,29 +1,34 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using UnityEngine;
 
-// 勉強の裏譜面「Q」(2026-10-27、Milthm のエイプリルフール譜面「Algebra」の4つの仕組みを移したもの)の決まり。
-// 時計・描画・状態を持たない純関数と数値だけ(QuizMode がこれで描き、テストもここを直接たたく)。
+// 勉強の裏譜面「Q」第3版(2026-10-28、Opus・Fable・Opus 下請けの3案から決めた仕様 spec_v3)の決まり。
+// 時計・描画・状態を持たない純関数と数値だけ(QuizMode と NoteSpawner がこれで描き、テストもここを直接たたく)。
 // 座標は譜面の座標(= 判定面 z=judgeZ のワールド座標)。時刻は曲の時計の秒(NoteSpawner.TotalOffsetSeconds を足した値)。
 //   試験用紙: papers の時間帯に 0.25 秒で黒い紙を出し、終わりの 0.25 秒で戻す(接する時間帯はつないで、境目で戻さない)。
-//   rhythm: 横の線(y −0.15)と左の的(x −1.6)。玉は右の画面の端から 4.0/秒の等速で、届く時刻に的の中心へ。届いたら 0.3 秒で薄れる。
-//   matrix: 4つの的(x ±0.6・±1.8)。左の端の近くの小さなレーン 4 本(間隔 0.28)を、印が 2.2/秒で落ちて y −0.35 の小さな丸に着く。
-//           レーンは画面でまっすぐ縦に見えるよう、判定面の上では少し傾ける(QuizMode がカメラから求める)。
-//   count: 縦の線(x 0)。玉は上の画面の端から 3.6/秒で落ちて y −0.35 の的へ。金の玉(unit)の数が答え。
-//   formula: 数式の画像を幅 9.0・濃さ 0.55 でゲートの中央に置き、ringsMs に白い輪(半径 2.2→6.0、0.6 秒、濃さ 0.3)。
-//   玉・印は、その問題が出る(showMs)前は出さず、showMs から 0.15 秒で薄く現れる(次の問題の玉を前の問題の間に見せない)。
-// 切る相手は見えないノーツ(NoteData.hidden)。玉や印はノーツではない(飾りの玉は数えない)。
-// 2026-10-27 夜(撮影を見た b1 の指示): rhythm 2.8→4.0・count 2.4→3.6 の速さ、showMs からの出現、数式の幅 4.2→9.0、
-// 数える問題の式・凡例・金の丸を約 2.5 倍、行列のレーンを画面で縦に。
+//     紙の間は判定面にゲートの枠(x ±1.9、y −0.6〜0.3)を白い細線で描く。字は白、正解の印だけ赤ペンの赤、ノーツは金。
+//   rhythm「答えの柱」(どこで切るか): 柱は x −1.8/−0.6/0.6/1.8、y −0.15。判定面に薄い四角、真上に答えの札、上に問題。
+//     本物の金は正しい柱だけ(当たり 0.45 倍で隣の柱では切れない)、ほかの3本は飾りの金(NoteSpawner.Decoy)。
+//     本物を切るとその札が 0.15 秒金に光り、最後の本物が届いたら正しい札を赤い丸で囲む(練習は最初から)。
+//   sort「斬り分け」(どの向きに切るか): 札4つ(x ±0.7・±2.1、y 1.1)から金が発射され(NoteData.launch)、真ん中の的へ飛ぶ。
+//     本当の向き(答えの側)は隠してある(sideArrow)。届く時刻に札が答えの箱(x ±3.7)へ 0.25 秒で滑り込み、
+//     切れていれば金、逃した・違う向きなら灰色で積む。接近 2.0 秒では最初の金が問題の前に出るので、板を早めに出す。
+//   count「答えの形」(いくつ来るか): 金の数が答え。届くたびに(切っても逃しても)「?」の所の数が 1, 2, 3 … と増え、
+//     最後の金のあと答えの数を赤い丸で囲む。
+//   pi「π を書く」: 金を切るたびに、そのマスに円周率の桁が白く(逃したら灰色で)書かれる。行が埋まると 0.3 秒で 0.9 上へ送る。
+//     盛り上がり4から拍ごとに紙の縁を光らせ(大きな光の予算・F3 では出さない)、最後に「…」と「π」の赤い花丸。
+// 第2版(Milthm「Algebra」をなぞった横線の玉・行列のレーン・数える玉・数式の輪)は、ユーザーの「パクりすぎ」で全部やめた。
 public static class QuizRules
 {
-    public const string Rhythm = "rhythm", Matrix = "matrix", Count = "count", Formula = "formula";
+    public const string Rhythm = "rhythm", Sort = "sort", Count = "count", Pi = "pi";
+    public const string Left = "left", Right = "right";
+    // NoteData.sideArrow の隠した向き。
+    public const string HiddenSide = "hidden";
     // 画像は曲フォルダ(StreamingAssets/Songs/<曲>)の下のこのフォルダ。
     public const string ImageFolder = "quiz";
-    // 数える問題の凡例「● = 1」の画像。項目(QuizItemData.legend)に無いときに探す名前。
-    public const string DefaultLegendImage = "legend.png";
-    // 見えないノーツと玉・印を同じ時刻とみなす幅(秒)。譜面は同じ値を書くので、浮動小数の丸めだけを許す。
+    // ノーツと問題の時刻を同じとみなす幅(秒)。譜面は同じ値を書くので、浮動小数の丸めだけを許す。
     public const double MatchSeconds = .002;
 
     // ---- 試験用紙 ----
@@ -31,79 +36,103 @@ public static class QuizRules
     // これより近い時間帯はつなぐ(C と D のように接するとき、境目で黒を戻さない)。
     public const double PaperJoinSeconds = .001;
 
-    // ---- 黒板(問題・楽譜・行列・凡例の画像) ----
-    // 仕様(spec_v2)の大きさは、見えている広さをゲートの枠(x ±5.5 前後)くらいと見たもの。実際の判定面は 1080p で
-    // 約 130px/単位なので、そのままでは楽譜の行が約 20px(音符の頭が 3px)になって読めない。黒板の画像だけを
-    // BoardScale 倍にする(玉・的・レーン・数式は見えないノーツと重ねるので、譜面の座標のまま変えない)。
-    public const float BoardScale = 3f;
-    public const float QuestionHeight = .30f * BoardScale;
-    public const float RowHeight = .17f * BoardScale;
-    public const float RowGap = .05f * BoardScale;
-    // 問題と1行目のあいだ(仕様に無いので、行の間より少し広くする)。
-    public const float QuestionGap = .08f * BoardScale;
-    // 黒板のいちばん下(ゲートの上端 0.3 から少しあける)。
-    public const float BoardBottomY = .55f;
-    public static readonly Color AnswerGreen = new Color(.5f, 1f, .35f);
-    public const double RevealGreenSeconds = .4;
-
-    // ---- 玉・印の出現 ----
-    // その問題の showMs から、この秒数で薄く現れる(それより前は出さない)。
-    public const double AppearSeconds = .15;
-
-    // ---- rhythm ----
-    // 速さは読む1小節(2.4 秒)のうちに右の画面の端から入る 4.0(仕様の 2.8 から b1 の指示で変えた)。
-    public const float RhythmLineY = -.15f, RhythmTargetX = -1.6f, RhythmTargetRadius = .24f;
-    public const float BallRadius = .16f, RhythmSpeed = 4f;
-    public const double PassFadeSeconds = .3;
-    public const float HintDecoyAlpha = .25f;
-    // 線は的の少し左から右の画面の端まで。
-    public const float RhythmLineLeftMargin = .45f;
-
-    // ---- matrix ----
-    // 4つの的は間隔 1.2(仕様の 1.0 では、隣の丸の内側を振ると正しい的まで届いた。Codex の点検を受けて b1 の指示で広げた)。
-    // 見えないノーツの当たりの倍率は MatrixHitScale(譜面の hitScale)。本編の判定(刃 0.32 + 当たり 0.88 × 0.45 = 0.716)は、
-    // 正しい的の中心から隣の丸の縁まで(1.2 − 0.3 = 0.9)に届かない。細い側の振りで広げても SaberCutJudge.ScaledThinRangeLimit(0.85)まで。
-    public static readonly float[] MatrixTargetX = { -1.8f, -.6f, .6f, 1.8f };
-    public const float MatrixTargetSpacing = 1.2f;
-    public const float MatrixHitScale = .45f;
-    public const float MatrixTargetY = -.15f, MatrixTargetRadius = .30f, MatrixLabelY = .32f;
-    public const int LaneCount = 4;
-    public const float LaneSpacing = .28f, LaneBottomY = -.35f, LaneDotRadius = .09f, GuideRadius = .09f, GuideSpeed = 2.2f;
-    // 左のレーンを画面の左の端からどれだけ内に置くか。字(A B C D)は小さな丸の下。
-    public const float LaneMargin = .45f, LaneLetterY = -.62f;
-    public const float MatrixImageHeight = .55f * BoardScale, MatrixBoardBottomY = .85f;
-
-    // ---- count ----
-    // 速さは読む1小節(1.5 秒)のうちに上の画面の端から入る 3.6(仕様の 2.4 から b1 の指示で変えた)。
-    public const float CountLineX = 0f, CountTargetY = -.35f, CountTargetRadius = .24f, CountSpeed = 3.6f;
-    // 動画のように、左上の大きな凡例「● = 1」と左の大きな式。式・答え・凡例・金の丸を、黒板の大きさのさらに CountScale 倍にする。
-    public const float CountScale = 2.5f;
-    // 式は縦の線(x 0)の左に、右の端をそろえて置く(線や玉と重ねない)。横に長すぎる式は、画面の左の端に収まるよう縮める。
-    public const float CountQuestionHeight = QuestionHeight * CountScale;
-    public const float CountQuestionRightX = -.8f, CountQuestionCenterY = 1.35f, CountQuestionLeftMargin = .4f;
-    public const float LegendHeight = .20f * BoardScale * CountScale, LegendMargin = .5f;
-    public const float UnitMarkRadius = .045f * BoardScale * CountScale, UnitMarkSpacing = .12f * BoardScale * CountScale,
-        UnitMarkGap = .04f * BoardScale * CountScale;
-
-    // ---- formula ----
-    // 幅は 9.0(仕様の 4.2 では小さすぎて読めない、b1 の指示)。ノーツは譜面の側がこの大きさの記号の上へ置く。
-    public const float FormulaWidth = 9f, FormulaAlpha = .55f;
-    // 判定面よりわずかに奥。
-    public const float FormulaDepth = .05f;
+    // ---- 判定面のゲートの枠(紙の間だけ。奥行きと判定面の場所を見せる) ----
+    public const float GateHalfWidth = 1.9f, GateBottomY = -.6f, GateTopY = .3f;
+    public const float GateLineWidth = .03f, GateLineAlpha = .4f;
     public static readonly Vector2 GateCenter = new Vector2(0f, -.15f);
-    public const float RingFromRadius = 2.2f, RingToRadius = 6f, RingAlpha = .3f, RingWidth = .07f;
-    public const double RingSeconds = .6;
 
-    // ---- 切ったときの弾け ----
-    public const double PopSeconds = .3;
-    public const float PopGrowth = 2.4f, PopAlpha = .9f, PopWidth = .06f;
+    // ---- 赤ペン ----
+    public static readonly Color RedPen = new Color(.92f, .18f, .16f);
+    // 投影で見えるよう 0.07(0.05 では細かった。Codex の点検、10/28)。
+    public const float RedPenWidth = .07f;
+    // 丸は一筆で描く(仕様に無い足し)。0.2 秒で描き終え、終わりは書き始めを 8% 越えて少し外へずれる。
+    public const double PenDrawSeconds = .2;
+    public const float PenOvershoot = .08f;
+    // 札・数のまわりのあき。
+    public const float PenCirclePad = .12f;
 
-    // ---- 線の太さ ----
-    public const float LineWidth = .035f, TargetWidth = .045f, LaneLineWidth = .025f;
-    public const float LineAlpha = .85f;
+    // ---- 板の画像の大きさの上限(判定面で横に見えている幅は約 ±7) ----
+    public const float BoardMaxWidth = 9f;
 
-    // カメラが無いとき(EditMode など)の、判定面で見えている端。本編は QuizMode がカメラから求める。
-    public const float DefaultRightEdgeX = 7.3f, DefaultTopEdgeY = 4.6f, DefaultLeftEdgeX = -6.5f;
+    // ---- rhythm「答えの柱」 ----
+    public static readonly float[] PillarX = { -1.8f, -.6f, .6f, 1.8f };
+    public const float PillarY = -.15f, PillarSpacing = 1.2f;
+    // 本物の当たりの倍率(譜面の hitScale)。本編の当たり(刃 0.32 + 0.88 × 0.45 = 0.716)は、隣の柱の四角の内側の縁
+    // (1.2 − 0.25 = 0.95)に届かない。細い側の振りで広げても SaberCutJudge.ScaledThinRangeLimit(0.85)まで。
+    public const float PillarHitScale = .45f;
+    public const float PillarSquareSize = .5f, PillarSquareAlpha = .18f;
+    // 札は判定面の y 2.0(画面では奥から出てくるノーツより上)。0.95 では、奥から柱へ来るノーツの通り道(画面の上下)に札が重なり、
+    // 字が金のノーツに隠れた(9a、10/28 の録画)。問題はその上。
+    public const float RhythmQuestionY = 3.05f, RhythmQuestionHeight = .85f;
+    public const float OptionY = 2f, OptionHeight = .5f, OptionMaxWidth = 1.1f;
+    public const double OptionFlashSeconds = .15;
+    // 札の画像のふつうの高さ(画素)。札はこの高さを OptionHeight で出し、背の高い札(分数の 299px など)は同じ比で大きくして
+    // 字の大きさをそろえる(幅が上限を超えたときだけ縮める。9a、10/28)。斬り分けの札・箱の語も同じ。
+    public const int OptionReferencePixels = 143, SortLabelReferencePixels = 178, BoxWordReferencePixels = 175;
+    // 試験用紙の間の、切った光(GameplayCutFeedback)の大きさの倍率。黒い紙の上では Perfect の虹の輪が問題の字まで覆い、
+    // 答えの形(金を続けて切る)では問題が読めなくなったため(9a、10/28 の録画)。紙の濃さに合わせて 1 から下げる。
+    public const float PaperCutFeedbackScale = .6f;
+
+    // ---- sort「斬り分け」 ----
+    public static readonly float[] SortLabelX = { -2.1f, -.7f, .7f, 2.1f };
+    public const float SortHeaderY = 2.3f, SortHeaderHeight = .6f;
+    // 札の幅の上限(隣の札と重ねない。札の間は 1.4)。
+    public const float SortLabelY = 1.1f, SortLabelHeight = .55f, SortLabelMaxWidth = 1.25f;
+    public static readonly Vector2 SortTarget = new Vector2(0f, -.15f);
+    // 箱と中の字は投影で読める大きさに(Codex の点検、10/28。前は 1.5×1.0・語 0.30・札 0.24 で十数画素だった)。
+    public const float BoxX = 3.7f, BoxY = -.15f, BoxWidth = 2f, BoxHeight = 1.3f;
+    public const float BoxAlpha = .5f, BoxLineWidth = .035f;
+    // 箱の中: 上の端に語(高さ 0.36、幅 1.8 を超えたら縮める)、その下に積んだ札を2列×2段。
+    public const float BoxWordHeight = .36f, BoxWordMaxWidth = 1.8f, BoxWordTopMargin = .05f;
+    public const float BoxSlotGap = .03f, BoxSlotBottomMargin = .05f;
+    public const float BoxLabelHeight = .30f, BoxLabelMaxWidth = .80f;
+    // 札が箱へ滑り込むのは、遅めの判定の窓(0.18 秒)が閉じたあと(届く 0.24 秒後から 0.10 秒)。届いた時刻から動かすと、
+    // 答えの箱を見てから遅めに切れてしまう(Codex の点検、10/28)。
+    public const double SortSlideDelaySeconds = .24, SortSlideSeconds = .10;
+    // 金は play から4分(160 BPM で 0.375 秒)おきに4つ(譜面にノーツが足りないときの札の時刻)。
+    public const double SortStepSeconds = .375;
+    // 接近 2.0 秒では最初の金が問題(show)より前に出る。板はその金が出る 0.2 秒前から出す。
+    public const double SortBoardLeadSeconds = .2;
+    // 板のために紙を早める上限(CoverBoard)。
+    public const double SortCoverLeadSeconds = 2.5;
+    // 金が出る前の札の濃さ。出たら 0.1 秒で 1 へ(仕様の「少し明るくなる」)。
+    public const float SortDimAlpha = .7f;
+    public const double SortBrightenSeconds = .1;
+    public static readonly Color MissGray = new Color(.5f, .5f, .5f);
+
+    // ---- count「答えの形」 ----
+    public const float CountQuestionY = 2f, CountQuestionHeight = .85f;
+    // 最初に「?」の所に出す「?」の画像(QuizItemData.markImage が無いときに探す名前。白い字を赤ペンの色で塗る)。
+    public const string DefaultMarkImage = "qmark.png";
+    // 数の画像の高さ。問題の画像と同じ字の大きさで書き出してあれば画素の比で決まる。比が使えないときは問題の高さ × 0.62。
+    public const float CountNumberScale = .62f, CountNumberMinScale = .3f, CountNumberMaxScale = 1f;
+
+    // ---- pi「π を書く」 ----
+    // マスの間隔は 0.38。11 マスの行もゲートの中に収まるよう、行の長さ n では 0.38 と 3.42 ÷ (n − 1) の狭い方(9a、10/28)。
+    public const float PiLineY = -.15f, PiFirstCellX = -1.71f, PiCellSpacing = .38f, PiRowSpan = 3.42f;
+    public const int PiRowCells = 10;
+    // 桁の高さ(「0」の画像)。点・「…」・「π =」は同じ字の大きさで書き出した画素の比で、下の端(字の並ぶ線)をそろえる。
+    public const float PiDigitHeight = .5f;
+    // 「π =」の中心(1行目の左)。最初のマスとのあいだは PiLabelGap より狭めない。
+    public const float PiLabelX = -2.45f, PiLabelGap = .06f;
+    public const float PiRowStep = .9f;
+    public const double PiRowScrollSeconds = .3;
+    public const float PiMissAlpha = .35f;
+    // 「π =」の画像の中の「π」の中心(slotX・slotY が無いとき。x は左から、y は上から)。
+    public const float PiGlyphX = .2f, PiGlyphY = .5f;
+    // 赤い花丸(渦巻き+花びら)の高さと、出るときの膨らみ。
+    public const float FlowerHeight = 1.3f;
+    public const double FlowerSeconds = .25;
+    // 紙の縁の光(大きな光の予算に乗せる。画面の縁 8% の帯、ゲートの内側は抜く)。
+    public const float EdgeFlashAlpha = .3f;
+    public const double EdgeFlashSeconds = .3;
+
+    // ---- 飾りの金 ----
+    // 届いたら判定面を少し過ぎながら、この秒数で薄れて消える(MISS の暗くなる見た目は出さない)。
+    public const double DecoyFadeSeconds = .3;
+
+    // カメラが無いとき(EditMode など)の、判定面で見えている上の端。
+    public const float DefaultTopEdgeY = 4.6f;
 
     // 試験用紙の時間帯(曲の時計の秒)。
     public readonly struct Span
@@ -124,6 +153,27 @@ public static class QuizRules
     // 種類の名前(大文字小文字・前後の空白をそろえる)。
     public static string Kind(string kind) => string.IsNullOrWhiteSpace(kind) ? "" : kind.Trim().ToLowerInvariant();
 
+    // 答えの側の名前("left" / "right"、ほかは "")。
+    public static string Side(string side)
+    {
+        string name = Kind(side);
+        return name == Left || name == Right ? name : "";
+    }
+
+    // 左は −1、右は +1、どちらでもなければ 0。
+    public static float SideSign(string side) => Side(side) == Left ? -1f : Side(side) == Right ? 1f : 0f;
+
+    // 隠した向きの名前。"hidden"(大文字小文字・前後の空白は問わない)を、左右の矢印のノーツにだけ残す。
+    public static string SideArrow(string value, string direction)
+    {
+        if (Kind(value) != HiddenSide) return "";
+        var required = CutDirectionHelper.Parse(direction);
+        return required == CutDirection.Left || required == CutDirection.Right ? HiddenSide : "";
+    }
+
+    // そのノーツの本当の向きを隠すか(読み込み前の譜面でも同じ答え)。
+    public static bool HidesSide(NoteData note) => note != null && SideArrow(note.sideArrow, note.direction) == HiddenSide;
+
     // 読み込み直後にそろえる(ChartLoader.Parse)。壊れた値・長さの無い時間帯は捨て、時刻順に並べる。
     public static QuizChartData Normalize(QuizChartData quiz)
     {
@@ -137,20 +187,45 @@ public static class QuizRules
         foreach (var item in quiz.items)
         {
             item.kind = Kind(item.kind);
-            item.question = item.question ?? "";
-            item.answerImage = item.answerImage ?? "";
-            item.legend = item.legend ?? "";
-            item.rows = (item.rows ?? new List<string>()).Select(r => r ?? "").ToList();
-            item.labels = (item.labels ?? new List<string>()).Select(l => l == null ? "" : l.Trim()).ToList();
-            item.dots = (item.dots ?? new List<QuizDotData>()).Where(d => d != null && Finite(d.ms)).OrderBy(d => d.ms).ToList();
-            item.guides = (item.guides ?? new List<QuizGuideData>())
-                .Where(g => g != null && Finite(g.ms) && g.lane >= 0 && g.lane < LaneCount).OrderBy(g => g.ms).ToList();
-            item.ringsMs = (item.ringsMs ?? new List<float>()).Where(r => Finite(r)).OrderBy(r => r).ToList();
+            item.question = File(item.question);
+            item.options = Files(item.options);
+            item.sides = (item.sides ?? new List<string>()).Select(Side).ToList();
+            item.boxes = Files(item.boxes);
+            item.numbers = Files(item.numbers);
+            item.markImage = File(item.markImage);
+            item.digits = Digits(item.digits);
+            item.rows = (item.rows ?? new List<int>()).Where(r => r > 0).ToList();
+            item.pointImage = File(item.pointImage);
+            item.ellipsisImage = File(item.ellipsisImage);
+            item.flowerImage = File(item.flowerImage);
+            item.flashesMs = (item.flashesMs ?? new List<float>()).Where(f => Finite(f)).OrderBy(f => f).ToList();
             if (!Finite(item.revealMs)) item.revealMs = 0f;
-            if (item.answer < 0 || item.answer >= item.rows.Count) item.answer = -1;
+            item.slotX = Finite(item.slotX) ? Mathf.Clamp01(item.slotX) : 0f;
+            item.slotY = Finite(item.slotY) ? Mathf.Clamp01(item.slotY) : 0f;
+            if (item.count < 0) item.count = 0;
+            if (item.answer < 0 || item.answer >= PillarX.Length) item.answer = -1;
         }
+        quiz.decoys = (quiz.decoys ?? new List<QuizDecoyData>())
+            .Where(d => d != null && Finite(d.ms) && Finite(d.x) && Finite(d.y)).OrderBy(d => d.ms).ToList();
+        foreach (var decoy in quiz.decoys) decoy.veil = Finite(decoy.veil) ? Mathf.Clamp01(decoy.veil) : 0f;
         return quiz;
     }
+
+    static string File(string file) => file == null ? "" : file.Trim();
+    static List<string> Files(List<string> files) => (files ?? new List<string>()).Select(File).ToList();
+
+    // 桁の列から数字だけを残す("3.1415" → "31415")。
+    public static string Digits(string value)
+    {
+        if (string.IsNullOrEmpty(value)) return "";
+        var builder = new StringBuilder(value.Length);
+        foreach (char c in value) if (c >= '0' && c <= '9') builder.Append(c);
+        return builder.ToString();
+    }
+
+    // マス cell の桁(0〜9)。無ければ −1。
+    public static int Digit(string digits, int cell)
+        => digits != null && cell >= 0 && cell < digits.Length && digits[cell] >= '0' && digits[cell] <= '9' ? digits[cell] - '0' : -1;
 
     // 試験用紙の時間帯。時刻順に並べ、重なる・接する時間帯はつなぐ。offsetSeconds は NoteSpawner.TotalOffsetSeconds。
     public static List<Span> BuildPapers(QuizChartData quiz, double offsetSeconds)
@@ -162,6 +237,11 @@ public static class QuizRules
             if (paper == null || !Finite(paper.startMs) || !Finite(paper.endMs) || paper.endMs <= paper.startMs) continue;
             spans.Add(new Span(Seconds(paper.startMs, offsetSeconds), Seconds(paper.endMs, offsetSeconds)));
         }
+        return Merge(spans);
+    }
+
+    static List<Span> Merge(List<Span> spans)
+    {
         spans.Sort((a, b) => a.Start.CompareTo(b.Start));
         var merged = new List<Span>();
         foreach (var span in spans)
@@ -174,6 +254,21 @@ public static class QuizRules
             else merged.Add(span);
         }
         return merged;
+    }
+
+    // 板を紙より前に出す必要があるとき(接近 2.0 秒の斬り分けの1問目は、最初の金が問題の前に出る)、その板と一緒に紙も出す。
+    // boardStart がどの紙の中でもなく、そのあと maxLead 秒以内に紙が始まるなら、その紙の始まりを boardStart まで前へ
+    // (紙と板はいつもと同じく一緒に 0.25 秒で現れる)。ほかの場合はそのまま。
+    public static List<Span> CoverBoard(List<Span> papers, double boardStart, double maxLead)
+    {
+        if (papers == null || !Finite(boardStart) || InPaper(papers, boardStart)) return papers;
+        var result = new List<Span>(papers.Count);
+        foreach (var paper in papers)
+        {
+            bool late = paper.Start > boardStart && paper.Start - boardStart <= maxLead;
+            result.Add(late ? new Span(boardStart, paper.End) : paper);
+        }
+        return Merge(result);
     }
 
     // 試験用紙の濃さ(0〜1)。始まりから 0.25 秒で 1、終わりの 0.25 秒で 0 へ。
@@ -221,142 +316,8 @@ public static class QuizRules
         return true;
     }
 
-    // ---- 流れる玉・落ちる印 ----
-
-    // rhythm の玉の x。届く時刻に的の中心、それより前は右に、あとは左へ同じ速さで進む。
-    public static float BallX(double arrival, double time) => RhythmTargetX + RhythmSpeed * (float)(arrival - time);
-
-    // 上から落ちる玉・印の y(targetY に届く時刻 arrival)。
-    public static float FallY(float targetY, float speed, double arrival, double time) => targetY + speed * (float)(arrival - time);
-
-    // 届く何秒前から見えるか(端 edge から的 target まで、speed で進む)。
-    public static double LeadSeconds(float target, float edge, float speed)
-        => speed > 0f ? Math.Max(0.0, (edge - target) / speed) : 0.0;
-
-    // 届いたあとは PassFadeSeconds で薄れる。
-    public static float PassFade(double arrival, double time)
-        => time <= arrival ? 1f : Mathf.Clamp01(1f - (float)((time - arrival) / PassFadeSeconds));
-
-    // 流れる玉の濃さ。練習の問題(hint)だけ、飾り(real=false)を薄くする。それ以外は本物と飾りが同じ見た目。
-    public static float BallAlpha(bool hint, bool real, double arrival, double time)
-        => (hint && !real ? HintDecoyAlpha : 1f) * PassFade(arrival, time);
-
-    // 玉を描くか(右・上の端から入ってきたあと、届いて薄れ切る前)。
-    public static bool BallShown(double arrival, double time, double leadSeconds)
-        => time >= arrival - leadSeconds && time < arrival + PassFadeSeconds;
-
-    // その問題の玉・印の現れ方(0〜1)。showMs より前は 0(次の問題の玉を前の問題の間に見せない)、showMs から AppearSeconds で 1。
-    public static float AppearFade(QuizItemData item, double offset, double time)
-    {
-        if (item == null || !Finite(time)) return 0f;
-        double since = time - Seconds(item.showMs, offset);
-        return since < 0 ? 0f : (float)Math.Min(1.0, since / AppearSeconds);
-    }
-
-    // 行列のレーン(判定面で下の点 bottom から上の点 top へ)の、高さ y での x。下と上の点は画面の同じ横の位置から求めるので、
-    // この線は画面でまっすぐ縦に見える(カメラが下を向いた透視でも傾かない)。y が下の点より下でも同じ線の延長。
-    public static float LaneXAt(Vector2 bottom, Vector2 top, float y)
-    {
-        float span = top.y - bottom.y;
-        if (Mathf.Abs(span) < 1e-5f) return bottom.x;
-        return bottom.x + (top.x - bottom.x) * ((y - bottom.y) / span);
-    }
-
-    // 数える問題の式の大きさ(幅, 高さ)。高さは CountQuestionHeight、横に長い式は画面の左の端(leftEdgeX)の内側に収まるよう縮める。
-    public static Vector2 CountQuestionSize(float aspect, float leftEdgeX)
-    {
-        aspect = aspect > .01f && !float.IsNaN(aspect) && !float.IsInfinity(aspect) ? aspect : 1f;
-        float room = Mathf.Max(.5f, CountQuestionRightX - (leftEdgeX + CountQuestionLeftMargin));
-        float height = Mathf.Min(CountQuestionHeight, room / aspect);
-        return new Vector2(height * aspect, height);
-    }
-
-    // ---- 正しい行の緑 ----
-
-    // 緑にする時間帯。練習の問題は playMs から endMs まで。ほかは最後の本物の玉が届いたあと、endMs までの最後の 0.4 秒だけ
-    // (動画にない、答えを見せるための足し)。正しい行の無い問題は false。
-    public static bool GreenSpan(QuizItemData item, double offset, out Span span)
-    {
-        span = default;
-        if (item == null || item.rows == null || item.answer < 0 || item.answer >= item.rows.Count) return false;
-        double end = Seconds(item.endMs, offset);
-        double start;
-        if (item.hint) start = Seconds(item.playMs, offset);
-        else
-        {
-            start = end - RevealGreenSeconds;
-            if (item.dots != null)
-                foreach (var dot in item.dots)
-                    if (dot != null && dot.real) start = Math.Max(start, Seconds(dot.ms, offset));
-        }
-        if (!(start < end)) return false;
-        span = new Span(start, end);
-        return true;
-    }
-
-    public static bool Green(QuizItemData item, double offset, double time)
-        => GreenSpan(item, offset, out var span) && time >= span.Start && time < span.End;
-
-    // count・formula: revealMs から answerImage に差し替える。
-    public static bool Revealed(QuizItemData item, double offset, double time)
-        => item != null && !string.IsNullOrEmpty(item.answerImage) && item.revealMs > 0f
-            && time >= Seconds(item.revealMs, offset);
-
-    // ---- 黒板の並び ----
-
-    // rhythm の答えの行(0 が上)の中心の高さ。
-    public static float RowCenterY(int row, int rowCount)
-        => BoardBottomY + RowHeight * .5f + (rowCount - 1 - row) * (RowHeight + RowGap);
-
-    // rhythm の問題の中心の高さ(行の上)。
-    public static float QuestionCenterY(int rowCount)
-        => BoardBottomY + rowCount * RowHeight + Math.Max(0, rowCount - 1) * RowGap + QuestionGap + QuestionHeight * .5f;
-
-    // 左のレーンの x(lane 0 = A が左)。
-    public static float LaneX(int lane, float laneLeftX) => laneLeftX + lane * LaneSpacing;
-
-    // 4つの的のうち x にいちばん近いもの。
-    public static int NearestMatrixTarget(float x)
-    {
-        int best = 0;
-        for (int i = 1; i < MatrixTargetX.Length; i++)
-            if (Math.Abs(MatrixTargetX[i] - x) < Math.Abs(MatrixTargetX[best] - x)) best = i;
-        return best;
-    }
-
-    // count の金の小さな丸(0 から)の中心。問題の画像の左下から右へ並べる。
-    public static Vector2 UnitMark(int index, float questionLeftX, float questionBottomY)
-        => new Vector2(questionLeftX + UnitMarkRadius + index * UnitMarkSpacing, questionBottomY - UnitMarkGap - UnitMarkRadius);
-
-    // count の答え(金の玉の数)。
-    public static int UnitCount(QuizItemData item)
-    {
-        int count = 0;
-        if (item?.dots != null) foreach (var dot in item.dots) if (dot != null && dot.unit) count++;
-        return count;
-    }
-
-    // ---- 見えないノーツとの対応 ----
-
-    // 届く時刻 hitTime の見えないノーツに対応する玉の番号(無ければ −1)。
-    public static int FindDot(QuizItemData item, double offset, double hitTime)
-    {
-        if (item?.dots == null || !Finite(hitTime)) return -1;
-        for (int i = 0; i < item.dots.Count; i++)
-            if (item.dots[i] != null && Math.Abs(Seconds(item.dots[i].ms, offset) - hitTime) <= MatchSeconds) return i;
-        return -1;
-    }
-
-    // 届く時刻 hitTime の見えないノーツに対応する印の番号(無ければ −1)。
-    public static int FindGuide(QuizItemData item, double offset, double hitTime)
-    {
-        if (item?.guides == null || !Finite(hitTime)) return -1;
-        for (int i = 0; i < item.guides.Count; i++)
-            if (item.guides[i] != null && Math.Abs(Seconds(item.guides[i].ms, offset) - hitTime) <= MatchSeconds) return i;
-        return -1;
-    }
-
-    // ---- 輪 ----
+    // 前のコマから今のコマのあいだに時刻 at を越えたか(止まっている間・巻き戻しでは越えない)。
+    public static bool Crossed(double previous, double now, double at) => previous < at && at <= now;
 
     static float EaseOut(double t)
     {
@@ -364,16 +325,203 @@ public static class QuizRules
         return 1f - (1f - k) * (1f - k);
     }
 
-    // 大問の白い輪(ringsMs からの経過 age 秒)。半径 2.2 → 6.0 をすっと広げ、濃さ 0.3 から消す。
-    public static bool RingShown(double age) => age >= 0 && age < RingSeconds;
-    public static float RingRadius(double age) => Mathf.Lerp(RingFromRadius, RingToRadius, EaseOut(age / RingSeconds));
-    public static float RingOpacity(double age) => RingShown(age) ? RingAlpha * (1f - (float)(age / RingSeconds)) : 0f;
+    // ---- 発射点(NoteData.launch) ----
 
-    // 前のコマから今のコマのあいだに時刻 at を越えたか(止まっている間・巻き戻しでは越えない)。
-    public static bool Crossed(double previous, double now, double at) => previous < at && at <= now;
+    // 出る瞬間に本体が見える奥の点。カメラ camera と札(label, judgeZ)を結ぶ線が z = spawnZ と交わる所(画面では札の上に重なる)。
+    // カメラが無い・判定面より奥にあるときは札の真後ろ(label)。
+    public static Vector2 LaunchFar(Vector3? camera, Vector2 label, float judgeZ, float spawnZ)
+    {
+        if (!camera.HasValue) return label;
+        Vector3 c = camera.Value;
+        float toJudge = judgeZ - c.z;
+        if (!(toJudge > 1e-4f) || !Finite(c.x) || !Finite(c.y) || !Finite(c.z)) return label;
+        float k = (spawnZ - c.z) / toJudge;
+        return new Vector2(c.x + (label.x - c.x) * k, c.y + (label.y - c.y) * k);
+    }
 
-    // 見えないノーツを切ったときの弾け(的で輪が広がる)。
-    public static bool PopShown(double age) => age >= 0 && age < PopSeconds;
-    public static float PopRadius(float baseRadius, double age) => baseRadius * Mathf.Lerp(1f, PopGrowth, EaseOut(age / PopSeconds));
-    public static float PopOpacity(double age) => PopShown(age) ? PopAlpha * (1f - (float)(age / PopSeconds)) : 0f;
+    // 見た目の子のずれ(xy)。根元の奥行き z が spawnZ のとき 奥の点 − 着地点、judgeZ で 0、その間はまっすぐ。届いたあとは 0。
+    // 緩急の無い譜面では z の割合 = 残り ÷ 接近なので、仕様の「(P_奥 − 着地点) × 残り ÷ 接近」と同じ。
+    public static Vector2 LaunchOffset(Vector2 far, Vector2 landing, float z, float judgeZ, float spawnZ)
+    {
+        float span = spawnZ - judgeZ;
+        if (!(Mathf.Abs(span) > 1e-4f) || !Finite(z)) return Vector2.zero;
+        float t = Mathf.Clamp01((z - judgeZ) / span);
+        return t <= 0f ? Vector2.zero : (far - landing) * t;
+    }
+
+    // ---- 飾りの金 ----
+
+    // 飾りの見え方(1 → 0)。届く時刻 hit までは本物と同じ姿、届いたら判定面を少し過ぎながら DecoyFadeSeconds で消える。
+    public static float DecoyVisibility(double time, double hit)
+    {
+        if (!Finite(time) || !Finite(hit) || time <= hit) return 1f;
+        return Mathf.Clamp01(1f - (float)((time - hit) / DecoyFadeSeconds));
+    }
+
+    // 見え方 visibility の飾りの見えにくさ(譜面の veil から 1 へ)。
+    public static float DecoyVeil(float veil, float visibility)
+    {
+        float baseVeil = float.IsNaN(veil) || float.IsInfinity(veil) ? 0f : Mathf.Clamp01(veil);
+        return 1f - (1f - baseVeil) * Mathf.Clamp01(visibility);
+    }
+
+    // ---- 板の並び ----
+
+    // 縦横比 aspect の画像を高さ height で、幅が maxWidth を超えたら縮めて置く大きさ(幅, 高さ)。
+    public static Vector2 FitSize(float aspect, float height, float maxWidth)
+    {
+        aspect = aspect > .01f && !float.IsNaN(aspect) && !float.IsInfinity(aspect) ? aspect : 1f;
+        float width = height * aspect;
+        if (maxWidth > 0f && width > maxWidth)
+        {
+            height *= maxWidth / width;
+            width = maxWidth;
+        }
+        return new Vector2(width, height);
+    }
+
+    // 札の大きさ(幅, 高さ)。ふつうの高さ referencePixels の札を高さ height で出し、ほかの高さの札は同じ比で大きく(小さく)する
+    // (字の大きさがそろう)。そのうえで幅が maxWidth を超えたら縦横比のまま縮める。画素が分からなければ height。
+    public static Vector2 LabelSize(int pixels, float aspect, float height, int referencePixels, float maxWidth)
+        => FitSize(aspect, pixels > 0 && referencePixels > 0 ? height * pixels / referencePixels : height, maxWidth);
+
+    // 同じ字の大きさで書き出した画像どうしなら、高さは画素の比(基準の画像 referencePixels が高さ referenceHeight)。
+    // 比が使えない・[min, max] を外れるときは fallback。
+    public static float GlyphHeight(int pixels, int referencePixels, float referenceHeight, float fallback, float min, float max)
+    {
+        if (pixels > 0 && referencePixels > 0 && referenceHeight > 0f)
+        {
+            float height = referenceHeight * pixels / referencePixels;
+            if (height >= min && height <= max) return height;
+        }
+        return Mathf.Clamp(fallback, min, max);
+    }
+
+    // 4本の柱のうち x にいちばん近いもの。
+    public static int NearestPillar(float x)
+    {
+        int best = 0;
+        for (int i = 1; i < PillarX.Length; i++)
+            if (Math.Abs(PillarX[i] - x) < Math.Abs(PillarX[best] - x)) best = i;
+        return best;
+    }
+
+    // 赤ペンの丸の描き進み(start から PenDrawSeconds で 1)。
+    public static float PenProgress(double time, double start)
+    {
+        if (!Finite(time) || !Finite(start) || time < start) return 0f;
+        return Mathf.Clamp01((float)((time - start) / PenDrawSeconds));
+    }
+
+    // 札が金に光っているか(本物を切った次のコマの曲の時計 start から 0.15 秒)。
+    public static bool OptionFlashing(double time, double start)
+        => Finite(start) && Finite(time) && time >= start && time < start + OptionFlashSeconds;
+
+    // ---- sort ----
+
+    // 問題の板を出す時刻。show と、最初の金が出る時刻 − 0.2 秒の早い方(接近 2.0 秒では最初の金が show より前に出る)。
+    public static double SortBoardStart(double show, double firstSpawn)
+        => Finite(firstSpawn) ? Math.Min(show, firstSpawn - SortBoardLeadSeconds) : show;
+
+    // 札が箱へ滑り込む進み(遅めの判定の窓が閉じた hit + 0.24 秒から 0.10 秒、終わりはゆっくり)。
+    public static float SortSlide(double time, double hit)
+    {
+        if (!Finite(time) || !Finite(hit)) return 0f;
+        double start = hit + SortSlideDelaySeconds;
+        if (time <= start) return 0f;
+        return EaseOut((time - start) / SortSlideSeconds);
+    }
+
+    // 札の濃さ。その金が出る(spawn)までは少し暗く、出たら 0.1 秒で 1。
+    public static float SortLabelAlpha(double time, double spawn)
+    {
+        if (!Finite(spawn) || !Finite(time) || time < spawn) return SortDimAlpha;
+        return Mathf.Lerp(SortDimAlpha, 1f, Mathf.Clamp01((float)((time - spawn) / SortBrightenSeconds)));
+    }
+
+    // 左(sign −1)・右(+1)の箱の中心と、上の端の語の中心。
+    public static Vector2 BoxCenter(float sign) => new Vector2(BoxX * Mathf.Sign(sign), BoxY);
+    public static Vector2 BoxWordCenter(float sign)
+        => new Vector2(BoxX * Mathf.Sign(sign), BoxY + BoxHeight * .5f - BoxWordTopMargin - BoxWordHeight * .5f);
+
+    // 箱に積んだ index 番目の札の中心(語の下に2列×2段。左上から右へ、次の段へ)。
+    public static Vector2 BoxSlot(float sign, int index)
+    {
+        index = Mathf.Clamp(index, 0, 3);
+        float top = BoxY + BoxHeight * .5f - BoxWordTopMargin - BoxWordHeight - BoxSlotGap;
+        float bottom = BoxY - BoxHeight * .5f + BoxSlotBottomMargin;
+        float rowHeight = (top - bottom) * .5f;
+        float x = BoxX * Mathf.Sign(sign) + (index % 2 == 0 ? -1f : 1f) * BoxWidth * .25f;
+        return new Vector2(x, top - rowHeight * (index / 2 + .5f));
+    }
+
+    // ---- count ----
+
+    // 時刻 time までに届いた金の数(times は届く時刻。切っても逃しても数える)。
+    public static int CountAt(IReadOnlyList<double> times, double time)
+    {
+        if (times == null || !Finite(time)) return 0;
+        int count = 0;
+        for (int i = 0; i < times.Count; i++) if (times[i] <= time + 1e-9) count++;
+        return count;
+    }
+
+    // 画像(中心 center・大きさ size)の中の割合 (slotX, slotY) の点。x は左から、y は上から。
+    public static Vector2 SlotPoint(Vector2 center, Vector2 size, float slotX, float slotY)
+        => new Vector2(center.x + (slotX - .5f) * size.x, center.y + (.5f - slotY) * size.y);
+
+    // ---- pi ----
+
+    // 長さ rowLength の行のマスの間隔(0.38、11 マスの行は 0.342)。
+    public static float PiPitch(int rowLength) => rowLength > 1 ? Mathf.Min(PiCellSpacing, PiRowSpan / (rowLength - 1)) : PiCellSpacing;
+
+    // 長さ rowLength の行の、列 column のマスの x(x = −1.71 + 間隔 × 列)。
+    public static float CellX(int column, int rowLength) => PiFirstCellX + PiPitch(rowLength) * column;
+
+    // 行 row のマスの数(rows の外・壊れた値は 10)。
+    public static int RowLength(IReadOnlyList<int> rows, int row)
+        => rows != null && row >= 0 && row < rows.Count && rows[row] > 0 ? rows[row] : PiRowCells;
+
+    // マス cell の行と列(rows は各行のマスの数)。rows の外は最後の行の続き。rows が無ければ 10 マスずつ。
+    public static void CellOf(IReadOnlyList<int> rows, int cell, out int row, out int column)
+    {
+        cell = Math.Max(0, cell);
+        if (rows == null || rows.Count == 0)
+        {
+            row = cell / PiRowCells;
+            column = cell % PiRowCells;
+            return;
+        }
+        row = 0;
+        column = cell;
+        for (int r = 0; r < rows.Count; r++)
+        {
+            int length = Math.Max(1, rows[r]);
+            row = r;
+            if (column < length || r == rows.Count - 1) return;
+            column -= length;
+        }
+    }
+
+    // 行を上へ送る進み(行が埋まってから 0.3 秒で 1、終わりはゆっくり)。
+    public static float RowScroll(double age) => !Finite(age) || age <= 0 ? 0f : EaseOut(age / PiRowScrollSeconds);
+
+    // 行 row の高さ。書く行は y −0.15。行 j が埋まる(その行の最後のノーツが届く rowEnds[j])たびに、
+    // そこまでに書いた行(row ≤ j)を 0.9 上へ送る。
+    public static float RowY(int row, IReadOnlyList<double> rowEnds, double time)
+    {
+        float y = PiLineY;
+        if (rowEnds == null) return y;
+        for (int j = Math.Max(0, row); j < rowEnds.Count; j++)
+            if (Finite(rowEnds[j])) y += PiRowStep * RowScroll(time - rowEnds[j]);
+        return y;
+    }
+
+    // 花丸が出る進み(0 → 1)。
+    public static float FlowerAmount(double time, double start)
+        => !Finite(start) || !Finite(time) || time < start ? 0f : EaseOut((time - start) / FlowerSeconds);
+
+    // 紙の縁の光(始まりからの経過 age 秒)。
+    public static bool EdgeFlashShown(double age) => age >= 0 && age < EdgeFlashSeconds;
+    public static float EdgeFlashOpacity(double age) => EdgeFlashShown(age) ? EdgeFlashAlpha * (1f - (float)(age / EdgeFlashSeconds)) : 0f;
 }

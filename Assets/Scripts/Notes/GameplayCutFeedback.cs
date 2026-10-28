@@ -271,7 +271,8 @@ public sealed partial class GameplayCutFeedback : MonoBehaviour
             float t = Mathf.Clamp01(burst.age / BurstLifetime);
             float life = 1f - t;
             float eased = 1f - life * life;          // 立ち上がりを速く、終わりをゆっくり
-            float size = burst.scale * style.size * (reduced ? 1f : burst.release) * (1f + .15f * voltage);
+            float size = burst.scale * style.size * (reduced ? 1f : burst.release) * (1f + .15f * voltage)
+                * (owner != null ? owner.CutFeedbackSizeScale : 1f);
             float gain = burst.gain * style.gain * accentScale;
             Vector3 direction = new Vector3(burst.direction.x, burst.direction.y, 0f);
             Vector3 normal = new Vector3(-direction.y, direction.x, 0f);

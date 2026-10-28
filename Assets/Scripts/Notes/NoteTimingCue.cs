@@ -55,6 +55,9 @@ public class NoteTimingCue : MonoBehaviour
     Transform omenRunner;
     Material omenMat;
     public bool OmenShown => omenAge >= 0;
+    // 予兆の光は出すが「チリッ」(GoldOmen)は知らせない。Q の試験用紙の間は流れてくるノーツが全部金で、飾りの金も
+    // 本物と同じに鳴らすので、4本の柱ぶん鳴り続けてしまうため(QuizMode が本物にも飾りにも同じに立てる)。出現ごとに戻す。
+    public bool MuteOmen { get; set; }
 
     public bool InWindow { get; private set; }
     public Transform RingRoot => ringRoot;
@@ -112,13 +115,17 @@ public class NoteTimingCue : MonoBehaviour
             if (ghostRoot != null) { ghostRoot.SetActive(false); SafeDestroyGo(ghostRoot); }
             if (approachRoot != null) { approachRoot.SetActive(false); SafeDestroyGo(approachRoot); }
             SafeDestroy(ghostMat); SafeDestroy(approachMat);
+            SafeDestroy(omenMat);
             ghostRoot = approachRoot = null; ghostMat = approachMat = null;
+            omenRunner = null; omenMat = null;
         }
         builtProjector = DisplaySettings.ProjectorMode;
-        omenFired = false; omenAge = -1;
-        if (omenRunner != null) omenRunner.gameObject.SetActive(false);
+        omenFired = false; omenAge = -1; MuteOmen = false;
         if (buildRing && ringRoot == null) BuildRing();
         if (buildGhost && ghostRoot == null) BuildGhost(judgeZ);
+        // 出現通知より前に用意し、紙の上への移動と終了時の描画順の復元に含める。
+        if (note != null && note.IsGold && ghostRoot != null && omenRunner == null) BuildOmenRunner();
+        if (omenRunner != null) omenRunner.gameObject.SetActive(false);
         endFadeAlpha=1; InWindow=false;
         if (visuals != null) visuals.SetEmissionBoost(1f);
         if(initialized) {
@@ -201,7 +208,7 @@ public class NoteTimingCue : MonoBehaviour
         {
             omenFired = true;
             // 予兆の時刻を過ぎてから現れたノーツでは、窓に入ったあとに鳴らさない。
-            if (dt > earlyWindow) { omenAge = 0; GoldOmen?.Invoke(note); }
+            if (dt > earlyWindow) { omenAge = 0; if (!MuteOmen) GoldOmen?.Invoke(note); }
         }
         if (omenAge >= 0) TickOmen(elapsed);
 
