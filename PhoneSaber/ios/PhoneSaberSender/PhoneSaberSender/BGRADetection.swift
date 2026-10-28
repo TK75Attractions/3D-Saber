@@ -907,9 +907,8 @@ enum ShutterEmitterThresholds {
     static let maximumWidthRatio = 0.07
 }
 
-private func shutterEmitterMasks(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int,
-                                  bytesPerRow: Int, step: Int, values: [UInt8],
-                                  chroma: [UInt8]) -> [SaberColor: [UInt8]] {
+// 同じ上側中央値を暗背景マスクと明背景の赤ゲートで共有する。
+func saberBackgroundMedian(_ values: [UInt8]) -> Int {
     var histogram = Array(repeating: 0, count: 256)
     for value in values { histogram[Int(value)] += 1 }
     var count = 0, background = 0
@@ -917,13 +916,38 @@ private func shutterEmitterMasks(baseAddress: UnsafePointer<UInt8>, width: Int, 
         count += histogram[value]
         if count > values.count / 2 { background = value; break }
     }
-    guard background <= ShutterEmitterThresholds.maximumBackground else { return [:] }
-    let floor = max(ShutterEmitterThresholds.minimumValue,
-                    background * ShutterEmitterThresholds.minimumBackgroundRatio)
+    return background
+}
+
+// カメラのフレームキューが所有する。1/4 EMA と2階調のデッドバンドで境界の往復を抑える。
+final class SaberBackgroundState {
+    private var filtered: Double?
+    private var stable: Double = 0
+
+    func reset() { filtered = nil; stable = 0 }
+
+    func update(_ background: Int) -> Double {
+        guard let previous = filtered else {
+            filtered = Double(background); stable = Double(background)
+            return stable
+        }
+        let next = previous + (Double(background) - previous) * 0.25
+        filtered = next
+        if abs(next - stable) >= 2 { stable = next }
+        return stable
+    }
+}
+
+private func shutterEmitterMasks(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int,
+                                  bytesPerRow: Int, step: Int, values: [UInt8],
+                                  chroma: [UInt8], background: Double) -> [SaberColor: [UInt8]] {
+    guard background <= Double(ShutterEmitterThresholds.maximumBackground) else { return [:] }
+    let floor = max(Double(ShutterEmitterThresholds.minimumValue),
+                    background * Double(ShutterEmitterThresholds.minimumBackgroundRatio))
     var red = Array(repeating: UInt8(0), count: values.count), blue = red
     for i in values.indices {
         let value = Int(values[i])
-        guard value >= floor, value <= ShutterEmitterThresholds.maximumValue,
+        guard Double(value) >= floor, value <= ShutterEmitterThresholds.maximumValue,
               Double(chroma[i]) / Double(max(value, 1)) >= ShutterEmitterThresholds.minimumPurity else { continue }
         let offset = (i / width) * step * bytesPerRow + (i % width) * step * 4
         let hsv = saberHSV(baseAddress[offset + 2], baseAddress[offset + 1], baseAddress[offset])
@@ -966,7 +990,8 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
                    ignoreZones: [SaberColor: [SaberIgnoreZone]] = [:],
                    playArea: SaberPlayArea? = nil,
                   trackLock: SaberTrackLock? = nil, now: Double = 0,
-                   shutterEmitter: ShutterEmitterMode = ShutterEmitterMode()) -> SaberFrameAnalysis {
+                   shutterEmitter: ShutterEmitterMode = ShutterEmitterMode(),
+                   backgroundState: SaberBackgroundState? = nil) -> SaberFrameAnalysis {
     let totalStart = collectProfile ? ProcessInfo.processInfo.systemUptime : 0
     var profile = SaberDetectionProfile()
     let candidateStageProfile = collectProfile ? SaberCandidateStageProfile() : nil
@@ -1063,9 +1088,14 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
             }
         }
     }
+    let background = shutterEmitter.active ? saberBackgroundMedian(valueMap) : 0
+    if !shutterEmitter.active { backgroundState?.reset() }
+    let redBackground = shutterEmitter.active
+        ? (backgroundState?.update(background) ?? Double(background)) : 0
     let lowISOMasks = shutterEmitter.active
         ? shutterEmitterMasks(baseAddress: baseAddress, width: maskWidth, height: maskHeight,
-                              bytesPerRow: bytesPerRow, step: step, values: valueMap, chroma: chromaMap) : [:]
+                              bytesPerRow: bytesPerRow, step: step, values: valueMap, chroma: chromaMap,
+                              background: redBackground) : [:]
     let scanEnd = collectProfile ? ProcessInfo.processInfo.systemUptime : 0
     let strictBlueMask = blueMask
     blueMask = supportedBlueDiffuserMask(
@@ -1139,7 +1169,8 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
             let evidence = SaberEvidence(color: color, radiance: radianceMap,
                                          value: valueMap, chroma: chromaMap,
                                          colorMask: rawMask, coreMask: associatedCore,
-                                         collectObserverEvidence: collectObserverEvidence)
+                                         collectObserverEvidence: collectObserverEvidence,
+                                         redBackground: redBackground)
             // A dotted or one-sample-wide LED blade can vanish under opening while
             // a smooth reflection survives it. Always score close-only components
             // as well, then discard duplicates of components already found in the
@@ -1161,9 +1192,18 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
                 stageProfile: candidateStageProfile,
                 componentObserver: additionalComponentObserver
             , collectEndpointDiagnostics: collectPipelineDiagnostics)
-            for var candidate in closedCandidates where !candidates.contains(where: {
-                candidateAxisDistance($0, candidate) <= 3.0
-            }) {
+            for var candidate in closedCandidates {
+                if let duplicate = candidates.firstIndex(where: { candidateAxisDistance($0, candidate) <= 3.0 }) {
+                    // 10/28の交差した赤刃: openが細い先端を8px削る。明背景ゲートで認めた同じ刃だけ、
+                    // 既存のclose候補が15%以上長く、bodyも85%以上残るときに重複元を置き換える。
+                    guard candidate.acceptedBrightBackgroundRed,
+                          !candidates[duplicate].isEmitterEligible || candidates[duplicate].acceptedBrightBackgroundRed,
+                          candidate.rawPCASpan > candidates[duplicate].rawPCASpan * 1.15,
+                          candidate.retainedBodyRatio >= 0.85 else { continue }
+                    candidate.source = "color-close"
+                    candidates[duplicate] = candidate
+                    continue
+                }
                 candidate.source = "color-close"
                 candidates.append(candidate)
             }
@@ -1758,7 +1798,7 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
                         stronglyTrimmedCoreLine: trace.stronglyTrimmedCoreLine,
                         diffusedBlueBody: trace.diffusedBlueBody, gatingValues: trace.gatingValues,
                         emitter: trace.emitter)
-                }
+                }, acceptedBrightBackgroundRed: candidate.acceptedBrightBackgroundRed
             )
         }
         allCandidates[color] = scaled
@@ -1846,7 +1886,8 @@ func analyzeSabers(in bgra: [UInt8], width: Int, height: Int, bytesPerRow: Int,
                    ignoreZones: [SaberColor: [SaberIgnoreZone]] = [:],
                    playArea: SaberPlayArea? = nil,
                    trackLock: SaberTrackLock? = nil, now: Double = 0,
-                   shutterEmitter: ShutterEmitterMode = ShutterEmitterMode()) -> SaberFrameAnalysis {
+                   shutterEmitter: ShutterEmitterMode = ShutterEmitterMode(),
+                   backgroundState: SaberBackgroundState? = nil) -> SaberFrameAnalysis {
     guard width > 0, height > 0, bytesPerRow >= width * 4,
           bgra.count >= bytesPerRow * height else {
         return SaberFrameAnalysis(candidates: [:], selected: [:])
@@ -1861,6 +1902,7 @@ func analyzeSabers(in bgra: [UInt8], width: Int, height: Int, bytesPerRow: Int,
                              collectProfile: collectProfile,
                              collectPipelineDiagnostics: collectPipelineDiagnostics,
                              collectObserverEvidence: collectObserverEvidence, ignoreZones: ignoreZones,
-                             playArea: playArea, trackLock: trackLock, now: now, shutterEmitter: shutterEmitter)
+                             playArea: playArea, trackLock: trackLock, now: now, shutterEmitter: shutterEmitter,
+                             backgroundState: backgroundState)
     }
 }

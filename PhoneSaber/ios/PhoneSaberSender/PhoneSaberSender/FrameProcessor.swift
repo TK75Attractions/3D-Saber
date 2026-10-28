@@ -200,6 +200,7 @@ final class FrameProcessor: @unchecked Sendable {
     var redThreshold = ColorThreshold()
     var blueThreshold = ColorThreshold()
     private var tracks: [SaberColor: Track] = [.red: Track(), .blue: Track()]
+    private let backgroundState = SaberBackgroundState() // フレームキューだけで読み書き。
     private let selectionTrack = SaberTrackLock() // フレームキューだけで読み書き。
     private var selectionTrackRevision: UInt64 = 0 // フレームキューのみ。
     private var trackLockRevision: UInt64 = 0 // pendingLock で保護。
@@ -399,6 +400,7 @@ final class FrameProcessor: @unchecked Sendable {
             expiryWorkItem = nil
             tracks = [.red: Track(), .blue: Track()]
             selectionTrack.reset()
+            backgroundState.reset()
             lastDimensions = nil
 #if DEBUG
             freezeWindow.reset()
@@ -706,6 +708,7 @@ final class FrameProcessor: @unchecked Sendable {
             expiryWorkItem?.cancel()
             expiryWorkItem = nil
             tracks = [.red: Track(), .blue: Track()]
+            backgroundState.reset()
             lastDimensions = (width, height)
         }
         let bytesPerRow = CVPixelBufferGetBytesPerRow(pixelBuffer)
@@ -737,7 +740,7 @@ final class FrameProcessor: @unchecked Sendable {
                                      blueThreshold: blueThreshold, collectProfile: collectProfile,
                                      collectPipelineDiagnostics: debugVideoRecorder != nil,
                                      collectObserverEvidence: observer != nil,
-                                     ignoreZones: zones, playArea: area, trackLock: lockState, now: processingStart, shutterEmitter: emitterMode)
+                                     ignoreZones: zones, playArea: area, trackLock: lockState, now: processingStart, shutterEmitter: emitterMode, backgroundState: backgroundState)
         let sabers = analysis.selected
         let observedAnalysis: SaberFrameAnalysis? = analysis
 #else
@@ -751,7 +754,7 @@ final class FrameProcessor: @unchecked Sendable {
                 baseAddress: bytes, width: width, height: height,
                 bytesPerRow: bytesPerRow, redThreshold: redThreshold,
                 blueThreshold: blueThreshold, collectObserverEvidence: true,
-                ignoreZones: zones, playArea: area, trackLock: lockState, now: processingStart, shutterEmitter: emitterMode
+                ignoreZones: zones, playArea: area, trackLock: lockState, now: processingStart, shutterEmitter: emitterMode, backgroundState: backgroundState
             )
             analysis = result
             sabers = result.selected
@@ -760,7 +763,7 @@ final class FrameProcessor: @unchecked Sendable {
                 baseAddress: bytes, width: width, height: height,
                 bytesPerRow: bytesPerRow, redThreshold: redThreshold,
                 blueThreshold: blueThreshold, collectProfile: false,
-                collectPipelineDiagnostics: true, ignoreZones: zones, playArea: area, trackLock: lockState, now: processingStart, shutterEmitter: emitterMode
+                collectPipelineDiagnostics: true, ignoreZones: zones, playArea: area, trackLock: lockState, now: processingStart, shutterEmitter: emitterMode, backgroundState: backgroundState
             )
             analysis = recordedAnalysis
             sabers = recordedAnalysis.selected
@@ -768,7 +771,7 @@ final class FrameProcessor: @unchecked Sendable {
             let result = analyzeSabers(baseAddress: bytes, width: width, height: height,
                                   bytesPerRow: bytesPerRow,
                                   redThreshold: redThreshold, blueThreshold: blueThreshold,
-                                  ignoreZones: zones, playArea: area, trackLock: lockState, now: processingStart, shutterEmitter: emitterMode)
+                                  ignoreZones: zones, playArea: area, trackLock: lockState, now: processingStart, shutterEmitter: emitterMode, backgroundState: backgroundState)
             analysis = result
             sabers = result.selected
         }

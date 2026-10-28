@@ -37,6 +37,29 @@ enum SaberColorModelThresholds {
     static let diffuserNeighborhoodRadius = 2
 }
 
+// 10/28 09:00の原寸event: 背景66〜67、赤面積452〜640、純度0.72〜0.77。
+// 芯のhighValueRatio不足を形で補う。明るいほど低純度を許す代わりに面積下限と幅を厳しくする。
+// 微小でも既存のassociatedCore支持を要求する（実刃0.006〜0.025、背景の赤い籠0）。
+struct BrightBackgroundRedGate {
+    let amount: Double
+    init?(background: Double) {
+        guard background > 48 else { return nil }
+        amount = min((background - 48) / 20, 1)
+    }
+    var minimumPurity: Double { 0.75 - 0.17 * amount }
+    var minimumPixels: Double { 32 + 32 * amount }
+    var maximumWidthRatio: Double { 0.05 - 0.015 * amount }
+
+    func accepts(pixels: Int, frameArea: Int, minimumDimension: Int, aspect: Double,
+                 length: Double, purity: Double, peak: Int, mean: Double,
+                 contrast: Double, emitterScore: Double, coreSupport: Double) -> Bool {
+        Double(pixels) >= minimumPixels && Double(pixels) <= Double(frameArea) * 0.01
+            && aspect >= 3 && Double(pixels) / max(length, 1) <= Double(minimumDimension) * maximumWidthRatio
+            && purity >= minimumPurity && peak >= 218 && mean >= 170
+            && contrast >= 0.05 && emitterScore >= 0.28 && coreSupport > 0
+    }
+}
+
 private enum EndpointSelectionThresholds {
     static let connectedBodyContinuity = 0.90
     static let coreLineMaximumGap = 2
@@ -513,6 +536,7 @@ struct SaberCandidate {
     var diagnosticRejections: [SaberEligibilityDecision] = []
     var observerEmitterInputs: SaberObserverEmitterInputs? = nil
     var endpointDiagnosticTrace: SaberEndpointDiagnosticTrace? = nil
+    var acceptedBrightBackgroundRed = false
 }
 
 struct SaberBoundingBox {
@@ -558,6 +582,8 @@ struct SaberEvidence {
     let colorMask: [UInt8]
     let coreMask: [UInt8]
     var collectObserverEvidence = false
+    // 低ISOモードだけで設定する。暗背景・通常露出の既存ゲートは変えない。
+    var redBackground: Double = 0
 
     func isValid(width: Int, height: Int) -> Bool {
         let count = width * height
@@ -884,6 +910,7 @@ private func scoredSaberComponent(_ points: [PixelPoint], width: Int, height: In
     var coreSupportRatio = 0.0
     var longitudinalCoreCoverage = 0.0
     var isEmitterEligible = evidence == nil
+    var acceptedBrightBackgroundRed = false
     var radianceSum = 0.0
     if let evidence, evidence.isValid(width: width, height: height) {
         var rawCount = 0
@@ -1014,6 +1041,16 @@ private func scoredSaberComponent(_ points: [PixelPoint], width: Int, height: In
         // mask: moderately bright reflections may form candidates, but cannot
         // win without a concentrated LED-like emitter core.
         isEmitterEligible = peakValue >= 218 && hasEmitterCore && emitterScore >= 0.42
+        if evidence.color == .red, !isEmitterEligible, !isCompactRed,
+           let gate = BrightBackgroundRedGate(background: evidence.redBackground),
+           gate.accepts(pixels: points.count, frameArea: width * height,
+                        minimumDimension: min(width, height), aspect: aspect,
+                        length: majorLength, purity: meanPurity, peak: peakValue,
+                        mean: meanValue, contrast: localContrast, emitterScore: emitterScore,
+                        coreSupport: coreSupportRatio) {
+            isEmitterEligible = true
+            acceptedBrightBackgroundRed = true
+        }
         if isCompactRed {
             isEmitterEligible = isEmitterEligible && peakValue >= 230
                 && highRatio >= 0.50 && meanPurity >= 0.50
@@ -1148,6 +1185,7 @@ private func scoredSaberComponent(_ points: [PixelPoint], width: Int, height: In
                           componentArea: points.count,
                           pointCount: points.count,
                           usedPointLEDFallback: usedPointLEDFallback)
+    candidate.acceptedBrightBackgroundRed = acceptedBrightBackgroundRed
     if evidence?.collectObserverEvidence == true {
         candidate.observerEmitterInputs = SaberObserverEmitterInputs(
             emitterScore: emitterScore, nearSaturationPresent: clippedRatio > 0, aspect: aspect)

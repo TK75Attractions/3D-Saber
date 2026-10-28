@@ -1465,6 +1465,70 @@ enum StaticBGRADetectionTests {
             }
             print("Play area: the candidate whose midpoint is outside is skipped and the inside bar is selected")
         }
+        // 明背景の赤: 芯を白飛びさせない刃、幅広の反射、小さい点、背景の境界往復を本番経路で検証する。
+        do {
+            let mode = ShutterEmitterMode(shutter: 2000, iso: 250, enabled: true)
+            func scene(background: UInt8, rgb: (UInt8, UInt8, UInt8) = (195, 70, 65),
+                       length: Int = 54, thickness: Int = 3, core: Bool = true) -> StaticImage {
+                var image = StaticImage(width: 480, height: 640, padding: 16)
+                for y in 0..<image.height { for x in 0..<image.width {
+                    image.pixel(x, y, red: background, green: background, blue: background)
+                } }
+                image.coloredBar(from: PixelPoint(x: 180, y: 220), to: PixelPoint(x: 180 + length, y: 220),
+                                 red: rgb.0, green: rgb.1, blue: rgb.2, thickness: thickness)
+                // 最高輝度は218以上でも、220以上の割合が0.08未満で従来の芯ゲートを満たさない。
+                image.pixel(206, 220, red: core ? 238 : 230, green: core ? 110 : 70, blue: 65)
+                return image
+            }
+            func run(_ image: StaticImage, mode: ShutterEmitterMode = ShutterEmitterMode(),
+                     state: SaberBackgroundState? = nil) -> SaberFrameAnalysis {
+                analyzeSabers(in: image.bytes, width: image.width, height: image.height,
+                              bytesPerRow: image.bytesPerRow, redThreshold: ColorThreshold(),
+                              blueThreshold: ColorThreshold(), shutterEmitter: mode, backgroundState: state)
+            }
+            let blade = scene(background: 67)
+            precondition(run(blade).selected[.red] == nil)
+            precondition(run(blade, mode: mode).selected[.red] != nil)
+            precondition(run(scene(background: 49), mode: mode).selected[.red] == nil)
+            var thinTip = scene(background: 67, length: 40)
+            thinTip.coloredBar(from: PixelPoint(x: 220, y: 220), to: PixelPoint(x: 234, y: 220),
+                               red: 195, green: 70, blue: 65, thickness: 0)
+            let recoveredTip = run(thinTip, mode: mode)
+            precondition(recoveredTip.candidates[.red]?.first(where: { $0.isEmitterEligible })?.source == "color-close")
+            precondition(recoveredTip.selected[.red].map { max($0.0.x, $0.1.x) >= 232 } == true)
+            for negative in [scene(background: 67, rgb: (195, 140, 135)),
+                             scene(background: 67, core: false),
+                             scene(background: 67, length: 12, thickness: 3),
+                             scene(background: 67, length: 54, thickness: 12),
+                             scene(background: 67, length: 160, thickness: 12)] {
+                precondition(run(negative, mode: mode).selected[.red] == nil)
+            }
+            let state = SaberBackgroundState()
+            _ = state.update(48)
+            for i in 0..<40 { precondition(state.update(i % 2 == 0 ? 47 : 49) == 48) }
+            precondition(run(scene(background: 49, rgb: (150, 30, 30), core: false), mode: mode).selected[.red] == nil)
+            for i in 0..<40 {
+                precondition(run(scene(background: i % 2 == 0 ? 47 : 49, rgb: (150, 30, 30), core: false),
+                                 mode: mode, state: state).selected[.red] != nil)
+            }
+            state.reset()
+            _ = state.update(67)
+            // 状態なしでは選択が往復する純度境界でも、実際の選択を40フレーム固定できる。
+            let edgeBlade = scene(background: 67, rgb: (204, 84, 84))
+            precondition(run(scene(background: 66, rgb: (204, 84, 84)), mode: mode).selected[.red] == nil)
+            precondition(run(scene(background: 68, rgb: (204, 84, 84)), mode: mode).selected[.red] != nil)
+            let outputs = (0..<40).map { i in
+                run(scene(background: i % 2 == 0 ? 66 : 68, rgb: (204, 84, 84)),
+                    mode: mode, state: state).selected[.red] != nil
+            }
+            precondition(outputs.allSatisfy { $0 })
+            // 数十フレーム後には実際の明暗変化に追随し、OFF/リセットで履歴を破棄する。
+            for _ in 0..<32 { _ = state.update(48) }
+            precondition(run(edgeBlade, mode: mode, state: state).selected[.red] == nil)
+            _ = run(blade, state: state)
+            precondition(run(blade, mode: mode, state: state).selected[.red] != nil)
+            print("Bright background red: mode, adaptive purity, shape negatives, EMA/deadband 40-frame stability/reset PASS")
+        }
         // ISO実験の暫定閾値はこの合成グリッドを根拠にする。実機の再現性を保証するものではない。
         do {
             let on = ShutterEmitterMode(shutter: 2000, iso: 500, enabled: true)
