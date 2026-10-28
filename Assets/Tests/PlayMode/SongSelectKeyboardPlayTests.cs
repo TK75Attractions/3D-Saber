@@ -828,6 +828,62 @@ public class SongSelectKeyboardPlayTests
         yield return Press(Key.Escape);
     }
 
+    // 出力先がサンプルレートの違う機器へ変わると、DSP の時計が跳ぶ(2026-10-28 ユーザー「演奏中に音の出力先が変わると強制的に
+    // リザルト画面に行ってしまってる」)。曲の時計は跳ばずに実時間どおり続き、残りのノーツを飛ばして結果画面へ行かない。
+    [UnityTest]
+    public IEnumerator AudioOutputChangeToAnotherSampleRateMidSongKeepsTheSongClock()
+    {
+        var original = AudioSettings.GetConfiguration();
+        try
+        {
+            InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.Enter));
+            yield return null; yield return null;
+            InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+            GamePlayManager manager = null;
+            double deadline = Time.realtimeSinceStartupAsDouble + 20;
+            while ((manager == null || !manager.songPlayer.IsPlaying || manager.songPlayer.SongTime < 1)
+                && Time.realtimeSinceStartupAsDouble < deadline)
+            {
+                yield return null;
+                if (manager == null) manager = Object.FindFirstObjectByType<GamePlayManager>();
+            }
+            Assert.True(manager.songPlayer.IsPlaying);
+            int recoveries = AudioOutputRecovery.RecoveryCount;
+            double songBefore = manager.songPlayer.SongTime, realBefore = Time.realtimeSinceStartupAsDouble;
+            var other = AudioSettings.GetConfiguration();
+            other.sampleRate = other.sampleRate == 44100 ? 48000 : 44100;
+            Assert.True(AudioSettings.Reset(other), "サンプルレートの違う出力先へ変わったことにする");
+            yield return null;
+            Assert.That(manager.songPlayer.SongTime - songBefore, Is.EqualTo(Time.realtimeSinceStartupAsDouble - realBefore).Within(.3),
+                "曲の時計は跳ばない");
+            deadline = Time.realtimeSinceStartupAsDouble + 10;
+            while ((AudioOutputRecovery.RecoveryCount == recoveries || manager.AudioReloading) && Time.realtimeSinceStartupAsDouble < deadline)
+            {
+                Assert.AreEqual("Game", SceneManager.GetActiveScene().name, "結果画面へ行かない");
+                yield return null;
+            }
+            Assert.AreEqual(AudioOutputRecovery.Action.ReloadSong, AudioOutputRecovery.LastAction);
+            Assert.False(manager.AudioReloading, "裏で曲の音を読み直し終える");
+            yield return new WaitForSecondsRealtime(.5f);
+            Assert.AreEqual("Game", SceneManager.GetActiveScene().name, "画面は本編のまま");
+            Assert.That(manager.songPlayer.SongTime - songBefore, Is.EqualTo(Time.realtimeSinceStartupAsDouble - realBefore).Within(.6),
+                "読み直したあとも、曲の時計は実時間どおり");
+            var source = manager.songPlayer.GetComponent<AudioSource>();
+            Assert.True(source.isPlaying, "読み直した音が鳴っている");
+            Assert.That(source.timeSamples / (double)source.clip.frequency, Is.EqualTo(manager.songPlayer.SongTime).Within(.2),
+                "読み直した音は今の位置で鳴る");
+        }
+        finally
+        {
+            if (AudioSettings.GetConfiguration().sampleRate != original.sampleRate) AudioSettings.Reset(original);
+        }
+        InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.Escape));
+        yield return null; yield return null;
+        InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+        yield return null; yield return null;
+        yield return Press(Key.Escape);
+    }
+
     static int FreePort()
     {
         using (var receiver = new UdpClient(0)) return ((IPEndPoint)receiver.Client.LocalEndPoint).Port;

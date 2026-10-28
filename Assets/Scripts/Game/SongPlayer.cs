@@ -47,7 +47,7 @@ public class SongPlayer : MonoBehaviour
 
     // 開始予約中も先読み時計は動く。音が鳴っている状態とは区別する。
     public bool IsScheduled => scheduled;
-    public bool IsPlaying => scheduled && !paused && AudioSettings.dspTime >= startDspTime + startOffset;
+    public bool IsPlaying => scheduled && !paused && DspNow() >= startDspTime + startOffset;
     public bool IsPaused => paused;
     // 鳴らし直したあと(PlayFrom)、実際の音が進むのを待って時計を止めている間。本編はこの間、判定・譜面の進行・演出の予約も止める
     // (2026-10-23 点検: 止まった時計のまま「今から0.1秒後」と予約したサビの音が、曲のサビより先に鳴った)。
@@ -69,7 +69,7 @@ public class SongPlayer : MonoBehaviour
         {
             if (!scheduled) return 0.0;
             if (paused) return pausedSongTime;
-            double now = AudioSettings.dspTime;
+            double now = DspNow();
             if (!double.IsNegativeInfinity(holdUntilDsp))
             {
                 if (now < holdUntilDsp) return restartSongTime;
@@ -113,6 +113,64 @@ public class SongPlayer : MonoBehaviour
 
     public double Duration => source != null && source.clip != null ? source.clip.length : 0.0;
 
+    // ---- 音の仕組みの作り直しで DSP の時計が跳んだとき(2026-10-28) ----
+    // 音の出力先がサンプルレートの違う機器へ変わると、Unity は音の仕組みを作り直し、AudioSettings.dspTime は
+    // 「それまでのサンプル数 ÷ 新しいレート」に跳ぶ(48 kHz → 44.1 kHz で通算の +8.8%、戻すと同じだけ後ろへ。PlayMode で実測)。
+    // ゲームを30分つけていれば曲の時計が2分半先へ跳び、残りのノーツが全部 MISS になって結果へ進んでいた
+    // (ユーザー「演奏中に音の出力先が変わると強制的にリザルト画面に行ってしまってる」)。
+    // 作り直しの知らせ(OnAudioConfigurationChanged)が来たら、そのあと最初に時計を読むときに、前に読んだときからの DSP の進みを
+    // 実時間の進みと比べ、ずれた分だけ曲の 0 秒の DSP 時刻(と鳴らし直しの予約)をずらして、曲の時計を続ける。
+    // ふだんの音の遅れ(作り直しの知らせが無いとき)には触れない。曲の音は AudioOutputRecovery が読み直して今の位置から鳴らす。
+    static int audioResets;
+    int seenAudioResets;
+    double lastDspRead = double.NaN, lastRealRead;
+    // 跳んだ分を直した回数と、最後に直した量(秒。テスト用)。
+    public int DspJumpsFollowed { get; private set; }
+    public double LastDspJump { get; private set; }
+
+    // 本編の立て直し(AudioOutputRecovery)より先に数えるよう、いちばん早い時点で登録する。
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ListenForAudioReset()
+    {
+        AudioSettings.OnAudioConfigurationChanged -= CountAudioReset;
+        AudioSettings.OnAudioConfigurationChanged += CountAudioReset;
+    }
+
+    static void CountAudioReset(bool deviceWasChanged) => audioResets++;
+
+    // 曲の時計に使う DSP の時刻。作り直しのあとの最初の読みで、跳んだ分だけ基準をずらす。
+    double DspNow()
+    {
+        double now = AudioSettings.dspTime;
+        double real = Time.realtimeSinceStartupAsDouble;
+        if (seenAudioResets != audioResets)
+        {
+            seenAudioResets = audioResets;
+            if (scheduled && !paused && !double.IsNaN(lastDspRead))
+            {
+                double jump = (now - lastDspRead) - (real - lastRealRead);
+                startDspTime += jump;
+                if (!double.IsNegativeInfinity(holdUntilDsp)) holdUntilDsp += jump;
+                LastDspJump = jump;
+                DspJumpsFollowed++;
+            }
+        }
+        lastDspRead = now;
+        lastRealRead = real;
+        return now;
+    }
+
+    // 基準(startDspTime)をいまの DSP の時刻から決め直したとき。前の作り直しの知らせは、もう反映済みとして扱う。
+    void MarkDspClock()
+    {
+        seenAudioResets = audioResets;
+        lastDspRead = AudioSettings.dspTime;
+        lastRealRead = Time.realtimeSinceStartupAsDouble;
+    }
+
+    // テスト用: 音の仕組みの作り直しの知らせが来たことにする(本物は AudioSettings.Reset で起きる)。
+    public static void SimulateAudioResetForTest() => CountAudioReset(false);
+
     void Awake()
     {
         EnsureSource();
@@ -142,6 +200,7 @@ public class SongPlayer : MonoBehaviour
         double playAt = System.Math.Max(dspStartTime, AudioSettings.dspTime + 0.01);
         SetStartOffset(offsetSeconds);
         startDspTime = playAt - startOffset;
+        MarkDspClock();
         if (source.clip != null)
         {
             if (startSample > 0) source.timeSamples = startSample;
@@ -200,6 +259,7 @@ public class SongPlayer : MonoBehaviour
     {
         if (!scheduled || !paused) return;
         startDspTime = AudioSettings.dspTime - pausedSongTime;
+        MarkDspClock();
         paused = false;
         bool restart = restartOnResume;
         restartOnResume = false;
@@ -273,6 +333,7 @@ public class SongPlayer : MonoBehaviour
         ClearRestartWait();
         var clip = source.clip;
         startDspTime = playAt - songTime;
+        MarkDspClock();
         holdUntilDsp = playAt;
         restartSongTime = songTime;
         clockSynchronized = false;
