@@ -1497,6 +1497,31 @@ enum StaticBGRADetectionTests {
             }
             print("Play area: the candidate whose midpoint is outside is skipped and the inside bar is selected")
         }
+        // 暗い部屋の桃色寄りの赤刃（色相約339度、最大200）は桃色マスクの候補で取り、
+        // 暗い・色の薄い照り返しは取らない。真っ赤な刃は従来の候補のまま。
+        do {
+            let mode = ShutterEmitterMode(shutter: 2000, iso: 250, enabled: true)
+            func scene(_ rgb: (UInt8, UInt8, UInt8)) -> StaticImage {
+                var image = StaticImage(width: 480, height: 640, padding: 0)
+                for y in 0..<image.height { for x in 0..<image.width {
+                    image.pixel(x, y, red: 4, green: 4, blue: 4)
+                } }
+                image.coloredBar(from: PixelPoint(x: 200, y: 300), to: PixelPoint(x: 200, y: 344),
+                                 red: rgb.0, green: rgb.1, blue: rgb.2, thickness: 2)
+                return image
+            }
+            let pink = staticAnalysis(scene((200, 30, 90)), mode: mode)
+            precondition(pink.selected[.red] != nil)
+            precondition(pink.candidates[.red]?.first(where: { $0.isEmitterEligible })?.source == "shutter-magenta-emitter")
+            precondition(staticAnalysis(scene((200, 30, 90))).selected[.red] == nil)
+            for negative in [(80, 20, 40), (200, 60, 100)] as [(UInt8, UInt8, UInt8)] {
+                precondition(staticAnalysis(scene(negative), mode: mode).selected[.red] == nil)
+            }
+            let red = staticAnalysis(scene((200, 30, 30)), mode: mode)
+            precondition(red.selected[.red] != nil)
+            precondition(!(red.candidates[.red] ?? []).contains { $0.source == "shutter-magenta-emitter" })
+            print("Low-ISO magenta red: pink blade selected, dim/low-purity pink rejected, pure red unchanged")
+        }
         // 明背景の赤: 芯を白飛びさせない刃、幅広の反射、小さい点、背景の境界往復を本番経路で検証する。
         do {
             let mode = ShutterEmitterMode(shutter: 2000, iso: 250, enabled: true)

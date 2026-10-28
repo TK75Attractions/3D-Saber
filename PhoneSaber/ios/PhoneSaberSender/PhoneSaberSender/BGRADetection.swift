@@ -1023,6 +1023,18 @@ enum ShutterEmitterThresholds {
     static let minimumPeakBackgroundRatio = 5.0
     static let maximumPeakFloor = 220.0
     static let redHueEdge = 15.0
+    // 10/28 夕方の暗い部屋（背景3〜6、ISO250）: 赤刃は芯の外側が色相330〜349度（桃色寄り）に写り、
+    // ±15度では遅い振りやカメラ側へ傾いた刃（最大値170〜210）が候補にならなかった。
+    // 桃色側を広げただけのマスクは周りのにじみで刃が太くなり、今取れている短い刃を落とすので、
+    // 通常の赤マスクはそのままにし、桃色まで含めたマスクの候補は重ならない場所にだけ足す。
+    // 青（200〜250度）とは重ならない。
+    static let redMagentaHueStart = 330.0
+    // 桃色マスクだけで見つかった候補の下限。10/24 の近い撮影で赤い光に照らされた顔・髪
+    // （最大67〜91、純度0.69〜0.71、周囲との差0.03〜0.05）は落とし、暗い部屋の刃
+    // （最大140〜232、純度0.85〜0.99、周囲との差0.30〜1.0）は残す。
+    static let redMagentaMinimumPeak = 120
+    static let redMagentaMinimumPurity = 0.80
+    static let redMagentaMinimumContrast = 0.20
     // HSVのbinary64計算で250度が1ULP上になる境界だけ含める。
     static let blueHueRange = 200.0...250.0.nextUp
     static let minimumPixels = 6
@@ -1069,20 +1081,27 @@ final class SaberBackgroundState {
 
 private func shutterEmitterMasks(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int,
                                   bytesPerRow: Int, step: Int, values: [UInt8],
-                                  chroma: [UInt8], background: Double) -> [SaberColor: [UInt8]] {
+                                  chroma: [UInt8], background: Double,
+                                  redMagenta: inout [UInt8]) -> [SaberColor: [UInt8]] {
     guard background <= Double(ShutterEmitterThresholds.maximumBackground) else { return [:] }
     let floor = max(Double(ShutterEmitterThresholds.minimumValue),
                     background * Double(ShutterEmitterThresholds.minimumBackgroundRatio))
     var red = Array(repeating: UInt8(0), count: values.count), blue = red
+    var magenta = red
     for i in values.indices {
         let value = Int(values[i])
         guard Double(value) >= floor, value <= ShutterEmitterThresholds.maximumValue,
               Double(chroma[i]) / Double(max(value, 1)) >= ShutterEmitterThresholds.minimumPurity else { continue }
         let offset = (i / width) * step * bytesPerRow + (i % width) * step * 4
         let hsv = saberHSV(baseAddress[offset + 2], baseAddress[offset + 1], baseAddress[offset])
-        if hsv.hue <= ShutterEmitterThresholds.redHueEdge || hsv.hue >= 360 - ShutterEmitterThresholds.redHueEdge { red[i] = 1 }
+        if hsv.hue <= ShutterEmitterThresholds.redHueEdge || hsv.hue >= 360 - ShutterEmitterThresholds.redHueEdge {
+            red[i] = 1; magenta[i] = 1
+        } else if hsv.hue >= ShutterEmitterThresholds.redMagentaHueStart {
+            magenta[i] = 1
+        }
         if ShutterEmitterThresholds.blueHueRange.contains(hsv.hue) { blue[i] = 1 }
     }
+    redMagenta = magenta
     return [.red: red, .blue: blue]
 }
 
@@ -1233,10 +1252,11 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
     if !shutterEmitter.active { backgroundState?.reset() }
     let redBackground = shutterEmitter.active
         ? (backgroundState?.update(background) ?? Double(background)) : 0
+    var lowISORedMagentaMask: [UInt8] = []
     let lowISOMasks = shutterEmitter.active
         ? shutterEmitterMasks(baseAddress: baseAddress, width: maskWidth, height: maskHeight,
                               bytesPerRow: bytesPerRow, step: step, values: valueMap, chroma: chromaMap,
-                              background: redBackground) : [:]
+                              background: redBackground, redMagenta: &lowISORedMagentaMask) : [:]
     let scanEnd = collectProfile ? ProcessInfo.processInfo.systemUptime : 0
     let strictBlueMask = blueMask
     blueMask = supportedBlueDiffuserMask(
@@ -1268,7 +1288,8 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
         // full-mask morphology/component passes for an absent color; this is
         // an exact empty-mask fast path and does not alter candidate scoring.
         // 走査済みの通常画素数は rawMask の非空判定と同じ（青の補助画素も加算済み）。
-        guard maskPixelCount > 0 || lowISOMasks[color]?.contains(1) == true else {
+        guard maskPixelCount > 0 || lowISOMasks[color]?.contains(1) == true
+                || (color == .red && lowISORedMagentaMask.contains(1)) else {
             _ = trackLock?.select([], color: color, width: width, height: height, now: now)
             allCandidates[color] = []
             if collectPipelineDiagnostics {
@@ -1865,10 +1886,31 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
                 }
             }
         }
-        if let mask = lowISOMasks[color], mask.contains(1) {
-            let additional = shutterEmitterCandidates(mask: mask, width: maskWidth, height: maskHeight,
-                color: color, values: valueMap, chroma: chromaMap, radiance: radianceMap,
-                collectEvidence: collectObserverEvidence, background: redBackground)
+        if let mask = lowISOMasks[color] {
+            var additional = mask.contains(1)
+                ? shutterEmitterCandidates(mask: mask, width: maskWidth, height: maskHeight,
+                    color: color, values: valueMap, chroma: chromaMap, radiance: radianceMap,
+                    collectEvidence: collectObserverEvidence, background: redBackground)
+                : []
+            if color == .red, lowISORedMagentaMask != mask, lowISORedMagentaMask.contains(1) {
+                // 通常の赤マスクの候補と重なる場所には足さない（今取れている刃の形を変えない）。
+                let magenta = shutterEmitterCandidates(mask: lowISORedMagentaMask, width: maskWidth,
+                    height: maskHeight, color: color, values: valueMap, chroma: chromaMap,
+                    radiance: radianceMap, collectEvidence: collectObserverEvidence,
+                    background: redBackground)
+                for var candidate in magenta where candidate.peakValue >= ShutterEmitterThresholds.redMagentaMinimumPeak
+                    && candidate.meanColorPurity >= ShutterEmitterThresholds.redMagentaMinimumPurity
+                    && candidate.localContrast >= ShutterEmitterThresholds.redMagentaMinimumContrast
+                    && !additional.contains(where: {
+                    $0.boundingBox.minX <= candidate.boundingBox.maxX
+                        && candidate.boundingBox.minX <= $0.boundingBox.maxX
+                        && $0.boundingBox.minY <= candidate.boundingBox.maxY
+                        && candidate.boundingBox.minY <= $0.boundingBox.maxY
+                }) {
+                    candidate.source = "shutter-magenta-emitter"
+                    additional.append(candidate)
+                }
+            }
             if !additional.isEmpty {
                 candidates += additional
                 candidates.sort { $0.score > $1.score }
