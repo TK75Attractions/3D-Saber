@@ -320,20 +320,21 @@ final class AutoClipTests: XCTestCase {
         winner.observerEmitterInputs = SaberObserverEmitterInputs(emitterScore: 0.8,
                                                                  nearSaturationPresent: true, aspect: 12.5)
         let competitor = Self.candidate((400, 500), (400, 600))
-        let analysis = SaberFrameAnalysis(candidates: [.red: [competitor, winner], .blue: [competitor]],
+        var analysis = SaberFrameAnalysis(candidates: [.red: [competitor, winner], .blue: [competitor]],
             selected: [.red: winner.endpoints], trackLockSuppressed: [.blue])
+        analysis.backgroundMedian = 57
         let buffers = AutoClipBuffers(width: 480, height: 640, captureFPS: 30)
         var pixel: UInt8 = 0
         withUnsafePointer(to: &pixel) { base in
             buffers.storeRecord(ObservedFrame(baseAddress: base, width: 480, height: 640, bytesPerRow: 1920,
                 sequence: 1, timestamp: 1, processingSeconds: 0, analysis: analysis, ignoreZones: [:],
-                playArea: nil, captureFPS: 30),
+                playArea: nil, captureFPS: 30, appliedISO: 50),
                 red: AutoClipCompetition.evaluate(analysis.candidates[.red]!, selected: analysis.selected[.red],
                     width: 480, height: 640, zones: [], playArea: nil), blue: AutoClipCompetition())
         }
         let capture = AutoClipCapture(clipID: "test", trigger: AutoClipTriggerEvent(kind: .manual, frameID: 1, timestamp: 1),
             buffers: buffers, windowStart: 0, windowEnd: 2, captureFPS: 30,
-            environmentAtTrigger: AutoClipEnvironment(shutter: 1000, shutterISO: 64, shutterEmitter: true, exposureDurationSeconds: 0.001, iso: 80.5, appVersion: identity.appVersion, identity: identity, signingExpiryRemainingHours: 49),
+            environmentAtTrigger: AutoClipEnvironment(shutter: 1000, shutterISO: 64, shutterEmitter: true, autoExposure: AutoClipAutoExposure(enabled: true, ceilingISO: 64, appliedISO: 50, lastChangeTime: 123, lastChangeReason: "lower"), exposureDurationSeconds: 0.001, iso: 80.5, appVersion: identity.appVersion, identity: identity, signingExpiryRemainingHours: 49),
             environmentAtSave: AutoClipEnvironment(signingExpiryRemainingHours: 48),
             ignoreZones: [:], playArea: nil, sessionClipIndex: 1, rejectedTriggers: [:])
         let content = AutoClipBundleContent(capture: capture, slots: [0])
@@ -353,7 +354,18 @@ final class AutoClipTests: XCTestCase {
         XCTAssertEqual(camera["shutterEmitter"] as? Bool, true)
         XCTAssertEqual(camera["exposureDurationSeconds"] as? Double, 0.001)
         XCTAssertEqual(camera["iso"] as? Double, 80.5)
+        let exposure = try XCTUnwrap(camera["autoExposure"] as? [String: Any])
+        XCTAssertEqual(exposure["enabled"] as? Bool, true)
+        XCTAssertEqual(exposure["ceilingISO"] as? Int, 64)
+        XCTAssertEqual(exposure["appliedISO"] as? Double, 50)
+        XCTAssertEqual(exposure["lastChangeHostTime"] as? Double, 123)
+        XCTAssertEqual(exposure["lastChangeReason"] as? String, "lower")
         let frames = try XCTUnwrap(clip["frames"] as? [[String: Any]])
+        XCTAssertEqual(frames.first?["backgroundMedian"] as? Int, 57)
+        XCTAssertEqual(frames.first?["appliedISO"] as? Double, 50)
+        let contextFrames = try XCTUnwrap(content.frameContext(frameID: 1, sessionID: "test")["frames"] as? [[String: Any]])
+        XCTAssertEqual(contextFrames.first?["backgroundMedian"] as? Int, 57)
+        XCTAssertEqual(contextFrames.first?["appliedISO"] as? Double, 50)
         let red = try XCTUnwrap(frames.first?["red"] as? [String: Any])
         let blue = try XCTUnwrap(frames.first?["blue"] as? [String: Any])
         XCTAssertEqual(red["sel"] as? [Int], [100, 100, 100, 300])

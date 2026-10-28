@@ -19,6 +19,21 @@ final class MetricsDatagramTests: XCTestCase {
         return m
     }
 
+    func testAutoISOOptionalTokenAndWorstCaseByteLimit() throws {
+        for value: Int? in [nil, 0, 32, 160, 2000] {
+            var m = Self.worstCaseMetrics
+            m.autoISO = value
+            let line = try XCTUnwrap(m.line())
+            XCTAssertLessThan(line.utf8.count, 400)
+            XCTAssertNotNil(line.data(using: .ascii))
+            if let value { XCTAssertTrue(line.hasSuffix(" auto-iso=\(value == 0 ? "off" : String(value))")) }
+            else { XCTAssertFalse(line.contains("auto-iso=")) }
+        }
+        var m = MetricsDatagram()
+        m.autoISO = -1; XCTAssertNil(m.line())
+        m.autoISO = 2001; XCTAssertNil(m.line())
+    }
+
     func testWorstCaseLengthIncludesAllExtensionsAndMissingValues() throws {
         // 可変文字列: station/model/thermal各16、app24、ctl4、emitter。LANとdetectionも含む。
         // 数値最大だけでは最長にならない。capture/battery/RTTのunknownが最長の382 byte。

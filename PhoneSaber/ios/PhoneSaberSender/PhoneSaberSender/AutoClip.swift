@@ -408,6 +408,8 @@ struct AutoClipFrameRecord {
     var frameID: UInt64 = 0
     var timestamp: Double = 0
     var processingMs: Float = 0
+    var backgroundMedian: Int?
+    var appliedISO: Float?
     var red = AutoClipColorRecord()
     var blue = AutoClipColorRecord()
 }
@@ -499,6 +501,8 @@ final class AutoClipBuffers {
         let slot = frameNext
         frames[slot].frameID = frame.sequence
         frames[slot].timestamp = frame.timestamp
+        frames[slot].backgroundMedian = frame.analysis.backgroundMedian
+        frames[slot].appliedISO = frame.appliedISO
         frames[slot].processingMs = Float(frame.processingSeconds * 1000)
         fill(&frames[slot].red, color: .red, competition: red, frame: frame, slot: slot, colorIndex: 0)
         fill(&frames[slot].blue, color: .blue, competition: blue, frame: frame, slot: slot, colorIndex: 1)
@@ -595,12 +599,26 @@ final class AutoClipBuffers {
 
 // MARK: - Recorder (frame queue)
 
+// 適用要求値と変更時刻はhost単調時計。フレームの時刻とは別の診断情報。
+struct AutoClipAutoExposure: Equatable {
+    var enabled = false
+    var ceilingISO = 160
+    var appliedISO: Double?
+    var lastChangeTime: Double?
+    var lastChangeReason: String?
+    var jsonObject: [String: Any] {
+        ["enabled": enabled, "ceilingISO": ceilingISO, "appliedISO": appliedISO ?? NSNull(),
+         "lastChangeHostTime": lastChangeTime ?? NSNull(), "lastChangeReason": lastChangeReason ?? NSNull()]
+    }
+}
+
 struct AutoClipEnvironment: Equatable {
     var thermal = "nominal"
     var exposureBias = 0
     var shutter = 0
     var shutterISO = 160
     var shutterEmitter = true
+    var autoExposure = AutoClipAutoExposure()
     var exposureDurationSeconds: Double?
     var iso: Double?
     var appVersion = ""
@@ -765,7 +783,7 @@ final class AutoClipRecorder: FrameAnalysisObserver {
                                   bytesPerRow: input.bytesPerRow, sequence: sequenceOffset + input.sequence,
                                   timestamp: input.timestamp, processingSeconds: input.processingSeconds,
                                   analysis: input.analysis, ignoreZones: input.ignoreZones,
-                                  playArea: input.playArea, captureFPS: input.captureFPS)
+                                  playArea: input.playArea, captureFPS: input.captureFPS, appliedISO: input.appliedISO)
         // A new format or a time discontinuity invalidates the recorded past.
         if let current = buffers, current.width != frame.width || current.height != frame.height {
             dropState()
@@ -1166,6 +1184,8 @@ struct AutoClipBundleContent {
             let includeIneligible = level == 0 || near
             entries.append([
                 "f": Int(frame.frameID), "t": frame.timestamp, "ms": round1(Double(frame.processingMs)),
+                "backgroundMedian": frame.backgroundMedian ?? NSNull(),
+                "appliedISO": frame.appliedISO.map { Double($0) } ?? NSNull(),
                 "red": colorEntry(frame.red, slot: slot, colorIndex: 0, sources: &sources,
                                   sourceIndex: &sourceIndex, includeIneligible: includeIneligible),
                 "blue": colorEntry(frame.blue, slot: slot, colorIndex: 1, sources: &sources,
@@ -1269,6 +1289,7 @@ struct AutoClipBundleContent {
                        "iso": capture.environmentAtTrigger.iso ?? NSNull(),
                        "shutterISO": capture.environmentAtTrigger.shutterISO,
                        "shutterEmitter": capture.environmentAtTrigger.shutterEmitter,
+                       "autoExposure": capture.environmentAtTrigger.autoExposure.jsonObject,
                        "thermalAtTrigger": capture.environmentAtTrigger.thermal,
                        "thermalAtSave": capture.environmentAtSave.thermal,
                        "appVersion": capture.environmentAtTrigger.appVersion],
@@ -1313,6 +1334,8 @@ struct AutoClipBundleContent {
             let buffers = capture.buffers
             let frame = buffers.frames[slot]
             frameEntry["timestamp"] = frame.timestamp
+            frameEntry["backgroundMedian"] = frame.backgroundMedian ?? NSNull()
+            frameEntry["appliedISO"] = frame.appliedISO.map { Double($0) } ?? NSNull()
             frameEntry["processingTimeSeconds"] = round4(Double(frame.processingMs) / 1000)
             frameEntry["red"] = contextColor(frame.red, slot: slot, colorIndex: 0)
             frameEntry["blue"] = contextColor(frame.blue, slot: slot, colorIndex: 1)

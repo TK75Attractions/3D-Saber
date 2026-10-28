@@ -77,6 +77,11 @@ for (station, model) in [("A", "iPhone14,5"), ("B", "iPhone16,2"), ("", "iPhone1
     lines.append(try XCTUnwrap(m.line()))
   }
 }
+for iso in [0, 32, 160, 2000] {
+    var m = MetricsDatagramTests.worstCaseMetrics
+    m.autoISO = iso
+    lines.append(try XCTUnwrap(m.line()))
+}
 try lines.joined(separator: "\n").write(toFile: CommandLine.arguments[1], atomically: true, encoding: .ascii)
 ''')
             run(['xcrun', 'swiftc', '-O', '-D', 'METRICS_STANDALONE',
@@ -105,7 +110,7 @@ try lines.joined(separator: "\n").write(toFile: CommandLine.arguments[1], atomic
         new Check().WorstCaseIPhoneMetricsAndByteBoundaryParse();
         CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("fr-FR");
         var lines = File.ReadAllLines(args[0]);
-        Assert.AreEqual(394, lines.Length);
+        Assert.AreEqual(398, lines.Length);
         Assert.AreEqual(WorstCaseLine, lines[0]);
         for (int i = 0; i < lines.Length; i++) {
             var bytes = Encoding.ASCII.GetBytes(lines[i]);
@@ -114,6 +119,10 @@ try lines.joined(separator: "\n").write(toFile: CommandLine.arguments[1], atomic
             Assert.IsTrue(Legacy.PhoneSaberMetrics.TryParse(bytes, bytes.Length, out var old), "旧PC: " + lines[i]);
             Assert.AreEqual(old.Controls, m.Controls);
             if (i == 0) continue;
+            if (i >= 394) {
+                Assert.AreEqual(new[] {"off", "32", "160", "2000"}[i - 394], m.AutoISO);
+                continue;
+            }
             int index = i <= 384 ? i - 1 : i - 385;
             Assert.AreEqual(index % 3 == 2 ? (bool?)null : index % 3 == 0, m.Emitter);
             if (i <= 384) {
@@ -137,7 +146,7 @@ try lines.joined(separator: "\n").write(toFile: CommandLine.arguments[1], atomic
             Assert.AreEqual(59.8, m.CaptureFps); Assert.AreEqual(59.7, m.RedFps); Assert.AreEqual(59.6, m.BlueFps);
             Assert.AreEqual(60, m.FpsMode); Assert.AreEqual(82, m.Battery); Assert.AreEqual(0, m.LowLatencyTest);
         }
-        Console.WriteLine("PASS Swift -> current/54e32a5d PC: 394 vectors, A/B/none, emitter ON/OFF/omitted, worst-case 382 bytes; PC 399/400 boundary");
+        Console.WriteLine("PASS Swift -> current/54e32a5d PC: 398 vectors, A/B/none, emitter ON/OFF/omitted, auto-iso off/32/160/2000, worst-case 396 bytes; PC 399/400 boundary");
     }
 }
 ''')

@@ -97,6 +97,7 @@ public static class PhoneSaberControlPanelHealth { public sealed class Check { p
         metrics_tests = (tests / 'PhoneSaberLatencyEstimateTests.cs').read_text()
         (tmp / 'MetricsTests.cs').write_text(metrics_tests[:metrics_tests.index('    [Test] public void SharedContractVectors()')] +
             '\n[Test]\n' + block(metrics_tests, 'public void SharedContractVectors(') +
+            '\n[Test]\n' + block(metrics_tests, 'public void AutoISOParsesLegacyAndLogsOnlyChangesPerStation(') +
             '\n[Test]\n' + block(metrics_tests, 'public void OptionalEmitterAcceptsOnlyExactBitsAndNeverInfersMissingValues(') + '\n}')
         (tmp / 'Run.cs').write_text('''using System; using System.Reflection; using NUnit.Framework;
 class Run { static int Main() {

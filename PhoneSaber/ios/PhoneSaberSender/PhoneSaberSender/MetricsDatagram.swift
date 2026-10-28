@@ -56,6 +56,8 @@ struct MetricsDatagram {
     var c2sEnd = "detection"
     var controls: String?
     // 設定値の報告であり、認識経路が実際に有効かどうかは表さない。
+    // nilは旧形式、0はOFF、正数は自動制御中の適用ISO。
+    var autoISO: Int?
     var emitter: Bool?
     var model: String?
 
@@ -98,6 +100,10 @@ struct MetricsDatagram {
         }
         if let emitter { text += " emitter=\(emitter ? 1 : 0)" }
         if let model { text += " model=\(Self.atom(model, limit: 16))" }
+        if let autoISO {
+            guard (0...2000).contains(autoISO) else { return nil }
+            text += " auto-iso=\(autoISO == 0 ? "off" : String(autoISO))"
+        }
         return text.utf8.count < 400 && text.data(using: .ascii) != nil ? text : nil
     }
 }

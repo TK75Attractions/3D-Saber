@@ -1,6 +1,7 @@
 import Foundation
 
 struct SaberFrameAnalysis {
+    var backgroundMedian: Int? = nil
     let candidates: [SaberColor: [SaberCandidate]]
     let selected: [SaberColor: (PixelPoint, PixelPoint)]
     let trackLockSuppressed: Set<SaberColor>
@@ -695,10 +696,130 @@ final class SaberTrackLock {
         var frames: Int
     }
     private var tracks: [SaberColor: Track] = [:]
+    // 移動するeligibleの履歴と、同じ場所に見え続ける成分の履歴を分ける。
+    // eligibilityが途切れたり遠いproposalが現れても、静止時間を奪われない。
+    private struct Motion {
+        var x: Double, y: Double, length: Double, angle: Double, updated: Double
+        var originX: Double, originY: Double, originTime: Double
+        var movedAt: Double? = nil
+        var eligible = false
+    }
+    private struct Still {
+        var x: Double, y: Double, length: Double, since: Double, updated: Double
+        var box: SaberBoundingBox
+        var sawMovingAlternative = false
+        var excluded = false
+    }
+    // 10/28の13clipと過去69clipのsweep: 1.5s/8px/24pxは過去の選択・欠落の変更0。
+    // 0.5〜1sの短縮や12px以上への拡大では過去出力が変わるため採用しない。
+    static let stationarySeconds = 1.5
+    static let stationaryRadius = 8.0 // 480px短辺でのpx。解像度に比例させる。
+    static let movingDistance = 24.0
+    private var motions: [SaberColor: [Motion]] = [:]
+    private var stationary: [SaberColor: [Still]] = [:]
     private var dimensions: (Int, Int)?
     private(set) var suppressed: Set<SaberColor> = []
 
-    func reset() { tracks = [:]; dimensions = nil; suppressed = [] }
+    func reset() { tracks = [:]; motions = [:]; stationary = [:]; dimensions = nil; suppressed = [] }
+
+    /// 単独の静止刃は維持する。離れたeligibleの実測移動がある時だけ静止物を降格する。
+    /// 降格後にその物体しか残らない時は送らず、消失・移動・resetで忘れる。
+    private func movingAlternatives(_ eligible: [SaberCandidate], observed: [SaberCandidate], color: SaberColor,
+                                    width: Int, height: Int, now: Double) -> [SaberCandidate] {
+        let scale = Double(min(width, height)) / 480
+        let tolerance = Self.stationaryRadius * scale
+        let prior = (motions[color] ?? []).filter { now >= $0.updated && now - $0.updated <= 0.25 }
+        var used: Set<Int> = [], moving: [Motion] = []
+        // eligibilityが揺れた間の移動も観測する。移動証拠として使うのは現在eligibleの物体だけ。
+        let observations = eligible + observed.filter { candidate in
+            !eligible.contains { $0.endpoints.0 == candidate.endpoints.0 && $0.endpoints.1 == candidate.endpoints.1 }
+        }
+        for candidate in observations {
+            let e = candidate.endpoints
+            let allowed = eligible.contains { $0.endpoints.0 == e.0 && $0.endpoints.1 == e.1 }
+            let x = Double(e.0.x + e.1.x) / 2, y = Double(e.0.y + e.1.y) / 2
+            if moving.contains(where: { hypot(x - $0.x, y - $0.y) <= tolerance }) { continue }
+            let length = max(hypot(Double(e.1.x - e.0.x), Double(e.1.y - e.0.y)), 1)
+            let angle = atan2(Double(e.1.y - e.0.y), Double(e.1.x - e.0.x))
+            var match: Int?, closest = Double.infinity
+            for i in prior.indices where !used.contains(i) {
+                let p = prior[i], distance = hypot(x - prior[i].x, y - prior[i].y)
+                let raw = abs(angle - p.angle).truncatingRemainder(dividingBy: .pi)
+                let cost = 0.80 * distance / p.length + 0.18 * min(raw, .pi - raw) / (.pi / 2)
+                    + 0.02 * abs(log2(length / p.length))
+                if cost <= 0.5 && distance < closest { closest = distance; match = i }
+            }
+            var m = Motion(x: x, y: y, length: length, angle: angle, updated: now,
+                           originX: x, originY: y, originTime: now)
+            if let match {
+                used.insert(match); m = prior[match]
+                if hypot(x - m.originX, y - m.originY) >= Self.movingDistance * scale {
+                    m.movedAt = now
+                    m.originX = x; m.originY = y; m.originTime = now
+                } else if now - m.originTime > Self.stationarySeconds {
+                    m.originX = x; m.originY = y; m.originTime = now
+                }
+                m.x = x; m.y = y; m.length = length; m.angle = angle; m.updated = now
+            }
+            m.eligible = allowed
+            moving.append(m)
+        }
+        motions[color] = moving
+        var still = (stationary[color] ?? []).filter { now >= $0.updated && now - $0.updated <= 0.25 }
+        func sameObject(_ box: SaberBoundingBox, x: Double, y: Double, length: Double, _ s: Still) -> Bool {
+            let distance = hypot(x - s.x, y - s.y)
+            if distance <= tolerance { return true }
+            // 固定した成分の全体/部分bodyが交替しても履歴を引き継ぐ。
+            // 同寸の刃が並進するだけでは包含にならない。anchorの箱は広げない。
+            func contains(_ a: SaberBoundingBox, _ b: SaberBoundingBox) -> Bool {
+                a.minX <= b.minX && a.minY <= b.minY && a.maxX >= b.maxX && a.maxY >= b.maxY
+            }
+            let area = Double(max(1, box.maxX - box.minX + 1) * max(1, box.maxY - box.minY + 1))
+            let oldArea = Double(max(1, s.box.maxX - s.box.minX + 1) * max(1, s.box.maxY - s.box.minY + 1))
+            return distance <= (length + s.length) / 4 && max(area, oldArea) <= 4 * min(area, oldArea)
+                && (contains(box, s.box) || contains(s.box, box))
+        }
+        for candidate in observed {
+            // 部分bodyへの端点切替を移動と誤認しないよう、成分bboxの中点を測る。
+            let box = candidate.boundingBox
+            let x = Double(box.minX + box.maxX) / 2, y = Double(box.minY + box.maxY) / 2
+            let e = candidate.endpoints
+            let length = hypot(Double(e.1.x - e.0.x), Double(e.1.y - e.0.y))
+            if let i = still.indices.filter({ sameObject(box, x: x, y: y, length: length, still[$0]) }).min(by: {
+                hypot(x - still[$0].x, y - still[$0].y) < hypot(x - still[$1].x, y - still[$1].y)
+            }) {
+                still[i].updated = now
+            } else {
+                still.append(Still(x: x, y: y, length: length, since: now, updated: now, box: box))
+            }
+        }
+        for i in still.indices where still[i].updated == now {
+            let a = still[i]
+            if moving.contains(where: { b in
+                b.eligible && b.movedAt.map { now - $0 <= 0.75 } == true
+                    && hypot(a.x - b.x, a.y - b.y) > max(3 * tolerance, (a.length + b.length) / 2)
+            }) { still[i].sawMovingAlternative = true }
+            if now - a.since >= Self.stationarySeconds && still[i].sawMovingAlternative {
+                still[i].excluded = true
+            }
+        }
+        stationary[color] = still
+        func excluded(_ candidate: SaberCandidate) -> Bool {
+            let box = candidate.boundingBox
+            let x = Double(box.minX + box.maxX) / 2, y = Double(box.minY + box.maxY) / 2
+            let e = candidate.endpoints
+            let length = hypot(Double(e.1.x - e.0.x), Double(e.1.y - e.0.y))
+            return still.contains { $0.excluded && $0.updated == now && sameObject(box, x: x, y: y, length: length, $0) }
+        }
+
+        let rejected = eligible.filter(excluded)
+        // 固定物への継続・復帰を切り、同frameで遠い実刃を取得できるようにする。
+        if let track = tracks[color], rejected.contains(where: {
+            hypot(Double($0.endpoints.0.x + $0.endpoints.1.x) / 2 - track.x,
+                  Double($0.endpoints.0.y + $0.endpoints.1.y) / 2 - track.y) <= max(2 * tolerance, track.length / 2)
+        }) { tracks[color] = nil }
+        return eligible.filter { !excluded($0) }
+    }
 
     /// 選択が途切れず0.5秒続いた色の当該フレームのwinnerだけで、既存範囲を広げる。
     /// FrameProcessor の作業用範囲に適用する。未設定なら新しく作らない。
@@ -829,10 +950,13 @@ final class SaberTrackLock {
     }
 
     func select(_ eligible: [SaberCandidate], color: SaberColor,
-                width: Int, height: Int, now: Double, playArea: SaberPlayArea? = nil) -> SaberCandidate? {
+                width: Int, height: Int, now: Double, playArea: SaberPlayArea? = nil,
+                observedCandidates: [SaberCandidate]? = nil) -> SaberCandidate? {
         if dimensions.map({ $0 != (width, height) }) ?? true {
             reset(); dimensions = (width, height)
         }
+        let eligible = movingAlternatives(eligible, observed: observedCandidates ?? eligible,
+                                          color: color, width: width, height: height, now: now)
         suppressed.remove(color)
         var track = tracks[color]
         if let t = track, now - t.updated < 0 || now - t.updated > 0.25 { track = nil }
@@ -1816,7 +1940,8 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
         }
         let winner: SaberCandidate?
         if let trackLock {
-            winner = trackLock.select(scaled.filter(allowed), color: color, width: width, height: height, now: now, playArea: playArea)
+            winner = trackLock.select(scaled.filter(allowed), color: color, width: width, height: height,
+                                      now: now, playArea: playArea, observedCandidates: scaled)
         } else {
             winner = scaled.first {
                 allowed($0) && (playArea?.containsMidpoint($0.endpoints, width: width, height: height) ?? true)
@@ -1844,11 +1969,13 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
                 - profile.endpointAndBoundsMs
         )
     }
-    return SaberFrameAnalysis(candidates: allCandidates, selected: selected,
+    var result = SaberFrameAnalysis(candidates: allCandidates, selected: selected,
                               trackLockSuppressed: trackLock?.suppressed ?? [],
                               profile: collectProfile ? profile : nil,
                               pipelineDiagnostics: collectPipelineDiagnostics
                                   ? pipelineDiagnostics : nil)
+    result.backgroundMedian = shutterEmitter.active ? background : nil
+    return result
 }
 
 func detectSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, bytesPerRow: Int,

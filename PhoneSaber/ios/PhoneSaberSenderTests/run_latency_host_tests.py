@@ -237,16 +237,20 @@ extension AVCaptureSession { func addOutput(_ output: AVCaptureVideoDataOutput) 
                    "func preferredCameraFormatIndex(", "func highSpeedCameraFormatIndex(",
                    "func storedCameraFPS(", "func disableCameraPostProcessing("]:
         support += block(camera, marker) + "\n"
+    if "struct AutoExposureController" in camera:
+        support += block(camera, "struct AutoExposureController") + "\n"
     support += block(camera, "struct CameraShutterPlan:") + "\n"
     support += block(camera, "struct CameraShutterController") + "\n"
     shutter_key = next(line for line in camera.splitlines() if 'static let shutterKey =' in line)
     support += 'enum LANLivenessProbe { static let shutterChoices = [0, 500, 1000, 2000]; static let shutterISOChoices = [2000, 250, 200, 160, 125, 100, 80, 64] }\n'
     support += 'enum CameraViewModel {\n' + shutter_key + '\n'
-    for key in ['shutterISOKey', 'shutterEmitterKey']:
+    for key in ['shutterISOKey', 'shutterEmitterKey'] + (['autoExposureKey'] if 'autoExposureKey' in camera else []):
         support += next(line for line in camera.splitlines() if f'static let {key} =' in line) + '\n'
     for marker in ['nonisolated static func storedShutter(', 'nonisolated static func storedShutterISO(',
                    'nonisolated static func storedShutterEmitter(']:
         support += block(camera, marker) + '\n'
+    if 'nonisolated static func storedAutoExposure(' in camera:
+        support += block(camera, 'nonisolated static func storedAutoExposure(') + '\n'
     support += '}\n'
     current_camera = (SOURCE / "CameraViewModel.swift").read_text()
     support += block(current_camera, "struct CameraPostProcessingState") + "\n"
@@ -268,6 +272,8 @@ extension AVCaptureSession { func addOutput(_ output: AVCaptureVideoDataOutput) 
                "func test120FPSMailboxPreserves", "func testDebugRecordingBundleIncludesConnectivityTail", "func testPlayAreaGrowth", "func testIgnoreZoneSnapshot"]
     focused = "import XCTest\nimport CoreMedia\nimport CoreVideo\nimport AVFoundation\nfinal class CameraLatencyTests: XCTestCase {\n"
     for name in re.findall(r"func (test\w+)\(", core):
+        if name.startswith("testFixedShutterPlanAuto") and "struct AutoExposureController" not in camera:
+            continue
         if any(("func " + name).startswith(marker) for marker in markers):
             focused += block(core, "func " + name + "(") + "\n"
     focused += r'''func testFixedShutterDeviceWritesAndRevert() throws {

@@ -94,6 +94,86 @@ final class DetectionCoreTests: XCTestCase {
         }
     }
 
+    func testFixedShutterPlanAutoExposureStorageDefaultsOffAndPreservesSwitch() throws {
+        let name = "PhoneSaber.autoExposure.tests." + UUID().uuidString
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: name))
+        defer { defaults.removePersistentDomain(forName: name) }
+        XCTAssertFalse(CameraViewModel.storedAutoExposure(in: defaults))
+        for enabled in [true, false] {
+            defaults.set(enabled, forKey: "PhoneSaber.autoExposure.v1")
+            XCTAssertEqual(CameraViewModel.storedAutoExposure(in: try XCTUnwrap(UserDefaults(suiteName: name))), enabled)
+        }
+    }
+
+    func testFixedShutterPlanAutoISOClampsWithoutBypassingRequestedValidation() throws {
+        func plan(_ requested: Int?, _ automatic: Float?) -> CameraShutterPlan? {
+            CameraShutterPlan.make(denominator: 2000, minimum: CMTime(value: 1, timescale: 10000),
+                maximum: CMTime(value: 1, timescale: 30), frameDuration: CMTime(value: 1, timescale: 60),
+                minISO: 40, maxISO: 300, requestedISO: requested, autoISO: automatic)
+        }
+        XCTAssertEqual(plan(250, 32)?.iso, 40)
+        XCTAssertEqual(plan(250, 50)?.iso, 50)
+        XCTAssertEqual(plan(250, 400)?.iso, 300)
+        XCTAssertNil(plan(50, 50))
+        XCTAssertNil(plan(500, 50))
+        XCTAssertNil(plan(250, .nan)); XCTAssertNil(plan(250, 0))
+        XCTAssertEqual(plan(250, nil)?.iso, 250)
+    }
+
+    func testFixedShutterPlanAutoExposureHysteresisAndBounds() throws {
+        var control = AutoExposureController()
+        var changes: [AutoExposureController.Change] = []
+        for i in 0...240 {
+            if let change = control.observe(time: Double(i) / 4, background: 100, ceilingISO: 250, minISO: 34) {
+                changes.append(change)
+            }
+        }
+        XCTAssertEqual(changes.map(\.to), [200, 160, 125, 100, 80, 64, 50, 40, 34])
+        XCTAssertEqual(changes.first?.time, 2)
+        for pair in zip(changes, changes.dropFirst()) { XCTAssertGreaterThanOrEqual(pair.1.time - pair.0.time, 3) }
+        XCTAssertEqual(control.appliedISO, 34)
+        changes = []
+        for i in 241...600 {
+            if let change = control.observe(time: Double(i) / 4, background: 20, ceilingISO: 250, minISO: 34) {
+                changes.append(change)
+            }
+        }
+        XCTAssertGreaterThanOrEqual(try XCTUnwrap(changes.first).time, 64.25)
+        XCTAssertEqual(changes.map(\.to), [40, 50, 64, 80, 100, 125, 160, 200, 250])
+        XCTAssertEqual(control.appliedISO, 250)
+        let reset = control.observe(time: 151, background: 40, ceilingISO: 160, minISO: 34)
+        XCTAssertEqual(reset?.reason, "reset"); XCTAssertEqual(control.appliedISO, 160)
+        // 1段の最大比は1.28。46/30未満なので定常照明で上下の閾値を跨がない。
+        for pair in zip(AutoExposureController.levels, AutoExposureController.levels.dropFirst()) {
+            XCTAssertLessThan(Double(pair.0 / pair.1), 46.0 / 30)
+        }
+    }
+
+    func testFixedShutterPlanAutoExposureRejectsNoiseDisabledAndStaleEvidence() {
+        for disabled in 0..<3 {
+            var control = AutoExposureController()
+            for i in 0...80 {
+                XCTAssertNil(control.observe(time: Double(i) / 4, background: 100, ceilingISO: 250,
+                    minISO: 32, enabled: disabled != 0, emitter: disabled != 1, shutter: disabled != 2))
+            }
+            XCTAssertNil(control.appliedISO)
+        }
+        for base in [30, 38, 46] {
+            var control = AutoExposureController()
+            for i in 0...240 {
+                let value = i == 20 ? 255 : base
+                XCTAssertNil(control.observe(time: Double(i) / 4, background: value, ceilingISO: 250, minISO: 32))
+            }
+            XCTAssertEqual(control.appliedISO, 250)
+        }
+        var control = AutoExposureController()
+        for i in 0...6 { XCTAssertNil(control.observe(time: Double(i) / 4, background: 100, ceilingISO: 250, minISO: 32)) }
+        XCTAssertNil(control.observe(time: 20, background: 100, ceilingISO: 250, minISO: 32))
+        XCTAssertNil(control.observe(time: 21, background: 100, ceilingISO: 250, minISO: 32))
+        XCTAssertEqual(control.observe(time: 22, background: 100, ceilingISO: 250, minISO: 32)?.to, 200)
+        XCTAssertNil(control.observe(time: 22.5, background: 0, ceilingISO: 250, minISO: 32))
+    }
+
     func testFixedShutterStoredSettingsDefault2000AndMigrateLegacyOffOnce() throws {
         let name = "PhoneSaber.shutter.tests." + UUID().uuidString
         let defaults = try XCTUnwrap(UserDefaults(suiteName: name))

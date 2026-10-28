@@ -1279,6 +1279,38 @@ enum StaticBGRADetectionTests {
             precondition(bounded.maxX == 1 && bounded.minX >= 0)
         }
         print("Play area growth: both colors, 0.5s continuity, misses, expand-only, acquisition, OFF and unset passed")
+        // 10/28 明るい部屋: 動かない赤い物に追跡が張りつき、離れて動く本物の刃が負けた。
+        for color in [SaberColor.red, .blue] {
+            let threshold = ColorThreshold(brightness: 140, dominance: 20)
+            func scene(static still: Bool, movingX: Int?) -> StaticImage {
+                var image = StaticImage(width: 640, height: 480)
+                if still { image.bar(from: PixelPoint(x: 100, y: 40), to: PixelPoint(x: 100, y: 130), color: color) }
+                if let x = movingX { image.bar(from: PixelPoint(x: x, y: 250), to: PixelPoint(x: x, y: 330), color: color) }
+                return image
+            }
+            func pick(_ image: StaticImage, _ now: Double, _ lock: SaberTrackLock) -> ((PixelPoint, PixelPoint))? {
+                analyzeSabers(in: image.bytes, width: 640, height: 480, bytesPerRow: image.bytesPerRow,
+                              redThreshold: threshold, blueThreshold: threshold, trackLock: lock, now: now).selected[color]
+            }
+            func isStill(_ e: (PixelPoint, PixelPoint)?) -> Bool { e.map { abs($0.0.x - 100) <= 4 && abs($0.1.x - 100) <= 4 } ?? false }
+            let lock = SaberTrackLock()
+            var t = 0.0
+            // 置き物だけの間は選ばれる（単独で静止する刃と区別できないため）。
+            for _ in 0..<30 { precondition(isStill(pick(scene(static: true, movingX: nil), t, lock))); t += 1.0 / 60 }
+            // 離れた所で刃が往復し続けると、1.5秒以内に置き物を外して刃を選ぶ。
+            var last: (PixelPoint, PixelPoint)?
+            for i in 0..<150 {
+                let x = 300 + (i % 40 < 20 ? i % 20 : 20 - i % 20) * 12
+                last = pick(scene(static: true, movingX: x), t, lock); t += 1.0 / 60
+                if i >= 100 { precondition(last != nil && !isStill(last)) }
+            }
+            // 外した置き物は、刃が見えなくなっても選び直さない。
+            for _ in 0..<20 { precondition(!isStill(pick(scene(static: true, movingX: nil), t, lock))); t += 1.0 / 60 }
+            // reset で履歴を忘れる。単独で止まった刃は3秒間ずっと選ばれる。
+            lock.reset()
+            for _ in 0..<180 { precondition(isStill(pick(scene(static: true, movingX: nil), t, lock))); t += 1.0 / 60 }
+        }
+        print("Stationary object vs moving blade: demote after motion, keep demoted, lone still blade kept, reset PASS")
         // 新しい無視範囲は矩形だけでなく登録物体の両端も照合。旧JSONは従来の矩形判定。
         for color in [SaberColor.red, .blue] {
             let threshold = ColorThreshold(brightness: 140, dominance: 20)

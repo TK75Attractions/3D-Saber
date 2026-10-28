@@ -55,6 +55,28 @@ public class PhoneSaberLatencyEstimateTests
             Assert.IsFalse(PhoneSaberDiscoveryResponder.IsRequest(bytes, bytes.Length), "旧PCは計測に返信しない");
         }
     }
+    [Test] public void AutoISOParsesLegacyAndLogsOnlyChangesPerStation() {
+        var events = new System.Collections.Generic.List<string>();
+        var store = new PhoneSaberMetricsStore((station, colour, kind, detail) =>
+            events.Add(station + ":" + colour + ":" + kind + ":" + detail));
+        double time = 0;
+        void Receive(string suffix, string station = "A") {
+            var bytes = Encoding.ASCII.GetBytes(Encoding.ASCII.GetString(Valid).Replace("station=A", "station=" + station) + suffix);
+            Assert.IsTrue(PhoneSaberMetrics.TryParse(bytes, bytes.Length, out _));
+            store.Receive(bytes, bytes.Length, station, time++);
+        }
+        Receive(""); Assert.AreEqual(0, events.Count);
+        Receive(" auto-iso=160"); Receive(" auto-iso=160"); Receive(""); Receive(" auto-iso=160");
+        Receive(" auto-iso=125"); Receive(" auto-iso=off"); Receive(" auto-iso=off");
+        Receive(" auto-iso=160", "B");
+        CollectionAssert.AreEqual(new[] {
+            "A:SYSTEM:phone-auto-iso:iso=160 prev=unknown", "A:SYSTEM:phone-auto-iso:iso=125 prev=160",
+            "A:SYSTEM:phone-auto-iso:iso=off prev=125", "B:SYSTEM:phone-auto-iso:iso=160 prev=unknown" }, events);
+        foreach (string value in new[] { "0", "01", "-1", "2001", "32.0", "ON", "unknown", "32 auto-iso=40" }) {
+            var bytes = Encoding.ASCII.GetBytes(Encoding.ASCII.GetString(Valid) + " auto-iso=" + value);
+            Assert.IsFalse(PhoneSaberMetrics.TryParse(bytes, bytes.Length, out _), value);
+        }
+    }
     static PhoneSaberMetrics Phone(double at = 0) {
         Assert.IsTrue(PhoneSaberMetrics.TryParse(Valid, Valid.Length, out var m)); m.ReceivedAt = at; return m;
     }

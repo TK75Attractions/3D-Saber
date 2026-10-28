@@ -547,6 +547,9 @@ struct ContentView: View {
                             Toggle("低ISOの色付き発光体（試験）", isOn: Binding(
                                 get: { model.shutterEmitter }, set: { model.setShutterEmitter($0) }
                             ))
+                            Toggle("明るさでISOを自動調整（低ISO発光体のとき）", isOn: Binding(
+                                get: { model.autoExposureEnabled }, set: { model.setAutoExposureEnabled($0) }
+                            ))
                             Text("1/2000秒でISOを半分にするごとに−1段。端末の範囲に制限されるため実測値も確認。既定ISO 160、色付き発光体は既定ON、固定シャッターかつISO2000未満の時だけ有効。固定シャッターOFFで自動露出＋補正に戻ります。")
                                 .font(.caption)
                             Text(model.exposureBiasStatus)

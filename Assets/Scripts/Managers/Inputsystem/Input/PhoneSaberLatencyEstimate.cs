@@ -17,6 +17,7 @@ public sealed class PhoneSaberMetrics
     public double ReceivedAt;
     public string Controls;
     public bool? Emitter;
+    public string AutoISO; // nullは旧形式。offと数値は区別する。
     public string Model;
     public const int MaximumBytes = 399;
 
@@ -69,6 +70,12 @@ public sealed class PhoneSaberMetrics
                 if (emitter != "0" && emitter != "1") return false;
                 m.Emitter = emitter == "1";
             }
+            if (fields.TryGetValue("auto-iso", out string autoISO))
+            {
+                if (autoISO != "off" && (!int.TryParse(autoISO, NumberStyles.None, CultureInfo.InvariantCulture, out int iso) ||
+                    iso < 1 || iso > 2000 || iso.ToString(CultureInfo.InvariantCulture) != autoISO)) return false;
+                m.AutoISO = autoISO;
+            }
             if (fields.TryGetValue("model", out string model)) m.Model = Atom(model, 16);
             metrics = m; return true;
         }
@@ -97,6 +104,10 @@ public sealed class PhoneSaberMetricsStore
 {
     readonly object gate = new object();
     readonly Dictionary<string, PhoneSaberMetrics> latest = new Dictionary<string, PhoneSaberMetrics>();
+    readonly Dictionary<string, string> autoISOByStation = new Dictionary<string, string>();
+    readonly Action<string, string, string, string> recordEvent;
+    public PhoneSaberMetricsStore(Action<string, string, string, string> recordEvent = null)
+    { this.recordEvent = recordEvent ?? PhoneSaberEventLog.Record; }
     double budgetAt = double.NegativeInfinity;
     int parsed;
     public const double FreshSeconds = 15;
@@ -118,6 +129,15 @@ public sealed class PhoneSaberMetricsStore
                 foreach (var pair in latest) if (pair.Value.ReceivedAt < at) { oldest = pair.Key; at = pair.Value.ReceivedAt; }
                 if (now - at < FreshSeconds) return;
                 latest.Remove(oldest);
+            }
+            if (metrics.AutoISO != null && (metrics.Station == "A" || metrics.Station == "B"))
+            {
+                autoISOByStation.TryGetValue(metrics.Station, out string previous);
+                if (previous != metrics.AutoISO)
+                {
+                    autoISOByStation[metrics.Station] = metrics.AutoISO;
+                    recordEvent(metrics.Station, "SYSTEM", "phone-auto-iso", "iso=" + metrics.AutoISO + " prev=" + (previous ?? "unknown"));
+                }
             }
             metrics.ReceivedAt = now;
             latest[sender] = metrics;

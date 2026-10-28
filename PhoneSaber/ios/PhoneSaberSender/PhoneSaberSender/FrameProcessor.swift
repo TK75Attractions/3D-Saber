@@ -93,6 +93,7 @@ struct ObservedFrame {
     let ignoreZones: [SaberColor: [SaberIgnoreZone]]
     let playArea: SaberPlayArea?
     let captureFPS: Int
+    var appliedISO: Float? = nil
 }
 
 /// Read-only consumer of production analysis results (the auto clip recorder,
@@ -186,6 +187,17 @@ final class FrameProcessor: @unchecked Sendable {
     func setAnalysisObserver(_ observer: FrameAnalysisObserver?) {
         queue.async { [weak self] in self?.analysisObserver = observer }
     }
+    // 生中央値だけを最大4Hzでmainへ渡す。カメラlockはこのキューでは取らない。
+    var onBackground: ((Double, Int, UInt64, Int) -> Void)?
+    private var lastBackgroundNotification = -Double.infinity // フレームキューのみ。
+    private var exposureRevision: UInt64 = 0 // pendingLockで保護。
+    private var appliedISO: Float? // pendingLockで保護。
+    func setExposureContext(revision: UInt64, appliedISO: Float?) {
+        pendingLock.lock()
+        if exposureRevision != revision { trackLockRevision &+= 1 }
+        exposureRevision = revision; self.appliedISO = appliedISO
+        pendingLock.unlock()
+    }
     var onProcessingActivity: ((Bool) -> Void)?
     var onResult: (([DetectedSaber], Int, Int, TimeInterval, Int, FrameTrace?) -> Void)?
     /// (time, detection ms, generation, capture→detection-end ms). The last value is nil when
@@ -203,6 +215,7 @@ final class FrameProcessor: @unchecked Sendable {
     private let backgroundState = SaberBackgroundState() // フレームキューだけで読み書き。
     private let selectionTrack = SaberTrackLock() // フレームキューだけで読み書き。
     private var selectionTrackRevision: UInt64 = 0 // フレームキューのみ。
+    private var selectionRedThreshold = ColorThreshold(), selectionBlueThreshold = ColorThreshold()
     private var trackLockRevision: UInt64 = 0 // pendingLock で保護。
     private var trackLockEnabled = false // pendingLock で保護。
     func setTrackLockEnabled(_ enabled: Bool) {
@@ -225,7 +238,10 @@ final class FrameProcessor: @unchecked Sendable {
     /// カメラ設定のスナップショット。低ISOの明示ON以外では従来経路を維持する。
     private var shutterEmitterMode = ShutterEmitterMode()
     func setShutterEmitterMode(_ mode: ShutterEmitterMode) {
-        pendingLock.lock(); shutterEmitterMode = mode; ignoreInspection.invalidate(); pendingLock.unlock()
+        pendingLock.lock()
+        if shutterEmitterMode != mode { trackLockRevision &+= 1 }
+        shutterEmitterMode = mode; ignoreInspection.invalidate()
+        pendingLock.unlock()
     }
     /// 無視する範囲（SaberIgnoreZone）。main から設定し、検出スレッドで読む（pendingLock で保護）。
     private var ignoreZones: [SaberColor: [SaberIgnoreZone]] = [:]
@@ -252,7 +268,9 @@ final class FrameProcessor: @unchecked Sendable {
         pendingLock.lock(); ignoreLearners.removeAll(); pendingLock.unlock()
     }
     func setIgnoreZones(_ zones: [SaberColor: [SaberIgnoreZone]]) {
-        pendingLock.lock(); ignoreZones = zones; ignoreInspection.invalidate(); pendingLock.unlock()
+        pendingLock.lock()
+        if ignoreZones != zones { trackLockRevision &+= 1 }
+        ignoreZones = zones; ignoreInspection.invalidate(); pendingLock.unlock()
     }
     /// プレイ範囲（SaberPlayArea）と、その学習。main から設定し、検出スレッドで読む（pendingLock で保護）。
     /// 学習中は範囲で絞らない（前の範囲より広く覚えられるように）。無視範囲は学習中も効く。
@@ -267,6 +285,7 @@ final class FrameProcessor: @unchecked Sendable {
     func setPlayArea(_ area: SaberPlayArea?) {
         pendingLock.lock()
         ignoreInspection.invalidate()
+        if playArea != area { trackLockRevision &+= 1 }
         playArea = area; playAreaRevision &+= 1; playAreaGrowthPending = false
         pendingLock.unlock()
     }
@@ -723,8 +742,13 @@ final class FrameProcessor: @unchecked Sendable {
         let areaRevision = playAreaRevision
         let frameCaptureFPS = captureFPS
         let emitterMode = shutterEmitterMode
+        let frameISO = appliedISO, frameExposureRevision = exposureRevision
         pendingLock.unlock()
-        if !lockEnabled || selectionTrackRevision != lockRevision { selectionTrack.reset() }
+        if !lockEnabled || selectionTrackRevision != lockRevision
+            || selectionRedThreshold != redThreshold || selectionBlueThreshold != blueThreshold {
+            selectionTrack.reset()
+        }
+        selectionRedThreshold = redThreshold; selectionBlueThreshold = blueThreshold
         selectionTrackRevision = lockRevision
         let lockState = lockEnabled ? selectionTrack : nil
 #if DEBUG
@@ -873,6 +897,11 @@ final class FrameProcessor: @unchecked Sendable {
         // 統計ロックを待つ前に座標を送信する。従来の撮影→認識完了の測定終点は維持。
         onHealthSample?(ProcessInfo.processInfo.systemUptime, max(0, (detectionEnd - processingStart) * 1000), generation,
                         captureHostTime.map { (detectionEnd - $0) * 1000 })
+        if let background = observedAnalysis?.backgroundMedian,
+           processingStart - lastBackgroundNotification >= 0.25 {
+            lastBackgroundNotification = processingStart
+            onBackground?(processingStart, background, frameExposureRevision, generation)
+        }
         // After the coordinates were handed to the sender: the observer only
         // reads this frame's analysis and (rarely) copies pixels.
         if let observer, let observedAnalysis {
@@ -881,7 +910,7 @@ final class FrameProcessor: @unchecked Sendable {
                 sequence: sequence,
                 timestamp: CMSampleBufferGetPresentationTimeStamp(sampleBuffer).seconds,
                 processingSeconds: max(0, detectionEnd - processingStart),
-                analysis: observedAnalysis, ignoreZones: zones, playArea: area, captureFPS: frameCaptureFPS))
+                analysis: observedAnalysis, ignoreZones: zones, playArea: area, captureFPS: frameCaptureFPS, appliedISO: frameISO))
         }
         if let debugVideoRecorder = debugVideoRecorder {
             let processingTimeSeconds = max(0, clock() - processingStart)

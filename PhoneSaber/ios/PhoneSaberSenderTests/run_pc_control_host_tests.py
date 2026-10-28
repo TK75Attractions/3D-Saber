@@ -46,6 +46,11 @@ final class FrameProcessor {
     var serial = 0.0
     var trackChanges = 0
     func setTrackLockEnabled(_ enabled: Bool) { trackChanges += 1 }
+    var exposureRevision: UInt64 = 0
+    var appliedISO: Float?
+    func setExposureContext(revision: UInt64, appliedISO: Float?) {
+        exposureRevision = revision; self.appliedISO = appliedISO
+    }
     func clock() -> Double { serial += 1; return serial }
     func reset() -> Int { cancelIgnoreLearning(); return 0 }
     func finishPlayAreaLearning() -> Int? { nil }
@@ -65,8 +70,25 @@ final class LANLivenessProbe {
         support += block(udp, marker) + '\n'
     support += '''}
 struct Delivery { func suspend() {} }
-final class AVCaptureDevice {}
-struct ShutterController { var active = false; var appliedISO: Float? }
+enum HostMonotonicClock {
+    static var time = 0.0
+    static func now() -> Double { time }
+}
+final class AVCaptureDevice {
+    struct Format { var minISO: Float = 80.5 }
+    var activeFormat = Format()
+    var fail = false
+}
+struct ShutterController {
+    var active = false
+    var appliedISO: Float?
+    mutating func apply(_ value: Int, to camera: AVCaptureDevice, requestedISO: Int?, autoISO: Float? = nil) throws -> Bool {
+        guard !camera.fail else { return false }
+        active = value != 0
+        appliedISO = value == 0 ? nil : max(camera.activeFormat.minISO, autoISO ?? Float(requestedISO ?? 2000))
+        return true
+    }
+}
 struct DeviceThermalLevel {
     init(state: ProcessInfo.ThermalState) {}
     var metadataValue: String { "nominal" }
@@ -93,11 +115,6 @@ enum PlayAreaSettings { static let exposureBiasKey = "unused" }
     var shutterStatus = "", exposureBiasStatus = ""
     var exposureBiasCamera: AVCaptureDevice?
     var shutterController = ShutterController()
-    func applyShutter(_ value: Int, to camera: AVCaptureDevice, requestedISO: Int? = nil) -> Bool {
-        shutterController.active = value != 0
-        shutterController.appliedISO = value == 0 ? nil : max(80.5, Float(requestedISO ?? shutterISO))
-        return true
-    }
     func applyCameraExposureExperiment(to camera: AVCaptureDevice) {}
     func applyExposureBias(to camera: AVCaptureDevice, reason: String) {}
     func refreshShutterStatus() {}
@@ -116,6 +133,16 @@ enum PlayAreaSettings { static let exposureBiasKey = "unused" }
     // stop / configureLAN / camera recovery が共有する実 resetProcessor を呼ぶ。
     func resetForTesting() { lifecycleGeneration += 1; resetProcessor() }
 '''
+    # 自動露出の制御・設定・適用ハンドラは実ソース。デバイスのsetterだけ代役。
+    if 'struct AutoExposureController {' in camera:
+        support = support.replace('@MainActor final class CameraViewModel {',
+                                  block(camera, 'struct AutoExposureController {') + '\n@MainActor final class CameraViewModel {', 1)
+        start = camera.index('    nonisolated private static let autoExposureKey =')
+        end = camera.index('    static let shutterISOChoices =', start)
+        support += camera[start:end].replace('@Published ', '').replace('private ', '')
+    else:
+        support += 'func resetAutoExposure(restore: Bool) {}\n'
+    support += block(camera, 'private func applyShutter(') + '\n'
     # 状態の宣言も修正前後の実ソースを使う。
     support += next(line for line in camera.splitlines() if 'private var ignoreLearningIDs:' in line) + '\n'
     for line in camera.splitlines():
@@ -141,6 +168,54 @@ enum PlayAreaSettings { static let exposureBiasKey = "unused" }
     support += '}\n'
     tests = '''import XCTest
 @MainActor final class PCControlTests: XCTestCase {
+    func testAutoExposureRestoresCeilingAndHonoursSwitchesFailuresAndStaleFrames() {
+        let model = CameraViewModel()
+        let camera = AVCaptureDevice()
+        camera.activeFormat.minISO = 32
+        model.exposureBiasCamera = camera
+        model.shutterISO = 250; model.shutterEmitter = true
+        HostMonotonicClock.time = 0
+        model.setAutoExposureEnabled(true)
+        func frame(_ time: Double, _ background: Int = 100) {
+            HostMonotonicClock.time = time
+            model.observeAutoExposure(time: time, background: background)
+        }
+        for i in 0...11 { frame(Double(i) / 4) }
+        XCTAssertEqual(model.shutterController.appliedISO, 250, "初回適用後1秒は破棄し、その後2秒連続を要求")
+        frame(3)
+        XCTAssertEqual(model.shutterController.appliedISO, 200)
+        XCTAssertEqual(model.processor.appliedISO, 200)
+        for i in 13...23 { frame(Double(i) / 4) }
+        camera.fail = true; frame(6)
+        XCTAssertEqual(model.shutterController.appliedISO, 200, "失敗を適用済みとして扱わない")
+        camera.fail = false; frame(6.25)
+        XCTAssertEqual(model.shutterController.appliedISO, 160)
+        camera.fail = true
+        model.setAutoExposureEnabled(false)
+        XCTAssertTrue(model.autoExposureEnabled, "復帰失敗時にOFFを保存しない")
+        XCTAssertEqual(model.shutterController.appliedISO, 160)
+        camera.fail = false
+        model.setAutoExposureEnabled(false)
+        XCTAssertFalse(model.autoExposureEnabled)
+        XCTAssertEqual(model.shutterController.appliedISO, 250)
+        for i in 26...50 { frame(Double(i) / 4) }
+        XCTAssertEqual(model.shutterController.appliedISO, 250)
+        model.setAutoExposureEnabled(true)
+        model.setShutterEmitter(false)
+        for i in 51...80 { frame(Double(i) / 4) }
+        XCTAssertEqual(model.shutterController.appliedISO, 250)
+        model.setShutterEmitter(true)
+        XCTAssertTrue(model.setShutterISO(125))
+        XCTAssertEqual(model.shutterController.appliedISO, 125)
+        HostMonotonicClock.time = 100
+        model.observeAutoExposure(time: 20, background: 100)
+        XCTAssertEqual(model.shutterController.appliedISO, 125, "古いフレーム通知を採用しない")
+        XCTAssertTrue(model.setShutter(0))
+        frame(101)
+        XCTAssertFalse(model.shutterController.active)
+        XCTAssertNil(model.shutterController.appliedISO)
+    }
+
     func testShutterISOAckReportsAppliedValueForBothStations() {
         for station in ["A", "B"] {
             let model = CameraViewModel()
@@ -286,6 +361,8 @@ enum PlayAreaSettings { static let exposureBiasKey = "unused" }
     }
 }
 '''
+    if 'struct AutoExposureController {' not in camera:
+        tests = tests.replace(block(tests, 'func testAutoExposureRestoresCeilingAndHonoursSwitchesFailuresAndStaleFrames('), '')
     developer = Path(subprocess.check_output(['xcode-select', '-p'], text=True).strip()) / 'Platforms/MacOSX.platform/Developer'
     with tempfile.TemporaryDirectory(prefix='phonesaber-pc-control-') as directory:
         tmp = Path(directory)

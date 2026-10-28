@@ -29,7 +29,7 @@ private func pointJSON(_ point: PixelPoint) -> [String: Int] {
     ["x": point.x, "y": point.y]
 }
 
-private func candidateJSON(_ candidate: SaberCandidate) -> [String: Any] {
+private func candidateJSON(_ candidate: SaberCandidate, emitterMetrics: Bool) -> [String: Any] {
     var result: [String: Any] = [
         "blueNoDeepSupport": candidate.blueNoDeepSupport.map { verdict in
             ["applied": verdict.applied, "deepCount": verdict.deepCount,
@@ -68,6 +68,11 @@ private func candidateJSON(_ candidate: SaberCandidate) -> [String: Any] {
         "point_count": candidate.pointCount,
         "used_point_led_fallback": candidate.usedPointLEDFallback,
     ]
+    // 分布計測時だけ追加する。通常のbit一致parityの出力形式は維持する。
+    if emitterMetrics {
+        result["emitter_score"] = candidate.observerEmitterInputs.map { $0.emitterScore as Any } ?? NSNull()
+        result["aspect"] = candidate.observerEmitterInputs.map { $0.aspect as Any } ?? NSNull()
+    }
     if CoreLineGuard.enabled {
         result["coreLineGuard"] = candidate.coreLineGuard.map { v in
             ["supportingIndex": v.supportingIndex, "supportingSource": v.supportingSource,
@@ -103,6 +108,7 @@ private enum VideoDetectionDiagnostic {
             FileHandle.standardError.write(Data("usage: video-detection-diagnostic WIDTH HEIGHT SAMPLE_STEP [SHUTTER ISO EMITTER_0_OR_1]\n".utf8))
             Foundation.exit(2)
         }
+        let emitterMetrics = ProcessInfo.processInfo.environment["PHONESABER_EMITTER_METRICS"] == "1"
         let frameByteCount = arguments.width * arguments.height * 4
         var frameIndex = 0
         while let frame = try readExactly(FileHandle.standardInput, count: frameByteCount) {
@@ -121,6 +127,7 @@ private enum VideoDetectionDiagnostic {
                     sampleStep: arguments.sampleStep,
                     collectProfile: true,
                     collectPipelineDiagnostics: true,
+                    collectObserverEvidence: emitterMetrics,
                     shutterEmitter: arguments.shutterEmitter
                 )
             }
@@ -128,7 +135,7 @@ private enum VideoDetectionDiagnostic {
             for (name, color) in [("red", SaberColor.red), ("blue", SaberColor.blue)] {
                 colors[name] = [
                     "selected": selectedJSON(analysis.selected[color]),
-                    "candidates": (analysis.candidates[color] ?? []).map(candidateJSON),
+                    "candidates": (analysis.candidates[color] ?? []).map { candidateJSON($0, emitterMetrics: emitterMetrics) },
                 ]
             }
             let profile = analysis.profile
