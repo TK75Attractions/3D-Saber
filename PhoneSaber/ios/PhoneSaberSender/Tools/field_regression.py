@@ -25,6 +25,8 @@ FrameProcessor の追跡状態・無視範囲・送信抑制・UDP の再現で�
 任意の shutterEmitter: {"shutter": 2000, "iso": 250, "enabled": true} は
 記録された camera.shutter / shutterISO / shutterEmitter と一致する場合だけ登録する。
 iso は要求値。未記録時は省略し、従来のホスト既定動作を保持する。
+自動ISOの適用値を渡す場合だけ shutterEmitterISOSource: "autoExposure.appliedISO"
+を指定し、camera と event frame の整数 appliedISO の両方に一致させる。
 """
 
 from __future__ import annotations
@@ -93,6 +95,9 @@ def validate_label(label: dict, size: tuple[int, int]) -> None:
     datetime.fromisoformat(label["date"])
     if "shutterEmitter" in label:
         lossless.validate_shutter_emitter(label["shutterEmitter"])
+    if "shutterEmitterISOSource" in label and (
+            label["shutterEmitterISOSource"] != "autoExposure.appliedISO" or "shutterEmitter" not in label):
+        raise ValueError("shutterEmitterISOSource は autoExposure.appliedISO と明示モードが必要です")
     for color in COLORS:
         truth = label.get(color)
         if truth == "absent":
@@ -145,14 +150,22 @@ def add_frames(labels_path: Path, inbox: Path, destination: Path) -> int:
             raise ValueError(f"フル解像度の event 画像が必要です: {source.name}")
         if label["exposure"] != metadata["camera"]["exposureBias"]:
             raise ValueError(f"露出がクリップの記録と異なります: {source.name}")
+        image = next(image for image in summary["images"] if image["path"] == "images/" + label["image"])
         if "shutterEmitter" in label:
             camera = metadata["camera"]
             recorded = {"shutter": camera.get("shutter"), "iso": camera.get("shutterISO"),
                         "enabled": camera.get("shutterEmitter")}
+            if label.get("shutterEmitterISOSource") == "autoExposure.appliedISO":
+                auto = camera.get("autoExposure", {})
+                context = json.loads((bundle / image["frameContextPath"]).read_text(encoding="utf-8"))
+                frame = next(frame for frame in context["frames"] if frame["frameID"] == image["frameID"])
+                recorded["iso"] = auto.get("appliedISO")
+                if (auto.get("enabled") is not True or type(frame.get("appliedISO")) is not int
+                        or frame["appliedISO"] != recorded["iso"]):
+                    raise ValueError(f"適用ISOが camera / event frame の記録と異なります: {source.name}")
             lossless.validate_shutter_emitter(recorded)
             if label["shutterEmitter"] != recorded:
                 raise ValueError(f"shutterEmitter がクリップの記録と異なります: {source.name}")
-        image = next(image for image in summary["images"] if image["path"] == "images/" + label["image"])
         # 設定と原資料を結果から追跡できるようにする。旧ラベルは変更しない。
         label = {**label, "captureSource": {
             "summarySHA256": hashlib.sha256((bundle / "summary.json").read_bytes()).hexdigest(),

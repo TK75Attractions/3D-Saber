@@ -154,6 +154,45 @@ class FieldRegressionTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     field.validate_label({**self.label, "shutterEmitter": mode}, (160, 120))
 
+    def test_applied_iso_opt_in_requires_matching_camera_and_event_records(self):
+        mode = {"shutter": 2000, "iso": 160, "enabled": True}
+        self.label.update(shutterEmitter=mode, shutterEmitterISOSource="autoExposure.appliedISO")
+        self.save_labels()
+        summary_path = self.source.parent.parent / "summary.json"
+        context_path = self.source.parent.parent / "frames/1.json"
+        summary = json.loads(summary_path.read_text())
+        summary["autoClip"]["camera"].update(shutter=2000, shutterISO=250, shutterEmitter=True,
+                                           autoExposure={"enabled": True, "appliedISO": 160}, iso=160.0048)
+        for camera_iso, frame_iso, enabled in ((160, None, True), (160, 200, True),
+                                               (160, 160.0, True), (160.0, 160, True),
+                                               (True, 160, True), (160, 160, False)):
+            with self.subTest(camera_iso=camera_iso, frame_iso=frame_iso, enabled=enabled):
+                summary["autoClip"]["camera"]["autoExposure"] = {"enabled": enabled, "appliedISO": camera_iso}
+                summary_path.write_text(json.dumps(summary))
+                context_path.write_text(json.dumps({"frames": [{"frameID": 1, "timestamp": 1, "appliedISO": frame_iso}]}))
+                with self.assertRaises(ValueError):
+                    self.add()
+                self.assertFalse(self.destination.exists())
+        summary["autoClip"]["camera"]["autoExposure"] = {"enabled": True, "appliedISO": 160}
+        summary_path.write_text(json.dumps(summary))
+        self.add()
+        [(path, label)] = field.load_set(self.destination)
+        self.assertEqual(label["shutterEmitter"], mode)
+        analysis = {"colors": {"red": {"selected": None}, "blue": {"selected": points()}},
+                    "shutterEmitter": {**mode, "active": True}}
+        with patch.object(field.lossless, "compile_harness"), \
+                patch.object(field.lossless, "analyze_png", return_value=analysis) as analyze:
+            rows = field.run_set(self.destination)
+        self.assertEqual(analyze.call_args.kwargs, {"shutter_emitter": mode})
+        self.assertTrue(all(row["status"] == "PASS" for row in rows))
+        for update in ({"shutterEmitterISOSource": "iso"}, {"shutterEmitterISOSource": None},
+                       {"shutterEmitter": None}):
+            with self.subTest(update=update), self.assertRaises(ValueError):
+                field.validate_label({**self.label, **update}, (160, 120))
+        without_mode = {key: value for key, value in self.label.items() if key != "shutterEmitter"}
+        with self.assertRaises(ValueError):
+            field.validate_label(without_mode, (160, 120))
+
     def test_git_directories_and_symlink_alias_are_rejected(self):
         repo = self.root / "repo"
         repo.mkdir()
