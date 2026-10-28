@@ -159,6 +159,10 @@ final class MetricsDatagramTests: XCTestCase {
         }
         XCTAssertNil(LANLivenessProbe.parseCommand("PHONESABER_COMMAND 1 id=73 shutter-emitter=on"))
         XCTAssertEqual(LANLivenessProbe.parseCommand("PHONESABER_COMMAND 1 id=73 shutter-emitter=1 shutter-emitter=0")?.shutterEmitter, false)
+        XCTAssertEqual(LANLivenessProbe.parseCommand("PHONESABER_COMMAND 1 id=74 auto-iso=1")?.autoISO, true)
+        XCTAssertEqual(LANLivenessProbe.parseCommand("PHONESABER_COMMAND 1 id=75 auto-iso=0")?.autoISO, false)
+        XCTAssertNil(LANLivenessProbe.parseCommand("PHONESABER_COMMAND 1 id=76 auto-iso=on"))
+        XCTAssertNil(LANLivenessProbe.parseCommand("PHONESABER_COMMAND 1 id=77 auto-iso=1 shutter=2000"))
     }
 
     func testIPhoneShutterParsingAndAck() {

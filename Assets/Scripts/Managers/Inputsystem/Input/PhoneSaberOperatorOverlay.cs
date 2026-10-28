@@ -261,6 +261,7 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
             { "phone-defaults", _ => PhoneSaberDiscoveryResponder.QueueCommand(PhoneSaberDiscoveryResponder.DefaultsCommand) },
             { "phone-shutter-iso", v => PhoneSaberOperatorKeys.SelectShutterISO(int.Parse(v, CultureInfo.InvariantCulture)) },
             { "phone-shutter-emitter", v => PhoneSaberDiscoveryResponder.QueueCommand("shutter-emitter=" + v) },
+            { "phone-auto-iso", v => PhoneSaberDiscoveryResponder.QueueCommand("auto-iso=" + v) },
             { "phone-shutter", v => PhoneSaberOperatorKeys.SelectShutter(int.Parse(v, CultureInfo.InvariantCulture)) },
             { "phone-exposure", v => PhoneSaberDiscoveryResponder.QueueCommand(PhoneSaberDiscoveryResponder.ExposureBiasCommand(int.Parse(v, CultureInfo.InvariantCulture))) },
             { "phone-track-lock", v => {
@@ -549,6 +550,8 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         panel.Label("低ISOの色付き発光体: 既定ON、固定シャッター・ISO2000未満のときだけ有効（試験）");
         panel.Button("色付き発光体 OFF", "phone-shutter-emitter", "0");
         panel.Button("色付き発光体 ON", "phone-shutter-emitter", "1");
+        panel.Button("ISO自動調整 OFF", "phone-auto-iso", "0");
+        panel.Button("ISO自動調整 ON", "phone-auto-iso", "1");
         panel.Button("既定に戻す（追跡 ON・露出 −2・1/2000 秒・ISO 160・色付き発光体 ON）", "phone-defaults");
         panel.Label($"PC 側で無視（予備）: {count} か所（この台に保存）{ignored}");
         string warning = input != null ? IgnoreDominanceWarning(input) : "";
@@ -747,7 +750,8 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
     {
         string key = name == "phone-track-lock" ? "trackLock" : name == "phone-exposure" ? "exposureEv" :
             name == "phone-shutter" ? "shutter" : name == "phone-shutter-iso" ? "iso" :
-            name == "phone-shutter-emitter" ? "colouredEmitter" : null;
+            name == "phone-shutter-emitter" ? "colouredEmitter" :
+            name == "phone-auto-iso" ? "autoIso" : null;
         if (key == null) return null;
         string value = null;
         foreach (var phone in panel.Phones)

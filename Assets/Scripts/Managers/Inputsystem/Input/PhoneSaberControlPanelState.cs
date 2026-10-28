@@ -19,6 +19,7 @@ public static class PhoneSaberControlPanelActions
         { "phone-learn-area", new[] { "" } }, { "phone-clear-area", new[] { "" } },
         { "phone-shutter-iso", new[] { "2000", "250", "200", "160", "125", "100", "80", "64" } },
         { "phone-shutter-emitter", new[] { "0", "1" } },
+        { "phone-auto-iso", new[] { "0", "1" } },
         { "phone-shutter", new[] { "0", "500", "1000", "2000" } },
         { "phone-exposure", new[] { "0", "-1", "-2" } },
         { "phone-track-lock", new[] { "", "0", "1" } }, { "phone-clip", new[] { "" } },
@@ -161,8 +162,8 @@ public sealed class PhoneSaberControlPanelPhone
     public double LastMetricsAt = double.NegativeInfinity;
     public string ModelLabel => Model == "iPhone14_5" ? "iPhone 13" : Model == "iPhone16_2" ? "iPhone 15 Pro Max" : Model ?? "機種未報告";
     public readonly Dictionary<string, Report> Settings = new Dictionary<string, Report>();
-    public static readonly string[] Keys = { "trackLock", "exposureEv", "shutter", "iso", "colouredEmitter", "ignoreRed", "ignoreBlue", "playArea" };
-    public static readonly string[] Labels = { "追跡ロック", "露出 EV", "シャッター", "ISO", "色付き発光体", "無視範囲 赤", "無視範囲 青", "プレイ範囲" };
+    public static readonly string[] Keys = { "trackLock", "exposureEv", "shutter", "iso", "colouredEmitter", "autoIso", "ignoreRed", "ignoreBlue", "playArea" };
+    public static readonly string[] Labels = { "追跡ロック", "露出 EV", "シャッター", "ISO", "色付き発光体", "ISO自動調整", "無視範囲 赤", "無視範囲 青", "プレイ範囲" };
     public PhoneSaberControlPanelPhone(string station, string sender) { Station = station; Sender = sender; }
     void Set(string key, string value, double at, double order, string source)
     {
@@ -206,6 +207,7 @@ public sealed class PhoneSaberControlPanelPhone
             case "shutter": Put("shutter", ack.Detail == "off" ? "OFF" : "1/" + ack.Detail); break;
             case "shutter-iso": Put("iso", ack.Detail); break;
             case "shutter-emitter": Put("colouredEmitter", ack.Detail == "on" ? "ON" : "OFF"); break;
+            case "auto-iso": Put("autoIso", ack.Detail == "on" ? "ON" : "OFF"); break;
             case "defaults":
                 Put("trackLock", "ON"); Put("exposureEv", "-2");
                 if (ack.Detail.EndsWith("shutter-2000")) Put("shutter", "1/2000");
