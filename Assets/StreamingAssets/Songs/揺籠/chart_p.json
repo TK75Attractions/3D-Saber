@@ -2,7 +2,7 @@
  "_comment": "揺籠 Hard revision 2 / Lv.9. Phrase-based triplet groups, syncopations, rests and audio-supported 174ms bursts. ElDorado-only reference. Normal and Easy unchanged. / P(U72 Pass): 序盤Normal、64拍(66.9767442秒)からHard。原譜の時刻・位置・手・矢印・回数・長さを維持。三連のまとまりで二速を入れ替え、既存の同時切りへ左右から合流。到着0.73秒前から共通等速、枠は実時間0.7秒。Pの基準接近時間は設定値と1.5秒の大きい方、奥は最長4秒。Lv9: Hard後半の操作に出現順の逆転が加わる。ロングのZ伸長と近傍の数字を抑え、長さ・回数・床の進捗は維持。",
  "bpm": 57.333333333333336,
  "coordScale": 1.0,
- "offsetMs": 12,
+ "offsetMs": 29,
  "notes": [
   {
    "beat": 1.0,

@@ -39,13 +39,13 @@ public class Review1023bTests
 
     [TestCase("escapade", "easy", 16441.0512)]
     [TestCase("escapade", "normal", 16441.0512)]
-    [TestCase("Phobia PARTⅠ", "easy", 52743.2727)]
-    [TestCase("Epilogue", "easy", 104630.79)]
-    [TestCase("揺籠", "easy", 158035.2558)]
-    [TestCase("揺籠", "easy", 159081.7674)]
-    [TestCase("Phobia PARTⅠ", "easy", 48197.8182)]
-    [TestCase("Phobia PARTⅠ", "easy", 88197.8182)]
-    [TestCase("Andalusia", "easy", 6952.1582)]
+    [TestCase("Phobia PARTⅠ", "easy", 52753.2727)]
+    [TestCase("Epilogue", "easy", 104641.79)]
+    [TestCase("揺籠", "easy", 158052.2558)]
+    [TestCase("揺籠", "easy", 159098.7674)]
+    [TestCase("Phobia PARTⅠ", "easy", 48207.8182)]
+    [TestCase("Phobia PARTⅠ", "easy", 88207.8182)]
+    [TestCase("Andalusia", "easy", 6971.1582)]
     [TestCase("Aobasou", "normal", 58714.2857, 1)]
     [TestCase("Aobasou", "normal", 59142.8571)]
     [TestCase("Aobasou", "normal", 106714.2857, 1)]
@@ -58,17 +58,17 @@ public class Review1023bTests
     [TestCase("BenkyouRemaster", "normal", 71049.0)]
     [TestCase("escapade", "normal", 64441.0508)]
     [TestCase("escapade", "normal", 65388.4219)]
-    [TestCase("Phobia PARTⅠ", "normal", 45470.5455)]
-    [TestCase("Phobia PARTⅠ", "normal", 47743.2727)]
-    [TestCase("Phobia PARTⅠ", "normal", 85470.5455)]
-    [TestCase("Phobia PARTⅠ", "normal", 88197.8182)]
+    [TestCase("Phobia PARTⅠ", "normal", 45480.5455)]
+    [TestCase("Phobia PARTⅠ", "normal", 47753.2727)]
+    [TestCase("Phobia PARTⅠ", "normal", 85480.5455)]
+    [TestCase("Phobia PARTⅠ", "normal", 88207.8182)]
     public void SelectedSingleNotesAreAbsent(string song, string diff, double audioMs, int expectedCount = 0)
     {
         var c = Load(song, diff);
         Assert.AreEqual(expectedCount, c.notes.Count(n => At(c, n, audioMs)), song + "/" + diff);
     }
 
-    [TestCase("Andalusia", "easy", 3815.0288, 3949.193115234375, "blue")]
+    [TestCase("Andalusia", "easy", 3834.0288, 3968.193115234375, "blue")]
     [TestCase("logic", "normal", 46528, 46434.25, "blue", 0)]
     [TestCase("logic", "normal", 129653, 129403, "red")]
     [TestCase("logic", "normal", 138653, 138403, "blue")]
@@ -118,9 +118,9 @@ public class Review1023bTests
     [TestCase("Aobasou", "normal", 129000)]
     [TestCase("Aobasou", "normal", 87857)]
     [TestCase("Aobasou", "normal", 115286)]
-    [TestCase("Phobia PARTⅠ", "easy", 62743)]
-    [TestCase("Phobia PARTⅠ", "easy", 97289)]
-    [TestCase("揺籠", "easy,normal", 165361)]
+    [TestCase("Phobia PARTⅠ", "easy", 62753)]
+    [TestCase("Phobia PARTⅠ", "easy", 97299)]
+    [TestCase("揺籠", "easy,normal", 165378)]
     [TestCase("製作中", "easy,normal", 46551)]
     [TestCase("製作中", "easy,normal", 53285)]
     [TestCase("製作中", "easy,normal", 56653)]
@@ -140,7 +140,7 @@ public class Review1023bTests
     [TestCase("escapade", "normal", 119)]
     [TestCase("Phobia PARTⅠ", "easy", 79)]
     [TestCase("Phobia PARTⅠ", "normal", 138)]
-    [TestCase("Andalusia", "easy", 123)]
+    [TestCase("Andalusia", "easy", 122)]
     [TestCase("Epilogue", "easy", 131)]
     [TestCase("揺籠", "easy", 106)]
     [TestCase("Aobasou", "normal", 176)]
@@ -187,9 +187,9 @@ public class Review1023bTests
         Assert.AreEqual(0, t.Evaluate(123));
     }
 
-    [TestCase("Phobia PARTⅠ", 50925.0909, 54561.4545)]
-    [TestCase("Epilogue", 103203.63, 105578.69)]
-    [TestCase("揺籠", 156988.7442, 161174.7907)]
+    [TestCase("Phobia PARTⅠ", 50935.0909, 54571.4545)]
+    [TestCase("Epilogue", 103214.63, 105589.69)]
+    [TestCase("揺籠", 157005.7442, 161191.7907)]
     public void SelectedPhrasesHaveThreeBeatRests(string song, double a, double b)
     {
         var c = Load(song, "easy");
@@ -202,9 +202,9 @@ public class Review1023bTests
         Assert.Less(b - a, 5000);
     }
 
-    [TestCase("Phobia PARTⅠ", 49106.9091)]
-    [TestCase("Phobia PARTⅠ", 89106.9091)]
-    [TestCase("Andalusia", 7641.9561)]
+    [TestCase("Phobia PARTⅠ", 49116.9091)]
+    [TestCase("Phobia PARTⅠ", 89116.9091)]
+    [TestCase("Andalusia", 7660.9561)]
     public void SelectedRedBlueChordsHaveTwoBeatsToPrepare(string song, double ms)
     {
         var c = Load(song, "easy");

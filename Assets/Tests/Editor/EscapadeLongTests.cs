@@ -246,10 +246,10 @@ public class EscapadeLongTests
                 "読込時の補正で生成器の範囲外・重複を隠さない");
         var source = JsonUtility.FromJson<ChartData>(JsonUtility.ToJson(chart));
         source.notes.RemoveAll(n => n.slide);
-        MixedSecretChartAssertions.Check("escapade", source, "l", 35388.4211, 40, 209);
-        Assert.AreEqual(249, source.notes.Count);
+        MixedSecretChartAssertions.Check("escapade", source, "l", 35388.4211, 40, 207);
+        Assert.AreEqual(247, source.notes.Count);
         Assert.AreEqual(13, source.notes.Count(n => n.IsLong));
-        Assert.AreEqual(250, chart.notes.Count);
+        Assert.AreEqual(248, chart.notes.Count);
         Assert.AreEqual(14, chart.notes.Count(n => n.IsLong), "元ロング13本と追加1本");
         Assert.IsTrue(source.notes.All(n => !n.slide));
         Assert.AreEqual(10, chart.displayLevel);
@@ -306,8 +306,8 @@ public class EscapadeLongTests
         }
         Assert.GreaterOrEqual(turns, 20);
         ScoreManager.CountUnits(chart, out int weight, out int combos);
-        Assert.AreEqual(2293, weight);
-        Assert.AreEqual(1263, combos);
+        Assert.AreEqual(2291, weight);
+        Assert.AreEqual(1261, combos);
     }
 
     static float SegmentDistance(Vector2 a, Vector2 b, Vector2 p)

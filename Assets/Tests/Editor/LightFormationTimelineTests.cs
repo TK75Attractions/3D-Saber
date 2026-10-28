@@ -162,7 +162,7 @@ public class LightFormationTimelineTests
     }
 
     [TestCase("2_23_AM",129.333,150.667)] [TestCase("ElDorado",100.203,119.403)]
-    [TestCase("Epilogue",111.208,145.401)] [TestCase("Morning",113.898,130.169)]
+    [TestCase("Epilogue",111.208,145.401)] [TestCase("Morning",114.422,130.693)]
     [TestCase("揺籠",140.245,165.361)]
     public void ExistingSongsUseOneAuthoredLongSection(string song, double start, double end)
     {

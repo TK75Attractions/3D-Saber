@@ -149,7 +149,7 @@ public class StageLaserShapeTests
     [TestCase("escapade", new[] { 25.283158, 50.546316, 65.704211, 85.914737 }, new[] { 10.125263 })]
     [TestCase("logic", new[] { 54.403, 70.403, 128.153, 144.153 }, new[] { 36.028 })]
     [TestCase("ManicSonic", new[] { 21.333333, 81.166667 }, new[] { 5.333333 })]
-    [TestCase("Morning", new double[0], new[] { 40.678, 113.898 })]
+    [TestCase("Morning", new double[0], new[] { 41.202, 114.422 })]
     [TestCase("Phobia PARTⅠ", new[] { 89.106909 }, new[] { 49.106909 })]
     [TestCase("RushE", new[] { 112.22494 }, new[] { 40.05941, 87.676 })]
     [TestCase("揺籠", new[] { 140.245 }, new[] { 66.989, 83.733, 102.221 })]

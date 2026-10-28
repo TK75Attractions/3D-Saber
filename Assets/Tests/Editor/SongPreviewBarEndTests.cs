@@ -113,11 +113,11 @@ public class SongPreviewBarEndTests
     public void TwelveEightAndLegacyYurikagoHaveTheSameBarDuration()
     {
         // 四分音符BPM86の6拍と、旧データの付点四分音符BPM57.333…の4拍は同じ。
-        var chart=new ChartData{bpm=86,offsetMs=12,timeSignatures=new List<ChartTimeSignature>{
+        var chart=new ChartData{bpm=86,offsetMs=29,timeSignatures=new List<ChartTimeSignature>{
             new ChartTimeSignature{beat=0,numerator=12,denominator=8}}};
         var window=Resolve(chart,140.245,184.24163);
         Assert.AreEqual(140.245,window.Start);
-        Assert.AreEqual(150.709674,window.Start+window.Duration,.001);
+        Assert.AreEqual(150.726674,window.Start+window.Duration,.001);
         var legacy=SongSelectChartPreview.ResolveWindow("揺籠",StagePerformanceTimeline.Load("揺籠"),184.24163);
         Assert.AreEqual(window.Start,legacy.Start);
         Assert.AreEqual(window.Duration,legacy.Duration,.001);

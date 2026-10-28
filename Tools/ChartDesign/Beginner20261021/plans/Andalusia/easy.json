@@ -1793,7 +1793,7 @@
     {
       "index": 105,
       "timesMs": [
-        103005.7803
+        103352.6012
       ],
       "directions": [
         "down"
@@ -1810,23 +1810,6 @@
     {
       "index": 106,
       "timesMs": [
-        103699.422
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "extension-2026-10-27",
-      "sourceIndex": null,
-      "sourceLong": null,
-      "added": true,
-      "phaseErrorMs": 0.0,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 107,
-      "timesMs": [
         104393.0636
       ],
       "directions": [
@@ -1842,7 +1825,7 @@
       "handRepair": false
     },
     {
-      "index": 108,
+      "index": 107,
       "timesMs": [
         105433.526
       ],
@@ -1859,7 +1842,7 @@
       "handRepair": false
     },
     {
-      "index": 109,
+      "index": 108,
       "timesMs": [
         106473.9884
       ],
@@ -1876,7 +1859,7 @@
       "handRepair": false
     },
     {
-      "index": 110,
+      "index": 109,
       "timesMs": [
         109595.3757
       ],
@@ -1893,7 +1876,7 @@
       "handRepair": false
     },
     {
-      "index": 111,
+      "index": 110,
       "timesMs": [
         110289.0173
       ],
@@ -1910,7 +1893,7 @@
       "handRepair": false
     },
     {
-      "index": 112,
+      "index": 111,
       "timesMs": [
         111329.4798
       ],
@@ -1927,7 +1910,7 @@
       "handRepair": false
     },
     {
-      "index": 113,
+      "index": 112,
       "timesMs": [
         112369.9422
       ],
@@ -1944,7 +1927,7 @@
       "handRepair": false
     },
     {
-      "index": 114,
+      "index": 113,
       "timesMs": [
         113063.5838
       ],
@@ -1961,7 +1944,7 @@
       "handRepair": false
     },
     {
-      "index": 115,
+      "index": 114,
       "timesMs": [
         115491.3295
       ],
@@ -1978,7 +1961,7 @@
       "handRepair": false
     },
     {
-      "index": 116,
+      "index": 115,
       "timesMs": [
         116531.7919
       ],
@@ -1995,7 +1978,7 @@
       "handRepair": false
     },
     {
-      "index": 117,
+      "index": 116,
       "timesMs": [
         117572.2543
       ],
@@ -2012,7 +1995,7 @@
       "handRepair": false
     },
     {
-      "index": 118,
+      "index": 117,
       "timesMs": [
         118612.7168
       ],
@@ -2029,7 +2012,7 @@
       "handRepair": false
     },
     {
-      "index": 119,
+      "index": 118,
       "timesMs": [
         119306.3584
       ],
@@ -2046,7 +2029,7 @@
       "handRepair": false
     },
     {
-      "index": 120,
+      "index": 119,
       "timesMs": [
         120000.0
       ],
@@ -2063,7 +2046,7 @@
       "handRepair": false
     },
     {
-      "index": 121,
+      "index": 120,
       "timesMs": [
         121387.2832
       ],
@@ -2080,7 +2063,7 @@
       "handRepair": false
     },
     {
-      "index": 122,
+      "index": 121,
       "timesMs": [
         121387.2832
       ],

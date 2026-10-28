@@ -17,9 +17,9 @@ public class SchoolSongFlowTests
         {
             double audioMs = (double)n.time + chart.offsetMs;
             bool movedRed = difficulty == "hard" && n.color == "red" &&
-                System.Math.Abs(audioMs - 20643.829) <= .03;
+                System.Math.Abs(audioMs - 20654.829) <= .03;
             bool movedBlue = difficulty == "hard" && n.color == "blue" &&
-                System.Math.Abs(audioMs - 20861.22) <= .03;
+                System.Math.Abs(audioMs - 20872.22) <= .03;
             if (movedRed || movedBlue)
             {
                 Assert.AreEqual(movedRed ? .5 : -.5, n.x, .00001);

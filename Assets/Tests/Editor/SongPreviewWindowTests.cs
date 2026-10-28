@@ -4,17 +4,17 @@ using NUnit.Framework;
 public class SongPreviewWindowTests
 {
     [TestCase("2_23_AM",129.333,196.075,140.026203)]
-    [TestCase("Andalusia",53.44,130.40181,63.815197)]
+    [TestCase("Andalusia",53.44,130.40181,63.834197)]
     [TestCase("Aobasou",109.714286,138.857052,120.000012)]
     [TestCase("BenkyouRemaster",6.024,138.762449,16.524000)]
-    [TestCase("ElDorado",100.203,144.065306,110.400200)]
-    [TestCase("Epilogue",133.859,166.408707,143.368062)]
+    [TestCase("ElDorado",100.203,144.065306,110.426200)]
+    [TestCase("Epilogue",133.859,166.408707,143.379062)]
     [TestCase("escapade",85.914737,109.944036,96.019996)]
     [TestCase("logic",144.153,206.759184,154.403000)]
     [TestCase("ManicSonic",81.166667,149.451938,91.833333)]
-    [TestCase("Morning",113.898,165.329,124.591797)]
-    [TestCase("Phobia PARTⅠ",89.106909,110.968163,98.197818)]
-    [TestCase("揺籠",140.245,184.24163,150.709672)]
+    [TestCase("Morning",114.422,165.329,124.607797)]
+    [TestCase("Phobia PARTⅠ",89.106909,110.968163,98.207818)]
+    [TestCase("揺籠",140.245,184.24163,150.726672)]
     [TestCase("製作中",134.713878,174.864,144.815922)]
     public void AllDifficultyExcerptsKeepTheirStartAndEndOnTheSameBar(string song,double expected,double length,double expectedEnd)
     {

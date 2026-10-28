@@ -78,7 +78,7 @@ public class EscapadeLongPlayTests
         Assert.IsFalse(spawner.HasFall);
         Assert.IsNull(GameObject.Find("FirstHandHint"), "裏譜面の始まりに文字を出さない");
         var chart = spawner.CurrentChart;
-        Assert.AreEqual(250, chart.notes.Count, "本編の切り詰めでも追加ロングを落とさない");
+        Assert.AreEqual(248, chart.notes.Count, "本編の切り詰めでも追加ロングを落とさない");
         var source = chart.notes.Single(n => n.slide);
         Assert.AreSame(source, chart.notes[0]);
         Assert.AreEqual(1000, source.count);

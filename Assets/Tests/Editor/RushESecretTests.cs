@@ -296,7 +296,7 @@ public class RushESecretTests
         Assert.AreEqual(127, g.notes.Count(n => n.type == "direction"));
         Assert.AreEqual(47, g.notes.Count(n => n.IsLong));
         Assert.IsTrue(g.notes.Where(n => n.type == "direction").All(n => n.direction != "none"), "矢印の向きはそのまま");
-        Assert.AreEqual(100f, g.bpm); Assert.AreEqual(0f, g.offsetMs); Assert.AreEqual(10, g.displayLevel);
+        Assert.AreEqual(100f, g.bpm); Assert.AreEqual(26f, g.offsetMs); Assert.AreEqual(10, g.displayLevel);
         Assert.AreEqual(217346f, g.notes.Max(n => n.time + n.lengthMs), 1f, "長い版の最後まで");
         // ロングは長さ(時間)を変えずに回数だけ5倍(同日ユーザー指示)。長さの無かったロングも、今までの長さ(回数-1)×0.7秒を書いてある。
         var longs = g.notes.Where(n => n.IsLong).ToArray();

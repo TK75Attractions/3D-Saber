@@ -30,7 +30,7 @@ public class PhobiaSongTests
         Assert.AreEqual(40000f, grid.TimeAt(64), .01f);
         var roundTrip = ChartLoader.Parse(SaberChartUtility.ToJson(clone));
         Assert.AreEqual(source.notes.Count, roundTrip.notes.Count);
-        Assert.AreEqual(16f, roundTrip.offsetMs);
+        Assert.AreEqual(26f, roundTrip.offsetMs);
         Assert.AreEqual(source.displayLevel, roundTrip.displayLevel);
         for (int i = 0; i < source.notes.Count; i++)
         {

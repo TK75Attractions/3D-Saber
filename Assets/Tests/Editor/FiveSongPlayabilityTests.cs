@@ -82,6 +82,13 @@ public class FiveSongPlayabilityTests
             var removed=new[]{224,256,259,276};
             plan.notes=plan.notes.Where(r=>!removed.Contains(r.index)).ToArray();
             Assert.AreEqual(291,plan.notes.Length);
+            // 譜面点検 ES-H-01(2026-10-28): 音の無い 70.549・70.551 秒の2個を消し、4個を確かめた音の時刻へ動かした。
+            plan.notes[178].timesMs=new[]{68461.0};
+            plan.notes[193].timesMs=new[]{70749.0};
+            plan.notes[194].timesMs=new[]{70757.0};
+            plan.notes[290].timesMs=new[]{106125.0};
+            plan.notes=plan.notes.Where((r,i)=>i!=191&&i!=192).ToArray();
+            Assert.AreEqual(289,plan.notes.Length);
         }
         if(song=="logic")
         {

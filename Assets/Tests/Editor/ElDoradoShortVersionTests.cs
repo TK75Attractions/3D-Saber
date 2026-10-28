@@ -14,7 +14,7 @@ public class ElDoradoShortVersionTests
     {
         var chart = ChartLoader.LoadFromStreamingAssets("ElDorado", difficulty);
         Assert.AreEqual(100, chart.bpm);
-        Assert.AreEqual(0, chart.offsetMs);
+        Assert.AreEqual(26, chart.offsetMs);
         Assert.Less(chart.notes.Last().time / 1000.0, 142);
         foreach (var note in chart.notes)
         {

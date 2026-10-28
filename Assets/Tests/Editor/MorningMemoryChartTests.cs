@@ -56,7 +56,7 @@ public class MorningMemoryChartTests
     {
         Assert.AreEqual(118f, chart.bpm);
         Assert.AreEqual(524f, chart.beatZeroMs);
-        Assert.AreEqual(0f, chart.offsetMs);
+        Assert.AreEqual(16f, chart.offsetMs);
         Assert.AreEqual(8, chart.displayLevel);
         Assert.IsEmpty(chart.editorTempoMap, "BPM が変わらない曲");
         Assert.IsEmpty(chart.memory.captions, "下の解説は出さない");

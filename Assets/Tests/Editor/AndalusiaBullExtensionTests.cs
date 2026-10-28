@@ -111,7 +111,7 @@ public partial class AndalusiaBullChartTests
         }
         Assert.AreEqual(173, chart.bpm);
         Assert.AreEqual(0, chart.beatZeroMs);
-        Assert.AreEqual(0, chart.offsetMs);
+        Assert.AreEqual(19, chart.offsetMs);
         Assert.AreEqual(1, chart.coordScale);
         Assert.AreEqual(10, chart.displayLevel);
         var meter = new ChartMeterMap(chart.timeSignatures);

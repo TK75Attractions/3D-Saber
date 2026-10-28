@@ -2,7 +2,7 @@
   "_comment": "2026-10-21初心者向け改訂 / 日常的なループの主題を小さい上下で反復し、再登場だけアクセントを変える。 表拍主体、Normal裏拍は表裏表に限定。Easyは四分以上・実時間500ms以上。ロングも切断間隔を検証。",
   "bpm": 118,
   "coordScale": 1.0,
-  "offsetMs": 0,
+  "offsetMs": 16,
   "beatZeroMs": 524,
   "displayLevel": 4,
   "notes": [

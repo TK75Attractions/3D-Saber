@@ -48,7 +48,7 @@ public class SongChartPreviewPlayTests
         Assert.AreEqual("Epilogue",preview.SongId); Assert.AreEqual("Normal",preview.Difficulty);
         Assert.GreaterOrEqual(preview.StartedAt-preview.SelectedAt,1);
         Assert.That(preview.Window.Start,Is.EqualTo(133.859).Within(.001));
-        Assert.That(preview.Window.Start+preview.Window.Duration,Is.EqualTo(143.368062).Within(.001));
+        Assert.That(preview.Window.Start+preview.Window.Duration,Is.EqualTo(143.379062).Within(.001));
         Assert.That(controller.previewSource.time,Is.EqualTo(preview.SongTime).Within(.35));
         var world=preview.View.WorldRoot;
         Assert.IsFalse(world.GetComponentsInChildren<Collider>().Any(c=>c.enabled));
@@ -100,7 +100,7 @@ public class SongChartPreviewPlayTests
         yield return AwaitPlaying();
         var preview=controller.ChartPreview;
         Assert.That(preview.Window.Start,Is.EqualTo(140.245).Within(.001));
-        Assert.That(preview.Window.Start+preview.Window.Duration,Is.EqualTo(150.709672).Within(.001));
+        Assert.That(preview.Window.Start+preview.Window.Duration,Is.EqualTo(150.726672).Within(.001));
         Assert.That(preview.Window.Duration,Is.InRange(8d,12d));
         double end=preview.Window.Start+preview.Window.Duration;
         double deadline=Time.realtimeSinceStartupAsDouble+preview.Window.Duration+3;

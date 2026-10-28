@@ -106,7 +106,7 @@ public class SongLeadInPlayTests
         Assert.That(firstNote.HitTime - firstSpawnTime, Is.EqualTo(manager.noteSpawner.approachTime).Within(.15),
             "先頭にも設定した4秒の移動時間を確保する");
         Assert.False(manager.songPlayer.IsPlaying, "曲の音が鳴る前に先読みする");
-        Assert.That(firstNote.HitTime, Is.EqualTo(1.296 + manager.extraOffsetSeconds).Within(.001), "譜面の時刻は変更しない");
+        Assert.That(firstNote.HitTime, Is.EqualTo(1.307 + manager.extraOffsetSeconds).Within(.001), "譜面の時刻は変更しない");
         Assert.AreEqual(0, manager.scoreManager.MissCount);
         if (useCountdown)
         {

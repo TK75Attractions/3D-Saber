@@ -27,7 +27,7 @@ public class AndalusiaChartTests
         Assert.IsTrue(File.Exists(Path.Combine(DirectoryPath, "chart_" + difficulty + ".json")));
         var chart = ChartLoader.LoadFromStreamingAssets(SongId, difficulty);
         Assert.AreEqual(level, chart.displayLevel);
-        Assert.AreEqual(0f, chart.offsetMs);
+        Assert.AreEqual(19f, chart.offsetMs);
         Assert.AreEqual(1f, chart.coordScale);
         Assert.Greater(chart.notes.Count, 0);
         Assert.Less(chart.notes[0].time, 8000f, "冒頭の有音区間から遊べる");
@@ -75,7 +75,7 @@ public class AndalusiaChartTests
         SaberChartUtility.RecalculateBeatsFromTimes(restored, 0f);
         var chart = ChartLoader.Parse(SaberChartUtility.ToJson(restored));
         Assert.AreEqual(level, chart.displayLevel);
-        Assert.AreEqual(0f, chart.offsetMs);
+        Assert.AreEqual(19f, chart.offsetMs);
         Assert.AreEqual(expected.Length, chart.notes.Count);
         // 同時刻の左右2個はローダーのソートで順番が入れ替わり得るため、位置で対応付ける。
         var loaded = chart.notes.OrderBy(n => n.time).ThenBy(n => n.x).ThenBy(n => n.y).ToArray();
@@ -186,7 +186,7 @@ public class AndalusiaChartTests
         Assert.AreEqual(3, stage.sections.Length, "2026-10-23に採用した2区間と、10/27 に音源を統一してからの延長");
         var window = SongSelectChartPreview.ResolveWindow(SongId, stage, 130.40181);
         Assert.AreEqual(53.44, window.Start, .001);
-        Assert.AreEqual(63.815197, window.Start + window.Duration, .001);
+        Assert.AreEqual(63.834197, window.Start + window.Duration, .001);
         foreach (string difficulty in new[] { "easy", "normal", "hard" })
         {
             var chart = ChartLoader.LoadFromStreamingAssets(SongId, difficulty);

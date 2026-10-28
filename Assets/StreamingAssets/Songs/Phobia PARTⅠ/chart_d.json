@@ -2,7 +2,7 @@
   "_comment": "Phobia PARTⅠ の裏譜面「D」(2026-10-24 に「避」として作成)。ノーツは無く、照準で狙う的(aim.targets)とよけるトゲ(aim.spikes)だけ。dev/tools/ChartPhobiaAvoid/gen_avoid.py で作る。時刻は音源の頭からのミリ秒(offsetMs は Hard と同じ)。",
   "bpm": 96,
   "coordScale": 1.0,
-  "offsetMs": 16,
+  "offsetMs": 26,
   "beatZeroMs": 0,
   "displayLevel": 10,
   "timeSignatures": [

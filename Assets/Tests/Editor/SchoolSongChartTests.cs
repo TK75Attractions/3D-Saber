@@ -97,6 +97,6 @@ public class SchoolSongChartTests
         var roundTrip = ChartLoader.Parse(Saber.ChartEditor.SaberChartUtility.ToJson(Saber.ChartEditor.SaberChartUtility.Clone(document)));
         Assert.AreEqual(level, roundTrip.displayLevel);
         Assert.AreEqual(document.notes.Count, roundTrip.notes.Count);
-        Assert.AreEqual(1296f, roundTrip.offsetMs, 0.01f);
+        Assert.AreEqual(1307f, roundTrip.offsetMs, 0.01f);
     }
 }

@@ -1,7 +1,7 @@
 {
   "bpm": 173.0,
   "coordScale": 1.0,
-  "offsetMs": 0.0,
+  "offsetMs": 19.0,
   "displayLevel": 3,
   "beatZeroMs": 0.0,
   "timeSignatures": [
@@ -1218,23 +1218,12 @@
       "lengthMs": 1387.009
     },
     {
-      "beat": 297.0,
-      "time": 103005.7803,
-      "x": 1.5,
-      "y": -0.75,
+      "beat": 298.0,
+      "time": 103352.6012,
+      "x": 1.3387,
+      "y": -0.266,
       "type": "tap",
       "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0.0
-    },
-    {
-      "beat": 299.0,
-      "time": 103699.422,
-      "x": -1.25,
-      "y": 0.0,
-      "type": "tap",
-      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0.0

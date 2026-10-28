@@ -2,7 +2,7 @@
   "_comment": "2026-10-21初心者向け改訂 / 静かな前半と132BPMの主部を対比。3+3+2の裏打ちは表拍へ解決。 表拍主体、Normal裏拍は表裏表に限定。Easyは四分以上・実時間500ms以上。ロングも切断間隔を検証。",
   "bpm": 96,
   "coordScale": 1.0,
-  "offsetMs": 16,
+  "offsetMs": 26,
   "beatZeroMs": 0,
   "displayLevel": 2,
   "timeSignatures": [
