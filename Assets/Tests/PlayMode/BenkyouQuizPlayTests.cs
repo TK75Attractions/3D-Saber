@@ -10,8 +10,9 @@ using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 using Object = UnityEngine.Object;
 
-// 勉強の裏譜面 Q 第3版(chart_q.json)を本編で読み、試験用紙で黒い紙が出て HUD と床の印が消え剣が上に描かれること、
-// 答えの柱(本物は正しい柱だけ、ほかは判定に入らない飾りの金)、斬り分け(札から発射・隠した向き)、答えの形、π を書くを確かめる。
+// 勉強の裏譜面 Q 第3.1版(chart_q.json)を本編で読み、試験用紙で黒い紙が出て HUD と床の印が消え剣が上に描かれること、
+// 答えの柱(本物は正しい柱だけ、ほかは判定に入らない飾りの金)、斬り分け(札から発射・隠した向き)、
+// C の点の札の答えの柱、D の最後の問題の花丸を確かめる(第3.1版で C・D も答えの柱になった。count・pi は譜面に無い)。
 // 曲は止め、時刻を選んで同じ本体(NoteSpawner・QuizMode)を進める。結果画面には進めず、失敗時もシーン・選曲・設定を戻す。
 public class BenkyouQuizPlayTests
 {
@@ -51,7 +52,7 @@ public class BenkyouQuizPlayTests
     }
 
     [UnityTest]
-    public IEnumerator PaperPillarsDecoysSortCountAndPiWorkInTheGame()
+    public IEnumerator PaperPillarsDecoysSortDotsAndFlowerWorkInTheGame()
     {
         string folder = Path.Combine(Application.streamingAssetsPath, "Songs", SongId);
         Assert.IsTrue(File.Exists(Path.Combine(folder, "chart_q.json")), "chart_q.json は必須。通常譜面へのフォールバックで通さない");
@@ -216,39 +217,56 @@ public class BenkyouQuizPlayTests
         quiz.Tick(sortHit + .3);
         Assert.AreEqual(QuizMode.SlotCut, quiz.SlotState(s, 0));
         Assert.AreEqual(UISkinPalette.NoteGold.b, quiz.ImageColor(sort.options[0]).b, 1e-3, "切れた札は金で箱へ");
+        Assert.Less(quiz.Squares, 4, "斬り分けの間は答えの柱の四角を出さない");
+        CollectionAssert.IsEmpty(items.Where(i => i.kind == QuizRules.Count || i.kind == QuizRules.Pi), "第3.1版に count・pi は無い");
 
-        // 答えの形: 金が届くたびに(切っても逃しても)数が増え、最後の金で答えの数。
-        var count = items.First(i => i.kind == QuizRules.Count);
-        int c = items.IndexOf(count);
-        double show = QuizRules.Seconds(count.showMs, offset);
-        Assert.AreEqual(0, quiz.CountShown(c, show + .1), "最初は「?」");
-        double lastGold = QuizRules.Seconds(count.revealMs, offset);
-        Assert.AreEqual(count.count, quiz.CountShown(c, lastGold + .01), "最後の金で答えの数");
-        quiz.Tick(show + .1);
-        Assert.IsTrue(quiz.ImageShown(count.markImage), "赤い「?」");
-        quiz.Tick(lastGold + .05);
-        Assert.IsTrue(quiz.ImageShown(count.numbers[count.count]), "答えの数の画像");
-        Assert.GreaterOrEqual(quiz.RedCircles, 1, "答えの数を赤い丸で囲む");
+        // C「数で答える」(斬り分けのあとの答えの柱): 札は点の数。本物は正しい札の柱だけ、ほかの3本の柱には同じ時刻に飾りの金。
+        int c = items.FindIndex(i => i.kind == QuizRules.Rhythm && i.showMs > sort.showMs);
+        Assert.Greater(c, s, "斬り分けのあとの答えの柱");
+        var dots = items[c];
+        var dotSource = spawner.CurrentChart.notes.First(n => n.time >= dots.playMs - .5f && n.time < dots.endMs - .5f);
+        double dotHit = spawner.EffectiveTime(dotSource);
+        var dotNote = Spawn(spawner, dotHit);
+        Assert.IsFalse(dotNote.IsDecoy);
+        Assert.IsTrue(dotNote.IsGold);
+        Assert.AreEqual(QuizRules.PillarX[dots.answer], dotNote.LandingPosition.x, 1e-4, "本物は正しい札の柱だけ");
+        Assert.AreEqual(QuizRules.PillarHitScale, dotNote.HitScale, 1e-6);
+        var sameTime = spawner.LiveDecoys.Where(d => Math.Abs(d.HitTime - dotHit) < 1e-6).ToList();
+        CollectionAssert.AreEqual(Enumerable.Range(0, 4).Where(pillar => pillar != dots.answer).ToArray(),
+            sameTime.Select(d => QuizRules.NearestPillar(d.LandingPosition.x)).OrderBy(pillar => pillar).ToArray(),
+            "同じ時刻に、ほかの3本の柱から飾りの金");
+        int dotHits = score.HitCount;
+        Swing(cutter, tracker, sameTime[0].LandingPosition.x, dotHit);
+        Assert.IsFalse(dotNote.IsCut, "飾りの柱を振っても本物は切れない");
+        Assert.AreEqual(dotHits, score.HitCount, "飾りは点にならない");
+        Swing(cutter, tracker, dotNote.LandingPosition.x, dotHit);
+        Assert.IsTrue(dotNote.IsCut, "正しい札の柱で切れる");
+        Assert.AreEqual(dotHits + 1, score.HitCount);
+        quiz.Tick(dotHit + .02);
+        Assert.IsTrue(quiz.ImageShown(dots.question), "問題");
+        foreach (var file in dots.options) Assert.IsTrue(quiz.ImageShown(file), "点の札 " + file);
+        Assert.AreEqual(UISkinPalette.NoteGold.b, quiz.ImageColor(dots.options[dots.answer]).b, 1e-3, "切った柱の札が金に光る");
+        Assert.AreEqual(4, quiz.Squares, "答えの柱の問題の間は柱の判定面の薄い四角");
 
-        // π を書く: 最初の金を切ると、最初のマスに「3.」。
-        var pi = items.First(i => i.kind == QuizRules.Pi);
-        int p = items.IndexOf(pi);
-        var piSource = spawner.CurrentChart.notes.First(n => n.time >= pi.showMs - .5f);
-        double piHit = spawner.EffectiveTime(piSource);
-        Spawn(spawner, piHit);
-        // 最初のマス(同時の2つなら左)のノーツ。
-        float firstCell = QuizRules.CellX(0, QuizRules.RowLength(pi.rows, 0));
-        var piNote = spawner.LiveNotes.First(n => n != null && Math.Abs(n.HitTime - piHit) < 1e-6
-            && Math.Abs(n.LandingPosition.x - firstCell) < 1e-3);
-        Assert.IsTrue(piNote.IsGold);
-        Swing(cutter, tracker, piNote.LandingPosition.x, piHit);
-        Assert.IsTrue(piNote.IsCut);
-        quiz.Tick(piHit + .05);
+        // D: C と D のあいだも黒いまま。最後の問題(D3)は、最後の本物が届いたら正しい札を赤い花丸で囲む。
+        var lastPaper = spawner.CurrentChart.quiz.papers[spawner.CurrentChart.quiz.papers.Count - 1];
+        var first = items.First(i => i.kind == QuizRules.Rhythm && Math.Abs(i.showMs - lastPaper.startMs) < .5f);
+        double join = QuizRules.Seconds(first.showMs, offset);
+        quiz.Tick(join - .05);
         Assert.AreEqual(1f, quiz.PaperVisibility, "C と D のあいだも黒いまま");
-        Assert.AreEqual(QuizMode.SlotCut, quiz.SlotState(p, 0));
-        Assert.IsTrue(quiz.ImageShown(pi.question), "「π =」");
-        Assert.IsTrue(quiz.ImageShown(pi.numbers[3]), "最初のマスに 3");
-        Assert.IsTrue(quiz.ImageShown(pi.pointImage), "「3.」");
+        quiz.Tick(join + .05);
+        Assert.AreEqual(1f, quiz.PaperVisibility);
+        Assert.IsTrue(quiz.ImageShown(first.question), "D の1問目");
+        var final = items[items.Count - 1];
+        Assert.AreEqual(QuizRules.Rhythm, final.kind, "最後は答えの柱");
+        Assert.IsFalse(string.IsNullOrEmpty(final.flowerImage), "最後の問題は花丸");
+        double reveal = QuizRules.Seconds(final.revealMs, offset);
+        quiz.Tick(reveal - .05);
+        Assert.IsTrue(quiz.ImageShown(final.options[final.answer]), "正しい札");
+        Assert.IsFalse(quiz.ImageShown(final.flowerImage), "最後の本物が届くまで花丸は出さない");
+        quiz.Tick(reveal + .3);
+        Assert.IsTrue(quiz.ImageShown(final.flowerImage), "最後の本物のあと、正しい札を花丸で囲む");
+        Assert.AreEqual(4, quiz.Squares);
 
         // 試験用紙の外(ふつうの Hard の所)では、黒い紙・HUD・床の印を戻す。
         quiz.Tick(65);

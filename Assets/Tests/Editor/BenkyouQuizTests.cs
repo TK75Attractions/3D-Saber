@@ -1287,21 +1287,52 @@ public class BenkyouQuizModeTests
     }
 }
 
-// 勉強の Q の譜面(chart_q.json、下請け G が gen_quiz.py で作る)を仕様(spec_v3)と 9a の決めた点で確かめる。
-// 9a の決めた点: 飾りの柱も 4〜6 打で表拍を3つ以上(本物と打つ数・形で見分けがつかないように)、π のマスの間隔は行の長さで決める。
+// 勉強の Q の譜面(chart_q.json、下請け G が gen_quiz.py で作る)を仕様(spec_v3、第3.1版の spec_v4_cd)と 9a の決めた点で確かめる。
+// 第3.1版(10/28 午後、ユーザー「勉強のCとDは問題わかんなくても切れちゃうから直して」): C と D も A と同じ答えの柱(rhythm)。
+// count・pi の項目は譜面に無い(ゲームのコードと、BenkyouQuizModeTests の作り物の譜面は残る)。
+// 9a の決めた点: 4本の柱は同じリズム(飾りは本物と同じ時刻でほかの3本の柱)、同じ柱の間は 0.3 秒以上。
 public class BenkyouQuizChartTests
 {
     const string Song = "BenkyouRemaster";
-    const string Pi40 = "3141592653589793238462643383279502884197";
-    // 正しい柱は左から 2→4→1→3(9a、10/28。巡回 2→3→4→1 をやめた)。
-    static readonly int[] RhythmAnswers = { 1, 3, 0, 2 };
+    const string Flower = "pi_flower.png";
+    // 答えの柱の問題は A(4問)・C(4問)・D(3問)の順。
+    const int APart = 4, CPart = 4, DPart = 3;
+    // 正しい柱(左から 0〜3)。A は 2→4→1→3(9a、10/28。巡回 2→3→4→1 をやめた)、C・D は spec_v4_cd の表。
+    static readonly int[] RhythmAnswers = { 1, 3, 0, 2, 1, 2, 0, 3, 2, 0, 3 };
     static readonly string[][] SortSides =
     {
         new[] { "left", "right", "right", "left" }, new[] { "right", "left", "right", "left" },
         new[] { "left", "left", "right", "right" }, new[] { "right", "left", "left", "right" }
     };
-    static readonly float[] CountShows = { 97674, 100674, 103674, 108174 };
-    static readonly int[] CountAnswers = { 2, 6, 8, 12 };
+    // C「数で答える」: 問題が出る時刻・終わり(ミリ秒)、本物の数(play から4分)、札の点の数(左から)。
+    static readonly float[] DotShows = { 97674, 100674, 103674, 108174 };
+    static readonly float[] DotEnds = { 100674, 103674, 108174, 112674 };
+    static readonly int[] DotHits = { 4, 4, 7, 7 };
+    static readonly int[][] DotValues = { new[] { 1, 2, 3, 4 }, new[] { 4, 2, 3, 6 }, new[] { 5, 6, 3, 4 }, new[] { 4, 8, 12, 6 } };
+    // C の式の値: H2O の H の数・√9・1 + 2 × 2(かけ算が先)・立方体の面(辺 12・頂点 8、オイラーの多面体定理 F = E − V + 2)。
+    static readonly int[] DotTruths = { 2, (int)Math.Round(Math.Sqrt(9)), 1 + 2 * 2, 12 - 8 + 2 };
+    // 点の並べ方の行・列(1 = 真ん中、2・3・5 = さいころの 3×3、4 = 2×2、6 = 2×3、8 = 2×4、12 = 3×4)。
+    static readonly Dictionary<int, (int rows, int columns)> DotGrid = new Dictionary<int, (int, int)>
+    {
+        { 1, (1, 1) }, { 2, (3, 3) }, { 3, (3, 3) }, { 4, (2, 2) }, { 5, (3, 3) }, { 6, (2, 3) }, { 8, (2, 4) }, { 12, (3, 4) }
+    };
+    // D「大問」: 問題が出る時刻・終わり(ミリ秒)、本物の時刻(秒。spec の表は元の D の時刻を 1ms に丸めた値)、札の値(左から)。
+    static readonly float[] FinalShows = { 112674, 119300, 125400 };
+    static readonly float[] FinalEnds = { 119300, 125400, 137550 };
+    static readonly double[][] FinalHits =
+    {
+        new[] { 116.103, 117.817, 118.674 },
+        new[] { 122.103, 122.531, 122.960, 123.388, 124.245, 124.674 },
+        new[] { 128.103, 128.960, 129.817, 131.531, 133.245, 133.579, 133.912, 134.245, 134.579, 134.912, 135.245, 135.579, 135.912 }
+    };
+    static readonly double[][] FinalValues =
+    {
+        new double[] { 5000, 10100, 5050, 4950 },
+        new double[] { 8, 4, 6, 12 },
+        new[] { Math.PI * Math.PI / 8, double.PositiveInfinity, Math.PI / 4, Math.PI * Math.PI / 6 }
+    };
+    // 読む時間に入るので使わない元の D の時刻(秒)。
+    static readonly double[] FinalUnused = { 114.388, 119.531, 119.960, 120.817, 121.245, 126.388 };
 
     static string Folder => Path.Combine(Application.streamingAssetsPath, "Songs", Song);
 
@@ -1319,6 +1350,15 @@ public class BenkyouQuizChartTests
     // その問題のノーツ(showMs〜endMs、時刻順・同じ時刻は x の順)。
     static List<NoteData> NotesOf(ChartData chart, QuizItemData item)
         => chart.notes.Where(n => n.time >= item.showMs - .5f && n.time < item.endMs - .5f).OrderBy(n => n.time).ThenBy(n => n.x).ToList();
+
+    // quiz/ の PNG の幅と高さ(IHDR の値)。
+    static Vector2Int PngSize(string file)
+    {
+        byte[] bytes = File.ReadAllBytes(Path.Combine(Folder, QuizRules.ImageFolder, file));
+        Assert.GreaterOrEqual(bytes.Length, 24, file);
+        int Read(int at) => (bytes[at] << 24) | (bytes[at + 1] << 16) | (bytes[at + 2] << 8) | bytes[at + 3];
+        return new Vector2Int(Read(16), Read(20));
+    }
 
     [Test]
     public void QReplacesCInTheSecretTableWithTheChalkColors()
@@ -1356,9 +1396,12 @@ public class BenkyouQuizChartTests
         Assert.AreEqual(97.674, papers[2].Start, .002);
         Assert.GreaterOrEqual(papers[2].End, 137.0, "D は曲の終わりまで");
 
+        // A(答えの柱)・B(斬り分け)・C と D(答えの柱)の順。count と pi の項目は第3.1版の譜面に無い。
         var kinds = quiz.items.Select(i => i.kind).ToArray();
-        CollectionAssert.AreEqual(Enumerable.Repeat(QuizRules.Rhythm, 4).Concat(Enumerable.Repeat(QuizRules.Sort, 4))
-            .Concat(Enumerable.Repeat(QuizRules.Count, 4)).Concat(new[] { QuizRules.Pi }), kinds);
+        CollectionAssert.AreEqual(Enumerable.Repeat(QuizRules.Rhythm, APart).Concat(Enumerable.Repeat(QuizRules.Sort, 4))
+            .Concat(Enumerable.Repeat(QuizRules.Rhythm, CPart + DPart)), kinds);
+        CollectionAssert.IsEmpty(Items(chart, QuizRules.Count), "count の項目は無い");
+        CollectionAssert.IsEmpty(Items(chart, QuizRules.Pi), "pi の項目は無い");
         foreach (var item in quiz.items)
         {
             Assert.LessOrEqual(item.showMs, item.playMs, item.kind);
@@ -1368,15 +1411,34 @@ public class BenkyouQuizChartTests
         }
 
         var rhythm = Items(chart, QuizRules.Rhythm);
-        for (int i = 0; i < 4; i++)
+        Assert.AreEqual(APart + CPart + DPart, rhythm.Count);
+        for (int i = 0; i < rhythm.Count; i++)
         {
             var item = rhythm[i];
-            Assert.IsTrue(Near(item.showMs, 30024 + 4800 * i), "show " + i);
-            Assert.IsTrue(Near(item.playMs, item.showMs + 2400), "読む1小節 " + i);
-            Assert.IsTrue(Near(item.endMs, item.playMs + 2400), "叩く1小節 " + i);
             Assert.AreEqual(RhythmAnswers[i], item.answer, "正しい柱 " + i);
-            Assert.AreEqual(i == 0, item.hint, "練習は1問目だけ");
+            Assert.AreEqual(i == 0, item.hint, "練習は A の1問目だけ");
             Assert.AreEqual(4, item.options.Count, "札4つ " + i);
+            Assert.AreEqual(i == rhythm.Count - 1 ? Flower : "", item.flowerImage, "花丸は D3 だけ " + i);
+            if (i < APart)
+            {
+                Assert.IsTrue(Near(item.showMs, 30024 + 4800 * i), "show " + i);
+                Assert.IsTrue(Near(item.playMs, item.showMs + 2400), "読む1小節 " + i);
+                Assert.IsTrue(Near(item.endMs, item.playMs + 2400), "叩く1小節 " + i);
+            }
+            else if (i < APart + CPart)
+            {
+                int q = i - APart;
+                Assert.IsTrue(Near(item.showMs, DotShows[q]), "C の show " + q);
+                Assert.IsTrue(Near(item.playMs, item.showMs + 1500), "C の読む時間は1小節 " + q);
+                Assert.IsTrue(Near(item.endMs, DotEnds[q]), "C の end " + q);
+            }
+            else
+            {
+                int d = i - APart - CPart;
+                Assert.IsTrue(Near(item.showMs, FinalShows[d]), "D の show " + d);
+                Assert.IsTrue(Near(item.playMs, FinalHits[d][0] * 1000, 1), "D の play は最初の本物 " + d);
+                Assert.IsTrue(Near(item.endMs, FinalEnds[d]), "D の end " + d);
+            }
         }
         var sorts = Items(chart, QuizRules.Sort);
         for (int k = 0; k < 4; k++)
@@ -1389,31 +1451,6 @@ public class BenkyouQuizChartTests
             CollectionAssert.AreEqual(SortSides[k], item.sides, "答えの側 " + k);
             Assert.AreEqual(2, item.boxes.Count, "左右の箱の語 " + k);
         }
-        var counts = Items(chart, QuizRules.Count);
-        for (int q = 0; q < 4; q++)
-        {
-            var item = counts[q];
-            Assert.IsTrue(Near(item.showMs, CountShows[q]), "show " + q);
-            Assert.IsTrue(Near(item.playMs, item.showMs + 1500), "最初の1小節は読む時間 " + q);
-            Assert.IsTrue(Near(item.endMs, q < 3 ? CountShows[q + 1] : 112674), "end は次の show " + q);
-            Assert.AreEqual(CountAnswers[q], item.count, "答え " + q);
-            Assert.AreEqual(13, item.numbers.Count, "0〜12 の数の画像 " + q);
-            Assert.That(item.slotX, Is.InRange(.01f, .99f), "「?」の所 " + q);
-            Assert.That(item.slotY, Is.InRange(.01f, .99f));
-            Assert.IsFalse(string.IsNullOrEmpty(item.markImage), "最初の「?」の画像 " + q);
-        }
-        var pi = Items(chart, QuizRules.Pi).Single();
-        Assert.IsTrue(Near(pi.showMs, 112674), "D は 112.674 秒から");
-        Assert.GreaterOrEqual(pi.endMs, 137000f, "曲の終わりまで");
-        Assert.AreEqual(10, pi.numbers.Count, "0〜9 の桁の画像");
-        Assert.AreEqual(Pi40, pi.digits, "円周率の 40 桁");
-        Assert.AreEqual(40, pi.rows.Sum(), "合計 40 マス");
-        foreach (int length in pi.rows) Assert.That(length, Is.InRange(9, 11), "1行 9〜11 マス");
-        Assert.IsFalse(string.IsNullOrEmpty(pi.pointImage));
-        Assert.IsFalse(string.IsNullOrEmpty(pi.ellipsisImage));
-        Assert.IsFalse(string.IsNullOrEmpty(pi.flowerImage));
-        Assert.That(pi.slotX, Is.InRange(.01f, .99f), "「π」の中心");
-        Assert.That(pi.slotY, Is.InRange(.01f, .99f));
 
         // 使う画像がそろっている。
         foreach (var item in quiz.items)
@@ -1434,7 +1471,7 @@ public class BenkyouQuizChartTests
         {
             var item = rhythm[i];
             var real = NotesOf(chart, item);
-            int[] Cells(IEnumerable<float> times) => times.Select(t => (int)Math.Round((t - item.playMs) / 150.0)).OrderBy(c => c).ToArray();
+            Assert.Greater(real.Count, 0, "本物 " + i);
             foreach (var note in real)
             {
                 Assert.AreEqual("gold", note.color, "流れてくるのは金 " + i);
@@ -1445,49 +1482,50 @@ public class BenkyouQuizChartTests
                 Assert.AreEqual("none", note.direction);
                 Assert.IsFalse(note.launch);
                 Assert.IsFalse(note.hidden, "第3版は見えないノーツを使わない");
-                double cell = (note.time - item.playMs) / 150.0;
-                Assert.AreEqual(Math.Round(cell), cell, .01, "16分の格子 " + i);
-                Assert.That(cell, Is.InRange(0, 15), "叩く1小節の中 " + i);
             }
-            var hits = Cells(real.Select(n => n.time));
-            Assert.That(hits.Length, Is.InRange(4, 6), "正しい柱は 4〜6 打 " + i);
-            Assert.AreEqual(0, hits[0], "1拍目(小節の頭)を必ず含む " + i);
-            Assert.GreaterOrEqual(hits.Count(h => h % 4 == 0) * 2, hits.Length, "表拍を多めに " + i);
-            for (int k = 2; k < hits.Length; k++) Assert.IsFalse(hits[k] - hits[k - 2] == 2, "16分の連続は2つまで " + i);
-            Assert.IsTrue(Near(item.revealMs, real.Last().time), "赤ペンは最後の本物のあと " + i);
+            Assert.IsTrue(Near(real[0].time, item.playMs, .01), "最初の本物が play(読む時間には来ない) " + i);
+            Assert.IsTrue(Near(item.revealMs, real[real.Count - 1].time), "赤ペン・花丸は最後の本物のあと " + i);
+            for (int k = 1; k < real.Count; k++)
+                Assert.GreaterOrEqual(real[k].time - real[k - 1].time, 300f - .01f, $"同じ柱の間は 0.3 秒以上 {i}");
 
-            var mine = decoys.Where(d => d.ms >= item.playMs - .5f && d.ms < item.endMs - .5f).ToList();
-            var patterns = new List<HashSet<int>> { new HashSet<int>(hits) };
+            // 飾りはほかの3本の柱に、本物と同じ時刻(4本の柱は同じリズム。形・数で正解の柱を当てられないように。9a、10/28)。
+            var mine = decoys.Where(d => d.ms >= item.showMs - .5f && d.ms < item.endMs - .5f).ToList();
             for (int p = 0; p < 4; p++)
             {
-                var pillar = mine.Where(d => Math.Abs(d.x - QuizRules.PillarX[p]) < 1e-4).ToList();
+                var pillar = mine.Where(d => Math.Abs(d.x - QuizRules.PillarX[p]) < 1e-4).OrderBy(d => d.ms).ToList();
                 if (p == item.answer)
                 {
                     Assert.IsEmpty(pillar, "正しい柱に飾りは来ない " + i);
                     continue;
                 }
-                Assert.That(pillar.Count, Is.InRange(4, 6), $"飾りの柱も 4〜6 打(9a) {i}/{p}");
-                var cells = Cells(pillar.Select(d => d.ms));
-                Assert.GreaterOrEqual(cells.Count(c => c % 4 == 0), 3, $"飾りも表拍を3つ以上(9a) {i}/{p}");
+                Assert.AreEqual(real.Count, pillar.Count, $"飾りの柱も本物と同じ数 {i}/{p}");
+                for (int k = 0; k < real.Count; k++)
+                    Assert.AreEqual(real[k].time, pillar[k].ms, .01, $"飾りは本物と同じ時刻 {i}/{p}");
                 foreach (var d in pillar)
                 {
                     Assert.AreEqual(QuizRules.PillarY, d.y, 1e-4);
-                    Assert.AreEqual(i == 0 ? .7f : 0f, d.veil, 1e-4, "練習の飾りだけ veil 0.7");
+                    Assert.AreEqual(item.hint ? .7f : 0f, d.veil, 1e-4, "練習の飾りだけ veil 0.7");
                 }
-                patterns.Add(new HashSet<int>(cells));
             }
-            Assert.AreEqual(4, patterns.Count, "4本の柱 " + i);
-            Assert.AreEqual(mine.Count, mine.Count(d => QuizRules.PillarX.Any(x => Math.Abs(d.x - x) < 1e-4)), "飾りは柱の上だけ " + i);
-            // 4本の柱は同じリズム(リズムの形で正解の柱を当てられないように。9a、10/28 Codex の点検)。
-            for (int p = 1; p < patterns.Count; p++)
-                Assert.IsTrue(patterns[p].SetEquals(patterns[0]), $"4本の柱は同じリズム {i}: 0/{p}");
-            var sorted = patterns[0].OrderBy(c => c).ToList();
-            for (int k = 1; k < sorted.Count; k++)
-                Assert.GreaterOrEqual(sorted[k] - sorted[k - 1], 2, $"同じ柱へ 0.15 秒の連打は置かない {i}");
+            Assert.AreEqual(3 * real.Count, mine.Count, "飾りは柱の上だけ " + i);
+
+            if (i >= APart) continue;
+            // A のリズムの形(第3版): 16分の格子で 4〜6 打、1拍目(小節の頭)を必ず含み、表拍を多めに、16分の連続は2つまで。
+            int[] hits = real.Select(n => (int)Math.Round((n.time - item.playMs) / 150.0)).OrderBy(c => c).ToArray();
+            foreach (var note in real)
+            {
+                double cell = (note.time - item.playMs) / 150.0;
+                Assert.AreEqual(Math.Round(cell), cell, .01, "16分の格子 " + i);
+                Assert.That(cell, Is.InRange(0, 15), "叩く1小節の中 " + i);
+            }
+            Assert.That(hits.Length, Is.InRange(4, 6), "正しい柱は 4〜6 打 " + i);
+            Assert.AreEqual(0, hits[0], "1拍目(小節の頭)を必ず含む " + i);
+            Assert.GreaterOrEqual(hits.Count(h => h % 4 == 0) * 2, hits.Length, "表拍を多めに " + i);
+            for (int k = 2; k < hits.Length; k++) Assert.IsFalse(hits[k] - hits[k - 2] == 2, "16分の連続は2つまで " + i);
         }
         foreach (var d in decoys)
         {
-            Assert.IsTrue(rhythm.Any(it => d.ms >= it.playMs - .5f && d.ms < it.endMs - .5f), "飾りは答えの柱の叩く1小節の中だけ " + d.ms);
+            Assert.IsTrue(rhythm.Any(it => d.ms >= it.playMs - .5f && d.ms < it.endMs - .5f), "飾りは答えの柱の叩く部分の中だけ " + d.ms);
             Assert.IsFalse(chart.notes.Any(n => Math.Abs(n.time - d.ms) < .5f && Math.Abs(n.x - d.x) < 1e-3 && Math.Abs(n.y - d.y) < 1e-3),
                 "飾りは chart.notes に入れない " + d.ms);
         }
@@ -1523,76 +1561,107 @@ public class BenkyouQuizChartTests
     }
 
     [Test]
-    public void CountGoldsComeInTheShapeOfTheAnswer()
+    public void DotsPartAnswersWithDotLabelsOnThePillars()
     {
         var chart = Load();
-        var counts = Items(chart, QuizRules.Count);
-        var shapes = new[]
+        var dots = Items(chart, QuizRules.Rhythm).Skip(APart).Take(CPart).ToList();
+        Assert.AreEqual(CPart, dots.Count);
+        var heights = new Dictionary<int, HashSet<int>>();
+        var widths = new Dictionary<int, HashSet<int>>();
+        for (int q = 0; q < CPart; q++)
         {
-            new[] { (4f, -.9f, -.6f), (6f, .9f, -.6f) },
-            new[] { (4f, -1.5f, .3f), (4f, -1.5f, -.6f), (6f, .6f, .3f), (6f, .6f, -.6f), (7f, 1.5f, .3f), (7f, 1.5f, -.6f) },
-            Enumerable.Range(0, 8).Select(k => (4f + .5f * k, -1.75f + .5f * k, -.15f)).ToArray(),
-            Enumerable.Range(0, 12).Select(k => (4f + k / 2, -1.75f + .7f * (k / 2), k % 2 == 0 ? .3f : -.6f)).ToArray()
-        };
-        for (int q = 0; q < counts.Count; q++)
-        {
-            var item = counts[q];
-            var notes = NotesOf(chart, item);
-            Assert.AreEqual(CountAnswers[q], notes.Count, "金の数が答え " + q);
-            foreach (var (beat, x, y) in shapes[q])
-                Assert.IsTrue(notes.Any(n => Near(n.time, item.showMs + 375 * beat) && Math.Abs(n.x - x) < 1e-3 && Math.Abs(n.y - y) < 1e-3),
-                    $"答えに関係した形 {q}: 拍 {beat} ({x}, {y})");
-            foreach (var note in notes)
+            var item = dots[q];
+            Assert.AreEqual($"rhythm_c{q + 1}.png", item.question);
+            // 正しい札の点の数が式の値で、その値の札は1枚だけ。
+            Assert.AreEqual(DotTruths[q], DotValues[q][item.answer], "正しい札の点の数が式の値 " + q);
+            Assert.AreEqual(1, DotValues[q].Count(v => v == DotTruths[q]), "式の値の札は1枚だけ " + q);
+            // 本物は play から4分(160 BPM、0.375 秒)で DotHits 個。
+            var real = NotesOf(chart, item);
+            Assert.AreEqual(DotHits[q], real.Count, "本物の数 " + q);
+            for (int k = 0; k < real.Count; k++)
+                Assert.IsTrue(Near(real[k].time, item.playMs + 375 * k, .01), $"play から4分 {q}/{k}");
+            for (int j = 0; j < 4; j++)
             {
-                Assert.AreEqual("gold", note.color, "全部ふつうの金ノーツ " + q);
-                Assert.AreEqual("none", note.direction);
-                Assert.AreEqual(1, note.count);
-                Assert.IsFalse(note.launch);
+                string file = item.options[j];
+                Assert.AreEqual($"rhythm_c{q + 1}_o{j + 1}.png", file);
+                Vector2Int px = PngSize(file);
+                var grid = DotGrid[DotValues[q][j]];
+                if (!heights.TryGetValue(grid.rows, out var hs)) heights[grid.rows] = hs = new HashSet<int>();
+                if (!widths.TryGetValue(grid.columns, out var ws)) widths[grid.columns] = ws = new HashSet<int>();
+                hs.Add(px.y);
+                ws.Add(px.x);
+                // ゲームの大きさ(画素の比)で幅の上限に当たらない(当たると、その札だけ丸が小さく見える)。隣の柱の札とも重ならない。
+                Vector2 size = QuizRules.LabelSize(px.y, (float)px.x / px.y, QuizRules.OptionHeight, QuizRules.OptionReferencePixels,
+                    QuizRules.OptionMaxWidth);
+                Assert.AreEqual(QuizRules.OptionHeight * px.y / QuizRules.OptionReferencePixels, size.y, 1e-4, "点の札は縮まない " + file);
+                Assert.Less(size.x, QuizRules.PillarSpacing, "隣の柱の札と重ならない " + file);
             }
-            Assert.IsTrue(Near(item.revealMs, notes.Max(n => n.time)), "赤い丸は最後の金のあと " + q);
         }
+        // 丸の大きさと間隔はどの札も同じ: 画像の高さは行の数だけで決まり(2行は A の札と同じ基準の 143px)、1行ふえるごとに同じだけ伸びる。
+        // 幅も列の数だけで決まる。
+        foreach (var pair in heights) Assert.AreEqual(1, pair.Value.Count, $"{pair.Key} 行の札の高さがそろう");
+        foreach (var pair in widths) Assert.AreEqual(1, pair.Value.Count, $"{pair.Key} 列の札の幅がそろう");
+        Assert.AreEqual(QuizRules.OptionReferencePixels, heights[2].Single(), "2行の札は基準の 143px");
+        int step = heights[3].Single() - heights[2].Single();
+        Assert.Greater(step, 0);
+        Assert.AreEqual(step, heights[2].Single() - heights[1].Single(), "行の間隔はどの札も同じ");
+        foreach (var pair in widths)
+            Assert.AreEqual(heights[1].Single() + step * (pair.Key - 1), pair.Value.Single(), $"{pair.Key} 列の幅も同じ間隔");
     }
 
     [Test]
-    public void PiGoldsWriteTheDigitsAcrossTheRowsAtTheOldTimes()
+    public void FinalPartUsesTheOldDTimesTheFlowerAndTheClimaxFlashes()
     {
         var chart = Load();
-        var pi = Items(chart, QuizRules.Pi).Single();
-        var notes = NotesOf(chart, pi);
-        Assert.AreEqual(40, notes.Count, "元の D のノーツ 40 個");
-        for (int k = 0; k < notes.Count; k++)
-        {
-            var note = notes[k];
-            QuizRules.CellOf(pi.rows, k, out int row, out int column);
-            int length = QuizRules.RowLength(pi.rows, row);
-            Assert.AreEqual(QuizRules.CellX(column, length), note.x, 1e-3, $"左のマスから右へ(行 {row}・列 {column})");
-            Assert.AreEqual(QuizRules.PiLineY, note.y, 1e-4, "書く行 y −0.15");
-            Assert.That(note.x, Is.InRange(-QuizRules.GateHalfWidth, QuizRules.GateHalfWidth), "マスはゲートの中");
-            Assert.AreEqual("gold", note.color, "全部金");
-            Assert.AreEqual("none", note.direction, "矢印なし");
-            Assert.AreEqual(1, note.count, "ロングなし");
-            Assert.IsFalse(note.launch);
-        }
-        for (int k = 1; k < notes.Count; k++)
-        {
-            if (Math.Abs(notes[k].time - notes[k - 1].time) > .5f) continue;
-            QuizRules.CellOf(pi.rows, k - 1, out int rowA, out int columnA);
-            QuizRules.CellOf(pi.rows, k, out int rowB, out int columnB);
-            Assert.AreEqual(rowA, rowB, "同時の2つは行をまたがない " + notes[k].time);
-            Assert.AreEqual(columnA + 1, columnB, "同時の2つは隣どうしのマス " + notes[k].time);
-        }
-        // 時刻は元の D のまま(70 BPM の Hard と 360 BPM の締め)。最初の1秒には置かない。
+        var finals = Items(chart, QuizRules.Rhythm).Skip(APart + CPart).ToList();
+        Assert.AreEqual(DPart, finals.Count);
+        // 式の値: 1 + 2 + … + 100、∫_0^2 3x² dx = [x³]_0^2、Σ 1/n²(部分和。残りの和は 1/N より小さい)。
+        double basel = 0;
+        for (int n = 1; n <= 100000; n++) basel += 1.0 / ((double)n * n);
+        double[] truths = { Enumerable.Range(1, 100).Sum(), Math.Pow(2, 3) - Math.Pow(0, 3), basel };
         var hard = ChartLoader.Parse(File.ReadAllText(Path.Combine(Folder, "chart_hard.json")));
-        foreach (var note in notes)
-            Assert.IsTrue(hard.notes.Any(h => Near(h.time, note.time, .05)), "Hard の時刻 " + note.time);
-        Assert.GreaterOrEqual(notes[0].time, pi.showMs + 1000 - .5f, "大問の最初の1秒にノーツを置かない");
-        // 盛り上がり4(119.53 秒)から最後のノーツまで紙の縁を光らせる。大きな光は1秒に3回まで(360 BPM は4拍ごと)。
-        Assert.Greater(pi.flashesMs.Count, 0);
-        Assert.GreaterOrEqual(pi.flashesMs[0], 119530f - 1f, "盛り上がり4から");
-        Assert.LessOrEqual(pi.flashesMs[pi.flashesMs.Count - 1], notes[notes.Count - 1].time + 1f, "最後のノーツまで");
-        for (int f = 1; f < pi.flashesMs.Count; f++)
-            Assert.GreaterOrEqual(pi.flashesMs[f] - pi.flashesMs[f - 1], 334f, "大きな光は1秒に3回まで");
-        Assert.IsTrue(Near(pi.revealMs, notes[notes.Count - 1].time), "「…」と花丸は最後のノーツのあと");
+        for (int d = 0; d < DPart; d++)
+        {
+            var item = finals[d];
+            Assert.AreEqual($"rhythm_d{d + 1}.png", item.question);
+            CollectionAssert.AreEqual(Enumerable.Range(1, 4).Select(j => $"rhythm_d{d + 1}_o{j}.png").ToArray(), item.options);
+            // 正しい札が式の値にいちばん近く(1e-4 以内)、ほかの札は 0.1 以上離れる。
+            var values = FinalValues[d];
+            Assert.AreEqual(truths[d], values[item.answer], 1e-4, "正しい札が式の値 " + d);
+            for (int j = 0; j < 4; j++)
+                if (j != item.answer) Assert.Greater(Math.Abs(values[j] - truths[d]), .1, $"ほかの札は式の値から離れる {d}/{j}");
+            // 本物の時刻は元の D(70 BPM の Hard と 360 BPM の締め)の時刻のまま(spec の表)。
+            var real = NotesOf(chart, item);
+            Assert.AreEqual(FinalHits[d].Length, real.Count, "本物の数 " + d);
+            for (int k = 0; k < real.Count; k++)
+            {
+                Assert.AreEqual(FinalHits[d][k] * 1000, real[k].time, 1.0, $"spec の表の時刻 {d}/{k}");
+                Assert.IsTrue(hard.notes.Any(h => Near(h.time, real[k].time, .05)), "Hard の時刻 " + real[k].time);
+            }
+            Assert.AreEqual(d == DPart - 1 ? Flower : "", item.flowerImage, "花丸は D3 だけ " + d);
+        }
+        Assert.IsTrue(File.Exists(Path.Combine(Folder, QuizRules.ImageFolder, Flower)), "花丸の画像");
+        // 読む時間に入る元の時刻には、本物も飾りも置かない。
+        foreach (double t in FinalUnused)
+        {
+            Assert.IsTrue(hard.notes.Any(h => Near(h.time, t * 1000, 1)), "使わない時刻も元の D の時刻 " + t);
+            Assert.IsFalse(chart.notes.Any(n => Near(n.time, t * 1000, 1)), "使わない時刻に本物がある " + t);
+            Assert.IsFalse(chart.quiz.decoys.Any(x => Near(x.ms, t * 1000, 1)), "使わない時刻に飾りがある " + t);
+        }
+        // 盛り上がり4(119.53 秒)から最後の本物まで紙の縁を光らせる。光の時刻は、その時刻を含む D の問題が持つ
+        // (ゲームはどの項目の flashesMs も読む)。大きな光は1秒に3回まで(360 BPM は4拍ごと)。
+        foreach (var item in chart.quiz.items.Except(finals))
+            Assert.IsEmpty(item.flashesMs, "縁の光は D の問題だけ");
+        foreach (var item in finals)
+            foreach (float f in item.flashesMs)
+                Assert.IsTrue(f >= item.showMs - .5f && f < item.endMs - .5f, "光はその時刻を含む問題が持つ " + f);
+        var flashes = finals.SelectMany(i => i.flashesMs).OrderBy(f => f).ToList();
+        Assert.Greater(flashes.Count, 0);
+        Assert.AreEqual(119531f, flashes[0], 1f, "盛り上がり4から");
+        var last = NotesOf(chart, finals[DPart - 1]).Last();
+        Assert.AreEqual(last.time, flashes[flashes.Count - 1], 1f, "最後の本物まで");
+        for (int f = 1; f < flashes.Count; f++)
+            Assert.GreaterOrEqual(flashes[f] - flashes[f - 1], 334f, "大きな光は1秒に3回まで");
     }
 
     [Test]

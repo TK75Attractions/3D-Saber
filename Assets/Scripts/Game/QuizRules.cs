@@ -66,6 +66,13 @@ public static class QuizRules
     public const float RhythmQuestionY = 3.05f, RhythmQuestionHeight = .85f;
     public const float OptionY = 2f, OptionHeight = .5f, OptionMaxWidth = 1.1f;
     public const double OptionFlashSeconds = .15;
+    // 答えの柱の問題の画像のふつうの高さ(画素)。積分・Σ のように背の高い問題は画素の比で大きくし(上限 1.6)、
+    // 下の端(札の上)はそろえて上へ伸ばす(高さを決めうちにすると字が A の 0.4 倍ほどになった。第3.1版)。
+    public const int RhythmQuestionReferencePixels = 172;
+    public const float RhythmQuestionMaxHeight = 1.6f;
+    public const float RhythmQuestionBottomY = RhythmQuestionY - RhythmQuestionHeight * .5f;
+    // 最後の問題(flowerImage がある項目)は、答えを赤い丸で囲んだうえで、問題の右に花丸を押す(札を囲むと隣の札にかかるため)。
+    public const float OptionFlowerGap = .25f;
     // 札の画像のふつうの高さ(画素)。札はこの高さを OptionHeight で出し、背の高い札(分数の 299px など)は同じ比で大きくして
     // 字の大きさをそろえる(幅が上限を超えたときだけ縮める。9a、10/28)。斬り分けの札・箱の語も同じ。
     public const int OptionReferencePixels = 143, SortLabelReferencePixels = 178, BoxWordReferencePixels = 175;

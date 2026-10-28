@@ -364,10 +364,11 @@ public sealed partial class QuizMode : MonoBehaviour
             double age = time - edgeFlashStarts[i];
             if (age < 0 || age >= QuizRules.EdgeFlashSeconds) edgeFlashStarts.RemoveAt(i);
         }
-        if (!hasPi || !QuizRules.Finite(previousTime) || time <= previousTime) return;
+        if (!QuizRules.Finite(previousTime) || time <= previousTime) return;
+        // どの項目の flashesMs も読む(第3.1版では、その時刻を含む答えの柱の問題が持つ)。
         foreach (var item in quiz.items)
         {
-            if (item.kind != QuizRules.Pi) continue;
+            if (item.flashesMs == null) continue;
             foreach (float ms in item.flashesMs)
             {
                 double at = QuizRules.Seconds(ms, offset);

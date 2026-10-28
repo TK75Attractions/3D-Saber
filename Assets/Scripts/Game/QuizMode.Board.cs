@@ -323,9 +323,19 @@ public sealed partial class QuizMode
 
     // ---- rhythm「答えの柱」 ----
 
-    // 柱の判定面の薄い四角と、出ている問題の板(問題・札・赤ペン)。
+    // 出ている問題の板(問題・札・赤ペン)と、柱の判定面の薄い四角。答えの柱の問題は A・C・D に分かれて、あいだに斬り分けが
+    // 入るので、四角はどれかの答えの柱の問題が出ている間だけ描く(第3.1版、10/28)。
     void DrawRhythm(double time, float visibility)
     {
+        bool any = false;
+        for (int i = 0; i < quiz.items.Count; i++)
+        {
+            var item = quiz.items[i];
+            if (item.kind != QuizRules.Rhythm || !QuizRules.Active(item, offset, time)) continue;
+            any = true;
+            DrawRhythmBoard(i, item, time, visibility);
+        }
+        if (!any) return;
         float z = judgeZ - MarkLift;
         for (int p = 0; p < QuizRules.PillarX.Length; p++)
         {
@@ -333,22 +343,38 @@ public sealed partial class QuizMode
                 Vertex(Color.white, QuizRules.PillarSquareAlpha * visibility));
             Squares++;
         }
-        for (int i = 0; i < quiz.items.Count; i++)
-        {
-            var item = quiz.items[i];
-            if (item.kind == QuizRules.Rhythm && QuizRules.Active(item, offset, time)) DrawRhythmBoard(i, item, time, visibility);
-        }
     }
 
     void DrawRhythmBoard(int index, QuizItemData item, double time, float visibility)
     {
         float z = judgeZ - ImageLift;
         var question = Load(item.question);
+        Vector2 questionSize = Vector2.zero;
+        float questionY = QuizRules.RhythmQuestionY;
         if (question != null)
-            Place(question, new Vector3(0f, QuizRules.RhythmQuestionY, z),
-                QuizRules.FitSize(question.aspect, QuizRules.RhythmQuestionHeight, QuizRules.BoardMaxWidth), White(visibility));
+        {
+            // 背の高い問題(積分・Σ)は画素の比で大きく(上限あり)、下の端をそろえて上へ伸ばす。
+            questionSize = QuizRules.LabelSize(question.pixels, question.aspect, QuizRules.RhythmQuestionHeight,
+                QuizRules.RhythmQuestionReferencePixels, QuizRules.BoardMaxWidth);
+            // 大きくするだけ(ふつうの高さより小さい問題は 0.85 のまま。幅の上限で縮んだときは縮んだまま)。
+            if (questionSize.y < QuizRules.RhythmQuestionHeight && questionSize.x < QuizRules.BoardMaxWidth - 1e-4f)
+                questionSize = QuizRules.FitSize(question.aspect, QuizRules.RhythmQuestionHeight, QuizRules.BoardMaxWidth);
+            if (questionSize.y > QuizRules.RhythmQuestionMaxHeight)
+                questionSize *= QuizRules.RhythmQuestionMaxHeight / questionSize.y;
+            questionY = QuizRules.RhythmQuestionBottomY + questionSize.y * .5f;
+            Place(question, new Vector3(0f, questionY, z), questionSize, White(visibility));
+        }
         // 練習は最初から、ほかは最後の本物が届いたら、正しい札を赤い丸で囲む(end まで)。
         double penStart = item.hint ? QuizRules.Seconds(item.showMs, offset) : RevealTime(index, item);
+        // 最後の問題は、答えが出たら問題の右に花丸を押す(膨らみながら)。
+        var flower = item.hint ? null : Load(item.flowerImage);
+        if (flower != null && QuizRules.Finite(penStart) && time >= penStart)
+        {
+            float amount = QuizRules.FlowerAmount(time, penStart);
+            float h = QuizRules.FlowerHeight * Mathf.Lerp(.7f, 1f, amount);
+            float x = questionSize.x * .5f + QuizRules.OptionFlowerGap + QuizRules.FlowerHeight * flower.aspect * .5f;
+            Place(flower, new Vector3(x, questionY, z), new Vector2(h * flower.aspect, h), White(amount * visibility), MarkSortingOrder);
+        }
         for (int p = 0; p < QuizRules.PillarX.Length && p < item.options.Count; p++)
         {
             var option = Load(item.options[p]);
