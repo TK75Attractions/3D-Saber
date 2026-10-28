@@ -75,6 +75,52 @@ public static class DailyRankingStore
         }
     }
 
+    // 台同士のランキング同期(RankingSync)で、別の台で遊んだ回を足す(順位は評価しない)。同じ runId があれば AlreadyThere。
+    // 表の day(数え始めた日)は今のまま。表がまだ無ければ localTime の日から数え始める。
+    // 壊れた表は Record と同じく上書きしない(Failed。呼び出し側が適用待ちに残して、あとで足し直す。知らせも呼び出し側)。
+    // PlayerPrefs へ書くだけで、ディスクへの保存(PlayerPrefs.Save)は呼び出し側がまとめてする。
+    public static RankingMergeResult Merge(string song, string difficulty, string runId, int score, DateTime localTime) =>
+        MergeAll(song, difficulty, new[] { new Entry { runId = runId, score = score } }, localTime)[0];
+
+    // 同じ曲×難易度へ何回分かをまとめて足す(表の読み書きは1回)。結果は entries と同じ順。
+    public static RankingMergeResult[] MergeAll(string song, string difficulty, IList<Entry> entries, DateTime localTime)
+    {
+        var results = new RankingMergeResult[entries?.Count ?? 0];
+        if (results.Length == 0) return results;
+        bool readable = false;
+        Table table = null;
+        try { readable = !string.IsNullOrWhiteSpace(song) && TryRead(PlayerPrefs.GetString(Key(song, difficulty), ""), DayKey(localTime), out table); }
+        catch (Exception) { readable = false; }
+        if (!readable)
+        {
+            for (int i = 0; i < results.Length; i++) results[i] = RankingMergeResult.Failed;
+            return results;
+        }
+        var present = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var existing in table.entries) present.Add(existing.runId);
+        bool added = false;
+        for (int i = 0; i < results.Length; i++)
+        {
+            var entry = entries[i];
+            if (entry == null || string.IsNullOrEmpty(entry.runId) || entry.score < 0) { results[i] = RankingMergeResult.Failed; continue; }
+            if (!present.Add(entry.runId)) { results[i] = RankingMergeResult.AlreadyThere; continue; }
+            table.entries.Add(new Entry { runId = entry.runId, score = entry.score });
+            results[i] = RankingMergeResult.Added;
+            added = true;
+        }
+        if (!added) return results;
+        try
+        {
+            PlayerPrefs.SetString(Key(song, difficulty), JsonUtility.ToJson(table));
+        }
+        catch (Exception)
+        {
+            for (int i = 0; i < results.Length; i++)
+                if (results[i] == RankingMergeResult.Added) results[i] = RankingMergeResult.Failed;
+        }
+        return results;
+    }
+
     public static bool TryRead(string json, string day, out Table table)
     {
         table = new Table { day = day };

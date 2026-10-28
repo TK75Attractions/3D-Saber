@@ -68,21 +68,40 @@ public static class GameSession
         var table = HighScoreStore.Load(SelectedSongId, SelectedDifficulty);
         HighScoreBestBefore(table.entries.Count > 0 ? table.entries[0].score : 0);
         if (!ShouldRecordRun || !ClaimHighScoreRecord()) return;
-        HighScoreStore.Record(SelectedSongId, SelectedDifficulty, new HighScoreEntry
+        // 同じ回(runId)がもうあれば足さない(台同士の同期の足し直しと重なっても二重にしない)。表が壊れていれば上書きせず、
+        // RankingSync が動いている間に足し直す(Failed のとき)。
+        var result = HighScoreStore.RecordRun(SelectedSongId, SelectedDifficulty, new HighScoreEntry
         {
             score = FinalScore,
             rank = PlayRankHelper.Label(PlayRankHelper.FromScore(FinalScore)),
             accuracy = FinalAccuracy,
             date = System.DateTime.Now.ToString("yyyy/MM/dd"),
-        }, out _);
+            // 台同士の同期(RankingSync)で、相手の台から戻ってきた同じ回を二重に足さないため。
+            runId = AchievementRunId,
+            // 同点の並び(HighScoreStore.Compare)。相手の台へ送った回と同じ時刻にして、2台で同じ並びにする。
+            at = completedAtUnixMs > 0 ? completedAtUnixMs : System.DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+        }, out _, out _);
+        if (result == RankingMergeResult.Failed) RankingSync.LocalHighScoreFailed(AchievementRunId);
     }
 
+    // この回を遊び終わった時刻(通算の順位に残したとき。UTC の Unix ミリ秒)。HI-SCORE と同期の記録で同じ値を使う。
+    static long completedAtUnixMs;
+
     // 通常終了の確定スコアのみ登録。日付や結果UIが変わっても同じプレイを二重登録しない。
+    // 台同士のランキング同期(2026-10-28): 登録した回を RankingSync へ渡し、もう1台へすぐ送る(上の FinalDailyRanking で、この回につき1回だけ)。
+    // 同期が無いとき(テスト・Editor の既定・-rankingSync off)は何もしない。
     public static void RecordCompletedDailyRanking()
     {
         if (FinalDailyRanking != null || !ShouldRecordRun) return;
+        var now = System.DateTime.Now;
         FinalDailyRanking = DailyRankingStore.Record(SelectedSongId, SelectedDifficulty,
-            AchievementRunId, FinalScore, System.DateTime.Now);
+            AchievementRunId, FinalScore, now);
+        // ここで通算の表に書けなかった(表が壊れている・保存の失敗)ときも、相手の台へは送り、この台の表には RankingSync が
+        // 動いている間に足し直す(FinalDailyRanking は失敗の結果でも入っているので、この回で記録し直すことはない)。
+        var play = RankingSyncLog.NewPlay(AchievementRunId, SelectedSongId, SelectedDifficulty, FinalScore,
+            PlayRankHelper.Label(PlayRankHelper.FromScore(FinalScore)), FinalAccuracy, now, PhoneSaberStation.Read());
+        completedAtUnixMs = play.at;
+        RankingSync.RecordLocal(play, FinalDailyRanking.Available);
     }
 
     public static void RecordCompletedAchievements()
@@ -212,6 +231,7 @@ public static class GameSession
     {
         AchievementRunId = System.Guid.NewGuid().ToString("N");
         FinalDailyRanking = null;
+        completedAtUnixMs = 0;
         FinalScore = 0;
         FinalMaxCombo = 0;
         FinalComboBonus = 0;
