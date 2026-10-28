@@ -103,6 +103,20 @@ public class SongSelectDiscTests
         Assert.AreEqual(98765.ToString("N0")+"<size=24>点</size>",SongSelectSkin.FormatHighScore(table));
         table.entries.RemoveRange(0,2); Assert.AreEqual("0<size=24>点</size>",SongSelectSkin.FormatHighScore(table),"0点の記録は「—」にしない");
     }
+    [Test] public void TopScoresListTheFiveBestRecordsAndDashesForEmptyRows()
+    {
+        // 右下の上位5件(2026-10-28)。高い順に5行、記録のない行は「—」、+ だけ赤み。
+        Assert.AreEqual(HighScoreStore.MaxEntries,SongSelectSkin.TopScoreRows);
+        var table=new HighScoreTable();
+        foreach(var e in new[]{(61234,"A"),(98765,"S+"),(80000,"S")}) HighScoreStore.Insert(table,new HighScoreEntry{score=e.Item1,rank=e.Item2},HighScoreStore.MaxEntries);
+        Assert.AreEqual(98765.ToString("N0")+"<size=22>点</size>",SongSelectSkin.TopScoreValue(table,0));
+        Assert.AreEqual("S<color=#ff6e7a>+</color>",SongSelectSkin.TopScoreRank(table,0));
+        Assert.AreEqual(80000.ToString("N0")+"<size=22>点</size>",SongSelectSkin.TopScoreValue(table,1));
+        Assert.AreEqual("A",SongSelectSkin.TopScoreRank(table,2));
+        Assert.IsFalse(SongSelectSkin.HasTopScore(table,3));
+        Assert.AreEqual("—",SongSelectSkin.TopScoreValue(table,3)); Assert.AreEqual("",SongSelectSkin.TopScoreRank(table,4));
+        Assert.AreEqual("—",SongSelectSkin.TopScoreValue(null,0));
+    }
     [TestCase("Epilogue")]
     [TestCase("Andalusia")]
     public void ActualVariableTimingChartsProduceOrderedEvents(string id)

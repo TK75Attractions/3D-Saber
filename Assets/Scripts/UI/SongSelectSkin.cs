@@ -29,7 +29,9 @@ public class SongSelectSkin : MonoBehaviour
     readonly TextMeshProUGUI[] difficultyNumbers = new TextMeshProUGUI[3];
     readonly TextMeshProUGUI[] difficultyLabels = new TextMeshProUGUI[3];
     readonly SongSelectRubyText[] counts = new SongSelectRubyText[4];
-    TextMeshProUGUI sourceCredit, composerName, timer, timerNotice, achievementDifficulty, libraryPosition, startHint, holdHint;
+    TextMeshProUGUI sourceCredit, composerName, timer, timerNotice, achievementDifficulty, libraryPosition, startHint, holdHint, topScoresDifficulty;
+    readonly TextMeshProUGUI[] topScoreRanks = new TextMeshProUGUI[TopScoreRows];
+    readonly TextMeshProUGUI[] topScoreValues = new TextMeshProUGUI[TopScoreRows];
     SongSelectDiscGraphic visitorProgress;
     // 残り時間の音(盤5): 30秒で1回の知らせ、10秒から1秒ごとの刻み。鳴らすのは MenuSfx。
     int lastBeepSecond = -1, previousSecond = -1;
@@ -97,7 +99,7 @@ public class SongSelectSkin : MonoBehaviour
         ctl.suppressDefaultDifficultyTint = true;
         ctl.startButton = null;
         corridor = SongSelectCorridor.Build(layout, ctl);
-        BuildHeader(); BuildDiscs(); BuildTitle(); BuildDifficulties(); BuildSecretDifficulty(); BuildAchievements(); BuildActions();
+        BuildHeader(); BuildDiscs(); BuildTitle(); BuildDifficulties(); BuildSecretDifficulty(); BuildAchievements(); BuildTopScores(); BuildActions();
         // 2曲モードの何曲目の札は盤より手前に描く(スタートで盤が1.25倍になっても点が隠れない。砂嵐などの覆いはこの後に作るので上に乗る)。
         if (visitorProgress != null) visitorProgress.transform.SetAsLastSibling();
         // 選曲の音は幕の裏で作っておき、最初の操作で処理落ちしないようにする。
@@ -433,12 +435,51 @@ public class SongSelectSkin : MonoBehaviour
         highScore = Ruby(score, FormatHighScore(null));
         Graphic(panel.transform, "HighScoreRule", new Vector2(14, -126), new Vector2(420, 2), SongSelectDiscGraphic.Shape.Panel, new Color(.38f, .81f, .83f, .2f)).Width = 0;
     }
+    // 右下の上位5件(2026-10-28 ユーザー「判定調整ボタンを左上に配置 小さくして 右下はTop5のスコアとかでいいや」)。
+    // 記録パネルと左右対称の大きさ・高さ。中身は結果画面と同じ HighScoreStore の記録(高い順に5件)。
+    void BuildTopScores()
+    {
+        var panel = PanelAt("TopScores", 1625, 919, 470, 290, SongSelectVisuals.Edge, 3, 22);
+        var heading = Label(panel.transform, "TopScoresHeading", "TOP 5", 28, new Vector2(-160, 108), new Vector2(110, 45), UISkinKit.LogoFontAsset(), SongSelectVisuals.Accent);
+        heading.alignment = TextAlignmentOptions.MidlineLeft;
+        topScoresDifficulty = Label(panel.transform, "TopScoresDifficulty", "EASY", 24, new Vector2(-28, 106), new Vector2(152, 36), color: SongSelectVisuals.Muted);
+        for (int i = 0; i < TopScoreRows; i++)
+        {
+            float y = 62 - 43 * i;
+            var place = Label(panel.transform, "TopPlace" + i, (i + 1).ToString(), 30, new Vector2(-192, y), new Vector2(40, 44), UISkinKit.LogoFontAsset(), i == 0 ? Gold : White);
+            place.alignment = TextAlignmentOptions.MidlineLeft;
+            topScoreRanks[i] = Label(panel.transform, "TopRank" + i, "", 30, new Vector2(-118, y), new Vector2(90, 44), UISkinKit.LogoFontAsset(), Gold);
+            topScoreRanks[i].alignment = TextAlignmentOptions.MidlineLeft;
+            topScoreValues[i] = Label(panel.transform, "TopScore" + i, "—", 32, new Vector2(103, y - 1), new Vector2(230, 44), UISkinKit.LogoFontAsset());
+            topScoreValues[i].alignment = TextAlignmentOptions.MidlineRight;
+            topScoreValues[i].enableAutoSizing = true; topScoreValues[i].fontSizeMin = 16; topScoreValues[i].fontSizeMax = 32;
+            Graphic(panel.transform, "TopRule" + i, new Vector2(4, y - 22), new Vector2(420, 2), SongSelectDiscGraphic.Shape.Panel, new Color(.38f, .81f, .83f, .2f)).Width = 0;
+        }
+    }
+    void ShowTopScores(HighScoreTable table)
+    {
+        for (int i = 0; i < TopScoreRows; i++)
+        {
+            topScoreRanks[i].text = TopScoreRank(table, i);
+            topScoreValues[i].text = TopScoreValue(table, i);
+            topScoreValues[i].color = HasTopScore(table, i) ? White : SongSelectVisuals.Muted;
+        }
+    }
+    public const int TopScoreRows = HighScoreStore.MaxEntries;
+    public static bool HasTopScore(HighScoreTable table, int row) => table != null && table.entries != null && row >= 0 && row < table.entries.Count;
+    public static string TopScoreValue(HighScoreTable table, int row) => HasTopScore(table, row)
+        ? table.entries[row].score.ToString("N0") + "<size=22>点</size>" : "—";
+    // 記録パネルの「S+」と同じく + だけ赤みをつける。
+    public static string TopScoreRank(HighScoreTable table, int row) => HasTopScore(table, row)
+        ? (table.entries[row].rank ?? "").Replace("+", "<color=#ff6e7a>+</color>") : "";
     void BuildActions()
     {
-        var cal = PanelAt("CalibrationButton", 1630, 930, 460, 180, SongSelectVisuals.Edge, 4);
+        // 左上、見出しの下(2026-10-28 ユーザー「判定調整ボタンを左上に配置 小さくして」)。タイトルへと同じ高さ96の小さいボタン。
+        // 隣の盤(上端310)・2曲先の盤(上端495)より上、見出し(下端148)の下に収める。
+        var cal = PanelAt("CalibrationButton", 210, 230, 300, 96, SongSelectVisuals.Edge, 2, 16);
         ButtonOn(cal.rectTransform, cal, 2, false).onClick.AddListener(() => { EnterCalibration(); if (ScreenTransition.IsBusy) ctl.StopPreview(); });
-        AddChargeBar(cal, 460, 180);
-        var t = Label(cal.transform, "CalibrationLabel", "", 52, new Vector2(0, -8), new Vector2(410, 106), UISkinKit.JapaneseFallbackFontAsset()); t.fontStyle = FontStyles.Bold;
+        AddChargeBar(cal, 300, 96);
+        var t = Label(cal.transform, "CalibrationLabel", "", 34, new Vector2(0, -8), new Vector2(270, 70), UISkinKit.JapaneseFallbackFontAsset()); t.fontStyle = FontStyles.Bold;
         Ruby(t, "<ruby=はんてい>判定</ruby><ruby=ちょうせい>調整</ruby>");
         var back = PanelAt("BackToTitle", 1220, 92, 340, 96, SongSelectVisuals.Edge, 2, 16);
         ButtonOn(back.rectTransform, back, 2, false).onClick.AddListener(ctl.ReturnToTitle);
@@ -554,7 +595,10 @@ public class SongSelectSkin : MonoBehaviour
         var value = SongAchievementStore.Load(ctl.SongIdAt(ctl.SelectedIndex), ctl.CurrentDifficultyName);
         int[] values = { value.s, value.sPlus, value.fc, value.ap };
         for (int i = 0; i < 4; i++) counts[i].Set(values[i].ToString() + "<size=24>回</size>");
-        highScore.Set(FormatHighScore(HighScoreStore.Load(ctl.SongIdAt(ctl.SelectedIndex), ctl.CurrentDifficultyName)));
+        var records = HighScoreStore.Load(ctl.SongIdAt(ctl.SelectedIndex), ctl.CurrentDifficultyName);
+        highScore.Set(FormatHighScore(records));
+        topScoresDifficulty.text = achievementDifficulty.text; topScoresDifficulty.color = achievementDifficulty.color;
+        ShowTopScores(records);
     }
     void Update()
     {
