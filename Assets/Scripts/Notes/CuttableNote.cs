@@ -50,8 +50,6 @@ public partial class CuttableNote : MonoBehaviour
     int registryIndex = -1;
     void Register()
     {
-        // Q の飾りの金は判定の候補(SaberCutJudge が読む一覧)に入れない。
-        if (IsDecoy) return;
         if (registryIndex >= 0 && registryIndex < activeNotes.Count && activeNotes[registryIndex] == this) return;
         registryIndex = activeNotes.Count; activeNotes.Add(this);
     }
@@ -123,7 +121,8 @@ public partial class CuttableNote : MonoBehaviour
         SaberHand lane = RequiredHand == SaberHand.Any ? cutterHand : RequiredHand;
         foreach (var earlier in activeNotes)
         {
-            if (earlier == this || earlier == null || !earlier.isActiveAndEnabled) continue;
+            // Q の飾りの金は、ほかのノーツの早切り防止に数えない(切らずに通すのが正しいノーツなので)。
+            if (earlier == this || earlier == null || !earlier.isActiveAndEnabled || earlier.IsDecoy) continue;
             if (earlier.JudgmentOwner != JudgmentOwner || earlier.IsCut || earlier.IsMissed || earlier.IsFinalized) continue;
             // ロングは最初の1カットで後続を解放する。残り回数を終えるまで後続を拘束しない。
             if (earlier.CutsAchieved > 0 || !SaberHandHelper.CanCut(earlier.RequiredHand, lane)) continue;
@@ -293,8 +292,7 @@ public partial class CuttableNote : MonoBehaviour
         double? swingSongTime, float directionTolerance, double? judgedSongTime = null, Vector2? judgedDirection = null,
         ulong swingId = 0)
     {
-        // Q の飾りの金は刃が通っても何も起きない(割れない・音・光・点なし。録画の自動切りもここで止まる)。
-        if (IsDecoy || !isActiveAndEnabled || IsCut || IsMissed || IsFinalized) return false;
+        if (DecoyHit || !isActiveAndEnabled || IsCut || IsMissed || IsFinalized) return false;
 
         if (RequireJudgeableOnCut && !IsJudgeable && !swingSongTime.HasValue) return false;
         if (MinimumCutSpeed > 0f && !(cutVelocity.magnitude >= MinimumCutSpeed)) return false;
@@ -303,6 +301,13 @@ public partial class CuttableNote : MonoBehaviour
         if (!SaberHandHelper.CanCut(RequiredHand, cutterHand)) return false;
         double? cutTime = swingSongTime ?? judgedSongTime;
         if (cutTime.HasValue && !CanBeginCutAt(cutTime.Value, cutterHand)) return false;
+        // Q の飾りの金(違う答えの柱)は、判定の窓の中で刃が通ったら割れずに暗くなり、MISS になる(HitDecoy)。
+        // 切れたことにはしない(切った音・光・点は出ない)。窓の外(早すぎ・遅すぎ)は何も起きない。
+        if (IsDecoy)
+        {
+            if (IsJudgeable) HitDecoy();
+            return false;
+        }
 
         // 向きの決まったノーツは、向きが合わない振りでは切らない(2026-10-22 ユーザー指定。以前は 60〜120° を1段下げて切っていた)。
         // 矢印だけで知らせて終了。判定・ミスは出さず、向きの合う振りで切り直せる。

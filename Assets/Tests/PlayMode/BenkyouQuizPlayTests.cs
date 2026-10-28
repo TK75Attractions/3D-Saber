@@ -159,17 +159,20 @@ public class BenkyouQuizPlayTests
             Assert.IsTrue(decoy.IsDecoy);
             Assert.IsTrue(decoy.IsGold, "飾りも同じ金");
             Assert.IsFalse(spawner.LiveNotes.Contains(decoy), "飾りは生きているノーツの一覧に入らない");
-            Assert.IsFalse(CuttableNote.ActiveNotes.Contains(decoy), "飾りは判定の候補に入らない");
+            Assert.AreEqual(QuizRules.PillarHitScale, decoy.HitScale, 1e-6, "飾りの当たりも柱と同じ");
             Assert.AreEqual(MemoryVeilLayers.AboveNoteSortingOrder, decoy.BodyRenderer.sortingOrder, "飾りも本物と同じく試験用紙の上");
             Assert.Greater(Mathf.Abs(decoy.LandingPosition.x - QuizRules.PillarX[rhythm.answer]), 1f, "飾りは正しくない柱");
             Assert.AreEqual(real.transform.localScale, decoy.transform.localScale, "同じ大きさ");
         }
-        var target = spawner.LiveDecoys[0];
-        int hits = score.HitCount;
+        var target = spawner.LiveDecoys.OrderBy(d => Math.Abs(d.HitTime - hit)).First();
+        int hits = score.HitCount, missed = score.MissCount;
         Swing(cutter, tracker, target.LandingPosition.x, hit);
         Assert.IsFalse(target.IsCut, "飾りの柱を振っても割れない");
+        Assert.IsTrue(target.DecoyHit, "違う答えの柱を切った");
         Assert.IsFalse(real.IsCut, "隣の柱の本物も切れない");
         Assert.AreEqual(hits, score.HitCount, "飾りは点にならない");
+        Assert.AreEqual(missed + 1, score.MissCount, "飾りを切ったら MISS");
+        Assert.AreEqual(0, score.Combo, "コンボが切れる");
         Swing(cutter, tracker, real.LandingPosition.x, hit);
         Assert.IsTrue(real.IsCut, "正しい柱を振ると本物が切れる");
         Assert.AreEqual(hits + 1, score.HitCount);

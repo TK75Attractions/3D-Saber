@@ -6,10 +6,11 @@ using UnityEngine;
 //   同じ色と発光(NoteVisuals)・同じ接近(ComputeNoteZ)・同じ着地の枠と判定窓の光と金の予兆(NoteTimingCue。予兆の「チリッ」も
 //   GoldNoteSfx が JudgmentOwner を見て同じに鳴らす)・同じ光の保護(GameplayCutFeedback.Track)。試験用紙の上へ上げるのは
 //   QuizMode(OnDecoySpawned)。床の印は飾りに無いので、紙の間は QuizMode が本物の側も止める。
-// 判定には入らない: CuttableNote.IsDecoy で ActiveNotes(SaberCutJudge の候補)に登録せず、刃が通っても切れない(CutCore)。
-//   liveNotes(MISS・曲の終わり・CameraImuJudgment・同時押しの線)にも入れず、OnNoteSpawned も出さない
-//   (ScoreManager・GoldNoteSfx・GateAccents など十数か所が聞いている)。点・コンボ・満点の分母・リザルト・録画の自動切り・
-//   譜面の lint(どれも chart.notes か ActiveNotes を見る)のどれにも関係しない。
+// 違う答え: 飾りも SaberCutJudge の候補に入り(当たりは本物と同じ PillarHitScale)、判定の窓の中で刃が通ったら割れずに暗くなって
+//   OnDecoyHit を出す。ScoreManager がそれを MISS にしてコンボを切る(10/28 ユーザー「違うやつ切ったらミスになるようにして」)。
+//   liveNotes(取り逃しの MISS・曲の終わり・CameraImuJudgment・同時押しの線)には入れず、OnNoteSpawned も出さない
+//   (ScoreManager・GoldNoteSfx・GateAccents など十数か所が聞いている)。満点の分母(chart.notes)・判定したノーツの数・
+//   早切り防止(CutOrderStartTime)・譜面の lint には関係しない。録画の自動切りは IsDecoy を見て飾りを切らない。
 // 届いたら判定面を少し過ぎながら 0.3 秒で薄れて消える(MISS の暗くなる見た目は出さない。届くまでは本物と同じ姿)。
 // 姿は届く時刻と曲の時計だけで決めるので、止まれば止まり、時計が戻れば戻る。
 // 片付け: 譜面のやり直し(SetChart)・QuizMode の終わり(ClearDecoys。曲の終わり・途中でやめたとき)・Spawner の破棄。
@@ -29,6 +30,9 @@ public partial class NoteSpawner
 
     // 飾りの金が出たとき(QuizMode が試験用紙の上へ上げる)。OnNoteSpawned は出さない。
     public event System.Action<CuttableNote> OnDecoySpawned;
+    // 飾りの金を間違えて切ったとき(ScoreManager が MISS にする)。
+    public event System.Action<CuttableNote> OnDecoyHit;
+    void HandleDecoyHit(CuttableNote decoy) => OnDecoyHit?.Invoke(decoy);
     public IReadOnlyList<CuttableNote> LiveDecoys => liveDecoys;
     public int DecoyCount => decoySchedule.Count;
     public int NextDecoyIndex => nextDecoy;
@@ -115,6 +119,9 @@ public partial class NoteSpawner
         // 前の飛行の購読と印を外してから飾りの印を立て直す(有効にする前。OnEnable の登録を IsDecoy で止める)。
         note.ResetForSpawn();
         note.IsDecoy = true;
+        // 当たりは本物の答えの柱と同じ大きさ(正しい柱を振って隣の飾りまで届かない。間を振れば両方に届く)。
+        note.HitScale = QuizRules.PillarHitScale;
+        note.OnDecoyHit += HandleDecoyHit;
         note.IsPooled = false;
         note.FragmentPool = null;
         note.ConfigureWind(DecoyShape, landing);
@@ -162,6 +169,9 @@ public partial class NoteSpawner
         double depth = dt;
         if (scrollMap != null) depth = dt > 0 ? ShapedRemaining(decoy.HitTime, songTime) : VisualRemaining(decoy.HitTime, songTime);
         decoy.transform.position = new Vector3(decoy.LandingPosition.x, decoy.LandingPosition.y, ComputeNoteZ(decoy, depth, Speed));
+        // 本物と同じ判定の窓の中だけ刃を受ける(間違えて切られたあとは受けない)。
+        UpdateJudgmentWindow(decoy, decoy.HitTime - JudgeClock(songTime), LateWindowFor(decoy));
+        if (decoy.DecoyHit) decoy.IsJudgeable = false;
         float veil = QuizRules.DecoyVeil(decoy.DecoyVeil, visibility);
         if (decoy.Veil != veil)
         {
