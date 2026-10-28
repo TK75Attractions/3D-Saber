@@ -114,6 +114,7 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         }
         PollCalibration(logNow);
         var keyboard = Keyboard.current;
+        if (PhoneSaberOperatorKeys.TextEntryActive) keyboard = null; // 結果画面の一言の欄で打っている間は F7・F8 を止める(日本語入力の変換キー)
         if (keyboard != null && keyboard.f8Key.wasPressedThisFrame)
         {
             bool shift = keyboard.leftShiftKey.isPressed || keyboard.rightShiftKey.isPressed;

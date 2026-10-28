@@ -95,6 +95,7 @@ public sealed class PhoneSaberLatencyProbe : MonoBehaviour
     void Update()
     {
         var keyboard = Keyboard.current;
+        if (PhoneSaberOperatorKeys.TextEntryActive) keyboard = null; // 結果画面の一言の欄で打っている間は F9 を止める(日本語入力の変換キー)
         bool toggle = keyboard != null && keyboard.f9Key.wasPressedThisFrame;
         if (autoBlocks > 0)
         {

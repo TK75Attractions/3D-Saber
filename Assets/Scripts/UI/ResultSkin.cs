@@ -45,6 +45,8 @@ public class ResultSkin : MonoBehaviour
 
     private ResultReveal reveal;
     private ResultController controller;
+    // 来場者の出口(次の曲へ / タイトルへ)。印の一言の欄を閉じたあと、選択をここへ戻す(ChartMarkCommentPanel)。
+    public Button BackButton { get; private set; }
     // Esc は2秒以内に2回でタイトルへ(来場者の画面で共通。仕様面の点検 2)。1回目は今までどおり演出も飛ばす(ResultReveal)。
     private readonly EscapeTwiceGate escapeGate = new EscapeTwiceGate();
     // スコアのカウントアップと音(爽快感カタログ 山4)が書き換える数字。
@@ -624,6 +626,7 @@ public class ResultSkin : MonoBehaviour
             var label = btn.GetComponentInChildren<Text>();
             if (label != null && label.text == "BACK")
             {
+                BackButton = btn;
                 var rt = btn.GetComponent<RectTransform>();
                 rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
                 rt.pivot = new Vector2(0.5f, 0.5f);

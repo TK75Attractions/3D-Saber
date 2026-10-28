@@ -20,6 +20,7 @@ public class ProjectorModeHotkey : MonoBehaviour
     void Update()
     {
         var kb = Keyboard.current;
+        if (ChartMarkCommentPanel.IsOpen) return; // 結果画面の一言の欄で打っている間は F4 を止める
         if (kb == null || !kb[toggleKey].wasPressedThisFrame) return;
         Toggle();
     }

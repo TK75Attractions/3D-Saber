@@ -17,6 +17,8 @@ using Object = UnityEngine.Object;
 
 // 2026-10-27 実際の結果画面で、印の一言を打つ欄(ChartMarkCommentPanel)。打っている間は Enter・Esc で結果画面を出ない。
 // F5 で閉じると「戻る」を選び直し、いつもの Enter で進める。ResultNavigationPlayTests と同じ仮想キーボードの用意。
+// 2026-10-28 結果画面の F5 で開き直す・変換中の F5 では閉じない・開く前の選択が無くても「戻る」へ戻す。
+// たまに落ちた最初の Assert は、残っていた常駐の印(0.6秒後に欄を自動で開いて選択を外す)を先に消し、選択が決まるまで待つ。
 public class ChartMarkPlayTests
 {
     readonly Dictionary<FieldInfo, object> sessionValues = new Dictionary<FieldInfo, object>();
@@ -27,10 +29,18 @@ public class ChartMarkPlayTests
     Keyboard keyboard;
     InputSettings originalInputSettings;
     InputSettings testInputSettings;
+    ChartMarkRecorder recorder;
+
+    static GameObject Selected => EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
 
     [UnitySetUp]
     public IEnumerator SetUp()
     {
+        // 常駐の印が残っていると、結果画面に入って0.6秒後に欄を自動で開き、選択を外す(たまに落ちた原因の候補)。
+        foreach (var old in Object.FindObjectsByType<ChartMarkRecorder>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            Object.DestroyImmediate(old.gameObject);
+        if (ChartMarkCommentPanel.Current != null) Object.DestroyImmediate(ChartMarkCommentPanel.Current.gameObject);
+        PhoneSaberOperatorKeys.TextEntryActive = false;
         originalInputSettings = InputSystem.settings;
         testInputSettings = Object.Instantiate(originalInputSettings);
         InputSystem.settings = testInputSettings;
@@ -86,6 +96,9 @@ public class ChartMarkPlayTests
     public IEnumerator TearDown()
     {
         if (ChartMarkCommentPanel.Current != null) ChartMarkCommentPanel.Current.Close();
+        if (ChartMarkCommentPanel.Current != null) ChartMarkCommentPanel.Current.Close();
+        if (recorder != null) Object.DestroyImmediate(recorder.gameObject);
+        recorder = null;
         yield return WaitForTransition();
         if (keyboard != null && keyboard.added) InputSystem.RemoveDevice(keyboard);
         if (originalInputSettings != null) InputSystem.settings = originalInputSettings;
@@ -101,13 +114,16 @@ public class ChartMarkPlayTests
         ChartMarks.BeginPlay();
         ChartMarks.FolderOverride = null;
         InputManager.EscapeSuppressed = false;
+        PhoneSaberOperatorKeys.TextEntryActive = false;
         if (Directory.Exists(folder)) Directory.Delete(folder, true);
     }
 
     [UnityTest]
     public IEnumerator TypingKeepsTheResultScreenAndF5HandsTheExitBack()
     {
-        Assert.AreEqual(back.gameObject, EventSystem.current.currentSelectedGameObject);
+        // 結果画面が「戻る」を選ぶまで(最大10コマ)待つ。
+        for (int i = 0; i < 10 && Selected != back.gameObject; i++) yield return null;
+        Assert.AreEqual(back.gameObject, Selected, "結果画面は「戻る」を選んで始まる");
         keyboard.MakeCurrent();
         var panel = ChartMarkCommentPanel.Open(ChartMarks.Current);
         Assert.NotNull(panel);
@@ -138,6 +154,65 @@ public class ChartMarkPlayTests
         yield return Tap(Key.Enter);
         yield return WaitForTransition();
         Assert.AreNotEqual("Result", SceneManager.GetActiveScene().name, "閉じたあとはいつもの Enter で進める");
+    }
+
+    [UnityTest]
+    public IEnumerator F5OnTheResultScreenReopensThePanelAndTheExitComesBack()
+    {
+        recorder = new GameObject("ChartMarkRecorderForTest").AddComponent<ChartMarkRecorder>();
+        Assert.AreSame(recorder, ChartMarkRecorder.Instance);
+        Assert.AreEqual(ChartMarkRecorder.StateResult, ChartMarkRecorder.PlayState);
+        Assert.IsFalse(recorder.TryMark(ChartMarks.SourcePhone, out string message), "結果画面では印を付けない");
+        Assert.AreEqual(ChartMarkRecorder.NotPlayingMessage, message);
+        Assert.AreEqual(2, ChartMarks.Count);
+
+        keyboard.MakeCurrent();
+        yield return null;
+        // 開く前の選択が無くても、閉じたら結果画面の「戻る」を選ぶ。
+        EventSystem.current.SetSelectedGameObject(null);
+        yield return Tap(Key.F5);
+        var panel = ChartMarkCommentPanel.Current;
+        Assert.NotNull(panel, "結果画面の F5 で一言の欄を開く");
+        Assert.IsTrue(PhoneSaberOperatorKeys.TextEntryActive, "打っている間は運営の F キーを止める");
+        foreach (char c in "ab") InputSystem.QueueTextEvent(keyboard, c);
+        yield return null;
+        yield return null;
+        Assert.AreEqual("ab", panel.TextAt(0));
+
+        yield return Tap(Key.F5);
+        Assert.IsFalse(ChartMarkCommentPanel.IsOpen, "F5 で閉じる(閉じた F5 で開き直さない)");
+        Assert.IsFalse(PhoneSaberOperatorKeys.TextEntryActive);
+        Assert.AreEqual(back.gameObject, Selected, "閉じたら「戻る」を選ぶ");
+        Assert.AreEqual("ab", JsonUtility.FromJson<ChartMarkFile>(File.ReadAllText(ChartMarks.CurrentPath)).marks[0].comment);
+
+        yield return Tap(Key.F5);
+        Assert.IsTrue(ChartMarkCommentPanel.IsOpen, "閉じたあとでも F5 でもう一度開ける");
+        Assert.AreEqual("ab", ChartMarkCommentPanel.Current.TextAt(0), "保存した一言が出る");
+        ChartMarkCommentPanel.Current.Close();
+        yield return null;
+        yield return null;
+        Assert.AreEqual("Result", SceneManager.GetActiveScene().name);
+    }
+
+    [UnityTest]
+    public IEnumerator F5WaitsForTheConversionBeforeClosing()
+    {
+        keyboard.MakeCurrent();
+        var panel = ChartMarkCommentPanel.Open(ChartMarks.Current);
+        Assert.NotNull(panel);
+        yield return null;
+        panel.Compose("へんかん");
+        yield return Tap(Key.F5);
+        Assert.IsTrue(ChartMarkCommentPanel.IsOpen, "変換中の F5 では閉じない");
+        StringAssert.Contains(ChartMarkCommentPanel.ConfirmFirstNotice, panel.FooterText, "変換を確定してから F5 と案内する");
+        Assert.AreEqual("Result", SceneManager.GetActiveScene().name);
+
+        // 変換が終わってから(終わったコマは数えない)の F5 で閉じる。
+        panel.Compose("");
+        yield return null;
+        yield return null;
+        yield return Tap(Key.F5);
+        Assert.IsFalse(ChartMarkCommentPanel.IsOpen, "変換を確定したあとの F5 で閉じる");
     }
 
     [UnityTest]

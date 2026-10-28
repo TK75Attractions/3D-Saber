@@ -3,11 +3,11 @@ param()
 
 $ErrorActionPreference = 'Stop'
 
-# 台同士のランキング同期(UDP 5017)と、スマホから譜面に印を付ける操作盤(TCP 5020)の受信を、
+# 台同士のランキング同期(UDP 5017)と、スマホから譜面に印を付ける操作盤(TCP 5020〜5029)の受信を、
 # 同じネットワーク(ローカルサブネット)の端末からだけ許可します(2026-10-28)。
 # PhoneSaber の受信(UDP 5005〜5007)は PhoneSaber/windows/Allow-PhoneSaber-Firewall.ps1 で別に許可します。
 # Windows のモバイルホットスポットは Public 扱いになることがあるので、Private と Public の両方で許可します。
-Write-Host 'ゲーム: UDP 5017(ランキング同期)と TCP 5020(スマホで譜面に印)を、同じネットワークの端末から受信できるようにします。'
+Write-Host 'ゲーム: UDP 5017(ランキング同期)と TCP 5020〜5029(スマホで譜面に印)を、同じネットワークの端末から受信できるようにします。'
 Write-Host '管理者権限が必要です。Private / Public(ホットスポット)で有効、送信元は LocalSubnet のみ。再実行しても規則は増えません。'
 
 $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
@@ -17,16 +17,17 @@ if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administra
 }
 
 $rules = @(
-    @{ Port = 5017; Protocol = 'UDP'; What = 'ランキング同期' },
-    @{ Port = 5020; Protocol = 'TCP'; What = 'スマホで譜面に印' }
+    @{ Name = 'BeatTraceSlash-UDP-5017'; Port = '5017'; Protocol = 'UDP'; What = 'ランキング同期' },
+    # 5020 が使えないときは 5021〜5029 で待ち受けます。名前は前の版のまま(再実行で範囲を広げます)。
+    @{ Name = 'BeatTraceSlash-TCP-5020'; Port = '5020-5029'; Protocol = 'TCP'; What = 'スマホで譜面に印' }
 )
 foreach ($rule in $rules) {
-    $ruleName = "BeatTraceSlash-$($rule.Protocol)-$($rule.Port)"
+    $ruleName = $rule.Name
     $settings = @{
         PolicyStore = 'PersistentStore'
         Name = $ruleName
         DisplayName = "Beat Trace Slash $($rule.Protocol) $($rule.Port) $($rule.What) (LocalSubnet)"
-        Description = "台同士のランキング同期 UDP 5017 / スマホの印 TCP 5020。Private/Public、送信元は LocalSubnet のみ。"
+        Description = "台同士のランキング同期 UDP 5017 / スマホの印 TCP 5020〜5029。Private/Public、送信元は LocalSubnet のみ。"
         Direction = 'Inbound'
         Action = 'Allow'
         Enabled = 'True'

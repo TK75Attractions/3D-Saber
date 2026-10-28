@@ -21,6 +21,8 @@ public sealed class PhoneSaberOperatorKeys : MonoBehaviour
     }
 
     PhoneSaberOperatorToast toast;
+    // 結果画面の一言の欄(ChartMarkCommentPanel)で文字を打っている間は true。運営の F キー(F7〜F10)を止める(日本語入力の変換キーと重なる)。
+    public static bool TextEntryActive;
     static bool lastSentTrackLock = true; // スマホの新しい既定 ON に合わせる。
     static int shutterISOIndex = 3; // 既定 ISO160 → 125 → 100 → 80 → 64 → 2000 → 250 → 200 → 160
     static int shutterIndex = 3; // 既定 1/2000 → OFF → 1/500 → 1/1000 → 1/2000

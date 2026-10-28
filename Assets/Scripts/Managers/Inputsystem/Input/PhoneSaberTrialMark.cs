@@ -28,6 +28,7 @@ public sealed class PhoneSaberTrialMark : MonoBehaviour
     void Update()
     {
         var keyboard = Keyboard.current;
+        if (PhoneSaberOperatorKeys.TextEntryActive) return; // 結果画面の一言の欄で打っている間は F10 を止める(日本語入力の変換キー)
         if (keyboard == null || !keyboard.f10Key.wasPressedThisFrame) return;
         Trial++;
         var input = InputPoint.Instance;
