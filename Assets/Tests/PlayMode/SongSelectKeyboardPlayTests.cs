@@ -659,13 +659,18 @@ public class SongSelectKeyboardPlayTests
             deadline = countFrom + 2.5;
             while (view.HeadlineShown != "再開まで 2" && Time.realtimeSinceStartupAsDouble < deadline) { Send(); yield return null; }
             Assert.AreEqual("再開まで 2", view.HeadlineShown, "出力先が変わっても数えるのは止めない");
+            // 読み直しで音を展開する間(約0.25秒)は main スレッドが止まる。その間を途切れに数えて輪合わせへ戻さない(2026-10-29。
+            // 戻すと輪の外の剣は5秒待ってから数え直すので、ここで落ちていた。展開がこの PC で 0.23〜0.25 秒のため、まとめて流すときだけ揺れた)。
+            bool rewound = false;
             deadline = Time.realtimeSinceStartupAsDouble + 6;
             while ((AudioOutputRecovery.RecoveryCount == recoveries || manager.AudioReloading) && Time.realtimeSinceStartupAsDouble < deadline)
-            { Send(); yield return null; }
+            { Send(); yield return null; rewound |= manager.TrackingWatch.State == PlayTrackingWatch.Phase.Waiting; }
             Assert.AreEqual(AudioOutputRecovery.Action.ReloadSong, AudioOutputRecovery.LastAction);
             Assert.False(manager.AudioReloading, "止めている間に曲の音を読み直す");
             deadline = Time.realtimeSinceStartupAsDouble + 6;
-            while (!manager.songPlayer.IsPlaying && Time.realtimeSinceStartupAsDouble < deadline) { Send(); yield return null; }
+            while (!manager.songPlayer.IsPlaying && Time.realtimeSinceStartupAsDouble < deadline)
+            { Send(); yield return null; rewound |= manager.TrackingWatch.State == PlayTrackingWatch.Phase.Waiting; }
+            Assert.False(rewound, "読み直しで止まったフレームを途切れに数えず、輪合わせへ戻さない");
             Assert.True(manager.songPlayer.IsPlaying, "数え終えたら続きから再開する");
             Assert.That(manager.songPlayer.SongTime, Is.GreaterThanOrEqualTo(pausedAt - .000001), "止めた位置から続ける");
             Assert.AreEqual("Game", SceneManager.GetActiveScene().name);

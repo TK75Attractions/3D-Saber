@@ -152,6 +152,49 @@ public class SpecReview1021Tests
         Assert.AreEqual(PlayTrackingWatch.Phase.Playing, watch.State);
     }
 
+    // 2026-10-29: 曲の読み直しで音を展開する間(約0.25秒)など、main スレッドが止まったフレームは途切れに数えない(3・2・1 を輪合わせへ戻さない)。
+    // ふつうの間隔のフレームで届かない・止まる前から届いていなかった色は今までどおり。
+    [Test]
+    public void TrackingWatchDoesNotCountAFrozenFrameAsAGap()
+    {
+        var sender = new PlayTrackingWatch();
+        double start = CountdownByFrames(sender), before = start + 1;
+        Frame(sender, before, before);
+        Frame(sender, before + .266, before);
+        Assert.AreEqual(PlayTrackingWatch.Phase.Countdown, sender.State, "送り手も一緒に止まった 0.266 秒(PlayMode の試験と同じ並び)は途切れに数えない");
+        Frame(sender, before + .3, before + .27);
+        Assert.AreEqual(PlayTrackingWatch.Phase.Countdown, sender.State, "止まったあとに届いた位置で数え続ける");
+        var request = PlayTrackingWatch.Request.None;
+        double resumedAt = double.NaN;
+        for (int i = 1; request == PlayTrackingWatch.Request.None && i <= 90; i++)
+        {
+            double now = before + .3 + i / 30.0;
+            request = Frame(sender, now, now);
+            resumedAt = now;
+        }
+        Assert.AreEqual(PlayTrackingWatch.Request.Resume, request);
+        Assert.AreEqual(start + PlayTrackingWatch.ResumeCountdownSeconds, resumedAt, 1 / 30.0 + 1e-6, "数え始めから3秒で再開する(延びない)");
+
+        var phone = new PlayTrackingWatch();
+        start = CountdownByFrames(phone); before = start + 1;
+        Frame(phone, before, before);
+        Frame(phone, before + .3, before + .28);
+        Assert.AreEqual(PlayTrackingWatch.Phase.Countdown, phone.State, "止まっている間もスマホからは届いていた(受信の間が 0.28 秒に見える)");
+
+        var lost = new PlayTrackingWatch();
+        start = CountdownByFrames(lost); before = start + 1;
+        Frame(lost, before, before);
+        for (int i = 1; i <= 9; i++) Frame(lost, before + i / 30.0, double.NaN);
+        Assert.AreEqual(PlayTrackingWatch.Phase.Waiting, lost.State, "ふつうに見ていて 0.25 秒届かなければ今までどおり待ち直す");
+
+        var stale = new PlayTrackingWatch();
+        for (int i = 0; i <= 300; i++) Frame(stale, i / 30.0, i / 30.0);
+        for (int i = 301; i <= 387; i++) Frame(stale, i / 30.0, double.NaN);
+        Assert.AreEqual(PlayTrackingWatch.Phase.Playing, stale.State);
+        Assert.AreEqual(PlayTrackingWatch.Request.Pause, Frame(stale, 387 / 30.0 + .3, double.NaN),
+            "止まる前から届いていなかった色は、止まっていた間も届いていないまま(2.9 秒 + 0.3 秒で止める)");
+    }
+
     [Test]
     public void TrackingWatchIgnoresRepeatedOrBrokenTimes()
     {
@@ -248,6 +291,26 @@ public class SpecReview1021Tests
     }
 
     static PlayTrackingWatch.Phase StepAt(PlayTrackingWatch watch, double now) { watch.Step(now, true); return watch.State; }
+
+    // 本編と同じ順(フレームの初め → 届いた赤の位置 → 判定)で1フレーム進める。arrived が NaN なら届いていない。
+    static PlayTrackingWatch.Request Frame(PlayTrackingWatch watch, double now, double arrived, int inside = 0)
+    {
+        watch.BeginFrame(now);
+        if (!double.IsNaN(arrived)) watch.ObserveUsable(0, arrived);
+        return watch.Step(now, true, inside);
+    }
+
+    // 赤だけ届く台で、10 秒届いたあと見失って止め、輪にそろえて 3・2・1 を数え始めるまでを 1/30 秒のフレームで進める。数え始めの時刻を返す。
+    static double CountdownByFrames(PlayTrackingWatch watch)
+    {
+        int i = 0;
+        for (; i <= 300; i++) Frame(watch, i / 30.0, i / 30.0);
+        for (; i <= 420; i++) Frame(watch, i / 30.0, double.NaN);
+        Assert.AreEqual(PlayTrackingWatch.Phase.Waiting, watch.State, "3 秒届かなければ止める");
+        for (; watch.State == PlayTrackingWatch.Phase.Waiting && i <= 600; i++) Frame(watch, i / 30.0, i / 30.0, 1);
+        Assert.AreEqual(PlayTrackingWatch.Phase.Countdown, watch.State, "輪にそろえたら数え始める");
+        return (i - 1) / 30.0;
+    }
 
     static object[] Snapshot() => new object[]
     {

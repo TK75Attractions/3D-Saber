@@ -1088,6 +1088,10 @@ public class GamePlayManager : MonoBehaviour
     {
         // 中断・結果へ進むと決めたあと(幕が閉じる間)は、見張りも表示も止める。数えかけの 3・2・1 の刻みや再開の音を鳴らさない
         // (Codex の点検で 2026-10-22 に追加)。音の出力先が変わって曲の音を読み直している間も、見張りはふつうに動かす(曲は止めない)。
+        double now = Time.realtimeSinceStartupAsDouble;
+        // main スレッドが止まっていたフレーム(曲の読み直しで音を展開する約0.25秒など)は、止まっていた間を剣の途切れに数えない(2026-10-29)。
+        // 見張りを止めている間も毎フレーム渡す(あとで空いた時間を、止まっていたと取り違えない)。
+        trackingWatch.BeginFrame(now);
         if (trackingView == null) return;
         if (leaving || finished)
         {
@@ -1097,7 +1101,6 @@ public class GamePlayManager : MonoBehaviour
             return;
         }
         var input = InputPoint.Instance;
-        double now = Time.realtimeSinceStartupAsDouble;
         if (input != null)
         {
             if (input.LastReceivedTime >= trackingSince && input.HasValidStickEndpoints) trackingWatch.ObserveUsable(0, input.LastReceivedTime);

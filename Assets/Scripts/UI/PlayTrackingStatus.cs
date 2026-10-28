@@ -25,6 +25,8 @@ public sealed class PlayTrackingWatch
     readonly Feed[] feeds = new Feed[2];
     double countdownStart;
     int countdownMask;
+    // 前のフレームの時刻(BeginFrame)。
+    double frameAt = double.NaN;
     readonly PlayResumePose pose = new PlayResumePose();
     int SeenMask => (Seen(0) ? 1 : 0) | (Seen(1) ? 2 : 0);
     public int FreshMask(double now) =>
@@ -47,6 +49,23 @@ public sealed class PlayTrackingWatch
             { State = Phase.Waiting; pose.Reset(); }
         }
         feed.seen = true; feed.last = receivedAt;
+    }
+
+    // 本編のフレームの初め(ObserveUsable より前)に毎フレーム呼ぶ。前のフレームから MaxGapSeconds より長く空いたとき
+    // (曲の読み直しで音を展開する間など、main スレッドが止まっていた)、その直前まで届いていた色は止まっていた間も届いていたものとして扱う。
+    // 見ていない間に途切れたかは分からないので、止まった分を途切れに数えない(2026-10-29: 3・2・1 の途中で音の出力先が変わると、
+    // 約0.25秒の展開のあいだを途切れと見て輪合わせへ戻っていた)。直前にもう届いていなかった色はそのまま。呼ばなければ今までどおり。
+    public void BeginFrame(double now)
+    {
+        if (double.IsNaN(now) || double.IsInfinity(now)) return;
+        double previous = frameAt;
+        frameAt = now;
+        if (!(now - previous > MaxGapSeconds)) return;
+        for (int i = 0; i < feeds.Length; i++)
+        {
+            ref Feed feed = ref feeds[i];
+            if (feed.seen && previous - feed.last <= MaxGapSeconds && feed.last < now) feed.last = now;
+        }
     }
 
     public bool AnySeen => feeds[0].seen || feeds[1].seen;
