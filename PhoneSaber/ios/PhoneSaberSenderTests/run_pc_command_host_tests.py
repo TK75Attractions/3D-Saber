@@ -48,7 +48,7 @@ def main():
     func setTrackLockEnabled(_ value: Bool) { effects.append("tracklock") }
     func setExposureBias(_ value: Int, commandID: Int?) { effects.append("exposure") }
     func clearIgnoreZones() { effects.append("clear-ignore") }
-    func learnIgnoreZones(_ colors: [Color], completion: @escaping (Int, Int) -> Void) {
+    func learnIgnoreZones(_ colors: [Color], refused: (() -> Void)? = nil, completion: @escaping (Int, Int) -> Void) {
         effects.append("ignore"); ignoreCompletion = completion
     }
     func learnPlayArea(seconds: Int, commandID: Int?, completion: @escaping (Int, Bool, LANLivenessProbe.PCCommand.Area?) -> Void) {

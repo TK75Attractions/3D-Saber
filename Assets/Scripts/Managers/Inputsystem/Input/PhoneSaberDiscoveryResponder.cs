@@ -278,7 +278,7 @@ public sealed class PhoneSaberAcknowledgement
                 int.Parse(detail.Substring(0, detail.Length - 1)) >= 1 && int.Parse(detail.Substring(0, detail.Length - 1)) <= 60;
             case "learned": return detail.StartsWith("samples") &&
                 (Number(detail.Substring(7)) || TryLearnedBounds(detail, out _));
-            case "failed": return detail.StartsWith("samples") && Number(detail.Substring(7));
+            case "failed": return detail == "moving-blade-refused" || detail.StartsWith("samples") && Number(detail.Substring(7));
             // 形式のminISOで制限された実適用値は、選択肢外や小数にもなる。
             case "shutter-iso": return double.TryParse(detail, System.Globalization.NumberStyles.AllowDecimalPoint,
                 System.Globalization.CultureInfo.InvariantCulture, out double iso) && iso > 0 && !double.IsInfinity(iso);

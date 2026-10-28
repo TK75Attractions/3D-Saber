@@ -266,7 +266,7 @@ public sealed class PhoneSaberOperatorKeys : MonoBehaviour
                 ? "無視する物を覚えています（剣を消して3秒待つ）"
                 : "プレイ範囲を覚えています（" + ack.Detail.TrimEnd('s') + "秒、振りやすい範囲で上下左右に振る）"; break;
             case "learned": result = "プレイ範囲を覚えました（" + ack.SampleCount + "回分）"; break;
-            case "failed": result = (operationResult ? "範囲を" : "") + "覚えられませんでした（振りが足りません）"; break;
+            case "failed": result = ack.Detail == "moving-blade-refused" ? "動いている刃なので無視しませんでした" : (operationResult ? "範囲を" : "") + "覚えられませんでした（振りが足りません）"; break;
             case "shutter-iso": result = "固定シャッター ISO " + ack.Detail; break;
             case "shutter-emitter": result = "低ISOの色付き発光体 " + (ack.Detail == "on" ? "ON（固定・ISO2000未満で有効）" : "OFF"); break;
             case "auto-iso": result = "ISO自動調整 " + (ack.Detail == "on" ? "ON（明るいと感度を下げる）" : "OFF"); break;

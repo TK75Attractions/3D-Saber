@@ -402,6 +402,25 @@ public class PhoneSaberAcknowledgementTests
         StringAssert.EndsWith("（送信中）", PhoneSaberOperatorKeys.StatusText(store, 1001));
     }
 
+    [TestCase("ignore=red")]
+    [TestCase("ignore=blue")]
+    [TestCase("ignore=both")]
+    public void MovingBladeRefusalIsTerminalAndDisplayedAfterLateLearningReply(string command)
+    {
+        var store = new PhoneSaberAcknowledgementStore();
+        store.Queue(7, command, 0);
+        Assert.IsTrue(PhoneSaberAcknowledgement.TryParse(
+            "PHONESABER_ACK 1 id=7 station=A platform=ios result=failed detail=moving-blade-refused", out var ack));
+        Assert.IsTrue(store.Receive(ack, "phone"));
+        store.Receive(Ack(7, "learning", "3s", station: "A"), "phone");
+        Assert.AreEqual("failed", store.Read(7)[0].Result);
+        Assert.IsEmpty(store.PendingCommands(1, "phone"));
+        const string expected = "iPhone（台A）: 動いている刃なので無視しませんでした";
+        Assert.AreEqual(expected, PhoneSaberOperatorKeys.StatusText(store, 1));
+        Assert.AreEqual(expected, PhoneSaberOperatorKeys.ToastText(store, 1));
+        Assert.AreEqual(expected, PhoneSaberOperatorKeys.ResultText(ack, command, operationResult: true));
+    }
+
     [TestCase("ignored", "red1-blue1", "赤と青を無視しました（赤1・青1）")]
     [TestCase("ignored", "red1-blue0", "赤を無視しました（赤1・青0）")]
     [TestCase("ignored", "red0-blue1", "青を無視しました（赤0・青1）")]

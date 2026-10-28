@@ -1773,7 +1773,7 @@ final class CameraViewModel: NSObject, ObservableObject {
         learnIgnoreZones([color])
     }
 
-    private func learnIgnoreZones(_ colors: [SaberColor], completion: ((Int, Int) -> Void)? = nil) {
+    private func learnIgnoreZones(_ colors: [SaberColor], refused: (() -> Void)? = nil, completion: ((Int, Int) -> Void)? = nil) {
         cancelIgnoreLearning()
         let id = processor.startIgnoreLearning(colors)
         ignoreLearningIDs.insert(id)
@@ -1781,7 +1781,15 @@ final class CameraViewModel: NSObject, ObservableObject {
         Task { @MainActor [weak self] in
             try? await Task.sleep(nanoseconds: UInt64(SaberIgnoreLearner.seconds * 1_000_000_000))
             guard let self, self.ignoreLearningIDs.contains(id) else { return }
-            let learned = self.processor.finishIgnoreLearning(id)
+            var movingBladeRefused = false
+            let learned = self.processor.finishIgnoreLearning(id, reportRefusal: { movingBladeRefused = $0 })
+            self.ignoreLearningIDs.remove(id)
+            self.ignoreLearning = !self.ignoreLearningIDs.isEmpty
+            if movingBladeRefused {
+                ConnectivityLog.shared.record("IGNORE_ZONE", "moving-blade-refused")
+                refused?()
+                return
+            }
             var counts: [SaberColor: Int] = [:]
             for color in colors {
                 let added = Array((learned[color] ?? []).suffix(Self.maximumIgnoreZones))
@@ -1789,8 +1797,6 @@ final class CameraViewModel: NSObject, ObservableObject {
                 counts[color] = added.count
             }
             self.applyIgnoreZones()
-            self.ignoreLearningIDs.remove(id)
-            self.ignoreLearning = !self.ignoreLearningIDs.isEmpty
             let red = counts[.red] ?? 0, blue = counts[.blue] ?? 0
             ConnectivityLog.shared.record("IGNORE_ZONE", "learned red\(red)-blue\(blue)")
             completion?(red, blue)
@@ -1854,7 +1860,8 @@ final class CameraViewModel: NSObject, ObservableObject {
         if command.clearIgnore { clearIgnoreZones(); ack("cleared", "ignore") }
         if let name = command.ignore {
             ack("learning", "3s")
-            learnIgnoreZones(name == "both" ? [.red, .blue] : name == "red" ? [.red] : [.blue]) { red, blue in
+            learnIgnoreZones(name == "both" ? [.red, .blue] : name == "red" ? [.red] : [.blue],
+                             refused: { ack("failed", "moving-blade-refused") }) { red, blue in
                 ack(red + blue > 0 ? "ignored" : "nothing", "red\(red)-blue\(blue)")
             }
         }

@@ -259,15 +259,22 @@ final class FrameProcessor: @unchecked Sendable {
         return ignoreInspection.take(session: session, at: clock())
     }
     private var ignoreLearners: [UUID: SaberIgnoreLearner] = [:]
+    // pendingLockで保護。track-lock OFFでも登録事故を防ぐため、認識用とは独立して記録する。
+    private let ignoreSafetyTrack = SaberTrackLock()
     func startIgnoreLearning(_ colors: [SaberColor]) -> UUID {
         pendingLock.lock(); defer { pendingLock.unlock() }
         let id = UUID()
-        ignoreLearners[id] = SaberIgnoreLearner(startedAt: clock(), colors: colors)
+        let now = clock()
+        var learner = SaberIgnoreLearner(startedAt: now, colors: colors)
+        learner.refuseMoving(ignoreSafetyTrack.recentlyMovingColors(now: now))
+        ignoreLearners[id] = learner
         return id
     }
-    func finishIgnoreLearning(_ id: UUID) -> [SaberColor: [SaberIgnoreZone]] {
+    func finishIgnoreLearning(_ id: UUID, reportRefusal: ((Bool) -> Void)? = nil) -> [SaberColor: [SaberIgnoreZone]] {
         pendingLock.lock(); defer { pendingLock.unlock() }
-        return ignoreLearners.removeValue(forKey: id)?.zones ?? [:]
+        let learner = ignoreLearners.removeValue(forKey: id)
+        reportRefusal?(learner?.movingBladeRefused ?? false)
+        return learner?.zones ?? [:]
     }
     func cancelIgnoreLearning() {
         pendingLock.lock(); ignoreLearners.removeAll(); pendingLock.unlock()
@@ -433,6 +440,7 @@ final class FrameProcessor: @unchecked Sendable {
             pendingLock.lock()
             generationSnapshot = generation
             ignoreLearners = [:]
+            ignoreSafetyTrack.reset()
             pendingLock.unlock()
             return generation
         }
@@ -834,8 +842,9 @@ final class FrameProcessor: @unchecked Sendable {
         let grownArea = lockState?.grownPlayArea(area, selected: sabers, width: width, height: height, now: processingStart)
         pendingLock.lock()
         if let frameAnalysis = observedAnalysis {
+            let movingColors = ignoreSafetyTrack.observeIgnoreMotion(frameAnalysis, width: width, height: height, now: processingStart)
             for id in Array(ignoreLearners.keys) {
-                ignoreLearners[id]?.add(frameAnalysis, width: width, height: height, now: processingStart)
+                ignoreLearners[id]?.add(frameAnalysis, width: width, height: height, now: processingStart, movingColors: movingColors)
             }
         }
         if lockEnabled, trackLockEnabled, !learningArea, playAreaLearner == nil, areaRevision == playAreaRevision {

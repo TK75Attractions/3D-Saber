@@ -585,8 +585,20 @@ struct SaberIgnoreLearner {
     let colors: [SaberColor]
     private(set) var zones: [SaberColor: [SaberIgnoreZone]] = [:]
 
-    mutating func add(_ analysis: SaberFrameAnalysis, width: Int, height: Int, now: TimeInterval) {
+    private(set) var movingBladeRefused = false
+
+    // 3秒の途中で動きが判明した場合も、先に集めた範囲を含めて保存しない。
+    mutating func refuseMoving(_ movingColors: Set<SaberColor>) {
+        guard colors.contains(where: { movingColors.contains($0) }) else { return }
+        movingBladeRefused = true
+        zones = [:]
+    }
+
+    mutating func add(_ analysis: SaberFrameAnalysis, width: Int, height: Int, now: TimeInterval,
+                      movingColors: Set<SaberColor> = []) {
         guard now >= startedAt, now < startedAt + Self.seconds else { return }
+        refuseMoving(movingColors)
+        guard !movingBladeRefused else { return }
         for color in colors {
             for candidate in analysis.candidates[color] ?? [] {
                 var zone = SaberIgnoreZone(around: candidate.endpoints, width: width, height: height)
@@ -722,6 +734,29 @@ final class SaberTrackLock {
     private(set) var suppressed: Set<SaberColor> = []
 
     func reset() { tracks = [:]; motions = [:]; stationary = [:]; dimensions = nil; suppressed = [] }
+
+    /// 無視登録専用のインスタンスで既存の動き記録を再利用する。認識用の状態には触れない。
+    func observeIgnoreMotion(_ analysis: SaberFrameAnalysis, width: Int, height: Int, now: Double) -> Set<SaberColor> {
+        if dimensions.map({ $0 != (width, height) }) ?? true {
+            reset()
+            dimensions = (width, height)
+        }
+        for color in [SaberColor.red, .blue] {
+            let candidates = analysis.candidates[color] ?? []
+            _ = movingAlternatives(candidates.filter { $0.isEmitterEligible }, observed: candidates, color: color,
+                                   width: width, height: height, now: now)
+        }
+        return recentlyMovingColors(now: now)
+    }
+
+    func recentlyMovingColors(now: Double) -> Set<SaberColor> {
+        Set(motions.compactMap { color, history in
+            history.contains { motion in
+                now >= motion.updated
+                    && motion.movedAt.map { now >= $0 && now - $0 <= Self.stationarySeconds } == true
+            } ? color : nil
+        })
+    }
 
     /// 単独の静止刃は維持する。離れたeligibleの実測移動がある時だけ静止物を降格する。
     /// 降格後にその物体しか残らない時は送らず、消失・移動・resetで忘れる。

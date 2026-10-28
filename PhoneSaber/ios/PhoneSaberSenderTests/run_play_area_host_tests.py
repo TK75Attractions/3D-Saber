@@ -73,7 +73,7 @@ final class LANLivenessProbe {
     func setTrackLockEnabled(_ value: Bool) {}
     func setExposureBias(_ value: Int, commandID: Int?) {}
     func clearIgnoreZones() {}
-    func learnIgnoreZones(_ colors: [SaberColor], completion: @escaping (Int, Int) -> Void) {}
+    func learnIgnoreZones(_ colors: [SaberColor], refused: (() -> Void)? = nil, completion: @escaping (Int, Int) -> Void) {}
     func setAutoClipEnabled(_ enabled: Bool, commandID: Int?) {}
     func requestAutoClip(commandID: Int?, reason: String?) {}
 '''

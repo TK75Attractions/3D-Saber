@@ -518,6 +518,68 @@ final class AutoClipTests: XCTestCase {
         }
     }
 
+    func testIgnoreSafetyRefusesRecentMotionAndMotionDuringLearning() {
+        for color in [SaberColor.red, .blue] {
+            for size in [480, 960] {
+                let scale = size / 480
+                let safety = SaberTrackLock()
+                func frame(_ x: Int) -> SaberFrameAnalysis {
+                    .init(candidates: [color: [Self.candidate((x * scale, 100 * scale),
+                                                             (x * scale, 200 * scale))]], selected: [:])
+                }
+                _ = safety.observeIgnoreMotion(frame(100), width: size, height: size, now: 10)
+                var learner = SaberIgnoreLearner(startedAt: 10, colors: [color])
+                learner.add(frame(100), width: size, height: size, now: 10)
+                XCTAssertFalse(learner.zones.isEmpty)
+                XCTAssertTrue(safety.observeIgnoreMotion(frame(123), width: size, height: size, now: 10.05).isEmpty,
+                              "24px未満の移動では拒否しない")
+                let moving = safety.observeIgnoreMotion(frame(124), width: size, height: size, now: 10.1)
+                XCTAssertEqual(moving, [color], "短辺480px換算24px以上の移動を拒否")
+                var recent = SaberIgnoreLearner(startedAt: 10.4, colors: [color])
+                recent.refuseMoving(safety.recentlyMovingColors(now: 10.4))
+                recent.add(frame(124), width: size, height: size, now: 10.4)
+                XCTAssertTrue(recent.movingBladeRefused, "開始前1.5秒以内の移動も拒否")
+                XCTAssertTrue(recent.zones.isEmpty)
+                learner.add(frame(124), width: size, height: size, now: 10.1, movingColors: moving)
+                XCTAssertTrue(learner.movingBladeRefused)
+                XCTAssertTrue(learner.zones.isEmpty, "移動前に集めた範囲も取り消す")
+                for i in 2...18 {
+                    _ = safety.observeIgnoreMotion(frame(124), width: size, height: size, now: 10 + Double(i) / 10)
+                    if i <= 16 {
+                        XCTAssertEqual(safety.recentlyMovingColors(now: 10 + Double(i) / 10), [color])
+                    }
+                }
+                XCTAssertTrue(safety.recentlyMovingColors(now: 11.8).isEmpty, "1.5秒より前の移動は拒否しない")
+                learner.add(frame(124), width: size, height: size, now: 11.8)
+                XCTAssertTrue(learner.zones.isEmpty, "動きの期限後も拒否した学習を復活させない")
+                XCTAssertTrue(safety.recentlyMovingColors(now: 12.1).isEmpty, "古い観測は使用しない")
+                safety.reset()
+                XCTAssertTrue(safety.recentlyMovingColors(now: 10.1).isEmpty)
+            }
+        }
+    }
+
+    func testIgnoreSafetyRegistersStationaryObjectsAndOnlyChecksRequestedColors() {
+        for color in [SaberColor.red, .blue] {
+            let safety = SaberTrackLock()
+            var learner = SaberIgnoreLearner(startedAt: 10, colors: [color])
+            for i in 0..<30 {
+                let now = 10 + Double(i) / 10
+                let x = 100 + i % 3
+                let frame = SaberFrameAnalysis(candidates: [color: [Self.candidate((x, 100), (x, 200), eligible: false)]], selected: [:])
+                let moving = safety.observeIgnoreMotion(frame, width: 480, height: 640, now: now)
+                learner.add(frame, width: 480, height: 640, now: now, movingColors: moving)
+            }
+            XCTAssertFalse(learner.movingBladeRefused)
+            XCTAssertEqual(learner.zones[color]?.count, 1, "eligibleでない静止物も従来通り登録")
+            learner.refuseMoving([color == .red ? .blue : .red])
+            XCTAssertFalse(learner.movingBladeRefused, "指定していない色の動きは影響させない")
+            var both = SaberIgnoreLearner(startedAt: 10, colors: [.red, .blue])
+            both.refuseMoving([color])
+            XCTAssertTrue(both.movingBladeRefused, "bothでは片色の移動でも全登録を拒否")
+        }
+    }
+
     func testSaberCrossingTubeRectangleIsStillSelected() throws {
         let candidates = [Self.candidate((18, 372), (48, 410)), Self.candidate((12, 390), (34, 342)),
                           Self.candidate((18, 404), (28, 340), eligible: false)]

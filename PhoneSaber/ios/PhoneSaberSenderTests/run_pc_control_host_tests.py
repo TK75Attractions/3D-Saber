@@ -36,11 +36,20 @@ struct SaberIgnoreZone: Equatable { let value: Int }
 struct SaberIgnoreLearner {
     static let seconds = 3.0
     var zones: [SaberColor: [SaberIgnoreZone]]
+    var movingBladeRefused = false
+    mutating func refuseMoving(_ colors: Set<SaberColor>) {
+        if !colors.isEmpty { movingBladeRefused = true; zones = [:] }
+    }
     init(startedAt: Double, colors: [SaberColor]) {
         zones = Dictionary(uniqueKeysWithValues: colors.map { ($0, [SaberIgnoreZone(value: Int(startedAt))]) })
     }
 }
+final class IgnoreSafetyTrack {
+    var movingColors: Set<SaberColor> = []
+    func recentlyMovingColors(now: Double) -> Set<SaberColor> { movingColors }
+}
 final class FrameProcessor {
+    let ignoreSafetyTrack = IgnoreSafetyTrack()
     let pendingLock = NSLock()
     var ignoreLearners: [UUID: SaberIgnoreLearner] = [:]
     var serial = 0.0
@@ -281,6 +290,35 @@ enum PlayAreaSettings { static let exposureBiasKey = "unused" }
     func begin(_ model: CameraViewModel, _ color: SaberColor, completion: ((Int, Int) -> Void)? = nil) async {
         model.begin([color], completion: completion)
         for _ in 0..<20 { await Task.yield() }
+    }
+    func testPCIgnoreRefusesMovingTargetAndReplaysReasonWithoutSaving() async {
+        for color in ["red", "blue", "both"] {
+            let model = CameraViewModel()
+            model.processor.ignoreSafetyTrack.movingColors = [color == "red" ? .red : .blue]
+            model.ignoreZones = [.red: [SaberIgnoreZone(value: 42)], .blue: [SaberIgnoreZone(value: 43)]]
+            let original = model.ignoreZones
+            let command = LANLivenessProbe.PCCommand(id: 101, ignore: color, clearIgnore: false, sourceHost: model.host)
+            model.applyPCCommand(command)
+            for _ in 0..<20 { await Task.yield() }
+            await LearnSleeper.finish()
+            XCTAssertFalse(model.ignoreLearning)
+            XCTAssertEqual(model.ignoreZones, original, "既存の無視範囲は変更しない")
+            XCTAssertEqual(model.applyCount, 0)
+            let ack = model.lanProbe.acks.last
+            XCTAssertTrue(ack?.contains("result=failed detail=moving-blade-refused") == true)
+            model.applyPCCommand(command)
+            XCTAssertEqual(model.lanProbe.acks.last, ack)
+            XCTAssertTrue(LearnSleeper.pending.isEmpty)
+        }
+    }
+    func testPCIgnoreStaticTargetSavesAndAcknowledges() async {
+        let model = CameraViewModel()
+        model.applyPCCommand(.init(id: 102, ignore: "blue", clearIgnore: false, sourceHost: model.host))
+        for _ in 0..<20 { await Task.yield() }
+        await LearnSleeper.finish()
+        XCTAssertEqual(model.ignoreZones[.blue]?.count, 1)
+        XCTAssertEqual(model.applyCount, 1)
+        XCTAssertTrue(model.lanProbe.acks.last?.contains("result=ignored detail=red0-blue1") == true)
     }
     func testInterruptedLearningCannotCompleteAfterProcessorReset() async {
         let model = CameraViewModel()

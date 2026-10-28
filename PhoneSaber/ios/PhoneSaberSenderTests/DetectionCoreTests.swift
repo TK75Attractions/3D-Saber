@@ -485,43 +485,77 @@ final class DetectionCoreTests: XCTestCase {
     func testIgnoreZoneSnapshotLearnsAcrossFramesAndResets() throws {
         var now = 10.0
         let processor = FrameProcessor(clock: { now }, expiryScheduler: nil)
-        func frame(_ x: Int?) -> CMSampleBuffer {
+        func frame(_ xs: [Int]) -> CMSampleBuffer {
             sampleBuffer(width: 480, height: 640) { base, stride in
-                guard let x else { return }
                 let pixels = base.assumingMemoryBound(to: UInt8.self)
-                for y in 340...410 { for dx in -4...4 {
+                for x in xs { for y in 340...410 { for dx in -4...4 {
                     let i = y * stride + (x + dx) * 4
                     pixels[i] = 30; pixels[i + 1] = 45; pixels[i + 2] = 245
-                } }
+                } } }
             }
         }
         // 開始前のフレームは学習しない。winnerが既存ゾーンで除外されても全候補を収集する。
-        processor.queue.sync { processor.process(frame(440)) }
+        processor.queue.sync { processor.process(frame([440])) }
         processor.setIgnoreZones([.red: [SaberIgnoreZone(minX: 0, minY: 0, maxX: 1, maxY: 1)]])
         let id = processor.startIgnoreLearning([.red, .blue])
-        for x in stride(from: 40, through: 160, by: 20) {
+        for _ in 0..<7 {
             now += 0.1
-            processor.queue.sync { processor.process(frame(x)) }
+            processor.queue.sync { processor.process(frame([40, 160])) }
         }
-        processor.queue.sync { processor.process(frame(nil)) }
+        processor.queue.sync { processor.process(frame([])) }
         now = 13
-        processor.queue.sync { processor.process(frame(360)) }
+        processor.queue.sync { processor.process(frame([360])) }
         let learned = processor.finishIgnoreLearning(id)
         let zone = try XCTUnwrap(learned[.red]?.first)
-        XCTAssertEqual(learned[.red]?.count, 1)
+        XCTAssertEqual(learned[.red]?.count, 2)
         XCTAssertNil(learned[.blue])
         XCTAssertLessThan(zone.minX, 0.04)
-        XCTAssertGreaterThan(zone.maxX, 0.38)
+        XCTAssertGreaterThan(learned[.red]?.last?.maxX ?? 0, 0.38)
         XCTAssertLessThan(zone.maxX, 0.5, "3秒以降や開始前の候補を含めない")
         XCTAssertTrue(processor.finishIgnoreLearning(id).isEmpty)
         let cancelled = processor.startIgnoreLearning([.red])
-        processor.queue.sync { processor.process(frame(40)) }
+        processor.queue.sync { processor.process(frame([40])) }
         processor.cancelIgnoreLearning()
         XCTAssertTrue(processor.finishIgnoreLearning(cancelled).isEmpty)
         let reset = processor.startIgnoreLearning([.red])
-        processor.queue.sync { processor.process(frame(40)) }
+        processor.queue.sync { processor.process(frame([40])) }
         processor.reset()
         XCTAssertTrue(processor.finishIgnoreLearning(reset).isEmpty)
+    }
+
+    func testIgnoreZoneSnapshotRefusesMotionBeforeOrDuringLearningWithTrackLockOnAndOff() {
+        for lockEnabled in [false, true] {
+            for color in [SaberColor.red, .blue] {
+                for movedBeforeCommand in [false, true] {
+                    var now = 10.0
+                    let processor = FrameProcessor(clock: { now }, expiryScheduler: nil)
+                    processor.setTrackLockEnabled(lockEnabled)
+                    func frame(_ x: Int) {
+                        let buffer = sampleBuffer(width: 480, height: 640) { base, stride in
+                            let pixels = base.assumingMemoryBound(to: UInt8.self)
+                            for y in 340...410 { for dx in -4...4 {
+                                let i = y * stride + (x + dx) * 4
+                                pixels[i] = color == .blue ? 245 : 30
+                                pixels[i + 1] = 45
+                                pixels[i + 2] = color == .red ? 245 : 30
+                            } }
+                        }
+                        processor.queue.sync { processor.process(buffer) }
+                        now += 0.1
+                    }
+                    var id: UUID?
+                    if !movedBeforeCommand { id = processor.startIgnoreLearning([color]) }
+                    for x in stride(from: 100, through: 130, by: 10) { frame(x) }
+                    if movedBeforeCommand { id = processor.startIgnoreLearning([color]) }
+                    // 静止してから完了しても、開始前・学習中の移動による拒否を維持する。
+                    for _ in 0..<30 { frame(130) }
+                    var refused = false
+                    let learned = processor.finishIgnoreLearning(id!, reportRefusal: { refused = $0 })
+                    XCTAssertTrue(refused, "lock=\(lockEnabled) color=\(color) before=\(movedBeforeCommand)")
+                    XCTAssertTrue(learned.isEmpty)
+                }
+            }
+        }
     }
 
     func testFrameSendPrecedesHealthStatisticsWithTrackLock() {
