@@ -1592,6 +1592,7 @@ enum StaticBGRADetectionTests {
                         let rgb: (UInt8, UInt8, UInt8) = color == .red ? (UInt8(value), 12, 12) : (12, 24, UInt8(value))
                         let image = scene(rgb, background: UInt8(background))
                         let expected = value >= max(64, background + 40, background * 3)
+                            && Double(value) >= shutterEmitterPeakFloor(background: Double(background))
                         let result = run(image, on)
                         guard !emitters(result, color).isEmpty == expected else {
                             fatalError("shutter emitter grid color=\(color) bg=\(background) value=\(value) expected=\(expected)")

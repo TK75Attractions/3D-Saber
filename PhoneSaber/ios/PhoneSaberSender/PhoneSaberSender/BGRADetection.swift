@@ -1017,6 +1017,11 @@ enum ShutterEmitterThresholds {
     static let maximumValue = 234
     static let minimumBackgroundRatio = 3
     static let minimumPurity = 0.65
+    // 10/28 明るい部屋（ISO自動で背景42〜48）: 刃の光で照らされた服・カーテンは純度0.8〜0.99でも
+    // 候補の最大値が135〜202、芯なし。同じ時の本物の刃は229〜234。暗い会場（背景0〜6）の刃は77〜208。
+    // 背景に応じた比（24以下は3、40以上は5、上限220）を候補の最大値の下限にすると、照り返しは落ち、どちらの刃も残る。
+    static let minimumPeakBackgroundRatio = 5.0
+    static let maximumPeakFloor = 220.0
     static let redHueEdge = 15.0
     // HSVのbinary64計算で250度が1ULP上になる境界だけ含める。
     static let blueHueRange = 200.0...250.0.nextUp
@@ -1081,6 +1086,15 @@ private func shutterEmitterMasks(baseAddress: UnsafePointer<UInt8>, width: Int, 
     return [.red: red, .blue: blue]
 }
 
+/// 候補の最大値の下限。背景24以下は画素の下限（背景×3）と同じで暗い会場は変えない。
+/// 背景24→40で比を3→5へ上げ、220で頭打ち（明るい部屋の照り返しだけを落とす）。
+func shutterEmitterPeakFloor(background: Double) -> Double {
+    let ramp = min(max((background - 24) / 16, 0), 1)
+    let ratio = Double(ShutterEmitterThresholds.minimumBackgroundRatio)
+        + (ShutterEmitterThresholds.minimumPeakBackgroundRatio - Double(ShutterEmitterThresholds.minimumBackgroundRatio)) * ramp
+    return min(background * ratio, ShutterEmitterThresholds.maximumPeakFloor)
+}
+
 func minimumShutterEmitterAspect(color: SaberColor, pixels: Int) -> Double {
     color == .red && pixels >= ShutterEmitterThresholds.relaxedRedAspectMinimumPixels
         ? ShutterEmitterThresholds.relaxedRedAspect : ShutterEmitterThresholds.minimumAspect
@@ -1088,7 +1102,9 @@ func minimumShutterEmitterAspect(color: SaberColor, pixels: Int) -> Double {
 
 private func shutterEmitterCandidates(mask: [UInt8], width: Int, height: Int,
                                       color: SaberColor, values: [UInt8], chroma: [UInt8],
-                                      radiance: [UInt8], collectEvidence: Bool) -> [SaberCandidate] {
+                                      radiance: [UInt8], collectEvidence: Bool,
+                                      background: Double = 0) -> [SaberCandidate] {
+    let peakFloor = shutterEmitterPeakFloor(background: background)
     let evidence = SaberEvidence(color: color, radiance: radiance, value: values, chroma: chroma,
                                  colorMask: mask, coreMask: Array(repeating: 0, count: mask.count),
                                  collectObserverEvidence: collectEvidence)
@@ -1096,7 +1112,8 @@ private func shutterEmitterCandidates(mask: [UInt8], width: Int, height: Int,
                            minimumAreaOverride: ShutterEmitterThresholds.minimumPixels).compactMap { candidate in
         let length = max(candidate.rawPCASpan, 1)
         let meanWidth = Double(candidate.pointCount) / length
-        guard Double(candidate.pointCount) <= Double(width * height) * ShutterEmitterThresholds.maximumAreaRatio,
+        guard Double(candidate.peakValue) >= peakFloor,
+              Double(candidate.pointCount) <= Double(width * height) * ShutterEmitterThresholds.maximumAreaRatio,
               length / max(meanWidth, 1) >= minimumShutterEmitterAspect(color: color, pixels: candidate.pointCount),
               meanWidth <= Double(min(width, height)) * ShutterEmitterThresholds.maximumWidthRatio else { return nil }
         var emitter = candidate
@@ -1851,7 +1868,7 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
         if let mask = lowISOMasks[color], mask.contains(1) {
             let additional = shutterEmitterCandidates(mask: mask, width: maskWidth, height: maskHeight,
                 color: color, values: valueMap, chroma: chromaMap, radiance: radianceMap,
-                collectEvidence: collectObserverEvidence)
+                collectEvidence: collectObserverEvidence, background: redBackground)
             if !additional.isEmpty {
                 candidates += additional
                 candidates.sort { $0.score > $1.score }

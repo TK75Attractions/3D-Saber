@@ -20,12 +20,29 @@ HERE = Path(__file__).resolve().parent
 SOURCE = HERE.parent / 'PhoneSaberSender'
 
 
+def _clip_background(path):
+    import numpy as np
+    from PIL import Image
+    image = sorted((path / 'images').glob('*event*.png'))[0]
+    return int(np.median(np.asarray(Image.open(image).convert('RGB')).max(2)))
+
+
 def load_clip(path):
     summary = json.loads((path / 'summary.json').read_text())
     clip = summary['autoClip']
     columns = clip['candidateColumns']
     assert columns[:12] == ['rank', 'x1', 'y1', 'x2', 'y2', 'minX', 'minY', 'maxX', 'maxY', 'score', 'flags', 'source']
     frames, previous, seeded = [], None, set()
+    # 低ISO発光体候補の最大値の下限（背景×5、上限220）を再生だけで試す。環境変数で背景値を与える。
+    peak_floor = None
+    if os.environ.get('PHONESABER_REPLAY_EMITTER_PEAK_FLOOR'):
+        background = _clip_background(path)
+        ratio = 3 + 2 * min(max((background - 24) / 16, 0), 1)
+        peak_floor = min(background * ratio, 220)
+    sources = clip.get('sources', [])
+    def dim_emitter(c):
+        return (peak_floor is not None and int(c[11]) < len(sources)
+                and sources[int(c[11])] == 'shutter-color-emitter' and (c[12] or 0) < peak_floor)
     for frame in clip['frames']:
         complete = all(sum(int(c[10]) & 1 != 0 for c in frame[color]['c']) == frame[color]['e'] for color in ('red', 'blue'))
         reset = not complete or (previous is not None and (frame['f'] != previous['f'] + 1 or not 0 <= frame['t'] - previous['t'] <= .25))
@@ -39,7 +56,7 @@ def load_clip(path):
         for color in ('red', 'blue'):
             area = clip.get('playArea') or [0, 0, 1, 1]
             def allowed(c):
-                if not int(c[10]) & 1:
+                if not int(c[10]) & 1 or dim_emitter(c):
                     return False
                 if int(c[10]) & 6:
                     return True
