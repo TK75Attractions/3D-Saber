@@ -182,6 +182,7 @@ namespace Saber.ChartEditor
                 history.Clear();
                 savedJson = SaberChartUtility.ToJson(next, false);
                 RememberDiskState(song, difficulty, nextDiskState);
+                secretSourceKey = SaberChartSecrets.IsSecret(difficulty) ? TargetKey(song, difficulty) : null;
                 persistentWarning = null;
                 hasUnsavedChanges = false;
                 currentBeat = Mathf.Clamp(keepBeat, 0f, MaxBeat());

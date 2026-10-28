@@ -96,6 +96,83 @@ namespace Saber.ChartEditor
             }
         }
 
+        /// <summary>
+        /// 根のオブジェクトの各項目の名前と、値の文字の範囲(始まりと終わりの文字の位置)。並びはファイルの順。
+        /// JsonUtility が書いた文字の中へ項目を足す・元の文字に戻すときに使う。根がオブジェクトでない・読めないときは null。
+        /// </summary>
+        public static List<(string key, int start, int end)> RootMemberSpans(string json)
+        {
+            if (json == null) return null;
+            int index = 0;
+            SkipSpace(json, ref index);
+            if (index < json.Length && json[index] == '﻿') { index++; SkipSpace(json, ref index); }
+            return ObjectMemberSpans(json, index);
+        }
+
+        /// <summary>start の位置から始まるオブジェクトの各項目の名前と、値の文字の範囲。オブジェクトでない・読めないときは null。</summary>
+        public static List<(string key, int start, int end)> ObjectMemberSpans(string json, int start)
+        {
+            if (json == null || start < 0 || start >= json.Length || json[start] != '{') return null;
+            try
+            {
+                int index = start + 1;
+                var spans = new List<(string key, int start, int end)>();
+                SkipSpace(json, ref index);
+                if (index < json.Length && json[index] == '}') return spans;
+                while (true)
+                {
+                    SkipSpace(json, ref index);
+                    if (index >= json.Length || json[index] != '"') return null;
+                    int end = StringEnd(json, index);
+                    string key = Unquote(json.Substring(index, end - index + 1));
+                    index = end + 1;
+                    SkipSpace(json, ref index);
+                    if (index >= json.Length || json[index] != ':') return null;
+                    index++;
+                    SkipSpace(json, ref index);
+                    int valueStart = index;
+                    ParseValue(json, ref index);
+                    spans.Add((key, valueStart, index - 1));
+                    SkipSpace(json, ref index);
+                    if (index >= json.Length) return null;
+                    if (json[index] == ',') { index++; continue; }
+                    return json[index] == '}' ? spans : null;
+                }
+            }
+            catch (FormatException)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>start の位置から始まる配列の、各要素の文字の範囲(始まりと終わりの文字の位置)。配列でない・読めないときは null。</summary>
+        public static List<(int start, int end)> ArrayItemSpans(string json, int start)
+        {
+            if (json == null || start < 0 || start >= json.Length || json[start] != '[') return null;
+            try
+            {
+                int index = start + 1;
+                var spans = new List<(int start, int end)>();
+                SkipSpace(json, ref index);
+                if (index < json.Length && json[index] == ']') return spans;
+                while (true)
+                {
+                    SkipSpace(json, ref index);
+                    int itemStart = index;
+                    ParseValue(json, ref index);
+                    spans.Add((itemStart, index - 1));
+                    SkipSpace(json, ref index);
+                    if (index >= json.Length) return null;
+                    if (json[index] == ',') { index++; continue; }
+                    return json[index] == ']' ? spans : null;
+                }
+            }
+            catch (FormatException)
+            {
+                return null;
+            }
+        }
+
         public static SaberJsonValue String(string value) => new SaberJsonValue(Quote(value ?? string.Empty));
         public static SaberJsonValue Number(double value) =>
             new SaberJsonValue(double.IsNaN(value) || double.IsInfinity(value) ? "0" : value.ToString("R", CultureInfo.InvariantCulture));

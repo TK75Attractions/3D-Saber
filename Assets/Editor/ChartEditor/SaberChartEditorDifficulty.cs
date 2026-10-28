@@ -26,21 +26,30 @@ namespace Saber.ChartEditor
         private void DrawDifficultyPanel()
         {
             SectionLabel("難易度");
+            bool secret = EditingIsSecret;
             GUILayout.BeginHorizontal();
             GUILayout.Label("複製して開く", GUILayout.Width(70f));
-            for (int i = 0; i < DifficultyValues.Length; i++)
+            using (new EditorGUI.DisabledScope(secret))
             {
-                if (i == EditingDifficultyIndex) continue;
-                if (GUILayout.Button(new GUIContent(DifficultyLabels[i], $"今の内容を {DifficultyLabels[i]} の譜面として開きます（保存するまで書きません）"),
-                        EditorStyles.miniButton))
+                for (int i = 0; i < DifficultyValues.Length; i++)
                 {
-                    string previousSong = songId; int previousDifficulty = difficultyIndex;
-                    songId = EditingSongId;
-                    difficultyIndex = i;
-                    if (!DuplicateToSelection()) { songId = previousSong; difficultyIndex = previousDifficulty; }
+                    if (i == EditingDifficultyIndex) continue;
+                    string tip = secret ? SecretDuplicateReason : $"今の内容を {DifficultyLabels[i]} の譜面として開きます（保存するまで書きません）";
+                    if (GUILayout.Button(new GUIContent(DifficultyLabels[i], tip), EditorStyles.miniButton))
+                    {
+                        string previousSong = songId; int previousDifficulty = difficultyIndex;
+                        songId = EditingSongId;
+                        difficultyIndex = i;
+                        if (!DuplicateToSelection()) { songId = previousSong; difficultyIndex = previousDifficulty; }
+                    }
                 }
             }
             GUILayout.EndHorizontal();
+            if (secret)
+            {
+                GUILayout.Label("裏譜面では、複製と上の難易度から下ろす候補は使えません（配置を直すだけ）", smallMutedStyle);
+                return;
+            }
 
             string upper = SaberChartDerive.UpperDifficulty(EditingDifficulty);
             if (upper == null) return;
@@ -188,7 +197,8 @@ namespace Saber.ChartEditor
             settingsMismatchKey = key;
             settingsMismatchCheckedAt = EditorApplication.timeSinceStartup;
             settingsMismatch.Clear();
-            if (!SaberChartFileStore.IsValidSongId(EditingSongId, out _)) return settingsMismatch;
+            // 裏譜面の曲の設定は道具で決めているので、表の難易度とは比べない(写しもしない)。
+            if (EditingIsSecret || !SaberChartFileStore.IsValidSongId(EditingSongId, out _)) return settingsMismatch;
             foreach (string difficulty in DifficultyValues)
             {
                 if (difficulty == EditingDifficulty) continue;
@@ -238,6 +248,7 @@ namespace Saber.ChartEditor
         private void CopySongSettingsToOtherDifficulties()
         {
             EndNoteDrag();
+            if (SongSettingsLocked()) return;
             var targets = DifficultyValues
                 .Where(difficulty => difficulty != EditingDifficulty && SaberChartFileStore.ChartExists(EditingSongId, difficulty))
                 .ToList();
@@ -293,6 +304,7 @@ namespace Saber.ChartEditor
 
         private void LoadSongSettingsFrom(string difficulty)
         {
+            if (SongSettingsLocked()) return;
             SaberChartDocument other = SaberChartFileStore.TryLoadExact(EditingSongId, difficulty);
             if (other == null) return;
             EndNoteDrag();

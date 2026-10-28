@@ -97,6 +97,8 @@ namespace Saber.ChartEditor
                     hash = hash * 31 + (n.type ?? "").GetHashCode();
                     hash = hash * 31 + (n.color ?? "").GetHashCode();
                     hash = hash * 31 + (n.direction ?? "").GetHashCode();
+                    // ノーツの知らない項目(R の mirror など)も、検査の結果と未保存の判定に効く。
+                    hash = hash * 31 + (n.extraJson ?? "").GetHashCode();
                 }
                 return hash;
             }
@@ -154,6 +156,10 @@ namespace Saber.ChartEditor
                 if (x < SaberChartUtility.DefaultXMin || x > SaberChartUtility.DefaultXMax ||
                     y < SaberChartUtility.DefaultYMin || y > SaberChartUtility.DefaultYMax)
                     Add(issues, SaberChartIssueLevel.Warning, "outside", chart, "推奨XY範囲の外", i);
+                // R の鏡門は中央の門の内側を通るノーツだけを鏡にする。本編(ReverseRules.Normalize)は門の外の mirror を外す
+                // (座標は譜面の値のまま。R の coordScale は 1)。
+                if (SaberChartUtility.NoteExtraFlag(n, "mirror") && !ReverseRules.InsideGate(n.x, n.y))
+                    Add(issues, SaberChartIssueLevel.Warning, "mirror-outside-gate", chart, "鏡のノーツが門の外（本編では鏡になりません）", i);
             }
         }
 

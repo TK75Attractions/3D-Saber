@@ -250,10 +250,13 @@ namespace Saber.ChartEditor
             float stepX = fine ? .01f : (SaberChartUtility.DefaultXMax - SaberChartUtility.DefaultXMin) / (LaneCount - 1);
             float stepY = fine ? .01f : (SaberChartUtility.DefaultYMax - SaberChartUtility.DefaultYMin) / (LaneCount - 1);
             string before = CurrentJson();
+            // 動かした軸だけを変える(高さだけ動かしても、範囲の外にある横位置を端へ寄せない)。
             foreach (SaberChartNote note in targets)
             {
-                note.x = Mathf.Clamp(note.x + dx * stepX, SaberChartUtility.DefaultXMin, SaberChartUtility.DefaultXMax);
-                note.y = Mathf.Clamp(note.y + dy * stepY, SaberChartUtility.DefaultYMin, SaberChartUtility.DefaultYMax);
+                if (dx != 0f)
+                    note.x = SaberChartUtility.ClampMoved(note.x + dx * stepX, note.x, SaberChartUtility.DefaultXMin, SaberChartUtility.DefaultXMax);
+                if (dy != 0f)
+                    note.y = SaberChartUtility.ClampMoved(note.y + dy * stepY, note.y, SaberChartUtility.DefaultYMin, SaberChartUtility.DefaultYMax);
             }
             if (CurrentJson() == before) return;
             SaberChartNote keep = SelectedNote;
@@ -562,10 +565,12 @@ namespace Saber.ChartEditor
         private StagePerformanceTimeline OverviewSections()
         {
             string song = EditingSongId;
-            if (overviewSectionsSong != song)
+            // 本編と同じく、難易度ごとの演出(ElDorado G の stage_g.json など)があればその区間を出す。
+            string key = song + "|" + EditingDifficulty;
+            if (overviewSectionsSong != key)
             {
-                overviewSectionsSong = song;
-                overviewSections = SaberChartFileStore.IsValidSongId(song, out _) ? StagePerformanceTimeline.Load(song) : null;
+                overviewSectionsSong = key;
+                overviewSections = SaberChartFileStore.IsValidSongId(song, out _) ? StagePerformanceTimeline.Load(song, EditingDifficulty) : null;
             }
             return overviewSections;
         }

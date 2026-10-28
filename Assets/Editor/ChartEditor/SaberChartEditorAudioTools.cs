@@ -150,6 +150,7 @@ namespace Saber.ChartEditor
 
         private void SetTempoMap(List<SaberChartTempoPoint> map, string status)
         {
+            if (SongSettingsLocked()) return;
             EndNoteDrag();
             string before = CurrentJson();
             document.tempoMap = map;
@@ -162,6 +163,7 @@ namespace Saber.ChartEditor
 
         private void RecalculateBeatsWithGrid()
         {
+            if (SongSettingsLocked()) return;
             EndNoteDrag();
             string before = CurrentJson();
             SaberChartUtility.RecalculateBeatsFromTimes(document, time => Grid.BeatAt(time));

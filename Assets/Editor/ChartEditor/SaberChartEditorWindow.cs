@@ -34,6 +34,8 @@ namespace Saber.ChartEditor
         private static readonly string[] SnapLabels = { "4分（表拍）", "8分", "12分", "16分", "24分", "32分" };
         private static readonly string[] DifficultyValues = { "easy", "normal", "hard" };
         private static readonly string[] DifficultyLabels = { "Easy", "Normal", "Hard" };
+        // 「開く・作る」の選択とヘッダーの札で、E N H の次の番号はその曲の裏譜面(SaberChartSecrets)。
+        private const int SecretDifficultyIndex = 3;
         private static readonly string[] TypeValues =
         {
             SaberChartUtility.TypeTap,
@@ -92,6 +94,8 @@ namespace Saber.ChartEditor
         [SerializeField] private int selectedIndex = -1;
         [SerializeField] private string loadedSongId;
         [SerializeField] private string loadedDifficulty;
+        // 今の譜面を読み込んだ裏譜面(曲/難易度。読み込みに成功したときだけ決まる)。裏譜面へはこれと同じ所にだけ保存する。
+        [SerializeField] private string secretSourceKey;
         [SerializeField] private string savedJson;
         [SerializeField] private bool documentInitialized;
         [SerializeField] private Vector2 leftScroll;
@@ -146,12 +150,17 @@ namespace Saber.ChartEditor
         private Action<string> reportLoadError = message => EditorUtility.DisplayDialog("譜面を読み込めません", message, "OK");
 
         private int CurrentSnap => SnapDenominators[Mathf.Clamp(snapIndex, 0, SnapDenominators.Length - 1)];
-        private string CurrentDifficulty => DifficultyValues[Mathf.Clamp(difficultyIndex, 0, DifficultyValues.Length - 1)];
+        // 裏譜面の番号で、選んだ曲に裏譜面が無いときは Normal。
+        private string CurrentDifficulty => DifficultyFor(songId, difficultyIndex) ?? DifficultyValues[1];
         // 保存先は「開いた場所」。画面上部の選択は、次に開く・作る先を選ぶだけ。
         private string EditingSongId => !string.IsNullOrEmpty(loadedSongId) ? loadedSongId : songId?.Trim();
         private string EditingDifficulty => !string.IsNullOrEmpty(loadedDifficulty) ? loadedDifficulty : CurrentDifficulty;
-        private int EditingDifficultyIndex => Mathf.Max(0, Array.IndexOf(DifficultyValues, EditingDifficulty));
-        private string EditingDifficultyLabel => DifficultyLabels[EditingDifficultyIndex];
+        private int EditingDifficultyIndex => DifficultyIndexOf(EditingDifficulty);
+        private string EditingDifficultyLabel => DifficultyLabelFor(EditingDifficulty);
+        // 裏譜面はノーツの配置を直すだけにする(新規・複製・難易度の派生・曲の設定の写しには使わない)。
+        private bool EditingIsSecret => SaberChartSecrets.IsSecret(EditingDifficulty);
+        // 本編テストで GameSession.SelectedDifficulty に入れる名前(裏譜面は表の文字。例 "R")。
+        private string EditingGameDifficulty => EditingIsSecret ? SaberChartSecrets.Letter(EditingDifficulty) : EditingDifficultyLabel;
         private string HistoryStateKey => "3DSaber.ChartEditor.History." + GetInstanceID();
         private SaberChartNote SelectedNote =>
             document?.notes != null && selectedIndex >= 0 && selectedIndex < document.notes.Count
@@ -310,6 +319,12 @@ namespace Saber.ChartEditor
             EndNoteDrag();
             string targetSong = songId?.Trim();
             string targetDifficulty = CurrentDifficulty;
+            // 裏譜面から表の譜面へも、表の譜面から裏譜面へも複製しない。
+            if (EditingIsSecret || SaberChartSecrets.IsSecret(targetDifficulty))
+            {
+                SetStatus(SecretDuplicateReason);
+                return false;
+            }
             if (!SaberChartFileStore.IsValidSongId(targetSong, out string reason))
             {
                 EditorUtility.DisplayDialog("複製できません", reason, "OK");
@@ -326,7 +341,7 @@ namespace Saber.ChartEditor
                 if (choice == 1) return false;
                 if (choice == 0 && !SaveDocument()) return false;
             }
-            string targetLabel = DifficultyLabels[Mathf.Clamp(difficultyIndex, 0, DifficultyLabels.Length - 1)];
+            string targetLabel = DifficultyLabelFor(targetDifficulty);
             SaberChartDocument existing = SaberChartFileStore.TryLoadExact(targetSong, targetDifficulty);
             if (SaberChartFileStore.ChartExists(targetSong, targetDifficulty) &&
                 !confirmDuplicateOverwrite($"{targetSong} / {targetLabel} は既にあります。",
@@ -342,6 +357,7 @@ namespace Saber.ChartEditor
             loadedSongId = targetSong;
             loadedDifficulty = targetDifficulty;
             confirmedOverwriteTarget = TargetKey(targetSong, targetDifficulty);
+            secretSourceKey = null;
             RememberDiskState(targetSong, targetDifficulty);
             persistentWarning = null;
             ResetDerivedViews();
@@ -360,6 +376,41 @@ namespace Saber.ChartEditor
         private static string TargetKey(string song, string difficulty) =>
             (song ?? string.Empty).Trim().ToLowerInvariant() + "/" + (difficulty ?? string.Empty).Trim().ToLowerInvariant();
 
+        // 選択の番号の難易度。裏譜面の番号は、その曲に裏譜面のファイルがあるときだけ(無ければ null)。
+        private static string DifficultyFor(string song, int index) =>
+            index == SecretDifficultyIndex
+                ? SaberChartSecrets.Value(SaberChartSecrets.For(song))
+                : DifficultyValues[Mathf.Clamp(index, 0, DifficultyValues.Length - 1)];
+
+        private static int DifficultyIndexOf(string difficulty)
+        {
+            int index = Array.IndexOf(DifficultyValues, difficulty);
+            return index >= 0 ? index : SaberChartSecrets.IsSecret(difficulty) ? SecretDifficultyIndex : 0;
+        }
+
+        private static string DifficultyLabelFor(string difficulty)
+        {
+            int index = Array.IndexOf(DifficultyValues, difficulty);
+            if (index >= 0) return DifficultyLabels[index];
+            return SaberChartSecrets.IsSecret(difficulty) ? SaberChartSecrets.Label(difficulty) : DifficultyLabels[0];
+        }
+
+        // 裏譜面で使えない操作の理由(ボタンのツールチップと、止めたときの知らせ)。
+        private const string SecretNewReason = "裏譜面は生成の道具（gen_*.py）で作ります。エディターでは開いて配置を直すだけです";
+        private const string SecretDuplicateReason = "裏譜面は複製に使えません（仕掛けの項目が表の譜面へ写らないように。裏譜面は生成の道具で作ります）";
+        private const string SecretSettingsReason = "裏譜面の曲の設定は道具で決めています";
+
+        // 裏譜面の曲の設定(BPM・OFFSET・グリッド原点・座標倍率・拍子・テンポ地図・拍の数え直し・ほかの難易度との写し)は変えない。
+        private bool SongSettingsLocked()
+        {
+            if (!EditingIsSecret) return false;
+            SetStatus(SecretSettingsReason + "（ここでは変えません）");
+            return true;
+        }
+
+        private string SecretOpenedMessage =>
+            $"裏譜面 {SaberChartSecrets.Letter(EditingDifficulty)} を開きました。ノーツごとの仕掛け（鏡・風など）はそのまま残します。新しく置いたノーツには付きません";
+
         private void DrawLeftPanel(Rect rect)
         {
             GUI.Box(rect, GUIContent.none, panelStyle);
@@ -374,6 +425,9 @@ namespace Saber.ChartEditor
             if (SaberChartFileStore.IsValidSongId(EditingSongId, out _) && EditingDifficulty != "normal" &&
                 SaberChartFileStore.MissingNormalChart(EditingSongId))
                 EditorGUILayout.HelpBox("Normal がまだありません。共通の chart.json は Normal を保存すると作成されます。", MessageType.Info);
+            if (EditingIsSecret)
+                EditorGUILayout.HelpBox($"裏譜面 {SaberChartSecrets.Title(EditingDifficulty)}: ノーツごとの仕掛けはそのまま残します。新しく置いたノーツには付きません。",
+                    MessageType.Info);
             SectionLabel("次に置くノーツ / パレット");
             GUILayout.Label("選択済みノーツは右の「ノーツ」で編集", smallMutedStyle);
             SectionLabel("編集ツール");
@@ -498,6 +552,7 @@ namespace Saber.ChartEditor
             if (float.IsNaN(nextBpm) || float.IsInfinity(nextBpm) || float.IsNaN(nextOffset) || float.IsInfinity(nextOffset) ||
                 float.IsNaN(nextBeatZero) || float.IsInfinity(nextBeatZero) || float.IsNaN(nextScale) || float.IsInfinity(nextScale))
                 return;
+            if (SongSettingsLocked()) return;
             EndNoteDrag();
             string before = CurrentJson();
             float safeBpm = Mathf.Max(1f, nextBpm);
@@ -528,6 +583,7 @@ namespace Saber.ChartEditor
 
         private void WriteDisplayedOriginToFile()
         {
+            if (SongSettingsLocked()) return;
             EndNoteDrag();
             string before = CurrentJson();
             document.beatZeroMs = beatZeroMs;
@@ -687,6 +743,7 @@ namespace Saber.ChartEditor
 
         private void SetTimeSignature(float beat, int numerator, int denominator)
         {
+            if (SongSettingsLocked()) return;
             EndNoteDrag();
             string before = CurrentJson();
             PutTimeSignature(beat, numerator, denominator);
@@ -698,6 +755,7 @@ namespace Saber.ChartEditor
         {
             if (index < 0 || index >= document.timeSignatures.Count ||
                 (!remove && (float.IsNaN(beat) || float.IsInfinity(beat)))) return;
+            if (SongSettingsLocked()) return;
             EndNoteDrag();
             string before = CurrentJson();
             document.timeSignatures.RemoveAt(index);
@@ -729,13 +787,15 @@ namespace Saber.ChartEditor
             int nextTypeIndex = EditorGUILayout.Popup("種類", typeIndex, TypeLabels);
             int nextColorIndex = EditorGUILayout.Popup("色 / 手", colorIndex, ColorLabels);
             int nextDirectionIndex = EditorGUILayout.Popup("方向", directionIndex, DirectionLabels);
-            int nextCount = nextTypeIndex == 2
-                ? EditorGUILayout.IntSlider("カット回数", count, 2, 99)
-                : 1;
+            // 99回を越えるロング(裏譜面 L の1000回など)は数の欄で出す(つまみの端に丸めない)。
+            int nextCount = nextTypeIndex != 2 ? 1
+                : count > 99 ? Mathf.Clamp(EditorGUILayout.DelayedIntField("カット回数", count), 2, SaberChartUtility.MaxLongCount)
+                : EditorGUILayout.IntSlider("カット回数", count, 2, 99);
             // Long の長さ。自動 = 本編既定の (回数-1)×0.7秒。手動なら拍数で直接指定できる。
             bool autoLength = note.lengthMs <= 0f;
             bool nextAutoLength = autoLength;
             float nextLengthBeats = 0f;
+            float shownBeats = 0f;
             if (nextTypeIndex == 2)
             {
                 nextAutoLength = EditorGUILayout.Toggle("長さ自動 ((回数−1)×0.7s)", autoLength);
@@ -743,7 +803,7 @@ namespace Saber.ChartEditor
                     ? note.lengthMs
                     : (Mathf.Max(2, nextCount) - 1) * SaberChartUtility.DefaultSecondsPerLongCut * 1000f;
                 // テンポ地図があっても、その場所のテンポで拍数を出す。
-                float shownBeats = GridBeatAt(note.time + effectiveMs) - GridBeatAt(note.time);
+                shownBeats = GridBeatAt(note.time + effectiveMs) - GridBeatAt(note.time);
                 using (new EditorGUI.DisabledScope(nextAutoLength))
                 {
                     nextLengthBeats = EditorGUILayout.DelayedFloatField("長さ (拍)", shownBeats);
@@ -770,20 +830,25 @@ namespace Saber.ChartEditor
                 if (nextTypeIndex == typeIndex && nextDirectionIndex != directionIndex)
                     nextType = TypeAfterDirectionEdit(nextType, chosenDirection);
                 selected.type = nextType;
-                selected.color = ColorValues[Mathf.Clamp(nextColorIndex, 0, ColorValues.Length - 1)];
+                // 色の一覧に無い色(読み込んだ譜面の独自の色)は、色を選び直したときだけ変える。
+                if (nextColorIndex != colorIndex) selected.color = ColorValues[Mathf.Clamp(nextColorIndex, 0, ColorValues.Length - 1)];
                 bool changedAwayFromDirection = nextTypeIndex != typeIndex && nextType != SaberChartUtility.TypeDirection;
                 if (nextType == SaberChartUtility.TypeDirection && chosenDirection == SaberChartUtility.DirectionNone)
                     chosenDirection = "up";
                 selected.direction = changedAwayFromDirection ? SaberChartUtility.DirectionNone : chosenDirection;
                 selected.count = selected.type == SaberChartUtility.TypeLong ? Mathf.Max(2, nextCount) : 1;
-                if (selected.type == SaberChartUtility.TypeLong && !nextAutoLength)
+                // 長さは、長さの欄か「長さ自動」を触ったとき(と LONG にしたとき)だけ拍から決め直す。
+                // ほかの欄だけ変えたときは ms のまま保つ(テンポの変わる所をまたいでも、触っていない長さを変えない)。
+                bool lengthEdited = nextAutoLength != autoLength || typeIndex != 2 ||
+                    !nextAutoLength && !Mathf.Approximately(nextLengthBeats, shownBeats);
+                if (selected.type != SaberChartUtility.TypeLong || nextAutoLength)
+                {
+                    selected.lengthMs = 0f; // 自動(回数×0.7s)へ戻す
+                }
+                else if (lengthEdited)
                 {
                     float startBeat = GridBeatAt(selected.time);
                     selected.lengthMs = Mathf.Max(60f, GridTimeAt(startBeat + Mathf.Max(0f, nextLengthBeats)) - selected.time);
-                }
-                else
-                {
-                    selected.lengthMs = 0f; // 自動(回数×0.7s)へ戻す
                 }
                 SaberChartUtility.SortNotes(document);
                 selectedIndex = document.notes.IndexOf(selected);
@@ -1079,6 +1144,8 @@ namespace Saber.ChartEditor
             string text = $"#{index + 1}  {color} · {kind}\n" +
                           $"{(note.time + document.offsetMs) / 1000f:0.000}秒 · {SaberChartUtility.FormatMusicalPosition(TimelineBeat(note), document, CurrentSnap)}\n" +
                           $"X {note.x:0.##} · Y {note.y:0.##}（高さ {height}/{LaneCount}）";
+            List<string> extras = SaberChartUtility.NoteExtraKeys(note);
+            if (extras.Count > 0) text += "\n仕掛け: " + string.Join("・", extras);
             SaberChartIssue issue = WorstIssueFor(index);
             return issue == null ? text : text + $"\n{SaberChartLint.Label(issue.level)}: {issue.message}";
         }
@@ -1278,7 +1345,7 @@ namespace Saber.ChartEditor
             float lanes = (mouse.x - dragStartMouse.x) / laneWidth;
             if (placementSnap) lanes = Mathf.Round(lanes);
             float spacing = (xMax - xMin) / (LaneCount - 1);
-            float x = lanes == 0 ? dragOriginalX : Mathf.Clamp(dragOriginalX + lanes * spacing, xMin, xMax);
+            float x = lanes == 0 ? dragOriginalX : SaberChartUtility.ClampMoved(dragOriginalX + lanes * spacing, dragOriginalX, xMin, xMax);
             return (time, x);
         }
 
@@ -1465,6 +1532,11 @@ namespace Saber.ChartEditor
         private void NewDocument()
         {
             EndNoteDrag();
+            if (SaberChartSecrets.IsSecret(CurrentDifficulty))
+            {
+                SetStatus(SecretNewReason);
+                return;
+            }
             if (!ConfirmAbandonChanges()) return;
             StopPreview(false);
             string targetSong = songId?.Trim();
@@ -1479,6 +1551,7 @@ namespace Saber.ChartEditor
             // 新しい譜面の保存先は、作ったときに選んでいた曲・難易度。既存ファイルがあれば保存時に確認する。
             loadedSongId = SaberChartFileStore.IsValidSongId(targetSong, out _) ? targetSong : null;
             loadedDifficulty = loadedSongId != null ? CurrentDifficulty : null;
+            secretSourceKey = null;
             confirmedOverwriteTarget = null;
             ResetDerivedViews();
             history.Clear();
@@ -1527,7 +1600,8 @@ namespace Saber.ChartEditor
         /// </summary>
         private void SwitchEditingDifficulty(int index)
         {
-            if (RecordingBusy || index < 0 || index >= DifficultyValues.Length || index == EditingDifficultyIndex) return;
+            if (RecordingBusy || index < 0 || index > SecretDifficultyIndex || index == EditingDifficultyIndex) return;
+            if (index == SecretDifficultyIndex && SaberChartSecrets.For(EditingSongId) == null) return;
             string previousSong = songId;
             int previousDifficulty = difficultyIndex;
             songId = EditingSongId;
@@ -1547,14 +1621,19 @@ namespace Saber.ChartEditor
             if (!ConfirmAbandonChanges()) return;
             try
             {
+                // 裏譜面の番号は、読む曲の裏譜面(無い曲なら Normal)。
+                string difficulty = DifficultyFor(targetSongId, difficultyIndex) ?? DifficultyValues[1];
                 // 読込に失敗した場合は、元の譜面・履歴・未保存状態・保存先を残す。
-                var nextDiskState = CaptureDiskState(targetSongId, CurrentDifficulty);
-                SaberChartDocument nextDocument = SaberChartFileStore.Load(targetSongId, CurrentDifficulty, out string loadedPath);
+                var nextDiskState = CaptureDiskState(targetSongId, difficulty);
+                SaberChartDocument nextDocument = SaberChartFileStore.Load(targetSongId, difficulty, out string loadedPath);
                 if (!DiskStateMatches(nextDiskState)) throw new IOException("読み込み中に譜面が変更されました。もう一度読み込んでください。");
                 // 守5: Easy・Hard のファイルが無いと Normal の chart.json を読む。それを「変更なし」として開くと、
                 // 保存や「本編でテスト」で Normal の中身のまま新しいファイルを黙って作るので、未保存の新しい譜面として開く。
-                bool borrowedNormal = loadedPath != null && CurrentDifficulty != "normal" &&
+                bool borrowedNormal = loadedPath != null && difficulty != "normal" &&
                     string.Equals(Path.GetFileName(loadedPath), "chart.json", StringComparison.OrdinalIgnoreCase);
+                // 裏譜面は Normal を元に作らない(ファイルが無ければ開かない)。
+                if (SaberChartSecrets.IsSecret(difficulty) && (loadedPath == null || borrowedNormal))
+                    throw new IOException($"{DifficultyLabelFor(difficulty)} の譜面ファイル（chart_{difficulty}.json）がありません。裏譜面は生成の道具で作ります。");
                 float nextBeatZeroMs = SaberChartUtility.EstimateBeatZeroMs(nextDocument);
                 string nextSavedJson = borrowedNormal ? null : SaberChartUtility.ToJson(nextDocument, false);
                 StopPreview(false);
@@ -1564,7 +1643,10 @@ namespace Saber.ChartEditor
                 currentBeat = 0f;
                 selectedIndex = -1;
                 loadedSongId = songId.Trim();
-                loadedDifficulty = CurrentDifficulty;
+                loadedDifficulty = difficulty;
+                secretSourceKey = SaberChartSecrets.IsSecret(difficulty) ? TargetKey(loadedSongId, difficulty) : null;
+                // 裏譜面の無い曲へ移ったときは、選択も開いた Normal にそろえる。
+                difficultyIndex = DifficultyIndexOf(difficulty);
                 confirmedOverwriteTarget = null;
                 ResetDerivedViews();
                 history.Clear();
@@ -1582,6 +1664,7 @@ namespace Saber.ChartEditor
                 CheckForDraft();
                 SetStatus(loadedPath == null ? "空の譜面を開きました"
                     : borrowedNormal ? $"{EditingDifficultyLabel} は未作成。Normal を元に新しい譜面として開きました"
+                    : EditingIsSecret ? SecretOpenedMessage
                     : $"読込: {Path.GetFileName(loadedPath)}");
             }
             catch (Exception exception)
@@ -1607,6 +1690,13 @@ namespace Saber.ChartEditor
                 EditorUtility.DisplayDialog("譜面を保存できません", reason, "OK");
                 return false;
             }
+            // 裏譜面へは、その曲のその裏譜面を読み込んで直した譜面だけを書く(読み込んでいない選択や、読み込みに失敗したあとの内容で置き換えない)。
+            if (SaberChartSecrets.IsSecret(targetDifficulty) && secretSourceKey != TargetKey(targetSong, targetDifficulty))
+            {
+                SetStatus($"{targetSong} / {DifficultyLabelFor(targetDifficulty)} へは保存しません。裏譜面は、読み込んで直したときだけ保存できます" +
+                          "（上の札か「開く・作る」の「読込」で開いてください）");
+                return false;
+            }
             bool exists = SaberChartFileStore.ChartExists(targetSong, targetDifficulty);
             if (savedJson != null && CurrentJson() == savedJson && (exists || SongInfoDirty))
             {
@@ -1616,7 +1706,7 @@ namespace Saber.ChartEditor
                 SetStatus("保存済み（譜面の内容は変更ありません）");
                 return true;
             }
-            string targetLabel = DifficultyLabels[Mathf.Max(0, Array.IndexOf(DifficultyValues, targetDifficulty))];
+            string targetLabel = DifficultyLabelFor(targetDifficulty);
             if (exists && (savedJson == null || string.IsNullOrEmpty(loadedSongId) || string.IsNullOrEmpty(loadedDifficulty))
                 && confirmedOverwriteTarget != TargetKey(targetSong, targetDifficulty))
             {
@@ -1636,6 +1726,8 @@ namespace Saber.ChartEditor
                 persistentWarning = null;
                 loadedSongId = targetSong.Trim();
                 loadedDifficulty = targetDifficulty;
+                // 表の譜面として保存したら、裏譜面の読み込み元ではなくなる(裏譜面への保存は、読み込み元と同じときだけここまで来る)。
+                if (!SaberChartSecrets.IsSecret(targetDifficulty)) secretSourceKey = null;
                 confirmedOverwriteTarget = null;
                 savedJson = CurrentJson();
                 hasUnsavedChanges = false;
@@ -1729,7 +1821,7 @@ namespace Saber.ChartEditor
 
         private void EnsureAudioForSong(bool notify)
         {
-            AudioClip found = SaberChartFileStore.LoadAudioClip(EditingSongId);
+            AudioClip found = SaberChartFileStore.LoadAudioClipFor(EditingSongId, EditingDifficulty);
             SetAudioClip(found);
             if (notify) SetStatus(found != null ? "曲フォルダの音源を読み込みました" : "音源が見つかりません");
         }
@@ -1768,7 +1860,7 @@ namespace Saber.ChartEditor
 
         private void HandleAudioClipSelection(AudioClip clip)
         {
-            if (clip == null || SaberChartFileStore.IsAudioClipForSong(clip, EditingSongId))
+            if (clip == null || SaberChartFileStore.IsAudioClipForChart(clip, EditingSongId, EditingDifficulty))
             {
                 SetAudioClip(clip);
                 return;
@@ -2041,7 +2133,7 @@ namespace Saber.ChartEditor
         {
             if (!SaveForTestIfNeeded()) return;
             string testSong = EditingSongId;
-            AudioClip packagedClip = SaberChartFileStore.LoadAudioClip(testSong);
+            AudioClip packagedClip = SaberChartFileStore.LoadAudioClipFor(testSong, EditingDifficulty);
             if (packagedClip == null)
             {
                 bool continueSilent = EditorUtility.DisplayDialog(
@@ -2068,7 +2160,7 @@ namespace Saber.ChartEditor
                 return;
             }
 
-            SaberChartTestPlayBridge.Queue(testSong.Trim(), EditingDifficultyLabel);
+            SaberChartTestPlayBridge.Queue(testSong.Trim(), EditingGameDifficulty);
             EditorSceneManager.OpenScene(gameScenePath);
             EditorApplication.EnterPlaymode();
         }
@@ -2099,7 +2191,7 @@ namespace Saber.ChartEditor
         private List<string> ValidationWarnings()
         {
             var warnings = new List<string>();
-            AudioClip packagedClip = SaberChartFileStore.LoadAudioClip(EditingSongId);
+            AudioClip packagedClip = SaberChartFileStore.LoadAudioClipFor(EditingSongId, EditingDifficulty);
             if (packagedClip == null)
                 warnings.Add("曲フォルダに本編用音源がありません");
             else if (audioClip != null && audioClip != packagedClip)
@@ -2532,12 +2624,13 @@ namespace Saber.ChartEditor
                 if (!File.Exists(path)) return;
                 var snapshot = CaptureDiskState(songId, CurrentDifficulty);
                 // 自動復元だけは例外を握りつぶす TryLoadExact を使わない。
-                var restored = SaberChartUtility.FromJson(File.ReadAllText(path));
+                var restored = SaberChartUtility.FromJson(File.ReadAllText(path), SaberChartSecrets.IsSecret(CurrentDifficulty));
                 if (!DiskStateMatches(snapshot)) throw new IOException("読み込み中に譜面が変更されました。");
                 RememberDiskState(songId, CurrentDifficulty, snapshot);
                 persistentWarning = null;
                 document = restored;
                 loadedSongId = songId.Trim(); loadedDifficulty = CurrentDifficulty;
+                secretSourceKey = SaberChartSecrets.IsSecret(loadedDifficulty) ? TargetKey(loadedSongId, loadedDifficulty) : null;
                 beatZeroMs = SaberChartUtility.EstimateBeatZeroMs(document);
                 savedJson = CurrentJson();
             }
@@ -2557,7 +2650,11 @@ namespace Saber.ChartEditor
             difficultyIndex = EditorPrefs.GetInt(PrefPrefix + "Difficulty", difficultyIndex);
             snapIndex = EditorPrefs.GetInt(PrefPrefix + "Snap", snapIndex);
             pixelsPerBeat = EditorPrefs.GetFloat(PrefPrefix + "Zoom", pixelsPerBeat);
-            difficultyIndex = Mathf.Clamp(difficultyIndex, 0, DifficultyValues.Length - 1);
+            difficultyIndex = Mathf.Clamp(difficultyIndex, 0, SecretDifficultyIndex);
+            // 裏譜面は文字でも覚えておき、その曲の今の裏譜面と違えば(裏譜面が無くなった・曲が変わった)Normal にする。
+            if (difficultyIndex == SecretDifficultyIndex && !string.Equals(EditorPrefs.GetString(PrefPrefix + "SecretDifficulty", string.Empty),
+                    DifficultyFor(songId, SecretDifficultyIndex), StringComparison.OrdinalIgnoreCase))
+                difficultyIndex = 1;
             snapIndex = Mathf.Clamp(snapIndex, 0, SnapDenominators.Length - 1);
             pixelsPerBeat = Mathf.Clamp(pixelsPerBeat, 30f, 240f);
         }
@@ -2567,6 +2664,7 @@ namespace Saber.ChartEditor
             EditorPrefs.SetInt(PrefPrefix + "ShowPlaybackPreview", showPlaybackPreview ? 1 : 0);
             EditorPrefs.SetString(PrefPrefix + "SongId", songId ?? string.Empty);
             EditorPrefs.SetInt(PrefPrefix + "Difficulty", difficultyIndex);
+            if (difficultyIndex == SecretDifficultyIndex) EditorPrefs.SetString(PrefPrefix + "SecretDifficulty", CurrentDifficulty);
             EditorPrefs.SetInt(PrefPrefix + "Snap", snapIndex);
             EditorPrefs.SetFloat(PrefPrefix + "Zoom", pixelsPerBeat);
         }

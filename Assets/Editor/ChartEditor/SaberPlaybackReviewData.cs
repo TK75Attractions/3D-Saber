@@ -311,6 +311,9 @@ namespace Saber.ChartEditor
                 var problems = NoteProblems(n, current.offsetMs, duration);
                 if (problems.Count > 0) { errors.Add(where + ": " + string.Join(" / ", problems)); continue; }
                 var copy = n.Clone();
+                // 置き換えは元のノーツの知らない項目(裏譜面の仕掛けなど)と元の文字を引き継ぎ、足すノーツには付けない(返信の項目では変えない)。
+                copy.extraJson = operation.action == "add" ? string.Empty : current.notes[operation.index].extraJson;
+                copy.sourceJson = operation.action == "add" ? string.Empty : current.notes[operation.index].sourceJson;
                 // 時刻が変わったノーツの格子位置は既存のテンポ地図から計算する。
                 if (operation.action == "add" || current.notes[operation.index].time != copy.time)
                     copy.beat = new SaberChartGrid(current.bpm, current.beatZeroMs, current.tempoMap).BeatAt(copy.time);

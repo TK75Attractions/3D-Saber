@@ -45,8 +45,8 @@ namespace Saber.ChartEditor
     }
 
     /// <summary>
-    /// 譜面ファイルへ書く形。エディター内の作業用の項目(extraFields)は持たず、
-    /// 未知の項目は先頭へそのまま書き戻す。
+    /// 譜面ファイルへ書く形。エディター内の作業用の項目(extraFields・ノーツの extraJson)は持たず、
+    /// 未知の項目は先頭へ、ノーツの未知の項目は各ノーツの中へ、そのまま書き戻す。
     /// </summary>
     [Serializable]
     public sealed class SaberChartFileData
@@ -57,7 +57,22 @@ namespace Saber.ChartEditor
         public int displayLevel;
         public float beatZeroMs;
         public List<ChartTimeSignature> timeSignatures = new List<ChartTimeSignature>();
-        public List<SaberChartNote> notes = new List<SaberChartNote>();
+        public List<SaberChartFileNote> notes = new List<SaberChartFileNote>();
+    }
+
+    /// <summary>ファイルへ書くノーツ。項目と並びは SaberChartNote と同じ(書き出す文字を今までと変えない)。</summary>
+    [Serializable]
+    public sealed class SaberChartFileNote
+    {
+        public float beat;
+        public float time;
+        public float x;
+        public float y;
+        public string type;
+        public string color;
+        public string direction;
+        public int count;
+        public float lengthMs;
     }
 
     [Serializable]
@@ -73,6 +88,13 @@ namespace Saber.ChartEditor
         public int count = 1;
         // Long の実長さ(ミリ秒)。0 なら本編既定の (count-1)×0.7s で自動決定。
         public float lengthMs;
+        // エディターが知らないノーツの項目(裏譜面の mirror・windX など)。読み込んだ綴りのままの JSON オブジェクト
+        // ({"mirror": true} の形)で、無ければ空。ファイルへは各ノーツの中に元の名前で書き戻す。新しく置いたノーツは空。
+        // ToJson の空の省略が「後ろの項目」を前提にするので、項目を足すときもこの2つを最後に置く。
+        public string extraJson = string.Empty;
+        // 裏譜面のファイルから読んだときだけの、このノーツの元の文字({"raw": 元のノーツ, "loaded": 読み込んだ直後の値})。
+        // 書き出しで、値を変えていない項目は元の綴りのまま書く(触っていないノーツはノーツごと元のまま)。表の譜面・新しいノーツは空。
+        public string sourceJson = string.Empty;
 
         public SaberChartNote Clone()
         {
@@ -87,6 +109,8 @@ namespace Saber.ChartEditor
                 direction = direction,
                 count = count,
                 lengthMs = lengthMs,
+                extraJson = extraJson,
+                sourceJson = sourceJson,
             };
         }
     }
@@ -108,6 +132,8 @@ namespace Saber.ChartEditor
         public const string DirectionNone = "none";
 
         public const int DefaultLaneCount = 8;
+        // ロングのカット回数の上限。裏譜面には L の1000回・G の100回がある(本編は上限を設けていない)。
+        public const int MaxLongCount = 10000;
         public const float DefaultXMin = -2.5f;
         public const float DefaultXMax = 2.5f;
         public const float DefaultYMin = -1.5f;
@@ -133,7 +159,11 @@ namespace Saber.ChartEditor
             "downright",
         };
 
-        public static SaberChartDocument FromJson(string json)
+        /// <summary>
+        /// 譜面の JSON(ファイルか、エディター内の比較・履歴用)を読む。keepNoteSource は裏譜面のファイルを読むときだけ true にし、
+        /// ノーツごとに元の文字を持たせる(書き出しで、触っていない項目を元の綴りのまま書くため)。
+        /// </summary>
+        public static SaberChartDocument FromJson(string json, bool keepNoteSource = false)
         {
             if (string.IsNullOrWhiteSpace(json)) return new SaberChartDocument();
 
@@ -149,8 +179,18 @@ namespace Saber.ChartEditor
 
             if (document == null)
                 throw new FormatException("chart.json のルートオブジェクトを読み取れません。 ");
-            CollectExtraFields(json, document);
+            List<SaberChartNote> sourced = CollectExtraFields(json, document, keepNoteSource);
             Normalize(document);
+            // 元の文字に、読み込んだ直後(正規化のあと)の値を添える。書き出しでは、この値から変わった項目だけを書き直す。
+            foreach (SaberChartNote note in sourced)
+            {
+                var source = new SaberJsonObject();
+                source.Set("raw", SaberJson.Parse(note.sourceJson));
+                var loaded = new SaberJsonArray();
+                foreach (string value in NoteValues(note)) loaded.Items.Add(SaberJson.String(value));
+                source.Set("loaded", loaded);
+                note.sourceJson = SaberJson.WriteCompact(source);
+            }
             return document;
         }
 
@@ -164,12 +204,37 @@ namespace Saber.ChartEditor
             "markers", MarkersFileKey, "tempoMap", TempoMapFileKey,
         };
 
-        private static void CollectExtraFields(string json, SaberChartDocument document)
+        // ノーツの項目として扱う名前。これ以外(裏譜面の mirror・windX など)は、ノーツごとに extraJson へ残す。
+        // extraJson・sourceJson はエディター内の JSON だけの入れ物。
+        private const string NoteExtraKey = "extraJson";
+        private const string NoteSourceKey = "sourceJson";
+
+        private static readonly HashSet<string> KnownNoteKeys = new HashSet<string>
+        {
+            "beat", "time", "x", "y", "type", "color", "direction", "count", "lengthMs", NoteExtraKey, NoteSourceKey,
+        };
+
+        // ファイルに書くノーツの項目(SaberChartFileNote と同じ並び)。sourceJson の loaded もこの並び。
+        private static readonly string[] NoteFields = { "beat", "time", "x", "y", "type", "color", "direction", "count", "lengthMs" };
+
+        // ノーツの知っている項目の値(比べるための文字)。並びは NoteFields。
+        private static string[] NoteValues(SaberChartNote note) => new[]
+        {
+            Exact(note.beat), Exact(note.time), Exact(note.x), Exact(note.y), note.type ?? string.Empty, note.color ?? string.Empty,
+            note.direction ?? string.Empty, note.count.ToString(System.Globalization.CultureInfo.InvariantCulture), Exact(note.lengthMs),
+        };
+
+        private static string Exact(float value) => value.ToString("R", System.Globalization.CultureInfo.InvariantCulture);
+
+        // 読み取った JSON のうち、元の文字を持たせたノーツ(keepNoteSource のときだけ。ほかは空の一覧)。
+        private static List<SaberChartNote> CollectExtraFields(string json, SaberChartDocument document, bool keepNoteSource)
         {
             document.extraFields ??= new List<SaberChartExtraField>();
             document.markers ??= new List<SaberChartMarker>();
-            if (!SaberJson.TryParseObject(json, out SaberJsonObject root)) return;
-            RemoveExplicitNullNotes(root, document);
+            // ここで読めないと、知らない項目(制作メモ・裏譜面の仕掛け)が保存で消える。知っている項目だけで開かずに知らせる。
+            if (!SaberJson.TryParseObject(json, out SaberJsonObject root))
+                throw new FormatException("譜面の JSON の一部を読み取れないため、知らない項目（制作メモ・裏譜面の仕掛けなど）を残して開けません。");
+            List<SaberChartNote> sourced = AlignNotesWithJson(root, document, keepNoteSource);
             if (document.markers.Count == 0 && root.Get(MarkersFileKey) is SaberJsonArray markerArray)
             {
                 foreach (SaberJsonNode item in markerArray.Items)
@@ -201,30 +266,82 @@ namespace Saber.ChartEditor
                     json = SaberJson.WriteCompact(member.Value),
                 });
             }
+            return sourced;
         }
 
         // JsonUtility は notes 配列の null を既定値のノーツ(0秒・中央)にするので、そのまま保存すると本編で実ノーツになる。
         // 本編 ChartLoader と同じく、元の JSON で null と書かれた位置だけ除く(値では見分けず、0秒・中央の正規ノーツは残す)。
+        // 同じ位置の対応で、ノーツの知らない項目を extraJson へ、keepNoteSource なら元の文字を sourceJson へ移す
+        // (null を除く前に移すので、何番目のノーツかがずれない)。
         // 位置で合わせるので Normalize の並べ替えより前に呼び、root の notes が1つで要素数も合うときだけ行う。
-        private static void RemoveExplicitNullNotes(SaberJsonObject root, SaberChartDocument document)
+        private static List<SaberChartNote> AlignNotesWithJson(SaberJsonObject root, SaberChartDocument document, bool keepNoteSource)
         {
-            if (document.notes == null || root.Members.Count(member => member.Key == "notes") != 1) return;
-            if (!(root.Get("notes") is SaberJsonArray array) || array.Items.Count != document.notes.Count) return;
+            var sourced = new List<SaberChartNote>();
+            if (document.notes == null) return sourced;
+            SaberJsonArray array = root.Members.Count(member => member.Key == "notes") == 1 ? root.Get("notes") as SaberJsonArray : null;
+            if (array == null || array.Items.Count != document.notes.Count)
+            {
+                // 対応が分からないまま開くと、ノーツの知らない項目(裏譜面の仕掛け)が保存で消える。開かずに知らせる。
+                if (root.Members.Any(member => member.Key == "notes" && member.Value is SaberJsonArray items &&
+                                               items.Items.Any(HasUnknownNoteKeys)))
+                    throw new FormatException("ノーツの数が読み取りと合わないため、ノーツごとの項目（裏譜面の仕掛けなど）を残して開けません。");
+                return sourced;
+            }
+            for (int i = 0; i < array.Items.Count; i++)
+            {
+                if (!(array.Items[i] is SaberJsonObject item) || document.notes[i] == null) continue;
+                document.notes[i].extraJson = MergeNoteExtras(document.notes[i].extraJson, item);
+                if (!keepNoteSource) continue;
+                // エディターの入れ物の項目は元の文字に入れない(ファイルのノーツには無い)。
+                var raw = new SaberJsonObject();
+                foreach (var member in item.Members)
+                    if (member.Key != NoteExtraKey && member.Key != NoteSourceKey) raw.Members.Add(member);
+                document.notes[i].sourceJson = SaberJson.WriteCompact(raw);
+                sourced.Add(document.notes[i]);
+            }
             for (int i = array.Items.Count - 1; i >= 0; i--)
                 if (array.Items[i] is SaberJsonValue value && value.Raw == "null") document.notes.RemoveAt(i);
+            return sourced;
         }
+
+        private static bool HasUnknownNoteKeys(SaberJsonNode node) =>
+            node is SaberJsonObject note && note.Members.Any(member => !KnownNoteKeys.Contains(member.Key));
+
+        // ファイルのノーツにある知らない項目を、元の綴りのまま extraJson に重ねる。無ければ今の値(エディターの JSON の extraJson)のまま。
+        private static string MergeNoteExtras(string current, SaberJsonObject note)
+        {
+            SaberJsonObject extra = null;
+            foreach (var member in note.Members)
+            {
+                if (KnownNoteKeys.Contains(member.Key)) continue;
+                extra ??= ParseNoteExtras(current) ?? new SaberJsonObject();
+                extra.Set(member.Key, member.Value);
+            }
+            return extra == null ? current ?? string.Empty : SaberJson.WriteCompact(extra);
+        }
+
+        // extraJson を読む。空・壊れている・オブジェクトでなければ null。
+        private static SaberJsonObject ParseNoteExtras(string extraJson) =>
+            !string.IsNullOrWhiteSpace(extraJson) && SaberJson.TryParseObject(extraJson, out SaberJsonObject extra) ? extra : null;
+
+        // 空の extraJson・sourceJson を省く(表の譜面では、比較・履歴・下書きの JSON を今までと同じ文字にする)。
+        // 文字列の中の引用符は \" になるので、本当の空の項目だけに合う。
+        private static readonly System.Text.RegularExpressions.Regex EmptyNoteExtra = new System.Text.RegularExpressions.Regex(
+            ",\\s*\"(?:" + NoteExtraKey + "|" + NoteSourceKey + ")\"\\s*:\\s*\"\"(?=\\s*[,}])",
+            System.Text.RegularExpressions.RegexOptions.CultureInvariant);
 
         /// <summary>エディター内の比較・履歴用の JSON。作業用の項目も含む。</summary>
         public static string ToJson(SaberChartDocument document, bool prettyPrint = true)
         {
             SaberChartDocument output = CopyRaw(document);
             Normalize(output);
-            return JsonUtility.ToJson(output, prettyPrint);
+            return EmptyNoteExtra.Replace(JsonUtility.ToJson(output, prettyPrint), string.Empty);
         }
 
         /// <summary>
         /// 譜面ファイルに書く JSON。本編と同じ項目に加え、読み込んだときの未知の項目
-        /// (制作メモなど)を先頭へそのまま戻す。
+        /// (制作メモなど)を先頭へ、ノーツの未知の項目(裏譜面の仕掛けなど)を各ノーツの中へそのまま戻す。
+        /// 裏譜面のファイルから読んだノーツ(sourceJson がある)は、値を変えていない項目を元の綴りのまま書く。
         /// </summary>
         public static string ToFileJson(SaberChartDocument document)
         {
@@ -238,9 +355,13 @@ namespace Saber.ChartEditor
                 displayLevel = output.displayLevel,
                 beatZeroMs = output.beatZeroMs,
                 timeSignatures = output.timeSignatures,
-                notes = output.notes,
+                notes = output.notes.Select(note => new SaberChartFileNote
+                {
+                    beat = note.beat, time = note.time, x = note.x, y = note.y, type = note.type, color = note.color,
+                    direction = note.direction, count = note.count, lengthMs = note.lengthMs,
+                }).ToList(),
             };
-            string json = JsonUtility.ToJson(file, true);
+            string json = WriteNoteTexts(JsonUtility.ToJson(file, true), output.notes);
             if (output.extraFields.Count == 0 && output.markers.Count == 0 && output.tempoMap.Count == 0) return json;
 
             int open = json.IndexOf('{');
@@ -275,6 +396,195 @@ namespace Saber.ChartEditor
                     .Append(SaberJson.WriteCompact(points)).Append(',');
             }
             return json.Insert(open + 1, extra.ToString());
+        }
+
+        // JsonUtility が書いたノーツを、ノーツ自身が持つ元の文字で直す(改行と字下げはそのノーツの書き方に合わせる)。
+        // ・元の文字(sourceJson)があり、値をどれも変えていないノーツは、元の項目の並びと綴りのまま書く。
+        // ・値を変えたノーツは、変えていない項目だけ元の綴りに戻す。知らない項目は末尾へ元の名前と綴りで足す。
+        // 元の文字も知らない項目も無ければ、文字を変えない(表の譜面は今までどおり)。
+        private static string WriteNoteTexts(string json, List<SaberChartNote> notes)
+        {
+            if (notes.All(note => string.IsNullOrEmpty(note.extraJson) && string.IsNullOrEmpty(note.sourceJson))) return json;
+            List<(string key, int start, int end)> members = SaberJson.RootMemberSpans(json);
+            List<(int start, int end)> spans = members == null || members.Count(member => member.key == "notes") != 1 ? null
+                : SaberJson.ArrayItemSpans(json, members.First(member => member.key == "notes").start);
+            if (spans == null || spans.Count != notes.Count)
+                throw new InvalidOperationException("ノーツごとの項目（裏譜面の仕掛けなど）を書き戻す位置が見つかりません。");
+            var builder = new System.Text.StringBuilder(json.Length + notes.Count * 32);
+            int copied = 0;
+            for (int i = 0; i < notes.Count; i++)
+            {
+                SaberJsonObject extra = ParseNoteExtras(notes[i].extraJson);
+                SaberJsonObject raw = ParseNoteSource(notes[i].sourceJson, out string[] loaded);
+                if (extra == null && raw == null) continue;
+                int open = spans[i].start, close = spans[i].end;
+                if (json[open] != '{' || json[close] != '}') continue;
+                int first = open + 1;
+                while (first < close && char.IsWhiteSpace(json[first])) first++;
+                string separator = json.Substring(open + 1, first - open - 1);
+                int end = close;
+                while (end > open + 1 && char.IsWhiteSpace(json[end - 1])) end--;
+                string[] now = raw != null ? NoteValues(notes[i]) : null;
+                if (raw != null && now.SequenceEqual(loaded) &&
+                    SaberJson.WriteCompact(UnknownMembers(raw)) == SaberJson.WriteCompact(extra ?? new SaberJsonObject()))
+                {
+                    builder.Append(json, copied, open - copied).Append('{');
+                    for (int m = 0; m < raw.Members.Count; m++)
+                    {
+                        if (m > 0) builder.Append(',');
+                        builder.Append(separator).Append(SaberJson.Quote(raw.Members[m].Key)).Append(": ")
+                            .Append(SaberJson.WriteCompact(raw.Members[m].Value));
+                    }
+                    builder.Append(json, end, close - end).Append('}');
+                    copied = close + 1;
+                    continue;
+                }
+                if (raw != null)
+                {
+                    List<(string key, int start, int end)> fields = SaberJson.ObjectMemberSpans(json, open);
+                    if (fields != null)
+                        foreach ((string key, int start, int stop) in fields)
+                        {
+                            int field = Array.IndexOf(NoteFields, key);
+                            if (field < 0 || now[field] != loaded[field] || !(LastMember(raw, key) is SaberJsonValue value)) continue;
+                            builder.Append(json, copied, start - copied).Append(value.Raw);
+                            copied = stop + 1;
+                        }
+                }
+                if (extra == null) continue;
+                builder.Append(json, copied, end - copied);
+                bool hasMember = end > open + 1;
+                foreach (var member in extra.Members)
+                {
+                    // 名前の重なる項目は書かない(同じ名前が2つあると、本編は後ろの値を読む)。
+                    if (KnownNoteKeys.Contains(member.Key)) continue;
+                    if (hasMember) builder.Append(',');
+                    builder.Append(separator).Append(SaberJson.Quote(member.Key)).Append(": ").Append(SaberJson.WriteCompact(member.Value));
+                    hasMember = true;
+                }
+                copied = end;
+            }
+            builder.Append(json, copied, json.Length - copied);
+            return builder.ToString();
+        }
+
+        // sourceJson の元のノーツと、読み込んだ直後の値(NoteFields の並び)。無い・壊れているときは null。
+        private static SaberJsonObject ParseNoteSource(string sourceJson, out string[] loaded)
+        {
+            loaded = null;
+            if (string.IsNullOrWhiteSpace(sourceJson) || !SaberJson.TryParseObject(sourceJson, out SaberJsonObject source) ||
+                !(source.Get("raw") is SaberJsonObject raw) || !(source.Get("loaded") is SaberJsonArray values) ||
+                values.Items.Count != NoteFields.Length) return null;
+            var texts = new string[NoteFields.Length];
+            for (int i = 0; i < texts.Length; i++)
+                if (!SaberJson.TryGetString(values.Items[i], out texts[i])) return null;
+            loaded = texts;
+            return raw;
+        }
+
+        // 元のノーツの知らない項目(読み込みで extraJson にしたものと同じ形)。
+        private static SaberJsonObject UnknownMembers(SaberJsonObject note)
+        {
+            var unknown = new SaberJsonObject();
+            foreach (var member in note.Members)
+                if (!KnownNoteKeys.Contains(member.Key)) unknown.Set(member.Key, member.Value);
+            return unknown;
+        }
+
+        // 同じ名前が2つあれば、本編(JsonUtility)と同じく後ろの値。
+        private static SaberJsonNode LastMember(SaberJsonObject note, string key)
+        {
+            SaberJsonNode found = null;
+            foreach (var member in note.Members)
+                if (member.Key == key) found = member.Value;
+            return found;
+        }
+
+        /// <summary>
+        /// これから書く譜面の JSON の上の段(notes 以外)のうち、元のファイルから変わっていない項目を、元のファイルの文字のまま書く
+        /// (float にした bpm・丸めたテンポ地図・1行に詰めた知らない項目を、触っていなければ元の綴りに戻す)。
+        /// 「変わっていない」は、元のファイルをこのエディターで読んでそのまま書いたときと同じ文字になること。
+        /// 元のファイルにあってエディターが書かない項目(空の editorMarkers など)も、そのままなら元の文字で足す。
+        /// </summary>
+        public static string KeepUntouchedRootTexts(string json, string original)
+        {
+            if (string.IsNullOrEmpty(json) || string.IsNullOrWhiteSpace(original)) return json;
+            string unchanged;
+            try { unchanged = ToFileJson(FromJson(original)); }
+            catch (Exception exception) when (exception is FormatException || exception is InvalidOperationException ||
+                                              exception is ArgumentException) { return json; }
+            List<(string key, int start, int end)> mine = SaberJson.RootMemberSpans(json);
+            List<(string key, int start, int end)> baseline = SaberJson.RootMemberSpans(unchanged);
+            List<(string key, int start, int end)> source = SaberJson.RootMemberSpans(original);
+            if (mine == null || baseline == null || source == null || mine.Count == 0) return json;
+            string newline = json.Contains("\r\n") ? "\r\n" : "\n";
+            string RawText((string key, int start, int end) member)
+            {
+                // 元の文字の改行は、書く JSON の改行にそろえる(値の文字列の中に生の改行は無いので、項目の間の改行だけが変わる)。
+                string text = original.Substring(member.start, member.end - member.start + 1).Replace("\r\n", "\n");
+                return newline != "\n" ? text.Replace("\n", newline) : text;
+            }
+            var builder = new System.Text.StringBuilder(json.Length);
+            int copied = 0;
+            foreach ((string key, int start, int end) in mine)
+            {
+                // 名前が重なる項目は、どれが対応するか分からないので書き直したままにする。
+                if (key == "notes" || mine.Count(member => member.key == key) != 1 ||
+                    baseline.Count(member => member.key == key) != 1 || source.Count(member => member.key == key) != 1) continue;
+                var before = baseline.First(member => member.key == key);
+                int length = end - start + 1;
+                if (before.end - before.start + 1 != length || string.CompareOrdinal(json, start, unchanged, before.start, length) != 0) continue;
+                builder.Append(json, copied, start - copied).Append(RawText(source.First(member => member.key == key)));
+                copied = end + 1;
+            }
+            // 書いたものにも、元のファイルをそのまま書いたものにも無い項目は、エディターが書かないだけなので元の文字で足す。
+            var missing = source.Where(member => member.key != "notes" && source.Count(other => other.key == member.key) == 1 &&
+                                                 mine.All(other => other.key != member.key) &&
+                                                 baseline.All(other => other.key != member.key)).ToList();
+            if (missing.Count > 0)
+            {
+                int rootOpen = json.IndexOf('{'), first = rootOpen + 1;
+                while (first < json.Length && char.IsWhiteSpace(json[first])) first++;
+                string separator = json.Substring(rootOpen + 1, first - rootOpen - 1);
+                int insertAt = mine[mine.Count - 1].end + 1;
+                builder.Append(json, copied, insertAt - copied);
+                copied = insertAt;
+                foreach (var member in missing)
+                    builder.Append(',').Append(separator).Append(SaberJson.Quote(member.key)).Append(": ").Append(RawText(member));
+            }
+            builder.Append(json, copied, json.Length - copied);
+            return builder.ToString();
+        }
+
+        // 裏譜面をエディターで保存した日時(上の段の項目。本編は読まない)。生成の道具で作り直すときに、手で直したことが分かるように。
+        public const string EditedAtKey = "_editorEditedAt";
+
+        /// <summary>上の段の _editorEditedAt を time(ISO 8601)にした写し。元の譜面は変えない。2回目以降は同じ項目を上書きする。</summary>
+        public static SaberChartDocument WithEditedAt(SaberChartDocument document, DateTimeOffset time)
+        {
+            SaberChartDocument copy = CopyRaw(document);
+            string value = SaberJson.Quote(time.ToString("yyyy-MM-dd'T'HH:mm:sszzz", System.Globalization.CultureInfo.InvariantCulture));
+            SaberChartExtraField field = copy.extraFields.Find(item => item != null && item.key == EditedAtKey);
+            if (field != null) field.json = value;
+            else copy.extraFields.Add(new SaberChartExtraField { key = EditedAtKey, json = value });
+            return copy;
+        }
+
+        /// <summary>ノーツの知らない項目の名前(読み込んだ順)。</summary>
+        public static List<string> NoteExtraKeys(SaberChartNote note)
+        {
+            var keys = new List<string>();
+            SaberJsonObject extra = ParseNoteExtras(note?.extraJson);
+            if (extra != null) keys.AddRange(extra.Members.Select(member => member.Key));
+            return keys;
+        }
+
+        /// <summary>ノーツの知らない項目 key が true か(R の mirror など)。</summary>
+        public static bool NoteExtraFlag(SaberChartNote note, string key)
+        {
+            if (string.IsNullOrEmpty(note?.extraJson) || note.extraJson.IndexOf(key, StringComparison.Ordinal) < 0) return false;
+            SaberJsonObject extra = ParseNoteExtras(note.extraJson);
+            return extra != null && SaberJson.TryGetBool(extra.Get(key), out bool value) && value;
         }
 
         public static SaberChartDocument Clone(SaberChartDocument source)
@@ -322,7 +632,7 @@ namespace Saber.ChartEditor
 
                 string type = LowerOrDefault(note.type, TypeTap);
                 note.type = ValidTypes.Contains(type) ? type : TypeTap;
-                int count = Mathf.Clamp(note.count, 1, 99);
+                int count = Mathf.Clamp(note.count, 1, MaxLongCount);
 
                 // 本編は type より count / direction を実際の判定に使う。
                 // 旧・手書き譜面の不整合を読み込んでもゲーム上の意味を失わないよう昇格する。
@@ -337,6 +647,9 @@ namespace Saber.ChartEditor
                 if (!IsFinite(note.lengthMs) || note.lengthMs < 0f) note.lengthMs = 0f;
                 if (note.type != TypeLong) note.lengthMs = 0f;
                 note.lengthMs = Mathf.Min(note.lengthMs, 600000f);
+                // 知らない項目と元の文字の中身は変えない(読み込んだ綴りのまま書き戻す)。
+                note.extraJson ??= string.Empty;
+                note.sourceJson ??= string.Empty;
             }
 
             SortNotes(document);
@@ -536,6 +849,13 @@ namespace Saber.ChartEditor
         {
             return 4f / Mathf.Max(1, noteDenominator);
         }
+
+        /// <summary>
+        /// 動かした座標を範囲に収める。元から範囲の外にある値(裏譜面 L の x 2.7 など)は、その値までを範囲とみなす
+        /// (少し動かしただけで範囲の端へ飛ばさない)。動かしていない軸には使わない。
+        /// </summary>
+        public static float ClampMoved(float value, float original, float min, float max) =>
+            Mathf.Clamp(value, Mathf.Min(min, original), Mathf.Max(max, original));
 
         public static float CoordinateForLane(int lane, int laneCount, float min, float max)
         {

@@ -108,20 +108,56 @@ namespace Saber.ChartEditor
         private string difficultyFilesSong;
         private double difficultyFilesCheckedAt;
         private readonly bool[] difficultyFiles = new bool[3];
+        private SecretChart difficultySecret;
         private GUIStyle[] missingDifficultyStyles;
+        private GUIStyle secretDifficultyStyle;
 
-        // 難易度のファイルがあるか。描画のたびにディスクを見ないよう、曲ごとに2秒だけ覚える。
+        // 難易度のファイルと裏譜面があるか。描画のたびにディスクを見ないよう、曲ごとに2秒だけ覚える。
+        private void RefreshDifficultyFiles()
+        {
+            if (difficultyFilesSong == EditingSongId && EditorApplication.timeSinceStartup < difficultyFilesCheckedAt + 2) return;
+            // 裏譜面の札の有無で部品の数が変わるので、描画中は Layout のときだけ読み直す(Layout と次の描画で数をそろえる)。
+            if (difficultyFilesSong == EditingSongId && Event.current != null && Event.current.type != EventType.Layout) return;
+            difficultyFilesSong = EditingSongId;
+            difficultyFilesCheckedAt = EditorApplication.timeSinceStartup;
+            bool valid = SaberChartFileStore.IsValidSongId(EditingSongId, out _);
+            for (int i = 0; i < DifficultyValues.Length; i++)
+                difficultyFiles[i] = valid && SaberChartFileStore.ChartExists(EditingSongId, DifficultyValues[i]);
+            difficultySecret = valid ? SaberChartSecrets.For(EditingSongId) : null;
+        }
+
         private bool DifficultyFileExists(int index)
         {
-            if (difficultyFilesSong != EditingSongId || EditorApplication.timeSinceStartup >= difficultyFilesCheckedAt + 2)
-            {
-                difficultyFilesSong = EditingSongId;
-                difficultyFilesCheckedAt = EditorApplication.timeSinceStartup;
-                bool valid = SaberChartFileStore.IsValidSongId(EditingSongId, out _);
-                for (int i = 0; i < DifficultyValues.Length; i++)
-                    difficultyFiles[i] = valid && SaberChartFileStore.ChartExists(EditingSongId, DifficultyValues[i]);
-            }
+            RefreshDifficultyFiles();
             return difficultyFiles[index];
+        }
+
+        // 「開く・作る」で選んでいる曲の裏譜面。これも曲ごとに2秒だけ覚える。
+        private string pickerSecretSong;
+        private double pickerSecretCheckedAt;
+        private SecretChart pickerSecret;
+
+        private SecretChart PickerSecret()
+        {
+            string song = songId?.Trim();
+            if (pickerSecretSong == song && EditorApplication.timeSinceStartup < pickerSecretCheckedAt + 2) return pickerSecret;
+            pickerSecretSong = song;
+            pickerSecretCheckedAt = EditorApplication.timeSinceStartup;
+            pickerSecret = SaberChartSecrets.For(song);
+            return pickerSecret;
+        }
+
+        // 裏譜面の札の文字は、本編の表の目印の色(Accent)。
+        private GUIStyle SecretDifficultyStyle(Color accent)
+        {
+            secretDifficultyStyle ??= new GUIStyle(EditorStyles.miniButton) { fontStyle = FontStyle.Bold };
+            foreach (GUIStyleState state in new[]
+                     {
+                         secretDifficultyStyle.normal, secretDifficultyStyle.hover, secretDifficultyStyle.active, secretDifficultyStyle.focused,
+                         secretDifficultyStyle.onNormal, secretDifficultyStyle.onHover, secretDifficultyStyle.onActive, secretDifficultyStyle.onFocused,
+                     })
+                state.textColor = accent;
+            return secretDifficultyStyle;
         }
 
         private void DrawDifficultySwitch()
@@ -147,6 +183,23 @@ namespace Saber.ChartEditor
                     if (!pressed || editing) continue;
                     SwitchEditingDifficulty(i);
                     GUIUtility.ExitGUI();
+                }
+                // その曲に裏譜面があれば、E N H の右にその文字の札を出す。
+                RefreshDifficultyFiles();
+                if (difficultySecret != null)
+                {
+                    GUILayout.Space(3);
+                    bool editing = EditingDifficultyIndex == SecretDifficultyIndex;
+                    string title = SaberChartSecrets.Title(difficultySecret.Difficulty);
+                    string tip = editing ? $"裏譜面 {title} を編集中。ノーツごとの仕掛けはそのまま残します"
+                        : $"裏譜面 {title} を開く（未保存の変更があれば、先に保存するかを聞きます）";
+                    bool pressed = GUILayout.Toggle(editing, new GUIContent(SaberChartSecrets.Letter(difficultySecret.Difficulty), tip),
+                        SecretDifficultyStyle(difficultySecret.Accent), GUILayout.Width(24));
+                    if (pressed && !editing)
+                    {
+                        SwitchEditingDifficulty(SecretDifficultyIndex);
+                        GUIUtility.ExitGUI();
+                    }
                 }
             }
         }
@@ -228,14 +281,22 @@ namespace Saber.ChartEditor
                 GUI.SetNextControlName("ChartText:string_nextSongId");
                 songId = EditorGUILayout.TextField(songId ?? string.Empty, GUILayout.MinWidth(120));
                 if (GUILayout.Button("曲一覧 ▾", GUILayout.Width(75))) ShowSongMenu();
-                difficultyIndex = EditorGUILayout.Popup(difficultyIndex, DifficultyLabels, GUILayout.Width(78));
+                // 選んだ曲に裏譜面があれば、難易度の最後に足す(無い曲で裏譜面を選んでいたら Normal を出す)。
+                SecretChart secret = PickerSecret();
+                string[] labels = secret != null ? DifficultyLabels.Append(SaberChartSecrets.Label(secret.Difficulty)).ToArray() : DifficultyLabels;
+                int shown = difficultyIndex == SecretDifficultyIndex && secret == null ? 1 : Mathf.Clamp(difficultyIndex, 0, labels.Length - 1);
+                difficultyIndex = EditorGUILayout.Popup(shown, labels, GUILayout.Width(78));
+                bool secretTarget = difficultyIndex == SecretDifficultyIndex;
                 if (GUILayout.Button("読込", GUILayout.Width(58))) LoadDocument();
-                if (GUILayout.Button("新規", GUILayout.Width(58))) NewDocument();
-                if (GUILayout.Button("ここへ複製", GUILayout.Width(87))) DuplicateToSelection();
+                using (new EditorGUI.DisabledScope(secretTarget))
+                    if (GUILayout.Button(new GUIContent("新規", secretTarget ? SecretNewReason : ""), GUILayout.Width(58))) NewDocument();
+                using (new EditorGUI.DisabledScope(secretTarget || EditingIsSecret))
+                    if (GUILayout.Button(new GUIContent("ここへ複製", secretTarget || EditingIsSecret ? SecretDuplicateReason : ""), GUILayout.Width(87)))
+                        DuplicateToSelection();
                 if (GUILayout.Button("選択を戻す", GUILayout.Width(87))) ResetSelectionToEditing();
                 GUILayout.EndHorizontal();
                 GUILayout.Label(SelectionDiffersFromEditing()
-                    ? $"未読込: {songId?.Trim()} / {DifficultyLabels[Mathf.Clamp(difficultyIndex, 0, 2)]}   |   保存先: {EditingSongId} / {EditingDifficultyLabel}"
+                    ? $"未読込: {songId?.Trim()} / {DifficultyLabelFor(CurrentDifficulty)}   |   保存先: {EditingSongId} / {EditingDifficultyLabel}"
                     : $"編集中と同じ選択です  /  {document.notes.Count:N0} NOTES", smallMutedStyle);
             }
             GUILayout.EndArea();
@@ -302,11 +363,17 @@ namespace Saber.ChartEditor
                         {
                             DrawWorkspaceAudio();
                             SectionLabel("曲 / グリッド設定");
-                            DrawChartSettings();
-                            DrawTimingExplanation();
-                            DrawSettingsMismatch();
-                            DrawTempoMapPanel();
-                            GUILayout.Space(10); DrawTimeSignatures();
+                            if (EditingIsSecret)
+                                EditorGUILayout.HelpBox(SecretSettingsReason + "。BPM・OFFSET・グリッド原点・座標倍率・拍子・テンポ地図は、ここでは変えません。",
+                                    MessageType.Info);
+                            using (new EditorGUI.DisabledScope(EditingIsSecret))
+                            {
+                                DrawChartSettings();
+                                DrawTimingExplanation();
+                                DrawSettingsMismatch();
+                                DrawTempoMapPanel();
+                                GUILayout.Space(10); DrawTimeSignatures();
+                            }
                         }
                         break;
                     case InspectorSection.Song:
@@ -376,10 +443,11 @@ namespace Saber.ChartEditor
         private List<SaberChartIssue> LintIssues(float audioLengthMs)
         {
             SaberChartDocument upper = UpperDocument();
-            string key = SaberChartLint.Fingerprint(document) + "|" + EditingDifficultyLabel + "|" + audioLengthMs + "|" + upperDocumentKey;
+            string key = SaberChartLint.Fingerprint(document) + "|" + EditingGameDifficulty + "|" + audioLengthMs + "|" + upperDocumentKey;
             if (lintCache == null || key != lintCacheKey)
             {
-                lintCache = SaberChartLint.Check(document, EditingDifficultyLabel, audioLengthMs);
+                // 本編と同じ難易度の名前で調べる(裏譜面は表の文字。例 "R")。
+                lintCache = SaberChartLint.Check(document, EditingGameDifficulty, audioLengthMs);
                 // 下の難易度が上の難易度の一部になっているか(上にない時刻のノーツをまとめて1件)。
                 string upperDifficulty = SaberChartDerive.UpperDifficulty(EditingDifficulty);
                 SaberChartIssue nesting = upperDifficulty == null ? null : SaberChartLint.NotInUpper(document, upper,
@@ -474,11 +542,13 @@ namespace Saber.ChartEditor
         private float packagedAudioLengthMs;
         private float PackagedAudioLengthMs()
         {
-            if (packagedAudioSong != EditingSongId || EditorApplication.timeSinceStartup >= packagedAudioCheckedAt + 2)
+            // 難易度ごとの音源(ElDorado G の長い版 audio_g.mp3 など)があれば、その長さで調べる。
+            string key = EditingSongId + "|" + EditingDifficulty;
+            if (packagedAudioSong != key || EditorApplication.timeSinceStartup >= packagedAudioCheckedAt + 2)
             {
-                AudioClip packaged = SaberChartFileStore.LoadAudioClip(EditingSongId);
+                AudioClip packaged = SaberChartFileStore.LoadAudioClipFor(EditingSongId, EditingDifficulty);
                 packagedAudioLengthMs = packaged != null ? packaged.length * 1000f : 0f;
-                packagedAudioSong = EditingSongId;
+                packagedAudioSong = key;
                 packagedAudioCheckedAt = EditorApplication.timeSinceStartup;
             }
             return packagedAudioLengthMs;

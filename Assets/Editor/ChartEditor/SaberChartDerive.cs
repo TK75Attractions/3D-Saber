@@ -71,6 +71,9 @@ namespace Saber.ChartEditor
                     if (hands.Any(hand => TooClose(hand, time, beat, lastByHand, lastBeatByHand, rules))) continue;
                     SaberChartNote candidate = Simplify(source, rules, beatAt);
                     candidate.beat = beat;
+                    // 候補は下の難易度の新しいノーツなので、上のノーツの知らない項目と元の文字は付けない。
+                    candidate.extraJson = string.Empty;
+                    candidate.sourceJson = string.Empty;
                     if (existing?.notes != null && existing.notes.Any(note => SaberChartRangeOps.SameSlot(note, candidate))) continue;
                     result.Add(candidate);
                     kept++;

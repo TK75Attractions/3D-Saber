@@ -113,6 +113,10 @@ namespace Saber.ChartEditor
             }
             if (!songInfo.Exists) GUILayout.Label("まだ stage.json がありません。保存すると作ります", smallMutedStyle);
             if (stageChangedOutside) EditorGUILayout.HelpBox(StageChangedMessage, MessageType.Warning);
+            string variantStage = SaberChartFileStore.StageVariantPath(EditingSongId, EditingDifficulty);
+            if (variantStage != null)
+                EditorGUILayout.HelpBox($"{EditingDifficultyLabel} の本編の演出（区間・試聴）は {Path.GetFileName(variantStage)} です（見取り図の区間もこちら）。" +
+                                        "ここでは曲の共通の stage.json を編集します。", MessageType.Info);
 
             GUI.SetNextControlName("ChartText:songInfo.DisplayName");
 

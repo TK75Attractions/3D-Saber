@@ -77,6 +77,8 @@ namespace Saber.ChartEditor
         {
             string specific = ChartPath(songId, difficulty);
             if (!string.IsNullOrEmpty(specific) && File.Exists(specific)) return specific;
+            // 裏譜面は Normal(chart.json)で代わりに開かない(保存すると Normal の中身の裏譜面ができるため)。
+            if (SaberChartSecrets.IsSecret(difficulty)) return null;
 
             string folder = SongFolderPath(songId);
             if (folder == null) return null;
@@ -90,7 +92,8 @@ namespace Saber.ChartEditor
                 throw new InvalidOperationException(reason);
             loadedPath = FindChartToLoad(songId, difficulty);
             if (string.IsNullOrEmpty(loadedPath)) return new SaberChartDocument();
-            return SaberChartUtility.FromJson(File.ReadAllText(loadedPath, Encoding.UTF8));
+            // 裏譜面はノーツごとに元の文字を持たせる(保存で、触っていない項目を元の綴りのまま書くため)。
+            return SaberChartUtility.FromJson(File.ReadAllText(loadedPath, Encoding.UTF8), SaberChartSecrets.IsSecret(difficulty));
         }
 
         public static string Save(SaberChartDocument document, string songId, string difficulty)
@@ -101,7 +104,15 @@ namespace Saber.ChartEditor
             string folder = SongFolderPath(songId);
             Directory.CreateDirectory(folder);
             string destination = ChartPath(songId, difficulty);
-            string json = SaberChartUtility.ToFileJson(document);
+            string json;
+            if (SaberChartSecrets.IsSecret(difficulty))
+            {
+                // 裏譜面は、生成の道具で作り直すときに手で直したことが分かるよう、保存した日時を書く(ファイルにだけ。編集中の譜面には入れない)。
+                // 触っていない上の段の項目は、元のファイルの文字のまま書く(bpm 57.333333333333336 を float に丸めない)。
+                json = SaberChartUtility.ToFileJson(SaberChartUtility.WithEditedAt(document, DateTimeOffset.Now));
+                if (File.Exists(destination)) json = SaberChartUtility.KeepUntouchedRootTexts(json, File.ReadAllText(destination, Encoding.UTF8));
+            }
+            else json = SaberChartUtility.ToFileJson(document);
             var targets = new List<(string path, string difficulty)> { (destination, difficulty) };
 
             // chart.json は Easy / Normal の読み込み先の予備。Normal と同じ内容に保ち、
@@ -121,6 +132,15 @@ namespace Saber.ChartEditor
             return folder == null ? null : Path.Combine(folder, "stage.json");
         }
 
+        /// <summary>その難易度だけの演出 stage_<難易度>.json(ElDorado G など。本編はあればこちらを使う)。無ければ null。</summary>
+        public static string StageVariantPath(string songId, string difficulty)
+        {
+            string folder = SongFolderPath(songId);
+            if (folder == null || string.IsNullOrWhiteSpace(difficulty) || !IsValidSongId(difficulty, out _)) return null;
+            string path = Path.Combine(folder, "stage_" + NormalizeDifficulty(difficulty) + ".json");
+            return File.Exists(path) ? path : null;
+        }
+
         public static string CoverPath(string songId)
         {
             string folder = SongFolderPath(songId);
@@ -128,16 +148,30 @@ namespace Saber.ChartEditor
         }
 
         /// <summary>本編が鳴らす音源ファイル(ogg → wav → mp3 の順で最初に見つかったもの)。無ければ null。</summary>
-        public static string AudioPath(string songId)
+        public static string AudioPath(string songId) => AudioPathFor(songId, null);
+
+        /// <summary>その難易度で本編が鳴らす音源。その難易度の音源(ElDorado G の audio_g.mp3 など)があればそちら。</summary>
+        public static string AudioPathFor(string songId, string difficulty)
         {
             string folder = SongFolderPath(songId);
             if (folder == null) return null;
-            foreach (string audioName in AudioNames)
+            foreach (string audioName in AudioNamesFor(folder, difficulty))
             {
                 string path = Path.Combine(folder, audioName);
                 if (File.Exists(path)) return path;
             }
             return null;
+        }
+
+        // 本編(SongLoudness.VariantSuffix)と同じ決まり: audio_<難易度>.* が1つでもあれば、その難易度はそちらだけを鳴らす。
+        private static IEnumerable<string> AudioNamesFor(string folder, string difficulty)
+        {
+            string suffix = SongLoudness.VariantSuffix(folder, difficulty);
+            if (string.IsNullOrEmpty(suffix)) return AudioNames;
+            var names = new List<string>();
+            foreach (string audioName in AudioNames)
+                names.Add(Path.GetFileNameWithoutExtension(audioName) + suffix + Path.GetExtension(audioName));
+            return names;
         }
 
         /// <summary>stage.json を、譜面と同じ手順(一時ファイル→バックアップ→置き換え、失敗したら戻す)で書く。</summary>
@@ -286,11 +320,14 @@ namespace Saber.ChartEditor
         // 本編ランタイムと同じ file:// 経由のデコードで読み込む。
         // 毎リペイントの検証(ValidationWarnings)からも呼ばれるため、ファイル更新時刻+サイズで
         // キャッシュし、失敗もキャッシュして再デコードの連発(ビジーカーソル連打)を防ぐ。
-        public static AudioClip LoadAudioClip(string songId)
+        public static AudioClip LoadAudioClip(string songId) => LoadAudioClipFor(songId, null);
+
+        /// <summary>その難易度で本編が鳴らす音源(audio_<難易度>.* があればそちら)。</summary>
+        public static AudioClip LoadAudioClipFor(string songId, string difficulty)
         {
             string folder = SongFolderPath(songId);
             if (folder == null) return null;
-            foreach (string audioName in AudioNames)
+            foreach (string audioName in AudioNamesFor(folder, difficulty))
             {
                 string path = Path.Combine(folder, audioName);
                 if (!File.Exists(path)) continue;
@@ -375,14 +412,17 @@ namespace Saber.ChartEditor
             }
         }
 
-        public static bool IsAudioClipForSong(AudioClip clip, string songId)
+        public static bool IsAudioClipForSong(AudioClip clip, string songId) => IsAudioClipForChart(clip, songId, null);
+
+        /// <summary>その難易度で本編が鳴らす音源のクリップか(audio_<難易度>.* があればそちら)。</summary>
+        public static bool IsAudioClipForChart(AudioClip clip, string songId, string difficulty)
         {
             if (clip == null) return false;
             string folder = SongFolderPath(songId);
             if (folder == null) return false;
 
             // このストアがデコードして返したクリップはキャッシュ照合で判定する
-            foreach (string audioName in AudioNames)
+            foreach (string audioName in AudioNamesFor(folder, difficulty))
             {
                 string path = Path.Combine(folder, audioName);
                 if (audioCache.TryGetValue(path, out CachedAudio cached) && cached.clip == clip) return true;
@@ -393,7 +433,7 @@ namespace Saber.ChartEditor
             if (string.IsNullOrEmpty(assetPath)) return false;
             string projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
             string absolute = Path.GetFullPath(Path.Combine(projectRoot, assetPath));
-            foreach (string audioName in AudioNames)
+            foreach (string audioName in AudioNamesFor(folder, difficulty))
             {
                 if (PathsEqual(absolute, Path.Combine(folder, audioName))) return true;
             }

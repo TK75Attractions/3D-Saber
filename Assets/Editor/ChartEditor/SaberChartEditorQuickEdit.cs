@@ -54,6 +54,9 @@ namespace Saber.ChartEditor
                     SaberChartNote note = SelectedNote;
                     int color = System.Array.IndexOf(ColorValues, note.color);
                     GUILayout.Label($"音源上 {(note.time + document.offsetMs) / 1000f:0.000}s（OFFSET込み） /  {(color >= 0 ? ColorLabels[color] : note.color)}  /  {DirectionGlyph(note.direction)}", smallMutedStyle);
+                    System.Collections.Generic.List<string> extras = SaberChartUtility.NoteExtraKeys(note);
+                    if (extras.Count > 0)
+                        GUILayout.Label($"仕掛け（そのまま残します）: {string.Join("・", extras)}", smallMutedStyle);
                     GUILayout.BeginHorizontal();
                     if (GUILayout.Button("10ms早く")) NudgeSelectedNoteTime(-10f);
                     if (GUILayout.Button("10ms遅く")) NudgeSelectedNoteTime(10f);
@@ -100,7 +103,7 @@ namespace Saber.ChartEditor
             ApplySelectionEdit("高さを変更しました。Ctrl+Z で戻せます", targets =>
             {
                 foreach (SaberChartNote note in targets)
-                    note.y = Mathf.Clamp(note.y + direction * step,
+                    note.y = SaberChartUtility.ClampMoved(note.y + direction * step, note.y,
                         SaberChartUtility.DefaultYMin, SaberChartUtility.DefaultYMax);
                 return true;
             });
