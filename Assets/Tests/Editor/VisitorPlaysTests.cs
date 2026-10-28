@@ -43,19 +43,21 @@ public class VisitorPlaysTests
         Assert.AreEqual(savedMode, PlayerPrefs.GetInt(VisitorPlays.PreferenceKey, int.MinValue));
     }
 
+    // 2026-10-28: 文化祭は1人1曲に戻ったので、保存なしは1曲。2曲の予定だった間の保存値(_v1)は読まない。
     [Test]
-    public void MissingPreferenceDefaultsToTwo()
+    public void MissingPreferenceDefaultsToOne()
     {
-        Assert.AreEqual(2, VisitorPlays.ResolveSongsPerVisitor(null));
+        Assert.AreEqual(1, VisitorPlays.ResolveSongsPerVisitor(null));
+        Assert.AreEqual("visitorSongsPerPlay_v2", VisitorPlays.PreferenceKey, "2曲の予定だった間の保存値を持ち越さない");
     }
 
     [TestCase(1, 1)]
     [TestCase(2, 2)]
-    [TestCase(0, 2)]
-    [TestCase(-1, 2)]
-    [TestCase(3, 2)]
-    [TestCase(int.MaxValue, 2)]
-    public void InvalidValuesUseTwo(int stored, int expected)
+    [TestCase(0, 1)]
+    [TestCase(-1, 1)]
+    [TestCase(3, 1)]
+    [TestCase(int.MaxValue, 1)]
+    public void InvalidValuesUseOne(int stored, int expected)
     {
         Assert.AreEqual(expected, VisitorPlays.ResolveSongsPerVisitor(stored));
         VisitorPlays.SetSongsPerVisitorForTest(stored);
@@ -73,7 +75,7 @@ public class VisitorPlaysTests
         }
         VisitorPlays.SetSongsPerVisitorForTest(null);
         int expected = VisitorPlays.ResolveSongsPerVisitor(
-            PlayerPrefs.GetInt(VisitorPlays.PreferenceKey, 2));
+            PlayerPrefs.GetInt(VisitorPlays.PreferenceKey, 1));
         Assert.AreEqual(expected, VisitorPlays.SongsPerVisitor);
     }
 

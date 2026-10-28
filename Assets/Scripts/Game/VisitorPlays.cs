@@ -2,9 +2,11 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // 1人(1組)の曲数。設定だけ保存し、進行中の回数はタイトルで数え直す。
+// 2026-10-28: 文化祭は1人1曲に戻った(ユーザー「プレイ回数やっぱ2回から1回になったから戻して」)。既定を1曲にし、
+// 2曲の予定だった間に保存された値(_v1)は読まない。2曲モードはタイトルの 2 キーで切り替えられるまま残す。
 public static class VisitorPlays
 {
-    public const string PreferenceKey = "visitorSongsPerPlay_v1";
+    public const string PreferenceKey = "visitorSongsPerPlay_v2";
     static int? songsForTest;
     static readonly HashSet<string> completedRuns = new HashSet<string>();
     static string voltageRun;
@@ -22,13 +24,13 @@ public static class VisitorPlays
     }
 
     public static int SongsPerVisitor => songsForTest
-        ?? ResolveSongsPerVisitor(PlayerPrefs.GetInt(PreferenceKey, 2));
+        ?? ResolveSongsPerVisitor(PlayerPrefs.GetInt(PreferenceKey, 1));
     public static int CompletedSongs { get; private set; }
     public static bool HasNextSong => CompletedSongs < SongsPerVisitor;
     public static int CurrentSongNumber => Mathf.Min(CompletedSongs + 1, SongsPerVisitor);
 
-    // 保存なし・壊れた値は、予定している2曲モードにそろえる。
-    public static int ResolveSongsPerVisitor(int? saved) => saved == 1 ? 1 : 2;
+    // 保存なし・壊れた値は1曲。
+    public static int ResolveSongsPerVisitor(int? saved) => saved == 2 ? 2 : 1;
 
     public static void ToggleSongsPerVisitor()
     {
