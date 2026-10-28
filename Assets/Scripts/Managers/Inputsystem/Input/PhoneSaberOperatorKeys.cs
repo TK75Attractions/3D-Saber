@@ -224,6 +224,7 @@ public sealed class PhoneSaberOperatorKeys : MonoBehaviour
                 if (fields.StartsWith("learn-area=")) return "スマホ: プレイ範囲を覚える（" + fields.Substring(11) + "秒、振りやすい範囲で上下左右に振る）";
                 if (fields.StartsWith("shutter-iso=")) return "iPhone固定シャッター: " + ShutterISOLabel(int.Parse(fields.Substring(12)));
                 if (fields.StartsWith("shutter-emitter=")) return "iPhone低ISOの色付き発光体 " + (fields.EndsWith("1") ? "ON" : "OFF");
+                if (fields.StartsWith("auto-iso=")) return "iPhone ISO自動調整 " + (fields.EndsWith("1") ? "ON" : "OFF");
                 if (fields.StartsWith("shutter=")) return "iPhone固定シャッター: " + (fields == "shutter=0" ? "OFF（自動露出）" : "1/" + fields.Substring(8) + " 秒");
                 if (fields.StartsWith("exposure-bias=")) return "スマホ露出: " + (fields.Substring(14) == "0" ? "0（OFF）" : fields.Substring(14));
                 if (fields.StartsWith("track-lock=")) return "スマホ: 剣を追いかける " + (fields.EndsWith("1") ? "ON" : "OFF");
@@ -268,6 +269,7 @@ public sealed class PhoneSaberOperatorKeys : MonoBehaviour
             case "failed": result = (operationResult ? "範囲を" : "") + "覚えられませんでした（振りが足りません）"; break;
             case "shutter-iso": result = "固定シャッター ISO " + ack.Detail; break;
             case "shutter-emitter": result = "低ISOの色付き発光体 " + (ack.Detail == "on" ? "ON（固定・ISO2000未満で有効）" : "OFF"); break;
+            case "auto-iso": result = "ISO自動調整 " + (ack.Detail == "on" ? "ON（明るいと感度を下げる）" : "OFF"); break;
             case "shutter": result = "固定シャッター " + (ack.Detail == "off" ? "OFF（自動露出）" : "1/" + ack.Detail + " 秒"); break;
             case "exposure": result = "露出を " + ack.Detail.Substring(2) + " EV にしました"; break;
             case "tracklock": result = "剣を追いかける " + (ack.Detail == "on" ? "ON" : "OFF"); break;

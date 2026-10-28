@@ -33,7 +33,7 @@ const token=new URLSearchParams(location.search).get('t')||'';
 const panel=document.getElementById('panel'), connection=document.getElementById('connection'), message=document.getElementById('message');
 let structure='', nodes=[], phoneNodes=[], busy=false, lastPhoneName=null;
 const sending=new Map();
-const settingLabels={trackLock:'追跡ロック',exposureEv:'露出 EV',shutter:'シャッター',iso:'ISO',colouredEmitter:'色付き発光体',ignoreRed:'無視範囲 赤',ignoreBlue:'無視範囲 青',playArea:'プレイ範囲'};
+const settingLabels={trackLock:'追跡ロック',exposureEv:'露出 EV',shutter:'シャッター',iso:'ISO',colouredEmitter:'色付き発光体',autoIso:'ISO自動調整',ignoreRed:'無視範囲 赤',ignoreBlue:'無視範囲 青',playArea:'プレイ範囲'};
 function url(path, extra={}){return path+'?'+new URLSearchParams({t:token,...extra});}
 async function action(item){
  if(busy||!item.enabled||item.pending||sending.has(item.name))return;

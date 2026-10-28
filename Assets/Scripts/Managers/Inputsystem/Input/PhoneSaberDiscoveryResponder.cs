@@ -282,7 +282,7 @@ public sealed class PhoneSaberAcknowledgement
             // 形式のminISOで制限された実適用値は、選択肢外や小数にもなる。
             case "shutter-iso": return double.TryParse(detail, System.Globalization.NumberStyles.AllowDecimalPoint,
                 System.Globalization.CultureInfo.InvariantCulture, out double iso) && iso > 0 && !double.IsInfinity(iso);
-            case "shutter-emitter": return detail == "on" || detail == "off";
+            case "shutter-emitter": case "auto-iso": return detail == "on" || detail == "off";
             case "shutter": return detail == "off" || detail == "500" || detail == "1000" || detail == "2000";
             case "exposure": return detail == "ev0" || detail == "ev-1" || detail == "ev-2";
             case "defaults": return detail == "tracklock-on-ev-2" || detail == "tracklock-on-ev-2-shutter-2000";
@@ -385,10 +385,10 @@ public sealed class PhoneSaberAcknowledgementStore
             case "shutter-iso":
                 return int.TryParse(parts[1], NumberStyles.None, CultureInfo.InvariantCulture, out int iso) &&
                     PhoneSaberDiscoveryResponder.ShutterISOChoices.Contains(iso) ? "shutter-iso" : null;
-            case "shutter-emitter": case "track-lock":
+            case "shutter-emitter": case "track-lock": case "auto-iso":
                 if (parts[1] != "0" && parts[1] != "1") return null;
                 detail = parts[1] == "1" ? "on" : "off";
-                return parts[0] == "track-lock" ? "tracklock" : "shutter-emitter";
+                return parts[0] == "track-lock" ? "tracklock" : parts[0];
             case "shutter":
                 if (!int.TryParse(parts[1], NumberStyles.None, CultureInfo.InvariantCulture, out int shutter) ||
                     !PhoneSaberDiscoveryResponder.ShutterChoices.Contains(shutter)) return null;

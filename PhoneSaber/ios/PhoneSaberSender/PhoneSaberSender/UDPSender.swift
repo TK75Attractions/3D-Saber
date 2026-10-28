@@ -740,6 +740,8 @@ final class LANLivenessProbe {
         var shutter: Int? = nil
         var shutterISO: Int? = nil
         var shutterEmitter: Bool? = nil
+        /// auto-iso=0|1: 明るさでISOを自動調整（端末に保存。PCのF8から切り替える）。
+        var autoISO: Bool? = nil
         /// clip=1: 今の前後を自動クリップとして保存する。
         var clip = false
         /// auto-clip=0|1: 自動クリップの ON/OFF（端末に保存）。
@@ -759,7 +761,7 @@ final class LANLivenessProbe {
         guard text.hasPrefix(commandPrefix) else { return nil }
         var id: Int?, ignore: String?, clear = false
         var learn: Int?, clearArea = false, exposure: Int?, shutter: Int?
-        var shutterISO: Int?, shutterEmitter: Bool?
+        var shutterISO: Int?, shutterEmitter: Bool?, autoISO: Bool?
         var playArea: PCCommand.Area?
         var clip = false, autoClip: Bool?, trackLock: Bool?, defaults = false
         for field in text.dropFirst(commandPrefix.count).split(separator: " ") {
@@ -776,6 +778,7 @@ final class LANLivenessProbe {
             case "defaults": defaults = parts[1] == "1"
             case "shutter-iso": shutterISO = Int(parts[1]).flatMap { shutterISOChoices.contains($0) ? $0 : nil }
             case "shutter-emitter": shutterEmitter = parts[1] == "1" ? true : parts[1] == "0" ? false : nil
+            case "auto-iso": autoISO = parts[1] == "1" ? true : parts[1] == "0" ? false : nil
             case "shutter": shutter = Int(parts[1]).flatMap { shutterChoices.contains($0) ? $0 : nil }
             case "exposure-bias": exposure = Int(parts[1]).flatMap { exposureBiasChoices.contains($0) ? $0 : nil }
             case "clip": clip = parts[1] == "1"
@@ -786,10 +789,10 @@ final class LANLivenessProbe {
         }
         let legacy = (ignore != nil ? 1 : 0) + (clear ? 1 : 0)
         let added = (learn != nil ? 1 : 0) + (clearArea ? 1 : 0) + (exposure != nil ? 1 : 0)
-            + (shutter != nil ? 1 : 0) + (shutterISO != nil ? 1 : 0) + (shutterEmitter != nil ? 1 : 0) + (clip ? 1 : 0) + (autoClip != nil ? 1 : 0) + (trackLock != nil ? 1 : 0) + (defaults ? 1 : 0) + (playArea != nil ? 1 : 0)
+            + (shutter != nil ? 1 : 0) + (shutterISO != nil ? 1 : 0) + (shutterEmitter != nil ? 1 : 0) + (autoISO != nil ? 1 : 0) + (clip ? 1 : 0) + (autoClip != nil ? 1 : 0) + (trackLock != nil ? 1 : 0) + (defaults ? 1 : 0) + (playArea != nil ? 1 : 0)
         guard let id, legacy + added > 0, added == 0 || legacy + added == 1 else { return nil }
         return PCCommand(id: id, ignore: ignore, clearIgnore: clear,
-                         learnAreaSeconds: learn, clearArea: clearArea, playArea: playArea, exposureBias: exposure, shutter: shutter, shutterISO: shutterISO, shutterEmitter: shutterEmitter,
+                         learnAreaSeconds: learn, clearArea: clearArea, playArea: playArea, exposureBias: exposure, shutter: shutter, shutterISO: shutterISO, shutterEmitter: shutterEmitter, autoISO: autoISO,
                          clip: clip, autoClip: autoClip, trackLock: trackLock, defaults: defaults)
     }
     static func formatAck(id: Int, station: String, platform: String, result: String, detail: String) -> String? {

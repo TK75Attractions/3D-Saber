@@ -1868,6 +1868,7 @@ final class CameraViewModel: NSObject, ObservableObject {
         if let enabled = command.trackLock { setTrackLockEnabled(enabled); ack("tracklock", enabled ? "on" : "off") }
         if let value = command.shutterISO, setShutterISO(value) { ack("shutter-iso", shutterISOAckDetail()) }
         if let enabled = command.shutterEmitter { setShutterEmitter(enabled); ack("shutter-emitter", enabled ? "on" : "off") }
+        if let enabled = command.autoISO { setAutoExposureEnabled(enabled); ack("auto-iso", autoExposureEnabled ? "on" : "off") }
         if let value = command.shutter, setShutter(value) { ack("shutter", value == 0 ? "off" : String(value)) }
         if let bias = command.exposureBias { setExposureBias(bias, commandID: command.id); ack("exposure", "ev\(bias)") }
         if let enabled = command.autoClip { setAutoClipEnabled(enabled, commandID: command.id); ack("autoclip", enabled ? "on" : "off") }

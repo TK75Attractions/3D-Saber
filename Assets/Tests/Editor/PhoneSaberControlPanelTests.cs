@@ -182,6 +182,20 @@ public class PhoneSaberControlPanelTests
         }
     }
 
+    [Test]
+    public void AutoIsoAckIsShownAndCommandIsChecked()
+    {
+        var phone = new PhoneSaberControlPanelPhone("A", "10.0.0.1");
+        Assert.IsNull(phone.Value("autoIso"));
+        phone.Acknowledge(Ack(1, "auto-iso", "on", "A"), 9, 8);
+        Assert.AreEqual("ON", phone.Value("autoIso"));
+        phone.Acknowledge(Ack(2, "auto-iso", "off", "A"), 11, 10);
+        Assert.AreEqual("OFF", phone.Value("autoIso"));
+        var store = new PhoneSaberAcknowledgementStore();
+        store.Queue(5, "auto-iso=1", 100);
+        Assert.IsTrue(store.Receive(new PhoneSaberAcknowledgement(5, "A", "ios", "auto-iso", "on", "10.0.0.1"), "10.0.0.1"));
+    }
+
     [TestCase("A")]
     [TestCase("B")]
     public void EmitterMetricsAndAcksPreserveNewestReport(string station)
@@ -364,7 +378,7 @@ public class PhoneSaberControlPanelTests
             { "phone-ignore", new[] { "red", "blue", "both" } }, { "phone-clear-ignore", new[] { "" } },
             { "phone-learn-area", new[] { "" } }, { "phone-clear-area", new[] { "" } },
             { "phone-shutter-iso", new[] { "2000", "250", "200", "160", "125", "100", "80", "64" } },
-            { "phone-shutter-emitter", new[] { "0", "1" } },
+            { "phone-shutter-emitter", new[] { "0", "1" } }, { "phone-auto-iso", new[] { "0", "1" } },
             { "phone-shutter", new[] { "0", "500", "1000", "2000" } },
             { "phone-exposure", new[] { "0", "-1", "-2" } }, { "phone-track-lock", new[] { "", "0", "1" } }, { "phone-clip", new[] { "" } },
             { "pc-ignore", new[] { "red", "blue" } }, { "pc-clear-ignore", new[] { "" } }, { "clocks-synchronized", new[] { "0", "1" } }
