@@ -113,6 +113,7 @@ public class SongSelectSkin : MonoBehaviour
         hardNoise = MenuSignalNoise.BuildScreenOverlay(canvas, layout);
         secretView = RushESecret.Build(ctl, this, layout);
         ctl.OnSelectionChanged += SelectionChanged; ctl.OnDifficultyChanged += DifficultyChanged; ctl.OnStartProgress += AnimateStart;
+        OperatorMode.Changed += OperatorModeChanged;
         SelectionChanged(ctl.SelectedIndex); animation = 1; AnimateDiscs();
         var guide = SongSelectIdleGuide.Build(ctl, layout);
         aim = SongSelectAimPointer.Build(ctl, canvas, null, guide);
@@ -634,14 +635,21 @@ public class SongSelectSkin : MonoBehaviour
         foreach (var d in discs) d.button.interactable = d.offset == 0 ? !ctl.RushESecret.Transitioning && !ctl.SelectedSongLocked && ctl.CurrentDifficultyLevel() > 0 : Mathf.Abs(d.offset) <= 2;
         achievementDifficulty.text = secret ? unlocked.Difficulty : DifficultyDisplayName(selected, ctl.CurrentDifficultyName);
         achievementDifficulty.color = secret ? unlocked.Accent : SongSelectVisuals.Muted;
+        topScoresDifficulty.text = achievementDifficulty.text; topScoresDifficulty.color = achievementDifficulty.color;
+        RefreshRecords();
+    }
+    // 記録パネルの回数・HI-SCORE と TOP 5。今のモード(OperatorMode.Namespace)の表を読む。
+    void RefreshRecords()
+    {
         var value = SongAchievementStore.Load(ctl.SongIdAt(ctl.SelectedIndex), ctl.CurrentDifficultyName);
         int[] values = { value.s, value.sPlus, value.fc, value.ap };
         for (int i = 0; i < 4; i++) counts[i].Set(values[i].ToString() + "<size=24>回</size>");
         var records = HighScoreStore.Load(ctl.SongIdAt(ctl.SelectedIndex), ctl.CurrentDifficultyName);
         highScore.Set(FormatHighScore(records));
-        topScoresDifficulty.text = achievementDifficulty.text; topScoresDifficulty.color = achievementDifficulty.color;
         ShowTopScores(records);
     }
+    // 選曲画面で F12 を押したら、曲や難易度を変えなくても、そのモードの記録に読み直す(表示と保存先をそろえる)。
+    void OperatorModeChanged() { if (built) RefreshRecords(); }
     void Update()
     {
         if (!built) return;
@@ -763,6 +771,7 @@ public class SongSelectSkin : MonoBehaviour
     void OnDestroy()
     {
         if (ctl != null) { ctl.OnSelectionChanged -= SelectionChanged; ctl.OnDifficultyChanged -= DifficultyChanged; ctl.OnStartProgress -= AnimateStart; }
+        OperatorMode.Changed -= OperatorModeChanged;
     }
     Sprite CoverSprite(int index) => ctl != null ? ctl.CoverSpriteAt(index) : null;
 }

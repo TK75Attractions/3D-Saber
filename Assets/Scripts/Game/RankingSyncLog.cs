@@ -10,7 +10,9 @@ using UnityEngine;
 // ・遊び終わった1回(RankingPlay)を、PlayerPrefs の1キー(RankingSync.Log.v1)に JSON で残す。壊れた値は捨てる(偽の記録を作らない)。
 // ・併合は id(= GameSession.AchievementRunId)が無いものだけ足す。同じ回は何度届いても1回。同じ id で中身が違えば先のものを残す。
 // ・要約(digest)は件数と、id の 64bit ハッシュ(FNV-1a)の XOR。足した順に依らないので、同じ記録を持つ2台は同じ要約になる。
-// ・送る形は "BTSRANK1 " + JSON。種類は plays(プレイの束)と digest(件数と要約、最近聞こえた相手)。1データグラムは 1200 バイト以下に分ける。
+// ・送る形は "BTSRANK2 " + JSON。種類は plays(プレイの束)と digest(件数と要約、最近聞こえた相手)。1データグラムは 1200 バイト以下に分ける。
+// ・版 2(2026-10-29 運営モードと実績): 1回の記録に ns(名前空間。"" はふだん、"fes" は運営モードの表)と ach(その回の実績の ID)。
+//   ほかの版(BTSRANK1 など)のメッセージは合流しない(RankingSync が運営に1回知らせる)。保存の形は版 1(ns・ach なし = ふだん)も読む。
 
 // 表(通算の順位・上位5件)へ足した結果。失敗は、ログに入れずに適用待ちに残して、あとで足し直す。
 public enum RankingMergeResult { Added, AlreadyThere, OutsideTop, Failed }
@@ -28,6 +30,9 @@ public sealed class RankingPlay
     public string date;      // 遊んだ日 "yyyy/MM/dd"(HI-SCORE の表示)
     public string st;        // 遊んだ台の名前(A / B。空でもよい)
     public long at = -1;     // 遊び終わった時刻(UTC の Unix ミリ秒。上位5件の同点の並びにも使う)
+    // 版 2 から。欄が無ければ(版 1 の保存)ふだんの表・実績なし。
+    public string ns;        // 名前空間("" はふだん、"fes" は運営モードの表)。合流はこの名前空間の表へ
+    public List<string> ach = new List<string>();   // その回に取った実績の ID(相手の台は AchievementStore.Merge で数に足す)
 }
 
 // 受け取った1通。v は初期値を持たせず、count は -1(欄の無い JSON を正しい1通と取り違えない)。
@@ -55,8 +60,13 @@ public readonly struct RankingSyncDatagram
 public sealed class RankingSyncLog
 {
     public const string PreferenceKey = "RankingSync.Log.v1";
-    public const string Prefix = "BTSRANK1 ";
-    public const int Version = 1;
+    // 通信の版(2026-10-29 に 2: ns・ach を足した)。目印の数字と JSON の v。ほかの版のメッセージは合流しない。
+    public const string PrefixStem = "BTSRANK";
+    public const string Prefix = "BTSRANK2 ";
+    public const int Version = 2;
+    // 保存(ログ・足し直し待ち)の形の版。書くのは 2、読むのは 1(ns・ach なし = ふだんの表)と 2。
+    public const int SavedVersion = 2;
+    public const int OldestSavedVersion = 1;
     public const string PlaysKind = "plays";
     public const string DigestKind = "digest";
     public const int MaxDatagramBytes = 1200;
@@ -68,11 +78,21 @@ public sealed class RankingSyncLog
     // 要約に入れる「最近聞こえた相手」の数の上限(1200 バイトに収める)。
     public const int MaxHeard = 8;
     public const int MinIdLength = 8, MaxIdLength = 64, MaxSongLength = 64, MaxDifficultyLength = 16, MaxRankLength = 8;
-    const long MaxUnixMilliseconds = 32503680000000; // 3000-01-01(この台の時刻へ直しても桁があふれない範囲)
+    public const int MaxStationLength = 16;
+    // 1回の記録に入れる実績の数の上限(実績は全部で44個)。12 字の ID が48個でも、ふつうの回(32 字の回の ID・曲 ID 15 字ほど・
+    // 台名 16 字まで)は1通に入る(1回分が束に入る大きさ MaxPlayBytes は下で確かめる)。
+    public const int MaxAchievementsPerPlay = 48;
+    public const long MaxUnixMilliseconds = 32503680000000; // 3000-01-01(この台の時刻へ直しても桁があふれない範囲)
 
     static readonly UTF8Encoding Utf8 = new UTF8Encoding(false);
     // 受け取ったバイト列は厳しく読む(壊れた UTF-8 を置き換え文字で通さない)。
     static readonly UTF8Encoding StrictUtf8 = new UTF8Encoding(false, true);
+    // 1回分の JSON の大きさの上限: 1200 バイトから、一番大きな束の頭(64 文字の差出人・16 文字の台名・件数の上限)と閉じの "]}" を除いた残り。
+    // これに収まる回だけを正しい形とする(どの束にも入り、送れない回を作らない)。
+    public static readonly int MaxPlayBytes = MaxDatagramBytes -
+        (Utf8.GetByteCount(Head(PlaysKind, new string('f', MaxIdLength), new string('S', MaxStationLength), MaxPlays, HashToText(ulong.MaxValue), null)) + 2);
+    // 1回分の JSON の、文字列の中身を除いた部分の大きさ(欄の名前・引用符・区切り・数の欄の一番長い形。精度は 24 文字まで見込む)。
+    const int FixedPlayBytes = 140;
 
     // 保存した JSON の外側(プレイは SplitPlays で1回ずつ読む)。
     [Serializable]
@@ -94,6 +114,13 @@ public sealed class RankingSyncLog
     public bool IsFull => plays.Count >= MaxPlays;
     // 読むだけ(中身を書き換えない)。
     public IReadOnlyList<RankingPlay> Plays => plays;
+    // 外へ渡す、足した順の写し(書き換えてもこのログは変わらない。一覧も書き換えられない)。
+    public IReadOnlyList<RankingPlay> CopyPlays()
+    {
+        var copies = new RankingPlay[plays.Count];
+        for (int i = 0; i < copies.Length; i++) copies[i] = Copy(plays[i]);
+        return Array.AsReadOnly(copies);
+    }
     public bool Contains(string id) => id != null && positions.ContainsKey(id);
     public RankingPlay Find(string id) => id != null && positions.TryGetValue(id, out int at) ? plays[at] : null;
     public bool SameDigest(int count, string hashText) => count == Count && string.Equals(hashText, HashText, StringComparison.Ordinal);
@@ -122,9 +149,10 @@ public sealed class RankingSyncLog
         return added;
     }
 
-    public string ToJson() => "{\"v\":" + Version.ToString(CultureInfo.InvariantCulture) + ",\"plays\":[" + string.Join(",", playJson) + "]}";
+    public string ToJson() => "{\"v\":" + SavedVersion.ToString(CultureInfo.InvariantCulture) + ",\"plays\":[" + string.Join(",", playJson) + "]}";
 
     // 保存した JSON を読む。全体が読めない・版が違うときは空のログ、一部の回だけ壊れていればその回だけ捨てる(broken = true)。
+    // 版 1 の保存(ns・ach の欄なし)は、ふだんの表・実績なしの回として読む。
     public static RankingSyncLog FromJson(string json, out bool broken)
     {
         broken = false;
@@ -134,7 +162,7 @@ public sealed class RankingSyncLog
         if (!SplitPlays(json, out string envelope, out var items)) { broken = true; return log; }
         try { saved = JsonUtility.FromJson<Saved>(envelope); }
         catch (Exception) { broken = true; return log; }
-        if (saved == null || saved.v != Version) { broken = true; return log; }
+        if (saved == null || saved.v < OldestSavedVersion || saved.v > SavedVersion) { broken = true; return log; }
         foreach (string item in items)
             if (!log.Add(ParsePlay(item))) broken = true;
         return log;
@@ -144,7 +172,10 @@ public sealed class RankingSyncLog
     // プレイは1回ずつ読む(JsonUtility.FromJson<RankingPlay> は欄の初期値 -1 から読むので、欠けた数の欄を確かに見分けられ、
     // 形の壊れた1回だけを捨てられる)。配列の要素がオブジェクトでなければ、その要素は null(壊れた1回)。
     // plays が無い・配列でない・2つある・括弧や文字列の形が壊れている・後ろに余計なものがあれば false(全体が壊れている)。
-    static bool SplitPlays(string json, out string envelope, out List<string> items)
+    static bool SplitPlays(string json, out string envelope, out List<string> items) => SplitArray(json, "plays", out envelope, out items);
+
+    // SplitPlays と同じ読み方で、arrayKey の配列を分ける(実績の記録 AchievementStore の "entries" にも使う)。
+    internal static bool SplitArray(string json, string arrayKey, out string envelope, out List<string> items)
     {
         envelope = null;
         items = null;
@@ -165,7 +196,7 @@ public sealed class RankingSyncLog
             if (i >= json.Length || json[i] != ':') return false;
             i++;
             SkipSpace(json, ref i);
-            if (key == "plays")
+            if (key == arrayKey)
             {
                 if (arrayStart >= 0 || i >= json.Length || json[i] != '[') return false;
                 arrayStart = i;
@@ -279,7 +310,7 @@ public sealed class RankingSyncLog
         var parts = new List<string>();
         foreach (var play in items)
             if (IsValid(play)) parts.Add(JsonUtility.ToJson(Copy(play)));
-        return "{\"v\":" + Version.ToString(CultureInfo.InvariantCulture) + ",\"plays\":[" + string.Join(",", parts) + "]}";
+        return "{\"v\":" + SavedVersion.ToString(CultureInfo.InvariantCulture) + ",\"plays\":[" + string.Join(",", parts) + "]}";
     }
 
     // 1回分の JSON を読む。オブジェクトでない・読めなければ null(検査で落ちる)。
@@ -437,6 +468,32 @@ public sealed class RankingSyncLog
         return true;
     }
 
+    // ほかの版の目印("BTSRANK1 " など、数字と空白)で始まるか。version にその版。合流はしない(運営に1回知らせる)。
+    public static bool IsOtherVersion(string text, out int version)
+    {
+        version = 0;
+        if (text == null || !text.StartsWith(PrefixStem, StringComparison.Ordinal)) return false;
+        int i = PrefixStem.Length, value = 0, digits = 0;
+        for (; i < text.Length && digits < 4 && text[i] >= '0' && text[i] <= '9'; i++, digits++) value = value * 10 + (text[i] - '0');
+        if (digits == 0 || i >= text.Length || text[i] != ' ' || value == Version) return false;
+        version = value;
+        return true;
+    }
+
+    // 受信スレッドで、届いたバイト列のまま確かめる形。
+    public static bool IsOtherVersion(byte[] data, int length, out int version)
+    {
+        version = 0;
+        if (data == null || length > data.Length || length < PrefixStem.Length + 2) return false;
+        for (int j = 0; j < PrefixStem.Length; j++)
+            if (data[j] != (byte)PrefixStem[j]) return false;
+        int i = PrefixStem.Length, value = 0, digits = 0;
+        for (; i < length && digits < 4 && data[i] >= '0' && data[i] <= '9'; i++, digits++) value = value * 10 + (data[i] - '0');
+        if (digits == 0 || i >= length || data[i] != ' ' || value == Version) return false;
+        version = value;
+        return true;
+    }
+
     // ---- 1回のプレイの検査 ----
 
     public static bool IsValid(RankingPlay play) =>
@@ -445,12 +502,55 @@ public sealed class RankingSyncLog
         !float.IsNaN(play.acc) && play.acc >= 0f && play.acc <= 1f &&
         IsValidRank(play.rank) && IsValidDate(play.date) &&
         PhoneSaberStation.Normalize(play.st) == (play.st ?? "") &&
-        play.at > 0 && play.at <= MaxUnixMilliseconds;
+        play.at > 0 && play.at <= MaxUnixMilliseconds &&
+        OperatorMode.IsValidNamespace(play.ns) && IsValidAchievements(play.ach) && EstimatedPlayBytes(play) <= MaxPlayBytes;
+
+    // 実績の ID の並び: 無い(null・空)か、形の正しい ID が重ならずに MaxAchievementsPerPlay 個まで。
+    static bool IsValidAchievements(List<string> ids)
+    {
+        if (ids == null || ids.Count == 0) return true;
+        if (ids.Count > MaxAchievementsPerPlay) return false;
+        for (int i = 0; i < ids.Count; i++)
+        {
+            if (!AchievementStore.IsValidId(ids[i])) return false;
+            for (int j = 0; j < i; j++)
+                if (ids[j] == ids[i]) return false;
+        }
+        return true;
+    }
+
+    // 1回分の JSON の大きさの見積もり(多めに数える。文字列は ASCII 1 バイト・" と \ は 2・それ以外は \uXXXX にされても収まる 6)。
+    static int EstimatedPlayBytes(RankingPlay play)
+    {
+        int bytes = FixedPlayBytes + JsonBytes(play.id) + JsonBytes(play.song) + JsonBytes(play.diff) + JsonBytes(play.rank) +
+                    JsonBytes(play.date) + JsonBytes(play.st) + JsonBytes(play.ns);
+        if (play.ach != null)
+            foreach (string id in play.ach) bytes += JsonBytes(id) + 3; // 引用符2つと区切り
+        return bytes;
+    }
+
+    static int JsonBytes(string text)
+    {
+        if (text == null) return 0;
+        int bytes = 0;
+        foreach (char c in text) bytes += c < ' ' || c >= 0x80 ? 6 : c == '"' || c == '\\' ? 2 : 1;
+        return bytes;
+    }
 
     // 同じ回の中身か(同じ id で中身の違う回が届いたら、先のものを残して知らせる)。精度は JSON の往復の誤差を許す。
     public static bool SameContent(RankingPlay a, RankingPlay b) =>
         a != null && b != null && a.id == b.id && a.song == b.song && a.diff == b.diff && a.score == b.score &&
-        a.rank == b.rank && Math.Abs(a.acc - b.acc) < 1e-5f && a.date == b.date && (a.st ?? "") == (b.st ?? "") && a.at == b.at;
+        a.rank == b.rank && Math.Abs(a.acc - b.acc) < 1e-5f && a.date == b.date && (a.st ?? "") == (b.st ?? "") && a.at == b.at &&
+        (a.ns ?? "") == (b.ns ?? "") && SameAchievements(a.ach, b.ach);
+
+    static bool SameAchievements(List<string> a, List<string> b)
+    {
+        int count = a?.Count ?? 0;
+        if (count != (b?.Count ?? 0)) return false;
+        for (int i = 0; i < count; i++)
+            if (a[i] != b[i]) return false;
+        return true;
+    }
 
     // 回の ID と機械 ID: 8〜64 文字の英数字と - だけ(GUID の "N" 形式は 32 文字の16進)。
     public static bool IsValidId(string id)
@@ -527,17 +627,50 @@ public sealed class RankingSyncLog
     {
         id = play.id, song = play.song, diff = play.diff, score = play.score, rank = play.rank,
         acc = play.acc, date = play.date, st = play.st ?? "", at = play.at,
+        ns = play.ns ?? "", ach = play.ach != null ? new List<string>(play.ach) : new List<string>(),
     };
 
-    // 自分の台で遊び終わった回を作る。日付はカルチャに依らず "yyyy/MM/dd"。
+    // 実績を同期の記録に入れきれなかったことを、起動の間に1回だけ警告したか。
+    static bool achievementsDroppedWarned;
+
+    // テスト用: 上の警告をもう一度出せるようにする。
+    public static void ResetWarningsForTest() => achievementsDroppedWarned = false;
+
+    // 自分の台で遊び終わった回を作る。日付はカルチャに依らず "yyyy/MM/dd"。ns はその回の名前空間(GameSession.RunNamespace)。
+    // 実績は形の正しい ID を重ねずに入れる。形が違う・上限を超える・1回分が束に入る大きさを超える分は入れられないので、
+    // 外したことを1回だけ警告する(送れない回を作らない。ふつうの回では起きない大きさ)。
     public static RankingPlay NewPlay(string runId, string song, string difficulty, int score, string rank, float accuracy,
-        DateTime localTime, string station) => new RankingPlay
+        DateTime localTime, string station, string ns = "", IEnumerable<string> achievements = null)
     {
-        id = runId, song = song, diff = difficulty, score = score, rank = rank, acc = accuracy,
-        date = localTime.ToString("yyyy/MM/dd", CultureInfo.InvariantCulture),
-        st = PhoneSaberStation.Normalize(station),
-        at = new DateTimeOffset(localTime).ToUnixTimeMilliseconds(),
-    };
+        var play = new RankingPlay
+        {
+            id = runId, song = song, diff = difficulty, score = score, rank = rank, acc = accuracy,
+            date = localTime.ToString("yyyy/MM/dd", CultureInfo.InvariantCulture),
+            st = PhoneSaberStation.Normalize(station),
+            at = new DateTimeOffset(localTime).ToUnixTimeMilliseconds(),
+            ns = ns ?? "",
+        };
+        int dropped = 0;
+        if (achievements != null)
+            foreach (string id in achievements)
+            {
+                if (id != null && play.ach.Contains(id)) continue;
+                if (AchievementStore.IsValidId(id) && play.ach.Count < MaxAchievementsPerPlay) play.ach.Add(id);
+                else dropped++;
+            }
+        while (play.ach.Count > 0 && EstimatedPlayBytes(play) > MaxPlayBytes)
+        {
+            play.ach.RemoveAt(play.ach.Count - 1);
+            dropped++;
+        }
+        if (dropped > 0 && !achievementsDroppedWarned)
+        {
+            achievementsDroppedWarned = true;
+            Debug.LogWarning("RankingSync: この回の実績のうち " + dropped + " 個を同期の記録に入れられませんでした" +
+                             "(ID の形が違う・" + MaxAchievementsPerPlay + " 個を超える・1通に収まらない)。相手の台の数には入りません。");
+        }
+        return play;
+    }
 
     // この台の時刻での、遊び終わった時刻(通算の表を新しく作るときの「数え始めた日」に使う)。
     public static DateTime LocalTime(RankingPlay play) => DateTimeOffset.FromUnixTimeMilliseconds(play.at).LocalDateTime;
@@ -547,13 +680,13 @@ public sealed class RankingSyncLog
         score = play.score, rank = play.rank, accuracy = play.acc, date = play.date, runId = play.id, at = play.at,
     };
 
-    // 同じ表へ書く回をまとめるための鍵(曲 × 難易度。難易度は表と同じく小文字にそろえる)。
-    public static string ChartKey(RankingPlay play) => ChartKey(play.song, play.diff);
+    // 同じ表へ書く回をまとめるための鍵(名前空間 × 曲 × 難易度。難易度は表と同じく小文字にそろえる)。
+    public static string ChartKey(RankingPlay play) => ChartKey(play.ns, play.song, play.diff);
 
-    public static string ChartKey(string song, string difficulty)
+    public static string ChartKey(string ns, string song, string difficulty)
     {
         string diff = string.IsNullOrWhiteSpace(difficulty) ? "normal" : difficulty.Trim().ToLowerInvariant();
-        return song + "\n" + diff;
+        return (ns ?? "") + "\n" + song + "\n" + diff;
     }
 
     // ---- 送り先 ----

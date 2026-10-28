@@ -1365,6 +1365,8 @@ public class GamePlayManager : MonoBehaviour
         Debug.Log($"GamePlayManager: FinishGame songTime={songPlayer.SongTime:F1}s " +
             $"duration={songPlayer.Duration:F1}s lastNote={lastNoteTime:F1}s alive={noteSpawner.AliveCount}");
         completing = true;
+        // 曲が終わった時刻(終わりの演出の前)。通算の順位・相手の台へ送る記録・実績で同じ時刻を使う。
+        GameSession.MarkRunEnded(System.DateTime.Now);
         songPlayer.Stop();
         if (aimMode != null) aimMode.EndPlay();
         if (memoryMode != null) memoryMode.EndPlay();

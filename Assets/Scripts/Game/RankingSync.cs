@@ -11,7 +11,9 @@ using UnityEngine.SceneManagement;
 // 台同士のランキング同期(2026-10-28 ユーザー「台同士でなんとかしてランキングを同期できない？本番リアルタイムに」)。
 // 台A・台B(Windows / Mac のビルド)が同じネットワーク(学校の Wi-Fi・片方のホットスポット)にいるとき、遊び終わった回を
 // 相手の台へその場で(1秒以内)届け、通算順位の表(DailyRankingStore)と上位5件(HighScoreStore)を両方の台で同じにする。
-// 実績(SongAchievementStore)は合わせない。記録の形・検査・束の作り方は RankingSyncLog。
+// 曲ごとの達成(SongAchievementStore)は合わせない。記録の形・検査・束の作り方は RankingSyncLog。
+// ・運営モード(2026-10-29、通信の版 2): 1回の記録の ns(名前空間)の表へ足す("" はふだん、"fes" は本番)。ログ・足し直し待ちは1つのまま。
+//   記録の ach(その回の実績)は AchievementStore.Merge で数に足す(2台の「○人目」)。ほかの版の相手が聞こえたら、運営に1回知らせて合流しない。
 // ・UDP 5017。受信と送信はそれぞれ別スレッド(受信はキューに入れるだけ、送信は上限つきのキューから送るだけ)。
 //   解析と PlayerPrefs への読み書きはメインスレッド(Update)だけ。止めるときは停止の合図・ソケットを閉じる・Join(Thread.Abort は使わない)。
 // ・自分の台で遊び終わったら(GameSession.RecordCompletedDailyRanking → RecordLocal)、その回をすぐ送る(取りこぼしに備えて 0・0.3・1.0 秒の3回)。
@@ -162,7 +164,9 @@ public sealed class RankingSync : MonoBehaviour
     bool logDirty, pendingStoreDirty, saveDirty;
     // 1回だけの警告と知らせ
     bool bindWarned, sendWarned, sendNoticed, fullWarned, nearFullNoticed, invalidWarned, conflictWarned, receiveWarned, handleWarned;
-    bool saveWarned, idWarned, guessWarned, unreadableWarned, noPeerNoticed;
+    bool saveWarned, idWarned, guessWarned, unreadableWarned, noPeerNoticed, oldPeerNoticed, newerPeerNoticed;
+    // 受信スレッドが聞いた、ほかの版の相手の版(0 = まだ)。メインスレッドが1回だけ知らせる。
+    int otherVersionHeard;
     readonly HashSet<string> applyWarned = new HashSet<string>(StringComparer.Ordinal);
     double startAt, activatedAt, listeningSince, nextBindAt, nextDigestAt, nextSaveAt, nextBroadcastRefreshAt;
     double pendingRetryAt = double.NegativeInfinity;
@@ -210,6 +214,28 @@ public sealed class RankingSync : MonoBehaviour
     public string Station => station;
     public int Count => log.Count;
     public string Hash => log.HashText;
+    // 同期のメモリの記録(この台と相手の台の回、足した順。演奏中に届いた回も入る)の写し。書き換えても同期の記録は変わらず、
+    // 一覧も書き換えられない。読むたびに写すので、1回の結果で1回くらいに。メインスレッドで。
+    public IReadOnlyList<RankingPlay> LoggedPlays => log.CopyPlays();
+    // 本番の同期(起動時に作った1つ)の LoggedPlays。同期が動いていなければ(テスト・Editor の既定・-rankingSync off)空。
+    public static IReadOnlyList<RankingPlay> KnownPlays
+    {
+        get
+        {
+            var sync = Instance;
+            if (sync == null || (sync.autoStarted && !AutoStartEnabled)) return Array.Empty<RankingPlay>();
+            return sync.LoggedPlays;
+        }
+    }
+
+    // AchievementStore.CountSince から: メモリの記録のうち、その名前空間で sinceUnixMs 以後に遊び終わり、achId を取った回の ID を runs に足す
+    // (写さずに読む)。
+    internal void AddRunsWithAchievement(string ns, string achId, long sinceUnixMs, HashSet<string> runs)
+    {
+        if (autoStarted && !AutoStartEnabled) return;
+        foreach (var play in log.Plays)
+            if ((play.ns ?? "") == ns && play.at >= sinceUnixMs && play.ach != null && play.ach.Contains(achId)) runs.Add(play.id);
+    }
     // 届いている相手の数(60秒以内に届いた相手)と、そのうち双方向と分かった相手の数。
     public int PeerCount
     {
@@ -249,8 +275,8 @@ public sealed class RankingSync : MonoBehaviour
     public int QueuedCount => freshApply.Count + bulkApply.Count + reconcileApply.Count;
     public int PendingCount => pending.Count;
     public int ConflictingPlays { get; private set; }
-    // 書きかけ(ログ・足し直し待ち・ディスクへの保存)が残っているか。
-    public bool SaveWaiting => logDirty || pendingStoreDirty || saveDirty;
+    // 書きかけ(ログ・足し直し待ち・実績の記録・ディスクへの保存)が残っているか。
+    public bool SaveWaiting => logDirty || pendingStoreDirty || saveDirty || AchievementStore.NeedsWrite;
     public int TransfersWaiting => transfers.Count;
     public string LastNotice { get; private set; }
     public int NoticeCount { get; private set; }
@@ -289,6 +315,8 @@ public sealed class RankingSync : MonoBehaviour
     public const string SendFailedNotice = "ランキング同期: 送れません(ネットワークを確かめてください。ゲームはそのまま遊べます)";
     public static readonly string NearFullNotice =
         "ランキング同期: 同期の記録が " + RankingSyncLog.WarnPlays + " 回を超えました(" + RankingSyncLog.MaxPlays + " 回で同期を止めます)";
+    public const string OldPeerNotice = "ランキング同期: 相手の台の版が古いので同期しません";
+    public const string NewerPeerNotice = "ランキング同期: 相手の台の版が新しいので同期しません(この台を新しい版にしてください)";
     static string Label(string peerStation) => string.IsNullOrEmpty(peerStation) ? "もう1台" : "台" + peerStation;
 
     // ---- 作る ----
@@ -382,6 +410,8 @@ public sealed class RankingSync : MonoBehaviour
             waiting.Add(play.id, item);
             Put(reconcileApply, item, ApplyWhere.Reconcile);
         }
+        // 実績の記録はここで読んでおく(曲の演奏中に届いた1回で、初めて読むことにならないように)。照合で、ログの回の実績も数に戻す。
+        _ = AchievementStore.Available;
         CheckNearFull();
         if (!settings.Offline) OpenNetwork(now);
     }
@@ -510,15 +540,15 @@ public sealed class RankingSync : MonoBehaviour
         }
     }
 
-    // 曲が終わって通算の順位を決める直前(GameSession.RecordCompletedDailyRanking から)。その曲×難易度で、表へ足す待ち・束の待ち・
+    // 曲が終わって通算の順位を決める直前(GameSession.RecordCompletedDailyRanking から)。その名前空間×曲×難易度で、表へ足す待ち・束の待ち・
     // 足し直し待ちにある回を、演奏中でも先に表へ足す(その1曲ぶんだけなので軽い)。結果画面の順位が、届いていた記録を入れた表で決まるように。
-    public static void ApplyWaitingFor(string song, string difficulty)
+    public static void ApplyWaitingFor(string ns, string song, string difficulty)
     {
         try
         {
             var sync = Instance;
             if (sync == null || (sync.autoStarted && !AutoStartEnabled) || string.IsNullOrWhiteSpace(song)) return;
-            sync.ApplyChart(song, difficulty, Time.realtimeSinceStartupAsDouble);
+            sync.ApplyChart(ns, song, difficulty, Time.realtimeSinceStartupAsDouble);
         }
         catch (Exception exception)
         {
@@ -526,11 +556,11 @@ public sealed class RankingSync : MonoBehaviour
         }
     }
 
-    // ある曲×難易度の待ちの回を、いますぐ表へ足す(ApplyWaitingFor。テストからも呼ぶ)。新しくログに足した回の数を返す。
-    public int ApplyChart(string song, string difficulty, double now)
+    // ある名前空間×曲×難易度の待ちの回を、いますぐ表へ足す(ApplyWaitingFor。テストからも呼ぶ)。新しくログに足した回の数を返す。
+    public int ApplyChart(string ns, string song, string difficulty, double now)
     {
         if (!configured) return 0;
-        string chart = RankingSyncLog.ChartKey(song, difficulty);
+        string chart = RankingSyncLog.ChartKey(ns, song, difficulty);
         var batch = new List<ApplyItem>();
         TakeChart(freshApply, chart, batch);
         TakeChart(bulkApply, chart, batch);
@@ -724,6 +754,8 @@ public sealed class RankingSync : MonoBehaviour
     // 受け取った1通の処理(メインスレッド)。新しい回は表へ足す待ちに入れる(足すのは ApplyQueued)。入れた回の数を返す。
     int Handle(string text, IPEndPoint from, double now, bool fresh)
     {
+        // ほかの版の相手(ふだんは受信スレッドで分ける。ReceiveForTest はここを通る)。合流しない。
+        if (RankingSyncLog.IsOtherVersion(text, out int otherVersion)) { NoticeOtherVersion(otherVersion); return 0; }
         if (from == null || !RankingSyncLog.TryParse(text, out var message)) return 0;
         // ブロードキャストは自分にも届く。自分の送ったものは捨てる。
         if (message.from == machineId) return 0;
@@ -812,6 +844,9 @@ public sealed class RankingSync : MonoBehaviour
             for (int i = 0; i < group.Count; i++)
             {
                 var item = group[i];
+                // その回の実績を数に足す(表とは別。同じ回の同じ実績は二重に数えない。自分の台の回は解除したときに入っている)。
+                // PlayerPrefs へは FlushSaves がまとめて書く。
+                AchievementStore.Merge(item.Play.ns, item.Play.id, item.Play.ach, item.Play.st, item.Play.at);
                 bool dailyFailed = dailyResults[i] == RankingMergeResult.Failed;
                 bool highFailed = highResults[i] == RankingMergeResult.Failed;
                 if (dailyFailed || highFailed)
@@ -847,7 +882,7 @@ public sealed class RankingSync : MonoBehaviour
         return added;
     }
 
-    // まとまりのうち、通算の表へ足す回を1回の読み書きで足す。結果は足さない回は null。
+    // まとまり(同じ名前空間×曲×難易度)のうち、通算の表へ足す回を1回の読み書きで足す。結果は足さない回は null。
     static void MergeDaily(List<ApplyItem> group, RankingMergeResult?[] results)
     {
         var entries = new List<DailyRankingStore.Entry>();
@@ -863,11 +898,12 @@ public sealed class RankingSync : MonoBehaviour
         }
         if (entries.Count == 0) return;
         var play0 = group[index[0]].Play;
-        var merged = DailyRankingStore.MergeAll(play0.song, play0.diff, entries, DateTimeOffset.FromUnixTimeMilliseconds(earliest).LocalDateTime);
+        var merged = DailyRankingStore.MergeAll(play0.ns ?? "", play0.song, play0.diff, entries,
+            DateTimeOffset.FromUnixTimeMilliseconds(earliest).LocalDateTime);
         for (int j = 0; j < index.Count; j++) results[index[j]] = merged[j];
     }
 
-    // まとまりのうち、上位5件の表へ足す回を1回の読み書きで足す。結果は足さない回は null。
+    // まとまり(同じ名前空間×曲×難易度)のうち、上位5件の表へ足す回を1回の読み書きで足す。結果は足さない回は null。
     static void MergeHigh(List<ApplyItem> group, RankingMergeResult?[] results)
     {
         var entries = new List<HighScoreEntry>();
@@ -880,7 +916,7 @@ public sealed class RankingSync : MonoBehaviour
         }
         if (entries.Count == 0) return;
         var play0 = group[index[0]].Play;
-        var merged = HighScoreStore.MergeAll(play0.song, play0.diff, entries);
+        var merged = HighScoreStore.MergeAll(play0.ns ?? "", play0.song, play0.diff, entries);
         for (int j = 0; j < index.Count; j++) results[index[j]] = merged[j];
     }
 
@@ -961,8 +997,8 @@ public sealed class RankingSync : MonoBehaviour
             }
         }
         // ポートを開けてから30秒たっても相手が一度も見つからない。今ポートを開けないあいだは、そちらの知らせだけにする
-        // (あとで開けたら、そこから数え直す)。
-        if (!everHeard && !noPeerNoticed && !bindFailing && now - listeningSince > NoPeerSeconds)
+        // (あとで開けたら、そこから数え直す)。ほかの版の相手が聞こえていれば、その知らせだけにする。
+        if (!everHeard && !noPeerNoticed && !bindFailing && !oldPeerNoticed && !newerPeerNoticed && now - listeningSince > NoPeerSeconds)
         {
             noPeerNoticed = true;
             Notice(NoPeerNotice);
@@ -1020,8 +1056,26 @@ public sealed class RankingSync : MonoBehaviour
     void WarnApplyFailed(RankingPlay play, bool daily)
     {
         if (!applyWarned.Add(RankingSyncLog.ChartKey(play))) return;
-        Debug.LogWarning("RankingSync: " + play.song + "(" + play.diff + ")の" + (daily ? "通算の順位" : "上位5件") +
-                         "の表を読み書きできないので、その回をあとで足し直します(壊れた表は上書きしません)。");
+        Debug.LogWarning("RankingSync: " + (string.IsNullOrEmpty(play.ns) ? "" : "[" + play.ns + "] ") + play.song + "(" + play.diff + ")の" +
+                         (daily ? "通算の順位" : "上位5件") + "の表を読み書きできないので、その回をあとで足し直します(壊れた表は上書きしません)。");
+    }
+
+    // ほかの版の相手が聞こえた(合流しない)。古い・新しいそれぞれ1回だけ知らせる。
+    void NoticeOtherVersion(int version)
+    {
+        if (version < RankingSyncLog.Version)
+        {
+            if (oldPeerNoticed) return;
+            oldPeerNoticed = true;
+            Notice(OldPeerNotice);
+        }
+        else
+        {
+            if (newerPeerNoticed) return;
+            newerPeerNoticed = true;
+            Notice(NewerPeerNotice);
+        }
+        LogEvent("ranking-sync-version", "peer-version=" + version + " mine=" + RankingSyncLog.Version);
     }
 
     // ---- 保存 ----
@@ -1095,7 +1149,16 @@ public sealed class RankingSync : MonoBehaviour
         Debug.LogWarning("RankingSync: 同期の記録を保存できませんでした(" + exception.GetType().Name + ")。少し待って保存し直します。");
     }
 
-    // ログ・足し直し待ちの書き出しとディスクへの保存は、まとめて 0.5 秒に1回まで(1コマに1回より少なく。演奏中は呼ばない)。
+    // 相手の回の実績を足した記録(AchievementStore)を PlayerPrefs へ書く(ディスクへの保存は TrySavePrefs)。
+    bool TryWriteAchievements()
+    {
+        if (FailSavesForTest) { WarnSave(new InvalidOperationException("テスト用の保存失敗")); return false; }
+        if (!AchievementStore.WriteToPrefs()) return false;
+        saveDirty = true;
+        return true;
+    }
+
+    // ログ・足し直し待ち・実績の記録の書き出しとディスクへの保存は、まとめて 0.5 秒に1回まで(1コマに1回より少なく。演奏中は呼ばない)。
     // 失敗したら 2 秒待って書き直す。
     void FlushSaves(double now)
     {
@@ -1103,6 +1166,7 @@ public sealed class RankingSync : MonoBehaviour
         nextSaveAt = now + SaveIntervalSeconds;
         if (logDirty && !TryWriteLog()) { nextSaveAt = now + SaveRetrySeconds; return; }
         if (pendingStoreDirty && !TryWritePending()) { nextSaveAt = now + SaveRetrySeconds; return; }
+        if (AchievementStore.NeedsWrite && !TryWriteAchievements()) { nextSaveAt = now + SaveRetrySeconds; return; }
         if (saveDirty && !TrySavePrefs()) nextSaveAt = now + SaveRetrySeconds;
     }
 
@@ -1264,6 +1328,8 @@ public sealed class RankingSync : MonoBehaviour
             sendWarned = true;
             Debug.LogWarning("RankingSync: " + sendNote + "。届く相手には送り続けます。");
         }
+        int otherVersion = Interlocked.Exchange(ref otherVersionHeard, 0);
+        if (otherVersion != 0) NoticeOtherVersion(otherVersion);
         // 開いてから2回目の要約(各ネットワークへのブロードキャストを含む)を送り終えても、どこへも送れていない(ネットワークが無いなど)。
         // 運営に1回だけ知らせる。
         if (!sendNoticed && socket != null && now - listeningSince > DigestSeconds + 1 && Volatile.Read(ref sendFailures) > 0 &&
@@ -1352,6 +1418,12 @@ public sealed class RankingSync : MonoBehaviour
                 try { length = client.Client.ReceiveFrom(buffer, ref remote); }
                 catch (SocketException exception) when (IsTransient(exception.SocketErrorCode))
                 {
+                    continue;
+                }
+                // ほかの版の相手は合流しない(版だけ残し、メインスレッドが運営に1回知らせる)。
+                if (RankingSyncLog.IsOtherVersion(buffer, length, out int otherVersion))
+                {
+                    Interlocked.CompareExchange(ref otherVersionHeard, otherVersion, 0);
                     continue;
                 }
                 // 大きすぎる・ほかの目印・壊れた UTF-8 はここで捨てる。自分の送ったもの(ブロードキャスト)もキューに入れない。
@@ -1510,6 +1582,7 @@ public sealed class RankingSync : MonoBehaviour
         CloseNetwork();
         if (logDirty) TryWriteLog();
         if (pendingStoreDirty) TryWritePending();
+        if (AchievementStore.NeedsWrite) TryWriteAchievements();
         if (saveDirty) TrySavePrefs();
     }
 

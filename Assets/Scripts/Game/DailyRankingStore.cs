@@ -6,6 +6,7 @@ using UnityEngine;
 // この端末の同じ曲/難易度の全プレイを集計。人数ではなく延べプレイ数。
 // 上位だけを切り捨てると圏外の順位が計算できないため、全件保持する。
 // 2026-10-22: 日付で区切らず、これまでの通算で数える(ユーザーの依頼。文化祭の直前に記録を消す)。
+// 2026-10-29: 文化祭は運営モードの表(名前空間 "fes"、初めは空)で数えるので、ふだんの表は消さなくてよい。
 // 表の day は数え始めた日(結果画面に「○○ から」と出す)。日ごとに戻すなら TryRead の「日付が違えば新しい表」を戻す。
 public static class DailyRankingStore
 {
@@ -38,21 +39,29 @@ public static class DailyRankingStore
     // 長さを含め、曲IDや難易度内の区切り文字によるキー衝突を防ぐ。
     // 2026-10-20 に満点を 100000 にそろえたので保存先を v2 に分ける(中身の形式 version は 1 のまま)。
     // 旧 "dailyRanking_v1_" の記録は消さずに残す。
-    public static string Key(string song, string difficulty)
+    // 名前空間(運営モード、2026-10-29)を渡さない呼び出しは、今の表示の名前空間(OperatorMode.Namespace)の表。
+    // 記録・合流する所は、その回の名前空間(GameSession.RunNamespace・プレイの ns)を渡す。
+    public static string Key(string song, string difficulty) => Key(OperatorMode.Namespace, song, difficulty);
+
+    // "" は今までと同じ鍵、"fes" は頭に "fes_"。
+    public static string Key(string ns, string song, string difficulty)
     {
         string diff = string.IsNullOrWhiteSpace(difficulty) ? "normal" : difficulty.Trim().ToLowerInvariant();
-        return "dailyRanking_v2_" + (song ?? "").Length + ":" + song + ":" + diff;
+        return OperatorMode.KeyPrefix(ns) + "dailyRanking_v2_" + (song ?? "").Length + ":" + song + ":" + diff;
     }
 
     public static string DayKey(DateTime localTime) => localTime.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
-    public static Result Record(string song, string difficulty, string runId, int score, DateTime localTime)
+    public static Result Record(string song, string difficulty, string runId, int score, DateTime localTime) =>
+        Record(OperatorMode.Namespace, song, difficulty, runId, score, localTime);
+
+    public static Result Record(string ns, string song, string difficulty, string runId, int score, DateTime localTime)
     {
         if (string.IsNullOrWhiteSpace(song) || string.IsNullOrEmpty(runId) || score < 0) return new Result();
         string day = DayKey(localTime);
         try
         {
-            if (!TryRead(PlayerPrefs.GetString(Key(song, difficulty), ""), day, out var table))
+            if (!TryRead(PlayerPrefs.GetString(Key(ns, song, difficulty), ""), day, out var table))
             {
                 // 壊れた記録を空のランキングとして上書きし、偽の1位を出さない。
                 Debug.LogWarning("DailyRankingStore: 順位の記録を読み込めないため、順位を表示しません。");
@@ -63,7 +72,7 @@ public static class DailyRankingStore
             var result = Evaluate(table, runId);
             if (!exists)
             {
-                PlayerPrefs.SetString(Key(song, difficulty), JsonUtility.ToJson(table));
+                PlayerPrefs.SetString(Key(ns, song, difficulty), JsonUtility.ToJson(table));
                 PlayerPrefs.Save();
             }
             return result;
@@ -80,16 +89,22 @@ public static class DailyRankingStore
     // 壊れた表は Record と同じく上書きしない(Failed。呼び出し側が適用待ちに残して、あとで足し直す。知らせも呼び出し側)。
     // PlayerPrefs へ書くだけで、ディスクへの保存(PlayerPrefs.Save)は呼び出し側がまとめてする。
     public static RankingMergeResult Merge(string song, string difficulty, string runId, int score, DateTime localTime) =>
-        MergeAll(song, difficulty, new[] { new Entry { runId = runId, score = score } }, localTime)[0];
+        Merge(OperatorMode.Namespace, song, difficulty, runId, score, localTime);
+
+    public static RankingMergeResult Merge(string ns, string song, string difficulty, string runId, int score, DateTime localTime) =>
+        MergeAll(ns, song, difficulty, new[] { new Entry { runId = runId, score = score } }, localTime)[0];
 
     // 同じ曲×難易度へ何回分かをまとめて足す(表の読み書きは1回)。結果は entries と同じ順。
-    public static RankingMergeResult[] MergeAll(string song, string difficulty, IList<Entry> entries, DateTime localTime)
+    public static RankingMergeResult[] MergeAll(string song, string difficulty, IList<Entry> entries, DateTime localTime) =>
+        MergeAll(OperatorMode.Namespace, song, difficulty, entries, localTime);
+
+    public static RankingMergeResult[] MergeAll(string ns, string song, string difficulty, IList<Entry> entries, DateTime localTime)
     {
         var results = new RankingMergeResult[entries?.Count ?? 0];
         if (results.Length == 0) return results;
         bool readable = false;
         Table table = null;
-        try { readable = !string.IsNullOrWhiteSpace(song) && TryRead(PlayerPrefs.GetString(Key(song, difficulty), ""), DayKey(localTime), out table); }
+        try { readable = !string.IsNullOrWhiteSpace(song) && TryRead(PlayerPrefs.GetString(Key(ns, song, difficulty), ""), DayKey(localTime), out table); }
         catch (Exception) { readable = false; }
         if (!readable)
         {
@@ -111,7 +126,7 @@ public static class DailyRankingStore
         if (!added) return results;
         try
         {
-            PlayerPrefs.SetString(Key(song, difficulty), JsonUtility.ToJson(table));
+            PlayerPrefs.SetString(Key(ns, song, difficulty), JsonUtility.ToJson(table));
         }
         catch (Exception)
         {

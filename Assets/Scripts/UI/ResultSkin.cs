@@ -479,7 +479,8 @@ public class ResultSkin : MonoBehaviour
         string songId = GameSession.SelectedSongId;
         if (string.IsNullOrEmpty(songId)) return; // シーン直起動などは行ごと省略
 
-        var table = HighScoreStore.Load(songId, GameSession.SelectedDifficulty);
+        // この回を残す表(その回の名前空間。結果画面で運営モードを切り替えても、この回の表のまま)。
+        var table = HighScoreStore.Load(GameSession.RunNamespace, songId, GameSession.SelectedDifficulty);
         // 同じ回の結果画面を作り直しても、比べる相手は最初に読んだ「残す前の最高点」のまま。
         int prevBest = GameSession.HighScoreBestBefore(table.entries.Count > 0 ? table.entries[0].score : 0);
         // 1回も切っていない回は残さない(仕様面の点検 1)。HI-SCORE は今までの最高点のまま見せる。

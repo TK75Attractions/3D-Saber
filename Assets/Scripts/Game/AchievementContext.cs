@@ -1,0 +1,87 @@
+using System;
+using System.Collections.Generic;
+
+// 実績の条件(AchievementCatalog)が見る、1回の演奏の結果の写し(2026-10-29)。結果が決まったとき(GameSession.RunRecording)に
+// AchievementTracker が GameSession の Final*・PlayStats・その回の情報(AchievementRunInfo)・記録(AchievementStore・RankingSync)から作る。
+// テストは値を直接入れて作る。
+public sealed class AchievementContext
+{
+    public string SongId = "", Difficulty = "";
+    public int Score, MaxCombo, Hit, Miss, Perfect, Great, Good, Bad, CutCount;
+    public float Accuracy;
+    // 照準の裏譜面(D)の回か。D はノーツを使う実績の対象外。
+    public bool AimMode;
+    public int AimDamage;
+    // 通算の順位(GameSession.FinalDailyRanking。このモードの表、2台合算)。
+    public bool RankingAvailable;
+    public int DailyRank, TotalPlays, TiedPlays;
+    // 演奏中の記録。null は記録が無い回(ノーツ・コンボの節目・X斬りなどを使う実績は取れない)。
+    public PlayStats Stats;
+    // 曲を始めた・終えた時刻(台の現地時刻)と、終えた時刻(UTC の Unix ミリ秒。解除の記録と、となりの台の回と比べる)。
+    public DateTime StartedLocal, EndedLocal;
+    public long EndedUnixMs;
+    public string Station = "", Namespace = "", RunId = "";
+    // 同じ来場者の練習を最後まで終えたあとの、最初の1曲か。
+    public bool PracticedBefore;
+    // 選曲にかかった秒(残り時間の数え方)。判定調整から戻った選曲・分からないときは null(時間切れの自動開始は 100 秒)。
+    public double? SelectionSeconds;
+    // このモードで、今日(台の現地の日付)の clear の解除の数(2台合わせて、この回の分を入れる前)。分からなければ -1。
+    public int ClearsToday = -1;
+    // 同期の記録(この台と相手の台の回。この回はまだ入っていない)。
+    public IReadOnlyList<RankingPlay> Plays = Array.Empty<RankingPlay>();
+    // この回の clear の番号(○人目)。clear を解除したあとに入れる(キリ番)。
+    public int ClearNumber;
+
+    public bool Secret => RushESecretState.IsSecretDifficulty(Difficulty);
+    public bool IsHard => string.Equals(Difficulty, AchievementCatalog.HardDifficulty, StringComparison.OrdinalIgnoreCase);
+    public PlayRank Rank => PlayRankHelper.FromScore(Score);
+    // ScoreManager.IsFullCombo・IsAllPerfect と同じ(避はトゲに当たると対象外)。
+    public bool FullCombo => Hit > 0 && Bad == 0 && Miss == 0 && AimDamage == 0;
+    public bool AllPerfect => FullCombo && Perfect == Hit;
+    // ノーツを使う実績を判定できるか(最初から記録していて、照準の裏譜面でない)。
+    public bool NoteStats => Stats != null && Stats.Complete && !AimMode;
+
+    // その裏譜面(曲と難易度の文字)の回か。
+    public bool Is(SecretChart chart) =>
+        chart != null && SongId == chart.SongId && string.Equals(Difficulty, chart.Difficulty, StringComparison.OrdinalIgnoreCase);
+
+    // 曲を始めてから終わるまでの間に、台の時計が hour:minute(の1分間)にかかったか。
+    public bool Spans(int hour, int minute)
+    {
+        DateTime start = StartedLocal <= EndedLocal ? StartedLocal : EndedLocal;
+        // 始めた時刻が入っていない・おかしいときも、1日より前は見ない(曲は数分)。
+        if (start < EndedLocal.AddDays(-1)) start = EndedLocal.AddDays(-1);
+        for (DateTime day = start.Date; day <= EndedLocal.Date; day = day.AddDays(1))
+        {
+            DateTime from = day.AddHours(hour).AddMinutes(minute), to = from.AddMinutes(1);
+            if (start < to && EndedLocal >= from) return true;
+        }
+        return false;
+    }
+
+    // このモードで、となりの台(台名が自分と違う)が同じ曲(難易度は問わない)を、この回の終わりの前後 seconds 秒以内に終えていたか。
+    // 届いている相手の回だけを見るので、取るのは結果があとに決まった方(終わりの演出の長さで、曲を先に終えた方があとになることがある)。
+    public bool NeighborFinishedSameSong(double seconds)
+    {
+        if (Plays == null || string.IsNullOrEmpty(SongId)) return false;
+        long window = (long)Math.Round(seconds * 1000.0);
+        foreach (var play in Plays)
+        {
+            if (play == null || play.id == RunId || (play.ns ?? "") != (Namespace ?? "") || play.song != SongId) continue;
+            if ((play.st ?? "") == (Station ?? "")) continue;
+            if (play.at > 0 && Math.Abs(EndedUnixMs - play.at) <= window) return true;
+        }
+        return false;
+    }
+
+    // 赤・青(金は除く)がどちらも min 個以上で、色ごとに PERFECT の数 ÷ その色の数 ≥ rate。
+    public bool BothHandsPerfectRate(int min, double rate)
+    {
+        if (!NoteStats) return false;
+        int red = Stats.Count(n => n.Red), blue = Stats.Count(n => n.Blue);
+        if (red < Math.Max(1, min) || blue < Math.Max(1, min)) return false;
+        int redPerfect = Stats.Count(n => n.Red && n.Perfect), bluePerfect = Stats.Count(n => n.Blue && n.Perfect);
+        // 割合の境目(6割ちょうど)を丸めで落とさない。
+        return redPerfect + 1e-9 >= rate * red && bluePerfect + 1e-9 >= rate * blue;
+    }
+}

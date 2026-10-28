@@ -29,6 +29,15 @@ public static class GameSession
     // 結果UIの再構築と、同じ人の次のプレイを区別する保存用ID。
     public static string AchievementRunId;
     public static DailyRankingStore.Result FinalDailyRanking;
+    // その回を残す表の名前空間(運営モード、2026-10-29)。曲を始めたとき(ResetResult)の OperatorMode.Namespace。
+    // 曲の途中で運営モードを切り替えても、その回は始めたときの表に残す。"" はふだんの表、"fes" は本番用(2台で共有)。
+    public static string RunNamespace = "";
+    // その回に取った実績の ID。プレイの記録(RankingSync)の ach に入れて相手の台へ送る(この回に AchievementStore で解除した分も足す)。
+    // 入れる ID は、この回の AchievementRunId と RunNamespace で Unlock したもの(相手の台は、この回の ID で数に足す)。
+    public static System.Collections.Generic.List<string> FinalAchievements = new System.Collections.Generic.List<string>();
+    // 記録してよい回の結果が決まり、通算の順位を出したあと・プレイの記録を作って相手の台へ送る前に、その回につき1回だけ
+    // (実績を決めて Unlock し、FinalAchievements に入れるため。FinalDailyRanking はもう入っている)。
+    public static event System.Action RunRecording;
 
     // その回に実際にノーツを切った回数(ScoreManager.CutCount)。向き違いで MISS に下がった切りや、ロングの途中の切りも数える。
     public static int FinalCutCount;
@@ -62,15 +71,16 @@ public static class GameSession
     }
 
     // HI-SCORE を残す(結果画面と、終わりの演出を Esc 2回で抜けたとき)。同じ回は一度だけ、1回も切っていない回は残さない。
+    // 残すのは、その回の名前空間(RunNamespace)の表。
     public static void RecordCompletedHighScore()
     {
         if (string.IsNullOrEmpty(SelectedSongId)) return;
-        var table = HighScoreStore.Load(SelectedSongId, SelectedDifficulty);
+        var table = HighScoreStore.Load(RunNamespace, SelectedSongId, SelectedDifficulty);
         HighScoreBestBefore(table.entries.Count > 0 ? table.entries[0].score : 0);
         if (!ShouldRecordRun || !ClaimHighScoreRecord()) return;
         // 同じ回(runId)がもうあれば足さない(台同士の同期の足し直しと重なっても二重にしない)。表が壊れていれば上書きせず、
         // RankingSync が動いている間に足し直す(Failed のとき)。
-        var result = HighScoreStore.RecordRun(SelectedSongId, SelectedDifficulty, new HighScoreEntry
+        var result = HighScoreStore.RecordRun(RunNamespace, SelectedSongId, SelectedDifficulty, new HighScoreEntry
         {
             score = FinalScore,
             rank = PlayRankHelper.Label(PlayRankHelper.FromScore(FinalScore)),
@@ -87,6 +97,18 @@ public static class GameSession
     // この回を遊び終わった時刻(通算の順位に残したとき。UTC の Unix ミリ秒)。HI-SCORE と同期の記録で同じ値を使う。
     static long completedAtUnixMs;
 
+    // この回の曲が終わった時刻(終わりの演出の前。GamePlayManager.FinishGame)。通算の順位・相手の台へ送る記録・実績で同じ時刻を使う
+    // (2台の「となりと同じ曲」を、終わりの演出の長さに左右されずに比べるため)。別の回の時刻は返さない。
+    static System.DateTime? runEndedAt;
+    static string runEndedRunId;
+    public static System.DateTime? RunEndedAt => runEndedAt.HasValue && runEndedRunId == AchievementRunId ? runEndedAt : null;
+    public static void MarkRunEnded(System.DateTime localTime)
+    {
+        if (RunEndedAt.HasValue) return;
+        runEndedAt = localTime;
+        runEndedRunId = AchievementRunId;
+    }
+
     // 通常終了の確定スコアのみ登録。日付や結果UIが変わっても同じプレイを二重登録しない。
     // 台同士のランキング同期(2026-10-28): 登録した回を RankingSync へ渡し、もう1台へすぐ送る(上の FinalDailyRanking で、この回につき1回だけ)。
     // 同期が無いとき(テスト・Editor の既定・-rankingSync off)は何もしない。
@@ -94,22 +116,39 @@ public static class GameSession
     {
         if (FinalDailyRanking != null || !ShouldRecordRun) return;
         // 演奏中に届いて待っていたこの曲×難易度の記録を、順位を決める前に表へ足す(結果画面の順位が、届いていた記録を入れた表で決まる)。
-        RankingSync.ApplyWaitingFor(SelectedSongId, SelectedDifficulty);
-        var now = System.DateTime.Now;
-        FinalDailyRanking = DailyRankingStore.Record(SelectedSongId, SelectedDifficulty,
+        RankingSync.ApplyWaitingFor(RunNamespace, SelectedSongId, SelectedDifficulty);
+        var now = RunEndedAt ?? System.DateTime.Now;
+        FinalDailyRanking = DailyRankingStore.Record(RunNamespace, SelectedSongId, SelectedDifficulty,
             AchievementRunId, FinalScore, now);
+        // この回の実績を決める(担当 B)。決める側の失敗で、順位と同期の記録を止めない。
+        try { RunRecording?.Invoke(); }
+        catch (System.Exception exception) { Debug.LogException(exception); }
         // ここで通算の表に書けなかった(表が壊れている・保存の失敗)ときも、相手の台へは送り、この台の表には RankingSync が
         // 動いている間に足し直す(FinalDailyRanking は失敗の結果でも入っているので、この回で記録し直すことはない)。
         var play = RankingSyncLog.NewPlay(AchievementRunId, SelectedSongId, SelectedDifficulty, FinalScore,
-            PlayRankHelper.Label(PlayRankHelper.FromScore(FinalScore)), FinalAccuracy, now, PhoneSaberStation.Read());
+            PlayRankHelper.Label(PlayRankHelper.FromScore(FinalScore)), FinalAccuracy, now, PhoneSaberStation.Read(),
+            RunNamespace, RunAchievementIds());
         completedAtUnixMs = play.at;
         RankingSync.RecordLocal(play, FinalDailyRanking.Available);
+    }
+
+    // 相手の台へ送る、この回の実績: FinalAchievements と、この回に解除した記録(AchievementStore。選曲で取った分など)。重ねない。
+    static System.Collections.Generic.List<string> RunAchievementIds()
+    {
+        var ids = new System.Collections.Generic.List<string>();
+        if (FinalAchievements != null)
+            foreach (string id in FinalAchievements)
+                if (!string.IsNullOrEmpty(id) && !ids.Contains(id)) ids.Add(id);
+        if (!string.IsNullOrEmpty(AchievementRunId))
+            foreach (string id in AchievementStore.UnlockedIn(RunNamespace, AchievementRunId))
+                if (!ids.Contains(id)) ids.Add(id);
+        return ids;
     }
 
     public static void RecordCompletedAchievements()
     {
         if (!ShouldRecordRun) return;
-        SongAchievementStore.Record(SelectedSongId, SelectedDifficulty, AchievementRunId,
+        SongAchievementStore.Record(RunNamespace, SelectedSongId, SelectedDifficulty, AchievementRunId,
             FinalPerfect, FinalGreat, FinalGood, FinalBad, FinalMiss, FinalScore);
     }
 
@@ -232,8 +271,12 @@ public static class GameSession
     public static void ResetResult()
     {
         AchievementRunId = System.Guid.NewGuid().ToString("N");
+        RunNamespace = OperatorMode.Namespace;
+        FinalAchievements = new System.Collections.Generic.List<string>();
         FinalDailyRanking = null;
         completedAtUnixMs = 0;
+        runEndedAt = null;
+        runEndedRunId = null;
         FinalScore = 0;
         FinalMaxCombo = 0;
         FinalComboBonus = 0;

@@ -6,16 +6,20 @@ using UnityEngine.UI;
 // 更新するたびに上げる: 軽微な直しは 1.0.1 → 1.0.2、中くらいの変更は 1.1 → 1.2(下の桁は 0 に戻して省く)。
 public static class GameVersion
 {
-    public const string Number = "1.39.3";
+    public const string Number = "2.0";
     public static string Label => "v" + Number;
 }
 
 // 版の表示。起動時に一度だけ作り、シーンをまたいで残す(シーンは編集しない)。幕や運営の知らせより下、HUD より上。
+// 運営モード(OperatorMode)の間は、版の左に同じ小ささ・薄さで「運営」と出す(来場者が気にならない大きさ)。
 public sealed class GameVersionLabel : MonoBehaviour
 {
     public const float FontSize = 18;
     public const float Alpha = .32f;
     public static readonly Vector2 Margin = new Vector2(16, 6);
+    public const string OperatorBadgeText = "運営";
+    // 版の文字と「運営」の間。
+    public const float BadgeGap = 8;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void Initialize()
@@ -40,8 +44,28 @@ public sealed class GameVersionLabel : MonoBehaviour
         rt.anchoredPosition = new Vector2(-Margin.x, Margin.y);
         text.raycastTarget = false;
         view.Text = text;
+        var badge = UISkinKit.MakeTMP(root.transform, "OperatorBadge", OperatorBadgeText, FontSize, new Color(1, 1, 1, Alpha),
+            TextAlignmentOptions.BottomRight, Vector2.zero, new Vector2(60, 26), FontStyles.Normal, 0,
+            UISkinKit.JapaneseFallbackFontAsset());
+        var badgeRect = badge.rectTransform;
+        badgeRect.anchorMin = badgeRect.anchorMax = badgeRect.pivot = new Vector2(1, 0);
+        float versionWidth = text.GetPreferredValues(GameVersion.Label).x;
+        versionWidth = float.IsNaN(versionWidth) ? rt.sizeDelta.x * .5f : Mathf.Clamp(versionWidth, 0, rt.sizeDelta.x);
+        badgeRect.anchoredPosition = new Vector2(-Margin.x - versionWidth - BadgeGap, Margin.y);
+        badge.raycastTarget = false;
+        view.OperatorBadge = badge;
+        view.RefreshOperatorBadge();
         return view;
     }
 
     public TextMeshProUGUI Text { get; private set; }
+    public TextMeshProUGUI OperatorBadge { get; private set; }
+
+    void OnEnable() { OperatorMode.Changed += RefreshOperatorBadge; RefreshOperatorBadge(); }
+    void OnDisable() => OperatorMode.Changed -= RefreshOperatorBadge;
+
+    public void RefreshOperatorBadge()
+    {
+        if (OperatorBadge != null) OperatorBadge.gameObject.SetActive(OperatorMode.IsOn);
+    }
 }

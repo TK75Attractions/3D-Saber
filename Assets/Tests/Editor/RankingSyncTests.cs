@@ -12,26 +12,36 @@ using UnityEngine.TestTools;
 // 台同士のランキング同期(RankingSync、2026-10-28)の純粋な部分(RankingSyncLog)と、表(HighScoreStore・DailyRankingStore)への併合。
 // ネットワークは開かない(受け取ったあとの処理は ReceiveForTest、時間の進みは Tick に時刻を渡して確かめる)。本物の UDP は PlayMode の
 // RankingSyncPlayTests。PlayerPrefs は専用の曲 ID と専用のログのキーだけを使い、テストの後で消す。
+// 版 2(2026-10-29 運営モードと実績)の ns・ach・ほかの版の扱いは、このファイルの後ろの方。
 public class RankingSyncTests
 {
     const string Song = "__RankingSyncTest";
     const string JapaneseSong = "__RankingSyncTest揺籠";
     const string LogKey = "RankingSync.Log.v1.__RankingSyncTest";
     const string PendingKey = "RankingSync.Pending.v1.__RankingSyncTest";
+    const string AchievementKey = "Achievements.Log.v1.__RankingSyncTest";
+    const string Fes = OperatorMode.FestivalNamespace;
     static readonly string[] Difficulties = { "Normal", "Hard" };
     static readonly DateTime PlayedAt = new DateTime(2026, 10, 28, 13, 0, 0);
     static readonly IPEndPoint From = new IPEndPoint(IPAddress.Parse("192.168.137.20"), RankingSync.DefaultPort);
     readonly List<RankingSync> created = new List<RankingSync>();
-    // 本番のキー(ログ・足し直し待ち・機械 ID・手で入れた相手)には触れないことを、どのテストでも確かめる。
+    // 本番のキー(ログ・足し直し待ち・機械 ID・手で入れた相手・実績の記録)には触れないことを、どのテストでも確かめる。
     static readonly string[] ProductionKeys =
-        { RankingSyncLog.PreferenceKey, RankingSync.PendingPreferenceKey, RankingSync.MachinePreferenceKey, RankingSync.PeersPreferenceKey };
+    {
+        RankingSyncLog.PreferenceKey, RankingSync.PendingPreferenceKey, RankingSync.MachinePreferenceKey, RankingSync.PeersPreferenceKey,
+        AchievementStore.PreferenceKey,
+    };
     readonly Dictionary<string, string> production = new Dictionary<string, string>();
+    string savedAchievementKey;
 
     [SetUp]
     public void RememberProductionKeys()
     {
         production.Clear();
         foreach (string key in ProductionKeys) production[key] = PlayerPrefs.HasKey(key) ? PlayerPrefs.GetString(key) : null;
+        savedAchievementKey = AchievementStore.Key;
+        PlayerPrefs.DeleteKey(AchievementKey);
+        AchievementStore.UseKeyForTest(AchievementKey);
     }
 
     [TearDown]
@@ -44,15 +54,19 @@ public class RankingSyncTests
             UnityEngine.Object.DestroyImmediate(sync.gameObject);
         }
         created.Clear();
-        foreach (string song in new[] { Song, JapaneseSong })
-            foreach (string difficulty in Difficulties)
-            {
-                PlayerPrefs.DeleteKey(DailyRankingStore.Key(song, difficulty));
-                PlayerPrefs.DeleteKey(HighScoreStore.Key(song, difficulty));
-            }
+        foreach (string ns in new[] { "", Fes })
+            foreach (string song in new[] { Song, JapaneseSong })
+                foreach (string difficulty in Difficulties)
+                {
+                    PlayerPrefs.DeleteKey(DailyRankingStore.Key(ns, song, difficulty));
+                    PlayerPrefs.DeleteKey(HighScoreStore.Key(ns, song, difficulty));
+                }
         PlayerPrefs.DeleteKey(LogKey);
         PlayerPrefs.DeleteKey(PendingKey);
+        PlayerPrefs.DeleteKey(AchievementKey);
         PlayerPrefs.Save();
+        AchievementStore.UseKeyForTest(savedAchievementKey);
+        OperatorMode.OverrideForTest(false);
         foreach (var pair in production)
             Assert.AreEqual(pair.Value, PlayerPrefs.HasKey(pair.Key) ? PlayerPrefs.GetString(pair.Key) : null, "本番のキーに触れない: " + pair.Key);
     }
@@ -97,9 +111,10 @@ public class RankingSyncTests
         return sync;
     }
 
+    // ふだんの表(名前空間 "")。
     static DailyRankingStore.Table DailyTable(string song, string difficulty)
     {
-        Assert.IsTrue(DailyRankingStore.TryRead(PlayerPrefs.GetString(DailyRankingStore.Key(song, difficulty), ""), "2000-01-01", out var table));
+        Assert.IsTrue(DailyRankingStore.TryRead(PlayerPrefs.GetString(DailyRankingStore.Key("", song, difficulty), ""), "2000-01-01", out var table));
         return table;
     }
 
@@ -215,7 +230,7 @@ public class RankingSyncTests
         Assert.AreEqual(JapaneseSong, loaded.Find(japanese.id).song);
         Assert.AreEqual("", loaded.Find(hard.id).st);
 
-        foreach (string text in new[] { "not json", "{\"v\":2,\"plays\":[]}", "{\"plays\":[]}" })
+        foreach (string text in new[] { "not json", "{\"v\":3,\"plays\":[]}", "{\"v\":0,\"plays\":[]}", "{\"plays\":[]}" })
         {
             var empty = RankingSyncLog.FromJson(text, out bool broken);
             Assert.IsTrue(broken, text);
@@ -258,7 +273,7 @@ public class RankingSyncTests
         string digest = RankingSyncLog.BuildDigest(from, "A", 0, EmptyHash).Replace("\"plays\":[]", "\"plays\" : [ ]").Replace(",\"hash\"", ", \"hash\"");
         Assert.IsTrue(RankingSyncLog.TryParse(digest, out var message));
         Assert.AreEqual(from, message.from);
-        Assert.IsFalse(RankingSyncLog.TryParse(RankingSyncLog.Prefix + "{\"v\":1,\"kind\":\"digest\",\"from\":\"" + from +
+        Assert.IsFalse(RankingSyncLog.TryParse(RankingSyncLog.Prefix + "{\"v\":" + RankingSyncLog.Version + ",\"kind\":\"digest\",\"from\":\"" + from +
                                                "\",\"st\":\"A\",\"count\":0,\"hash\":\"" + EmptyHash + "\"}", out _));
     }
 
@@ -278,10 +293,13 @@ public class RankingSyncTests
 
         Assert.IsFalse(RankingSyncLog.TryParse(null, out _));
         Assert.IsFalse(RankingSyncLog.TryParse("PHONESABER_DISCOVER 1", out _), "ほかの目印");
-        Assert.IsFalse(RankingSyncLog.TryParse("BTSRANK2 " + digest.Substring(RankingSyncLog.Prefix.Length), out _), "版の違う目印");
+        Assert.AreEqual("BTSRANK2 ", RankingSyncLog.Prefix, "通信の版は 2");
+        Assert.IsFalse(RankingSyncLog.TryParse("BTSRANK1 " + digest.Substring(RankingSyncLog.Prefix.Length), out _), "版の違う目印(古い版)");
+        Assert.IsFalse(RankingSyncLog.TryParse("BTSRANK3 " + digest.Substring(RankingSyncLog.Prefix.Length), out _), "版の違う目印(新しい版)");
         Assert.IsFalse(RankingSyncLog.TryParse(RankingSyncLog.Prefix + "{broken", out _), "JSON として読めない");
         Assert.IsFalse(RankingSyncLog.TryParse(RankingSyncLog.Prefix + "{}", out _), "版が無い");
-        Assert.IsFalse(RankingSyncLog.TryParse(digest.Replace("\"v\":1", "\"v\":2"), out _), "版が違う");
+        Assert.IsFalse(RankingSyncLog.TryParse(digest.Replace("\"v\":2", "\"v\":1"), out _), "版が違う");
+        Assert.IsFalse(RankingSyncLog.TryParse(digest.Replace("\"v\":2", "\"v\":3"), out _), "版が違う");
         Assert.IsFalse(RankingSyncLog.TryParse(digest.Replace("\"digest\"", "\"hello\""), out _), "知らない種類");
         Assert.IsFalse(RankingSyncLog.TryParse(digest.Replace(from, "bad id!"), out _), "差出人の ID が壊れている");
         Assert.IsFalse(RankingSyncLog.TryParse(digest.Replace("\"st\":\"A\"", "\"st\":\"A B\""), out _), "台名が壊れている");
@@ -766,7 +784,8 @@ public class RankingSyncTests
         Assert.AreEqual(0, sync.ReceiveForTest(PlaysMessage(other, "B", bundled), From, t0 + 1), "束は演奏中は待つ");
         Assert.AreEqual(0, sync.ReceiveForTest(PlaysMessage(other, "B", elsewhere), From, t0 + 2));
         // 曲が終わった(GameSession.RecordCompletedDailyRanking の前の RankingSync.ApplyWaitingFor と同じ)
-        Assert.AreEqual(3, sync.ApplyChart(Song, "Normal", t0 + 3));
+        Assert.AreEqual(0, sync.ApplyChart(Fes, Song, "Normal", t0 + 3), "ほかの名前空間の表の待ちは取らない");
+        Assert.AreEqual(3, sync.ApplyChart("", Song, "Normal", t0 + 3));
         Assert.AreEqual(0, sync.PendingCount);
         Assert.AreEqual(2, sync.QueuedCount, "ほかの曲の束は待ったまま");
         Assert.IsFalse(PlayerPrefs.HasKey(DailyRankingStore.Key(JapaneseSong, "Normal")));
@@ -977,6 +996,45 @@ public class RankingSyncTests
         }
     }
 
+    // 送る記録の時刻は、曲が終わったとき(終わりの演出の前、GameSession.MarkRunEnded)。2台で「となりと同じ曲」を比べる実績と同じ時刻。
+    // 最初の1回だけ覚え、次の回(ResetResult・回の ID が変わった)には持ち越さない。
+    [Test]
+    public void TheSentTimeIsWhenTheSongEndedNotWhenTheEndingEffectsFinished()
+    {
+        var saved = SaveGameSession();
+        var received = new List<RankingPlay>();
+        Action<RankingPlay> handler = received.Add;
+        RankingSync.LocalPlayRecorded += handler;
+        try
+        {
+            GameSession.SelectedSongId = Song;
+            GameSession.SelectedDifficulty = "Normal";
+            GameSession.IsCalibrationMode = false;
+            GameSession.ResetResult();
+            Assert.IsNull(GameSession.RunEndedAt);
+            var ended = DateTime.Now.AddSeconds(-7);
+            GameSession.MarkRunEnded(ended);
+            GameSession.MarkRunEnded(DateTime.Now);
+            Assert.AreEqual(ended, GameSession.RunEndedAt, "最初の1回だけ");
+            GameSession.FinalPerfect = 10;
+            GameSession.FinalCutCount = 10;
+            GameSession.FinalScore = 81234;
+            GameSession.RecordCompletedDailyRanking();
+            Assert.AreEqual(1, received.Count);
+            Assert.AreEqual(new DateTimeOffset(ended).ToUnixTimeMilliseconds(), received[0].at);
+            GameSession.ResetResult();
+            Assert.IsNull(GameSession.RunEndedAt, "次の回には持ち越さない");
+            GameSession.MarkRunEnded(ended);
+            GameSession.AchievementRunId = "another-run";
+            Assert.IsNull(GameSession.RunEndedAt, "別の回の時刻は返さない");
+        }
+        finally
+        {
+            RankingSync.LocalPlayRecorded -= handler;
+            RestoreGameSession(saved);
+        }
+    }
+
     // 結果画面の HI-SCORE も、壊れた上位5件の表を上書きしない(その回は RankingSync の足し直し待ちへ)。同じ回は二重にしない。
     [Test]
     public void RecordingAHighScoreNeverOverwritesABrokenTable()
@@ -1043,5 +1101,456 @@ public class RankingSyncTests
         Assert.IsFalse(RankingSync.EnabledHere(new[] { "app", "-rankingSync", "off" }, false, false));
         Assert.IsFalse(RankingSync.EnabledHere(new[] { "app", "-phonesaberSoak", "5" }, false, false), "試験の起動では動かさない");
         Assert.IsFalse(RankingSync.EnabledHere(new[] { "app", "-phonesaberSmoke" }, false, false));
+    }
+
+    // ---- 版 2(2026-10-29): 名前空間(ns)・実績(ach)・ほかの版 ----
+
+    static RankingPlay FesPlay(int score = 50000, string station = "B", params string[] achievements) =>
+        RankingSyncLog.NewPlay(NewId(), Song, "Normal", score, PlayRankHelper.Label(PlayRankHelper.FromScore(score)), .8f, PlayedAt, station,
+            Fes, achievements);
+
+    [Test]
+    public void ARecordCarriesItsNamespaceAndAchievementsThroughTheLogAndTheBundles()
+    {
+        RankingSyncLog.ResetWarningsForTest();
+        LogAssert.Expect(LogType.Warning, new System.Text.RegularExpressions.Regex(@"^RankingSync: この回の実績のうち 3 個を同期の記録に入れられませんでした"));
+        var play = RankingSyncLog.NewPlay(NewId(), Song, "Hard", 91000, "S+", .95f, PlayedAt, "A", Fes,
+            new[] { "hard_clear", "gold_all", "hard_clear", "bad id!", "", null, "full_combo" });
+        Assert.AreEqual(Fes, play.ns);
+        CollectionAssert.AreEqual(new[] { "hard_clear", "gold_all", "full_combo" }, play.ach, "形の正しい ID だけを、重ねずに取った順で");
+        Assert.IsTrue(RankingSyncLog.IsValid(play));
+        var plain = Play();
+        Assert.AreEqual("", plain.ns, "名前空間を渡さなければふだん");
+        Assert.AreEqual(0, plain.ach.Count);
+
+        var log = new RankingSyncLog();
+        Assert.IsTrue(log.Add(play) && log.Add(plain));
+        log.Save(LogKey);
+        StringAssert.StartsWith("{\"v\":2,", PlayerPrefs.GetString(LogKey), "保存の形は版 2");
+        var loaded = RankingSyncLog.Load(LogKey);
+        Assert.IsTrue(RankingSyncLog.SameContent(play, loaded.Find(play.id)));
+        Assert.AreEqual(Fes, loaded.Find(play.id).ns);
+        CollectionAssert.AreEqual(play.ach, loaded.Find(play.id).ach);
+        Assert.AreEqual("", loaded.Find(plain.id).ns);
+        Assert.AreEqual(log.HashText, loaded.HashText);
+
+        // 束と、受け取った1通の読み方でもそのまま
+        Assert.IsTrue(RankingSyncLog.TryParse(log.Bundles(NewId(), "A")[0].Text, out var message));
+        var received = message.plays.Single(p => p != null && p.id == play.id);
+        Assert.IsTrue(RankingSyncLog.SameContent(play, received));
+        CollectionAssert.AreEqual(play.ach, received.ach);
+        // 名前空間・実績が違えば、同じ回の違う中身。表をまとめる鍵は名前空間で分かれる
+        var otherNs = RankingSyncLog.Copy(play);
+        otherNs.ns = "";
+        var otherAch = RankingSyncLog.Copy(play);
+        otherAch.ach.RemoveAt(0);
+        Assert.IsFalse(RankingSyncLog.SameContent(play, otherNs));
+        Assert.IsFalse(RankingSyncLog.SameContent(play, otherAch));
+        Assert.AreEqual(3, play.ach.Count, "写しを変えても元は変わらない");
+        Assert.AreNotEqual(RankingSyncLog.ChartKey(play), RankingSyncLog.ChartKey(otherNs));
+    }
+
+    // 前の版(1)が残したログ(ns・ach の欄なし)は、ふだんの表・実績なしの回として読み、起動時の照合でふだんの表へ入れる。
+    [Test]
+    public void AVersionOneSavedLogIsReadAsOrdinaryPlays()
+    {
+        var play = Play(score: 70000);
+        string v1Play = "{\"id\":\"" + play.id + "\",\"song\":\"" + play.song + "\",\"diff\":\"Normal\",\"score\":70000,\"rank\":\"" + play.rank +
+                        "\",\"acc\":0.8,\"date\":\"" + play.date + "\",\"st\":\"A\",\"at\":" + play.at.ToString(CultureInfo.InvariantCulture) + "}";
+        string v1Log = "{\"v\":1,\"plays\":[" + v1Play + "]}";
+        var log = RankingSyncLog.FromJson(v1Log, out bool broken);
+        Assert.IsFalse(broken);
+        Assert.AreEqual("", log.Find(play.id).ns);
+        Assert.AreEqual(0, log.Find(play.id).ach.Count);
+        PlayerPrefs.SetString(LogKey, v1Log);
+        PlayerPrefs.SetString(PendingKey, "{\"v\":1,\"plays\":[]}");
+        var sync = Offline(NewId());
+        Assert.AreEqual(1, sync.Count, "前の版のログをそのまま読む");
+        sync.Tick(Time.realtimeSinceStartupAsDouble);
+        Assert.AreEqual(play.id, DailyTable(Song, "Normal").entries.Single().runId);
+        Assert.AreEqual(play.id, HighScoreStore.Load("", Song, "Normal").entries.Single().runId);
+        Assert.IsFalse(PlayerPrefs.HasKey(DailyRankingStore.Key(Fes, Song, "Normal")), "本番の表には入れない");
+        Assert.IsFalse(PlayerPrefs.HasKey(HighScoreStore.Key(Fes, Song, "Normal")));
+    }
+
+    [Test]
+    public void BrokenNamespacesAndAchievementsMakeARecordInvalid()
+    {
+        var cases = new (string name, Action<RankingPlay> breakIt)[]
+        {
+            ("大文字の名前空間", p => p.ns = "FES"),
+            ("記号の名前空間", p => p.ns = "fes_1"),
+            ("空白の名前空間", p => p.ns = " "),
+            ("長すぎる名前空間", p => p.ns = new string('f', OperatorMode.MaxNamespaceLength + 1)),
+            ("空の実績 ID", p => p.ach = new List<string> { "" }),
+            ("null の実績 ID", p => p.ach = new List<string> { null }),
+            ("空白の入った実績 ID", p => p.ach = new List<string> { "hard clear" }),
+            ("長すぎる実績 ID", p => p.ach = new List<string> { new string('a', AchievementStore.MaxIdLength + 1) }),
+            ("重なった実績", p => p.ach = new List<string> { "hard_clear", "gold_all", "hard_clear" }),
+            ("多すぎる実績", p => p.ach = Enumerable.Range(0, RankingSyncLog.MaxAchievementsPerPlay + 1).Select(i => "a" + i).ToList()),
+        };
+        foreach (var (name, breakIt) in cases)
+        {
+            var play = Play();
+            breakIt(play);
+            Assert.IsFalse(RankingSyncLog.IsValid(play), name);
+            Assert.IsFalse(new RankingSyncLog().Add(play), name);
+        }
+        var ok = Play();
+        ok.ns = Fes;
+        ok.ach = Enumerable.Range(0, RankingSyncLog.MaxAchievementsPerPlay).Select(i => "a" + i).ToList();
+        Assert.IsTrue(RankingSyncLog.IsValid(ok), "上限ちょうどは通る");
+        ok.ach = null;
+        ok.ns = null;
+        Assert.IsTrue(RankingSyncLog.IsValid(ok), "欄が無い(null)のは、ふだんの表・実績なし");
+        Assert.AreEqual("", RankingSyncLog.Copy(ok).ns);
+        Assert.AreEqual(0, RankingSyncLog.Copy(ok).ach.Count);
+    }
+
+    // 実績の一覧(44個、2026-10-29 b1 の catalog.md)。
+    static readonly string[] CatalogIds =
+    {
+        "ap", "senbon", "quiz", "bullseye", "fubuki", "mirror", "shingan", "memory", "matador", "clock", "hardsplus", "secret_s", "wind",
+        "overtake", "dark", "ichiban", "streak50", "fc", "kiriban", "zorome", "splus", "combo100", "streak20", "top", "secret", "pioneer",
+        "jackpot", "comeback", "duet", "school", "ranks", "hard", "chorus", "quick", "combo50", "goldall", "dual", "arrows", "rainbow",
+        "firstcut", "finale", "xcut", "practice", "clear",
+    };
+
+    // 長さの上限(12 字)の ID を n 個。
+    static List<string> LongIds(int count) => Enumerable.Range(0, count)
+        .Select(i => i.ToString("D2", CultureInfo.InvariantCulture) + new string('x', AchievementStore.MaxIdLength - 2)).ToList();
+
+    // 1回の記録に、どの曲でも(長い曲 ID・日本語の曲 ID・16 字の台名)、一覧の44個も、12 字の ID の44個・48個(上限)も、外さずに入り、1通で送れる。
+    [Test]
+    public void AllFortyFourAchievementsFitInOneDatagramForEverySong()
+    {
+        Assert.AreEqual(44, CatalogIds.Length);
+        Assert.AreEqual(48, RankingSyncLog.MaxAchievementsPerPlay);
+        Assert.AreEqual(12, AchievementStore.MaxIdLength);
+        var songs = System.IO.Directory.GetDirectories(System.IO.Path.Combine(Application.streamingAssetsPath, "Songs"))
+            .Select(System.IO.Path.GetFileName).ToList();
+        Assert.GreaterOrEqual(songs.Count, 10, "曲のフォルダを読めた");
+        CollectionAssert.Contains(songs, "Phobia PARTⅠ");
+        var warnings = new List<string>();
+        Application.LogCallback collect = (condition, stack, type) => { if (type == LogType.Warning) warnings.Add(condition); };
+        RankingSyncLog.ResetWarningsForTest();
+        Application.logMessageReceived += collect;
+        try
+        {
+            foreach (string song in songs)
+                foreach (var ids in new[] { CatalogIds.ToList(), LongIds(44), LongIds(RankingSyncLog.MaxAchievementsPerPlay) })
+                {
+                    var play = RankingSyncLog.NewPlay(NewId(), song, "Normal", ScoreManager.MaxScore, "S+", 1f / 3f, PlayedAt,
+                        new string('B', RankingSyncLog.MaxStationLength), Fes, ids);
+                    CollectionAssert.AreEqual(ids, play.ach, song + " の " + ids.Count + " 個を外さずに入れる");
+                    Assert.IsTrue(RankingSyncLog.IsValid(play), song);
+                    var log = new RankingSyncLog();
+                    Assert.IsTrue(log.Add(play), song);
+                    // 束の頭が一番大きな形(64 字の差出人・16 字の台名)でも1通
+                    var bundles = log.Bundles(new string('f', RankingSyncLog.MaxIdLength), new string('A', RankingSyncLog.MaxStationLength));
+                    Assert.AreEqual(1, bundles.Count, song);
+                    Assert.LessOrEqual(Encoding.UTF8.GetByteCount(bundles[0].Text), RankingSyncLog.MaxDatagramBytes, song);
+                    Assert.IsTrue(RankingSyncLog.TryParse(bundles[0].Text, out var message), song);
+                    CollectionAssert.AreEqual(ids, message.plays.Single().ach, song);
+                }
+        }
+        finally { Application.logMessageReceived -= collect; }
+        Assert.IsFalse(warnings.Any(w => w.StartsWith("RankingSync: この回の実績のうち", StringComparison.Ordinal)), "外さないので警告しない");
+    }
+
+    // 入れられない実績(形が違う・上限を超える・1通に収まらない)は黙って外さず、起動の間に1回だけ警告する。外しても送れる回にする。
+    [Test]
+    public void AchievementsThatCannotBeKeptAreReportedOnce()
+    {
+        var droppedWarning = new System.Text.RegularExpressions.Regex(@"^RankingSync: この回の実績のうち \d+ 個を同期の記録に入れられませんでした");
+        var warnings = new List<string>();
+        Application.LogCallback collect = (condition, stack, type) =>
+        {
+            if (type == LogType.Warning && droppedWarning.IsMatch(condition)) warnings.Add(condition);
+        };
+        RankingSyncLog.ResetWarningsForTest();
+        Application.logMessageReceived += collect;
+        try
+        {
+            // 検査を通る一番大きな形(64 字の回の ID・64 字の日本語の曲・16 字の難易度と台名・8 字の名前空間)は、48個は入らない
+            LogAssert.Expect(LogType.Warning, droppedWarning);
+            var largest = RankingSyncLog.NewPlay(new string('a', RankingSyncLog.MaxIdLength), new string('揺', RankingSyncLog.MaxSongLength),
+                new string('d', RankingSyncLog.MaxDifficultyLength), ScoreManager.MaxScore, "ABCDEFGH", 1f / 3f, PlayedAt,
+                new string('B', RankingSyncLog.MaxStationLength), new string('f', OperatorMode.MaxNamespaceLength), LongIds(48));
+            Assert.Greater(largest.ach.Count, 0);
+            Assert.Less(largest.ach.Count, 48);
+            CollectionAssert.AreEqual(LongIds(largest.ach.Count), largest.ach, "前から順に残す");
+            Assert.IsTrue(RankingSyncLog.IsValid(largest), "外したあとは送れる形");
+            var log = new RankingSyncLog();
+            Assert.IsTrue(log.Add(largest));
+            Assert.AreEqual(1, log.Bundles(new string('f', RankingSyncLog.MaxIdLength), new string('A', RankingSyncLog.MaxStationLength)).Count);
+            // 上限を超える数・形の違う ID も入れない(警告は起動の間に1回だけ)
+            var many = Enumerable.Range(0, RankingSyncLog.MaxAchievementsPerPlay + 2).Select(i => "a" + i).ToList();
+            var capped = RankingSyncLog.NewPlay(NewId(), Song, "Normal", 90000, "S+", .9f, PlayedAt, "A", Fes, many);
+            CollectionAssert.AreEqual(many.Take(RankingSyncLog.MaxAchievementsPerPlay), capped.ach);
+            var shaped = RankingSyncLog.NewPlay(NewId(), Song, "Normal", 90000, "S+", .9f, PlayedAt, "A", Fes, new[] { "ok", "bad id!", "ok" });
+            CollectionAssert.AreEqual(new[] { "ok" }, shaped.ach, "重なりは1つに、形の違う ID は入れない");
+        }
+        finally { Application.logMessageReceived -= collect; }
+        Assert.AreEqual(1, warnings.Count, "警告は1回だけ");
+    }
+
+    // 相手の回は、その回の名前空間の表へ足す(ふだんの表と本番の表は混ざらない)。ログは1つで、要約は全部の回で。
+    [Test]
+    public void PlaysAreMergedIntoTheTablesOfTheirNamespace()
+    {
+        var sync = Offline(NewId());
+        double t0 = Time.realtimeSinceStartupAsDouble;
+        string other = NewId();
+        var festival = FesPlay(88000);
+        var ordinary = Play(score: 77000, station: "B");
+        Assert.AreEqual(1, sync.ReceiveForTest(PlaysMessage(other, "B", festival), From, t0));
+        Assert.AreEqual(1, sync.ReceiveForTest(PlaysMessage(other, "B", ordinary), From, t0 + 1));
+        Assert.AreEqual(2, sync.Count, "ログは1つ");
+        Assert.IsTrue(DailyRankingStore.TryRead(PlayerPrefs.GetString(DailyRankingStore.Key(Fes, Song, "Normal"), ""), "2000-01-01", out var fesDaily));
+        Assert.AreEqual(festival.id, fesDaily.entries.Single().runId);
+        Assert.AreEqual(ordinary.id, DailyTable(Song, "Normal").entries.Single().runId);
+        Assert.AreEqual(festival.id, HighScoreStore.Load(Fes, Song, "Normal").entries.Single().runId);
+        Assert.AreEqual(ordinary.id, HighScoreStore.Load("", Song, "Normal").entries.Single().runId);
+        var both = new RankingSyncLog();
+        Assert.IsTrue(both.Add(ordinary) && both.Add(festival));
+        Assert.AreEqual(both.HashText, sync.Hash, "要約は名前空間に依らず全部の回で");
+        // 名前空間を渡さない表示(選曲の TOP 5 など)は、今の運営モードの表
+        OperatorMode.OverrideForTest(true);
+        Assert.AreEqual(festival.id, HighScoreStore.Load(Song, "Normal").entries.Single().runId);
+        OperatorMode.OverrideForTest(false);
+        Assert.AreEqual(ordinary.id, HighScoreStore.Load(Song, "Normal").entries.Single().runId);
+        // 起動し直しても(照合)、それぞれの表のまま
+        sync.Tick(t0 + 2);
+        sync.Shutdown();
+        var restarted = Offline(NewId());
+        restarted.Tick(Time.realtimeSinceStartupAsDouble);
+        Assert.AreEqual(1, HighScoreStore.Load(Fes, Song, "Normal").entries.Count);
+        Assert.AreEqual(1, HighScoreStore.Load("", Song, "Normal").entries.Count);
+        Assert.AreEqual(Fes, RankingSyncLog.Load(LogKey).Find(festival.id).ns);
+    }
+
+    // 曲が終わって順位を決める前に先に足すのは、その回の名前空間の表で待っている回だけ。
+    [Test]
+    public void TheFinishedChartOnlyTakesWaitingPlaysOfItsNamespace()
+    {
+        var sync = Offline(NewId());
+        double t0 = Time.realtimeSinceStartupAsDouble;
+        sync.BusyForTest = true;
+        string other = NewId();
+        Assert.AreEqual(0, sync.ReceiveForTest(PlaysMessage(other, "B", FesPlay(95000), FesPlay(60000)), From, t0), "束は演奏中は待つ");
+        Assert.AreEqual(0, sync.ReceiveForTest(PlaysMessage(other, "B", Play(score: 99000, station: "B"), Play(score: 98000, station: "B")), From, t0 + 1));
+        Assert.AreEqual(2, sync.ApplyChart(Fes, Song, "Normal", t0 + 2));
+        Assert.AreEqual(2, sync.QueuedCount, "ふだんの表の回は待ったまま");
+        var local = DailyRankingStore.Record(Fes, Song, "Normal", NewId(), 80000, PlayedAt);
+        Assert.AreEqual(2, local.Rank, "本番の表の 95000 だけが上");
+        Assert.AreEqual(3, local.TotalPlays);
+        Assert.IsFalse(PlayerPrefs.HasKey(DailyRankingStore.Key("", Song, "Normal")));
+    }
+
+    // 相手の台の回の実績(ach)は、この台の数に足す(同じ回は二重に数えない。ポップアップは出さない)。名前空間ごとに別に数える。
+    [Test]
+    public void AchievementsOfPlaysFromTheOtherMachineAreCounted()
+    {
+        var sync = Offline(NewId());
+        double t0 = Time.realtimeSinceStartupAsDouble;
+        string other = NewId();
+        Assert.AreEqual(1, AchievementStore.Unlock(Fes, NewId(), "hard_clear", "A", 1000), "この台で1人目");
+        var theirs = FesPlay(91000, "B", "hard_clear", "gold_all");
+        Assert.AreEqual(1, sync.ReceiveForTest(PlaysMessage(other, "B", theirs), From, t0));
+        Assert.AreEqual(2, AchievementStore.Count(Fes, "hard_clear"), "相手の台の回を足して2人");
+        Assert.AreEqual(1, AchievementStore.Count(Fes, "gold_all"));
+        Assert.AreEqual(0, AchievementStore.Count("", "hard_clear"), "ふだんの数とは別");
+        CollectionAssert.AreEqual(new[] { "hard_clear", "gold_all" }, AchievementStore.UnlockedIn(Fes, theirs.id));
+        // 同じ回が束で届き直しても、二重に数えない
+        Assert.AreEqual(1, sync.ReceiveForTest(PlaysMessage(other, "B", theirs, Play(station: "B")), From, t0 + 1), "新しい回だけ足す");
+        Assert.AreEqual(2, AchievementStore.Count(Fes, "hard_clear"));
+        // PlayerPrefs へは FlushSaves がまとめて書く(読み直しても同じ数)
+        Assert.IsTrue(AchievementStore.NeedsWrite);
+        Assert.IsTrue(sync.SaveWaiting);
+        sync.Tick(t0 + 2);
+        Assert.IsFalse(AchievementStore.NeedsWrite);
+        Assert.IsFalse(sync.SaveWaiting);
+        AchievementStore.UseKeyForTest(AchievementKey); // 読み直す
+        Assert.AreEqual(2, AchievementStore.Count(Fes, "hard_clear"));
+        Assert.AreEqual(1, AchievementStore.Count(Fes, "gold_all"));
+    }
+
+    // ほかの版の相手のメッセージは合流せず、運営に1回だけ知らせる(古い版・新しい版)。相手が見つからないの知らせは重ねない。
+    [Test]
+    public void APeerOnAnotherVersionIsToldOnceAndNotMerged()
+    {
+        var sync = Offline(NewId());
+        double t0 = Time.realtimeSinceStartupAsDouble;
+        string other = NewId();
+        string current = PlaysMessage(other, "B", Play(station: "B"));
+        string old = "BTSRANK1 " + current.Substring(RankingSyncLog.Prefix.Length).Replace("\"v\":2", "\"v\":1");
+        Assert.IsTrue(RankingSyncLog.IsOtherVersion(old, out int oldVersion));
+        Assert.AreEqual(1, oldVersion);
+        Assert.IsFalse(RankingSyncLog.IsOtherVersion(current, out _), "今の版");
+        Assert.IsFalse(RankingSyncLog.IsOtherVersion("BTSRANK 1", out _));
+        Assert.IsFalse(RankingSyncLog.IsOtherVersion("BTSRANKX {}", out _));
+        Assert.IsFalse(RankingSyncLog.IsOtherVersion("PHONESABER_DISCOVER 1", out _));
+        Assert.IsFalse(RankingSyncLog.IsOtherVersion((string)null, out _));
+        byte[] oldBytes = Encoding.UTF8.GetBytes(old);
+        Assert.IsTrue(RankingSyncLog.IsOtherVersion(oldBytes, oldBytes.Length, out int fromBytes));
+        Assert.AreEqual(1, fromBytes);
+        byte[] currentBytes = Encoding.UTF8.GetBytes(current);
+        Assert.IsFalse(RankingSyncLog.IsOtherVersion(currentBytes, currentBytes.Length, out _));
+        Assert.IsFalse(RankingSyncLog.TryDecode(oldBytes, oldBytes.Length, out _), "受信スレッドのふるいも通さない");
+
+        Assert.AreEqual(0, sync.ReceiveForTest(old, From, t0));
+        Assert.AreEqual(0, sync.Count, "合流しない");
+        Assert.AreEqual(0, sync.PeerCount, "相手として数えない");
+        Assert.IsFalse(PlayerPrefs.HasKey(DailyRankingStore.Key(Song, "Normal")));
+        Assert.AreEqual(RankingSync.OldPeerNotice, sync.LastNotice);
+        Assert.AreEqual("ランキング同期: 相手の台の版が古いので同期しません", RankingSync.OldPeerNotice);
+        Assert.AreEqual(1, sync.NoticeCount);
+        sync.ReceiveForTest(old, From, t0 + 5);
+        sync.Tick(t0 + 40);
+        Assert.AreEqual(1, sync.NoticeCount, "1回だけ。相手が見つからないの知らせも重ねない");
+        // 新しい版の相手
+        Assert.AreEqual(0, sync.ReceiveForTest("BTSRANK3 " + current.Substring(RankingSyncLog.Prefix.Length), From, t0 + 41));
+        Assert.AreEqual(RankingSync.NewerPeerNotice, sync.LastNotice);
+        Assert.AreEqual(2, sync.NoticeCount);
+        // 今の版の相手とは、そのまま合わせる
+        Assert.AreEqual(1, sync.ReceiveForTest(current, From, t0 + 42));
+    }
+
+    // 1回のプレイの表は、曲を始めたとき(ResetResult)の運営モードで決まり、あとで切り替えても、その回はその表に残る。
+    // 送る記録には ns と、その回の実績(RunRecording で決めた FinalAchievements と、この回に解除した記録)が入る。
+    [Test]
+    public void AFinishedRunGoesToTheNamespaceItStartedInWithItsAchievements()
+    {
+        var saved = SaveGameSession();
+        var received = new List<RankingPlay>();
+        Action<RankingPlay> handler = received.Add;
+        int recordingCalls = 0;
+        Action decide = () =>
+        {
+            recordingCalls++;
+            Assert.IsNotNull(GameSession.FinalDailyRanking, "順位はもう出ている");
+            GameSession.FinalAchievements.Add("hard_clear");
+            AchievementStore.Unlock(GameSession.RunNamespace, GameSession.AchievementRunId, "hard_clear", "A", 0);
+        };
+        RankingSync.LocalPlayRecorded += handler;
+        GameSession.RunRecording += decide;
+        try
+        {
+            OperatorMode.OverrideForTest(true);
+            GameSession.SelectedSongId = Song;
+            GameSession.SelectedDifficulty = "Normal";
+            GameSession.IsCalibrationMode = false;
+            GameSession.ResetResult();
+            Assert.AreEqual(Fes, GameSession.RunNamespace, "曲を始めたときの運営モード");
+            Assert.AreEqual(0, GameSession.FinalAchievements.Count);
+            // 選曲などで、この回に先に取った実績
+            Assert.AreEqual(1, AchievementStore.Unlock(Fes, GameSession.AchievementRunId, "secret_open", "A", 0));
+            OperatorMode.OverrideForTest(false); // 曲の途中で切り替えても
+            GameSession.FinalPerfect = 10;
+            GameSession.FinalCutCount = 10;
+            GameSession.FinalScore = 95000;
+            GameSession.RecordCompletedAchievements();
+            GameSession.RecordCompletedDailyRanking();
+            GameSession.RecordCompletedDailyRanking();
+            GameSession.RecordCompletedHighScore();
+            Assert.AreEqual(1, recordingCalls, "実績を決めるのは1回だけ");
+            var play = received.Single();
+            Assert.AreEqual(Fes, play.ns);
+            CollectionAssert.AreEqual(new[] { "hard_clear", "secret_open" }, play.ach);
+            Assert.IsTrue(RankingSyncLog.IsValid(play));
+            Assert.AreEqual(1, GameSession.FinalDailyRanking.TotalPlays);
+            Assert.IsTrue(DailyRankingStore.TryRead(PlayerPrefs.GetString(DailyRankingStore.Key(Fes, Song, "Normal")), "2000-01-01", out var fesDaily));
+            Assert.AreEqual(play.id, fesDaily.entries.Single().runId);
+            Assert.AreEqual(play.id, HighScoreStore.Load(Fes, Song, "Normal").entries.Single().runId);
+            Assert.AreEqual(1, SongAchievementStore.Load(Fes, Song, "Normal").ap);
+            Assert.IsFalse(PlayerPrefs.HasKey(DailyRankingStore.Key("", Song, "Normal")), "ふだんの表には残さない");
+            Assert.IsFalse(PlayerPrefs.HasKey(HighScoreStore.Key("", Song, "Normal")));
+            Assert.IsFalse(PlayerPrefs.HasKey(SongAchievementStore.Key("", Song, "Normal")));
+            // 次の回は、そのときの運営モード(切った)で
+            GameSession.ResetResult();
+            Assert.AreEqual("", GameSession.RunNamespace);
+            Assert.AreEqual(0, GameSession.FinalAchievements.Count);
+        }
+        finally
+        {
+            RankingSync.LocalPlayRecorded -= handler;
+            GameSession.RunRecording -= decide;
+            OperatorMode.OverrideForTest(false);
+            PlayerPrefs.DeleteKey(SongAchievementStore.Key(Fes, Song, "Normal"));
+            PlayerPrefs.DeleteKey(SongAchievementStore.Key("", Song, "Normal"));
+            RestoreGameSession(saved);
+        }
+    }
+
+    // 同期のメモリの記録を外から読む口(AchievementTracker の「となりと同じ曲」など)。足した順の写しで、書き換えても同期の記録は変わらず、
+    // 一覧も書き換えられない。本番の同期(Instance)が無ければ KnownPlays は空。
+    [Test]
+    public void LoggedPlaysAreReadOnlyCopiesInTheOrderTheyWereAdded()
+    {
+        Assert.AreEqual(0, RankingSync.KnownPlays.Count, "テストでは本番の同期は動いていない");
+        var sync = Offline(NewId());
+        double t0 = Time.realtimeSinceStartupAsDouble;
+        Assert.AreEqual(0, sync.LoggedPlays.Count);
+        var theirs = FesPlay(88000, "B", "clear", "hard");
+        Assert.AreEqual(1, sync.ReceiveForTest(PlaysMessage(NewId(), "B", theirs), From, t0));
+        var mine = Play(score: 70000);
+        Assert.IsTrue(sync.Record(mine));
+        var plays = sync.LoggedPlays;
+        CollectionAssert.AreEqual(new[] { theirs.id, mine.id }, plays.Select(p => p.id), "足した順(届いた回も、この台の回も)");
+        Assert.IsTrue(RankingSyncLog.SameContent(theirs, plays[0]));
+        CollectionAssert.AreEqual(new[] { "clear", "hard" }, plays[0].ach);
+        Assert.Throws<NotSupportedException>(() => ((IList<RankingPlay>)plays).Add(Play()), "一覧は書き換えられない");
+        Assert.Throws<NotSupportedException>(() => ((IList<RankingPlay>)plays)[0] = Play());
+        plays[0].score = 1;
+        plays[0].ns = "";
+        plays[0].ach.Add("changed");
+        var again = sync.LoggedPlays;
+        Assert.AreNotSame(plays[0], again[0], "読むたびに新しい写し");
+        Assert.AreEqual(88000, again[0].score, "写しを書き換えても同期の記録は変わらない");
+        Assert.AreEqual(Fes, again[0].ns);
+        CollectionAssert.AreEqual(new[] { "clear", "hard" }, again[0].ach);
+        Assert.AreEqual(Fes, RankingSyncLog.Copy(again[0]).ns);
+    }
+
+    // AchievementStore.CountSince: ある時刻から後に、その実績を取った回の数(回の ID が同じなら1回)。この台の解除・相手の台から足した分に、
+    // 同期のメモリの記録(まだ数に足していない回)も合わせる。名前空間ごと。保存した記録が読めないときは -1。
+    [Test]
+    public void CountSinceAddsTheSyncedPlaysAndCountsEachRunOnce()
+    {
+        string early = NewId(), late = NewId();
+        Assert.AreEqual(1, AchievementStore.Unlock(Fes, early, "clear", "A", 1000));
+        Assert.AreEqual(2, AchievementStore.Unlock(Fes, late, "clear", "A", 5000));
+        Assert.AreEqual(1, AchievementStore.Unlock("", NewId(), "clear", "A", 6000));
+        Assert.AreEqual(2, AchievementStore.CountSince(Fes, "clear", 0));
+        Assert.AreEqual(1, AchievementStore.CountSince(Fes, "clear", 5000), "その時刻ちょうどは入る");
+        Assert.AreEqual(0, AchievementStore.CountSince(Fes, "clear", 5001));
+        Assert.AreEqual(1, AchievementStore.CountSince("", "clear", 0), "名前空間ごと");
+        Assert.AreEqual(0, AchievementStore.CountSince(Fes, "hard", 0));
+        Assert.AreEqual(0, AchievementStore.CountSince(Fes, "bad id!", 0));
+        // 同期のメモリにだけある回(起動して、照合でまだ数に足していない回)も数える。同じ回の ID は1回
+        var remote = FesPlay(80000, "B", "clear");
+        var sameRun = RankingSyncLog.NewPlay(late, Song, "Normal", 85000, "S", .85f, PlayedAt, "A", Fes, new[] { "clear" });
+        var otherAchievement = FesPlay(70000, "B", "hard");
+        var ordinary = Play(score: 60000, station: "B");
+        ordinary.ach = new List<string> { "clear" };
+        var saved = new RankingSyncLog();
+        Assert.IsTrue(saved.Add(remote) && saved.Add(sameRun) && saved.Add(otherAchievement) && saved.Add(ordinary));
+        saved.Save(LogKey);
+        var sync = Offline(NewId()); // 照合(Tick)の前
+        Assert.AreEqual(2, AchievementStore.CountSince(Fes, "clear", 0), "本番の同期が無ければ、実績の記録だけ");
+        Assert.AreEqual(3, AchievementStore.CountSince(Fes, "clear", 0, sync), "同期の記録の回を足す(late は1回)");
+        Assert.AreEqual(2, AchievementStore.CountSince(Fes, "clear", remote.at, sync), "遊び終わった時刻で見る(remote と late)");
+        Assert.AreEqual(2, AchievementStore.CountSince("", "clear", 0, sync), "ふだんの回はふだんの数");
+        // 照合で数に足したあとも、同じ数
+        sync.Tick(Time.realtimeSinceStartupAsDouble);
+        Assert.AreEqual(3, AchievementStore.CountSince(Fes, "clear", 0));
+        Assert.AreEqual(3, AchievementStore.CountSince(Fes, "clear", 0, sync));
+        // 保存した記録に読めない所があれば分からない(-1)
+        PlayerPrefs.SetString(AchievementKey, "not json");
+        AchievementStore.UseKeyForTest(AchievementKey);
+        LogAssert.Expect(LogType.Warning, AchievementStore.UnreadableWarning(AchievementKey));
+        Assert.AreEqual(-1, AchievementStore.CountSince(Fes, "clear", 0, sync));
+        Assert.AreEqual(-1, AchievementStore.CountSince(Fes, "clear", 0));
     }
 }

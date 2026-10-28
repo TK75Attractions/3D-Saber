@@ -28,11 +28,16 @@ public static class HighScoreStore
 {
     public const int MaxEntries = 5;
 
-    public static string Key(string songId, string difficulty)
+    // 名前空間(運営モード、2026-10-29)を渡さない呼び出しは、今の表示の名前空間(OperatorMode.Namespace)の表(選曲の TOP 5 など)。
+    // 記録・合流する所は、その回の名前空間(GameSession.RunNamespace・プレイの ns)を渡す。
+    public static string Key(string songId, string difficulty) => Key(OperatorMode.Namespace, songId, difficulty);
+
+    // "" は今までと同じ鍵、"fes" は頭に "fes_"。
+    public static string Key(string ns, string songId, string difficulty)
     {
         string diff = string.IsNullOrWhiteSpace(difficulty) ? "normal" : difficulty.Trim().ToLowerInvariant();
         // 2026-10-20 に満点を 100000 にそろえたので保存先を分ける。旧 "hiscore_" の記録は消さずに残す。
-        return "hiscore_v2_" + songId + "_" + diff;
+        return OperatorMode.KeyPrefix(ns) + "hiscore_v2_" + songId + "_" + diff;
     }
 
     // 並び: 点の降順 → 遊び終わった時刻の昇順(0 = 古い記録は一番古い扱い)→ runId の昇順。
@@ -49,15 +54,20 @@ public static class HighScoreStore
 
     static readonly IComparer<HighScoreEntry> Order = Comparer<HighScoreEntry>.Create(Compare);
 
-    public static HighScoreTable Load(string songId, string difficulty) =>
-        TryLoad(songId, difficulty, out var table) ? table : new HighScoreTable();
+    public static HighScoreTable Load(string songId, string difficulty) => Load(OperatorMode.Namespace, songId, difficulty);
+
+    public static HighScoreTable Load(string ns, string songId, string difficulty) =>
+        TryLoad(ns, songId, difficulty, out var table) ? table : new HighScoreTable();
+
+    public static bool TryLoad(string songId, string difficulty, out HighScoreTable table) =>
+        TryLoad(OperatorMode.Namespace, songId, difficulty, out table);
 
     // 保存値を読む。無ければ空の表で true、壊れていれば(JSON として読めない)空の表で false(上書きしないために区別する)。
     // 一部が不正・順不同でも有効な記録を残す(true)。並びが同じ記録の順は変えない。読むだけでは保存先を書き換えない。
-    public static bool TryLoad(string songId, string difficulty, out HighScoreTable table)
+    public static bool TryLoad(string ns, string songId, string difficulty, out HighScoreTable table)
     {
         table = new HighScoreTable();
-        string json = PlayerPrefs.GetString(Key(songId, difficulty), "");
+        string json = PlayerPrefs.GetString(Key(ns, songId, difficulty), "");
         if (string.IsNullOrEmpty(json)) return true;
         try
         {
@@ -75,19 +85,25 @@ public static class HighScoreStore
     }
 
     // 記録して保存。挿入位置(0始まり)を返す。同じ回(runId)がもうあればその位置。上位N圏外・壊れた表・保存の失敗なら -1(保存もしない)。
-    public static int Record(string songId, string difficulty, HighScoreEntry entry, out HighScoreTable table)
+    public static int Record(string songId, string difficulty, HighScoreEntry entry, out HighScoreTable table) =>
+        Record(OperatorMode.Namespace, songId, difficulty, entry, out table);
+
+    public static int Record(string ns, string songId, string difficulty, HighScoreEntry entry, out HighScoreTable table)
     {
-        RecordRun(songId, difficulty, entry, out table, out int index);
+        RecordRun(ns, songId, difficulty, entry, out table, out int index);
         return index;
     }
+
+    public static RankingMergeResult RecordRun(string songId, string difficulty, HighScoreEntry entry, out HighScoreTable table, out int index) =>
+        RecordRun(OperatorMode.Namespace, songId, difficulty, entry, out table, out index);
 
     // 1回分を残して保存する(結果画面)。台同士の同期の足し直し(MergeAll)と同じ決まりで、結果を返す。
     // Added(index に挿入位置)・AlreadyThere(同じ runId がもうある。足し直しと重なっても二重にしない)・
     // OutsideTop(上位N圏外。保存しない)・Failed(表が壊れていて上書きしない、または保存の失敗。呼び出し側が足し直しへ回す)。
-    public static RankingMergeResult RecordRun(string songId, string difficulty, HighScoreEntry entry, out HighScoreTable table, out int index)
+    public static RankingMergeResult RecordRun(string ns, string songId, string difficulty, HighScoreEntry entry, out HighScoreTable table, out int index)
     {
         index = -1;
-        if (!TryLoad(songId, difficulty, out table) || entry == null || entry.score < 0) return RankingMergeResult.Failed;
+        if (!TryLoad(ns, songId, difficulty, out table) || entry == null || entry.score < 0) return RankingMergeResult.Failed;
         int existing = IndexOfRun(table, entry.runId);
         if (existing >= 0)
         {
@@ -98,7 +114,7 @@ public static class HighScoreStore
         if (inserted < 0) return RankingMergeResult.OutsideTop;
         try
         {
-            PlayerPrefs.SetString(Key(songId, difficulty), JsonUtility.ToJson(table));
+            PlayerPrefs.SetString(Key(ns, songId, difficulty), JsonUtility.ToJson(table));
             PlayerPrefs.Save();
         }
         catch (Exception exception)
@@ -120,15 +136,21 @@ public static class HighScoreStore
     // 壊れた表は上書きしない(Failed。呼び出し側が適用待ちに残して、あとで足し直す)。
     // PlayerPrefs へ書くだけで、ディスクへの保存(PlayerPrefs.Save)は呼び出し側がまとめてする(1コマに1回まで)。
     public static RankingMergeResult Merge(string songId, string difficulty, HighScoreEntry entry) =>
-        MergeAll(songId, difficulty, new[] { entry })[0];
+        Merge(OperatorMode.Namespace, songId, difficulty, entry);
+
+    public static RankingMergeResult Merge(string ns, string songId, string difficulty, HighScoreEntry entry) =>
+        MergeAll(ns, songId, difficulty, new[] { entry })[0];
+
+    public static RankingMergeResult[] MergeAll(string songId, string difficulty, IList<HighScoreEntry> entries) =>
+        MergeAll(OperatorMode.Namespace, songId, difficulty, entries);
 
     // 同じ曲×難易度へ何回分かをまとめて足す(表の読み書きは1回)。結果は entries と同じ順。
     // 並びは届いた順に依らないので、まとめて足しても1回ずつ足しても同じ表になる。
-    public static RankingMergeResult[] MergeAll(string songId, string difficulty, IList<HighScoreEntry> entries)
+    public static RankingMergeResult[] MergeAll(string ns, string songId, string difficulty, IList<HighScoreEntry> entries)
     {
         var results = new RankingMergeResult[entries?.Count ?? 0];
         if (results.Length == 0) return results;
-        if (string.IsNullOrEmpty(songId) || !TryLoad(songId, difficulty, out var table))
+        if (string.IsNullOrEmpty(songId) || !TryLoad(ns, songId, difficulty, out var table))
         {
             for (int i = 0; i < results.Length; i++) results[i] = RankingMergeResult.Failed;
             return results;
@@ -152,7 +174,7 @@ public static class HighScoreStore
         if (!inserted) return results;
         try
         {
-            PlayerPrefs.SetString(Key(songId, difficulty), JsonUtility.ToJson(table));
+            PlayerPrefs.SetString(Key(ns, songId, difficulty), JsonUtility.ToJson(table));
         }
         catch (Exception)
         {
@@ -194,9 +216,11 @@ public static class HighScoreStore
         accuracy = float.IsNaN(entry.accuracy) || float.IsInfinity(entry.accuracy) ? 0 : Mathf.Clamp01(entry.accuracy)
     };
 
-    public static void Clear(string songId, string difficulty)
+    public static void Clear(string songId, string difficulty) => Clear(OperatorMode.Namespace, songId, difficulty);
+
+    public static void Clear(string ns, string songId, string difficulty)
     {
-        PlayerPrefs.DeleteKey(Key(songId, difficulty));
+        PlayerPrefs.DeleteKey(Key(ns, songId, difficulty));
         PlayerPrefs.Save();
     }
 }

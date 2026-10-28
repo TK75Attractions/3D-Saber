@@ -64,7 +64,8 @@ public static class Haptic
 
     static void Init()
     {
-        if (isInitialized) return;
+        // ランナーが消されていたら(テストの後片付けで常駐物を消したときなど)作り直す。
+        if (isInitialized && runner != null) return;
         isInitialized = true;
 
         // ランナー生成
