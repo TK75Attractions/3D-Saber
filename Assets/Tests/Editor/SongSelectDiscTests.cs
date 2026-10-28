@@ -117,6 +117,21 @@ public class SongSelectDiscTests
         Assert.AreEqual("—",SongSelectSkin.TopScoreValue(table,3)); Assert.AreEqual("",SongSelectSkin.TopScoreRank(table,4));
         Assert.AreEqual("—",SongSelectSkin.TopScoreValue(null,0));
     }
+    [Test] public void SecretHintsCycleStayTenSecondsAndCanBeDismissed()
+    {
+        // 時計の下の小さいボタン(2026-10-29)。5秒かざすと次のヒント、10秒かほかのボタンで消える。
+        Assert.AreEqual(5f,SongSelectSecretHint.HoldSeconds); Assert.AreEqual(10f,SongSelectSecretHint.ShowSeconds);
+        Assert.AreEqual(5,SongSelectSecretHint.Hints.Length);
+        StringAssert.Contains("ジャケット",SongSelectSecretHint.Hints[1]); StringAssert.Contains("自己責任",SongSelectSecretHint.Hints[4]);
+        var hint=new SongSelectSecretHint();
+        Assert.IsFalse(hint.Tick(0)); Assert.AreEqual("",hint.Text);
+        Assert.AreEqual(SongSelectSecretHint.Hints[0],hint.Show(100));
+        Assert.IsTrue(hint.Tick(109.9),"10秒は出す"); Assert.IsFalse(hint.Tick(110),"10秒で消える");
+        for(int i=1;i<5;i++) Assert.AreEqual(SongSelectSecretHint.Hints[i],hint.Show(200+i),"押すたびに次");
+        Assert.AreEqual(SongSelectSecretHint.Hints[0],hint.Show(300),"最後のあとは最初へ");
+        Assert.IsTrue(hint.Visible); hint.Dismiss(); Assert.IsFalse(hint.Tick(300.5),"ほかのボタンで消える");
+        Assert.IsTrue(hint.Tick(300.5)==false && hint.Shown==6);
+    }
     [TestCase("Epilogue")]
     [TestCase("Andalusia")]
     public void ActualVariableTimingChartsProduceOrderedEvents(string id)

@@ -28,11 +28,12 @@ public class Review1023bTests
     static double AudioTime(ChartData c, NoteData n) => (double)n.time + c.offsetMs;
     static bool At(ChartData c, NoteData n, double ms, double tolerance = EpsilonMs) =>
         Math.Abs(AudioTime(c, n) - ms) <= tolerance;
+    // 長さ 0 のロングはゲームと同じく 0.7 秒ごと(BeginnerChartTests.LongSpanMs)。
     static IEnumerable<double> Cuts(ChartData c, NoteData n)
     {
         for (int k = 0; k < n.count; k++)
             yield return AudioTime(c, n) +
-                (n.count > 1 ? (double)n.lengthMs * k / (n.count - 1) : 0);
+                (n.count > 1 ? BeginnerChartTests.LongSpanMs(n) * k / (n.count - 1) : 0);
     }
     static string Hand(NoteData n) =>
         n.color == "red" || n.color == "blue" ? n.color : n.x < 0 ? "blue" : "red";
@@ -150,7 +151,7 @@ public class Review1023bTests
     [TestCase("2_23_AM", "hard", 449)]
     [TestCase("logic", "hard", 424)]
     [TestCase("BenkyouRemaster", "hard", 335)]
-    [TestCase("RushE", "hard", 402)]
+    [TestCase("RushE", "hard", 418)]   // 10/28 ユーザーの区間ごとの選び(402)に、ユーザーが手で足した(15:15、「rushEは意図した変更です」)
     [TestCase("RushE", "e", 1158)]
     public void CountsChangeOnlyByTheSelectedDeletions(string song, string diff, int count)
     {
@@ -222,8 +223,9 @@ public class Review1023bTests
     [TestCase("Aobasou", 61.714286, 4, 13, 1.625)]
     [TestCase("Aobasou", 109.714286, 2, 29, 2.4166666667)]
     [TestCase("logic", 54.403, 4, 8, .84375)]
-    [TestCase("RushE", 112.22494, 5, 26, .86467323)]
-    [TestCase("RushE", 40.05941, 7, 33, .78571428)]
+    // RUSH E の Normal は 10/28 15:20 にユーザーが手で直した(「rushEは意図した変更です」)。
+    [TestCase("RushE", 112.22494, 5, 27, .89792990)]
+    [TestCase("RushE", 40.05941, 7, 32, .76190476)]
     [TestCase("BenkyouRemaster", 73.674, 0, 6, double.PositiveInfinity)]
     [TestCase("escapade", 65.704211, 3, 18, 1.5)]
     [TestCase("Phobia PARTⅠ", 49.106909, 5, 42, 1.2)]
@@ -249,7 +251,8 @@ public class Review1023bTests
     public void RushEBuildUpKeepsItsAcceleratingRedPhrase()
     {
         var c = Load("RushE", "normal");
-        double[] times = { 36343.4921, 36905.9921, 37437.2421, 37968.4921,
+        // 最初の赤は 10/28 15:20 にユーザーが 36343.4921 から音へ寄せた(「rushEは意図した変更です」)。
+        double[] times = { 36453.25, 36905.9921, 37437.2421, 37968.4921,
             38468.4921, 38937.2421, 39843.4921 };
         foreach (double t in times)
             Assert.AreEqual(1, c.notes.Count(n => n.color == "red" && At(c, n, t)));
@@ -325,6 +328,9 @@ public class Review1023bTests
                     // 10/16 からある logic Normal 40 秒の赤の組(281.25ms)。今日の直しで増えたものではない(取りまとめ役が確認)。
                     if (song == "logic" && diff == "normal" && side == "red" &&
                         Math.Abs(a.time - 40153.0) <= EpsilonMs && Math.Abs(b.time - 40434.25) <= EpsilonMs)
+                        continue;
+                    // ユーザーが手で入れた12回の金のロング(RUSH E Normal 124.35 秒)は、ほかのノーツと重ねて刻む形(意図した変更)。
+                    if (BeginnerChartTests.UserLong(song, diff, a.note) || BeginnerChartTests.UserLong(song, diff, b.note))
                         continue;
                     Assert.GreaterOrEqual(b.time - a.time,
                         (diff == "easy" ? 500 : 300) - EpsilonMs,

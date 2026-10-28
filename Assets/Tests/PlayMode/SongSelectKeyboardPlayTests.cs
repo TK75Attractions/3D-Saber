@@ -129,6 +129,27 @@ public class SongSelectKeyboardPlayTests
         Assert.False(GameSession.IsCalibrationMode);
     }
 
+    // 2026-10-29: 時計の下の小さいボタン(5秒かざす)で裏難易度のヒント。押すたびに次のヒント、曲を送ると消える。
+    [UnityTest]
+    public IEnumerator SecretHintButtonShowsTheNextHintAndHidesOnAnotherSelection()
+    {
+        var skin = Object.FindFirstObjectByType<SongSelectSkin>();
+        var go = GameObject.Find("SecretHintButton");
+        Assert.NotNull(go, "時計の下の小さいボタン");
+        Assert.AreEqual(SongSelectSecretHint.HoldSeconds, go.GetComponent<SongSelectDiscTarget>().HoldSeconds, 1e-6, "5秒かざす");
+        Assert.IsFalse(skin.SecretHintVisible, "最初は出さない");
+        var button = go.GetComponent<Button>();
+        button.onClick.Invoke();
+        yield return null;
+        Assert.IsTrue(skin.SecretHintVisible);
+        Assert.AreEqual(SongSelectSecretHint.Hints[0], skin.SecretHintMarkup);
+        button.onClick.Invoke();
+        yield return null;
+        Assert.AreEqual(SongSelectSecretHint.Hints[1], skin.SecretHintMarkup, "押すたびに次のヒント");
+        yield return Press(Key.RightArrow);
+        Assert.IsFalse(skin.SecretHintVisible, "曲を送ったら消える");
+    }
+
     [UnityTest]
     public IEnumerator ArrowKeysChangeSongAndDifficultyWithoutMovingButtonFocus()
     {

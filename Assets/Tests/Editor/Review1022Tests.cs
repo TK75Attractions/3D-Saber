@@ -269,8 +269,9 @@ public class Review1022Tests
     [TestCase("BenkyouRemaster", 12774.0, 12736.0, "hard")]
     [TestCase("BenkyouRemaster", 12774.0, 12736.0, "easy,normal", false)]
     [TestCase("RushE", 15968.49, 16001.0, "normal,hard,e")]
-    [TestCase("RushE", 67843.49, 67877.0, "easy,normal,hard,e")]
-    [TestCase("RushE", 68218.49, 68244.0, "normal,hard,e")]
+    // RUSH E の Hard は 10/28 にユーザーが区間ごとに選び直し、手でも直した(「rushEは意図した変更です」)ので、この2つは Hard に無い。
+    [TestCase("RushE", 67843.49, 67877.0, "easy,normal,e")]
+    [TestCase("RushE", 68218.49, 68244.0, "normal,e")]
     [TestCase("RushE", 94155.99, 94131.0, "easy,normal,e")]
     [TestCase("escapade", 57493.68, 57516.0, "easy,normal,hard")]
     [TestCase("logic", 53903.0, 53928.0, "easy,normal,hard")]

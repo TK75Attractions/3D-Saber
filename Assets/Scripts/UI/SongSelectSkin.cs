@@ -32,6 +32,12 @@ public class SongSelectSkin : MonoBehaviour
     TextMeshProUGUI sourceCredit, composerName, timer, timerNotice, achievementDifficulty, libraryPosition, startHint, holdHint, topScoresDifficulty;
     readonly TextMeshProUGUI[] topScoreRanks = new TextMeshProUGUI[TopScoreRows];
     readonly TextMeshProUGUI[] topScoreValues = new TextMeshProUGUI[TopScoreRows];
+    // 時計の下の「もっと高難易度の譜面をあそびたい方へ…」と、出した裏難易度のヒント(SongSelectSecretHint)。
+    readonly SongSelectSecretHint secretHint = new SongSelectSecretHint();
+    SongSelectDiscGraphic secretHintPanel;
+    SongSelectRubyText secretHintText;
+    public bool SecretHintVisible => secretHintPanel != null && secretHintPanel.gameObject.activeSelf;
+    public string SecretHintMarkup => secretHint.Visible ? secretHint.Text : "";
     SongSelectDiscGraphic visitorProgress;
     // 残り時間の音(盤5): 30秒で1回の知らせ、10秒から1秒ごとの刻み。鳴らすのは MenuSfx。
     int lastBeepSecond = -1, previousSecond = -1;
@@ -99,7 +105,7 @@ public class SongSelectSkin : MonoBehaviour
         ctl.suppressDefaultDifficultyTint = true;
         ctl.startButton = null;
         corridor = SongSelectCorridor.Build(layout, ctl);
-        BuildHeader(); BuildDiscs(); BuildTitle(); BuildDifficulties(); BuildSecretDifficulty(); BuildAchievements(); BuildTopScores(); BuildActions();
+        BuildHeader(); BuildDiscs(); BuildTitle(); BuildDifficulties(); BuildSecretDifficulty(); BuildAchievements(); BuildTopScores(); BuildActions(); BuildSecretHint();
         // 2曲モードの何曲目の札は盤より手前に描く(スタートで盤が1.25倍になっても点が隠れない。砂嵐などの覆いはこの後に作るので上に乗る)。
         if (visitorProgress != null) visitorProgress.transform.SetAsLastSibling();
         // 選曲の音は幕の裏で作っておき、最初の操作で処理落ちしないようにする。
@@ -486,6 +492,40 @@ public class SongSelectSkin : MonoBehaviour
         Label(back.transform, "Label", "タイトルへ", 36, Vector2.zero, new Vector2(300, 76), UISkinKit.JapaneseFallbackFontAsset());
         AddChargeBar(back, 340, 96);
     }
+    // 時計のすぐ下の小さいボタン(2026-10-29 ユーザー「時計のすぐ下にさ、もっと高難易度の譜面をあそびたい方へ...の小さいボタンを用意して
+    // (5秒長押し) 押すと、裏難易度へのヒントがでる仕組みにして(10秒かほかのボタン選択で自動で消える)」)。
+    // 時計の下の案内(この曲が自動で始まるまで、下端191)の下に置き、ヒントはその下に出す(隣の盤の上端310より上)。
+    void BuildSecretHint()
+    {
+        var button = PanelAt("SecretHintButton", 1680, 214, 400, 44, SongSelectVisuals.Edge, 2, 12);
+        ButtonOn(button.rectTransform, button, SongSelectSecretHint.HoldSeconds, false).onClick.AddListener(ShowSecretHint);
+        AddChargeBar(button, 400, 44);
+        var label = Label(button.transform, "SecretHintLabel", "もっと高難易度の譜面をあそびたい方へ…", 20, new Vector2(0, 1), new Vector2(380, 38),
+            UISkinKit.JapaneseFallbackFontAsset(), SongSelectVisuals.Muted);
+        label.enableAutoSizing = true; label.fontSizeMin = 14; label.fontSizeMax = 20;
+        secretHintPanel = PanelAt("SecretHintPanel", 1530, 270, 700, 60, Gold, 3, 14);
+        var text = Label(secretHintPanel.transform, "SecretHintText", "", 26, new Vector2(0, -4), new Vector2(670, 52), UISkinKit.JapaneseFallbackFontAsset());
+        text.enableAutoSizing = true; text.fontSizeMin = 16; text.fontSizeMax = 26;
+        secretHintText = Ruby(text, "");
+        secretHintPanel.gameObject.SetActive(false);
+    }
+    void ShowSecretHint()
+    {
+        secretHintText.Set(secretHint.Show(Time.unscaledTimeAsDouble));
+        RefreshSecretHint();
+    }
+    // ほかのボタンを選んだとき(曲送り・難易度)と時間切れで消す。
+    void DismissSecretHint()
+    {
+        secretHint.Dismiss();
+        RefreshSecretHint();
+    }
+    void RefreshSecretHint()
+    {
+        if (secretHintPanel == null) return;
+        bool show = secretHint.Tick(Time.unscaledTimeAsDouble);
+        if (secretHintPanel.gameObject.activeSelf != show) secretHintPanel.gameObject.SetActive(show);
+    }
     // ボタンの下端に、ためている間だけ左から満ちる線を置く(盤2)。
     void AddChargeBar(SongSelectDiscGraphic panel, float width, float height)
     {
@@ -516,6 +556,7 @@ public class SongSelectSkin : MonoBehaviour
     }
     void SelectionChanged(int index)
     {
+        DismissSecretHint();
         // 送った向きと量(隣なら±1、2曲先なら±2)。盤の位置と同じく半周を超えたら逆回りに数える。
         int step = built && shownIndex >= 0 ? WrapOffset(index - shownIndex, discs.Count) : 0;
         shownIndex = index;
@@ -567,6 +608,7 @@ public class SongSelectSkin : MonoBehaviour
     }
     void DifficultyChanged(int selected)
     {
+        DismissSecretHint();
         var unlocked = ctl.UnlockedSecret;
         bool secret = unlocked != null;
         rimPulse.Select(ctl.SelectedIndex, selected, secret, Time.unscaledTimeAsDouble);
@@ -611,6 +653,7 @@ public class SongSelectSkin : MonoBehaviour
         string hint = waiting ? WaitingStartHint : HoldStartHint;
         if (holdHint.text != hint) holdHint.text = hint;
         RefreshChargeDisplays();
+        RefreshSecretHint();
         bool urgent = displayedSecond > 0 && displayedSecond <= 10;
         bool operated = GameSession.SongSelectOperated;
         startHint.text = StartHint(displayedSecond, operated);

@@ -33,7 +33,16 @@ public class BeginnerChartTests
     }
 
     static double[] Times(NoteData n) => Enumerable.Range(0, n.count)
-        .Select(k => (double)n.time + (n.count > 1 ? n.lengthMs * (double)k / (n.count - 1) : 0)).ToArray();
+        .Select(k => (double)n.time + (n.count > 1 ? LongSpanMs(n) * k / (n.count - 1) : 0)).ToArray();
+
+    // ロングの最初から最後のカットまで(ms)。長さ 0 のロングはゲームと同じく 0.7 秒ごと(NoteSpawner.DefaultSecondsPerLongCut)。
+    public static double LongSpanMs(NoteData n) => n.count <= 1 ? 0
+        : n.lengthMs > 0 ? n.lengthMs : (n.count - 1) * NoteSpawner.DefaultSecondsPerLongCut * 1000.0;
+
+    // 2026-10-28 15:20 にユーザーが RUSH E の Normal へ手で入れた12回の金のロング(124.35 秒、長さ 0)。
+    // ユーザー「rushEは意図した変更です」。下位の「ロングはゆっくり2回」と、同じ手の間隔の決まりの例外。
+    public static bool UserLong(string song, string difficulty, NoteData n) =>
+        song == "RushE" && difficulty == "normal" && n.IsLong && Math.Abs(n.time - 124351.8984) < 1;
 
     [TestCaseSource(nameof(Charts))]
     public void SavedCutsHaveShortRestsAndSparsePreparedFlicks(string song, string difficulty)
@@ -62,7 +71,7 @@ public class BeginnerChartTests
             double after = distinct.Where(t => t > flick.time + .1).DefaultIfEmpty(flick.time + 10000).Min();
             Assert.GreaterOrEqual(Math.Min(flick.time - before, after - flick.time), difficulty == "easy" ? 739 : 479);
         }
-        foreach (var note in chart.notes.Where(n => n.IsLong))
+        foreach (var note in chart.notes.Where(n => n.IsLong && !UserLong(song, difficulty, n)))
         {
             Assert.AreEqual(2, note.count, "下位はゆっくり2回切る形");
             Assert.GreaterOrEqual(note.lengthMs, 499);
