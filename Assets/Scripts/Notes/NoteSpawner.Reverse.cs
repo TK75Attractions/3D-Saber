@@ -27,8 +27,6 @@ public partial class NoteSpawner
 
     void ApplyReverse(CuttableNote note, double remaining)
     {
-        float offset = note.IsMirror ? ReverseRules.MirrorOffsetX(note.LandingPosition.x, remaining) : 0f;
-        float scale = note.IsMirror ? ReverseRules.MirrorScaleX(remaining) : 1f;
-        note.SetReverse(offset, scale);
+        note.SetReverse(note.IsMirror ? ReverseRules.MirrorOffsetX(note.LandingPosition.x, remaining) : 0f);
     }
 }

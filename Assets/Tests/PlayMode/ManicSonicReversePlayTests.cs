@@ -146,7 +146,21 @@ public class ManicSonicReversePlayTests
         Freeze();
         var (cutter, tracker) = Rig(sceneJudge);
 
-        // 鏡門: 根元は最初から本当の位置。届く時刻に、剣を鏡像の位置に置いても切れず、本当の位置なら切れる。
+        // 外側の列(x = ±1.9)は門の横を素通りし、鏡の間も反転しない(2026-10-28 ユーザー案)。拍22 の赤は鏡の間の外側。
+        var outer = chart.notes.First(n => Math.Abs(n.beat - 22) < .01f);
+        Assert.AreEqual(1.9f, outer.x, 1e-4, "拍22 の赤は外側の右の列");
+        Assert.IsFalse(outer.mirror, "外側の列は鏡にしない");
+        double outerHit = spawner.EffectiveTime(outer);
+        spawner.Tick(outerHit - .9);
+        mode.Tick(outerHit - .9);
+        var passing = Find(spawner, outerHit, "red");
+        Assert.IsFalse(passing.IsMirror);
+        Assert.AreEqual(ReverseRules.GatePhase.Mirror, mode.Gates.Phase, "門は鏡のまま");
+        Assert.AreEqual(1.9f, passing.VisualTransform.position.x, 1e-3, "門より奥でも自分の側のまま");
+        Assert.AreEqual(ReverseRules.GateHalfWidth, spawner.FloorGuide.CountTintHalfWidth, 1e-6, "床は中央だけ塗る");
+
+        // 鏡門: 根元は最初から本当の位置。届く時刻に、剣を鏡像の近く(本当の位置からは当たりの外)に置いても切れず、
+        // 本当の位置なら切れる(中央の2列は 1.2 しか離れていないので、鏡像そのものの位置は当たりの境目になる)。
         var mirror = chart.notes.First(n => n.mirror && n.color == "red");
         double hit = spawner.EffectiveTime(mirror);
         spawner.Tick(hit - .9);
@@ -161,8 +175,8 @@ public class ManicSonicReversePlayTests
         mode.Tick(hit);
         Assert.AreEqual(mirror.x, note.VisualTransform.position.x, 1e-3, "門を通ったら本当の位置");
         cutter.hand = SaberHand.Right;
-        Swing(cutter, tracker, -mirror.x, hit);
-        Assert.IsFalse(note.IsCut, "鏡像の位置では切れない");
+        Swing(cutter, tracker, -mirror.x + Mathf.Sign(-mirror.x) * 1.1f, hit);
+        Assert.IsFalse(note.IsCut, "鏡像の近くでは切れない(判定は本当の位置)");
         Swing(cutter, tracker, mirror.x, hit);
         Assert.IsTrue(note.IsCut, "本当の位置なら切れる");
 

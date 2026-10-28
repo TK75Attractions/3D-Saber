@@ -6,6 +6,7 @@ using UnityEngine;
 // Manic Sonic の裏譜面「R(反転)」の決まり(純関数。テストは主にここで取る)。
 // 時刻の引数は、ミリ秒(ms と付くもの。譜面の time と同じ)か、譜面の時計の秒(曲の時計 − offset)。
 //   ・鏡門(U105): 門は届く 0.5 秒前の深さに立ち、そこを通るノーツが本当の位置へ 0.08 秒で滑る(見た目だけ。根元は最初から本当の位置)。
+//     門は中央の2列(x = ±0.6)だけを囲み、外側の列(x = ±1.9)は門の横を素通りして反転しない(2026-10-28 ユーザー案)。
 //   ・天地返し(U103): 画面の絵(投影の行列)をノーツの帯の中心のまわりに回し、剣の入力はカメラの経路で逆に回す。
 public static class ReverseRules
 {
@@ -15,10 +16,14 @@ public static class ReverseRules
     public const double SlideSeconds = .08;
     // 門の切り替えの前後この秒数には、門を通るノーツを置かない(生成道具とテストで確かめる)。
     public const double SwitchClearSeconds = .15;
-    // 門の内側の半分の大きさ(幅 5.2 × 高さ 2.5)と枠の太さ。中心はノーツの帯の中心(BandCenter)。
-    public const float GateHalfWidth = 2.6f, GateHalfHeight = 1.25f, GateBar = .07f;
+    // 門の内側の半分の大きさ(幅 2.5 × 高さ 2.2)と枠の太さ。中心はノーツの帯の中心(BandCenter)。
+    // 2026-10-28: 全部の列を囲む 5.2 × 2.5 から、中央の 2×2 マスだけを囲む大きさへ(ユーザー「中央4マスが反転…外側4マスにも
+    // ノーツながしてそいつらは反転しない」)。枠の内側の縁 1.25 は、中央の列のノーツの外の縁(プロジェクターで 1.048)と
+    // 外側の列のノーツの内の縁(1.452)のほぼ真ん中。
+    public const float GateHalfWidth = 1.25f, GateHalfHeight = 1.10f, GateBar = .07f;
     // 裏返り・割れる破片・F3 で薄くなって消える時間、出てくるときに入る時間。
-    public const double FlipSeconds = .33, ShatterSeconds = .6, ReducedFadeSeconds = .3, GateFadeInSeconds = .15;
+    // 裏返りは 0.15 秒(切り替えから 0.167 秒後に門を通るノーツがあるので、裏返りの途中の門を通さない。2026-10-28 に 0.33 から)。
+    public const double FlipSeconds = .15, ShatterSeconds = .6, ReducedFadeSeconds = .3, GateFadeInSeconds = .15;
     // 枠の光(素通しは 40%、鏡は 100%)。
     public const float PassGlow = .4f, MirrorGlow = 1f;
     // 門を通ったときの横切りの筋と、両端の波紋。
@@ -28,8 +33,6 @@ public static class ReverseRules
     public const float FloorMarkBeforeCross = .5f;
     // 予告音の数(鏡にする拍の前の3拍)。
     public const int CueCount = 3;
-    // 鏡の矢印の拡縮が 0 にならないよう(0 の行列は逆行列が作れない)、押しつぶれる最小の大きさ。
-    public const float MinMirrorScale = .04f;
 
     // ---- 天地返し ----
     // ノーツの帯の中心。回転の軸で、門の中心。
@@ -61,6 +64,7 @@ public static class ReverseRules
 
     // 区間は時刻順に並べ、長さの無いもの・壊れた値は捨てる。on は門の時間の中へ収める。角度は有限に収める。
     // 門を通る時刻(届く − 0.5 秒)が鏡の区間に入らない mirror は外す(門なしで裏返るのを防ぐ)。ロング・見えないノーツは鏡にしない。
+    // 門の外を通るノーツ(外側の列)も鏡にしない(InsideGate)。座標は譜面の値(R の coordScale は 1)。
     public static ReverseChartData Normalize(ReverseChartData data, List<NoteData> notes)
     {
         data ??= new ReverseChartData();
@@ -90,7 +94,7 @@ public static class ReverseRules
         if (notes != null)
             foreach (var note in notes)
                 if (note != null && note.mirror && (!data.enabled || note.IsLong || note.hidden
-                    || !MirrorOn(data, note.time - CrossSeconds * 1000.0)))
+                    || !InsideGate(note.x, note.y) || !MirrorOn(data, note.time - CrossSeconds * 1000.0)))
                     note.mirror = false;
         return data;
     }
@@ -103,18 +107,18 @@ public static class ReverseRules
 
     public static double CrossTime(double hitSeconds) => hitSeconds - CrossSeconds;
 
+    // 門の内側を通る位置か(本当の着地点。鏡像の −x も同じ答え)。外側の列は門の横を素通りする。
+    public static bool InsideGate(float x, float y)
+        => Finite(x) && Finite(y) && Mathf.Abs(x) < GateHalfWidth && Mathf.Abs(y - BandCenter.y) < GateHalfHeight;
+
     // 門を通ってからの滑りの進み(0 = 鏡像の側、1 = 本当の位置)。残り時間だけで決まるので、コマ飛びで門を飛び越しても正しい位置に出る。
     public static float MirrorBlend(double remaining) => Finite(remaining) ? Ease((CrossSeconds - remaining) / SlideSeconds) : 1f;
 
     // 見た目の子の横のずれ(ワールド)。本当の x の鏡像(−x)に見せてから、本当の x へ。
     public static float MirrorOffsetX(float landingX, double remaining) => -2f * landingX * (1f - MirrorBlend(remaining));
 
-    // 見た目の子の横の拡縮。−1(鏡。矢印も鏡)から +1 へ、真ん中で押しつぶれて戻る(ノーツ自身も裏返って見える)。
-    public static float MirrorScaleX(double remaining)
-    {
-        float s = Mathf.Lerp(-1f, 1f, MirrorBlend(remaining));
-        return Mathf.Abs(s) < MinMirrorScale ? (s < 0f ? -MinMirrorScale : MinMirrorScale) : s;
-    }
+    // 2026-10-28: 見た目の子の横の拡縮(−1 → 押しつぶれて +1)はやめた。切る前のノーツは形を崩さず、位置だけが滑る
+    // (鏡の区間の矢印は縦だけなので、左右の鏡と同じ見え方)。
 
     // 左右の鏡の矢印(横の成分を反転。上下は変えない)。
     public static CutDirection MirrorDirection(CutDirection direction)
@@ -223,7 +227,8 @@ public static class ReverseRules
         return flip;
     }
 
-    // 床の判定線を左赤・右青に塗る量(0〜1)。立っている門の裏返りの量。
+    // 床の判定線を左赤・右青に塗る量(0〜1)。立っている門の裏返りの量。MirrorGateView は、ノーツが届く時刻に合わせて
+    // 門より CrossSeconds 遅れた時刻で読む(中央の |x| < GateHalfWidth だけを塗る)。
     public static float MirrorTint(ReverseChartData data, double seconds)
     {
         if (data?.gates == null || !Finite(seconds)) return 0f;

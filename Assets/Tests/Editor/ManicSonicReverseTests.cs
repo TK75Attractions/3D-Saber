@@ -67,24 +67,45 @@ public class ReverseRulesTests
     {
         Assert.AreEqual(1.0, ReverseRules.CrossTime(1.5), 1e-12, "門を通るのは届く 0.5 秒前");
         foreach (double remaining in new[] { 1.5, .9, .5 })
-        {
-            Assert.AreEqual(-2.2f, ReverseRules.MirrorOffsetX(1.1f, remaining), 1e-6, "門より奥は x が −2x ずれる " + remaining);
-            Assert.AreEqual(-1f, ReverseRules.MirrorScaleX(remaining), 1e-6, "拡縮 −1(矢印も鏡)");
-        }
+            Assert.AreEqual(-1.2f, ReverseRules.MirrorOffsetX(.6f, remaining), 1e-6, "門より奥は x が −2x ずれる " + remaining);
         foreach (double remaining in new[] { .42, .3, 0, -.2 })
-        {
-            Assert.AreEqual(0f, ReverseRules.MirrorOffsetX(1.1f, remaining), 1e-6, "0.08 秒で本当の位置 " + remaining);
-            Assert.AreEqual(1f, ReverseRules.MirrorScaleX(remaining), 1e-6);
-        }
+            Assert.AreEqual(0f, ReverseRules.MirrorOffsetX(.6f, remaining), 1e-6, "0.08 秒で本当の位置 " + remaining);
         float previous = float.NegativeInfinity;
         for (double remaining = .5; remaining >= .42; remaining -= .002)
         {
-            float scale = ReverseRules.MirrorScaleX(remaining);
-            Assert.GreaterOrEqual(Mathf.Abs(scale), ReverseRules.MinMirrorScale, "拡縮は 0 にしない");
-            Assert.GreaterOrEqual(scale, previous - 1e-6f, "押しつぶれて戻る(逆戻りしない)");
-            previous = scale;
+            float blend = ReverseRules.MirrorBlend(remaining);
+            Assert.GreaterOrEqual(blend, previous - 1e-6f, "滑りは逆戻りしない");
+            previous = blend;
         }
         Assert.AreEqual(ReverseRules.MirrorBlend(.46), ReverseRules.MirrorBlend(.46), "残り時間だけの関数");
+    }
+
+    // 2026-10-28: 門は中央の2列(x = ±0.6)だけを囲み、外側の列(±1.9)は門の横を素通りする(ユーザー案)。
+    [TestCase(.6f, .3f, true)]
+    [TestCase(-.6f, -.6f, true)]
+    [TestCase(0f, -.15f, true)]
+    [TestCase(1.9f, -.6f, false)]
+    [TestCase(-1.9f, .3f, false)]
+    [TestCase(1.25f, -.15f, false)]
+    [TestCase(.6f, 1.2f, false)]
+    [TestCase(float.NaN, 0f, false)]
+    public void OnlyTheCenterColumnsAreInsideTheGate(float x, float y, bool inside)
+    {
+        Assert.AreEqual(inside, ReverseRules.InsideGate(x, y));
+    }
+
+    // 門の枠は、中央の列のノーツと外側の列のノーツのあいだに収まる(プロジェクターモードの大きさ 0.896 で)。
+    [Test]
+    public void TheGateFrameFitsBetweenTheCenterAndOuterColumns()
+    {
+        const float half = .8f * ProjectorMode.NoteScale / 2f;
+        Assert.Less(.6f + half, ReverseRules.GateHalfWidth - .15f, "中央の列のノーツと枠の内側の縁のすき間 0.15 以上");
+        // 枠のいちばん外は角の目印(内側の縁 + 1.5 本ぶん)。
+        Assert.Greater(1.9f - half, ReverseRules.GateHalfWidth + 1.5f * ReverseRules.GateBar + .08f, "枠の外の縁と外側の列のノーツのすき間 0.08 以上");
+        float cy = ReverseRules.BandCenter.y;
+        Assert.Less(.3f + half - cy, ReverseRules.GateHalfHeight - .15f, "上の段も枠の中");
+        Assert.Less(cy - (-.6f - half), ReverseRules.GateHalfHeight - .15f, "下の段も枠の中");
+        Assert.LessOrEqual(ReverseRules.FlipSeconds, ReverseRules.SwitchClearSeconds, "切り替えのあと最初に門を通るノーツより先に裏返り終わる");
     }
 
     static ReverseGateData FirstGate()
@@ -270,6 +291,7 @@ public class ReverseLoaderTests
         // swell・gap・pieces は v1.35 の逆再生の項目(2026-10-28 に外した)。古い譜面に残っていても読み飛ばす。
         string json = @"{""bpm"":180,""notes"":[
             {""time"":6333.3,""x"":-1.05,""y"":-0.15,""color"":""gold"",""mirror"":true,""swell"":true},
+            {""time"":7333.3,""x"":1.9,""y"":-0.6,""color"":""red"",""mirror"":true},
             {""time"":4000,""x"":1,""y"":0,""color"":""red"",""mirror"":true},
             {""time"":7000,""x"":1,""y"":0,""color"":""red"",""type"":""long"",""count"":2,""lengthMs"":700,""mirror"":true}],
             ""reverse"":{""enabled"":true,""gap"":9,
@@ -291,6 +313,7 @@ public class ReverseLoaderTests
         var gold = chart.notes.Single(n => Math.Abs(n.time - 6333.3f) < .1f);
         Assert.IsTrue(gold.mirror, "門を通る時刻(5833.3)が鏡の区間にある");
         Assert.IsFalse(chart.notes.Single(n => Math.Abs(n.time - 4000) < .1f).mirror, "門を通る時刻が鏡の区間の外なら鏡を外す");
+        Assert.IsFalse(chart.notes.Single(n => Math.Abs(n.time - 7333.3f) < .1f).mirror, "外側の列は門の外を通るので鏡にしない");
         Assert.IsFalse(chart.notes.Single(n => n.IsLong).mirror, "ロングは鏡にしない");
     }
 
@@ -620,7 +643,7 @@ public class ReverseNoteTests
         Assert.AreEqual(-1.1f, note.transform.position.x, 1e-5, "根元は出現から本当の着地点");
         Assert.AreEqual(.1f, note.transform.position.y, 1e-5);
         Assert.AreEqual(1.1f, note.VisualTransform.position.x, 1e-4, "門より奥は本当の位置の左右の鏡像");
-        Assert.AreEqual(-1f, note.VisualTransform.localScale.x, 1e-6, "x の拡縮が −1");
+        Assert.AreEqual(Vector3.one, note.VisualTransform.localScale, "形は変えない(2026-10-28 から負の拡縮で裏返さない)");
         Assert.AreEqual(-1.1f, note.TimingCue.GhostRoot.transform.position.x, 1e-4, "着地の枠は本当の x");
 
         spawner.Tick(5.9);
@@ -629,14 +652,14 @@ public class ReverseNoteTests
 
         var arrow = Live(7.0);
         Assert.NotNull(arrow);
-        Assert.Less(arrow.Arrow.transform.lossyScale.x, 0f, "矢印も鏡");
+        Assert.Greater(arrow.Arrow.transform.lossyScale.x, 0f, "矢印は裏返さない(鏡の区間の矢印は縦だけ)");
 
         spawner.Tick(6.2);
         Assert.AreEqual(-1.1f, note.VisualTransform.position.x, 1e-4, "門を通ったら 0.08 秒で本当の位置");
         Assert.AreEqual(1f, note.VisualTransform.localScale.x, 1e-6);
         Assert.AreEqual(-1.1f, note.transform.position.x, 1e-5);
         spawner.Tick(6.6);
-        Assert.Greater(arrow.Arrow.transform.lossyScale.x, 0f, "門を通った矢印は本当の向き");
+        Assert.Greater(arrow.Arrow.transform.lossyScale.x, 0f, "門を通った矢印も本当の向き");
         Assert.AreEqual(CutDirection.Left, arrow.RequiredDirection, "判定の向きは最初から本当の向き");
     }
 
@@ -758,18 +781,18 @@ public class ReverseNoteTests
     }
 
     [Test]
-    public void ReuseClearsTheOffsetAndTheNegativeScale()
+    public void ReuseClearsTheOffset()
     {
         spawner.SetChart(Chart());
         spawner.Tick(5.01);
         var note = Live(6.5);
         spawner.Tick(5.3);
-        Assert.AreEqual(-1f, note.VisualTransform.localScale.x, 1e-6);
+        Assert.AreNotEqual(Vector3.zero, note.VisualTransform.localPosition, "門より奥は鏡像の側へずれている");
         note.ResetForSpawn();
         Assert.IsFalse(note.HasReverse);
         Assert.IsFalse(note.IsMirror);
         Assert.AreEqual(Vector3.zero, note.VisualTransform.localPosition, "鏡のずれを持ち越さない");
-        Assert.AreEqual(Vector3.one, note.VisualTransform.localScale, "負の拡縮を持ち越さない");
+        Assert.AreEqual(Vector3.one, note.VisualTransform.localScale, "形はそのまま");
         Assert.IsTrue(note.BodyRenderer.enabled, "本体を描く");
     }
 }
@@ -864,11 +887,17 @@ public class ReverseModeTests
         Assert.AreEqual(127.5, mode.HingeSeconds, 1e-6, "ちょうつがいの金");
         Assert.AreEqual(151.4519, mode.FinalSeconds, 1e-3, "最後の一回転が着く時刻(曲の最後の拍)");
 
+        mode.Tick(5.3);
+        Assert.AreEqual(0f, mode.Gates.Tint, "床は門より 0.5 秒遅れて塗る(鏡のノーツが届く時刻に合わせる)");
         mode.Tick(6.0);
         Assert.AreEqual(1f, mode.Gates.Tint, 1e-6);
         Assert.AreEqual(1f, spawner.FloorGuide.CountTintAmount, 1e-6, "鏡の間は床の線を左赤・右青");
+        Assert.AreEqual(ReverseRules.GateHalfWidth, spawner.FloorGuide.CountTintHalfWidth, 1e-6, "塗るのは門の内側の中央だけ(外側は白)");
+        mode.Tick(9.2);
+        Assert.AreEqual(1f, spawner.FloorGuide.CountTintAmount, 1e-6, "門が割れても、最後の鏡のノーツが届くまでは塗ったまま");
         mode.Tick(9.7);
         Assert.AreEqual(0f, spawner.FloorGuide.CountTintAmount, "鏡の外では必ず戻す(カウントインと共有)");
+        Assert.AreEqual(FloorTimingGuide.LineHalfWidth, spawner.FloorGuide.CountTintHalfWidth, 1e-6, "カウントインの全幅に戻す");
 
         mode.Tick(135);
         Assert.AreEqual(180f, WorldTurn.CurrentDegrees, 1e-4);
@@ -920,11 +949,21 @@ public class ReverseModeTests
         Assert.AreEqual(ReverseRules.GatePhase.Mirror, mode.Gates.Phase);
         Assert.AreEqual(180f, mode.Gates.Flip, 1e-4, "縦の軸で裏返る");
         Assert.AreEqual(ReverseRules.MirrorGlow, mode.Gates.Glow, 1e-6);
+        float frame = ReverseRules.GateHalfWidth + 1.5f * ReverseRules.GateBar + 1e-3f;
+        Assert.LessOrEqual(MaxAbsX(mode.Gates.Mesh), frame, "枠は中央の2列だけを囲む(外側の列にかからない)");
         mode.Tick(9.2);
         Assert.AreEqual(ReverseRules.GatePhase.Broken, mode.Gates.Phase);
         Assert.Greater(mode.Gates.ShardsDrawn, 0, "ガラスの破片になって飛ぶ");
+        Assert.LessOrEqual(MaxAbsX(mode.Gates.Mesh), frame + .3f, "破片は上下へ飛び、外側の列へ広がらない");
         mode.Tick(9.7);
         Assert.AreEqual(ReverseRules.GatePhase.None, mode.Gates.Phase);
+    }
+
+    static float MaxAbsX(Mesh mesh)
+    {
+        float max = 0f;
+        foreach (var vertex in mesh.vertices) max = Mathf.Max(max, Mathf.Abs(vertex.x));
+        return max;
     }
 
     [Test]

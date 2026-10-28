@@ -4,13 +4,15 @@ using UnityEngine;
 using UnityEngine.Rendering;
 
 // Manic Sonic の裏譜面 R の鏡門(U105)の絵。1枚の動的メッシュ(QuizMesh)に毎コマ描く(ノーツごとの資源を増やさない)。
-//   ・門: 細い枠(内側 5.2 × 2.5、中心はノーツの帯の中心)。左半分が青・右半分が赤(手のいつもの側)、角は目印の鏡銀。光は素通しで 40%。
+//   ・門: 細い枠(内側 2.5 × 2.2、中心はノーツの帯の中心。中央の2列だけを囲み、外側の列は門の横を素通りする)。
+//     左半分が青・右半分が赤(手のいつもの側)、角は目印の鏡銀。光は素通しで 40%。
 //     鏡にするときはトランプのように縦の軸で 180° 裏返り、そのまま「左赤・右青」になる(光 100%)。鏡の間は真ん中の軸の線と内側のガラスの縁。
 //   ・奥から流れてきて、届く 0.5 秒前の深さ(judgeZ + 速さ × 0.5)で止まる。深さは見る(手前のノーツが門を隠す)。
-//   ・割れるとき: 枠がガラスの破片になって、帯の外側と奥へ飛び、0.6 秒で消える(ゲートの内側を光らせないよう外へ飛ばす)。
+//   ・割れるとき: 枠がガラスの破片になって、上下と奥へ飛び、0.6 秒で消える(横へ飛ばすと外側の列のノーツに重なるため)。
 //     F3 では破片を出さず、0.3 秒で薄くなって消える。
 //   ・門を通ったノーツ: 通った所から出た所へノーツの色の細い筋(0.2 秒)と、両端の小さな波紋(F3 では出さない)。
-//   ・床の判定線: 鏡の間は左赤・右青(カウントインの塗り分けの逆。FloorTimingGuide.SetCountTint を共有するので、鏡の外では必ず戻す)。
+//   ・床の判定線: 鏡の間は中央(|x| < GateHalfWidth)だけ左赤・右青、外側は白のまま(カウントインの塗り分けの逆。
+//     FloorTimingGuide.SetCountTint を共有するので、鏡の外では必ず戻す)。ノーツが届く時刻に合わせ、門より 0.5 秒遅れて塗る・戻す。
 // 色は頂点色(線形の色空間なので、材質の色と同じ見え方になるよう color.linear にする)。
 public sealed class MirrorGateView : IDisposable
 {
@@ -141,14 +143,14 @@ public sealed class MirrorGateView : IDisposable
         Color axis = Vertex(RushESecretState.MirrorSilver, .8f * mirror);
         Band(new Vector2(0f, cy - h), new Vector2(0f, cy + h), .025f, z, flip, axis);
         Color rim = Vertex(RushESecretState.MirrorSilver, .5f * mirror);
-        float iw = w - .1f, ih = h - .1f;
+        float iw = w - .06f, ih = h - .06f;
         Band(new Vector2(-iw, cy + ih), new Vector2(iw, cy + ih), .02f, z, flip, rim);
         Band(new Vector2(-iw, cy - ih), new Vector2(iw, cy - ih), .02f, z, flip, rim);
         Band(new Vector2(-iw, cy - ih), new Vector2(-iw, cy + ih), .02f, z, flip, rim);
         Band(new Vector2(iw, cy - ih), new Vector2(iw, cy + ih), .02f, z, flip, rim);
     }
 
-    // 割れた枠の破片。枠の6本の棒をそれぞれ4つに割り、帯の外側(門の中心から離れる向き)と奥へ飛ばす。
+    // 割れた枠の破片。枠の6本の棒をそれぞれ4つに割り、上下(門の中心より上は上へ、下は下へ)と奥へ飛ばす。
     void DrawShards(float z, float flip, float glow, double age)
     {
         float p = Mathf.Clamp01((float)(age / ReverseRules.ShatterSeconds));
@@ -177,9 +179,7 @@ public sealed class MirrorGateView : IDisposable
                 Vector2 from = Vector2.Lerp(a, b, k / (float)PiecesPerBar), to = Vector2.Lerp(a, b, (k + 1) / (float)PiecesPerBar);
                 Vector2 mid = (from + to) * .5f;
                 Vector3 start = Place(mid.x, mid.y, z, flip);
-                Vector3 outward = start - center;
-                outward.z = 0f;
-                outward = outward.sqrMagnitude > 1e-6f ? outward.normalized : Vector3.up;
+                Vector3 outward = start.y - center.y >= 0f ? Vector3.up : Vector3.down;
                 Vector3 position = start + outward * (ShardSpeed * travel) + Vector3.forward * (ShardRecede * travel);
                 float spin = (k * 1.7f + bar * .9f + 1f) * travel * 6f;
                 float half = (to - from).magnitude * .5f * (1f - .4f * p);
@@ -223,11 +223,11 @@ public sealed class MirrorGateView : IDisposable
 
     void UpdateFloorTint(double seconds)
     {
-        Tint = ReverseRules.MirrorTint(data, seconds);
+        Tint = ReverseRules.MirrorTint(data, seconds - ReverseRules.CrossSeconds);
         if (floor == null) return;
         if (Tint > 0f)
         {
-            floor.SetCountTint(UISkinPalette.LogoRed, Tint, UISkinPalette.LogoBlue, Tint);
+            floor.SetCountTint(UISkinPalette.LogoRed, Tint, UISkinPalette.LogoBlue, Tint, ReverseRules.GateHalfWidth);
             tinted = true;
         }
         else ClearTint();

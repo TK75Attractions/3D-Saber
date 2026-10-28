@@ -22,19 +22,26 @@ public sealed class FloorTimingGuide : MonoBehaviour
     // カウントイン(3・2・1)で中央の判定線を左右に塗り分ける(左=青、右=赤)。量 0 で通常の白。
     Color countLeft = Color.white, countRight = Color.white;
     float countLeftAmount, countRightAmount;
+    float countHalfWidth = LineHalfWidth;
     public int MarkerCount { get; private set; }
     public int LongProgressCount { get; private set; }
     public float JudgmentZ { get; private set; }
     public float CountTintAmount => Mathf.Max(countLeftAmount, countRightAmount);
     public float DarkBrightness { get; set; } = 1f;
 
-    public void SetCountTint(Color left, float leftAmount, Color right, float rightAmount)
+    // halfWidth を渡すと、真ん中の |x| < halfWidth だけを塗り、外側は白のまま(R の鏡門は中央の2列だけを反転する。2026-10-28)。
+    public void SetCountTint(Color left, float leftAmount, Color right, float rightAmount, float halfWidth = LineHalfWidth)
     {
         countLeft = left; countRight = right;
         countLeftAmount = Mathf.Clamp01(leftAmount); countRightAmount = Mathf.Clamp01(rightAmount);
+        countHalfWidth = Finite(halfWidth) ? Mathf.Clamp(halfWidth, .1f, LineHalfWidth) : LineHalfWidth;
     }
 
-    public void ClearCountTint() { countLeftAmount = 0; countRightAmount = 0; }
+    public void ClearCountTint() { countLeftAmount = 0; countRightAmount = 0; countHalfWidth = LineHalfWidth; }
+
+    // 判定線の半分の長さと、いま塗っている真ん中の半分の幅(テスト用)。
+    public const float LineHalfWidth = 3.6f;
+    public float CountTintHalfWidth => countHalfWidth;
 
     public static FloorTimingGuide Create(Transform parent, float floorY)
     {
@@ -70,8 +77,15 @@ public sealed class FloorTimingGuide : MonoBehaviour
         if (countLeftAmount <= 0 && countRightAmount <= 0) Bar(0, JudgmentZ, 7.2f, .065f * visibility, lineColor, .003f);
         else
         {
-            Bar(-1.8f, JudgmentZ, 3.6f, .065f * visibility, Color.Lerp(lineColor, countLeft, countLeftAmount), .003f);
-            Bar(1.8f, JudgmentZ, 3.6f, .065f * visibility, Color.Lerp(lineColor, countRight, countRightAmount), .003f);
+            float hw = countHalfWidth, outer = LineHalfWidth - hw;
+            Bar(-hw / 2, JudgmentZ, hw, .065f * visibility, Color.Lerp(lineColor, countLeft, countLeftAmount), .003f);
+            Bar(hw / 2, JudgmentZ, hw, .065f * visibility, Color.Lerp(lineColor, countRight, countRightAmount), .003f);
+            // 真ん中だけを塗るとき(R の鏡門)は、外側を白のまま描く。
+            if (outer > 1e-3f)
+            {
+                Bar(-(hw + outer / 2), JudgmentZ, outer, .065f * visibility, lineColor, .003f);
+                Bar(hw + outer / 2, JudgmentZ, outer, .065f * visibility, lineColor, .003f);
+            }
         }
         DimColors(0, DarkBrightness);
         candidates.Clear();

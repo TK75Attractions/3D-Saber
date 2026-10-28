@@ -2,11 +2,11 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // Manic Sonic の裏譜面 R の描画先(F の FallVisual・W の WindVisual と同じ作り)。判定の根元(transform)・着地の枠・床の印は動かさない。
-//   ReverseVisual: 本体の描画先と、芯・縁・光の板・矢印・ひびを移した子。鏡門のノーツは門を通るまで x だけ負の拡縮にして、
-//     本当の位置の左右の鏡像に見せる(矢印も鏡)。本体の MeshRenderer は子へ移し、切断のメッシュ・光の保護・当たりの矩形は
-//     その子の本体の立方体を使う。
+//   ReverseVisual: 本体の描画先と、芯・縁・光の板・矢印・ひびを移した子。鏡門のノーツは門を通るまで、本当の位置の左右の鏡像
+//     (−x)に見せ、門で本当の位置へ滑る(2026-10-28 から形は変えない。負の拡縮で裏返す見せ方はやめた)。本体の MeshRenderer は
+//     子へ移し、切断のメッシュ・光の保護・当たりの矩形はその子の本体の立方体を使う。
 // 2026-10-28: 逆再生(割れた2片・破片・割れ目の光)はユーザーの「見た目が悪い」で外した。鏡のノーツだけがこの子を使う。
-// プールは R の鏡のノーツとほかのノーツで分ける(NoteSpawner.Key)。出現のたびに ResetReverse で、ずれと負の拡縮を必ず戻す。
+// プールは R の鏡のノーツとほかのノーツで分ける(NoteSpawner.Key)。出現のたびに ResetReverse で、ずれを必ず戻す。
 public partial class CuttableNote
 {
     Transform reverseVisual;
@@ -76,17 +76,17 @@ public partial class CuttableNote
         IsMirror = mirror;
     }
 
-    // 毎コマ(NoteSpawner.ApplyReverse)。mirrorOffsetX・mirrorScaleX は鏡の見た目の横のずれ(ワールド)と拡縮。
-    internal void SetReverse(float mirrorOffsetX, float mirrorScaleX)
+    // 毎コマ(NoteSpawner.ApplyReverse)。mirrorOffsetX は鏡の見た目の横のずれ(ワールド)。
+    internal void SetReverse(float mirrorOffsetX)
     {
         if (!HasReverse || reverseVisual == null) return;
         // 鏡: 見た目の子だけを本当の x の鏡像へ。拡縮・傾きのある出現中でも、ずれはワールドの横方向にそろえる。
         reverseVisual.localPosition = mirrorOffsetX == 0f ? Vector3.zero
             : transform.InverseTransformVector(new Vector3(mirrorOffsetX, 0f, 0f));
-        reverseVisual.localScale = new Vector3(mirrorScaleX, 1f, 1f);
+        reverseVisual.localScale = Vector3.one;
     }
 
-    // 出現のたびに(ResetForSpawn)。ずれと負の拡縮を戻す。子の作りはそのまま再利用する。
+    // 出現のたびに(ResetForSpawn)。ずれ(と前の版の負の拡縮)を戻す。子の作りはそのまま再利用する。
     internal void ResetReverse()
     {
         HasReverse = false;
