@@ -890,7 +890,10 @@ final class CameraViewModel: NSObject, ObservableObject {
         return PhoneSaberIdentity(deviceModel: PhoneSaberIdentity.deviceModel, deviceID: PhoneSaberIdentity.deviceID,
                                   appVersion: PhoneSaberIdentity.version, appBuild: PhoneSaberIdentity.build,
                                   station: station.isEmpty ? "none" : station, destination: destination,
-                                  manualIPOverride: manualHostActive)
+                                  manualIPOverride: manualHostActive,
+                                  gitCommit: PhoneSaberIdentity.buildIdentity("PhoneSaberGitCommit"),
+                                  gitDirty: PhoneSaberIdentity.buildIdentity("PhoneSaberGitDirty"),
+                                  buildTime: PhoneSaberIdentity.buildIdentity("PhoneSaberBuildTime"))
     }
     @Published private(set) var connectionMode = "Auto (Bonjour)"
     @Published private(set) var station = ""

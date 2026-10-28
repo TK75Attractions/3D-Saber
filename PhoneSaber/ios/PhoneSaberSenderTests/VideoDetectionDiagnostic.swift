@@ -29,7 +29,7 @@ private func pointJSON(_ point: PixelPoint) -> [String: Int] {
     ["x": point.x, "y": point.y]
 }
 
-private func candidateJSON(_ candidate: SaberCandidate, emitterMetrics: Bool) -> [String: Any] {
+private func candidateJSON(_ candidate: SaberCandidate, emitterMetrics: Bool, bitPatterns: Bool) -> [String: Any] {
     var result: [String: Any] = [
         "blueNoDeepSupport": candidate.blueNoDeepSupport.map { verdict in
             ["applied": verdict.applied, "deepCount": verdict.deepCount,
@@ -73,6 +73,7 @@ private func candidateJSON(_ candidate: SaberCandidate, emitterMetrics: Bool) ->
         result["emitter_score"] = candidate.observerEmitterInputs.map { $0.emitterScore as Any } ?? NSNull()
         result["aspect"] = candidate.observerEmitterInputs.map { $0.aspect as Any } ?? NSNull()
     }
+    if bitPatterns { result["scoreBits"] = String(candidate.score.bitPattern) }
     if CoreLineGuard.enabled {
         result["coreLineGuard"] = candidate.coreLineGuard.map { v in
             ["supportingIndex": v.supportingIndex, "supportingSource": v.supportingSource,
@@ -109,6 +110,9 @@ private enum VideoDetectionDiagnostic {
             Foundation.exit(2)
         }
         let emitterMetrics = ProcessInfo.processInfo.environment["PHONESABER_EMITTER_METRICS"] == "1"
+        let bitPatterns = ProcessInfo.processInfo.environment["PHONESABER_BIT_PATTERNS"] == "1"
+        let components = ProcessInfo.processInfo.environment["PHONESABER_COMPONENT_DIAGNOSTICS"] == "1"
+        let lightweight = ProcessInfo.processInfo.environment["PHONESABER_LIGHTWEIGHT"] == "1"
         let frameByteCount = arguments.width * arguments.height * 4
         var frameIndex = 0
         while let frame = try readExactly(FileHandle.standardInput, count: frameByteCount) {
@@ -126,8 +130,9 @@ private enum VideoDetectionDiagnostic {
                     blueThreshold: ColorThreshold(),
                     sampleStep: arguments.sampleStep,
                     collectProfile: true,
-                    collectPipelineDiagnostics: true,
+                    collectPipelineDiagnostics: !lightweight,
                     collectObserverEvidence: emitterMetrics,
+                    collectComponentDiagnostics: components,
                     shutterEmitter: arguments.shutterEmitter
                 )
             }
@@ -135,11 +140,11 @@ private enum VideoDetectionDiagnostic {
             for (name, color) in [("red", SaberColor.red), ("blue", SaberColor.blue)] {
                 colors[name] = [
                     "selected": selectedJSON(analysis.selected[color]),
-                    "candidates": (analysis.candidates[color] ?? []).map { candidateJSON($0, emitterMetrics: emitterMetrics) },
+                    "candidates": (analysis.candidates[color] ?? []).map { candidateJSON($0, emitterMetrics: emitterMetrics, bitPatterns: bitPatterns) },
                 ]
             }
             let profile = analysis.profile
-            let output: [String: Any] = [
+            var output: [String: Any] = [
                 "frame": frameIndex,
                 "shutterEmitter": ["shutter": arguments.shutterEmitter.shutter,
                                    "iso": arguments.shutterEmitter.iso,
@@ -168,6 +173,11 @@ private enum VideoDetectionDiagnostic {
                     ])
                 }),
             ]
+            if components {
+                output["components"] = Dictionary(uniqueKeysWithValues: [("red", SaberColor.red), ("blue", .blue)].map {
+                    ($0.0, analysis.componentDiagnostics?[$0.1]?.snapshot.json() ?? ["state": "notCollected"])
+                })
+            }
             let encoded = try JSONSerialization.data(withJSONObject: output, options: [.sortedKeys])
             FileHandle.standardOutput.write(encoded)
             FileHandle.standardOutput.write(Data([0x0a]))

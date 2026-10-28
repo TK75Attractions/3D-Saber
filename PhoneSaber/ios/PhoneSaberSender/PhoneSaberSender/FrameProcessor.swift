@@ -101,6 +101,11 @@ struct ObservedFrame {
 /// It never changes detection, selection or what is sent.
 protocol FrameAnalysisObserver: AnyObject {
     func observe(_ frame: ObservedFrame)
+    func wantsComponentDiagnostics(timestamp: Double) -> Bool
+}
+
+extension FrameAnalysisObserver {
+    func wantsComponentDiagnostics(timestamp: Double) -> Bool { false }
 }
 
 /// 添字は設定の世代と組にする。同じ形の重複登録も別々に解除できる。
@@ -751,6 +756,8 @@ final class FrameProcessor: @unchecked Sendable {
         selectionRedThreshold = redThreshold; selectionBlueThreshold = blueThreshold
         selectionTrackRevision = lockRevision
         let lockState = lockEnabled ? selectionTrack : nil
+        let collectComponents = debugVideoRecorder == nil && (analysisObserver?.wantsComponentDiagnostics(
+            timestamp: CMSampleBufferGetPresentationTimeStamp(sampleBuffer).seconds) ?? false)
 #if DEBUG
         let accessMs = (ProcessInfo.processInfo.systemUptime - accessStart) * 1000
         let observer = debugVideoRecorder == nil ? analysisObserver : nil
@@ -763,7 +770,7 @@ final class FrameProcessor: @unchecked Sendable {
                                      bytesPerRow: bytesPerRow, redThreshold: redThreshold,
                                      blueThreshold: blueThreshold, collectProfile: collectProfile,
                                      collectPipelineDiagnostics: debugVideoRecorder != nil,
-                                     collectObserverEvidence: observer != nil,
+                                     collectObserverEvidence: observer != nil, collectComponentDiagnostics: collectComponents,
                                      ignoreZones: zones, playArea: area, trackLock: lockState, now: processingStart, shutterEmitter: emitterMode, backgroundState: backgroundState)
         let sabers = analysis.selected
         let observedAnalysis: SaberFrameAnalysis? = analysis
@@ -778,6 +785,7 @@ final class FrameProcessor: @unchecked Sendable {
                 baseAddress: bytes, width: width, height: height,
                 bytesPerRow: bytesPerRow, redThreshold: redThreshold,
                 blueThreshold: blueThreshold, collectObserverEvidence: true,
+                collectComponentDiagnostics: collectComponents,
                 ignoreZones: zones, playArea: area, trackLock: lockState, now: processingStart, shutterEmitter: emitterMode, backgroundState: backgroundState
             )
             analysis = result

@@ -10,6 +10,10 @@ struct PhoneSaberIdentity: Codable, Equatable {
     var station: String
     var destination: String
     var manualIPOverride: Bool
+    // optionalで旧Codableを維持。dirtyは "true" / "false" / "unknown"。
+    var gitCommit: String? = nil
+    var gitDirty: String? = nil
+    var buildTime: String? = nil
 
     static let deviceModel: String = {
         var info = utsname()
@@ -27,6 +31,9 @@ struct PhoneSaberIdentity: Codable, Equatable {
     }()
     static var version: String { Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "unknown" }
     static var build: String { Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "unknown" }
+    static func buildIdentity(_ key: String) -> String {
+        Bundle.main.object(forInfoDictionaryKey: key) as? String ?? "unknown"
+    }
     static func modelName(_ model: String) -> String {
         switch model {
         case "iPhone14,5": return "iPhone 13"
@@ -37,7 +44,8 @@ struct PhoneSaberIdentity: Codable, Equatable {
     var jsonObject: [String: Any] {
         ["deviceModel": deviceModel, "deviceName": Self.modelName(deviceModel), "deviceID": deviceID,
          "appVersion": appVersion, "appBuild": appBuild, "station": station,
-         "destination": destination, "manualIPOverride": manualIPOverride]
+         "destination": destination, "manualIPOverride": manualIPOverride,
+         "gitCommit": gitCommit ?? "unknown", "gitDirty": gitDirty ?? "unknown", "buildTime": buildTime ?? "unknown"]
     }
     var displayText: String {
         "台\(station == "none" ? "未指定（A/Bを確認）" : station) · \(Self.modelName(deviceModel))\n送信先: \(destination)\n" +

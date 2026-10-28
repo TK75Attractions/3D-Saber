@@ -135,6 +135,109 @@ class PNGTests(unittest.TestCase):
 
 
 class ClipReportTests(unittest.TestCase):
+    def test_build_station_warnings_and_ignore_frame_counts(self):
+        with tempfile.TemporaryDirectory() as directory:
+            bundle = make_clip(Path(directory))
+            path = bundle / "summary.json"
+            summary = json.loads(path.read_text())
+            clip = summary["autoClip"]
+            clip["phone"] = {"gitCommit": "abcdef123456", "gitDirty": "true",
+                             "buildTime": "2026-10-28T01:02:03Z", "station": "none"}
+            clip["candidateColumns"].append("exclusionReason")
+            for frame in clip["frames"]:
+                for row in frame["red"]["c"]:
+                    row.append("none" if row[10] & report.FLAG_SELECTABLE else "ignore:0,1")
+                # 同じzoneの複数候補も1フレームに数える。
+                frame["red"]["c"].append(list(frame["red"]["c"][1]))
+            clip["frames"][0]["blue"]["c"] = [list(clip["frames"][0]["red"]["c"][1])]
+            path.write_text(json.dumps(summary))
+            info = report.describe(bundle)
+            self.assertEqual(info["ignoreExcludedFrames"], {"red": {0: 30, 1: 30}, "blue": {0: 1, 1: 1}})
+            self.assertEqual(info["exclusionUnknownFrames"], {"red": 0, "blue": 0})
+            text = report.render_text(info)
+            self.assertIn("build: abcdef123456+dirty 2026-10-28T01:02:03Z ⚠", text)
+            self.assertIn("station: none ⚠", text)
+            self.assertIn("red: zone 0=30 frames, zone 1=30 frames", text)
+            self.assertIn("not selectable: ignore:0,1", text)
+            for station in ("A", "B"):
+                clip["phone"].update(gitDirty="false", station=station)
+                path.write_text(json.dumps(summary))
+                text = report.render_text(report.describe(bundle))
+                self.assertNotIn("⚠", text)
+                self.assertIn("station: " + station, text)
+            clip["phone"]["gitCommit"] = "unknown"
+            path.write_text(json.dumps(summary))
+            self.assertIn("build: unknown 2026-10-28T01:02:03Z ⚠", report.render_text(report.describe(bundle)))
+
+    def test_context_fallback_keeps_reason_and_legacy_is_unknown(self):
+        with tempfile.TemporaryDirectory() as directory:
+            bundle = make_clip(Path(directory))
+            path = bundle / "summary.json"
+            summary = json.loads(path.read_text())
+            summary["autoClip"]["frames"] = [f for f in summary["autoClip"]["frames"] if f["f"] != 105]
+            image = summary["images"][0]
+            context_path = bundle / image["frameContextPath"]
+            context = json.loads(context_path.read_text())
+            candidate = {"endpoints": [10, 20, 10, 60], "bbox": [7, 17, 13, 63],
+                         "eligible": True, "selectable": False, "exclusionReason": "ignore:2"}
+            context["frames"][0]["red"]["autoClipCandidates"] = [candidate]
+            context_path.write_text(json.dumps(context))
+            path.write_text(json.dumps(summary))
+            self.assertEqual(report.describe(bundle)["ignoreExcludedFrames"]["red"], {2: 1})
+            del candidate["exclusionReason"]
+            context_path.write_text(json.dumps(context))
+            model = report.load_clip(bundle)
+            self.assertEqual(report.frame_candidates(model, 105, "red")[0]["exclusionReason"], "unknown")
+            self.assertEqual(report.frame_candidates(model, 112, "red")[0]["exclusionReason"], "unknown")
+            self.assertIn("build: unknown unknown ⚠", report.render_text(report.describe(bundle)))
+
+    def test_real_1027_and_1028_legacy_clips_are_readable(self):
+        names = ("phone_saber_triage_autoclip_20261028_170422_784_confusion_blue",
+                 "phone_saber_triage_autoclip_20261027_185641_219_gap_red")
+        for name in names:
+            with self.subTest(clip=name):
+                bundle = report.DEFAULT_INBOX / "autoclips" / name
+                if not bundle.is_dir():
+                    self.skipTest("private legacy clips unavailable")
+                text = report.render_text(report.describe(bundle))
+                self.assertIn("build: unknown unknown ⚠", text)
+                self.assertIn("unknown reason frames=", text)
+
+    def test_component_states_reasons_and_legacy_are_not_inferred(self):
+        with tempfile.TemporaryDirectory() as directory:
+            bundle = make_clip(Path(directory))
+            self.assertEqual(report.describe(bundle)["triggerFrameComponents"]["red"], {"state": "unknown"})
+            summary = json.loads((bundle / "summary.json").read_text())
+            image = next(i for i in summary["images"] if i["frameID"] == 112)
+            path = bundle / image["frameContextPath"]
+            context = json.loads(path.read_text())
+            for state in ("notCollected", "maskEmpty", "collected"):
+                value = {"state": state, "maskPixels": 0, "emitterMaskPixels": 12, "omitted": 9,
+                         "columns": ["path", "stage", "reason"],
+                         "rows": [["shutter-color-emitter", "emitter", "emitterAspect"]] if state == "collected" else []}
+                context["frames"][0]["red"]["components"] = value
+                path.write_text(json.dumps(context))
+                info = report.describe(bundle)
+                self.assertEqual(info["triggerFrameComponents"]["red"], value)
+                text = report.render_text(info)
+                self.assertIn(f"components: {state}", text)
+                self.assertIn("omitted=9", text)
+                if state == "collected":
+                    self.assertIn("emitter/emitterAspect", text)
+                self.assertEqual(report.frame_components(report.load_clip(bundle), 112, "blue"), {"state": "unknown"})
+
+    def test_disabled_component_diagnostics_are_not_collected_at_clip_level(self):
+        with tempfile.TemporaryDirectory() as directory:
+            bundle = make_clip(Path(directory))
+            summary_path = bundle / "summary.json"
+            summary = json.loads(summary_path.read_text())
+            summary["autoClip"]["componentDiagnostics"] = {"enabled": False}
+            summary_path.write_text(json.dumps(summary))
+            for color in ("red", "blue"):
+                self.assertEqual(report.frame_components(report.load_clip(bundle), 112, color),
+                                 {"state": "notCollected"})
+            self.assertIn("components: notCollected", report.render_text(report.describe(bundle)))
+
     def test_integrity_rejects_duplicate_ids_and_time_mismatches_before_overlay(self):
         for corruption in ('summary-duplicate', 'image-duplicate', 'context-duplicate',
                            'image-time', 'context-time', 'context-id', 'context-extra', 'invalid-time'):

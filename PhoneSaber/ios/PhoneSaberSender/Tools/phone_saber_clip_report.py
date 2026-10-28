@@ -15,6 +15,7 @@ report and contact sheet are written beside it.
 from __future__ import annotations
 
 import argparse
+from collections import Counter
 import json
 import math
 import os
@@ -147,6 +148,7 @@ def _candidates(frame: dict, color: str, columns: list[str], sources: list[str])
     result = []
     for row in rows:
         item = dict(zip(columns, row))
+        item.setdefault("exclusionReason", "unknown")
         if isinstance(item.get("source"), int) and 0 <= item["source"] < len(sources):
             item["source"] = sources[item["source"]]
         flags = int(item.get("flags", 0))
@@ -252,6 +254,7 @@ def frame_candidates(model: dict, frame_id: int, color: str) -> list[dict]:
                            "score": c.get("finalScore"), "source": c.get("sourceType"),
                            "eligible": c.get("eligible"), "selectable": c.get("selectable"),
                            "selected": c.get("selected"), "competitor": c.get("competitor"),
+                           "exclusionReason": c.get("exclusionReason", "unknown"),
                            "mid": [(x1 + x2) / 2, (y1 + y2) / 2],
                            "length": round(math.hypot(x2 - x1, y2 - y1), 1),
                            "boxSize": [box[2] - box[0], box[3] - box[1]]})
@@ -278,6 +281,23 @@ def frame_output(model: dict, frame_id: int, color: str) -> dict:
         except (OSError, ValueError, KeyError):
             continue
     return {"selected": None, "trackLockSuppressed": None}
+
+
+def frame_components(model: dict, frame_id: int, color: str) -> dict:
+    """画像の詳細を優先し、旧形式・未収集・空マスクを推定で混ぜない。"""
+    if (model["summary"].get("autoClip", {}).get("componentDiagnostics") or {}).get("enabled") is False:
+        return {"state": "notCollected"}
+    for image in model["summary"].get("images", []):
+        if image.get("frameID") != frame_id:
+            continue
+        context = json.loads((model["bundle"] / image["frameContextPath"]).read_text(encoding="utf-8"))
+        for frame in context.get("frames", []):
+            if frame.get("frameID") == frame_id:
+                value = (frame.get(color) or {}).get("components")
+                if isinstance(value, dict):
+                    return value
+    entry = (model["frames"].get(frame_id) or {}).get(color) or {}
+    return entry.get("components") or {"state": "unknown"}
 
 
 def _winner_side_counts(model: dict, color: str, saber_mid: list[float] | None,
@@ -317,6 +337,7 @@ def describe(bundle: Path) -> dict[str, Any]:
                                                 "competitorCount", "jumpDistancePx", "jumpThresholdPx",
                                                 "typicalLengthPx", "note")},
         "window": clip.get("window"), "camera": clip.get("camera"),
+        "phone": clip.get("phone") or {},
         "playArea": clip.get("playArea"), "ignoreZones": clip.get("ignoreZones"),
         "images": [{"path": i.get("path"), "role": i.get("role"), "frameID": i.get("frameID"),
                     "offsetSeconds": i.get("offsetSeconds")} for i in summary.get("images", [])],
@@ -327,9 +348,27 @@ def describe(bundle: Path) -> dict[str, Any]:
     result["triggerFrameCandidates"] = {
         c: frame_candidates(model, frame_id, c) if isinstance(frame_id, int) else [] for c in colors}
     result["triggerFrameOutput"] = {c: frame_output(model, frame_id, c) for c in colors}
+    result["triggerFrameComponents"] = {c: frame_components(model, frame_id, c) for c in colors}
     result["suppressedFrames"] = {
         c: sum(bool((f.get(c) or {}).get("sup")) for f in model["frames"].values())
         if clip.get("formatVersion", 1) >= 2 else None for c in ("red", "blue")}
+    # 同じframeの複数候補はzoneごとに一度だけ数える。summary間引き時は保存画像contextも使う。
+    frame_ids = set(model["frames"]) | {i["frameID"] for i in summary.get("images", [])}
+    counts, unknown = {}, {}
+    for c in ("red", "blue"):
+        zones, missing = Counter(), 0
+        for frame in sorted(frame_ids):
+            candidates = frame_candidates(model, frame, c)
+            missing += any(item["exclusionReason"] == "unknown" for item in candidates)
+            excluded = set()
+            for item in candidates:
+                reason = item["exclusionReason"]
+                if isinstance(reason, str) and reason.startswith("ignore:"):
+                    excluded.update(int(index) for index in reason[7:].split(",") if index.isdigit())
+            zones.update(excluded)
+        counts[c], unknown[c] = dict(sorted(zones.items())), missing
+    result["ignoreExcludedFrames"] = counts
+    result["exclusionUnknownFrames"] = unknown
     if trigger.get("kind") == "confusion" and color in ("red", "blue"):
         winner, competitor = trigger.get("winner"), trigger.get("competitor")
         mid = (lambda e: [(e[0] + e[2]) / 2, (e[1] + e[3]) / 2] if e and len(e) == 4 else None)
@@ -342,9 +381,7 @@ def describe(bundle: Path) -> dict[str, Any]:
 def _fmt_candidate(c: dict) -> str:
     role = "WINNER" if c.get("selected") else "COMPETITOR" if c.get("competitor") else \
         "eligible" if c.get("eligible") else "ineligible"
-    extra = "" if c.get("selectable") or not c.get("eligible") else (
-        " (actual tracked output outside acquisition area)" if c.get("selected") else
-        " (not selectable: ignore zone / outside play area)")
+    extra = "" if c.get("selectable") else f" (not selectable: {c.get('exclusionReason', 'unknown')})"
     evidence = " ".join(f"{key}={c.get(key) if c.get(key) is not None else 'unknown'}" for key in EVIDENCE_COLUMNS)
     return (f"  - {role:<10} rank {c.get('rank')} {c.get('source')} score {c.get('score')} "
             f"mid ({c['mid'][0]:.0f},{c['mid'][1]:.0f}) length {c['length']:.0f}px "
@@ -353,7 +390,15 @@ def _fmt_candidate(c: dict) -> str:
 
 def render_text(info: dict[str, Any]) -> str:
     trigger = info["trigger"]
+    phone = info.get("phone") or {}
+    commit = phone.get("gitCommit") or "unknown"
+    dirty = phone.get("gitDirty", "unknown")
+    is_dirty = dirty is True or dirty == "true"
+    build_warning = " ⚠" if commit == "unknown" or is_dirty or dirty == "unknown" else ""
+    station = phone.get("station") or "none"
     lines = [f"# Auto clip {info['clipID']}", "",
+             f"- build: {commit}{'+dirty' if is_dirty else ''} {phone.get('buildTime') or 'unknown'}{build_warning}",
+             f"- station: {station}{' ⚠' if station == 'none' else ''}",
              f"- trigger: **{trigger.get('kind')}** colour={trigger.get('color')} frame={trigger.get('frameID')} "
              f"t={trigger.get('timestamp')}",
              f"- reason: {trigger.get('reason')}"]
@@ -367,6 +412,12 @@ def render_text(info: dict[str, Any]) -> str:
                  f"{info.get('recordedFrames')} frames; fps {camera.get('captureFPS')} (measured {camera.get('measuredFPS')}), "
                  f"thermal {camera.get('thermalAtTrigger')}→{camera.get('thermalAtSave')}, exposure bias {camera.get('exposureBias')}")
     lines.append(f"- play area: {info.get('playArea')}; ignore zones: {info.get('ignoreZones')}")
+    lines.append("- ignore excluded frames by zone (stored candidates only; thinned/omitted candidates are not counted):")
+    for color in ("red", "blue"):
+        counts = info.get("ignoreExcludedFrames", {}).get(color, {})
+        missing = info.get("exclusionUnknownFrames", {}).get(color, 0)
+        text = ", ".join(f"zone {zone}={count} frames" for zone, count in counts.items()) or "none recorded"
+        lines.append(f"  - {color}: {text}; unknown reason frames={missing}")
     if trigger.get("kind") == "jump":
         jump = info.get("jump") or {}
         lines.append(f"- jump: {trigger.get('jumpDistancePx')} px (threshold {trigger.get('jumpThresholdPx')} px, "
@@ -383,6 +434,15 @@ def render_text(info: dict[str, Any]) -> str:
                      f"trackLockSuppressed={suppression if suppression is not None else 'unknown'}"
                      + ("" if candidates else " (none stored)"))
         lines += [_fmt_candidate(c) for c in candidates]
+        components = info.get("triggerFrameComponents", {}).get(color, {"state": "unknown"})
+        columns = components.get("columns", [])
+        reasons = Counter()
+        for row in components.get("rows", []):
+            entry = dict(zip(columns, row))
+            reasons[f"{entry.get('stage')}/{entry.get('reason')}"] += 1
+        lines.append(f"  - components: {components.get('state', 'unknown')}; "
+                     f"mask={components.get('maskPixels', 'unknown')} emitterMask={components.get('emitterMaskPixels', 'unknown')}; "
+                     f"omitted={components.get('omitted', 'unknown')}; stage/reason counts={dict(reasons)}")
     lines += ["", "## Images (time order)"]
     for index, image in enumerate(info["images"], 1):
         lines.append(f"{index}. {image['role']} frame {image['frameID']} ({image['offsetSeconds']:+.2f} s) {image['path']}")

@@ -9,6 +9,422 @@ import XCTest
 /// Auto clip (AutoClip.swift): pure trigger rules, rate limiting, suspend policy,
 /// PC commands, deferred upload and one synthetic clip written end to end.
 final class AutoClipTests: XCTestCase {
+    func testLegacyIdentityAndIgnoreZoneDecode() throws {
+        let legacy = #"{"deviceModel":"iPhone14,5","deviceID":"old","appVersion":"1.0","appBuild":"20261024","station":"A","destination":"Mac","manualIPOverride":false}"#
+        let phone = try JSONDecoder().decode(PhoneSaberIdentity.self, from: Data(legacy.utf8))
+        for key in ["gitCommit", "gitDirty", "buildTime"] {
+            XCTAssertEqual(phone.jsonObject[key] as? String, "unknown")
+        }
+        XCTAssertNil(phone.gitCommit)
+        let rectangle = #"{"minX":0.1,"minY":0.2,"maxX":0.8,"maxY":0.9}"#
+        let zone = try JSONDecoder().decode(SaberIgnoreZone.self, from: Data(rectangle.utf8))
+        XCTAssertNil(zone.objectEndpoints)
+        XCTAssertNil(zone.objects)
+        XCTAssertTrue(zone.ignores((P(x: 20, y: 30), P(x: 20, y: 70)), width: 100, height: 100))
+    }
+
+    func testExclusionReasonsUseCompetitionPredicateAndSerialize() throws {
+        let ignored = Self.candidate((20, 30), (20, 70))
+        let outside = Self.candidate((90, 30), (90, 70))
+        var ineligible = ignored
+        ineligible.isEmitterEligible = false
+        let inside = Self.candidate((50, 30), (50, 70))
+        let zone = SaberIgnoreZone(minX: 0.1, minY: 0.2, maxX: 0.3, maxY: 0.8)
+        let area = SaberPlayArea(minX: 0.1, minY: 0.1, maxX: 0.8, maxY: 0.9)
+        let list = [ignored, outside, ineligible, inside]
+        let expected = ["ignore:0,1", "outsidePlayArea", "ineligible", "none"]
+        for (candidate, reason) in zip(list, expected) {
+            let result = AutoClipCompetition.exclusionReason(candidate, width: 100, height: 100,
+                zones: [zone, zone], playArea: area)
+            XCTAssertEqual(result ?? "none", reason)
+            XCTAssertEqual(AutoClipCompetition.selectable(candidate, width: 100, height: 100,
+                zones: [zone, zone], playArea: area), result == nil)
+        }
+        let buffers = AutoClipBuffers(width: 100, height: 100, captureFPS: 30)
+        let analysis = SaberFrameAnalysis(candidates: [.red: list], selected: [:])
+        var pixel: UInt8 = 0
+        withUnsafePointer(to: &pixel) { base in
+            buffers.storeRecord(ObservedFrame(baseAddress: base, width: 100, height: 100, bytesPerRow: 400,
+                sequence: 1, timestamp: 1, processingSeconds: 0, analysis: analysis,
+                ignoreZones: [.red: [zone, zone]], playArea: area, captureFPS: 30),
+                red: AutoClipCompetition(), blue: AutoClipCompetition())
+        }
+        let capture = AutoClipCapture(clipID: "reasons", trigger: AutoClipTriggerEvent(kind: .manual, frameID: 1, timestamp: 1),
+            buffers: buffers, windowStart: 0, windowEnd: 2, captureFPS: 30,
+            environmentAtTrigger: AutoClipEnvironment(), environmentAtSave: AutoClipEnvironment(),
+            ignoreZones: [.red: [zone, zone]], playArea: area, sessionClipIndex: 1, rejectedTriggers: [:])
+        let content = AutoClipBundleContent(capture: capture, slots: [0])
+        var sources: [String] = []
+        let entry = content.frameEntries(level: 0, sources: &sources)[0]["red"] as! [String: Any]
+        let column = AutoClipBundleContent.candidateColumns.firstIndex(of: "exclusionReason")!
+        for row in entry["c"] as! [[Any]] {
+            XCTAssertEqual(row[column] as? String, expected[row[0] as! Int])
+        }
+        let frame = (content.frameContext(frameID: 1, sessionID: "reasons")["frames"] as! [[String: Any]])[0]
+        for candidate in (frame["red"] as! [String: Any])["autoClipCandidates"] as! [[String: Any]] {
+            XCTAssertEqual(candidate["exclusionReason"] as? String, expected[candidate["index"] as! Int])
+        }
+    }
+
+    func testIgnoreZoneDetailsKeepShapesAndBoundTotalObjects() throws {
+        let buffers = AutoClipBuffers(width: 100, height: 100, captureFPS: 30)
+        let endpoints = SaberIgnoreZone.ObjectEndpoints(x1: 0.123456789, y1: 0.2, x2: 0.3, y2: 0.4)
+        var zone = SaberIgnoreZone(minX: 0.1, minY: 0.2, maxX: 0.8, maxY: 0.9)
+        zone.objectEndpoints = endpoints
+        zone.objects = Array(repeating: endpoints, count: 40)
+        let oldZone = SaberIgnoreZone(minX: 0.1, minY: 0.2, maxX: 0.8, maxY: 0.9)
+        let capture = AutoClipCapture(clipID: "shapes", trigger: AutoClipTriggerEvent(kind: .manual, frameID: 1, timestamp: 1),
+            buffers: buffers, windowStart: 0, windowEnd: 2, captureFPS: 30,
+            environmentAtTrigger: AutoClipEnvironment(), environmentAtSave: AutoClipEnvironment(),
+            ignoreZones: [.red: [zone, zone, zone], .blue: [zone, zone, oldZone]], playArea: nil,
+            sessionClipIndex: 1, rejectedTriggers: [:])
+        let content = AutoClipBundleContent(capture: capture, slots: [])
+        let json = try JSONSerialization.jsonObject(with: content.summaryData(images: [])) as! [String: Any]
+        let clip = json["autoClip"] as! [String: Any]
+        XCTAssertEqual((clip["ignoreZones"] as! [String: Any])["red"] as? [[Double]], Array(repeating: [0.1, 0.2, 0.8, 0.9], count: 3))
+        let details = clip["ignoreZoneDetails"] as! [String: Any]
+        XCTAssertEqual(details["objectCount"] as? Int, 200)
+        XCTAssertEqual(details["truncated"] as? Int, 72)
+        let red = details["red"] as! [[String: Any]], blue = details["blue"] as! [[String: Any]]
+        XCTAssertEqual((red[0]["objects"] as? [[Double]])?.count, 32)
+        XCTAssertEqual((red[0]["objects"] as? [[Double]])?.first?.first, endpoints.x1)
+        XCTAssertEqual(red[0]["objectEndpoints"] as? [Double], [endpoints.x1, endpoints.y1, endpoints.x2, endpoints.y2])
+        XCTAssertEqual(red[0]["truncated"] as? Int, 8)
+        XCTAssertEqual((blue[1]["objects"] as? [[Double]])?.count, 0)
+        XCTAssertEqual(blue[1]["truncated"] as? Int, 40)
+        XCTAssertTrue(blue[2]["objects"] is NSNull)
+        XCTAssertTrue(blue[2]["objectEndpoints"] is NSNull)
+        XCTAssertNil(content.frameContext(frameID: 1, sessionID: "shapes")["ignoreZoneDetails"])
+    }
+
+    func testEmitterLimitRetainsTerminalDecisionsInsteadOfIntermediatePasses() throws {
+        for color in [SaberColor.red, .blue] {
+            let width = 240, height = 160
+            var bytes = [UInt8](repeating: 8, count: width * height * 4)
+            for n in 0...SaberComponentDiagnostics.limit {
+                for y in 30...31 { for x in (10 + n * 16)...(19 + n * 16) {
+                    let i = (y * width + x) * 4
+                    bytes[i] = color == .blue ? 128 : 12
+                    bytes[i+1] = 24; bytes[i+2] = color == .red ? 128 : 12
+                } }
+            }
+            let analysis = analyzeSabers(in: bytes, width: width, height: height, bytesPerRow: width * 4,
+                redThreshold: ColorThreshold(), blueThreshold: ColorThreshold(), sampleStep: 1,
+                collectComponentDiagnostics: true, shutterEmitter: ShutterEmitterMode(shutter: 2000, iso: 250, enabled: true))
+            let diagnostic = try XCTUnwrap(analysis.componentDiagnostics?[color])
+            XCTAssertEqual(diagnostic.rows.count, SaberComponentDiagnostics.limit)
+            XCTAssertEqual(diagnostic.omitted, 1)
+            XCTAssertTrue(diagnostic.rows.allSatisfy { $0.stage == "emitter" && $0.reason == "passed" })
+        }
+    }
+
+    func testStationaryDiagnosticsPreserveBothColorTrackHistories() throws {
+        for color in [SaberColor.red, .blue] {
+            let off = SaberTrackLock(), on = SaberTrackLock()
+            let still = Self.candidate((100, 40), (100, 130), score: 100)
+            var sawStationary = false
+            for frame in 0..<200 {
+                let now = Double(frame) / 60
+                var candidates = [still]
+                if frame >= 30 && frame < 180 {
+                    let i = frame - 30
+                    let x = 300 + (i % 40 < 20 ? i % 20 : 20 - i % 20) * 12
+                    candidates.append(Self.candidate((x, 250), (x, 330), score: 99))
+                }
+                let diagnostics = SaberComponentDiagnostics()
+                let a = off.select(candidates, color: color, width: 640, height: 480, now: now)
+                let b = on.select(candidates, color: color, width: 640, height: 480, now: now,
+                                  componentDiagnostics: diagnostics)
+                XCTAssertEqual(a?.endpoints.0, b?.endpoints.0)
+                XCTAssertEqual(a?.endpoints.1, b?.endpoints.1)
+                XCTAssertEqual(a?.score.bitPattern, b?.score.bitPattern)
+                if let row = diagnostics.rows.first(where: { $0.reason == "stationary" }) {
+                    sawStationary = true
+                    XCTAssertEqual(row.stage, "postGeneration")
+                    // fixtureの候補bboxは端点の外側に3pxの幅を持つ。
+                    XCTAssertEqual(row.bbox, [97, 37, 103, 133])
+                }
+            }
+            XCTAssertTrue(sawStationary)
+        }
+    }
+
+    func testPostGenerationDiagnosticsUseActualIgnoreAreaAndEligibilityDecisions() throws {
+        let width = 240, height = 160
+        var bytes = [UInt8](repeating: 8, count: width * height * 4)
+        func rectangle(_ x1: Int, _ x2: Int, _ y1: Int, _ y2: Int, _ rgb: (UInt8, UInt8, UInt8)) {
+            for y in y1...y2 { for x in x1...x2 {
+                let i = (y * width + x) * 4
+                bytes[i] = rgb.2; bytes[i+1] = rgb.1; bytes[i+2] = rgb.0; bytes[i+3] = 255
+            } }
+        }
+        rectangle(20, 100, 20, 23, (128, 24, 12))
+        let mode = ShutterEmitterMode(shutter: 2000, iso: 250, enabled: true)
+        for reason in ["ignore", "playArea"] {
+            let zones: [SaberColor: [SaberIgnoreZone]] = reason == "ignore"
+                ? [.red: [SaberIgnoreZone(minX: 0, minY: 0, maxX: 1, maxY: 1)]] : [:]
+            let area = reason == "playArea" ? SaberPlayArea(minX: 0.7, minY: 0.7, maxX: 1, maxY: 1) : nil
+            func run(_ on: Bool) -> SaberFrameAnalysis {
+                analyzeSabers(in: bytes, width: width, height: height, bytesPerRow: width * 4,
+                    redThreshold: ColorThreshold(), blueThreshold: ColorThreshold(),
+                    collectComponentDiagnostics: on, ignoreZones: zones, playArea: area, shutterEmitter: mode)
+            }
+            let off = run(false), on = run(true)
+            XCTAssertNil(off.selected[.red]); XCTAssertNil(on.selected[.red])
+            let row = try XCTUnwrap(on.componentDiagnostics?[.red]?.rows.first { $0.reason == reason })
+            XCTAssertEqual(row.stage, "postGeneration")
+            XCTAssertEqual(row.bbox, [10, 10, 50, 11])
+            XCTAssertEqual(off.candidates[.red]?.map { $0.score.bitPattern }, on.candidates[.red]?.map { $0.score.bitPattern })
+            XCTAssertTrue(on.candidates[.red]?.contains { $0.isEmitterEligible } == true)
+        }
+        // 暗い青と離れた明るい実刃。mainにないauto28の反射抑制を導入しない。
+        bytes = [UInt8](repeating: 8, count: bytes.count)
+        for y in 50...60 { for x in 40...76 {
+            if (x-58)*(x-58)*25 + (y-55)*(y-55)*324 <= 324*25 {
+                rectangle(x, x, y, y, (40, 50, 170))
+            }
+        } }
+        rectangle(130, 205, 95, 99, (8, 12, 255))
+        func blue(_ on: Bool) -> SaberFrameAnalysis {
+            analyzeSabers(in: bytes, width: width, height: height, bytesPerRow: width * 4,
+                redThreshold: ColorThreshold(), blueThreshold: ColorThreshold(), sampleStep: 1,
+                collectComponentDiagnostics: on, shutterEmitter: mode)
+        }
+        let off = blue(false), on = blue(true)
+        XCTAssertEqual(off.selected[.blue]?.0, on.selected[.blue]?.0)
+        XCTAssertEqual(off.selected[.blue]?.1, on.selected[.blue]?.1)
+        XCTAssertEqual(off.candidates[.blue]?.map { $0.score.bitPattern }, on.candidates[.blue]?.map { $0.score.bitPattern })
+        XCTAssertEqual(off.candidates[.blue]?.map { $0.isEmitterEligible }, on.candidates[.blue]?.map { $0.isEmitterEligible })
+        let blueDiagnostics = try XCTUnwrap(on.componentDiagnostics?[.blue])
+        let post = blueDiagnostics.rows.filter { $0.stage == "postGeneration" }
+        XCTAssertFalse(post.contains { $0.reason == "blueSurface" })
+        XCTAssertTrue(on.candidates[.blue]?.contains {
+            $0.source == "shutter-color-emitter" && $0.peakValue == 170 && $0.isEmitterEligible
+        } == true)
+        XCTAssertTrue(post.contains { $0.reason == "ineligible" })
+        // 上限にも重複行を使わず、実際の不適格候補数だけを記録する。
+        XCTAssertEqual(post.count, on.candidates[.blue]?.filter { !$0.isEmitterEligible }.count)
+        XCTAssertEqual(blueDiagnostics.omitted, 0)
+    }
+
+    func testComponentRejectionReasonsAndBoundedCollection() throws {
+        func check(_ points: [PixelPoint], _ reason: String) {
+            var mask = [UInt8](repeating: 0, count: 100 * 100)
+            for p in points { mask[p.y * 100 + p.x] = 1 }
+            let diagnostics = SaberComponentDiagnostics()
+            _ = saberCandidates(in: mask, width: 100, height: 100, componentDiagnostics: diagnostics)
+            XCTAssertEqual(diagnostics.rows.first?.reason, reason)
+            XCTAssertEqual(diagnostics.rows.first?.pixels, points.count)
+            XCTAssertTrue(diagnostics.rows.allSatisfy { $0.length.isFinite && $0.extent.isFinite })
+        }
+        func rectangle(_ w: Int, _ h: Int) -> [PixelPoint] {
+            (10..<(10+h)).flatMap { y in (10..<(10+w)).map { PixelPoint(x: $0, y: y) } }
+        }
+        check([P(x: 10, y: 10)], "area")
+        check(rectangle(50, 50), "areaRatio")
+        check(rectangle(3, 3), "length")
+        check(rectangle(8, 8), "aspect")
+        check((10...90).map { P(x: $0, y: 10) } + (11...90).map { P(x: 10, y: $0) }, "extent")
+        check(rectangle(30, 3), "passed")
+        let diagnostics = SaberComponentDiagnostics()
+        var mask = [UInt8](repeating: 0, count: 10000)
+        for x in stride(from: 0, to: 90, by: 3) { mask[10 * 100 + x] = 1 }
+        _ = saberCandidates(in: mask, width: 100, height: 100, componentDiagnostics: diagnostics)
+        XCTAssertEqual(diagnostics.rows.count, SaberComponentDiagnostics.limit)
+        XCTAssertEqual(diagnostics.omitted, 30 - SaberComponentDiagnostics.limit)
+    }
+
+    func testEmitterDiagnosticReasonsAndRecognitionIdentity() throws {
+        let width = 160, height = 240
+        let mode = ShutterEmitterMode(shutter: 2000, iso: 250, enabled: true)
+        for color in [SaberColor.red, .blue] {
+            for (length, thickness, reason) in [(5, 1, "area"), (7, 2, "emitterAspect"),
+                (90, 12, "emitterWidth"), (166, 7, "emitterArea"), (100, 3, "passed")] {
+                // 面積比境界だけ長辺方向へ配置する。
+                var bytes = [UInt8](repeating: 8, count: width * height * 4)
+                for y in 20..<(20+length) { for x in 20..<(20+thickness) {
+                    let i = (y * width + x) * 4
+                    bytes[i] = color == .blue ? 128 : 12
+                    bytes[i+1] = 24; bytes[i+2] = color == .red ? 128 : 12
+                } }
+                bytes.withUnsafeBufferPointer { b in
+                    func run(_ on: Bool) -> SaberFrameAnalysis {
+                        analyzeSabers(baseAddress: b.baseAddress!, width: width, height: height,
+                            bytesPerRow: width * 4, redThreshold: ColorThreshold(), blueThreshold: ColorThreshold(),
+                            sampleStep: 1, collectComponentDiagnostics: on, shutterEmitter: mode)
+                    }
+                    let off = run(false), on = run(true)
+                    let rows = on.componentDiagnostics?[color]?.rows ?? []
+                    XCTAssertTrue(rows.contains { $0.reason == reason }, "\(color) \(length)x\(thickness): \(rows)")
+                    XCTAssertNil(off.componentDiagnostics)
+                    for c in [SaberColor.red, .blue] {
+                        let a = off.candidates[c] ?? [], b = on.candidates[c] ?? []
+                        XCTAssertEqual(a.count, b.count)
+                        for (a, b) in zip(a, b) {
+                            XCTAssertEqual(a.score.bitPattern, b.score.bitPattern)
+                            XCTAssertEqual(a.isEmitterEligible, b.isEmitterEligible)
+                            XCTAssertEqual(a.endpoints.0, b.endpoints.0); XCTAssertEqual(a.endpoints.1, b.endpoints.1)
+                        }
+                        XCTAssertEqual(off.selected[c]?.0, on.selected[c]?.0)
+                        XCTAssertEqual(off.selected[c]?.1, on.selected[c]?.1)
+                    }
+                }
+            }
+        }
+    }
+
+    func testMainPeakFloorAndMagentaDiagnosticsPreserveRecognition() throws {
+        let width = 240, height = 160
+        let mode = ShutterEmitterMode(shutter: 2000, iso: 250, enabled: true)
+        let cases: [(SaberColor, UInt8, (UInt8, UInt8, UInt8), String, String?)] = [
+            (.red, 40, (160, 24, 12), "emitterPeak", nil),
+            (.blue, 40, (12, 24, 160), "emitterPeak", nil),
+            (.red, 40, (220, 24, 12), "passed", "shutter-color-emitter"),
+            (.blue, 40, (12, 24, 220), "passed", "shutter-color-emitter"),
+            (.red, 8, (220, 30, 100), "passed", "shutter-magenta-emitter")
+        ]
+        for (color, background, rgb, reason, source) in cases {
+            var bytes = [UInt8](repeating: background, count: width * height * 4)
+            for y in 30...32 { for x in 30...109 {
+                let i = (y * width + x) * 4
+                bytes[i] = rgb.2; bytes[i+1] = rgb.1; bytes[i+2] = rgb.0; bytes[i+3] = 255
+            } }
+            func run(_ on: Bool) -> SaberFrameAnalysis {
+                analyzeSabers(in: bytes, width: width, height: height, bytesPerRow: width * 4,
+                    redThreshold: ColorThreshold(), blueThreshold: ColorThreshold(), sampleStep: 1,
+                    collectComponentDiagnostics: on, shutterEmitter: mode)
+            }
+            let off = run(false), on = run(true)
+            let diagnostic = try XCTUnwrap(on.componentDiagnostics?[color])
+            XCTAssertTrue(diagnostic.rows.contains { $0.stage == "emitter" && $0.reason == reason })
+            XCTAssertEqual(diagnostic.snapshot.json()["state"] as? String, "collected")
+            if let source {
+                XCTAssertTrue(on.candidates[color]?.contains { $0.source == source && $0.isEmitterEligible } == true)
+            } else {
+                XCTAssertFalse(on.candidates[color]?.contains { $0.source == "shutter-color-emitter" } == true)
+            }
+            for c in [SaberColor.red, .blue] {
+                XCTAssertEqual(off.selected[c]?.0, on.selected[c]?.0)
+                XCTAssertEqual(off.selected[c]?.1, on.selected[c]?.1)
+                let a = off.candidates[c] ?? [], b = on.candidates[c] ?? []
+                XCTAssertEqual(a.count, b.count)
+                for (a, b) in zip(a, b) {
+                    XCTAssertEqual(a.score.bitPattern, b.score.bitPattern)
+                    XCTAssertEqual(a.isEmitterEligible, b.isEmitterEligible)
+                    XCTAssertEqual(a.endpoints.0, b.endpoints.0)
+                    XCTAssertEqual(a.endpoints.1, b.endpoints.1)
+                }
+            }
+        }
+    }
+
+    func testComponentCollectionScheduleLegacyStateAndSavedFrameIdentity() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let off = AutoClipRecorder(directory: directory, enabled: true, componentDiagnostics: false)
+        XCTAssertFalse(off.wantsComponentDiagnostics(timestamp: 1))
+        let recorder = AutoClipRecorder(directory: directory, enabled: true, componentDiagnostics: true)
+        XCTAssertTrue(recorder.wantsComponentDiagnostics(timestamp: 1))
+        XCTAssertEqual(SaberComponentDiagnosticSnapshot.state(in: [:]), "unknown")
+        let defaults = UserDefaults(suiteName: UUID().uuidString)!
+        XCTAssertFalse(AutoClipSettings.storedComponentDiagnostics(defaults))
+        let pixels = [UInt8](repeating: 0, count: 16 * 16 * 4)
+        let buffers = AutoClipBuffers(width: 16, height: 16, captureFPS: 30)
+        pixels.withUnsafeBufferPointer { b in
+            let analysis = analyzeSabers(baseAddress: b.baseAddress!, width: 16, height: 16, bytesPerRow: 64,
+                redThreshold: ColorThreshold(), blueThreshold: ColorThreshold(), collectComponentDiagnostics: true)
+            XCTAssertEqual(analysis.componentDiagnostics?[.red]?.snapshot.json()["state"] as? String, "maskEmpty")
+            let frame = ObservedFrame(baseAddress: b.baseAddress!, width: 16, height: 16, bytesPerRow: 64,
+                sequence: 47, timestamp: 1, processingSeconds: 0, analysis: analysis,
+                ignoreZones: [:], playArea: nil, captureFPS: 30)
+            buffers.storeRecord(frame, red: AutoClipCompetition(), blue: AutoClipCompetition())
+            buffers.storeEvent(frame)
+            recorder.observe(frame)
+            XCTAssertFalse(recorder.wantsComponentDiagnostics(timestamp: 1.1))
+            XCTAssertTrue(recorder.wantsComponentDiagnostics(timestamp: 1.31))
+        }
+        let capture = AutoClipCapture(clipID: "diagnostics", trigger: event(.manual, at: 1), buffers: buffers,
+            windowStart: 0, windowEnd: 2, captureFPS: 30, environmentAtTrigger: AutoClipEnvironment(),
+            environmentAtSave: AutoClipEnvironment(), ignoreZones: [:], playArea: nil,
+            sessionClipIndex: 1, rejectedTriggers: [:], componentDiagnosticsEnabled: true)
+        let content = AutoClipBundleContent(capture: capture, slots: [0])
+        try content.validateFrameIdentity()
+        let data = try JSONSerialization.data(withJSONObject: content.frameContext(frameID: 47, sessionID: "diagnostics"))
+        XCTAssertLessThan(data.count, 32 * 1024)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let path = directory.appendingPathComponent("frame_47.json")
+        try data.write(to: path)
+        let saved = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: path)) as? [String: Any])
+        let frame = try XCTUnwrap((saved["frames"] as? [[String: Any]])?.first)
+        XCTAssertEqual(frame["frameID"] as? Int, 47)
+        XCTAssertEqual(frame["timestamp"] as? Double, 1)
+        XCTAssertEqual(SaberComponentDiagnosticSnapshot.state(in: frame["red"] as? [String: Any] ?? [:]), "maskEmpty")
+        let snapshot = try XCTUnwrap(buffers.frames[0].componentDiagnostics?[.red])
+        XCTAssertEqual(try JSONDecoder().decode(SaberComponentDiagnosticSnapshot.self,
+            from: JSONEncoder().encode(snapshot)), snapshot)
+    }
+
+    func testComponentPreflightBoundAndPredictableGapTrigger() throws {
+        let buffers = AutoClipBuffers(width: 480, height: 640, captureFPS: 60)
+        let diagnostics = SaberComponentDiagnostics()
+        for path in ["color-mask", "shutter-color-emitter"] {
+            for i in 0..<20 {
+                diagnostics.append(SaberComponentDiagnostic(path: path, stage: "component", reason: "aspect",
+                    bbox: [i, i, 240, 320], pixels: 500, length: 123.45678901234567,
+                    meanWidth: 12.345678901234567, aspect: 1.2345678901234567, extent: 0.12345678901234567))
+            }
+        }
+        for _ in 0..<20 {
+            diagnostics.append(SaberComponentDiagnostic(path: "shutter-color-emitter", stage: "postGeneration", reason: "stationary",
+                bbox: [0, 0, 240, 320], pixels: 500, length: 123.45678901234567,
+                meanWidth: 12.345678901234567, aspect: 1.2345678901234567, extent: 0.12345678901234567))
+        }
+        XCTAssertEqual(diagnostics.rows.count, 3 * SaberComponentDiagnostics.limit)
+        XCTAssertEqual(diagnostics.omitted, 60 - diagnostics.rows.count)
+        diagnostics.maskPixels = 500
+        var analysis = SaberFrameAnalysis(candidates: [.red: (0..<12).map { _ in Self.candidate((0, 0), (400, 500)) },
+                                                       .blue: (0..<12).map { _ in Self.candidate((0, 0), (400, 500)) }], selected: [:])
+        analysis.componentDiagnostics = [.red: diagnostics, .blue: diagnostics]
+        var pixel: UInt8 = 0
+        withUnsafePointer(to: &pixel) { b in
+            buffers.storeRecord(ObservedFrame(baseAddress: b, width: 480, height: 640, bytesPerRow: 1920,
+                sequence: 1, timestamp: 1, processingSeconds: 0, analysis: analysis,
+                ignoreZones: [:], playArea: nil, captureFPS: 60), red: AutoClipCompetition(), blue: AutoClipCompetition())
+        }
+        let capture = AutoClipCapture(clipID: "bound", trigger: event(.manual, at: 1), buffers: buffers,
+            windowStart: 0, windowEnd: 2, captureFPS: 60, environmentAtTrigger: AutoClipEnvironment(),
+            environmentAtSave: AutoClipEnvironment(), ignoreZones: [:], playArea: nil,
+            sessionClipIndex: 1, rejectedTriggers: [:], componentDiagnosticsEnabled: true)
+        let content = AutoClipBundleContent(capture: capture, slots: [0])
+        // 実アプリの上限は片色8zone。全zone一致の最長コードを24候補に入れても32KiB内。
+        for i in 0..<24 {
+            buffers.candidates[i].exclusionReason = "ignore:0,1,2,3,4,5,6,7"
+            buffers.candidates[i].peakValue = 255
+            buffers.candidates[i].emitterScore = 0.8765
+            buffers.candidates[i].highValueRatio = 0.4567
+            buffers.candidates[i].meanValue = 234.5
+            buffers.candidates[i].nearSaturationPresent = true
+            buffers.candidates[i].colorPurity = 0.5678
+            buffers.candidates[i].componentArea = 480
+            buffers.candidates[i].aspect = 12.3456
+        }
+        let data = try JSONSerialization.data(withJSONObject: content.frameContext(frameID: 1, sessionID: "bound"))
+        XCTAssertLessThanOrEqual(data.count, 32 * 1024)
+        print("component-preflight worst fixture bytes=\(data.count), rows/color=\(diagnostics.rows.count)")
+        var detector = AutoClipTriggerDetector()
+        let winner = (P(x: 10, y: 10), P(x: 100, y: 100))
+        for i in 0...60 {
+            _ = detector.observe(color: .red, sequence: UInt64(i+1), timestamp: Double(i)/60,
+                winner: winner, competitorCount: 0, competitor: nil, width: 480, height: 640, otherSelected: true)
+        }
+        for i in 1...7 {
+            XCTAssertFalse(detector.mayTriggerNextFrame)
+            _ = detector.observe(color: .red, sequence: UInt64(61+i), timestamp: 1+Double(i)/60,
+                winner: nil, competitorCount: 0, competitor: nil, width: 480, height: 640, otherSelected: true)
+        }
+        XCTAssertTrue(detector.mayTriggerNextFrame)
+    }
+
     private typealias P = PixelPoint
 
     static func candidate(_ a: (Int, Int), _ b: (Int, Int), eligible: Bool = true,
@@ -315,7 +731,8 @@ final class AutoClipTests: XCTestCase {
 
     func testBundleMetadataSerializesRealOutputSuppressionAndEvidence() throws {
         let identity = PhoneSaberIdentity(deviceModel: "iPhone16,2", deviceID: "test-device", appVersion: "1.0",
-            appBuild: "20261024", station: "B", destination: "192.168.1.2:5005/5006", manualIPOverride: true)
+            appBuild: "20261024", station: "B", destination: "192.168.1.2:5005/5006", manualIPOverride: true,
+            gitCommit: "abcdef123456", gitDirty: "true", buildTime: "2026-10-28T01:02:03Z")
         var winner = Self.candidate((100, 100), (100, 300))
         winner.observerEmitterInputs = SaberObserverEmitterInputs(emitterScore: 0.8,
                                                                  nearSaturationPresent: true, aspect: 12.5)
@@ -323,6 +740,10 @@ final class AutoClipTests: XCTestCase {
         var analysis = SaberFrameAnalysis(candidates: [.red: [competitor, winner], .blue: [competitor]],
             selected: [.red: winner.endpoints], trackLockSuppressed: [.blue])
         analysis.backgroundMedian = 57
+        let componentDiagnostics = SaberComponentDiagnostics()
+        componentDiagnostics.maskPixels = 1
+        componentDiagnostics.component([P(x: 4, y: 5)], path: "color-close", reason: "area")
+        analysis.componentDiagnostics = [.red: componentDiagnostics]
         let buffers = AutoClipBuffers(width: 480, height: 640, captureFPS: 30)
         var pixel: UInt8 = 0
         withUnsafePointer(to: &pixel) { base in
@@ -336,7 +757,7 @@ final class AutoClipTests: XCTestCase {
             buffers: buffers, windowStart: 0, windowEnd: 2, captureFPS: 30,
             environmentAtTrigger: AutoClipEnvironment(shutter: 1000, shutterISO: 64, shutterEmitter: true, autoExposure: AutoClipAutoExposure(enabled: true, ceilingISO: 64, appliedISO: 50, lastChangeTime: 123, lastChangeReason: "lower"), exposureDurationSeconds: 0.001, iso: 80.5, appVersion: identity.appVersion, identity: identity, signingExpiryRemainingHours: 49),
             environmentAtSave: AutoClipEnvironment(signingExpiryRemainingHours: 48),
-            ignoreZones: [:], playArea: nil, sessionClipIndex: 1, rejectedTriggers: [:])
+            ignoreZones: [:], playArea: nil, sessionClipIndex: 1, rejectedTriggers: [:], componentDiagnosticsEnabled: true)
         let content = AutoClipBundleContent(capture: capture, slots: [0])
         let data = try content.summaryData(images: [])
         let summary = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
@@ -349,6 +770,9 @@ final class AutoClipTests: XCTestCase {
         XCTAssertEqual(camera["appVersion"] as? String, "1.0")
         let phone = try XCTUnwrap(clip["phone"] as? [String: Any])
         XCTAssertEqual(phone as NSDictionary, identity.jsonObject as NSDictionary)
+        XCTAssertEqual(phone["gitCommit"] as? String, "abcdef123456")
+        XCTAssertEqual(phone["gitDirty"] as? String, "true")
+        XCTAssertEqual(phone["buildTime"] as? String, "2026-10-28T01:02:03Z")
         XCTAssertEqual(camera["shutter"] as? Int, 1000)
         XCTAssertEqual(camera["shutterISO"] as? Int, 64)
         XCTAssertEqual(camera["shutterEmitter"] as? Bool, true)
@@ -366,6 +790,12 @@ final class AutoClipTests: XCTestCase {
         let contextFrames = try XCTUnwrap(content.frameContext(frameID: 1, sessionID: "test")["frames"] as? [[String: Any]])
         XCTAssertEqual(contextFrames.first?["backgroundMedian"] as? Int, 57)
         XCTAssertEqual(contextFrames.first?["appliedISO"] as? Double, 50)
+        let componentColor = try XCTUnwrap(contextFrames.first?["red"] as? [String: Any])
+        let componentJSON = try XCTUnwrap(componentColor["components"] as? [String: Any])
+        let componentRows = try XCTUnwrap(componentJSON["rows"] as? [[Any]])
+        XCTAssertEqual(componentRows.first?[2] as? String, "area")
+        XCTAssertEqual(componentRows.first?[7] as? Int, 1)
+        XCTAssertEqual(SaberComponentDiagnosticSnapshot.state(in: contextFrames.first?["blue"] as? [String: Any] ?? [:]), "notCollected")
         let red = try XCTUnwrap(frames.first?["red"] as? [String: Any])
         let blue = try XCTUnwrap(frames.first?["blue"] as? [String: Any])
         XCTAssertEqual(red["sel"] as? [Int], [100, 100, 100, 300])
@@ -405,12 +835,48 @@ final class AutoClipTests: XCTestCase {
             buffers: buffers, windowStart: 0, windowEnd: 5, captureFPS: 120,
             environmentAtTrigger: AutoClipEnvironment(), environmentAtSave: AutoClipEnvironment(),
             ignoreZones: [:], playArea: nil, sessionClipIndex: 1, rejectedTriggers: [:])
-        let data = try AutoClipBundleContent(capture: capture, slots: Array(0..<count)).summaryData(images: [])
+        let content = AutoClipBundleContent(capture: capture, slots: Array(0..<count))
+        let data = try content.summaryData(images: [])
         XCTAssertLessThanOrEqual(data.count, AutoClipLimits.maximumSummaryBytes)
         let summary = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
         let clip = try XCTUnwrap(summary["autoClip"] as? [String: Any])
         XCTAssertTrue((clip["camera"] as? [String: Any])?["signingExpiryRemainingHours"] is NSNull)
+        XCTAssertEqual((clip["componentDiagnostics"] as? [String: Bool])?["enabled"], false)
         let frames = try XCTUnwrap(clip["frames"] as? [[String: Any]])
+        // OFFではframe数・候補数によらずclip単位の小さなメタデータだけを足す。
+        for frame in frames {
+            for color in ["red", "blue"] {
+                XCTAssertNil((frame[color] as? [String: Any])?["components"])
+            }
+        }
+        var legacy = summary
+        var legacyClip = clip
+        legacyClip.removeValue(forKey: "componentDiagnostics")
+        legacy["autoClip"] = legacyClip
+        let legacyData = try JSONSerialization.data(withJSONObject: legacy, options: [.sortedKeys])
+        XCTAssertGreaterThan(data.count - legacyData.count, 0)
+        XCTAssertLessThan(data.count - legacyData.count, 64)
+        let context = content.frameContext(frameID: 361, sessionID: "dense")
+        let contextFrame = try XCTUnwrap((context["frames"] as? [[String: Any]])?.first)
+        for color in ["red", "blue"] {
+            XCTAssertNil((contextFrame[color] as? [String: Any])?["components"])
+        }
+        // ONの予測外フレームは、旧形式のunknownと混ぜず明示する。
+        var enabledCapture = capture
+        enabledCapture.componentDiagnosticsEnabled = true
+        var sources: [String] = []
+        let enabledFrames = AutoClipBundleContent(capture: enabledCapture, slots: [360]).frameEntries(level: 0, sources: &sources)
+        for color in ["red", "blue"] {
+            let entry = try XCTUnwrap(enabledFrames.first?[color] as? [String: Any])
+            XCTAssertEqual((entry["components"] as? [String: String])?["state"], "notCollected")
+        }
+        let enabledContext = AutoClipBundleContent(capture: enabledCapture, slots: [360])
+            .frameContext(frameID: 361, sessionID: "dense")
+        let enabledContextFrame = try XCTUnwrap((enabledContext["frames"] as? [[String: Any]])?.first)
+        for color in ["red", "blue"] {
+            let entry = try XCTUnwrap(enabledContextFrame[color] as? [String: Any])
+            XCTAssertEqual((entry["components"] as? [String: String])?["state"], "notCollected")
+        }
         let trigger = try XCTUnwrap(frames.first { $0["f"] as? Int == 361 })
         for color in ["red", "blue"] {
             let record = try XCTUnwrap(trigger[color] as? [String: Any])

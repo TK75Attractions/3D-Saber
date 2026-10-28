@@ -795,23 +795,104 @@ private func largestZeroRun(in counts: [Int], range: Range<Int>) -> Int {
     return largest
 }
 
+// 診断専用。上限後は画素列を走査せず、省略数だけ増やす。認識からは参照しない。
+struct SaberComponentDiagnostic: Equatable, Codable {
+    var path: String
+    var stage: String
+    var reason: String
+    var bbox: [Int]
+    var pixels: Int
+    var length: Double
+    var meanWidth: Double
+    var aspect: Double
+    var extent: Double
+}
+
+final class SaberComponentDiagnostics {
+    static let limit = 12
+    var candidateScale = 1
+    var sampleStep = 1
+    private var counts = [0, 0, 0]
+    var maskPixels = 0
+    var emitterMaskPixels = 0
+    var rows: [SaberComponentDiagnostic] = []
+    var omitted = 0
+
+    func hasCapacity(path: String, stage: String) -> Bool {
+        counts[stage == "postGeneration" ? 2 : path == "shutter-color-emitter" ? 1 : 0] < Self.limit
+    }
+
+    func append(_ row: @autoclosure () -> SaberComponentDiagnostic) {
+        let value = row()
+        let bucket = value.stage == "postGeneration" ? 2 : value.path == "shutter-color-emitter" ? 1 : 0
+        guard counts[bucket] < Self.limit else { omitted += 1; return }
+        counts[bucket] += 1
+        rows.append(value)
+    }
+
+    func component(_ points: [PixelPoint], path: String, reason: String,
+                   geometry: (Double, Double, Double)? = nil) {
+        guard counts[path == "shutter-color-emitter" ? 1 : 0] < Self.limit else { omitted += 1; return }
+        guard let first = points.first else { return }
+        var minX = first.x, maxX = first.x, minY = first.y, maxY = first.y
+        for p in points {
+            minX = min(minX, p.x); maxX = max(maxX, p.x)
+            minY = min(minY, p.y); maxY = max(maxY, p.y)
+        }
+        let length: Double, aspect: Double, extent: Double
+        if let g = geometry { (length, aspect, extent) = g } else {
+            let mx = points.reduce(0.0) { $0 + Double($1.x) } / Double(points.count)
+            let my = points.reduce(0.0) { $0 + Double($1.y) } / Double(points.count)
+            var xx = 0.0, yy = 0.0, xy = 0.0
+            for p in points {
+                let x = Double(p.x) - mx, y = Double(p.y) - my
+                xx += x*x; yy += y*y; xy += x*y
+            }
+            let a = 0.5 * atan2(2 * xy, xx - yy), ax = cos(a), ay = sin(a)
+            var lo = Double.infinity, hi = -Double.infinity
+            var nl = Double.infinity, nh = -Double.infinity
+            for p in points {
+                let x = Double(p.x) - mx, y = Double(p.y) - my
+                let v = x*ax + y*ay, n = -x*ay + y*ax
+                lo = min(lo, v); hi = max(hi, v); nl = min(nl, n); nh = max(nh, n)
+            }
+            length = hi - lo + 1
+            let width = max(nh - nl + 1, 1)
+            aspect = length / width
+            extent = Double(points.count) / max(length * width, 1)
+        }
+        append(SaberComponentDiagnostic(path: path, stage: "component", reason: reason,
+            bbox: [minX, minY, maxX, maxY], pixels: points.count, length: length,
+            meanWidth: Double(points.count) / max(length, 1), aspect: aspect, extent: extent))
+    }
+}
+
 private func scoredSaberComponent(_ points: [PixelPoint], width: Int, height: Int,
                                   componentMask: SaberComponentMask,
                                   evidence: SaberEvidence?,
                                   source: String = "color-mask",
                                   stageProfile: SaberCandidateStageProfile? = nil,
                                   minimumAreaOverride: Int? = nil,
-                                  collectEndpointDiagnostics: Bool = false) -> SaberCandidate? {
+                                  collectEndpointDiagnostics: Bool = false,
+                                  componentDiagnostics: SaberComponentDiagnostics? = nil,
+                                  diagnosticPath: String = "color-mask") -> SaberCandidate? {
     let shapeStart = stageProfile == nil ? 0 : ProcessInfo.processInfo.systemUptime
     let standardMinimumArea = max(4, minimumAreaOverride
         ?? Int(Double(width * height) * 0.0005))
     // A nearby, foreshortened red blade can be compact at the sampled
     // resolution. Evaluate its existing emitter evidence before discarding it.
     let minimumArea = evidence?.color == .red ? min(standardMinimumArea, 20) : standardMinimumArea
-    guard points.count >= minimumArea else { return nil }
+    // OFFでは理由・geometryの一時状態を更新しない。実際の棄却点でだけ観測する。
+    guard points.count >= minimumArea else {
+        componentDiagnostics?.component(points, path: diagnosticPath, reason: "area")
+        return nil
+    }
     let frameArea = max(Double(width * height), 1)
     let areaRatio = Double(points.count) / frameArea
-    guard areaRatio <= 0.22 else { return nil }
+    guard areaRatio <= 0.22 else {
+        componentDiagnostics?.component(points, path: diagnosticPath, reason: "areaRatio")
+        return nil
+    }
 
     let meanX = points.reduce(0.0) { $0 + Double($1.x) } / Double(points.count)
     let meanY = points.reduce(0.0) { $0 + Double($1.y) } / Double(points.count)
@@ -845,10 +926,21 @@ private func scoredSaberComponent(_ points: [PixelPoint], width: Int, height: In
     let aspect = majorLength / max(minorLength, 1.0)
     let isCompactRed = evidence?.color == .red
         && (points.count < standardMinimumArea || aspect < 1.5)
+    guard majorLength >= max(4.0, Double(min(width, height)) * 0.025) else {
+        componentDiagnostics?.component(points, path: diagnosticPath, reason: "length",
+            geometry: (majorLength, aspect, Double(points.count) / max(majorLength * minorLength, 1.0)))
+        return nil
+    }
+    guard aspect >= (evidence?.color == .red ? 1.0 : 1.5) else {
+        componentDiagnostics?.component(points, path: diagnosticPath, reason: "aspect",
+            geometry: (majorLength, aspect, Double(points.count) / max(majorLength * minorLength, 1.0)))
+        return nil
+    }
     let extent = Double(points.count) / max(majorLength * minorLength, 1.0)
-    guard majorLength >= max(4.0, Double(min(width, height)) * 0.025),
-          aspect >= (evidence?.color == .red ? 1.0 : 1.5),
-          extent >= 0.10 else { return nil }
+    guard extent >= 0.10 else {
+        componentDiagnostics?.component(points, path: diagnosticPath, reason: "extent", geometry: (majorLength, aspect, extent))
+        return nil
+    }
     // The additional longitudinal histogram is only useful for candidates
     // that already pass the cheap geometric gate.
     let body = dominantLongitudinalBody(in: points, projections: projections, meanX: meanX, meanY: meanY, axis: axis)
@@ -1010,7 +1102,10 @@ private func scoredSaberComponent(_ points: [PixelPoint], width: Int, height: In
                 }
             }
         }
-        guard rawCount >= 3 else { return nil }
+        guard rawCount >= 3 else {
+            componentDiagnostics?.component(points, path: diagnosticPath, reason: "area", geometry: (majorLength, aspect, extent))
+            return nil
+        }
         meanValue = valueSum / Double(rawCount)
         highRatio = Double(highCount) / Double(rawCount)
         meanPurity = puritySum / Double(rawCount)
@@ -1223,6 +1318,10 @@ private func scoredSaberComponent(_ points: [PixelPoint], width: Int, height: In
                     longitudinalHighCoverage: longitudinalHighCoverage) : nil
             })
     }
+    // emitterの通過は形状filter側で1回記録し、中間passedで上限を使い切らない。
+    if let componentDiagnostics, diagnosticPath != "shutter-color-emitter" {
+        componentDiagnostics.component(points, path: diagnosticPath, reason: "passed", geometry: (majorLength, aspect, extent))
+    }
     return candidate
 }
 
@@ -1290,7 +1389,9 @@ func saberCandidates(in mask: [UInt8], width: Int, height: Int,
                      stageProfile: SaberCandidateStageProfile? = nil,
                      componentObserver: ((Int) -> Void)? = nil,
                      minimumAreaOverride: Int? = nil,
-                     collectEndpointDiagnostics: Bool = false) -> [SaberCandidate] {
+                     collectEndpointDiagnostics: Bool = false,
+                     componentDiagnostics: SaberComponentDiagnostics? = nil,
+                     diagnosticPath: String = "color-mask") -> [SaberCandidate] {
     guard width > 0, height > 0, mask.count == width * height else { return [] }
     var remaining = mask
     var candidates: [SaberCandidate] = []
@@ -1343,7 +1444,8 @@ func saberCandidates(in mask: [UInt8], width: Int, height: Int,
                                                      ), evidence: evidence,
                                                      stageProfile: stageProfile,
                                                      minimumAreaOverride: minimumAreaOverride,
-                                                     collectEndpointDiagnostics: collectEndpointDiagnostics)
+                                                     collectEndpointDiagnostics: collectEndpointDiagnostics,
+                                  componentDiagnostics: componentDiagnostics, diagnosticPath: diagnosticPath)
                 if let stageProfile {
                     stageProfile.candidateScoringMs +=
                         (ProcessInfo.processInfo.systemUptime - scoreStart) * 1000
@@ -1367,11 +1469,14 @@ func saberCandidate(from points: [PixelPoint], width: Int, height: Int,
                     evidence: SaberEvidence? = nil,
                     source: String = "color-mask",
                     stageProfile: SaberCandidateStageProfile? = nil,
-                    collectEndpointDiagnostics: Bool = false) -> SaberCandidate? {
+                    collectEndpointDiagnostics: Bool = false,
+                    componentDiagnostics: SaberComponentDiagnostics? = nil,
+                    diagnosticPath: String = "color-mask") -> SaberCandidate? {
     var workspace = SaberProposalWorkspace()
     return saberCandidate(from: points, width: width, height: height, evidence: evidence,
                           workspace: &workspace, source: source, stageProfile: stageProfile,
-                          collectEndpointDiagnostics: collectEndpointDiagnostics)
+                          collectEndpointDiagnostics: collectEndpointDiagnostics,
+                                  componentDiagnostics: componentDiagnostics, diagnosticPath: diagnosticPath)
 }
 
 func saberCandidate(from points: [PixelPoint], width: Int, height: Int,
@@ -1379,7 +1484,9 @@ func saberCandidate(from points: [PixelPoint], width: Int, height: Int,
                     workspace: inout SaberProposalWorkspace,
                     source: String = "color-mask",
                     stageProfile: SaberCandidateStageProfile? = nil,
-                    collectEndpointDiagnostics: Bool = false) -> SaberCandidate? {
+                    collectEndpointDiagnostics: Bool = false,
+                    componentDiagnostics: SaberComponentDiagnostics? = nil,
+                    diagnosticPath: String = "color-mask") -> SaberCandidate? {
     guard width > 0, height > 0 else { return nil }
     let validPoints = points.filter { $0.x >= 0 && $0.x < width && $0.y >= 0 && $0.y < height }
     guard let first = validPoints.first else { return nil }
@@ -1415,7 +1522,8 @@ func saberCandidate(from points: [PixelPoint], width: Int, height: Int,
                                 componentMask: componentMask,
                                 evidence: evidence, source: source,
                                 stageProfile: stageProfile,
-                                collectEndpointDiagnostics: collectEndpointDiagnostics)
+                                collectEndpointDiagnostics: collectEndpointDiagnostics,
+                                  componentDiagnostics: componentDiagnostics, diagnosticPath: diagnosticPath)
 }
 
 /// Select one elongated external component, rather than simply the largest color patch.
@@ -1425,7 +1533,8 @@ func saberEndpoints(in mask: [UInt8], width: Int, height: Int,
         .first(where: { $0.isEmitterEligible })?.endpoints
 }
 
-func bestColorCluster(in points: [PixelPoint], width: Int, height: Int, connectionRadius: Int = 1) -> [PixelPoint] {
+func bestColorCluster(in points: [PixelPoint], width: Int, height: Int, connectionRadius: Int = 1,
+                      componentDiagnostics: SaberComponentDiagnostics? = nil) -> [PixelPoint] {
     guard width > 0, height > 0, !points.isEmpty else { return [] }
     let radius = max(connectionRadius, 1)
     var remaining = Set(points.compactMap { point -> Int? in
@@ -1457,7 +1566,11 @@ func bestColorCluster(in points: [PixelPoint], width: Int, height: Int, connecti
 
     let minimumLength = max(4.0, Double(min(width, height)) * 0.025)
     return candidates.compactMap { component -> (Double, [PixelPoint])? in
+        var reason = "area"
+        var geometry: (Double, Double, Double)?
+        defer { componentDiagnostics?.component(component, path: "bestColorCluster", reason: reason, geometry: geometry) }
         guard component.count >= 4, let endpoints = principalAxisEndpoints(component) else { return nil }
+        reason = "length"
         let dx = Double(endpoints.1.x - endpoints.0.x)
         let dy = Double(endpoints.1.y - endpoints.0.y)
         let majorLength = hypot(dx, dy)
@@ -1468,7 +1581,12 @@ func bestColorCluster(in points: [PixelPoint], width: Int, height: Int, connecti
         let normalValues = component.map { Double($0.x) * normal.0 + Double($0.y) * normal.1 }
         let minorLength = (normalValues.max() ?? 0) - (normalValues.min() ?? 0)
         let aspect = majorLength / max(minorLength, 2.0)
+        if componentDiagnostics != nil {
+            geometry = (majorLength, aspect, Double(component.count) / max(majorLength * max(minorLength, 2.0), 1))
+        }
+        reason = "aspect"
         guard aspect >= 1.35 else { return nil }
+        reason = "passed"
         let score = majorLength * sqrt(min(aspect, 12.0)) * log(Double(component.count) + 1.0)
         return (score, component)
     }.sorted { lhs, rhs in
@@ -1610,5 +1728,40 @@ func applyCoreLineGuard(_ candidates: inout [SaberCandidate], evidence: SaberEvi
             candidates[i].source = "core-line-overlinked"
             break
         }
+    }
+}
+
+struct SaberComponentDiagnosticSnapshot: Codable, Equatable {
+    let maskPixels: Int
+    let emitterMaskPixels: Int
+    let sampleStep: Int
+    let rows: [SaberComponentDiagnostic]
+    let omitted: Int
+
+    func json(details: Bool = true) -> [String: Any] {
+        var value: [String: Any] = ["state": maskPixels + emitterMaskPixels == 0 ? "maskEmpty" : "collected",
+            "maskPixels": maskPixels, "emitterMaskPixels": emitterMaskPixels, "omitted": omitted]
+        if details {
+            value["sampleStep"] = sampleStep
+            value["columns"] = ["path", "stage", "reason", "minX", "minY", "maxX", "maxY",
+                                "maskPixels", "length", "meanWidth", "aspect", "extent"]
+            value["rows"] = rows.map { r -> [Any] in
+                [r.path, r.stage, r.reason, r.bbox[0], r.bbox[1], r.bbox[2], r.bbox[3],
+                 r.pixels, r.length, r.meanWidth, r.aspect, r.extent]
+            }
+        }
+        return value
+    }
+
+    // 旧clipに項目がない場合、未収集や空マスクと推定しない。
+    static func state(in color: [String: Any]) -> String {
+        (color["components"] as? [String: Any])?["state"] as? String ?? "unknown"
+    }
+}
+
+extension SaberComponentDiagnostics {
+    var snapshot: SaberComponentDiagnosticSnapshot {
+        SaberComponentDiagnosticSnapshot(maskPixels: maskPixels, emitterMaskPixels: emitterMaskPixels, sampleStep: sampleStep,
+                                         rows: rows, omitted: omitted)
     }
 }

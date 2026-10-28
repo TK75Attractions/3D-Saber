@@ -13,7 +13,8 @@ import ImageIO
 //
 // Cost model (see tools/ios-hot-path/autoclip.py for the host measurement):
 // - every frame: a fixed-size metadata record (≤12 candidates per colour) written
-//   into a preallocated ring, plus the trigger state machine. No allocation.
+//   into a preallocated ring, plus the trigger state machine.
+//   保存する除外候補は短い理由文字列も保持する。画素処理は追加しない。
 // - every 0.3 s: one half-resolution point-sampled BGRA copy (the pixels the
 //   detector's step-2 mask scan reads) into a preallocated 21-slot ring.
 // - only when a clip is taken: three full-resolution copies (trigger frame and the
@@ -23,6 +24,11 @@ import ImageIO
 enum AutoClipSettings {
     static let enabledKey = "PhoneSaber.autoClip.enabled.v1"
     static let directoryName = "AutoClips"
+    // 診断だけの明示opt-in。既存インストールでも既定OFF。
+    static let componentDiagnosticsKey = "PhoneSaber.autoClip.componentDiagnostics.v1"
+    static func storedComponentDiagnostics(_ defaults: UserDefaults = .standard) -> Bool {
+        defaults.bool(forKey: componentDiagnosticsKey)
+    }
 
     /// Default ON.
     static func storedEnabled(_ defaults: UserDefaults = .standard) -> Bool {
@@ -41,6 +47,8 @@ enum AutoClipLimits {
     static let maximumImages = 20
     static let candidatesPerColor = 12
     static let ineligibleCandidatesPerColor = 2
+    static let ignoreObjectsPerZone = 32
+    static let ignoreObjectsTotal = 128
     // 2026-10-21: 6本では1時間で使い切り、青の誤検出の場面が残らなかった。15秒間隔で1曲（約2.5分）最大10本、
     // 送信1回あたり60本まで（曲を続けても残る）。
     static let cooldownSeconds = 15.0
@@ -124,9 +132,26 @@ struct AutoClipCompetition: Equatable {
     /// 競合の範囲判定。追跡中の実winnerは範囲外にも出るため、ここから推定しない。
     static func selectable(_ candidate: SaberCandidate, width: Int, height: Int,
                            zones: [SaberIgnoreZone], playArea: SaberPlayArea?) -> Bool {
-        candidate.isEmitterEligible
-            && (zones.isEmpty || !saberIgnored(candidate.endpoints, width: width, height: height, zones: zones))
-            && (playArea?.containsMidpoint(candidate.endpoints, width: width, height: height) ?? true)
+        exclusionReason(candidate, width: width, height: height, zones: zones,
+                        playArea: playArea, includeZoneIndices: false) == nil
+    }
+
+    // 元の短絡順（eligibility → ignore → play area）を維持する診断用の共通判定。
+    // selectableの照会ではindicesの文字列を作らず、保存する候補だけ全一致zoneを記録する。
+    static func exclusionReason(_ candidate: SaberCandidate, width: Int, height: Int,
+                                zones: [SaberIgnoreZone], playArea: SaberPlayArea?,
+                                includeZoneIndices: Bool = true) -> String? {
+        guard candidate.isEmitterEligible else { return "ineligible" }
+        var ignored = ""
+        for (index, zone) in zones.enumerated() where zone.ignores(candidate.endpoints, width: width, height: height) {
+            if !includeZoneIndices { return "ignore" }
+            ignored += ignored.isEmpty ? "\(index)" : ",\(index)"
+        }
+        if !ignored.isEmpty { return "ignore:" + ignored }
+        guard playArea?.containsMidpoint(candidate.endpoints, width: width, height: height) ?? true else {
+            return "outsidePlayArea"
+        }
+        return nil
     }
 
     /// Two candidates are different objects when their boxes do not touch, or their
@@ -190,6 +215,12 @@ struct AutoClipTriggerDetector {
     }
     private var red = ColorState()
     private var blue = ColorState()
+
+    // 判定は変えず、次フレームがgap/confusion発火位置になり得ることだけ通知する。
+    var mayTriggerNextFrame: Bool {
+        [red, blue].contains { $0.missingRun == AutoClipTriggerPolicy.gapFrames - 1
+            || $0.confusionRun == AutoClipTriggerPolicy.confusionFrames - 1 }
+    }
 
     mutating func reset() { red = ColorState(); blue = ColorState() }
 
@@ -392,6 +423,7 @@ struct AutoClipCandidateRecord {
     var aspect: Float? = nil
     var flags: UInt8 = 0
     var source = ""
+    var exclusionReason = "unknown"
 }
 
 struct AutoClipColorRecord {
@@ -408,6 +440,7 @@ struct AutoClipFrameRecord {
     var frameID: UInt64 = 0
     var timestamp: Double = 0
     var processingMs: Float = 0
+    var componentDiagnostics: [SaberColor: SaberComponentDiagnosticSnapshot]?
     var backgroundMedian: Int?
     var appliedISO: Float?
     var red = AutoClipColorRecord()
@@ -496,11 +529,12 @@ final class AutoClipBuffers {
         eventCount += 1
     }
 
-    /// Writes the metadata record of this frame in place (no allocation).
+    /// 固定リングへ書く。保存する除外候補だけ理由の短い文字列も保持する。
     func storeRecord(_ frame: ObservedFrame, red: AutoClipCompetition, blue: AutoClipCompetition) {
         let slot = frameNext
         frames[slot].frameID = frame.sequence
         frames[slot].timestamp = frame.timestamp
+        frames[slot].componentDiagnostics = frame.analysis.componentDiagnostics?.mapValues { $0.snapshot }
         frames[slot].backgroundMedian = frame.analysis.backgroundMedian
         frames[slot].appliedISO = frame.appliedISO
         frames[slot].processingMs = Float(frame.processingSeconds * 1000)
@@ -571,6 +605,8 @@ final class AutoClipBuffers {
                 candidates[target].aspect = candidate.observerEmitterInputs.map { Float($0.aspect) }
                 candidates[target].flags = flags
                 candidates[target].source = candidate.source
+                candidates[target].exclusionReason = AutoClipCompetition.exclusionReason(candidate,
+                    width: frame.width, height: frame.height, zones: zones, playArea: frame.playArea) ?? "none"
                 stored += 1
             }
         }
@@ -651,6 +687,8 @@ struct AutoClipCapture {
     let playArea: SaberPlayArea?
     let sessionClipIndex: Int
     let rejectedTriggers: [String: Int]
+    // 未収集はclip単位で示し、OFF時に全フレームへ同じ値を書かない。
+    var componentDiagnosticsEnabled: Bool = false
 }
 
 final class AutoClipRecorder: FrameAnalysisObserver {
@@ -684,6 +722,7 @@ final class AutoClipRecorder: FrameAnalysisObserver {
     private var sequenceOffset: UInt64 = 0
     private let writer: AutoClipWriter
     private let clipNamer: () -> String
+    private let collectComponents: Bool
 
     /// Called on the writer queue after a clip bundle was published (or failed).
     var onClipSaved: ((Result<URL, Error>) -> Void)?
@@ -693,8 +732,10 @@ final class AutoClipRecorder: FrameAnalysisObserver {
     var onLog: ((String) -> Void)?
 
     init(directory: URL, enabled: Bool,
+         componentDiagnostics: Bool = AutoClipSettings.storedComponentDiagnostics(),
          clipNamer: @escaping () -> String = AutoClipRecorder.timestampName) {
         self.enabled = enabled
+        self.collectComponents = componentDiagnostics
         self.writer = AutoClipWriter(directory: directory.appendingPathComponent(AutoClipSettings.directoryName))
         self.clipNamer = clipNamer
         status.enabled = enabled
@@ -750,6 +791,19 @@ final class AutoClipRecorder: FrameAnalysisObserver {
     }
 
     // MARK: Frame queue
+
+    // フレームキューからだけ呼ぶ。context、予測可能な発火点、event後2枚で収集する。
+    // 突発的なjump発火点は事前に分からないので、未収集になり得る。
+    func wantsComponentDiagnostics(timestamp: Double) -> Bool {
+        guard collectComponents, timestamp.isFinite else { return false }
+        lock.lock()
+        let active = enabled && suspendedReason == nil
+        let manual = manualRequest != nil
+        lock.unlock()
+        guard active else { return false }
+        return manual || (pending == nil && detector.mayTriggerNextFrame) || (pending != nil && (buffers?.eventCount ?? AutoClipLimits.eventFrames) < AutoClipLimits.eventFrames)
+            || timestamp - (buffers?.lastContextTime ?? -Double.infinity) >= AutoClipLimits.contextInterval
+    }
 
     func observe(_ input: ObservedFrame) {
         lock.lock()
@@ -884,7 +938,8 @@ final class AutoClipRecorder: FrameAnalysisObserver {
             captureFPS: current.captureFPS,
             environmentAtTrigger: current.environment, environmentAtSave: environmentNow,
             ignoreZones: current.zones, playArea: current.area,
-            sessionClipIndex: limiter.automaticClipsThisSession, rejectedTriggers: limiter.rejected)
+            sessionClipIndex: limiter.automaticClipsThisSession, rejectedTriggers: limiter.rejected,
+            componentDiagnosticsEnabled: collectComponents)
         lock.lock(); writesInFlight += 1; lock.unlock()
         writer.write(capture) { [weak self] result in
             guard let self else { return }
@@ -1081,7 +1136,7 @@ struct AutoClipBundleContent {
 
     static let candidateColumns = ["rank", "x1", "y1", "x2", "y2", "minX", "minY", "maxX", "maxY",
                                    "score", "flags", "source", "peakValue", "emitterScore", "highValueRatio",
-                                   "meanValue", "nearSaturationPresent", "colorPurity", "componentArea", "aspect"]
+                                   "meanValue", "nearSaturationPresent", "colorPurity", "componentArea", "aspect", "exclusionReason"]
 
     let capture: AutoClipCapture
     let slots: [Int]
@@ -1162,10 +1217,14 @@ struct AutoClipBundleContent {
                          Int(c.peakValue), c.emitterScore.map { round4(Double($0)) } ?? NSNull(),
                          round4(Double(c.highValueRatio)), round1(Double(c.meanValue)),
                          c.nearSaturationPresent ?? NSNull(), round4(Double(c.colorPurity)),
-                         Int(c.componentArea), c.aspect.map { round4(Double($0)) } ?? NSNull()])
+                         Int(c.componentArea), c.aspect.map { round4(Double($0)) } ?? NSNull(), c.exclusionReason])
         }
         var entry: [String: Any] = ["n": Int(record.candidateCount), "e": Int(record.eligibleCount),
                                     "k": Int(record.competitorCount), "sup": record.trackLockSuppressed, "c": rows]
+        if capture.componentDiagnosticsEnabled {
+            entry["components"] = buffers.frames[slot].componentDiagnostics?[colorIndex == 0 ? .red : .blue]?.json(details: false)
+                ?? ["state": "notCollected"]
+        }
         entry["sel"] = record.hasSelection ? [Int(record.x1), Int(record.y1), Int(record.x2), Int(record.y2)] : NSNull()
         return entry
     }
@@ -1261,7 +1320,38 @@ struct AutoClipBundleContent {
         func zones(_ color: SaberColor) -> [[Double]] {
             (capture.ignoreZones[color] ?? []).map { [round4($0.minX), round4($0.minY), round4($0.maxX), round4($0.maxY)] }
         }
+        // 詳細はsummaryだけに置き、各frameContextへ複製しない。値は正規化座標を精度を落とさず残す。
+        var remainingObjects = AutoClipLimits.ignoreObjectsTotal
+        var totalObjects = 0, truncatedObjects = 0
+        func zoneDetails(_ color: SaberColor) -> [[String: Any]] {
+            (capture.ignoreZones[color] ?? []).enumerated().map { index, zone in
+                func endpoints(_ object: SaberIgnoreZone.ObjectEndpoints) -> [Double] {
+                    [object.x1, object.y1, object.x2, object.y2]
+                }
+                let count = zone.objects?.count ?? 0
+                let retained = min(count, AutoClipLimits.ignoreObjectsPerZone, remainingObjects)
+                remainingObjects -= retained
+                totalObjects += count
+                truncatedObjects += count - retained
+                return ["index": index, "rect": [zone.minX, zone.minY, zone.maxX, zone.maxY],
+                        "objectEndpoints": zone.objectEndpoints.map(endpoints) ?? NSNull(),
+                        "objects": zone.objects.map { $0.prefix(retained).map(endpoints) } ?? NSNull(),
+                        "objectCount": count, "truncated": count - retained]
+            }
+        }
+        let redDetails = zoneDetails(.red), blueDetails = zoneDetails(.blue)
+        let ignoreDetails: [String: Any] = ["red": redDetails, "blue": blueDetails,
+            "coordinateSpace": "frame 0..1 (rect may include the configured margin outside frame)",
+            "rectColumns": ["minX", "minY", "maxX", "maxY"], "objectColumns": ["x1", "y1", "x2", "y2"],
+            "objectsPerZoneLimit": AutoClipLimits.ignoreObjectsPerZone, "objectsTotalLimit": AutoClipLimits.ignoreObjectsTotal,
+            "objectCount": totalObjects, "truncated": truncatedObjects]
         let area: Any = capture.playArea.map { [round4($0.minX), round4($0.minY), round4($0.maxX), round4($0.maxY)] } ?? NSNull()
+        let componentMetadata: [String: Any] = capture.componentDiagnosticsEnabled ? ["enabled": true, "version": 1, "limitPerBucket": SaberComponentDiagnostics.limit,
+                "buckets": ["normal", "shutterEmitter", "postGeneration"],
+                "coordinates": "mask pixels; multiply bbox, length and meanWidth by sampleStep=2 for source pixels",
+                "geometry": "meanWidth=maskPixels/length; component aspect=PCA major/minor span; emitter aspect=length/max(meanWidth,1); repeated proposals are separate rows",
+                "missing": "unknown (legacy clip); notCollected is explicit",
+                "collection": "context images, predictable gap/confusion triggers and next two event images; unexpected jump trigger may be notCollected"] : ["enabled": false]
         let autoClip: [String: Any] = [
             // 転送summaryのv1 envelopeを保ち、AutoClip内部のschemaを更新する。
             "formatVersion": 2,
@@ -1280,7 +1370,8 @@ struct AutoClipBundleContent {
             "contextImages": ["scale": 0.5, "width": buffers.halfWidth, "height": buffers.halfHeight,
                               "intervalSeconds": AutoClipLimits.contextInterval,
                               "sampling": "point sample of every second pixel and row (the pixels the step-2 detector mask scan reads); coordinates in metadata are full-resolution"],
-            "phone": capture.environmentAtTrigger.identity?.jsonObject ?? [:],
+            "phone": capture.environmentAtTrigger.identity?.jsonObject
+                ?? ["gitCommit": "unknown", "gitDirty": "unknown", "buildTime": "unknown"],
             "camera": ["captureFPS": capture.captureFPS, "measuredFPS": round1(measuredFPS),
                        "signingExpiryRemainingHours": capture.environmentAtSave.signingExpiryRemainingHours ?? NSNull(),
                        "exposureBias": capture.environmentAtTrigger.exposureBias,
@@ -1294,6 +1385,7 @@ struct AutoClipBundleContent {
                        "thermalAtSave": capture.environmentAtSave.thermal,
                        "appVersion": capture.environmentAtTrigger.appVersion],
             "ignoreZones": ["red": zones(.red), "blue": zones(.blue), "coordinateSpace": "frame 0..1"],
+            "ignoreZoneDetails": ignoreDetails,
             "playArea": area,
             "sessionClipIndex": capture.sessionClipIndex,
             "rejectedTriggersThisSession": capture.rejectedTriggers,
@@ -1303,11 +1395,13 @@ struct AutoClipBundleContent {
                                "selectable": Int(AutoClipCandidateRecord.selectable),
                                "selected": Int(AutoClipCandidateRecord.selected),
                                "competitor": Int(AutoClipCandidateRecord.competitor)],
+            "componentDiagnostics": componentMetadata,
             "candidateLimit": ["perColor": AutoClipLimits.candidatesPerColor,
                                "ineligiblePerColor": AutoClipLimits.ineligibleCandidatesPerColor],
             "frameKeys": ["f": "frameID", "t": "timestamp (s)", "ms": "detection ms",
                           "n": "candidates", "e": "eligible", "k": "separated competitors",
-                          "sup": "track lock suppressed output", "sel": "actual analyzeSabers selected endpoints", "c": "stored candidates (candidateColumns)"],
+                          "sup": "track lock suppressed output", "sel": "actual analyzeSabers selected endpoints", "c": "stored candidates (candidateColumns)",
+                          "exclusionReason": "first failing selectable check: ineligible, ignore:<all matching color-local zero-based zone indices>, outsidePlayArea; none if selectable; missing=unknown. Competition heuristic, not actual track-lock rejection."],
             "thinning": thinning,
             "sources": sources,
             "frames": frames
@@ -1356,6 +1450,7 @@ struct AutoClipBundleContent {
                 "index": Int(c.rank), "sourceType": c.source, "finalScore": round1(Double(c.score)),
                 "eligible": c.flags & AutoClipCandidateRecord.eligible != 0,
                 "selectable": c.flags & AutoClipCandidateRecord.selectable != 0,
+                "exclusionReason": c.exclusionReason,
                 "selected": c.flags & AutoClipCandidateRecord.selected != 0,
                 "competitor": c.flags & AutoClipCandidateRecord.competitor != 0,
                 "endpoints": [Int(c.x1), Int(c.y1), Int(c.x2), Int(c.y2)],
@@ -1376,6 +1471,10 @@ struct AutoClipBundleContent {
             "selectedCandidateType": selectedType,
             "autoClipCandidates": candidates
         ]
+        if capture.componentDiagnosticsEnabled {
+            entry["components"] = buffers.frames[slot].componentDiagnostics?[colorIndex == 0 ? .red : .blue]?.json(details: true)
+                ?? ["state": "notCollected"]
+        }
         if record.hasSelection {
             entry["endpoint"] = [Int(record.x1), Int(record.y1), Int(record.x2), Int(record.y2)]
         }

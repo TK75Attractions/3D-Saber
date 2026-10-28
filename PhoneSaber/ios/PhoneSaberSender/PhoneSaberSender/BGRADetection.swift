@@ -1,6 +1,7 @@
 import Foundation
 
 struct SaberFrameAnalysis {
+    var componentDiagnostics: [SaberColor: SaberComponentDiagnostics]? = nil
     var backgroundMedian: Int? = nil
     let candidates: [SaberColor: [SaberCandidate]]
     let selected: [SaberColor: (PixelPoint, PixelPoint)]
@@ -725,7 +726,8 @@ final class SaberTrackLock {
     /// 単独の静止刃は維持する。離れたeligibleの実測移動がある時だけ静止物を降格する。
     /// 降格後にその物体しか残らない時は送らず、消失・移動・resetで忘れる。
     private func movingAlternatives(_ eligible: [SaberCandidate], observed: [SaberCandidate], color: SaberColor,
-                                    width: Int, height: Int, now: Double) -> [SaberCandidate] {
+                                    width: Int, height: Int, now: Double,
+                                    componentDiagnostics: SaberComponentDiagnostics? = nil) -> [SaberCandidate] {
         let scale = Double(min(width, height)) / 480
         let tolerance = Self.stationaryRadius * scale
         let prior = (motions[color] ?? []).filter { now >= $0.updated && now - $0.updated <= 0.25 }
@@ -813,6 +815,9 @@ final class SaberTrackLock {
         }
 
         let rejected = eligible.filter(excluded)
+        if let componentDiagnostics {
+            for candidate in rejected { componentDiagnostics.candidate(candidate, stage: "postGeneration", reason: "stationary") }
+        }
         // 固定物への継続・復帰を切り、同frameで遠い実刃を取得できるようにする。
         if let track = tracks[color], rejected.contains(where: {
             hypot(Double($0.endpoints.0.x + $0.endpoints.1.x) / 2 - track.x,
@@ -951,15 +956,22 @@ final class SaberTrackLock {
 
     func select(_ eligible: [SaberCandidate], color: SaberColor,
                 width: Int, height: Int, now: Double, playArea: SaberPlayArea? = nil,
-                observedCandidates: [SaberCandidate]? = nil) -> SaberCandidate? {
+                observedCandidates: [SaberCandidate]? = nil,
+                componentDiagnostics: SaberComponentDiagnostics? = nil) -> SaberCandidate? {
         if dimensions.map({ $0 != (width, height) }) ?? true {
             reset(); dimensions = (width, height)
         }
         let eligible = movingAlternatives(eligible, observed: observedCandidates ?? eligible,
-                                          color: color, width: width, height: height, now: now)
+                                          color: color, width: width, height: height, now: now, componentDiagnostics: componentDiagnostics)
         suppressed.remove(color)
         var track = tracks[color]
         if let t = track, now - t.updated < 0 || now - t.updated > 0.25 { track = nil }
+        // 診断は実際に取得制約が有効なときだけ記録する。
+        if track == nil, let componentDiagnostics, let playArea {
+            for c in eligible where !playArea.containsMidpoint(c.endpoints, width: width, height: height) {
+                componentDiagnostics.candidate(c, stage: "postGeneration", reason: "playArea")
+            }
+        }
         // プレイ範囲は取得時だけに適用し、追跡中は範囲外でもゲート内の候補を選ぶ。
         var winner = track == nil ? eligible.first {
             playArea?.containsMidpoint($0.endpoints, width: width, height: height) ?? true
@@ -1122,19 +1134,39 @@ func minimumShutterEmitterAspect(color: SaberColor, pixels: Int) -> Double {
 private func shutterEmitterCandidates(mask: [UInt8], width: Int, height: Int,
                                       color: SaberColor, values: [UInt8], chroma: [UInt8],
                                       radiance: [UInt8], collectEvidence: Bool,
-                                      background: Double = 0) -> [SaberCandidate] {
+                                      background: Double = 0,
+                                      componentDiagnostics: SaberComponentDiagnostics? = nil) -> [SaberCandidate] {
     let peakFloor = shutterEmitterPeakFloor(background: background)
     let evidence = SaberEvidence(color: color, radiance: radiance, value: values, chroma: chroma,
                                  colorMask: mask, coreMask: Array(repeating: 0, count: mask.count),
                                  collectObserverEvidence: collectEvidence)
     return saberCandidates(in: mask, width: width, height: height, evidence: evidence,
-                           minimumAreaOverride: ShutterEmitterThresholds.minimumPixels).compactMap { candidate in
+                           minimumAreaOverride: ShutterEmitterThresholds.minimumPixels,
+                           componentDiagnostics: componentDiagnostics, diagnosticPath: "shutter-color-emitter").compactMap { candidate in
         let length = max(candidate.rawPCASpan, 1)
         let meanWidth = Double(candidate.pointCount) / length
-        guard Double(candidate.peakValue) >= peakFloor,
-              Double(candidate.pointCount) <= Double(width * height) * ShutterEmitterThresholds.maximumAreaRatio,
-              length / max(meanWidth, 1) >= minimumShutterEmitterAspect(color: color, pixels: candidate.pointCount),
-              meanWidth <= Double(min(width, height)) * ShutterEmitterThresholds.maximumWidthRatio else { return nil }
+        guard Double(candidate.peakValue) >= peakFloor else {
+            componentDiagnostics?.candidate(candidate, stage: "emitter", reason: "emitterPeak",
+                path: "shutter-color-emitter", length: length, aspect: length / max(meanWidth, 1))
+            return nil
+        }
+        guard Double(candidate.pointCount) <= Double(width * height) * ShutterEmitterThresholds.maximumAreaRatio else {
+            componentDiagnostics?.candidate(candidate, stage: "emitter", reason: "emitterArea",
+                path: "shutter-color-emitter", length: length, aspect: length / max(meanWidth, 1))
+            return nil
+        }
+        guard length / max(meanWidth, 1) >= minimumShutterEmitterAspect(color: color, pixels: candidate.pointCount) else {
+            componentDiagnostics?.candidate(candidate, stage: "emitter", reason: "emitterAspect",
+                path: "shutter-color-emitter", length: length, aspect: length / max(meanWidth, 1))
+            return nil
+        }
+        guard meanWidth <= Double(min(width, height)) * ShutterEmitterThresholds.maximumWidthRatio else {
+            componentDiagnostics?.candidate(candidate, stage: "emitter", reason: "emitterWidth",
+                path: "shutter-color-emitter", length: length, aspect: length / max(meanWidth, 1))
+            return nil
+        }
+        componentDiagnostics?.candidate(candidate, stage: "emitter", reason: "passed",
+            path: "shutter-color-emitter", length: length, aspect: length / max(meanWidth, 1))
         var emitter = candidate
         emitter.source = "shutter-color-emitter"
         emitter.isEmitterEligible = true
@@ -1147,6 +1179,7 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
                    sampleStep: Int = 2, collectProfile: Bool = false,
                    collectPipelineDiagnostics: Bool = false,
                    collectObserverEvidence: Bool = false,
+                   collectComponentDiagnostics: Bool = false,
                    ignoreZones: [SaberColor: [SaberIgnoreZone]] = [:],
                    playArea: SaberPlayArea? = nil,
                   trackLock: SaberTrackLock? = nil, now: Double = 0,
@@ -1283,7 +1316,17 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
         (.blue, blueMask, blueEmitterMask, blueMaskPixelCount)
     ]
     let closeRadius = min(maskWidth, maskHeight) >= 16 ? 2 : 1
+    var componentDiagnostics: [SaberColor: SaberComponentDiagnostics] = [:]
     for (color, rawMask, emitterMask, maskPixelCount) in masks {
+        let rejection = collectComponentDiagnostics ? SaberComponentDiagnostics() : nil
+        if let rejection {
+            rejection.sampleStep = step
+            rejection.maskPixels = maskPixelCount
+            // mainの桃色拡張マスクも含め、赤マスクが空でもmaskEmptyと誤記しない。
+            let emitterDiagnosticMask = color == .red ? lowISORedMagentaMask : (lowISOMasks[color] ?? [])
+            rejection.emitterMaskPixels = emitterDiagnosticMask.reduce(0) { $0 + Int($1) }
+            componentDiagnostics[color] = rejection
+        }
         // Most live frames contain at most one saber color. Do not run several
         // full-mask morphology/component passes for an absent color; this is
         // an exact empty-mask fast path and does not alter candidate scoring.
@@ -1347,13 +1390,13 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
                 ? { _ in profile.connectedComponentCount += 1 } : nil
             candidates = saberCandidates(in: cleaned, width: maskWidth, height: maskHeight,
                                              evidence: evidence, stageProfile: candidateStageProfile,
-                                             componentObserver: componentObserver, collectEndpointDiagnostics: collectPipelineDiagnostics)
+                                             componentObserver: componentObserver, collectEndpointDiagnostics: collectPipelineDiagnostics, componentDiagnostics: rejection, diagnosticPath: "color-mask")
             let closedCandidates = saberCandidates(
                 in: closed,
                 width: maskWidth, height: maskHeight, evidence: evidence,
                 stageProfile: candidateStageProfile,
                 componentObserver: additionalComponentObserver
-            , collectEndpointDiagnostics: collectPipelineDiagnostics)
+            , collectEndpointDiagnostics: collectPipelineDiagnostics, componentDiagnostics: rejection, diagnosticPath: "color-close")
             for var candidate in closedCandidates {
                 if let duplicate = candidates.firstIndex(where: { candidateAxisDistance($0, candidate) <= 3.0 }) {
                     // 10/28の交差した赤刃: openが細い先端を8px削る。明背景ゲートで認めた同じ刃だけ、
@@ -1382,7 +1425,7 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
                     evidence: evidence, stageProfile: candidateStageProfile,
                     componentObserver: additionalComponentObserver,
                     minimumAreaOverride: sparseMinimumArea
-                , collectEndpointDiagnostics: collectPipelineDiagnostics)
+                , collectEndpointDiagnostics: collectPipelineDiagnostics, componentDiagnostics: rejection, diagnosticPath: "color-sparse-raw")
                 for var candidate in sparseCandidates {
                     candidate.source = "color-sparse-raw"
                     if let duplicate = candidates.firstIndex(where: {
@@ -1407,7 +1450,7 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
                     width: maskWidth, height: maskHeight, evidence: evidence,
                     stageProfile: candidateStageProfile,
                     componentObserver: additionalComponentObserver
-                , collectEndpointDiagnostics: collectPipelineDiagnostics) : []
+                , collectEndpointDiagnostics: collectPipelineDiagnostics, componentDiagnostics: rejection, diagnosticPath: "color-emitter") : []
             for var candidate in emitterCandidates where !candidates.contains(where: {
                 candidateAxisDistance($0, candidate) <= 3.0
             }) {
@@ -1425,7 +1468,7 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
                     width: maskWidth, height: maskHeight, evidence: evidence,
                     stageProfile: candidateStageProfile,
                     componentObserver: additionalComponentObserver
-                , collectEndpointDiagnostics: collectPipelineDiagnostics) : []
+                , collectEndpointDiagnostics: collectPipelineDiagnostics, componentDiagnostics: rejection, diagnosticPath: "core-halo") : []
             for var candidate in coreCandidates where !candidates.contains(where: {
                 candidateAxisDistance($0, candidate) <= 3.0
             }) {
@@ -1437,7 +1480,7 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
                 let connectedCore = closeSaberMask(associatedCore, width: maskWidth, height: maskHeight, radius: 4)
                 for var candidate in saberCandidates(in: connectedCore, width: maskWidth, height: maskHeight,
                                                       evidence: evidence, stageProfile: candidateStageProfile,
-                                                      componentObserver: additionalComponentObserver, collectEndpointDiagnostics: collectPipelineDiagnostics) {
+                                                      componentObserver: additionalComponentObserver, collectEndpointDiagnostics: collectPipelineDiagnostics, componentDiagnostics: rejection, diagnosticPath: "connected-core") {
                     let length = hypot(Double(candidate.comparisonEndpoints.1.x - candidate.comparisonEndpoints.0.x),
                                        Double(candidate.comparisonEndpoints.1.y - candidate.comparisonEndpoints.0.y))
                     guard length >= max(12, Double(min(maskWidth, maskHeight)) * 0.10) else { continue }
@@ -1461,7 +1504,7 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
                 if var candidate = saberCandidate(from: proposal, width: maskWidth,
                                                   height: maskHeight, evidence: evidence,
                                                   workspace: &proposalWorkspace, source: "core-line",
-                                                  stageProfile: candidateStageProfile, collectEndpointDiagnostics: collectPipelineDiagnostics),
+                                                  stageProfile: candidateStageProfile, collectEndpointDiagnostics: collectPipelineDiagnostics, componentDiagnostics: rejection, diagnosticPath: "core-line"),
                    !candidates.contains(where: {
                     candidateAxisDistance($0, candidate) <= 10.0
                         || candidateIsSubsegment(candidate, of: $0)
@@ -1890,14 +1933,14 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
             var additional = mask.contains(1)
                 ? shutterEmitterCandidates(mask: mask, width: maskWidth, height: maskHeight,
                     color: color, values: valueMap, chroma: chromaMap, radiance: radianceMap,
-                    collectEvidence: collectObserverEvidence, background: redBackground)
+                    collectEvidence: collectObserverEvidence, background: redBackground, componentDiagnostics: rejection)
                 : []
             if color == .red, lowISORedMagentaMask != mask, lowISORedMagentaMask.contains(1) {
                 // 通常の赤マスクの候補と重なる場所には足さない（今取れている刃の形を変えない）。
                 let magenta = shutterEmitterCandidates(mask: lowISORedMagentaMask, width: maskWidth,
                     height: maskHeight, color: color, values: valueMap, chroma: chromaMap,
                     radiance: radianceMap, collectEvidence: collectObserverEvidence,
-                    background: redBackground)
+                    background: redBackground, componentDiagnostics: rejection)
                 for var candidate in magenta where candidate.peakValue >= ShutterEmitterThresholds.redMagentaMinimumPeak
                     && candidate.meanColorPurity >= ShutterEmitterThresholds.redMagentaMinimumPurity
                     && candidate.localContrast >= ShutterEmitterThresholds.redMagentaMinimumContrast
@@ -1914,6 +1957,12 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
             if !additional.isEmpty {
                 candidates += additional
                 candidates.sort { $0.score > $1.score }
+            }
+        }
+        // 現在の認識処理が不適格とした候補だけを記録する。
+        if let rejection {
+            for c in candidates where !c.isEmitterEligible {
+                rejection.candidate(c, stage: "postGeneration", reason: "ineligible")
             }
         }
         let scaled = candidates.map { candidate in
@@ -1993,14 +2042,25 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
             )
         }
         let zones = ignoreZones[color] ?? []
+        if let rejection {
+            for c in scaled where c.isEmitterEligible {
+                if saberIgnored(c.endpoints, width: width, height: height, zones: zones) {
+                    rejection.candidate(c, stage: "postGeneration", reason: "ignore", scale: step)
+                } else if trackLock == nil, let playArea,
+                          !playArea.containsMidpoint(c.endpoints, width: width, height: height) {
+                    rejection.candidate(c, stage: "postGeneration", reason: "playArea", scale: step)
+                }
+            }
+        }
         // 無視範囲は常に適用する。追跡ONのプレイ範囲は取得時だけに適用する。
         let allowed: (SaberCandidate) -> Bool = {
             $0.isEmitterEligible && (zones.isEmpty || !saberIgnored($0.endpoints, width: width, height: height, zones: zones))
         }
         let winner: SaberCandidate?
         if let trackLock {
+            rejection?.candidateScale = step
             winner = trackLock.select(scaled.filter(allowed), color: color, width: width, height: height,
-                                      now: now, playArea: playArea, observedCandidates: scaled)
+                                      now: now, playArea: playArea, observedCandidates: scaled, componentDiagnostics: rejection)
         } else {
             winner = scaled.first {
                 allowed($0) && (playArea?.containsMidpoint($0.endpoints, width: width, height: height) ?? true)
@@ -2033,6 +2093,7 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
                               profile: collectProfile ? profile : nil,
                               pipelineDiagnostics: collectPipelineDiagnostics
                                   ? pipelineDiagnostics : nil)
+    result.componentDiagnostics = collectComponentDiagnostics ? componentDiagnostics : nil
     result.backgroundMedian = shutterEmitter.active ? background : nil
     return result
 }
@@ -2069,6 +2130,7 @@ func analyzeSabers(in bgra: [UInt8], width: Int, height: Int, bytesPerRow: Int,
                    sampleStep: Int = 2, collectProfile: Bool = false,
                    collectPipelineDiagnostics: Bool = false,
                    collectObserverEvidence: Bool = false,
+                   collectComponentDiagnostics: Bool = false,
                    ignoreZones: [SaberColor: [SaberIgnoreZone]] = [:],
                    playArea: SaberPlayArea? = nil,
                    trackLock: SaberTrackLock? = nil, now: Double = 0,
@@ -2087,8 +2149,26 @@ func analyzeSabers(in bgra: [UInt8], width: Int, height: Int, bytesPerRow: Int,
                              blueThreshold: blueThreshold, sampleStep: sampleStep,
                              collectProfile: collectProfile,
                              collectPipelineDiagnostics: collectPipelineDiagnostics,
-                             collectObserverEvidence: collectObserverEvidence, ignoreZones: ignoreZones,
+                             collectObserverEvidence: collectObserverEvidence,
+                             collectComponentDiagnostics: collectComponentDiagnostics, ignoreZones: ignoreZones,
                              playArea: playArea, trackLock: trackLock, now: now, shutterEmitter: shutterEmitter,
                              backgroundState: backgroundState)
+    }
+}
+
+// 座標はmask格子へ揃える。JSON保存時にsampleStepを別途付ける。
+extension SaberComponentDiagnostics {
+    func candidate(_ c: SaberCandidate, stage: String, reason: String, path: String? = nil,
+                   length: Double? = nil, aspect: Double? = nil, scale: Int? = nil) {
+        // 上限後はbbox配列や数値の計算も省く。
+        guard hasCapacity(path: path ?? c.source, stage: stage) else { omitted += 1; return }
+        let scale = scale ?? candidateScale
+        let d = Double(max(scale, 1)), box = c.boundingBox
+        let span = length ?? max(c.rawPCASpan / d, 1)
+        append(SaberComponentDiagnostic(path: path ?? c.source, stage: stage, reason: reason,
+            bbox: [box.minX / scale, box.minY / scale, box.maxX / scale, box.maxY / scale],
+            pixels: c.pointCount, length: span, meanWidth: Double(c.pointCount) / span,
+            aspect: aspect ?? (c.scoreBreakdown.extent / 2 * pow(c.rawPCASpan / d, 2) / Double(max(c.pointCount, 1))),
+            extent: c.scoreBreakdown.extent / 2))
     }
 }
