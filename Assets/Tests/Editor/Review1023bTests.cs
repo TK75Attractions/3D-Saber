@@ -93,7 +93,7 @@ public class Review1023bTests
     [TestCase("BenkyouRemaster", 24774, 24805, 0, 0, 1, 0)]
     [TestCase("BenkyouRemaster", 64299, 64325, 0, 1, 1, 0)]
     [TestCase("RushE", 118406, 118382, 1, 2, 2, 2)]
-    [TestCase("RushE", 50115, 50138, 1, 1, 1, 2)]
+    [TestCase("RushE", 50115, 50138, 1, 1, 2, 2)]
     [TestCase("RushE", 134812, 134770, 1, 1, 1, 1)]
     public void OnsetMovesCoverEveryDifficultyAndEveryPartner(
         string song, double from, double to, int easy, int normal, int hard, int secret)
@@ -150,7 +150,7 @@ public class Review1023bTests
     [TestCase("2_23_AM", "hard", 449)]
     [TestCase("logic", "hard", 424)]
     [TestCase("BenkyouRemaster", "hard", 335)]
-    [TestCase("RushE", "hard", 353)]
+    [TestCase("RushE", "hard", 402)]
     [TestCase("RushE", "e", 1158)]
     public void CountsChangeOnlyByTheSelectedDeletions(string song, string diff, int count)
     {
