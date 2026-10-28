@@ -58,7 +58,8 @@ enum AutoClipLimits {
     /// was (a static cone, a poster) is not saved again in the same session.
     static let repeatLocationDiagonalFraction = 0.06
     static let repeatLocationMemory = 8
-    static let maximumStoredClips = 12
+    /// 送れないまま15秒ごとに増えると12本では数分で消える（10-29）。容量は maximumStoredBytes で抑える。
+    static let maximumStoredClips = 40
     static let maximumStoredBytes: Int64 = 160 * 1_024 * 1_024
     static let minimumFreeSpaceBytes: Int64 = 512 * 1_024 * 1_024
     /// Below the receiver's 512 KiB summary.json limit.

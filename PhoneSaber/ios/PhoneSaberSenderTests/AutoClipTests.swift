@@ -1218,6 +1218,15 @@ final class AutoClipTests: XCTestCase {
         XCTAssertNil(outbox.beginNext(now: now, recording: false, automatic: true, liveTraffic: true))
         XCTAssertEqual(outbox.beginNext(now: now, recording: false, automatic: true, liveTraffic: false)?.sessionID,
                        "autoclip_a")
+        // 「今すぐ送る」（retryNow → manualIDs）は座標送信中でも送る。
+        var pressed = DebugBundleOutbox()
+        pressed.register(sessionID: "autoclip_b", bundlePath: "AutoClips/phone_saber_triage_autoclip_b",
+                         now: now, deferDuringPlay: true)
+        let manual = pressed.retryNow()
+        XCTAssertEqual(manual, ["autoclip_b"])
+        XCTAssertNil(pressed.beginNext(now: now, recording: false, automatic: true, liveTraffic: true))
+        XCTAssertEqual(pressed.beginNext(now: now, recording: false, automatic: true, manualIDs: manual,
+                                         liveTraffic: true)?.sessionID, "autoclip_b")
         // Debug Recording bundles keep their behaviour while playing.
         var recordings = DebugBundleOutbox()
         recordings.register(sessionID: "phonesaber_x", bundlePath: "phone_saber_triage_phonesaber_x", now: now)

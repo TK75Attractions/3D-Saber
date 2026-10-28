@@ -114,7 +114,9 @@ struct DebugBundleOutbox: Codable {
     // 手動を先頭にし、各種別では保存順を守る。古い自動clipのbackoff中も追い越さない。
     private func candidates(automatic: Bool, manualIDs: Set<String>, liveTraffic: Bool) -> [Int] {
         entries.indices.filter {
-            entries[$0].canRetry && !(liveTraffic && entries[$0].deferDuringPlay == true)
+            // 「今すぐ送る」で選んだclipは、座標送信中でも待たせない（10-29: 剣を持ったままだと送られず端末で消えた）。
+            entries[$0].canRetry
+                && !(liveTraffic && entries[$0].deferDuringPlay == true && !manualIDs.contains(entries[$0].sessionID))
                 && ((automatic && entries[$0].automatic) || manualIDs.contains(entries[$0].sessionID))
         }.sorted {
             let left = entries[$0], right = entries[$1]
@@ -442,6 +444,8 @@ final class DebugBundleTransfer: NSObject {
         liveTrafficActive = active
         if active, let id = activeSessionID,
            outbox.entries.first(where: { $0.sessionID == id })?.deferDuringPlay == true {
+            // 送信が再開したら手動指定も解き、次の静かな間まで待たせる。
+            manualIDs.remove(id)
             outbox.pause(sessionID: id)
             persist()
             finishCurrentBundle()
@@ -506,6 +510,8 @@ final class DebugBundleTransfer: NSObject {
             }
             return
         }
+        // 座標送信中に「今すぐ送る」で始めた転送は、送信が続いていても止めない（persistの通知より前に記録）。
+        let startedDuringLiveTraffic = liveTrafficActive
         persist()
         isBusy = true
         generation += 1
@@ -524,7 +530,9 @@ final class DebugBundleTransfer: NSObject {
                         return
                     }
                     self.activePackageURL = packageURL
-                    if self.recordingActive || (self.liveTrafficActive && entry.deferDuringPlay == true) {
+                    let playResumed = self.liveTrafficActive && entry.deferDuringPlay == true && !startedDuringLiveTraffic
+                    if self.recordingActive || playResumed {
+                        if playResumed { self.manualIDs.remove(entry.sessionID) }
                         self.outbox.pause(sessionID: entry.sessionID)
                         self.persist()
                         self.finishCurrentBundle()
