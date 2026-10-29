@@ -130,7 +130,8 @@ public class UICatalogPlayTests
     }
     [UnityTest] public IEnumerator JapaneseResultTitleIsNotDuplicatedAndExitUsesLongDwell()
     {
-        GameSession.SelectedSongId="Epilogue";GameSession.SelectedSongTitle="校歌";
+        // 曲名は選曲と同じ表示名(2026-10-29 から「校歌@音楽祭ver」。古い「校歌」のままだと名前が違うので2行目の和名が出ていた)。
+        GameSession.SelectedSongId="Epilogue";GameSession.SelectedSongTitle=SongSelectController.DisplaySongTitle("Epilogue");
         GameSession.FinalScore=0;GameSession.FinalMaxCombo=0;GameSession.FinalComboBonus=0;
         GameSession.FinalHit=GameSession.FinalMiss=GameSession.FinalPerfect=GameSession.FinalGreat=GameSession.FinalGood=GameSession.FinalBad=0;
         GameSession.FinalDailyRanking=null;
