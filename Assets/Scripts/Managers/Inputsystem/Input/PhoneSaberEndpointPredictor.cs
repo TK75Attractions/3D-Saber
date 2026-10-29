@@ -95,7 +95,9 @@ public struct PhoneSaberEndpointPredictor
     }
 
     // F8「自動」専用。手動・OFF の演算と受信した端点は変更しない。
-    public void PredictAdaptive(double nowSeconds, int horizonMilliseconds, out Vector2 a, out Vector2 b)
+    // automaticLimit: 1回に動かせる距離（world、台ごと。PhoneSaberPredictionSettings.LoadReach）。範囲外は既定の 2。
+    public void PredictAdaptive(double nowSeconds, int horizonMilliseconds, out Vector2 a, out Vector2 b,
+        float automaticLimit = AutomaticMaximumDisplacement)
     {
         a = latestA; b = latestB;
         LastPredictionSuppressed = true;
@@ -117,7 +119,8 @@ public struct PhoneSaberEndpointPredictor
         delta.x = (float)Math.Max(-automaticRange.x * rangeScale, Math.Min(automaticRange.x * rangeScale, delta.x));
         delta.y = (float)Math.Max(-automaticRange.y * rangeScale, Math.Min(automaticRange.y * rangeScale, delta.y));
         double length = Math.Sqrt((double)delta.x * delta.x + (double)delta.y * delta.y);
-        float limit = configuredDisplacement ? maximumDisplacement : AutomaticMaximumDisplacement;
+        float limit = configuredDisplacement ? maximumDisplacement :
+            Finite(automaticLimit) && automaticLimit > 0 ? automaticLimit : AutomaticMaximumDisplacement;
         if (length > limit) delta *= (float)(limit / length);
         LastPredictionSuppressed = delta.x == 0 && delta.y == 0;
         a += delta; b += delta;

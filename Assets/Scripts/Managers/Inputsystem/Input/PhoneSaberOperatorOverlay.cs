@@ -240,6 +240,11 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
                 if (v == "auto") input.SetPredictionAutomatic();
                 else input.SetPredictionHorizonMilliseconds(int.Parse(v, CultureInfo.InvariantCulture));
             } },
+            { "prediction-reach", v => {
+                var input = InputPoint.Instance;
+                if (input == null || calibrationCorner >= 0) return;
+                input.SetPredictionReach(int.Parse(v, CultureInfo.InvariantCulture));
+            } },
             { "display-latency-adjust", v => PhoneSaberManualDisplayLatency.Adjust(CurrentStation, int.Parse(v, CultureInfo.InvariantCulture)) },
             { "display-latency-centre", _ => PhoneSaberManualDisplayLatency.Centre(CurrentStation) },
             { "display-latency-clear", _ => PhoneSaberManualDisplayLatency.Clear(CurrentStation) },
@@ -433,9 +438,16 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
                 milliseconds.ToString(CultureInfo.InvariantCulture), enabled, !automatic && horizon == milliseconds);
         panel.Label("初期値は自動（未設定の台）。手動なら20 msから試してください。折り返しでは行き過ぎが増えます。\n" +
             $"手動: 最大{PhoneSaberEndpointPredictor.MaximumManualHorizonMilliseconds} ms・移動上限{PhoneSaberEndpointPredictor.DefaultMaximumDisplacement} world。\n" +
-            $"自動: 最大{PhoneSaberEndpointPredictor.MaximumHorizonMilliseconds} ms・移動上限{PhoneSaberEndpointPredictor.AutomaticMaximumDisplacement} world。受信が100 ms止まると予測量はゼロに戻ります。");
+            $"自動: 最大{PhoneSaberEndpointPredictor.MaximumHorizonMilliseconds} ms・移動上限は下の設定（world）。受信が100 ms止まると予測量はゼロに戻ります。");
         panel.Label("自動: スマホ＋通信＋PC＋画面＋露光の目安。未計測時はOFF。\n" +
             "同期確認済みのts片道値は第2候補。30秒中央値が5 ms超変化した時、10秒以上あけて更新。");
+        float reach = input != null ? input.PredictionReach : PhoneSaberEndpointPredictor.AutomaticMaximumDisplacement;
+        panel.Label($"自動の移動上限: {reach:0} world（この台に保存。画面の横幅は約11 world）");
+        foreach (int world in PhoneSaberPredictionSettings.ReachChoices)
+            panel.Button(world + " world" + (world == 2 ? "（従来）" : ""), "prediction-reach",
+                world.ToString(CultureInfo.InvariantCulture), enabled, Mathf.Approximately(reach, world));
+        panel.Label("速い振りは移動上限で先回りが頭打ちになります（2 world だと、0.2 秒で端から端の振りで約40 ms）。\n" +
+            "上げると速い振りの遅れが減ります。振り終わりで剣が少し行き過ぎる・触れていないノーツが切れるなら下げてください。");
         BuildDisplayLatency();
     }
 

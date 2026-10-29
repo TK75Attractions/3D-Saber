@@ -394,6 +394,33 @@ public class PhoneSaberAdaptivePredictionTests
         }
     }
 
+    // 2026-10-29 台B: 速い振り（50 world/s）は既定の 2 world で頭打ち。台ごとの上限 4 なら 2 倍まで先回りする。
+    [Test]
+    public void FastSwingsReachTheStationLimitAndSlowSwingsDoNotChange()
+    {
+        PhoneSaberEndpointPredictor fast = default;
+        for (int i = 0; i <= 20; i++) fast.AddSample(i / 60.0, A(i * 50f / 60), B(i * 50f / 60));
+        double now = 20.0 / 60 + .008;
+        float last = 20 * 50f / 60;
+        fast.PredictAdaptive(now, 106, out var standard, out _);
+        Assert.AreEqual(last + PhoneSaberEndpointPredictor.AutomaticMaximumDisplacement, standard.x, .002f, "既定は 2 world で頭打ち");
+        fast.PredictAdaptive(now, 106, out var wide, out var wideB, 4);
+        Assert.AreEqual(last + 4, wide.x, .002f);
+        Assert.AreEqual(wide.x, wideB.x);
+        fast.PredictAdaptive(now, 106, out var invalid, out _, float.NaN);
+        Assert.AreEqual(standard.x, invalid.x, .00001f, "範囲外の上限は既定の 2");
+        PhoneSaberEndpointPredictor slow = default;
+        for (int i = 0; i <= 20; i++) slow.AddSample(i / 60.0, A(i * 10f / 60), B(i * 10f / 60));
+        slow.PredictAdaptive(now, 106, out var slow2, out _);
+        slow.PredictAdaptive(now, 106, out var slow4, out _, 4);
+        Assert.AreEqual(slow2.x, slow4.x, .00001f, "上限に届かない振りは変わらない");
+        // 保存値は 2・3・4 だけ（未保存・範囲外は従来の 2）。
+        Assert.AreEqual(2f, PhoneSaberPredictionSettings.ClampReach(float.NaN));
+        Assert.AreEqual(2f, PhoneSaberPredictionSettings.ClampReach(2.9f));
+        Assert.AreEqual(3f, PhoneSaberPredictionSettings.ClampReach(3f));
+        Assert.AreEqual(4f, PhoneSaberPredictionSettings.ClampReach(99f));
+    }
+
     [Test]
     public void SupportedAccelerationCannotLeapBeyondObservedTravelWindow()
     {

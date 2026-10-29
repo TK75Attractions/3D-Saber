@@ -38,6 +38,20 @@ public static class PhoneSaberPredictionSettings
     public static int Clamp(int milliseconds) =>
         Mathf.Clamp(milliseconds, 0, PhoneSaberEndpointPredictor.MaximumManualHorizonMilliseconds);
 
+    // 自動の先回りで1回に動かせる距離（world、画面の横幅は約11）。未保存の台は従来の 2。
+    // 2026-10-29 台B: 速い振り（0.2 秒で端から端）は 2 world で約40 ms に頭打ちになり、先回りの ms を増やしても遅れが残った。
+    public static readonly int[] ReachChoices = { 2, 3, 4 };
+    public static string ReachKey(string station) => Key(station) + ".Reach";
+    public static float ClampReach(float world) => world >= 4 ? 4 : world >= 3 ? 3 : PhoneSaberEndpointPredictor.AutomaticMaximumDisplacement;
+    public static float LoadReach(string station) =>
+        ClampReach(PlayerPrefs.GetFloat(ReachKey(station), PhoneSaberEndpointPredictor.AutomaticMaximumDisplacement));
+
+    public static void SaveReach(string station, float world)
+    {
+        PlayerPrefs.SetFloat(ReachKey(station), ClampReach(world));
+        PlayerPrefs.Save();
+    }
+
     public static void Save(string station, int milliseconds)
     {
         PlayerPrefs.SetInt(Key(station), Clamp(milliseconds));

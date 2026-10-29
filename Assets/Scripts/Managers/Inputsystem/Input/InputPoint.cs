@@ -171,6 +171,8 @@ public class InputPoint : MonoBehaviour
     public int PredictionHorizonMilliseconds { get; private set; }
     public int PredictionRevision { get; private set; }
     public bool PredictionAutomatic { get; private set; }
+    // 自動の先回りの移動上限（world、台ごと）。SaberInputBridge が PredictAdaptive へ渡す。
+    public float PredictionReach { get; private set; } = PhoneSaberEndpointPredictor.AutomaticMaximumDisplacement;
     public bool PredictionClocksSynchronized { get; set; }
     public string PredictionLeadSource { get; private set; } = "manual";
     public long PredictionDraws { get; private set; }
@@ -224,6 +226,15 @@ public class InputPoint : MonoBehaviour
                 policy.Median.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) +
                 " clamped=" + (policy.Clamped ? "1" : "0") + " maximum-ms=" + PhoneSaberEndpointPredictor.MaximumHorizonMilliseconds +
                 " sender=" + (sender ?? "unknown"));
+    }
+
+    public void SetPredictionReach(float world)
+    {
+        PredictionReach = PhoneSaberPredictionSettings.ClampReach(world);
+        PhoneSaberPredictionSettings.SaveReach(StationLabel, PredictionReach);
+        PredictionRevision++;
+        PhoneSaberEventLog.Record(StationLabel, "SYSTEM", "prediction-reach",
+            "world=" + PredictionReach.ToString("0", System.Globalization.CultureInfo.InvariantCulture));
     }
 
     public void SetPredictionHorizonMilliseconds(int milliseconds)
@@ -537,6 +548,7 @@ public class InputPoint : MonoBehaviour
             positionCalibration = PhoneSaberPositionCalibrationStore.Load(phoneSaberStation, out positionCalibrationEnabled);
             PredictionHorizonMilliseconds = PhoneSaberPredictionSettings.Load(phoneSaberStation);
             PredictionAutomatic = PhoneSaberPredictionSettings.LoadAutomatic(phoneSaberStation);
+            PredictionReach = PhoneSaberPredictionSettings.LoadReach(phoneSaberStation);
             if (PredictionAutomatic)
             {
                 redPrediction = new PhoneSaberAutomaticLeadPolicy(); bluePrediction = new PhoneSaberAutomaticLeadPolicy();
