@@ -48,6 +48,20 @@ public class SongDisplayInfoTests
         Assert.AreEqual(reading, SongDisplayInfo.Get(songId).Reading);
     }
 
+    // 作曲者はユーザーが決めた名前(2026-10-29)。校歌は「???」のまま。
+    [TestCase("2_23_AM", "しゃろう")]
+    [TestCase("Morning", "しゃろう")]
+    [TestCase("Andalusia", "もり　わきお")]
+    [TestCase("揺籠", "きのこしゅーくりーむ")]
+    [TestCase("製作中", "きのこしゅーくりーむ")]
+    [TestCase("ElDorado", "きのこしゅーくりーむ")]
+    [TestCase("Phobia PARTⅠ", "きのこしゅーくりーむ")]
+    [TestCase("Epilogue", "???")]
+    public void ComposersComeFromStageJson(string songId, string composer)
+    {
+        Assert.AreEqual(composer, SongDisplayInfo.Get(songId).Composer);
+    }
+
     [TestCase(null, "???")]
     [TestCase("", "???")]
     [TestCase("   ", "???")]
