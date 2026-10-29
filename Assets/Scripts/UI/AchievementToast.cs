@@ -9,7 +9,7 @@ using UnityEngine.UI;
 // 実績解除の知らせ(2026-10-29 ユーザー「参加者が達成したときにxboxみたいな感じで上にポップアップ？が出てきて~をした ~人目ってのが
 // わかるだけにして(5秒以内に消す)」。同日 v2.2「高難易度と思われる実績はふちを銅、銀、金、虹に光らせて効果音も変えて。表示の順番は
 // 簡単なものから。あと右上のスペースにポップアップすればもっと大きく実績を出せるよね」)。
-// 画面の右上(曲名の右、判定の表の上の空き)に大きいカードを2枚まで: トロフィーの印・小さく「実績解除」・「〜した ○人目」(○人目は金)。
+// 画面の右上(曲名の右、判定の表の上の空き)に大きいカードを2枚まで: トロフィーの印・小さく「実績解除」・「〜した ○人目」(○人目は金。1人目は「初獲得！」)。
 // 1枚は入り 0.3 秒・止まり 3.7 秒・消え 0.5 秒の 4.5 秒。ただし段なしのカードは、後ろに待っているカードがあるうちは 2.2 秒で消す
 // (簡単なものから出すので、いちばん難しい実績を来場者が帰る前に出す)。寿命と光の動きは出し始めた実時刻から数える。
 // 段の低い順に並べ、同じ段では渡された順を保つ。段によってふち・トロフィー・鈴を変える(AchievementCardFrame)。
@@ -36,6 +36,8 @@ public sealed class AchievementToast : MonoBehaviour
     // (白く浮く投影や色の見え方で、銅と金・銀となしが近く見えることがある)。
     public const char TierMark = '◆';
     public const string NumberColor = "#FFD84D";
+    // 1人目のときは番号の代わりにこれを出す(2026-10-29 ユーザー「実績獲得1人目のときは1人目！ではなく初獲得！とする」)。
+    public const string FirstUnlockText = "初獲得！";
     public const string ChimeKey = "AchievementChime";
     public const double ChimePeakDb = -18;
     // 直前に鳴った音と同じ段以下は、この間隔をあける。上の段は間隔によらず鳴る。
@@ -80,9 +82,11 @@ public sealed class AchievementToast : MonoBehaviour
     public static void Show(string text, int number, AchievementTier tier = AchievementTier.None) =>
         Ensure().queue.Enqueue(Message(text, number), tier);
 
-    // 通知の文: 「〜した ○人目」(○人目は金の太字)。番号が無い(記録できなかった)ときは文だけ。
+    // 通知の文: 「〜した ○人目」(○人目は金の太字。1人目は「初獲得！」)。番号が無い(記録できなかった)ときは文だけ。
     public static string Message(string text, int number) =>
-        number > 0 ? (text ?? "") + "  <color=" + NumberColor + "><b>" + number + "人目</b></color>" : text ?? "";
+        number > 0 ? (text ?? "") + "  <color=" + NumberColor + "><b>" + NumberLabel(number) + "</b></color>" : text ?? "";
+
+    public static string NumberLabel(int number) => number == 1 ? FirstUnlockText : number + "人目";
 
     // カードの上の小さな見出し(段のあるカードは、段の数の◆をつける)。
     public static string CaptionFor(AchievementTier tier) =>

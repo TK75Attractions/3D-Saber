@@ -212,6 +212,17 @@ public class SongSelectSkin : MonoBehaviour
     {
         var ruby = text.gameObject.AddComponent<SongSelectRubyText>(); ruby.Set(markup); return ruby;
     }
+    // 曲名のふりがなは、名前の頭の漢字のかたまりにだけ付ける(2026-10-29「校歌@音楽祭ver」の「こうか」は「校歌」の上)。
+    // 頭が漢字でなければ名前全体に付ける(今までどおり)。
+    public static string TitleRubyMarkup(string title, string reading)
+    {
+        if (string.IsNullOrEmpty(title) || string.IsNullOrEmpty(reading)) return title ?? "";
+        int end = 0;
+        while (end < title.Length && IsKanji(title[end])) end++;
+        if (end == 0) end = title.Length;
+        return "<ruby=" + reading + ">" + title.Substring(0, end) + "</ruby>" + title.Substring(end);
+    }
+    static bool IsKanji(char c) => (c >= '一' && c <= '鿿') || (c >= '㐀' && c <= '䶿') || c == '々';
     SongSelectDiscGraphic PanelAt(string name, float x, float y, float w, float h, Color edge, float border = 3, float radius = 24)
     {
         var g = Graphic(layout, name, Position(x, y), new Vector2(w, h), SongSelectDiscGraphic.Shape.Panel, Panel);
@@ -599,7 +610,7 @@ public class SongSelectSkin : MonoBehaviour
         sourceCredit.text = string.IsNullOrEmpty(info.SourceUrl) ? string.Empty
             : (string.IsNullOrEmpty(info.Artist) ? string.Empty : info.Artist + "\n") + info.SourceUrl;
         bool japanese = !string.IsNullOrEmpty(reading);
-        string markup = japanese ? $"<ruby={reading}>{title}</ruby>" : title;
+        string markup = japanese ? TitleRubyMarkup(title, reading) : title;
         var titleText = songTitle.GetComponent<TextMeshProUGUI>();
         // フォントは固定し、日本語は既存のフォールバックで描く。切替時に別アトラスの材質を残さない。
         titleText.fontStyle = japanese ? FontStyles.Bold : FontStyles.Normal;

@@ -135,6 +135,8 @@ public class ResultSkin : MonoBehaviour
         if (string.IsNullOrEmpty(songId)) return "";
         // 保存記録と音源フォルダのIDは維持し、画面の曲名だけを正式名称にする。
         string name = SongDisplayInfo.Get(songId).DisplayName;
+        // 日本語の入った名前は書いたとおりに出す(2026-10-29「校歌@音楽祭ver」の ver を大文字にしない・区切りを足さない)。
+        if (!UISkinKit.IsAsciiOnly(name)) return name;
         var sb = new System.Text.StringBuilder();
         for (int i = 0; i < name.Length; i++)
         {

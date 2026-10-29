@@ -179,6 +179,9 @@ public class AchievementToastTests
     public void MessageShowsTheNumberOfPeopleInGold()
     {
         Assert.AreEqual("Hardをクリアした  <color=#FFD84D><b>37人目</b></color>", AchievementToast.Message("Hardをクリアした", 37));
+        Assert.AreEqual("Hardをクリアした  <color=#FFD84D><b>初獲得！</b></color>", AchievementToast.Message("Hardをクリアした", 1),
+            "1人目は「1人目」でなく「初獲得！」");
+        Assert.AreEqual("Hardをクリアした  <color=#FFD84D><b>2人目</b></color>", AchievementToast.Message("Hardをクリアした", 2));
         Assert.AreEqual("Hardをクリアした", AchievementToast.Message("Hardをクリアした", 0), "番号が無い(記録できない)ときは文だけ");
         Assert.AreEqual("", AchievementToast.Message(null, 0));
     }

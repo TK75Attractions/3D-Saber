@@ -10,9 +10,19 @@ public class SchoolSongChartTests
     [TestCase("epilogue")]
     public void SchoolSongUsesJapaneseTitleWithoutChangingStorageId(string id)
     {
-        Assert.AreEqual("校歌", ResultSkin.SongIdToDisplayTitle(id));
-        Assert.AreEqual("校歌", SongSelectController.DisplaySongTitle(id));
+        Assert.AreEqual("校歌@音楽祭ver", ResultSkin.SongIdToDisplayTitle(id), "日本語の入った名前の英字は大文字にしない");
+        Assert.AreEqual("校歌@音楽祭ver", SongSelectController.DisplaySongTitle(id));
         CollectionAssert.Contains(SongSelectController.EnumerateSongIds(), "Epilogue");
+    }
+
+    [Test]
+    public void TheReadingSitsOnlyOverTheLeadingKanji()
+    {
+        Assert.AreEqual("<ruby=こうか>校歌</ruby>@音楽祭ver",
+            SongSelectSkin.TitleRubyMarkup(SongSelectController.DisplaySongTitle("Epilogue"), SongDisplayInfo.Get("Epilogue").Reading));
+        Assert.AreEqual("<ruby=ゆりかご>揺籠</ruby>", SongSelectSkin.TitleRubyMarkup("揺籠", "ゆりかご"), "全部が漢字なら全体");
+        Assert.AreEqual("<ruby=よみ>ABC</ruby>", SongSelectSkin.TitleRubyMarkup("ABC", "よみ"), "頭が漢字でなければ全体(今までどおり)");
+        Assert.AreEqual("ABC", SongSelectSkin.TitleRubyMarkup("ABC", ""));
     }
 
     [Test]

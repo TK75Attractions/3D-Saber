@@ -26,7 +26,7 @@ public class SongDisplayInfoTests
         SongDisplayInfo.ClearCache();
     }
 
-    [TestCase("Epilogue", "校歌", "校歌")]
+    [TestCase("Epilogue", "校歌@音楽祭ver", "校歌@音楽祭ver")]
     [TestCase("Andalusia", "アンダルシア", "アンダルシア")]
     [TestCase("揺籠", "揺籠", "揺籠")]
     [TestCase("ElDorado", "ElDorado", "EL DORADO")]
@@ -81,7 +81,7 @@ public class SongDisplayInfoTests
     public void MissingOrMismatchedFoldersFallBackToTheId()
     {
         Assert.AreEqual("ELDORADO", ResultSkin.SongIdToDisplayTitle("ELDORADO"), "表示名がフォルダ名と同じだけなら、渡された ID の綴りのまま");
-        Assert.AreEqual("校歌", SongSelectController.DisplaySongTitle("epilogue"), "保存記録の ID と大文字小文字が違っても同じ曲");
+        Assert.AreEqual("校歌@音楽祭ver", SongSelectController.DisplaySongTitle("epilogue"), "保存記録の ID と大文字小文字が違っても同じ曲");
         Assert.AreEqual("NoSuchSong", SongSelectController.DisplaySongTitle("NoSuchSong"));
         Assert.True(SongDisplayInfo.Get("NoSuchSong").Listed);
         Assert.AreEqual("", ResultSkin.SongIdToDisplayTitle(null));
