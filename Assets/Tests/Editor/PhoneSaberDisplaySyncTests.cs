@@ -155,4 +155,48 @@ public class PhoneSaberDisplaySyncTests
         Assert.AreEqual("b", PhoneSaberDisplayNotice.Join("", "b"));
         Assert.AreEqual("a", PhoneSaberDisplayNotice.Join("a", null));
     }
+
+    [Test]
+    public void MeasuringInAMenuLiftsOnlyTheMenuCapItApplied()
+    {
+        int two = PhoneSaberFrameCapSettings.TwoTimes;
+        int menuCap = PhoneSaberFrameCapSettings.TargetFrameRateToApply(two, 60, -1, menu: true);
+        Assert.AreEqual(60, menuCap);
+        // 計測中は本編と同じ 120 fps で測る（本編の画面条件と一致させ、実測を本編の推定に使う）。
+        int lifted = PhoneSaberFrameCapSettings.CurrentForCap(menuCap, menuCap, true);
+        Assert.AreEqual(120, PhoneSaberFrameCapSettings.TargetFrameRateToApply(two, 60, lifted));
+        // 計測していない・ゲームが自分で決めた 30 fps・上限なしは今までどおり。
+        Assert.AreEqual(60, PhoneSaberFrameCapSettings.CurrentForCap(60, 60, false));
+        Assert.AreEqual(-1, PhoneSaberFrameCapSettings.TargetFrameRateToApply(two, 60,
+            PhoneSaberFrameCapSettings.CurrentForCap(30, menuCap, true)));
+        Assert.AreEqual(-1, PhoneSaberFrameCapSettings.CurrentForCap(-1, -1, true));
+        // 計測が終われば、メニューの上限へ下げ直す。
+        Assert.AreEqual(60, PhoneSaberFrameCapSettings.TargetFrameRateToApply(two, 60, 120, menu: true));
+    }
+
+    [Test]
+    public void UsbTetheringHidesOnlyTheTetheringHostLine()
+    {
+        string usb = PhoneSaberDisplayNotice.PhoneWarningFor("172.20.10.1", "critical", 30, true);
+        StringAssert.DoesNotContain("テザリング", usb);
+        StringAssert.Contains("熱い", usb);
+        StringAssert.Contains("30fps", PhoneSaberDisplayNotice.PhoneWarningFor("172.20.10.1", "fair", 30, true));
+        Assert.IsEmpty(PhoneSaberDisplayNotice.PhoneWarningFor("172.20.10.1", "nominal", 60, true));
+        StringAssert.Contains("テザリング", PhoneSaberDisplayNotice.PhoneWarningFor("172.20.10.1", "nominal", 60, false));
+        Assert.IsFalse(PhoneSaberUsbTether.ViaUsb("192.168.137.145", 0));
+    }
+
+    [Test]
+    public void UsbTetheringIsTheAppleAdapterWithAnAddressFromTheIPhone()
+    {
+        Assert.IsTrue(PhoneSaberUsbTether.IsUsbTetherInterface("Apple Mobile Device Ethernet", new[] { "172.20.10.3" }));
+        Assert.IsTrue(PhoneSaberUsbTether.IsUsbTetherInterface("Apple Mobile Device Ethernet #2", new[] { "169.254.1.2", "172.20.10.14" }));
+        Assert.IsFalse(PhoneSaberUsbTether.IsUsbTetherInterface("Intel(R) Wi-Fi 6E AX211 160MHz", new[] { "172.20.10.3" }));
+        Assert.IsFalse(PhoneSaberUsbTether.IsUsbTetherInterface("Apple Mobile Device Ethernet", new[] { "169.254.55.161" }));
+        Assert.IsFalse(PhoneSaberUsbTether.IsUsbTetherInterface("Apple Mobile Device Ethernet", new[] { "172.20.10.16" }));
+        Assert.IsFalse(PhoneSaberUsbTether.IsUsbTetherInterface(null, new[] { "172.20.10.3" }));
+        Assert.IsFalse(PhoneSaberUsbTether.InTetheringSubnet("172.20.10"));
+        Assert.IsFalse(PhoneSaberUsbTether.InTetheringSubnet("172.20.10.-1"));
+        Assert.IsFalse(PhoneSaberUsbTether.InTetheringSubnet("172.20.10.300"));
+    }
 }

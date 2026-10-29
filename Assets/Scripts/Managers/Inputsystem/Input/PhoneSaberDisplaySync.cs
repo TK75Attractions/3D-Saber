@@ -64,6 +64,12 @@ public static class PhoneSaberFrameCapSettings
         if (!(target >= 1 && target <= int.MaxValue)) return -1;
         return currentTarget > 0 && currentTarget <= (int)target ? -1 : (int)target;
     }
+
+    // 計測中のメニューでは、自分で下げたメニューの上限（menuCap）だけを無いものとして本編の倍率まで上げ直す。
+    // 2026-10-29 台B: 上げ直さずに 60 fps のまま F9 で測り、本編（120 fps）の画面条件と一致せず実測が使われなかった。
+    // ゲームが自分で決めた低い値（30 fps など）は計測中も上げない。
+    public static int CurrentForCap(int currentTarget, int menuCap, bool measuringInMenu) =>
+        measuringInMenu && currentTarget > 0 && currentTarget == menuCap ? -1 : currentTarget;
 }
 
 public sealed class PhoneSaberDisplaySync : MonoBehaviour
@@ -86,10 +92,28 @@ public sealed class PhoneSaberDisplaySync : MonoBehaviour
         DontDestroyOnLoad(go);
     }
 
+    static PhoneSaberDisplaySync instance;
     PhoneSaberDisplayNotice notice;
     double nextNoticeCheck;
     int sceneHandle;
     bool inGameScene;
+    // メニュー用に自分で入れた上限。計測の間だけ外す。
+    int menuCap = -1;
+
+    void Awake() => instance = this;
+
+    void OnDestroy()
+    {
+        if (instance == this) instance = null;
+    }
+
+    // F9・追従計測の開始と終了。最初のブロックより先に上限を切り替えて、本編と同じ条件で測る
+    // （次の Update を待つと、最初のブロックが「測定中に画面設定が変わった」として捨てられる）。
+    public static void SetMeasuring(bool measuring)
+    {
+        Measuring = measuring;
+        if (instance != null) instance.ApplyFrameCap();
+    }
 
     // OFF へ戻したときは値を書き戻さない（ゲームが次のシーンで自分の設定を入れ直す）。
     public static void SetMode(int mode)
@@ -119,19 +143,7 @@ public sealed class PhoneSaberDisplaySync : MonoBehaviour
     {
         int value = PhoneSaberDisplaySyncSettings.VSyncCountToApply(Mode, QualitySettings.vSyncCount);
         if (value >= 0) QualitySettings.vSyncCount = value;
-        if (FrameCapMode != PhoneSaberFrameCapSettings.GameDefault)
-        {
-            // シーン名は切り替わったときだけ読む（毎フレームの文字列確保を避ける）。
-            Scene scene = SceneManager.GetActiveScene();
-            if (scene.handle != sceneHandle)
-            {
-                sceneHandle = scene.handle;
-                inGameScene = scene.name == PhoneSaberDisplayNotice.GameSceneName;
-            }
-            int target = PhoneSaberFrameCapSettings.TargetFrameRateToApply(FrameCapMode,
-                Screen.currentResolution.refreshRateRatio.value, Application.targetFrameRate, !inGameScene && !Measuring);
-            if (target >= 0) Application.targetFrameRate = target;
-        }
+        ApplyFrameCap();
         // 画面の更新が遅い（低電力モードなど）ときの知らせ。確認は秒1回、描画は必要なときだけ有効にする。
         double now = Time.realtimeSinceStartupAsDouble;
         if (notice == null || now < nextNoticeCheck) return;
@@ -142,6 +154,25 @@ public sealed class PhoneSaberDisplaySync : MonoBehaviour
                 ? RefreshHzOverride : Screen.currentResolution.refreshRateRatio.value),
             sceneName), sceneName == PhoneSaberDisplayNotice.GameSceneName ? "" : PhoneSaberDisplayNotice.PhoneWarning);
         notice.enabled = notice.Text.Length > 0;
+    }
+
+    void ApplyFrameCap()
+    {
+        if (FrameCapMode == PhoneSaberFrameCapSettings.GameDefault) return;
+        // シーン名は切り替わったときだけ読む（毎フレームの文字列確保を避ける）。
+        Scene scene = SceneManager.GetActiveScene();
+        if (scene.handle != sceneHandle)
+        {
+            sceneHandle = scene.handle;
+            inGameScene = scene.name == PhoneSaberDisplayNotice.GameSceneName;
+        }
+        bool menu = !inGameScene && !Measuring;
+        int current = PhoneSaberFrameCapSettings.CurrentForCap(Application.targetFrameRate, menuCap, !inGameScene && Measuring);
+        int target = PhoneSaberFrameCapSettings.TargetFrameRateToApply(FrameCapMode,
+            Screen.currentResolution.refreshRateRatio.value, current, menu);
+        if (target < 0) return;
+        Application.targetFrameRate = target;
+        menuCap = menu ? target : -1;
     }
 }
 
@@ -160,14 +191,19 @@ public sealed class PhoneSaberDisplayNotice : MonoBehaviour
         string.IsNullOrEmpty(a) ? b ?? "" : string.IsNullOrEmpty(b) ? a : a + "\n" + b;
 
     // 2026-10-17 実測: iPhone がテザリングの親機（172.20.10.1）のまま thermal=serious になり、ずっと 30 fps だった。
-    public static string PhoneWarningFor(string sender, string thermal, double fpsMode)
+    public static string PhoneWarningFor(string sender, string thermal, double fpsMode) =>
+        PhoneWarningFor(sender, thermal, fpsMode, false);
+
+    // viaUsb: USB のインターネット共有（2026-10-29 台B）。送信元は同じ 172.20.10.1 だが Wi-Fi の電波で親機をしないので、
+    // 親機の注意は出さない。熱と 30fps は thermal・fpsMode で今までどおり知らせる。
+    public static string PhoneWarningFor(string sender, string thermal, double fpsMode, bool viaUsb)
     {
         string text = "";
         if (thermal == "serious" || thermal == "critical")
             text = Join(text, $"スマホが熱い（{thermal}）: カメラが30fpsに落ちて遅れが増えます。ケースを外す・充電を外す・風を当てて冷ましてください。");
         else if (fpsMode > 0 && fpsMode < 50)
             text = Join(text, "スマホのカメラが30fpsです（60fpsより遅れが約15ms増）。発熱か設定を確認してください。");
-        if (sender == "172.20.10.1")
+        if (sender == PhoneSaberUsbTether.TetheringHost && !viaUsb)
             text = Join(text, "スマホがテザリングの親機です。Wi-Fi で親機をすると発熱します。Wi-Fiルーター・別の端末を親機にするか、USBケーブルでつないでください。");
         return text;
     }
@@ -200,5 +236,106 @@ public sealed class PhoneSaberDisplayNotice : MonoBehaviour
         foreach (char c in Text) if (c == '\n') lines++;
         float height = style.fontSize * (1.2f + 1.3f * lines);
         GUI.Box(new Rect(Screen.width * 0.1f, 8, Screen.width * 0.8f, height), Text, style);
+    }
+}
+
+// 2026-10-29 台B: iPhone のインターネット共有を USB でつなぐと、Wi-Fi の親機のときと同じく送信元が 172.20.10.1 になる。
+// この PC の 172.20.10.0/28 の番地が Apple Mobile Device Ethernet（Windows の iPhone USB ドライバー）にあれば USB とみなす。
+// 一覧の取得は数十 ms かかることがあるので、送信元が 172.20.10.1 のときだけ裏のスレッドで 10 秒ごとに調べる。
+// Mac の「iPhone USB」は Mono の一覧から Wi-Fi と見分けられないので、Mac では今までどおり親機の注意を出す。
+public static class PhoneSaberUsbTether
+{
+    public const string TetheringHost = "172.20.10.1";
+    public const string WindowsAdapter = "Apple Mobile Device Ethernet";
+    public const double RefreshSeconds = 10;
+
+    const int Unknown = 0, Usb = 1, NotUsb = 2;
+    static int state = Unknown;
+    static int scanning;
+    static string localAddress = "";
+    // ここから下は main thread だけが触る。
+    static double nextScanAt = double.NegativeInfinity;
+    static int loggedState = Unknown;
+
+    // iPhone の親機が配る 172.20.10.0/28。
+    public static bool InTetheringSubnet(string address)
+    {
+        if (string.IsNullOrEmpty(address)) return false;
+        string[] parts = address.Split('.');
+        if (parts.Length != 4) return false;
+        var values = new int[4];
+        for (int i = 0; i < 4; i++)
+            if (!int.TryParse(parts[i], System.Globalization.NumberStyles.None,
+                    System.Globalization.CultureInfo.InvariantCulture, out values[i]) || values[i] > 255) return false;
+        return values[0] == 172 && values[1] == 20 && values[2] == 10 && values[3] <= 15;
+    }
+
+    public static bool IsUsbTetherInterface(string description, System.Collections.Generic.IEnumerable<string> addresses)
+    {
+        if (description == null || addresses == null ||
+            !description.StartsWith(WindowsAdapter, System.StringComparison.OrdinalIgnoreCase)) return false;
+        foreach (string address in addresses)
+            if (InTetheringSubnet(address)) return true;
+        return false;
+    }
+
+    // main thread から（PhoneSaberJudgeLatency が 2 秒ごと）。調べ終わる前は USB 扱いにして、注意を一瞬だけ出すことをしない。
+    public static bool ViaUsb(string sender, double now)
+    {
+        if (sender != TetheringHost) return false;
+        if (now >= nextScanAt)
+        {
+            nextScanAt = now + RefreshSeconds;
+            ScanInBackground();
+        }
+        int current = System.Threading.Volatile.Read(ref state);
+        if (current != Unknown && current != loggedState)
+        {
+            loggedState = current;
+            PhoneSaberEventLog.Record(PhoneSaberStation.Read(), "SYSTEM", "usb-tether",
+                current == Usb ? "usb=1 local=" + System.Threading.Volatile.Read(ref localAddress) : "usb=0");
+        }
+        return current != NotUsb;
+    }
+
+    static void ScanInBackground()
+    {
+        if (System.Threading.Interlocked.CompareExchange(ref scanning, 1, 0) != 0) return;
+        try
+        {
+            System.Threading.ThreadPool.QueueUserWorkItem(_ =>
+            {
+                try
+                {
+                    string found = Scan();
+                    System.Threading.Volatile.Write(ref localAddress, found ?? "");
+                    System.Threading.Volatile.Write(ref state, found != null ? Usb : NotUsb);
+                }
+                catch (System.Exception) { System.Threading.Volatile.Write(ref state, NotUsb); }
+                finally { System.Threading.Volatile.Write(ref scanning, 0); }
+            });
+        }
+        catch (System.Exception) { System.Threading.Volatile.Write(ref scanning, 0); }
+    }
+
+    // USB 側のこの PC の番地（無ければ null）。動いている Apple Mobile Device Ethernet だけを見る。
+    static string Scan()
+    {
+        foreach (var network in System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces())
+        {
+            try
+            {
+                if (network.OperationalStatus != System.Net.NetworkInformation.OperationalStatus.Up) continue;
+                var addresses = new System.Collections.Generic.List<string>();
+                foreach (var unicast in network.GetIPProperties().UnicastAddresses)
+                    if (unicast.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+                        addresses.Add(unicast.Address.ToString());
+                if (!IsUsbTetherInterface(network.Description, addresses)) continue;
+                foreach (string address in addresses)
+                    if (InTetheringSubnet(address)) return address;
+            }
+            catch (System.Exception) { }
+        }
+        return null;
     }
 }

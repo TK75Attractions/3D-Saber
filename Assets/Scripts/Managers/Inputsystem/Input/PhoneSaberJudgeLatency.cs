@@ -161,7 +161,7 @@ public sealed class PhoneSaberJudgeLatency : MonoBehaviour
         string sender = input.RedCoordinateSender ?? input.BlueCoordinateSender;
         var phone = sender != null ? input.ReadPhoneMetrics(sender, clock) : null;
         PhoneSaberDisplayNotice.PhoneWarning = phone == null ? ""
-            : PhoneSaberDisplayNotice.PhoneWarningFor(sender, phone.Thermal, phone.FpsMode);
+            : PhoneSaberDisplayNotice.PhoneWarningFor(sender, phone.Thermal, phone.FpsMode, PhoneSaberUsbTether.ViaUsb(sender, clock));
         double? sample = PhoneSaberJudgeLatencySettings.Combine(red, blue);
         if (sample.HasValue) AutomaticMs = PhoneSaberJudgeLatencySettings.Smooth(AutomaticMs, sample.Value);
     }
