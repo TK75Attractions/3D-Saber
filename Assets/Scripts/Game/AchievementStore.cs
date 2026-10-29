@@ -126,6 +126,18 @@ public static class AchievementStore
         return runId != null && byRun.TryGetValue(RunKey(ns ?? "", runId), out var list) ? list.ToArray() : Array.Empty<string>();
     }
 
+    // 名前空間 ns の回ごとの実績(回の ID → 取った順の写し。実績ポイントの順位に使う)。保存した記録が読めないときは空。
+    public static Dictionary<string, IReadOnlyList<string>> RunsIn(string ns)
+    {
+        EnsureLoaded();
+        var runs = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
+        if (!available) return runs;
+        string prefix = RunKey(ns ?? "", "");
+        foreach (var pair in byRun)
+            if (pair.Key.StartsWith(prefix, StringComparison.Ordinal)) runs[pair.Key.Substring(prefix.Length)] = pair.Value.ToArray();
+        return runs;
+    }
+
     // 相手の台で遊んだ回の実績を足す(数が増えるだけ。ポップアップは出さない)。形の違う ID は捨てる。
     // PlayerPrefs へはまだ書かない(RankingSync が WriteToPrefs でまとめて書き、PlayerPrefs.Save もまとめてする)。
     public static void Merge(string ns, string runId, IEnumerable<string> achIds, string station, long atUnixMs)

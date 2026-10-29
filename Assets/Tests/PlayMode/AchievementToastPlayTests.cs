@@ -400,8 +400,14 @@ public class AchievementToastPlayTests
         while (Visible() && Time.realtimeSinceStartupAsDouble < shown + 8) { lastSeen = Time.realtimeSinceStartupAsDouble; yield return null; }
         Assert.IsFalse(Visible(), "消える");
         Assert.Less(lastSeen - shown, 5, "実時間5秒以内に消える(見えていた最後のコマで測る)");
-        while (AchievementToast.Instance != null && Time.realtimeSinceStartupAsDouble < shown + 30) yield return null;
+        string lastBody = null;
+        while (AchievementToast.Instance != null && Time.realtimeSinceStartupAsDouble < shown + 30)
+        {
+            foreach (var visible in AchievementToast.Instance.VisibleCards()) lastBody = BodyOf(visible);
+            yield return null;
+        }
         Assert.IsNull(AchievementToast.Instance, "全部出し終えたら消える");
+        StringAssert.StartsWith(AchievementPoints.Sum(unlocks.Select(u => u.Id)) + "pt", lastBody, "最後に実績ポイントのカード(〇〇pt 〇位/〇人)");
     }
 
     [UnityTest]

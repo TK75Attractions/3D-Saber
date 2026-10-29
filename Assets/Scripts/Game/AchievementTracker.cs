@@ -310,7 +310,13 @@ public sealed class AchievementTracker : MonoBehaviour
 
     void ShowNow()
     {
-        if (pending != null && pending.Count > 0) AchievementToast.Show(pending);
+        if (pending != null && pending.Count > 0)
+        {
+            AchievementToast.Show(pending);
+            // 最後に実績ポイントと順位(2026-10-29 ユーザー「…実績のポップアップの最後にOOpt O位/O人…」。AchievementPoints)。
+            var standing = AchievementPoints.Of(GameSession.RunNamespace, pendingRun, pending.ConvertAll(u => u.Id));
+            AchievementToast.ShowPoints(standing.Points, standing.Rank, standing.Total, AchievementPoints.Highest(pending));
+        }
         DropPending();
         StopWatchingReveal();
     }

@@ -92,6 +92,19 @@ public sealed class AchievementToast : MonoBehaviour
 
     public static string NumberLabel(int number) => number == 1 ? FirstUnlockText : number + "人目";
 
+    // 実績ポイントのカード(2026-10-29 ユーザー「楽曲終了後の実績のポップアップの最後にOOpt O位/O人っていう同じようなポップアップを出して」、
+    // AchievementPoints)。文は「128pt  3位/412人」(順位は金の太字)。順位が分からない(記録が読めない)ときは点だけ。
+    // ふちはその回でいちばん高い段、見出しは◆なしの「実績ポイント」、音は小さな鈴。実績のカードのあとに足すので、いちばん最後に出る。
+    public const string PointsCaption = "実績ポイント";
+
+    public static string PointsMessage(int points, int rank, int total) =>
+        rank > 0 && total > 0
+            ? points + "pt  <color=" + NumberColor + "><b>" + rank + "位</b></color>/" + total + "人"
+            : points + "pt";
+
+    public static void ShowPoints(int points, int rank, int total, AchievementTier frameTier) =>
+        Ensure().queue.EnqueuePoints(PointsMessage(points, rank, total), frameTier);
+
     // カードの上の小さな見出し(段のあるカードは、段の数の◆をつける)。
     public static string CaptionFor(AchievementTier tier) =>
         tier > AchievementTier.None && tier <= AchievementTier.Rainbow ? Caption + "  " + new string(TierMark, (int)tier) : Caption;
@@ -222,10 +235,11 @@ public sealed class AchievementToast : MonoBehaviour
 
     void PlayChime(AchievementToastQueue.Card card)
     {
-        if (card.StartedAt - lastChime < ChimeGapSeconds - 1e-9 && (int)card.Tier <= (int)lastChimeTier) return;
+        // ポイントのカードは、ふちの段によらず小さな鈴。
+        AchievementTier tier = card.Points ? AchievementTier.None : card.Tier;
+        if (card.StartedAt - lastChime < ChimeGapSeconds - 1e-9 && (int)tier <= (int)lastChimeTier) return;
         lastChime = card.StartedAt;
-        lastChimeTier = card.Tier;
-        AchievementTier tier = card.Tier;
+        lastChimeTier = tier;
         MenuSfx.Play(ChimeKeyFor(tier), () => ChimeSamples(tier));
     }
 
@@ -242,7 +256,7 @@ public sealed class AchievementToast : MonoBehaviour
         if (view.Shown != card.Message || view.ShownTier != card.Tier)
         {
             view.Shown = card.Message; view.ShownTier = card.Tier;
-            view.Body.text = card.Message; view.Caption.text = CaptionFor(card.Tier);
+            view.Body.text = card.Message; view.Caption.text = card.Points ? PointsCaption : CaptionFor(card.Tier);
         }
         double age = now - card.StartedAt;
         var pose = CardPose(age, card.Life, reduced);
@@ -357,6 +371,8 @@ public sealed class AchievementToastQueue
         public AchievementTier Tier;
         public double StartedAt;
         public float Life = AchievementToast.LifeSeconds;
+        // 実績ポイントのカード(見出しは「実績ポイント」、音は小さな鈴)。
+        public bool Points;
     }
 
     readonly Queue<Card> waiting = new Queue<Card>();
@@ -373,6 +389,9 @@ public sealed class AchievementToastQueue
 
     public void Enqueue(string message, AchievementTier tier = AchievementTier.None) =>
         waiting.Enqueue(new Card { Message = message ?? "", Tier = tier });
+
+    public void EnqueuePoints(string message, AchievementTier frameTier) =>
+        waiting.Enqueue(new Card { Message = message ?? "", Tier = frameTier, Points = true });
 
     // 実時刻 now まで進める。消える時刻を過ぎたカードを外し、canStart なら空いた段へ次を出す(前に出してから StaggerSeconds あける)。
     // canStart が false の間(演奏中・幕の間)は新しく出さない(出ているカードは時刻どおり消えていく)。出した枚数を返す。

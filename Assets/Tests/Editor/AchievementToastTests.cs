@@ -372,4 +372,23 @@ public class AchievementToastTests
         }
         finally { Object.DestroyImmediate(mesh); }
     }
+
+    // 実績ポイントのカード(2026-10-29 ユーザー「…実績のポップアップの最後にOOpt O位/O人…」): 実績のカードのあと(最後)、
+    // 文は「128pt  3位/412人」(順位は金の太字。順位が分からないときは点だけ)、見出しは「実績ポイント」、最後の1枚なので 4.5 秒。
+    [Test]
+    public void ThePointsCardComesLastWithItsOwnCaption()
+    {
+        Assert.AreEqual("128pt  <color=" + AchievementToast.NumberColor + "><b>3位</b></color>/412人", AchievementToast.PointsMessage(128, 3, 412));
+        Assert.AreEqual("7pt", AchievementToast.PointsMessage(7, 0, 0));
+        Assert.AreEqual("実績ポイント", AchievementToast.PointsCaption);
+        var queue = new AchievementToastQueue(AchievementToast.MaxVisible);
+        queue.Enqueue("a", AchievementTier.Gold);
+        queue.EnqueuePoints(AchievementToast.PointsMessage(11, 1, 1), AchievementTier.Gold);
+        queue.Tick(0, true);
+        queue.Tick(1, true);
+        Assert.IsFalse(queue.At(0).Points);
+        Assert.IsTrue(queue.At(1).Points);
+        Assert.AreEqual(AchievementTier.Gold, queue.At(1).Tier, "ふちはその回でいちばん高い段");
+        Assert.AreEqual(AchievementToast.LifeSeconds, queue.At(1).Life, 1e-6, "最後の1枚は 4.5 秒");
+    }
 }
