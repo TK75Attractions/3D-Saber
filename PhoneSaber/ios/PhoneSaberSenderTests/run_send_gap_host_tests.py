@@ -58,7 +58,7 @@ def main():
     support = "import Foundation\nimport Network\nimport CoreMedia\nimport CryptoKit\n"
     support += block((SOURCE / "FrameProcessor.swift").read_text(), "enum HostMonotonicClock") + "\n"
     for marker in ["enum DestinationHostSource", "struct DestinationHostSelection", "struct DestinationDisplayPolicy",
-                   "private struct BonjourDiscoveryUpdate"]:
+                   "struct BonjourDiscoveryUpdate"]:
         support += block(camera, marker).replace("private struct", "struct") + "\n"
     support += '''
 struct StubProcessor { let currentGeneration = 7 }
@@ -108,6 +108,9 @@ final class StubDiscovery { var preferredServiceName = ""; func start() {} }
                    "func recordLANReplyForTesting("]:
         support += block(camera, marker) + "\n"
     support += "}\n"
+    # 実 makePackage が参照する上限も本番ソースから取り込む。
+    if "private enum AutoClipFullTransferLimits" in transfer:
+        support += block(transfer, "private enum AutoClipFullTransferLimits") + "\n"
     for marker in ["private struct DebugBundleManifestFile", "private struct DebugBundleManifest:", "private enum DebugBundleTransferError", "struct DebugBundleUploadTrace"]:
         support += block(transfer, marker) + "\n"
     support += '''

@@ -117,7 +117,7 @@ def run_routing_tests(udp_source=None, ingress_benchmark=False):
             sources.append(str(copied))
         camera = (SOURCE / "CameraViewModel.swift").read_text()
         discovery = "import Foundation\nimport Network\nimport Darwin\n" + "\n".join(
-            block(camera, marker) for marker in ["enum DestinationHostSource", "struct DestinationHostSelection", "private struct BonjourDiscoveryUpdate", "private final class BonjourDiscovery:"])
+            block(camera, marker) for marker in ["enum DestinationHostSource", "struct DestinationHostSelection", "struct BonjourDiscoveryUpdate", "final class BonjourDiscovery:"])
         (tmp / "Discovery.swift").write_text(discovery)
         sources.append(str(tmp / "Discovery.swift"))
         frames = (SOURCE / "FrameProcessor.swift").read_text()

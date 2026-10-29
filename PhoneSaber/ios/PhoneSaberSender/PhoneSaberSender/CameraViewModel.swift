@@ -3912,7 +3912,7 @@ struct DebugPerformanceRow: Identifiable, Equatable {
 }
 #endif
 
-private struct BonjourDiscoveryUpdate {
+struct BonjourDiscoveryUpdate {
     let status: String
     let name: String
     let ip: String
@@ -3925,7 +3925,7 @@ private struct BonjourDiscoveryUpdate {
 /// Discovery runs on the main run loop, outside the capture and UDP queues.
 /// The service advertises red UDP 5005; blue remains the existing 5006 on the
 /// resolved host, preserving the payload and transport contract.
-private final class BonjourDiscovery: NSObject, NetServiceBrowserDelegate, NetServiceDelegate {
+final class BonjourDiscovery: NSObject, NetServiceBrowserDelegate, NetServiceDelegate {
     var station = ""
     var preferredServiceName = ""
     var onUpdate: ((BonjourDiscoveryUpdate) -> Void)?
@@ -3936,8 +3936,15 @@ private final class BonjourDiscovery: NSObject, NetServiceBrowserDelegate, NetSe
     private var routeTimer: Timer?
     private var refreshTicks = 0
     private var pendingResolutions: Set<NetService> = []
-    private let routeMonitor = NWPathMonitor()
+    // 既定経路の一覧だけでは、Wi-Fi と併用した USB が省略される iOS がある。
+    private let routeMonitors = [NWPathMonitor(), NWPathMonitor(requiredInterfaceType: .wiredEthernet),
+                                 NWPathMonitor(requiredInterfaceType: .other)]
+    private var interfacesByMonitor: [Int: [NWInterface]] = [:]
     private var interfaces: [NWInterface] = []
+    private let clock: () -> TimeInterval
+    private let probeFactory: (String) -> LANLivenessProbe
+    private let candidateLog: (String) -> Void
+    private var lastCandidateLog = -Double.infinity
     private var addresses: [String: Set<String>] = [:]
     private struct Route {
         let service: String
@@ -3950,25 +3957,44 @@ private final class BonjourDiscovery: NSObject, NetServiceBrowserDelegate, NetSe
     private var scopeStation = ""
     private var scopeService = ""
 
-    override init() {
+    init(monitorRoutes: Bool = true,
+         clock: @escaping () -> TimeInterval = { ProcessInfo.processInfo.systemUptime },
+         probeFactory: @escaping (String) -> LANLivenessProbe = { LANLivenessProbe(expectedStation: $0) },
+         candidateLog: @escaping (String) -> Void = { ConnectivityLog.shared.recordToFileOnly("LAN_CANDIDATES", $0) }) {
+        self.clock = clock
+        self.probeFactory = probeFactory
+        self.candidateLog = candidateLog
         super.init()
-        routeMonitor.pathUpdateHandler = { [weak self] path in
-            DispatchQueue.main.async {
-                guard let self else { return }
-                self.interfaces = path.availableInterfaces.filter { interface in
-                    interface.type != .loopback && interface.type != .cellular &&
-                        !["awdl", "llw", "utun", "pdp_ip"].contains { interface.name.hasPrefix($0) }
+        guard monitorRoutes else { return }
+        let queue = DispatchQueue(label: "PhoneSaberSender.bonjourRoutes")
+        for (source, monitor) in routeMonitors.enumerated() {
+            monitor.pathUpdateHandler = { [weak self] path in
+                DispatchQueue.main.async {
+                    self?.updateInterfaces(path.availableInterfaces, source: source)
                 }
-                if self.isSearching { self.rebuildRoutes() }
             }
+            monitor.start(queue: queue)
         }
-        routeMonitor.start(queue: DispatchQueue(label: "PhoneSaberSender.bonjourRoutes"))
     }
 
     deinit {
-        routeMonitor.cancel()
+        routeMonitors.forEach { $0.cancel() }
         routeTimer?.invalidate()
         routes.values.forEach { $0.probe.stop() }
+    }
+
+    private func updateInterfaces(_ available: [NWInterface], source: Int) {
+        interfacesByMonitor[source] = available.filter { interface in
+            interface.type != .loopback && interface.type != .cellular &&
+                !["awdl", "llw", "utun", "pdp_ip"].contains { interface.name.hasPrefix($0) }
+        }
+        // 別 monitor の更新で USB を上書きしない。消失は各 monitor の最新一覧で反映する。
+        var combined: [Int: NWInterface] = [:]
+        for list in interfacesByMonitor.values {
+            for interface in list { combined[interface.index] = interface }
+        }
+        interfaces = combined.values.sorted { $0.index < $1.index }
+        if isSearching { rebuildRoutes() }
     }
 
     // 座標送信と同じインターフェースに5007を固定。Wi-Fiへ暗黙に経路変更した応答をUSBの証拠にしない。
@@ -3987,7 +4013,7 @@ private final class BonjourDiscovery: NSObject, NetServiceBrowserDelegate, NetSe
                     let id = "\(service)|\(host)%\(interface?.index ?? 0)"
                     wanted.insert(id)
                     if routes[id] == nil {
-                        let probe = LANLivenessProbe(expectedStation: station)
+                        let probe = probeFactory(station)
                         probe.start(host: host, requiredInterface: interface)
                         routes[id] = Route(service: service, host: host, networkInterface: interface, probe: probe)
                     }
@@ -4003,6 +4029,7 @@ private final class BonjourDiscovery: NSObject, NetServiceBrowserDelegate, NetSe
     }
 
     private func chooseRoute() {
+        let now = clock()
         let candidates = routes.map { id, route in
             let interface = route.networkInterface
             let path = route.probe.path
@@ -4012,8 +4039,20 @@ private final class BonjourDiscovery: NSObject, NetServiceBrowserDelegate, NetSe
             return LANRoutePreference.Candidate(id: id, service: route.service, host: route.host,
                 kind: kind, evidence: route.probe.replyEvidence)
         }
-        guard let selection = preference.select(candidates, service: preferredServiceName,
-                                                 at: ProcessInfo.processInfo.systemUptime),
+        let selection = preference.select(candidates, service: preferredServiceName, at: now)
+        if now - lastCandidateLog >= 30 {
+            lastCandidateLog = now
+            let resolved = addresses.keys.sorted().map { "\($0)=[\(addresses[$0]!.sorted().joined(separator: ","))]" }.joined(separator: ";")
+            let inventory = interfaces.map { "\($0.name)#\($0.index):\($0.type)" }.joined(separator: ",")
+            let rows = candidates.sorted { $0.id < $1.id }.map { candidate in
+                let route = routes[candidate.id]!
+                let path = route.probe.path
+                let age = candidate.evidence.count == 0 ? "none" : String(format: "%.1f", now - candidate.evidence.last)
+                return "{host=\(candidate.host) interface=\(route.networkInterface.map { "\($0.name)#\($0.index)" } ?? "default") kind=\(candidate.kind) alive=\(candidate.evidence.alive(at: now)) stable=\(candidate.evidence.stable(at: now)) replies=\(candidate.evidence.count) age=\(age) pathWifi=\(path?.usesInterfaceType(.wifi) == true) pathWired=\(path?.usesInterfaceType(.wiredEthernet) == true) \(route.probe.diagnosticSummary)}"
+            }.joined(separator: " ")
+            candidateLog("selected=\(preference.selectedID ?? "none") reason=\(preference.decisionReason) resolved=\(resolved) interfaces=[\(inventory)] candidates=\(candidates.count) \(rows)")
+        }
+        guard let selection,
               let route = routes[selection.candidate.id] else { return }
         // 最初のサービスを名前で固定し、別台・別PCからの候補では奪わない。
         if preferredServiceName.isEmpty { preferredServiceName = route.service }
@@ -4030,6 +4069,8 @@ private final class BonjourDiscovery: NSObject, NetServiceBrowserDelegate, NetSe
         // USBの再接続や広告のアドレス追加を拾う。失敗しても既存候補の5007確認を継続する。
         if refreshTicks % 6 == 0 {
             for service in resolving where !pendingResolutions.contains(service) {
+                // 同じ NetService の前の解決を終了し、追加アドレスも再問い合わせする。
+                service.stop()
                 pendingResolutions.insert(service)
                 service.resolve(withTimeout: 2)
             }
@@ -4150,4 +4191,20 @@ private final class BonjourDiscovery: NSObject, NetServiceBrowserDelegate, NetSe
             return String(cString: host)
         }
     }
+
+#if DEBUG
+    // 実際の候補生成・probe・選択・周期ログを、実機のネットワーク構成に依存せず検証する。
+    func setResolvedHostsForTesting(_ hosts: [String], service: String) {
+        addresses[service, default: []].formUnion(hosts)
+        rebuildRoutes()
+    }
+
+    func setInterfacesForTesting(_ interfaces: [NWInterface], source: Int) {
+        updateInterfaces(interfaces, source: source)
+        rebuildRoutes()
+    }
+
+    var routeProbesForTesting: [String: LANLivenessProbe] { routes.mapValues { $0.probe } }
+    func routeTickForTesting() { routeTick() }
+#endif
 }

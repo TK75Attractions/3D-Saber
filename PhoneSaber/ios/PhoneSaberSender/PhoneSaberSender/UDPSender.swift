@@ -916,6 +916,11 @@ final class LANLivenessProbe {
         return .init(first: firstReply, last: lastReply, count: replyCount)
     }
 
+    var diagnosticSummary: String {
+        lock.lock(); let connection = self.connection, sent = sentRequestCount; lock.unlock()
+        return "state=\(connection.map { String(describing: $0.state) } ?? "none") requests=\(sent)"
+    }
+
     func metricsRoundTrip(at now: Double) -> (median: Double?, count: Int, age: Double?) {
         lock.lock(); defer { lock.unlock() }
         return roundTrip.snapshot(at: now)
@@ -1170,7 +1175,7 @@ final class SendGapMonitor: @unchecked Sendable {
 /// 直近を画面に出し、同じ内容を Library/Logs/connectivity.log へ追記する（1 MiB で1世代だけ回す）。
 /// 記録は出来事の発生時だけ（フレームごとには呼ばない）。10秒ごとの計測行は `recordToFileOnly` で
 /// ファイルにだけ残す（画面と直近200件を計測行で埋めて、経路の出来事を押し出さないため）。
-/// 計測行は8時間で約0.7 MiB なので、1日分の出来事が回転で消えない上限にしてある。
+/// 経路候補数によって定期行の量が変わるため、保存期間は固定せず1 MiB・1世代の上限で回す。
 final class ConnectivityLog: @unchecked Sendable {
     static let shared = ConnectivityLog(fileURL: defaultFileURL)
     static let sendGapMonitor = SendGapMonitor { shared.record("SEND_GAP", $0) }
@@ -1486,13 +1491,19 @@ struct LANRoutePreference {
         var evidence = Evidence()
     }
     private(set) var selectedID: String?
+    private(set) var decisionReason = "no verified candidate"
 
-    // 172.20.10/28 は Wi-Fi テザリングと共通。Wi-Fi の証拠を常に優先し、IP だけでは有線にしない。
+    // 172.20.10/28 は Wi-Fi テザリングと共通。IP だけでは有線にしない。
+    // 固定なしの Mac USB link-local は、Wi-Fi 併用時の path 表示より宛先を優先する。
+    // 明示的に Wi-Fi へ固定した候補は有線に昇格させない。採用には別途5007の応答が必須。
     // iOS の USB が other として現れる場合は物理 en/usb/ipheth 名、または link-local を補助証拠にする。
     static func kind(host: String, type: NWInterface.InterfaceType, name: String,
                      usesWiFi: Bool, usesWired: Bool) -> Kind {
-        if type == .wifi || usesWiFi { return .wifi }
-        if type == .wiredEthernet || usesWired { return .wired }
+        if type == .wifi { return .wifi }
+        if type == .wiredEthernet { return .wired }
+        if name.isEmpty && host.hasPrefix("169.254.") { return .wired }
+        if usesWiFi { return .wifi }
+        if usesWired { return .wired }
         let name = name.lowercased()
         let virtual = ["awdl", "llw", "utun", "lo", "pdp_ip", "bridge"].contains { name.hasPrefix($0) }
         let physical = name.hasPrefix("usb") || name.hasPrefix("ipheth") ||
@@ -1511,12 +1522,19 @@ struct LANRoutePreference {
         let reason: String
         if let current, current.evidence.alive(at: now) {
             next = current.kind == .wired ? current : (wired ?? current)
-            reason = "wired-recovered-stable (3 replies / >=1s); prefer wired over Wi-Fi"
+            if next?.id != current.id {
+                reason = "wired-recovered-stable (3 replies / >=1s); prefer wired over Wi-Fi"
+            } else {
+                reason = current.kind == .wired ? "keep responding wired" : "keep responding current; waiting for stable wired (3 replies / >=1s)"
+            }
         } else {
             // 複数インターフェースの同じIPに別台がいる場合も、初回はUnity応答を得た候補だけを採用する。
             next = alive.first { $0.kind == .wired } ?? alive.first ?? current
-            reason = current == nil ? "initial candidate; prefer verified wired" : "Unity 5007 reply expired (>1.5s); LAN fallback"
+            reason = current == nil ? "initial candidate; prefer verified wired" :
+                (alive.isEmpty ? "Unity 5007 reply expired (>1.5s); no responding LAN; retain destination for retry" :
+                    "Unity 5007 reply expired (>1.5s); LAN fallback")
         }
+        decisionReason = next == nil ? "no verified candidate" : reason
         guard let next, next.id != selectedID else { return nil }
         selectedID = next.id
         return (next, reason)

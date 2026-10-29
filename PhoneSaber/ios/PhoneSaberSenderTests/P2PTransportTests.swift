@@ -2175,6 +2175,135 @@ import Network
 // このクラスは Mac の standalone XCTest でも同じ production 経路を検証する。
 /// 固定時計で実5007応答パーサーと選択ポリシーを通し、Mac/Windows両方の復旧順序を確認する。
 final class LANRoutePreferenceTests: XCTestCase {
+    func testBonjourRefreshCollectsAdditionalAddressesWithoutDiscardingKnownRoutes() throws {
+        final class Service: NetService {
+            var hosts: [String] = []
+            var calls: [String] = []
+            override var addresses: [Data]? {
+                hosts.map { host in
+                    var address = sockaddr_in()
+                    address.sin_len = UInt8(MemoryLayout<sockaddr_in>.size)
+                    address.sin_family = sa_family_t(AF_INET)
+                    _ = host.withCString { inet_pton(AF_INET, $0, &address.sin_addr) }
+                    return Data(bytes: &address, count: MemoryLayout<sockaddr_in>.size)
+                }
+            }
+            override func resolve(withTimeout timeout: TimeInterval) { calls.append("resolve:\(timeout)") }
+            override func stop() { calls.append("stop") }
+        }
+        let discovery = BonjourDiscovery(monitorRoutes: false,
+            probeFactory: { LANLivenessProbe(port: 1, expectedStation: $0) }, candidateLog: { _ in })
+        let service = Service(domain: "local.", type: "_phonesaber._udp.", name: "Phone Saber Unity A", port: 5005)
+        service.hosts = ["192.168.1.9"]
+        discovery.netServiceBrowser(NetServiceBrowser(), didFind: service, moreComing: false)
+        discovery.netServiceDidResolveAddress(service)
+        let wifiID = "\(service.name)|192.168.1.9%0"
+        let wifi = try XCTUnwrap(discovery.routeProbesForTesting[wifiID])
+        for _ in 0..<6 { discovery.routeTickForTesting() }
+        XCTAssertEqual(service.calls, ["resolve:5.0", "stop", "resolve:2.0"], "3秒ごとに解決を開始し直す")
+        service.hosts = ["169.254.185.161"]
+        discovery.netServiceDidResolveAddress(service)
+        XCTAssertEqual(discovery.routeProbesForTesting.count, 2)
+        XCTAssertTrue(discovery.routeProbesForTesting[wifiID] === wifi)
+        discovery.netService(service, didNotResolve: ["error": NSNumber(value: -1)])
+        for _ in 0..<6 { discovery.routeTickForTesting() }
+        XCTAssertEqual(service.calls.suffix(2), ["stop", "resolve:2.0"])
+        XCTAssertEqual(discovery.routeProbesForTesting.count, 2, "再解決失敗でも既知アドレスを失わない")
+    }
+
+    func testUnpinnedMacUSBPromotesEvenWhenPathReportsWiFi() {
+        let service = "Phone Saber Unity A"
+        for usesWiFi in [false, true] {
+            var policy = LANRoutePreference()
+            var wifi = LANRoutePreference.Candidate(id: "wifi", service: service, host: "192.168.1.9", kind: .wifi,
+                evidence: .init(first: 0, last: 0, count: 1))
+            var usb = LANRoutePreference.Candidate(id: "usb", service: service, host: "169.254.185.161",
+                kind: LANRoutePreference.kind(host: "169.254.185.161", type: .other, name: "",
+                    usesWiFi: usesWiFi, usesWired: false))
+            XCTAssertEqual(usb.kind, .wired)
+            XCTAssertEqual(policy.select([wifi, usb], service: service, at: 0)?.candidate.id, "wifi")
+            wifi.evidence.last = 10
+            XCTAssertNil(policy.select([wifi, usb], service: service, at: 10), "無応答のUSB候補へは切り替えない")
+            usb.evidence = .init(first: 10, last: 10.5, count: 2)
+            XCTAssertNil(policy.select([wifi, usb], service: service, at: 10.5))
+            usb.evidence = .init(first: 10, last: 11, count: 3)
+            wifi.evidence.last = 11
+            XCTAssertEqual(policy.select([wifi, usb], service: service, at: 11)?.candidate.id, "usb",
+                           "Wi-Fi生存中も固定なしUSBが安定すれば昇格する（10-29回帰）")
+            XCTAssertTrue(policy.decisionReason.contains("wired-recovered-stable"))
+        }
+    }
+
+    func testBonjourLateUSBAddressFallbackAndReturnUseProductionRoutes() throws {
+        var now = 0.0
+        let discovery = BonjourDiscovery(monitorRoutes: false, clock: { now },
+            probeFactory: { LANLivenessProbe(port: 1, expectedStation: $0, clock: { now }) }, candidateLog: { _ in })
+        discovery.station = "A"
+        var selected: [String] = []
+        discovery.onUpdate = { if !$0.ip.isEmpty { selected.append($0.ip) } }
+        let service = "Phone Saber Unity A"
+        let wifiHost = "192.168.1.9", usbHost = "169.254.185.161"
+        discovery.setResolvedHostsForTesting([wifiHost], service: service)
+        let wifi = try XCTUnwrap(discovery.routeProbesForTesting["\(service)|\(wifiHost)%0"])
+        func reply(_ probe: LANLivenessProbe) { probe.recordReplyForTesting("PHONESABER_UNITY 1 station=A") }
+        reply(wifi); discovery.routeTickForTesting()
+        XCTAssertEqual(selected, [wifiHost], "Wi-Fiだけなら即座に使う")
+        now = 1
+        discovery.setResolvedHostsForTesting([usbHost], service: service)
+        let usb = try XCTUnwrap(discovery.routeProbesForTesting["\(service)|\(usbHost)%0"])
+        XCTAssertTrue(discovery.routeProbesForTesting["\(service)|\(wifiHost)%0"] === wifi,
+                      "追加解決で応答履歴を失わない")
+        for time in [1.0, 1.5] {
+            now = time; reply(wifi); reply(usb); discovery.routeTickForTesting()
+            XCTAssertEqual(selected, [wifiHost])
+        }
+        now = 2; reply(wifi); reply(usb); discovery.routeTickForTesting()
+        XCTAssertEqual(selected, [wifiHost, usbHost])
+        now = 3.5; reply(wifi); discovery.routeTickForTesting()
+        XCTAssertEqual(selected.last, usbHost)
+        now = 3.51; discovery.routeTickForTesting()
+        XCTAssertEqual(selected, [wifiHost, usbHost, wifiHost], "USB抜け後1.5秒超でWi-Fi")
+        for time in [4.0, 4.5] {
+            now = time; reply(wifi); reply(usb); discovery.routeTickForTesting()
+            XCTAssertEqual(selected.last, wifiHost)
+        }
+        now = 5; reply(wifi); reply(usb); discovery.routeTickForTesting()
+        XCTAssertEqual(selected, [wifiHost, usbHost, wifiHost, usbHost], "USB戻りは連続3応答で復帰")
+    }
+
+    func testBonjourUSBOnlyAndPeriodicCandidateDiagnostics() throws {
+        var now = 0.0
+        var logs: [String] = []
+        let discovery = BonjourDiscovery(monitorRoutes: false, clock: { now },
+            probeFactory: { LANLivenessProbe(port: 1, expectedStation: $0, clock: { now }) },
+            candidateLog: { logs.append($0) })
+        var selected = ""
+        discovery.onUpdate = { selected = $0.ip }
+        let service = "Phone Saber Unity A", host = "169.254.185.161"
+        discovery.setResolvedHostsForTesting([host], service: service)
+        let usb = try XCTUnwrap(discovery.routeProbesForTesting["\(service)|\(host)%0"])
+        XCTAssertEqual(logs.count, 1)
+        XCTAssertTrue(logs[0].contains("no verified candidate"))
+        XCTAssertTrue(logs[0].contains("alive=false stable=false replies=0 age=none"))
+        XCTAssertEqual(selected, "")
+        usb.recordReplyForTesting("PHONESABER_UNITY 1")
+        discovery.routeTickForTesting()
+        XCTAssertEqual(selected, host, "USBのみなら初回応答で使う")
+        now = 29; usb.recordReplyForTesting("PHONESABER_UNITY 1"); discovery.routeTickForTesting()
+        now = 29.9; usb.recordReplyForTesting("PHONESABER_UNITY 1"); discovery.routeTickForTesting()
+        XCTAssertEqual(logs.count, 1, "候補ログは30秒に1回（1 MiBのログを早く回さない）")
+        now = 30; usb.recordReplyForTesting("PHONESABER_UNITY 1"); discovery.routeTickForTesting()
+        XCTAssertEqual(logs.count, 2)
+        for field in ["selected=\(service)|\(host)%0", "reason=keep responding wired", "resolved=\(service)=[\(host)]",
+                      "interface=default kind=wired alive=true stable=true replies=3 age=0.0", "pathWifi=", "state=", "requests="] {
+            XCTAssertTrue(logs[1].contains(field), "候補ログに \(field) が必要: \(logs[1])")
+        }
+        now = 60; discovery.routeTickForTesting()
+        XCTAssertEqual(logs.count, 3)
+        XCTAssertTrue(logs[2].contains("reply expired"))
+        XCTAssertTrue(logs[2].contains("alive=false stable=false"))
+    }
+
     func testMacAndWindowsPreferWiredLoseItAndRecoverWithoutFlapping() {
         for (station, wiredHost, type, interfaceName) in [
             ("A", "169.254.111.127", NWInterface.InterfaceType.wiredEthernet, "en5"),
@@ -2286,6 +2415,8 @@ final class LANRoutePreferenceTests: XCTestCase {
             XCTAssertEqual(LANRoutePreference.kind(host: host, type: .other, name: "utun1", usesWiFi: false, usesWired: false), .other)
         }
         XCTAssertEqual(LANRoutePreference.kind(host: "172.20.10.2", type: .other, name: "unknown", usesWiFi: false, usesWired: false), .other)
+        XCTAssertEqual(LANRoutePreference.kind(host: "172.20.10.2", type: .other, name: "", usesWiFi: true, usesWired: false), .wifi,
+                       "Windowsのテザリング範囲は固定なしでもIPだけで有線にしない")
         XCTAssertEqual(LANRoutePreference.kind(host: "172.20.10.2", type: .other, name: "bridge100", usesWiFi: true, usesWired: false), .wifi)
     }
 
@@ -2299,6 +2430,22 @@ final class LANRoutePreferenceTests: XCTestCase {
         wait(for: [seen], timeout: 3)
         monitor.pathUpdateHandler = nil
         guard let interface = interfaces.value.first else { throw XCTSkip("sandboxにインターフェース一覧がない") }
+        if interface.type != .loopback && interface.type != .cellular &&
+            !["awdl", "llw", "utun", "pdp_ip"].contains(where: { interface.name.hasPrefix($0) }) {
+            let discovery = BonjourDiscovery(monitorRoutes: false,
+                probeFactory: { LANLivenessProbe(port: 1, expectedStation: $0) }, candidateLog: { _ in })
+            let service = "Phone Saber Unity A", host = "169.254.185.161"
+            discovery.setResolvedHostsForTesting([host], service: service)
+            discovery.setInterfacesForTesting([interface], source: 1)
+            discovery.setInterfacesForTesting([interface], source: 0)
+            XCTAssertEqual(discovery.routeProbesForTesting.count, 2, "monitorを跨ぐ同じindexは重複させない")
+            discovery.setInterfacesForTesting([], source: 0)
+            let id = "\(service)|\(host)%\(interface.index)"
+            XCTAssertNotNil(discovery.routeProbesForTesting[id], "既定経路から消えても専用monitor側のUSBを保持")
+            discovery.setInterfacesForTesting([], source: 1)
+            XCTAssertNil(discovery.routeProbesForTesting[id], "全monitorから消えて無応答なら固定候補を除去")
+            XCTAssertEqual(discovery.routeProbesForTesting.count, 1, "固定なしの救済候補は残す")
+        }
         let sender = UDPSender()
         defer { sender.stop() }
         sender.configure(host: "127.0.0.1", requiredInterface: interface)
