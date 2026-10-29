@@ -115,12 +115,18 @@ def run_routing_tests(udp_source=None, ingress_benchmark=False):
                 content = content.replace("    func update(_ settings: Settings)", getter + "\n    func update(_ settings: Settings)")
             copied.write_text(content)
             sources.append(str(copied))
+        camera = (SOURCE / "CameraViewModel.swift").read_text()
+        discovery = "import Foundation\nimport Network\nimport Darwin\n" + "\n".join(
+            block(camera, marker) for marker in ["enum DestinationHostSource", "struct DestinationHostSelection", "private struct BonjourDiscoveryUpdate", "private final class BonjourDiscovery:"])
+        (tmp / "Discovery.swift").write_text(discovery)
+        sources.append(str(tmp / "Discovery.swift"))
         frames = (SOURCE / "FrameProcessor.swift").read_text()
         (tmp / "Clock.swift").write_text("import CoreMedia\nimport Foundation\n" + block(frames, "enum HostMonotonicClock"))
         (tmp / "main.swift").write_text('''import XCTest
 import Darwin
 let suite = XCTestSuite(name: "Production LAN/routing regression")
 suite.addTest(CoordinateDeliveryTests.defaultTestSuite)
+suite.addTest(LANRoutePreferenceTests.defaultTestSuite)
 suite.addTest(SendGapTests.defaultTestSuite)
 let ingress = UDPIngressTests.defaultTestSuite
 guard ingress.testCaseCount >= 12 else { exit(1) }

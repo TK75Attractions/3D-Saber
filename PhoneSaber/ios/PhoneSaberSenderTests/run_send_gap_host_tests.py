@@ -62,7 +62,7 @@ def main():
         support += block(camera, marker).replace("private struct", "struct") + "\n"
     support += '''
 struct StubProcessor { let currentGeneration = 7 }
-struct StubDiscovery { func start() {} }
+final class StubDiscovery { var preferredServiceName = ""; func start() {} }
 // AVCaptureSession・UI の代役。宛先更新・経路通知・P2P callback の関数本体は下の実ソース。
 @MainActor final class CameraViewModel {
     let sender: UDPSender
@@ -82,6 +82,8 @@ struct StubDiscovery { func start() {} }
     var lifecycleGenerationForTesting: Int { lifecycleGeneration }
     var lifecycleGeneration = 1
     var latestResolvedMac = (name: "", ip: "")
+    var bonjourInterface: NWInterface?
+    var automaticLANInterface: NWInterface? { hostSelection.source == .manual ? nil : bonjourInterface }
     var destinationDisplay = DestinationDisplayPolicy()
     var connectionMode = "", activeDestination = "", networkDiscoveryStatus = "", otherDiscoveredPC = ""
     var pathStatus = "", pathInterface = ""
@@ -137,6 +139,7 @@ final class DebugBundleTransfer {
                  "testDuplicatePongsDoNotRestoreAStaleLink",
                  "testReceiveErrorRebuildsP2PBeforePongTimeoutAndRecovers",
                  "testUnchangedBonjourAndPathRefreshPreserveBothLANConnections",
+                 "testBonjourInterfaceChangeReconfiguresSameHostButManualKeepsDefaultRoute",
                  "testP2PConnectedNotificationPreservesPendingVerifiedLANCoordinates",
                  "testCoordinateSendFailureInvalidatesP2PAndFallsBackToLAN",
                  "testLateP2PFailureDoesNotSendOlderCoordinatesAfterNewerLANCoordinates",

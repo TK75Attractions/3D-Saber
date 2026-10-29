@@ -73,6 +73,7 @@ final class UDPSender {
     private var connectionErrors: [Int: String] = [:]
     private var sendErrors: [Int: String] = [:]
     private var configuredHost = ""
+    private var requiredInterface: NWInterface?
     private var configuredPorts: Set<Int> = []
     private var isRunning = false
     private var configurationGeneration = 0
@@ -121,11 +122,12 @@ final class UDPSender {
         stopLocked(clearHandler: true)
     }
 
-    func configure(host: String, ports: [Int] = [5005, 5006],
+    func configure(host: String, ports: [Int] = [5005, 5006], requiredInterface: NWInterface? = nil,
                    onUpdate: (([Int: String], [Int: String], String?) -> Void)? = nil) {
         queue.sync {
             // 同じ宛先の再通知では、待機中・送信中の座標と接続を保持する。
-            if isRunning, configuredHost == host, configuredPorts == Set(ports) {
+            if isRunning, configuredHost == host, configuredPorts == Set(ports),
+               self.requiredInterface?.index == requiredInterface?.index {
 #if DEBUG
                 // 接続世代は保ち、テスト用の通知設定履歴だけ更新する。
                 updateHandlersForTesting.append(onUpdate)
@@ -137,6 +139,7 @@ final class UDPSender {
             stopLocked(clearHandler: false)
             configurationGeneration += 1
             configuredHost = host
+            self.requiredInterface = requiredInterface
             configuredPorts = Set(ports)
             isRunning = true
             updateHandler = onUpdate
@@ -158,11 +161,13 @@ final class UDPSender {
         }
     }
 
-    func updateHost(_ host: String) {
+    func updateHost(_ host: String, requiredInterface: NWInterface? = nil) {
         queue.async { [weak self] in
-            guard let self, self.isRunning, !host.isEmpty, host != self.configuredHost else { return }
+            guard let self, self.isRunning, !host.isEmpty,
+                  host != self.configuredHost || self.requiredInterface?.index != requiredInterface?.index else { return }
             self.configurationGeneration += 1
             self.configuredHost = host
+            self.requiredInterface = requiredInterface
             self.ingressLock.lock()
             self.ingressHost = host
             self.ingressLock.unlock()
@@ -273,7 +278,9 @@ final class UDPSender {
             return
         }
         guard let networkPort = NWEndpoint.Port(rawValue: UInt16(port)) else { return }
-        let connection = NWConnection(host: NWEndpoint.Host(configuredHost), port: networkPort, using: .udp)
+        let parameters = NWParameters.udp
+        parameters.requiredInterface = requiredInterface
+        let connection = NWConnection(host: NWEndpoint.Host(configuredHost), port: networkPort, using: parameters)
         connections[port] = connection
         connection.stateUpdateHandler = { [weak self, weak connection] state in
             guard let self else { return }
@@ -605,6 +612,7 @@ final class UDPSender {
         states.removeAll(); connectionErrors.removeAll(); sendErrors.removeAll()
         reconnectAttempts.removeAll()
         configuredHost = ""
+        requiredInterface = nil
         if clearHandler { updateHandler = nil }
 #if DEBUG
         lastSendStartByPort = [:]
@@ -833,17 +841,22 @@ final class LANLivenessProbe {
     private let clock: () -> TimeInterval
     /// 本番は常に 5007。テストだけが空きポートの偽 Unity を指定する。
     private let probePort: UInt16
+    private var expectedStation: String
     private var host = ""
+    private var requiredInterface: NWInterface?
     private var connection: NWConnection?
     private var timer: DispatchSourceTimer?
     private var lastReply = -Double.infinity
+    private var firstReply = -Double.infinity
+    private var replyCount = 0
     private var createdConnectionCount = 0
     private var sentRequestCount = 0
     private var roundTrip = ProbeRoundTrip()
 
-    init(port: UInt16 = LANLivenessProbe.port,
+    init(port: UInt16 = LANLivenessProbe.port, expectedStation: String = "",
          clock: @escaping () -> TimeInterval = { ProcessInfo.processInfo.systemUptime }) {
         self.probePort = port
+        self.expectedStation = expectedStation
         self.clock = clock
     }
 
@@ -853,9 +866,11 @@ final class LANLivenessProbe {
     }
 
     /// 同じ host なら何もしない（応答履歴を保つ）。
-    func start(host: String) {
+    func start(host: String, requiredInterface: NWInterface? = nil, expectedStation: String? = nil,
+               verifiedEvidence: LANRoutePreference.Evidence? = nil) {
         lock.lock()
-        let same = host == self.host && timer != nil
+        let station = expectedStation ?? self.expectedStation
+        let same = host == self.host && timer != nil && self.requiredInterface?.index == requiredInterface?.index && self.expectedStation == station
         lock.unlock()
         if same { return }
         stop()
@@ -863,7 +878,15 @@ final class LANLivenessProbe {
         let timer = DispatchSource.makeTimerSource(queue: queue)
         timer.schedule(deadline: .now(), repeating: 0.5)
         timer.setEventHandler { [weak self] in self?.tick() }
-        lock.lock(); self.host = host; self.timer = timer; lock.unlock()
+        lock.lock()
+        self.host = host; self.requiredInterface = requiredInterface; self.timer = timer
+        self.expectedStation = station
+        // 同じ宛先・インターフェースの候補探索で既に受けた応答を引き継ぐ。
+        // 切替直後の確認待ちだけを理由に、利用可能なWi-Fiより先にP2Pへ退避しない。
+        if let evidence = verifiedEvidence, evidence.alive(at: clock()) {
+            firstReply = evidence.first; lastReply = evidence.last; replyCount = evidence.count
+        }
+        lock.unlock()
         timer.resume()
     }
 
@@ -872,6 +895,7 @@ final class LANLivenessProbe {
         let timer = self.timer, connection = self.connection
         self.timer = nil; self.connection = nil; host = ""; lastReply = -Double.infinity
         roundTrip = ProbeRoundTrip()
+        requiredInterface = nil; firstReply = -Double.infinity; replyCount = 0
         lock.unlock()
         timer?.cancel()
         connection?.cancel()
@@ -880,6 +904,16 @@ final class LANLivenessProbe {
     var isAlive: Bool {
         lock.lock(); defer { lock.unlock() }
         return clock() - lastReply <= Self.aliveWindow
+    }
+
+    var path: NWPath? {
+        lock.lock(); let connection = self.connection; lock.unlock()
+        return connection?.currentPath
+    }
+
+    var replyEvidence: LANRoutePreference.Evidence {
+        lock.lock(); defer { lock.unlock() }
+        return .init(first: firstReply, last: lastReply, count: replyCount)
     }
 
     func metricsRoundTrip(at now: Double) -> (median: Double?, count: Int, age: Double?) {
@@ -931,16 +965,19 @@ final class LANLivenessProbe {
     private func tick() {
         lock.lock()
         let host = self.host
+        let requiredInterface = self.requiredInterface
         var connection = self.connection
         lock.unlock()
         guard !host.isEmpty, let port = NWEndpoint.Port(rawValue: probePort) else { return }
         if let current = connection, case .failed = current.state { current.cancel(); connection = nil }
         if let current = connection, case .cancelled = current.state { connection = nil }
         if connection == nil {
-            let created = NWConnection(host: NWEndpoint.Host(host), port: port, using: .udp)
+            let parameters = NWParameters.udp
+            parameters.requiredInterface = requiredInterface
+            let created = NWConnection(host: NWEndpoint.Host(host), port: port, using: parameters)
             // この tick の途中で stop / 別 host への start があったら、旧 host の接続を残さない。
             lock.lock()
-            let stillCurrent = self.host == host
+            let stillCurrent = self.host == host && self.requiredInterface?.index == requiredInterface?.index && timer != nil
             if stillCurrent { self.connection = created; createdConnectionCount += 1 }
             lock.unlock()
             guard stillCurrent else { return }
@@ -1002,6 +1039,12 @@ final class LANLivenessProbe {
         return true
     }
 
+    static func matchesStation(_ text: String, expected: String) -> Bool {
+        guard !expected.isEmpty else { return true }
+        let station = text.split(separator: " ").first { $0.hasPrefix("station=") }.map { String($0.dropFirst(8)) }
+        return station == nil || station == expected
+    }
+
     private func handle(_ data: Data, from connection: NWConnection?) {
         guard let text = String(data: data, encoding: .ascii) else { return }
         if var command = Self.parseCommand(text) {
@@ -1012,8 +1055,12 @@ final class LANLivenessProbe {
         }
         guard Self.isCompatibleReply(text) else { return }
         lock.lock()
+        guard Self.matchesStation(text, expected: expectedStation) else { lock.unlock(); return }
         if connection == nil || self.connection === connection {
-            lastReply = clock()
+            let now = clock()
+            if now - lastReply > Self.aliveWindow { firstReply = now; replyCount = 0 }
+            lastReply = now
+            replyCount += 1
             roundTrip.reply(at: lastReply)
         }
         lock.unlock()
@@ -1337,7 +1384,14 @@ final class CoordinateDelivery: @unchecked Sendable {
     private func note(_ route: Route) {
         guard route != lastRoute else { return }
         lastRoute = route
-        ConnectivityLog.shared.record("経路", route.rawValue)
+        let reason: String
+        switch route {
+        case .p2p: reason = "LAN Unity 5007 reply unavailable; P2P last fallback"
+        case .lanVerified: reason = "LAN Unity 5007 reply alive; prefer LAN"
+        case .lanUnverified: reason = "manual IP or no usable P2P; LAN not verified"
+        case .none: reason = "no configured destination"
+        }
+        ConnectivityLog.shared.record("経路", "\(route.rawValue) reason=\(reason)")
     }
 
     func snapshot(generation: Int) -> Settings? {
@@ -1406,5 +1460,61 @@ final class CoordinateDelivery: @unchecked Sendable {
             ConnectivityLog.sendGapMonitor.blocked("route had no destination")
             noRoute()
         }
+    }
+}
+
+
+/// 同一 PC のアドレス・インターフェース候補から選ぶ。IP の並び順や OS の既定経路に依存させない。
+struct LANRoutePreference {
+    enum Kind { case wired, wifi, other }
+    struct Evidence {
+        var first = -Double.infinity
+        var last = -Double.infinity
+        var count = 0
+        func alive(at now: TimeInterval) -> Bool { now - last <= LANLivenessProbe.aliveWindow }
+        func stable(at now: TimeInterval) -> Bool { alive(at: now) && count >= 3 && last - first >= 1 }
+    }
+    struct Candidate {
+        let id: String
+        let service: String
+        let host: String
+        let kind: Kind
+        var evidence = Evidence()
+    }
+    private(set) var selectedID: String?
+
+    // 172.20.10/28 は Wi-Fi テザリングと共通。Wi-Fi の証拠を常に優先し、IP だけでは有線にしない。
+    // iOS の USB が other として現れる場合は物理 en/usb/ipheth 名、または link-local を補助証拠にする。
+    static func kind(host: String, type: NWInterface.InterfaceType, name: String,
+                     usesWiFi: Bool, usesWired: Bool) -> Kind {
+        if type == .wifi || usesWiFi { return .wifi }
+        if type == .wiredEthernet || usesWired { return .wired }
+        let name = name.lowercased()
+        let virtual = ["awdl", "llw", "utun", "lo", "pdp_ip", "bridge"].contains { name.hasPrefix($0) }
+        let physical = name.hasPrefix("usb") || name.hasPrefix("ipheth") ||
+            (name.hasPrefix("en") && Int(name.dropFirst(2)) != nil)
+        if type == .other && !virtual && (physical || host.hasPrefix("169.254.")) { return .wired }
+        return .other
+    }
+
+    mutating func select(_ candidates: [Candidate], service: String, at now: TimeInterval) -> (candidate: Candidate, reason: String)? {
+        // 台・名前の固定は Bonjour/VM と同じ。別 PC の有線で現在の PC を置き換えない。
+        let eligible = candidates.filter { service.isEmpty || $0.service == service }.sorted { $0.id < $1.id }
+        let current = eligible.first { $0.id == selectedID }
+        let alive = eligible.filter { $0.evidence.alive(at: now) }
+        let wired = alive.first { $0.kind == .wired && (current == nil || $0.evidence.stable(at: now)) }
+        let next: Candidate?
+        let reason: String
+        if let current, current.evidence.alive(at: now) {
+            next = current.kind == .wired ? current : (wired ?? current)
+            reason = "wired-recovered-stable (3 replies / >=1s); prefer wired over Wi-Fi"
+        } else {
+            // 複数インターフェースの同じIPに別台がいる場合も、初回はUnity応答を得た候補だけを採用する。
+            next = alive.first { $0.kind == .wired } ?? alive.first ?? current
+            reason = current == nil ? "initial candidate; prefer verified wired" : "Unity 5007 reply expired (>1.5s); LAN fallback"
+        }
+        guard let next, next.id != selectedID else { return nil }
+        selectedID = next.id
+        return (next, reason)
     }
 }

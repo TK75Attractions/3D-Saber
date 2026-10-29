@@ -878,6 +878,8 @@ final class CameraViewModel: NSObject, ObservableObject {
     @Published private(set) var otherDiscoveredPC = ""
     private var destinationDisplay = DestinationDisplayPolicy()
     private var latestResolvedMac = (name: "", ip: "")
+    private var bonjourInterface: NWInterface?
+    private var automaticLANInterface: NWInterface? { hostSelection.source == .manual ? nil : bonjourInterface }
     var manualHostActive: Bool { hostSelection.source == .manual }
     var phoneIdentity: PhoneSaberIdentity {
         let destination: String
@@ -1189,6 +1191,7 @@ final class CameraViewModel: NSObject, ObservableObject {
             }
         }
         bonjourDiscovery.station = station
+        bonjourDiscovery.preferredServiceName = hostSelection.bonjourServiceName
         updateDiagnosticDestination()
         if automaticLANDiscoveryEnabled { bonjourDiscovery.start() }
         if self.p2pEnabled { startP2P() }
@@ -2415,6 +2418,8 @@ final class CameraViewModel: NSObject, ObservableObject {
         UserDefaults.standard.removeObject(forKey: "PhoneSaber.bonjourService")
         UserDefaults.standard.set(value, forKey: PhoneSaberStation.preferenceKey)
         latestResolvedMac = (name: "", ip: "")
+        bonjourInterface = nil
+        bonjourDiscovery.preferredServiceName = ""
         if hostSelection.source != .manual {
             hostSelection = DestinationHostSelection()
             host = ""
@@ -2445,6 +2450,8 @@ final class CameraViewModel: NSObject, ObservableObject {
         updateSelectedDestinationDisplay()
         networkDiscoveryStatus = destinationDisplay.status
         latestResolvedMac = (name: "", ip: "")
+        bonjourInterface = nil
+        bonjourDiscovery.preferredServiceName = ""
         updateDiagnosticDestination()
         bonjourDiscovery.station = station
         if automaticLANDiscoveryEnabled { bonjourDiscovery.start() }
@@ -2478,32 +2485,42 @@ final class CameraViewModel: NSObject, ObservableObject {
 
     private func receiveBonjourUpdate(_ update: BonjourDiscoveryUpdate) {
         guard update.name.isEmpty || PhoneSaberStation.matches(service: update.name, station: station) else { return }
-        latestResolvedMac = (name: update.name, ip: update.ip)
+        if !update.ip.isEmpty && (hostSelection.bonjourServiceName.isEmpty || hostSelection.bonjourServiceName == update.name) {
+            latestResolvedMac = (name: update.name, ip: update.ip)
+            // 手動IP中も、自動へ戻したときの候補インターフェースはIPと対で記憶する。
+            // 手動の送信には automaticLANInterface が常に nil を返す。
+            if hostSelection.source == .manual { bonjourInterface = update.requiredInterface }
+        }
         if update.removed && hostSelection.source != .manual && hostSelection.bonjourServiceName == update.name {
             lanConfigured = false
             sender.stop(); lanProbe.stop()
         }
-        if hostSelection.applyBonjour(host: update.ip, serviceName: update.name) ||
+        let interfaceChanged = hostSelection.source != .manual && !update.ip.isEmpty &&
+            hostSelection.bonjourServiceName == update.name && bonjourInterface?.index != update.requiredInterface?.index
+        if hostSelection.applyBonjour(host: update.ip, serviceName: update.name) || interfaceChanged ||
             (!update.ip.isEmpty && hostSelection.source != .manual && hostSelection.bonjourServiceName == update.name && !lanConfigured) {
             if NSClassFromString("XCTestCase") == nil {
                 UserDefaults.standard.set(update.name, forKey: "PhoneSaber.bonjourService")
             }
+            bonjourInterface = update.requiredInterface
+            bonjourDiscovery.preferredServiceName = hostSelection.bonjourServiceName
             host = hostSelection.host
             connectionMode = hostSelection.source.rawValue
+            ConnectivityLog.shared.record("LAN_SELECTION", "station=\(station) service=\(update.name) host=\(update.ip) interface=\(update.requiredInterface?.name ?? "default") reason=\(update.reason)")
             updateDiagnosticDestination()
 #if DEBUG
             print("[Host] source=\(hostSelection.source.rawValue) resolved=\(update.ip) service=\(update.name)")
 #endif
             if running {
                 if lanConfigured {
-                    sender.updateHost(update.ip)
+                    sender.updateHost(update.ip, requiredInterface: automaticLANInterface)
                     // 生存確認も新しい IP へ向ける。旧 IP のままだと LAN が確認済みにならず、
                     // LAN で届くのに遅い P2P へ回り続ける。
                     ConnectivityLog.shared.record("LAN", "宛先の IP が変わった \(update.ip)")
-                    lanProbe.start(host: update.ip)
+                    lanProbe.start(host: update.ip, requiredInterface: automaticLANInterface, expectedStation: station, verifiedEvidence: update.evidence)
                 } else {
                     // Started on P2P alone; the LAN fallback becomes available now.
-                    configureLAN(host: update.ip, generation: lifecycleGeneration)
+                    configureLAN(host: update.ip, generation: lifecycleGeneration, verifiedEvidence: update.evidence)
                 }
                 activeDestination = "\(update.ip):5005 / \(update.ip):5006"
             }
@@ -2515,8 +2532,9 @@ final class CameraViewModel: NSObject, ObservableObject {
         otherDiscoveredPC = destinationDisplay.otherPC
     }
 
-    func applyBonjourForTesting(host: String, serviceName: String = "Test Mac") {
-        receiveBonjourUpdate(BonjourDiscoveryUpdate(status: "Resolved", name: serviceName, ip: host))
+    func applyBonjourForTesting(host: String, serviceName: String = "Test Mac", requiredInterface: NWInterface? = nil) {
+        receiveBonjourUpdate(BonjourDiscoveryUpdate(status: "Resolved", name: serviceName, ip: host,
+                                                   requiredInterface: requiredInterface))
     }
 
     func recoverFromForeground() {
@@ -3202,11 +3220,11 @@ final class CameraViewModel: NSObject, ObservableObject {
 
     // MARK: Transport (LAN 確認済みを優先、P2P へ退避)
 
-    private func configureLAN(host: String, generation: Int) {
+    private func configureLAN(host: String, generation: Int, verifiedEvidence: LANRoutePreference.Evidence? = nil) {
         lanConfigured = false
         ConnectivityLog.shared.record("LAN", "宛先 \(host)")
-        lanProbe.start(host: host)
-        sender.configure(host: host) { [weak self] states, errors, _ in
+        lanProbe.start(host: host, requiredInterface: automaticLANInterface, expectedStation: hostSelection.source == .manual ? "" : station, verifiedEvidence: verifiedEvidence)
+        sender.configure(host: host, requiredInterface: automaticLANInterface) { [weak self] states, errors, _ in
             Task { @MainActor in
                 self?.applySenderUpdate(states: states, errors: errors, generation: generation)
             }
@@ -3879,6 +3897,9 @@ private struct BonjourDiscoveryUpdate {
     let name: String
     let ip: String
     var removed = false
+    var requiredInterface: NWInterface? = nil
+    var reason = "Bonjour resolved"
+    var evidence: LANRoutePreference.Evidence? = nil
 }
 
 /// Discovery runs on the main run loop, outside the capture and UDP queues.
@@ -3886,11 +3907,110 @@ private struct BonjourDiscoveryUpdate {
 /// resolved host, preserving the payload and transport contract.
 private final class BonjourDiscovery: NSObject, NetServiceBrowserDelegate, NetServiceDelegate {
     var station = ""
+    var preferredServiceName = ""
     var onUpdate: ((BonjourDiscoveryUpdate) -> Void)?
     private let browser = NetServiceBrowser()
     private var resolving: Set<NetService> = []
     private var searchTimeout: DispatchWorkItem?
     private var isSearching = false
+    private var routeTimer: Timer?
+    private var refreshTicks = 0
+    private var pendingResolutions: Set<NetService> = []
+    private let routeMonitor = NWPathMonitor()
+    private var interfaces: [NWInterface] = []
+    private var addresses: [String: Set<String>] = [:]
+    private struct Route {
+        let service: String
+        let host: String
+        let networkInterface: NWInterface?
+        let probe: LANLivenessProbe
+    }
+    private var routes: [String: Route] = [:]
+    private var preference = LANRoutePreference()
+    private var scopeStation = ""
+    private var scopeService = ""
+
+    override init() {
+        super.init()
+        routeMonitor.pathUpdateHandler = { [weak self] path in
+            DispatchQueue.main.async {
+                guard let self else { return }
+                self.interfaces = path.availableInterfaces.filter { interface in
+                    interface.type != .loopback && interface.type != .cellular &&
+                        !["awdl", "llw", "utun", "pdp_ip"].contains { interface.name.hasPrefix($0) }
+                }
+                if self.isSearching { self.rebuildRoutes() }
+            }
+        }
+        routeMonitor.start(queue: DispatchQueue(label: "PhoneSaberSender.bonjourRoutes"))
+    }
+
+    deinit {
+        routeMonitor.cancel()
+        routeTimer?.invalidate()
+        routes.values.forEach { $0.probe.stop() }
+    }
+
+    // 座標送信と同じインターフェースに5007を固定。Wi-Fiへ暗黙に経路変更した応答をUSBの証拠にしない。
+    private func rebuildRoutes() {
+        let available: [NWInterface?] = interfaces.isEmpty ? [nil] : interfaces.map { $0 }
+        var wanted: Set<String> = []
+        for (service, hosts) in addresses {
+            guard PhoneSaberStation.matches(service: service, station: station),
+                  preferredServiceName.isEmpty || service == preferredServiceName else { continue }
+            for host in hosts {
+                for interface in available {
+                    let id = "\(service)|\(host)%\(interface?.index ?? 0)"
+                    wanted.insert(id)
+                    if routes[id] == nil {
+                        let probe = LANLivenessProbe(expectedStation: station)
+                        probe.start(host: host, requiredInterface: interface)
+                        routes[id] = Route(service: service, host: host, networkInterface: interface, probe: probe)
+                    }
+                }
+            }
+        }
+        for id in Array(routes.keys) where !wanted.contains(id) {
+            // 経路一覧からの消失でも、最後の応答から1.5秒は既存経路を保持する。
+            if routes[id]?.probe.isAlive == true { continue }
+            routes.removeValue(forKey: id)?.probe.stop()
+        }
+        chooseRoute()
+    }
+
+    private func chooseRoute() {
+        let candidates = routes.map { id, route in
+            let interface = route.networkInterface
+            let path = route.probe.path
+            let kind = LANRoutePreference.kind(host: route.host, type: interface?.type ?? .other,
+                name: interface?.name ?? "", usesWiFi: path?.usesInterfaceType(.wifi) == true,
+                usesWired: path?.usesInterfaceType(.wiredEthernet) == true)
+            return LANRoutePreference.Candidate(id: id, service: route.service, host: route.host,
+                kind: kind, evidence: route.probe.replyEvidence)
+        }
+        guard let selection = preference.select(candidates, service: preferredServiceName,
+                                                 at: ProcessInfo.processInfo.systemUptime),
+              let route = routes[selection.candidate.id] else { return }
+        // 最初のサービスを名前で固定し、別台・別PCからの候補では奪わない。
+        if preferredServiceName.isEmpty { preferredServiceName = route.service }
+        scopeService = preferredServiceName
+        onUpdate?(BonjourDiscoveryUpdate(status: "Resolved: \(route.host) / Ready", name: route.service,
+            ip: route.host, requiredInterface: route.networkInterface,
+            reason: "\(selection.reason) kind=\(selection.candidate.kind) type=\(String(describing: route.networkInterface?.type))",
+            evidence: selection.candidate.evidence))
+    }
+
+    private func routeTick() {
+        chooseRoute()
+        refreshTicks += 1
+        // USBの再接続や広告のアドレス追加を拾う。失敗しても既存候補の5007確認を継続する。
+        if refreshTicks % 6 == 0 {
+            for service in resolving where !pendingResolutions.contains(service) {
+                pendingResolutions.insert(service)
+                service.resolve(withTimeout: 2)
+            }
+        }
+    }
 
     private func report(_ status: String, name: String = "", ip: String = "", removed: Bool = false) {
 #if DEBUG
@@ -3902,6 +4022,17 @@ private final class BonjourDiscovery: NSObject, NetServiceBrowserDelegate, NetSe
     func start() {
         precondition(Thread.isMainThread)
         searchTimeout?.cancel()
+        routeTimer?.invalidate()
+        routeTimer = nil
+        // Wi-Fiが到達可能になった通知でも、応答中のUSBと復帰確認の履歴を失わない。
+        if scopeStation != station || scopeService != preferredServiceName {
+            routes.values.forEach { $0.probe.stop() }
+            routes.removeAll(); addresses.removeAll()
+            preference = LANRoutePreference()
+        }
+        scopeStation = station; scopeService = preferredServiceName
+        pendingResolutions.removeAll()
+        refreshTicks = 0
         browser.stop()
         resolving.forEach { $0.stop() }
         resolving.removeAll()
@@ -3909,6 +4040,9 @@ private final class BonjourDiscovery: NSObject, NetServiceBrowserDelegate, NetSe
         report("Discovery starting")
         browser.searchForServices(ofType: "_phonesaber._udp.", inDomain: "local.")
         isSearching = true
+        let timer = Timer(timeInterval: 0.5, repeats: true) { [weak self] _ in self?.routeTick() }
+        RunLoop.main.add(timer, forMode: .common)
+        routeTimer = timer
         let timeout = DispatchWorkItem { [weak self] in
             guard let self, self.resolving.isEmpty else { return }
             self.report(self.station.isEmpty ? "No service found; Manual IP required (探索継続中)"
@@ -3935,8 +4069,10 @@ private final class BonjourDiscovery: NSObject, NetServiceBrowserDelegate, NetSe
     func netServiceBrowser(_ browser: NetServiceBrowser, didRemove service: NetService, moreComing: Bool) {
         guard PhoneSaberStation.matches(service: service.name, station: station) else { return }
         resolving.remove(service)
+        pendingResolutions.remove(service)
         service.stop()
-        report("PC を再接続中…", name: service.name, removed: true)
+        // 広告消失だけでは応答中の有線を捨てない。5007の既存1.5秒判定で退避する。
+        if addresses[service.name] == nil { report("PC を再接続中…", name: service.name, removed: true) }
     }
 
     func netServiceWillResolve(_ sender: NetService) {
@@ -3951,6 +4087,7 @@ private final class BonjourDiscovery: NSObject, NetServiceBrowserDelegate, NetSe
         report("Found: \(service.name)", name: service.name)
         resolving.insert(service)
         service.delegate = self
+        pendingResolutions.insert(service)
         service.resolve(withTimeout: 5)
     }
 
@@ -3962,14 +4099,19 @@ private final class BonjourDiscovery: NSObject, NetServiceBrowserDelegate, NetSe
 
     func netServiceDidResolveAddress(_ sender: NetService) {
         guard resolving.contains(sender), PhoneSaberStation.matches(service: sender.name, station: station) else { return }
-        let ip = sender.addresses?.compactMap(ipv4Address).first ?? ""
-        let name = sender.name
-        let status = ip.isEmpty ? "Resolve failed: IPv4なし; Manual IP required" : "Resolved: \(ip) / Ready"
-        report(status, name: name, ip: ip)
+        pendingResolutions.remove(sender)
+        let hosts = Set(sender.addresses?.compactMap(ipv4Address) ?? [])
+        guard !hosts.isEmpty else {
+            report("Resolve failed: IPv4なし; Manual IP required", name: sender.name)
+            return
+        }
+        // DNSの順序変更・一時的な欠落ではUSB候補を忘れない。失効は応答時間で判断する。
+        addresses[sender.name, default: []].formUnion(hosts)
+        rebuildRoutes()
     }
 
     func netService(_ sender: NetService, didNotResolve errorDict: [String: NSNumber]) {
-        resolving.remove(sender)
+        pendingResolutions.remove(sender)
         report("Resolve failed: \(errorDict); Manual IP required", name: sender.name)
     }
 

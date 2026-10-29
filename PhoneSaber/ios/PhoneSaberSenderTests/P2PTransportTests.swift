@@ -586,8 +586,10 @@ final class P2PTransportTests: XCTestCase {
         now += LANLivenessProbe.aliveWindow + 1
         delivery.route("1,2,3,4", port: 5005, settings: settings, onSendStarted: nil, completion: { _ in }, noRoute: {})
         let logged = Array(ConnectivityLog.shared.recent.filter { $0.source == "経路" }.suffix(3).map(\.message))
-        XCTAssertEqual(logged, [CoordinateDelivery.Route.lanUnverified.rawValue, CoordinateDelivery.Route.lanVerified.rawValue,
-                                CoordinateDelivery.Route.lanUnverified.rawValue])
+        XCTAssertEqual(logged.map { String($0.components(separatedBy: " reason=")[0]) },
+                       [CoordinateDelivery.Route.lanUnverified.rawValue, CoordinateDelivery.Route.lanVerified.rawValue,
+                        CoordinateDelivery.Route.lanUnverified.rawValue])
+        XCTAssertTrue(logged.allSatisfy { $0.contains("reason=") })
         lan.stop()
     }
 
@@ -1767,6 +1769,42 @@ final class P2PTransportTests: XCTestCase {
         return condition()
     }
 
+    @MainActor
+    func testBonjourInterfaceChangeReconfiguresSameHostButManualKeepsDefaultRoute() async throws {
+        let monitor = NWPathMonitor()
+        let seen = expectation(description: "interface")
+        let interfaces = LockedBox<[NWInterface]>([])
+        monitor.pathUpdateHandler = { path in interfaces.mutate { $0 = path.availableInterfaces }; seen.fulfill() }
+        monitor.start(queue: DispatchQueue(label: "test.bonjour-interface"))
+        defer { monitor.cancel() }
+        await fulfillment(of: [seen], timeout: 3)
+        monitor.pathUpdateHandler = nil
+        guard let interface = interfaces.value.first else { throw XCTSkip("interface inventory unavailable") }
+        for station in ["A", "B"] {
+            let sender = UDPSender { _, _, done in done(.success(1)) }
+            let p2p = P2PSender(endpointOverride: .hostPort(host: "127.0.0.1", port: 9))
+            let model = CameraViewModel(sender: sender, p2pSender: p2p, p2pEnabled: false, idleTimerUpdater: { _ in })
+            model.startForTesting(host: "127.0.0.1", manual: false)
+            model.applyBonjourForTesting(host: "127.0.0.1", serviceName: "PC " + station)
+            let first = sender.connectionGenerationForTesting(port: 5005)
+            model.applyBonjourForTesting(host: "127.0.0.1", serviceName: "PC " + station, requiredInterface: interface)
+            XCTAssertGreaterThan(sender.connectionGenerationForTesting(port: 5005), first)
+            XCTAssertGreaterThan(sender.connectionGenerationForTesting(port: 5006), first)
+            let pinned = sender.connectionGenerationForTesting(port: 5005)
+            model.applyBonjourForTesting(host: "127.0.0.1", serviceName: "PC " + station, requiredInterface: interface)
+            XCTAssertEqual(sender.connectionGenerationForTesting(port: 5005), pinned)
+            model.stop()
+            let manualSender = UDPSender { _, _, done in done(.success(1)) }
+            let manual = CameraViewModel(sender: manualSender, p2pSender: p2p, p2pEnabled: false, idleTimerUpdater: { _ in })
+            manual.startForTesting(host: "172.20.10.2", manual: true)
+            let before = manualSender.connectionGenerationForTesting(port: 5005)
+            manual.applyBonjourForTesting(host: "169.254.1.2", serviceName: "PC " + station, requiredInterface: interface)
+            XCTAssertEqual(manual.host, "172.20.10.2")
+            XCTAssertEqual(manualSender.connectionGenerationForTesting(port: 5005), before)
+            manual.stop()
+        }
+    }
+
     func testLANLivenessProbeAcceptsOnlyRepliesForTheVersionAndPortsThisPhoneUses() {
         XCTAssertTrue(LANLivenessProbe.isCompatibleReply("PHONESABER_UNITY 1"))
         XCTAssertTrue(LANLivenessProbe.isCompatibleReply("PHONESABER_UNITY 1 red=5005 blue=5006 name=Mac station=A"))
@@ -2135,6 +2173,155 @@ import Network
 #endif
 
 // このクラスは Mac の standalone XCTest でも同じ production 経路を検証する。
+/// 固定時計で実5007応答パーサーと選択ポリシーを通し、Mac/Windows両方の復旧順序を確認する。
+final class LANRoutePreferenceTests: XCTestCase {
+    func testMacAndWindowsPreferWiredLoseItAndRecoverWithoutFlapping() {
+        for (station, wiredHost, type, interfaceName) in [
+            ("A", "169.254.111.127", NWInterface.InterfaceType.wiredEthernet, "en5"),
+            ("B", "172.20.10.2", .wiredEthernet, "en2"),
+            ("B", "172.20.10.14", .other, "usb0"),
+            ("B", "172.20.10.3", .other, "en7")
+        ] {
+            var now = 0.0
+            let wired = LANLivenessProbe(port: 1, expectedStation: station, clock: { now })
+            let wifi = LANLivenessProbe(port: 1, expectedStation: station, clock: { now })
+            var policy = LANRoutePreference()
+            let service = "Phone Saber Unity " + station
+            let wifiHost = station == "A" ? "192.168.100.48" : wiredHost
+            func reply(_ probe: LANLivenessProbe) {
+                probe.recordReplyForTesting("PHONESABER_UNITY 1 red=5005 blue=5006 station=\(station)")
+            }
+            func choose() -> (candidate: LANRoutePreference.Candidate, reason: String)? {
+                let candidates = [
+                    LANRoutePreference.Candidate(id: "wifi", service: service, host: wifiHost,
+                        kind: LANRoutePreference.kind(host: wifiHost, type: .wifi, name: "en0", usesWiFi: true, usesWired: false),
+                        evidence: wifi.replyEvidence),
+                    LANRoutePreference.Candidate(id: "usb", service: service, host: wiredHost,
+                        kind: LANRoutePreference.kind(host: wiredHost, type: type, name: interfaceName, usesWiFi: false, usesWired: type == .wiredEthernet),
+                        evidence: wired.replyEvidence)
+                ]
+                return policy.select(candidates, service: service, at: now)
+            }
+            reply(wired); reply(wifi)
+            XCTAssertEqual(choose()?.candidate.id, "usb", "両方応答なら有線。Windowsは同じIPでもインターフェースで区別")
+            for time in [0.5, 1.0, 1.5, 2.0] {
+                now = time; reply(wired); reply(wifi)
+                XCTAssertNil(choose(), "Wi-Fiの再解決・応答でUSBを奪わない")
+            }
+            now = 3.5; reply(wifi)
+            XCTAssertNil(choose(), "最終応答から1.5秒までは有線を保持")
+            now = 3.51
+            let fallback = choose()
+            XCTAssertEqual(fallback?.candidate.id, "wifi")
+            XCTAssertTrue(fallback?.reason.contains("expired") == true)
+            now = 4; reply(wired); reply(wifi)
+            XCTAssertNil(choose(), "単発の復帰応答では切り替えない")
+            now = 4.5; reply(wired); reply(wifi)
+            XCTAssertNil(choose(), "2回では復帰しない")
+            now = 6.1; reply(wifi)
+            XCTAssertNil(choose(), "一度途切れた復帰は持ち越さない")
+            for time in [6.5, 7.0] {
+                now = time; reply(wired); reply(wifi)
+                XCTAssertNil(choose())
+            }
+            now = 7.5; reply(wired); reply(wifi)
+            let recovery = choose()
+            XCTAssertEqual(recovery?.candidate.id, "usb")
+            XCTAssertTrue(recovery?.reason.contains("wired-recovered-stable") == true)
+            now = 8; reply(wired); reply(wifi)
+            XCTAssertNil(choose())
+            now = 10
+            XCTAssertFalse(wired.isAlive); XCTAssertFalse(wifi.isAlive)
+            XCTAssertNil(choose(), "両方無応答なら現在のLANは未確認となり既存CoordinateDeliveryがP2Pへ退避")
+        }
+    }
+
+    func testWiFiFirstWaitsForStableUSBAndNeverMixesServiceNames() {
+        var policy = LANRoutePreference()
+        XCTAssertNil(policy.select([.init(id: "pending", service: "PC A", host: "172.20.10.2", kind: .wired)],
+                                   service: "PC A", at: 0), "初回は別台の同一IPを未確認で採用しない")
+        let name = "PC A"
+        var wifi = LANRoutePreference.Candidate(id: "wifi", service: name, host: "192.168.1.2", kind: .wifi,
+            evidence: .init(first: 0, last: 0, count: 1))
+        var usb = LANRoutePreference.Candidate(id: "usb", service: name, host: "169.254.1.2", kind: .wired)
+        let other = LANRoutePreference.Candidate(id: "other", service: "Other PC A", host: "169.254.1.3", kind: .wired,
+            evidence: .init(first: 0, last: 1, count: 3))
+        XCTAssertEqual(policy.select([wifi, usb, other], service: name, at: 0)?.candidate.id, "wifi")
+        usb.evidence = .init(first: 0.5, last: 0.5, count: 1)
+        XCTAssertNil(policy.select([wifi, usb, other], service: name, at: 0.5))
+        usb.evidence = .init(first: 0.5, last: 1.5, count: 3)
+        wifi.evidence.last = 1.5
+        XCTAssertEqual(policy.select([other, usb, wifi], service: name, at: 1.5)?.candidate.id, "usb")
+        XCTAssertFalse(PhoneSaberStation.matches(service: "PC B", station: "A"))
+        XCTAssertFalse(PhoneSaberStation.matches(service: "PC A", station: "B"))
+        XCTAssertTrue(LANLivenessProbe.matchesStation("PHONESABER_UNITY 1 station=B", expected: "B"))
+        XCTAssertFalse(LANLivenessProbe.matchesStation("PHONESABER_UNITY 1 station=A", expected: "B"))
+        var now = 0.0
+        let probe = LANLivenessProbe(port: 1, expectedStation: "B", clock: { now })
+        probe.recordReplyForTesting("PHONESABER_UNITY 1 station=A")
+        XCTAssertFalse(probe.isAlive)
+        now = 1
+        probe.recordReplyForTesting("PHONESABER_UNITY 1 station=B")
+        XCTAssertTrue(probe.isAlive)
+    }
+
+    func testManualIPRemainsAuthoritativeForBothStations() {
+        for (service, manualIP) in [("PC A", "169.254.111.127"), ("PC B", "172.20.10.2")] {
+            var selection = DestinationHostSelection()
+            selection.setManual(manualIP, resolvedHost: "", serviceName: "")
+            for host in ["192.168.100.48", "172.20.10.14", "169.254.1.3"] {
+                XCTAssertFalse(selection.applyBonjour(host: host, serviceName: service))
+                XCTAssertEqual(selection.host, manualIP)
+                XCTAssertEqual(selection.source, .manual)
+            }
+            selection.setManual("", resolvedHost: "192.168.100.48", serviceName: service)
+            XCTAssertTrue(selection.applyBonjour(host: "169.254.1.2", serviceName: service))
+        }
+    }
+
+    func testInterfaceEvidenceWinsOverBothTetheringAndLinkLocalAddresses() {
+        for host in ["172.20.10.2", "172.20.10.14", "169.254.1.2"] {
+            XCTAssertEqual(LANRoutePreference.kind(host: host, type: .wifi, name: "en0", usesWiFi: false, usesWired: false), .wifi)
+            XCTAssertEqual(LANRoutePreference.kind(host: host, type: .other, name: "usb0", usesWiFi: true, usesWired: false), .wifi)
+            XCTAssertEqual(LANRoutePreference.kind(host: host, type: .other, name: "utun1", usesWiFi: false, usesWired: false), .other)
+        }
+        XCTAssertEqual(LANRoutePreference.kind(host: "172.20.10.2", type: .other, name: "unknown", usesWiFi: false, usesWired: false), .other)
+        XCTAssertEqual(LANRoutePreference.kind(host: "172.20.10.2", type: .other, name: "bridge100", usesWiFi: true, usesWired: false), .wifi)
+    }
+
+    func testBothPortsAndProbePinAndClearTheSameInterface() throws {
+        let monitor = NWPathMonitor()
+        let seen = expectation(description: "interface inventory")
+        let interfaces = PipelineLockedValue<[NWInterface]>([])
+        monitor.pathUpdateHandler = { path in interfaces.mutate { $0 = path.availableInterfaces }; seen.fulfill() }
+        monitor.start(queue: DispatchQueue(label: "test.lan-interface"))
+        defer { monitor.cancel() }
+        wait(for: [seen], timeout: 3)
+        monitor.pathUpdateHandler = nil
+        guard let interface = interfaces.value.first else { throw XCTSkip("sandboxにインターフェース一覧がない") }
+        let sender = UDPSender()
+        defer { sender.stop() }
+        sender.configure(host: "127.0.0.1", requiredInterface: interface)
+        for port in [5005, 5006] {
+            XCTAssertEqual(sender.connectionsForTesting[port]?.parameters.requiredInterface?.index, interface.index)
+        }
+        let generation = sender.connectionGenerationForTesting(port: 5005)
+        sender.configure(host: "127.0.0.1", requiredInterface: interface)
+        XCTAssertEqual(sender.connectionGenerationForTesting(port: 5005), generation)
+        sender.updateHost("127.0.0.1")
+        XCTAssertNil(sender.connectionsForTesting[5005]?.parameters.requiredInterface)
+        XCTAssertGreaterThan(sender.connectionGenerationForTesting(port: 5005), generation)
+        let probe = LANLivenessProbe(port: 1)
+        defer { probe.stop() }
+        probe.start(host: "127.0.0.1", requiredInterface: interface)
+        let deadline = Date().addingTimeInterval(2)
+        while probe.resourcesForTesting.connection == nil && Date() < deadline { Thread.sleep(forTimeInterval: 0.01) }
+        XCTAssertEqual(probe.resourcesForTesting.connection?.parameters.requiredInterface?.index, interface.index)
+        probe.start(host: "127.0.0.1")
+        XCTAssertFalse(probe.isAlive)
+    }
+}
+
 final class CoordinateDeliveryTests: XCTestCase {
     private func settings() -> CoordinateDelivery.Settings {
         var value = CoordinateDelivery.Settings()
@@ -2175,6 +2362,29 @@ final class CoordinateDeliveryTests: XCTestCase {
             XCTAssertEqual(lan.discardedForP2PCountForTesting, 0)
             XCTAssertEqual(delivery.currentRoute, manual ? .lanUnverified : .lanVerified)
         }
+    }
+
+    func testVerifiedCandidateHandoffPrefersLANImmediatelyAndEvidenceExpiresNormally() {
+        var now = 10.0
+        let sent = expectation(description: "confirmed Wi-Fi fallback")
+        let lan = UDPSender { _, _, done in done(.success(now)); sent.fulfill() }
+        let p2p = P2PSender()
+        p2p.overrideUsabilityForTesting(true)
+        let probe = LANLivenessProbe(port: 1, clock: { now })
+        defer { lan.stop(); p2p.stop(); probe.stop() }
+        let delivery = CoordinateDelivery(sender: lan, p2pSender: p2p, lanProbe: probe)
+        let config = settings()
+        delivery.update(config)
+        lan.configure(host: "127.0.0.1")
+        probe.start(host: "127.0.0.1", verifiedEvidence: .init(first: 9, last: 10, count: 3))
+        delivery.route("1,2,3,4", port: 5005, settings: config, onSendStarted: nil,
+                       completion: { _ in }, noRoute: { XCTFail("verified LAN available") })
+        wait(for: [sent], timeout: 2)
+        XCTAssertEqual(delivery.currentRoute, .lanVerified)
+        now = 11.51
+        XCTAssertFalse(probe.isAlive, "候補からの引継ぎでも1.5秒の失効を延ばさない")
+        probe.start(host: "127.0.0.2", verifiedEvidence: .init(first: 9, last: 10, count: 3))
+        XCTAssertFalse(probe.isAlive, "古い候補の証拠は引き継がない")
     }
 
     func testP2PCheckThenLinkLossFallsBackToLANAndDiscardsOlderWaitingCoordinates() {
