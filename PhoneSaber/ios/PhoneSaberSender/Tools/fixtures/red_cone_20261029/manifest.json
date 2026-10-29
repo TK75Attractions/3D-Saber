@@ -96,12 +96,13 @@
       "eventRedAbsent": false,
       "baseline": {
         "coneSelectedFrames": 22,
-        "redOutputAbsentFrames": 25,
+        "redOutputAbsentFrames": 21,
         "recordedConeSelectedFrames": 8,
         "recordedMismatchFrames": 31,
         "resetFrames": 0,
         "truncatedFrames": 179
-      }
+      },
+      "baselineNotes": "f1: 通常winnerなし・遠方eligible共存時の既存d1短縮救済。追加赤出力frame 31316, 31361, 31363, 31418 は前後のcontext原画像と実刃の保存軸を照合。コーン選択上限・fixture・色safety gateは不変更。記録時nullとの不一致は救済による。"
     },
     {
       "id": "125054_666",
@@ -115,12 +116,13 @@
       "eventRedAbsent": false,
       "baseline": {
         "coneSelectedFrames": 36,
-        "redOutputAbsentFrames": 151,
+        "redOutputAbsentFrames": 147,
         "recordedConeSelectedFrames": 29,
-        "recordedMismatchFrames": 15,
+        "recordedMismatchFrames": 17,
         "resetFrames": 0,
         "truncatedFrames": 197
-      }
+      },
+      "baselineNotes": "f1: 通常winnerなし・遠方eligible共存時の既存d1短縮救済。追加赤出力frame 34874, 34875, 34915, 34994 は前後のcontext原画像と実刃の保存軸を照合。コーン選択上限・fixture・色safety gateは不変更。記録時nullとの不一致は救済による。"
     },
     {
       "id": "132525",
@@ -229,12 +231,13 @@
       "eventRedAbsent": false,
       "baseline": {
         "coneSelectedFrames": 19,
-        "redOutputAbsentFrames": 20,
+        "redOutputAbsentFrames": 14,
         "recordedConeSelectedFrames": 19,
         "recordedMismatchFrames": 10,
         "resetFrames": 0,
         "truncatedFrames": 68
-      }
+      },
+      "baselineNotes": "f1: 通常winnerなし・遠方eligible共存時の既存d1短縮救済。追加赤出力frame 33681, 33682, 33683, 33892, 33893, 33894 は前後のcontext原画像と実刃の保存軸を照合。コーン選択上限・fixture・色safety gateは不変更。記録時nullとの不一致は救済による。"
     },
     {
       "id": "135856_666",
@@ -248,19 +251,22 @@
       "eventRedAbsent": false,
       "baseline": {
         "coneSelectedFrames": 59,
-        "redOutputAbsentFrames": 13,
+        "redOutputAbsentFrames": 12,
         "recordedConeSelectedFrames": 57,
-        "recordedMismatchFrames": 4,
+        "recordedMismatchFrames": 5,
         "resetFrames": 120,
         "truncatedFrames": 181
-      }
+      },
+      "baselineNotes": "f1: 通常winnerなし・遠方eligible共存時の既存d1短縮救済。追加赤出力frame 279921 は前後のcontext原画像と実刃の保存軸を照合。コーン選択上限・fixture・色safety gateは不変更。記録時nullとの不一致は救済による。"
     }
   ],
-  "baselineCommit": "6a55f1a9317c8c5b37124c42c8b935854695cca9",
+  "baselineCommit": null,
   "baselineSourceSHA256": {
     "PhoneSaber/ios/PhoneSaberSender/PhoneSaberSender/DetectionCore.swift": "6708d274ee5a2f840b8a0f02b86c918a7651bd9a34bb963aae37bc4bcb005614",
-    "PhoneSaber/ios/PhoneSaberSender/PhoneSaberSender/BGRADetection.swift": "14282304a28779f6f54062196ede677f75b0b70cda86e2dac4c423ca38c9ba38",
+    "PhoneSaber/ios/PhoneSaberSender/PhoneSaberSender/BGRADetection.swift": "b9acdf0668ce651b75c0bc7776f39c2b1e31760a8585f35d1b0195d62ed5f296",
     "PhoneSaber/ios/PhoneSaberSender/Tools/SelectionReplayHost.swift": "ee9bc46298e36dc57452b2e0bb88577d8e9caa980be0d8db17d82cfe10fcf88b",
     "PhoneSaber/ios/PhoneSaberSender/Tools/phone_saber_stationary_replay.py": "9797f9bacae20f7950fb502d210d312e098c96a6492d2f4509f3e84f6d23ff22"
-  }
+  },
+  "baselineParentCommit": "d7af0cda",
+  "baselineChange": "end-on救済を遠方eligible共存時も許可（f1-redloss）。コーン選択上限は全件不変。"
 }

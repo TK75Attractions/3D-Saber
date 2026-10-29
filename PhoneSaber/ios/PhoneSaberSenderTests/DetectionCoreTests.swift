@@ -5523,6 +5523,47 @@ extension DetectionCoreTests {
                                  continuityCandidates: [short]))
     }
 
+    func testEndOnContinuitySurvivesUnrelatedEligibleOutsideTrackingGate() {
+        // 10/29: コーン/表示灯のeligibleが遠方に残ると、通常winnerも短縮救済も出なかった。
+        for color in [SaberColor.red, .blue] {
+            let lock = SaberTrackLock()
+            func seed() {
+                lock.reset()
+                for (i, length) in [48, 36, 26, 18].enumerated() {
+                    XCTAssertNotNil(lock.select([endOnTestCandidate(length: length)], color: color,
+                        width: 480, height: 640, now: Double(i) / 60))
+                }
+            }
+            let far = endOnTestCandidate(length: 40, x: 360)
+            let short = endOnTestCandidate(length: 12, x: 104, eligible: false)
+            seed()
+            let rescued = lock.select([far], color: color, width: 480, height: 640, now: 0.07,
+                observedCandidates: [far, short], continuityCandidates: [short])
+            XCTAssertEqual(rescued?.endpoints.0, short.endpoints.0)
+            XCTAssertEqual(rescued?.endpoints.1, short.endpoints.1)
+            XCTAssertFalse(lock.suppressed.contains(color))
+
+            seed()
+            XCTAssertNil(lock.select([far], color: color, width: 480, height: 640, now: 0.07),
+                "現在の短縮候補がなければ座標を補間せず、遠方候補へも飛ばない")
+            seed()
+            var unsafe = short
+            if color == .red {
+                unsafe.warmNoDeepRed = SaberWarmNoDeepRedVerdict(deepCount: 0, warmCount: 10, pixelCount: 10)
+            } else {
+                unsafe.blueNoDeepSupport = SaberBlueNoDeepSupportVerdict(deepCount: 0, pixelCount: 10)
+            }
+            XCTAssertNil(lock.select([far], color: color, width: 480, height: 640, now: 0.07,
+                continuityCandidates: [unsafe]), "共存時も色safety gateを迂回しない")
+
+            seed()
+            let normal = endOnTestCandidate(length: 30, x: 110)
+            XCTAssertEqual(lock.select([far, normal], color: color, width: 480, height: 640, now: 0.07,
+                continuityCandidates: [short])?.endpoints.1, normal.endpoints.1,
+                "通常winnerがあれば救済候補で置き換えない")
+        }
+    }
+
     func testEndOnContinuityDoesNotBorrowShrinkingHistoryAcrossObjects() {
         let lock = SaberTrackLock()
         // 通常trackの3回miss後に離れた短い物体を取得しても、元の刃の期限を貸さない。

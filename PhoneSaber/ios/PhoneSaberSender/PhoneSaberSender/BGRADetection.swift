@@ -780,7 +780,7 @@ final class SaberTrackLock {
     }
 
     private func endOnWinner(_ candidates: [SaberCandidate], color: SaberColor,
-                             scale: Double, now: Double) -> SaberCandidate? {
+                             scale: Double, now: Double, coexistingEligible: Bool = false) -> SaberCandidate? {
         guard let state = endOn[color], let deadline = state.deadline, now < deadline,
               let last = state.last, now >= last.time,
               now - last.time <= Self.endOnSeconds else {
@@ -790,6 +790,8 @@ final class SaberTrackLock {
         // 0.10秒を超えた途切れは元の期限内だけ再取得。24px内の実測塊を2回確認する。
         // 通常の継続より4px広い代わりに、連続観測間の移動を8px以内に限定し外挿しない。
         let needsConfirmation = now - last.time > Self.endOnRecentSeconds
+        // 別のeligibleが共存する時の救済は途切れ直後（0.10秒以内）だけ。再取得の確認は通常候補で中断しやり直す。
+        if coexistingEligible && needsConfirmation { endOnPending[color] = nil; return nil }
         defer { if !needsConfirmation { endOnPending[color] = nil } }
 
         let a = last.endpoints
@@ -1144,9 +1146,11 @@ final class SaberTrackLock {
         }
         let scale = Double(min(width, height)) / 480
         if !eligible.isEmpty { endOnPending[color] = nil }
-        // eligibleがあれば通常の選択・ゲートへ戻す。救済は現frameの不適格候補だけ。
-        let rescued = winner == nil && eligible.isEmpty
-            ? endOnWinner(continuityCandidates, color: color, scale: scale, now: now) : nil
+        // 通常winnerを優先する。ゲート外の別候補（遠くのコーン等）が共存しても、近傍の短縮刃の救済を妨げない。
+        // 救済は従来の色safety gate・短縮履歴・距離・期限を満たす現frameの不適格候補だけ。
+        let rescued = winner == nil
+            ? endOnWinner(continuityCandidates, color: color, scale: scale, now: now,
+                          coexistingEligible: !eligible.isEmpty) : nil
         if let rescued { rememberEndOn(rescued, color: color, scale: scale, now: now, rescued: true) }
         if winner == nil, var t = track {
             // 3コマ目で通常履歴を捨てる。短縮履歴にも実測候補がなければ送らない。

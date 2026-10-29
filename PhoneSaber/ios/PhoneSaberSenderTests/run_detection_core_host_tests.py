@@ -13,6 +13,10 @@ import tempfile
 TESTS = Path(__file__).resolve().parent
 SOURCE = TESTS.parent / "PhoneSaberSender/PhoneSaberSender"
 TEST_NAMES = """
+testEndOnContinuitySurvivesUnrelatedEligibleOutsideTrackingGate
+testEndOnContinuityUsesCurrentCandidateAndExpiresWithoutRenewal
+testEndOnContinuityPreservesColorSafetyAndRejectsDistantObjects
+testEndOnContinuityDoesNotBorrowShrinkingHistoryAcrossObjects
 testCoreLineCandidateScoringIsIndependentOfPointOrder
 testLowISOAcquisitionRetainsUnsaturatedDimAndShortBlades
 testNewAcquisitionKeepsProtectedWhiteCoreRedBlade
@@ -85,7 +89,7 @@ def main():
     if os.environ.get("PHONESABER_CORELINE_GUARD", "1") != "1":
         raise ValueError("受入gateと同じCoreLineGuard有効条件で実行する")
     source = (TESTS / "DetectionCoreTests.swift").read_text()
-    methods = [method(source, name) for name in [*TEST_NAMES, "axisDistance"]]
+    methods = [method(source, name) for name in [*TEST_NAMES, "axisDistance", "endOnTestCandidate"]]
     developer = Path(subprocess.check_output(["xcode-select", "-p"], text=True).strip()) / "Platforms/MacOSX.platform/Developer"
     frameworks = developer / "Library/Frameworks"
     with tempfile.TemporaryDirectory(prefix="phonesaber-detection-core-") as directory:
