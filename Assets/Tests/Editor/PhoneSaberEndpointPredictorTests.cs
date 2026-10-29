@@ -414,11 +414,16 @@ public class PhoneSaberAdaptivePredictionTests
         slow.PredictAdaptive(now, 106, out var slow2, out _);
         slow.PredictAdaptive(now, 106, out var slow4, out _, 4);
         Assert.AreEqual(slow2.x, slow4.x, .00001f, "上限に届かない振りは変わらない");
-        // 保存値は 2・3・4 だけ（未保存・範囲外は従来の 2）。
+        fast.PredictAdaptive(now, 106, out var widest, out _, 6);
+        Assert.AreEqual(last + 50 * (.106f + .008f), widest.x, .002f, "6 world なら 50 world/s・106+8 ms をそのまま先回りする");
+        // 保存値は 2〜6 の整数だけ（未保存・範囲外は従来の 2）。
         Assert.AreEqual(2f, PhoneSaberPredictionSettings.ClampReach(float.NaN));
         Assert.AreEqual(2f, PhoneSaberPredictionSettings.ClampReach(2.9f));
         Assert.AreEqual(3f, PhoneSaberPredictionSettings.ClampReach(3f));
-        Assert.AreEqual(4f, PhoneSaberPredictionSettings.ClampReach(99f));
+        Assert.AreEqual(4f, PhoneSaberPredictionSettings.ClampReach(4.5f));
+        Assert.AreEqual(5f, PhoneSaberPredictionSettings.ClampReach(5f));
+        Assert.AreEqual(6f, PhoneSaberPredictionSettings.ClampReach(99f));
+        CollectionAssert.AreEqual(new[] { 2, 3, 4, 5, 6 }, PhoneSaberPredictionSettings.ReachChoices);
     }
 
     [Test]

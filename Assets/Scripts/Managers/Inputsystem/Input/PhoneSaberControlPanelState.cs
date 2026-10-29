@@ -11,7 +11,7 @@ public static class PhoneSaberControlPanelActions
         { "calibration-start", new[] { "" } }, { "calibration-advance", new[] { "" } },
         { "calibration-cancel", new[] { "" } }, { "calibration-reset", new[] { "" } },
         { "calibration-blue", new[] { "0", "1" } }, { "calibration-enabled", new[] { "0", "1" } },
-        { "prediction", new[] { "auto", "0", "20", "40", "60" } }, { "prediction-reach", new[] { "2", "3", "4" } },
+        { "prediction", new[] { "auto", "0", "20", "40", "60" } }, { "prediction-reach", new[] { "2", "3", "4", "5", "6" } },
         { "display-latency-adjust", new[] { "-10", "10" } }, { "display-latency-centre", new[] { "" } },
         { "display-latency-clear", new[] { "" } },
         { "display-sync", new[] { "0", "1" } }, { "frame-cap", new[] { "0", "1", "2" } },

@@ -40,9 +40,11 @@ public static class PhoneSaberPredictionSettings
 
     // 自動の先回りで1回に動かせる距離（world、画面の横幅は約11）。未保存の台は従来の 2。
     // 2026-10-29 台B: 速い振り（0.2 秒で端から端）は 2 world で約40 ms に頭打ちになり、先回りの ms を増やしても遅れが残った。
-    public static readonly int[] ReachChoices = { 2, 3, 4 };
+    // 4 でも約73 ms（台B の遅れの合計は約106 ms）で当たりの中央が +33 ms だったので、5・6 も選べるようにした。
+    public static readonly int[] ReachChoices = { 2, 3, 4, 5, 6 };
     public static string ReachKey(string station) => Key(station) + ".Reach";
-    public static float ClampReach(float world) => world >= 4 ? 4 : world >= 3 ? 3 : PhoneSaberEndpointPredictor.AutomaticMaximumDisplacement;
+    public static float ClampReach(float world) => world >= 6 ? 6 : world >= 5 ? 5 : world >= 4 ? 4 : world >= 3 ? 3 :
+        PhoneSaberEndpointPredictor.AutomaticMaximumDisplacement;
     public static float LoadReach(string station) =>
         ClampReach(PlayerPrefs.GetFloat(ReachKey(station), PhoneSaberEndpointPredictor.AutomaticMaximumDisplacement));
 

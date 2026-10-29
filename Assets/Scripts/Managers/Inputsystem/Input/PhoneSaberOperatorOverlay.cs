@@ -446,7 +446,7 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         foreach (int world in PhoneSaberPredictionSettings.ReachChoices)
             panel.Button(world + " world" + (world == 2 ? "（従来）" : ""), "prediction-reach",
                 world.ToString(CultureInfo.InvariantCulture), enabled, Mathf.Approximately(reach, world));
-        panel.Label("速い振りは移動上限で先回りが頭打ちになります（2 world だと、0.2 秒で端から端の振りで約40 ms）。\n" +
+        panel.Label("速い振りは移動上限で先回りが頭打ちになります（0.2 秒で端から端の振りなら 2 world で約40 ms・4 で約73 ms・6 で約110 ms）。\n" +
             "上げると速い振りの遅れが減ります。振り終わりで剣が少し行き過ぎる・触れていないノーツが切れるなら下げてください。");
         BuildDisplayLatency();
     }
