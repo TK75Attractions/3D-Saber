@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""AutoClip v2 eligible候補を本番Swift選択器で再生する。画像の正解判定は別途必要。
+"""AutoClip v2 保存候補を本番Swift選択器で再生する。画像の正解判定は別途必要。
 
 --source-root は比較checkoutの PhoneSaber/。--stationary-seconds/radius/motion
 はsweep用の一時ビルドだけに適用し、productionソースを書き換えない。
 クリップ開始前の状態は不明。候補欠落・timestampの断絶では履歴をresetする。
 最初の記録winnerで選択を初期化するが、直前の速度/復帰/選好履歴は復元できない。
 得点は記録精度（0.1点）、ineligibleは保存上限（通常2件）のまま使う。
+短縮救済の原画素safety gate・無視範囲は保存候補だけでは再現できず、救済数は上限評価。
 ROI外の候補や非静止の候補を、画像で確認せず実刃の正解とは扱わない。
 """
 import argparse
@@ -76,7 +77,7 @@ def load_clip(path):
         row['seed'] = seed
         frames.append(row)
         previous = frame if complete else None
-    return {'name': path.name, **clip['frameSize'], 'area': clip.get('playArea'), 'frames': frames}
+    return {'name': path.name, **clip['frameSize'], 'area': clip.get('playArea'), 'sources': sources, 'frames': frames}
 
 
 def comparison(clips, before, after, static_roi=None):
@@ -156,6 +157,10 @@ def run(clips, source_root=None, seconds=None, radius=None, motion=None, policie
         (directory / 'BGRADetection.swift').write_text(bgra)
         binary = directory / 'selection'
         host = (HERE / 'SelectionReplayHost.swift').read_text()
+        if 'continuityCandidates:' not in bgra:
+            host = host.replace(', continuityCandidates: continuity', '').replace('            testEndOnSelection()\n', '')
+            host = host.replace('                    let continuity = observedRows.filter { Int($0[10]) & 1 == 0 }.map { replayCandidate($0, sources: sources) }\n', '')
+            host = host[:host.index('// 短縮履歴')]
         if 'observedCandidates:' not in bgra:
             host = host.replace(', observedCandidates: observed', '')
             host = host[:host.index('// 画像生成/eligibility')].replace('            testStationarySelection()', '')

@@ -709,6 +709,104 @@ final class SaberTrackLock {
         var frames: Int
     }
     private var tracks: [SaberColor: Track] = [:]
+    private struct EndOnSample {
+        var endpoints: (PixelPoint, PixelPoint)
+        var length: Double, time: Double
+    }
+    private struct EndOn {
+        var history: [EndOnSample] = []
+        var last: EndOnSample?
+        var previous: EndOnSample?
+        var deadline: Double?
+    }
+    private var endOn: [SaberColor: EndOn] = [:]
+    // 10/29の短縮区間。短辺480px換算。期限は救済や短いeligibleの瞬間復帰では延長しない。
+    static let endOnSeconds = 0.5
+    static let endOnRecentSeconds = 0.10
+
+    private static func endOnAnchors(_ endpoints: (PixelPoint, PixelPoint)) -> [PixelPoint] {
+        [endpoints.0, endpoints.1,
+         PixelPoint(x: (endpoints.0.x + endpoints.1.x) / 2, y: (endpoints.0.y + endpoints.1.y) / 2)]
+    }
+
+    /// 形状だけの不適格を救う入口。色支持のsafety gate・無視範囲は呼出側で別途必須。
+    static func isEndOnCandidate(_ candidate: SaberCandidate, scale: Double) -> Bool {
+        let e = candidate.endpoints
+        let length = hypot(Double(e.1.x - e.0.x), Double(e.1.y - e.0.y))
+        return !candidate.isEmitterEligible
+            && ["color-mask", "color-close", "color-sparse-raw"].contains(candidate.source)
+            && length >= 10 * scale && length <= 20 * scale
+            && Double(max(candidate.boundingBox.maxX - candidate.boundingBox.minX,
+                          candidate.boundingBox.maxY - candidate.boundingBox.minY)) <= 24 * scale
+            && candidate.peakValue >= 210 && candidate.meanColorPurity >= 0.65
+            && candidate.warmNoDeepRed?.rejected != true && candidate.blueNoDeepSupport?.rejected != true
+    }
+
+    private func rememberEndOn(_ winner: SaberCandidate, color: SaberColor, scale: Double, now: Double,
+                               rescued: Bool) {
+        let e = winner.endpoints
+        let sample = EndOnSample(endpoints: e,
+            length: hypot(Double(e.1.x - e.0.x), Double(e.1.y - e.0.y)), time: now)
+        var state = endOn[color] ?? EndOn()
+        if let last = state.last, now < last.time || now - last.time > Self.endOnRecentSeconds {
+            state = EndOn()
+        }
+        if let last = state.last {
+            let x = Double(e.0.x + e.1.x) / 2, y = Double(e.0.y + e.1.y) / 2
+            // 通常選択が別の物体へ移った時に、その長さの差を短縮履歴として貸さない。
+            if Self.endOnAnchors(last.endpoints).allSatisfy({
+                hypot(x - Double($0.x), y - Double($0.y)) > 48 * scale
+            }) { state = EndOn() }
+        }
+        if !rescued {
+            // 長い刃へ戻るまで同じ短縮episode。短いeligibleの点滅で期限を更新しない。
+            if state.deadline != nil && sample.length >= 32 * scale { state = EndOn() }
+            state.history = state.history.filter { now >= $0.time && now - $0.time <= 0.15 }
+            state.history.append(sample)
+            let lengths = state.history.map { $0.length }
+            let decreases = zip(lengths, lengths.dropFirst()).filter { $0 - $1 >= 2 * scale }.count
+            if state.deadline == nil, lengths.count >= 3,
+               let longest = lengths.max(), longest >= 32 * scale,
+               sample.length <= 30 * scale, sample.length <= longest * 0.7, decreases >= 2 {
+                state.deadline = now + Self.endOnSeconds
+            }
+        }
+        state.previous = state.last
+        state.last = sample
+        endOn[color] = state
+    }
+
+    private func endOnWinner(_ candidates: [SaberCandidate], color: SaberColor,
+                             scale: Double, now: Double) -> SaberCandidate? {
+        guard let state = endOn[color], let deadline = state.deadline, now < deadline,
+              let last = state.last, now >= last.time,
+              now - last.time <= Self.endOnRecentSeconds else { return nil }
+        let a = last.endpoints
+        let anchors = Self.endOnAnchors(a)
+        var closest = 20 * scale
+        var winner: SaberCandidate?
+        for candidate in candidates where Self.isEndOnCandidate(candidate, scale: scale) {
+            let e = candidate.endpoints
+            let x = Double(e.0.x + e.1.x) / 2, y = Double(e.0.y + e.1.y) / 2
+            // 既に降格した静止成分には救済でも戻らない。
+            if (stationary[color] ?? []).contains(where: {
+                $0.excluded && hypot(x - $0.x, y - $0.y) <= max(16 * scale, $0.length / 2)
+            }) { continue }
+            let measuredDistance = anchors.map { hypot(x - Double($0.x), y - Double($0.y)) }.min()!
+            var distance = measuredDistance
+            // n0を挟んだ2〜3コマだけ直前の実測移動を併用。予測座標そのものは出力しない。
+            if now - last.time >= 0.025, let previous = state.previous, last.time > previous.time {
+                let b = previous.endpoints
+                let factor = min(now - last.time, 0.05) / (last.time - previous.time)
+                let dx = Double(a.0.x + a.1.x - b.0.x - b.1.x) / 2 * factor
+                let dy = Double(a.0.y + a.1.y - b.0.y - b.1.y) / 2 * factor
+                distance = min(distance, anchors.map { hypot(x - Double($0.x) - dx, y - Double($0.y) - dy) }.min()!)
+            }
+            if measuredDistance <= 48 * scale && distance <= 20 * scale
+                && (winner == nil || distance < closest) { closest = distance; winner = candidate }
+        }
+        return winner
+    }
     // 移動するeligibleの履歴と、同じ場所に見え続ける成分の履歴を分ける。
     // eligibilityが途切れたり遠いproposalが現れても、静止時間を奪われない。
     private struct Motion {
@@ -733,7 +831,7 @@ final class SaberTrackLock {
     private var dimensions: (Int, Int)?
     private(set) var suppressed: Set<SaberColor> = []
 
-    func reset() { tracks = [:]; motions = [:]; stationary = [:]; dimensions = nil; suppressed = [] }
+    func reset() { tracks = [:]; endOn = [:]; motions = [:]; stationary = [:]; dimensions = nil; suppressed = [] }
 
     /// 無視登録専用のインスタンスで既存の動き記録を再利用する。認識用の状態には触れない。
     func observeIgnoreMotion(_ analysis: SaberFrameAnalysis, width: Int, height: Int, now: Double) -> Set<SaberColor> {
@@ -992,6 +1090,7 @@ final class SaberTrackLock {
     func select(_ eligible: [SaberCandidate], color: SaberColor,
                 width: Int, height: Int, now: Double, playArea: SaberPlayArea? = nil,
                 observedCandidates: [SaberCandidate]? = nil,
+                continuityCandidates: [SaberCandidate] = [],
                 componentDiagnostics: SaberComponentDiagnostics? = nil) -> SaberCandidate? {
         if dimensions.map({ $0 != (width, height) }) ?? true {
             reset(); dimensions = (width, height)
@@ -1018,17 +1117,23 @@ final class SaberTrackLock {
             winner = Self.continuityWinner(eligible, predictedX: x, predictedY: y,
                 radius: radius, now: now, track: &t)
             track = t
-            if winner == nil {
-                // 3コマ目で履歴を捨てる。このコマは送らず、次のコマは通常選択。
-                t.challenger = nil
-                t.misses += 1
-                t.selectedSince = nil
-                tracks[color] = t.misses >= 3 ? nil : t
-                suppressed.insert(color)
-                return nil
-            }
+        }
+        let scale = Double(min(width, height)) / 480
+        // eligibleがあれば通常の選択・ゲートへ戻す。救済は現frameの不適格候補だけ。
+        let rescued = winner == nil && eligible.isEmpty
+            ? endOnWinner(continuityCandidates, color: color, scale: scale, now: now) : nil
+        if let rescued { rememberEndOn(rescued, color: color, scale: scale, now: now, rescued: true) }
+        if winner == nil, var t = track {
+            // 3コマ目で通常履歴を捨てる。短縮履歴にも実測候補がなければ送らない。
+            t.challenger = nil
+            t.misses += 1
+            t.selectedSince = nil
+            tracks[color] = t.misses >= 3 ? nil : t
+            if rescued == nil { suppressed.insert(color) }
+            return rescued
         }
         if let winner {
+            rememberEndOn(winner, color: color, scale: scale, now: now, rescued: false)
             let e = winner.endpoints
             let x = (Double(e.0.x) + Double(e.1.x)) / 2, y = (Double(e.0.y) + Double(e.1.y)) / 2
             var next = Track(x: x, y: y, length: hypot(Double(e.0.x - e.1.x), Double(e.0.y - e.1.y)),
@@ -1043,8 +1148,8 @@ final class SaberTrackLock {
             track = next
         }
         tracks[color] = track
-        if winner == nil { suppressed.insert(color) } // ON の未選択では過去座標の補間を送らない。
-        return winner
+        if winner == nil && rescued == nil { suppressed.insert(color) } // ON の未選択では過去座標の補間を送らない。
+        return winner ?? rescued
     }
 }
 
@@ -2000,6 +2105,19 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
                 rejection.candidate(c, stage: "postGeneration", reason: "ineligible")
             }
         }
+        // 新しい継続経路にも既存の赤コーン・青緑面のsafety gateを同じ元画素で適用する。
+        let continuityIndices: Set<Int> = trackLock == nil ? [] : Set(candidates.indices.filter { index in
+            let c = candidates[index]
+            guard SaberTrackLock.isEndOnCandidate(c, scale: Double(min(width, height)) / 480 / Double(step)),
+                  !c.supportSamplePoints.isEmpty else { return false }
+            if color == .red {
+                return !redWarmNoDeepRedSupport(points: c.supportSamplePoints, baseAddress: baseAddress,
+                    width: width, height: height, bytesPerRow: bytesPerRow, sampleStep: step).rejected
+            }
+            return !isCorelessBlueSurface(c)
+                && !blueNoDeepSupport(points: c.supportSamplePoints, baseAddress: baseAddress,
+                    width: width, height: height, bytesPerRow: bytesPerRow, sampleStep: step).rejected
+        })
         let scaled = candidates.map { candidate in
             let endpoints = candidate.endpoints
             return SaberCandidate(
@@ -2095,7 +2213,11 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
         if let trackLock {
             rejection?.candidateScale = step
             winner = trackLock.select(scaled.filter(allowed), color: color, width: width, height: height,
-                                      now: now, playArea: playArea, observedCandidates: scaled, componentDiagnostics: rejection)
+                                      now: now, playArea: playArea, observedCandidates: scaled,
+                                      continuityCandidates: scaled.enumerated().compactMap { index, c in
+                                          continuityIndices.contains(index)
+                                              && !saberIgnored(c.endpoints, width: width, height: height, zones: zones) ? c : nil
+                                      }, componentDiagnostics: rejection)
         } else {
             winner = scaled.first {
                 allowed($0) && (playArea?.containsMidpoint($0.endpoints, width: width, height: height) ?? true)

@@ -5390,3 +5390,85 @@ extension DetectionCoreTests {
     }
 
 }
+
+extension DetectionCoreTests {
+    private func endOnTestCandidate(length: Int, x: Int = 100, eligible: Bool = true) -> SaberCandidate {
+        let a = PixelPoint(x: x, y: 200), b = PixelPoint(x: x + length, y: 200)
+        return SaberCandidate(comparisonEndpoints: (a, b), endpoints: (a, b),
+            boundingBox: SaberBoundingBox(minX: x, minY: 196, maxX: x + length, maxY: 204), score: 80,
+            scoreBreakdown: SaberScoreBreakdown(length: 0, aspect: 0, extent: 0, widthConsistency: 0,
+                area: 0, peakBrightness: 0, meanBrightness: 0, highBrightnessRatio: 0, colorPurity: 0,
+                localContrast: 0, emitterTexture: 0, clippedWhite: 0, longitudinalHighCoverage: 0,
+                coreSupport: 0, longitudinalCoreCoverage: 0),
+            isEmitterEligible: eligible, isCompactRed: false, peakValue: 240, meanValue: 180,
+            highValueRatio: 0.1, meanColorPurity: 0.8, clippedWhiteRatio: 0, brightnessVariation: 0,
+            localContrast: 0, longitudinalHighCoverage: 0, widthVariation: 0, coreSupportRatio: 0,
+            longitudinalCoreCoverage: 0, longitudinalContinuity: 0, largestLongitudinalGap: 0,
+            retainedBodyRatio: 0, rawPCASpan: Double(length), robustMainIntervalEndpoints: nil,
+            robustMainIntervalLength: 0, axialDensity: 0, componentArea: 100, pointCount: 0,
+            usedPointLEDFallback: false)
+    }
+
+    func testEndOnContinuityUsesCurrentCandidateAndExpiresWithoutRenewal() {
+        for color in [SaberColor.red, .blue] {
+            let lock = SaberTrackLock()
+            func select(_ normal: [SaberCandidate], _ short: [SaberCandidate], _ now: Double) -> SaberCandidate? {
+                lock.select(normal, color: color, width: 480, height: 640, now: now,
+                            observedCandidates: normal + short, continuityCandidates: short)
+            }
+            let short = endOnTestCandidate(length: 12, x: 104, eligible: false)
+            XCTAssertNil(select([], [short], 0), "短い静止物を新規取得しない")
+            for (i, length) in [48, 36, 26, 18].enumerated() {
+                XCTAssertNotNil(select([endOnTestCandidate(length: length)], [], Double(i) / 60))
+            }
+            XCTAssertNil(select([], [], 0.06), "候補なしで過去端点を出さない")
+            XCTAssertEqual(select([], [short], 0.07)?.endpoints.0, short.endpoints.0)
+            XCTAssertFalse(lock.suppressed.contains(color))
+            for i in 5...31 {
+                let time = Double(i) / 60
+                if i == 20 { XCTAssertNotNil(select([endOnTestCandidate(length: 18)], [], time)) }
+                else { XCTAssertEqual(select([], [short], time)?.endpoints.1, short.endpoints.1) }
+            }
+            XCTAssertNil(select([], [short], 0.534), "短いeligibleが一瞬戻っても期限を延ばさない")
+            XCTAssertTrue(lock.suppressed.contains(color))
+        }
+    }
+
+    func testEndOnContinuityPreservesColorSafetyAndRejectsDistantObjects() {
+        let lock = SaberTrackLock()
+        for (i, length) in [48, 36, 26, 18].enumerated() {
+            _ = lock.select([endOnTestCandidate(length: length)], color: .red,
+                            width: 480, height: 640, now: Double(i) / 60)
+        }
+        let short = endOnTestCandidate(length: 12, x: 104, eligible: false)
+        var cone = short
+        cone.warmNoDeepRed = SaberWarmNoDeepRedVerdict(deepCount: 0, warmCount: 10, pixelCount: 10)
+        XCTAssertFalse(SaberTrackLock.isEndOnCandidate(cone, scale: 1))
+        var wall = short
+        wall.blueNoDeepSupport = SaberBlueNoDeepSupportVerdict(deepCount: 0, pixelCount: 10)
+        XCTAssertFalse(SaberTrackLock.isEndOnCandidate(wall, scale: 1))
+        XCTAssertNil(lock.select([], color: .blue, width: 480, height: 640, now: 0.07,
+                                 continuityCandidates: [short]), "色別履歴")
+        XCTAssertNil(lock.select([], color: .red, width: 480, height: 640, now: 0.07,
+                                 continuityCandidates: [endOnTestCandidate(length: 12, x: 300, eligible: false)]))
+        lock.reset()
+        XCTAssertNil(lock.select([], color: .red, width: 480, height: 640, now: 0.08,
+                                 continuityCandidates: [short]))
+    }
+
+    func testEndOnContinuityDoesNotBorrowShrinkingHistoryAcrossObjects() {
+        let lock = SaberTrackLock()
+        // 通常trackの3回miss後に離れた短い物体を取得しても、元の刃の期限を貸さない。
+        for (i, length) in [48, 36, 26, 18].enumerated() {
+            _ = lock.select([endOnTestCandidate(length: length)], color: .red,
+                            width: 480, height: 640, now: Double(i) / 60)
+        }
+        for i in 4...6 {
+            XCTAssertNil(lock.select([], color: .red, width: 480, height: 640, now: Double(i) / 60))
+        }
+        XCTAssertNotNil(lock.select([endOnTestCandidate(length: 18, x: 300)], color: .red,
+                                    width: 480, height: 640, now: 7.0 / 60))
+        XCTAssertNil(lock.select([], color: .red, width: 480, height: 640, now: 8.0 / 60,
+                                continuityCandidates: [endOnTestCandidate(length: 12, x: 300, eligible: false)]))
+    }
+}
