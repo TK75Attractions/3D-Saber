@@ -477,6 +477,10 @@ def _cleanup_remaining_processes(process_group: int, log_file: IO[str]) -> None:
         pass
 
 
+def _restore_default_interrupt() -> None:
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+
 def _stop_process_group(process: subprocess.Popen[str], log_file: IO[str]) -> None:
     if process.poll() is not None:
         _cleanup_remaining_processes(process.pid, log_file)
@@ -604,6 +608,9 @@ def run_receiver(
                     errors="replace",
                     bufsize=1,
                     start_new_session=True,
+                    # nohup 起動では SIGINT の無視が子にも引き継がれ、下の停止処理(SIGINT)が届かず
+                    # 後片付けなしの強制終了になる。受信機は別セッションなので端末の Ctrl+C は届かない。
+                    preexec_fn=_restore_default_interrupt if signal.getsignal(signal.SIGINT) is signal.SIG_IGN else None,
                 )
                 _write_lock_metadata(lock_file, pid=process.pid, repo_root=repo_root, log_path=log_path)
                 assert process.stdout is not None
