@@ -201,8 +201,11 @@ public class AchievementToastPlayTests
                     Is.InRange(-AchievementToast.RightMargin - .01f, -AchievementToast.RightMargin + AchievementToast.EnterSlide + .01f));
                 var queued = AchievementToast.Instance.Queue.At(slot);
                 double age = time - queued.StartedAt;
-                // 止まっている間(段なしで後ろに待ちがあるカードは短い寿命。消え始めると右へ抜ける)。
-                if (age > AchievementToast.EnterSeconds + .05 && age < queued.Life - AchievementToast.ExitSeconds - .05)
+                // 止まっている間(後ろに待ちがある段なし・銅のカードは短い寿命。約1秒のカードは入りと消えも短い。消え始めると右へ抜ける)。
+                bool fast = queued.Life < AchievementToast.ShortLifeSeconds - 1e-4f;
+                double enter = fast ? AchievementToast.FastEnterSeconds : AchievementToast.EnterSeconds;
+                double exit = fast ? AchievementToast.FastExitSeconds : AchievementToast.ExitSeconds;
+                if (age > enter + .05 && age < queued.Life - exit - .05)
                 {
                     Assert.AreEqual(AchievementToast.RightMargin * scale, Screen.width - corners[2].x, 2f, "止まっている間は右24px");
                     settled.Add(body);

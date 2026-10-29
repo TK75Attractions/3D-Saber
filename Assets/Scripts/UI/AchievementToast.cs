@@ -10,8 +10,9 @@ using UnityEngine.UI;
 // わかるだけにして(5秒以内に消す)」。同日 v2.2「高難易度と思われる実績はふちを銅、銀、金、虹に光らせて効果音も変えて。表示の順番は
 // 簡単なものから。あと右上のスペースにポップアップすればもっと大きく実績を出せるよね」)。
 // 画面の右上(曲名の右、判定の表の上の空き)に大きいカードを2枚まで: トロフィーの印・小さく「実績解除」・「〜した ○人目」(○人目は金。1人目は「初獲得！」)。
-// 1枚は入り 0.3 秒・止まり 3.7 秒・消え 0.5 秒の 4.5 秒。ただし段なしのカードは、後ろに待っているカードがあるうちは 2.2 秒で消す
-// (簡単なものから出すので、いちばん難しい実績を来場者が帰る前に出す)。寿命と光の動きは出し始めた実時刻から数える。
+// 1枚は入り 0.3 秒・止まり 3.7 秒・消え 0.5 秒の 4.5 秒。ただし後ろに待っているカードがあるうちは、段なしは約1秒(入り・消えも短い)、
+// 銅は 2.2 秒で消す(簡単なものから出すので、いちばん難しい実績を来場者が帰る前に出す。同日「もっとレアリティの低いやつは高速で出して」)。
+// 寿命と光の動きは出し始めた実時刻から数える。
 // 段の低い順に並べ、同じ段では渡された順を保つ。段によってふち・トロフィー・鈴を変える(AchievementCardFrame)。
 // 演奏中(Game シーン)と幕の間は新しく出さない。出したシーンを出たら、残りは出さない(次の人へ持ち越さない)。
 // すべて raycastTarget=false。並び順は照準(900)より上、印の一言の欄(920)・運営の知らせ(950)より下。
@@ -19,9 +20,12 @@ public sealed class AchievementToast : MonoBehaviour
 {
     public const float EnterSeconds = .3f, HoldSeconds = 3.7f, ExitSeconds = .5f;
     public const float LifeSeconds = EnterSeconds + HoldSeconds + ExitSeconds;
-    // 段なしのカードの、後ろに待っているカードがあるときの止まりの秒(読める短さ)。
+    // 銅のカードの、後ろに待っているカードがあるときの止まりの秒(読める短さ)。
     public const float ShortHoldSeconds = 1.4f;
     public const float ShortLifeSeconds = EnterSeconds + ShortHoldSeconds + ExitSeconds;
+    // 段なしのカードの、後ろに待っているカードがあるときの入り・止まり・消え(約1秒で次へ)。
+    public const float FastEnterSeconds = .12f, FastHoldSeconds = .68f, FastExitSeconds = .2f;
+    public const float FastLifeSeconds = FastEnterSeconds + FastHoldSeconds + FastExitSeconds;
     public const int MaxVisible = 2;
     public const float StaggerSeconds = .12f;
     // 結果画面で出し始める、結果の演出の時刻(ランクの札の着地。演出を飛ばすと演出の時刻はこれを超える)。
@@ -164,22 +168,28 @@ public sealed class AchievementToast : MonoBehaviour
 
     public struct Pose { public float Alpha, Offset, Scale; }
 
-    // カードを出し始めるときに決める寿命: 段なしで後ろに待っているカードがあれば短く、ほかは 4.5 秒。
-    public static float LifeFor(AchievementTier tier, bool moreWaiting) =>
-        tier == AchievementTier.None && moreWaiting ? ShortLifeSeconds : LifeSeconds;
+    // カードを出し始めるときに決める寿命: 後ろに待っているカードがあれば、段なしは約1秒・銅は 2.2 秒。銀から上と最後の1枚は 4.5 秒。
+    public static float LifeFor(AchievementTier tier, bool moreWaiting)
+    {
+        if (!moreWaiting) return LifeSeconds;
+        if (tier == AchievementTier.None) return FastLifeSeconds;
+        return tier == AchievementTier.Bronze ? ShortLifeSeconds : LifeSeconds;
+    }
 
     // Offset は右へずらす量(px)。演出を下げる設定では移動・拡大をせず、透明度だけで出入りする。
     public static Pose CardPose(double age, bool reducedEffects = false) => CardPose(age, LifeSeconds, reducedEffects);
 
-    // 寿命 life のカードの見え方(入りと消えの長さは同じで、止まりが短くなる)。
+    // 寿命 life のカードの見え方(短いカードは止まりが短くなる。約1秒のカードは入りと消えも短い)。
     public static Pose CardPose(double age, float life, bool reducedEffects)
     {
-        double holdSeconds = Math.Max(0, life - EnterSeconds - ExitSeconds);
+        bool fast = life < ShortLifeSeconds - 1e-4f;
+        double enter = fast ? FastEnterSeconds : EnterSeconds, exit = fast ? FastExitSeconds : ExitSeconds;
+        double holdSeconds = Math.Max(0, life - enter - exit);
         // 消える時刻は寿命そのもので比べる(入り・止まり・消えを足し直すと、丸めで寿命ちょうどに透明になりきらない)。
         if (age < 0 || age >= life) return new Pose { Alpha = 0f, Offset = 0f, Scale = 1f };
-        if (age < EnterSeconds)
+        if (age < enter)
         {
-            float k = (float)(age / EnterSeconds), e = 1f - (1f - k) * (1f - k) * (1f - k);
+            float k = (float)(age / enter), e = 1f - (1f - k) * (1f - k) * (1f - k);
             return new Pose
             {
                 Alpha = e,
@@ -187,9 +197,9 @@ public sealed class AchievementToast : MonoBehaviour
                 Scale = reducedEffects ? 1f : Mathf.Lerp(.96f, 1f, e),
             };
         }
-        double leave = age - EnterSeconds - holdSeconds;
+        double leave = age - enter - holdSeconds;
         if (leave <= 0) return new Pose { Alpha = 1f, Offset = 0f, Scale = 1f };
-        float t = Mathf.Clamp01((float)(leave / ExitSeconds));
+        float t = Mathf.Clamp01((float)(leave / exit));
         return new Pose { Alpha = 1f - t * t, Offset = reducedEffects ? 0f : t * ExitSlide, Scale = 1f };
     }
 

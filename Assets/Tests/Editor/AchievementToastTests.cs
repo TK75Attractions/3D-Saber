@@ -98,15 +98,19 @@ public class AchievementToastTests
         Assert.AreEqual(0, queue.VisibleCount, "出し始めてから実時間 4.5 秒で消える");
     }
 
-    // 簡単なものから出すので、後ろに待っているカードがある段なしのカードは短く(2.2 秒)、段のあるカードと最後の1枚は 4.5 秒。
+    // 簡単なものから出すので、後ろに待っているカードがあるうちは段なしを約1秒・銅を 2.2 秒で消し、銀から上と最後の1枚は 4.5 秒
+    // (2026-10-29 ユーザー「もっとレアリティの低いやつは高速で出して」)。
     [Test]
     public void PlainCardsAreShortWhileOthersWaitSoTheHardestComesSooner()
     {
         Assert.LessOrEqual(AchievementToast.ShortLifeSeconds, 2.5f);
-        Assert.GreaterOrEqual(AchievementToast.ShortHoldSeconds, 1f, "読める長さは止まる");
+        Assert.GreaterOrEqual(AchievementToast.ShortHoldSeconds, 1f, "銅は読める長さは止まる");
+        Assert.LessOrEqual(AchievementToast.FastLifeSeconds, 1f, "段なしは約1秒");
+        Assert.GreaterOrEqual(AchievementToast.FastHoldSeconds, .6f, "段なしも一瞬は止まる");
         var queue = new AchievementToastQueue(AchievementToast.MaxVisible);
         foreach (string m in new[] { "a", "b", "c" }) queue.Enqueue(m);
         queue.Enqueue("bronze", AchievementTier.Bronze);
+        queue.Enqueue("silver", AchievementTier.Silver);
         queue.Enqueue("gold", AchievementTier.Gold);
         var life = new Dictionary<string, float>();
         var shownAt = new Dictionary<string, double>();
@@ -120,11 +124,12 @@ public class AchievementToastTests
             }
         }
         Assert.IsTrue(queue.Idle);
-        foreach (string m in new[] { "a", "b", "c" }) Assert.AreEqual(AchievementToast.ShortLifeSeconds, life[m], 1e-6, m);
-        Assert.AreEqual(AchievementToast.LifeSeconds, life["bronze"], 1e-6, "段のあるカードは短くしない");
+        foreach (string m in new[] { "a", "b", "c" }) Assert.AreEqual(AchievementToast.FastLifeSeconds, life[m], 1e-6, m);
+        Assert.AreEqual(AchievementToast.ShortLifeSeconds, life["bronze"], 1e-6, "銅は 2.2 秒");
+        Assert.AreEqual(AchievementToast.LifeSeconds, life["silver"], 1e-6, "銀から上は短くしない");
         Assert.AreEqual(AchievementToast.LifeSeconds, life["gold"], 1e-6);
-        Assert.Less(shownAt["gold"], 2 * AchievementToast.ShortLifeSeconds + 2 * AchievementToast.StaggerSeconds + 3 * Frame,
-            "いちばん難しい金は、段なし3枚のあとすぐ(5秒より前)に出る");
+        Assert.Less(shownAt["gold"], 2 * AchievementToast.FastLifeSeconds + AchievementToast.ShortLifeSeconds + 2 * AchievementToast.StaggerSeconds + 3 * Frame,
+            "いちばん難しい金は、段なし3枚と銅のあとすぐ(4秒より前)に出る");
         var single = new AchievementToastQueue(AchievementToast.MaxVisible);
         single.Enqueue("only");
         single.Tick(0, true);
@@ -133,6 +138,12 @@ public class AchievementToastTests
             AchievementToast.ShortLifeSeconds, false);
         Assert.AreEqual(1f, pose.Alpha, "短いカードも止まっている間は見える");
         Assert.AreEqual(0f, AchievementToast.CardPose(AchievementToast.ShortLifeSeconds, AchievementToast.ShortLifeSeconds, false).Alpha);
+        var fast = AchievementToast.CardPose(AchievementToast.FastEnterSeconds + .01, AchievementToast.FastLifeSeconds, false);
+        Assert.AreEqual(1f, fast.Alpha, "約1秒のカードは入りも短い");
+        Assert.AreEqual(1f, AchievementToast.CardPose(AchievementToast.FastLifeSeconds - AchievementToast.FastExitSeconds - .01,
+            AchievementToast.FastLifeSeconds, false).Alpha, "止まりの終わりまで見える");
+        Assert.Less(AchievementToast.CardPose(AchievementToast.FastLifeSeconds - .05, AchievementToast.FastLifeSeconds, false).Alpha, .5f, "消えも短い");
+        Assert.AreEqual(0f, AchievementToast.CardPose(AchievementToast.FastLifeSeconds, AchievementToast.FastLifeSeconds, false).Alpha);
     }
 
     // 段は色だけでなく◆の数でも分かる。結果画面の順位のリールが回っている間は、新しいカードを出さない(音がぶつかる)。
