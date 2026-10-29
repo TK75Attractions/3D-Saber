@@ -1,0 +1,266 @@
+{
+  "schemaVersion": 1,
+  "coneRects": [
+    [
+      264,
+      44,
+      350,
+      190
+    ],
+    [
+      338,
+      44,
+      380,
+      158
+    ],
+    [
+      376,
+      40,
+      450,
+      164
+    ],
+    [
+      448,
+      40,
+      479,
+      164
+    ]
+  ],
+  "clips": [
+    {
+      "id": "124359_033",
+      "sourceClip": "phone_saber_triage_autoclip_20261029_124359_033_jump_red",
+      "sourceSummarySHA256": "99b2489f889ca126d3ca62be4cdfc3c5135b951b346873cf264a9383ef8ab60c",
+      "fixtureSHA256": "93cf18238399b9869586ad4bcbaa9b448e09e22975a5197faa00e1bd5d4833fd",
+      "frameCount": 301,
+      "firstFrame": 9748,
+      "lastFrame": 10048,
+      "eventFrame": 9929,
+      "eventRedAbsent": false,
+      "baseline": {
+        "coneSelectedFrames": 3,
+        "redOutputAbsentFrames": 45,
+        "recordedConeSelectedFrames": 3,
+        "recordedMismatchFrames": 3,
+        "resetFrames": 0,
+        "truncatedFrames": 301
+      }
+    },
+    {
+      "id": "124558_320",
+      "sourceClip": "phone_saber_triage_autoclip_20261029_124558_320_jump_red",
+      "sourceSummarySHA256": "7b573406ed801dba68b180ebc348488edfcabbc78f198cc232ed755f8bec0898",
+      "fixtureSHA256": "56c01f8ec5721eb76e14e0a5cea88ecdd9e85271186ceee6f16e56dda5ed4eb6",
+      "frameCount": 301,
+      "firstFrame": 16909,
+      "lastFrame": 17209,
+      "eventFrame": 17090,
+      "eventRedAbsent": false,
+      "baseline": {
+        "coneSelectedFrames": 83,
+        "redOutputAbsentFrames": 83,
+        "recordedConeSelectedFrames": 83,
+        "recordedMismatchFrames": 0,
+        "resetFrames": 0,
+        "truncatedFrames": 1
+      }
+    },
+    {
+      "id": "124818_863",
+      "sourceClip": "phone_saber_triage_autoclip_20261029_124818_863_jump_red",
+      "sourceSummarySHA256": "308a314fad83be04ae382f08df1d3133e1ba277e540cdafb481b70395a5615dc",
+      "fixtureSHA256": "4a332f3d164ada939429aa1ab3bb169ef185b6ca6f01db9b06e03a8e49a12456",
+      "frameCount": 301,
+      "firstFrame": 25346,
+      "lastFrame": 25646,
+      "eventFrame": 25527,
+      "eventRedAbsent": true,
+      "baseline": {
+        "coneSelectedFrames": 149,
+        "redOutputAbsentFrames": 152,
+        "recordedConeSelectedFrames": 152,
+        "recordedMismatchFrames": 32,
+        "resetFrames": 0,
+        "truncatedFrames": 123
+      }
+    },
+    {
+      "id": "124957_145",
+      "sourceClip": "phone_saber_triage_autoclip_20261029_124957_145_jump_red",
+      "sourceSummarySHA256": "6364819954b56c94000303cc02500fb0413f465e1ac30c423638d51260bf2c19",
+      "fixtureSHA256": "b58cbbcdbc0b475b8a1353e6d8d70f3a565b84b599120ece9e21678e2e075f13",
+      "frameCount": 301,
+      "firstFrame": 31246,
+      "lastFrame": 31546,
+      "eventFrame": 31427,
+      "eventRedAbsent": false,
+      "baseline": {
+        "coneSelectedFrames": 22,
+        "redOutputAbsentFrames": 25,
+        "recordedConeSelectedFrames": 8,
+        "recordedMismatchFrames": 31,
+        "resetFrames": 0,
+        "truncatedFrames": 179
+      }
+    },
+    {
+      "id": "125054_666",
+      "sourceClip": "phone_saber_triage_autoclip_20261029_125054_666_jump_red",
+      "sourceSummarySHA256": "edb0fdd01ee2ff0c86e7897cc933e4d0f01ceba25e2715de2be3a5ea7b3e977e",
+      "fixtureSHA256": "a65a139ca1f162ef6fd925d0f66b6a29f2a4b2b21b227ab32f7383beebc67433",
+      "frameCount": 301,
+      "firstFrame": 34699,
+      "lastFrame": 34999,
+      "eventFrame": 34880,
+      "eventRedAbsent": false,
+      "baseline": {
+        "coneSelectedFrames": 36,
+        "redOutputAbsentFrames": 151,
+        "recordedConeSelectedFrames": 29,
+        "recordedMismatchFrames": 15,
+        "resetFrames": 0,
+        "truncatedFrames": 197
+      }
+    },
+    {
+      "id": "132525",
+      "sourceClip": "phone_saber_triage_autoclip_20261029_132525_025_jump_red",
+      "sourceSummarySHA256": "dbb1a3ef51eedba3073ea216f46eb5dd299173831d25a83a283a5d50a894df79",
+      "fixtureSHA256": "a9e1ae45c928453da94ae99ed00ffbc9e0eedcfcc3268d702d54e8e41d71bb41",
+      "frameCount": 301,
+      "firstFrame": 158985,
+      "lastFrame": 159285,
+      "eventFrame": 159166,
+      "eventRedAbsent": true,
+      "baseline": {
+        "coneSelectedFrames": 261,
+        "redOutputAbsentFrames": 36,
+        "recordedConeSelectedFrames": 224,
+        "recordedMismatchFrames": 153,
+        "resetFrames": 4,
+        "truncatedFrames": 268
+      }
+    },
+    {
+      "id": "132602",
+      "sourceClip": "phone_saber_triage_autoclip_20261029_132602_454_jump_red",
+      "sourceSummarySHA256": "d038863d3d856205ebe58a276f4b71db4a7922bc856b7e887c4afb974caea139",
+      "fixtureSHA256": "55d512de7cd4a36be8e8c33b907e0fd119aba0f74a37c92319c7e597e086b6a0",
+      "frameCount": 301,
+      "firstFrame": 161232,
+      "lastFrame": 161532,
+      "eventFrame": 161413,
+      "eventRedAbsent": true,
+      "baseline": {
+        "coneSelectedFrames": 140,
+        "redOutputAbsentFrames": 161,
+        "recordedConeSelectedFrames": 132,
+        "recordedMismatchFrames": 102,
+        "resetFrames": 0,
+        "truncatedFrames": 301
+      }
+    },
+    {
+      "id": "132736",
+      "sourceClip": "phone_saber_triage_autoclip_20261029_132736_371_jump_red",
+      "sourceSummarySHA256": "22b33db0a38b5e8a8ba285e494ae9d28b6ed16ca94407a0e5f3209c004567842",
+      "fixtureSHA256": "60f6fb1f26798406066a0245eb87e1236f4e4cc90be990a34eb21ec6a0cbd022",
+      "frameCount": 301,
+      "firstFrame": 166870,
+      "lastFrame": 167170,
+      "eventFrame": 167051,
+      "eventRedAbsent": true,
+      "baseline": {
+        "coneSelectedFrames": 294,
+        "redOutputAbsentFrames": 7,
+        "recordedConeSelectedFrames": 289,
+        "recordedMismatchFrames": 112,
+        "resetFrames": 0,
+        "truncatedFrames": 301
+      }
+    },
+    {
+      "id": "133224",
+      "sourceClip": "phone_saber_triage_autoclip_20261029_133224_221_jump_red",
+      "sourceSummarySHA256": "71be20b6b8c1648f06adfce95dbfd01ecf1fe42be767457afa1eca4339ca9c69",
+      "fixtureSHA256": "b66cc99a01437f44ea4ce505daf8f26918668f007df65ba14df133f62bc4b22a",
+      "frameCount": 301,
+      "firstFrame": 184150,
+      "lastFrame": 184450,
+      "eventFrame": 184331,
+      "eventRedAbsent": true,
+      "baseline": {
+        "coneSelectedFrames": 206,
+        "redOutputAbsentFrames": 95,
+        "recordedConeSelectedFrames": 210,
+        "recordedMismatchFrames": 70,
+        "resetFrames": 4,
+        "truncatedFrames": 299
+      }
+    },
+    {
+      "id": "135841_407",
+      "sourceClip": "phone_saber_triage_autoclip_20261029_135841_407_jump_red",
+      "sourceSummarySHA256": "eb1eba59a26b6bdadb73b93dc7a739a45c1b87f4e0d5bdc80e4a4cffd05281a6",
+      "fixtureSHA256": "1333d1515ab18390bc32a4b51e504fabd8ff87b1a1106f86bf3011212fb3928a",
+      "frameCount": 301,
+      "firstFrame": 278830,
+      "lastFrame": 279130,
+      "eventFrame": 279011,
+      "eventRedAbsent": false,
+      "baseline": {
+        "coneSelectedFrames": 279,
+        "redOutputAbsentFrames": 22,
+        "recordedConeSelectedFrames": 217,
+        "recordedMismatchFrames": 105,
+        "resetFrames": 11,
+        "truncatedFrames": 301
+      }
+    },
+    {
+      "id": "125036_741",
+      "sourceClip": "phone_saber_triage_autoclip_20261029_125036_741_confusion_red",
+      "sourceSummarySHA256": "279e674ffa5a2553f4fd8fbb0fbe1ba2ff61e38e8f3c1e6128d60d13426fd179",
+      "fixtureSHA256": "3b501ff9e290a2080880230a8de2d826cf95dd09cc57d350725144e07bb72838",
+      "frameCount": 301,
+      "firstFrame": 33623,
+      "lastFrame": 33923,
+      "eventFrame": 33804,
+      "eventRedAbsent": false,
+      "baseline": {
+        "coneSelectedFrames": 19,
+        "redOutputAbsentFrames": 20,
+        "recordedConeSelectedFrames": 19,
+        "recordedMismatchFrames": 10,
+        "resetFrames": 0,
+        "truncatedFrames": 68
+      }
+    },
+    {
+      "id": "135856_666",
+      "sourceClip": "phone_saber_triage_autoclip_20261029_135856_666_confusion_red",
+      "sourceSummarySHA256": "8038902e48fcdc74c8ba017cce98b004897cda9d0a26a54037af581196658bb0",
+      "fixtureSHA256": "04af5a3d27f2f13d64c4af026aec645164b207112be98689091e12891e0700a3",
+      "frameCount": 181,
+      "firstFrame": 279746,
+      "lastFrame": 280046,
+      "eventFrame": 279927,
+      "eventRedAbsent": false,
+      "baseline": {
+        "coneSelectedFrames": 59,
+        "redOutputAbsentFrames": 13,
+        "recordedConeSelectedFrames": 57,
+        "recordedMismatchFrames": 4,
+        "resetFrames": 120,
+        "truncatedFrames": 181
+      }
+    }
+  ],
+  "baselineCommit": "6a55f1a9317c8c5b37124c42c8b935854695cca9",
+  "baselineSourceSHA256": {
+    "PhoneSaber/ios/PhoneSaberSender/PhoneSaberSender/DetectionCore.swift": "6708d274ee5a2f840b8a0f02b86c918a7651bd9a34bb963aae37bc4bcb005614",
+    "PhoneSaber/ios/PhoneSaberSender/PhoneSaberSender/BGRADetection.swift": "14282304a28779f6f54062196ede677f75b0b70cda86e2dac4c423ca38c9ba38",
+    "PhoneSaber/ios/PhoneSaberSender/Tools/SelectionReplayHost.swift": "ee9bc46298e36dc57452b2e0bb88577d8e9caa980be0d8db17d82cfe10fcf88b",
+    "PhoneSaber/ios/PhoneSaberSender/Tools/phone_saber_stationary_replay.py": "9797f9bacae20f7950fb502d210d312e098c96a6492d2f4509f3e84f6d23ff22"
+  }
+}
