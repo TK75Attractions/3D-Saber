@@ -61,7 +61,8 @@ internal sealed class FirstNoteHandHintView : MonoBehaviour
         var go = new GameObject("FirstHandHint", typeof(Canvas), typeof(CanvasScaler));
         var canvas = go.GetComponent<Canvas>(); canvas.renderMode = RenderMode.ScreenSpaceOverlay; canvas.sortingOrder = 940;
         var scaler = go.GetComponent<CanvasScaler>(); scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1920, 1080); scaler.matchWidthOrHeight = .5f;
+        // Overlay なので 16:9 以外の画面でも 1920×1080 の全体が収まる Expand(16:9 では今までと同じ。2026-10-30 全体の点検)。
+        scaler.referenceResolution = new Vector2(1920, 1080); scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand;
         var view = go.AddComponent<FirstNoteHandHintView>();
         // 手の短い予告は従来の幅。ルールや段の字幕は横へ広げ、長い文だけ縮小を許す。
         bool longCaption = !string.IsNullOrEmpty(text) && text.Length > 14;

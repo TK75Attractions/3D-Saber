@@ -51,10 +51,12 @@ public sealed partial class PlayExcitement
             var scaler = go.GetComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1920, 1080);
-            scaler.matchWidthOrHeight = .5f;
+            // Overlay なので 16:9 以外の画面でも 1920×1080 の全体が収まる Expand にし、その 1920×1080 が
+            // FreezeAspectRate で中央に切り出したカメラの絵と重なるので、札は中央を原点に置く(2026-10-30 全体の点検)。
+            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand;
             tag = UISkinKit.MakeTMP(go.transform, "Label", "つづきから", 24, Color.white,
                 TextAlignmentOptions.Center, Vector2.zero, new Vector2(180, 34));
-            tag.rectTransform.anchorMin = tag.rectTransform.anchorMax = Vector2.zero;
+            tag.rectTransform.anchorMin = tag.rectTransform.anchorMax = new Vector2(.5f, .5f);
             tag.rectTransform.pivot = new Vector2(.5f, .5f);
             tagLeft = 2;
             tagCanvas.enabled = false;
@@ -325,7 +327,7 @@ public sealed partial class PlayExcitement
             y = (float)gate.Top * 1080 - 70;
             fits = y > 540;
         }
-        tag.rectTransform.anchoredPosition = new Vector2(x, y);
+        tag.rectTransform.anchoredPosition = new Vector2(x - 960, y - 540);
         tagCanvas.enabled = advancing && tagLeft > 0 && fits;
     }
 

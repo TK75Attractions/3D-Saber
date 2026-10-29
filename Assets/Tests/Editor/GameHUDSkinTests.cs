@@ -122,6 +122,14 @@ public class GameHUDSkinTests
         Assert.IsTrue(skin.IsBuilt);
     }
 
+    // 演奏中の HUD は Overlay なので、16:9 以外の画面でも 1920×1080 の全体が収まる Expand にする(2026-10-30 全体の点検)。
+    [Test]
+    public void Ensure_FitsAnyScreenShape()
+    {
+        var scaler = GameHUDSkin.Ensure().GetComponent<CanvasScaler>();
+        Assert.AreEqual(CanvasScaler.ScreenMatchMode.Expand, scaler.screenMatchMode);
+    }
+
     [Test]
     public void Ensure_IsIdempotent()
     {

@@ -50,7 +50,8 @@ public sealed class GameplayFeedbackPresenter : MonoBehaviour
         lottery = new MilestoneLottery(GameSession.SelectedSongId, GameSession.AchievementRunId);
         var canvas = GetComponent<Canvas>(); canvas.renderMode = RenderMode.ScreenSpaceOverlay; canvas.sortingOrder = 505;
         var scaler = GetComponent<CanvasScaler>(); scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1920, 1080); scaler.matchWidthOrHeight = .5f;
+        // Overlay なので 16:9 以外の画面でも 1920×1080 の全体が収まる Expand(16:9 では今までと同じ。2026-10-30 全体の点検)。
+        scaler.referenceResolution = new Vector2(1920, 1080); scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand;
         // 曲中の初回判定でフォントアトラスを増やさないよう、使う字を開始前に準備する。
         var labelFont = UISkinKit.FontAsset("Oxanium-Bold");
         if (labelFont != null) labelFont.TryAddCharacters("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 /,.ms");

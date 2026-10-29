@@ -242,7 +242,9 @@ public class GameHUDSkin : MonoBehaviour
         var scaler = gameObject.AddComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920, 1080);
-        scaler.matchWidthOrHeight = 0.5f;
+        // Overlay なので FreezeAspectRate の 16:9 が効かない。縦横の平均で拡大すると 21:9 などで上下が切れるので、
+        // 1920×1080 の全体がどの画面比でも収まる Expand にする(16:9 では今までと同じ。2026-10-30 全体の点検)。
+        scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand;
 
         var font = UISkinKit.LogoFontAsset(); // Chakra Petch Bold Italic(数字・勢いのある文字)
         var oxBold = UISkinKit.FontAsset("Oxanium-Bold"); // ラベル類

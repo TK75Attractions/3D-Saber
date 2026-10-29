@@ -202,7 +202,8 @@ public class GameStartCountdown : MonoBehaviour
         if (scaler == null) scaler = gameObject.AddComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920f, 1080f);
-        scaler.matchWidthOrHeight = 0.5f;
+        // Overlay なので 16:9 以外の画面でも 1920×1080 の全体が収まる Expand(16:9 では今までと同じ。2026-10-30 全体の点検)。
+        scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand;
 
         canvasGroup = gameObject.GetComponent<CanvasGroup>();
         if (canvasGroup == null) canvasGroup = gameObject.AddComponent<CanvasGroup>();

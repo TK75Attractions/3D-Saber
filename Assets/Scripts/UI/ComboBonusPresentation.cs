@@ -70,7 +70,8 @@ public class ComboBonusPresentation : MonoBehaviour
         var scaler = gameObject.AddComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920, 1080);
-        scaler.matchWidthOrHeight = .5f;
+        // Overlay なので 16:9 以外の画面でも 1920×1080 の全体が収まる Expand(16:9 では今までと同じ。2026-10-30 全体の点検)。
+        scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand;
 
         scrim = Image("Dim", transform, new Vector2(3000, 2200), null, new Color(.012f, .018f, .055f, .86f));
         glow = Image("Halo", transform, new Vector2(1700, 1100), UISkinKit.SoftGlow(), TierAccent(tier));

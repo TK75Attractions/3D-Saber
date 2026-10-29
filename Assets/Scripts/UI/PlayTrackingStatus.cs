@@ -237,7 +237,8 @@ public sealed class PlayTrackingStatus : MonoBehaviour
         root.transform.SetParent(parent, false);
         var canvas = root.GetComponent<Canvas>(); canvas.renderMode = RenderMode.ScreenSpaceOverlay; canvas.sortingOrder = 860;
         var scaler = root.GetComponent<CanvasScaler>(); scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1920, 1080); scaler.matchWidthOrHeight = .5f;
+        // Overlay なので 16:9 以外の画面でも 1920×1080 の全体が収まる Expand(16:9 では今までと同じ。2026-10-30 全体の点検)。
+        scaler.referenceResolution = new Vector2(1920, 1080); scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand;
         var view = root.AddComponent<PlayTrackingStatus>();
         // いちばん奥に、止まっている間だけの暗い幕(画面いっぱい・入力は受けない)。
         var dimGo = new GameObject("PauseDim", typeof(RectTransform), typeof(Image));
