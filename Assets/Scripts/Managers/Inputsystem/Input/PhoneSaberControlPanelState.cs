@@ -12,6 +12,8 @@ public static class PhoneSaberControlPanelActions
         { "calibration-cancel", new[] { "" } }, { "calibration-reset", new[] { "" } },
         { "calibration-blue", new[] { "0", "1" } }, { "calibration-enabled", new[] { "0", "1" } },
         { "prediction", new[] { "auto", "0", "20", "40", "60" } },
+        { "display-latency-adjust", new[] { "-10", "10" } }, { "display-latency-centre", new[] { "" } },
+        { "display-latency-clear", new[] { "" } },
         { "display-sync", new[] { "0", "1" } }, { "frame-cap", new[] { "0", "1", "2" } },
         { "judge-mode", new[] { "0", "1" } }, { "judge-adjust", new[] { "-10", "10" } }, { "judge-centre", new[] { "" } },
         { "filter", new[] { "0", "1", "2", "3", "4" } }, { "stabilizer", new[] { "0", "1" } },
@@ -32,7 +34,7 @@ public static class PhoneSaberControlPanelActions
     public static bool IsValid(string name, string value) => name != null && choices.TryGetValue(name, out var values) && Array.IndexOf(values, value) >= 0;
     public static bool RequiresConfirmation(string name, string value) =>
         name == "judge-mode" && value == "0" || name == "phone-clear-ignore" || name == "pc-clear-ignore" ||
-        name == "phone-clear-area" || name == "calibration-reset";
+        name == "phone-clear-area" || name == "calibration-reset" || name == "display-latency-clear";
 
     public static bool Dispatch(string name, string value, IReadOnlyDictionary<string, Action<string>> handlers, bool confirmed = false)
     {

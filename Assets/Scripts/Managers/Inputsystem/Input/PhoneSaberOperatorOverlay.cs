@@ -240,6 +240,9 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
                 if (v == "auto") input.SetPredictionAutomatic();
                 else input.SetPredictionHorizonMilliseconds(int.Parse(v, CultureInfo.InvariantCulture));
             } },
+            { "display-latency-adjust", v => PhoneSaberManualDisplayLatency.Adjust(CurrentStation, int.Parse(v, CultureInfo.InvariantCulture)) },
+            { "display-latency-centre", _ => PhoneSaberManualDisplayLatency.Centre(CurrentStation) },
+            { "display-latency-clear", _ => PhoneSaberManualDisplayLatency.Clear(CurrentStation) },
             { "display-sync", v => PhoneSaberDisplaySync.SetMode(int.Parse(v, CultureInfo.InvariantCulture)) },
             { "frame-cap", v => PhoneSaberDisplaySync.SetFrameCapMode(int.Parse(v, CultureInfo.InvariantCulture)) },
             { "judge-mode", v => PhoneSaberJudgeLatency.Set(int.Parse(v, CultureInfo.InvariantCulture), PhoneSaberJudgeLatency.OffsetMs) },
@@ -433,6 +436,27 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
             $"自動: 最大{PhoneSaberEndpointPredictor.MaximumHorizonMilliseconds} ms・移動上限{PhoneSaberEndpointPredictor.AutomaticMaximumDisplacement} world。受信が100 ms止まると予測量はゼロに戻ります。");
         panel.Label("自動: スマホ＋通信＋PC＋画面＋露光の目安。未計測時はOFF。\n" +
             "同期確認済みのts片道値は第2候補。30秒中央値が5 ms超変化した時、10秒以上あけて更新。");
+        BuildDisplayLatency();
+    }
+
+    static string DisplaySourceLabel(string source) => source == "manual" ? "手入力" :
+        source == "measured" ? "F9 の実測" : "半周期の推定・投影機の処理は含まず";
+
+    // 2026-10-29 台B: 投影の赤は色合いが変わって F9 で測れず、画面の遅延が半周期の 8 ms のまま先回りが足りなかった。
+    void BuildDisplayLatency()
+    {
+        string station = CurrentStation;
+        double? display = PhoneSaberPerfLog.DisplayMs(station, out string source);
+        panel.Label($"画面の遅延: {(display.HasValue ? $"約{display.Value:0} ms" : "不明")}（{DisplaySourceLabel(source)}・この台とこの画面に保存）");
+        panel.Button("画面の遅延 −10", "display-latency-adjust", "-10", display.HasValue);
+        panel.Button("画面の遅延 +10", "display-latency-adjust", "10", display.HasValue);
+        double? median = PhoneSaberJudgeTimingStats.Median();
+        if (display.HasValue && median.HasValue && PhoneSaberJudgeTimingStats.Count >= PhoneSaberJudgeLatencySettings.MinimumHitsToCentre)
+            panel.Button($"当たりの中央から決める（{display.Value:0} → {PhoneSaberDisplayMeasurementSettings.CentredManual(display.Value, median.Value)} ms）",
+                "display-latency-centre");
+        panel.Button("F9 の実測・推定に戻す", "display-latency-clear", enabled: source == "manual");
+        panel.Label("投影機は F9 で赤を拾えないことがあります。1曲切ってから「当たりの中央から決める」を押すと、\n" +
+            $"その分だけ剣の先回り（自動、最大{PhoneSaberEndpointPredictor.MaximumHorizonMilliseconds} ms）が増え、当たりも中央に寄ります。手入力は F9 の実測より優先します。");
     }
 
     void BuildDisplaySync()

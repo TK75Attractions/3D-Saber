@@ -133,6 +133,32 @@ public class PhoneSaberLatencyEstimateTests
         m.Rtt = null; Assert.IsNull(new PhoneSaberLatencyEstimate(m, pc, "x", 0, 1, 60, 1).TotalMs);
         StringAssert.Contains("届いていません", e.Line("赤", 16));
     }
+    // 2026-10-29 台B: 投影機は F9 で測れないので、F8 の手入力を実測より優先し、当たりの中央から決められるようにした。
+    [Test] public void ManualDisplayLatencyWinsAndCentresOnTheHitMedian() {
+        var m = Phone(); var pc = new PhoneSaberTimingStats(new double[] { 7, 7, 7 });
+        var half = new PhoneSaberLatencyEstimate(m, pc, "10.0.0.1", .1, 1, 60, 0);
+        var manual = new PhoneSaberLatencyEstimate(m, pc, "10.0.0.1", .1, 1, 60, 0, 45, 3, 30);
+        Assert.AreEqual("manual", manual.DisplaySource);
+        Assert.AreEqual(30, manual.DisplayMs.Value, 1e-9);
+        Assert.AreEqual(half.TotalMs.Value - 500.0 / 60 + 30, manual.TotalMs.Value, 1e-9);
+        StringAssert.Contains("手入力", manual.Line("赤", 1));
+        StringAssert.Contains("display-source=manual", manual.Log());
+        Assert.AreEqual("measured", new PhoneSaberLatencyEstimate(m, pc, "10.0.0.1", .1, 1, 60, 0, 45, 3).DisplaySource);
+        Assert.AreEqual(45, PhoneSaberLatencyEstimate.ChooseDisplay(-1, 45, 60, out string source).Value, 1e-9);
+        Assert.AreEqual("measured", source, "範囲外の手入力は使わない");
+        Assert.AreEqual(500.0 / 60, PhoneSaberLatencyEstimate.ChooseDisplay(null, null, 60, out source).Value, 1e-9);
+        Assert.AreEqual("configured-half-refresh", source);
+        // 当たりが +24 ms 遅め・画面 8.3 ms なら 30 ms。早めなら減らす。10 ms 単位で 0〜250 に収める。
+        Assert.AreEqual(30, PhoneSaberDisplayMeasurementSettings.CentredManual(500.0 / 60, 24));
+        Assert.AreEqual(20, PhoneSaberDisplayMeasurementSettings.CentredManual(40, -18));
+        Assert.AreEqual(0, PhoneSaberDisplayMeasurementSettings.CentredManual(8.3, -60));
+        Assert.AreEqual(250, PhoneSaberDisplayMeasurementSettings.CentredManual(200, 120));
+        Assert.AreEqual(20, PhoneSaberDisplayMeasurementSettings.AdjustedManual(500.0 / 60, 10));
+        Assert.AreEqual(0, PhoneSaberDisplayMeasurementSettings.AdjustedManual(500.0 / 60, -10));
+        // 鍵は台と画面だけ（fps の上限・画面同期は入れない。メニューで決めて本編で使う）。
+        Assert.AreEqual("PhoneSaber.DisplayManual.B.v1.display=PJ,pixels=1920x1080,refresh-hz=60",
+            PhoneSaberDisplayMeasurementSettings.ManualKey("B", "display=PJ,pixels=1920x1080,refresh-hz=60"));
+    }
     [Test] public void BoundedStoreSourceExpiryAndRateLimit() {
         var store = new PhoneSaberMetricsStore();
         for (int i = 0; i < 100; i++) store.Receive(Valid, Valid.Length, "ip" + i, 0);

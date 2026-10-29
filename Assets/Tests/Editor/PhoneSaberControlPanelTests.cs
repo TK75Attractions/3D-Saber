@@ -372,6 +372,8 @@ public class PhoneSaberControlPanelTests
             { "calibration-cancel", new[] { "" } }, { "calibration-reset", new[] { "" } },
             { "calibration-blue", new[] { "0", "1" } }, { "calibration-enabled", new[] { "0", "1" } },
             { "prediction", new[] { "auto", "0", "20", "40", "60" } },
+            { "display-latency-adjust", new[] { "-10", "10" } }, { "display-latency-centre", new[] { "" } },
+            { "display-latency-clear", new[] { "" } },
             { "display-sync", new[] { "0", "1" } }, { "frame-cap", new[] { "0", "1", "2" } },
             { "judge-mode", new[] { "0", "1" } }, { "judge-adjust", new[] { "-10", "10" } }, { "judge-centre", new[] { "" } },
             { "filter", new[] { "0", "1", "2", "3", "4" } }, { "stabilizer", new[] { "0", "1" } },
@@ -499,6 +501,7 @@ public class PhoneSaberControlPanelTests
     [TestCase("pc-clear-ignore", "")]
     [TestCase("phone-clear-area", "")]
     [TestCase("calibration-reset", "")]
+    [TestCase("display-latency-clear", "")]
     public void DangerousActionsRequireConfirmationEvenOutsideBrowser(string name, string value)
     {
         int calls = 0;

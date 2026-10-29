@@ -171,13 +171,13 @@ public sealed class PhoneSaberLatencyEstimate
     public readonly double DisplayAgeMinutes;
     public readonly double? NetworkMs, DisplayMs, ExposureMs, TotalMs;
     public PhoneSaberLatencyEstimate(PhoneSaberMetrics phone, PhoneSaberTimingStats pc, string sender,
-        double coordinateAge, double now, double refreshHz, int vsync, double? measuredDisplay = null, double displayAgeMinutes = 0)
+        double coordinateAge, double now, double refreshHz, int vsync, double? measuredDisplay = null, double displayAgeMinutes = 0,
+        double? manualDisplay = null)
     {
         Phone = phone; Pc = pc; At = now; RefreshHz = refreshHz; Vsync = vsync; Sender = sender ?? "unknown";
         CoordinateAge = coordinateAge;
-        DisplaySource = measuredDisplay.HasValue && PhoneSaberDisplayMeasurement.IsPlausible(measuredDisplay.Value) ? "measured" : "configured-half-refresh";
+        DisplayMs = ChooseDisplay(manualDisplay, measuredDisplay, refreshHz, out DisplaySource);
         DisplayAgeMinutes = displayAgeMinutes;
-        DisplayMs = DisplaySource == "measured" ? measuredDisplay : refreshHz > 0 && !double.IsInfinity(refreshHz) ? 500.0 / refreshHz : (double?)null;
         NetworkMs = phone?.Rtt / 2;
         // F9が画面残差から差し引いた露光位相を、合計へ必ず戻す。
         ExposureMs = phone?.CaptureFps > 0 && !double.IsInfinity(phone.CaptureFps.Value) ? 500 / phone.CaptureFps.Value : (double?)null;
@@ -188,6 +188,16 @@ public sealed class PhoneSaberLatencyEstimate
             ExposureMs == null ? "missing-exposure" : "estimate";
         if (Status == "estimate") TotalMs = phone.C2sMedian + NetworkMs + pc.MedianMs + DisplayMs + ExposureMs;
     }
+    // 画面の遅延: 運営の手入力 > F9 の実測 > 画面の半周期。手入力は F9 で測れない投影機用（2026-10-29 台B、
+    // 投影の赤は色合いが変わって iPhone が拾えない）。半周期は投影機の処理を含まないので、そのままだと先回りが足りない。
+    public static double? ChooseDisplay(double? manual, double? measured, double refreshHz, out string source)
+    {
+        if (manual.HasValue && PhoneSaberDisplayMeasurement.IsPlausible(manual.Value)) { source = "manual"; return manual; }
+        if (measured.HasValue && PhoneSaberDisplayMeasurement.IsPlausible(measured.Value)) { source = "measured"; return measured; }
+        source = "configured-half-refresh";
+        return refreshHz > 0 && !double.IsInfinity(refreshHz) ? 500.0 / refreshHz : (double?)null;
+    }
+
     static string N(double? n) => n.HasValue ? n.Value.ToString("0.0", CultureInfo.InvariantCulture) : "unknown";
     public string Line(string colour, double now)
     {
@@ -200,7 +210,7 @@ public sealed class PhoneSaberLatencyEstimate
         return head + string.Format(CultureInfo.InvariantCulture,
             "約{0:0} ms（スマホ {1:0} + 通信 約{2:0} + PC {3:0} + 画面 約{4:0} + 露光 約{7:0}）/ {5:0}秒前まで・{6}",
             TotalMs, Phone.C2sMedian, NetworkMs, Pc.MedianMs, DisplayMs, Math.Max(0, now - Phone.ReceivedAt), DisplaySource == "measured" ?
-            $"画面は実測（{DisplayAgeMinutes:0}分前）" : "画面は半周期の推定・投影機処理は含まず", ExposureMs);
+            $"画面は実測（{DisplayAgeMinutes:0}分前）" : DisplaySource == "manual" ? "画面は手入力（F8）" : "画面は半周期の推定・投影機処理は含まず", ExposureMs);
     }
     public string Log() => "status=" + Status + " sender=" + Sender + " platform=" + (Phone?.Platform ?? "unknown") +
         " phone-station=" + (Phone?.Station ?? "unknown") + " model=" + (Phone?.Model ?? "unknown") +
@@ -284,4 +294,70 @@ public static class PhoneSaberDisplayMeasurementSettings
     }
     public static bool Load(string station, string configuration, double now, out double value, out double ageMinutes) =>
         Decode(UnityEngine.PlayerPrefs.GetString(Key(station) + "." + configuration, ""), configuration, now, out value, out ageMinutes);
+
+    // 手入力の画面の遅延（F9 で測れない投影機用）。台と画面ごとに保存し、鍵に fps の上限は入れない
+    // （メニューの F8 で決めて本編で使う。F9 の実測は上限まで一致させる）。
+    public const int MaximumManualMs = 250;
+    public static string ManualKey(string station, string display) =>
+        "PhoneSaber.DisplayManual." + PhoneSaberStation.Normalize(station) + ".v1." + display;
+    public static int ClampManual(int ms) => Math.Max(0, Math.Min(MaximumManualMs, ms));
+    // 当たりのずれの中央（＋は遅め）だけ画面の遅延を増やすと、先回りが同じだけ増えて当たりも中央に来る。10 ms 単位。
+    public static int CentredManual(double currentDisplayMs, double hitMedianMs) =>
+        ClampManual((int)Math.Round((currentDisplayMs + hitMedianMs) / 10.0) * 10);
+    public static int AdjustedManual(double currentDisplayMs, int deltaMs) =>
+        ClampManual((int)Math.Round(currentDisplayMs / 10.0) * 10 + deltaMs);
+    public static bool LoadManual(string station, string display, out int ms)
+    {
+        int saved = UnityEngine.PlayerPrefs.GetInt(ManualKey(station, display), -1);
+        ms = ClampManual(saved);
+        return saved >= 0;
+    }
+    public static void SaveManual(string station, string display, int ms)
+    {
+        UnityEngine.PlayerPrefs.SetInt(ManualKey(station, display), ClampManual(ms));
+        UnityEngine.PlayerPrefs.Save();
+    }
+    public static void ClearManual(string station, string display)
+    {
+        UnityEngine.PlayerPrefs.DeleteKey(ManualKey(station, display));
+        UnityEngine.PlayerPrefs.Save();
+    }
+}
+
+// F8 の「画面の遅延」。変えたら、それより前の当たりのずれは中央合わせに使わない。
+public static class PhoneSaberManualDisplayLatency
+{
+    public static void Adjust(string station, int deltaMs)
+    {
+        double? current = PhoneSaberPerfLog.DisplayMs(station, out _);
+        if (current.HasValue) Save(station, PhoneSaberDisplayMeasurementSettings.AdjustedManual(current.Value, deltaMs), "adjust");
+    }
+
+    public static void Centre(string station)
+    {
+        double? current = PhoneSaberPerfLog.DisplayMs(station, out _);
+        double? median = PhoneSaberJudgeTimingStats.Median();
+        if (!current.HasValue || !median.HasValue ||
+            PhoneSaberJudgeTimingStats.Count < PhoneSaberJudgeLatencySettings.MinimumHitsToCentre) return;
+        Save(station, PhoneSaberDisplayMeasurementSettings.CentredManual(current.Value, median.Value),
+            string.Format(CultureInfo.InvariantCulture, "centre hit-median-ms={0:0} hits={1} from-ms={2:0}",
+                median.Value, PhoneSaberJudgeTimingStats.Count, current.Value));
+    }
+
+    public static void Clear(string station)
+    {
+        string display = PhoneSaberPerfLog.DisplayIdentity();
+        PhoneSaberDisplayMeasurementSettings.ClearManual(station, display);
+        PhoneSaberJudgeTimingStats.Clear();
+        PhoneSaberEventLog.Record(station, "SYSTEM", "display-latency-setting", "source=auto " + display);
+    }
+
+    static void Save(string station, int ms, string reason)
+    {
+        string display = PhoneSaberPerfLog.DisplayIdentity();
+        PhoneSaberDisplayMeasurementSettings.SaveManual(station, display, ms);
+        PhoneSaberJudgeTimingStats.Clear();
+        PhoneSaberEventLog.Record(station, "SYSTEM", "display-latency-setting",
+            "source=manual display-ms=" + ms.ToString(CultureInfo.InvariantCulture) + " reason=" + reason + " " + display);
+    }
 }

@@ -213,10 +213,28 @@ public sealed class PhoneSaberPerfLog : MonoBehaviour
         string sender = blue ? input.BlueCoordinateSender : input.RedCoordinateSender;
         bool measured = PhoneSaberDisplayMeasurementSettings.Load(input.StationLabel, DisplayConfiguration(),
             DateTimeOffset.UtcNow.ToUnixTimeSeconds(), out double display, out double age);
+        bool manual = PhoneSaberDisplayMeasurementSettings.LoadManual(input.StationLabel, DisplayIdentity(), out int manualMs);
         return new PhoneSaberLatencyEstimate(input.ReadPhoneMetrics(sender, now), timing, sender,
             now - (blue ? input.LastReceivedMonotonicTime2 : input.LastReceivedMonotonicTime), now,
-            Screen.currentResolution.refreshRateRatio.value, QualitySettings.vSyncCount, measured ? (double?)display : null, age);
+            Screen.currentResolution.refreshRateRatio.value, QualitySettings.vSyncCount, measured ? (double?)display : null, age,
+            manual ? (double?)manualMs : null);
     }
+
+    // いま推定に入る画面の遅延（F8 の表示と「画面の遅延」の起点）。推定と同じ順で選ぶ。
+    public static double? DisplayMs(string station, out string source)
+    {
+        bool measured = PhoneSaberDisplayMeasurementSettings.Load(station, DisplayConfiguration(),
+            DateTimeOffset.UtcNow.ToUnixTimeSeconds(), out double display, out _);
+        bool manual = PhoneSaberDisplayMeasurementSettings.LoadManual(station, DisplayIdentity(), out int manualMs);
+        return PhoneSaberLatencyEstimate.ChooseDisplay(manual ? (double?)manualMs : null, measured ? (double?)display : null,
+            Screen.currentResolution.refreshRateRatio.value, out source);
+    }
+
+    // 手入力の画面の遅延の鍵。画面（投影機）の名前・解像度・Hz だけで、fps の上限・画面同期は含めない。
+    public static string DisplayIdentity() => string.Format(CultureInfo.InvariantCulture,
+        "display={0},pixels={1}x{2},refresh-hz={3:0.###}",
+        Uri.EscapeDataString(Screen.mainWindowDisplayInfo.name ?? "unknown"),
+        Screen.currentResolution.width, Screen.currentResolution.height, Screen.currentResolution.refreshRateRatio.value);
 
     // 同じ名前でも投影機の内部モード変更は検出できない。変更時は F9 をやり直す。
     public static string DisplayConfiguration() => string.Format(CultureInfo.InvariantCulture,
