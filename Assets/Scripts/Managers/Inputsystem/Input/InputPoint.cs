@@ -779,7 +779,9 @@ public class InputPoint : MonoBehaviour
         if (application.Attempted) { error = application.Error; return application.Success; }
         application.Attempted = true;
         application.Error = "学習範囲の適用を完了できませんでした。";
-        bool applied = PhoneSaberPositionCalibration.TryFromLearnedArea(bounds, camWidth, camHeight, out var calibration, out error);
+        PhoneSaberPositionCalibration calibration = null;
+        bool applied = PhoneSaberPositionCalibration.EnoughLearnedSamples(application.Ack.SampleCount, out error)
+            && PhoneSaberPositionCalibration.TryFromLearnedArea(bounds, camWidth, camHeight, out calibration, out error);
         string result = PhoneSaberPositionCalibration.LearnedAreaResult(bounds, applied, error);
         if (applied)
         {

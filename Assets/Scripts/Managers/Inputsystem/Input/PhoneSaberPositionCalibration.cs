@@ -53,6 +53,19 @@ public sealed class PhoneSaberPositionCalibration
         return new Rect(bounds.center - size * .5f, size);
     }
 
+    // 10-29 10:23: 10秒の学習で44サンプル（約0.7秒分）しか無い範囲が隅の小さな矩形として採用された。
+    // 正常な学習は1028〜1197サンプル（当日23件）。300未満は採用せず、今の範囲を保つ。
+    public const int MinimumLearnedSamples = 300;
+
+    public static bool EnoughLearnedSamples(string sampleCount, out string error)
+    {
+        error = null;
+        if (int.TryParse(sampleCount, System.Globalization.NumberStyles.None,
+                System.Globalization.CultureInfo.InvariantCulture, out int count) && count >= MinimumLearnedSamples) return true;
+        error = $"学習中に剣が写っていた時間が短すぎます（{sampleCount} サンプル）。今の範囲のままです。振りやすい範囲で上下左右に振って、もう一度覚えてください。";
+        return false;
+    }
+
     public static bool TryFromLearnedArea(Rect bounds, float cameraWidth, float cameraHeight,
         out PhoneSaberPositionCalibration calibration, out string error)
     {

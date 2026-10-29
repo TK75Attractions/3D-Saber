@@ -333,6 +333,19 @@ public class PhoneSaberPositionCalibrationTests
     }
 
     [Test]
+    public void LearnedAreaNeedsEnoughSamples()
+    {
+        // 10-29: 44サンプルの学習を拒否し、当日最少の正常学習（1028）は通す。
+        Assert.IsFalse(PhoneSaberPositionCalibration.EnoughLearnedSamples("44", out var error));
+        StringAssert.Contains("44", error);
+        Assert.IsFalse(PhoneSaberPositionCalibration.EnoughLearnedSamples("299", out _));
+        Assert.IsFalse(PhoneSaberPositionCalibration.EnoughLearnedSamples("", out _));
+        Assert.IsFalse(PhoneSaberPositionCalibration.EnoughLearnedSamples("-5", out _));
+        Assert.IsTrue(PhoneSaberPositionCalibration.EnoughLearnedSamples("300", out _));
+        Assert.IsTrue(PhoneSaberPositionCalibration.EnoughLearnedSamples("1028", out _));
+    }
+
+    [Test]
     public void LearnedRectangleRejectsInvalidOrTinyBounds()
     {
         foreach (var bounds in new[] { new Rect(), Rect.MinMaxRect(-.1f, 0, 1, 1),
