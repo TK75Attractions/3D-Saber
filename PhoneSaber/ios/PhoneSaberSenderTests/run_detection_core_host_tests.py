@@ -14,6 +14,8 @@ TESTS = Path(__file__).resolve().parent
 SOURCE = TESTS.parent / "PhoneSaberSender/PhoneSaberSender"
 TEST_NAMES = """
 testCoreLineCandidateScoringIsIndependentOfPointOrder
+testLowISOAcquisitionRetainsUnsaturatedDimAndShortBlades
+testNewAcquisitionKeepsProtectedWhiteCoreRedBlade
 testProductionVideoFixturesKeepBladeAxesAndRejectFalseCoreLines
 testBrightRedAndBluePixels
 testBrightColorDoesNotOverflowWithHighOtherChannels
@@ -45,6 +47,9 @@ testBlueDiffuserColorModelRecoversMeasuredPaleAndBlurredPixels
 testBlueDiffuserSupportExpandsOnlyNextToStrictBlue
 testDiffusedBlueHaloIncreasesMaskWithoutChangingRedDetection
 testRelaxedBlueBackgroundWithoutStrictAnchorIsNotDetected
+testShutterEmitterKeepsDimShortAndPointingBladesAtNightAndDay
+testShutterEmitterKeepsShortBlueBodyNearPixelFloor
+testShutterEmitterPeakFloorKeepsNightDayAndRatioBoundaries
 """.split()
 
 

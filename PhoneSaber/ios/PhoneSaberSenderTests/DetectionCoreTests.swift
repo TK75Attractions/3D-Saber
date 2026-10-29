@@ -3389,6 +3389,73 @@ final class DetectionCoreTests: XCTestCase {
         XCTAssertNotNil(analysis.selected[.red])
     }
 
+    func testShutterEmitterKeepsDimShortAndPointingBladesAtNightAndDay() throws {
+        // 夜の背景6と昼の39〜46を別々に初期化する。暗い・遠い・短い刃に白飛び芯を要求しない。
+        let width = 160, height = 120, bytesPerRow = width * 4
+        let mode = ShutterEmitterMode(shutter: 2000, iso: 160, enabled: true)
+        for background in [6, 39, 46] {
+            for color in [SaberColor.red, .blue] {
+                for length in [16, 40] {
+                    let value = background == 6 ? 80 : 229
+                    var bytes = Array(repeating: UInt8(background), count: bytesPerRow * height)
+                    for offset in stride(from: 3, to: bytes.count, by: 4) { bytes[offset] = 255 }
+                    for y in 57...59 {
+                        for x in 60..<(60 + length) {
+                            let offset = y * bytesPerRow + x * 4
+                            bytes[offset] = UInt8(color == .blue ? value : 20)
+                            bytes[offset + 1] = 30
+                            bytes[offset + 2] = UInt8(color == .red ? value : 20)
+                        }
+                    }
+                    let state = SaberBackgroundState()
+                    // 既存の赤gate用EMAを暖めた状態も保護する。
+                    for _ in 0..<120 { _ = state.update(background) }
+                    let result = analyzeSabers(in: bytes, width: width, height: height,
+                        bytesPerRow: bytesPerRow, redThreshold: ColorThreshold(), blueThreshold: ColorThreshold(),
+                        shutterEmitter: mode, backgroundState: state)
+                    let endpoints = try XCTUnwrap(result.selected[color], "bg=\(background) color=\(color) length=\(length)")
+                    XCTAssertLessThanOrEqual(axisDistance(endpoints,
+                        (PixelPoint(x: 60, y: 58), PixelPoint(x: 60 + length - 2, y: 58))), 3)
+                }
+            }
+        }
+    }
+
+    func testShutterEmitterKeepsShortBlueBodyNearPixelFloor() throws {
+        // 実機の向いた青刃: 背景39/41、peak226/231。peakだけ残っても暗い胴体を切ると消える。
+        let width = 160, height = 120, bytesPerRow = width * 4
+        for (background, body, peak) in [(39, 119, 226), (41, 125, 231)] {
+            var bytes = Array(repeating: UInt8(background), count: bytesPerRow * height)
+            for offset in stride(from: 3, to: bytes.count, by: 4) { bytes[offset] = 255 }
+            for y in 57...59 {
+                for x in 60..<76 {
+                    let offset = y * bytesPerRow + x * 4
+                    bytes[offset] = UInt8(x < 64 ? peak : body)
+                    bytes[offset + 1] = 20
+                    bytes[offset + 2] = 10
+                }
+            }
+            let state = SaberBackgroundState()
+            for _ in 0..<120 { _ = state.update(background) }
+            let result = analyzeSabers(in: bytes, width: width, height: height, bytesPerRow: bytesPerRow,
+                redThreshold: ColorThreshold(), blueThreshold: ColorThreshold(),
+                shutterEmitter: ShutterEmitterMode(shutter: 2000, iso: 50, enabled: true), backgroundState: state)
+            XCTAssertNotNil(result.selected[.blue], "bg=\(background) body=\(body) peak=\(peak)")
+        }
+    }
+
+    func testShutterEmitterPeakFloorKeepsNightDayAndRatioBoundaries() {
+        XCTAssertEqual(shutterEmitterPeakFloor(background: 6), 18)
+        XCTAssertEqual(shutterEmitterPeakFloor(background: 18), 54)
+        XCTAssertEqual(shutterEmitterPeakFloor(background: 23), 69)
+        XCTAssertEqual(shutterEmitterPeakFloor(background: 38), 180.5)
+        XCTAssertEqual(shutterEmitterPeakFloor(background: 40), 200)
+        XCTAssertEqual(shutterEmitterPeakFloor(background: 46), 220)
+        // ISOだけを下げても背景比は改善しない。ここで比や上限を緩めない。
+        XCTAssertEqual(shutterEmitterPeakFloor(background: 12) / 12,
+                       shutterEmitterPeakFloor(background: 24) / 24)
+    }
+
     func testRelaxedBlueBackgroundWithoutStrictAnchorIsNotDetected() {
         let width = 160, height = 80, bytesPerRow = width * 4
         var bytes = Array(repeating: UInt8(0), count: bytesPerRow * height)
@@ -5470,5 +5537,59 @@ extension DetectionCoreTests {
                                     width: 480, height: 640, now: 7.0 / 60))
         XCTAssertNil(lock.select([], color: .red, width: 480, height: 640, now: 8.0 / 60,
                                 continuityCandidates: [endOnTestCandidate(length: 12, x: 300, eligible: false)]))
+    }
+}
+
+extension DetectionCoreTests {
+    func testLowISOAcquisitionRetainsUnsaturatedDimAndShortBlades() throws {
+        // 10/29原画像では実刃にも高輝度比0・emitterScore 0.42未満がある。
+        // 発光証拠を通常候補と同じ一律閾値にすると、新規取得でこの経路を失う。
+        let width = 480, height = 640
+        for color in [SaberColor.red, .blue] {
+            for length in [24, 48] {
+                var bytes = Array(repeating: UInt8(4), count: width * height * 4)
+                for y in 200...202 {
+                    for x in 200...(200 + length) {
+                        let index = (y * width + x) * 4
+                        bytes[index] = color == .blue ? 146 : 4
+                        bytes[index + 1] = 8
+                        bytes[index + 2] = color == .red ? 146 : 4
+                        bytes[index + 3] = 255
+                    }
+                }
+                let analysis = bytes.withUnsafeBufferPointer { pixels in
+                    analyzeSabers(baseAddress: pixels.baseAddress!, width: width, height: height,
+                        bytesPerRow: width * 4, redThreshold: ColorThreshold(), blueThreshold: ColorThreshold(),
+                        collectObserverEvidence: true, trackLock: SaberTrackLock(),
+                        shutterEmitter: ShutterEmitterMode(shutter: 2000, iso: 160, enabled: true))
+                }
+                let selected = try XCTUnwrap(analysis.selected[color])
+                let candidate = try XCTUnwrap(analysis.candidates[color]?.first {
+                    $0.isEmitterEligible && $0.endpoints.0 == selected.0 && $0.endpoints.1 == selected.1
+                })
+                XCTAssertEqual(candidate.source, "shutter-color-emitter")
+                XCTAssertTrue(candidate.isEmitterEligible)
+                XCTAssertEqual(candidate.peakValue, 146)
+                XCTAssertEqual(candidate.highValueRatio, 0)
+                XCTAssertLessThan(try XCTUnwrap(candidate.observerEmitterInputs).emitterScore, 0.42)
+                XCTAssertNil(analysis.selected[color == .red ? .blue : .red])
+            }
+        }
+    }
+}
+
+extension DetectionCoreTests {
+    func testNewAcquisitionKeepsProtectedWhiteCoreRedBlade() throws {
+        // 色付き画素だけの軸被覆率0.5を要求すると、この白飛びした実刃を落とす。
+        // formalは追跡なしのため、同じ保護画像の新規取得も別途固定する。
+        let fixture = try fixtureBGRA("frame_1048", subdirectory: "forensic-20260921")
+        let analysis = fixture.bytes.withUnsafeBufferPointer { pixels in
+            analyzeSabers(baseAddress: pixels.baseAddress!, width: fixture.width, height: fixture.height,
+                bytesPerRow: fixture.bytesPerRow, redThreshold: ColorThreshold(), blueThreshold: ColorThreshold(),
+                trackLock: SaberTrackLock())
+        }
+        let selected = try XCTUnwrap(analysis.selected[.red])
+        XCTAssertEqual(selected.0, PixelPoint(x: 262, y: 430))
+        XCTAssertEqual(selected.1, PixelPoint(x: 310, y: 508))
     }
 }
