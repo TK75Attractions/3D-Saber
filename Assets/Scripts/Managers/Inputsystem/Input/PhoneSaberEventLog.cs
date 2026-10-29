@@ -385,16 +385,40 @@ public sealed class PhoneSaberEventLog
 
     void Rotate()
     {
-        // 移動先がディレクトリなら、既存の世代を削除・移動する前に失敗させる。
-        // 毎回同じ障害で Flush が再試行しても、過去のログを順に失わない。
+        // 移動先がディレクトリなら、既存の世代を移動する前に失敗させる。
         for (int i = 1; i < FileCount; i++)
             if (Directory.Exists(GenerationPath(LogPath, i)))
                 throw new IOException("Log generation path is a directory");
-        File.Delete(GenerationPath(LogPath, FileCount - 1));
-        for (int i = FileCount - 2; i >= 0; i--)
+
+        // 最古の世代も退避し、全世代の移動が成功するまで削除しない。
+        // 旧実装は最古を先に消して若い世代から順に移動していたので、現行ファイルを別のプロセスが
+        // 開いていて（Windows で Delete の共有なし）移動に失敗すると、追記ごとの再試行で
+        // 旧世代が1つずつ消えていった（2026-10-30 の点検）。失敗したら済んだ移動を逆順に戻す。
+        string retired = LogPath + ".rotation-" + Guid.NewGuid().ToString("N");
+        var moved = new List<(string source, string destination)>(FileCount);
+        try
         {
-            string source = GenerationPath(LogPath, i);
-            if (File.Exists(source)) File.Move(source, GenerationPath(LogPath, i + 1));
+            for (int i = FileCount - 1; i >= 0; i--)
+            {
+                string source = GenerationPath(LogPath, i);
+                if (!File.Exists(source)) continue;
+                string destination = i == FileCount - 1 ? retired : GenerationPath(LogPath, i + 1);
+                File.Move(source, destination);
+                moved.Add((source, destination));
+            }
+            File.Delete(retired);
+        }
+        catch (Exception rotationError)
+        {
+            // 復元にも失敗した場合は退避ファイルを残し、両方の失敗を通知する。
+            Exception restoreError = null;
+            for (int i = moved.Count - 1; i >= 0; i--)
+            {
+                try { File.Move(moved[i].destination, moved[i].source); }
+                catch (Exception e) { restoreError = e; }
+            }
+            if (restoreError != null) throw new AggregateException(rotationError, restoreError);
+            throw;
         }
     }
 }

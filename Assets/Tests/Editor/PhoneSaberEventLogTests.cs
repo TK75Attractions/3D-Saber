@@ -22,7 +22,8 @@ public class PhoneSaberDiagnosticsTests
             File.WriteAllText(launcher, "fixture");
             foreach (string relative in new[] { "Assets", "Builds/Mac/3D-Saber.app/Contents", "Builds/Mac/3D-Saber.app/Contents/Resources/Data" })
                 Assert.AreEqual(launcher, PhoneSaberTriageReceiverLauncher.ResolveLauncherPath(Path.Combine(root, relative), _ => null));
-            Assert.AreEqual(launcher, PhoneSaberTriageReceiverLauncher.ResolveLauncherPath(null, _ => " " + launcher + " "));
+            // 明示指定は GetFullPath で区切りが揃う（Windows では "/" が "\" になる）ので、期待値も揃えて比べる。
+            Assert.AreEqual(Path.GetFullPath(launcher), PhoneSaberTriageReceiverLauncher.ResolveLauncherPath(null, _ => " " + launcher + " "));
             Assert.IsNull(PhoneSaberTriageReceiverLauncher.ResolveLauncherPath(null, _ => null));
             File.Delete(launcher);
             Assert.IsNull(PhoneSaberTriageReceiverLauncher.ResolveLauncherPath(Path.Combine(root, "Builds/Mac/3D-Saber.app/Contents"), _ => null));
@@ -449,6 +450,59 @@ public class PhoneSaberDiagnosticsTests
 
 public class PhoneSaberEventLogTests
 {
+    // Windows で現行ファイルや世代を別のプロセスが開いたまま（Delete の共有なし）上限に達すると、
+    // 世代交代が失敗する。失敗を追記ごとに再試行しても旧世代を1つも失わず、開放後は通常の交代に戻る。
+    [TestCase(0)]
+    [TestCase(1)]
+    [TestCase(2)]
+    [TestCase(3)]
+    public void SharingViolationPreservesEveryGenerationAcrossRetries(int lockedGeneration)
+    {
+        if (Path.DirectorySeparatorChar != '\\')
+            Assert.Ignore("Windows のファイル共有違反を検証する");
+
+        string folder = Path.Combine(Path.GetTempPath(), "phonesaber-rotation-lock-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(folder);
+        string path = Path.Combine(folder, "events.log");
+        var log = new PhoneSaberEventLog(path);
+        try
+        {
+            using (var initial = new FileStream(path, FileMode.Create, FileAccess.Write))
+                initial.SetLength(PhoneSaberEventLog.MaximumFileBytes);
+            for (int i = 1; i < PhoneSaberEventLog.FileCount; i++)
+                File.WriteAllText(PhoneSaberEventLog.GenerationPath(path, i), "generation-" + i);
+
+            // 追記は許すが、削除・名前変更は許さない読み取り元を再現する。
+            using (new FileStream(PhoneSaberEventLog.GenerationPath(path, lockedGeneration),
+                FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            {
+                for (int attempt = 0; attempt < 4; attempt++)
+                {
+                    log.Enqueue(DateTimeOffset.UtcNow, "B", "SYSTEM", "test", "attempt=" + attempt);
+                    Assert.IsTrue(log.FlushAndWait(3000), log.LastError);
+                }
+                for (int i = 1; i < PhoneSaberEventLog.FileCount; i++)
+                    Assert.AreEqual("generation-" + i, File.ReadAllText(PhoneSaberEventLog.GenerationPath(path, i)),
+                        "generation " + i + " must survive a failed rotation");
+                Assert.IsFalse(Directory.GetFiles(folder, "events.log.rotation-*").Length > 0, "retired file left behind");
+            }
+
+            // 読み取り元が閉じたら、次の追記で通常の世代交代に戻れる。
+            log.Enqueue(DateTimeOffset.UtcNow, "B", "SYSTEM", "test", "recovered");
+            Assert.IsTrue(log.FlushAndWait(3000), log.LastError);
+            Assert.Less(new FileInfo(path).Length, PhoneSaberEventLog.MaximumFileBytes);
+            // 交代できなかった間の4行は現行ファイルへ追記されたまま .1 へ移る（上限超過は許容）。
+            Assert.GreaterOrEqual(new FileInfo(PhoneSaberEventLog.GenerationPath(path, 1)).Length, PhoneSaberEventLog.MaximumFileBytes);
+            Assert.AreEqual("generation-1", File.ReadAllText(PhoneSaberEventLog.GenerationPath(path, 2)));
+            Assert.AreEqual("generation-3", File.ReadAllText(PhoneSaberEventLog.GenerationPath(path, 4)));
+        }
+        finally
+        {
+            log.StopAndDrain(3000);
+            Directory.Delete(folder, true);
+        }
+    }
+
     readonly List<PhoneSaberEventLog> logs = new List<PhoneSaberEventLog>();
 
     PhoneSaberEventLog NewLog(string path, Action beforeSave = null)
