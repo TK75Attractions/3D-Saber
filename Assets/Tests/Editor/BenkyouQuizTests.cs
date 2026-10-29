@@ -104,7 +104,7 @@ public class BenkyouQuizRulesTests
         Assert.AreEqual(QuizRules.OptionHeight * 299f / 143f, fraction.y, 1e-4, "分数の札(299px)は画素の比で大きく、字の大きさをそろえる");
         Assert.AreEqual(112f / 299f, fraction.x / fraction.y, 1e-4);
         var wide = QuizRules.LabelSize(143, 4f, QuizRules.OptionHeight, QuizRules.OptionReferencePixels, QuizRules.OptionMaxWidth);
-        Assert.AreEqual(QuizRules.OptionMaxWidth, wide.x, 1e-5, "幅 1.1 を超えたら縮める");
+        Assert.AreEqual(QuizRules.OptionMaxWidth, wide.x, 1e-5, "幅 1.6 を超えたら縮める");
         Assert.AreEqual(4f, wide.x / wide.y, 1e-4, "縦横比はそのまま");
         Assert.AreEqual(QuizRules.OptionHeight, QuizRules.LabelSize(0, 1f, QuizRules.OptionHeight, 143, 9f).y, 1e-6, "画素が分からなければ決めた高さ");
         var word = QuizRules.LabelSize(175, 701f / 175f, QuizRules.BoxWordHeight, QuizRules.BoxWordReferencePixels, QuizRules.BoxWordMaxWidth);
@@ -114,12 +114,17 @@ public class BenkyouQuizRulesTests
         Assert.AreEqual(1.35f, tooWide.x, 1e-5, "幅 1.35 を超えたら縮める");
         Assert.AreEqual(1f, QuizRules.FitSize(float.NaN, 1f, 0f).x, "壊れた縦横比は 1");
 
-        CollectionAssert.AreEqual(new[] { -1.8f, -.6f, .6f, 1.8f }, QuizRules.PillarX);
+        // 第4.1版(10/29「選択肢同士の間隔を広げて」): 柱は 1.8 おき(前は 1.2)、当たり 0.8 倍(前は 0.45)。
+        CollectionAssert.AreEqual(new[] { -2.7f, -.9f, .9f, 2.7f }, QuizRules.PillarX);
         for (int i = 1; i < QuizRules.PillarX.Length; i++)
-            Assert.AreEqual(QuizRules.PillarSpacing, QuizRules.PillarX[i] - QuizRules.PillarX[i - 1], 1e-6, "柱は 1.2 おき");
-        Assert.AreEqual(.45f, QuizRules.PillarHitScale);
-        Assert.AreEqual(3, QuizRules.NearestPillar(1.4f));
+            Assert.AreEqual(QuizRules.PillarSpacing, QuizRules.PillarX[i] - QuizRules.PillarX[i - 1], 1e-6, "柱は 1.8 おき");
+        Assert.AreEqual(.8f, QuizRules.PillarHitScale);
+        Assert.AreEqual(2, QuizRules.NearestPillar(1.4f));
+        Assert.AreEqual(3, QuizRules.NearestPillar(2f));
         Assert.AreEqual(0, QuizRules.NearestPillar(-9f));
+        Assert.Less(QuizRules.PillarX[3] + QuizRules.PillarSquareSize * .5f, QuizRules.PillarGateHalfWidth,
+            "答えの柱の紙のゲートの枠は、外の柱の四角まで入る");
+        Assert.Less(QuizRules.GateHalfWidth, QuizRules.BoxX - QuizRules.BoxWidth * .5f, "斬り分けの紙の枠は箱にかからない");
         Assert.Greater(QuizRules.OptionY - QuizRules.OptionHeight * .5f, QuizRules.GateTopY, "札はゲートの上");
         Assert.Greater(QuizRules.RhythmQuestionY - QuizRules.RhythmQuestionHeight * .5f, QuizRules.OptionY + fraction.y * .5f,
             "問題は札(背の高い分数の札も)の上");
@@ -240,6 +245,56 @@ public class BenkyouQuizRulesTests
         Assert.IsFalse(QuizRules.Crossed(3, 2, 2.5), "巻き戻しでは越えない");
         Assert.AreEqual(0f, QuizRules.FlowerAmount(9, 10));
         Assert.AreEqual(1f, QuizRules.FlowerAmount(10.25, 10), 1e-6);
+    }
+
+    // 正解の虹の波動(10/29): 輪3つを 0.09 秒おきに、0.9 秒で 0.4 から 12 まで広げながら薄れる。色は輪ごとに 1/3 ずらして時間で回す。
+    [Test]
+    public void RainbowWaveRingsSpreadPastTheScreenEdgeAndFadeOutInAboutASecond()
+    {
+        Assert.IsFalse(QuizRules.WaveActive(-.01), "始まる前は出さない");
+        Assert.IsTrue(QuizRules.WaveActive(0));
+        Assert.IsTrue(QuizRules.WaveActive(1.07));
+        Assert.IsFalse(QuizRules.WaveActive(.9 + 2 * .09), "最後の輪が広がり終わったら消える");
+        Assert.IsFalse(QuizRules.WaveActive(double.NaN));
+        Assert.AreEqual(0f, QuizRules.WaveProgress(0, 0));
+        Assert.AreEqual(-1f, QuizRules.WaveProgress(.05, 1), "2つ目の輪は 0.09 秒あと");
+        Assert.AreEqual(.5f, QuizRules.WaveProgress(.45 + .18, 2), 1e-5);
+        Assert.AreEqual(-1f, QuizRules.WaveProgress(.9, 0), "広がり終わった輪は出さない");
+        Assert.AreEqual(QuizRules.WaveFromRadius, QuizRules.WaveRadius(0f), 1e-6);
+        Assert.AreEqual(QuizRules.WaveToRadius, QuizRules.WaveRadius(1f), 1e-5);
+        Assert.Greater(QuizRules.WaveRadius(.3f), QuizRules.WaveRadius(.2f));
+        Assert.Greater(QuizRules.WaveRadius(.5f), (QuizRules.WaveFromRadius + QuizRules.WaveToRadius) * .5f, "終わりはゆっくり");
+        Assert.Greater(QuizRules.WaveToRadius, Mathf.Sqrt(10f * 10f + 6.2f * 6.2f), "外の柱の札から、反対側の画面の隅(x −7.3、y −4.2)まで届く");
+        Assert.AreEqual(QuizRules.WaveAlpha, QuizRules.WaveOpacity(0f), 1e-6);
+        Assert.Less(QuizRules.WaveOpacity(.6f), QuizRules.WaveOpacity(.3f), "広がるほど薄れる");
+        Assert.AreEqual(0f, QuizRules.WaveOpacity(1f));
+        Assert.AreEqual(0f, QuizRules.WaveOpacity(-1f));
+        Assert.AreEqual(1f / 3f, QuizRules.WaveHue(1, 0), 1e-6, "輪ごとに色をずらす");
+        Assert.AreEqual(Mathf.Repeat(QuizRules.WaveHueSpeed * .5f, 1f), QuizRules.WaveHue(0, .5), 1e-6, "時間で回す");
+
+        Assert.AreEqual(new Vector2(QuizRules.PillarX[2], QuizRules.OptionY),
+            QuizRules.WaveOrigin(new QuizItemData { kind = QuizRules.Rhythm, answer = 2 }), "答えの柱は正しい札から");
+        Assert.AreEqual(new Vector2(0f, QuizRules.SortHeaderY), QuizRules.WaveOrigin(new QuizItemData { kind = QuizRules.Sort }), "斬り分けは見出し");
+        Assert.AreEqual(new Vector2(0f, QuizRules.CountQuestionY), QuizRules.WaveOrigin(new QuizItemData { kind = QuizRules.Count }));
+        Assert.AreEqual(new Vector2(QuizRules.PiLabelX, QuizRules.PiLineY), QuizRules.WaveOrigin(new QuizItemData { kind = QuizRules.Pi }));
+        Assert.AreEqual(new Vector2(0f, QuizRules.OptionY),
+            QuizRules.WaveOrigin(new QuizItemData { kind = QuizRules.Rhythm, answer = -1 }), "答えの無い答えの柱は真ん中から");
+        Assert.AreEqual(new Vector2(0f, QuizRules.CountQuestionY), QuizRules.WaveOrigin(null));
+    }
+
+    // 答えの柱の問題がある紙だけ、ゲートの枠を外の柱まで広げる(斬り分けの紙は箱にかからない幅のまま)。
+    [Test]
+    public void GateOutlineWidensOnlyOnPapersWithAnswerPillars()
+    {
+        var quiz = new QuizChartData();
+        quiz.items.Add(new QuizItemData { kind = QuizRules.Rhythm, showMs = 30000, playMs = 32000, endMs = 34000 });
+        quiz.items.Add(new QuizItemData { kind = QuizRules.Sort, showMs = 80000, playMs = 81500, endMs = 83000 });
+        Assert.IsTrue(QuizRules.PaperHasPillars(quiz, new QuizRules.Span(29.9, 50.1), .1));
+        Assert.IsFalse(QuizRules.PaperHasPillars(quiz, new QuizRules.Span(79.7, 91.8), .1), "斬り分けだけの紙");
+        Assert.IsFalse(QuizRules.PaperHasPillars(quiz, new QuizRules.Span(34.1, 40), .1), "問題が消えた後に始まる紙");
+        Assert.IsFalse(QuizRules.PaperHasPillars(null, new QuizRules.Span(0, 100), 0));
+        Assert.AreEqual(QuizRules.PillarGateHalfWidth, QuizRules.GateHalfWidthFor(true));
+        Assert.AreEqual(QuizRules.GateHalfWidth, QuizRules.GateHalfWidthFor(false));
     }
 
     [Test]
@@ -491,7 +546,7 @@ public class BenkyouQuizHiddenNoteTests
 }
 
 // 当たりの大きさの倍率(NoteData.hitScale)。SaberCutJudge の当たり(と CameraImuJudgment)がノーツの当たり半径に掛ける。
-// Q の答えの柱の本物は 0.45 倍で、隣の柱(1.2 離れ、薄い四角の内側の縁は 0.95)では切れない。
+// Q の答えの柱の本物は 0.8 倍で、隣の柱(1.8 離れ、薄い四角の内側の縁は 1.55)では切れない(第4.1版。前は 0.45 倍・1.2 離れ)。
 public class BenkyouQuizHitScaleTests
 {
     readonly List<GameObject> created = new List<GameObject>();
@@ -589,17 +644,20 @@ public class BenkyouQuizHitScaleTests
         Assert.AreEqual(judge.bladeRadius + judge.noteHitRadiusXY, judge.HitRangeFor(plain), "倍率 1 は今までと同じ値");
         Assert.AreEqual(judge.bladeRadius + judge.noteHitRadiusXY, judge.HitRangeFor(null));
         Assert.AreEqual(judge.bladeRadius + judge.noteHitRadiusXY * QuizRules.PillarHitScale, judge.HitRangeFor(small), 1e-6);
-        // 本編の値(刃 0.32・当たり 0.88、GamePlayManager の V2)。隣の柱は 1.2 離れ、その四角の内側の縁は 0.95。
+        // 本編の値(刃 0.32・当たり 0.88、GamePlayManager の V2)。隣の柱は 1.8 離れ、その四角の内側の縁は 1.55。
         judge.bladeRadius = .32f;
         judge.noteHitRadiusXY = .88f;
-        Assert.AreEqual(.95f, NeighbourEdge, 1e-6);
-        Assert.Less(judge.HitRangeFor(small), NeighbourEdge, "0.45 倍の柱は隣の柱の四角の縁まで届かない");
+        Assert.AreEqual(1.55f, NeighbourEdge, 1e-6);
+        Assert.Less(judge.HitRangeFor(small), NeighbourEdge, "0.8 倍の柱は隣の柱の四角の縁まで届かない");
+        Assert.Greater(judge.HitRangeFor(small), QuizRules.PillarSpacing * .5f, "2つの柱のまん中までは届く(正しい柱の側を振れば切れる)");
         Assert.Greater(judge.HitRangeFor(small), QuizRules.PillarSquareSize * .5f, "正しい柱の四角の中ならどこでも届く");
-        Assert.Greater(judge.HitRangeFor(plain), NeighbourEdge, "ふつうの大きさなら隣の柱の中まで届いてしまう");
+        // 倍率 1 のままだと、細い側の振りで広げた当たり(1.7)が隣の柱の四角の中まで届いてしまう(だから 1 未満にする)。
+        Assert.Greater(SaberCutJudge.ThinRangeFor(new Vector2(0f, -.5f), new Vector2(0f, .5f), Vector2.down,
+            judge.HitRangeFor(plain), 1f, judge.minSwingWidth), NeighbourEdge, "ふつうの大きさなら隣の柱の中まで届いてしまう");
     }
 
     // 細い側の振りで広げた当たり(SaberCutJudge.ThinRangeFor)。倍率 1 は今までと同じ値。
-    // 小さくした的は広げる量にも倍率を掛け、ScaledThinRangeLimit(0.85)まで。隣の柱の四角の縁(0.95)には届かない。
+    // 小さくした的は広げる量にも倍率を掛け、ScaledThinRangeLimit(0.85)まで。隣の柱の四角の縁(1.55)には届かない。
     [Test]
     public void ThinRangeIsUnchangedAtScaleOneAndCappedForSmallTargets()
     {
@@ -613,18 +671,22 @@ public class BenkyouQuizHitScaleTests
 
         float small = .32f + .88f * QuizRules.PillarHitScale;
         float thin = SaberCutJudge.ThinRangeFor(a, b, down, small, QuizRules.PillarHitScale, width);
-        Assert.AreEqual(1.7f * QuizRules.PillarHitScale, thin, 1e-6);
+        Assert.AreEqual(small, thin, 1e-6, "0.8 倍の柱は広げても 0.85 までなので、ふだんの当たり(1.024)のまま");
         Assert.Less(thin, NeighbourEdge, "答えの柱は、細い側で振っても隣の柱の四角の縁まで届かない");
+        Assert.AreEqual(1.7f * .45f, SaberCutJudge.ThinRangeFor(a, b, down, .32f + .88f * .45f, .45f, width), 1e-6,
+            "小さくした的は、広げる量にも倍率を掛ける(0.45 倍なら 0.765)");
         Assert.AreEqual(SaberCutJudge.ScaledThinRangeLimit, SaberCutJudge.ThinRangeFor(a, b, down, .5f, .8f, width), 1e-6,
             "小さくした的は 0.85 まで");
         Assert.Less(SaberCutJudge.ScaledThinRangeLimit, NeighbourEdge);
     }
 
     // 答えの柱(PillarHitScale 倍)を、本編の当たり(刃 0.32・当たり 0.88)とカメラの縦の刃で縦に振る(曲時計あり = 細い側で広げる道も通る)。
-    // 隣の柱の側へ 0.9 ずれた所を振っても切れず、正しい柱の四角の中(0.25)なら切れる。ふつうの大きさなら 0.9 でも切れてしまう。
-    [TestCase(.9f, QuizRules.PillarHitScale, false)]
+    // 隣の柱の側へ 1.3(まん中 0.9 を越えた所)ずれて振っても切れず、まん中(0.9)と正しい柱の四角の中(0.25)なら切れる。
+    // ふつうの大きさなら、隣の柱の四角の中(1.6)でも細い側の振りで切れてしまう。
+    [TestCase(1.3f, QuizRules.PillarHitScale, false)]
+    [TestCase(.9f, QuizRules.PillarHitScale, true)]
     [TestCase(.25f, QuizRules.PillarHitScale, true)]
-    [TestCase(.9f, 1f, true)]
+    [TestCase(1.6f, 1f, true)]
     public void VerticalCameraSwingTowardTheNeighbourDoesNotCutThePillar(float offset, float scale, bool cut)
     {
         var (judge, tracker, bridge) = BladeRig();
@@ -643,7 +705,8 @@ public class BenkyouQuizHitScaleTests
     }
 
     // 刃の無い点の剣でも同じ(上から下へ一息に通る振り)。
-    [TestCase(.9f, false)]
+    [TestCase(1.3f, false)]
+    [TestCase(.9f, true)]
     [TestCase(.25f, true)]
     public void PointSwingTowardTheNeighbourDoesNotCutThePillar(float offset, bool cut)
     {
@@ -1001,10 +1064,11 @@ public class BenkyouQuizModeTests
         }
         Assert.AreEqual(QuizRules.OptionHeight, mode.ImageSize("ro0.png").y, 1e-4, "ふつうの札は高さ 0.42");
         Assert.AreEqual(QuizRules.OptionHeight * 299f / 143f, mode.ImageSize("ro2.png").y, 1e-3, "背の高い分数の札は画素の比で大きく");
-        Assert.AreEqual(QuizRules.OptionMaxWidth, mode.ImageSize("ro3.png").x, 1e-4, "横に長い札は幅 1.1 に縮める");
+        Assert.AreEqual(QuizRules.OptionMaxWidth, mode.ImageSize("ro3.png").x, 1e-4, "横に長い札は幅 1.6 に縮める");
         Assert.Less(mode.ImageSize("ro3.png").y, QuizRules.OptionHeight);
         Assert.AreEqual(4, mode.Squares, "柱の判定面の薄い四角");
         Assert.IsTrue(mode.GateOutlineDrawn);
+        Assert.AreEqual(QuizRules.PillarGateHalfWidth, mode.GateOutlineHalfWidth, 1e-6, "答えの柱の紙はゲートの枠を外の柱まで広げる");
         Assert.AreEqual(1, mode.RedCircles, "練習は正しい札を最初から赤い丸で囲む");
         Color red = QuizRules.RedPen.linear;
         Assert.IsTrue(mode.MarkRenderer.GetComponent<MeshFilter>().sharedMesh.colors.Any(c =>
@@ -1037,6 +1101,79 @@ public class BenkyouQuizModeTests
         Rgba(Color.white, mode.ImageColor("ro1.png"));
         mode.Tick(16.2);
         Rgba(Color.white, mode.ImageColor("ro2.png"), "0.15 秒で戻る");
+    }
+
+    // 第4.1版(10/29「1問正解の時(正解ノーツをすべて切れたとき)虹の波動を出して」): 問題のノーツをすべて切れたら、
+    // 正しい札から虹色の輪を3つ広げる。1つでも逃した問題では出さない。紙の上・ノーツと字の下に描き、1秒ほどで消える。
+    [Test]
+    public void SolvingAQuestionSendsARainbowWaveFromTheAnswerAndAMissSendsNone()
+    {
+        mode.Tick(11.9);
+        Cut(Spawn(12.0));
+        mode.Tick(12.0);
+        Assert.AreEqual(0, mode.WavesStarted, "1つ目を切っただけでは出さない");
+        Cut(Spawn(12.3));
+        mode.Tick(12.32);
+        Assert.AreEqual(1, mode.WavesStarted, "練習の問題も、全部切れたら出す");
+        Assert.AreEqual(1, mode.ActiveWaves, "最後の1つを切った次のコマから");
+        Assert.AreEqual(1, mode.WaveRingsDrawn, "2つ目・3つ目の輪はまだ");
+        mode.Tick(12.52);
+        Assert.AreEqual(QuizRules.WaveRings, mode.WaveRingsDrawn, "輪3つ");
+        var renderer = mode.WaveRenderer;
+        Assert.IsTrue(renderer.enabled);
+        Assert.Greater(renderer.sortingOrder, mode.PaperRenderer.sortingOrder, "黒い紙の上");
+        Assert.Less(renderer.sortingOrder, MemoryVeilLayers.AboveNoteSortingOrder, "ノーツ(本物も飾りも)の下");
+        Assert.Less(renderer.sortingOrder, mode.MarkRenderer.sortingOrder, "字・赤ペンの下(字を隠さない)");
+        var bounds = mode.WaveMesh.bounds;
+        Assert.AreEqual(QuizRules.PillarX[1], bounds.center.x, 1e-3, "正しい札(左から2つ目)が中心");
+        Assert.AreEqual(QuizRules.OptionY, bounds.center.y, 1e-3);
+        var colors = mode.WaveMesh.colors;
+        Assert.IsTrue(colors.Any(c => c.r > c.g && c.r > c.b) && colors.Any(c => c.g > c.r && c.g > c.b)
+            && colors.Any(c => c.b > c.r && c.b > c.g), "虹色(赤・緑・青のどれが強い所もある)");
+        mode.Tick(13.45);
+        Assert.AreEqual(0, mode.ActiveWaves, "1秒ほどで消える");
+        Assert.IsFalse(mode.WaveRenderer.enabled);
+
+        // 2問目: 1つ目を切って、2つ目(17.5 秒)を逃す → 出さない。
+        Cut(Spawn(16.0));
+        mode.Tick(16.02);
+        spawner.Tick(17.0);
+        spawner.Tick(18.0);
+        mode.Tick(18.0);
+        Assert.AreEqual(QuizMode.SlotMissed, mode.SlotState(R2, 1));
+        Assert.AreEqual(1, mode.WavesStarted, "1つでも逃した問題は出さない");
+        Assert.AreEqual(0, mode.ActiveWaves);
+        mode.EndPlay();
+        Assert.IsFalse(mode.WaveRenderer.enabled);
+    }
+
+    // 斬り分けは4つとも答えの側へ切れたら、見出しから。演出控えめ(F3)では輪1つだけを弱く、にじみなしで出す。
+    [Test]
+    public void SortingAllFourSendsTheWaveFromTheHeaderAndF3KeepsOneFaintRing()
+    {
+        DisplaySettings.SetReducedEffectsForTest(true);
+        string[] sides = { "left", "right", "right", "left" };
+        for (int k = 0; k < 4; k++)
+        {
+            double hit = 31.5 + .375 * k;
+            spawner.Tick(hit - .3);
+            spawner.Tick(hit);
+            var gold = spawner.LiveNotes.First(n => Math.Abs(n.HitTime - hit) < 1e-6);
+            Vector3 swing = (sides[k] == "left" ? Vector3.left : Vector3.right) * 8f;
+            Assert.IsTrue(gold.CutAtSongTime(gold.transform.position, swing, CutDirection.None, SaberHand.Any, hit), "札 " + k);
+            mode.Tick(hit + .01);
+            Assert.AreEqual(k < 3 ? 0 : 1, mode.WavesStarted, "4つ目を切った次のコマで出す " + k);
+        }
+        Assert.AreEqual(QuizRules.GateHalfWidth, mode.GateOutlineHalfWidth, 1e-6, "斬り分けの紙はゲートの枠を広げない");
+        mode.Tick(32.85);
+        Assert.AreEqual(1, mode.ActiveWaves);
+        Assert.AreEqual(1, mode.WaveRingsDrawn, "F3 では輪1つ");
+        var bounds = mode.WaveMesh.bounds;
+        Assert.AreEqual(0f, bounds.center.x, 1e-3, "斬り分けは見出しが中心");
+        Assert.AreEqual(QuizRules.SortHeaderY, bounds.center.y, 1e-3);
+        foreach (var color in mode.WaveMesh.colors)
+            Assert.LessOrEqual(color.a, QuizRules.WaveAlpha * GateAccents.LowGain + 1e-4f, "F3 では弱く");
+        foreach (var uv in mode.WaveMesh.uv) Assert.AreEqual(.5f, uv.y, 1e-6, "にじみ(縁へ薄れる帯)は出さない");
     }
 
     [Test]

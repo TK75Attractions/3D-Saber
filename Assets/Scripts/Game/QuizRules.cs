@@ -8,10 +8,11 @@ using UnityEngine;
 // 時計・描画・状態を持たない純関数と数値だけ(QuizMode と NoteSpawner がこれで描き、テストもここを直接たたく)。
 // 座標は譜面の座標(= 判定面 z=judgeZ のワールド座標)。時刻は曲の時計の秒(NoteSpawner.TotalOffsetSeconds を足した値)。
 //   試験用紙: papers の時間帯に 0.25 秒で黒い紙を出し、終わりの 0.25 秒で戻す(接する時間帯はつないで、境目で戻さない)。
-//     紙の間は判定面にゲートの枠(x ±1.9、y −0.6〜0.3)を白い細線で描く。字は白、正解の印だけ赤ペンの赤、ノーツは金。
-//   rhythm「答えの柱」(どこで切るか): 柱は x −1.8/−0.6/0.6/1.8、y −0.15。判定面に薄い四角、真上に答えの札、上に問題。
-//     本物の金は正しい柱だけ(当たり 0.45 倍で隣の柱では切れない)、ほかの3本は飾りの金(NoteSpawner.Decoy)。
+//     紙の間は判定面にゲートの枠(x ±1.9、答えの柱の紙は ±3.3。y −0.6〜0.3)を白い細線で描く。字は白、正解の印だけ赤ペンの赤、ノーツは金。
+//   rhythm「答えの柱」(どこで切るか): 柱は x −2.7/−0.9/0.9/2.7、y −0.15。判定面に薄い四角、真上に答えの札、上に問題。
+//     本物の金は正しい柱だけ(当たり 0.8 倍で隣の柱では切れない)、ほかの3本は飾りの金(NoteSpawner.Decoy)。
 //     本物を切るとその札が 0.15 秒金に光り、最後の本物が届いたら正しい札を赤い丸で囲む(練習は最初から)。
+//   どの問題も、問題のノーツをすべて切れたら(正解)、答えの札・問題から虹の波動(虹色の輪3つ)を画面の外まで広げる。
 //   sort「斬り分け」(どの向きに切るか): 札4つ(x ±0.7・±2.1、y 1.1)から金が発射され(NoteData.launch)、真ん中の的へ飛ぶ。
 //     本当の向き(答えの側)は隠してある(sideArrow)。届く時刻に札が答えの箱(x ±3.7)へ 0.25 秒で滑り込み、
 //     切れていれば金、逃した・違う向きなら灰色で積む。接近 2.0 秒では最初の金が問題の前に出るので、板を早めに出す。
@@ -38,6 +39,9 @@ public static class QuizRules
 
     // ---- 判定面のゲートの枠(紙の間だけ。奥行きと判定面の場所を見せる) ----
     public const float GateHalfWidth = 1.9f, GateBottomY = -.6f, GateTopY = .3f;
+    // 答えの柱の問題がある紙では、外の柱の四角(2.7 + 0.25)より 0.35 外まで広げる(外の柱は本物のゲートの外にある)。
+    // 斬り分けの紙は箱(x ±2.7〜±4.7)に重ねないよう 1.9 のまま。
+    public const float PillarGateHalfWidth = 3.3f;
     public const float GateLineWidth = .03f, GateLineAlpha = .4f;
     public static readonly Vector2 GateCenter = new Vector2(0f, -.15f);
 
@@ -55,16 +59,20 @@ public static class QuizRules
     public const float BoardMaxWidth = 9f;
 
     // ---- rhythm「答えの柱」 ----
-    public static readonly float[] PillarX = { -1.8f, -.6f, .6f, 1.8f };
-    public const float PillarY = -.15f, PillarSpacing = 1.2f;
-    // 本物の当たりの倍率(譜面の hitScale)。本編の当たり(刃 0.32 + 0.88 × 0.45 = 0.716)は、隣の柱の四角の内側の縁
-    // (1.2 − 0.25 = 0.95)に届かない。細い側の振りで広げても SaberCutJudge.ScaledThinRangeLimit(0.85)まで。
-    public const float PillarHitScale = .45f;
+    // 柱の間は 1.8(第4.1版、2026-10-29 ユーザー「選択肢同士の間隔を広げて間違えて切りにくくして」。前は 1.2 で x ±0.6・±1.8)。
+    public static readonly float[] PillarX = { -2.7f, -.9f, .9f, 2.7f };
+    public const float PillarY = -.15f, PillarSpacing = 1.8f;
+    // 本物の当たりの倍率(譜面の hitScale)。本編の当たり(刃 0.32 + 0.88 × 0.8 = 1.024)は、2つの柱のまん中(0.9)を少し越えるので
+    // 正しい柱の側ならどこを振っても切れ、隣の柱の四角の内側の縁(1.8 − 0.25 = 1.55)には届かない。倍率が 1 未満なので、
+    // 細い側の振りで広げる量は SaberCutJudge.ScaledThinRangeLimit(0.85)までで、ふだんの当たりより広がらない。
+    // 間が 1.2 のときは 0.45(当たり 0.716、まん中 0.6 を少し越える)だった。柱の間と一緒に広げ、当たりとまん中の関係は変えない。
+    public const float PillarHitScale = .8f;
     public const float PillarSquareSize = .5f, PillarSquareAlpha = .18f;
     // 札は判定面の y 2.0(画面では奥から出てくるノーツより上)。0.95 では、奥から柱へ来るノーツの通り道(画面の上下)に札が重なり、
     // 字が金のノーツに隠れた(9a、10/28 の録画)。問題はその上。
     public const float RhythmQuestionY = 3.05f, RhythmQuestionHeight = .85f;
-    public const float OptionY = 2f, OptionHeight = .5f, OptionMaxWidth = 1.1f;
+    // 札の幅の上限は、隣の札とのあきを 0.2 残す 1.6(柱の間が 1.2 のときは 1.1 で、D1 の札4枚が縮んで字が小さかった)。
+    public const float OptionY = 2f, OptionHeight = .5f, OptionMaxWidth = 1.6f;
     public const double OptionFlashSeconds = .15;
     // 答えの柱の問題の画像のふつうの高さ(画素)。積分・Σ のように背の高い問題は画素の比で大きくし(上限 1.6)、
     // 下の端(札の上)はそろえて上へ伸ばす(高さを決めうちにすると字が A の 0.4 倍ほどになった。第3.1版)。
@@ -137,6 +145,19 @@ public static class QuizRules
     // ---- 飾りの金 ----
     // 届いたら判定面を少し過ぎながら、この秒数で薄れて消える(MISS の暗くなる見た目は出さない)。
     public const double DecoyFadeSeconds = .3;
+
+    // ---- 正解の虹の波動(2026-10-29 ユーザー「1問正解の時(正解ノーツをすべて切れたとき)虹の波動を出して」) ----
+    // 問題のノーツをすべて切れたら、答えの札(答えの柱)・問題の画像(ほか)から虹色の輪を 0.09 秒おきに3つ、0.9 秒で画面の外まで広げる。
+    // 紙の上・ノーツと字の下に描く(字・ノーツ・剣を隠さない)。面を光らせない細い輪なので、大きな光の予算(1秒3回)には乗せない。
+    // 演出控えめ(F3)では1つ目の輪だけを GateAccents.LowGain の濃さで出し、にじみは出さない。
+    public const double WaveSeconds = .9, WaveRingDelaySeconds = .09;
+    public const int WaveRings = 3;
+    // 輪の半径(判定面のワールド単位。画面の端は判定面で x ±7.3 ほど)。終わりはゆっくり。
+    public const float WaveFromRadius = .4f, WaveToRadius = 12f;
+    // 芯の太さ(広がるにつれ 6 割へ)と、芯のまわりのにじみ(縁へ薄れる帯。広がるにつれ倍へ)。
+    public const float WaveWidth = .2f, WaveGlowWidth = .9f, WaveGlowAlpha = .35f, WaveAlpha = .95f;
+    // 色相が1秒に回る量(輪の上では角度で一周する)。
+    public const float WaveHueSpeed = 1.2f;
 
     // カメラが無いとき(EditMode など)の、判定面で見えている上の端。
     public const float DefaultTopEdgeY = 4.6f;
@@ -290,6 +311,19 @@ public static class QuizRules
         return Merge(result);
     }
 
+    // 紙 paper の間に答えの柱の問題(出てから消えるまで)が重なるか。重なる紙ではゲートの枠を柱の幅まで広げる。
+    public static bool PaperHasPillars(QuizChartData quiz, Span paper, double offsetSeconds)
+    {
+        if (quiz?.items == null) return false;
+        foreach (var item in quiz.items)
+            if (item != null && Kind(item.kind) == Rhythm && Seconds(item.showMs, offsetSeconds) < paper.End
+                && Seconds(item.endMs, offsetSeconds) > paper.Start) return true;
+        return false;
+    }
+
+    // ゲートの枠の半分の幅(答えの柱の紙は広い枠、ほかは本物のゲートと同じ)。
+    public static float GateHalfWidthFor(bool pillars) => pillars ? PillarGateHalfWidth : GateHalfWidth;
+
     // 試験用紙の濃さ(0〜1)。始まりから 0.25 秒で 1、終わりの 0.25 秒で 0 へ。
     // 毎コマ呼ぶので、IReadOnlyList の foreach(列挙子の箱詰め)ではなく添字で回す。
     public static float PaperVisibility(IReadOnlyList<Span> papers, double time)
@@ -382,6 +416,43 @@ public static class QuizRules
     {
         float baseVeil = float.IsNaN(veil) || float.IsInfinity(veil) ? 0f : Mathf.Clamp01(veil);
         return 1f - (1f - baseVeil) * Mathf.Clamp01(visibility);
+    }
+
+    // ---- 正解の虹の波動 ----
+
+    // 波動が出ている間か(始まりから age 秒。最後の輪が広がり終わるまで)。
+    public static bool WaveActive(double age) => Finite(age) && age >= 0 && age < WaveSeconds + (WaveRings - 1) * WaveRingDelaySeconds;
+
+    // ring 本目(0 から)の輪の進み(0〜1)。まだ出ていない・広がり終わった輪は −1。
+    public static float WaveProgress(double age, int ring)
+    {
+        double t = age - ring * WaveRingDelaySeconds;
+        return Finite(t) && t >= 0 && t < WaveSeconds ? (float)(t / WaveSeconds) : -1f;
+    }
+
+    // 進み progress の輪の半径(終わりはゆっくり)と濃さ(薄れながら広がり、1 で 0)。
+    public static float WaveRadius(float progress)
+    {
+        float k = 1f - Mathf.Clamp01(progress);
+        return Mathf.Lerp(WaveFromRadius, WaveToRadius, 1f - k * k * k);
+    }
+
+    public static float WaveOpacity(float progress)
+        => progress < 0f || progress >= 1f ? 0f : WaveAlpha * Mathf.Pow(1f - progress, 1.3f);
+
+    // ring 本目の輪の色相の始まり。時間で回し、輪ごとに 1/3 ずらす(どの瞬間も3つの輪は違う色が並ぶ)。
+    public static float WaveHue(int ring, double age)
+        => Mathf.Repeat(ring / (float)WaveRings + (Finite(age) ? (float)age : 0f) * WaveHueSpeed, 1f);
+
+    // 波動の中心。答えの柱は正しい札(答えが無ければ札の列の真ん中)、斬り分けは見出し、π を書くは「π =」、答えの形は問題。
+    public static Vector2 WaveOrigin(QuizItemData item)
+    {
+        string kind = item != null ? Kind(item.kind) : "";
+        if (kind == Rhythm)
+            return new Vector2(item.answer >= 0 && item.answer < PillarX.Length ? PillarX[item.answer] : 0f, OptionY);
+        if (kind == Sort) return new Vector2(0f, SortHeaderY);
+        if (kind == Pi) return new Vector2(PiLabelX, PiLineY);
+        return new Vector2(0f, CountQuestionY);
     }
 
     // ---- 板の並び ----

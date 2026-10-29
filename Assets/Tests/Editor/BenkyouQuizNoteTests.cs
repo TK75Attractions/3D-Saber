@@ -91,9 +91,10 @@ public class BenkyouQuizDecoyTests : BenkyouQuizSpawnerFixture
     public void DecoysFlyExactlyLikeTheRealGoldNoteButAreNeverJudgedOrScored()
     {
         var chart = new ChartData { bpm = 100 };
-        chart.notes.Add(new NoteData { time = 2000, x = -.6f, y = -.15f, color = "gold", hitScale = QuizRules.PillarHitScale });
-        chart.quiz.decoys.Add(new QuizDecoyData { ms = 2000, x = .6f, y = -.15f });
-        chart.quiz.decoys.Add(new QuizDecoyData { ms = 2150, x = 1.8f, y = -.15f });
+        float realX = QuizRules.PillarX[1], decoyX = QuizRules.PillarX[2];
+        chart.notes.Add(new NoteData { time = 2000, x = realX, y = -.15f, color = "gold", hitScale = QuizRules.PillarHitScale });
+        chart.quiz.decoys.Add(new QuizDecoyData { ms = 2000, x = decoyX, y = -.15f });
+        chart.quiz.decoys.Add(new QuizDecoyData { ms = 2150, x = QuizRules.PillarX[3], y = -.15f });
         int spawned = 0, decoys = 0;
         spawner.OnNoteSpawned += _ => spawned++;
         spawner.OnDecoySpawned += _ => decoys++;
@@ -109,7 +110,7 @@ public class BenkyouQuizDecoyTests : BenkyouQuizSpawnerFixture
         Assert.IsTrue(decoy.IsDecoy);
         Assert.IsFalse(real.IsDecoy);
         Assert.IsTrue(decoy.IsGold, "飾りも金");
-        Assert.AreEqual(new Vector2(.6f, -.15f), decoy.LandingPosition);
+        Assert.AreEqual(new Vector2(decoyX, -.15f), decoy.LandingPosition);
         Assert.AreEqual(real.transform.position.z, decoy.transform.position.z, 1e-5, "同じ接近");
         Assert.AreEqual(real.transform.localScale, decoy.transform.localScale, "同じ大きさ");
         Assert.AreEqual(real.Visuals.DisplayColor, decoy.Visuals.DisplayColor, "同じ色");
@@ -128,9 +129,9 @@ public class BenkyouQuizDecoyTests : BenkyouQuizSpawnerFixture
         Assert.AreEqual(real.TimingCue.ApproachRoot.transform.localScale, decoy.TimingCue.ApproachRoot.transform.localScale, "縮む枠");
         Assert.AreEqual(decoy.LandingPosition, (Vector2)decoy.TimingCue.GhostRoot.transform.position, "枠は飾りの着地点");
 
-        // 飾りの柱を本編の当たりで振っても、何も切れない(本物は 1.2 離れ、当たり 0.45 倍では届かない)。
+        // 飾りの柱を本編の当たりで振っても、何も切れない(本物は隣の柱で 1.8 離れ、当たり 0.8 倍の 1.024 では届かない)。
         var (judge, tracker) = Saber();
-        Swing(judge, tracker, .6f, 2.0);
+        Swing(judge, tracker, decoyX, 2.0);
         Assert.IsFalse(decoy.IsCut, "刃が通っても割れない");
         Assert.IsFalse(real.IsCut, "隣の柱の本物は切れない");
         Assert.IsFalse(decoy.CutAtSongTime(decoy.transform.position, Vector3.down * 8f, CutDirection.None, SaberHand.Any, 2.0),

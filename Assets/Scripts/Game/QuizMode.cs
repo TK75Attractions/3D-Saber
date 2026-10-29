@@ -14,11 +14,15 @@ using Object = UnityEngine.Object;
 //   板の上に Q の絵、ノーツ(本物も飾りも AboveNoteSortingOrder)、剣と切った光(AboveSortingOrder)を描く。
 //   HUD(点・コンボ・判定の文字)とコンボの炎は画面の一番上の Canvas なので、CanvasGroup で板と同じだけ薄める。
 //   黒は頂点色 0 の板(霧・光・発光が無く、プロジェクターの露出の上げ幅でも黒のまま)。紙の縁の光もこの板に重ねて描く。
+// 正解の虹の波動(2026-10-29): 問題のノーツをすべて切れたら、次の Tick の曲の時計から QuizRules.WaveOrigin を中心に虹色の輪を広げる。
+//   紙のすぐ上・ノーツの下の段(WaveSortingOrder)の別のメッシュに描くので、ノーツ・字・赤ペン・剣は波動の上に見える。
 public sealed partial class QuizMode : MonoBehaviour
 {
     // 並び順。M・停電とは同じ譜面で重ならない。問題・札・桁の字と赤ペン・線は、ノーツ・切った光・剣より手前に描く
     // (黒い紙の上では、切った光の輪や割れた破片が字を隠した。Codex の点検、10/28)。紙だけがステージより上・ノーツより下。
     public const int PaperSortingOrder = MemoryVeilLayers.NoiseSortingOrder;
+    // 正解の虹の波動は紙の上・ノーツの下(本物のノーツ・飾りの金は AboveNoteSortingOrder)。
+    public const int WaveSortingOrder = PaperSortingOrder + 1;
     public const int ImageSortingOrder = MemoryVeilLayers.AboveSortingOrder + 10;
     public const int MarkSortingOrder = MemoryVeilLayers.AboveSortingOrder + 11;
     // 判定面から手前へ少しだけ出す(深さは見ないが、画像の代わりの材質のときに枠などに埋もれないように)。
@@ -32,10 +36,12 @@ public sealed partial class QuizMode : MonoBehaviour
     string folder = "";
     Camera view;
     Transform board;
-    QuizMesh paper, marks;
+    QuizMesh paper, marks, waves;
     double offset = double.NaN;
     float timedApproach = float.NaN;
     List<QuizRules.Span> papers = new List<QuizRules.Span>();
+    // 紙ごとに、答えの柱の問題を含むか(papers と同じ順。含む紙はゲートの枠を柱の幅まで広げる)。
+    readonly List<bool> pillarPapers = new List<bool>();
     bool hasRhythm, hasSort, hasCount, hasPi;
     QuizRules.Span rhythmSpan, sortSpan, countSpan, piSpan;
     bool ended, previousCutFeedbackLift, floorGuideStopped;
@@ -75,6 +81,9 @@ public sealed partial class QuizMode : MonoBehaviour
     double[] optionFlashStart = new double[0];
     int[] optionFlashPillar = new int[0];
     bool[] optionFlashPending = new bool[0];
+    // 正解の虹の波動の始まり(曲の時計。問題ごと、出していなければ NaN)。最後のノーツを切った次の Tick で入れる。
+    double[] waveStart = new double[0];
+    bool[] wavePending = new bool[0];
     // 紙の縁の光の始まり(曲の時計)。
     readonly List<double> edgeFlashStarts = new List<double>();
     readonly List<FlashRect> flashRects = new List<FlashRect>();
@@ -89,11 +98,18 @@ public sealed partial class QuizMode : MonoBehaviour
     public bool Ended => ended;
     // 床の印を止めているか(紙の間)。
     public bool FloorGuideStopped => floorGuideStopped;
-    // このコマに描いた赤ペンの丸・薄い四角の数、ゲートの枠、紙の縁の光の数(テスト用)。
+    // このコマに描いた赤ペンの丸・薄い四角の数、ゲートの枠とその半分の幅、紙の縁の光の数(テスト用)。
     public int RedCircles { get; private set; }
     public int Squares { get; private set; }
     public bool GateOutlineDrawn { get; private set; }
+    public float GateOutlineHalfWidth { get; private set; }
     public int ActiveEdgeFlashes { get; private set; }
+    // 正解の虹の波動: 出した数(この曲で)と、このコマに描いた数・描いた輪の数(テスト用)。
+    public int WavesStarted { get; private set; }
+    public int ActiveWaves { get; private set; }
+    public int WaveRingsDrawn { get; private set; }
+    public MeshRenderer WaveRenderer => waves != null ? waves.Renderer : null;
+    public Mesh WaveMesh => waves != null ? waves.Mesh : null;
 
     // 問題 item のノーツの数と、index 番目の記録(SlotWaiting / SlotCut / SlotMissed)(テスト用)。
     public int SlotCount(int item) => item >= 0 && item < itemSlotCount.Length ? itemSlotCount[item] : 0;
@@ -132,6 +148,7 @@ public sealed partial class QuizMode : MonoBehaviour
         board = boardObject.transform;
         board.SetParent(transform, false);
         marks = new QuizMesh(board, "QuizMarks", MarkSortingOrder, world: true);
+        waves = new QuizMesh(board, "QuizWaves", WaveSortingOrder, world: true);
         if (view != null) paper = new QuizMesh(view.transform, "QuizPaper", PaperSortingOrder, world: false);
         PrepareImages();
         FindCanvases();
@@ -170,6 +187,9 @@ public sealed partial class QuizMode : MonoBehaviour
         optionFlashStart = new double[count];
         optionFlashPillar = new int[count];
         optionFlashPending = new bool[count];
+        waveStart = new double[count];
+        wavePending = new bool[count];
+        for (int i = 0; i < count; i++) waveStart[i] = double.NaN;
         float scale = chart != null && chart.coordScale > 0f ? chart.coordScale : 1f;
         var picked = new List<NoteData>();
         for (int i = 0; i < count; i++)
@@ -208,6 +228,16 @@ public sealed partial class QuizMode : MonoBehaviour
         // 接近 2.0 秒では斬り分けの1問目の金が問題の前に出る。その札を見せるため、板と一緒に紙も早める(ほかの問題の板は紙の中)。
         int first = FirstItem(QuizRules.Sort);
         if (first >= 0) papers = QuizRules.CoverBoard(papers, SortBoardStart(first), QuizRules.SortCoverLeadSeconds);
+        pillarPapers.Clear();
+        foreach (var span in papers) pillarPapers.Add(QuizRules.PaperHasPillars(quiz, span, offset));
+    }
+
+    // その時刻のゲートの枠の半分の幅(答えの柱の問題がある紙は広い枠)。
+    float GateHalfWidthAt(double time)
+    {
+        for (int i = 0; i < papers.Count && i < pillarPapers.Count; i++)
+            if (papers[i].Contains(time)) return QuizRules.GateHalfWidthFor(pillarPapers[i]);
+        return QuizRules.GateHalfWidth;
     }
 
     void RefreshTimes()
@@ -299,6 +329,7 @@ public sealed partial class QuizMode : MonoBehaviour
         DrawPaper(songTime, visibility);
         FadeCanvases(visibility);
         DrawBoard(songTime, visibility);
+        DrawWaves(songTime, visibility);
         LiftPieces();
         previousTime = songTime;
     }
@@ -336,15 +367,16 @@ public sealed partial class QuizMode : MonoBehaviour
     Vector3 PaperPoint(double x, double y, float depth)
         => view.transform.InverseTransformPoint(view.ViewportToWorldPoint(new Vector3((float)x, (float)y, depth)));
 
-    // 判定面のゲートの枠の、画面での矩形(0〜1)。カメラの後ろにかかるときは空。
-    FlashRect GateViewportRect()
+    // 判定面のゲートの枠(その時刻の幅)の、画面での矩形(0〜1)。カメラの後ろにかかるときは空。
+    FlashRect GateViewportRect(double time)
     {
+        float halfWidth = GateHalfWidthAt(time);
         double left = double.PositiveInfinity, bottom = double.PositiveInfinity;
         double right = double.NegativeInfinity, top = double.NegativeInfinity;
         for (int sx = -1; sx <= 1; sx += 2)
             for (int sy = 0; sy <= 1; sy++)
             {
-                Vector3 p = view.WorldToViewportPoint(new Vector3(sx * QuizRules.GateHalfWidth,
+                Vector3 p = view.WorldToViewportPoint(new Vector3(sx * halfWidth,
                     sy == 0 ? QuizRules.GateBottomY : QuizRules.GateTopY, judgeZ));
                 if (p.z <= 0f || !QuizRules.Finite(p.x) || !QuizRules.Finite(p.y)) return new FlashRect(0, 0, 0, 0);
                 left = Math.Min(left, p.x); right = Math.Max(right, p.x);
@@ -386,7 +418,7 @@ public sealed partial class QuizMode : MonoBehaviour
     void DrawEdgeFlashes(double time, float visibility)
     {
         if (edgeFlashStarts.Count == 0 || DisplaySettings.ReducedEffects) return;
-        LargeFlashLayout.Build(LargeFlashKind.Edge, LargeFlashLayout.ProtectedGate(GateViewportRect()), flashRects);
+        LargeFlashLayout.Build(LargeFlashKind.Edge, LargeFlashLayout.ProtectedGate(GateViewportRect(time)), flashRects);
         float depth = PaperDepth();
         foreach (double start in edgeFlashStarts)
         {
@@ -627,6 +659,18 @@ public sealed partial class QuizMode : MonoBehaviour
             optionFlashPillar[s.item] = QuizRules.NearestPillar(s.x);
             optionFlashPending[s.item] = true;
         }
+        // 問題のノーツをすべて切れたら(正解)、虹の波動を出す(次の Tick の曲の時計から。記録は1回ずつなので1問に1回)。
+        if (state == SlotCut && Solved(s.item)) wavePending[s.item] = true;
+    }
+
+    // 問題 item のノーツがすべて切れたか(待ち・逃したが1つでもあれば false)。ノーツの無い問題は false。
+    bool Solved(int item)
+    {
+        int first = itemFirstSlot[item], count = itemSlotCount[item];
+        if (count <= 0) return false;
+        for (int k = 0; k < count; k++)
+            if (slotState[first + k] != SlotCut) return false;
+        return true;
     }
 
     void StartFlashes(double time)
@@ -637,6 +681,53 @@ public sealed partial class QuizMode : MonoBehaviour
             optionFlashPending[i] = false;
             optionFlashStart[i] = time;
         }
+        for (int i = 0; i < wavePending.Length; i++)
+        {
+            if (!wavePending[i]) continue;
+            wavePending[i] = false;
+            waveStart[i] = time;
+            WavesStarted++;
+        }
+    }
+
+    // ---- 正解の虹の波動 ----
+
+    // 出ている波動の輪(芯と、まわりのにじみ)を描く。紙の濃さを掛け、紙の外では描かない。
+    // 演出控えめ(F3)では1つ目の輪の芯だけを弱く(GateAccents.LowGain)。
+    void DrawWaves(double time, float visibility)
+    {
+        if (waves == null) return;
+        waves.Clear();
+        ActiveWaves = WaveRingsDrawn = 0;
+        if (visibility > 0f)
+        {
+            bool low = DisplaySettings.ReducedEffects;
+            float gain = visibility * (low ? GateAccents.LowGain : 1f);
+            int rings = low ? 1 : QuizRules.WaveRings;
+            float z = judgeZ - MarkLift;
+            for (int i = 0; i < waveStart.Length; i++)
+            {
+                double age = time - waveStart[i];
+                if (!QuizRules.WaveActive(age)) continue;
+                Vector2 origin = QuizRules.WaveOrigin(quiz.items[i]);
+                bool drawn = false;
+                for (int ring = 0; ring < rings; ring++)
+                {
+                    float progress = QuizRules.WaveProgress(age, ring);
+                    float alpha = QuizRules.WaveOpacity(progress) * gain;
+                    if (alpha <= 0f) continue;
+                    float radius = QuizRules.WaveRadius(progress), hue = QuizRules.WaveHue(ring, age);
+                    if (!low)
+                        waves.RainbowRing(origin, z, radius, QuizRules.WaveGlowWidth * (1f + progress),
+                            alpha * QuizRules.WaveGlowAlpha, hue, soft: true);
+                    waves.RainbowRing(origin, z, radius, QuizRules.WaveWidth * (1f - .4f * progress), alpha, hue, soft: false);
+                    WaveRingsDrawn++;
+                    drawn = true;
+                }
+                if (drawn) ActiveWaves++;
+            }
+        }
+        waves.Flush();
     }
 
     // ---- 終わり ----
@@ -648,6 +739,8 @@ public sealed partial class QuizMode : MonoBehaviour
         PaperVisibility = 0f;
         if (paper != null) paper.Hide();
         if (marks != null) marks.Hide();
+        if (waves != null) waves.Hide();
+        ActiveWaves = WaveRingsDrawn = 0;
         HideBoard();
         RestoreCanvases();
         RestoreSabers();
@@ -683,7 +776,8 @@ public sealed partial class QuizMode : MonoBehaviour
         EndPlay();
         paper?.Dispose();
         marks?.Dispose();
-        paper = marks = null;
+        waves?.Dispose();
+        paper = marks = waves = null;
         DisposeBoard();
     }
 }

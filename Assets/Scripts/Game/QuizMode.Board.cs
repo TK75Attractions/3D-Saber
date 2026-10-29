@@ -269,9 +269,10 @@ public sealed partial class QuizMode
         foreach (var image in images.Values) image.used = 0;
         RedCircles = Squares = 0;
         GateOutlineDrawn = false;
+        GateOutlineHalfWidth = 0f;
         if (visibility > 0f && quiz?.items != null && marks != null)
         {
-            DrawGateOutline(visibility);
+            DrawGateOutline(time, visibility);
             if (hasRhythm && InSection(rhythmSpan, time, QuizRules.PaperFadeSeconds)) DrawRhythm(time, visibility);
             // 斬り分けの板は、接近 2.0 秒では最初の問題より前から出る。
             if (hasSort && InSection(sortSpan, time, QuizRules.SortCoverLeadSeconds)) DrawSort(time, visibility);
@@ -295,12 +296,14 @@ public sealed partial class QuizMode
     static bool InSection(QuizRules.Span span, double time, double lead)
         => time >= span.Start - lead && time < span.End + QuizRules.PaperFadeSeconds;
 
-    // 判定面のゲートの枠(紙の間だけ、白い細線)。奥行きと判定面の場所を見せる。
-    void DrawGateOutline(float visibility)
+    // 判定面のゲートの枠(紙の間だけ、白い細線)。奥行きと判定面の場所を見せる。答えの柱の紙では外の柱まで入る広い枠。
+    void DrawGateOutline(double time, float visibility)
     {
-        marks.Frame(QuizRules.GateCenter, judgeZ - MarkLift, QuizRules.GateHalfWidth * 2f, QuizRules.GateTopY - QuizRules.GateBottomY,
+        float halfWidth = GateHalfWidthAt(time);
+        marks.Frame(QuizRules.GateCenter, judgeZ - MarkLift, halfWidth * 2f, QuizRules.GateTopY - QuizRules.GateBottomY,
             QuizRules.GateLineWidth, Vertex(Color.white, QuizRules.GateLineAlpha * visibility));
         GateOutlineDrawn = true;
+        GateOutlineHalfWidth = halfWidth;
     }
 
     // 赤ペンの丸(札・数のまわり)。start から一筆で描く。

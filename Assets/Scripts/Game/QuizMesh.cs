@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-// 勉強の裏譜面 Q の試験用紙(と紙の縁の光)と、板の線・四角・箱・赤ペンの丸を描く1枚のメッシュ(毎コマ作り直す)。
+// 勉強の裏譜面 Q の試験用紙(と紙の縁の光)と、板の線・四角・箱・赤ペンの丸・正解の虹の波動を描く1枚のメッシュ(毎コマ作り直す)。
 // 色は頂点色だけ(Effects/PlayExcitement の材質。霧・光・発光が無いので、黒は 0 のまま黒く、プロジェクターの露出でも浮かない)。
 // 深さは見ない。前後は sortingOrder(2D レンダラーでは材質の queue より先に効く)と、同じメッシュの中では足した順で決まる。
 public sealed class QuizMesh : IDisposable
@@ -57,12 +57,12 @@ public sealed class QuizMesh : IDisposable
 
     bool Room(int count) => Available && vertices.Count + count <= MaxVertices;
 
-    int Add(Vector3 point, Color color)
+    int Add(Vector3 point, Color color, float v = .5f)
     {
         vertices.Add(Local(point));
         colors.Add(color);
-        // PlayExcitement の材質は uv.y で縁を薄くする。0.5 なら縁まで同じ濃さ。
-        uvs.Add(new Vector2(.5f, .5f));
+        // PlayExcitement の材質は uv.y で縁を薄くする。0.5 なら縁まで同じ濃さ(0 と 1 の縁で消える)。
+        uvs.Add(new Vector2(.5f, v));
         return vertices.Count - 1;
     }
 
@@ -116,6 +116,31 @@ public sealed class QuizMesh : IDisposable
         for (int s = 0; s < segments; s++)
         {
             int a = first + s * 2, b = first + (s + 1) % segments * 2;
+            indices.Add(a); indices.Add(a + 1); indices.Add(b + 1);
+            indices.Add(a); indices.Add(b + 1); indices.Add(b);
+        }
+    }
+
+    // 虹色の輪(正解の波動)。色相は hue から角度で一周する。soft なら内と外の縁へ薄れる帯(uv.y を 0 → 1)。
+    // 彩度は GameplayCutFeedback の虹と同じ 0.8(投影で沈まない)。頂点色は線形の値として使われるので linear に直す。
+    public void RainbowRing(Vector2 center, float z, float radius, float width, float alpha, float hue, bool soft, int segments = 96)
+    {
+        if (radius <= 0f || width <= 0f || alpha <= 0f || segments < 3 || !Room((segments + 1) * 2)) return;
+        float inner = Mathf.Max(0f, radius - width * .5f), outer = radius + width * .5f;
+        int first = vertices.Count;
+        // 最初と最後の点を重ねて置き、色相の一周の継ぎ目でも色を混ぜない。
+        for (int s = 0; s <= segments; s++)
+        {
+            float t = (float)s / segments, angle = t * Mathf.PI * 2f;
+            Color color = Color.HSVToRGB(Mathf.Repeat(hue + t, 1f), .8f, 1f).linear;
+            color.a = Mathf.Clamp01(alpha);
+            float x = Mathf.Cos(angle), y = Mathf.Sin(angle);
+            Add(new Vector3(center.x + x * inner, center.y + y * inner, z), color, soft ? 0f : .5f);
+            Add(new Vector3(center.x + x * outer, center.y + y * outer, z), color, soft ? 1f : .5f);
+        }
+        for (int s = 0; s < segments; s++)
+        {
+            int a = first + s * 2, b = a + 2;
             indices.Add(a); indices.Add(a + 1); indices.Add(b + 1);
             indices.Add(a); indices.Add(b + 1); indices.Add(b);
         }
