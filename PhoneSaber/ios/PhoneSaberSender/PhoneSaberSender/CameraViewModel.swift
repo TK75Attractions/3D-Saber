@@ -3959,7 +3959,11 @@ private final class BonjourDiscovery: NSObject, NetServiceBrowserDelegate, NetSe
             guard PhoneSaberStation.matches(service: service, station: station),
                   preferredServiceName.isEmpty || service == preferredServiceName else { continue }
             for host in hosts {
-                for interface in available {
+                // iOS は Mac との USB リンクを availableInterfaces に出さない（10-29 実機: wifi, wifi, cellular のみ）。
+                // link-local の宛先は固定なしでも試し、OS の経路（USB）で 5007 が返れば有線候補にする。
+                let hostInterfaces = host.hasPrefix("169.254.") && !available.contains(where: { $0 == nil })
+                    ? available + [nil] : available
+                for interface in hostInterfaces {
                     let id = "\(service)|\(host)%\(interface?.index ?? 0)"
                     wanted.insert(id)
                     if routes[id] == nil {
