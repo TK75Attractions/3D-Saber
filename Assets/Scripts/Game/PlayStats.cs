@@ -10,9 +10,9 @@ using UnityEngine;
 // ・連続 PERFECT は判定の並び(ロングの途中の回も数える。PERFECT 以外と MISS で 0 に戻す)。
 // ・第2弾(同日): ノーツごとの誤差・結果が出た時刻・切った手・向き違いの振り・反対の剣のしびれ、組(1ms 以内)、最後の組の前後の HUD の点、
 //   消え方・背景の食・切る回数。止まり(S)・回転(R)・区間の名前(校歌の転調)は譜面と stage から求める。
-public sealed class PlayStats
+public sealed partial class PlayStats
 {
-    public sealed class Note
+    public sealed partial class Note
     {
         public int Index;
         // 譜面の時刻(秒)と、ロングの長さを足した終わりの時刻。
@@ -781,7 +781,7 @@ public sealed class PlayStats
 // (使い回しのノーツは ResetForSpawn でも外れる)。ノーツの OnJudged は ScoreManager が採点して OnJudgment を出したあとに来るので、
 // そこで読む誤差(LastErrorMs)と HUD の点(ScoreWithCombo)はその判定のもの。ロングの途中の切りも ScoreManager が先に数える
 // (ScoreManager は GamePlayManager が譜面を渡したすぐあとに結び付け、記録はそのあとで結び付く)。
-public sealed class PlayStatsRecorder
+public sealed partial class PlayStatsRecorder
 {
     readonly GamePlayManager manager;
     readonly NoteSpawner spawner;
@@ -840,6 +840,9 @@ public sealed class PlayStatsRecorder
         Stats = PlayStats.FromChart(spawner.CurrentChart, spawner.TotalOffsetSeconds, spawner.secondsPerLongCut, stage, runId,
             StageThemeCatalog.ForSong(GameSession.SelectedSongId));
         Stats.Complete = complete;
+        Stats.ActionsComplete = complete;
+        UnwatchAim();
+        cutIndices.Clear();
         Stale = false;
         scoreBefore = scoreAfter = score.ScoreWithCombo;
         if (bound) WatchVoltage();
@@ -853,6 +856,7 @@ public sealed class PlayStatsRecorder
         spawner.OnChartReset += ChartReset;
         foreach (var note in spawner.LiveNotes) Spawned(note);
         score.OnJudgment += Judged;
+        score.OnVoltageJudgment += VoltageJudgment;
         score.OnLongCut += LongCut;
         if (feedback != null) feedback.OnMilestone += Milestone;
     }
@@ -864,7 +868,8 @@ public sealed class PlayStatsRecorder
         UnwatchVoltage();
         Unwatch();
         if (spawner != null) { spawner.OnNoteSpawned -= Spawned; spawner.OnChartReset -= ChartReset; }
-        if (score != null) { score.OnJudgment -= Judged; score.OnLongCut -= LongCut; }
+        if (score != null) { score.OnJudgment -= Judged; score.OnLongCut -= LongCut; score.OnVoltageJudgment -= VoltageJudgment; }
+        UnwatchAim();
         if (feedback != null) feedback.OnMilestone -= Milestone;
     }
 
@@ -888,6 +893,8 @@ public sealed class PlayStatsRecorder
         Stale = true;
         UnwatchVoltage();
         judgedSinceReset = 0;
+        UnwatchAim();
+        cutIndices.Clear();
     }
 
     // 毎コマ。置き直された譜面が入ったら作り直し、曲が鳴り始めた時刻と、曲が終わった時刻(止めたコマ)を1回だけ覚える。
@@ -896,7 +903,7 @@ public sealed class PlayStatsRecorder
         if (!bound) return;
         if (Stale && spawner != null && spawner.CurrentChart != null)
             Rebuild(GameSession.AchievementRunId, judgedSinceReset == 0 && spawner.AliveCount == 0);
-        if (!Stale) WatchVoltage();
+        if (!Stale) { WatchVoltage(); WatchFourthBatch(); }
         var song = manager != null ? manager.songPlayer : null;
         if (song == null) return;
         if (!Stats.StartedAt.HasValue) { if (song.IsPlaying) Stats.StartedAt = DateTime.Now; }
@@ -906,6 +913,8 @@ public sealed class PlayStatsRecorder
     // 結果が決まったとき(GameSession.RunRecording)に、曲の終わりの値を写す。
     public PlayStats Snapshot()
     {
+        WatchFourthBatch();
+        if (meter != null) Stats.FinalVoltageLevel = meter.Level;
         if (score != null)
         {
             Stats.CrossCuts = score.CrossCutCount;
@@ -952,16 +961,17 @@ public sealed class PlayStatsRecorder
         var stats = Stats;
         int k = stats.Match(note.HitTime, note.LandingPosition.x, note.LandingPosition.y);
         if (k < 0) return;
+        uint generation = note.SpawnVersion;
+        stats.BindGeneration(k, generation);
+        cutIndices[note] = (k, generation);
         var item = new Watched
         {
             Note = note,
-            Judged = (cut, tier, point, velocity) => NoteJudged(stats, k, cut, tier),
-            Missed = missed => NoteMissed(stats, k),
-            Wrong = wrong => stats.MarkWrongSwing(k),
+            Judged = (cut, tier, point, velocity) => { if (Current(stats, k, cut, generation)) NoteJudged(stats, k, cut, tier); },
+            Missed = missed => { if (Current(stats, k, missed, generation)) NoteMissed(stats, k); },
+            Wrong = wrong => { if (Current(stats, k, wrong, generation)) stats.MarkWrongSwing(k); },
+            Partial = (cut, index, total) => PartialRecorded(stats, k, cut, generation, index, total),
         };
-        // 最後の組のロングは、途中の切りも土壇場の一太刀の判定に数える(最後の1回は OnJudged で)。
-        if (stats.Notes[k].Final)
-            item.Partial = (cut, index, total) => { if (index < total - 1) stats.FinalJudgment(scoreBefore, scoreAfter); };
         note.OnJudged += item.Judged;
         note.OnMiss += item.Missed;
         note.OnWrongDirection += item.Wrong;
@@ -972,6 +982,7 @@ public sealed class PlayStatsRecorder
     // ノーツの結果。誤差はタップ・矢印の判定だけ(ロング・MISS では ScoreManager が無効にしている)。
     void NoteJudged(PlayStats stats, int k, CuttableNote cut, JudgmentTier tier)
     {
+        stats.ResolveAt(k, JudgmentClock);
         bool hit = tier != JudgmentTier.Miss;
         stats.Notes[k].CutsDone = cut != null ? Math.Max(0, cut.CutsAchieved) : 0;
         var hand = hit && cut != null ? cut.LastCutterHand : SaberHand.Any;
@@ -983,6 +994,7 @@ public sealed class PlayStatsRecorder
     // 1回も切れずに期限が切れた。MISS の採点(OnJudgment)はこのあとに来るが、HUD の点は変わらない。
     void NoteMissed(PlayStats stats, int k)
     {
+        stats.ResolveAt(k, JudgmentClock);
         stats.Record(k, JudgmentTier.Miss, null, null, SaberHand.Any, false);
         stats.Notes[k].CutsDone = 0;
         int now = score.ScoreWithCombo;

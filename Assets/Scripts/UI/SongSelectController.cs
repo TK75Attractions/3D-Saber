@@ -123,6 +123,12 @@ public class SongSelectController : MonoBehaviour
     // 決めてからの秒(0〜StartSequenceSeconds)。選曲の見た目(SongSelectSkin)がジャケットを割るのに使う。
     public event System.Action<float> OnStartProgress;
     public bool StartAccepted { get; private set; }
+    public bool StartWasManual { get; private set; }
+    public int SelectionRevision { get; private set; }
+    public bool SelectionWasManual { get; private set; }
+    public int StartPreviewGeneration { get; private set; }
+    public double StartPreviewPosition { get; private set; }
+    public bool StartPreviewAudible { get; private set; }
     float previewStartVolume;
     AudioHighPassFilter previewFilter;
     // Esc は2秒以内に2回でタイトルへ(来場者の画面で共通。仕様面の点検 2)。
@@ -142,7 +148,7 @@ public class SongSelectController : MonoBehaviour
         if (restoredIndex >= 0 && restoredDifficulty >= 0) selectedDifficulty = restoredDifficulty;
         BindStartButton();
         BindDifficultyButtons();
-        if (songIds.Count > 0) Select(restoredIndex >= 0 ? restoredIndex : 0);
+        if (songIds.Count > 0) Select(restoredIndex >= 0 ? restoredIndex : 0, false);
     }
 
     void Update()
@@ -380,9 +386,13 @@ public class SongSelectController : MonoBehaviour
         SetDifficulty(selectedDifficulty);
     }
 
-    public void Select(int idx)
+    public void Select(int idx) => Select(idx, true);
+
+    public void Select(int idx, bool manual)
     {
         if (idx < 0 || idx >= songIds.Count) return;
+        SelectionWasManual = manual;
+        SelectionRevision++;
         if (selectedIndex == idx) return;
         selectedIndex = idx;
         RushESecret.Select(songIds[idx]);
@@ -696,7 +706,10 @@ public class SongSelectController : MonoBehaviour
         if (changed && selectedIndex >= 0 && selectedIndex < songIds.Count) StartPreview(songIds[selectedIndex], true);
     }
 
-    public void StartGame()
+    public void StartGame() => StartGame(false);
+    public void StartGameAutomatically() => StartGame(true);
+
+    void StartGame(bool automatic)
     {
         if (ScreenTransition.IsBusy || RushESecret.Transitioning) return;
         if (selectedIndex < 0 || selectedIndex >= songIds.Count) return;
@@ -714,11 +727,18 @@ public class SongSelectController : MonoBehaviour
             OnDifficultyChanged?.Invoke(selectedDifficulty);
             return;
         }
+        int previewGeneration = 0;
+        double previewPosition = 0;
+        bool audible = chartPreview != null && chartPreview.TryGetAudiblePosition(out previewGeneration, out previewPosition);
         float sequence = StartSequenceSeconds;
         // 幕は Load の中ですぐ「0秒目」の StartDeparture を呼ぶので、試聴の元の音量はその前に覚える。
         previewStartVolume = previewSource != null ? previewSource.volume : 0;
         if (!ScreenTransition.Load(gameSceneName, ScreenTransition.Style.Forward, StartDeparture, sequence, StartHoldSeconds / sequence)) return;
         StartAccepted = true;
+        StartWasManual = !automatic;
+        StartPreviewGeneration = previewGeneration;
+        StartPreviewPosition = previewPosition;
+        StartPreviewAudible = audible;
         BeginPreviewFilter();
         MenuSfx.StartHit();
         GameSession.IsCalibrationMode = false;

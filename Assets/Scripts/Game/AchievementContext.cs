@@ -5,7 +5,7 @@ using System.Globalization;
 // 実績の条件(AchievementCatalog)が見る、1回の演奏の結果の写し(2026-10-29)。結果が決まったとき(GameSession.RunRecording)に
 // AchievementTracker が GameSession の Final*・PlayStats・その回の情報(AchievementRunInfo)・記録(AchievementStore・RankingSync)から作る。
 // テストは値を直接入れて作る。
-public sealed class AchievementContext
+public sealed partial class AchievementContext
 {
     public string SongId = "", Difficulty = "";
     public int Score, MaxCombo, Hit, Miss, Perfect, Great, Good, Bad, CutCount;
@@ -24,6 +24,7 @@ public sealed class AchievementContext
     public string Station = "", Namespace = "", RunId = "";
     // 同じ来場者の練習を最後まで終えたあとの、最初の1曲か。
     public bool PracticedBefore;
+    public bool Backpick;
     // 練習の矢印とロングが両方 ok・総仕上げが最初の型の1周以内だったか。
     public bool PracticePairBefore, PracticeAllFirstLoop;
     // タイトルの開始ノーツを斬り上げたか。TitleHand と同じ寿命。
@@ -76,6 +77,19 @@ public sealed class AchievementContext
 
     // このモードで、となりの台(台名が自分と違う)が同じ曲(難易度は問わない)を、この回の終わりの前後 seconds 秒以内に終えていたか。
     // 届いている相手の回だけを見るので、取るのは結果があとに決まった方(終わりの演出の長さで、曲を先に終えた方があとになることがある)。
+    public bool SchoolDuet()
+    {
+        if (SongId != RushESecretState.EpilogueFall.SongId || Plays == null || EndedUnixMs <= 0 || string.IsNullOrEmpty(RunId)
+            || (Station != "A" && Station != "B")) return false;
+        string other = Station == "A" ? "B" : "A";
+        foreach (var play in Plays)
+            if (play != null && !string.IsNullOrEmpty(play.id) && play.id != RunId && play.st == other
+                && (play.ns ?? "") == (Namespace ?? "") && play.song == SongId && play.at > 0
+                && Math.Abs((double)EndedUnixMs - play.at) <= AchievementCatalog.SeishoFinishWindowSeconds * 1000)
+                return true;
+        return false;
+    }
+
     public bool NeighborFinishedSameSong(double seconds)
     {
         if (Plays == null || string.IsNullOrEmpty(SongId)) return false;

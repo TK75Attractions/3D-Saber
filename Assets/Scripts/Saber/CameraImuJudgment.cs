@@ -4,7 +4,7 @@ using UnityEngine;
 public enum CameraImuMode { CameraOnly, Auto, ImuAndCamera }
 
 [RequireComponent(typeof(GameplaySwingAdapter))]
-public class CameraImuJudgment : MonoBehaviour
+public partial class CameraImuJudgment : MonoBehaviour
 {
     [Header("Input mode")]
     [Tooltip("Autoは左右が判明した最初のSwing以降、その側だけIMUを必須にする。無入力時間では切り替えない。")]
@@ -45,6 +45,8 @@ public class CameraImuJudgment : MonoBehaviour
     struct Contact
     {
         public Vector3 Point, Velocity;
+        public Vector3 MotionFrom, MotionTo;
+        public float FromTurn, ToTurn;
         public double SampleTime, ReceiveTime;
         public bool Swept;
     }
@@ -329,7 +331,7 @@ public class CameraImuJudgment : MonoBehaviour
         string detail = $"seq={p.Swing.Sequence} side={p.Swing.Side} camera={color} receive={p.Swing.ReceiveTime:F6} xiao={p.Swing.XiaoTimestampUs} song={p.SongTime:F6} sample={contact.SampleTime:F6} sampleAgeMs={(now - contact.ReceiveTime) * 1000:F1} latencyMs={cameraLatencyCompensationMs:F1} deltaMs={(contact.SampleTime - p.Swing.ReceiveTime) * 1000:F1} note={noteId} position=pass swept={contact.Swept} direction={direction}";
         if (!judge.CanCutNote(best)) return false;
         bool accepted = best.TryCutWithCameraTiming(contact.Point, contact.Velocity, judge.CutterHandFor(best),
-            p.SongTime, Mathf.Cos(directionToleranceDegrees * Mathf.Deg2Rad), p.FeedbackSwingId);
+            p.SongTime, Mathf.Cos(directionToleranceDegrees * Mathf.Deg2Rad), p.FeedbackSwingId, AchievementCutRecord(contact, p, judge));
         if (!direction)
         {
             // CutCore の方向拒否から矢印へ通知した後、この振りを使い切る。判定・ミスは出さない。
@@ -374,7 +376,8 @@ public class CameraImuJudgment : MonoBehaviour
                 c.Velocity = directionVelocity;
             }
             c.Point.z = spawner.ComputeNoteZ(note, note.HitTime - p.SongTime, spawner.Speed);
-            note.TryCutWithCameraTiming(c.Point, c.Velocity, judge.CutterHandFor(note), p.SongTime, tolerance, p.FeedbackSwingId);
+            note.TryCutWithCameraTiming(c.Point, c.Velocity, judge.CutterHandFor(note), p.SongTime, tolerance, p.FeedbackSwingId,
+                AchievementCutRecord(c, p, judge));
         }
         touched.Clear();
     }
@@ -403,7 +406,8 @@ public class CameraImuJudgment : MonoBehaviour
             if (distance > range) continue;
             bool swept = SaberCutJudge.DistPointToSegment(note.transform.position, a0, b0, out _) > range
                 && SaberCutJudge.DistPointToSegment(note.transform.position, a1, b1, out _) > range;
-            contact = new Contact { Point = point, Velocity = velocity, SampleTime = end, ReceiveTime = next.ReceiveTime, Swept = swept };
+            contact = new Contact { Point = point, Velocity = velocity, SampleTime = end, ReceiveTime = next.ReceiveTime, Swept = swept,
+                MotionFrom = prev.Center, MotionTo = next.Center, FromTurn = prev.InputTurnDegrees, ToTurn = next.InputTurnDegrees };
             return true;
         }
         return false;

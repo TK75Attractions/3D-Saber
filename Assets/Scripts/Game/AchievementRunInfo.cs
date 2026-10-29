@@ -5,9 +5,11 @@ using UnityEngine;
 // 実績の判定に使う、その回の外の情報(2026-10-29)。AchievementTracker が書く。
 // 選曲の秒・裏の扉・ヒントは次に始める曲だけ。タイトルの手と向き・練習の結果は、最初の記録された曲まで持つ。
 // 来場者が替わったら全部消す。判定調整の往復ではタイトル・練習を消さず、選曲のヒントは新しい画面で数え直す。
-public static class AchievementRunInfo
+public static partial class AchievementRunInfo
 {
     public static readonly double SelectionStartSeconds = new SongSelectCountdown().Remaining;
+    public static readonly AchievementSelectionHistory Selection = new AchievementSelectionHistory();
+    public static bool Backpick { get; private set; }
 
     public static double? PendingSelectionSeconds { get; private set; }
     public static bool PracticePending { get; private set; }
@@ -43,6 +45,8 @@ public static class AchievementRunInfo
         PendingTitleHand = TitleHand = SaberHand.Any;
         PendingTitleUpward = TitleUpward = false;
         RunId = null;
+        Selection.Clear();
+        Backpick = false;
     }
 
     // openedSecret と hintsBeforeOpen は、この選曲で新しく開いた分だけを Tracker が渡す。
@@ -102,6 +106,7 @@ public static class AchievementRunInfo
     public static void BeginRun(string runId)
     {
         RunId = runId;
+        Backpick = Selection.Consume();
         SelectionSeconds = PendingSelectionSeconds;
         PracticedBefore = PracticePending;
         PracticePairBefore = PracticePairPending;

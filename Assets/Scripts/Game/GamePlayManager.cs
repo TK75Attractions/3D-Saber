@@ -917,6 +917,9 @@ public class GamePlayManager : MonoBehaviour
         if (reverseMode != null && songPlayer != null && songPlayer.IsScheduled)
             reverseMode.Advance(songPlayer.SongTime);
 
+        // 実績の記録用に、刃の1コマ前と今の中心を覚える(判定・点・演出は変えない)。
+        if (cutJudge != null) cutJudge.ObserveAchievementMotion();
+        if (cutJudge2 != null) cutJudge2.ObserveAchievementMotion();
         // 1. セーバー判定(2本構成なら両方)
         if (cameraImuJudgment != null)
             cameraImuJudgment.Tick(SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp),

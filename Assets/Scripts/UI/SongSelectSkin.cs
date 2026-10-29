@@ -709,7 +709,7 @@ public class SongSelectSkin : MonoBehaviour
         if (!built) return;
         if (!countdown.Tick(deltaSeconds, !ScreenTransition.IsBusy && !ctl.RushESecret.Transitioning
             && VisitorInputLive())) return;
-        if (GameSession.SongSelectOperated) ctl.StartGame();
+        if (GameSession.SongSelectOperated) ctl.StartGameAutomatically();
         if (!ctl.StartAccepted && !ScreenTransition.IsBusy) ctl.ReturnToTitle();
     }
     void AnimateDiscs()

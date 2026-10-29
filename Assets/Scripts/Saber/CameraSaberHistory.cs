@@ -7,14 +7,16 @@ public readonly struct CameraSaberSample
     public readonly Vector3 EndA;
     public readonly Vector3 EndB;
     public readonly CameraSaberColor Color;
+    public readonly float InputTurnDegrees;
     public Vector3 Center => (EndA + EndB) * .5f;
 
-    public CameraSaberSample(double receiveTime, Vector3 a, Vector3 b, CameraSaberColor color)
+    public CameraSaberSample(double receiveTime, Vector3 a, Vector3 b, CameraSaberColor color, float inputTurnDegrees = 0)
     {
         ReceiveTime = receiveTime;
         EndA = a;
         EndB = b;
         Color = color;
+        InputTurnDegrees = inputTurnDegrees;
     }
 }
 

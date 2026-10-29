@@ -149,7 +149,7 @@ public class SaberInputBridge : MonoBehaviour
         cameraSample = new CameraSaberSample(stamp,
             receivedA ?? (HasBlade ? WorldEndA : SaberTransform.position),
             receivedB ?? (HasBlade ? WorldEndB : SaberTransform.position),
-            stickIndex == 2 ? CameraSaberColor.Blue : CameraSaberColor.Red);
+            stickIndex == 2 ? CameraSaberColor.Blue : CameraSaberColor.Red, AppliedTurnDegrees);
         hasCameraSample = true;
     }
 

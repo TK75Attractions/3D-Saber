@@ -89,6 +89,17 @@ public sealed class SongSelectChartPreview : MonoBehaviour
             return Math.Max(Window.Start,Math.Clamp(projected,decoded-buffer,decoded+buffer));
         }
     }
+    // 実績用。DSPの推定時計でなく、実際に進んだ音声カーソルを返す。
+    public bool TryGetAudiblePosition(out int sourceGeneration, out double position)
+    {
+        sourceGeneration = generation;
+        position = source != null && ownedClip != null && ownedClip.frequency > 0
+            ? source.timeSamples / (double)ownedClip.frequency : 0;
+        return IsPlaying && State == PreviewState.Playing && source != null && ownedClip != null
+            && source.clip == ownedClip && source.isPlaying && !Muted && !source.mute && source.volume > 0
+            && !AudioListener.pause && AudioListener.volume > 0 && AudioSettings.dspTime >= scheduledDsp;
+    }
+
     public double SelectedAt { get; private set; }
     // 1秒の待ちを数え始める時刻。曲送りをため続けている間は HoldOff で後ろへずらす。
     public double SettledAt { get; private set; }

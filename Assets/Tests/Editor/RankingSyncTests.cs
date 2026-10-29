@@ -1233,7 +1233,7 @@ public class RankingSyncTests
     public void TheLongestRealisticSetOfAchievementsFitsInOneDatagramForEverySong()
     {
         var all = CatalogIds();
-        Assert.AreEqual(104, all.Count);
+        Assert.Greater(all.Count, RankingSyncLog.MaxAchievementsPerPlay, "一覧は全部は1回に入らない");
         Assert.AreEqual(80, RankingSyncLog.MaxAchievementsPerPlay, "版 3 の台どうしで同じ上限(v2.1 の台とも同期する)");
         Assert.Greater(RankingSyncLog.MaxAchievementsPerPlay, RankingSyncLog.RealisticAchievementsPerPlay);
         Assert.AreEqual(12, AchievementStore.MaxIdLength);
@@ -1284,7 +1284,7 @@ public class RankingSyncTests
     {
         var sent = SentIds();
         Assert.AreEqual(AchievementCatalog.ClearId, sent[0]);
-        Assert.AreEqual("ap", sent[1], "clear の次はいちばん難しいもの");
+        Assert.AreEqual(AchievementCatalog.All[AchievementCatalog.All.Count - 1].Id, sent[1], "clear の次はいちばん難しいもの(表示の順の最後)");
         RankingSyncLog.ResetWarningsForTest();
         LogAssert.Expect(LogType.Warning, new System.Text.RegularExpressions.Regex("^RankingSync: この回の実績のうち"));
         var play = RankingSyncLog.NewPlay(NewId(), "製作中", "Normal", ScoreManager.MaxScore, "S+", 1f / 3f, PlayedAt,

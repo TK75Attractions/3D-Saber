@@ -22,7 +22,9 @@ public sealed class VoltageScoreBinding : IDisposable
     void Judgment(JudgmentTier tier, int awarded)
     {
         if (accepting != null && !accepting()) return;
+        int before = meter.Level, maximum = meter.MaxLevelReached;
         meter.ObserveCombo(score.Combo, tier == JudgmentTier.Bad || tier == JudgmentTier.Miss);
+        score.NotifyVoltageJudgment(before, meter.Level, maximum);
     }
 
     void LongCut(JudgmentTier tier, int awarded, bool wrongFlick) => Judgment(tier, awarded);

@@ -29,6 +29,8 @@ public sealed class AimDodgeMode : MonoBehaviour
     public double FirstTime => Session != null ? Session.FirstTime : double.NaN;
     public double LastTime => Session != null ? Session.LastTime : 0;
     public int TargetCount => Session != null ? Session.Targets.Count : 0;
+    public event System.Action<double, double, AimHandSample, AimHandSample> AchievementSamples;
+    public double LastAchievementSongTime { get; private set; } = double.NaN;
 
     ScoreManager score;
     SaberInputBridge redBridge, blueBridge;
@@ -66,6 +68,7 @@ public sealed class AimDodgeMode : MonoBehaviour
 
     public void Initialize(AimChartData chart, double offsetSeconds, double endSeconds, ScoreManager scoreManager, SaberCutJudge judgeA, SaberCutJudge judgeB)
     {
+        LastAchievementSongTime = double.NaN;
         Session = new AimDodgeSession(chart, offsetSeconds, endSeconds > 0 ? endSeconds : double.PositiveInfinity);
         score = scoreManager;
         if (score != null) score.BeginAimScoring(Session.Targets.Count);
@@ -109,6 +112,8 @@ public sealed class AimDodgeMode : MonoBehaviour
         SpawnViews(songTime);
         events.Clear();
         Session.Tick(judgeTime, red, blue, events);
+        LastAchievementSongTime = songTime;
+        AchievementSamples?.Invoke(songTime, judgeTime, red, blue);
         foreach (var e in events) Handle(e, judgeTime);
         UpdateTargets(songTime);
         UpdateSpikes(songTime);

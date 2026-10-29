@@ -14,7 +14,7 @@ using UnityEngine;
 // カメラの値で細い側から振ると、振りを横切る刃の幅がなくなるので、そのときだけ当たりを広げる(近くに別の時刻のノーツがなければ)。
 // 1回の振りで切れるのは、基本は1つの時刻のノーツだけ(同時のノーツはまとめて)。振り抜けの勢いで後続のノーツを巻き込まない。
 // ただし曲時計があるときは、隣のマスへ順番に来るノーツを、その間隔どおりになぞれば同じ振りで続けて切れる(Sweeps)。
-public class SaberCutJudge : MonoBehaviour
+public partial class SaberCutJudge : MonoBehaviour
 {
     // 同時に切れるとみなすノーツの時刻の差(秒)。譜面の同時ノーツは時刻差0で、後続のノーツは0.06秒以上離れている。
     public const float SimultaneousSeconds = .025f;
@@ -598,7 +598,10 @@ public class SaberCutJudge : MonoBehaviour
         Vector2 motion = new Vector2(velocity.x, velocity.y);
         double? judged = clocked ? ScoreTime(note, p, motion) : Finite(p.bestSongTime) ? p.bestSongTime : (double?)null;
         Vector2? direction = clocked ? CutDirectionFor(note, p, motion) : (Vector2?)null;
-        bool accepted = note.CutAtSongTime(p.hitPoint, velocity, imuHint, CutterHandFor(note), judged, DirectionTolerance(), direction, feedbackSwingId);
+        bool sweep = Grouped(note) && Finite(strokeGroupTime)
+            && note.HitTime - strokeGroupTime > SimultaneousSeconds && Sweeps(note, p, velocity, imuHint);
+        var record = AchievementCutRecord(p, sweep);
+        bool accepted = note.CutAtSongTime(p.hitPoint, velocity, imuHint, CutterHandFor(note), judged, DirectionTolerance(), direction, feedbackSwingId, record);
         if (!accepted || !Grouped(note)) return;
         // この振りで切った時刻を進める(同時のノーツは最初の1つで決まる)。次のなぞりの間隔は、刃がこのノーツに届いた時刻から測る。
         if (double.IsNaN(strokeGroupTime) || note.HitTime - strokeGroupTime > SimultaneousSeconds)

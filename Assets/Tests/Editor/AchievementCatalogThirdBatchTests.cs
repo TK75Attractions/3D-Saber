@@ -57,8 +57,8 @@ public partial class AchievementCatalogTests
     {
         Assert.AreEqual(26, ThirdBatch.Length);
         CollectionAssert.AllItemsAreUnique(ThirdBatch);
-        var bronze = new[] { "balance", "xcut10", "souage", "trend", "hintkey", "urafutari", "pairrainbow",
-            "secretall", "rushe4", "twinstar", "meteor" };
+        // 2026-10-29 夜の段の見直しで、e_chords・kouyou5 は銅、hyakuren は金、xcut10・souage・rushe4・twinstar はなし。
+        var bronze = new[] { "balance", "trend", "hintkey", "urafutari", "pairrainbow", "secretall", "meteor", "e_chords", "kouyou5" };
         foreach (string id in ThirdBatch)
         {
             var d = AchievementCatalog.Find(id);
@@ -67,8 +67,7 @@ public partial class AchievementCatalogTests
             Assert.LessOrEqual(id.Length, 12);
             Assert.LessOrEqual(d.Text.Length, 20, id);
             Assert.LessOrEqual(d.Name.Length, 10, id);
-            var tier = id == "e_chords" ? AchievementTier.Gold
-                : id == "kouyou5" || id == "hyakuren" ? AchievementTier.Silver
+            var tier = id == "hyakuren" ? AchievementTier.Gold
                 : bronze.Contains(id) ? AchievementTier.Bronze : AchievementTier.None;
             Assert.AreEqual(tier, d.Tier, id);
         }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
@@ -123,7 +124,7 @@ public class AchievementTrackerTests
         for (int i = 0; i < 4; i++) AchievementStore.Merge("", NewId(), new[] { "clear" }, "B", at);
         void Numbered(AchievementContext c) => c.Score = 30005;   // 下3桁 005
         var fifth = AchievementTracker.Record(Ctx(NewId(), change: Numbered));
-        CollectionAssert.AreEqual(new[] { "clear", "twinprime", "firstever", "sebango" }, Ids(fifth), "5人目: 5 と 3 は素数、点の下3桁が 005");
+        CollectionAssert.AreEqual(InDisplayOrder("clear", "twinprime", "firstever", "sebango"), Ids(fifth), "5人目: 5 と 3 は素数、点の下3桁が 005");
         CollectionAssert.AreEqual(new[] { 5, 1, 1, 1 }, fifth.ConvertAll(u => u.Number));
         Assert.AreEqual(1, AchievementTracker.Record(Ctx(NewId(), change: Numbered)).Count, "6人目");
         var seventh = AchievementTracker.Record(Ctx(NewId(), change: Numbered));
@@ -131,6 +132,9 @@ public class AchievementTrackerTests
         CollectionAssert.AreEqual(new[] { 7, 2 }, seventh.ConvertAll(u => u.Number));
         Assert.AreEqual("clear", GameSession.FinalAchievements[0]);
     }
+
+    // 表示の順(段 → 見込み。段を見直すと並びが変わるので、カタログの順で並べてから比べる)。
+    static string[] InDisplayOrder(params string[] ids) => ids.OrderBy(id => AchievementCatalog.Find(id).Order).ToArray();
 
     // 初物・大収穫は、ほかを全部解除して番号が決まってから見る。同じ回をもう一度決めても数は増えない。
     [Test]
@@ -140,7 +144,7 @@ public class AchievementTrackerTests
         string run = NewId();
         int before = AchievementStore.WriteCountForTest;
         var unlocks = AchievementTracker.Record(Ctx(run, change: HardExcellent));
-        CollectionAssert.AreEqual(new[] { "clear", "hard", "combo50", "ranks", "harvest", "firstever", "combo100", "splus", "fc", "hardsplus", "ap" },
+        CollectionAssert.AreEqual(InDisplayOrder("clear", "hard", "combo50", "ranks", "harvest", "firstever", "combo100", "splus", "fc", "hardsplus", "hardfc", "ap"),
             Ids(unlocks), "初物・大収穫も表示の順(簡単なものから)の位置に");
         foreach (var unlock in unlocks) Assert.AreEqual(1, unlock.Number, unlock.Id);
         Assert.AreEqual(3, AchievementStore.WriteCountForTest - before);

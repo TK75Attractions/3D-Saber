@@ -74,6 +74,12 @@ public class ScoreManager : MonoBehaviour
     struct CrossCandidate { public bool valid; public SaberHand hand; public double hitTime, cutTime; public Vector3 point; }
     CrossCandidate crossCandidate;
 
+    // ボルテージ更新側が、更新の原因と前後の段をまとめて知らせる。購読順では推測しない。
+    public CuttableNote ScoringNote { get; private set; }
+    public event System.Action<CuttableNote, int, int, int, int> OnVoltageJudgment;
+    public void NotifyVoltageJudgment(int before, int after, int previousMaximum) =>
+        OnVoltageJudgment?.Invoke(ScoringNote, ScoringNote != null ? ScoringNote.CutsAchieved - 1 : -1, before, after, previousMaximum);
+
     public event System.Action<JudgmentTier, int> OnJudgment; // (tier, awarded score this judgment)
     // (tier, awarded, wasWrongFlick)。wasWrongFlick は向き違いの1段下げの印(HUD の ! FLICK)だったが、
     // 2026-10-22 から向きの合わない振りでは切らないので、いつも false。
@@ -267,8 +273,13 @@ public class ScoreManager : MonoBehaviour
         CutCount++;
         LastErrorValid = false;
         int before = Score;
-        AddHit(JudgmentTier.Perfect, CutWeight(note.IsGold));
-        OnLongCut?.Invoke(JudgmentTier.Perfect, Score - before, false);
+        ScoringNote = note;
+        try
+        {
+            AddHit(JudgmentTier.Perfect, CutWeight(note.IsGold));
+            OnLongCut?.Invoke(JudgmentTier.Perfect, Score - before, false);
+        }
+        finally { ScoringNote = null; }
     }
 
     private void HandleCut(CuttableNote note, Vector3 point, Vector3 velocity)
@@ -308,7 +319,9 @@ public class ScoreManager : MonoBehaviour
         }
 
         if (note.RequiredCutCount == 1) CheckCrossCut(note, tier, point);
-        RegisterHitWithContext(tier, weight);
+        ScoringNote = note;
+        try { RegisterHitWithContext(tier, weight); }
+        finally { ScoringNote = null; }
         note.NotifyJudgment(tier, point, velocity);
     }
 

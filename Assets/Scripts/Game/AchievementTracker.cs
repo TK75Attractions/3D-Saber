@@ -24,7 +24,7 @@ public readonly struct AchievementUnlock
 //   解除は clear → clear の番号を見る実績(キリ番など)と残り → ほかの実績の番号を見る実績(初物・大収穫)の順(保存は合わせて3回まで)。
 //   演奏中には出さず、番号つきで覚えておき、結果画面のランクの札が着地したとき(演出を飛ばしたらそのとき)に上に出す(AchievementToast)。
 //   結果画面に行かなかった回は出さない。
-public sealed class AchievementTracker : MonoBehaviour
+public sealed partial class AchievementTracker : MonoBehaviour
 {
     public const string GameScene = "Game", ResultScene = "Result", SongSelectScene = "SongSelect", TitleScene = "Title";
     // Test Runner の窓から回したテストでも作らない(RankingSync と同じ)。
@@ -39,6 +39,7 @@ public sealed class AchievementTracker : MonoBehaviour
     bool practiceRecorded;
     SongSelectController select;
     bool selectionTaken, calibrationReturn;
+    int selectionRevision = -1;
     // この選曲でジャケットを切って裏譜面を出した曲と、タイトルの開始ノーツ(切った手を覚える)。
     readonly HashSet<string> openedSecrets = new HashSet<string>(StringComparer.Ordinal);
     readonly Dictionary<string, int> hintsBeforeOpen = new Dictionary<string, int>(StringComparer.Ordinal);
@@ -155,7 +156,11 @@ public sealed class AchievementTracker : MonoBehaviour
         resultEnteredAt = Time.realtimeSinceStartupAsDouble;
         if (scene == TitleScene) AchievementRunInfo.BeginVisitor();
         // 判定調整から戻った選曲か(選曲の見た目 SongSelectSkin が1コマあとに読んで消す前に見る)。
-        if (scene == SongSelectScene) calibrationReturn = GameSession.CalibrationSelectionSeconds.HasValue;
+        if (scene == SongSelectScene)
+        {
+            calibrationReturn = GameSession.CalibrationSelectionSeconds.HasValue;
+            AchievementRunInfo.Selection.Begin(calibrationReturn);
+        }
     }
 
     void ResetSceneState()
@@ -168,6 +173,7 @@ public sealed class AchievementTracker : MonoBehaviour
         if (select != null) select.OnRushESecretChanged -= SecretChanged;
         select = null;
         selectionTaken = false;
+        selectionRevision = -1;
         openedSecrets.Clear();
         hintsBeforeOpen.Clear();
         countedTransition = null;
@@ -260,6 +266,7 @@ public sealed class AchievementTracker : MonoBehaviour
             if (select == null) return;
             select.OnRushESecretChanged += SecretChanged;
         }
+        ObserveSelection();
         var secret = select.RushESecret;
         if (secret.Unlocked && secret.Transitioning && !string.IsNullOrEmpty(secret.SelectedSong)) openedSecrets.Add(secret.SelectedSong);
         if (!select.StartAccepted) return;
@@ -269,6 +276,27 @@ public sealed class AchievementTracker : MonoBehaviour
         hintsBeforeOpen.TryGetValue(song, out int hints);
         AchievementRunInfo.SongChosen(skin != null && skin.IsReady ? skin.RemainingSeconds : (double?)null, calibrationReturn,
             openedSecrets.Contains(song), hints);
+    }
+
+    void ObserveSelection()
+    {
+        string song = select.SongIdAt(select.SelectedIndex);
+        if (selectionRevision != select.SelectionRevision)
+        {
+            selectionRevision = select.SelectionRevision;
+            AchievementRunInfo.Selection.Select(song, select.SelectionWasManual);
+        }
+        if (select.StartAccepted)
+        {
+            AchievementRunInfo.Selection.Sample(song, select.StartPreviewGeneration, select.StartPreviewPosition, select.StartPreviewAudible);
+            AchievementRunInfo.Selection.Finish(song, select.StartWasManual);
+            return;
+        }
+        var preview = select.ChartPreview;
+        int generation = 0;
+        double position = 0;
+        bool audible = preview != null && preview.TryGetAudiblePosition(out generation, out position);
+        AchievementRunInfo.Selection.Sample(preview != null ? preview.SongId : null, generation, position, audible);
     }
 
     // 最後のジャケット切断で演出が始まった時点の数を固定する(解除の演出ごと。ヒントなしで開いた曲を、別の曲へ移ってヒントを読んでから
@@ -383,6 +411,7 @@ public sealed class AchievementTracker : MonoBehaviour
             Namespace = ns,
             RunId = run,
             PracticedBefore = practiced,
+            Backpick = sameRun && AchievementRunInfo.Backpick,
             PracticePairBefore = sameRun && AchievementRunInfo.PracticePairBefore,
             PracticeAllFirstLoop = sameRun && AchievementRunInfo.PracticeAllFirstLoop,
             TitleUpward = sameRun && AchievementRunInfo.TitleUpward,

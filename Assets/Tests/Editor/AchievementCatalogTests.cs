@@ -5,19 +5,21 @@ using NUnit.Framework;
 // 実績の一覧(AchievementCatalog、2026-10-29 の 44 個と第2弾の 32 個・第3弾の 26 個)。並び・段・ID の形と、各実績の取れる/取れないの境目。
 public partial class AchievementCatalogTests
 {
-    // 表示の順(2026-10-29 v2.2 で並べ直した。簡単なもの → 難しいもの = 段の低い順、同じ段の中は見込みの高い順。clear が最初)。
+    // 表示の順(2026-10-29 v2.2 で並べ直し、同日夜に段を見直して並べ直した。簡単なもの → 難しいもの = 段の低い順、同じ段の中は見込みの高い順。clear が最初)。
     static readonly string[] Order =
     {
-        "clear", "overtake", "wind", "vanish_four", "hard", "xcut", "finale", "practice", "octave", "firstcut", "goldcoin",
-        "cradle", "two23", "onearm", "silence", "fivekinds", "modulate", "eclipse", "shubu", "rainbow", "arrows", "goldpair",
-        "dark", "m_echo", "gohoubi", "aobakin", "morningecho", "dual", "manicbreath", "learnpair", "lefthand", "goldall", "regain",
-        "chorus", "combo50", "late", "reswing", "kiriage", "lunchtime", "quick", "school", "triple", "ranks", "meteor", "twinstar",
-        "center10", "storm", "twinprime", "secret_s", "balance", "comeback", "jackpot", "upside", "matador", "secret", "rushe4",
-        "souage", "harvest", "early", "top", "duet", "xcut10", "redblue", "buzzer", "lastsec", "pioneer", "pairrainbow", "trend",
-        "firstever", "hintkey", "ichiban", "lastpiece", "sottoji", "urafutari", "clock", "secretall", "restart", "streak20",
-        "combo100", "jihou", "duo150k", "kouyou5", "hyakuren", "splus", "kiriban", "zorome", "e_chords", "almostfc", "fc", "slidein",
-        "bullseye", "mirror", "senbon", "hardsplus", "streak50", "sebango", "ichien", "fubuki", "quiz", "shingan", "memory",
-        "datescore", "almostap", "ap",
+        "clear", "overtake", "wind", "hard", "xcut", "firstcut", "rainbow", "vanish_four", "practice", "fivekinds", "harvest",
+        "silence", "finale", "eclipse", "passed", "goldcoin", "cradle", "two23", "shubu", "goldpair", "gohoubi", "aobakin",
+        "lefthand", "regain", "modulate", "arrows", "dark", "m_echo", "dual", "combo50", "reswing", "octave", "onearm",
+        "manicbreath", "learnpair", "goldall", "storm", "morningecho", "chorus", "kiriage", "quick", "triple", "redblue",
+        "setsujoku", "twinstar", "jackpot", "upside", "matador", "comeback", "lunchtime", "school", "ranks", "secret_s",
+        "rushe4", "souage", "xcut10", "restart", "mochitsuki", "holdcut", "streak20", "kouyou5", "senbon", "pioneer", "nothorn",
+        "backpick", "pairrainbow", "firstever", "combo100", "e_chords", "ittoryu", "sweep3", "meteor", "balance", "top",
+        "lastsec", "duo150k", "bullseye", "mirror", "twinprime", "buzzer", "rising", "scenemaster", "secret", "duet", "seisho",
+        "hintkey", "trend", "sottoji", "ichiban", "lastpiece", "urafutari", "clock", "secretall", "jihou", "late", "center10",
+        "early", "splus", "almostfc", "hardsplus", "streak50", "memory", "slowstart", "kiriban", "zorome", "kaibun", "hyakuren",
+        "lastrainbow", "fc", "ichien", "slidein", "handperfect", "fubuki", "quiz", "shingan", "almostap", "hardfc", "sebango",
+        "ap", "datescore",
     };
 
     // 第2弾の32個(catalog2.md の表の順)。
@@ -66,10 +68,10 @@ public partial class AchievementCatalogTests
     }
 
     [Test]
-    public void TheListHas104AchievementsFromTheEasiestWithClearFirst()
+    public void TheListHas120AchievementsFromTheEasiestWithClearFirst()
     {
         var all = AchievementCatalog.All;
-        Assert.AreEqual(104, all.Count);
+        Assert.AreEqual(120, all.Count);
         var ids = new List<string>();
         for (int i = 0; i < all.Count; i++)
         {
@@ -148,8 +150,10 @@ public partial class AchievementCatalogTests
         }
         Assert.IsTrue(Has(Ctx(c => { Song(c, RushESecretState.BenkyouQuiz); c.Stats = Run(JudgmentTier.Perfect, JudgmentTier.Miss); }), "quiz"),
             "試験用紙の外の MISS は問わない");
-        Assert.IsTrue(Has(Ctx(c => { Song(c, RushESecretState.BenkyouQuiz); c.Stats = Run(JudgmentTier.Bad, JudgmentTier.Perfect); }), "quiz"),
-            "BAD はよい");
+        Assert.IsTrue(Has(Ctx(c => { Song(c, RushESecretState.BenkyouQuiz); c.Stats = Run(JudgmentTier.Good, JudgmentTier.Perfect); }), "quiz"),
+            "GOOD 以上が正解");
+        Assert.IsFalse(Has(Ctx(c => { Song(c, RushESecretState.BenkyouQuiz); c.Stats = Run(JudgmentTier.Bad, JudgmentTier.Perfect); }), "quiz"),
+            "合格点と同じく BAD は正解でない");
         Assert.IsFalse(Has(Ctx(c => { Song(c, RushESecretState.BenkyouQuiz); c.Stats = Run(JudgmentTier.Miss, JudgmentTier.Perfect); }), "quiz"));
         Assert.IsFalse(Has(Ctx(c => { c.SongId = RushESecretState.BenkyouQuiz.SongId; c.Difficulty = "Hard"; c.Stats = Run(JudgmentTier.Perfect, JudgmentTier.Perfect); }), "quiz"),
             "Q のときだけ");
@@ -566,8 +570,25 @@ public partial class AchievementCatalogTests
         Assert.IsFalse(Has(Ctx(c => Fc(c, 10, 0, 0)), "almostap"), "AP は別の実績");
         Assert.IsFalse(Has(Ctx(c => { Fc(c, 9, 1, 0); c.Miss = 1; }), "almostap"), "MISS があるとフルコンボでない");
         Assert.IsFalse(Has(Ctx(c => { Fc(c, 9, 1, 0); c.AimMode = true; }), "almostap"), "D は対象外");
-        Assert.AreEqual(AchievementTier.Gold, AchievementCatalog.Find("almostfc").Tier);
-        Assert.AreEqual(AchievementTier.Rainbow, AchievementCatalog.Find("almostap").Tier);
+        // 2026-10-29 夜の段の見直し: 惜しいフルコンは銀(FC より取りやすい)、惜しい AP は金。
+        Assert.AreEqual(AchievementTier.Silver, AchievementCatalog.Find("almostfc").Tier);
+        Assert.AreEqual(AchievementTier.Gold, AchievementCatalog.Find("almostap").Tier);
+    }
+
+    // D(照準の裏譜面)は点が 1000 点刻みで、命中はどれも PERFECT。点の数字や FC・AP の実績が簡単に取れてしまうので外す(2026-10-29 段の見直し)。
+    [Test]
+    public void AimModeRunsDoNotGetScoreDigitOrFullComboAchievements()
+    {
+        void Aim(AchievementContext c, int score) { c.AimMode = true; c.Hit = 50; c.Perfect = 50; c.Great = c.Good = c.Bad = c.Miss = 0; c.AimDamage = 0; c.Score = score; }
+        void Normal(AchievementContext c, int score) { c.Hit = 50; c.Perfect = 50; c.Great = c.Good = c.Bad = c.Miss = 0; c.Score = score; }
+        Assert.IsTrue(Has(Ctx(c => Normal(c, 85000)), "zorome"), "ふつうの譜面の 85,000 点は下3桁 000 のゾロ目");
+        Assert.IsFalse(Has(Ctx(c => Aim(c, 85000)), "zorome"), "D の 1000 点刻みは必ずゾロ目になるので外す");
+        Assert.IsTrue(Has(Ctx(c => Normal(c, 80050)), "slidein"));
+        Assert.IsFalse(Has(Ctx(c => Aim(c, 80000)), "slidein"));
+        Assert.IsTrue(Has(Ctx(c => Normal(c, 100000)), "fc"));
+        Assert.IsTrue(Has(Ctx(c => Normal(c, 100000)), "ap"));
+        Assert.IsFalse(Has(Ctx(c => Aim(c, 100000)), "fc"), "D の全弾命中は FC ではない");
+        Assert.IsFalse(Has(Ctx(c => Aim(c, 100000)), "ap"), "D の全弾命中は AP ではない");
     }
 
     [Test]

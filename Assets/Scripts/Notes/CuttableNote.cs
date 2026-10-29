@@ -92,6 +92,7 @@ public partial class CuttableNote : MonoBehaviour
         MinimumCutSpeed = 0; RequireJudgeableOnCut = DirectionVisualOnly = false;
         LastCutterHand = SaberHand.Any;
         LastCutSongTime = null;
+        LastCutRecord = default;
         IsHeat = false;
         ResetQuiz();
         firstPiece = secondPiece = null;
@@ -140,6 +141,7 @@ public partial class CuttableNote : MonoBehaviour
             || songTime + OrderTimeEpsilon >= CutOrderStartTime(cutterHand);
     // 採点に使う曲時計。IMU+Camera照合ではSwingの時刻、従来判定では刃がいちばん近づいた時刻。時計がなければnull。
     public double? LastCutSongTime { get; private set; }
+    public SaberCutRecord LastCutRecord { get; private set; }
     // 金ノーツ：切ったときに豪華音を鳴らすため NoteSpawner が立てる。
     public bool IsGold { get; set; }
     // 熱交換の印。設定の無い譜面では判定・表示に影響しない。
@@ -272,10 +274,10 @@ public partial class CuttableNote : MonoBehaviour
 
     // 時間窓・位置を外側で確認済みのCamera判定専用。向きの扱いは本編の判定と同じ(合わなければ切らない)。
     public bool TryCutWithCameraTiming(Vector3 hitPoint, Vector3 cutVelocity, SaberHand cutterHand,
-        double songTime, float directionTolerance, ulong swingId = 0)
+        double songTime, float directionTolerance, ulong swingId = 0, SaberCutRecord? record = null)
     {
         if (!CameraSaberHistory.Finite(songTime)) return false;
-        return CutCore(hitPoint, cutVelocity, CutDirection.None, cutterHand, songTime, directionTolerance, swingId: swingId);
+        return CutCore(hitPoint, cutVelocity, CutDirection.None, cutterHand, songTime, directionTolerance, swingId: swingId, record: record);
     }
 
     // 従来のセーバー判定用。judgedSongTime があれば、その曲時計(刃がノーツを通り過ぎた・いちばん近づいた時刻)で採点する。
@@ -283,15 +285,15 @@ public partial class CuttableNote : MonoBehaviour
     // judgedDirection は向きの判定だけに使う動き(省略時は cutVelocity)。切り口や破片は cutVelocity のまま。
     // 切れたかどうかを返す。
     public bool CutAtSongTime(Vector3 hitPoint, Vector3 cutVelocity, CutDirection imuHint, SaberHand cutterHand,
-        double? judgedSongTime, float directionTolerance = .866f, Vector2? judgedDirection = null, ulong swingId = 0)
+        double? judgedSongTime, float directionTolerance = .866f, Vector2? judgedDirection = null, ulong swingId = 0, SaberCutRecord? record = null)
     {
         if (judgedSongTime.HasValue && !CameraSaberHistory.Finite(judgedSongTime.Value)) judgedSongTime = null;
-        return CutCore(hitPoint, cutVelocity, imuHint, cutterHand, null, directionTolerance, judgedSongTime, judgedDirection, swingId);
+        return CutCore(hitPoint, cutVelocity, imuHint, cutterHand, null, directionTolerance, judgedSongTime, judgedDirection, swingId, record);
     }
 
     bool CutCore(Vector3 hitPoint, Vector3 cutVelocity, CutDirection imuHint, SaberHand cutterHand,
         double? swingSongTime, float directionTolerance, double? judgedSongTime = null, Vector2? judgedDirection = null,
-        ulong swingId = 0)
+        ulong swingId = 0, SaberCutRecord? record = null)
     {
         // Q の飾りのノーツは刃が通っても何も起きない(割れない・音・光・点・ミスなし。録画の自動切りもここで止まる)。
         if (IsDecoy || !isActiveAndEnabled || IsCut || IsMissed || IsFinalized) return false;
@@ -325,6 +327,8 @@ public partial class CuttableNote : MonoBehaviour
 
         LastCutterHand = cutterHand;
         LastCutSongTime = swingSongTime ?? judgedSongTime;
+        LastCutRecord = record ?? new SaberCutRecord { Frame = Time.frameCount, Sample = -1,
+            ObservedAt = Time.realtimeSinceStartupAsDouble, StrokeId = swingId };
         RemainingCuts--;
         lastHitPoint = hitPoint;
         lastVelocity = cutVelocity;
