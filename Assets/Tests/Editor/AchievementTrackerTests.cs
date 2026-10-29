@@ -75,11 +75,11 @@ public class AchievementTrackerTests
     {
         string run = NewId();
         var unlocks = AchievementTracker.Record(Ctx(run, change: Excellent));
-        CollectionAssert.AreEqual(new[] { "ap", "fc", "firstever", "splus", "combo100", "ranks", "combo50", "clear" }, Ids(unlocks),
-            "珍しい順、clear が最後(どれも2台で初めてなので初物も)");
+        CollectionAssert.AreEqual(new[] { "clear", "combo50", "ranks", "firstever", "combo100", "splus", "fc", "ap" }, Ids(unlocks),
+            "簡単なものから(段の低い順)、clear が最初(どれも2台で初めてなので初物も)");
         foreach (var unlock in unlocks) Assert.AreEqual(1, unlock.Number, unlock.Id + " の1人目");
-        Assert.AreEqual("clear", GameSession.FinalAchievements[0], "相手の台へ送る記録では clear を先に");
-        CollectionAssert.AreEquivalent(Ids(unlocks), GameSession.FinalAchievements);
+        CollectionAssert.AreEqual(new[] { "clear", "ap", "fc", "splus", "combo100", "firstever", "ranks", "combo50" }, GameSession.FinalAchievements,
+            "相手の台へ送る記録では clear を先に、あとは難しいものから(1通に収まらないときは取りやすいものから外れる)");
         CollectionAssert.AreEquivalent(Ids(unlocks), AchievementStore.UnlockedIn("", run));
 
         // 同じ回をもう一度決めても、数は増えず、同じ番号のまま
@@ -123,12 +123,12 @@ public class AchievementTrackerTests
         for (int i = 0; i < 4; i++) AchievementStore.Merge("", NewId(), new[] { "clear" }, "B", at);
         void Numbered(AchievementContext c) => c.Score = 30005;   // 下3桁 005
         var fifth = AchievementTracker.Record(Ctx(NewId(), change: Numbered));
-        CollectionAssert.AreEqual(new[] { "sebango", "firstever", "twinprime", "clear" }, Ids(fifth), "5人目: 5 と 3 は素数、点の下3桁が 005");
-        CollectionAssert.AreEqual(new[] { 1, 1, 1, 5 }, fifth.ConvertAll(u => u.Number));
+        CollectionAssert.AreEqual(new[] { "clear", "twinprime", "firstever", "sebango" }, Ids(fifth), "5人目: 5 と 3 は素数、点の下3桁が 005");
+        CollectionAssert.AreEqual(new[] { 5, 1, 1, 1 }, fifth.ConvertAll(u => u.Number));
         Assert.AreEqual(1, AchievementTracker.Record(Ctx(NewId(), change: Numbered)).Count, "6人目");
         var seventh = AchievementTracker.Record(Ctx(NewId(), change: Numbered));
-        CollectionAssert.AreEqual(new[] { "twinprime", "clear" }, Ids(seventh), "7人目(双子の素数の2人目なので初物は無い)");
-        CollectionAssert.AreEqual(new[] { 2, 7 }, seventh.ConvertAll(u => u.Number));
+        CollectionAssert.AreEqual(new[] { "clear", "twinprime" }, Ids(seventh), "7人目(双子の素数の2人目なので初物は無い)");
+        CollectionAssert.AreEqual(new[] { 7, 2 }, seventh.ConvertAll(u => u.Number));
         Assert.AreEqual("clear", GameSession.FinalAchievements[0]);
     }
 
@@ -140,8 +140,8 @@ public class AchievementTrackerTests
         string run = NewId();
         int before = AchievementStore.WriteCountForTest;
         var unlocks = AchievementTracker.Record(Ctx(run, change: HardExcellent));
-        CollectionAssert.AreEqual(new[] { "ap", "hardsplus", "fc", "firstever", "splus", "combo100", "harvest", "ranks", "hard", "combo50", "clear" },
-            Ids(unlocks), "初物・大収穫も珍しい順の位置に");
+        CollectionAssert.AreEqual(new[] { "clear", "hard", "combo50", "ranks", "harvest", "firstever", "combo100", "splus", "fc", "hardsplus", "ap" },
+            Ids(unlocks), "初物・大収穫も表示の順(簡単なものから)の位置に");
         foreach (var unlock in unlocks) Assert.AreEqual(1, unlock.Number, unlock.Id);
         Assert.AreEqual(3, AchievementStore.WriteCountForTest - before);
         Assert.AreEqual("clear", GameSession.FinalAchievements[0]);
@@ -187,9 +187,9 @@ public class AchievementTrackerTests
         for (int i = 0; i < AchievementCatalog.KiribanEvery - 2; i++) AchievementStore.Merge("", NewId(), new[] { "clear" }, "B", at);
         Assert.AreEqual(1, AchievementTracker.Record(Ctx(NewId())).Count, "99人目はキリ番ではない");
         var hundredth = AchievementTracker.Record(Ctx(NewId()));
-        CollectionAssert.AreEqual(new[] { "kiriban", "clear" }, Ids(hundredth));
-        Assert.AreEqual(AchievementCatalog.KiribanEvery, hundredth[1].Number);
-        Assert.AreEqual(1, hundredth[0].Number, "キリ番の1人目");
+        CollectionAssert.AreEqual(new[] { "clear", "kiriban" }, Ids(hundredth));
+        Assert.AreEqual(AchievementCatalog.KiribanEvery, hundredth[0].Number);
+        Assert.AreEqual(1, hundredth[1].Number, "キリ番の1人目");
         Assert.AreEqual(1, AchievementTracker.Record(Ctx(NewId())).Count, "101人目");
     }
 
@@ -434,6 +434,7 @@ public class AchievementTrackerTests
         Assert.IsTrue(AchievementRunInfo.PracticePending);
         AchievementRunInfo.BeginRun("first-song");
         Assert.IsTrue(AchievementRunInfo.ForRun("first-song", out _, out bool practiced) && practiced, "練習のあとの最初の1曲");
+        AchievementRunInfo.RunRecorded("first-song");
         AchievementRunInfo.BeginRun("second-song");
         AchievementRunInfo.ForRun("second-song", out _, out bool again);
         Assert.IsFalse(again, "2曲目には付けない");

@@ -2,20 +2,22 @@ using System;
 using System.Collections.Generic;
 using NUnit.Framework;
 
-// 実績の一覧(AchievementCatalog、2026-10-29 の 44 個と第2弾の 32 個)。並び・ID の形と、各実績の取れる/取れないの境目。
-public class AchievementCatalogTests
+// 実績の一覧(AchievementCatalog、2026-10-29 の 44 個と第2弾の 32 個・第3弾の 26 個)。並び・段・ID の形と、各実績の取れる/取れないの境目。
+public partial class AchievementCatalogTests
 {
-    // catalog.md の表の順に、catalog2.md の32個を見積もりの珍しさで差し込んだ順(表示の順=珍しい順、clear が最後)。
+    // 表示の順(2026-10-29 v2.2 で並べ直した。簡単なもの → 難しいもの = 段の低い順、同じ段の中は見込みの高い順。clear が最初)。
     static readonly string[] Order =
     {
-        "datescore", "ap", "senbon", "quiz", "bullseye", "fubuki", "mirror", "shingan", "memory", "matador",
-        "ichien", "restart", "upside", "clock", "sebango", "onearm", "vanish_four", "lastpiece", "sottoji", "triple",
-        "slidein", "hardsplus", "secret_s", "wind", "overtake", "dark", "ichiban", "modulate", "eclipse", "streak50",
-        "fc", "kiriban", "zorome", "jihou", "duo150k", "firstever", "two23", "splus", "combo100", "redblue",
-        "lastsec", "buzzer", "harvest", "early", "octave", "streak20", "top", "secret", "pioneer", "jackpot",
-        "comeback", "duet", "twinprime", "storm", "center10", "school", "late", "reswing", "lunchtime", "ranks",
-        "hard", "chorus", "quick", "lefthand", "combo50", "goldall", "dual", "arrows", "silence", "fivekinds",
-        "rainbow", "firstcut", "finale", "xcut", "practice", "clear",
+        "clear", "overtake", "wind", "vanish_four", "hard", "xcut", "finale", "practice", "octave", "firstcut", "goldcoin",
+        "cradle", "two23", "onearm", "silence", "fivekinds", "modulate", "eclipse", "shubu", "rainbow", "arrows", "goldpair",
+        "dark", "m_echo", "gohoubi", "aobakin", "morningecho", "dual", "manicbreath", "learnpair", "lefthand", "goldall", "regain",
+        "chorus", "combo50", "late", "reswing", "kiriage", "lunchtime", "quick", "school", "triple", "ranks", "meteor", "twinstar",
+        "center10", "storm", "twinprime", "secret_s", "balance", "comeback", "jackpot", "upside", "matador", "secret", "rushe4",
+        "souage", "harvest", "early", "top", "duet", "xcut10", "redblue", "buzzer", "lastsec", "pioneer", "pairrainbow", "trend",
+        "firstever", "hintkey", "ichiban", "lastpiece", "sottoji", "urafutari", "clock", "secretall", "restart", "streak20",
+        "combo100", "jihou", "duo150k", "kouyou5", "hyakuren", "splus", "kiriban", "zorome", "e_chords", "almostfc", "fc", "slidein",
+        "bullseye", "mirror", "senbon", "hardsplus", "streak50", "sebango", "ichien", "fubuki", "quiz", "shingan", "memory",
+        "datescore", "almostap", "ap",
     };
 
     // 第2弾の32個(catalog2.md の表の順)。
@@ -64,10 +66,10 @@ public class AchievementCatalogTests
     }
 
     [Test]
-    public void TheListHas76AchievementsInTheCatalogOrderWithClearLast()
+    public void TheListHas104AchievementsFromTheEasiestWithClearFirst()
     {
         var all = AchievementCatalog.All;
-        Assert.AreEqual(76, all.Count);
+        Assert.AreEqual(104, all.Count);
         var ids = new List<string>();
         for (int i = 0; i < all.Count; i++)
         {
@@ -83,11 +85,13 @@ public class AchievementCatalogTests
         CollectionAssert.AreEqual(Order, ids);
         CollectionAssert.AllItemsAreUnique(ids);
         CollectionAssert.IsSubsetOf(SecondBatch, ids);
-        Assert.AreEqual(AchievementCatalog.ClearId, ids[ids.Count - 1]);
+        Assert.AreEqual(AchievementCatalog.ClearId, ids[0], "完走がいちばん簡単(最初に出る)");
+        for (int i = 1; i < all.Count; i++)
+            Assert.LessOrEqual((int)all[i - 1].Tier, (int)all[i].Tier, all[i - 1].Id + " → " + all[i].Id + ": 段の低い順(簡単なものから)");
+        Assert.AreEqual(AchievementTier.None, all[0].Tier);
+        Assert.AreEqual(AchievementTier.Rainbow, all[all.Count - 1].Tier);
         Assert.IsNull(AchievementCatalog.Find("nothing"));
         Assert.IsNull(AchievementCatalog.Find(null));
-        // 第2弾の32個は catalog2.md の表の順(見積もりの順)のまま差し込んだ
-        CollectionAssert.AreEqual(SecondBatch, ids.FindAll(id => Array.IndexOf(SecondBatch, id) >= 0));
         foreach (string id in AchievementCatalog.ClearNumberIds) Assert.NotNull(AchievementCatalog.Find(id), id);
         foreach (string id in AchievementCatalog.TallyIds) Assert.NotNull(AchievementCatalog.Find(id), id);
     }
@@ -106,7 +110,8 @@ public class AchievementCatalogTests
     {
         var earned = AchievementCatalog.Earned(Ctx(c => { c.Score = 95123; c.MaxCombo = 120; c.Miss = 0; c.Perfect = 10; c.Great = c.Good = 0; }));
         for (int i = 1; i < earned.Count; i++) Assert.Less(earned[i - 1].Order, earned[i].Order);
-        CollectionAssert.AreEqual(new[] { "ap", "fc", "splus", "combo100", "ranks", "combo50", "clear" }, earned.ConvertAll(d => d.Id));
+        CollectionAssert.AreEqual(new[] { "clear", "combo50", "ranks", "combo100", "splus", "fc", "ap" }, earned.ConvertAll(d => d.Id),
+            "簡単なものから(段の低い順)");
     }
 
     [Test]
@@ -543,10 +548,33 @@ public class AchievementCatalogTests
         Assert.IsFalse(Has(Ctx(c => { c.StartedLocal = lateNight; c.EndedLocal = lateNight.AddMinutes(3); c.Score = 61029; }), "datescore"));
     }
 
+    // 1ミスでフルコンボ・1つで AP を逃した人への称号(2026-10-29 ユーザー「1ミスでフルコンとかAP逃した人への称号も出しといて」)。
     [Test]
-    public void IchienIsExactlyThreeHundredCuts()
+    public void OneAwayFromFullComboOrAllPerfectGetsItsOwnTitle()
     {
-        Assert.AreEqual(300, AchievementCatalog.PricePerPlay);
+        Assert.IsTrue(Has(Ctx(c => { c.Miss = 1; c.Bad = 0; }), "almostfc"), "MISS が1つ");
+        Assert.IsTrue(Has(Ctx(c => { c.Miss = 0; c.Bad = 1; }), "almostfc"), "BAD が1つ");
+        Assert.IsFalse(Has(Ctx(c => { c.Miss = 2; c.Bad = 0; }), "almostfc"));
+        Assert.IsFalse(Has(Ctx(c => { c.Miss = 1; c.Bad = 1; }), "almostfc"));
+        Assert.IsFalse(Has(Ctx(c => { c.Miss = 0; c.Bad = 0; }), "almostfc"), "フルコンボは別の実績");
+        Assert.IsFalse(Has(Ctx(c => { c.Miss = 1; c.Hit = 0; c.Perfect = c.Great = c.Good = 0; }), "almostfc"), "1つも当てていない");
+        Assert.IsFalse(Has(Ctx(c => { c.Miss = 1; c.AimMode = true; }), "almostfc"), "D は対象外");
+        void Fc(AchievementContext c, int perfect, int great, int good) { c.Miss = c.Bad = 0; c.Hit = 10; c.Perfect = perfect; c.Great = great; c.Good = good; }
+        Assert.IsTrue(Has(Ctx(c => Fc(c, 9, 1, 0)), "almostap"), "GREAT が1つ");
+        Assert.IsTrue(Has(Ctx(c => Fc(c, 9, 0, 1)), "almostap"), "GOOD が1つ");
+        Assert.IsFalse(Has(Ctx(c => Fc(c, 8, 2, 0)), "almostap"));
+        Assert.IsFalse(Has(Ctx(c => Fc(c, 10, 0, 0)), "almostap"), "AP は別の実績");
+        Assert.IsFalse(Has(Ctx(c => { Fc(c, 9, 1, 0); c.Miss = 1; }), "almostap"), "MISS があるとフルコンボでない");
+        Assert.IsFalse(Has(Ctx(c => { Fc(c, 9, 1, 0); c.AimMode = true; }), "almostap"), "D は対象外");
+        Assert.AreEqual(AchievementTier.Gold, AchievementCatalog.Find("almostfc").Tier);
+        Assert.AreEqual(AchievementTier.Rainbow, AchievementCatalog.Find("almostap").Tier);
+    }
+
+    [Test]
+    public void IchienIsExactlyTwoHundredCuts()
+    {
+        Assert.AreEqual(200, AchievementCatalog.PricePerPlay, "1プレイ200円(2026-10-29 に 300円から変わった)");
+        StringAssert.StartsWith("200円ぶん", AchievementCatalog.Find("ichien").Text);
         Assert.IsTrue(Has(Ctx(c => c.CutCount = AchievementCatalog.PricePerPlay), "ichien"));
         Assert.IsFalse(Has(Ctx(c => c.CutCount = AchievementCatalog.PricePerPlay - 1), "ichien"));
         Assert.IsFalse(Has(Ctx(c => c.CutCount = AchievementCatalog.PricePerPlay + 1), "ichien"));

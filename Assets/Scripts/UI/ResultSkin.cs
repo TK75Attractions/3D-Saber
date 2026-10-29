@@ -324,6 +324,19 @@ public class ResultSkin : MonoBehaviour
             t.horizontalOverflow = HorizontalWrapMode.Overflow;
             t.verticalOverflow = VerticalWrapMode.Overflow;
         }
+        // 長い曲名は必要な分だけ左へ寄せ、実績カードの光の外側にも余白を残す。
+        // 結果画面と通知の CanvasScaler が異なるので、画面上の境界から親の座標へ戻す。
+        const float TitleGap = 16f;
+        Canvas.ForceUpdateCanvases();
+        LayoutRebuilder.ForceRebuildLayoutImmediate(rt);
+        float toastScale = Mathf.Min(Screen.width / AchievementToast.ReferenceWidth, Screen.height / AchievementToast.ReferenceHeight);
+        float rightLimit = Screen.width
+            - (AchievementToast.RightMargin + AchievementToast.CardWidth + AchievementCardFrame.MaxGlowWidth + TitleGap) * toastScale;
+        var canvas = parent.GetComponentInParent<Canvas>();
+        Camera camera = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
+        if (RectTransformUtility.ScreenPointToLocalPointInRectangle((RectTransform)parent,
+            new Vector2(rightLimit, Screen.height), camera, out var edge))
+            rt.anchoredPosition = new Vector2(Mathf.Min(0f, edge.x - rt.rect.width * .5f), rt.anchoredPosition.y);
         Reveal(row, DelayTitle, 0.5f, FromBelow);
     }
 

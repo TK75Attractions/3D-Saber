@@ -62,6 +62,8 @@ public sealed class RankingSyncLog
     public const string PreferenceKey = "RankingSync.Log.v1";
     // 通信の版(2026-10-29 に 2: ns・ach を足した。同じ日に 3: 実績の第2弾で数が76個・上限80になった)。目印の数字と JSON の v。
     // ほかの版のメッセージは合流しない(v2.0 と v2.1 の台をまぜると、知らせが出て同期しない)。
+    // 実績の第3弾(v2.2、102個)では形を変えない(版 3 のまま。新しい ID も今の形で送れ、v2.1 の台も受け取れる。台A が v2.1 のままでも
+    // 順位と実績の数の同期は続き、新しい26個は v2.2 の台でだけ取れる。2026-10-29 9a の知らせ: 台A は版 3 で動いている)。
     public const string PrefixStem = "BTSRANK";
     public const string Prefix = "BTSRANK3 ";
     public const int Version = 3;
@@ -80,9 +82,12 @@ public sealed class RankingSyncLog
     public const int MaxHeard = 8;
     public const int MinIdLength = 8, MaxIdLength = 64, MaxSongLength = 64, MaxDifficultyLength = 16, MaxRankLength = 8;
     public const int MaxStationLength = 16;
-    // 1回の記録に入れる実績の数の上限(実績は全部で76個。2026-10-29 の第2弾で 48 から上げた)。一覧の76個を全部入れても、
-    // どの曲の回(32 字の回の ID・台名 16 字まで)も1通に入る(RankingSyncTests で全曲を確かめる。1回分が束に入る大きさは MaxPlayBytes)。
+    // 1回の記録に入れる実績の数の上限(読む側の形の決まり。2026-10-29 の第2弾で 48 → 80。版 3 の台どうしで同じでないといけないので
+    // 第3弾でも 80)。一覧は102個で、全部は1回に入らない(数でも1通の大きさ MaxPlayBytes でも)。1回の演奏で取れるのは、曲ごとの実績が
+    // 重ならないので多くても数十個で、長い ID の RealisticAchievementsPerPlay 個までは、どの曲の回(32 字の回の ID・台名 16 字まで)も
+    // 1通に入る(RankingSyncTests で確かめる)。それを超えた分は後ろ(送る並びは clear → 難しい → 簡単なので、いちばん取りやすいもの)から外す。
     public const int MaxAchievementsPerPlay = 80;
+    public const int RealisticAchievementsPerPlay = 60;
     public const long MaxUnixMilliseconds = 32503680000000; // 3000-01-01(この台の時刻へ直しても桁があふれない範囲)
 
     static readonly UTF8Encoding Utf8 = new UTF8Encoding(false);

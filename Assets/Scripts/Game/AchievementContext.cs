@@ -24,6 +24,12 @@ public sealed class AchievementContext
     public string Station = "", Namespace = "", RunId = "";
     // 同じ来場者の練習を最後まで終えたあとの、最初の1曲か。
     public bool PracticedBefore;
+    // 練習の矢印とロングが両方 ok・総仕上げが最初の型の1周以内だったか。
+    public bool PracticePairBefore, PracticeAllFirstLoop;
+    // タイトルの開始ノーツを斬り上げたか。TitleHand と同じ寿命。
+    public bool TitleUpward;
+    // この選曲で、その曲の裏を開く最後の切断より前に出したヒントの数。
+    public int HintsBeforeOpen;
     // 選曲にかかった秒(残り時間の数え方)。判定調整から戻った選曲・分からないときは null(時間切れの自動開始は 100 秒)。
     public double? SelectionSeconds;
     // このモードで、今日(台の現地の日付)の clear の解除の数(2台合わせて、この回の分を入れる前)。分からなければ -1。
@@ -117,6 +123,56 @@ public sealed class AchievementContext
             else if (!played.Contains(song)) return false;
         }
         return listed;
+    }
+
+    // この台・このモードの直前の回が、指定の回数だけ同じ曲。時刻が同じなら回 ID の順。
+    public bool PreviousSameSong(int previousCount, double seconds)
+    {
+        if (previousCount < 1 || Plays == null || string.IsNullOrEmpty(SongId)
+            || string.IsNullOrEmpty(Station) || string.IsNullOrEmpty(RunId) || EndedUnixMs <= 0) return false;
+        var previous = new List<RankingPlay>();
+        foreach (var play in Plays)
+        {
+            if (play == null || string.IsNullOrEmpty(play.id) || play.id == RunId || play.at <= 0
+                || (play.ns ?? "") != (Namespace ?? "") || play.st != Station) continue;
+            if (play.at > EndedUnixMs || (play.at == EndedUnixMs && string.CompareOrdinal(play.id, RunId) >= 0)) continue;
+            previous.Add(play);
+        }
+        previous.Sort((a, b) =>
+        {
+            int order = b.at.CompareTo(a.at);
+            return order != 0 ? order : string.CompareOrdinal(b.id, a.id);
+        });
+        long window = (long)Math.Round(seconds * 1000.0);
+        int count = 0;
+        var ids = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var play in previous)
+        {
+            if (!ids.Add(play.id)) continue;
+            if (play.song != SongId || EndedUnixMs - play.at > window) return false;
+            if (++count == previousCount) return true;
+        }
+        return false;
+    }
+
+    // 最後のピースの裏譜面版。曲と難易度が表に載っている組だけを数える。
+    public bool CompletesTodaysSecrets()
+    {
+        var current = RushESecretState.ForDifficulty(Difficulty);
+        if (current == null || !Is(current) || Plays == null) return false;
+        string today = EndedLocal.ToString("yyyy/MM/dd", CultureInfo.InvariantCulture);
+        var played = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var play in Plays)
+        {
+            if (play == null || play.id == RunId || (play.ns ?? "") != (Namespace ?? "") || play.date != today) continue;
+            var chart = RushESecretState.For(play.song);
+            if (chart != null && string.Equals(chart.Difficulty, play.diff, StringComparison.OrdinalIgnoreCase))
+                played.Add(chart.Difficulty);
+        }
+        if (played.Contains(current.Difficulty)) return false;
+        foreach (var chart in RushESecretState.Charts)
+            if (chart != current && !played.Contains(chart.Difficulty)) return false;
+        return true;
     }
 
     // 赤・青(金は除く)がどちらも min 個以上で、色ごとに PERFECT の数 ÷ その色の数 ≥ rate。

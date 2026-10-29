@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
@@ -14,8 +15,8 @@ using UnityEngine.UI;
 using Object = UnityEngine.Object;
 
 // 実績(2026-10-29)を本物の結果画面と本編で確かめる。
-// ・結果画面: 上のまん中に出て、一度に2枚まで、1枚ずつ実時間5秒以内に消え、操作を止めない。曲の終わり(GameSession.RunRecording)で1回だけ決め、
-//   演奏の画面では出さず、結果画面のランクの札が着地したとき(演出を飛ばしたらそのとき)に出す。運営モードで始めた回は本番の数に入る。
+// ・結果画面: 右上に出て、一度に2枚まで、1枚ずつ実時間5秒以内に消え、操作を止めない。曲名と判定の表に重ならず、段の順と鈴の鍵を確かめる。
+//   曲の終わり(GameSession.RunRecording)で1回だけ決め、演奏の画面では出さず、ランクの札の着地か演出を飛ばしたときに出す。運営モードの回は本番の数に入る。
 // ・本編: 本物の Game 場面でアンダルシアの Easy の出だし(同時の青と赤の組が2つ)を届く時刻ちょうどの振りで切り、初太刀・X 斬り・連続 PERFECT・
 //   曲を始めた/終えた時刻を記録が正しく数える。
 // ChartMarkPlayTests と同じく、照準の受信はテスト専用の空いたポート、入力の設定はテスト用の写し。作った常駐物はテストの後で消し、幕の終わりを待つ。
@@ -98,6 +99,7 @@ public class AchievementToastPlayTests
         PlayerPrefs.Save();
         AchievementStore.UseKeyForTest(savedKey);
         AchievementRunInfo.Clear();
+        DisplaySettings.ResetReducedEffectsCacheForTest();
         foreach (var entry in session) entry.Key.SetValue(null, entry.Value);
         session.Clear();
         GameSession.SetPlayerSettingsForTest(false);
@@ -143,14 +145,18 @@ public class AchievementToastPlayTests
     }
 
     [UnityTest]
-    public IEnumerator CardsAppearAtTheTopCenterTwoAtATimeAndEachLeavesWithinFiveSeconds()
+    public IEnumerator CardsAppearAtTheTopRightTwoAtATimeAndEachLeavesWithinFiveSeconds()
     {
+        // 入りと消えの動きを確かめるので、保存してある F3(演出を下げる)の設定に左右されないようにする。
+        DisplaySettings.SetReducedEffectsForTest(false);
         yield return LoadResult();
         var reveal = Object.FindFirstObjectByType<ResultReveal>();
         reveal.enabled = false;
         reveal.Tick(999);
         int chimes = MenuSfx.PlayCount;
-        AchievementToast.Show(Unlocks(("fc", 3), ("combo50", 12), ("clear", 152)));
+        var unlocks = new List<AchievementUnlock>(Unlocks(("fc", 3), ("combo50", 12), ("clear", 152)));
+        var expected = unlocks.OrderBy(u => u.Tier).ToArray();
+        AchievementToast.Show(unlocks);
         var host = AchievementToast.Instance;
         Assert.NotNull(host);
         var canvas = host.GetComponent<Canvas>();
@@ -164,6 +170,8 @@ public class AchievementToastPlayTests
         var lastSeenAt = new Dictionary<string, double>();
         var goneAt = new Dictionary<string, double>();
         var previous = new HashSet<string>();
+        var order = new List<string>();
+        var settled = new HashSet<string>();
         int maxVisible = 0;
         double deadline = Time.realtimeSinceStartupAsDouble + 20;
         while (AchievementToast.Instance != null && Time.realtimeSinceStartupAsDouble < deadline)
@@ -174,16 +182,31 @@ public class AchievementToastPlayTests
             {
                 string body = BodyOf(card);
                 now.Add(body);
-                if (!shownAt.ContainsKey(body)) shownAt[body] = time;
+                if (!shownAt.ContainsKey(body)) { shownAt[body] = time; order.Add(body); }
                 lastSeenAt[body] = time;
-                Assert.AreEqual(new Vector2(.5f, 1f), card.anchorMin);
-                Assert.AreEqual(new Vector2(.5f, 1f), card.pivot);
+                Assert.AreEqual(Vector2.one, card.anchorMin);
+                Assert.AreEqual(Vector2.one, card.anchorMax);
+                Assert.AreEqual(Vector2.one, card.pivot);
+                Assert.AreEqual(new Vector2(540f, 126f), card.sizeDelta);
+                int slot = card.GetSiblingIndex();
+                Assert.That(slot, Is.InRange(0, 1));
                 var corners = new Vector3[4];
                 card.GetWorldCorners(corners);
                 float scale = canvas.scaleFactor;
-                Assert.AreEqual(Screen.width * .5f, (corners[0].x + corners[2].x) * .5f, 2f, "横のまん中");
+                Assert.AreEqual(-AchievementToast.SlotPosition(slot).y * scale, Screen.height - corners[2].y, 2f,
+                    "上の余白18px、2枚目は138px下");
                 Assert.LessOrEqual(Screen.height - corners[0].y, (AchievementToast.CoveredHeight + 1) * scale,
-                    "上から150px(RANK の見出しより上)に収まる");
+                    "上から282pxに収まる");
+                Assert.That(card.anchoredPosition.x,
+                    Is.InRange(-AchievementToast.RightMargin - .01f, -AchievementToast.RightMargin + AchievementToast.EnterSlide + .01f));
+                var queued = AchievementToast.Instance.Queue.At(slot);
+                double age = time - queued.StartedAt;
+                // 止まっている間(段なしで後ろに待ちがあるカードは短い寿命。消え始めると右へ抜ける)。
+                if (age > AchievementToast.EnterSeconds + .05 && age < queued.Life - AchievementToast.ExitSeconds - .05)
+                {
+                    Assert.AreEqual(AchievementToast.RightMargin * scale, Screen.width - corners[2].x, 2f, "止まっている間は右24px");
+                    settled.Add(body);
+                }
             }
             foreach (string body in previous) if (!now.Contains(body)) goneAt[body] = time;
             maxVisible = Mathf.Max(maxVisible, now.Count);
@@ -195,7 +218,10 @@ public class AchievementToastPlayTests
             foreach (string body in previous) if (!goneAt.ContainsKey(body)) goneAt[body] = Time.realtimeSinceStartupAsDouble;
         Assert.IsNull(AchievementToast.Instance, "全部消えたら知らせの部品も消える");
         Assert.AreEqual(3, shownAt.Count);
+        Assert.AreEqual(3, settled.Count, "全カードの右の余白を確かめた");
         Assert.AreEqual(2, maxVisible, "一度に見えるのは2枚まで");
+        CollectionAssert.AreEqual(expected.Select(u => AchievementToast.Message(u.Text, u.Number)).ToArray(), order,
+            "渡された順のうち段の低いものから出る");
         foreach (var pair in shownAt)
         {
             Assert.IsTrue(goneAt.ContainsKey(pair.Key), pair.Key);
@@ -204,7 +230,122 @@ public class AchievementToastPlayTests
         }
         Assert.IsTrue(shownAt.ContainsKey(AchievementToast.Message("1曲を最後まで斬りきった", 152)), "「〜した ○人目」");
         Assert.Greater(MenuSfx.PlayCount, chimes);
-        Assert.AreEqual(AchievementToast.ChimeKey, MenuSfx.LastPlayed, "短い鈴を鳴らす");
+        Assert.AreEqual(AchievementToast.ChimeKeyFor(expected[expected.Length - 1].Tier), MenuSfx.LastPlayed, "最後のカードの段の鈴");
+    }
+
+    static AchievementUnlock TierUnlock(string text, AchievementTier tier) =>
+        new AchievementUnlock(new AchievementCatalog.Definition(text, text, "出さない名前", "試験", tier, _ => true), 7);
+
+    static Rect ScreenRect(RectTransform rect)
+    {
+        var canvas = rect.GetComponentInParent<Canvas>();
+        Camera camera = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
+        var corners = new Vector3[4];
+        rect.GetWorldCorners(corners);
+        Vector2 min = RectTransformUtility.WorldToScreenPoint(camera, corners[0]), max = min;
+        for (int i = 1; i < corners.Length; i++)
+        {
+            Vector2 point = RectTransformUtility.WorldToScreenPoint(camera, corners[i]);
+            min = Vector2.Min(min, point);
+            max = Vector2.Max(max, point);
+        }
+        return Rect.MinMaxRect(min.x, min.y, max.x, max.y);
+    }
+
+    [UnityTest]
+    public IEnumerator LongestSongTitleAndEveryJudgeRowStayClearOfBothCards()
+    {
+        GameSession.SelectedSongId = "Aobasou";
+        GameSession.SelectedSongTitle = SongDisplayInfo.Get("Aobasou").DisplayName;
+        GameSession.FinalAimMode = false;
+        // 本物の曲 ID で結果画面を開くので、記録しない回にする(HI-SCORE・順位に残さない。点検 E)。
+        GameSession.FinalCutCount = 0;
+        GameSession.FinalHit = GameSession.FinalPerfect = GameSession.FinalGreat = GameSession.FinalGood = 0;
+        GameSession.FinalBad = GameSession.FinalMiss = 0;
+        Assert.IsFalse(GameSession.ShouldRecordRun);
+        Assert.AreEqual("青葉騒 feat.初音ミク", GameSession.SelectedSongTitle);
+        yield return LoadResult();
+        var reveal = Object.FindFirstObjectByType<ResultReveal>();
+        reveal.enabled = false;
+        reveal.Tick(999);
+        var titleObject = GameObject.Find("TitleRow");
+        Assert.NotNull(titleObject);
+        var title = titleObject.GetComponent<RectTransform>();
+        var obstacles = new List<RectTransform> { title };
+        foreach (string label in ResultSkin.JudgeLabels(false))
+        {
+            var row = title.parent.Find("Judge" + label);
+            Assert.NotNull(row, label + "の実物の行");
+            obstacles.Add(row.GetComponent<RectTransform>());
+        }
+        Assert.AreEqual(6, obstacles.Count, "曲名と判定5行");
+
+        bool savedReduced = DisplaySettings.ReducedEffects;
+        var host = AchievementToast.Ensure();
+        host.enabled = false;
+        try
+        {
+            foreach (bool reduced in new[] { false, true })
+            {
+                DisplaySettings.SetReducedEffectsForTest(reduced);
+                host.Queue.Clear();
+                AchievementToast.Show(new[]
+                {
+                    TierUnlock("長い曲名の結果画面で最初の条件を達成した", AchievementTier.Rainbow),
+                    TierUnlock("長い曲名の結果画面で次の条件も達成した", AchievementTier.Rainbow),
+                });
+                double start = Time.realtimeSinceStartupAsDouble;
+                host.Step(start, true);
+                host.Step(start + AchievementToast.StaggerSeconds, true);
+                foreach (double age in new[] { .13, .3, .6, 1.5, 4.1, 4.49 })
+                {
+                    host.Step(start + age, true);
+                    Canvas.ForceUpdateCanvases();
+                    var cards = host.VisibleCards().ToArray();
+                    Assert.AreEqual(2, cards.Length);
+                    foreach (var card in cards)
+                    {
+                        Rect bounds = ScreenRect(card);
+                        float glow = AchievementCardFrame.MaxGlowWidth * bounds.width / AchievementToast.CardWidth;
+                        Rect withGlow = Rect.MinMaxRect(bounds.xMin - glow, bounds.yMin - glow, bounds.xMax + glow, bounds.yMax + glow);
+                        foreach (var obstacle in obstacles)
+                        {
+                            Rect other = ScreenRect(obstacle);
+                            Assert.Greater(other.width, 0f);
+                            Assert.Greater(other.height, 0f);
+                            Assert.IsFalse(bounds.Overlaps(other), card.name + "が" + obstacle.name + "に重ならない");
+                            Assert.IsFalse(withGlow.Overlaps(other), "虹の光も" + obstacle.name + "に重ならない");
+                        }
+                    }
+                }
+            }
+        }
+        finally { DisplaySettings.SetReducedEffectsForTest(savedReduced); }
+        yield return null;
+    }
+
+    [UnityTest]
+    public IEnumerator EachTierPlaysItsOwnChimeKeyWhenItsCardStarts()
+    {
+        yield return LoadResult();
+        var reveal = Object.FindFirstObjectByType<ResultReveal>();
+        reveal.enabled = false;
+        reveal.Tick(999);
+        var host = AchievementToast.Ensure();
+        host.enabled = false;
+        var tiers = new[] { AchievementTier.None, AchievementTier.Bronze, AchievementTier.Silver, AchievementTier.Gold, AchievementTier.Rainbow };
+        var keys = new[] { "AchievementChime", "AchievementChimeBronze", "AchievementChimeSilver", "AchievementChimeGold", "AchievementChimeRainbow" };
+        AchievementToast.Show(tiers.Reverse().Select(t => TierUnlock(t + "の条件を達成した", t)));
+        int count = MenuSfx.PlayCount;
+        double start = Time.realtimeSinceStartupAsDouble;
+        for (int i = 0; i < tiers.Length; i++)
+        {
+            host.Step(start + i * 5, true);
+            Assert.AreEqual(tiers[i], host.Queue.At(0).Tier, "段の低いものから出る");
+            Assert.AreEqual(keys[i], MenuSfx.LastPlayed);
+            Assert.AreEqual(count + i + 1, MenuSfx.PlayCount);
+        }
+        yield return null;
     }
 
     [UnityTest]
@@ -216,8 +357,8 @@ public class AchievementToastPlayTests
         Assert.AreEqual(1, AchievementStore.Count("", "clear"));
         CollectionAssert.Contains(AchievementStore.UnlockedIn("", GameSession.AchievementRunId), "clear");
         var unlocks = tracker.LastUnlocks;
-        Assert.AreEqual("clear", unlocks[unlocks.Count - 1].Id);
-        Assert.AreEqual(1, unlocks[unlocks.Count - 1].Number);
+        Assert.AreEqual("clear", unlocks[0].Id, "完走がいちばん簡単(最初に出る)");
+        Assert.AreEqual(1, unlocks[0].Number);
         // 同じ回の記録をもう一度呼んでも決め直さない
         GameSession.RecordCompletedDailyRanking();
         Assert.AreEqual(1, AchievementStore.Count("", "clear"));
@@ -243,8 +384,9 @@ public class AchievementToastPlayTests
         Assert.NotNull(card, "結果画面で出る");
         Assert.GreaterOrEqual(revealTime, AchievementToast.ResultLandingSeconds, "ランクの札が着地してから(結果の演出の時計で)");
         double shown = Time.realtimeSinceStartupAsDouble;
-        string first = AchievementToast.Message(unlocks[0].Text, unlocks[0].Number);
-        Assert.AreEqual(first, BodyOf(card), "いちばん珍しい実績が上");
+        var firstUnlock = unlocks.OrderBy(u => u.Tier).First();
+        string first = AchievementToast.Message(firstUnlock.Text, firstUnlock.Number);
+        Assert.AreEqual(first, BodyOf(card), "渡された順のうち段の低いものが先に出る");
         bool Visible()
         {
             if (AchievementToast.Instance == null) return false;

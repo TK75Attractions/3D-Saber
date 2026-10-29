@@ -25,6 +25,8 @@ public sealed class PlayStats
         public bool Mirror, Fall, Hide, Veiled, Wind, Overtake, Quiz, Chorus;
         // 切る回数(ロングは NoteData.count)・消え方(V)・背景の食(AstralOrbit の背景だけ。EvaluateEclipse(譜面の時刻)、ほかは 0)・最後の組か。
         public int Cuts = 1;
+        // 実際に切った回数。ロングを途中で逃しても、その前に切った分を残す。
+        public int CutsDone;
         public VanishMode Vanish;
         public float Eclipse;
         public bool Final;
@@ -76,6 +78,7 @@ public sealed class PlayStats
     public int CrossCuts { get; set; }
     public int FinalCombo { get; set; }
     public int VoltageMax { get; set; }
+    public int VoltageMaxReaches { get; set; }
     public int Jackpots { get; set; }
     public int Stuns { get; set; }
     public bool HasBull { get; set; }
@@ -349,6 +352,245 @@ public sealed class PlayStats
         return true;
     }
 
+    // ---- 組と場面(第3弾) ----
+
+    public bool AllPerfect(IReadOnlyList<int> group, int min) =>
+        group != null && group.Count >= Math.Max(1, min) && AllPerfect(group);
+
+    public bool AllSuccess(IReadOnlyList<int> group)
+    {
+        if (group == null || group.Count == 0) return false;
+        foreach (int k in group)
+            if (k < 0 || k >= notes.Count || !notes[k].Success) return false;
+        return true;
+    }
+
+    // 条件に合うノーツを含む、最初/最後の組。返すのは組の全部。
+    public IReadOnlyList<int> FirstGroupWith(Func<Note, bool> filter)
+    {
+        foreach (var group in groups)
+            foreach (int k in group)
+                if (filter(notes[k])) return group;
+        return null;
+    }
+
+    public IReadOnlyList<int> LastGroupWith(Func<Note, bool> filter)
+    {
+        for (int i = groups.Count - 1; i >= 0; i--)
+            foreach (int k in groups[i])
+                if (filter(notes[k])) return groups[i];
+        return null;
+    }
+
+    // 最初に条件を含む組から、条件に合うノーツだけを取る。
+    public List<int> FirstNotesWith(Func<Note, bool> filter)
+    {
+        var result = new List<int>();
+        var group = FirstGroupWith(filter);
+        if (group != null)
+            foreach (int k in group)
+                if (filter(notes[k])) result.Add(k);
+        return result;
+    }
+
+    public bool HasGoldPair()
+    {
+        foreach (var group in groups)
+        {
+            if (group.Count != AchievementCatalog.PairNotes) continue;
+            bool left = false, right = false, ok = true;
+            foreach (int k in group)
+            {
+                var note = notes[k];
+                if (!note.Gold || note.Long || !note.Success) { ok = false; break; }
+                if (note.X < 0 && note.Hand == SaberHand.Left) left = true;
+                else if (note.X > 0 && note.Hand == SaberHand.Right) right = true;
+                else { ok = false; break; }
+            }
+            if (ok && left && right) return true;
+        }
+        return false;
+    }
+
+    public bool EqualRedBlueCuts(int min)
+    {
+        int red = CutCount(n => n.Red && !n.Gold), blue = CutCount(n => n.Blue && !n.Gold);
+        return red >= Math.Max(1, min) && red == blue;
+    }
+
+    public bool PracticePairSucceeded(int minCuts, int maxCuts)
+    {
+        var arrows = FirstNotesWith(n => n.Arrow);
+        if (!AllSuccess(arrows)) return false;
+        foreach (int k in arrows)
+            if (notes[k].WrongSwing) return false;
+        return AllPerfect(FirstNotesWith(n => n.Long && n.Cuts >= minCuts && n.Cuts <= maxCuts));
+    }
+
+    // 最大の回数を持つロング全部。最大でも minCuts に届かない譜面は空。
+    public List<int> MaximumLongs(int minCuts)
+    {
+        int maximum = 0;
+        foreach (var note in notes)
+            if (note.Long) maximum = Math.Max(maximum, note.Cuts);
+        var result = new List<int>();
+        if (maximum < minCuts) return result;
+        foreach (int k in TimeOrder())
+            if (notes[k].Long && notes[k].Cuts == maximum) result.Add(k);
+        return result;
+    }
+
+    public List<int> Window(double start, double end)
+    {
+        var result = new List<int>();
+        if (!Finite(start) || !Finite(end) || end <= start) return result;
+        foreach (int k in TimeOrder())
+            if (notes[k].Time >= start && notes[k].Time < end) result.Add(k);
+        return result;
+    }
+
+    // 名前の合う最初の区間の、始まりの少し前からの窓。個数が違う窓は使わない。
+    public List<int> WindowAfterSection(string prefix, double leadSeconds, double seconds, int expected)
+    {
+        StagePerformanceTimeline.Section first = null;
+        if (expected < 1 || Stage?.sections == null || string.IsNullOrEmpty(prefix)) return new List<int>();
+        foreach (var section in Stage.sections)
+        {
+            if (section == null || section.label == null || !section.label.StartsWith(prefix, StringComparison.Ordinal)) continue;
+            if (!Finite(section.startSeconds) || !Finite(section.endSeconds) || section.endSeconds <= section.startSeconds)
+                return new List<int>();
+            if (first == null || section.startSeconds < first.startSeconds) first = section;
+        }
+        if (first == null) return new List<int>();
+        double start = first.startSeconds - leadSeconds;
+        if (start + seconds > first.endSeconds) return new List<int>();
+        var result = Window(start, start + seconds);
+        return result.Count == expected ? result : new List<int>();
+    }
+
+    public bool MorningImproved(int expected)
+    {
+        var first = WindowAfterSection(AchievementCatalog.MorningFirstSection, AchievementCatalog.SceneLeadSeconds,
+            AchievementCatalog.MorningThemeSeconds, expected);
+        var second = WindowAfterSection(AchievementCatalog.MorningSecondSection, AchievementCatalog.SceneLeadSeconds,
+            AchievementCatalog.MorningThemeSeconds, expected);
+        if (first.Count == 0 || !AllSuccess(second)) return false;
+        int before = 0, after = 0;
+        foreach (int k in first)
+        {
+            if (!notes[k].Result.HasValue) return false;
+            if (notes[k].Perfect) before++;
+        }
+        foreach (int k in second)
+            if (notes[k].Perfect) after++;
+        return after > before;
+    }
+
+    // 区間ごとの最初の組をまとめる。区間不足・組不足・別の区間まで飛んだ組は使わない。withinSeconds を渡すと、
+    // 区間の始まりからその秒より後に始まる組も使わない(入口の組が欠けた譜面で、同じ区間のあとの組を代わりにしない)。
+    public List<int> GroupsAfterSections(string prefix, double leadSeconds, int minSections, double withinSeconds = double.PositiveInfinity)
+    {
+        var result = new List<int>();
+        if (Stage?.sections == null || string.IsNullOrEmpty(prefix)) return result;
+        var sections = new List<StagePerformanceTimeline.Section>();
+        foreach (var section in Stage.sections)
+        {
+            if (section == null || section.label == null || !section.label.StartsWith(prefix, StringComparison.Ordinal)) continue;
+            if (!Finite(section.startSeconds) || !Finite(section.endSeconds) || section.endSeconds <= section.startSeconds)
+                return new List<int>();
+            sections.Add(section);
+        }
+        if (sections.Count < Math.Max(1, minSections)) return result;
+        sections.Sort((a, b) => a.startSeconds.CompareTo(b.startSeconds));
+        foreach (var section in sections)
+        {
+            var group = GroupFrom(section.startSeconds - leadSeconds, false);
+            if (group == null || group.Count == 0 || notes[group[0]].Time >= section.endSeconds || result.Contains(group[0])
+                || notes[group[0]].Time > section.startSeconds + withinSeconds)
+                return new List<int>();
+            AddGroup(result, group);
+        }
+        return result;
+    }
+
+    // 指定時刻±1msにある組。個数・種類が違うか、1組でも欠けたら空。
+    public List<int> GroupsAtTimes(IReadOnlyList<double> times, int perGroup, Func<Note, bool> filter)
+    {
+        var result = new List<int>();
+        if (times == null || times.Count == 0 || perGroup < 1) return result;
+        foreach (double time in times)
+        {
+            var group = NearestGroup(time, FinalNoteGroup.Tolerance);
+            if (group == null || group.Count != perGroup || result.Contains(group[0])) return new List<int>();
+            foreach (int k in group)
+                if (Math.Abs(notes[k].Time - time) > FinalNoteGroup.Tolerance + 1e-9 || !filter(notes[k]))
+                    return new List<int>();
+            AddGroup(result, group);
+        }
+        return result;
+    }
+
+    // マーカーも time と同じ時計。古い譜面に目印が無いときだけ、指定の譜面時刻へ戻す。
+    double MarkerTime(string name, double fallback)
+    {
+        double first = double.PositiveInfinity;
+        if (Chart?.editorMarkers != null)
+            foreach (var marker in Chart.editorMarkers)
+                if (marker != null && marker.name == name && Finite(marker.timeMs))
+                    first = Math.Min(first, marker.timeMs / 1000.0 + OffsetSeconds);
+        return double.IsInfinity(first) ? fallback : first;
+    }
+
+    public List<int> ManicBreathNotes()
+    {
+        double quiet = MarkerTime(AchievementCatalog.ManicQuietMarker, AchievementCatalog.ManicQuietSeconds);
+        double back = MarkerTime(AchievementCatalog.ManicReturnMarker, AchievementCatalog.ManicReturnSeconds);
+        var times = new List<double>();
+        foreach (double offset in AchievementCatalog.ManicQuietOffsets) times.Add(quiet + offset);
+        if (times.Count == 0 || back <= times[times.Count - 1]) return new List<int>();
+        var result = GroupsAtTimes(times, 1, n => !n.Gold && !n.Long);
+        var gold = GroupsAtTimes(new[] { back }, AchievementCatalog.PairNotes, n => n.Gold && !n.Long);
+        if (result.Count != times.Count || gold.Count != AchievementCatalog.PairNotes) return new List<int>();
+        AddGroup(result, gold);
+        return result;
+    }
+
+    // B 案の再演に当たる memory の区間と、その直前の同じ長さの見本。別の組へ繰り上げない。
+    public List<int> MemoryPair(double recallSeconds, int perHalf)
+    {
+        var result = new List<int>();
+        if (Chart?.memory?.veils == null || perHalf < 1) return result;
+        MemoryVeilData target = null;
+        foreach (var veil in Chart.memory.veils)
+        {
+            if (veil == null || !Finite(veil.time) || !Finite(veil.endTime) || veil.endTime <= veil.time) continue;
+            if (Math.Abs(veil.time / 1000.0 + OffsetSeconds - recallSeconds) <= FinalNoteGroup.Tolerance + 1e-9)
+            {
+                if (target != null) return result;
+                target = veil;
+            }
+        }
+        if (target == null) return result;
+        double start = target.time / 1000.0 + OffsetSeconds;
+        double end = target.endTime / 1000.0 + OffsetSeconds;
+        double span = end - start, tolerance = FinalNoteGroup.Tolerance;
+        // JSON の float の丸めで、境目の音が隣の半分へ入らないようにする。
+        var sample = Window(start - span - tolerance, start - tolerance);
+        var recall = Window(start - tolerance, end - tolerance);
+        if (sample.Count != perHalf || recall.Count != perHalf) return result;
+        for (int i = 0; i < perHalf; i++)
+        {
+            var a = notes[sample[i]];
+            var b = notes[recall[i]];
+            if (Math.Abs(b.Time - a.Time - span) > tolerance || a.Color != b.Color
+                || Math.Abs(a.X - b.X) > MatchDistance || Math.Abs(a.Y - b.Y) > MatchDistance
+                || a.Arrow != b.Arrow || a.Cuts != b.Cuts || a.Veiled || !b.Veiled) return result;
+        }
+        AddGroup(result, sample);
+        AddGroup(result, recall);
+        return result;
+    }
+
     // ---- 組と場面(第2弾) ----
 
     // 譜面の時刻 time より後(inclusive なら time ちょうども)の最初の組。無ければ null。
@@ -429,6 +671,30 @@ public sealed class PlayStats
             if (section != null && section.label != null && section.label.StartsWith(prefix, StringComparison.Ordinal)
                 && Finite(section.startSeconds) && section.startSeconds < start) start = section.startSeconds;
         return double.IsInfinity(start) ? null : GroupFrom(start - leadSeconds, false);
+    }
+
+    // 上と同じ区間の最初の組のうち、その区間の中で、始まりから withinSeconds 秒以内に始まるものだけ(名場面の入口が欠けた譜面で、
+    // あとの組や次の区間の組を代わりに使わない。2026-10-29 Codex の点検 E)。無ければ null。
+    public IReadOnlyList<int> GroupAfterSection(string prefix, double leadSeconds, double withinSeconds)
+    {
+        if (Stage?.sections == null || string.IsNullOrEmpty(prefix)) return null;
+        StagePerformanceTimeline.Section first = null;
+        foreach (var section in Stage.sections)
+            if (section != null && section.label != null && section.label.StartsWith(prefix, StringComparison.Ordinal)
+                && Finite(section.startSeconds) && (first == null || section.startSeconds < first.startSeconds)) first = section;
+        if (first == null) return null;
+        var group = GroupFrom(first.startSeconds - leadSeconds, false);
+        if (group == null || group.Count == 0) return null;
+        double time = notes[group[0]].Time;
+        bool inside = !Finite(first.endSeconds) || first.endSeconds <= first.startSeconds || time < first.endSeconds;
+        return inside && time <= first.startSeconds + withinSeconds ? group : null;
+    }
+
+    // 組の最初のノーツが expectedSeconds の前後 toleranceSeconds 以内のときだけ、その組(ほかは空)。決まった時刻の名場面に使う。
+    public IReadOnlyList<int> NearTime(IReadOnlyList<int> group, double expectedSeconds, double toleranceSeconds)
+    {
+        if (group == null || group.Count == 0) return Array.Empty<int>();
+        return Math.Abs(notes[group[0]].Time - expectedSeconds) <= toleranceSeconds ? group : Array.Empty<int>();
     }
 
     // 各ノーツの譜面の時刻 t を頭にした [t, t+seconds) に入るノーツがいちばん多い窓(同じ数なら早い方)のノーツ。
@@ -527,6 +793,7 @@ public sealed class PlayStatsRecorder
     int judgedSinceReset;
     // 直近の判定(OnJudgment・OnLongCut)の直前と直後の HUD の点。
     int scoreBefore, scoreAfter;
+    VoltageMeter meter;
 
     struct Watched
     {
@@ -575,11 +842,13 @@ public sealed class PlayStatsRecorder
         Stats.Complete = complete;
         Stale = false;
         scoreBefore = scoreAfter = score.ScoreWithCombo;
+        if (bound) WatchVoltage();
     }
 
     void Hook()
     {
         bound = true;
+        WatchVoltage();
         spawner.OnNoteSpawned += Spawned;
         spawner.OnChartReset += ChartReset;
         foreach (var note in spawner.LiveNotes) Spawned(note);
@@ -592,6 +861,7 @@ public sealed class PlayStatsRecorder
     {
         if (!bound) return;
         bound = false;
+        UnwatchVoltage();
         Unwatch();
         if (spawner != null) { spawner.OnNoteSpawned -= Spawned; spawner.OnChartReset -= ChartReset; }
         if (score != null) { score.OnJudgment -= Judged; score.OnLongCut -= LongCut; }
@@ -616,6 +886,7 @@ public sealed class PlayStatsRecorder
     {
         Unwatch();
         Stale = true;
+        UnwatchVoltage();
         judgedSinceReset = 0;
     }
 
@@ -625,6 +896,7 @@ public sealed class PlayStatsRecorder
         if (!bound) return;
         if (Stale && spawner != null && spawner.CurrentChart != null)
             Rebuild(GameSession.AchievementRunId, judgedSinceReset == 0 && spawner.AliveCount == 0);
+        if (!Stale) WatchVoltage();
         var song = manager != null ? manager.songPlayer : null;
         if (song == null) return;
         if (!Stats.StartedAt.HasValue) { if (song.IsPlaying) Stats.StartedAt = DateTime.Now; }
@@ -648,6 +920,28 @@ public sealed class PlayStatsRecorder
             Stats.Stuns = bull != null ? bull.StunCount : 0;
         }
         return Stats;
+    }
+
+    // Meter が遅れてできた場合も、同じ Meter を二重に聞かない。作り直し・退出では外す。
+    void WatchVoltage()
+    {
+        var excitement = manager != null ? manager.GetComponent<PlayExcitement>() : null;
+        var next = excitement != null ? excitement.Meter : null;
+        if (ReferenceEquals(meter, next)) return;
+        UnwatchVoltage();
+        meter = next;
+        if (meter != null) meter.Changed += VoltageChanged;
+    }
+
+    void UnwatchVoltage()
+    {
+        if (meter != null) meter.Changed -= VoltageChanged;
+        meter = null;
+    }
+
+    void VoltageChanged(VoltageMeter.Change change)
+    {
+        if (bound && !Stale && change.Raised && change.Level == VoltageMeter.MaximumLevel) Stats.VoltageMaxReaches++;
     }
 
     void Spawned(CuttableNote note)
@@ -679,6 +973,7 @@ public sealed class PlayStatsRecorder
     void NoteJudged(PlayStats stats, int k, CuttableNote cut, JudgmentTier tier)
     {
         bool hit = tier != JudgmentTier.Miss;
+        stats.Notes[k].CutsDone = cut != null ? Math.Max(0, cut.CutsAchieved) : 0;
         var hand = hit && cut != null ? cut.LastCutterHand : SaberHand.Any;
         stats.Record(k, tier, hit && score.LastErrorValid ? score.LastErrorMs : (double?)null, hit ? DateTime.Now : (DateTime?)null,
             hand, hit && OtherHandStunned(cut, hand));
@@ -689,6 +984,7 @@ public sealed class PlayStatsRecorder
     void NoteMissed(PlayStats stats, int k)
     {
         stats.Record(k, JudgmentTier.Miss, null, null, SaberHand.Any, false);
+        stats.Notes[k].CutsDone = 0;
         int now = score.ScoreWithCombo;
         if (stats.Notes[k].Final) stats.FinalJudgment(now, now);
     }

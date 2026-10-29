@@ -1209,13 +1209,16 @@ public class RankingSyncTests
         Assert.AreEqual(0, RankingSyncLog.Copy(ok).ach.Count);
     }
 
-    // 実績の一覧(2026-10-29 の第1弾44個と第2弾32個、表示の順)と、相手の台へ送る並び(clear を先に。GameSession.FinalAchievements)。
+    // 実績の一覧(2026-10-29 の第1弾44個・第2弾32個・第3弾26個、表示の順 = 簡単なものから)と、相手の台へ送る並び
+    // (clear を先に、あとは難しいものから。GameSession.FinalAchievements)。
     static List<string> CatalogIds() => AchievementCatalog.All.Select(d => d.Id).ToList();
 
-    static List<string> SentIds()
+    static List<string> SentIds(IEnumerable<string> earned = null)
     {
-        var ids = new List<string> { AchievementCatalog.ClearId };
-        ids.AddRange(CatalogIds().Where(id => id != AchievementCatalog.ClearId));
+        var set = new HashSet<string>(earned ?? CatalogIds());
+        var ids = new List<string>();
+        if (set.Contains(AchievementCatalog.ClearId)) ids.Add(AchievementCatalog.ClearId);
+        ids.AddRange(Enumerable.Reverse(CatalogIds()).Where(id => id != AchievementCatalog.ClearId && set.Contains(id)));
         return ids;
     }
 
@@ -1223,16 +1226,22 @@ public class RankingSyncTests
     static List<string> LongIds(int count) => Enumerable.Range(0, count)
         .Select(i => i.ToString("D2", CultureInfo.InvariantCulture) + new string('x', AchievementStore.MaxIdLength - 2)).ToList();
 
-    // 1回の記録に、どの曲でも(長い曲 ID・日本語の曲 ID・16 字の台名)、一覧の76個を全部(表示の順でも、clear を先にした送る並びでも)
-    // 外さずに入れ、1通で送れる。上限(MaxAchievementsPerPlay)は一覧の数以上。12 字の ID を上限の数だけは入らないので、実際の一覧で確かめる。
+    // 1回の記録に、どの曲でも(長い曲 ID・日本語の曲 ID・16 字の台名)、一覧のうち ID の長い RealisticAchievementsPerPlay 個を
+    // (表示の順でも、送る並びでも)外さずに入れ、1通で送れる。一覧は100個を超えて全部は1回に入らないが、曲ごとの実績は同じ回に
+    // 重ならないので、1回に取れるのは多くても数十個。版 3 の数の上限(MaxAchievementsPerPlay = 80)はそれより大きい。
     [Test]
-    public void EveryAchievementOfTheCatalogFitsInOneDatagramForEverySong()
+    public void TheLongestRealisticSetOfAchievementsFitsInOneDatagramForEverySong()
     {
-        var catalog = CatalogIds();
-        Assert.AreEqual(76, catalog.Count);
-        Assert.GreaterOrEqual(RankingSyncLog.MaxAchievementsPerPlay, catalog.Count);
+        var all = CatalogIds();
+        Assert.AreEqual(104, all.Count);
+        Assert.AreEqual(80, RankingSyncLog.MaxAchievementsPerPlay, "版 3 の台どうしで同じ上限(v2.1 の台とも同期する)");
+        Assert.Greater(RankingSyncLog.MaxAchievementsPerPlay, RankingSyncLog.RealisticAchievementsPerPlay);
         Assert.AreEqual(12, AchievementStore.MaxIdLength);
-        foreach (string id in catalog) Assert.IsTrue(AchievementStore.IsValidId(id), id);
+        foreach (string id in all) Assert.IsTrue(AchievementStore.IsValidId(id), id);
+        var longest = new HashSet<string>(all.OrderByDescending(id => id.Length).ThenBy(id => id, StringComparer.Ordinal)
+            .Take(RankingSyncLog.RealisticAchievementsPerPlay));
+        var catalog = all.Where(longest.Contains).ToList();
+        Assert.AreEqual(RankingSyncLog.RealisticAchievementsPerPlay, catalog.Count);
         var songs = System.IO.Directory.GetDirectories(System.IO.Path.Combine(Application.streamingAssetsPath, "Songs"))
             .Select(System.IO.Path.GetFileName).ToList();
         Assert.GreaterOrEqual(songs.Count, 10, "曲のフォルダを読めた");
@@ -1245,7 +1254,7 @@ public class RankingSyncTests
         try
         {
             foreach (string song in songs)
-                foreach (var ids in new[] { catalog, SentIds() })
+                foreach (var ids in new[] { catalog, SentIds(catalog) })
                 {
                     var play = RankingSyncLog.NewPlay(NewId(), song, "Normal", ScoreManager.MaxScore, "S+", 1f / 3f, PlayedAt,
                         new string('B', RankingSyncLog.MaxStationLength), Fes, ids);
@@ -1265,8 +1274,27 @@ public class RankingSyncTests
         }
         finally { Application.logMessageReceived -= collect; }
         Assert.IsFalse(warnings.Any(w => w.StartsWith("RankingSync: この回の実績のうち", StringComparison.Ordinal)), "外さないので警告しない");
-        // 2026-10-29 の計算: 1回分の大きさの見積もり(EstimatedPlayBytes)は 製作中 の 945 バイトがいちばん大きく、上限(MaxPlayBytes)は 1020。
-        TestContext.WriteLine("76個を入れた1通のいちばん大きいもの: " + largest + " / " + RankingSyncLog.MaxDatagramBytes + " バイト");
+        TestContext.WriteLine(RankingSyncLog.RealisticAchievementsPerPlay + "個を入れた1通のいちばん大きいもの: " + largest + " / "
+                              + RankingSyncLog.MaxDatagramBytes + " バイト");
+    }
+
+    // 一覧を全部入れると1通に収まらない。送る並び(clear → 難しい → 簡単)の後ろから外すので、clear と珍しい実績は残る(警告は1回)。
+    [Test]
+    public void WhenEverythingDoesNotFitTheEasiestAchievementsAreDroppedFirst()
+    {
+        var sent = SentIds();
+        Assert.AreEqual(AchievementCatalog.ClearId, sent[0]);
+        Assert.AreEqual("ap", sent[1], "clear の次はいちばん難しいもの");
+        RankingSyncLog.ResetWarningsForTest();
+        LogAssert.Expect(LogType.Warning, new System.Text.RegularExpressions.Regex("^RankingSync: この回の実績のうち"));
+        var play = RankingSyncLog.NewPlay(NewId(), "製作中", "Normal", ScoreManager.MaxScore, "S+", 1f / 3f, PlayedAt,
+            new string('B', RankingSyncLog.MaxStationLength), Fes, sent);
+        Assert.IsTrue(RankingSyncLog.IsValid(play));
+        Assert.Less(play.ach.Count, sent.Count, "全部は入らない");
+        Assert.GreaterOrEqual(play.ach.Count, RankingSyncLog.RealisticAchievementsPerPlay);
+        CollectionAssert.AreEqual(sent.Take(play.ach.Count), play.ach, "後ろ(いちばん取りやすいもの)から外す");
+        foreach (var definition in AchievementCatalog.All.Where(d => d.Tier >= AchievementTier.Silver))
+            CollectionAssert.Contains(play.ach, definition.Id, "銀より上の段は残る");
     }
 
     // 入れられない実績(形が違う・上限を超える・1通に収まらない)は黙って外さず、起動の間に1回だけ警告する。外しても送れる回にする。

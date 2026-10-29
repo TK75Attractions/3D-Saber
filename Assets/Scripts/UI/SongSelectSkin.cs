@@ -38,6 +38,7 @@ public class SongSelectSkin : MonoBehaviour
     SongSelectRubyText secretHintText;
     public bool SecretHintVisible => secretHintPanel != null && secretHintPanel.gameObject.activeSelf;
     public string SecretHintMarkup => secretHint.Visible ? secretHint.Text : "";
+    public int SecretHintsShown => secretHint.Shown;
     SongSelectDiscGraphic visitorProgress;
     // 残り時間の音(盤5): 30秒で1回の知らせ、10秒から1秒ごとの刻み。鳴らすのは MenuSfx。
     int lastBeepSecond = -1, previousSecond = -1;

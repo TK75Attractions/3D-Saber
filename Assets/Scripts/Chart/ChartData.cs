@@ -22,6 +22,8 @@ public class ChartData
     public List<ChartTimeSignature> timeSignatures = new List<ChartTimeSignature>();
     // エディターと本編の拍ガイドで共有する時刻アンカー。ノーツの実時刻は変更しない。
     public List<ChartTempoPoint> editorTempoMap = new List<ChartTempoPoint>();
+    // 譜面の目印。実績の場面探しに使うだけで、ノーツの時刻や演出は変えない。
+    public List<ChartEditorMarker> editorMarkers = new List<ChartEditorMarker>();
     public List<NoteData> notes = new List<NoteData>();
     // 照準で遊ぶ裏譜面(Phobia の「避」、2026-10-24)。ノーツの代わりに、照準で狙う的とよけるトゲを置く。
     // ふつうの譜面では空のまま(JsonUtility は無い項目を空の入れ物にする)。譜面エディターは別の型なので、この欄を読み書きしない。
@@ -45,6 +47,13 @@ public class ChartData
     public QuizChartData quiz = new QuizChartData();
     // Manic Sonic の裏譜面 R(鏡門・天地返し)。enabled が false ならふつうの譜面。決まりは ReverseRules。
     public ReverseChartData reverse = new ReverseChartData();
+}
+
+[Serializable]
+public class ChartEditorMarker
+{
+    public float timeMs;
+    public string name = "";
 }
 
 [Serializable]

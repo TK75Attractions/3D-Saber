@@ -11,6 +11,7 @@ public readonly struct AchievementUnlock
     public AchievementUnlock(AchievementCatalog.Definition definition, int number) { Definition = definition; Number = number; }
     public string Id => Definition != null ? Definition.Id : "";
     public string Text => Definition != null ? Definition.Text : "";
+    public AchievementTier Tier => Definition != null ? Definition.Tier : AchievementTier.None;
 }
 
 // 実績の判定(2026-10-29、担当 B)。起動時に1つだけ作り、シーンをまたいで残す。テスト中(AutoStartEnabled が false)・
@@ -40,6 +41,9 @@ public sealed class AchievementTracker : MonoBehaviour
     bool selectionTaken, calibrationReturn;
     // この選曲でジャケットを切って裏譜面を出した曲と、タイトルの開始ノーツ(切った手を覚える)。
     readonly HashSet<string> openedSecrets = new HashSet<string>(StringComparer.Ordinal);
+    readonly Dictionary<string, int> hintsBeforeOpen = new Dictionary<string, int>(StringComparer.Ordinal);
+    // いま数を決めた解除の演出の曲(解除しきったら空に戻し、同じ曲を開き直したときに数え直す)。
+    string countedTransition;
     CuttableNote titleNote;
     bool titleCutSeen;
     // 決めた回と、結果画面で出す分。結果の演出(ResultReveal)の時計を聞いて出し始める。
@@ -161,9 +165,12 @@ public sealed class AchievementTracker : MonoBehaviour
         StopWatchingReveal();
         manager = null;
         practiceRecorded = false;
+        if (select != null) select.OnRushESecretChanged -= SecretChanged;
         select = null;
         selectionTaken = false;
         openedSecrets.Clear();
+        hintsBeforeOpen.Clear();
+        countedTransition = null;
         UnwatchTitle();
         titleCutSeen = false;
     }
@@ -204,7 +211,7 @@ public sealed class AchievementTracker : MonoBehaviour
     {
         UnwatchTitle();
         titleCutSeen = true;
-        AchievementRunInfo.TitleCut(note != null ? note.LastCutterHand : SaberHand.Any);
+        AchievementRunInfo.TitleCut(note != null ? note.LastCutterHand : SaberHand.Any, velocity);
     }
 
     void UnwatchTitle()
@@ -251,14 +258,38 @@ public sealed class AchievementTracker : MonoBehaviour
         {
             select = FindFirstObjectByType<SongSelectController>();
             if (select == null) return;
+            select.OnRushESecretChanged += SecretChanged;
         }
         var secret = select.RushESecret;
         if (secret.Unlocked && secret.Transitioning && !string.IsNullOrEmpty(secret.SelectedSong)) openedSecrets.Add(secret.SelectedSong);
         if (!select.StartAccepted) return;
         selectionTaken = true;
         var skin = FindFirstObjectByType<SongSelectSkin>();
+        string song = GameSession.SelectedSongId ?? "";
+        hintsBeforeOpen.TryGetValue(song, out int hints);
         AchievementRunInfo.SongChosen(skin != null && skin.IsReady ? skin.RemainingSeconds : (double?)null, calibrationReturn,
-            openedSecrets.Contains(GameSession.SelectedSongId ?? ""));
+            openedSecrets.Contains(song), hints);
+    }
+
+    // 最後のジャケット切断で演出が始まった時点の数を固定する(解除の演出ごと。ヒントなしで開いた曲を、別の曲へ移ってヒントを読んでから
+    // 開き直したときは、開き直した時点の数にする。Codex の点検 E)。
+    // Reveal までの間に出したヒントと、判定調整からの RestoreUnlocked は数えない。
+    void SecretChanged()
+    {
+        if (select == null) return;
+        var secret = select.RushESecret;
+        if (!secret.Transitioning || string.IsNullOrEmpty(secret.SelectedSong)) { countedTransition = null; return; }
+        if (!secret.Unlocked && countedTransition != secret.SelectedSong)
+        {
+            var skin = FindFirstObjectByType<SongSelectSkin>();
+            hintsBeforeOpen[secret.SelectedSong] = skin != null ? skin.SecretHintsShown : 0;
+            countedTransition = secret.SelectedSong;
+        }
+        if (secret.Unlocked)
+        {
+            openedSecrets.Add(secret.SelectedSong);
+            countedTransition = null;
+        }
     }
 
     // 結果画面: 結果の演出の時計がランクの札の着地(演出を飛ばすと 999)に届いたら出す。演出は幕の間は進まない。
@@ -314,7 +345,7 @@ public sealed class AchievementTracker : MonoBehaviour
         var ranking = GameSession.FinalDailyRanking;
         string run = GameSession.AchievementRunId ?? "";
         string ns = GameSession.RunNamespace ?? "";
-        AchievementRunInfo.ForRun(run, out var selection, out bool practiced, out bool openedSecret, out SaberHand titleHand);
+        bool sameRun = AchievementRunInfo.ForRun(run, out var selection, out bool practiced, out bool openedSecret, out SaberHand titleHand);
         var plays = PlaysSource != null ? PlaysSource() ?? Array.Empty<RankingPlay>() : Array.Empty<RankingPlay>();
         var songs = SongsSource != null ? SongsSource() ?? Array.Empty<string>() : Array.Empty<string>();
         DateTime ended = GameSession.RunEndedAt ?? (stats != null && stats.EndedAt.HasValue ? stats.EndedAt.Value : nowLocal);
@@ -346,6 +377,10 @@ public sealed class AchievementTracker : MonoBehaviour
             Namespace = ns,
             RunId = run,
             PracticedBefore = practiced,
+            PracticePairBefore = sameRun && AchievementRunInfo.PracticePairBefore,
+            PracticeAllFirstLoop = sameRun && AchievementRunInfo.PracticeAllFirstLoop,
+            TitleUpward = sameRun && AchievementRunInfo.TitleUpward,
+            HintsBeforeOpen = sameRun ? AchievementRunInfo.HintsBeforeOpen : 0,
             SelectionSeconds = selection,
             ClearsToday = ClearsSince != null ? ClearsSince(ns, new DateTimeOffset(ended.Date).ToUnixTimeMilliseconds()) : -1,
             Plays = plays,
@@ -355,8 +390,9 @@ public sealed class AchievementTracker : MonoBehaviour
         };
     }
 
-    // 写し context で実績を決めて解除し、番号つきで返す(表示の順)。ID は GameSession.FinalAchievements に入れる(clear を先に。
-    // 相手の台へ送る記録の数に上限があっても、来場の通し番号になる clear を落とさない)。同じ回で2回呼んでも数は増えない。
+    // 写し context で実績を決めて解除し、番号つきで返す(表示の順 = 簡単なものから)。ID は GameSession.FinalAchievements に入れる
+    // (clear を先に、あとは難しいものから。相手の台へ送る記録が1通に収まらなくても、来場の通し番号になる clear と珍しい実績を落とさない)。
+    // 同じ回で2回呼んでも数は増えない。
     // clear を先に解除してその番号でキリ番・双子の素数・背番号を見て、残りとまとめて解除する。最後に、ここまでの番号で初物・大収穫を見て
     // 解除する(保存は合わせて3回まで)。context の ClearNumber・Unlocked はここで入れ直す。
     public static List<AchievementUnlock> Record(AchievementContext context)
@@ -385,11 +421,10 @@ public sealed class AchievementTracker : MonoBehaviour
         if (GameSession.FinalAchievements == null) GameSession.FinalAchievements = new List<string>();
         var ids = GameSession.FinalAchievements;
         if (clear != null && !ids.Contains(clear.Id)) ids.Insert(0, clear.Id);
-        foreach (var definition in earned)
-        {
-            unlocks.Add(new AchievementUnlock(definition, numbers[definition]));
-            if (!ids.Contains(definition.Id)) ids.Add(definition.Id);
-        }
+        foreach (var definition in earned) unlocks.Add(new AchievementUnlock(definition, numbers[definition]));
+        // 相手の台へ送る並びは、clear のあと難しいものから(1通に収まらないときは、後ろのいちばん取りやすいものから外れる)。
+        for (int i = earned.Count - 1; i >= 0; i--)
+            if (!ids.Contains(earned[i].Id)) ids.Add(earned[i].Id);
         return unlocks;
     }
 

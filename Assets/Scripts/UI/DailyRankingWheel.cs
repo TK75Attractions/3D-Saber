@@ -90,9 +90,13 @@ public sealed class DailyRankingWheel : MonoBehaviour
             : ProceduralSfx.Clip("DailyRankDEN", Halve(FlourishSfx.Cached("DailyRankDen", FlourishSfx.DailyRankDen)), 22050);
     }
 
+    // 回っている間(暗幕が出ている間)。実績の知らせ(AchievementToast)はこの間、新しいカードを出さない(刻みの音・ドンと鈴がぶつかるため)。
+    public static bool Showing { get; private set; }
+
     public void Tick(float time, bool reduced)
     {
         bool visible = !reduced && time > StartTime && time < EndTime;
+        Showing = visible;
         group.alpha = visible ? Mathf.Clamp01((time - StartTime) / .16f) : 0;
         float background = 1 - Mathf.InverseLerp(TransferTime, BackdropEndTime, time);
         frameGroup.alpha = background;
@@ -162,6 +166,7 @@ public sealed class DailyRankingWheel : MonoBehaviour
 
     void OnDestroy()
     {
+        Showing = false;
         if (tickSound != null) Destroy(tickSound);
         if (impactSound != null) Destroy(impactSound);
     }

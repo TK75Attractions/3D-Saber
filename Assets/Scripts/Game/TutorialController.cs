@@ -10,7 +10,7 @@ public sealed class TutorialController : MonoBehaviour
     public const string MusicResourcePath = "Audio/Tutorial_Loop120";
     // 音源を曲と同じ -18 LUFS に作ってあるので、曲(SongPlayer の音量 1 × 曲別補正)と同じく 1 で鳴らす。
     public const float MusicVolume = 1f;
-    public struct TutorialStepRecord { public string Id; public double Seconds; public string Reason; }
+    public struct TutorialStepRecord { public string Id; public double Seconds; public string Reason; public bool FirstLoop; }
 
     public TutorialOverlay Overlay { get; private set; }
     public TutorialStep Step => steps != null && stepIndex >= 0 && stepIndex < steps.Length ? steps[stepIndex] : null;
@@ -74,7 +74,7 @@ public sealed class TutorialController : MonoBehaviour
     string station = "";
     bool rangeCheered;
     readonly List<TutorialStepRecord> records = new List<TutorialStepRecord>();
-    double totalOffset, startChartTime, stepStart, stepEndAt, nextPatternAt;
+    double totalOffset, startChartTime, stepStart, stepEndAt, nextPatternAt, firstPatternAt;
     int stepIndex = -1, swingFrames;
     float hintUntil;
     bool started, cleanedUp;
@@ -258,6 +258,7 @@ public sealed class TutorialController : MonoBehaviour
             range = new TutorialRangeLearning(SendLearnArea(), now);
         }
         nextPatternAt = TutorialProgram.NextBarAtOrAfter(now + TutorialProgram.ReadDelaySeconds + spawner.approachTime);
+        firstPatternAt = nextPatternAt;
         BannerTitle = step.Kind == TutorialStepKind.Ready && timedOutPractice ? "曲を選びに行こう" : step.Title;
         BannerSub = step.Sub;
         if (Overlay != null) Overlay.ShowStep(step, index, steps.Length);
@@ -270,7 +271,12 @@ public sealed class TutorialController : MonoBehaviour
         var step = Step;
         stepEndAt = now + (step.Kind == TutorialStepKind.Range ? TutorialProgram.RangeEndSeconds
             : reason == "timeout" ? TutorialProgram.TimeoutEndSeconds : TutorialProgram.StepEndSeconds);
-        records.Add(new TutorialStepRecord { Id = step.Id, Seconds = now - stepStart, Reason = reason });
+        records.Add(new TutorialStepRecord
+        {
+            Id = step.Id, Seconds = now - stepStart, Reason = reason,
+            FirstLoop = step.Id == TutorialProgram.AllStepId && reason == "ok"
+                && now >= firstPatternAt && now < firstPatternAt + step.PeriodSeconds,
+        });
         if (step.Kind == TutorialStepKind.Range)
         {
             BannerTitle = reason == "ok" ? TutorialProgram.RangeLearnedTitle : TutorialProgram.RangeKeptTitle; BannerSub = "";

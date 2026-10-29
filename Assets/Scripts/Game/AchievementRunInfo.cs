@@ -2,70 +2,90 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-// 実績の判定に使う、その回の外の情報(2026-10-29)。GameSession には足さず、ここに持つ(担当 B)。
-// ・選曲にかかった秒(即決): 選曲で曲を決めた瞬間に、選曲の残り時間の数え方で覚える。判定調整から戻った選曲は数えない。
-// ・練習(基本に忠実): 同じ来場者の練習(TutorialController)が最後まで終わったか(スキップ・時間切れ・振る範囲だけの回は数えない)。
-// ・裏の扉(そっ閉じ): 曲を決めた選曲で、その曲のジャケットを切って裏譜面を出したか。
-// ・タイトルの手(左手で幕開け): 同じ来場者がタイトルの開始ノーツを切った手。
-// どれも次に始めた本編の曲(BeginRun)が使い切る。ただしタイトルの手は、記録された最初の曲(RunRecorded)まで持つ
-// (1回も切らずに終えた曲では使い切らない)。来場者が替わったら(タイトル)消す。AchievementTracker が書く。
+// 実績の判定に使う、その回の外の情報(2026-10-29)。AchievementTracker が書く。
+// 選曲の秒・裏の扉・ヒントは次に始める曲だけ。タイトルの手と向き・練習の結果は、最初の記録された曲まで持つ。
+// 来場者が替わったら全部消す。判定調整の往復ではタイトル・練習を消さず、選曲のヒントは新しい画面で数え直す。
 public static class AchievementRunInfo
 {
-    // 選曲の残り時間の始まり(SongSelectCountdown の既定。新しい選曲はこの秒から数える)。
     public static readonly double SelectionStartSeconds = new SongSelectCountdown().Remaining;
 
-    // 次に始める曲の、選曲にかかった秒(null は数えない回)と、その前に練習を終えていたか・裏譜面を出していたか・タイトルを切った手。
     public static double? PendingSelectionSeconds { get; private set; }
     public static bool PracticePending { get; private set; }
+    public static bool PracticePairPending { get; private set; }
+    public static bool PracticeAllFirstLoopPending { get; private set; }
     public static bool PendingOpenedSecret { get; private set; }
+    public static int PendingHintsBeforeOpen { get; private set; }
     public static SaberHand PendingTitleHand { get; private set; } = SaberHand.Any;
+    public static bool PendingTitleUpward { get; private set; }
 
-    // 今の曲の回(BeginRun で決める)。
     public static string RunId { get; private set; }
     public static double? SelectionSeconds { get; private set; }
     public static bool PracticedBefore { get; private set; }
+    public static bool PracticePairBefore { get; private set; }
+    public static bool PracticeAllFirstLoop { get; private set; }
     public static bool OpenedSecret { get; private set; }
+    public static int HintsBeforeOpen { get; private set; }
     public static SaberHand TitleHand { get; private set; } = SaberHand.Any;
+    public static bool TitleUpward { get; private set; }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    public static void Clear()
-    {
-        BeginVisitor();
-        RunId = null;
-        SelectionSeconds = null;
-        PracticedBefore = false;
-        OpenedSecret = false;
-        TitleHand = SaberHand.Any;
-    }
+    public static void Clear() => BeginVisitor();
 
-    // 来場者が替わった(タイトル)。前の人の選曲・練習・タイトルの手を持ち越さない。
+    // 来場者が替わった(タイトル)。前の人の回の写しも返さない。
     public static void BeginVisitor()
     {
-        PendingSelectionSeconds = null;
-        PracticePending = false;
-        PendingOpenedSecret = false;
-        PendingTitleHand = SaberHand.Any;
+        PendingSelectionSeconds = SelectionSeconds = null;
+        PracticePending = PracticedBefore = false;
+        PracticePairPending = PracticePairBefore = false;
+        PracticeAllFirstLoopPending = PracticeAllFirstLoop = false;
+        PendingOpenedSecret = OpenedSecret = false;
+        PendingHintsBeforeOpen = HintsBeforeOpen = 0;
+        PendingTitleHand = TitleHand = SaberHand.Any;
+        PendingTitleUpward = TitleUpward = false;
+        RunId = null;
     }
 
-    // 選曲で曲を決めた。remaining は選曲の残り時間、calibrationReturn は判定調整から戻った選曲か、
-    // openedSecret はその選曲で、決めた曲のジャケットを切って裏譜面を出したか。
-    public static void SongChosen(double? remaining, bool calibrationReturn, bool openedSecret = false)
+    // openedSecret と hintsBeforeOpen は、この選曲で新しく開いた分だけを Tracker が渡す。
+    // 判定調整から戻った選曲でも、戻ったあとで新しくヒントを読んで開いた分は数える。
+    public static void SongChosen(double? remaining, bool calibrationReturn, bool openedSecret = false, int hintsBeforeOpen = 0)
     {
         PendingSelectionSeconds = calibrationReturn || !remaining.HasValue ? (double?)null : SelectionElapsed(remaining.Value);
         PendingOpenedSecret = openedSecret;
+        PendingHintsBeforeOpen = openedSecret ? Math.Max(0, hintsBeforeOpen) : 0;
     }
 
-    // タイトルの開始ノーツを切った(キーボードは Any)。
-    public static void TitleCut(SaberHand hand) => PendingTitleHand = hand;
+    public static void TitleCut(SaberHand hand) => TitleCut(hand, Vector3.zero);
 
-    // 残り時間から、選曲にかかった秒。時間切れの自動開始は残り 0 なので、始まりの秒(100)になる。
+    // タイトルの開始ノーツを切った手と向き。キーボードは Any。
+    public static void TitleCut(SaberHand hand, Vector3 velocity)
+    {
+        PendingTitleHand = hand;
+        PendingTitleUpward = (hand == SaberHand.Left || hand == SaberHand.Right)
+            && !float.IsNaN(velocity.x) && !float.IsNaN(velocity.y)
+            && !float.IsInfinity(velocity.x) && !float.IsInfinity(velocity.y)
+            && velocity.y > 0 && velocity.y >= Math.Abs(velocity.x);
+    }
+
     public static double SelectionElapsed(double remaining) =>
         double.IsNaN(remaining) || double.IsInfinity(remaining) ? SelectionStartSeconds : Math.Max(0, SelectionStartSeconds - remaining);
 
-    // 練習が終わった(TutorialController.IsFinished のとき1回)。
+    // 同じ練習の中で両方の段が ok だったかを見る。別々の練習の片方ずつを足し合わせない。
     public static void PracticeFinished(bool rangeOnly, string finishReason, IEnumerable<TutorialController.TutorialStepRecord> records)
     {
-        if (CountsAsPractice(rangeOnly, finishReason, records)) PracticePending = true;
+        var list = records != null ? new List<TutorialController.TutorialStepRecord>(records) : null;
+        bool practiced = CountsAsPractice(rangeOnly, finishReason, list);
+        PracticePending |= practiced;
+        if (rangeOnly || list == null) return;
+        bool arrow = false, longNote = false, firstLoop = false;
+        foreach (var record in list)
+        {
+            if (record.Reason != "ok") continue;
+            if (record.Id == "arrowEasy") arrow = true;
+            if (record.Id == "long") longNote = true;
+            if (record.Id == TutorialProgram.AllStepId && record.FirstLoop) firstLoop = true;
+        }
+        PracticePairPending |= arrow && longNote;
+        PracticeAllFirstLoopPending |= practiced && firstLoop;
     }
 
     // 最後まで終えた練習か(振る範囲だけの回・スキップ・どれかの練習が時間切れの回は数えない)。
@@ -78,31 +98,34 @@ public static class AchievementRunInfo
         return true;
     }
 
-    // 本編の曲を始めた(AchievementTracker が曲の記録を結び付けたとき)。覚えていた選曲・練習・裏の扉を、この回のものにして使い切る
-    // (タイトルの手は写すだけで、RunRecorded まで残す)。
+    // 選曲の情報は使い切る。練習とタイトルは、記録されない回・始め直しでは使い切らない。
     public static void BeginRun(string runId)
     {
         RunId = runId;
         SelectionSeconds = PendingSelectionSeconds;
         PracticedBefore = PracticePending;
+        PracticePairBefore = PracticePairPending;
+        PracticeAllFirstLoop = PracticeAllFirstLoopPending;
         OpenedSecret = PendingOpenedSecret;
+        HintsBeforeOpen = PendingHintsBeforeOpen;
         TitleHand = PendingTitleHand;
+        TitleUpward = PendingTitleUpward;
         PendingSelectionSeconds = null;
-        PracticePending = false;
         PendingOpenedSecret = false;
+        PendingHintsBeforeOpen = 0;
     }
 
-    // 記録された回の実績を決めた(AchievementTracker)。タイトルの手をここで使い切る。
     public static void RunRecorded(string runId)
     {
-        if (!string.IsNullOrEmpty(runId) && runId == RunId) PendingTitleHand = SaberHand.Any;
+        if (string.IsNullOrEmpty(runId) || runId != RunId) return;
+        PendingTitleHand = SaberHand.Any;
+        PendingTitleUpward = false;
+        PracticePending = PracticePairPending = PracticeAllFirstLoopPending = false;
     }
 
-    // この回の選曲の秒と練習(別の回なら、どちらも無し)。
     public static bool ForRun(string runId, out double? selectionSeconds, out bool practicedBefore) =>
         ForRun(runId, out selectionSeconds, out practicedBefore, out _, out _);
 
-    // この回の選曲の秒・練習・裏譜面を出したか・タイトルを切った手(別の回なら、どれも無し)。
     public static bool ForRun(string runId, out double? selectionSeconds, out bool practicedBefore, out bool openedSecret, out SaberHand titleHand)
     {
         bool same = !string.IsNullOrEmpty(runId) && runId == RunId;
