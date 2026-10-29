@@ -76,10 +76,10 @@ public class AchievementTrackerTests
     {
         string run = NewId();
         var unlocks = AchievementTracker.Record(Ctx(run, change: Excellent));
-        CollectionAssert.AreEqual(new[] { "clear", "combo50", "ranks", "firstever", "combo100", "splus", "fc", "ap" }, Ids(unlocks),
+        CollectionAssert.AreEqual(InDisplayOrder("clear", "combo50", "ranks", "firstever", "combo100", "splus", "medal3", "fc", "ap"), Ids(unlocks),
             "簡単なものから(段の低い順)、clear が最初(どれも2台で初めてなので初物も)");
         foreach (var unlock in unlocks) Assert.AreEqual(1, unlock.Number, unlock.Id + " の1人目");
-        CollectionAssert.AreEqual(new[] { "clear", "ap", "fc", "splus", "combo100", "firstever", "ranks", "combo50" }, GameSession.FinalAchievements,
+        CollectionAssert.AreEqual(new[] { "clear" }.Concat(InDisplayOrder("combo50", "ranks", "firstever", "combo100", "splus", "medal3", "fc", "ap").Reverse()), GameSession.FinalAchievements,
             "相手の台へ送る記録では clear を先に、あとは難しいものから(1通に収まらないときは取りやすいものから外れる)");
         CollectionAssert.AreEquivalent(Ids(unlocks), AchievementStore.UnlockedIn("", run));
 
@@ -106,11 +106,12 @@ public class AchievementTrackerTests
     {
         int before = AchievementStore.WriteCountForTest;
         var unlocks = AchievementTracker.Record(Ctx(NewId(), change: Excellent));
-        Assert.AreEqual(8, unlocks.Count);
+        Assert.AreEqual(9, unlocks.Count);
         Assert.AreEqual(3, AchievementStore.WriteCountForTest - before);
         before = AchievementStore.WriteCountForTest;
-        Assert.AreEqual(7, AchievementTracker.Record(Ctx(NewId(), change: Excellent)).Count, "2人目は初物なし");
-        Assert.AreEqual(2, AchievementStore.WriteCountForTest - before);
+        Assert.AreEqual(8, AchievementTracker.Record(Ctx(NewId(), change: Excellent)).Count, "2人目は初物なし");
+        // 2陣目の数え合い(点より中身・三色メダルなど)を最後に決める段があるので、2人目の回も3回まで(2026-10-30)。
+        Assert.LessOrEqual(AchievementStore.WriteCountForTest - before, 3);
         before = AchievementStore.WriteCountForTest;
         Assert.AreEqual(1, AchievementTracker.Record(Ctx(NewId())).Count);
         Assert.LessOrEqual(AchievementStore.WriteCountForTest - before, 1, "clear だけの回は1回");
@@ -144,7 +145,7 @@ public class AchievementTrackerTests
         string run = NewId();
         int before = AchievementStore.WriteCountForTest;
         var unlocks = AchievementTracker.Record(Ctx(run, change: HardExcellent));
-        CollectionAssert.AreEqual(InDisplayOrder("clear", "hard", "combo50", "ranks", "harvest", "firstever", "combo100", "splus", "fc", "hardsplus", "hardfc", "ap"),
+        CollectionAssert.AreEqual(InDisplayOrder("clear", "hard", "combo50", "ranks", "harvest", "firstever", "combo100", "splus", "medal3", "fc", "hardsplus", "hardfc", "ap", "triplegold"),
             Ids(unlocks), "初物・大収穫も表示の順(簡単なものから)の位置に");
         foreach (var unlock in unlocks) Assert.AreEqual(1, unlock.Number, unlock.Id);
         Assert.AreEqual(3, AchievementStore.WriteCountForTest - before);
@@ -299,7 +300,9 @@ public class AchievementTrackerTests
         Assert.AreSame(songs, c.ListedSongs);
         Assert.AreSame(plays, c.Plays);
         Assert.AreEqual(0, c.ClearsToday);
-        CollectionAssert.AreEqual(new[] { (Fes, new DateTimeOffset(Noon.Date).ToUnixTimeMilliseconds()) }, asked, "その回のモードの、終えた日の分");
+        long midnight = new DateTimeOffset(Noon.Date).ToUnixTimeMilliseconds();
+        CollectionAssert.AreEqual(new[] { (Fes, midnight), (Fes, 0L), (Fes, midnight) }, asked,
+            "その回のモードの今日の数と、過去の履歴の照合に使う総数");
 
         GameSession.FinalDailyRanking = null;
         AchievementTracker.ClearsSince = (ns, since) => -1;

@@ -79,6 +79,9 @@ public class RankingSyncPlayTests
             MachineId = "test-" + station + "-" + Guid.NewGuid().ToString("N"), Station = station, LogKey = logKey,
             PendingKey = logKey == KeyA ? PendingKeyA : PendingKeyB, ShowNotices = false,
         });
+        // 前のテストが Game シーンを開いたまま終わると、演奏中と見なされてログの保存が後回しになる(2026-10-30 の最後のテストで3件落ちた)。
+        // このテストは保存まで確かめるので、演奏中ではない扱いに固定する。
+        sync.BusyForTest = false;
         created.Add(sync);
         return sync;
     }

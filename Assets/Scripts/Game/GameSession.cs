@@ -125,9 +125,11 @@ public static class GameSession
         catch (System.Exception exception) { Debug.LogException(exception); }
         // ここで通算の表に書けなかった(表が壊れている・保存の失敗)ときも、相手の台へは送り、この台の表には RankingSync が
         // 動いている間に足し直す(FinalDailyRanking は失敗の結果でも入っているので、この回で記録し直すことはない)。
+        var stats = AchievementTracker.Instance != null ? AchievementTracker.Instance.StatsForBatch5b(AchievementRunId) : null;
+        var extra = PlayStats.SummaryBatch5b(stats, AchievementRunId, FinalAimMode, now);
         var play = RankingSyncLog.NewPlay(AchievementRunId, SelectedSongId, SelectedDifficulty, FinalScore,
             PlayRankHelper.Label(PlayRankHelper.FromScore(FinalScore)), FinalAccuracy, now, PhoneSaberStation.Read(),
-            RunNamespace, RunAchievementIds());
+            RunNamespace, RunAchievementIds(), extra.cuts, extra.lc, extra.dur);
         completedAtUnixMs = play.at;
         RankingSync.RecordLocal(play, FinalDailyRanking.Available);
     }
