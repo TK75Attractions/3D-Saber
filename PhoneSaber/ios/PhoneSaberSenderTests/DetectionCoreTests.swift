@@ -5538,6 +5538,96 @@ extension DetectionCoreTests {
         XCTAssertNil(lock.select([], color: .red, width: 480, height: 640, now: 8.0 / 60,
                                 continuityCandidates: [endOnTestCandidate(length: 12, x: 300, eligible: false)]))
     }
+
+    func testEndOnReacquisitionConfirmsCurrentBlobWithoutRenewingDeadline() {
+        for color in [SaberColor.red, .blue] {
+            for scale in [1, 2] {
+                let lock = SaberTrackLock()
+                func select(_ normal: [SaberCandidate], _ short: [SaberCandidate], _ now: Double) -> SaberCandidate? {
+                    lock.select(normal, color: color, width: 480 * scale, height: 640 * scale, now: now,
+                                observedCandidates: normal + short, continuityCandidates: short)
+                }
+                for (i, length) in [48, 36, 26, 18].enumerated() {
+                    XCTAssertNotNil(select([endOnTestCandidate(length: length * scale, x: 100 * scale)], [], Double(i) / 60))
+                }
+                XCTAssertNil(select([], [], 0.16), "不在中に過去端点を送らない")
+                // 直前端点から中点まで23px。通常の20pxを外れるが、確認後は再取得できる。
+                let first = endOnTestCandidate(length: 12 * scale, x: 135 * scale, eligible: false)
+                let current = endOnTestCandidate(length: 12 * scale, x: 134 * scale, eligible: false)
+                XCTAssertNil(select([], [first], 0.18), "一度の点滅では再取得しない")
+                XCTAssertEqual(select([], [current], 0.197)?.endpoints.0, current.endpoints.0)
+                XCTAssertFalse(lock.suppressed.contains(color))
+                for i in 13...31 {
+                    XCTAssertEqual(select([], [current], Double(i) / 60)?.endpoints.1, current.endpoints.1)
+                }
+                XCTAssertNil(select([], [current], 0.534), "再取得しても最初のarmから0.5秒で終了")
+            }
+        }
+    }
+
+    func testEndOnReacquisitionRequiresUninterruptedNearbyObservations() {
+        let lock = SaberTrackLock()
+        func select(_ short: [SaberCandidate], _ time: Double) -> SaberCandidate? {
+            lock.select([], color: .red, width: 480, height: 640, now: time, continuityCandidates: short)
+        }
+        for (i, length) in [48, 36, 26, 18].enumerated() {
+            _ = lock.select([endOnTestCandidate(length: length)], color: .red,
+                            width: 480, height: 640, now: Double(i) / 60)
+        }
+        let short = endOnTestCandidate(length: 12, x: 105, eligible: false)
+        XCTAssertNil(select([short], 0.18))
+        XCTAssertNil(select([], 0.19))
+        XCTAssertNil(select([short], 0.20), "候補なしを挟んだ観測を連続扱いしない")
+        let moved = endOnTestCandidate(length: 12, x: 128, eligible: false)
+        XCTAssertNil(select([moved], 0.217), "24px内でも確認候補から8pxを超えた移動は再確認")
+        XCTAssertNil(select([moved], 0.25), "確認間隔25ms超も再確認")
+        XCTAssertEqual(select([moved], 0.267)?.endpoints.0, moved.endpoints.0)
+    }
+
+    func testEndOnReacquisitionStillRequiresArmingColorSafetyAndProximity() {
+        let lock = SaberTrackLock()
+        let short = endOnTestCandidate(length: 12, eligible: false)
+        func select(_ candidates: [SaberCandidate], _ time: Double, color: SaberColor = .red) -> SaberCandidate? {
+            lock.select([], color: color, width: 480, height: 640, now: time, continuityCandidates: candidates)
+        }
+        XCTAssertNil(select([short], 0.18))
+        XCTAssertNil(select([short], 0.197), "短い静止物だけからはarmしない")
+        for (i, length) in [48, 36, 26, 18].enumerated() {
+            _ = lock.select([endOnTestCandidate(length: length)], color: .red,
+                            width: 480, height: 640, now: 1 + Double(i) / 60)
+        }
+        XCTAssertNil(select([short], 1.18, color: .blue), "他色へ期限を貸さない")
+        XCTAssertNil(select([short], 1.197, color: .blue))
+        let distant = endOnTestCandidate(length: 12, x: 140, eligible: false)
+        XCTAssertNil(select([distant], 1.18))
+        XCTAssertNil(select([distant], 1.197), "最後の端点から24pxを超える塊には移らない")
+        XCTAssertNil(select([short], 1.214))
+        var cone = short
+        cone.warmNoDeepRed = SaberWarmNoDeepRedVerdict(deepCount: 0, warmCount: 10, pixelCount: 10)
+        XCTAssertNil(select([cone], 1.231), "再取得でも赤の色支持gateを維持")
+        XCTAssertNil(select([short], 1.248), "不適格な色支持を確認回数に数えない")
+        lock.reset()
+        XCTAssertNil(select([short], 1.265))
+        XCTAssertNil(select([short], 1.282), "resetで確認途中の履歴も消す")
+    }
+
+    func testEndOnReacquisitionNormalCandidateInterruptsConfirmation() {
+        let lock = SaberTrackLock()
+        for (i, length) in [48, 36, 26, 18].enumerated() {
+            _ = lock.select([endOnTestCandidate(length: length)], color: .red,
+                            width: 480, height: 640, now: Double(i) / 60)
+        }
+        let short = endOnTestCandidate(length: 12, eligible: false)
+        XCTAssertNil(lock.select([], color: .red, width: 480, height: 640, now: 0.18,
+                                 continuityCandidates: [short]))
+        XCTAssertNil(lock.select([endOnTestCandidate(length: 60, x: 400)], color: .red,
+                                 width: 480, height: 640, now: 0.19, continuityCandidates: [short]),
+                     "通常候補が存在したら、継続ゲートで未選択でも救済しない")
+        XCTAssertNil(lock.select([], color: .red, width: 480, height: 640, now: 0.20,
+                                 continuityCandidates: [short]), "通常候補を挟んだ確認はやり直す")
+        XCTAssertEqual(lock.select([], color: .red, width: 480, height: 640, now: 0.217,
+                                   continuityCandidates: [short])?.endpoints.0, short.endpoints.0)
+    }
 }
 
 extension DetectionCoreTests {

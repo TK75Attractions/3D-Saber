@@ -720,6 +720,7 @@ final class SaberTrackLock {
         var deadline: Double?
     }
     private var endOn: [SaberColor: EndOn] = [:]
+    private var endOnPending: [SaberColor: EndOnSample] = [:]
     // 10/29の短縮区間。短辺480px換算。期限は救済や短いeligibleの瞬間復帰では延長しない。
     static let endOnSeconds = 0.5
     static let endOnRecentSeconds = 0.10
@@ -744,11 +745,13 @@ final class SaberTrackLock {
 
     private func rememberEndOn(_ winner: SaberCandidate, color: SaberColor, scale: Double, now: Double,
                                rescued: Bool) {
+        endOnPending[color] = nil
         let e = winner.endpoints
         let sample = EndOnSample(endpoints: e,
             length: hypot(Double(e.1.x - e.0.x), Double(e.1.y - e.0.y)), time: now)
         var state = endOn[color] ?? EndOn()
-        if let last = state.last, now < last.time || now - last.time > Self.endOnRecentSeconds {
+        // 確認済み再取得ではarm時の期限を保持し、0.5秒を更新しない。
+        if let last = state.last, now < last.time || (!rescued && now - last.time > Self.endOnRecentSeconds) {
             state = EndOn()
         }
         if let last = state.last {
@@ -780,10 +783,19 @@ final class SaberTrackLock {
                              scale: Double, now: Double) -> SaberCandidate? {
         guard let state = endOn[color], let deadline = state.deadline, now < deadline,
               let last = state.last, now >= last.time,
-              now - last.time <= Self.endOnRecentSeconds else { return nil }
+              now - last.time <= Self.endOnSeconds else {
+            endOnPending[color] = nil
+            return nil
+        }
+        // 0.10秒を超えた途切れは元の期限内だけ再取得。24px内の実測塊を2回確認する。
+        // 通常の継続より4px広い代わりに、連続観測間の移動を8px以内に限定し外挿しない。
+        let needsConfirmation = now - last.time > Self.endOnRecentSeconds
+        defer { if !needsConfirmation { endOnPending[color] = nil } }
+
         let a = last.endpoints
         let anchors = Self.endOnAnchors(a)
-        var closest = 20 * scale
+        let radius = (needsConfirmation ? 24.0 : 20) * scale
+        var closest = radius
         var winner: SaberCandidate?
         for candidate in candidates where Self.isEndOnCandidate(candidate, scale: scale) {
             let e = candidate.endpoints
@@ -795,15 +807,27 @@ final class SaberTrackLock {
             let measuredDistance = anchors.map { hypot(x - Double($0.x), y - Double($0.y)) }.min()!
             var distance = measuredDistance
             // n0を挟んだ2〜3コマだけ直前の実測移動を併用。予測座標そのものは出力しない。
-            if now - last.time >= 0.025, let previous = state.previous, last.time > previous.time {
+            if !needsConfirmation, now - last.time >= 0.025, let previous = state.previous, last.time > previous.time {
                 let b = previous.endpoints
                 let factor = min(now - last.time, 0.05) / (last.time - previous.time)
                 let dx = Double(a.0.x + a.1.x - b.0.x - b.1.x) / 2 * factor
                 let dy = Double(a.0.y + a.1.y - b.0.y - b.1.y) / 2 * factor
                 distance = min(distance, anchors.map { hypot(x - Double($0.x) - dx, y - Double($0.y) - dy) }.min()!)
             }
-            if measuredDistance <= 48 * scale && distance <= 20 * scale
+            if measuredDistance <= 48 * scale && distance <= radius
                 && (winner == nil || distance < closest) { closest = distance; winner = candidate }
+        }
+        if needsConfirmation {
+            let previous = endOnPending.removeValue(forKey: color)
+            guard let winner else { return nil }
+            let e = winner.endpoints
+            let sample = EndOnSample(endpoints: e,
+                length: hypot(Double(e.1.x - e.0.x), Double(e.1.y - e.0.y)), time: now)
+            endOnPending[color] = sample
+            guard let previous, now > previous.time, now - previous.time <= 0.025,
+                  hypot(Double(e.0.x + e.1.x - previous.endpoints.0.x - previous.endpoints.1.x) / 2,
+                        Double(e.0.y + e.1.y - previous.endpoints.0.y - previous.endpoints.1.y) / 2) <= 8 * scale
+            else { return nil }
         }
         return winner
     }
@@ -831,7 +855,7 @@ final class SaberTrackLock {
     private var dimensions: (Int, Int)?
     private(set) var suppressed: Set<SaberColor> = []
 
-    func reset() { tracks = [:]; endOn = [:]; motions = [:]; stationary = [:]; dimensions = nil; suppressed = [] }
+    func reset() { tracks = [:]; endOn = [:]; endOnPending = [:]; motions = [:]; stationary = [:]; dimensions = nil; suppressed = [] }
 
     /// 無視登録専用のインスタンスで既存の動き記録を再利用する。認識用の状態には触れない。
     func observeIgnoreMotion(_ analysis: SaberFrameAnalysis, width: Int, height: Int, now: Double) -> Set<SaberColor> {
@@ -1119,6 +1143,7 @@ final class SaberTrackLock {
             track = t
         }
         let scale = Double(min(width, height)) / 480
+        if !eligible.isEmpty { endOnPending[color] = nil }
         // eligibleがあれば通常の選択・ゲートへ戻す。救済は現frameの不適格候補だけ。
         let rescued = winner == nil && eligible.isEmpty
             ? endOnWinner(continuityCandidates, color: color, scale: scale, now: now) : nil

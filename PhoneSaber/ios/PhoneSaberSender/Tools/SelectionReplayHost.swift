@@ -227,7 +227,13 @@ private func testEndOnSelection() {
         precondition(select([], [short], 0.534) == nil, "短いeligible復帰でも0.5秒期限を延ばさない")
         precondition(lock.suppressed.contains(color))
         seed()
-        precondition(select([], [short], 0.151) == nil, "6コマを超えた不在は継がない")
+        precondition(select([], [short], 0.151) == nil, "6コマを超えた不在は単発の塊で継がない")
+        precondition(select([], [], 0.16) == nil)
+        let returning = candidate(12, 135, eligible: false)
+        precondition(select([], [returning], 0.18) == nil, "近傍24pxでも初回は確認だけ")
+        precondition(select([], [returning], 0.197)?.endpoints.1 == returning.endpoints.1)
+        for frame in 13...31 { precondition(select([], [returning], Double(frame) / 60) != nil) }
+        precondition(select([], [returning], 0.534) == nil, "再取得でも元の期限を延ばさない")
         seed(); lock.reset()
         precondition(select([], [short], 0.07) == nil)
         seed()
@@ -241,5 +247,5 @@ private func testEndOnSelection() {
         seed()
         precondition(select([], [short], -0.1) == nil, "時計の逆行では使わない")
     }
-    print("End-on selection: current endpoints, recency, deadline, safety, normal priority, color and reset passed")
+    print("End-on selection: current endpoints, confirmed reacquisition, deadline, safety, normal priority, color and reset passed")
 }
