@@ -131,7 +131,8 @@ def analyse(bundle: Path) -> dict:
     for image in summary.get('images', []):
         context = json.loads((bundle / image['frameContextPath']).read_text(encoding='utf-8'))
         contexts.update({f['frameID']: f for f in context.get('frames', [])})
-    ids = sorted(set(model['frames']) | set(contexts), key=lambda f: (
+    raw_mode = summary.get('fullResolution', {}).get('state') == 'captured' if summary.get('fullResolution') else False
+    ids = sorted(set(model['frames']) if raw_mode else set(model['frames']) | set(contexts), key=lambda f: (
         model['frames'].get(f, {}).get('t', contexts.get(f, {}).get('timestamp')), f))
     result = dict(bundle=bundle, model=model, time=clip_time(summary.get('sessionID') or bundle.name),
                   colors={}, background=None, iso=None)
@@ -207,10 +208,19 @@ def representative_image(model: dict, output: Path) -> int:
     """トリガーに最も近いcontext（なければevent）を元の解像度で描画する。"""
     images = model['summary'].get('images', [])
     contexts = [i for i in images if i.get('role') == 'context']
-    if not images:
+    full = model['summary'].get('fullResolution') or {}
+    if not images and full.get('state') != 'captured':
         raise ValueError('保存画像なし')
-    image = min(contexts or images, key=lambda i: (abs(i.get('offsetSeconds') or 0), i['frameID']))
-    width, height, pixels = report.read_png(model['bundle'] / image['path'])
+    image = min(contexts or images, key=lambda i: (abs(i.get('offsetSeconds') or 0), i['frameID'])) if images else {}
+    if full.get('state') == 'captured':
+        from phone_saber_fullres import read_rgb
+        rows = list(model['frames'].values())
+        index = min(range(len(rows)), key=lambda i: abs(rows[i]['t'] - model['clip']['trigger']['timestamp']))
+        image = {'frameID': rows[index]['f']}
+        width, height = full['width'], full['height']
+        pixels = read_rgb(model['bundle'], full, index)
+    else:
+        width, height, pixels = report.read_png(model['bundle'] / image['path'])
     size = model['clip']['frameSize']
     sx, sy = width / size['width'], height / size['height']
     for color in COLORS:

@@ -94,6 +94,12 @@ struct ObservedFrame {
     let playArea: SaberPlayArea?
     let captureFPS: Int
     var appliedISO: Float? = nil
+    // 原寸記録だけがretainする。baseAddressは非同期キューへ渡してはいけない。
+    var pixelBuffer: CVPixelBuffer? = nil
+    var cameraISO: Double? = nil
+    var exposureDurationSeconds: Double? = nil
+    var cameraMetadataSource: String? = nil
+    var cameraMetadataAgeSeconds: Double? = nil
 }
 
 /// Read-only consumer of production analysis results (the auto clip recorder,
@@ -102,9 +108,11 @@ struct ObservedFrame {
 protocol FrameAnalysisObserver: AnyObject {
     func observe(_ frame: ObservedFrame)
     func wantsComponentDiagnostics(timestamp: Double) -> Bool
+    var wantsFullResolution: Bool { get }
 }
 
 extension FrameAnalysisObserver {
+    var wantsFullResolution: Bool { false }
     func wantsComponentDiagnostics(timestamp: Double) -> Bool { false }
 }
 
@@ -922,12 +930,24 @@ final class FrameProcessor: @unchecked Sendable {
         // After the coordinates were handed to the sender: the observer only
         // reads this frame's analysis and (rarely) copies pixels.
         if let observer, let observedAnalysis {
+            var camera: DebugRecordingFrameCamera?
+            if observer.wantsFullResolution {
+                pendingLock.lock()
+                let state = debugCameraDeviceState
+                pendingLock.unlock()
+                camera = DebugRecordingFrameCamera.make(
+                    exif: DebugRecordingFrameCamera.exifAttachment(of: sampleBuffer),
+                    device: state, now: clock())
+            }
             observer.observe(ObservedFrame(
                 baseAddress: bytes, width: width, height: height, bytesPerRow: bytesPerRow,
                 sequence: sequence,
                 timestamp: CMSampleBufferGetPresentationTimeStamp(sampleBuffer).seconds,
                 processingSeconds: max(0, detectionEnd - processingStart),
-                analysis: observedAnalysis, ignoreZones: zones, playArea: area, captureFPS: frameCaptureFPS, appliedISO: frameISO))
+                analysis: observedAnalysis, ignoreZones: zones, playArea: area, captureFPS: frameCaptureFPS, appliedISO: frameISO,
+                pixelBuffer: observer.wantsFullResolution ? pixelBuffer : nil,
+                cameraISO: camera?.iso, exposureDurationSeconds: camera?.exposureDurationSeconds,
+                cameraMetadataSource: camera?.source, cameraMetadataAgeSeconds: camera?.deviceSampleAgeSeconds))
         }
         if let debugVideoRecorder = debugVideoRecorder {
             let processingTimeSeconds = max(0, clock() - processingStart)

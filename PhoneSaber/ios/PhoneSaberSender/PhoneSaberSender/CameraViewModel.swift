@@ -819,6 +819,8 @@ final class CameraViewModel: NSObject, ObservableObject {
     nonisolated let processor: FrameProcessor
     /// 自動クリップ（AutoClip.swift）。送信中、問題らしい瞬間の前後だけを保存して Mac へ送る。
     nonisolated let autoClip: AutoClipRecorder
+    @Published private(set) var fullResolutionEnabled = false
+    @Published private(set) var fullResolutionStatusLine = ""
     @Published private(set) var autoClipEnabled = false
     @Published private(set) var autoClipStatusLine = ""
     /// 最後に座標を送っていた時刻（自動クリップの転送を遊んでいる間は待たせる）。
@@ -1134,7 +1136,10 @@ final class CameraViewModel: NSObject, ObservableObject {
                 ?? FileManager.default.temporaryDirectory,
             enabled: autoClipOn)
         self.autoClipEnabled = autoClipOn
+        let fullResolutionOn = !underTest && UserDefaults.standard.bool(forKey: AutoClipSettings.fullResolutionKey)
+        self.fullResolutionEnabled = fullResolutionOn
         super.init()
+        autoClip.fullRecorder.setEnabled(fullResolutionOn)
         refreshShutterStatus()
         self.lowHeatDisplay.onDimmedChange = { [weak self] dimmed in self?.lowHeatDimmedChanged(dimmed) }
         if !underTest {
@@ -1903,6 +1908,14 @@ final class CameraViewModel: NSObject, ObservableObject {
 
     // MARK: 自動クリップ（AutoClip.swift）
 
+    func setFullResolutionEnabled(_ enabled: Bool) {
+        fullResolutionEnabled = enabled
+        if NSClassFromString("XCTestCase") == nil { UserDefaults.standard.set(enabled, forKey: AutoClipSettings.fullResolutionKey) }
+        autoClip.fullRecorder.setEnabled(enabled)
+        if enabled && !autoClipEnabled { setAutoClipEnabled(true) }
+        refreshAutoClipStatus()
+    }
+
     func setAutoClipEnabled(_ enabled: Bool, commandID: Int? = nil) {
         autoClipEnabled = enabled
         if NSClassFromString("XCTestCase") == nil { UserDefaults.standard.set(enabled, forKey: AutoClipSettings.enabledKey) }
@@ -1955,6 +1968,12 @@ final class CameraViewModel: NSObject, ObservableObject {
             thermal: thermalState, fpsReduced: thermalFPSPolicy.reduced,
             debugRecording: debugRecordingActive || debugRecordingFinalizing))
         if running && (rates.redSendFPS > 0 || rates.blueSendFPS > 0) { lastLiveTrafficAt = time }
+        let battery = deviceBatterySnapshot().level
+        let fullReason = !running ? "カメラ停止" :
+            AutoClipSuspendPolicy.reason(thermal: thermalState, fpsReduced: thermalFPSPolicy.reduced,
+                debugRecording: debugRecordingActive || debugRecordingFinalizing)
+            ?? ((battery ?? 0) <= 0.2 ? "電池20%以下・取得不可" : nil)
+        autoClip.fullRecorder.updatePolicy(reason: fullReason, directory: autoClip.directory)
         let live = running && lastLiveTrafficAt.map { time - $0 < Self.autoClipQuietSeconds } ?? false
         DebugBundleTransfer.shared.setLiveTrafficActive(live)
         refreshAutoClipStatus()
@@ -1964,6 +1983,7 @@ final class CameraViewModel: NSObject, ObservableObject {
     static let autoClipQuietSeconds: TimeInterval = 5
 
     private func refreshAutoClipStatus() {
+        assignIfChanged(\.fullResolutionStatusLine, autoClip.fullRecorder.statusLine)
         let status = autoClip.statusSnapshot
         var line: String
         if !status.enabled {
@@ -3086,7 +3106,7 @@ final class CameraViewModel: NSObject, ObservableObject {
         )
         if debugCameraConfiguration != updated { debugCameraConfiguration = updated }
 #if os(iOS)
-        if debugRecordingActive {
+        if debugRecordingActive || fullResolutionEnabled {
             // Same throttled main-actor read as above; the processor only keeps
             // the newest value and attaches it, with its age, to each frame.
             let deviceGains = camera.deviceWhiteBalanceGains

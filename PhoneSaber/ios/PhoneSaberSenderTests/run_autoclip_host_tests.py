@@ -16,7 +16,7 @@ def main():
     frameworks = developer / "Library/Frameworks"
     with tempfile.TemporaryDirectory(prefix="phonesaber-autoclip-") as directory:
         tmp = Path(directory)
-        (tmp / "Observer.swift").write_text("import Foundation\n" + contract)
+        (tmp / "Observer.swift").write_text("import Foundation\nimport CoreVideo\n" + contract)
         (tmp / "main.swift").write_text('''import XCTest
 import Darwin
 let suite = AutoClipTests.defaultTestSuite

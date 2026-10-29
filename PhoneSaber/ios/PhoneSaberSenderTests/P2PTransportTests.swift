@@ -2744,6 +2744,35 @@ final class SendGapTests: XCTestCase {
 
 #if !PIPELINE_ROUTING_STANDALONE
 final class DebugBundleLogTests: XCTestCase {
+    func testFullResolutionFilesTravelInExistingEnvelopeAndRejectWrongSizes() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let full: [String: Any] = ["state": "captured", "version": 1, "pixelsPath": "fullres.bgra",
+                                  "metadataPath": "fullres.jsonl", "frameBytes": 16, "frameCount": 2]
+        let summary: [String: Any] = ["sessionID": "fullres_test", "selectedImageCount": 0,
+                                     "images": [], "fullResolution": full]
+        try JSONSerialization.data(withJSONObject: summary).write(to: root.appendingPathComponent("summary.json"))
+        try Data("test".utf8).write(to: root.appendingPathComponent("prompt.md"))
+        let raw = Data((0..<32).map(UInt8.init))
+        try raw.write(to: root.appendingPathComponent("fullres.bgra"))
+        try Data("{}\n{}\n".utf8).write(to: root.appendingPathComponent("fullres.jsonl"))
+        let package = try DebugBundleTransfer.makePackage(for: root)
+        defer { try? FileManager.default.removeItem(at: package) }
+        let bytes = try Data(contentsOf: package)
+        let length = bytes[4..<8].reduce(0) { ($0 << 8) | Int($1) }
+        let manifest = try XCTUnwrap(JSONSerialization.jsonObject(with: bytes[8..<8 + length]) as? [String: Any])
+        let files = try XCTUnwrap(manifest["files"] as? [[String: Any]])
+        XCTAssertEqual(Set(files.compactMap { $0["path"] as? String }), ["summary.json", "prompt.md", "fullres.bgra", "fullres.jsonl"])
+        XCTAssertEqual(files.first { $0["path"] as? String == "fullres.bgra" }?["contentType"] as? String, "application/octet-stream")
+        XCTAssertEqual(files.first { $0["path"] as? String == "fullres.jsonl" }?["contentType"] as? String, "application/x-ndjson")
+        try raw.dropLast().write(to: root.appendingPathComponent("fullres.bgra"))
+        XCTAssertThrowsError(try DebugBundleTransfer.makePackage(for: root))
+        try FileManager.default.removeItem(at: root.appendingPathComponent("fullres.bgra"))
+        try FileManager.default.createSymbolicLink(at: root.appendingPathComponent("fullres.bgra"), withDestinationURL: root.appendingPathComponent("prompt.md"))
+        XCTAssertThrowsError(try DebugBundleTransfer.makePackage(for: root))
+    }
+
     func testUploadHeadersAndStartEndLogsShareIdentityWithoutChangingBody() throws {
         let url = try XCTUnwrap(URL(string: "http://127.0.0.1:8765/v1/bundle"))
         var ids = Set<String>()

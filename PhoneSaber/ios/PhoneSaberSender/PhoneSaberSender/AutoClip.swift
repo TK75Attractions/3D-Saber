@@ -1,4 +1,5 @@
 import CoreGraphics
+import CoreVideo
 import Foundation
 import ImageIO
 
@@ -22,6 +23,7 @@ import ImageIO
 // Memory at 480×640: 21 × 300 KiB + 3 × 1.2 MiB + ≈1 MiB metadata ≈ 11 MiB.
 
 enum AutoClipSettings {
+    static let fullResolutionKey = "PhoneSaber.autoClip.fullResolution.v1"
     static let enabledKey = "PhoneSaber.autoClip.enabled.v1"
     static let directoryName = "AutoClips"
     // 診断だけの明示opt-in。既存インストールでも既定OFF。
@@ -60,7 +62,7 @@ enum AutoClipLimits {
     static let repeatLocationMemory = 8
     /// 送れないまま15秒ごとに増えると12本では数分で消える（10-29）。容量は maximumStoredBytes で抑える。
     static let maximumStoredClips = 40
-    static let maximumStoredBytes: Int64 = 160 * 1_024 * 1_024
+    static let maximumStoredBytes: Int64 = 1_024 * 1_024 * 1_024
     static let minimumFreeSpaceBytes: Int64 = 512 * 1_024 * 1_024
     /// Below the receiver's 512 KiB summary.json limit.
     static let maximumSummaryBytes = 480 * 1_024
@@ -690,6 +692,8 @@ struct AutoClipCapture {
     let rejectedTriggers: [String: Int]
     // 未収集はclip単位で示し、OFF時に全フレームへ同じ値を書かない。
     var componentDiagnosticsEnabled: Bool = false
+    var fullResolutionRequested = false
+    var fullResolution: AutoClipFullSnapshot? = nil
 }
 
 final class AutoClipRecorder: FrameAnalysisObserver {
@@ -702,6 +706,8 @@ final class AutoClipRecorder: FrameAnalysisObserver {
         let captureFPS: Int
     }
 
+    let fullRecorder = AutoClipFullRecorder()
+    var wantsFullResolution: Bool { fullRecorder.isEnabled }
     private let lock = NSLock()
     // Guarded by `lock` (written from the main actor / writer queue, read on the frame queue).
     private var enabled: Bool
@@ -838,7 +844,11 @@ final class AutoClipRecorder: FrameAnalysisObserver {
                                   bytesPerRow: input.bytesPerRow, sequence: sequenceOffset + input.sequence,
                                   timestamp: input.timestamp, processingSeconds: input.processingSeconds,
                                   analysis: input.analysis, ignoreZones: input.ignoreZones,
-                                  playArea: input.playArea, captureFPS: input.captureFPS, appliedISO: input.appliedISO)
+                                  playArea: input.playArea, captureFPS: input.captureFPS, appliedISO: input.appliedISO,
+                                  pixelBuffer: input.pixelBuffer, cameraISO: input.cameraISO,
+                                  exposureDurationSeconds: input.exposureDurationSeconds,
+                                  cameraMetadataSource: input.cameraMetadataSource,
+                                  cameraMetadataAgeSeconds: input.cameraMetadataAgeSeconds)
         // A new format or a time discontinuity invalidates the recorded past.
         if let current = buffers, current.width != frame.width || current.height != frame.height {
             dropState()
@@ -882,7 +892,8 @@ final class AutoClipRecorder: FrameAnalysisObserver {
                                  timestamp: frame.timestamp, note: $0)
         }
 
-        if let current = pending {
+        var fullTrigger: AutoClipTriggerEvent?
+        if pending != nil {
             buffers.storeEvent(frame)
             if manualEvent != nil || redEvent != nil || blueEvent != nil {
                 for event in [manualEvent, redEvent, blueEvent].compactMap({ $0 }) {
@@ -893,7 +904,6 @@ final class AutoClipRecorder: FrameAnalysisObserver {
                     }
                 }
             }
-            if frame.timestamp >= current.end { finalize(current, buffers: buffers, environmentNow: environmentNow) }
         } else if manualEvent != nil || redEvent != nil || blueEvent != nil {
             for event in [manualEvent, redEvent, blueEvent].compactMap({ $0 }) {
                 let decision = limiter.admit(event, busy: writerBusy, width: frame.width, height: frame.height)
@@ -907,6 +917,7 @@ final class AutoClipRecorder: FrameAnalysisObserver {
                 pending = Pending(event: event, end: frame.timestamp + AutoClipLimits.postSeconds,
                                   environment: environmentNow, zones: frame.ignoreZones,
                                   area: frame.playArea, captureFPS: frame.captureFPS)
+                fullTrigger = event
                 buffers.storeEvent(frame)
                 onLog?("trigger kind=\(event.kind.rawValue) color=\(Self.colorName(event.color)) frame=\(event.frameID)"
                        + (event.jumpDistance.map { String(format: " jump=%.0fpx", $0) } ?? "")
@@ -916,9 +927,14 @@ final class AutoClipRecorder: FrameAnalysisObserver {
             }
             lock.lock(); status.rejected = limiter.rejected; lock.unlock()
         }
+        fullRecorder.offer(frame, trigger: fullTrigger)
+        if let current = pending, frame.timestamp >= current.end {
+            finalize(current, buffers: buffers, environmentNow: environmentNow)
+        }
     }
 
     private func dropState() {
+        if buffers != nil || pending != nil { fullRecorder.reset() }
         if let pending {
             onLog?("clip dropped kind=\(pending.event.kind.rawValue) (suspended, format change, sequence reset or time gap)")
             if pending.event.kind == .manual { onManualClipResult?(pending.event.note ?? "", false) }
@@ -933,33 +949,38 @@ final class AutoClipRecorder: FrameAnalysisObserver {
         pending = nil
         self.buffers = nil   // the next frame allocates a fresh ring; this one moves to the writer
         let suffix = current.event.kind.rawValue + (current.event.color.map { "_" + Self.colorName($0) } ?? "")
-        let capture = AutoClipCapture(
+        var capture = AutoClipCapture(
             clipID: "autoclip_\(clipNamer())_\(suffix)", trigger: current.event, buffers: buffers,
             windowStart: current.event.timestamp - AutoClipLimits.preSeconds, windowEnd: current.end,
             captureFPS: current.captureFPS,
             environmentAtTrigger: current.environment, environmentAtSave: environmentNow,
             ignoreZones: current.zones, playArea: current.area,
             sessionClipIndex: limiter.automaticClipsThisSession, rejectedTriggers: limiter.rejected,
-            componentDiagnosticsEnabled: collectComponents)
+            componentDiagnosticsEnabled: collectComponents, fullResolutionRequested: wantsFullResolution)
         lock.lock(); writesInFlight += 1; lock.unlock()
-        writer.write(capture) { [weak self] result in
+        fullRecorder.finish(event: current.event) { [weak self] snapshot in
             guard let self else { return }
-            self.lock.lock()
-            self.writesInFlight = max(0, self.writesInFlight - 1)
-            switch result {
-            case .success(let url):
-                self.status.savedThisSession += 1
-                self.status.savedTotal += 1
-                self.status.lastSavedClipID = url.lastPathComponent
-                self.status.lastError = nil
-            case .failure(let error):
-                self.status.lastError = error.localizedDescription
-            }
-            self.lock.unlock()
-            self.onClipSaved?(result)
-            if current.event.kind == .manual {
-                if case .success = result { self.onManualClipResult?(current.event.note ?? "", true) }
-                else { self.onManualClipResult?(current.event.note ?? "", false) }
+            capture.fullResolution = snapshot
+            self.writer.write(capture) { [weak self] result in
+                guard let self else { return }
+                self.lock.lock()
+                self.writesInFlight = max(0, self.writesInFlight - 1)
+                switch result {
+                case .success(let url):
+                    self.status.savedThisSession += 1
+                    self.status.savedTotal += 1
+                    self.status.lastSavedClipID = url.lastPathComponent
+                    self.status.lastError = nil
+                case .failure(let error):
+                    self.status.lastError = error.localizedDescription
+                }
+                self.lock.unlock()
+                self.fullRecorder.releaseSnapshot()
+                self.onClipSaved?(result)
+                if current.event.kind == .manual {
+                    if case .success = result { self.onManualClipResult?(current.event.note ?? "", true) }
+                    else { self.onManualClipResult?(current.event.note ?? "", false) }
+                }
             }
         }
     }
@@ -1018,6 +1039,10 @@ final class AutoClipWriter {
            available < AutoClipLimits.minimumFreeSpaceBytes {
             throw AutoClipWriterError.lowDiskSpace(available)
         }
+        if capture.fullResolution != nil,
+           (try? DebugRecordingStorageProbe.availableCapacity(at: directory)) ?? 0 < AutoClipFullLimits.minimumFreeBytes {
+            throw AutoClipWriterError.lowDiskSpace(0)
+        }
         let buffers = capture.buffers
         let slots = buffers.frameSlots(from: capture.windowStart, to: capture.windowEnd)
         guard !slots.isEmpty else { throw AutoClipWriterError.noFrames }
@@ -1048,7 +1073,16 @@ final class AutoClipWriter {
                 images.append(content.imageEntry(image, path: "images/\(name)", contextPath: contextPath,
                                                  sessionID: capture.clipID))
             }
-            let summary = try content.summaryData(images: images)
+            var summary = try content.summaryData(images: images)
+            if capture.fullResolutionRequested {
+                var object = try JSONSerialization.jsonObject(with: summary) as! [String: Any]
+                if let full = capture.fullResolution {
+                    object["fullResolution"] = try full.write(to: temporary)
+                } else {
+                    object["fullResolution"] = ["state": "notCaptured", "reason": "suspended, hourly limit, backlog or interrupted window"]
+                }
+                summary = try JSONSerialization.data(withJSONObject: object, options: [.sortedKeys])
+            }
             try summary.write(to: temporary.appendingPathComponent("summary.json"))
             try Data(content.prompt().utf8).write(to: temporary.appendingPathComponent("prompt.md"))
             try? fileManager.removeItem(at: final)
@@ -1503,4 +1537,227 @@ struct AutoClipBundleContent {
     private func round1(_ value: Double) -> Double { (value * 10).rounded() / 10 }
     private func round3(_ value: Double) -> Double { (value * 1000).rounded() / 1000 }
     private func round4(_ value: Double) -> Double { (value * 10000).rounded() / 10000 }
+}
+
+// MARK: - 原寸・全候補の診断記録（既定OFF）
+
+enum AutoClipFullLimits {
+    static let windowSeconds = 2.0
+    static let memoryBytes = 320 * 1_024 * 1_024
+    static let metadataBytesPerFrame = 256 * 1_024
+    static let maximumFrameBytes = 8 * 1_024 * 1_024
+    static let minimumFreeBytes: Int64 = 2 * 1_024 * 1_024 * 1_024
+    static let eventsPerHour = 4
+    static let historyKey = "PhoneSaber.autoClip.fullResolution.history.v1"
+}
+
+struct AutoClipFullFrame {
+    let id: UInt64
+    let timestamp: Double
+    let pixels: Data
+    let metadata: Data
+}
+
+final class AutoClipFullSnapshot {
+    let frames: [AutoClipFullFrame]
+    let event: AutoClipTriggerEvent
+    let width: Int
+    let height: Int
+    let fps: Int
+
+    init(frames: [AutoClipFullFrame], event: AutoClipTriggerEvent, width: Int, height: Int, fps: Int) {
+        self.frames = frames; self.event = event; self.width = width; self.height = height; self.fps = fps
+    }
+
+    func write(to directory: URL) throws -> [String: Any] {
+        let pixelsURL = directory.appendingPathComponent("fullres.bgra")
+        let metadataURL = directory.appendingPathComponent("fullres.jsonl")
+        guard FileManager.default.createFile(atPath: pixelsURL.path, contents: nil),
+              FileManager.default.createFile(atPath: metadataURL.path, contents: nil) else {
+            throw AutoClipWriterError.noFrames
+        }
+        let pixels = try FileHandle(forWritingTo: pixelsURL)
+        let metadata = try FileHandle(forWritingTo: metadataURL)
+        defer { try? pixels.close(); try? metadata.close() }
+        for frame in frames {
+            try pixels.write(contentsOf: frame.pixels)
+            try metadata.write(contentsOf: frame.metadata)
+            try metadata.write(contentsOf: Data([10]))
+        }
+        let missing = zip(frames, frames.dropFirst()).reduce(0) { count, pair in
+            count + max(0, Int(pair.1.id) - Int(pair.0.id) - 1)
+        }
+        let start = event.timestamp - AutoClipFullLimits.windowSeconds
+        let end = event.timestamp + AutoClipFullLimits.windowSeconds
+        let tolerance = 1.5 / Double(max(1, fps))
+        let preComplete = frames.first.map { $0.timestamp <= start + tolerance } ?? false
+        let postComplete = frames.last.map { $0.timestamp >= end - tolerance } ?? false
+        return ["version": 1, "state": "captured", "pixelFormat": "BGRA8",
+                "pixelsPath": "fullres.bgra", "metadataPath": "fullres.jsonl",
+                "width": width, "height": height, "bytesPerRow": width * 4,
+                "frameBytes": width * height * 4, "frameCount": frames.count,
+                "startTimestamp": start, "endTimestamp": end,
+                "preSeconds": 2, "postSeconds": 2, "captureFPS": fps,
+                "missingSequenceFrames": missing, "preComplete": preComplete, "postComplete": postComplete,
+                "complete": missing == 0 && preComplete && postComplete,
+                "candidateColumns": AutoClipBundleContent.candidateColumns,
+                "sourceEncoding": "candidate column 11 is source string (no numeric table)",
+                "scope": "every processed camera frame; camera/mailbox/backlog gaps are sequence gaps; no interpolation",
+                "cameraMetadata": "per-frame Exif first, latest actual device state fallback with age; unknown is null",
+                "limits": ["memoryBytes": AutoClipFullLimits.memoryBytes, "eventsPerHour": AutoClipFullLimits.eventsPerHour]]
+    }
+}
+
+final class AutoClipFullRecorder {
+    // retainするカメラbufferは最大2枚。待機も画素コピーも認識キューでは行わない。
+    private let queue: DispatchQueue
+    private let maximumMemoryBytes: Int
+    private let slots = DispatchSemaphore(value: 2)
+    private let lock = NSLock()
+    private var enabled = false
+    private var policyReason: String?
+    private var message = "原寸記録: OFF"
+    private var generation = 0
+    private var frames: [AutoClipFullFrame] = [] // 以下はqueueだけが所有する。
+    private var bytes = 0
+    private var event: AutoClipTriggerEvent?
+    private var holdingSnapshot = false
+    private var width = 0, height = 0, captureFPS = 60
+    private let defaults: UserDefaults
+
+    init(defaults: UserDefaults = .standard,
+         queue: DispatchQueue = DispatchQueue(label: "PhoneSaberSender.fullres-copy", qos: .utility),
+         maximumMemoryBytes: Int = AutoClipFullLimits.memoryBytes) {
+        self.defaults = defaults; self.queue = queue; self.maximumMemoryBytes = maximumMemoryBytes
+    }
+    var isEnabled: Bool { lock.lock(); defer { lock.unlock() }; return enabled }
+    var statusLine: String { lock.lock(); defer { lock.unlock() }; return message }
+
+    func setEnabled(_ value: Bool) {
+        lock.lock(); enabled = value; lock.unlock()
+        reset()
+        updateMessage(value ? "原寸記録: 準備中（最大4件/時）" : "原寸記録: OFF")
+    }
+
+    func updatePolicy(reason: String?, directory: URL) {
+        // ファイルシステム照会はutility queueでのみ行う。
+        queue.async { [self] in
+            try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            let capacity = try? DebugRecordingStorageProbe.availableCapacity(at: directory)
+            let reason = reason ?? ((capacity ?? 0) < AutoClipFullLimits.minimumFreeBytes ? "空き容量2 GiB未満・取得不可" : nil)
+            lock.lock(); policyReason = reason; let active = enabled; lock.unlock()
+            if let reason, active {
+                clear()
+                updateMessage("原寸記録: 一時停止（\(reason)）")
+            } else if active && !holdingSnapshot {
+                updateMessage("原寸記録: 待機中（最大4件/時・保存合計1 GiB）")
+            }
+        }
+    }
+
+    func reset() {
+        lock.lock(); generation += 1; lock.unlock()
+        queue.async { [self] in clear() }
+    }
+
+    private func clear() { frames.removeAll(); bytes = 0; event = nil }
+    private func updateMessage(_ value: String) { lock.lock(); message = value; lock.unlock() }
+
+    func offer(_ frame: ObservedFrame, trigger: AutoClipTriggerEvent?) {
+        lock.lock()
+        let active = enabled && policyReason == nil
+        let token = generation
+        lock.unlock()
+        guard active, let buffer = frame.pixelBuffer, slots.wait(timeout: .now()) == .success else { return }
+        // ポインタを閉じ込めず、retain済みCVPixelBufferと値型の解析だけを渡す。
+        let analysis = frame.analysis, zones = frame.ignoreZones, area = frame.playArea
+        let id = frame.sequence, timestamp = frame.timestamp, fps = frame.captureFPS
+        let iso = frame.cameraISO, exposure = frame.exposureDurationSeconds
+        let source = frame.cameraMetadataSource, age = frame.cameraMetadataAgeSeconds
+        let milliseconds = frame.processingSeconds * 1000
+        queue.async { [self, buffer] in
+            defer { slots.signal() }
+            lock.lock(); let valid = token == generation && enabled && policyReason == nil; lock.unlock()
+            guard valid, !holdingSnapshot else { return }
+            let w = CVPixelBufferGetWidth(buffer), h = CVPixelBufferGetHeight(buffer)
+            guard CVPixelBufferGetPixelFormatType(buffer) == kCVPixelFormatType_32BGRA,
+                  w > 0, h > 0, w * h * 4 <= AutoClipFullLimits.maximumFrameBytes else {
+                clear(); updateMessage("原寸記録: 非対応形式・原寸1枚8 MiB超"); return
+            }
+            if width != w || height != h || frames.last.map({ timestamp <= $0.timestamp || timestamp - $0.timestamp > 1 }) == true { clear() }
+            width = w; height = h; captureFPS = fps
+            if let trigger, event == nil {
+                let now = Date().timeIntervalSince1970
+                var history = (defaults.array(forKey: AutoClipFullLimits.historyKey) as? [Double] ?? []).filter { now - $0 < 3600 }
+                if history.count < AutoClipFullLimits.eventsPerHour {
+                    event = trigger; history.append(now)
+                    defaults.set(history, forKey: AutoClipFullLimits.historyKey)
+                    updateMessage("原寸記録: 保存窓を収集中（\(history.count)/4件・直近1時間）")
+                } else { updateMessage("原寸記録: 直近1時間の4件上限") }
+            }
+            let start = (event?.timestamp ?? timestamp) - AutoClipFullLimits.windowSeconds
+            while let first = frames.first, first.timestamp < start { bytes -= first.pixels.count + first.metadata.count; frames.removeFirst() }
+            if let event, timestamp > event.timestamp + AutoClipFullLimits.windowSeconds + 0.5 / Double(max(1, fps)) { return }
+            var row: [String: Any] = ["f": id, "t": timestamp, "ms": milliseconds,
+                "appliedISO": iso ?? NSNull(), "exposureDurationSeconds": exposure ?? NSNull(),
+                "cameraMetadataSource": source ?? "unknown", "cameraMetadataAgeSeconds": age ?? NSNull(),
+                "backgroundMedian": analysis.backgroundMedian ?? NSNull()]
+            for color in [SaberColor.red, .blue] {
+                let list = analysis.candidates[color] ?? []
+                let selected = analysis.selected[color]
+                let competition = AutoClipCompetition.evaluate(list, selected: selected, width: w, height: h, zones: zones[color] ?? [], playArea: area)
+                let candidates: [[Any]] = list.enumerated().map { index, c in
+                    let selectable = AutoClipCompetition.selectable(c, width: w, height: h, zones: zones[color] ?? [], playArea: area)
+                    let chosen = index == competition.winnerIndex
+                    let competitor = !chosen && selectable && competition.winnerIndex.map { AutoClipCompetition.separated(list[$0], c) } == true
+                    let flags = (c.isEmitterEligible ? 1 : 0) | (selectable ? 2 : 0) | (chosen ? 4 : 0) | (competitor ? 8 : 0)
+                    return [index, c.endpoints.0.x, c.endpoints.0.y, c.endpoints.1.x, c.endpoints.1.y,
+                            c.boundingBox.minX, c.boundingBox.minY, c.boundingBox.maxX, c.boundingBox.maxY,
+                            c.score, flags, c.source, c.peakValue,
+                            c.observerEmitterInputs?.emitterScore ?? NSNull(), c.highValueRatio, c.meanValue,
+                            c.observerEmitterInputs?.nearSaturationPresent ?? NSNull(), c.meanColorPurity, c.componentArea,
+                            c.observerEmitterInputs?.aspect ?? NSNull(),
+                            AutoClipCompetition.exclusionReason(c, width: w, height: h, zones: zones[color] ?? [], playArea: area) ?? "none"]
+                }
+                row[color == .red ? "red" : "blue"] = ["n": list.count, "e": competition.eligibleCount,
+                    "k": competition.competitorCount, "sup": analysis.trackLockSuppressed.contains(color),
+                    "sel": selected.map { AutoClipCompetition.endpointsArray($0) } ?? NSNull(), "c": candidates] as [String: Any]
+            }
+            guard let metadata = try? JSONSerialization.data(withJSONObject: row, options: [.sortedKeys]),
+                  metadata.count <= AutoClipFullLimits.metadataBytesPerFrame else {
+                updateMessage("原寸記録: 全候補metadata上限でframe欠落"); return
+            }
+            let cost = w * h * 4 + metadata.count
+            while bytes + cost > maximumMemoryBytes, !frames.isEmpty {
+                bytes -= frames[0].pixels.count + frames[0].metadata.count; frames.removeFirst()
+            }
+            guard cost <= maximumMemoryBytes else { return }
+            guard CVPixelBufferLockBaseAddress(buffer, .readOnly) == kCVReturnSuccess else { return }
+            defer { CVPixelBufferUnlockBaseAddress(buffer, .readOnly) }
+            guard let base = CVPixelBufferGetBaseAddress(buffer) else { return }
+            let stride = CVPixelBufferGetBytesPerRow(buffer)
+            var pixels = Data(count: w * h * 4)
+            pixels.withUnsafeMutableBytes { target in
+                for y in 0..<h { memcpy(target.baseAddress! + y * w * 4, base + y * stride, w * 4) }
+            }
+            frames.append(AutoClipFullFrame(id: id, timestamp: timestamp, pixels: pixels, metadata: metadata))
+            bytes += cost
+        }
+    }
+
+    func finish(event expected: AutoClipTriggerEvent, completion: @escaping (AutoClipFullSnapshot?) -> Void) {
+        queue.async { [self] in
+            guard event?.frameID == expected.frameID, !frames.isEmpty else { completion(nil); return }
+            let selected = frames.filter { $0.timestamp >= expected.timestamp - 2 && $0.timestamp <= expected.timestamp + 2 }
+            guard !selected.isEmpty else { clear(); completion(nil); return }
+            holdingSnapshot = true
+            updateMessage("原寸記録: 書き出し中")
+            let snapshot = AutoClipFullSnapshot(frames: selected, event: expected, width: width, height: height,
+                                                fps: captureFPS)
+            clear()
+            completion(snapshot)
+        }
+    }
+
+    func releaseSnapshot() { queue.async { [self] in holdingSnapshot = false } }
 }

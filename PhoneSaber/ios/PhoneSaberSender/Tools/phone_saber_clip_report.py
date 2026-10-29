@@ -218,7 +218,8 @@ def validate_frame_integrity(bundle: Path, summary: dict) -> None:
 
 
 def load_clip(bundle: Path) -> dict[str, Any]:
-    summary = json.loads((bundle / "summary.json").read_text(encoding="utf-8"))
+    from phone_saber_fullres import load_summary
+    summary = load_summary(bundle)
     if summary.get("summaryScope") != "autoClip":
         raise ValueError(f"not an auto clip: {bundle}")
     validate_frame_integrity(bundle, summary)

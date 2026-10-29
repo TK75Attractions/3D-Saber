@@ -581,6 +581,13 @@ struct ContentView: View {
                                 get: { model.autoClipEnabled },
                                 set: { model.setAutoClipEnabled($0) }
                             ))
+                            Toggle("原寸・全frame記録（実験用）", isOn: Binding(
+                                get: { model.fullResolutionEnabled },
+                                set: { model.setFullResolutionEnabled($0) }
+                            ))
+                            Text(model.fullResolutionStatusLine).font(.caption)
+                            Text("既定OFF。問題の前2秒〜後2秒を原寸BGRA・全候補で記録。480×640 / 60fpsで約296 MB/件、最大4件/時。保存合計1 GiBで古い順に削除。熱・電池20%以下・空き2 GiB未満で停止。処理・コピーが追いつかないframeは欠番として記録します。転送は既存AutoClipと同じです。")
+                                .font(.caption).foregroundStyle(.secondary)
                             Text(model.autoClipStatusLine)
                                 .font(.caption)
                             Text("既定ON。送信中、同じ色の候補が2つ以上残る（コーン・服・反射との取り違え）か、剣の位置が1コマで大きく飛んだときだけ、前3秒・後2秒の画像と認識データを保存します（20秒に1回まで、1回の送信で6件まで）。転送は座標を送っていない間（曲の合間・停止後）に行います。発熱中・fps を下げている間・Debug Recording 中は止まります。認識と送信は変わりません。PC（Unity）からの指示でも ON/OFF・今すぐ保存ができます。")

@@ -92,7 +92,7 @@ class IOSAutoClipTests(unittest.TestCase):
             frame_source = (SOURCE / "FrameProcessor.swift").read_text()
             observer = frame_source[frame_source.index("/// One processed camera frame"):
                                     frame_source.index("final class FrameProcessor")]
-            (directory / "Observer.swift").write_text("import Foundation\n" + observer)
+            (directory / "Observer.swift").write_text("import Foundation\nimport CoreVideo\n" + observer)
             (directory / "main.swift").write_text(MAIN)
             binary = directory / "autoclip"
             # The Xcode Debug configuration builds with -O and the DEBUG condition.

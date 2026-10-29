@@ -1,4 +1,5 @@
 import CoreGraphics
+import CoreVideo
 import Foundation
 import ImageIO
 import XCTest
@@ -1567,4 +1568,159 @@ extension AutoClipTests {
             print("ignore-removal track=\(track != nil) blue output before=\(before)/25 after=\(after)/25 next-frame=26 overlap=0/1")
         }
     }
+    private func fullRecorder(memory: Int = AutoClipFullLimits.memoryBytes) -> (AutoClipFullRecorder, DispatchQueue, UserDefaults) {
+        let defaults = UserDefaults(suiteName: "fullrec-tests-" + UUID().uuidString)!
+        let queue = DispatchQueue(label: "fullrec-tests")
+        return (AutoClipFullRecorder(defaults: defaults, queue: queue, maximumMemoryBytes: memory), queue, defaults)
+    }
+
+    private func fullFrame(_ id: UInt64, time: Double, count: Int = 20) throws -> ObservedFrame {
+        var buffer: CVPixelBuffer?
+        XCTAssertEqual(CVPixelBufferCreate(nil, 4, 4, kCVPixelFormatType_32BGRA, nil, &buffer), kCVReturnSuccess)
+        let pixelBuffer = try XCTUnwrap(buffer)
+        CVPixelBufferLockBaseAddress(pixelBuffer, [])
+        let base = CVPixelBufferGetBaseAddress(pixelBuffer)!.assumingMemoryBound(to: UInt8.self)
+        let stride = CVPixelBufferGetBytesPerRow(pixelBuffer)
+        // row paddingが混入しないこととBGRA全byteの保持を検証する。
+        for y in 0..<4 { for x in 0..<stride { base[y * stride + x] = UInt8((y * 16 + x) % 256) } }
+        CVPixelBufferUnlockBaseAddress(pixelBuffer, [])
+        var candidate = Self.candidate((1, 1), (2, 3))
+        candidate.isEmitterEligible = false
+        return ObservedFrame(baseAddress: UnsafePointer(base), width: 4, height: 4, bytesPerRow: stride,
+            sequence: id, timestamp: time, processingSeconds: 0.001,
+            analysis: SaberFrameAnalysis(candidates: [.red: Array(repeating: candidate, count: count)], selected: [:]),
+            ignoreZones: [:], playArea: nil, captureFPS: 2, pixelBuffer: pixelBuffer,
+            cameraISO: 50, exposureDurationSeconds: 0.0005, cameraMetadataSource: "exif")
+    }
+
+    func testFullResolutionWindowKeepsEveryPixelAndAllIneligibleCandidates() throws {
+        let (recorder, queue, _) = fullRecorder()
+        XCTAssertFalse(recorder.isEnabled)
+        recorder.setEnabled(true)
+        let event = AutoClipTriggerEvent(kind: .gap, color: .red, frameID: 5, timestamp: 2)
+        for i in 0...8 {
+            recorder.offer(try fullFrame(UInt64(i + 1), time: Double(i) / 2), trigger: i == 4 ? event : nil)
+            queue.sync {}
+        }
+        var saved: AutoClipFullSnapshot?
+        recorder.finish(event: event) { saved = $0 }; queue.sync {}
+        let snapshot = try XCTUnwrap(saved)
+        XCTAssertEqual(snapshot.frames.map(\.id), Array(1...9).map(UInt64.init))
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let info = try snapshot.write(to: directory)
+        XCTAssertEqual(info["complete"] as? Bool, true)
+        XCTAssertEqual(info["frameCount"] as? Int, 9)
+        let raw = try Data(contentsOf: directory.appendingPathComponent("fullres.bgra"))
+        XCTAssertEqual(raw.count, 9 * 64)
+        XCTAssertEqual(Array(raw.prefix(64)), Array(0..<64).map(UInt8.init))
+        let row = try JSONSerialization.jsonObject(with: snapshot.frames[0].metadata) as! [String: Any]
+        let red = row["red"] as! [String: Any]
+        XCTAssertEqual((red["c"] as? [[Any]])?.count, 20, "既存12件/非eligible2件の制限を適用しない")
+        XCTAssertEqual(row["appliedISO"] as? Double, 50)
+        XCTAssertEqual(row["exposureDurationSeconds"] as? Double, 0.0005)
+        XCTAssertEqual(row["cameraMetadataSource"] as? String, "exif")
+        // 任意の出力先へ本番Swiftのwire fixtureを残し、Mac readerとの相互運用を確認できる。
+        if let path = ProcessInfo.processInfo.environment["PHONESABER_FULLRES_FIXTURE_DIR"] {
+            let target = URL(fileURLWithPath: path)
+            try FileManager.default.createDirectory(at: target, withIntermediateDirectories: true)
+            let description = try snapshot.write(to: target)
+            let summary: [String: Any] = ["formatVersion": 1, "summaryScope": "autoClip",
+                "sessionID": "autoclip_20261029_120000_000_gap_red", "selectedImageCount": 0, "images": [],
+                "incidentCount": 1, "redBlueDetectionSummary": ["red": [:], "blue": [:]],
+                "dropoutSummary": ["red": [:], "blue": [:]], "fullResolution": description,
+                "autoClip": ["formatVersion": 2, "candidateColumns": AutoClipBundleContent.candidateColumns,
+                    "frames": [], "sources": [], "frameSize": ["width": 4, "height": 4],
+                    "trigger": ["kind": "gap", "frameID": 5, "timestamp": 2]]]
+            try JSONSerialization.data(withJSONObject: summary).write(to: target.appendingPathComponent("summary.json"))
+            try Data("Swift fullres fixture".utf8).write(to: target.appendingPathComponent("prompt.md"))
+        }
+        recorder.releaseSnapshot(); queue.sync {}
+    }
+
+    func testFullResolutionBacklogNeverWaitsAndReportsCameraSequenceGaps() throws {
+        let (recorder, queue, _) = fullRecorder()
+        recorder.setEnabled(true); queue.sync {}
+        let event = AutoClipTriggerEvent(kind: .jump, color: .blue, frameID: 1, timestamp: 0)
+        queue.suspend()
+        recorder.offer(try fullFrame(1, time: 0), trigger: event)
+        recorder.offer(try fullFrame(3, time: 0.5), trigger: nil)
+        // queueを止めたままでも3枚目以降は待たずに捨てる。
+        for i in 4...100 { recorder.offer(try fullFrame(UInt64(i), time: 1), trigger: nil) }
+        queue.resume(); queue.sync {}
+        var saved: AutoClipFullSnapshot?
+        recorder.finish(event: event) { saved = $0 }; queue.sync {}
+        let snapshot = try XCTUnwrap(saved)
+        XCTAssertEqual(snapshot.frames.map(\.id), [1, 3])
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let info = try snapshot.write(to: directory)
+        XCTAssertEqual(info["missingSequenceFrames"] as? Int, 1)
+        XCTAssertEqual(info["complete"] as? Bool, false)
+    }
+
+    func testFullResolutionEvictsOldestAndPersistsHourlyLimit() throws {
+        let (recorder, queue, defaults) = fullRecorder(memory: 1000)
+        recorder.setEnabled(true); queue.sync {}
+        let event = AutoClipTriggerEvent(kind: .confusion, color: .red, frameID: 1, timestamp: 0)
+        for i in 0...4 {
+            recorder.offer(try fullFrame(UInt64(i + 1), time: Double(i) / 2, count: 0), trigger: i == 0 ? event : nil)
+            queue.sync {}
+        }
+        var saved: AutoClipFullSnapshot?
+        recorder.finish(event: event) { saved = $0 }; queue.sync {}
+        let snapshot = try XCTUnwrap(saved)
+        XCTAssertLessThanOrEqual(snapshot.frames.reduce(0) { $0 + $1.pixels.count + $1.metadata.count }, 1000)
+        XCTAssertGreaterThan(try XCTUnwrap(snapshot.frames.first).id, 1)
+        recorder.releaseSnapshot(); queue.sync {}
+        defaults.set(Array(repeating: Date().timeIntervalSince1970, count: 4), forKey: AutoClipFullLimits.historyKey)
+        recorder.setEnabled(false); recorder.setEnabled(true); queue.sync {}
+        recorder.offer(try fullFrame(20, time: 10), trigger: AutoClipTriggerEvent(kind: .manual, frameID: 20, timestamp: 10))
+        queue.sync {}
+        saved = nil
+        recorder.finish(event: AutoClipTriggerEvent(kind: .manual, frameID: 20, timestamp: 10)) { saved = $0 }; queue.sync {}
+        XCTAssertNil(saved, "ON/OFFや新セッションで1時間の上限を回避しない")
+    }
+
+    func testFullResolutionSuspendDropsPendingAndDoesNotInventExposure() throws {
+        let (recorder, queue, _) = fullRecorder()
+        recorder.setEnabled(true); queue.sync {}
+        let event = AutoClipTriggerEvent(kind: .gap, color: .red, frameID: 1, timestamp: 0)
+        var frame = try fullFrame(1, time: 0)
+        frame.cameraISO = nil; frame.exposureDurationSeconds = nil; frame.cameraMetadataSource = nil
+        recorder.offer(frame, trigger: event); queue.sync {}
+        recorder.updatePolicy(reason: "thermalSerious", directory: FileManager.default.temporaryDirectory)
+        queue.sync {}
+        var saved: AutoClipFullSnapshot?
+        recorder.finish(event: event) { saved = $0 }; queue.sync {}
+        XCTAssertNil(saved)
+        XCTAssertTrue(recorder.statusLine.contains("thermalSerious"))
+    }
+
+    func testFullResolutionRetentionPrunesOldestIncludingTransferPackage() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        var entries: [URL] = []
+        for i in 1...4 {
+            let entry = directory.appendingPathComponent("phone_saber_triage_autoclip_0\(i)")
+            try FileManager.default.createDirectory(at: entry, withIntermediateDirectories: true)
+            let file = entry.appendingPathComponent("fullres.bgra")
+            FileManager.default.createFile(atPath: file.path, contents: nil)
+            let output = try FileHandle(forWritingTo: file)
+            try output.truncate(atOffset: 300 * 1024 * 1024)
+            try output.close()
+            entries.append(entry)
+        }
+        let package = directory.appendingPathComponent("autoclip_01_triage_transfer.psbt")
+        try Data([1]).write(to: package)
+        AutoClipWriter(directory: directory).prune(keeping: entries.last)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: entries[0].path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: package.path))
+        XCTAssertTrue(entries.dropFirst().allSatisfy { FileManager.default.fileExists(atPath: $0.path) })
+        XCTAssertLessThanOrEqual(AutoClipWriter.allocatedSize(directory), AutoClipLimits.maximumStoredBytes)
+    }
+
 }

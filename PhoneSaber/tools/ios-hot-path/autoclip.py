@@ -31,7 +31,7 @@ def main() -> None:
     here = pathlib.Path(__file__).resolve().parent
     with tempfile.TemporaryDirectory(prefix="phonesaber-autoclip-") as temporary:
         build = pathlib.Path(temporary)
-        (build / "Observer.swift").write_text("import Foundation\n" + frame[start:end])
+        (build / "Observer.swift").write_text("import Foundation\nimport CoreVideo\n" + frame[start:end])
         # Top-level code must live in main.swift when several files are compiled.
         (build / "main.swift").write_text((here / "AutoClipHarness.swift").read_text())
         subprocess.run(["xcrun", "clang", "-O2", "-c", str(here / "allocations.c"), "-o", str(build / "allocations.o")],

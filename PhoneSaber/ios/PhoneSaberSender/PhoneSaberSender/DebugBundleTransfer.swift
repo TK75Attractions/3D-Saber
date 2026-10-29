@@ -3,6 +3,9 @@ import CryptoKit
 import Foundation
 import Network
 
+// 転送hostテストはAutoClipの画像処理をリンクしないため、wire上限だけを独立させる。
+private enum AutoClipFullTransferLimits { static let maximumFrameBytes = 8 * 1024 * 1024 }
+
 private struct DebugBundleManifestFile: Encodable {
     let path: String
     let size: Int64
@@ -31,7 +34,7 @@ private enum DebugBundleTransferError: LocalizedError {
         case .invalidSummary: return "summary.json is invalid"
         case .unsafePath(let path): return "unsafe triage bundle path: \(path)"
         case .invalidFiles: return "triage bundle file list is invalid"
-        case .bundleTooLarge: return "triage upload exceeds the 64 MiB limit"
+        case .bundleTooLarge: return "triage upload exceeds the 512 MiB limit"
         case .discoveryTimeout: return "PhoneSaber diagnostics receiver was not found"
         case .invalidEndpoint: return "receiver hostname or port is invalid"
         case .invalidReceipt: return "receiver acknowledgment does not match this session"
@@ -330,8 +333,8 @@ final class DebugBundleTransfer: NSObject {
 
     static let preferenceKey = "phoneSaberAutoTransferDebugBundles"
     private static let maximumImages = 20
-    private static let maximumFiles = 43
-    private static let maximumBytes: Int64 = 64 * 1024 * 1024
+    private static let maximumFiles = 45
+    private static let maximumBytes: Int64 = 512 * 1024 * 1024
 
     private let workQueue = DispatchQueue(label: "PhoneSaberSender.debug-bundle-transfer",
                                           qos: .utility)
@@ -420,6 +423,9 @@ final class DebugBundleTransfer: NSObject {
               let summary = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let images = summary["images"] as? [[String: Any]],
               FileManager.default.fileExists(atPath: url.appendingPathComponent("prompt.md").path) else { return false }
+        if let full = summary["fullResolution"] as? [String: Any], full["state"] as? String == "captured" {
+            guard ["fullres.bgra", "fullres.jsonl"].allSatisfy({ FileManager.default.fileExists(atPath: url.appendingPathComponent($0).path) }) else { return false }
+        }
         return images.allSatisfy { image in
             guard let path = image["path"] as? String, let context = image["frameContextPath"] as? String else { return false }
             return FileManager.default.fileExists(atPath: url.appendingPathComponent(path).path)
@@ -713,7 +719,20 @@ final class DebugBundleTransfer: NSObject {
             selectedPaths.insert(try checkedRelativePath(imagePath, prefix: "images/", suffix: ".png"))
             selectedPaths.insert(try checkedRelativePath(framePath, prefix: "frames/", suffix: ".json"))
         }
-        guard selectedPaths.count == 2 + imageCount * 2,
+        let fullResolution = summary["fullResolution"] as? [String: Any]
+        let hasFullResolution = fullResolution?["state"] as? String == "captured"
+        if let full = fullResolution, hasFullResolution {
+            guard full["version"] as? Int == 1,
+                  full["pixelsPath"] as? String == "fullres.bgra",
+                  full["metadataPath"] as? String == "fullres.jsonl",
+                  let size = full["frameBytes"] as? Int, size > 0, size <= AutoClipFullTransferLimits.maximumFrameBytes,
+                  let count = full["frameCount"] as? Int, (1...1024).contains(count),
+                  (try? root.appendingPathComponent("fullres.bgra").resourceValues(forKeys: [.fileSizeKey]).fileSize) == size * count,
+                  let metadataSize = try? root.appendingPathComponent("fullres.jsonl").resourceValues(forKeys: [.fileSizeKey]).fileSize,
+                  metadataSize <= 64 * 1024 * 1024 else { throw DebugBundleTransferError.invalidFiles }
+            selectedPaths.formUnion(["fullres.bgra", "fullres.jsonl"])
+        }
+        guard selectedPaths.count == 2 + imageCount * 2 + (hasFullResolution ? 2 : 0),
               selectedPaths.count <= maximumFiles else {
             throw DebugBundleTransferError.invalidFiles
         }
@@ -739,7 +758,9 @@ final class DebugBundleTransfer: NSObject {
             guard totalBytes <= maximumBytes else { throw DebugBundleTransferError.bundleTooLarge }
             let digest = try sha256(fileURL)
             let contentType: String
-            if name.hasSuffix(".png") { contentType = "image/png" }
+            if name == "fullres.bgra" { contentType = "application/octet-stream" }
+            else if name == "fullres.jsonl" { contentType = "application/x-ndjson" }
+            else if name.hasSuffix(".png") { contentType = "image/png" }
             else if name == "connectivity.log" { contentType = "text/plain; charset=utf-8" }
             else if name.hasSuffix(".md") { contentType = "text/markdown; charset=utf-8" }
             else { contentType = "application/json; charset=utf-8" }

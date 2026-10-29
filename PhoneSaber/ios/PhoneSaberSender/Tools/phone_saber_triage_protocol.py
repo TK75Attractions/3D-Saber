@@ -20,7 +20,7 @@ FORMAT_VERSION = 1
 CONTENT_TYPE = "application/vnd.phonesaber.triage-v1"
 MAX_IMAGES = 20
 DEFAULT_MAX_IMAGES = 12
-MAX_FILES = 3 + MAX_IMAGES * 2
+MAX_FILES = 5 + MAX_IMAGES * 2
 MAX_BUNDLE_BYTES = 512 * 1024 * 1024
 MAX_MANIFEST_BYTES = 128 * 1024
 MAX_SUMMARY_BYTES = 512 * 1024
@@ -64,7 +64,7 @@ def _allowed_path(value: Any) -> str:
     if path.is_absolute() or any(part in {"", ".", ".."} for part in path.parts):
         raise BundleError("manifest path escapes the bundle")
     normalized = path.as_posix()
-    if normalized in {"summary.json", "prompt.md", "connectivity.log"}:
+    if normalized in {"summary.json", "prompt.md", "connectivity.log", "fullres.bgra", "fullres.jsonl"}:
         return normalized
     if normalized.startswith("images/") and normalized.lower().endswith(".png"):
         if len(path.parts) != 2 or path.name != normalized.split("/", 1)[1]:
@@ -76,6 +76,10 @@ def _allowed_path(value: Any) -> str:
 
 
 def _content_type(path: str) -> str:
+    if path == "fullres.bgra":
+        return "application/octet-stream"
+    if path == "fullres.jsonl":
+        return "application/x-ndjson"
     if path == "connectivity.log":
         return "text/plain; charset=utf-8"
     if path.endswith(".png"):
@@ -206,6 +210,8 @@ def receive_bundle(source: BinaryIO, content_length: int, inbox: Path,
             raise BundleError("manifest contains an invalid SHA-256")
         if entry.get("contentType") != _content_type(relative):
             raise BundleError("manifest content type does not match its file")
+        if relative == "fullres.jsonl" and size > 64 * 1024 * 1024:
+            raise BundleError("full resolution metadata is too large")
         if relative == "summary.json" and size > MAX_SUMMARY_BYTES:
             raise BundleError("summary.json is too large")
         if relative == "prompt.md" and size > MAX_PROMPT_BYTES:
@@ -350,6 +356,11 @@ def _validate_summary(summary: Any, file_paths: set[str]) -> str:
 
 
 def _validate_summary_file_set(root: Path, file_paths: set[str]) -> None:
+    from phone_saber_fullres import read_frames
+    try:
+        read_frames(root, json.loads((root / "summary.json").read_text(encoding="utf-8")))
+    except (OSError, ValueError, TypeError, KeyError, RecursionError) as exc:
+        raise BundleError(f"invalid full resolution recording: {exc}") from exc
     if "summary.json" not in file_paths or "prompt.md" not in file_paths:
         raise BundleError("summary.json and prompt.md are required")
     image_count = sum(path.startswith("images/") for path in file_paths)

@@ -29,7 +29,8 @@ def _clip_background(path):
 
 
 def load_clip(path):
-    summary = json.loads((path / 'summary.json').read_text())
+    from phone_saber_fullres import load_summary
+    summary = load_summary(path)
     clip = summary['autoClip']
     columns = clip['candidateColumns']
     assert columns[:12] == ['rank', 'x1', 'y1', 'x2', 'y2', 'minX', 'minY', 'maxX', 'maxY', 'score', 'flags', 'source']
