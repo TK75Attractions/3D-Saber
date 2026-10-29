@@ -58,9 +58,6 @@ public sealed partial class AchievementTracker : MonoBehaviour
     // 最後に決めた回の実績(表示の順。テストと確認用)。
     public IReadOnlyList<AchievementUnlock> LastUnlocks { get; private set; } = Array.Empty<AchievementUnlock>();
     public PlayStats CurrentStats => recorder != null ? recorder.Stats : null;
-    // 同期へ渡す演奏の記録。始め直しや別の回の記録は使わない。
-    public PlayStats StatsForBatch5b(string runId) =>
-        recorder != null && !recorder.Stale && recorder.Stats.RunId == runId ? recorder.Stats : null;
     // 今の曲の記録に、今の X 斬り・コンボ・ボルテージ・しびれを写す(テストと確認用。結果が決まったときと同じ)。
     public PlayStats SnapshotNow() => recorder != null ? recorder.Snapshot() : null;
 
@@ -241,7 +238,6 @@ public sealed partial class AchievementTracker : MonoBehaviour
         var tutorial = manager.Tutorial;
         if (tutorial != null)
         {
-            AchievementRunInfo.ObserveBatch5aPractice(tutorial.RangeOnly);
             if (!practiceRecorded && tutorial.IsFinished)
             {
                 practiceRecorded = true;
@@ -415,8 +411,6 @@ public sealed partial class AchievementTracker : MonoBehaviour
             Namespace = ns,
             RunId = run,
             PracticedBefore = practiced,
-            PracticeHistoryKnown = sameRun && AchievementRunInfo.Batch5aPracticeHistoryKnown,
-            PracticeSeen = sameRun && AchievementRunInfo.Batch5aPracticeSeen,
             Backpick = sameRun && AchievementRunInfo.Backpick,
             PracticePairBefore = sameRun && AchievementRunInfo.PracticePairBefore,
             PracticeAllFirstLoop = sameRun && AchievementRunInfo.PracticeAllFirstLoop,
@@ -424,7 +418,6 @@ public sealed partial class AchievementTracker : MonoBehaviour
             HintsBeforeOpen = sameRun ? AchievementRunInfo.HintsBeforeOpen : 0,
             SelectionSeconds = selection,
             ClearsToday = ClearsSince != null ? ClearsSince(ns, new DateTimeOffset(ended.Date).ToUnixTimeMilliseconds()) : -1,
-            ClearsBeforeTodayBatch5b = AchievementContext.CountClearsBeforeTodayBatch5b(ns, ended, ClearsSince),
             Plays = plays,
             OpenedSecretHere = openedSecret,
             TitleHand = titleHand,
@@ -457,8 +450,6 @@ public sealed partial class AchievementTracker : MonoBehaviour
         UnlockAll(context, rest, at, numbers);
         context.Unlocked = earned.ConvertAll(d => new AchievementUnlock(d, numbers[d]));
         int before = earned.Count;
-        // 数え合いは全部、通常の実績の同じ写しだけを見る(途中で Unlocked を更新しない)。
-        AddMet(earned, AchievementCatalog.Batch5aTallyIds, context);
         AddMet(earned, AchievementCatalog.TallyIds, context);
         UnlockAll(context, earned.GetRange(before, earned.Count - before), at, numbers);
         earned.Sort((a, b) => a.Order.CompareTo(b.Order));

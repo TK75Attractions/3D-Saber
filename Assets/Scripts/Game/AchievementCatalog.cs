@@ -145,19 +145,7 @@ public static partial class AchievementCatalog
             Id = id; Text = text; Name = name; Category = category; Tier = tier; Condition = condition;
         }
 
-        // 1つの実績の条件が例外を出しても、ほかの実績と結果画面を止めない(取れない扱い。2026-10-30 9a)。起動の間に実績ごと1回だけ記録する。
-        public bool Met(AchievementContext context)
-        {
-            if (context == null) return false;
-            try { return Condition(context); }
-            catch (Exception e)
-            {
-                if (!warned) { warned = true; UnityEngine.Debug.LogWarning("AchievementCatalog: " + Id + " の条件で例外が出たので取れない扱いにします: " + e.Message); }
-                return false;
-            }
-        }
-
-        bool warned;
+        public bool Met(AchievementContext context) => context != null && Condition(context);
     }
 
     const string Rare = "珍しい", Gimmick = "仕掛け", Fun = "遊び心", Skill = "腕前", Entry = "入口";
@@ -237,7 +225,6 @@ public static partial class AchievementCatalog
             c => c.PracticePairBefore && c.NoteStats && c.Stats.PracticePairSucceeded(PracticeLongMinCuts, PracticeLongMaxCuts)),
         new Definition("goldall", "金のノーツを1つ残らず斬った", "黄金の手", Skill, AchievementTier.None, c => c.NoteStats && c.Stats.AllCut(n => n.Gold, GoldMinNotes)),
         new Definition("storm", "いちばん密な2秒をノーミスで抜けた", "嵐の2秒", Skill, AchievementTier.None, c => c.NoteStats && StormCleared(c.Stats)),
-        new Definition("goodstart", "最初の10個を一つも落とさなかった", "好発進", Entry, AchievementTier.None, c => c.NoteStats && c.Stats.Batch5aGoodStart()),
         new Definition("morningecho", "2周目の朝で上達を見せた", "朝のこだま", Fun, AchievementTier.None,
             c => c.SongId == RushESecretState.MorningMemory.SongId && !c.Secret && c.NoteStats
                 && c.Stats.MorningImproved(MorningNoteCount(c.Difficulty))),
@@ -261,7 +248,6 @@ public static partial class AchievementCatalog
             c => c.Is(RushESecretState.AndalusiaBull) && c.Stats != null && c.Stats.HasBull && c.Stats.Stuns <= MatadorMaxStuns),
         new Definition("comeback", "立て直して30コンボで締めた", "立て直し", Skill, AchievementTier.None,
             c => c.Bad + c.Miss >= 1 && c.Stats != null && c.Stats.FinalCombo >= ComebackCombo),
-        new Definition("kangaii", "説明なしで初めての矢印を読み切った", "勘がいい", Entry, AchievementTier.None, c => c.NoteStats && c.PracticeHistoryKnown && !c.PracticeSeen && !c.PracticedBefore && c.Stats.Batch5aFirstArrow()),
         new Definition("lunchtime", "お昼の一曲を演奏した", "昼休み公演", Fun, AchievementTier.None,
             c => c.StartedLocal.Hour >= LunchFromHour && c.StartedLocal.Hour < LunchToHour),
         new Definition("school", "校歌を最後まで斬った", "文化祭の主役", Fun, AchievementTier.None, c => c.SongId == RushESecretState.EpilogueFall.SongId),
@@ -276,11 +262,8 @@ public static partial class AchievementCatalog
             c => c.NoteStats && c.Stats.CrossCuts >= CrossCutTen),
         new Definition("restart", "止まった流れの再開を全部決めた", "時を動かす剣", Gimmick, AchievementTier.None,
             c => c.Is(RushESecretState.LogicSpeed) && c.NoteStats && c.Stats.AllPerfect(c.Stats.FirstGroupsAfterStops(RestartMinStopSeconds))),
-        new Definition("owariyoshi", "出だしを落としても最後を決めた", "終わりよければ", Entry, AchievementTier.None, c => c.NoteStats && c.Stats.Batch5aGoodEnding()),
         new Definition("mochitsuki", "金ロングを両手交互に6打つないだ", "餅つき", Skill, AchievementTier.Bronze,
             c => c.NoteStats && c.Stats.HasMochitsuki()),
-        new Definition("yosumi", "ゲートの四すみでPERFECTを決めた", "四すみ制覇", Skill, AchievementTier.Bronze, c => c.NoteStats && c.Stats.Batch5aFourCorners()),
-        new Definition("kinou_koe", "昨日の人数を今日で超えた", "昨日越え", Fun, AchievementTier.Bronze, c => c.KinouKoeBatch5b()),
         new Definition("holdcut", "ロング中に反対の手で3個斬った", "押さえ斬り", Skill, AchievementTier.Bronze,
             c => c.NoteStats && c.Stats.HeldOppositeNotes() >= HoldCutRequiredNotes),
         new Definition("streak20", "PERFECTを20回続けた", "20連PERFECT", Skill, AchievementTier.Bronze, c => c.NoteStats && c.Stats.MaxPerfectStreak >= ShortStreak),
@@ -288,7 +271,6 @@ public static partial class AchievementCatalog
             c => c.SongId == RushESecretState.EscapadeLong.SongId && c.NoteStats
                 && c.Stats.AllPerfect(c.Stats.GroupsAfterSections(EscapadePeakSection, SceneLeadSeconds, EscapadePeaks, SceneEntrySeconds))),
         new Definition("senbon", "1曲で1000回斬った", "千本斬り", Rare, AchievementTier.Bronze, c => c.CutCount >= SenbonCuts),
-        new Definition("hitoributai", "ひとりきりの舞台で演奏した", "独り舞台", Fun, AchievementTier.Bronze, c => c.HitoributaiBatch5b()),
         new Definition("pioneer", "まだ誰も遊んでいない譜面を遊んだ", "開拓者", Fun, AchievementTier.Bronze, c => c.RankingAvailable && c.TotalPlays == 1),
         new Definition("nothorn", "Dで的を半分以上射抜き無傷だった", "トゲ知らず", Gimmick, AchievementTier.Bronze,
             c => c.Is(RushESecretState.PhobiaAvoid) && c.AimMode && c.AimDamage == 0
@@ -304,7 +286,6 @@ public static partial class AchievementCatalog
                 && c.Stats.AllSuccess(c.Stats.GroupsAtTimes(EChordSeconds, PairNotes, n => n.Gold && !n.Long))),
         new Definition("ittoryu", "一本の剣で8連PERFECTした", "一刀流", Skill, AchievementTier.Bronze,
             c => c.NoteStats && c.Stats.HasOneHandPerfect()),
-        new Definition("sasayaki", "静かな場面を全部PERFECTで斬った", "ささやき", Skill, AchievementTier.Bronze, c => c.NoteStats && c.Stats.Batch5aQuiet()),
         new Definition("sweep3", "一振りで3つ続けて斬った", "一閃三断", Skill, AchievementTier.Bronze,
             c => c.NoteStats && c.Stats.HasSweep()),
         new Definition("meteor", "Lの流星を500回斬った", "流星を追う", Gimmick, AchievementTier.Bronze,
@@ -322,16 +303,9 @@ public static partial class AchievementCatalog
             c => c.Is(RushESecretState.PhobiaAvoid) && c.AimMode && c.Hit > 0 && c.Miss == 0),
         new Definition("mirror", "Rで鏡の中のノーツを全部斬った", "鏡破り", Gimmick, AchievementTier.Bronze,
             c => c.Is(RushESecretState.ManicSonicReverse) && c.NoteStats && c.Stats.AllCut(n => n.Mirror, 1)),
-        new Definition("top5", "この譜面の五傑に入った", "五傑", Skill, AchievementTier.Bronze, c => c.RankingAvailable && c.TotalPlays >= TopFiveMinPlays && c.DailyRank >= 1 && c.DailyRank <= TopFiveRank),
         new Definition(TwinPrimeId, "双子の素数番で遊んだ", "双子の素数", Fun, AchievementTier.Bronze,
             c => c.ClearNumber >= TwinPrimeMin && IsPrime(c.ClearNumber) && IsPrime(c.ClearNumber - 2)),
         new Definition("buzzer", "最後の一太刀でランクを上げた", "土壇場の一太刀", Fun, AchievementTier.Bronze, RankUpAtTheEnd),
-        new Definition("nakami", "点より中身で三つの実績を取った", "点より中身", Fun, AchievementTier.Bronze, c => c.Batch5aContents()),
-        new Definition("zanshin", "ロングのあとも気を抜かず斬った", "残心", Skill, AchievementTier.Bronze, c => c.NoteStats && c.Stats.Batch5aZanshin()),
-        new Definition("kannon", "両腕を外へ開いて斬った", "観音開き", Skill, AchievementTier.Bronze, c => c.NoteStats && c.Stats.Batch5aKannon()),
-        new Definition("bounceback", "ミスのたびすぐPERFECTで返した", "切り替え上手", Skill, AchievementTier.Bronze, c => c.NoteStats && c.Stats.Batch5aBounceBack()),
-        new Definition("sync", "となりと曲も難易度もランクもそろった", "シンクロ", Fun, AchievementTier.Bronze, c => c.SyncBatch5b()),
-        new Definition("kinou_ima", "昨日の今ごろと同じ曲を遊んだ", "昨日の今ごろ", Fun, AchievementTier.Bronze, c => c.KinouImaBatch5b()),
         new Definition("rising", "矢印以外の8割を斬り上げた", "昇り竜", Skill, AchievementTier.Bronze,
             c => c.NoteStats && c.Stats.HasRising()),
         new Definition("scenemaster", "盛り上がりの入口を全て決めた", "場面の主", Skill, AchievementTier.Bronze,
@@ -341,17 +315,10 @@ public static partial class AchievementCatalog
         new Definition("seisho", "となりと校歌を最後まで遊んだ", "校歌斉唱", Fun, AchievementTier.Bronze, c => c.SchoolDuet()),
         new Definition("hintkey", "ヒントから裏譜面を見つけた", "秘密の手がかり", Gimmick, AchievementTier.Bronze,
             c => c.OpenedSecretHere && c.HintsBeforeOpen >= HintMinShown),
-        new Definition("honjitsu", "今日いちばんにこの曲を演奏した", "本日の初演", Fun, AchievementTier.Bronze, c => c.HonjitsuBatch5b()),
         new Definition("trend", "3人続けて同じ曲を遊んだ", "続く人気曲", Fun, AchievementTier.Bronze,
             c => c.PreviousSameSong(TrendPreviousPlays, TrendSeconds)),
         new Definition("sottoji", "裏の扉を開けて、そっと閉じた", "そっ閉じ", Fun, AchievementTier.Bronze, c => c.OpenedSecretHere && !c.Secret),
-        new Definition("daynight", "となりと朝と夜を演奏した", "朝夜の共演", Fun, AchievementTier.Bronze, c => c.DaynightBatch5b()),
-        new Definition("fushime", "みんなの節目の太刀を斬った", "節目の太刀", Fun, AchievementTier.Bronze, c => c.FushimeBatch5b()),
-        new Definition("shushifu", "となりと同時に最後を斬った", "ふたりの終止符", Fun, AchievementTier.Bronze, c => c.ShushifuBatch5b()),
         new Definition(IchibanId, "その日の一番乗りで遊んだ", "一番乗り", Fun, AchievementTier.Bronze, c => c.ClearsToday == 0),
-        new Definition("songswap", "二つの台で曲を交換した", "曲の交換会", Fun, AchievementTier.Bronze, c => c.SongswapBatch5b()),
-        new Definition("omoteura", "となりと同じ曲を表と裏で遊んだ", "表裏一体", Fun, AchievementTier.Bronze, c => c.OmoteuraBatch5b()),
-        new Definition("tachiai", "となりのキリ番に立ち会った", "キリ番の立会人", Fun, AchievementTier.Bronze, c => c.NeighborBatch5b()?.ach?.Contains("kiriban") == true),
         new Definition("lastpiece", "今日の全曲をそろえる1曲を遊んだ", "最後のピース", Fun, AchievementTier.Bronze, c => c.CompletesTodaysSongs()),
         new Definition("urafutari", "となりと裏譜面に挑んだ", "ふたりで裏へ", Fun, AchievementTier.Bronze,
             c => c.Secret && RushESecretState.IsSecretDifficulty(c.Neighbor(DuetSeconds)?.diff)),
@@ -359,10 +326,7 @@ public static partial class AchievementCatalog
             c => c.SongId == RushESecretState.TwoTwentyThreeLight.SongId && c.Spans(ClockHour, ClockMinute)),
         new Definition("secretall", "今日の裏譜面14種を締めくくった", "裏の十四夜", Fun, AchievementTier.Bronze,
             c => c.CompletesTodaysSecrets()),
-        new Definition("soroiban", "ふたつの実績の番号がそろった", "そろい番号", Fun, AchievementTier.Silver, c => c.Batch5aMatchingOrdinals()),
-        new Definition("medal3", "銅・銀・金の実績を1曲でそろえた", "三色メダル", Fun, AchievementTier.Silver, c => c.Batch5aThreeMedals()),
         new Definition("jihou", "時報の瞬間にノーツを斬った", "時報の剣", Fun, AchievementTier.Silver, c => c.NoteStats && c.Stats.Count(OnTheHour) >= 1),
-        new Definition("kaikin", "ノーツを一つも素通りさせなかった", "皆勤賞", Skill, AchievementTier.Silver, c => c.NoteStats && c.Stats.Batch5aAttendance()),
         new Definition("late", "ずれた判定が全部遅めだった", "ためて斬る", Fun, AchievementTier.Silver, c => c.NoteStats && c.Stats.OffBeatsLean(1, LeanMinJudged, LeanMinOff)),
         new Definition("center10", "誤差10ms以内で50回斬った", "ど真ん中", Skill, AchievementTier.Silver,
             c => c.NoteStats && c.Stats.Count(n => n.Cut && n.ErrorMs.HasValue && Math.Abs(n.ErrorMs.Value) <= CenterMs) >= CenterCount),
@@ -373,13 +337,8 @@ public static partial class AchievementCatalog
             c => !c.AimMode && c.Hit > 0 && c.Bad + c.Miss == 1),
         new Definition("hardsplus", "HardでS+をとった", "剣の名手", Rare, AchievementTier.Silver, c => c.IsHard && c.Rank >= PlayRank.SPlus),
         new Definition("streak50", "PERFECTを50回続けた", "乱れぬ五十拍", Rare, AchievementTier.Silver, c => c.NoteStats && c.Stats.MaxPerfectStreak >= LongStreak),
-        new Definition("goldperfect", "金のノーツを全部PERFECTで斬った", "純金", Skill, AchievementTier.Silver, c => c.NoteStats && c.Stats.AllPerfect(n => n.Gold, PureGoldMinNotes)),
-        new Definition("yatsugi", "続く矢印を全部PERFECTにした", "矢継ぎ早", Skill, AchievementTier.Silver, c => c.NoteStats && c.Stats.Batch5aArrowRun()),
-        new Definition("evenscore", "点数を偶数の数字だけで完成した", "偶数一色", Fun, AchievementTier.Silver, c => c.Batch5aEvenScore()),
         new Definition("memory", "Mのノイズの中を全部斬った", "記憶力", Gimmick, AchievementTier.Silver,
             c => c.Is(RushESecretState.MorningMemory) && c.NoteStats && c.Stats.AllCut(n => n.Veiled, 1)),
-        new Definition("rhythm_ok", "当てたぶんは八割PERFECTだった", "リズムは完璧", Skill, AchievementTier.Silver, c => c.NoteStats && c.Stats.Batch5aRhythm()),
-        new Definition("gobugobu", "PERFECTとGREATが同数だった", "五分五分", Fun, AchievementTier.Silver, c => c.NoteStats && c.Perfect >= EqualJudgmentMinCount && c.Perfect == c.Great),
         new Definition("slowstart", "出だしでつまずいてからSをとった", "遅咲き", Skill, AchievementTier.Silver,
             c => c.NoteStats && c.Rank >= SlowStartRequiredRank && c.Stats.OpeningFailures() >= SlowStartFailures),
         new Definition(KiribanId, "キリ番(100人ごと)を踏んだ", "キリ番", Fun, AchievementTier.Silver, c => c.ClearNumber > 0 && c.ClearNumber % KiribanEvery == 0),
@@ -387,11 +346,7 @@ public static partial class AchievementCatalog
         // ゾロ目は必ず、滑り込みも当たりやすい。D の命中はどれも PERFECT なので、フルコンボとオールパーフェクトが同じ条件になる)。
         new Definition("zorome", "点の下3桁をゾロ目にした", "ゾロ目", Fun, AchievementTier.Silver,
             c => !c.AimMode && c.Score >= ZoromeMinScore && c.Score % ZoromeModulus % ZoromeStep == 0),
-        new Definition("douten", "通算の表でだれかと同点になった", "運命の同点", Fun, AchievementTier.Gold, c => c.Batch5aSameScore()),
         new Definition("kaibun", "逆から読んでも同じ点を出した", "回文の点", Fun, AchievementTier.Gold, c => Palindrome(c.Score)),
-        new Definition("chords", "同時のノーツを全部PERFECTにした", "和音の名手", Skill, AchievementTier.Gold, c => c.NoteStats && c.Stats.Batch5aAllChords()),
-        new Definition("yushu", "最後の一太刀が一番正確だった", "有終の美", Skill, AchievementTier.Gold, c => c.NoteStats && c.Stats.Batch5aFinalBest()),
-        new Definition("fullhouse", "点数でフルハウスを完成した", "数字の手札", Fun, AchievementTier.Gold, c => c.Batch5aFullHouse()),
         new Definition("hyakuren", "Gの百連ロングを切りきった", "百連の黄金", Skill, AchievementTier.Gold,
             c => c.Is(RushESecretState.ElDoradoG) && c.NoteStats
                 && c.Stats.Count(n => n.Long && n.Cuts >= HundredCuts && n.Perfect) >= 1),
@@ -406,10 +361,6 @@ public static partial class AchievementCatalog
                 || c.Stats.AllPerfect(n => n.Blue && !n.Gold, HandPerfectMinNotes))),
         new Definition("fubuki", "Fで降るノーツを全部斬った", "花吹雪", Gimmick, AchievementTier.Gold,
             c => c.Is(RushESecretState.EpilogueFall) && c.NoteStats && c.Stats.AllCut(n => n.Fall, 1)),
-        new Definition("sanshu", "三種のノーツを全部PERFECTにした", "三種の神器", Skill, AchievementTier.Gold, c => c.NoteStats && c.Stats.AllPerfect(n => n.Gold, SacredKindMinNotes) && c.Stats.AllPerfect(n => n.Arrow, SacredKindMinNotes) && c.Stats.AllPerfect(n => n.Long, SacredKindMinNotes)),
-        new Definition("kengou", "一刀・二刀・三刀流をそろえた", "剣豪", Skill, AchievementTier.Gold, c => c.Batch5aKengou()),
-        new Definition("achsteps", "三つの実績で連番を完成した", "実績の階段", Fun, AchievementTier.Gold, c => c.Batch5aOrdinalSteps()),
-        new Definition("neckneck", "となりの台と100点差以内で並んだ", "肩を並べる", Fun, AchievementTier.Gold, c => c.NeighborBatch5b() is RankingPlay p && p.score >= 0 && c.Score >= 0 && Math.Abs((long)c.Score - p.score) <= NeckneckScoreGap),
         new Definition("quiz", "Qの試験で全問正解した", "満点答案", Gimmick, AchievementTier.Gold,
             c => c.Is(RushESecretState.BenkyouQuiz) && c.NoteStats && c.Stats.QuizSuccessRate(1, 1)),
         new Definition("shingan", "Vの消えるノーツを全部斬った", "心眼", Gimmick, AchievementTier.Gold,
@@ -417,15 +368,10 @@ public static partial class AchievementCatalog
         // フルコンボで、PERFECT でないのがちょうど1つ(AP まであと1つ)。
         new Definition("almostap", "あと1つで全部PERFECTだった", "惜しいAP", Rare, AchievementTier.Gold,
             c => !c.AimMode && c.FullCombo && c.Perfect == c.Hit - 1),
-        new Definition("fivekeys", "点数に一から五が勢ぞろいした", "数字の五人組", Fun, AchievementTier.Gold, c => c.Batch5aFiveKeys()),
         new Definition("hardfc", "Hardでフルコンボを決めた", "剣聖", Skill, AchievementTier.Gold,
             c => !c.Secret && !c.AimMode && c.IsHard && c.FullCombo),
         new Definition(SebangoId, "点に自分の番号を刻んだ", "背番号", Fun, AchievementTier.Gold,
             c => c.ClearNumber > 0 && c.Score >= SebangoMinScore && c.Score % SebangoModulus == c.ClearNumber % SebangoModulus),
-        new Definition("steady", "ずれ幅を15ms以内に収めきった", "ぶれない剣", Skill, AchievementTier.Rainbow, c => c.NoteStats && c.Stats.Batch5aSteady()),
-        new Definition("allgood", "全部GOODで斬りきった", "GOOD一色", Fun, AchievementTier.Rainbow, c => c.NoteStats && c.Stats.Batch5aAllGood()),
-        new Definition("triplegold", "金の実績を3つ同時に取った", "金三つ", Fun, AchievementTier.Rainbow, c => c.Batch5aTripleGold()),
-        new Definition("pairfc", "となりとそろってフルコンボを決めた", "ふたりで完全", Fun, AchievementTier.Rainbow, c => c.NoteStats && c.FullCombo && c.NeighborBatch5b()?.ach?.Contains("fc") == true),
         new Definition("ap", "全部PERFECTで斬りきった", "オールパーフェクト", Rare, AchievementTier.Rainbow, c => !c.AimMode && c.AllPerfect),
         new Definition("datescore", "今日の日付を点に刻んだ", "本日付の点", Fun, AchievementTier.Rainbow,
             c => c.Score >= DateScoreMinScore && c.Score % DateScoreModulus == 100 * c.StartedLocal.Month + c.StartedLocal.Day),
