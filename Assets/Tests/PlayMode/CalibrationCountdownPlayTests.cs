@@ -11,9 +11,13 @@ public class CalibrationCountdownPlayTests
     int savedOffset;
     float savedSpeed;
     string savedSelectionSongId, savedSelectionDifficulty;
+    // 判定調整の保存(CalibrationDraft.Commit)が書く出力先ごとの値。保存を試すテストが本物の値を書き換えたままにしない(2026-10-30 全体の点検)。
+    static readonly string[] CalibrationKeys={CalibrationDraft.SpeakerKey,CalibrationDraft.HeadphoneKey,CalibrationDraft.ActiveKey};
+    readonly int?[] savedCalibration=new int?[CalibrationKeys.Length];
 
     [UnitySetUp] public IEnumerator Open()
     {
+        for(int i=0;i<CalibrationKeys.Length;i++)savedCalibration[i]=PlayerPrefs.HasKey(CalibrationKeys[i])?PlayerPrefs.GetInt(CalibrationKeys[i]):(int?)null;
         savedOffset=GameSession.JudgmentOffsetMs;savedSpeed=GameSession.NoteApproachTime;
         savedSelectionSongId=GameSession.CalibrationSelectionSongId;
         savedSelectionDifficulty=GameSession.CalibrationSelectionDifficulty;
@@ -43,6 +47,13 @@ public class CalibrationCountdownPlayTests
     [UnityTearDown] public IEnumerator Cleanup()
     {
         Time.timeScale=1;
+        PhoneSaberDisplaySync.Measuring=false;
+        for(int i=0;i<CalibrationKeys.Length;i++)
+        {
+            if(savedCalibration[i].HasValue)PlayerPrefs.SetInt(CalibrationKeys[i],savedCalibration[i].Value);
+            else PlayerPrefs.DeleteKey(CalibrationKeys[i]);
+        }
+        PlayerPrefs.Save();
         yield return ScreenTransitionPlayTests.WaitForTransition();
         GameSession.IsCalibrationMode=false;GameSession.CalibrationSelectionSeconds=null;
         GameSession.JudgmentOffsetMs=savedOffset;GameSession.NoteApproachTime=savedSpeed;
@@ -66,6 +77,21 @@ public class CalibrationCountdownPlayTests
         Assert.AreEqual("SongSelect",SceneManager.GetActiveScene().name);
         Assert.That(Object.FindFirstObjectByType<SongSelectSkin>().RemainingSeconds,Is.EqualTo(remaining).Within(1));
         Assert.IsNull(GameSession.CalibrationSelectionSeconds,"引き継ぎは一度だけ消費する");
+    }
+
+    // 運営が F9 で遅れを測っている間は、選曲の時計を進めない(測っている途中に時間切れで曲が始まらない。2026-10-30 全体の点検)。
+    [UnityTest] public IEnumerator TheSelectionClockWaitsWhileF9Measures()
+    {
+        var select=Object.FindFirstObjectByType<SongSelectSkin>();
+        double before=select.RemainingSeconds;
+        PhoneSaberDisplaySync.Measuring=true;
+        select.TickCountdown(before+30);
+        yield return null;
+        Assert.AreEqual("SongSelect",SceneManager.GetActiveScene().name,"時間切れにしない");
+        Assert.That(select.RemainingSeconds,Is.EqualTo(before).Within(.5),"測っている間は進めない");
+        PhoneSaberDisplaySync.Measuring=false;
+        select.TickCountdown(10);
+        Assert.That(select.RemainingSeconds,Is.EqualTo(before-10).Within(.5),"測り終えたらまた進める");
     }
 
     [UnityTest] public IEnumerator BackRestoresSelectedSongDifficultyAndPreview()

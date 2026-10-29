@@ -257,4 +257,13 @@ public class ProjectorModeTests
         created.Add(a.gameObject);
         Assert.AreSame(a, ProjectorModeHotkey.Ensure());
     }
+
+    // F4 は結果画面の一言の欄で打っている間と、幕の間は受け付けない(F12 と同じ。2026-10-30 全体の点検)。
+    [Test]
+    public void Hotkey_IsIgnoredWhileTypingOrDuringTheCurtain()
+    {
+        Assert.IsTrue(ProjectorModeHotkey.Accepts(false, false));
+        Assert.IsFalse(ProjectorModeHotkey.Accepts(true, false), "一言の欄で打っている間");
+        Assert.IsFalse(ProjectorModeHotkey.Accepts(false, true), "幕の間(知らせが幕に隠れて見えない)");
+    }
 }

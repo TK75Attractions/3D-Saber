@@ -19,6 +19,10 @@ public sealed class CalibrationOverlay : MonoBehaviour
     readonly List<Button> adjustments = new List<Button>();
     readonly int[] deltas = { -10, 10 };
     double lastTick;
+    // 1回の Tick で残り時間を進める上限(秒)。音の立て直しを待つ間は GamePlayManager がこの Tick を呼ばないので、戻ったときに
+    // 待った時間をまとめて引いて時間切れにしない(2026-10-30 全体の点検)。
+    public const double MaxTickSeconds=.5;
+    public static double CountdownStep(double elapsed)=>elapsed>MaxTickSeconds?MaxTickSeconds:elapsed;
     Button play, save, back, measure, restore, recommend, resultPrimary, resultRetry;
     Button earlier, later;
     GameObject settings, exitDialog, resultCard, controls, timingGroup;
@@ -202,7 +206,7 @@ public sealed class CalibrationOverlay : MonoBehaviour
     }
     public void Tick()
     {
-        double now=Time.realtimeSinceStartupAsDouble; TickCountdown(now-lastTick); lastTick=now;
+        double now=Time.realtimeSinceStartupAsDouble; TickCountdown(CountdownStep(now-lastTick)); lastTick=now;
         if (ScreenTransition.IsBusy||ctl==null) return;
         var keyboard=Keyboard.current;
         if (keyboard!=null)

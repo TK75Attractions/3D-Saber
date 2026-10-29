@@ -20,10 +20,14 @@ public class ProjectorModeHotkey : MonoBehaviour
     void Update()
     {
         var kb = Keyboard.current;
-        if (ChartMarkCommentPanel.IsOpen) return; // 結果画面の一言の欄で打っている間は F4 を止める
+        if (!Accepts(ChartMarkCommentPanel.IsOpen, ScreenTransition.IsBusy)) return;
         if (kb == null || !kb[toggleKey].wasPressedThisFrame) return;
         Toggle();
     }
+
+    // F4 を受け付けるか。結果画面の一言の欄で打っている間と、幕の間は受け付けない(F12 と同じ。幕の間に押すと切り替わっても
+    // 知らせが幕に隠れてシーンとともに消え、スタッフが押し直して元に戻してしまう。2026-10-30 全体の点検)。
+    public static bool Accepts(bool commentOpen, bool transitionBusy) => !commentOpen && !transitionBusy;
 
     public static void Toggle()
     {

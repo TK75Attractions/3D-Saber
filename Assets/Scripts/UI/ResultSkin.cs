@@ -200,15 +200,16 @@ public class ResultSkin : MonoBehaviour
 
     // ---- セットアップ ----
 
-    // 1920×1080 基準の絶対座標を成立させる(16:9 は FreezeAspectRate 側で固定済み)
+    // 1920×1080 基準の絶対座標を成立させる。結果の画面は Overlay なので、FreezeAspectRate の 16:9 は効かない。
+    // 縦横の平均で拡大していたため、21:9 などの横長では出口(y=-432)と曲名が画面の外へ切れていた。
+    // 1920×1080 の全体がどの画面比でも収まる Expand にする(16:9 では今までと同じ。選曲・実績の知らせと同じ。2026-10-30 全体の点検)。
     static void EnsureScaler(Canvas canvas)
     {
         var scaler = canvas.GetComponent<CanvasScaler>();
         if (scaler == null) scaler = canvas.gameObject.AddComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920f, 1080f);
-        scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-        scaler.matchWidthOrHeight = 0.5f;
+        scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand;
     }
 
     // 旧スタッツ(ラベル+数値が同居した Text)と旧曲名は非表示にして作り直す。非破壊(SetActive のみ)。

@@ -94,4 +94,14 @@ public class CalibrationSpeedTests
             Object.DestroyImmediate(host);
         }
     }
+
+    // 判定調整の残り時間は、1回の Tick で 0.5 秒までしか進めない(音の立て直しを待つ間は Tick が呼ばれないので、
+    // 戻ったときに待った時間をまとめて引かない。2026-10-30 全体の点検)。
+    [Test]
+    public void TheCalibrationClockDoesNotJumpAfterAStall()
+    {
+        Assert.AreEqual(.016, CalibrationOverlay.CountdownStep(.016), 1e-9);
+        Assert.AreEqual(CalibrationOverlay.MaxTickSeconds, CalibrationOverlay.CountdownStep(8), 1e-9);
+        Assert.AreEqual(.5, CalibrationOverlay.MaxTickSeconds, 1e-9);
+    }
 }

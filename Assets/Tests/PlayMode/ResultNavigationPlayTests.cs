@@ -279,6 +279,25 @@ public class ResultNavigationPlayTests
         Assert.AreEqual(GameSession.NoteApproachTimeDefault, GameSession.NoteApproachTime);
     }
 
+    // 結果の画面は Overlay なので、16:9 以外の画面でも 1920×1080 の全体が収まる拡大(Expand)にし、出口はその中に置く
+    // (縦横の平均で拡大していたため、21:9 などの横長で出口が画面の下へ切れていた。2026-10-30 全体の点検)。
+    [UnityTest]
+    public IEnumerator TheExitStaysOnScreenWhateverTheScreenShape()
+    {
+        reveal.Tick(999);
+        yield return null;
+        var scaler = Object.FindFirstObjectByType<ResultController>().GetComponent<Canvas>().GetComponent<CanvasScaler>();
+        Assert.AreEqual(CanvasScaler.ScaleMode.ScaleWithScreenSize, scaler.uiScaleMode);
+        Assert.AreEqual(new Vector2(1920, 1080), scaler.referenceResolution);
+        Assert.AreEqual(CanvasScaler.ScreenMatchMode.Expand, scaler.screenMatchMode, "1920×1080 の全体がどの画面比でも収まる");
+        var rect = back.GetComponent<RectTransform>();
+        Assert.AreEqual(new Vector2(.5f, .5f), rect.anchorMin);
+        Assert.AreEqual(rect.anchorMin, rect.anchorMax);
+        Vector2 min = rect.anchoredPosition - Vector2.Scale(rect.sizeDelta, rect.pivot);
+        Vector2 max = min + rect.sizeDelta;
+        Assert.True(min.x >= -960 && max.x <= 960 && min.y >= -540 && max.y <= 540, "出口は 1920×1080 の中: " + min + "〜" + max);
+    }
+
     static IEnumerator WaitForTransition()
     {
         double deadline = Time.realtimeSinceStartupAsDouble + 10;

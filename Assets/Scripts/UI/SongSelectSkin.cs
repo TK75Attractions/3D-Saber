@@ -704,11 +704,12 @@ public class SongSelectSkin : MonoBehaviour
 
     // 時間切れ(仕様面の点検 1)。選曲で操作した人は今の曲・難易度で始める。操作がなければ無人とみなして、曲を始めずにタイトルへ戻る。
     // 始められなかったとき(譜面が消えた・曲が無いなど)もタイトルへ戻り、時計が止まったままにならない。
+    // 運営が F9 で遅れを測っている間(PhoneSaberDisplaySync.Measuring)も進めない(測っている途中に曲が始まらないように。2026-10-30 全体の点検)。
     public void TickCountdown(double deltaSeconds)
     {
         if (!built) return;
         if (!countdown.Tick(deltaSeconds, !ScreenTransition.IsBusy && !ctl.RushESecret.Transitioning
-            && VisitorInputLive())) return;
+            && !PhoneSaberDisplaySync.Measuring && VisitorInputLive())) return;
         if (GameSession.SongSelectOperated) ctl.StartGameAutomatically();
         if (!ctl.StartAccepted && !ScreenTransition.IsBusy) ctl.ReturnToTitle();
     }
