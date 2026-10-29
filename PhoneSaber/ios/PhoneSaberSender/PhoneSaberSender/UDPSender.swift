@@ -1403,10 +1403,12 @@ final class CoordinateDelivery: @unchecked Sendable {
         return settings
     }
 
-    private func isCurrent(_ request: Settings) -> Bool {
+    // 世代だけでなく「その色の最新の要求か」も見る。P2P で送信中に LAN へ戻ると、P2P 側に残った
+    // 待機中の古い座標が、新しい LAN の座標の後から届いて剣が一瞬戻っていた（2026-10-30）。
+    private func isCurrent(_ request: Settings, port: Int, requestID: UInt64) -> Bool {
         lock.lock(); defer { lock.unlock() }
-        let current = matches(request)
-        if !current { ConnectivityLog.sendGapMonitor.blocked("generation rejected") }
+        let current = matches(request) && latestRequestByPort[port] == requestID
+        if !current { ConnectivityLog.sendGapMonitor.blocked("superseded or generation rejected") }
         return current
     }
 
@@ -1428,7 +1430,9 @@ final class CoordinateDelivery: @unchecked Sendable {
         nextRequestID &+= 1
         let requestID = nextRequestID
         latestRequestByPort[port] = requestID
-        let valid: () -> Bool = { [weak self] in self?.isCurrent(request) == true }
+        let valid: () -> Bool = { [weak self] in
+            self?.isCurrent(request, port: port, requestID: requestID) == true
+        }
         let lanVerified = settings.lanConfigured && lanProbe.isAlive
         if !settings.manual && settings.p2pEnabled && p2pSender.isUsable && !lanVerified {
             if !routedViaP2P {

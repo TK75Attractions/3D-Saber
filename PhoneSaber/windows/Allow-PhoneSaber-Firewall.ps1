@@ -6,7 +6,9 @@ $ErrorActionPreference = 'Stop'
 # 座標・探索の UDP 受信を、同じネットワーク（ローカルサブネット）の端末からだけ許可します。
 # Windows のモバイルホットスポットは Public 扱いになることがあるため（2026-10-07 に確認）、
 # Private と Public の両方で許可し、送信元をローカルサブネットに限定します。
-Write-Host 'PhoneSaber: UDP 5005 (RED), 5006 (BLUE), 5007 (探索) を、同じネットワークの端末から受信できるようにします。'
+# 5017（台同士のランキング同期 RankingSync）と 5018（診断の共有 PhoneSaberPeerLog）も相手の台から受けます。
+# 初回の許可ダイアログを閉じて Block 規則だけが残った PC では、座標は届くのに同期だけ止まっていました（2026-10-30）。
+Write-Host 'PhoneSaber: UDP 5005 (RED), 5006 (BLUE), 5007 (探索), 5017 (ランキング同期), 5018 (診断共有) を、同じネットワークの端末から受信できるようにします。'
 Write-Host '管理者権限が必要です。Private / Public（ホットスポット）で有効、送信元は LocalSubnet のみ。再実行しても規則は増えません。'
 
 $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
@@ -15,13 +17,13 @@ if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administra
     throw 'PowerShell を「管理者として実行」で開いて、このスクリプトを再実行してください。'
 }
 
-foreach ($port in @(5005, 5006, 5007)) {
+foreach ($port in @(5005, 5006, 5007, 5017, 5018)) {
     $ruleName = "PhoneSaber-Event-UDP-$port"
     $settings = @{
         PolicyStore = 'PersistentStore'
         Name = $ruleName
         DisplayName = "PhoneSaber Event UDP $port (LocalSubnet)"
-        Description = 'PhoneSaber 当日用: RED 5005 / BLUE 5006 / Android 探索 5007。Private/Public、送信元は LocalSubnet のみ。'
+        Description = 'PhoneSaber 当日用: RED 5005 / BLUE 5006 / Android 探索 5007 / ランキング同期 5017 / 診断共有 5018。Private/Public、送信元は LocalSubnet のみ。'
         Direction = 'Inbound'
         Action = 'Allow'
         Enabled = 'True'

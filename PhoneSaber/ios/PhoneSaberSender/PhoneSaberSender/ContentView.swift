@@ -39,7 +39,10 @@ struct ContentView: View {
             model.refreshDebugRecordingSessions()
             diagnostics.startDiscovery()
         }
-        .onAppear { model.sceneDidChange(isActive: scenePhase == .active) }
+        // .inactive は前面のまま（システムの確認画面・通知センター・USB の「信頼しますか」など）。
+        // 背面になるまでは自動ロックを止めたまま送り続ける。2026-10-29 台B: USB を挿した約20秒後に
+        // 確認画面で非アクティブになり、自動ロックが戻って座標が止まった。
+        .onAppear { model.sceneDidChange(isActive: scenePhase != .background) }
         .confirmationDialog(
             "古い録画sessionを整理しますか？",
             isPresented: $showRecordingCleanupConfirmation,
@@ -57,7 +60,7 @@ struct ContentView: View {
             Text("対象: \(older.count)件（最古 \(firstOlder)、約\(ByteCountFormatter.string(fromByteCount: reclaimable, countStyle: .file))）。最新 \(latest) は保持します。")
         }
         .onChange(of: scenePhase) { phase in
-            model.sceneDidChange(isActive: phase == .active)
+            model.sceneDidChange(isActive: phase != .background)
         }
         .onChange(of: recordingPreviewURL) { url in
             model.setLowHeatInhibitedByUI(url != nil || showIgnoreInspection)

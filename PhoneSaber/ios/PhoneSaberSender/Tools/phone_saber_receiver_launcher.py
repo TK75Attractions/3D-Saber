@@ -587,6 +587,12 @@ def run_receiver(
             stop_signal: int | None = None
             try:
                 for signum in (signal.SIGINT, signal.SIGTERM, signal.SIGHUP):
+                    # saber-watchdog.sh と Unity は nohup と & で起動するので、SIGHUP と SIGINT は
+                    # 無視のまま届く。ここで上書きすると、監視の Ctrl+C（ゲームは残す操作）や
+                    # Terminal を閉じたときに、この launcher が受信機まで止めてしまう。
+                    # 無視されている信号は無視のままにし、Terminal から直接起動したときだけ止める。
+                    if signal.getsignal(signum) is signal.SIG_IGN:
+                        continue
                     previous_handlers[signum] = signal.signal(signum, _signal_handler)
                 process = subprocess.Popen(
                     command,

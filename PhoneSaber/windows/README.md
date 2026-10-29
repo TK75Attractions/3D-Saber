@@ -43,14 +43,14 @@ Get-ChildItem -Path "$env:TEMP\phonesaber-heartbeat-*" | Select-Object FullName,
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\PhoneSaber\windows\Allow-PhoneSaber-Firewall.ps1
 ```
 
-この実行だけ PowerShell の実行制限を回避します。スクリプトは PhoneSaber 専用の受信規則を作成し、**UDP 5005 (RED) / 5006 (BLUE) / 5007 (Android 探索)** を、**Private と Public の両方・送信元はローカルサブネットのみ**で許可します。Windows のモバイルホットスポットは Public 扱いになることがあるためです（2026-10-07 に確認）。固定名の同じ規則を更新するので再実行しても増えません。初回の許可ダイアログを閉じたとき、またはチェックしなかったネットワーク (例: パブリック) 向けに Windows が作る **Unity の受信ブロック規則も無効化**します（Block は Allow より優先されるため）。対象は表示名に `Unity` / `ServTechSlash` (Player の productName) を含む規則と、対象プログラムが `Unity.exe` / `3D-Saber.exe` の規則です。規則は exe 限定ではなく該当ポートへの許可なので、Editor と Player の両方で使えます。
+この実行だけ PowerShell の実行制限を回避します。スクリプトは PhoneSaber 専用の受信規則を作成し、**UDP 5005 (RED) / 5006 (BLUE) / 5007 (Android 探索) / 5017 (台同士のランキング同期) / 5018 (診断の共有)** を、**Private と Public の両方・送信元はローカルサブネットのみ**で許可します。Windows のモバイルホットスポットは Public 扱いになることがあるためです（2026-10-07 に確認）。固定名の同じ規則を更新するので再実行しても増えません。初回の許可ダイアログを閉じたとき、またはチェックしなかったネットワーク (例: パブリック) 向けに Windows が作る **Unity の受信ブロック規則も無効化**します（Block は Allow より優先されるため）。対象は表示名に `Unity` / `ServTechSlash` (Player の productName) を含む規則と、対象プログラムが `Unity.exe` / `3D-Saber.exe` の規則です。規則は exe 限定ではなく該当ポートへの許可なので、Editor と Player の両方で使えます。
 
 ブロック規則はダイアログに答えた時点で作られるため、**ビルド済み Player (と Editor) を一度起動してダイアログに答えた後に**このスクリプトを実行します。ダイアログではプライベートとパブリックの両方にチェックして許可するのが確実です。exe を別の場所に作り直した・別名にしたなどで新しいダイアログに答えたときは、スクリプトを再実行します。
 
 削除する場合は管理者 PowerShell で以下を実行します。
 
 ```powershell
-Get-NetFirewallRule -Name 'PhoneSaber-Event-UDP-500*' | Remove-NetFirewallRule
+Get-NetFirewallRule -Name 'PhoneSaber-Event-UDP-50*' | Remove-NetFirewallRule
 ```
 
 ## 4. 当日の接続とホットスポット予備経路

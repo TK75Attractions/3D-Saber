@@ -59,6 +59,8 @@ TOOLS_DIR = Path(__file__).resolve().parent
 # uploadsInProgress > 0, so /health never became idle and the launcher refused
 # every later stale-code restart.
 REQUEST_IDLE_TIMEOUT_SECONDS = 150.0
+# 受信箱の volume に、受け取った後も残しておく空き（bytes）。これを割る upload は 507 で断る。
+MIN_FREE_BYTES_AFTER_UPLOAD = 2 * 1024 * 1024 * 1024
 
 
 @dataclass(frozen=True)
@@ -388,6 +390,16 @@ class TriageRequestHandler(BaseHTTPRequestHandler):
                   f"outside 8..{MAX_BUNDLE_BYTES} bytes (413)", flush=True)
             self._reply(413, {"error": "bundle exceeds receiver limits"})
             return
+        # 受信箱の volume の空きが、この bundle を置いた後も MIN_FREE_BYTES_AFTER_UPLOAD 残るときだけ受ける。
+        # Mac のディスクが一杯になると Unity の events.log・記録の保存まで止まる。iPhone は 507 を
+        # 期限つきの再試行に回し、clip は iPhone に残る（空きの確認に失敗したときは従来どおり受ける）。
+        free = _free_bytes(self.server.inbox)
+        if free is not None and free - length < MIN_FREE_BYTES_AFTER_UPLOAD:
+            print(f"[triage] rejected upload from {self.client_address[0]}: Content-Length={length} "
+                  f"but only {free} bytes free on the inbox volume; keeping {MIN_FREE_BYTES_AFTER_UPLOAD} free (507)",
+                  flush=True)
+            self._reply(507, {"error": "insufficient storage on the receiver"})
+            return
         # Counted until the analysis is queued, so /health never reports idle while a
         # received bundle still waits for its report or its queue slot.
         self.server.upload_started()
@@ -476,6 +488,14 @@ def _is_local_peer(value: str) -> bool:
     carrier_grade = ipaddress.ip_network("100.64.0.0/10")
     return address.is_private or address.is_loopback or address.is_link_local \
         or (address.version == 4 and address in carrier_grade)
+
+
+def _free_bytes(path: Path) -> int | None:
+    """Free bytes on the volume holding ``path``; None when the OS cannot tell."""
+    try:
+        return shutil.disk_usage(path).free
+    except OSError:
+        return None
 
 
 def _publish_bonjour(port: int, service_name: str) -> subprocess.Popen[bytes] | None:

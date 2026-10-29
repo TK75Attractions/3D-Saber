@@ -853,7 +853,9 @@ final class P2PSender {
         if let error {
             ConnectivityLog.sendGapMonitor.blocked("send error", detail: error.localizedDescription)
             dropConnection(reason: "coordinate send failed: \(error.localizedDescription)")
-            if request.isCurrent?() != false, let fallback = request.fallback { fallback() }
+            // 置き換えられた（古い）要求は、失敗の通知も LAN への退避もせずに捨てる。
+            guard request.isCurrent?() != false else { return }
+            if let fallback = request.fallback { fallback() }
             else { request.completion(.failure(error)) }
             return
         }

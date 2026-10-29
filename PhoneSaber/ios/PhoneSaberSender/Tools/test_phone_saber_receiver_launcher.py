@@ -722,6 +722,87 @@ class PhoneSaberReceiverLauncherTests(unittest.TestCase):
                 if process.stdout is not None:
                     process.stdout.close()
 
+    def test_ignored_sigint_and_sighup_from_the_watchdog_do_not_stop_the_receiver(self) -> None:
+        # saber-watchdog.sh と Unity は launcher を nohup と & で起動する(SIGHUP・SIGINT は無視)。
+        # 監視の Ctrl+C や Terminal を閉じる操作で受信機まで止まらず、SIGTERM では今までどおり止まる。
+        if not hasattr(signal, "SIGINT") or not hasattr(signal, "SIGHUP"):
+            self.skipTest("SIGINT / SIGHUP are unavailable")
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            repo = root / "repo"
+            repo.mkdir()
+            log_dir = root / "logs"
+            fake_receiver = root / "fake_receiver.py"
+            stopped_file = root / "stopped.txt"
+            fake_receiver.write_text(
+                "import pathlib, time\n"
+                "try:\n"
+                "    print('[triage] listening on 0.0.0.0:8765; inbox=test', flush=True)\n"
+                "    while True: time.sleep(0.1)\n"
+                "except KeyboardInterrupt:\n"
+                "    pass\n"
+                "finally:\n"
+                f"    pathlib.Path({str(stopped_file)!r}).write_text('shutdown complete')\n",
+                encoding="utf-8",
+            )
+            harness = root / "run_launcher.py"
+            harness.write_text(
+                "import pathlib, sys\n"
+                f"sys.path.insert(0, {str(TOOLS_SOURCE)!r})\n"
+                "import phone_saber_receiver_launcher as launcher\n"
+                "repo = pathlib.Path(sys.argv[3])\n"
+                "snapshot = launcher.GitSnapshot(repo, 'main', '## main', False, 0, 0)\n"
+                "command = [sys.executable, sys.argv[1]]\n"
+                "raise SystemExit(launcher.run_receiver(repo, snapshot, pathlib.Path(sys.argv[2]), "
+                "receiver_command=command, listener_finder=lambda _port: None))\n",
+                encoding="utf-8",
+            )
+            # nohup と bash の & が残す状態(SIGHUP・SIGINT = SIG_IGN)を作ってから launcher を exec する。
+            ignore_and_exec = (
+                "import os, signal, sys; "
+                "signal.signal(signal.SIGINT, signal.SIG_IGN); "
+                "signal.signal(signal.SIGHUP, signal.SIG_IGN); "
+                "os.execv(sys.executable, [sys.executable] + sys.argv[1:])"
+            )
+            process = subprocess.Popen(
+                [sys.executable, "-c", ignore_and_exec, str(harness), str(fake_receiver), str(log_dir), str(repo)],
+                cwd=repo,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                bufsize=0,
+                start_new_session=True,
+            )
+            assert process.stdout is not None
+            transcript: list[str] = []
+            deadline = time.monotonic() + 30
+            try:
+                while time.monotonic() < deadline:
+                    ready, _, _ = select.select([process.stdout], [], [], 0.2)
+                    if ready:
+                        chunk = os.read(process.stdout.fileno(), 4096).decode("utf-8", errors="replace")
+                        transcript.append(chunk)
+                        if "[PHONE_SABER][WAITING]" in "".join(transcript):
+                            break
+                    if process.poll() is not None:
+                        break
+                self.assertIn("[PHONE_SABER][WAITING]", "".join(transcript), "".join(transcript))
+                os.kill(process.pid, signal.SIGINT)
+                os.kill(process.pid, signal.SIGHUP)
+                time.sleep(1.5)
+                self.assertIsNone(process.poll(), "launcher stopped on an ignored signal:\n" + "".join(transcript))
+                self.assertFalse(stopped_file.exists(), "receiver was stopped by an ignored signal")
+                os.kill(process.pid, signal.SIGTERM)
+                tail, _ = process.communicate(timeout=40)
+                transcript.append(tail.decode("utf-8", errors="replace"))
+                self.assertEqual(process.returncode, 128 + signal.SIGTERM, "\n".join(transcript))
+                self.assertTrue(stopped_file.exists(), "receiver did not run its shutdown path on SIGTERM")
+            finally:
+                if process.poll() is None:
+                    process.kill()
+                    process.wait(timeout=3)
+                if process.stdout is not None:
+                    process.stdout.close()
+
 
 
 def stale_health(pid: int, **overrides) -> dict:

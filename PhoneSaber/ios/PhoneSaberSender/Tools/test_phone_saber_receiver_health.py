@@ -11,6 +11,7 @@ import importlib.util
 import io
 import json
 import os
+import shutil
 import socket
 import sys
 import tempfile
@@ -261,6 +262,29 @@ class ReceiverHealthTests(unittest.TestCase):
         self.assertIn(f"Content-Length={MAX_BUNDLE_BYTES + 1} outside 8..{MAX_BUNDLE_BYTES} bytes (413)", log)
         self.assertIn("rejected upload from 127.0.0.1 (400)", log)
         self.assertEqual(server.health()["uploadsInProgress"], 0)
+
+    def test_upload_is_refused_with_507_when_the_inbox_volume_is_nearly_full(self) -> None:
+        # 文化祭の Mac で受信箱がディスクを食い尽くすと、Unity の events.log・記録の保存まで止まる。
+        # 残す空き(MIN_FREE_BYTES_AFTER_UPLOAD)を割る upload は本文を読む前に 507 で断り、
+        # 空きの確認ができないときは従来どおり受ける。
+        server = self.server(mode="disabled")
+        self.serve(server)
+        usage = shutil.disk_usage(self.inbox)
+        nearly_full = usage._replace(free=receiver.MIN_FREE_BYTES_AFTER_UPLOAD - 1)
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output), \
+                mock.patch.object(receiver.shutil, "disk_usage", return_value=nearly_full):
+            status, payload = self.request(server, "POST", "/v1/bundle", b"x" * 16, {
+                "Content-Type": CONTENT_TYPE, "Content-Length": "16"})
+        self.assertEqual(status, 507)
+        self.assertEqual(payload, {"error": "insufficient storage on the receiver"})
+        self.assertIn(f"keeping {receiver.MIN_FREE_BYTES_AFTER_UPLOAD} free (507)", output.getvalue())
+        self.assertEqual(server.health()["uploadsInProgress"], 0)
+        with contextlib.redirect_stdout(io.StringIO()), \
+                mock.patch.object(receiver.shutil, "disk_usage", side_effect=OSError("statvfs failed")):
+            status, _ = self.request(server, "POST", "/v1/bundle", b"not-a-bundle", {
+                "Content-Type": CONTENT_TYPE, "Content-Length": "12"})
+        self.assertEqual(status, 400, "an unreadable free-space figure must not refuse uploads")
 
     def test_stalled_upload_times_out_and_the_receiver_becomes_idle_again(self) -> None:
         # Wi-Fi lost mid-upload: no FIN, no more bytes. The receiver must not stay busy forever.
