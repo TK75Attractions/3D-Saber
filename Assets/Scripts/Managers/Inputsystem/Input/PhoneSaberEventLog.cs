@@ -35,6 +35,8 @@ public sealed class PhoneSaberEventLog
     bool pruneArchives;
     PhoneSaberLogActivity activity = new PhoneSaberLogActivity(
         SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp));
+    // 保存に成功した行の通知。購読側は背景 writer を待たせず、上限つきキューへ渡すだけ。
+    public event Action<string> LineWritten;
     public string LogPath { get; }
     public string LastError => lastError;
 
@@ -98,7 +100,7 @@ public sealed class PhoneSaberEventLog
     {
         return timestamp.ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'", CultureInfo.InvariantCulture) +
             " station=" + Field(string.IsNullOrEmpty(station) ? "none" : station) +
-            " colour=" + Field(colour) + " event=" + Field(kind) + " " + Field(detail, 2048) + "\n";
+            " colour=" + Field(colour) + " event=" + Field(kind) + " " + Field(detail, kind == "peer-log" ? PhoneSaberPeerLog.MaximumLineBytes + 64 : 2048) + "\n";
     }
 
     static string Field(string value, int limit = 512)
@@ -249,6 +251,8 @@ public sealed class PhoneSaberEventLog
                     using (var stream = new FileStream(LogPath, FileMode.Append, FileAccess.Write, FileShare.Read))
                         stream.Write(bytes, 0, bytes.Length);
                     retryWritten = true;
+                    try { LineWritten?.Invoke(line); }
+                    catch { /* 診断共有の失敗でもローカルの記録を続ける。 */ }
                 }
                 WriteArchive(line, bytes);
                 retryLine = null;

@@ -265,6 +265,19 @@ public sealed class RankingSync : MonoBehaviour
             return list.ToArray();
         }
     }
+    // 診断共有用の IP の写し。メインスレッドで読む。同期の状態や宛先ポートは変更しない。
+    public IReadOnlyList<IPAddress> PeerAddresses
+    {
+        get
+        {
+            var addresses = new List<IPAddress>();
+            foreach (var endpoint in manualPeers)
+                if (!addresses.Contains(endpoint.Address)) addresses.Add(endpoint.Address);
+            foreach (var peer in peers.Values)
+                if (!peer.Lost && peer.EndPoint != null && !addresses.Contains(peer.EndPoint.Address)) addresses.Add(peer.EndPoint.Address);
+            return addresses.AsReadOnly();
+        }
+    }
     // 最後に相手から届いた時刻(Time.realtimeSinceStartupAsDouble。まだなら -∞)。
     public double LastPeerMessageAt { get; private set; } = double.NegativeInfinity;
     // 相手から受け取って新しく足した回の数と、送った回の数(送り直し・宛先ごとも数える)。全部の記録を送り始めた回数。

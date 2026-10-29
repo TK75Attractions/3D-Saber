@@ -10,6 +10,10 @@ using UnityEngine.InputSystem;
 public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
 {
     bool initialized;
+    PhoneSaberPeerLog peerLog;
+    double nextPeerRefresh;
+    int peerSceneHandle = int.MinValue;
+    string peerSong;
     bool visible;
     PhoneSaberControlPanelServer controlPanel;
     PhoneSaberControlPanelState panel;
@@ -87,6 +91,8 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         overlay.quitMarker = null;
         overlay.StopControlPanel();
         overlay.initialized = true;
+        overlay.StopPeerLog();
+        overlay.StartPeerLog();
         overlay.StartControlPanel();
         string[] args = Environment.GetCommandLineArgs();
         for (int i = 1; i + 1 < args.Length; i++)
@@ -111,6 +117,20 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         {
             PhoneSaberEventLog.Current?.Flush();
             nextLogFlush = logNow + (string.IsNullOrEmpty(PhoneSaberEventLog.Current?.LastError) ? 0.25 : 5.0);
+        }
+        if (peerLog != null && logNow >= nextPeerRefresh)
+        {
+            nextPeerRefresh = logNow + 3;
+            peerLog.SetRankingPeers(RankingSync.Instance?.PeerAddresses);
+        }
+        if (peerLog != null)
+        {
+            var peerScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+            if (peerScene.handle != peerSceneHandle || peerSong != GameSession.SelectedSongId)
+            {
+                peerSceneHandle = peerScene.handle; peerSong = GameSession.SelectedSongId;
+                peerLog.ObserveContext(peerScene.name, peerSong);
+            }
         }
         PollCalibration(logNow);
         var keyboard = Keyboard.current;
@@ -169,9 +189,38 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
     void OnEnable()
     {
         SetVisible(visible);
-        if (initialized && Application.isPlaying) StartControlPanel();
+        if (initialized && Application.isPlaying) { StartControlPanel(); StartPeerLog(); }
     }
-    void OnDestroy() => StopControlPanel();
+    void OnDestroy() { StopControlPanel(); StopPeerLog(); }
+
+    void StartPeerLog()
+    {
+        if (peerLog != null || !initialized || !Application.isPlaying || !RankingSync.AutoStartEnabled ||
+            !PhoneSaberP2PBridgeProcess.AutoStartEnabled || PhoneSaberEventLog.Current == null || string.IsNullOrEmpty(fallbackStation)) return;
+        string[] args = Environment.GetCommandLineArgs();
+#if UNITY_EDITOR
+        if (!RankingSync.EnabledHere(args, true, UnityEditor.EditorPrefs.GetBool("RankingSync.EditorEnabled", false))) return;
+#else
+        if (!RankingSync.EnabledHere(args, false, false)) return;
+#endif
+        if (GameObject.Find("Code-based tests runner") != null) return;
+        try
+        {
+            var peerAddresses = new List<string>();
+            foreach (var endpoint in RankingSyncLog.ParsePeers(
+                RankingSync.ResolvePeers(args, PlayerPrefs.GetString(RankingSync.PeersPreferenceKey, "")), RankingSync.DefaultPort))
+                peerAddresses.Add(endpoint.Address.ToString()); // ランキング側で指定したポートは引き継がない。
+            peerLog = new PhoneSaberPeerLog(PhoneSaberEventLog.Current, new PhoneSaberPeerLog.Settings
+            {
+                Station = fallbackStation,
+                Peers = string.Join(",", peerAddresses),
+            });
+            nextPeerRefresh = 0; peerSceneHandle = int.MinValue;
+        }
+        catch { /* 診断共有を起動できなくてもゲームを続ける。 */ }
+    }
+
+    void StopPeerLog() { peerLog?.Dispose(); peerLog = null; }
 
     void StartControlPanel()
     {
@@ -295,6 +344,7 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
     string CurrentStation => InputPoint.Instance != null ? InputPoint.Instance.StationLabel : fallbackStation;
     void OnDisable()
     {
+        StopPeerLog();
         StopControlPanel();
         CancelCalibration();
         if (guiRenderer != null) guiRenderer.enabled = false;
@@ -647,6 +697,7 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         PhoneSaberEventLog.Record(fallbackStation, "SYSTEM", "session-quit", "exit-code=" + Environment.ExitCode);
         // 通常要求と区別し、終了時だけ最大1秒待つ。停止中の I/O は強制中断しない。
         PhoneSaberEventLog.Current?.StopAndDrain(1000);
+        StopPeerLog();
         // open -W はアプリの crash status を返さないため、正常終了の印を launcher に返す。
         try
         {
@@ -701,6 +752,8 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         panel.BeginSection("詳細 · 4隅の位置補正"); BuildCalibration();
         panel.BeginSection("接続・イベントログ");
         panel.Label(services);
+        panel.Label(peerLog == null ? "相手の診断: 停止（台名 / 同期設定を確認）" : peerLog.Latest);
+        if (peerLog != null && peerLog.LastError.Length > 0) panel.Label("診断共有 UDP 5018: " + peerLog.LastError, true);
         panel.Toggle("スマホとPCのNTP同期を確認済み（片道遅延も判定）", clocksSynchronized, "clocks-synchronized");
         var log = PhoneSaberEventLog.Current;
         panel.Label("イベントログ: " + (log?.LogPath ?? "作成できません"));
