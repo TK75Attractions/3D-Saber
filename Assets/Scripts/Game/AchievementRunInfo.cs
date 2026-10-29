@@ -47,6 +47,7 @@ public static partial class AchievementRunInfo
         RunId = null;
         Selection.Clear();
         Backpick = false;
+        BeginBatch5aVisitor();
     }
 
     // openedSecret と hintsBeforeOpen は、この選曲で新しく開いた分だけを Tracker が渡す。
@@ -76,6 +77,7 @@ public static partial class AchievementRunInfo
     // 同じ練習の中で両方の段が ok だったかを見る。別々の練習の片方ずつを足し合わせない。
     public static void PracticeFinished(bool rangeOnly, string finishReason, IEnumerable<TutorialController.TutorialStepRecord> records)
     {
+        ObserveBatch5aPractice(rangeOnly);
         var list = records != null ? new List<TutorialController.TutorialStepRecord>(records) : null;
         bool practiced = CountsAsPractice(rangeOnly, finishReason, list);
         PracticePending |= practiced;

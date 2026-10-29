@@ -11,15 +11,19 @@ public partial class AchievementCatalogTests
         "clear", "overtake", "wind", "hard", "xcut", "firstcut", "rainbow", "vanish_four", "practice", "fivekinds", "harvest",
         "silence", "finale", "eclipse", "passed", "goldcoin", "cradle", "two23", "shubu", "goldpair", "gohoubi", "aobakin",
         "lefthand", "regain", "modulate", "arrows", "dark", "m_echo", "dual", "combo50", "reswing", "octave", "onearm",
-        "manicbreath", "learnpair", "goldall", "storm", "morningecho", "chorus", "kiriage", "quick", "triple", "redblue",
-        "setsujoku", "twinstar", "jackpot", "upside", "matador", "comeback", "lunchtime", "school", "ranks", "secret_s",
-        "rushe4", "souage", "xcut10", "restart", "mochitsuki", "holdcut", "streak20", "kouyou5", "senbon", "pioneer", "nothorn",
-        "backpick", "pairrainbow", "firstever", "combo100", "e_chords", "ittoryu", "sweep3", "meteor", "balance", "top",
-        "lastsec", "duo150k", "bullseye", "mirror", "twinprime", "buzzer", "rising", "scenemaster", "secret", "duet", "seisho",
-        "hintkey", "trend", "sottoji", "ichiban", "lastpiece", "urafutari", "clock", "secretall", "jihou", "late", "center10",
-        "early", "splus", "almostfc", "hardsplus", "streak50", "memory", "slowstart", "kiriban", "zorome", "kaibun", "hyakuren",
-        "lastrainbow", "fc", "ichien", "slidein", "handperfect", "fubuki", "quiz", "shingan", "almostap", "hardfc", "sebango",
-        "ap", "datescore",
+        "manicbreath", "learnpair", "goldall", "storm", "goodstart", "morningecho", "chorus", "kiriage", "quick", "triple",
+        "redblue", "setsujoku", "twinstar", "jackpot", "upside", "matador", "comeback", "kangaii", "lunchtime", "school",
+        "ranks", "secret_s", "rushe4", "souage", "xcut10", "restart", "owariyoshi", "mochitsuki", "yosumi", "kinou_koe",
+        "holdcut", "streak20", "kouyou5", "senbon", "hitoributai", "pioneer", "nothorn", "backpick", "pairrainbow", "firstever",
+        "combo100", "e_chords", "ittoryu", "sasayaki", "sweep3", "meteor", "balance", "top", "lastsec", "duo150k", "bullseye",
+        "mirror", "top5", "twinprime", "buzzer", "nakami", "zanshin", "kannon", "bounceback", "sync", "kinou_ima", "rising",
+        "scenemaster", "secret", "duet", "seisho", "hintkey", "honjitsu", "trend", "sottoji", "daynight", "fushime", "shushifu",
+        "ichiban", "songswap", "omoteura", "tachiai", "lastpiece", "urafutari", "clock", "secretall", "soroiban", "medal3",
+        "jihou", "kaikin", "late", "center10", "early", "splus", "almostfc", "hardsplus", "streak50", "goldperfect", "yatsugi",
+        "evenscore", "memory", "rhythm_ok", "gobugobu", "slowstart", "kiriban", "zorome", "douten", "kaibun", "chords", "yushu",
+        "fullhouse", "hyakuren", "lastrainbow", "fc", "ichien", "slidein", "handperfect", "fubuki", "sanshu", "kengou",
+        "achsteps", "neckneck", "quiz", "shingan", "almostap", "fivekeys", "hardfc", "sebango", "steady", "allgood",
+        "triplegold", "pairfc", "ap", "datescore",
     };
 
     // 第2弾の32個(catalog2.md の表の順)。
@@ -68,10 +72,10 @@ public partial class AchievementCatalogTests
     }
 
     [Test]
-    public void TheListHas120AchievementsFromTheEasiestWithClearFirst()
+    public void TheListHas162AchievementsFromTheEasiestWithClearFirst()
     {
         var all = AchievementCatalog.All;
-        Assert.AreEqual(120, all.Count);
+        Assert.AreEqual(162, all.Count);
         var ids = new List<string>();
         for (int i = 0; i < all.Count; i++)
         {
