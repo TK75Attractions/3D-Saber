@@ -24,6 +24,8 @@ using UnityEngine.SceneManagement;
 //   束の併合・全部の記録の送信・ディスクへの保存は、曲の演奏中(Game シーン)は止め、結果・選曲・タイトルの間にまとめて行う。
 // ・表に書けなかった回(相手の回・自分の回とも)は、足せなかった表だけを足し直し待ちに残し、動いている間に足し直す。
 //   相手の回はログに入れず、別のキー(RankingSync.Pending.v1)にも残す(終了しても失われない)。起動時には、ログの各回が表にあるかも確かめる。
+// ・起動時(本番のビルドだけ)には逆に、この台の通算の表にあってログに無い回(同期が入る前の版などで遊んだ回)を、この台の回としてログに足す
+//   (RankingSyncBackfill。2026-10-29 ユーザー「完全に同期しちゃって欲しい」)。要約が変わるので、相手の台へは全部の記録の束で届く。
 // ・送り先は、動いている IPv4 のネットワークごとのブロードキャスト・255.255.255.255・届いた相手・手で入れた相手
 //   (PlayerPrefs RankingSync.Peers のカンマ区切り、または起動引数 -rankingPeer <IP>)。
 // ・つながりは双方向で確かめる(相手の要約に、こちらの機械 ID が入っていたら「つながりました」)。見つからない・片方向・途切れ・
@@ -110,6 +112,11 @@ public sealed class RankingSync : MonoBehaviour
         public string PendingKey = PendingPreferenceKey;
         public bool ShowNotices = true;     // 運営の知らせを画面に出すか(テストでは false。LastNotice には残す)
         public double StartDelaySeconds;    // 動き出す(照合・ネットワーク)までに待つ秒数(0 なら作ってすぐ)
+        // 動き出すとき、この台の通算の表にあってログに無い回をこの台の回としてログに足すか(本番のビルドの1つだけ。
+        // Editor で同期を入れても、それまでに Editor で遊んだ開発中の回は送らない)。
+        public bool Backfill;
+        // 調べる表(null なら RankingSyncBackfill.StationCharts: この台の全曲 × 難易度 × ふだん・運営モードの表)。テストで差し替える。
+        public IEnumerable<RankingSyncBackfill.Chart> BackfillCharts;
     }
 
     sealed class Peer
@@ -282,6 +289,8 @@ public sealed class RankingSync : MonoBehaviour
     public double LastPeerMessageAt { get; private set; } = double.NegativeInfinity;
     // 相手から受け取って新しく足した回の数と、送った回の数(送り直し・宛先ごとも数える)。全部の記録を送り始めた回数。
     public int ReceivedPlays { get; private set; }
+    // 動き出すときに、この台の表からログへ足した回の数(同期していない間に遊んだ回)。
+    public int BackfilledPlays { get; private set; }
     public int SentPlays => Volatile.Read(ref sentPlays);
     public int BundlesStarted { get; private set; }
     // 表へ足す待ちの回の数と、表に書けずに足し直しを待っている回の数。同じ id で中身の違う回が届いた数。
@@ -360,6 +369,7 @@ public sealed class RankingSync : MonoBehaviour
             Station = PhoneSaberStation.Read(),
             // 念のため少し待ってから動き出し(表の照合・ネットワーク)、その間に AutoStartEnabled が切られたら何もせずに消える(Update)。
             StartDelaySeconds = AutoStartDelaySeconds,
+            Backfill = !Application.isEditor,
         });
         Instance = sync;
     }
@@ -423,10 +433,35 @@ public sealed class RankingSync : MonoBehaviour
             waiting.Add(play.id, item);
             Put(reconcileApply, item, ApplyWhere.Reconcile);
         }
+        if (settings.Backfill) BackfillLocalPlays();
         // 実績の記録はここで読んでおく(曲の演奏中に届いた1回で、初めて読むことにならないように)。照合で、ログの回の実績も数に戻す。
         _ = AchievementStore.Available;
         CheckNearFull();
         if (!settings.Offline) OpenNetwork(now);
+    }
+
+    // この台の通算の表にあってログに無い回(同期が入る前の版・-rankingSync off で遊んだ回)を、この台の回としてログの後ろに足す
+    // (RankingSyncBackfill)。表にはもうあるので表へは足さない。ログが変わると要約が変わり、相手の台へは全部の記録の束で届く。
+    void BackfillLocalPlays()
+    {
+        List<RankingPlay> plays;
+        try { plays = RankingSyncBackfill.Collect(settings.BackfillCharts ?? RankingSyncBackfill.StationCharts(), log.Find, waiting.ContainsKey, station); }
+        catch (Exception exception)
+        {
+            // 調べられなくても、ほかの同期は今までどおり続ける。
+            Debug.LogWarning("RankingSync: 同期していない間の回を調べられませんでした。" + exception.GetType().Name + ": " + exception.Message);
+            return;
+        }
+        int added = 0;
+        foreach (var play in plays)
+        {
+            if (log.IsFull) { WarnFull(); break; }
+            if (log.Add(play)) added++;
+        }
+        if (added == 0) return;
+        BackfilledPlays += added;
+        logDirty = true;
+        LogEvent("ranking-sync-backfill", "plays=" + added + " total=" + log.Count);
     }
 
     static ApplyItem NewItem(RankingPlay play, bool daily, bool high) =>
