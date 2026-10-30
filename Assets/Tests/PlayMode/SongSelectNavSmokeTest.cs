@@ -61,7 +61,7 @@ public class SongSelectNavSmokeTest
         Assert.NotNull(skin.Background.Texture);
         Assert.True(skin.Background.Texture.IsCreated());
         Assert.AreEqual(1 << 30, skin.Background.ViewCamera.cullingMask);
-        Assert.That(skin.RemainingSeconds, Is.GreaterThan(95));
+        Assert.That(skin.RemainingSeconds, Is.GreaterThan(SongSelectCountdown.LimitSeconds - 5));
         Assert.AreEqual(0, ctl.SelectedDifficultyIndex);
         Assert.IsNull(ctl.ChartPreview.View, "旧譜面の描画カメラを生成しない");
     }

@@ -40,7 +40,7 @@ public class ResultController : MonoBehaviour
         if (!HasNextSong) { ReturnToTitle(); return; }
         if (!ScreenTransition.Load(songSelectSceneName, ScreenTransition.Style.Forward)) return;
         ResultSelectionReturn.Remember(GameSession.SelectedSongId, GameSession.SelectedDifficulty);
-        // 新しい100秒の選曲。判定値・速度・振る範囲はこの人のまま。
+        // 新しい選曲(制限は SongSelectCountdown.LimitSeconds)。判定値・速度・振る範囲はこの人のまま。
         GameSession.CalibrationSelectionSeconds = null;
         GameSession.CalibrationSelectionSongId = null;
         GameSession.CalibrationSelectionDifficulty = null;

@@ -980,12 +980,13 @@ public partial class AchievementCatalogTests
     [Test]
     public void LastsecIsAManualStartInTheLastFiveSeconds()
     {
+        // 選曲の制限(100→60→45 秒、2026-10-30)に合わせて数える。
         double start = AchievementRunInfo.SelectionStartSeconds;
-        Assert.AreEqual(100, start);
+        Assert.AreEqual(SongSelectCountdown.LimitSeconds, start);
         foreach (double seconds in new[] { start - AchievementCatalog.LastSecondsLeft, start - .01 })
             Assert.IsTrue(Has(Ctx(c => c.SelectionSeconds = seconds), "lastsec"), seconds.ToString());
         Assert.IsFalse(Has(Ctx(c => c.SelectionSeconds = start - AchievementCatalog.LastSecondsLeft - .01), "lastsec"));
-        Assert.IsFalse(Has(Ctx(c => c.SelectionSeconds = AchievementRunInfo.SelectionElapsed(0)), "lastsec"), "時間切れの自動開始は100秒ちょうど");
+        Assert.IsFalse(Has(Ctx(c => c.SelectionSeconds = AchievementRunInfo.SelectionElapsed(0)), "lastsec"), "時間切れの自動開始は制限ちょうど");
         Assert.IsFalse(Has(Ctx(c => c.SelectionSeconds = null), "lastsec"), "判定調整から戻った選曲");
     }
 

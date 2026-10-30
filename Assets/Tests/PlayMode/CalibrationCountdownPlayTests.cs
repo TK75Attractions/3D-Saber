@@ -66,12 +66,13 @@ public class CalibrationCountdownPlayTests
 
     [UnityTest] public IEnumerator CarriesTimeThroughCalibrationAndVoluntaryReturn()
     {
-        var select=Object.FindFirstObjectByType<SongSelectSkin>();select.TickCountdown(30.25);
+        // 進める秒は制限の割合で(制限が 100→60→45 秒と変わっても、戻ったあとに十分な残りがあるように)。
+        var select=Object.FindFirstObjectByType<SongSelectSkin>();select.TickCountdown(SongSelectCountdown.LimitSeconds*.5+.25);
         double before=select.RemainingSeconds;
         yield return EnterCalibration();
         var c=Object.FindFirstObjectByType<GamePlayManager>().Calibration;
         Assert.That(c.Overlay.RemainingSeconds,Is.EqualTo(before).Within(1));
-        c.Overlay.TickCountdown(12.5);double remaining=c.Overlay.RemainingSeconds;
+        c.Overlay.TickCountdown(SongSelectCountdown.LimitSeconds*.2+.5);double remaining=c.Overlay.RemainingSeconds;
         c.DiscardAndExit();
         yield return ScreenTransitionPlayTests.WaitForTransition();yield return WaitForSelection();
         Assert.AreEqual("SongSelect",SceneManager.GetActiveScene().name);

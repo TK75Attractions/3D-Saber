@@ -33,6 +33,7 @@ public sealed class TutorialStep
     public float TimeoutSeconds;                      // 自動送り秒。Practice の 0 は共通の制限時間
     public TutorialPatternNote[] Pattern = Array.Empty<TutorialPatternNote>();
     public double PeriodSeconds;                      // 型を繰り返す間隔(秒)
+    public int Loops;                                 // 型を出す周の数。0 は成功か制限時間まで繰り返す
     public int Goal;                                  // 成功回数
     public bool NeedDirection;                        // 向きが合った切りだけを数える
     public CutDirection[] RequiredDirections = Array.Empty<CutDirection>();
@@ -64,7 +65,13 @@ public static class TutorialProgram
     public const string AllStepId = "all";
     public const string SimulKind = "simul";
     public static readonly string[] AllKinds = { "red", "blue", "gold", SimulKind, "up", "down", "long" };
-    public const float AllPracticeTimeoutSeconds = 30f;   // 型2周ぶん。できなくても列を待たせない
+    // 型は1周だけ出して次へ(2026-10-30 ユーザー「練習は型1周で」。前は合格するまで最大30秒=型2周ぶん)。
+    public const int AllPracticeLoops = 1;
+    public const float AllPracticeTimeoutSeconds = 30f;   // 念のための上限。ふだんは型1周の終わり(PatternEndAt)で進む
+
+    // 周の数が決まった段の、最後の周が終わる時刻(譜面時刻)。決まっていない段は無限大。純関数。
+    public static double PatternEndAt(TutorialStep step, double firstPatternAt) =>
+        step != null && step.Loops > 0 ? firstPatternAt + step.Loops * step.PeriodSeconds : double.PositiveInfinity;
 
     // 難易度を選ぶ前に挟まるので、Easy / Normal に共通の型。左右・斜めの矢印は曲の中で覚える。
     public static readonly string[] CommonFlow = { "hands", "tapRed", "tapBlue", "tapMix", "gold", "simul", "arrowEasy", "long", AllStepId, "ready" };
@@ -140,7 +147,7 @@ public static class TutorialProgram
                     Kind("up", Arrow(RightX, BaseY, "red", "up", 6f)), Kind("down", Arrow(LeftX, BaseY, "blue", "down", 7f)),
                     Kind("long", Long(RightX, BaseY, "red", 3, 1000f, 9f)),
                 },
-                PeriodSeconds = 3 * LoopSeconds, Goal = AllKinds.Length, Kinds = AllKinds, TimeoutSeconds = AllPracticeTimeoutSeconds };
+                PeriodSeconds = 3 * LoopSeconds, Loops = AllPracticeLoops, Goal = AllKinds.Length, Kinds = AllKinds, TimeoutSeconds = AllPracticeTimeoutSeconds };
             case "ready": return new TutorialStep { Id = id, Kind = TutorialStepKind.Ready, Title = "準備OK!", Sub = "曲を選びに行こう", TimeoutSeconds = ReadyTimeoutSeconds };
         }
         return null;

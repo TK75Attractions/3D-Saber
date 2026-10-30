@@ -4,7 +4,8 @@ using System;
 public sealed class SongSelectCountdown
 {
     // 曲選びの制限。10-30 本番の97回は中央値約20秒・9割が50秒以内・最長80秒だったので、100秒から60秒に詰めた(2026-10-30 ユーザー判断)。
-    public const double LimitSeconds = 60;
+    // 同じ日の夜、ユーザー「選曲45秒に」で 45 秒。
+    public const double LimitSeconds = 45;
     public double Remaining { get; private set; } = LimitSeconds;
     bool expired;
     public void Reset(double remaining = LimitSeconds)

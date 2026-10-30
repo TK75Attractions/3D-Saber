@@ -31,7 +31,7 @@ public sealed partial class AchievementContext
     public bool TitleUpward;
     // この選曲で、その曲の裏を開く最後の切断より前に出したヒントの数。
     public int HintsBeforeOpen;
-    // 選曲にかかった秒(残り時間の数え方)。判定調整から戻った選曲・分からないときは null(時間切れの自動開始は 100 秒)。
+    // 選曲にかかった秒(残り時間の数え方)。判定調整から戻った選曲・分からないときは null(時間切れの自動開始は制限 SongSelectCountdown.LimitSeconds ちょうど)。
     public double? SelectionSeconds;
     // このモードで、今日(台の現地の日付)の clear の解除の数(2台合わせて、この回の分を入れる前)。分からなければ -1。
     public int ClearsToday = -1;
