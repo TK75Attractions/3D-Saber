@@ -143,7 +143,7 @@ public static class AchievementStore
     public static void Merge(string ns, string runId, IEnumerable<string> achIds, string station, long atUnixMs)
     {
         // 記録から外した回(RankingRemovals)の解除は数に入れない。
-        if (achIds == null || RankingRemovals.IsRemoved(runId)) return;
+        if (achIds == null || RankingRemovals.IsRemoved(runId) || RankingRemovals.InRemovedWindow(ns, atUnixMs)) return;
         EnsureLoaded();
         foreach (string achId in achIds)
         {
