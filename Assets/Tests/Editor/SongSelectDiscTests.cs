@@ -10,8 +10,8 @@ public class SongSelectDiscTests
         var timer=new SongSelectCountdown();timer.Reset(12.25);
         Assert.False(timer.Tick(12.25,false));Assert.AreEqual(12.25,timer.Remaining);
         Assert.False(timer.Tick(12,true));Assert.True(timer.Tick(.25,true));
-        Assert.False(timer.Tick(1,true));timer.Reset();Assert.AreEqual(100,timer.Remaining);
-        timer.Reset(double.NaN);Assert.AreEqual(100,timer.Remaining);
+        Assert.False(timer.Tick(1,true));timer.Reset();Assert.AreEqual(SongSelectCountdown.LimitSeconds,timer.Remaining);
+        timer.Reset(double.NaN);Assert.AreEqual(SongSelectCountdown.LimitSeconds,timer.Remaining);
         timer.Reset(-1);Assert.AreEqual(0,timer.Remaining);Assert.True(timer.Tick(0,true));
     }
 
@@ -68,10 +68,10 @@ public class SongSelectDiscTests
     }
     [Test] public void CountdownPausesAndExpiresOnce()
     {
-        var timer=new SongSelectCountdown(); Assert.False(timer.Tick(70,false)); Assert.AreEqual(100,timer.Remaining);
-        Assert.False(timer.Tick(99,true)); Assert.AreEqual(1,timer.Remaining);
+        var timer=new SongSelectCountdown(); Assert.False(timer.Tick(70,false)); Assert.AreEqual(SongSelectCountdown.LimitSeconds,timer.Remaining);
+        Assert.False(timer.Tick(SongSelectCountdown.LimitSeconds-1,true)); Assert.AreEqual(1,timer.Remaining);
         Assert.True(timer.Tick(1,true)); Assert.False(timer.Tick(30,true));
-        timer.Reset(); Assert.AreEqual(100,timer.Remaining);
+        timer.Reset(); Assert.AreEqual(SongSelectCountdown.LimitSeconds,timer.Remaining);
     }
     [Test] public void TempoChangeUsesNotesAndOffsetOnlyOnce()
     {

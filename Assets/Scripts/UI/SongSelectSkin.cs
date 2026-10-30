@@ -118,7 +118,7 @@ public class SongSelectSkin : MonoBehaviour
         SelectionChanged(ctl.SelectedIndex); animation = 1; AnimateDiscs();
         var guide = SongSelectIdleGuide.Build(ctl, layout);
         aim = SongSelectAimPointer.Build(ctl, canvas, null, guide);
-        countdown.Reset(GameSession.CalibrationSelectionSeconds ?? 100);
+        countdown.Reset(GameSession.CalibrationSelectionSeconds ?? SongSelectCountdown.LimitSeconds);
         GameSession.CalibrationSelectionSeconds = null;
         RefreshCountdownDisplay(timer, countdown.Remaining, ref displayedSecond);
         lastTick = Time.realtimeSinceStartupAsDouble; built = true;
@@ -164,7 +164,7 @@ public class SongSelectSkin : MonoBehaviour
         GameSession.CalibrationSelectionDifficulty = controller != null && controller.difficultyNames != null
             && controller.SelectedDifficultyIndex >= 0 && controller.SelectedDifficultyIndex < controller.difficultyNames.Length
             ? controller.difficultyNames[controller.SelectedDifficultyIndex] : null;
-        GameSession.CalibrationSelectionSeconds = skin != null ? skin.RemainingSeconds : 100;
+        GameSession.CalibrationSelectionSeconds = skin != null ? skin.RemainingSeconds : SongSelectCountdown.LimitSeconds;
         // 隠し譜面(E・G)を解除していたら、戻ったあとも解除したまま(往復で Hard に戻り、時間切れで Hard が始まっていた。2026-10-22)。
         var secret = controller != null ? controller.RushESecret.Current : null;
         GameSession.RushESecretCarry = secret != null && GameSession.CalibrationSelectionSongId == secret.SongId
@@ -275,7 +275,7 @@ public class SongSelectSkin : MonoBehaviour
         var clock = Graphic(parent, "TimeTab", Position(1680, 92), new Vector2(360, 112), SongSelectDiscGraphic.Shape.Tab, Panel);
         clock.Width = 6; clock.Edge = new Color(.25f, .43f, 1); clock.EdgeRight = Cyan; clock.Bottom = Ink;
         var icon = Graphic(clock.transform, "ClockIcon", new Vector2(-89, 0), new Vector2(56, 56), SongSelectDiscGraphic.Shape.Clock, White); icon.Edge = Ink;
-        return Label(clock.transform, "TimeRemaining", "100", 86, new Vector2(42, 0), new Vector2(180, 106), UISkinKit.LogoFontAsset());
+        return Label(clock.transform, "TimeRemaining", SongSelectCountdown.LimitSeconds.ToString("0"), 86, new Vector2(42, 0), new Vector2(180, 106), UISkinKit.LogoFontAsset());
     }
     public static void RefreshCountdownDisplay(TextMeshProUGUI timer, double remaining, ref int displayedSecond)
     {
@@ -288,14 +288,14 @@ public class SongSelectSkin : MonoBehaviour
         if (clock != null) { var hands = ClockHandDegrees(remaining); clock.SetHands(hands.x, hands.y); }
     }
     // 右上の時計の針(2026-10-24 ユーザー「右上の時計の絵文字を動かして」)。残りの数字が1つ減るたびに長い針が30°進み(12秒で1周)、
-    // 0.15秒で少し行き過ぎて戻る(カチッ)。短い針は長い針の12分の1の速さ。残り100秒で今までの絵(12時と3時)。純関数。
+    // 0.15秒で少し行き過ぎて戻る(カチッ)。短い針は長い針の12分の1の速さ。制限いっぱい(SongSelectCountdown.LimitSeconds)で今までの絵(12時と3時)。純関数。
     public const double ClockTickSeconds = .15;
     public static Vector2 ClockHandDegrees(double remaining)
     {
         if (double.IsNaN(remaining) || double.IsInfinity(remaining)) return new Vector2(0, 90);
         double shown = System.Math.Ceiling(remaining), sinceChange = shown - remaining;
-        double ticks = 100 - shown;
-        if (sinceChange < ClockTickSeconds && shown < 100) ticks += EaseOutBack(sinceChange / ClockTickSeconds) - 1;
+        double ticks = SongSelectCountdown.LimitSeconds - shown;
+        if (sinceChange < ClockTickSeconds && shown < SongSelectCountdown.LimitSeconds) ticks += EaseOutBack(sinceChange / ClockTickSeconds) - 1;
         float hand = (float)(ticks * 30);
         return new Vector2(Mathf.Repeat(hand, 360), Mathf.Repeat(90 + hand / 12, 360));
     }

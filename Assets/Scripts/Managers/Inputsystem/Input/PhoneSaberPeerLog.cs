@@ -84,6 +84,23 @@ public sealed class PhoneSaberPeerLog : IDisposable
     int rateLines;
     volatile bool stopping;
     volatile string lastError = "", latest = "相手の診断: 未受信";
+    static PhoneSaberPeerLog relayDiscovery;
+    volatile IPAddress stationAAddress;
+    // worker の辞書は公開せず、確定済み台Aと不変の設定・rankingの写しだけを渡す。
+    public static IPAddress[] ClipRelayTargets
+    {
+        get
+        {
+            var source = Volatile.Read(ref relayDiscovery);
+            if (source == null) return Array.Empty<IPAddress>();
+            var result = new List<IPAddress>();
+            var known = source.stationAAddress;
+            if (known != null) result.Add(known);
+            foreach (var peer in source.manual) if (!result.Contains(peer.Address)) result.Add(peer.Address);
+            foreach (var peer in Volatile.Read(ref source.rankingPeers)) if (!result.Contains(peer)) result.Add(peer);
+            return result.ToArray();
+        }
+    }
     string lastScene, lastSong;
     public int LocalPort => Volatile.Read(ref localPort);
     public int ReceivedLines => Volatile.Read(ref received);
@@ -105,6 +122,7 @@ public sealed class PhoneSaberPeerLog : IDisposable
         foreach (var target in RankingSyncLog.ParsePeers(settings.Peers, peerPort))
             if (Allowed(target.Address) && manual.Count < MaximumPeers) manual.Add(target);
         worker = new Thread(Run) { IsBackground = true, Name = "PhoneSaber peer log" };
+        if (!offline) Volatile.Write(ref relayDiscovery, this);
         log.LineWritten += Capture;
         worker.Start();
     }
@@ -325,6 +343,7 @@ public sealed class PhoneSaberPeerLog : IDisposable
             history = new Seen(); seen.Add(identity, history);
         }
         history.Add(seq); history.At = now;
+        if (remoteStation == "A") stationAAddress = from.Address;
         string endpointKey = from.ToString();
         if (learned.Count < MaximumPeers || learned.ContainsKey(endpointKey)) learned[endpointKey] = from;
         if (now - rateAt >= 1) { rateAt = now; rateLines = 0; }
@@ -380,6 +399,7 @@ public sealed class PhoneSaberPeerLog : IDisposable
     public void Dispose()
     {
         if (Interlocked.Exchange(ref disposed, 1) != 0) return;
+        Interlocked.CompareExchange(ref relayDiscovery, null, this);
         log.LineWritten -= Capture;
         stopping = true;
         stop.Set();

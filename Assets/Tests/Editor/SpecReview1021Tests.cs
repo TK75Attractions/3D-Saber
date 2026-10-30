@@ -330,16 +330,16 @@ public class SpecReview1021Tests
     [Test]
     public void CountdownClockHandsTickWithTheNumber()
     {
-        Assert.AreEqual(new Vector2(0, 90), SongSelectSkin.ClockHandDegrees(100), "残り100秒は今までの絵(12時と3時)");
-        Assert.AreEqual(new Vector2(0, 90), SongSelectSkin.ClockHandDegrees(99.95), "最初の数字では動かさない");
-        Assert.AreEqual(0, SongSelectSkin.ClockHandDegrees(98.999).x, 1, "数字が変わった瞬間は前の位置から");
-        Assert.Greater(SongSelectSkin.ClockHandDegrees(98.9).x, 30, "少し行き過ぎてから");
-        var settled = SongSelectSkin.ClockHandDegrees(98.8);
+        Assert.AreEqual(new Vector2(0, 90), SongSelectSkin.ClockHandDegrees(SongSelectCountdown.LimitSeconds), "制限いっぱいは今までの絵(12時と3時)");
+        Assert.AreEqual(new Vector2(0, 90), SongSelectSkin.ClockHandDegrees(SongSelectCountdown.LimitSeconds - .05), "最初の数字では動かさない");
+        Assert.AreEqual(0, SongSelectSkin.ClockHandDegrees(SongSelectCountdown.LimitSeconds - 1.001).x, 1, "数字が変わった瞬間は前の位置から");
+        Assert.Greater(SongSelectSkin.ClockHandDegrees(SongSelectCountdown.LimitSeconds - 1.1).x, 30, "少し行き過ぎてから");
+        var settled = SongSelectSkin.ClockHandDegrees(SongSelectCountdown.LimitSeconds - 1.2);
         Assert.AreEqual(30, settled.x, 1e-3, "30°の位置に止まる");
         Assert.AreEqual(92.5, settled.y, 1e-3, "短い針は12分の1");
-        Assert.AreEqual(330, SongSelectSkin.ClockHandDegrees(88.5).x, 1e-3);
-        Assert.AreEqual(0, SongSelectSkin.ClockHandDegrees(87.5).x, 1e-3, "12秒で1周");
-        Assert.AreEqual(120, SongSelectSkin.ClockHandDegrees(87.5).y, 1e-3);
+        Assert.AreEqual(330, SongSelectSkin.ClockHandDegrees(SongSelectCountdown.LimitSeconds - 11.5).x, 1e-3);
+        Assert.AreEqual(0, SongSelectSkin.ClockHandDegrees(SongSelectCountdown.LimitSeconds - 12.5).x, 1e-3, "12秒で1周");
+        Assert.AreEqual(120, SongSelectSkin.ClockHandDegrees(SongSelectCountdown.LimitSeconds - 12.5).y, 1e-3);
         Assert.AreEqual(new Vector2(0, 90), SongSelectSkin.ClockHandDegrees(double.NaN));
         var go = new GameObject("Clock", typeof(RectTransform));
         try

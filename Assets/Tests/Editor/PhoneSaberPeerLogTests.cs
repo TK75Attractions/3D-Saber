@@ -71,6 +71,19 @@ public class PhoneSaberPeerLogTests
         Assert.IsTrue(SpinWait.SpinUntil(() => peer.ReceivedLines >= count, 3000), "received=" + peer.ReceivedLines + " error=" + peer.LastError);
 
     [Test]
+    public void ClipRelayUsesVerifiedStationASourceBeforeManualAndRankingIps()
+    {
+        var b = Peer(Log("b"), "B", "127.0.0.3:5018");
+        b.SetRankingPeers(new[] { IPAddress.Parse("127.0.0.2") });
+        CollectionAssert.AreEqual(new[] { IPAddress.Parse("127.0.0.3"), IPAddress.Parse("127.0.0.2") }, PhoneSaberPeerLog.ClipRelayTargets);
+        Send(Socket(), b, Row(station: "A") + "\n", 1, 1, station: "A");
+        AwaitLines(b, 1);
+        CollectionAssert.AreEqual(new[] { IPAddress.Loopback, IPAddress.Parse("127.0.0.3"), IPAddress.Parse("127.0.0.2") }, PhoneSaberPeerLog.ClipRelayTargets);
+        b.Dispose();
+        Assert.IsEmpty(PhoneSaberPeerLog.ClipRelayTargets, "停止したpeerの発見先は引き継がない");
+    }
+
+    [Test]
     public void SavedDiagnosticsRoundTripLearnPeerAndNeverEcho()
     {
         var aLog = Log("a"); var bLog = Log("b");

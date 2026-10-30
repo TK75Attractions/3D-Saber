@@ -6,7 +6,7 @@ using NUnit.Framework;
 [SetUpFixture]
 public sealed class PhoneSaberP2PBridgeEditorTestDefaults
 {
-    bool saved, savedRankingSync;
+    bool saved, savedRankingSync, savedClipRelay;
 
     [OneTimeSetUp]
     public void DisableBridgeAutoStart()
@@ -15,6 +15,8 @@ public sealed class PhoneSaberP2PBridgeEditorTestDefaults
         PhoneSaberP2PBridgeProcess.AutoStartEnabled = false;
         savedRankingSync = RankingSync.AutoStartEnabled;
         RankingSync.AutoStartEnabled = false;
+        savedClipRelay = PhoneSaberClipRelay.AutoStartEnabled;
+        PhoneSaberClipRelay.AutoStartEnabled = false;
     }
 
     [OneTimeTearDown]
@@ -22,5 +24,6 @@ public sealed class PhoneSaberP2PBridgeEditorTestDefaults
     {
         PhoneSaberP2PBridgeProcess.AutoStartEnabled = saved;
         RankingSync.AutoStartEnabled = savedRankingSync;
+        PhoneSaberClipRelay.AutoStartEnabled = savedClipRelay;
     }
 }
