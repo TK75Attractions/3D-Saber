@@ -18,12 +18,16 @@ public sealed class SongSelectDiscTarget : MonoBehaviour, ICanvasRaycastFilter, 
     public bool Hovered { get; private set; }
     public float Progress { get; private set; }
     public Button Button { get; private set; }
+    // 2026-10-30 ユーザー「④もすべてやる」: お手本には成立した発射とクリックだけを知らせる。照準からのクリック呼び出しは二重に数えない。
+    public event System.Action Fired;
+    bool shooting;
     public bool Available => isActiveAndEnabled && Button != null && Button.isActiveAndEnabled && Button.IsInteractable();
 
     public static SongSelectDiscTarget Attach(Button button, float seconds, bool circle)
     {
         var target = button.gameObject.AddComponent<SongSelectDiscTarget>();
         target.Button = button; target.HoldSeconds = seconds; target.Circle = circle;
+        button.onClick.AddListener(target.NotifyClick);
         return target;
     }
     public Rect ScreenRect() => SongSelectAimPointer.RectOnScreen(HitArea != null ? HitArea : (RectTransform)transform);
@@ -39,11 +43,23 @@ public sealed class SongSelectDiscTarget : MonoBehaviour, ICanvasRaycastFilter, 
     }
     public bool IsRaycastLocationValid(Vector2 point, Camera camera) => ContainsPoint(point);
     public void SetAimProgress(float progress) { Progress = progress; }
+    void NotifyClick()
+    {
+        if (!shooting && Available && !ScreenTransition.IsBusy) Fired?.Invoke();
+    }
     public bool TryShoot()
     {
         if (!Available || ScreenTransition.IsBusy) return false;
-        if (ShootOverride != null) return ShootOverride();
-        Button.onClick.Invoke(); return true;
+        bool accepted;
+        shooting = true;
+        try
+        {
+            if (ShootOverride != null) accepted = ShootOverride();
+            else { Button.onClick.Invoke(); accepted = true; }
+        }
+        finally { shooting = false; }
+        if (accepted) Fired?.Invoke();
+        return accepted;
     }
     public void OnPointerEnter(PointerEventData e) { Hovered = true; }
     public void OnPointerExit(PointerEventData e) { Hovered = false; Progress = 0; }

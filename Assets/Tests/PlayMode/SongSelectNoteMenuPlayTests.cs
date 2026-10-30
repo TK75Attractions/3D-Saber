@@ -140,7 +140,9 @@ public class SongSelectNoteMenuPlayTests
         var target=controller.startButton.GetComponent<SongSelectDiscTarget>();
         Vector2 point=target.ScreenRect().center;
         Hold(point,19); Assert.Zero(aim.ShotCount); Assert.AreEqual("SongSelect",SceneManager.GetActiveScene().name);
-        Hold(point,1); Assert.AreEqual(1,aim.ShotCount); Assert.True(ScreenTransition.IsBusy);
+        // 2026-10-30 から2秒で「この曲で はじめる？」を開き、そこで決めると始まる(③)。
+        Hold(point,1); Assert.AreEqual(1,aim.ShotCount); Assert.True(SongSelectConfirm.IsOpen); Assert.False(ScreenTransition.IsBusy);
+        SongSelectConfirm.Instance.Tick(.6); SongSelectConfirm.Instance.Confirm("test"); Assert.True(ScreenTransition.IsBusy);
         aim.TickAt(Vector2.zero,.15f); Assert.True(aim.NeedsRelease); Assert.Zero(aim.Progress01);
         yield return ScreenTransitionPlayTests.WaitForTransition();
         Assert.AreEqual("Game",SceneManager.GetActiveScene().name); Assert.AreEqual("Epilogue",GameSession.SelectedSongId);
@@ -198,7 +200,9 @@ public class SongSelectNoteMenuPlayTests
     [UnityTest] public IEnumerator TimeoutStartsSelectedDifficultyAndResetsOnReturn()
     {
         var skin=Object.FindFirstObjectByType<SongSelectSkin>(); controller.SetDifficulty(2);
-        skin.TickCountdown(101); Assert.True(ScreenTransition.IsBusy);
+        // 2026-10-30 から時間切れは「この曲で はじめる？」を開き、8 秒で始める(③)。
+        skin.TickCountdown(101); Assert.True(SongSelectConfirm.IsOpen); Assert.True(SongSelectConfirm.Instance.Automatic);
+        SongSelectConfirm.Instance.Tick(SongSelectConfirm.AutoStartSeconds + .1); Assert.True(ScreenTransition.IsBusy);
         skin.TickCountdown(101);
         yield return ScreenTransitionPlayTests.WaitForTransition();
         Assert.AreEqual("Game",SceneManager.GetActiveScene().name); Assert.AreEqual("Hard",GameSession.SelectedDifficulty);
@@ -230,7 +234,13 @@ public class SongSelectNoteMenuPlayTests
             Assert.Less(GlyphRect(label).xMax,GlyphRect(value).xMin,"点が HI-SCORE に重なる");
             Rect rule=WorldRect((RectTransform)panel.Find("HighScoreRule")); Assert.True(box.Contains(rule.min)&&box.Contains(rule.max));
             foreach(var name in new[]{"TitleShadow","DifficultyTray"}) Assert.False(box.Overlaps(WorldRect((RectTransform)GameObject.Find(name).transform)),name+" に重なる");
-            Assert.False(box.Overlaps(GlyphRect(GameObject.Find("LibraryPosition").GetComponent<TMP_Text>())),"曲数の表示に重なる");
+            // 2026-10-30 ユーザー「④もすべてやる」: 曲数は記録パネルの見出し右へ移したので、内側に収まり見出しと重ならないことを確かめる。
+            var library=GameObject.Find("LibraryPosition").GetComponent<TMP_Text>();
+            library.ForceMeshUpdate();
+            Rect libraryBox=GlyphRect(library);
+            Assert.True(box.Contains(libraryBox.min)&&box.Contains(libraryBox.max),"曲数は記録パネルの内側");
+            foreach(var name in new[]{"AchievementHeading","AchievementDifficulty"})
+                Assert.False(libraryBox.Overlaps(WorldRect((RectTransform)panel.Find(name))),name+" と曲数が重なる");
             Rect screen=WorldRect((RectTransform)GameObject.Find("DiscSelectLayout").transform);
             Assert.True(screen.Contains(box.min)&&screen.Contains(box.max),"画面からはみ出す");
             controller.SetDifficulty(1);

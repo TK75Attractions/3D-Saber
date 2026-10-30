@@ -69,6 +69,7 @@ public sealed class RightClickHome : MonoBehaviour
         if (AlreadyHome()) return;
         string scene = SceneManager.GetActiveScene().name;
         PhoneSaberEventLog.Record(PhoneSaberStation.Read(), "SYSTEM", "right-click-home", scene);
+        StaffReturnLog.Record("right-click");
         LeaveBy(scene);
         if (ScreenTransition.IsBusy) return;
         // 出口が無い・断った(幕が始まらなかった)ときは、タイトルをそのまま読み直す。判定調整の印は消してから。

@@ -146,7 +146,7 @@ public partial class SaberCutJudge : MonoBehaviour
     // 前に入りを調べたときの刃(通った面で調べる起点)。
     Vector2 sweepA, sweepB;
     bool hasSweep;
-    bool lastModeWasBlade;
+    bool lastModeWasBlade, lastModeWasMouse;
 
     public int PendingCount => pending.Count;
 
@@ -201,7 +201,11 @@ public partial class SaberCutJudge : MonoBehaviour
         bool blade = bladeProvider != null && bladeProvider.HasBlade;
         // ブレードと点を切り替えたら、前の刃の記録も、触れていたノーツの保留も引き継がない
         // (受信が途切れて刃が消えたとき、古い中心の位置で「抜けた」と数えて、振っていないロングを切らない。2026-10-22)。
-        if (blade != lastModeWasBlade) { ResetMotion(); pending.Clear(); lastModeWasBlade = blade; }
+        // 剣を見失ってマウスへ移ったとき(とその逆)も同じ。刃は刃のまま位置だけ跳ぶので、その動きで「抜けた」と数えない
+        // (タイトルで剣が一瞬映って消えると、マウスの位置へ移る動きで開始ノーツが切れていた。2026-10-30 の記録)。
+        bool mouse = bladeProvider != null && bladeProvider.UsingMouseFallback;
+        if (blade != lastModeWasBlade || mouse != lastModeWasMouse)
+        { ResetMotion(); pending.Clear(); lastModeWasBlade = blade; lastModeWasMouse = mouse; }
         // 振り返したら、保留中のノーツの起点を今の刃の中心へ置き直す(次の振りで通り過ぎたかを見る)。
         if (strokeRestarted) Reanchor(Center(blade));
         TrackStep(blade);

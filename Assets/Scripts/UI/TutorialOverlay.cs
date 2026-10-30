@@ -24,6 +24,21 @@ public sealed class TutorialOverlay : MonoBehaviour
 
     public TutorialGuideModel Guide { get; private set; }
 
+    // 範囲を合わせる間のヒント(2026-10-30 夜、改善案⑤4)。カメラが剣を見失う動きを、ヒントの札に1つずつ3秒ごとに出す。題・副題は変えない。
+    public static readonly string[] RangeHints =
+    {
+        "剣の先を スマホに むけない(点になって 見えない)",
+        "頭より上は カメラに 見えないよ",
+        "はやすぎると ぶれて 見えないよ",
+        "赤と青を 重ねない",
+    };
+    public const float RangeHintSeconds = 3f;
+    // 範囲を合わせている間の何秒目に、どのヒントを出すか。
+    public static int RangeHintIndex(float elapsedSeconds) =>
+        (int)(Mathf.Max(0f, elapsedSeconds) / RangeHintSeconds) % RangeHints.Length;
+    // 今出しているヒント(出していなければ null)。
+    public string RangeHintShown => hintPanel != null && hintPanel.activeSelf && hint != null ? hint.text : null;
+
     TutorialController ctl;
     ScoreManager score;
     TextMeshProUGUI title, sub, hint, judge, judgeSub, timer;
@@ -35,6 +50,7 @@ public sealed class TutorialOverlay : MonoBehaviour
     Vector2 judgeBasePos;
     float judgeShownAt = -100f;
     string shownTitle, shownSub, shownHint;
+    float rangeHintsSince = -1f;
     int shownStep = -1;
     (TutorialStep step, int successes, int directions, bool done) shownProgressState;
 
@@ -105,7 +121,8 @@ public sealed class TutorialOverlay : MonoBehaviour
         title.enableAutoSizing = true; title.fontSizeMin = 36; title.fontSizeMax = 56; title.textWrappingMode = TextWrappingModes.NoWrap;
         sub = Label(transform, "Sub", "", 30, 0, 282, 1600, 48, Muted);
         sub.gameObject.SetActive(false);
-        hintPanel = SongSelectVisuals.Panel(transform, "HintPanel", new Vector2(0, 296), new Vector2(900, 56),
+        // ヒントの札は残り秒(Timer、y=282)の下(範囲を合わせる間のヒントだけが使う)。
+        hintPanel = SongSelectVisuals.Panel(transform, "HintPanel", new Vector2(0, 214), new Vector2(900, 56),
             new Color(.08f, .3f, .3f, .8f), Cyan, 8).gameObject;
         hint = Label(hintPanel.transform, "Hint", "", 26, 0, 0, 860, 48, Cyan);
         hintPanel.SetActive(false);
@@ -232,6 +249,7 @@ public sealed class TutorialOverlay : MonoBehaviour
             if (hintPanel != null) hintPanel.SetActive(false);
             if (hint != null) hint.text = shownHint ?? "";
         }
+        ShowRangeHints(ranging);
         string nextTitle = !ctl.StepDone && !string.IsNullOrEmpty(ctl.Hint) ? ctl.Hint : shownTitle;
         if (title != null && title.text != nextTitle) title.text = nextTitle;
         if (judge != null && judge.gameObject.activeSelf)
@@ -247,6 +265,21 @@ public sealed class TutorialOverlay : MonoBehaviour
                 var cs = judgeSub.color; cs.a = alpha; judgeSub.color = cs;
             }
         }
+    }
+
+    // 範囲を合わせる間だけ、ヒントの札を出して RangeHintSeconds ごとに次のヒントへ。段が終わったら隠す。
+    void ShowRangeHints(bool ranging)
+    {
+        if (hintPanel == null || hint == null) return;
+        if (!ranging)
+        {
+            if (rangeHintsSince >= 0f) { rangeHintsSince = -1f; hintPanel.SetActive(false); }
+            return;
+        }
+        if (rangeHintsSince < 0f) rangeHintsSince = Time.unscaledTime;
+        string want = RangeHints[RangeHintIndex(Time.unscaledTime - rangeHintsSince)];
+        if (hint.text != want) hint.text = want;
+        if (!hintPanel.activeSelf) hintPanel.SetActive(true);
     }
 
     // 剣の平面の矩形を、剣を映すカメラで画面へ写す。カメラの左右・上下の反転にかかわらず、写した2隅の外側を囲む。

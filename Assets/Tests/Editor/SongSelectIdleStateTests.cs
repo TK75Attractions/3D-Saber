@@ -4,10 +4,12 @@ public class SongSelectIdleStateTests
 {
     [Test] public void ShowsOnceOnEntryThenAgainAtTenSecondsWhileAwaitingFirstOperation()
     {
+        // 2026-10-30 ユーザー「④もすべてやる」: 模型の一周ではなく、入場から3.5秒を境界にする。
+        Assert.AreEqual(3.5f, SongSelectIdleState.EntryDisplaySeconds);
         var state = new SongSelectIdleState();
         Assert.True(state.ShouldShow, "入場直後から案内する");
         state.Tick(SongSelectIdleState.EntryDisplaySeconds - .01f, true); Assert.True(state.ShouldShow);
-        state.Tick(.011f, true); Assert.False(state.ShouldShow, "一周したら一旦案内を閉じる");
+        state.Tick(.011f, true); Assert.False(state.ShouldShow, "3.5秒で一旦案内を閉じる");
         state.Tick(SongSelectIdleState.DelaySeconds - SongSelectIdleState.EntryDisplaySeconds - .011f, true);
         Assert.False(state.ShouldShow);
         state.Tick(.011f, true); Assert.True(state.ShouldShow);

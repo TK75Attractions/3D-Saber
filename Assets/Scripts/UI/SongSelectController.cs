@@ -156,6 +156,10 @@ public class SongSelectController : MonoBehaviour
         RestoreNavigationEvents();
         if (ScreenTransition.IsBusy) return;
         if (chartPreview != null) chartPreview.Tick();
+        // 「この曲で はじめる？」の間のキー(決める・えらびなおす)は SongSelectConfirm が受ける。曲や難易度は変えない。
+        if (SongSelectConfirm.IsOpen) return;
+        // スタッフ用の説明(中ボタン・H)を開いている間も、曲・難易度・開始のキーを受けない。
+        if (SongSelectStaffGuide.IsOpen || SongSelectStaffGuide.ChangedThisFrame) return;
         var kb = Keyboard.current;
         if (kb == null) return;
         // 運営のキー(Ctrl+Shift+S のシャッターなど)を、曲・難易度の操作として受けない(2026-10-22)。
@@ -189,8 +193,12 @@ public class SongSelectController : MonoBehaviour
         if (harder) ChangeDifficultyBy(1);
         if (directDifficulty >= 0) ChooseDifficulty(directDifficulty);
         if (back && escapeGate.PressAndNotify(Time.unscaledTimeAsDouble, EscapeTwiceGate.ToTitleNotice)) { ReturnToTitle(); return; }
-        if (start) StartGame();
+        // Enter・Space もすぐ始めず「この曲で はじめる？」へ(2026-10-30 ユーザー「③はすべて実装」)。確認が無い画面では今までどおり。
+        if (start && (OpenStartConfirm == null || !OpenStartConfirm("key"))) StartGame();
     }
+
+    // 開始の前の確認を開く口(SongSelectSkin が SongSelectConfirm.Open をつなぐ)。開いたら true。
+    public System.Func<string, bool> OpenStartConfirm;
 
     void LateUpdate() { RestoreNavigationEvents(); }
 
@@ -337,6 +345,8 @@ public class SongSelectController : MonoBehaviour
     private bool CanStartSelectedChart => selectedIndex >= 0 && selectedIndex < songIds.Count
         && difficultyNames != null && selectedDifficulty >= 0 && selectedDifficulty < difficultyNames.Length
         && !SelectedSongLocked && !RushESecret.Transitioning && CurrentDifficultyLevel() > 0;
+    // 今の曲・難易度で始められるか(開始の確認を開くかの判定)。
+    public bool CanStartSelected => CanStartSelectedChart && !ScreenTransition.IsBusy;
 
     private void RefreshStartAvailability()
     {
@@ -725,6 +735,8 @@ public class SongSelectController : MonoBehaviour
 
     public void StartGame() => StartGame(false);
     public void StartGameAutomatically() => StartGame(true);
+    // 「この曲で はじめる？」で決めたとき(automatic は時間切れから開いた確認)。
+    public void StartConfirmed(bool automatic) => StartGame(automatic);
 
     void StartGame(bool automatic)
     {

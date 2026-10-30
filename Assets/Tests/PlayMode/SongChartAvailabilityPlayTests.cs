@@ -129,6 +129,9 @@ public class SongChartAvailabilityPlayTests
         controller.SetDifficulty(2);
         Assert.IsTrue(controller.startButton.interactable);
         controller.startButton.onClick.Invoke();
+        // 2026-10-30 からクリックは「この曲で はじめる？」を開き(③)、そこで決めると始まる。
+        Assert.IsTrue(SongSelectConfirm.IsOpen);
+        SongSelectConfirm.Instance.Tick(.6); SongSelectConfirm.Instance.Confirm("test");
         yield return ScreenTransitionPlayTests.WaitForTransition();
         Assert.AreEqual("Game", SceneManager.GetActiveScene().name);
         Assert.AreEqual(songId, GameSession.SelectedSongId);

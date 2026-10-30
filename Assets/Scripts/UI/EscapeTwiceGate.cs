@@ -18,10 +18,10 @@ public sealed class EscapeTwiceGate
         return false;
     }
 
-    // 1回目なら知らせを出す。
+    // 1回目なら知らせを出す。2回目(戻す)なら events.log に staff-return を1行(2026-10-30 夜、改善案⑥。ハイフンも Esc と同じ)。
     public bool PressAndNotify(double now, string notice)
     {
-        if (Press(now)) return true;
+        if (Press(now)) { StaffReturnLog.Record("esc"); return true; }
         OperatorNotice.Show(notice);
         return false;
     }

@@ -153,6 +153,8 @@ public sealed class TitleTutorialPrompt : MonoBehaviour
         if (!CanAnswer) return;
         Answered = true; AnswerIsTutorial = tutorial;
         Debug.Log("TitleTutorialPrompt: " + (tutorial ? "はい" : "いいえ") + " (" + how + ")");
+        // events.log にも1行(2026-10-30 夜、改善案⑥。Player.log は起動し直すと消える)。how は slash・key・timeout など。
+        PhoneSaberEventLog.Record(PhoneSaberStation.Read(), "SYSTEM", "prompt-answer", "answer=" + (tutorial ? "yes" : "no") + " how=" + how);
         // 選ばなかった方は消し、選んだ方は砕ける演出を見せてから進む。
         var other = tutorial ? NoNote : YesNote;
         if (other != null) { other.Note.IsJudgeable = false; other.gameObject.SetActive(false); }
