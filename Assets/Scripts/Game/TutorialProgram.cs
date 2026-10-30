@@ -63,6 +63,9 @@ public static class TutorialProgram
     public const float SwingSpeedToAdvance = 2.5f;    // 持ち方の説明を抜ける振りの速さ(タイトルの開始ノーツと同じ)
     // 本編は 2026-10-20 から、ロングを1回でも残すと残りが MISS でコンボが切れる。練習でも全部切ったら成功にする。
     public const float LongPracticeTimeoutSeconds = 30f;
+    // 練習のロングの長さ(ミリ秒)。判定面に留まって切れる時間で、受付は判定の遅い側の窓にこれを足した長さ。
+    // 2026-10-31 ユーザー「2回と3回のノーツの時間許容短いので2倍ぐらいにして」で 500・1000 → 1000・2000(1回ごとの間は2拍)。
+    public const float LongTwoCutMs = 1000f, LongThreeCutMs = 2000f;
     public const float RightX = 1.65f, LeftX = -1.65f, BaseY = .5f, LowY = -.4f;
 
     // 最後の「練習してみよう」(2026-10-28 ユーザー「練習してみようで今までの練習したやつが全部出てくるチュートリアルも入れて」)。
@@ -79,7 +82,7 @@ public static class TutorialProgram
     public const float AllPracticeTimeoutSeconds = 30f;   // 念のための上限。ふだんは合格か1周の判定で進む
     // 左右交互の念のための上限。ノーツが最も遅い(4秒)ときでも、2周の判定が出るより長くする。
     public const float MixPracticeTimeoutSeconds = 20f;
-    // 判定が来なくても次へ進むまでの、最後のノーツが終わってからの秒(ロングの受付は数が多いほど長く、4回で約2.3秒)。
+    // 判定が来なくても次へ進むまでの、最後のノーツが終わって(ロングは長さの分を足して)からの秒。判定の遅い側の窓と入力の遅れより十分長い。
     public const double PatternEndGraceSeconds = 3.0;
 
     // 周の数が決まった段で、判定が来なくても次へ進む時刻(譜面時刻)。決まっていない段は無限大。純関数。
@@ -160,9 +163,11 @@ public static class TutorialProgram
             case "arrowNormal": return new TutorialStep { Id = id, Kind = TutorialStepKind.Practice, Title = "矢印の向きに振ろう", Sub = "上・下・左・右",
                 Pattern = new[] { Arrow(RightX, BaseY, "red", "up", 0f), Arrow(LeftX, BaseY, "blue", "down", 2f), Arrow(RightX, BaseY, "red", "left", 4f), Arrow(LeftX, BaseY, "blue", "right", 6f) }, PeriodSeconds = 2 * LoopSeconds, Goal = 3, NeedDirection = true,
                 RequiredDirections = new[] { CutDirection.Up, CutDirection.Down } };
+            // ロングは2回(右手)と3回(左手)の2種類(2026-10-31 ユーザー「チュートリアルで、ロングノーツは2種類だけでいいよ」。前は4回もあった)。
+            // 長さ(=切り切るまでの受付)は前の2倍(同日「2回と3回のノーツの時間許容短いので2倍ぐらいにして」。0.5秒・1.0秒 → 1.0秒・2.0秒)。
             case "long": return new TutorialStep { Id = id, Kind = TutorialStepKind.Practice, Title = "長いノーツは、数字の回数だけ振ろう", Sub = "数字がなくなるまで切り切ろう",
-                Pattern = new[] { Long(RightX, BaseY, "red", 2, 500f, 0f), Long(LeftX, BaseY, "blue", 3, 1000f, 3f), Long(RightX, BaseY, "red", 4, 1500f, 6f) },
-                PeriodSeconds = 3 * LoopSeconds, Loops = OnceLoops, Goal = 3, TimeoutSeconds = LongPracticeTimeoutSeconds };
+                Pattern = new[] { Long(RightX, BaseY, "red", 2, LongTwoCutMs, 0f), Long(LeftX, BaseY, "blue", 3, LongThreeCutMs, 3f) },
+                PeriodSeconds = 3 * LoopSeconds, Loops = OnceLoops, Goal = 2, TimeoutSeconds = LongPracticeTimeoutSeconds };
             case "gold": return new TutorialStep { Id = id, Kind = TutorialStepKind.Practice, Title = "金色はどちらの手でもOK", Sub = "大事な一撃。好きな手で",
                 Pattern = new[] { Tap(0f, BaseY, "gold", 0f) }, PeriodSeconds = LoopSeconds, Loops = OnceLoops, Goal = 1 };
             case "simul": return new TutorialStep { Id = id, Kind = TutorialStepKind.Practice, Title = "赤と青がいっしょに来たら、両手で同時に", Sub = "青は左手、赤は右手",
@@ -173,7 +178,7 @@ public static class TutorialProgram
                     Kind("red", Tap(RightX, BaseY, "red", 0f)), Kind("blue", Tap(LeftX, BaseY, "blue", 1f)), Kind("gold", Tap(0f, BaseY, "gold", 2f)),
                     Kind(SimulKind, Tap(LeftX, BaseY, "blue", 4f)), Kind(SimulKind, Tap(RightX, BaseY, "red", 4f)),
                     Kind("up", Arrow(RightX, BaseY, "red", "up", 6f)), Kind("down", Arrow(LeftX, BaseY, "blue", "down", 7f)),
-                    Kind("long", Long(RightX, BaseY, "red", 3, 1000f, 9f)),
+                    Kind("long", Long(RightX, BaseY, "red", 3, LongThreeCutMs, 9f)),
                 },
                 PeriodSeconds = 3 * LoopSeconds, Loops = AllPracticeLoops, Goal = AllKinds.Length, Kinds = AllKinds, TimeoutSeconds = AllPracticeTimeoutSeconds };
             case "ready": return new TutorialStep { Id = id, Kind = TutorialStepKind.Ready, Title = "準備OK!", Sub = "曲を選びに行こう", TimeoutSeconds = ReadyTimeoutSeconds };

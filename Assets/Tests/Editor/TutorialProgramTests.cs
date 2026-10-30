@@ -393,7 +393,7 @@ public class TutorialProgramTests
         var steps = TutorialProgram.Build(TutorialProgram.CommonFlow, includeHands).Skip(firstIndex).Take(4).ToArray();
         CollectionAssert.AreEqual(new[] { "gold", "simul", "arrowEasy", "long" }, steps.Select(s => s.Id));
         Assert.IsTrue(steps.All(s => s.Kind == TutorialStepKind.Practice));
-        CollectionAssert.AreEqual(new[] { 1, 2, 2, 3 }, steps.Select(s => s.Goal));
+        CollectionAssert.AreEqual(new[] { 1, 2, 2, 2 }, steps.Select(s => s.Goal));
         CollectionAssert.AreEqual(new[] { false, true, false, false }, steps.Select(s => s.Simultaneous));
         CollectionAssert.AreEqual(new[] { false, false, true, false }, steps.Select(s => s.NeedDirection));
         CollectionAssert.AreEqual(new[] { CutDirection.Up, CutDirection.Down }, steps[2].RequiredDirections);
@@ -444,7 +444,7 @@ public class TutorialProgramTests
         var longNote = TutorialProgram.Get("long").Pattern[0].ToNote(12.5);
         Assert.AreEqual(12500f, longNote.time, .001f);
         Assert.AreEqual(2, longNote.count);
-        Assert.AreEqual(500f, longNote.lengthMs, .001f);
+        Assert.AreEqual(1000f, longNote.lengthMs, .001f, "2026-10-31 に前の2倍");
         Assert.AreEqual("red", longNote.color);
         Assert.IsTrue(longNote.IsLong);
 
@@ -644,7 +644,7 @@ public class TutorialProgramTests
         Assert.AreEqual("GREAT 以上であと 2 回", TutorialProgram.RemainingText(TutorialProgram.Get("tapRed"), 0, 0, false));
         Assert.AreEqual("GREAT 以上であと 1 回", TutorialProgram.RemainingText(TutorialProgram.Get("gold"), 0, 0, false), "1回の段も出す");
         Assert.AreEqual("GREAT 以上であと 1 組", TutorialProgram.RemainingText(TutorialProgram.Get("simul"), 0, 0, false));
-        Assert.AreEqual("あと 3 種類", TutorialProgram.RemainingText(TutorialProgram.Get("long"), 0, 0, false), "ロングは切り切れば PERFECT");
+        Assert.AreEqual("あと 2 種類", TutorialProgram.RemainingText(TutorialProgram.Get("long"), 0, 0, false), "ロングは切り切れば PERFECT");
         Assert.AreEqual("", TutorialProgram.RemainingText(TutorialProgram.Get("tapRed"), 2, 0, true));
         StringAssert.Contains("早い", TutorialProgram.NotPerfectHint(-60));
         StringAssert.Contains("遅い", TutorialProgram.NotPerfectHint(100));

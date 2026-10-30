@@ -19,7 +19,8 @@ public class TutorialGuideTests
     public void LongPracticeTeachesMultipleCountsOnBothHandsAndFitsItsDeadline()
     {
         var step = TutorialProgram.Get("long");
-        CollectionAssert.AreEquivalent(new[] { 2, 3, 4 }, step.Pattern.Select(n => n.count));
+        // 2026-10-31「ロングノーツは2種類だけでいいよ」: 2回と3回(前は 2・3・4 回)。
+        CollectionAssert.AreEquivalent(new[] { 2, 3 }, step.Pattern.Select(n => n.count));
         Assert.That(step.Pattern.Select(n => n.color).Distinct().Count(), Is.EqualTo(2));
         StringAssert.Contains("数字", step.Title);
         Assert.AreEqual(step.Pattern.Select(n => n.count).Distinct().Count(), step.Goal);
@@ -76,15 +77,18 @@ public class TutorialGuideTests
             var note = pattern.ToNote(20);
             var notes = new[] { note };
             var hand = note.color == "blue" ? SaberHand.Left : SaberHand.Right;
+            // お手本は長さを回数で割った間隔で振る(2026-10-31 に長さを2倍にして、1回ごとに2拍=1秒)。
+            double spacing = note.lengthMs / 1000.0 / (note.count - 1);
+            Assert.AreEqual(1.0, spacing, 1e-9, note.count + " 回");
             for (int cut = 0; cut < note.count; cut++)
             {
-                double hit = note.TimeSeconds + cut * .5;
+                double hit = note.TimeSeconds + cut * spacing;
                 float before = TutorialGuideMotion.Sample(notes, hit - .04, hand);
                 float after = TutorialGuideMotion.Sample(notes, hit + .04, hand);
                 Assert.AreEqual(.5f, TutorialGuideMotion.Sample(notes, hit, hand), .0001);
                 Assert.That((after - before) * (cut % 2 == 1 ? 1 : -1), Is.GreaterThan(0));
             }
-            Assert.AreEqual(.5f, TutorialGuideMotion.Sample(notes, note.TimeSeconds + note.count * .5, hand));
+            Assert.AreEqual(.5f, TutorialGuideMotion.Sample(notes, note.TimeSeconds + (note.count - 1) * spacing + .5, hand));
         }
     }
 

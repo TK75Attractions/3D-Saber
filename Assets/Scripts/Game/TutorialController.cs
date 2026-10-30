@@ -424,7 +424,7 @@ public sealed class TutorialController : MonoBehaviour
             }
             else if (step.Id == "long")
             {
-                // 同じ回数だけ繰り返しても通過させず、2・3・4 回をそれぞれ切り切る。
+                // 同じ回数だけ繰り返しても通過させず、2・3 回をそれぞれ切り切る。
                 if (completedLongCounts.Add(note.RequiredCutCount)) Successes++;
             }
             else if (!step.Simultaneous)

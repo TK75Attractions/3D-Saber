@@ -73,9 +73,7 @@ public class TutorialGuidePlayTests
         CutLong(2, 2); Assert.AreEqual(1, tutorial.Successes);
         CutLong(2, 2); Assert.AreEqual(1, tutorial.Successes, "2回だけ繰り返しても通過しない");
         CutLong(3, 2); Assert.AreEqual(1, tutorial.Successes);
-        CutLong(3, 3); Assert.AreEqual(2, tutorial.Successes);
-        CutLong(4, 3); Assert.AreEqual(2, tutorial.Successes);
-        CutLong(4, 4); Assert.AreEqual(3, tutorial.Successes);
+        CutLong(3, 3); Assert.AreEqual(2, tutorial.Successes, "2回と3回の2種類で合格(2026-10-31 から。前は4回も)");
         tutorial.Tick(.016f);
         Assert.True(tutorial.StepDone); Assert.AreEqual("ok", tutorial.Records[tutorial.Records.Count - 1].Reason);
         yield return null;
