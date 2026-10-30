@@ -13,6 +13,7 @@ import tempfile
 TESTS = Path(__file__).resolve().parent
 SOURCE = TESTS.parent / "PhoneSaberSender/PhoneSaberSender"
 TEST_NAMES = """
+testObserverEvidenceNeverChangesSelectedOrCandidateScores
 testEndOnContinuitySurvivesUnrelatedEligibleOutsideTrackingGate
 testEndOnContinuityUsesCurrentCandidateAndExpiresWithoutRenewal
 testEndOnContinuityPreservesColorSafetyAndRejectsDistantObjects

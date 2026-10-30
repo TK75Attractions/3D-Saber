@@ -57,7 +57,7 @@ final class FrameProcessor {
     func setTrackLockEnabled(_ enabled: Bool) { trackChanges += 1 }
     var exposureRevision: UInt64 = 0
     var appliedISO: Float?
-    func setExposureContext(revision: UInt64, appliedISO: Float?) {
+    func setExposureContext(revision: UInt64, appliedISO: Float?, enabled: Bool = false) {
         exposureRevision = revision; self.appliedISO = appliedISO
     }
     func clock() -> Double { serial += 1; return serial }
@@ -84,7 +84,7 @@ enum HostMonotonicClock {
     static func now() -> Double { time }
 }
 final class AVCaptureDevice {
-    struct Format { var minISO: Float = 80.5 }
+    struct Format { var minISO: Float = 80.5; var maxISO: Float = 2000 }
     var activeFormat = Format()
     var fail = false
 }
@@ -177,6 +177,27 @@ enum PlayAreaSettings { static let exposureBiasKey = "unused" }
     support += '}\n'
     tests = '''import XCTest
 @MainActor final class PCControlTests: XCTestCase {
+    func testAutoExposureCanRaiseAboveSelectionAndRestoreFixedISOOnOff() {
+        let model = CameraViewModel(), camera = AVCaptureDevice()
+        camera.activeFormat.minISO = 32
+        model.exposureBiasCamera = camera
+        model.shutterISO = 160; model.shutterEmitter = true
+        HostMonotonicClock.time = 0
+        XCTAssertTrue(model.setShutter(2000))
+        model.setAutoExposureEnabled(true)
+        let weak = AutoExposureController.Color(peakValue: 215, highValueRatio: 0.03, meanValue: 170,
+            colorPurity: 0.8, emitterScore: 0.4, selected: true)
+        for i in 0...180 {
+            let time = Double(i) / 30; HostMonotonicClock.time = time
+            model.observeAutoExposure(time: time, background: 38, frame: .init(colors: [weak]))
+        }
+        XCTAssertEqual(model.shutterController.appliedISO, 200)
+        XCTAssertEqual(model.processor.appliedISO, 200)
+        model.setAutoExposureEnabled(false)
+        XCTAssertEqual(model.shutterController.appliedISO, 160)
+        XCTAssertFalse(model.autoExposureEnabled)
+    }
+
     func testAutoExposureRestoresCeilingAndHonoursSwitchesFailuresAndStaleFrames() {
         let model = CameraViewModel()
         let camera = AVCaptureDevice()
@@ -184,20 +205,21 @@ enum PlayAreaSettings { static let exposureBiasKey = "unused" }
         model.exposureBiasCamera = camera
         model.shutterISO = 250; model.shutterEmitter = true
         HostMonotonicClock.time = 0
+        XCTAssertTrue(model.setShutter(2000))
         model.setAutoExposureEnabled(true)
         func frame(_ time: Double, _ background: Int = 100) {
             HostMonotonicClock.time = time
             model.observeAutoExposure(time: time, background: background)
         }
-        for i in 0...11 { frame(Double(i) / 4) }
+        for i in 0...15 { frame(Double(i) / 4) }
         XCTAssertEqual(model.shutterController.appliedISO, 250, "初回適用後1秒は破棄し、その後2秒連続を要求")
-        frame(3)
+        frame(4)
         XCTAssertEqual(model.shutterController.appliedISO, 200)
         XCTAssertEqual(model.processor.appliedISO, 200)
-        for i in 13...23 { frame(Double(i) / 4) }
-        camera.fail = true; frame(6)
+        for i in 17...35 { frame(Double(i) / 4) }
+        camera.fail = true; frame(9)
         XCTAssertEqual(model.shutterController.appliedISO, 200, "失敗を適用済みとして扱わない")
-        camera.fail = false; frame(6.25)
+        camera.fail = false; frame(9.25)
         XCTAssertEqual(model.shutterController.appliedISO, 160)
         camera.fail = true
         model.setAutoExposureEnabled(false)
@@ -207,11 +229,11 @@ enum PlayAreaSettings { static let exposureBiasKey = "unused" }
         model.setAutoExposureEnabled(false)
         XCTAssertFalse(model.autoExposureEnabled)
         XCTAssertEqual(model.shutterController.appliedISO, 250)
-        for i in 26...50 { frame(Double(i) / 4) }
+        for i in 38...60 { frame(Double(i) / 4) }
         XCTAssertEqual(model.shutterController.appliedISO, 250)
         model.setAutoExposureEnabled(true)
         model.setShutterEmitter(false)
-        for i in 51...80 { frame(Double(i) / 4) }
+        for i in 61...90 { frame(Double(i) / 4) }
         XCTAssertEqual(model.shutterController.appliedISO, 250)
         model.setShutterEmitter(true)
         XCTAssertTrue(model.setShutterISO(125))
@@ -242,7 +264,7 @@ enum PlayAreaSettings { static let exposureBiasKey = "unused" }
             XCTAssertTrue(model.lanProbe.acks.last?.hasSuffix("detail=64") == true, "停止中は予約した選択値")
         }
     }
-    func testDefaultsRestoreISO160AndEmitterForBothStations() {
+    func testDefaultsRestoreISO250AndEmitterForBothStations() {
         for station in ["A", "B"] {
             let model = CameraViewModel()
             model.station = station
@@ -255,7 +277,7 @@ enum PlayAreaSettings { static let exposureBiasKey = "unused" }
             XCTAssertFalse(model.shutterEmitter)
             // F8の明示リセットだけが保存済みの運営の選択も上書きする。
             model.applyPCCommand(.init(id: 81, ignore: nil, clearIgnore: false, defaults: true, sourceHost: model.host))
-            XCTAssertEqual(model.shutterISO, 160)
+            XCTAssertEqual(model.shutterISO, 250)
             XCTAssertTrue(model.shutterEmitter)
             XCTAssertEqual(model.shutter, 2000)
             XCTAssertTrue(model.trackLockEnabled)

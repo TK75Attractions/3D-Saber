@@ -647,7 +647,7 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         panel.Label("iPhone固定シャッター [Ctrl+Shift+S]: 1/2000 → OFF（自動露出）→ 1/500 → 1/1000 → 1/2000。初回の既定: 追跡 ON・露出 −2・1/2000 秒。再接続・PC再起動では保存値を維持");
         foreach (int value in PhoneSaberDiscoveryResponder.ShutterChoices)
             panel.Button(value == 0 ? "固定シャッター: OFF" : $"固定シャッター: 1/{value} 秒", "phone-shutter", value.ToString(CultureInfo.InvariantCulture));
-        panel.Label("固定シャッターの明るさ [Ctrl+Shift+D]: ISO 2000 → 250 → 200 → 160 → 125 → 100 → 80 → 64。初回の既定はISO 160");
+        panel.Label("固定シャッターの明るさ [Ctrl+Shift+D]: ISO 2000 → 250 → 200 → 160 → 125 → 100 → 80 → 64。初回の既定はISO 250");
         foreach (int value in PhoneSaberDiscoveryResponder.ShutterISOChoices)
             panel.Button(PhoneSaberOperatorKeys.ShutterISOLabel(value), "phone-shutter-iso", value.ToString(CultureInfo.InvariantCulture));
         panel.Label("低ISOの色付き発光体: 既定ON、固定シャッター・ISO2000未満のときだけ有効（試験）");
@@ -655,7 +655,7 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         panel.Button("色付き発光体 ON", "phone-shutter-emitter", "1");
         panel.Button("ISO自動調整 OFF", "phone-auto-iso", "0");
         panel.Button("ISO自動調整 ON", "phone-auto-iso", "1");
-        panel.Button("既定に戻す（追跡 ON・露出 −2・1/2000 秒・ISO 160・色付き発光体 ON）", "phone-defaults");
+        panel.Button("既定に戻す（追跡 ON・露出 −2・1/2000 秒・ISO 250・色付き発光体 ON）", "phone-defaults");
         panel.Label($"PC 側で無視（予備）: {count} か所（この台に保存）{ignored}");
         string warning = input != null ? IgnoreDominanceWarning(input) : "";
         if (warning.Length > 0) panel.Label(warning, true);

@@ -2,14 +2,16 @@
 """Compile actual Mac recording/triage sources and emit deterministic capture bundles.
 
 Run test_phone_saber_tracking_e2e.py for the mocked analysis/repair integration.
-Only the CameraViewModel interval type declarations are extracted for this host
-build because the rest of that view model imports iOS-only UIKit.
+CameraViewModelのフレーム間隔・露出判定と共通競合診断の実定義を抽出する。
+iOS専用UIKitを使うViewModel本体は、このホストではビルドしない。
 """
 from __future__ import annotations
 
 import os
 from pathlib import Path
 import subprocess
+
+from phone_saber_auto_iso_host_support import auto_iso_support
 
 # checkout 内の共通ビルドスイッチ。認識の既定値は両言語の core にも置く。
 import sys as _guard_sys
@@ -26,7 +28,7 @@ def capture_bundles(destination: Path) -> dict:
     destination.mkdir(parents=True, exist_ok=True)
     camera = (source / "CameraViewModel.swift").read_text()
     support = destination / "CameraIntervals.swift"
-    support.write_text("import Foundation\n" + camera[camera.index("struct CameraFrameIntervalStatistics:"):
+    support.write_text("import Foundation\n" + auto_iso_support(source) + camera[camera.index("struct CameraFrameIntervalStatistics:"):
         camera.index("enum CameraLifecycleState:")] + "\nstruct DebugBundleTransfer {\n    static let shared = DebugBundleTransfer()\n    func enqueue(bundleURL: URL, automatic: Bool = true) {} // Harness never uploads captures.\n}\nfinal class ConnectivityLog {\n    static let shared = ConnectivityLog()\n    func exportTail() -> String { String() } // Harness has no connectivity history.\n}\n")
     binary = destination / "capture-harness"
     command = ["xcrun", "swiftc", *guard_build.swift_flags(), "-O", "-D", "DEBUG"] + [str(source / name) for name in (

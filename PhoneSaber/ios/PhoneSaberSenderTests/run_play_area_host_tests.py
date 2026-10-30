@@ -70,6 +70,8 @@ final class LANLivenessProbe {
     func setShutter(_ value: Int) -> Bool { true }
     func shutterISOAckDetail() -> String { "2000" }
     func setShutterEmitter(_ value: Bool) {}
+    var autoExposureEnabled = false
+    func setAutoExposureEnabled(_ value: Bool) { autoExposureEnabled = value }
     func setTrackLockEnabled(_ value: Bool) {}
     func setExposureBias(_ value: Int, commandID: Int?) {}
     func clearIgnoreZones() {}
@@ -108,6 +110,10 @@ final class LANLivenessProbe {
     for marker in ['struct CameraFrameIntervalStatistics:', 'struct CameraFrameIntervalWindow']:
         support += block(camera, marker) + '\n'
 
+    if "static func exposureFrame(" in frames:
+        support += block(camera, "struct AutoExposureController") + "\n"
+        for marker in ["enum AutoClipTriggerPolicy", "struct AutoClipCompetition"]:
+            support += block(source("AutoClip.swift"), marker) + "\n"
     developer = Path(subprocess.check_output(['xcode-select', '-p'], text=True).strip()) / 'Platforms/MacOSX.platform/Developer'
     with tempfile.TemporaryDirectory(prefix='phonesaber-play-area-') as directory:
         tmp = Path(directory)

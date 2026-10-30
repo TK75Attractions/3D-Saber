@@ -10,6 +10,78 @@ import XCTest
 /// Auto clip (AutoClip.swift): pure trigger rules, rate limiting, suspend policy,
 /// PC commands, deferred upload and one synthetic clip written end to end.
 final class AutoClipTests: XCTestCase {
+    func testAutoISOReadsDimBladeWithoutChangingRecognition() throws {
+        let width = 480, height = 640
+        for color in [SaberColor.red, .blue] {
+            var pixels = [UInt8](repeating: 4, count: width * height * 4)
+            for y in 200...202 { for x in 200...248 {
+                let offset = (y * width + x) * 4
+                pixels[offset] = color == .blue ? 146 : 4
+                pixels[offset + 1] = 8
+                pixels[offset + 2] = color == .red ? 146 : 4
+            } }
+            func analyze(_ evidence: Bool) -> SaberFrameAnalysis {
+                analyzeSabers(in: pixels, width: width, height: height, bytesPerRow: width * 4,
+                    redThreshold: ColorThreshold(), blueThreshold: ColorThreshold(),
+                    collectObserverEvidence: evidence,
+                    shutterEmitter: ShutterEmitterMode(shutter: 2000, iso: 160, enabled: true))
+            }
+            let off = analyze(false), on = analyze(true)
+            // 自動ISO ONで追加取得する証拠が、候補・採点・選択結果を変えないことも確認する。
+            for key in [SaberColor.red, .blue] {
+                XCTAssertEqual(off.selected[key]?.0, on.selected[key]?.0)
+                XCTAssertEqual(off.selected[key]?.1, on.selected[key]?.1)
+                let a = off.candidates[key] ?? [], b = on.candidates[key] ?? []
+                XCTAssertEqual(a.count, b.count)
+                for (lhs, rhs) in zip(a, b) {
+                    XCTAssertEqual(lhs.endpoints.0, rhs.endpoints.0); XCTAssertEqual(lhs.endpoints.1, rhs.endpoints.1)
+                    XCTAssertEqual(lhs.score.bitPattern, rhs.score.bitPattern)
+                    XCTAssertEqual(lhs.isEmitterEligible, rhs.isEmitterEligible)
+                }
+            }
+            XCTAssertNotNil(on.selected[color])
+            let frame = FrameProcessor.exposureFrame(on, width: width, height: height, zones: [:], area: nil)
+            var controller = AutoExposureController()
+            var changes: [AutoExposureController.Change] = []
+            for i in 0...165 {
+                if let change = controller.observe(time: Double(i) / 30, background: 4, ceilingISO: 160,
+                    minISO: 32, frame: frame) { changes.append(change) }
+            }
+            XCTAssertEqual(changes.count, 1)
+            XCTAssertEqual(changes.first?.reason, "blade-weak"); XCTAssertEqual(changes.first?.to, 200)
+        }
+    }
+
+    func testAutoISOFrameUsesActualWinnerAndDistantSelectableEvidence() throws {
+        let winner = Self.candidate((100, 100), (100, 300))
+        let duplicate = Self.candidate((105, 100), (105, 300))
+        let far = Self.candidate((400, 100), (400, 300))
+        var ineligible = Self.candidate((600, 100), (600, 300)); ineligible.isEmitterEligible = false
+        let list = [far, duplicate, winner, ineligible]
+        var analysis = SaberFrameAnalysis(candidates: [.blue: list], selected: [.blue: winner.endpoints])
+        let frame = FrameProcessor.exposureFrame(analysis, width: 800, height: 640, zones: [:], area: nil)
+        XCTAssertFalse(frame.colors[0].selected)
+        let color = frame.colors[1]
+        XCTAssertTrue(color.selected); XCTAssertEqual(color.peakValue, winner.peakValue)
+        XCTAssertEqual(color.highValueRatio, winner.highValueRatio); XCTAssertEqual(color.meanValue, winner.meanValue)
+        XCTAssertEqual(color.colorPurity, winner.meanColorPurity)
+        XCTAssertEqual(color.distantEligible, 1); XCTAssertEqual(color.competitors, 1)
+        let zone = SaberIgnoreZone(minX: 0.45, minY: 0.1, maxX: 0.55, maxY: 0.6)
+        XCTAssertEqual(FrameProcessor.exposureFrame(analysis, width: 800, height: 640, zones: [.blue: [zone]], area: nil).colors[1].competitors, 0)
+        analysis = SaberFrameAnalysis(candidates: [.blue: list], selected: [:], trackLockSuppressed: [.blue])
+        XCTAssertFalse(FrameProcessor.exposureFrame(analysis, width: 800, height: 640, zones: [:], area: nil).colors[1].selected)
+        // 保存用は最後の変更と、変更しなかった競合窓を別々に保持する。
+        let saved = AutoClipAutoExposure(enabled: true, ceilingISO: 400, initialISO: 250, appliedISO: 320,
+            lastChangeTime: 5, lastChangeReason: "blade-weak", lastChangeMetrics: ["weak": 0.4, "lost": 0.1],
+            lastDecisionReason: "conflict", windowMetrics: ["distract": 0.3])
+        let json = try XCTUnwrap(try JSONSerialization.jsonObject(with: JSONSerialization.data(withJSONObject: saved.jsonObject)) as? [String: Any])
+        XCTAssertEqual(json["maximumAutomaticISO"] as? Int, 400)
+        XCTAssertEqual(json["lastChangeReason"] as? String, "blade-weak")
+        XCTAssertEqual((json["lastChangeMetrics"] as? [String: Double])?["weak"], 0.4)
+        XCTAssertEqual(json["lastDecisionReason"] as? String, "conflict")
+        XCTAssertEqual((json["windowMetrics"] as? [String: Double])?["distract"], 0.3)
+    }
+
     func testLegacyIdentityAndIgnoreZoneDecode() throws {
         let legacy = #"{"deviceModel":"iPhone14,5","deviceID":"old","appVersion":"1.0","appBuild":"20261024","station":"A","destination":"Mac","manualIPOverride":false}"#
         let phone = try JSONDecoder().decode(PhoneSaberIdentity.self, from: Data(legacy.utf8))
@@ -1103,6 +1175,18 @@ final class AutoClipTests: XCTestCase {
                                     sequence: UInt64(frame * 4 + 1)))
         }
         XCTAssertEqual(gapObserve(&detector, 38, winner: nil, sequence: 153)?.kind, .gap)
+    }
+
+    func testAutomaticSessionBudgetCoversEntireFestivalDay() {
+        // 15秒間隔でも24時間は5760件。10/30の60件を越えて保存を継続できる。
+        XCTAssertGreaterThan(AutoClipLimits.maximumAutomaticClipsPerSession, 24 * 60 * 60 / 15)
+        XCTAssertEqual(AutoClipLimits.cooldownSeconds, 15)
+        var limiter = AutoClipRateLimiter()
+        for index in 0..<5760 {
+            XCTAssertEqual(limiter.admit(event(.gap, at: Double(index) * 15), busy: false,
+                width: 480, height: 640), .accept)
+        }
+        XCTAssertEqual(limiter.automaticClipsThisSession, 5760)
     }
 
     func testGapUsesAutomaticBusyCooldownAndSessionBudget() {

@@ -200,17 +200,62 @@ final class FrameProcessor: @unchecked Sendable {
     func setAnalysisObserver(_ observer: FrameAnalysisObserver?) {
         queue.async { [weak self] in self?.analysisObserver = observer }
     }
-    // 生中央値だけを最大4Hzでmainへ渡す。カメラlockはこのキューでは取らない。
-    var onBackground: ((Double, Int, UInt64, Int) -> Void)?
-    private var lastBackgroundNotification = -Double.infinity // フレームキューのみ。
+    // 座標を送信側へ渡した後、既存の認識証拠を約10Hzで渡す。カメラlockはこのキューでは取らない。
+    var onBackground: ((Double, Int, AutoExposureController.Frame, UInt64, Int) -> Void)?
+    private var autoExposureEnabled = false // pendingLockで保護。
+    // 以下は処理キュー専用。欠落3frameは間引く前に数え、2.5秒窓に約25観測（最低20）を渡す。
+    private var lastExposureObservation = -Double.infinity
+    private var exposureObservationRevision: UInt64?
+    private var exposureMissingFrames = [0, 0]
+    private var exposureLastBladeSeen: Double?
     private var exposureRevision: UInt64 = 0 // pendingLockで保護。
     private var appliedISO: Float? // pendingLockで保護。
-    func setExposureContext(revision: UInt64, appliedISO: Float?) {
+    func setExposureContext(revision: UInt64, appliedISO: Float?, enabled: Bool = false) {
         pendingLock.lock()
         if exposureRevision != revision { trackLockRevision &+= 1 }
-        exposureRevision = revision; self.appliedISO = appliedISO
+        exposureRevision = revision; self.appliedISO = appliedISO; autoExposureEnabled = enabled
         pendingLock.unlock()
     }
+    static func exposureFrame(_ analysis: SaberFrameAnalysis, width: Int, height: Int,
+                              zones: [SaberColor: [SaberIgnoreZone]], area: SaberPlayArea?) -> AutoExposureController.Frame {
+        var colors: [AutoExposureController.Color] = []
+        colors.reserveCapacity(2)
+        let margin = max(AutoExposureController.minimumDistantEndpointPixels,
+            hypot(Double(width), Double(height)) * AutoExposureController.distantEndpointDiagonalFraction)
+        for color in [SaberColor.red, .blue] {
+            let candidates = analysis.candidates[color] ?? []
+            // 実winnerとの端点照合だけを行う。競合全件の走査をここで二重に実行しない。
+            guard let selected = analysis.selected[color], let winner = candidates.firstIndex(where: {
+                $0.endpoints.0 == selected.0 && $0.endpoints.1 == selected.1
+            }) else { colors.append(.init()); continue }
+            let blade = candidates[winner]
+            // 同じ刃の重複候補を数えない。既存の分離判定に加えて、両端から画面対角の10%以上離す。
+            // 10/30台Aの上端の白壁/奥の照明を対象とし、刃の周囲のhaloには反応させない。
+            func far(_ candidate: SaberCandidate) -> Bool {
+                let a = blade.endpoints, b = candidate.endpoints
+                let d00 = hypot(Double(a.0.x - b.0.x), Double(a.0.y - b.0.y))
+                let d01 = hypot(Double(a.0.x - b.1.x), Double(a.0.y - b.1.y))
+                let d10 = hypot(Double(a.1.x - b.0.x), Double(a.1.y - b.0.y))
+                let d11 = hypot(Double(a.1.x - b.1.x), Double(a.1.y - b.1.y))
+                return d00 > margin && d01 > margin && d10 > margin && d11 > margin
+            }
+            var eligible = 0, competitors = 0
+            for index in candidates.indices where index != winner {
+                let candidate = candidates[index]
+                guard AutoClipCompetition.separated(blade, candidate), far(candidate),
+                      AutoClipCompetition.selectable(candidate, width: width, height: height,
+                        zones: zones[color] ?? [], playArea: area) else { continue }
+                eligible += 1; competitors += 1
+            }
+            colors.append(.init(peakValue: blade.peakValue, highValueRatio: blade.highValueRatio,
+                meanValue: blade.meanValue, colorPurity: blade.meanColorPurity,
+                nearSaturationPresent: blade.observerEmitterInputs?.nearSaturationPresent ?? (blade.clippedWhiteRatio > 0),
+                emitterScore: blade.observerEmitterInputs?.emitterScore, selected: true,
+                distantEligible: eligible, competitors: competitors))
+        }
+        return .init(colors: colors)
+    }
+
     var onProcessingActivity: ((Bool) -> Void)?
     var onResult: (([DetectedSaber], Int, Int, TimeInterval, Int, FrameTrace?) -> Void)?
     /// (time, detection ms, generation, capture→detection-end ms). The last value is nil when
@@ -440,6 +485,7 @@ final class FrameProcessor: @unchecked Sendable {
             tracks = [.red: Track(), .blue: Track()]
             selectionTrack.reset()
             backgroundState.reset()
+            lastExposureObservation = -Double.infinity; exposureMissingFrames = [0, 0]; exposureLastBladeSeen = nil
             lastDimensions = nil
 #if DEBUG
             freezeWindow.reset()
@@ -749,6 +795,7 @@ final class FrameProcessor: @unchecked Sendable {
             expiryWorkItem = nil
             tracks = [.red: Track(), .blue: Track()]
             backgroundState.reset()
+            lastExposureObservation = -Double.infinity; exposureMissingFrames = [0, 0]; exposureLastBladeSeen = nil
             lastDimensions = (width, height)
         }
         let bytesPerRow = CVPixelBufferGetBytesPerRow(pixelBuffer)
@@ -764,6 +811,7 @@ final class FrameProcessor: @unchecked Sendable {
         let frameCaptureFPS = captureFPS
         let emitterMode = shutterEmitterMode
         let frameISO = appliedISO, frameExposureRevision = exposureRevision
+        let observeExposure = autoExposureEnabled
         pendingLock.unlock()
         if !lockEnabled || selectionTrackRevision != lockRevision
             || selectionRedThreshold != redThreshold || selectionBlueThreshold != blueThreshold {
@@ -786,7 +834,7 @@ final class FrameProcessor: @unchecked Sendable {
                                      bytesPerRow: bytesPerRow, redThreshold: redThreshold,
                                      blueThreshold: blueThreshold, collectProfile: collectProfile,
                                      collectPipelineDiagnostics: debugVideoRecorder != nil,
-                                     collectObserverEvidence: observer != nil, collectComponentDiagnostics: collectComponents,
+                                     collectObserverEvidence: observer != nil || observeExposure, collectComponentDiagnostics: collectComponents,
                                      ignoreZones: zones, playArea: area, trackLock: lockState, now: processingStart, shutterEmitter: emitterMode, backgroundState: backgroundState)
         let sabers = analysis.selected
         let observedAnalysis: SaberFrameAnalysis? = analysis
@@ -811,14 +859,14 @@ final class FrameProcessor: @unchecked Sendable {
                 baseAddress: bytes, width: width, height: height,
                 bytesPerRow: bytesPerRow, redThreshold: redThreshold,
                 blueThreshold: blueThreshold, collectProfile: false,
-                collectPipelineDiagnostics: true, ignoreZones: zones, playArea: area, trackLock: lockState, now: processingStart, shutterEmitter: emitterMode, backgroundState: backgroundState
+                collectPipelineDiagnostics: true, collectObserverEvidence: observeExposure, ignoreZones: zones, playArea: area, trackLock: lockState, now: processingStart, shutterEmitter: emitterMode, backgroundState: backgroundState
             )
             analysis = recordedAnalysis
             sabers = recordedAnalysis.selected
         } else {
             let result = analyzeSabers(baseAddress: bytes, width: width, height: height,
                                   bytesPerRow: bytesPerRow,
-                                  redThreshold: redThreshold, blueThreshold: blueThreshold,
+                                  redThreshold: redThreshold, blueThreshold: blueThreshold, collectObserverEvidence: observeExposure,
                                   ignoreZones: zones, playArea: area, trackLock: lockState, now: processingStart, shutterEmitter: emitterMode, backgroundState: backgroundState)
             analysis = result
             sabers = result.selected
@@ -922,10 +970,24 @@ final class FrameProcessor: @unchecked Sendable {
         // 統計ロックを待つ前に座標を送信する。従来の撮影→認識完了の測定終点は維持。
         onHealthSample?(ProcessInfo.processInfo.systemUptime, max(0, (detectionEnd - processingStart) * 1000), generation,
                         captureHostTime.map { (detectionEnd - $0) * 1000 })
-        if let background = observedAnalysis?.backgroundMedian,
-           processingStart - lastBackgroundNotification >= 0.25 {
-            lastBackgroundNotification = processingStart
-            onBackground?(processingStart, background, frameExposureRevision, generation)
+        if !observeExposure || exposureObservationRevision != frameExposureRevision {
+            lastExposureObservation = -Double.infinity; exposureMissingFrames = [0, 0]; exposureLastBladeSeen = nil
+            exposureObservationRevision = frameExposureRevision
+        }
+        if observeExposure, let observedAnalysis, let background = observedAnalysis.backgroundMedian {
+            for (index, color) in [SaberColor.red, .blue].enumerated() {
+                exposureMissingFrames[index] = observedAnalysis.selected[color] == nil ? exposureMissingFrames[index] + 1 : 0
+            }
+            if !observedAnalysis.selected.isEmpty { exposureLastBladeSeen = processingStart }
+            if processingStart - lastExposureObservation >= 0.1 - 1e-9 {
+                // 処理時刻の小さな揺れで毎回1frame遅れて、窓の最低20観測を割らないよう位相を保つ。
+                let elapsed = processingStart - lastExposureObservation
+                lastExposureObservation = elapsed < 0.2 ? lastExposureObservation + 0.1 : processingStart
+                var frame = Self.exposureFrame(observedAnalysis, width: width, height: height, zones: zones, area: area)
+                for index in frame.colors.indices { frame.colors[index].missingFrames = exposureMissingFrames[index] }
+                frame.lastBladeSeen = exposureLastBladeSeen
+                onBackground?(processingStart, background, frame, frameExposureRevision, generation)
+            }
         }
         // After the coordinates were handed to the sender: the observer only
         // reads this frame's analysis and (rarely) copies pixels.

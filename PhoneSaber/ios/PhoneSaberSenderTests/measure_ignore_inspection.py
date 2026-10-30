@@ -10,11 +10,12 @@ ROOT = Path(__file__).resolve().parents[3]
 SOURCE = ROOT / "PhoneSaber/ios/PhoneSaberSender/PhoneSaberSender"
 sys.path.insert(0, str(SOURCE.parent / "Tools"))
 from test_ios_ignore_inspection import MAIN, SUPPORT, block  # noqa: E402
+from phone_saber_auto_iso_host_support import auto_iso_support  # noqa: E402
 
 
 def main():
     camera = (SOURCE / "CameraViewModel.swift").read_text()
-    support = SUPPORT[:SUPPORT.index("@MainActor enum LearnSleeper")]
+    support = SUPPORT[:SUPPORT.index("@MainActor enum LearnSleeper")] + auto_iso_support(SOURCE)
     for marker in ["struct CameraFrameIntervalStatistics:", "struct CameraFrameIntervalWindow"]:
         support += block(camera, marker) + "\n"
     swift = BENCHMARK + block(MAIN, "static func sampleBuffer()").replace("check(", "precondition(") + "\n}\n"

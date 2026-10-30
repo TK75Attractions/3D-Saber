@@ -13,6 +13,7 @@ sys.path.insert(0, str(TOOLS))
 sys.path.insert(0, str(PHONE))
 import guard_build
 from phone_saber_triage_protocol import pack_bundle
+from phone_saber_auto_iso_host_support import auto_iso_support
 
 
 @unittest.skipUnless(sys.platform == 'darwin', 'Swift recorder host tests require macOS')
@@ -23,7 +24,7 @@ class CoreLineGuardTests(unittest.TestCase):
             source = PHONE / 'ios/PhoneSaberSender/PhoneSaberSender'
             camera = (source / 'CameraViewModel.swift').read_text()
             support = root / 'CameraIntervals.swift'
-            support.write_text('import Foundation\n' + camera[camera.index('struct CameraFrameIntervalStatistics:'):
+            support.write_text('import Foundation\n' + auto_iso_support(source) + camera[camera.index('struct CameraFrameIntervalStatistics:'):
                 camera.index('enum CameraLifecycleState:')] + '\nstruct DebugBundleTransfer {\n'
                 '    static let shared = DebugBundleTransfer()\n'
                 '    func enqueue(bundleURL: URL, automatic: Bool = true) {}\n}\n'

@@ -245,6 +245,9 @@ extension AVCaptureSession { func addOutput(_ output: AVCaptureVideoDataOutput) 
         support += block(camera, marker) + "\n"
     if "struct AutoExposureController" in camera:
         support += block(camera, "struct AutoExposureController") + "\n"
+    if "static func exposureFrame(" in source("FrameProcessor.swift"):
+        for marker in ["enum AutoClipTriggerPolicy", "struct AutoClipCompetition"]:
+            support += block(source("AutoClip.swift"), marker) + "\n"
     support += block(camera, "struct CameraShutterPlan:") + "\n"
     support += block(camera, "struct CameraShutterController") + "\n"
     shutter_key = next(line for line in camera.splitlines() if 'static let shutterKey =' in line)

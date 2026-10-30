@@ -10,6 +10,8 @@ import sys
 import tempfile
 import unittest
 
+from phone_saber_auto_iso_host_support import auto_iso_support
+
 SOURCE = Path(__file__).resolve().parents[1] / "PhoneSaberSender"
 TESTS = SOURCE.parent.parent / "PhoneSaberSenderTests"
 
@@ -32,7 +34,7 @@ class IgnoreInspectionTests(unittest.TestCase):
         section = section.replace(
             "try? await Task.sleep(nanoseconds: UInt64(SaberIgnoreLearner.seconds * 1_000_000_000))",
             "await LearnSleeper.wait()")
-        support = SUPPORT
+        support = SUPPORT + auto_iso_support(SOURCE)
         for marker in ["struct CameraFrameIntervalStatistics:", "struct CameraFrameIntervalWindow"]:
             support += block(camera, marker) + "\n"
         support += "@MainActor final class CameraViewModel {\nlet processor = FrameProcessor(expiryScheduler: nil)\n"

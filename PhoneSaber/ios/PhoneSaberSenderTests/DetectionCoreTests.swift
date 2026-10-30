@@ -120,40 +120,246 @@ final class DetectionCoreTests: XCTestCase {
         XCTAssertEqual(plan(250, nil)?.iso, 250)
     }
 
+    func testFixedShutterPlanAutoExposureRecognitionDecisions() throws {
+        typealias C = AutoExposureController.Color
+        let weak = C(peakValue: 215, highValueRatio: 0.03, meanValue: 170, colorPurity: 0.8, emitterScore: 0.4, selected: true)
+        let strong = C(peakValue: 250, highValueRatio: 0.5, meanValue: 220, colorPurity: 0.8, emitterScore: 0.8, selected: true)
+        var clutter = strong; clutter.distantEligible = 2; clutter.competitors = 1
+        var saturated = strong; saturated.nearSaturationPresent = true; saturated.colorPurity = 0.3
+        for (color, reason, iso) in [(weak, "blade-weak", Float(320)), (clutter, "distractors", 200), (saturated, "saturated", 200)] {
+            var control = AutoExposureController()
+            var changes: [AutoExposureController.Change] = []
+            for i in 0...165 {
+                if let change = control.observe(time: Double(i) / 30, background: 100, ceilingISO: 250,
+                    minISO: 32, frame: .init(colors: [color])) { changes.append(change) }
+            }
+            XCTAssertEqual(changes.count, 1)
+            XCTAssertEqual(changes.first?.reason, reason); XCTAssertEqual(changes.first?.to, iso)
+            XCTAssertGreaterThanOrEqual(try XCTUnwrap(changes.first).time, 4.4)
+            XCTAssertGreaterThan(changes.first?.metrics.samples ?? 0, 20)
+        }
+        var conflict = weak; conflict.competitors = 1
+        var control = AutoExposureController()
+        for i in 0...300 {
+            XCTAssertNil(control.observe(time: Double(i) / 30, background: 100, ceilingISO: 250,
+                minISO: 32, frame: .init(colors: [conflict])))
+        }
+        XCTAssertEqual(control.appliedISO, 250)
+        XCTAssertEqual(control.lastDecision?.reason, "conflict")
+        XCTAssertEqual(control.lastDecision?.metrics.weak, 1)
+        XCTAssertEqual(control.lastDecision?.metrics.distract, 1)
+        // 白い芯があっても純度が高ければ減感しない。刃が見える時は明るい背景だけでも減感しない。
+        var whiteCore = strong; whiteCore.nearSaturationPresent = true
+        control = AutoExposureController()
+        for i in 0...300 { XCTAssertNil(control.observe(time: Double(i) / 30, background: 255,
+            ceilingISO: 250, minISO: 32, frame: .init(colors: [whiteCore]))) }
+    }
+
+    func testFixedShutterPlanAutoExposureIgnoresBriefAndAmbiguousEvidence() {
+        let strong = AutoExposureController.Color(peakValue: 250, highValueRatio: 0.5, meanValue: 220,
+            colorPurity: 0.8, emitterScore: 0.8, selected: true)
+        var weak = strong
+        weak.peakValue = 220; weak.highValueRatio = 0.03; weak.meanValue = 170; weak.emitterScore = 0.4
+        var clutter = weak; clutter.distantEligible = 1
+        for scenario in 0..<3 {
+            var control = AutoExposureController()
+            for i in 0...360 {
+                // 短い弱さ、settling中だけの妨害、妨害5〜20%の保留帯では変更しない。
+                let color: AutoExposureController.Color
+                switch scenario {
+                case 0: color = (150..<156).contains(i) ? weak : strong
+                case 1: color = i < 30 ? clutter : strong
+                default: color = i % 10 == 0 ? clutter : weak
+                }
+                XCTAssertNil(control.observe(time: Double(i) / 30, background: 38, ceilingISO: 250,
+                    minISO: 32, frame: .init(colors: [color])))
+            }
+            XCTAssertEqual(control.appliedISO, 250)
+        }
+    }
+
+    func testFixedShutterPlanAutoExposureLostAndAbsentBlade() {
+        let strong = AutoExposureController.Color(peakValue: 250, highValueRatio: 0.5, meanValue: 220,
+            colorPurity: 0.8, emitterScore: 0.8, selected: true)
+        var control = AutoExposureController()
+        var changes: [AutoExposureController.Change] = []
+        for i in 0...180 {
+            // 10枚中5枚だけ映る。3枚目からの短い消失を数える（青だけ消えた場合も希釈しない）。
+            let color = i % 10 < 5 ? strong : .init()
+            if let change = control.observe(time: Double(i) / 30, background: 38, ceilingISO: 160,
+                minISO: 32, frame: .init(colors: [strong, color])) { changes.append(change) }
+        }
+        XCTAssertEqual(changes.first?.reason, "lost"); XCTAssertEqual(changes.first?.to, 200)
+        XCTAssertGreaterThan(changes.first?.metrics.lost ?? 0, 0.12)
+        // 一度も映っていない色や退場を見失いとして増感しない。刃なしの明背景は従来の中央値で減感する。
+        for (background, reason, target) in [(100, "bright", Float(200))] {
+            control = AutoExposureController(); changes = []
+            for i in 0...24 {
+                if let change = control.observe(time: Double(i) / 4, background: background,
+                    ceilingISO: 250, minISO: 32, frame: .init(colors: [.init(), .init()])) { changes.append(change) }
+            }
+            XCTAssertEqual(changes.first?.reason, reason); XCTAssertEqual(changes.first?.to, target)
+            XCTAssertEqual(changes.first?.metrics.lost, 0)
+        }
+    }
+
     func testFixedShutterPlanAutoExposureHysteresisAndBounds() throws {
         var control = AutoExposureController()
         var changes: [AutoExposureController.Change] = []
-        for i in 0...240 {
-            if let change = control.observe(time: Double(i) / 4, background: 100, ceilingISO: 250, minISO: 34) {
-                changes.append(change)
-            }
+        for i in 0...400 {
+            if let change = control.observe(time: Double(i) / 4, background: 100, ceilingISO: 250, minISO: 34) { changes.append(change) }
         }
-        XCTAssertEqual(changes.map(\.to), [200, 160, 125, 100, 80, 64, 50, 40, 34])
-        XCTAssertEqual(changes.first?.time, 2)
-        for pair in zip(changes, changes.dropFirst()) { XCTAssertGreaterThanOrEqual(pair.1.time - pair.0.time, 3) }
-        XCTAssertEqual(control.appliedISO, 34)
+        XCTAssertEqual(changes.map(\.to), [200, 160, 125, 100])
+        XCTAssertEqual(changes.first?.time, 3)
+        for pair in zip(changes, changes.dropFirst()) { XCTAssertGreaterThanOrEqual(pair.1.time - pair.0.time, 5) }
+        XCTAssertEqual(control.appliedISO, 100)
         changes = []
-        for i in 241...600 {
-            if let change = control.observe(time: Double(i) / 4, background: 20, ceilingISO: 250, minISO: 34) {
-                changes.append(change)
-            }
+        for i in 401...1000 {
+            if let change = control.observe(time: Double(i) / 4, background: 20, ceilingISO: 250, minISO: 34) { changes.append(change) }
         }
-        XCTAssertGreaterThanOrEqual(try XCTUnwrap(changes.first).time, 64.25)
-        XCTAssertEqual(changes.map(\.to), [40, 50, 64, 80, 100, 125, 160, 200, 250])
+        XCTAssertEqual(changes.map(\.to), [125, 160, 200, 250])
         XCTAssertEqual(control.appliedISO, 250)
-        let reset = control.observe(time: 151, background: 40, ceilingISO: 160, minISO: 34)
-        XCTAssertEqual(reset?.reason, "reset"); XCTAssertEqual(control.appliedISO, 160)
-        // 1段の最大比は1.28。46/30未満なので定常照明で上下の閾値を跨がない。
+        for initial in [Float(64), 100, 160, 250] {
+            control = AutoExposureController()
+            _ = control.observe(time: 0, background: 38, ceilingISO: initial, minISO: 32)
+            XCTAssertEqual(control.appliedISO, initial)
+        }
+        control = AutoExposureController()
+        for i in 0...120 {
+            XCTAssertNil(control.observe(time: Double(i) / 4, background: 100, ceilingISO: 64, minISO: 32))
+        }
+        XCTAssertEqual(control.appliedISO, 64, "明るい時に下限へ向けて逆向きに増感しない")
+        // 端末の有効範囲も守る。
+        control = AutoExposureController()
+        for i in 0...400 { _ = control.observe(time: Double(i) / 4, background: 20, ceilingISO: 250, minISO: 125, maxISO: 400) }
+        XCTAssertEqual(control.appliedISO, 250)
+        for i in 401...800 { _ = control.observe(time: Double(i) / 4, background: 100, ceilingISO: 250, minISO: 125, maxISO: 400) }
+        XCTAssertEqual(control.appliedISO, 125)
         for pair in zip(AutoExposureController.levels, AutoExposureController.levels.dropFirst()) {
             XCTAssertLessThan(Double(pair.0 / pair.1), 46.0 / 30)
         }
     }
 
+    func testFixedShutterPlanAutoExposureAbsentDarkNeverExceedsStart() {
+        for fps in [10, 30, 60] { for start in [Float(64), 80, 100, 160, 250] { for background in [2, 24] {
+            var controller = AutoExposureController()
+            for i in 0...(60 * fps) {
+                XCTAssertNil(controller.observe(time: Double(i) / Double(fps), background: background,
+                    ceilingISO: start, minISO: 32, frame: .init(colors: [.init(), .init()])))
+                XCTAssertLessThanOrEqual(controller.appliedISO ?? start, start)
+            }
+        } } }
+    }
+
+    func testFixedShutterPlanAutoExposureIdleRestoresStartAndHoldsForNextPlayer() throws {
+        let weak = AutoExposureController.Color(peakValue: 215, highValueRatio: 0.03, meanValue: 170,
+            colorPurity: 0.8, emitterScore: 0.4, selected: true)
+        for fps in [10, 30, 60] {
+            var controller = AutoExposureController()
+            for i in 0...(11 * fps) {
+                _ = controller.observe(time: Double(i) / Double(fps), background: 2, ceilingISO: 250,
+                    minISO: 32, frame: .init(colors: [weak]))
+            }
+            XCTAssertEqual(controller.appliedISO, 400)
+            var reset: AutoExposureController.Change?
+            // 初めて刃なしを観測した時から10秒。trackingGraceとcooldownでは遅延させない。
+            for i in (11 * fps + 1)...(21 * fps + 1) {
+                let change = controller.observe(time: Double(i) / Double(fps), background: 2, ceilingISO: 250, minISO: 32)
+                if let change { reset = change }
+                if i < 21 * fps + 1 { XCTAssertEqual(controller.appliedISO, 400) }
+            }
+            XCTAssertEqual(try XCTUnwrap(reset).reason, "idle-reset")
+            XCTAssertEqual(reset?.from, 400); XCTAssertEqual(reset?.to, 250)
+            // 退場後は暗背景でも明背景でも再調整せず、次のプレイも同じ値で始まる。
+            for i in (21 * fps + 2)...(60 * fps) {
+                XCTAssertNil(controller.observe(time: Double(i) / Double(fps), background: i < 40 * fps ? 2 : 100,
+                    ceilingISO: 250, minISO: 32))
+            }
+            XCTAssertEqual(controller.appliedISO, 250)
+            var nextPlayer: AutoExposureController.Change?
+            for i in (60 * fps + 1)...(66 * fps) {
+                if let change = controller.observe(time: Double(i) / Double(fps), background: 2,
+                    ceilingISO: 250, minISO: 32, frame: .init(colors: [weak])) { nextPlayer = change }
+            }
+            XCTAssertEqual(nextPlayer?.reason, "blade-weak"); XCTAssertEqual(nextPlayer?.from, 250)
+            XCTAssertEqual(nextPlayer?.to, 320)
+        }
+    }
+
+    func testFixedShutterPlanAutoExposureIdleRestoresLoweredISOAndRequiresContinuousAbsence() {
+        let strong = AutoExposureController.Color(peakValue: 250, highValueRatio: 0.5, meanValue: 220,
+            colorPurity: 0.8, emitterScore: 0.8, selected: true)
+        var controller = AutoExposureController()
+        _ = controller.observe(time: 0, background: 100, ceilingISO: 250, minISO: 32, frame: .init(colors: [strong]))
+        for i in 1...99 { _ = controller.observe(time: Double(i) / 10, background: 100, ceilingISO: 250, minISO: 32) }
+        XCTAssertLessThan(controller.appliedISO ?? 250, 250)
+        // 刃が戻れば退場タイマーをやり直す。
+        _ = controller.observe(time: 10, background: 38, ceilingISO: 250, minISO: 32, frame: .init(colors: [strong]))
+        for i in 101...200 {
+            let change = controller.observe(time: Double(i) / 10, background: 38, ceilingISO: 250, minISO: 32)
+            XCTAssertNotEqual(change?.reason, "idle-reset")
+        }
+        XCTAssertEqual(controller.observe(time: 20.1, background: 38, ceilingISO: 250, minISO: 32)?.to, 250)
+    }
+
+    func testFixedShutterPlanAutoExposureUpperLimit400AtTenHz() {
+        let weak = AutoExposureController.Color(peakValue: 215, highValueRatio: 0.03, meanValue: 170,
+            colorPurity: 0.8, emitterScore: 0.4, selected: true)
+        for hardwareMaximum in [Float(300), 640, 2000] {
+            var controller = AutoExposureController()
+            var changes: [AutoExposureController.Change] = []
+            for i in 0...600 {
+                if let change = controller.observe(time: Double(i) / 10, background: 2, ceilingISO: 250,
+                    minISO: 32, maxISO: hardwareMaximum, frame: .init(colors: [weak])) { changes.append(change) }
+                XCTAssertLessThanOrEqual(controller.appliedISO ?? 250, 400)
+            }
+            XCTAssertEqual(controller.appliedISO, min(hardwareMaximum, 400))
+            XCTAssertTrue(changes.allSatisfy { $0.reason == "blade-weak" && $0.metrics.samples >= 20 })
+            XCTAssertGreaterThanOrEqual(changes.first?.time ?? 0, 4.4)
+            XCTAssertLessThanOrEqual(changes.first?.time ?? 100, 4.6)
+        }
+        XCTAssertEqual(AutoExposureController.levels.first, 400)
+    }
+
+    func testObserverEvidenceNeverChangesSelectedOrCandidateScores() throws {
+        // 同一入力・独立したtrack/background状態で、観測フラグ以外を揃える。
+        for name in ["frame-0000", "frame-0033", "frame-0220", "frame-0704"] {
+            let image = try fixtureBGRA(name, subdirectory: "production-video-IMG_5933")
+            for emitterEnabled in [false, true] {
+                let offLock = SaberTrackLock(), onLock = SaberTrackLock()
+                let offBackground = SaberBackgroundState(), onBackground = SaberBackgroundState()
+                for i in 0..<3 {
+                    func run(_ evidence: Bool) -> SaberFrameAnalysis {
+                        analyzeSabers(in: image.bytes, width: image.width, height: image.height,
+                            bytesPerRow: image.bytesPerRow, redThreshold: ColorThreshold(), blueThreshold: ColorThreshold(),
+                            collectObserverEvidence: evidence, trackLock: evidence ? onLock : offLock,
+                            now: Double(i) / 30,
+                            shutterEmitter: .init(shutter: 2000, iso: 250, enabled: emitterEnabled),
+                            backgroundState: evidence ? onBackground : offBackground)
+                    }
+                    let off = run(false), on = run(true)
+                    XCTAssertEqual(Set(off.selected.keys), Set(on.selected.keys))
+                    for color in [SaberColor.red, .blue] {
+                        XCTAssertEqual(off.selected[color]?.0, on.selected[color]?.0)
+                        XCTAssertEqual(off.selected[color]?.1, on.selected[color]?.1)
+                        let a = off.candidates[color] ?? [], b = on.candidates[color] ?? []
+                        XCTAssertEqual(a.count, b.count)
+                        for (lhs, rhs) in zip(a, b) {
+                            XCTAssertEqual(lhs.endpoints.0, rhs.endpoints.0); XCTAssertEqual(lhs.endpoints.1, rhs.endpoints.1)
+                            XCTAssertEqual(lhs.score.bitPattern, rhs.score.bitPattern)
+                            XCTAssertEqual(lhs.isEmitterEligible, rhs.isEmitterEligible)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     func testFixedShutterPlanAutoExposureRejectsNoiseDisabledAndStaleEvidence() {
-        for disabled in 0..<3 {
+        for disabled in 0..<4 {
             var control = AutoExposureController()
             for i in 0...80 {
-                XCTAssertNil(control.observe(time: Double(i) / 4, background: 100, ceilingISO: 250,
+                XCTAssertNil(control.observe(time: Double(i) / 4, background: 100, ceilingISO: disabled == 3 ? 2000 : 250,
                     minISO: 32, enabled: disabled != 0, emitter: disabled != 1, shutter: disabled != 2))
             }
             XCTAssertNil(control.appliedISO)
@@ -161,8 +367,7 @@ final class DetectionCoreTests: XCTestCase {
         for base in [30, 38, 46] {
             var control = AutoExposureController()
             for i in 0...240 {
-                let value = i == 20 ? 255 : base
-                XCTAssertNil(control.observe(time: Double(i) / 4, background: value, ceilingISO: 250, minISO: 32))
+                XCTAssertNil(control.observe(time: Double(i) / 4, background: i == 20 ? 255 : base, ceilingISO: 250, minISO: 32))
             }
             XCTAssertEqual(control.appliedISO, 250)
         }
@@ -171,7 +376,13 @@ final class DetectionCoreTests: XCTestCase {
         XCTAssertNil(control.observe(time: 20, background: 100, ceilingISO: 250, minISO: 32))
         XCTAssertNil(control.observe(time: 21, background: 100, ceilingISO: 250, minISO: 32))
         XCTAssertEqual(control.observe(time: 22, background: 100, ceilingISO: 250, minISO: 32)?.to, 200)
-        XCTAssertNil(control.observe(time: 22.5, background: 0, ceilingISO: 250, minISO: 32))
+        // settling中は明るさも認識証拠も数えない。同一/過去時刻も数えない。
+        XCTAssertNil(control.observe(time: 22.5, background: 255, ceilingISO: 250, minISO: 32))
+        XCTAssertNil(control.observe(time: 22.5, background: 255, ceilingISO: 250, minISO: 32))
+        for i in 92...107 { XCTAssertNil(control.observe(time: Double(i) / 4, background: 100, ceilingISO: 250, minISO: 32)) }
+        XCTAssertEqual(control.observe(time: 27, background: 100, ceilingISO: 250, minISO: 32)?.to, 160)
+        XCTAssertNil(control.observe(time: 28, background: 100, ceilingISO: 250, minISO: 32, enabled: false))
+        XCTAssertNil(control.appliedISO)
     }
 
     func testFixedShutterStoredSettingsDefault2000AndMigrateLegacyOffOnce() throws {
@@ -193,12 +404,12 @@ final class DetectionCoreTests: XCTestCase {
         let name = "PhoneSaber.iso.tests." + UUID().uuidString
         let defaults = try XCTUnwrap(UserDefaults(suiteName: name))
         defer { defaults.removePersistentDomain(forName: name) }
-        XCTAssertEqual(CameraViewModel.storedShutterISO(in: defaults), 160)
+        XCTAssertEqual(CameraViewModel.storedShutterISO(in: defaults), 250)
         XCTAssertNil(defaults.object(forKey: "PhoneSaber.shutterISO.v1"))
         for value in [2000, 250, 200, 160, 125, 100, 80, 64, 1000, 500, 0, -1, 4000] {
             defaults.set(value, forKey: "PhoneSaber.shutterISO.v1")
             let expected = [1000, 500].contains(value) ? 250 :
-                ([2000, 250, 200, 160, 125, 100, 80, 64].contains(value) ? value : 160)
+                ([2000, 250, 200, 160, 125, 100, 80, 64].contains(value) ? value : 250)
             XCTAssertEqual(CameraViewModel.storedShutterISO(in: defaults), expected)
         }
         for fps in [30, 60] { for iso in [2000, 250, 200, 160, 125, 100, 80, 64] {
@@ -242,7 +453,7 @@ final class DetectionCoreTests: XCTestCase {
         } }
         defaults.removeObject(forKey: "PhoneSaber.shutterISO.v1")
         defaults.removeObject(forKey: "PhoneSaber.shutterEmitter.v1")
-        XCTAssertEqual(CameraViewModel.storedShutterISO(in: defaults), 160)
+        XCTAssertEqual(CameraViewModel.storedShutterISO(in: defaults), 250)
         XCTAssertTrue(CameraViewModel.storedShutterEmitter(in: defaults))
     }
 
@@ -261,7 +472,7 @@ final class DetectionCoreTests: XCTestCase {
         // F8の明示defaults=1だけで、それまでの明示選択をリセットする。
         model.applyPCCommand(try XCTUnwrap(LANLivenessProbe.parseCommand("PHONESABER_COMMAND 1 id=803 defaults=1")))
         XCTAssertEqual(model.shutter, 2000)
-        XCTAssertEqual(model.shutterISO, 160)
+        XCTAssertEqual(model.shutterISO, 250)
         XCTAssertTrue(model.shutterEmitter)
     }
 

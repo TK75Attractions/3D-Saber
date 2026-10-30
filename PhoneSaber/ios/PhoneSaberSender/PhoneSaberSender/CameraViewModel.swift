@@ -188,74 +188,205 @@ func disableCameraPostProcessing(_ camera: AVCaptureDevice) -> Bool {
     return true
 }
 
-// カメラ専用。検出マスクへ平滑値を戻さず、時刻付きの生中央値だけを使う。
+// カメラ専用の純粋な判定器。認識結果には値を戻さず、適用が成功したコピーだけを採用する。
 struct AutoExposureController {
-    static let window = 1.5, lowerHold = 2.0, raiseHold = 4.0
-    static let cooldown = 3.0, settling = 1.0
-    static let lowerThreshold = 46.0, raiseThreshold = 30.0
-    static let levels: [Float] = [2000, 1600, 1280, 1000, 800, 640, 500, 400, 320,
-                                  250, 200, 160, 125, 100, 80, 64, 50, 40, 32]
+    // 10/30は台B=160で見失いが台A=250の約10倍。一方、台Aでも遠方候補が赤3025/青1366回。
+    // 1フレームの反射や振り抜きを追わず、2.5秒窓＋1秒の同一判定を要求する保守的な初期値。
+    // 実機の証拠値分布は未計測なので、認識閾値を変えず露出だけを隣の1段へ動かす。
+    static let window = 2.5, decisionHold = 1.0, lowerHold = 2.0, raiseHold = 4.0
+    // 約10Hzの観測でも丸め/欠落を最大0.1秒だけ許し、短い断片だけで2.5秒窓を成立させない。
+    static let minimumWindowSpan = 2.4, maximumSampleGap = 1.0
+    static let minimumISO: Float = 100, maximumISO: Float = 400
+    // 台Aの白壁/奥の照明を対象とし、同じ刃のhalo/重複候補から距離を取る。
+    static let distantEndpointDiagonalFraction = 0.10, minimumDistantEndpointPixels = 24.0
+    static let cooldown = 5.0, settling = 1.0, idleReset = 10.0
+    // 刃が映らない時の中央値窓と明暗しきい値は従来値を維持する。
+    static let backgroundWindow = 1.5, lowerThreshold = 46.0, raiseThreshold = 30.0
+    static let levels: [Float] = [400, 320, 250, 200, 160, 125, 100]
+    // highValueの芯判定0.08付近とpeak/meanの芯判定242/190に余裕を持たせる。
+    // emitterScore 0.55は通常のeligible下限0.42近くに限定する余裕。強い芯のある刃は増感しない。
+    // 35%以上が弱い／12%以上が短い消失の時だけ増感。妨害5%以下を増感条件にする。
+    static let weakHighRatio = 0.10, weakPeak = 235, weakMean = 190.0, weakEmitter = 0.55
+    static let weakRate = 0.35, lostRate = 0.12, quietDistractorRate = 0.05
+    // 台Aの遠方候補対策は20%以上の継続で減感。白い芯だけでは減感せず色純度低下も要求。
+    // 純度0.45は色成分が半分未満の淡い刃に限定する仮値。10/30の集計だけで最適値とは断定しない。
+    static let distractorRate = 0.20, saturationRate = 0.20, saturationPurity = 0.45
+    // 3処理フレーム以上、直前0.75秒以内に見えていた色だけを消失扱い。退場を延々数えない。
+    static let missingFrames = 3, trackingGrace = 0.75, minimumSamples = 20
+    struct Color {
+        var peakValue = 0
+        var highValueRatio = 0.0, meanValue = 0.0, colorPurity = 0.0
+        var nearSaturationPresent = false
+        var emitterScore: Double? = nil
+        // 間引き前の処理フレーム数。直接のhost入力では従来どおり観測回数を数える。
+        var missingFrames: Int? = nil
+        var selected = false
+        var distantEligible = 0, competitors = 0
+    }
+    struct Frame {
+        var colors: [Color] = []
+        // 10Hz観測の合間に刃が映っても、連続した退場として数えない。
+        var lastBladeSeen: Double? = nil
+    }
+    struct Metrics: Equatable {
+        var weak = 0.0, lost = 0.0, distract = 0.0, saturated = 0.0
+        var samples = 0
+        var jsonObject: [String: Double] {
+            ["weak": weak, "lost": lost, "distract": distract, "saturated": saturated, "samples": Double(samples)]
+        }
+        var logDetail: String {
+            String(format: "weak=%.3f lost=%.3f distract=%.3f saturated=%.3f n=%d", weak, lost, distract, saturated, samples)
+        }
+    }
     struct Change {
         let time: Double, from: Float, to: Float, background: Double
         let reason: String
+        var metrics = Metrics()
     }
+    private struct Sample {
+        let time: Double
+        let weak: Bool, lost: Bool, distract: Bool, saturated: Bool
+    }
+    private struct Track { var lastSeen = -Double.infinity; var missing = 0 }
     private(set) var appliedISO: Float?
     private(set) var lastChange: Change?
-    private var ceiling: Float?, floor: Float?
-    private var samples: [(time: Double, value: Int)] = []
+    private(set) var lastDecision: Change?
+    private var startISO: Float?, floor: Float?, ceiling: Float?
+    private var samples: [Sample] = []
+    private var backgrounds: [(time: Double, value: Int)] = []
+    private var tracks: [Track] = []
     private var previousTime: Double?, highSince: Double?, lowSince: Double?
+    private var pendingReason: String?, pendingSince: Double?
     private var discardUntil = -Double.infinity
+    private var noBladeSince: Double?, lastObservedBladeTime: Double?
+    private var hasSeenBlade = false, idleRestored = false
 
+    // ceilingISOは旧API名を維持しているが、上限ではなく運営が選んだ開始値。
     mutating func observe(time: Double, background: Int, ceilingISO: Float, minISO: Float,
+                          maxISO: Float = 400, frame: Frame = Frame(),
                           enabled: Bool = true, emitter: Bool = true, shutter: Bool = true) -> Change? {
-        guard enabled && emitter && shutter else { self = Self(); return nil }
+        guard enabled && emitter && shutter && ceilingISO < 2000 else { self = Self(); return nil }
         guard time.isFinite, (0...255).contains(background), ceilingISO.isFinite,
-              minISO.isFinite, minISO > 0, ceilingISO > 0 else { return nil }
-        let minimum = max(minISO, 32), maximum = max(minimum, ceilingISO)
-        if ceiling != maximum || floor != minimum {
-            let old = appliedISO
+              minISO.isFinite, maxISO.isFinite, minISO > 0, maxISO >= minISO, ceilingISO > 0 else { return nil }
+        let minimum = max(minISO, Self.minimumISO), maximum = min(maxISO, Self.maximumISO)
+        guard minimum <= maximum else { return nil }
+        if startISO != ceilingISO || floor != minimum || ceiling != maximum {
             self = Self()
-            ceiling = maximum; floor = minimum; appliedISO = maximum
-            if let old, old != maximum {
-                let change = Change(time: time, from: old, to: maximum,
-                                    background: Double(background), reason: "reset")
-                lastChange = change; discardUntil = time + Self.settling
-                return change
-            }
+            startISO = ceilingISO; floor = minimum; ceiling = maximum
+            // 運営の固定ISOから開始する。次の自動変更の出力は必ず100〜400に収める。
+            appliedISO = min(maxISO, max(minISO, ceilingISO))
+            discardUntil = time + Self.settling
         }
         if let previousTime {
             guard time > previousTime else { return nil }
-            // 中断中の時間を連続した明暗として数えない。
-            if time - previousTime > 1 { samples = []; highSince = nil; lowSince = nil }
+            if time - previousTime > Self.maximumSampleGap {
+                clearWindow(); tracks = []; noBladeSince = nil; idleRestored = false
+            }
         }
         previousTime = time
+        if let seen = frame.lastBladeSeen, seen.isFinite, seen <= time,
+           seen > (lastObservedBladeTime ?? -Double.infinity) {
+            lastObservedBladeTime = seen
+            hasSeenBlade = true; noBladeSince = time; idleRestored = false
+        }
+        if frame.colors.contains(where: { $0.selected }) {
+            hasSeenBlade = true; noBladeSince = nil; idleRestored = false
+        } else if hasSeenBlade {
+            noBladeSince = noBladeSince ?? time
+            if let noBladeSince, time - noBladeSince >= Self.idleReset - 1e-9 {
+                // プレイ終了時だけ一度で戻し、次の刃まで保持する。背景による再増減で往復させない。
+                guard !idleRestored else { return nil }
+                idleRestored = true
+                clearWindow(); tracks = []
+                let initial = min(maxISO, max(minISO, ceilingISO))
+                guard let current = appliedISO, current != initial else { return nil }
+                let change = Change(time: time, from: current, to: initial,
+                    background: Double(background), reason: "idle-reset")
+                appliedISO = initial; lastChange = change; lastDecision = change
+                discardUntil = time + Self.settling
+                return change
+            }
+        }
         guard time >= discardUntil else { return nil }
-        samples.removeAll { $0.time < time - Self.window }
-        samples.append((time, background))
-        let sorted = samples.map(\.value).sorted(), n = samples.count
-        let filtered = n.isMultiple(of: 2)
-            ? Double(sorted[n / 2 - 1] + sorted[n / 2]) / 2 : Double(sorted[n / 2])
-        if filtered > Self.lowerThreshold { highSince = highSince ?? time } else { highSince = nil }
-        if filtered < Self.raiseThreshold { lowSince = lowSince ?? time } else { lowSince = nil }
-        guard time - (lastChange?.time ?? -Double.infinity) >= Self.cooldown,
-              let current = appliedISO else { return nil }
-        let next: Float, reason: String
-        if let highSince, time - highSince >= Self.lowerHold {
-            next = max(minimum, Self.levels.first(where: { $0 < current }) ?? minimum)
-            reason = "lower"
-        } else if let lowSince, time - lowSince >= Self.raiseHold {
-            next = min(maximum, Self.levels.last(where: { $0 > current }) ?? maximum)
-            reason = "raise"
-        } else { return nil }
-        guard next != current else { return nil }
-        let change = Change(time: time, from: current, to: next, background: filtered, reason: reason)
-        appliedISO = next; lastChange = change
-        samples = []; highSince = nil; lowSince = nil; discardUntil = time + Self.settling
+        while tracks.count < frame.colors.count { tracks.append(Track()) }
+        var active = false, weak = false, lost = false, distract = false, saturated = false
+        for (index, color) in frame.colors.enumerated() {
+            if color.selected {
+                tracks[index].lastSeen = time; tracks[index].missing = 0
+                active = true
+                weak = weak || (color.highValueRatio < Self.weakHighRatio &&
+                    (color.peakValue < Self.weakPeak || color.meanValue < Self.weakMean) &&
+                    (color.emitterScore.map { $0 < Self.weakEmitter } ?? true))
+                saturated = saturated || (color.nearSaturationPresent && color.colorPurity < Self.saturationPurity)
+            } else if time - tracks[index].lastSeen <= Self.trackingGrace {
+                tracks[index].missing = color.missingFrames ?? (tracks[index].missing + 1); active = true
+                lost = lost || tracks[index].missing >= Self.missingFrames
+            }
+            distract = distract || color.distantEligible > 0 || color.competitors > 0
+        }
+        var reason: String?, metrics = Metrics()
+        let filtered: Double
+        if active {
+            backgrounds = []; highSince = nil; lowSince = nil
+            samples.removeAll { $0.time < time - Self.window }
+            samples.append(Sample(time: time, weak: weak, lost: lost, distract: distract, saturated: saturated))
+            filtered = Double(background)
+            guard samples.count >= Self.minimumSamples,
+                  time - samples[0].time >= Self.minimumWindowSpan else { return nil }
+            let n = Double(samples.count)
+            metrics = Metrics(weak: Double(samples.filter { $0.weak }.count) / n,
+                lost: Double(samples.filter { $0.lost }.count) / n,
+                distract: Double(samples.filter { $0.distract }.count) / n,
+                saturated: Double(samples.filter { $0.saturated }.count) / n, samples: samples.count)
+            let needsLight = metrics.weak >= Self.weakRate || metrics.lost >= Self.lostRate
+            if needsLight && metrics.distract >= Self.distractorRate { reason = "conflict" }
+            else if metrics.saturated >= Self.saturationRate { reason = "saturated" }
+            else if metrics.distract >= Self.distractorRate { reason = "distractors" }
+            else if needsLight && metrics.distract <= Self.quietDistractorRate {
+                reason = metrics.lost >= Self.lostRate ? "lost" : "blade-weak"
+            }
+            if reason != pendingReason { pendingReason = reason; pendingSince = reason == nil ? nil : time }
+            guard let pendingSince, time - pendingSince >= Self.decisionHold else { return nil }
+        } else {
+            samples = []; pendingReason = nil; pendingSince = nil
+            backgrounds.removeAll { $0.time < time - Self.backgroundWindow }
+            backgrounds.append((time, background))
+            let sorted = backgrounds.map(\.value).sorted(), n = sorted.count
+            filtered = n.isMultiple(of: 2) ? Double(sorted[n / 2 - 1] + sorted[n / 2]) / 2 : Double(sorted[n / 2])
+            if filtered > Self.lowerThreshold { highSince = highSince ?? time } else { highSince = nil }
+            if filtered < Self.raiseThreshold { lowSince = lowSince ?? time } else { lowSince = nil }
+            if let highSince, time - highSince >= Self.lowerHold { reason = "bright" }
+            else if let lowSince, time - lowSince >= Self.raiseHold { reason = "dark" }
+        }
+        guard let reason, let current = appliedISO,
+              time - (lastChange?.time ?? -Double.infinity) >= Self.cooldown else { return nil }
+        if reason == "conflict" {
+            if time - (lastDecision?.time ?? -Double.infinity) >= Self.cooldown {
+                lastDecision = Change(time: time, from: current, to: current, background: filtered, reason: reason, metrics: metrics)
+            }
+            return nil
+        }
+        let raise = ["blade-weak", "lost", "dark"].contains(reason)
+        var next = min(maximum, max(minimum, raise
+            ? (Self.levels.last { $0 > current } ?? maximum)
+            : (Self.levels.first { $0 < current } ?? minimum)))
+        // 刃なしの暗背景は開始値までしか戻さない。増感の許可はblade-weak/lostだけ。
+        if reason == "dark" { next = min(next, min(maxISO, max(minISO, ceilingISO))) }
+        // 開始値64/80を尊重しつつ、明るすぎる時に下限100へ逆向きの増感をしない。
+        guard next != current, raise ? next > current : next < current else { return nil }
+        let change = Change(time: time, from: current, to: next, background: filtered, reason: reason, metrics: metrics)
+        appliedISO = next; lastChange = change; lastDecision = change
+        clearWindow(); tracks = []; discardUntil = time + Self.settling
         return change
+    }
+
+    private mutating func clearWindow() {
+        samples = []; backgrounds = []; highSince = nil; lowSince = nil
+        pendingReason = nil; pendingSince = nil
     }
 }
 
-// 本番既定は1/2000秒・ISO160・色付き発光体ON。反射と刃の分離を実機比較するためISOを段階的に下げる。
+// 本番既定は1/2000秒・ISO250・色付き発光体ON。認識状況に応じて固定シャッターのISOだけを調整する。
 struct CameraShutterPlan: Equatable {
     let duration: CMTime
     let iso: Float
@@ -1208,11 +1339,11 @@ final class CameraViewModel: NSObject, ObservableObject {
             self.persistPlayArea(area)
             ConnectivityLog.shared.record("PLAY_AREA", "grow area=\(area.minX),\(area.minY),\(area.maxX),\(area.maxY)")
         }
-        processor.onBackground = { [weak self] time, background, revision, generation in
+        processor.onBackground = { [weak self] time, background, frame, revision, generation in
             Task { @MainActor [weak self] in
                 guard let self, generation == self.processor.currentGeneration,
                       revision == self.autoExposureRevision else { return }
-                self.observeAutoExposure(time: time, background: background)
+                self.observeAutoExposure(time: time, background: background, frame: frame)
             }
         }
         processor.onHealthSample = { [healthMeter] time, milliseconds, generation, captureToSendMs in
@@ -1859,7 +1990,7 @@ final class CameraViewModel: NSObject, ObservableObject {
         }
         if command.defaults {
             // F8「既定に戻す」の明示操作だけで保存値をリセット。PC起動・再接続・探索では送らない。
-            guard setShutterISO(160), setShutter(2000) else { return }
+            guard setShutterISO(250), setShutter(2000) else { return }
             setShutterEmitter(true)
             setTrackLockEnabled(true)
             setExposureBias(-2, commandID: command.id)
@@ -1951,9 +2082,12 @@ final class CameraViewModel: NSObject, ObservableObject {
         autoClip.updateEnvironment(AutoClipEnvironment(
             thermal: thermal, exposureBias: exposureBias,
             shutter: shutter, shutterISO: shutterISO, shutterEmitter: shutterEmitter,
-            autoExposure: AutoClipAutoExposure(enabled: autoExposureEnabled, ceilingISO: shutterISO,
+            autoExposure: AutoClipAutoExposure(enabled: autoExposureEnabled, ceilingISO: 400, initialISO: shutterISO,
                 appliedISO: shutterController.appliedISO.map(Double.init),
-                lastChangeTime: autoExposureLastChange?.time, lastChangeReason: autoExposureLastChange?.reason),
+                lastChangeTime: autoExposureLastChange?.time, lastChangeReason: autoExposureLastChange?.reason,
+                lastChangeMetrics: autoExposureLastChange?.metrics.jsonObject ?? [:],
+                lastDecisionReason: autoExposureController.lastDecision?.reason,
+                windowMetrics: autoExposureController.lastDecision?.metrics.jsonObject ?? [:]),
             exposureDurationSeconds: running ? exposureBiasCamera.map { CMTimeGetSeconds($0.exposureDuration) } : nil,
             iso: running ? exposureBiasCamera.map { Double($0.iso) } : nil,
             appVersion: PhoneSaberIdentity.version, identity: phoneIdentity,
@@ -2147,8 +2281,8 @@ final class CameraViewModel: NSObject, ObservableObject {
     }
     private var autoExposureController = AutoExposureController()
     private var autoExposureLastChange: AutoExposureController.Change?
-    // 自動調整が実際に感度を下げたときだけ、リセットで運営の選んだ ISO へ戻す（OFF のままの切替でカメラを再設定しない）。
-    private var autoISOLowered = false
+    // 自動調整が実際に感度を変えたときだけ、リセットで運営の選んだ ISO へ戻す（OFF のままの切替でカメラを再設定しない）。
+    private var autoISOAdjusted = false
     private var autoExposureObservationsAfter = -Double.infinity
     private var autoExposureRevision: UInt64 = 0
     private var autoExposureActive: Bool {
@@ -2164,35 +2298,45 @@ final class CameraViewModel: NSObject, ObservableObject {
 
     @discardableResult
     private func resetAutoExposure(restore: Bool) -> Bool {
-        if restore, autoISOLowered, running, shutter != 0, let camera = exposureBiasCamera,
+        if restore, autoISOAdjusted, running, shutter != 0, let camera = exposureBiasCamera,
            !applyShutter(shutter, to: camera) { return false }
-        if restore { autoISOLowered = false }
+        if restore { autoISOAdjusted = false }
         autoExposureController = AutoExposureController()
         autoExposureRevision &+= 1
-        processor.setExposureContext(revision: autoExposureRevision, appliedISO: shutterController.appliedISO)
+        processor.setExposureContext(revision: autoExposureRevision, appliedISO: shutterController.appliedISO, enabled: autoExposureActive)
         refreshShutterStatus()
         updateAutoClipEnvironment(thermal: DeviceThermalLevel(state: ProcessInfo.processInfo.thermalState).metadataValue)
         return true
     }
 
-    private func observeAutoExposure(time: Double, background: Int) {
+    private func observeAutoExposure(time: Double, background: Int, frame: AutoExposureController.Frame = .init()) {
         let now = HostMonotonicClock.now()
         guard running, autoExposureActive, let camera = exposureBiasCamera,
               now >= time, now - time < 0.5, time >= autoExposureObservationsAfter else { return }
         var proposed = autoExposureController
+        let previousDecisionTime = autoExposureController.lastDecision?.time
         let change = proposed.observe(time: now, background: background,
-                                      ceilingISO: Float(shutterISO), minISO: camera.activeFormat.minISO)
+                                      ceilingISO: Float(shutterISO), minISO: camera.activeFormat.minISO,
+                                      maxISO: camera.activeFormat.maxISO, frame: frame)
         if let change {
             guard applyShutter(shutter, to: camera, autoISO: change.to) else { return }
             autoExposureLastChange = change
-            autoISOLowered = change.to < Float(shutterISO)
+            autoExposureObservationsAfter = now + AutoExposureController.settling
+            autoISOAdjusted = change.to != Float(shutterISO)
             autoExposureRevision &+= 1
-            ConnectivityLog.shared.record("AUTO_ISO", "from=\(change.from) to=\(change.to) background=\(change.background) reason=\(change.reason)")
-            processor.setExposureContext(revision: autoExposureRevision, appliedISO: shutterController.appliedISO)
+            ConnectivityLog.shared.record("AUTO_ISO", "iso=\(change.to) prev=\(change.from) background=\(change.background) reason=\(change.reason) \(change.metrics.logDetail)")
+            processor.setExposureContext(revision: autoExposureRevision, appliedISO: shutterController.appliedISO, enabled: autoExposureActive)
             refreshShutterStatus()
-            updateAutoClipEnvironment(thermal: DeviceThermalLevel(state: ProcessInfo.processInfo.thermalState).metadataValue)
+        }
+        if proposed.lastDecision?.reason == "conflict",
+           proposed.lastDecision?.time != autoExposureController.lastDecision?.time,
+           let decision = proposed.lastDecision {
+            ConnectivityLog.shared.record("AUTO_ISO", "iso=\(decision.to) prev=\(decision.from) reason=conflict \(decision.metrics.logDetail)")
         }
         autoExposureController = proposed
+        if proposed.lastDecision?.time != previousDecisionTime {
+            updateAutoClipEnvironment(thermal: DeviceThermalLevel(state: ProcessInfo.processInfo.thermalState).metadataValue)
+        }
     }
 
     static let shutterISOChoices = LANLivenessProbe.shutterISOChoices
@@ -2203,11 +2347,11 @@ final class CameraViewModel: NSObject, ObservableObject {
     @Published private(set) var shutterEmitter = NSClassFromString("XCTestCase") == nil
         && CameraViewModel.storedShutterEmitter(in: .standard)
 
-    // 初回だけISO160。保存済みの運営の選択はPC再起動・再接続でも維持し、明示defaultsだけで戻す。
+    // 初回だけISO250。保存済みの運営の選択はPC再起動・再接続でも維持し、明示defaultsだけで戻す。
     nonisolated static func storedShutterISO(in defaults: UserDefaults) -> Int {
         let value = defaults.integer(forKey: shutterISOKey)
         if value == 1000 || value == 500 { return 250 }
-        return LANLivenessProbe.shutterISOChoices.contains(value) ? value : 160
+        return LANLivenessProbe.shutterISOChoices.contains(value) ? value : 250
     }
 
     // キーなしだけ既定ON。保存済みOFFもPC再起動・再接続で維持する。
@@ -2296,7 +2440,7 @@ final class CameraViewModel: NSObject, ObservableObject {
                 autoExposureController = AutoExposureController()
                 autoExposureObservationsAfter = HostMonotonicClock.now() + AutoExposureController.settling
                 autoExposureRevision &+= 1
-                processor.setExposureContext(revision: autoExposureRevision, appliedISO: shutterController.appliedISO)
+                processor.setExposureContext(revision: autoExposureRevision, appliedISO: shutterController.appliedISO, enabled: autoExposureActive)
                 if let previousISO, let applied = shutterController.appliedISO, previousISO != applied {
                     let change = AutoExposureController.Change(time: HostMonotonicClock.now(), from: previousISO,
                         to: applied, background: 0, reason: "reset")

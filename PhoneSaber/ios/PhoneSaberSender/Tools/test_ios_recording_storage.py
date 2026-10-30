@@ -8,6 +8,8 @@ import tempfile
 import unittest
 
 
+from phone_saber_auto_iso_host_support import auto_iso_support
+
 SOURCE = Path(__file__).resolve().parents[1] / "PhoneSaberSender"
 
 
@@ -24,7 +26,7 @@ class IOSRecordingStorageTests(unittest.TestCase):
             support.write_text("import Foundation\n" + camera[
                 camera.index("struct CameraFrameIntervalStatistics:"):
                 camera.index("enum CameraLifecycleState:")
-            ] + SUPPORT)
+            ] + SUPPORT + auto_iso_support(SOURCE))
             original = (SOURCE / "DebugVideoRecorder.swift").read_text()
             start = original.index("                    var triageBundleURL: URL?")
             end = original.index("#if DEBUG\n                    beforeOverlay?()", start)
@@ -39,7 +41,9 @@ class IOSRecordingStorageTests(unittest.TestCase):
                      "DetectionCore.swift", "BGRADetection.swift", "FrameProcessor.swift",
                      "DebugVideoRecorder.swift", "DebugRecordingTriage.swift", "GuidedRecording.swift", "MetricsDatagram.swift")],
                  str(support), str(fixture), "-o", str(binary)],
-                capture_output=True, text=True, timeout=180,
+                # HEADでも176秒。露出フレーム型が加わったcold buildに余裕を持たせる。
+                # 実行時の60秒期限・保存結果のassertionは維持する。
+                capture_output=True, text=True, timeout=300,
             )
             self.assertEqual(compiled.returncode, 0, compiled.stderr)
             run = subprocess.run([str(binary), str(directory)], capture_output=True,

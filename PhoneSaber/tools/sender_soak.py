@@ -31,6 +31,8 @@ import guard_build
 
 REPO = Path(__file__).resolve().parents[1]
 SOURCE = REPO / "ios/PhoneSaberSender/PhoneSaberSender"
+sys.path.insert(0, str(SOURCE.parent / "Tools"))
+from phone_saber_auto_iso_host_support import auto_iso_support  # noqa: E402
 HARNESS = REPO / "ios/PhoneSaberSenderTests/SenderSoakHarness.swift"
 FIXTURE = REPO / "ios/PhoneSaberSenderTests/Fixtures/lossless-regression/phonesaber_20260922_101530_202/frame_390.png"
 SOURCES = ("DetectionCore.swift", "BGRADetection.swift", "FrameProcessor.swift", "DebugVideoRecorder.swift",
@@ -40,12 +42,12 @@ WARMUP_MINUTES = 5.0
 
 
 def support_source(destination: Path) -> Path:
-    """CameraViewModel.swift imports UIKit; copy only the interval types FrameProcessor needs."""
+    """UIKitを使わず、FrameProcessorが必要なフレーム間隔・露出の実定義を渡す。"""
     camera = (SOURCE / "CameraViewModel.swift").read_text(encoding="utf-8")
     start = camera.index("struct CameraFrameIntervalStatistics:")
     end = camera.index("enum CameraLifecycleState:")
     support = destination / "CameraIntervals.swift"
-    support.write_text("import Foundation\n" + camera[start:end] +
+    support.write_text("import Foundation\n" + auto_iso_support(SOURCE) + camera[start:end] +
                        "\nstruct DebugBundleTransfer {\n    static let shared = DebugBundleTransfer()\n"
                        "    func enqueue(bundleURL: URL, automatic: Bool = true) {} // The soak never uploads captures.\n}\n",
                        encoding="utf-8")

@@ -22,12 +22,17 @@ def main():
     camera = source("CameraViewModel.swift")
     frames = source("FrameProcessor.swift")
     rejected = "configureHighSpeedFrame(" in frames
+    exposure_sampling = "private var exposureMissingFrames" in frames
     support = "import Foundation\nimport CoreMedia\n"
     for marker in ["struct CameraFormatOption:", "func supportsFrameRate(", "func preferredCameraFormatIndex(",
                    "func highSpeedCameraFormatIndex(", "struct CameraFrameIntervalStatistics:", "struct CameraFrameIntervalWindow"]:
         support += block(camera, marker) + "\n"
     support += "struct DebugBundleTransfer { static let shared = DebugBundleTransfer(); func enqueue(bundleURL: URL, automatic: Bool = true) {} }\n"
     support += 'enum ConnectivityLog { static let shared = Log() }; struct Log { func exportTail() -> String { "" } }\n'
+    if "static func exposureFrame(" in frames:
+        support += block(camera, "struct AutoExposureController") + "\n"
+        for marker in ["enum AutoClipTriggerPolicy", "struct AutoClipCompetition"]:
+            support += block(source("AutoClip.swift"), marker) + "\n"
     developer = Path(subprocess.check_output(["xcode-select", "-p"], text=True).strip()) / "Platforms/MacOSX.platform/Developer"
     frameworks = developer / "Library/Frameworks"
     with tempfile.TemporaryDirectory(prefix="phonesaber-high-speed-regression-") as directory:
@@ -37,9 +42,10 @@ def main():
 import Darwin
 let suite = HighSpeedCaptureTests.defaultTestSuite
 suite.run()
-guard let run = suite.testRun, run.executionCount == 2, run.hasSucceeded else { exit(1) }
-''')
-        inputs = [tmp / "Support.swift", tmp / "main.swift", TESTS / "HighSpeedCaptureTests.swift"]
+guard let run = suite.testRun, run.executionCount == EXPECTED, run.hasSucceeded else { exit(1) }
+'''.replace('EXPECTED', '3' if exposure_sampling else '2'))
+        (tmp / "HighSpeedCaptureTests.swift").write_text((TESTS / "HighSpeedCaptureTests.swift").read_text())
+        inputs = [tmp / "Support.swift", tmp / "main.swift", tmp / "HighSpeedCaptureTests.swift"]
         names = ["FrameProcessor.swift", "DetectionCore.swift", "BGRADetection.swift", "DebugVideoRecorder.swift",
                  "DebugRecordingTriage.swift", "GuidedRecording.swift", "MetricsDatagram.swift"]
         if rejected:
@@ -48,7 +54,8 @@ guard let run = suite.testRun, run.executionCount == 2, run.hasSucceeded else { 
             (tmp / name).write_text(source(name))
             inputs.append(tmp / name)
         subprocess.run(["xcrun", "swiftc", "-O", *(["-D", "DEBUG"] if args.debug else []),
-                        *(["-D", "REJECTED_HFPS_REVISION"] if rejected else []), "-D", "HIGH_SPEED_STANDALONE",
+                        *(["-D", "REJECTED_HFPS_REVISION"] if rejected else []),
+                        *(["-D", "AUTO_ISO_OBSERVATIONS"] if exposure_sampling else []), "-D", "HIGH_SPEED_STANDALONE",
                         *map(str, inputs), "-I", str(developer / "usr/lib"), "-L", str(developer / "usr/lib"),
                         "-F", str(frameworks), "-Xlinker", "-rpath", "-Xlinker", str(frameworks),
                         "-Xlinker", "-rpath", "-Xlinker", str(developer / "usr/lib"),

@@ -52,9 +52,10 @@ enum AutoClipLimits {
     static let ignoreObjectsPerZone = 32
     static let ignoreObjectsTotal = 128
     // 2026-10-21: 6本では1時間で使い切り、青の誤検出の場面が残らなかった。15秒間隔で1曲（約2.5分）最大10本、
-    // 送信1回あたり60本まで（曲を続けても残る）。
+    // 曲中の通信負荷を増やさないよう、保存間隔はそのまま維持する。
     static let cooldownSeconds = 15.0
-    static let maximumAutomaticClipsPerSession = 60
+    // 10/30は60件で午前中に停止。15秒cooldownなら丸一日でも5760件なので実質無制限。
+    static let maximumAutomaticClipsPerSession = 100000
     static let manualMinimumInterval = 5.0
     /// A confusion trigger whose competitor sits where an earlier clip's competitor
     /// was (a static cone, a poster) is not saved again in the same session.
@@ -641,13 +642,19 @@ final class AutoClipBuffers {
 // 適用要求値と変更時刻はhost単調時計。フレームの時刻とは別の診断情報。
 struct AutoClipAutoExposure: Equatable {
     var enabled = false
-    var ceilingISO = 160
+    var ceilingISO = 400
+    var initialISO = 250
     var appliedISO: Double?
     var lastChangeTime: Double?
     var lastChangeReason: String?
+    var lastChangeMetrics: [String: Double] = [:]
+    var lastDecisionReason: String?
+    var windowMetrics: [String: Double] = [:]
     var jsonObject: [String: Any] {
-        ["enabled": enabled, "ceilingISO": ceilingISO, "appliedISO": appliedISO ?? NSNull(),
-         "lastChangeHostTime": lastChangeTime ?? NSNull(), "lastChangeReason": lastChangeReason ?? NSNull()]
+        ["enabled": enabled, "ceilingISO": ceilingISO, "initialISO": initialISO, "appliedISO": appliedISO ?? NSNull(),
+         "lastChangeHostTime": lastChangeTime ?? NSNull(), "lastChangeReason": lastChangeReason ?? NSNull(),
+         "lastChangeMetrics": lastChangeMetrics, "lastDecisionReason": lastDecisionReason ?? NSNull(),
+         "windowMetrics": windowMetrics, "minimumAutomaticISO": 100, "maximumAutomaticISO": 400]
     }
 }
 
@@ -655,7 +662,7 @@ struct AutoClipEnvironment: Equatable {
     var thermal = "nominal"
     var exposureBias = 0
     var shutter = 0
-    var shutterISO = 160
+    var shutterISO = 250
     var shutterEmitter = true
     var autoExposure = AutoClipAutoExposure()
     var exposureDurationSeconds: Double?
