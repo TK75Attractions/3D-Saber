@@ -10,6 +10,8 @@ public class TitleStartNote : MonoBehaviour
     public float bobHz = 0.55f;
     public float yawAmplitudeDeg = 14f;
     public float yawHz = 0.35f;
+    // 一辺の長さ(ワールド単位)。2026-10-31 ユーザー「タイトルノーツでかくして」で 1.1 → 1.76(1.6倍)。
+    public const float Size = 1.76f;
 
     public CuttableNote Note { get; private set; }
     public event System.Action OnSlashed;
@@ -24,7 +26,7 @@ public class TitleStartNote : MonoBehaviour
         var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
         go.name = "TitleStartNote";
         go.transform.position = position;
-        go.transform.localScale = Vector3.one * 1.1f;
+        go.transform.localScale = Vector3.one * Size;
 
         // ベース色を仕込む(NoteVisuals.Awake が継承して結晶外観を構築する)
         var mr = go.GetComponent<MeshRenderer>();

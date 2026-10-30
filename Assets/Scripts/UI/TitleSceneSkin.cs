@@ -15,6 +15,12 @@ public class TitleSceneSkin : MonoBehaviour
     private TitlePresentationMotion presentationMotion;
     private CanvasGroup startTargetGroup;
     private TitleStartNote startNote;
+    private GameObject receptionLock;
+    // 開始の的の位置と倍率。2026-10-31「タイトルノーツでかくして」で開始ノーツを 1.6 倍(TitleStartNote.Size)にしたので、
+    // 枠・光・クリックの的も 1.5 倍にした(中の寸法と TitleTargetProximity.Outline は前のまま)。
+    // 大きいノーツはカメラより下にあるので、映りの中心が y=-190 あたりへ下がる(16:9 で、浮き沈み込みで約 -300〜-70)。枠もそこへ下げた。
+    static readonly Vector2 StartTargetPosition = new Vector2(0f, -190f);
+    public const float StartTargetScale = 1.5f;
     private TitleTargetProximity startProximity;
     private readonly SaberInputBridge[] titleBlades = new SaberInputBridge[2];
     private Image flashImage;
@@ -65,6 +71,7 @@ public class TitleSceneSkin : MonoBehaviour
         }
         titleContainer = TitleConceptA.BuildLogo(canvas.transform);
         BuildStartTarget(canvas, cam != null);
+        BuildReceptionLock(canvas);
         BuildExitButton(canvas);
         visitorMode = VisitorModeBadge.Build(canvas.transform);
 
@@ -78,13 +85,15 @@ public class TitleSceneSkin : MonoBehaviour
         BuildFlashOverlay(canvas);
         presentationMotion = canvas.gameObject.AddComponent<TitlePresentationMotion>();
         presentationMotion.Configure(canvas, titleContainer, startTargetGroup, startNote, scenery, flashImage);
-        // 受付の鍵(TitleReception)。運営モードではタイトルに入るたびに閉じ、開始ノーツを隠す。
+        // 受付の鍵(TitleReception)。運営モードではタイトルに入るたびに閉じ、開始ノーツの代わりに鍵の印を出す。
         TitleReception.EnterTitle(OperatorMode.IsOn);
         ApplyReception();
     }
 
     // 開始ノーツと的が出ているか(受付が開いているか)。テストと運営の確認用。
     public bool StartNoteShown => startNote != null ? startNote.gameObject.activeSelf : startTargetGroup != null && startTargetGroup.gameObject.activeSelf;
+    // 鍵の印が出ているか(受付が閉じているか)。
+    public bool ReceptionLockShown => receptionLock != null && receptionLock.activeSelf;
 
     // スタッフのマウスの中ボタン(テストからも呼ぶ)。鍵を開け閉めし、運営の知らせと音で伝える。開始ノーツを切ったあとは受けない。
     public void ToggleReception(string how)
@@ -96,13 +105,14 @@ public class TitleSceneSkin : MonoBehaviour
         MenuSfx.Difficulty(TitleReception.Locked ? 0 : 2);
     }
 
-    // 鍵の間は開始ノーツと的を隠す(切れない・押せない)。開けたら出す。
+    // 鍵の間は開始ノーツと的を隠し(切れない・押せない)、同じ場所に鍵の印を出す。開けたら入れ替える。
     void ApplyReception()
     {
         if (transitioning) return;
         bool open = !TitleReception.Locked;
         if (startNote != null) startNote.gameObject.SetActive(open);
         if (startTargetGroup != null) startTargetGroup.gameObject.SetActive(open);
+        if (receptionLock != null) receptionLock.SetActive(!open);
     }
 
     // 問いかけ(と問いかけへ向かう演出)の間は、Esc を2秒以内に2回でタイトルを読み直す(来場者の画面で共通。仕様面の点検 2)。
@@ -194,7 +204,8 @@ public class TitleSceneSkin : MonoBehaviour
         startTargetGroup = go.GetComponent<CanvasGroup>();
         var rt = go.GetComponent<RectTransform>();
         rt.sizeDelta = new Vector2(260f, 240f);
-        rt.anchoredPosition = new Vector2(0f, -174f);
+        rt.anchoredPosition = StartTargetPosition;
+        rt.localScale = Vector3.one * StartTargetScale;
         var fill = go.GetComponent<Image>();
         fill.color = Color.clear;
         var button = go.GetComponent<Button>();
@@ -232,6 +243,64 @@ public class TitleSceneSkin : MonoBehaviour
             fallback.raycastTarget = false;
         }
         startProximity = new TitleTargetProximity(rt, glow);
+    }
+
+    // 受付が閉じている間、開始ノーツの場所に出す鍵の印(改善案①の絵: 暗い四角に錠前、下に一言)。押せない(raycast なし)。
+    void BuildReceptionLock(Canvas canvas)
+    {
+        receptionLock = new GameObject("ReceptionLock", typeof(RectTransform));
+        receptionLock.transform.SetParent(canvas.transform, false);
+        var rt = receptionLock.GetComponent<RectTransform>();
+        rt.sizeDelta = new Vector2(360f, 360f);
+        rt.anchoredPosition = StartTargetPosition;
+
+        // 開始ノーツの代わりの、暗い四角(45度回し。対角 240)。
+        var plate = new GameObject("LockPlate", typeof(RectTransform), typeof(Image));
+        plate.transform.SetParent(rt, false);
+        var plateRect = plate.GetComponent<RectTransform>();
+        plateRect.sizeDelta = new Vector2(170f, 170f);
+        plateRect.localRotation = Quaternion.Euler(0f, 0f, 45f);
+        var plateImage = plate.GetComponent<Image>();
+        Color plateColor = new Color(.075f, .125f, .204f, .94f);
+        plateImage.color = plateColor;
+        plateImage.raycastTarget = false;
+        Color stroke = new Color(.33f, .48f, .62f, 1f);
+        MakeLine(plate.transform, "LockPlateEdge", new Vector2(-85f, -85f), new Vector2(85f, -85f), 4f, stroke);
+        MakeLine(plate.transform, "LockPlateEdge", new Vector2(85f, -85f), new Vector2(85f, 85f), 4f, stroke);
+        MakeLine(plate.transform, "LockPlateEdge", new Vector2(85f, 85f), new Vector2(-85f, 85f), 4f, stroke);
+        MakeLine(plate.transform, "LockPlateEdge", new Vector2(-85f, 85f), new Vector2(-85f, -85f), 4f, stroke);
+
+        // 錠前: 胴・鍵穴・つる(左右の縦線と半円)。
+        Color metal = new Color(.55f, .66f, .78f, 1f);
+        var body = new GameObject("LockBody", typeof(RectTransform), typeof(Image));
+        body.transform.SetParent(rt, false);
+        var bodyRect = body.GetComponent<RectTransform>();
+        bodyRect.sizeDelta = new Vector2(58f, 44f);
+        bodyRect.anchoredPosition = new Vector2(0f, -13f);
+        var bodyImage = body.GetComponent<Image>();
+        bodyImage.color = metal;
+        bodyImage.raycastTarget = false;
+        var hole = new GameObject("LockKeyhole", typeof(RectTransform), typeof(Image));
+        hole.transform.SetParent(body.transform, false);
+        hole.GetComponent<RectTransform>().sizeDelta = new Vector2(8f, 17f);
+        var holeImage = hole.GetComponent<Image>();
+        holeImage.color = plateColor;
+        holeImage.raycastTarget = false;
+        MakeLine(rt, "LockShackle", new Vector2(-17f, 9f), new Vector2(-17f, 18f), 6f, metal);
+        MakeLine(rt, "LockShackle", new Vector2(17f, 9f), new Vector2(17f, 18f), 6f, metal);
+        for (int i = 0; i < 8; i++)
+        {
+            float a0 = Mathf.PI * i / 8f, a1 = Mathf.PI * (i + 1) / 8f;
+            MakeLine(rt, "LockShackle", new Vector2(17f * Mathf.Cos(a0), 18f + 17f * Mathf.Sin(a0)),
+                new Vector2(17f * Mathf.Cos(a1), 18f + 17f * Mathf.Sin(a1)), 6f, metal);
+        }
+
+        var label = UISkinKit.MakeTMP(rt, "ReceptionLockText", TitleReception.WaitingText, 40f,
+            new Color(UISkinPalette.OffWhite.r, UISkinPalette.OffWhite.g, UISkinPalette.OffWhite.b, .9f),
+            TextAlignmentOptions.Center, new Vector2(0f, -165f), new Vector2(900f, 60f), FontStyles.Normal, 0f,
+            UISkinKit.JapaneseFallbackFontAsset());
+        label.raycastTarget = false;
+        receptionLock.SetActive(false);
     }
 
     void BuildExitButton(Canvas canvas)
