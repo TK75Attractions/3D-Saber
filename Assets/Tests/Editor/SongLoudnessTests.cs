@@ -156,42 +156,93 @@ public class SongLoudnessTests
         Assert.GreaterOrEqual(count, 14);
     }
 
+    // 前もって大きくした再生用の音源(master*.ogg、Tools/Audio/SongLoudness/build_master.py、2026-10-30)は、Unity で読んでも
+    // 原音と同じ時間の上にある(デコーダの頭の無音などで譜面とずれない)。左右の和の差分(高い音が効いて山が鋭い)の相互相関の山が
+    // 時間差 0 にあることを、曲の 20%・50%・80% の3か所で確かめる。±MaxLag より大きいずれは、時間差 0 の相関が低くなって落ちる。
+    const int MaxLag = 1200;
+
     [UnityTest]
-    public IEnumerator NormalizedLogicHasTheSameAudioTimelineInUnity()
+    public IEnumerator MasteredSongsHaveTheSameAudioTimelineInUnity()
     {
-        string logic = Path.Combine(Application.streamingAssetsPath, "Songs", "logic");
-        AudioClip original = null, normalized = null;
-        try
-        {
-            foreach (string file in new[] { "audio.mp3", "normalized.wav" })
+        var pairs = new System.Collections.Generic.List<(string source, string master)>();
+        foreach (string folder in Directory.GetDirectories(Path.Combine(Application.streamingAssetsPath, "Songs")))
+            foreach (string metadata in Directory.GetFiles(folder, "loudness*.json"))
             {
-                using (var request = UnityWebRequestMultimedia.GetAudioClip(new Uri(Path.Combine(logic, file)).AbsoluteUri,
-                    file.EndsWith(".wav") ? AudioType.WAV : AudioType.MPEG))
+                var data = JsonUtility.FromJson<SongLoudness.Metadata>(File.ReadAllText(metadata));
+                if (!string.IsNullOrEmpty(data?.playbackFile))
+                    pairs.Add((Path.Combine(folder, data.sourceFile), Path.Combine(folder, data.playbackFile)));
+            }
+        Assert.GreaterOrEqual(pairs.Count, 15, "全曲と ElDorado の G が master の音源で鳴る");
+        foreach (var (sourcePath, masterPath) in pairs)
+        {
+            string name = Path.GetFileName(Path.GetDirectoryName(sourcePath)) + "/" + Path.GetFileName(masterPath);
+            var clips = new AudioClip[2];
+            try
+            {
+                for (int k = 0; k < clips.Length; k++)
                 {
-                    yield return request.SendWebRequest();
-                    Assert.AreEqual(UnityWebRequest.Result.Success, request.result, request.error);
-                    var clip = DownloadHandlerAudioClip.GetContent(request);
-                    if (file.EndsWith(".mp3")) original = clip; else normalized = clip;
+                    string path = k == 0 ? sourcePath : masterPath;
+                    using (var request = UnityWebRequestMultimedia.GetAudioClip(new Uri(path).AbsoluteUri, AudioTypeOf(path)))
+                    {
+                        yield return request.SendWebRequest();
+                        Assert.AreEqual(UnityWebRequest.Result.Success, request.result, path + ": " + request.error);
+                        clips[k] = DownloadHandlerAudioClip.GetContent(request);
+                    }
+                }
+                AudioClip original = clips[0], mastered = clips[1];
+                Assert.AreEqual(original.frequency, mastered.frequency, name);
+                Assert.AreEqual(original.channels, mastered.channels, name);
+                Assert.That(mastered.length, Is.EqualTo(original.length).Within(2), name); // MP3デコーダの末尾無音を許容
+                foreach (double at in new[] { .2, .5, .8 })
+                {
+                    int lag = PeakLag(original, mastered, (int)(original.samples * at), out double correlation);
+                    Assert.AreEqual(0, lag, name + " " + at + ": 時間のずれ(サンプル)");
+                    Assert.Greater(correlation, .5, name + " " + at + ": 時間差 0 で波形がそろう");
                 }
             }
-            Assert.AreEqual(original.frequency, normalized.frequency);
-            Assert.AreEqual(original.channels, normalized.channels);
-            Assert.That(normalized.length, Is.EqualTo(original.length).Within(2)); // MP3デコーダの末尾無音を許容
-            foreach (int second in new[] { 10, 60, 100 })
+            finally
             {
-                var a = new float[original.frequency * original.channels]; var b = new float[a.Length];
-                Assert.True(original.GetData(a, original.frequency * second));
-                Assert.True(normalized.GetData(b, normalized.frequency * second));
-                double aa = 0, bb = 0, ab = 0;
-                for (int i = 0; i < a.Length; i++) { aa += a[i] * a[i]; bb += b[i] * b[i]; ab += a[i] * b[i]; }
-                Assert.Greater(ab / Math.Sqrt(aa * bb), .995, second + "秒: 時間シフトなしで波形が一致する");
-                Assert.Greater(bb, aa, "静かな原音を音割れさせず増幅する");
+                foreach (var clip in clips) if (clip) Object.DestroyImmediate(clip);
             }
         }
-        finally
+    }
+
+    static AudioType AudioTypeOf(string path)
+    {
+        string extension = Path.GetExtension(path).ToLowerInvariant();
+        return extension == ".ogg" ? AudioType.OGGVORBIS : extension == ".wav" ? AudioType.WAV : AudioType.MPEG;
+    }
+
+    // start(サンプル)からの 0.25 秒の原音に対して、master を -MaxLag〜+MaxLag ずらした相関の山の位置と、時間差 0 の相関係数。
+    static int PeakLag(AudioClip original, AudioClip mastered, int start, out double correlation)
+    {
+        int length = original.frequency / 4;
+        double[] a = MonoDifference(original, start, length);
+        double[] b = MonoDifference(mastered, start - MaxLag, length + 2 * MaxLag);
+        int best = 0;
+        double bestValue = double.NegativeInfinity, aa = 0, bb = 0, ab = 0;
+        for (int lag = -MaxLag; lag <= MaxLag; lag++)
         {
-            if (original) Object.DestroyImmediate(original);
-            if (normalized) Object.DestroyImmediate(normalized);
+            double sum = 0;
+            for (int i = 0; i < a.Length; i++) sum += a[i] * b[i + lag + MaxLag];
+            if (sum > bestValue) { bestValue = sum; best = lag; }
         }
+        for (int i = 0; i < a.Length; i++) { aa += a[i] * a[i]; bb += b[i + MaxLag] * b[i + MaxLag]; ab += a[i] * b[i + MaxLag]; }
+        correlation = ab / Math.Sqrt(aa * bb + 1e-30);
+        return best;
+    }
+
+    static double[] MonoDifference(AudioClip clip, int start, int length)
+    {
+        var data = new float[(length + 1) * clip.channels];
+        Assert.True(clip.GetData(data, start));
+        var result = new double[length];
+        for (int i = 0; i < length; i++)
+        {
+            double now = 0, next = 0;
+            for (int c = 0; c < clip.channels; c++) { now += data[i * clip.channels + c]; next += data[(i + 1) * clip.channels + c]; }
+            result[i] = next - now;
+        }
+        return result;
     }
 }

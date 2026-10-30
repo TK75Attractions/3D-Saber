@@ -1903,7 +1903,7 @@ namespace Saber.ChartEditor
         {
             string backup = SaberChartFileStore.LastReplacedAudioBackup;
             persistentWarning = "音源を差し替えました。" + (backup != null ? $"前の音源は {backup} に残しています。" : "") +
-                "音量そろえ（loudness.json）は前の音源用なので、Tools/Audio/SongLoudness/build_loudness.py で作り直してください" +
+                "音量そろえ（loudness.json・master.ogg）は前の音源用なので、Tools/Audio/SongLoudness の build_loudness.py → build_master.py の順で作り直してください" +
                 "（作り直すまで、この曲だけ音量の補正が外れます）。";
         }
 
