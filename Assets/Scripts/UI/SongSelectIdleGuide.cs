@@ -69,7 +69,7 @@ public sealed class SongSelectIdleGuide : MonoBehaviour
     {
         // 運営のキー(F4 の投影切替・F8 など)では、来場者の操作として案内を閉じない。
         var keyboard = Keyboard.current;
-        if ((countEscape || keyboard == null || !keyboard.escapeKey.wasPressedThisFrame)
+        if ((countEscape || !InputManager.BackKeyPressedThisFrame(keyboard))
             && PhoneSaberOperatorKeys.VisitorKeyPressedThisFrame(keyboard)) return true;
         var mouse = Mouse.current;
         if (mouse != null && (mouse.leftButton.wasPressedThisFrame || mouse.rightButton.wasPressedThisFrame

@@ -4,7 +4,10 @@ using UnityEngine.InputSystem;
 public class InputManager : MonoBehaviour
 {
 	// 画面を戻るキーも入力側へ集約する。本編の単一Updateから参照する。
-    public static bool EscapeGetDown => !EscapeSuppressed && Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame;
+    public static bool EscapeGetDown => !EscapeSuppressed && BackKeyPressedThisFrame(Keyboard.current);
+    // 戻るキー: Esc と、ハイフン(- と テンキーの -)。文化祭本番で運営が押しやすいように足した(2026-10-30)。
+    public static bool BackKeyPressedThisFrame(Keyboard keyboard) => keyboard != null &&
+        (keyboard.escapeKey.wasPressedThisFrame || keyboard.minusKey.wasPressedThisFrame || keyboard.numpadMinusKey.wasPressedThisFrame);
     // 結果画面で印に一言を打っている間(ChartMarkCommentPanel)は、日本語入力の取り消しの Esc を「戻る」に数えない。
     public static bool EscapeSuppressed { get; set; }
 

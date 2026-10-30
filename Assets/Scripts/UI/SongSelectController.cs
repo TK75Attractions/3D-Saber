@@ -165,7 +165,7 @@ public class SongSelectController : MonoBehaviour
         bool nextSong = visitor && (kb.rightArrowKey.wasPressedThisFrame || kb.dKey.wasPressedThisFrame);
         bool easier = visitor && (kb.upArrowKey.wasPressedThisFrame || kb.wKey.wasPressedThisFrame);
         bool harder = visitor && (kb.downArrowKey.wasPressedThisFrame || kb.sKey.wasPressedThisFrame);
-        bool back = visitor && kb.escapeKey.wasPressedThisFrame;
+        bool back = visitor && InputManager.BackKeyPressedThisFrame(kb);
         int directDifficulty = !visitor ? -1 : kb.digit1Key.wasPressedThisFrame ? 0 : kb.digit2Key.wasPressedThisFrame ? 1 : kb.digit3Key.wasPressedThisFrame ? 2 : -1;
         bool start = visitor && (kb.enterKey.wasPressedThisFrame || kb.numpadEnterKey.wasPressedThisFrame || kb.spaceKey.wasPressedThisFrame);
         bool holdingShortcut = kb.upArrowKey.isPressed || kb.wKey.isPressed || kb.downArrowKey.isPressed || kb.sKey.isPressed
