@@ -36,6 +36,10 @@ MAX_TRUE_PEAK_DBTP = -1.0    # ogg にしたあとの上限
 MAX_SAMPLE = .89             # ogg にしたあとのサンプルの最大(出口の MasterLimiter の閾値 .891 に触れない)
 HIGHPASS_HZ = 30.0
 VORBIS_QUALITY = 8
+# 大きい版(2026-10-30 夜、--softclip-margin-db): レベラーのあと、曲全体の大きさ + この dB を超える山の角を、4倍オーバーサンプルで
+# なめらかに丸める(knee 倍から曲がり始め、超えない)。None なら掛けない(v2.6 の本番の音源)。
+SOFTCLIP_MARGIN_DB = None
+SOFTCLIP_KNEE = .7
 
 # レベラー: 1.5 秒の窓の大きさが曲全体から knee を超えて離れた分を ratio で縮める。下げも上げも 6 dB まで
 # (校歌・RUSH E のように静かな所と盛り上がりの差が大きい曲で、静かな所を持ち上げる)。
@@ -138,6 +142,12 @@ def gated_loudness(power, rate):
     relative = -.691 + 10 * np.log10(kept.mean()) - 10
     kept = means[(levels > -70) & (levels > relative)]
     return -.691 + 10 * np.log10(kept.mean())
+
+
+def speaker_lufs(y, rate):
+    """台B のスピーカー(150 Hz 未満が出ない)で聞こえる大きさの目安。150 Hz のゼロ位相ハイパスを掛けてから測る(大きい版の報告用)。"""
+    sos = signal.butter(4, 150, 'highpass', fs=rate, output='sos')
+    return gated_loudness(k_power(signal.sosfiltfilt(sos, y, axis=0), rate), rate)
 
 
 # ---- v2.5 の再現 ----
@@ -253,6 +263,19 @@ def limiter_gain(peak, rate, ceiling):
     return 10 ** (-smooth / 20)
 
 
+def soft_clip(y, rate):
+    """山の角を丸める(大きい版だけ)。4倍に上げてから曲げて戻す(resample_poly はゼロ位相なので時間はずれない)。
+    返すのは (丸めた音, 曲げたサンプルの割合)。"""
+    level = gated_loudness(k_power(y, rate), rate)
+    ceiling = 10 ** ((level + SOFTCLIP_MARGIN_DB) / 20)
+    knee = SOFTCLIP_KNEE * ceiling
+    up = signal.resample_poly(y, OVERSAMPLE, 1, axis=0)
+    size = np.abs(up)
+    bent = size > knee
+    shaped = np.where(bent, knee + (ceiling - knee) * np.tanh((size - knee) / (ceiling - knee)), size)
+    return signal.resample_poly(np.sign(up) * shaped, 1, OVERSAMPLE, axis=0)[:len(y)], float(np.mean(bent))
+
+
 class Prepared:
     """30 Hz ハイパスとレベラーまで掛けた音と、倍率を探すのに使う値(K 特性の2乗の和・真のピーク)。"""
 
@@ -260,6 +283,9 @@ class Prepared:
         filtered = highpass(x, rate)
         self.rate = rate
         self.leveled = filtered * leveler_gain(k_power(filtered, rate), rate)[:, None]
+        self.clipped_share = 0.0
+        if SOFTCLIP_MARGIN_DB is not None:
+            self.leveled, self.clipped_share = soft_clip(self.leveled, rate)
         self.power = k_power(self.leveled, rate)
         self.peak = true_peak_envelope(self.leveled)
         self.base = gated_loudness(self.power, rate)
@@ -314,6 +340,17 @@ def choose_makeup(prep, ceiling_dbtp, v25, offset):
     at_budget = search(gr95(GR95_BUDGET_DB), lo, hi)
     cap = min(m for m in (at_floor, at_budget, hi) if m is not None)
     return max(at_v25, cap)
+
+
+def louder_makeup(prep, ceiling_dbtp, louder, offset):
+    """大きい版の上げ幅(2026-10-30 夜「それよりもっと大きくしたバージョンの音源だけ用意しといて」)。全曲を同じ大きさ louder['target']
+    (測定の LUFS)へ上げる。ただしリミッターの下げ幅(95% の時間)が louder['gr95Cap'] dB に達したらそこで止める
+    (このリミッターでは、上げても大きさが頭打ちになり、下げ幅だけが増える)。"""
+    lo = (min(louder['target'], -12.0) - offset) - prep.base - 1
+    hi = lo + 32
+    at_target = search(lambda m: prep.run(m, ceiling_dbtp)[0] - (louder['target'] - offset), lo, hi)
+    at_cap = search(lambda m: reduction_stats(prep.run(m, ceiling_dbtp)[1])['limitP95Db'] - louder['gr95Cap'], lo, hi)
+    return min(m for m in (at_target, at_cap, hi) if m is not None)
 
 
 def master_to(x, rate, target, ceiling_dbtp=CEILING_DBTP):
@@ -464,8 +501,12 @@ def v25_from_report(folder, source):
     raise RuntimeError(f'{folder.name}/{source.name}: v2.5 の測定が {REPORT.name} に無い')
 
 
-def build_one(tools, folder, source, metadata_name, playback_name, output, apply):
+def build_one(tools, folder, source, metadata_name, playback_name, output, apply, louder=None):
+    global HIGHPASS_HZ, SOFTCLIP_MARGIN_DB
     ffmpeg, ffprobe, ffmpeg_vorbis = tools
+    if louder is not None:
+        # 処理の子プロセスごとに設定する(Windows の子プロセスは、親の書き換えた値を引き継がない)。
+        HIGHPASS_HZ, SOFTCLIP_MARGIN_DB = louder['highpassHz'], louder['softclipMarginDb']
     metadata = json.loads((folder / metadata_name).read_text(encoding='utf8'))
     assert metadata.get('sourceSha256') == sha(source), f'{folder.name}: loudness が今の原音のものではない'
 
@@ -487,7 +528,9 @@ def build_one(tools, folder, source, metadata_name, playback_name, output, apply
     # offset は見積もりと ffmpeg の測定の差(ずれたら上げ幅を探し直す)。ogg のはみ出し(密な曲でサンプル +1 dB ほど)は、
     # その場所だけ prep.scale を掛け重ねて下げ、作り直す(全体の天井を下げると、続く大きい音で届く大きさが下がり、下げ幅が増える)。
     offset, ceiling = 0.0, CEILING_DBTP
-    makeup = choose_makeup(prep, ceiling, v25_lufs, offset)
+    pick = (lambda off: choose_makeup(prep, ceiling, v25_lufs, off)) if louder is None else \
+        (lambda off: louder_makeup(prep, ceiling, louder, off))
+    makeup = pick(offset)
     for attempt in range(12):
         estimate, limit = prep.run(makeup, ceiling)
         encode_ogg(ffmpeg_vorbis, prep.output(makeup, limit), rate, ogg)
@@ -507,12 +550,14 @@ def build_one(tools, folder, source, metadata_name, playback_name, output, apply
             prep.scale *= np.maximum(over * 1.01, 1.0)
         if not offset_ok:
             offset = measured_offset
-            makeup = choose_makeup(prep, ceiling, v25_lufs, offset)
+            makeup = pick(offset)
     else:
         raise RuntimeError(f'{folder.name}/{source.name}: 大きさ {out_lufs} / 真のピーク {out_tp} / 最大 {sample_max} が外れた')
     assert decoded_rate == rate and decoded.shape == x.shape, (folder.name, decoded.shape, x.shape)
     info = dict(makeupDb=round(makeup, 2), estimateLufs=round(estimate, 2), **reduction_stats(limit),
                 attempts=attempt + 1, locallyLoweredSamples=int(np.count_nonzero(prep.scale > 1)))
+    if louder is not None:
+        info.update(louder=louder, softclippedShare=round(prep.clipped_share, 4), speakerLufs=round(speaker_lufs(decoded, rate), 2))
 
     duration = len(x) / rate
     lags = [derivative_lag(x, decoded, rate, duration * f) for f in (.15, .35, .55, .75, .9)]
@@ -550,7 +595,19 @@ if __name__ == '__main__':
     parser.add_argument('--apply', action='store_true', help='確かめたあと曲フォルダーへ master*.ogg と loudness*.json を置く')
     parser.add_argument('--tutorial', type=Path, default=None, help='練習音源の wav(曲は作らず、これだけ処理する)')
     parser.add_argument('--tutorial-target', type=float, default=TUTORIAL_TARGET_LUFS)
+    parser.add_argument('--uniform-target', type=float, default=None,
+                        help='大きい版: 全曲をこの大きさ(LUFS)へ上げる(v2.5 の決まりを使わない。--gr95-cap で止める)')
+    parser.add_argument('--gr95-cap', type=float, default=10.0, help='大きい版: リミッターの下げ幅(95%% の時間)の上限 dB')
+    parser.add_argument('--highpass-hz', type=float, default=HIGHPASS_HZ, help='大きい版: ハイパスの周波数')
+    parser.add_argument('--softclip-margin-db', type=float, default=None, help='大きい版: 曲全体 + この dB を超える山の角を丸める')
+    parser.add_argument('--workers', type=int, default=2, help='同時に処理する曲の数(長い曲は1本で数 GB 使う。メモリが足りなければ 1)')
     args = parser.parse_args()
+    louder = None
+    if args.uniform_target is not None:
+        if args.apply:
+            parser.error('大きい版は候補フォルダーにだけ作る(--apply と一緒に使わない)')
+        louder = dict(target=args.uniform_target, gr95Cap=args.gr95_cap, highpassHz=args.highpass_hz,
+                      softclipMarginDb=args.softclip_margin_db)
     if args.tutorial is not None:
         result = build_tutorial(args.tutorial, args.tutorial_target, args.apply)
         args.output.mkdir(parents=True, exist_ok=True)
@@ -560,9 +617,9 @@ if __name__ == '__main__':
     folders = sorted(p for p in args.songs.iterdir() if p.is_dir() and p.name not in args.skip
                      and (args.only is None or p.name in args.only))
     args.output.mkdir(parents=True, exist_ok=True)
-    jobs = [(tools, folder, source, metadata_name, playback_name, args.output, args.apply)
+    jobs = [(tools, folder, source, metadata_name, playback_name, args.output, args.apply, louder)
             for folder in folders for source, metadata_name, playback_name in sources(folder) if (folder / metadata_name).exists()]
-    with concurrent.futures.ProcessPoolExecutor(max_workers=2) as pool:
+    with concurrent.futures.ProcessPoolExecutor(max_workers=max(1, args.workers)) as pool:
         reports = list(pool.map(build_one, *zip(*jobs)))
     text = json.dumps(reports, ensure_ascii=False, indent=2) + '\n'
     (args.output / 'master_report.json').write_text(text, encoding='utf8')

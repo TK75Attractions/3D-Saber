@@ -83,3 +83,24 @@ Python 3 に numpy・scipy・numba・soundfile、FFmpeg は libvorbis 入り(gya
 `master*.ogg` と `loudness*.json` を曲フォルダーへ置く。作り直すときは、v2.5 の測定を前の `master_report.json` から読む。
 音源を差し替えたときは、`build_loudness.py` で `loudness.json` を作ってから `build_master.py`。練習音源の `--tutorial` は
 渡したファイルを上書きするので、原本(git の版)に対して1回だけ。
+
+### 大きい版(用意だけ・ゲームには入れていない。2026-10-30 夜)
+
+ユーザー「それよりもっと大きくしたバージョンの音源だけ用意しといて(今後実装するとなったらすぐできるように)」。
+このリミッターは割れない代わりに、上げても大きさが頭打ちになる(校歌は -7.1 LUFS、2:23 AM は -7.3 LUFS あたりで、下げ幅だけが増える)。
+それより大きくするために、2つを足した。
+
+- ハイパスを 130 Hz に上げる。台B のスピーカーは 150 Hz 未満が出ないので、出ない低音で天井を使わない。
+  低音の多い曲(Manic Sonic・2:23 AM・Morning・escapade)ほど、スピーカーで聞こえる大きさが上がる。
+- 山の角を丸める(`--softclip-margin-db`)。4倍オーバーサンプルで、曲全体 + N dB を超える所をなめらかに曲げる。
+  割れ(平らな頭)にはならないが、N が小さいほど音の角が取れて、ざらつきが出うる。
+
+```text
+python Tools/Audio/SongLoudness/build_master.py --songs Assets/StreamingAssets/Songs --output <候補フォルダー> --ffmpeg <ffmpeg> --ffprobe <ffprobe> --uniform-target -6.0 --gr95-cap 10 --highpass-hz 130 --softclip-margin-db 8
+```
+
+- `--uniform-target`: 全曲をこの大きさへ上げる。ただしリミッターの下げ幅(95% の時間)が `--gr95-cap` に達したらそこで止める。
+- 大きい版は候補フォルダーにだけ作る(`--apply` とは一緒に使えない)。報告の `speakerLufs` は、150 Hz のハイパスを掛けてから測った、台B のスピーカーでの大きさの目安。
+- 作った音源は、この PC の `C:\Users\shike\dev\3D-Saber-louder\` に置く(リポジトリには入れていない)。
+  入れるときは、各曲の `master*.ogg` と `loudness*.json` を曲フォルダーへ上書きし、`SongLoudnessTests` を流してからビルドする(コードの変更は要らない)。
+- 長い曲は1本で数 GB のメモリを使う。ほかの重い作業と重なるときは `--workers 1`。
