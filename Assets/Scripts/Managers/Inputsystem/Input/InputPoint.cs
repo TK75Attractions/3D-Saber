@@ -37,6 +37,7 @@ public class InputPoint : MonoBehaviour
     // iPhone からの P2P 経路用 bridge(座標を 127.0.0.1:5005/5006 へ転送するだけ)。受信処理は変えない。
     // Bonjour と同じく、5005/5006 の両方を bind できている間だけ動かす(iPhone が LAN へ戻れるように)。
     PhoneSaberP2PBridgeProcess p2pBridge;
+    PhoneSaberClipRelay clipRelay;
     // SetReceiverAlive は受信 thread で動くため、Application.dataPath は main thread で控えておく。
     string p2pDataPath;
     // main thread の StartNetworkServices だけが書く。読む側は lock を取らない
@@ -582,6 +583,7 @@ public class InputPoint : MonoBehaviour
             receiveThread2.IsBackground = true;
             receiveThread1.Start();
             receiveThread2.Start();
+            clipRelay = PhoneSaberClipRelay.StartForInput(phoneSaberStation);
         }
     }
 
@@ -1173,6 +1175,8 @@ public class InputPoint : MonoBehaviour
         Thread thread2;
         lock (networkLifecycleLock)
         {
+            clipRelay?.Dispose();
+            clipRelay = null;
             if (networkShutdown && receiveThread1 == null && receiveThread2 == null)
             {
                 bonjourPublisher?.Dispose();
