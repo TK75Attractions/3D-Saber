@@ -92,6 +92,50 @@ public class TutorialGuidePlayTests
         if (cuts < required) note.MarkMiss();
     }
 
+    // 2026-10-31「クリアしたらそのまま次いって、今のはあくまで最大」「左右交互に流れるやつだけ長めにとって他全部1周」。
+    // 合格したらすぐ次へ。合格しないまま最大の周(左右交互は2周、赤は1周)の判定が全部出たら、待たずに次へ。
+    [UnityTest] public IEnumerator LoopLimitedStepsMoveOnRightAfterTheLastJudgment()
+    {
+        manager.scoreManager.songPlayer = null; // 切った時刻は届く時刻ちょうど(PERFECT)にする
+        int mix = Array.IndexOf(TutorialProgram.CommonFlow, "tapMix");
+        typeof(TutorialController).GetMethod("BeginStep", Private).Invoke(tutorial, new object[] { mix, tutorial.DemonstrationTime });
+        for (int i = 0; i < 3; i++) Tap(true);
+        tutorial.Tick(.016f);
+        Assert.True(tutorial.StepDone, "1周目で合格したらすぐ次へ"); Assert.AreEqual("ok", tutorial.Records[tutorial.Records.Count - 1].Reason);
+
+        typeof(TutorialController).GetMethod("BeginStep", Private).Invoke(tutorial, new object[] { mix, tutorial.DemonstrationTime });
+        for (int i = 0; i < 2; i++) Tap(true);
+        for (int i = 2; i < 7; i++) Tap(false);
+        tutorial.Tick(.016f);
+        Assert.False(tutorial.StepDone, "2周目の最後の1個がまだ");
+        Tap(false);
+        tutorial.Tick(.016f);
+        Assert.True(tutorial.StepDone, "2周の8個の判定が出たら次へ");
+        Assert.AreEqual("timeout", tutorial.Records[tutorial.Records.Count - 1].Reason);
+
+        int red = Array.IndexOf(TutorialProgram.CommonFlow, "tapRed");
+        typeof(TutorialController).GetMethod("BeginStep", Private).Invoke(tutorial, new object[] { red, tutorial.DemonstrationTime });
+        Tap(true);
+        tutorial.Tick(.016f);
+        Assert.False(tutorial.StepDone);
+        Tap(false);
+        tutorial.Tick(.016f);
+        Assert.True(tutorial.StepDone, "1周の判定が出たら、合格しなくても待たずに次へ");
+        Assert.AreEqual("timeout", tutorial.Records[tutorial.Records.Count - 1].Reason);
+        Assert.AreEqual("次に進むよ", tutorial.BannerTitle);
+        yield return null;
+    }
+
+    void Tap(bool cut)
+    {
+        var chart = new ChartData { bpm = 120, notes = new List<NoteData> { new NoteData { time = 1000, color = "red", type = "tap" } } };
+        manager.noteSpawner.SetChart(chart);
+        manager.noteSpawner.Tick(1 + manager.noteSpawner.TotalOffsetSeconds);
+        var note = manager.noteSpawner.LiveNotes[0];
+        if (cut) Assert.True(note.CutAtSongTime(note.transform.position, Vector3.down * 5, CutDirection.None, SaberHand.Right, note.HitTime));
+        else note.MarkMiss();
+    }
+
     [UnityTest] public IEnumerator TimingOutALongIsNotReportedAsSuccessOrReady()
     {
         double now = tutorial.DemonstrationTime;

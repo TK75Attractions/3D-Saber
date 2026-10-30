@@ -24,7 +24,9 @@ public class TutorialGuideTests
         StringAssert.Contains("数字", step.Title);
         Assert.AreEqual(step.Pattern.Select(n => n.count).Distinct().Count(), step.Goal);
         double lastEnd = step.Pattern.Max(n => n.dt + n.lengthMs / 1000.0);
-        Assert.Less(lastEnd + 5 + step.PeriodSeconds, step.TimeoutSeconds, "接近待ちと再挑戦1周が入る");
+        // 2026-10-31 から1周だけ流す。接近待ちと1周と、判定が来なくて進むまでの待ちが入る。
+        Assert.Less(5 + TutorialProgram.PatternEndAt(step, 0), step.TimeoutSeconds, "接近待ちと1周と判定の待ちが入る");
+        Assert.AreEqual(lastEnd, step.PatternEndSeconds, 1e-9);
         Assert.Greater(step.PeriodSeconds, lastEnd + TutorialGuideMotion.RecoverSeconds);
     }
 

@@ -504,12 +504,12 @@ public class TutorialProgramTests
         var pair = step.Pattern.Where(n => n.kind == "simul").ToArray();
         Assert.AreEqual(2, pair.Length); Assert.AreEqual(pair[0].dt, pair[1].dt, "両手は同じ時刻");
         Assert.AreNotEqual(pair[0].color, pair[1].color);
-        // 2026-10-30 ユーザー「練習は型1周で」: 型は1周だけ。30秒は、最初の型を待つ間を足しても1周の終わりより長い念のための上限。
+        // 2026-10-30 ユーザー「練習は型1周で」: 型は1周だけ(10/31「他全部1周」も同じ)。30秒は、ノーツが最も遅い(4秒)ときに
+        // 最初の型を待つ間を足しても、1周の判定が来なくて進む時刻より長い念のための上限。
         Assert.AreEqual(1, step.Loops, "型1周で次へ");
-        Assert.AreEqual(10.0 + step.PeriodSeconds, TutorialProgram.PatternEndAt(step, 10.0), 1e-9);
-        double longestWait = TutorialProgram.ReadDelaySeconds + 1.0 + TutorialProgram.BarSeconds;
-        Assert.Greater(step.TimeoutSeconds, longestWait + step.PeriodSeconds);
-        Assert.AreEqual(double.PositiveInfinity, TutorialProgram.PatternEndAt(TutorialProgram.Get("tapRed"), 10.0), "ほかの段は合格するまで繰り返す");
+        Assert.AreEqual(10.0 + step.PatternEndSeconds + TutorialProgram.PatternEndGraceSeconds, TutorialProgram.PatternEndAt(step, 10.0), 1e-9);
+        double longestWait = TutorialProgram.ReadDelaySeconds + GameSession.NoteApproachTimeMax + TutorialProgram.BarSeconds;
+        Assert.Greater(step.TimeoutSeconds, TutorialProgram.PatternEndAt(step, longestWait));
         Assert.AreEqual("GREAT 以上であと 7 種類", TutorialProgram.RemainingText(step, 0, 0, false));
         Assert.AreEqual("GREAT 以上であと 1 種類", TutorialProgram.RemainingText(step, 6, 0, false));
     }
@@ -538,6 +538,54 @@ public class TutorialProgramTests
             Assert.IsTrue(chart.notes.All(n => n.TimeSeconds < first + step.PeriodSeconds));
         }
         finally { Object.DestroyImmediate(root); }
+    }
+
+    // 2026-10-31 ユーザー「赤 青 ロングノーツ フリックノーツのとこは1回だけ流して」「左右交互に流れるやつだけ長めにとって他全部1周」。
+    [Test]
+    public void LoopCounts_TwiceForTheAlternatingStepOnceForEveryOtherPractice()
+    {
+        var practices = TutorialProgram.Build(TutorialProgram.CommonFlow, true).Where(s => s.Kind == TutorialStepKind.Practice).ToArray();
+        CollectionAssert.AreEquivalent(new[] { "tapRed", "tapBlue", "tapMix", "gold", "simul", "arrowEasy", "long", TutorialProgram.AllStepId },
+            practices.Select(s => s.Id));
+        foreach (var step in practices)
+            Assert.AreEqual(step.Id == "tapMix" ? 2 : 1, step.Loops, step.Id + (step.Id == "tapMix" ? ": 左右交互だけ最大2周" : ": 最大1周"));
+        // ノーツが最も遅い(4秒)ときに最初の型を待つ間を足しても、制限時間の前に最後の周の判定が来なくて進む時刻が来る。
+        double longestWait = TutorialProgram.ReadDelaySeconds + GameSession.NoteApproachTimeMax + TutorialProgram.BarSeconds;
+        foreach (var step in TutorialProgram.Build(TutorialProgram.CommonFlow, true).Where(s => s.Loops > 0))
+            Assert.Less(TutorialProgram.PatternEndAt(step, longestWait),
+                step.TimeoutSeconds > 0 ? step.TimeoutSeconds : TutorialProgram.DefaultStepTimeoutSeconds, step.Id);
+    }
+
+    // 同日「クリアしたらそのまま次いって、今のはあくまで最大」: 周の数は上限。合格したらすぐ次へ。
+    [Test]
+    public void PracticeOutcome_PassingMovesOnAtOnceAndTheLoopsAreTheMaximum()
+    {
+        var mix = TutorialProgram.Get("tapMix");
+        float limit = mix.TimeoutSeconds;
+        double end = TutorialProgram.PatternEndAt(mix, 10);
+        Assert.AreEqual(10 + 4 + 3 + TutorialProgram.PatternEndGraceSeconds, end, 1e-9, "2周目の最後のノーツのあと");
+        Assert.AreEqual("ok", TutorialProgram.PracticeOutcome(mix, true, 3, 12, 10, 4, limit), "1周目で合格したらすぐ次へ");
+        Assert.IsNull(TutorialProgram.PracticeOutcome(mix, false, 4, 14, 10, 6, limit), "合格するまで2周目も流す");
+        Assert.AreEqual("timeout", TutorialProgram.PracticeOutcome(mix, false, 8, 17.2, 10, 9.2, limit), "2周の8個の判定が出たら待たずに次へ");
+        Assert.IsNull(TutorialProgram.PracticeOutcome(mix, false, 7, end - .01, 10, 9, limit));
+        Assert.AreEqual("timeout", TutorialProgram.PracticeOutcome(mix, false, 7, end, 10, 9, limit), "判定が来なくても進む");
+        Assert.AreEqual("timeout", TutorialProgram.PracticeOutcome(mix, false, 0, 10, 10, limit, limit), "制限時間");
+
+        var red = TutorialProgram.Get("tapRed");
+        Assert.IsNull(TutorialProgram.PracticeOutcome(red, false, 1, 11, 10, 3, 15));
+        Assert.AreEqual("timeout", TutorialProgram.PracticeOutcome(red, false, 2, 12.2, 10, 4.2, 15), "1周で、合格しなくても次へ");
+        Assert.AreEqual("ok", TutorialProgram.PracticeOutcome(red, true, 2, 12.1, 10, 4.1, 15));
+
+        var gold = TutorialProgram.Get("gold");
+        Assert.AreEqual("ok", TutorialProgram.PracticeOutcome(gold, true, 1, 10, 10, 2, 15), "金は合格したらすぐ次へ");
+        Assert.IsNull(TutorialProgram.PracticeOutcome(gold, false, 0, 9.9, 10, 1.9, 15));
+        Assert.AreEqual("timeout", TutorialProgram.PracticeOutcome(gold, false, 1, 10.2, 10, 2.2, 15), "金も1周で次へ(前は合格するまで)");
+        // 周の数を決めていない段(流れに入っていない arrowNormal)は、合格するか制限時間までくり返す。
+        var unlimited = TutorialProgram.Get("arrowNormal");
+        Assert.AreEqual(0, unlimited.Loops);
+        Assert.IsNull(TutorialProgram.PracticeOutcome(unlimited, false, 9, 40, 10, 14.9, 15), "判定の数では進まない");
+        Assert.AreEqual("timeout", TutorialProgram.PracticeOutcome(unlimited, false, 9, 40, 10, 15, 15));
+        Assert.IsNull(TutorialProgram.PracticeOutcome(TutorialProgram.Get("hands"), true, 0, 10, 10, 99, 15), "練習の段だけ");
     }
 
     // 判定の通知から種類の数へ。型の届く時刻で種類を引き、GREAT 以上だけ・種類ごとに1回・両手は組で数える。

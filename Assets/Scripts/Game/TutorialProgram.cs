@@ -33,13 +33,18 @@ public sealed class TutorialStep
     public float TimeoutSeconds;                      // 自動送り秒。Practice の 0 は共通の制限時間
     public TutorialPatternNote[] Pattern = Array.Empty<TutorialPatternNote>();
     public double PeriodSeconds;                      // 型を繰り返す間隔(秒)
-    public int Loops;                                 // 型を出す周の数。0 は成功か制限時間まで繰り返す
+    public int Loops;                                 // 型を出す周の数の上限。0 は成功か制限時間まで繰り返す
     public int Goal;                                  // 成功回数
     public bool NeedDirection;                        // 向きが合った切りだけを数える
     public CutDirection[] RequiredDirections = Array.Empty<CutDirection>();
     public bool Simultaneous;
     public string[] Kinds = Array.Empty<string>();    // 種類ごとに1回ずつ数える段(Goal は種類の数)
     public double PatternLengthSeconds => Pattern.Length == 0 ? 0 : Pattern[Pattern.Length - 1].dt;
+    // 型の最後のノーツが終わる秒(ロングは長さを足す)。
+    public double PatternEndSeconds
+    {
+        get { double end = 0; foreach (var p in Pattern) end = Math.Max(end, p.dt + p.lengthMs / 1000.0); return end; }
+    }
 }
 
 public static class TutorialProgram
@@ -65,13 +70,35 @@ public static class TutorialProgram
     public const string AllStepId = "all";
     public const string SimulKind = "simul";
     public static readonly string[] AllKinds = { "red", "blue", "gold", SimulKind, "up", "down", "long" };
-    // 型は1周だけ出して次へ(2026-10-30 ユーザー「練習は型1周で」。前は合格するまで最大30秒=型2周ぶん)。
-    public const int AllPracticeLoops = 1;
-    public const float AllPracticeTimeoutSeconds = 30f;   // 念のための上限。ふだんは型1周の終わり(PatternEndAt)で進む
+    // 型を流す周の数の上限(2026-10-31 ユーザー「赤 青 ロングノーツ フリックノーツのとこは1回だけ流して」「クリアしたらそのまま次いって、
+    // 今のはあくまで最大」「左右交互に流れるやつだけ長めにとって他全部1周」)。左右交互だけ最大2周、ほかの練習は最大1周。
+    // 合格したらすぐ次へ。合格しないまま上限の周の判定が全部出たら、待たずに次へ(前は合格するまで、最大15秒くり返した)。
+    public const int OnceLoops = 1, TwiceLoops = 2;
+    // 練習してみようも1周(10/30「練習は型1周で」)。
+    public const int AllPracticeLoops = OnceLoops;
+    public const float AllPracticeTimeoutSeconds = 30f;   // 念のための上限。ふだんは合格か1周の判定で進む
+    // 左右交互の念のための上限。ノーツが最も遅い(4秒)ときでも、2周の判定が出るより長くする。
+    public const float MixPracticeTimeoutSeconds = 20f;
+    // 判定が来なくても次へ進むまでの、最後のノーツが終わってからの秒(ロングの受付は数が多いほど長く、4回で約2.3秒)。
+    public const double PatternEndGraceSeconds = 3.0;
 
-    // 周の数が決まった段の、最後の周が終わる時刻(譜面時刻)。決まっていない段は無限大。純関数。
+    // 周の数が決まった段で、判定が来なくても次へ進む時刻(譜面時刻)。決まっていない段は無限大。純関数。
     public static double PatternEndAt(TutorialStep step, double firstPatternAt) =>
-        step != null && step.Loops > 0 ? firstPatternAt + step.Loops * step.PeriodSeconds : double.PositiveInfinity;
+        step != null && step.Loops > 0
+            ? firstPatternAt + (step.Loops - 1) * step.PeriodSeconds + step.PatternEndSeconds + PatternEndGraceSeconds
+            : double.PositiveInfinity;
+
+    // 練習の段を今終えるか。"ok"(合格)・"timeout"(合格せず次へ)・null(続ける)。純関数。
+    // 合格したらすぐ次へ。周の数が決まった段は、上限の周のノーツの判定が全部出たら(来なければ PatternEndAt で)次へ。
+    public static string PracticeOutcome(TutorialStep step, bool passed, int judgedNotes, double now, double firstPatternAt,
+        double elapsed, float timeoutSeconds)
+    {
+        if (step == null || step.Kind != TutorialStepKind.Practice) return null;
+        if (passed) return "ok";
+        bool over = elapsed >= timeoutSeconds || (step.Loops > 0
+            && (judgedNotes >= step.Pattern.Length * step.Loops || now >= PatternEndAt(step, firstPatternAt)));
+        return over ? "timeout" : null;
+    }
 
     // 難易度を選ぶ前に挟まるので、Easy / Normal に共通の型。左右・斜めの矢印は曲の中で覚える。
     public static readonly string[] CommonFlow = { "hands", "tapRed", "tapBlue", "tapMix", "gold", "simul", "arrowEasy", "long", AllStepId, "ready" };
@@ -121,24 +148,25 @@ public static class TutorialProgram
             case RangeStepId: return new TutorialStep { Id = id, Kind = TutorialStepKind.Range, Title = "両手の剣を、振りやすい範囲で上下左右に振ろう", Sub = "無理せず、いつも振るくらいの大きさで" };
             case "hands": return new TutorialStep { Id = id, Kind = TutorialStepKind.Explain, Title = "赤い剣は右手、青い剣は左手", Sub = "どちらかを振ると始まります", TimeoutSeconds = HandsTimeoutSeconds };
             case "tapRed": return new TutorialStep { Id = id, Kind = TutorialStepKind.Practice, Title = "赤い箱を右手で切ろう", Sub = "手前の枠に重なった瞬間に振る",
-                Pattern = new[] { Tap(RightX, BaseY, "red", 0f), Tap(RightX, BaseY, "red", 2f) }, PeriodSeconds = LoopSeconds, Goal = 2 };
+                Pattern = new[] { Tap(RightX, BaseY, "red", 0f), Tap(RightX, BaseY, "red", 2f) }, PeriodSeconds = LoopSeconds, Loops = OnceLoops, Goal = 2 };
             case "tapBlue": return new TutorialStep { Id = id, Kind = TutorialStepKind.Practice, Title = "青い箱は左手で切ろう", Sub = "色と手を合わせる",
-                Pattern = new[] { Tap(LeftX, BaseY, "blue", 0f), Tap(LeftX, BaseY, "blue", 2f) }, PeriodSeconds = LoopSeconds, Goal = 2 };
+                Pattern = new[] { Tap(LeftX, BaseY, "blue", 0f), Tap(LeftX, BaseY, "blue", 2f) }, PeriodSeconds = LoopSeconds, Loops = OnceLoops, Goal = 2 };
             case "tapMix": return new TutorialStep { Id = id, Kind = TutorialStepKind.Practice, Title = "来た色と同じ手で切ろう", Sub = "赤は右、青は左",
-                Pattern = new[] { Tap(RightX, BaseY, "red", 0f), Tap(LeftX, BaseY, "blue", 1f), Tap(RightX, LowY, "red", 2f), Tap(LeftX, LowY, "blue", 3f) }, PeriodSeconds = LoopSeconds, Goal = 3 };
+                Pattern = new[] { Tap(RightX, BaseY, "red", 0f), Tap(LeftX, BaseY, "blue", 1f), Tap(RightX, LowY, "red", 2f), Tap(LeftX, LowY, "blue", 3f) }, PeriodSeconds = LoopSeconds,
+                Loops = TwiceLoops, Goal = 3, TimeoutSeconds = MixPracticeTimeoutSeconds };
             case "arrowEasy": return new TutorialStep { Id = id, Kind = TutorialStepKind.Practice, Title = "矢印の向きに振ろう", Sub = "上向きなら下から上へ",
-                Pattern = new[] { Arrow(RightX, BaseY, "red", "up", 0f), Arrow(LeftX, BaseY, "blue", "down", 2f) }, PeriodSeconds = LoopSeconds, Goal = 2, NeedDirection = true,
+                Pattern = new[] { Arrow(RightX, BaseY, "red", "up", 0f), Arrow(LeftX, BaseY, "blue", "down", 2f) }, PeriodSeconds = LoopSeconds, Loops = OnceLoops, Goal = 2, NeedDirection = true,
                 RequiredDirections = new[] { CutDirection.Up, CutDirection.Down } };
             case "arrowNormal": return new TutorialStep { Id = id, Kind = TutorialStepKind.Practice, Title = "矢印の向きに振ろう", Sub = "上・下・左・右",
                 Pattern = new[] { Arrow(RightX, BaseY, "red", "up", 0f), Arrow(LeftX, BaseY, "blue", "down", 2f), Arrow(RightX, BaseY, "red", "left", 4f), Arrow(LeftX, BaseY, "blue", "right", 6f) }, PeriodSeconds = 2 * LoopSeconds, Goal = 3, NeedDirection = true,
                 RequiredDirections = new[] { CutDirection.Up, CutDirection.Down } };
             case "long": return new TutorialStep { Id = id, Kind = TutorialStepKind.Practice, Title = "長いノーツは、数字の回数だけ振ろう", Sub = "数字がなくなるまで切り切ろう",
                 Pattern = new[] { Long(RightX, BaseY, "red", 2, 500f, 0f), Long(LeftX, BaseY, "blue", 3, 1000f, 3f), Long(RightX, BaseY, "red", 4, 1500f, 6f) },
-                PeriodSeconds = 3 * LoopSeconds, Goal = 3, TimeoutSeconds = LongPracticeTimeoutSeconds };
+                PeriodSeconds = 3 * LoopSeconds, Loops = OnceLoops, Goal = 3, TimeoutSeconds = LongPracticeTimeoutSeconds };
             case "gold": return new TutorialStep { Id = id, Kind = TutorialStepKind.Practice, Title = "金色はどちらの手でもOK", Sub = "大事な一撃。好きな手で",
-                Pattern = new[] { Tap(0f, BaseY, "gold", 0f) }, PeriodSeconds = LoopSeconds, Goal = 1 };
+                Pattern = new[] { Tap(0f, BaseY, "gold", 0f) }, PeriodSeconds = LoopSeconds, Loops = OnceLoops, Goal = 1 };
             case "simul": return new TutorialStep { Id = id, Kind = TutorialStepKind.Practice, Title = "赤と青がいっしょに来たら、両手で同時に", Sub = "青は左手、赤は右手",
-                Pattern = new[] { Tap(LeftX, BaseY, "blue", 0f), Tap(RightX, BaseY, "red", 0f) }, PeriodSeconds = LoopSeconds, Goal = 2, Simultaneous = true };
+                Pattern = new[] { Tap(LeftX, BaseY, "blue", 0f), Tap(RightX, BaseY, "red", 0f) }, PeriodSeconds = LoopSeconds, Loops = OnceLoops, Goal = 2, Simultaneous = true };
             case AllStepId: return new TutorialStep { Id = id, Kind = TutorialStepKind.Practice, Title = "練習してみよう！ 今までのノーツが全部出てくるよ", Sub = "全部の種類を GREAT 以上で切ろう",
                 Pattern = new[]
                 {

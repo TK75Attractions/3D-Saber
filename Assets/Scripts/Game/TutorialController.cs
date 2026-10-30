@@ -76,6 +76,8 @@ public sealed class TutorialController : MonoBehaviour
     readonly List<TutorialStepRecord> records = new List<TutorialStepRecord>();
     double totalOffset, startChartTime, stepStart, stepEndAt, nextPatternAt, firstPatternAt;
     int stepIndex = -1, swingFrames;
+    // 周の数が決まった段: 足した周の数と、判定が出た(切れた・見逃した)この段のノーツの数。
+    int addedLoops, judgedNotes;
     float hintUntil;
     bool started, cleanedUp;
     // 用意ができた時刻(範囲合わせの始まりの記録 range-start の wait に使う。2026-10-30 夜、改善案⑥)。
@@ -211,11 +213,15 @@ public sealed class TutorialController : MonoBehaviour
                     switch (step.Kind)
                     {
                         case TutorialStepKind.Practice:
-                            if (TutorialProgram.PracticeGoalReached(step, Successes, completedDirections)) Complete(now, "ok");
-                            // 周の数が決まった段(練習してみよう=型1周)は、最後の周が終わったら合格しなくても次へ。
-                            else if (now >= TutorialProgram.PatternEndAt(step, firstPatternAt)) Complete(now, "timeout");
-                            else if (elapsed >= (step.TimeoutSeconds > 0 ? step.TimeoutSeconds : PracticeTimeoutSeconds)) Complete(now, "timeout");
+                        {
+                            // 合格したらすぐ次へ。周の数が決まった段(左右交互=最大2周、ほかの練習=最大1周)は、
+                            // 合格しないまま最後の周の判定が全部出たら次へ。
+                            string outcome = TutorialProgram.PracticeOutcome(step,
+                                TutorialProgram.PracticeGoalReached(step, Successes, completedDirections), judgedNotes, now, firstPatternAt, elapsed,
+                                step.TimeoutSeconds > 0 ? step.TimeoutSeconds : PracticeTimeoutSeconds);
+                            if (outcome != null) Complete(now, outcome);
                             break;
+                        }
                         case TutorialStepKind.Explain:
                             swingFrames = AnySaberSwinging() ? swingFrames + 1 : 0;
                             if ((elapsed >= TutorialProgram.HandsMinimumSeconds && swingFrames >= 3) || elapsed >= step.TimeoutSeconds) Complete(now, "ok");
@@ -235,13 +241,12 @@ public sealed class TutorialController : MonoBehaviour
         if (Overlay != null) Overlay.Tick(frameSeconds);
     }
 
-    // 成功するまで同じ型を出し続ける(周の数が決まった段はその周まで)。先読み分だけ譜面の末尾に足し、過去には足さない。
+    // 成功するまで同じ型を出し続ける(周の数が決まった段はその周の数だけ)。先読み分だけ譜面の末尾に足し、過去には足さない。
     void ExtendPattern(double now, TutorialStep step)
     {
         double horizon = now + spawner.approachTime + .3;
-        double end = TutorialProgram.PatternEndAt(step, firstPatternAt) - 1e-6;
         int guard = 0;
-        while (nextPatternAt <= horizon && nextPatternAt < end && guard++ < 8)
+        while (nextPatternAt <= horizon && (step.Loops <= 0 || addedLoops < step.Loops) && guard++ < 8)
         {
             foreach (var p in step.Pattern)
             {
@@ -250,6 +255,7 @@ public sealed class TutorialController : MonoBehaviour
                 // 出たノーツの HitTime は spawner.EffectiveTime と同じ値になる
                 if (!string.IsNullOrEmpty(p.kind)) kindByHit[HitKey(spawner.EffectiveTime(note))] = p.kind;
             }
+            addedLoops++;
             nextPatternAt += System.Math.Max(.5, step.PeriodSeconds);
         }
     }
@@ -260,6 +266,7 @@ public sealed class TutorialController : MonoBehaviour
     {
         stepIndex = index; Successes = 0; StepDone = false; swingFrames = 0; Hint = null;
         stepStart = now;
+        addedLoops = 0; judgedNotes = 0;
         pairs.Clear();
         completedLongCounts.Clear();
         completedDirections.Clear();
@@ -404,6 +411,7 @@ public sealed class TutorialController : MonoBehaviour
     {
         var step = Step;
         if (step == null || StepDone || IsFinished || !noteSteps.TryGetValue(note, out int owner) || owner != stepIndex) return;
+        judgedNotes++;
         if (TutorialProgram.CountsAsSuccess(step, tier, note.LastCutCorrectDirection, note.RequiredCutCount, note.CutsAchieved))
         {
             if (step.Kinds.Length > 0)
@@ -437,6 +445,7 @@ public sealed class TutorialController : MonoBehaviour
         var step = Step;
         if (step == null || step.Kind != TutorialStepKind.Practice || StepDone || IsFinished
             || !noteSteps.TryGetValue(note, out int owner) || owner != stepIndex) return;
+        judgedNotes++;
         SetHint(note.RequiredCutCount > 1 ? "数字の回数だけ、同じ場所を切ろう"
             : TutorialProgram.MissHint(ColorName(note), note.RequiredDirection != CutDirection.None));
     }
