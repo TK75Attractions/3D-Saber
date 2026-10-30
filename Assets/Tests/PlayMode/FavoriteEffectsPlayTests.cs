@@ -639,7 +639,9 @@ public class FavoriteEffectsPlayTests
         // 音声とDSP時計を実時間で進め、人工の正方向入力を毎フレーム与える。
         // 物理セーバー入力の再現ではなく、このテスト内でDSP基準時刻を飛ばさない。
         double duration = manager.songPlayer.Duration;
-        Assert.That(duration, Is.InRange(185, 186));
+        // v2.6 から鳴らすのは master.ogg(184.24 秒)。前の audio.mp3 は Unity の読み込みで 185 秒台に見えていたが、
+        // ffprobe ではどちらも 184.24 秒で中身の長さは同じ(2026-10-30 夜の全件実行で分かった)。
+        Assert.That(duration, Is.InRange(184, 186));
         manager.songPlayer.Play();
         float started = Time.realtimeSinceStartup;
         while (!manager.songPlayer.IsPlaying) yield return null;

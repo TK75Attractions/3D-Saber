@@ -41,10 +41,11 @@ public sealed class SongSelectIdleGuide : MonoBehaviour
         stage.Bottom = new Color(.025f, .05f, .09f); stage.Width = 0; stage.Radius = 20;
         model = SongSelectVisuals.Rect(card, "RightHandDemonstration", new Vector2(-340, -12), new Vector2(420, 440)).gameObject.AddComponent<SongSelectGuideModel>();
         model.raycastTarget = false;
-        Text("GuideEyebrow", "あそびかた", 27, new Vector2(210, 182), new Vector2(610, 40), SongSelectSkin.Cyan);
-        Text("GuideMessage", "<color=#FF7387>右手</color>で照準を\n合わせてね！", 60, new Vector2(210, 64), new Vector2(620, 176), Color.white);
-        Text("GuideDetail", "赤い剣をかざして えらぼう\nまん中の盤は 2秒で スタート", 29, new Vector2(210, -102), new Vector2(610, 90), new Color(.72f, .83f, .9f));
-        Text("GuideDismissHint", "操作すると案内は消えるよ", 24, new Vector2(210, -204), new Vector2(610, 38), new Color(.49f, .66f, .73f));
+        // 2026-10-30 ユーザー「④もすべてやる」: 右手の案内と、曲・難易度・確認の操作時間を同じカードへまとめる。
+        Text("GuideEyebrow", "あそびかた", 27, new Vector2(210, 190), new Vector2(610, 40), SongSelectSkin.Cyan);
+        Text("GuideMessage", "<color=#FF7387>右手の赤い剣で</color>\nねらう", 60, new Vector2(210, 80), new Vector2(620, 156), Color.white);
+        Text("GuideDetail", "となりの曲 … 1秒\nむずかしさ … 1秒\nまん中 … 2秒で かくにん", 29, new Vector2(210, -85), new Vector2(610, 126), new Color(.72f, .83f, .9f));
+        Text("GuideDismissHint", "操作すると案内は消えるよ", 24, new Vector2(210, -213), new Vector2(610, 38), new Color(.49f, .66f, .73f));
         Text("RightHandLabel", "右手", 25, new Vector2(-210, -213), new Vector2(100, 38), new Color(1, .45f, .54f));
         group.alpha = 0; card.gameObject.SetActive(false);
     }
@@ -58,7 +59,9 @@ public sealed class SongSelectIdleGuide : MonoBehaviour
 
     void Update()
     {
-        bool active = (Application.isFocused || Application.isBatchMode) && !ScreenTransition.IsBusy;
+        // 2026-10-30 ユーザー「④もすべてやる」: 説明の開閉を来場者の操作に数えず、前景の説明・確認にはカードを重ねない。
+        bool active = (Application.isFocused || Application.isBatchMode) && !ScreenTransition.IsBusy
+            && !SongSelectStaffGuide.IsOpen && !SongSelectStaffGuide.ChangedThisFrame && !SongSelectGhostGuide.ConfirmationOpen;
         // 選曲の時間切れで自動で始めるかは、来場者の操作があったかで決める(仕様面の点検 1)。退出の Esc は操作に数えない。
         if (active && !GameSession.SongSelectOperated && HasButtonInput(countEscape: false)) GameSession.SongSelectOperated = true;
         if (active && !state.Completed && HasButtonInput(countEscape: true)) { state.RegisterActivity(); Hide(); }

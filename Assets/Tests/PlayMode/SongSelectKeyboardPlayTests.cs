@@ -113,6 +113,27 @@ public class SongSelectKeyboardPlayTests
         yield return ScreenTransitionPlayTests.WaitForTransition();
     }
 
+    // 2026-10-30 から Enter・Space はまず「この曲で はじめる？」を開き、0.5 秒たってからのもう一度で始める(③)。
+    IEnumerator PressAndConfirm(Key key)
+    {
+        yield return Press(key);
+        Assert.IsTrue(SongSelectConfirm.IsOpen, "1回目は確認を開く");
+        Assert.AreEqual("SongSelect", SceneManager.GetActiveScene().name, "1回目ではまだ始めない");
+        yield return new WaitForSecondsRealtime((float)SongSelectConfirm.InputDelaySeconds + .1f);
+        yield return Press(key);
+    }
+
+    // 確認を開いた Enter のあと、0.5 秒待ってからもう一度 Enter で始める(待つ間も剣の位置を送る試験は eachFrame で送る)。
+    IEnumerator ConfirmStart(System.Action eachFrame = null)
+    {
+        Assert.IsTrue(SongSelectConfirm.IsOpen, "1回目の Enter は確認を開く");
+        double until = Time.realtimeSinceStartupAsDouble + SongSelectConfirm.InputDelaySeconds + .1;
+        while (Time.realtimeSinceStartupAsDouble < until) { eachFrame?.Invoke(); yield return null; }
+        InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.Enter));
+        eachFrame?.Invoke(); yield return null; eachFrame?.Invoke(); yield return null;
+        InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+    }
+
     [UnityTest]
     public IEnumerator EnterAfterDifficultyClickStartsGameWithoutClickingTheButtonAgain()
     {
@@ -122,7 +143,7 @@ public class SongSelectKeyboardPlayTests
         Assert.AreEqual(2, controller.SelectedDifficultyIndex);
         int extraClicks = 0;
         button.onClick.AddListener(() => extraClicks++);
-        yield return Press(Key.Enter);
+        yield return PressAndConfirm(Key.Enter);
         Assert.AreEqual("Game", SceneManager.GetActiveScene().name);
         Assert.AreEqual(0, extraClicks, "Enterはプレイ開始だけを行い、前にクリックした設定を再実行しない");
         Assert.AreEqual("Hard", GameSession.SelectedDifficulty);
@@ -171,7 +192,7 @@ public class SongSelectKeyboardPlayTests
         EventSystem.current.SetSelectedGameObject(button.gameObject);
         int calibrationClicks = 0;
         button.onClick.AddListener(() => calibrationClicks++);
-        yield return Press(Key.Enter);
+        yield return PressAndConfirm(Key.Enter);
         Assert.AreEqual("Game", SceneManager.GetActiveScene().name);
         Assert.AreEqual(0, calibrationClicks);
         Assert.False(GameSession.IsCalibrationMode, "画面で案内しているEnterの意味は選択譜面のプレイ開始");
@@ -243,7 +264,7 @@ public class SongSelectKeyboardPlayTests
     {
         var button = GameObject.Find("CalibrationButton").GetComponent<Button>();
         EventSystem.current.SetSelectedGameObject(button.gameObject);
-        yield return Press(Key.Space);
+        yield return PressAndConfirm(Key.Space);
         Assert.AreEqual("Game", SceneManager.GetActiveScene().name);
         Assert.False(GameSession.IsCalibrationMode);
     }
@@ -253,7 +274,7 @@ public class SongSelectKeyboardPlayTests
     {
         var button = GameObject.Find("CalibrationButton").GetComponent<Button>();
         EventSystem.current.SetSelectedGameObject(button.gameObject);
-        yield return Press(Key.NumpadEnter);
+        yield return PressAndConfirm(Key.NumpadEnter);
         Assert.AreEqual("Game", SceneManager.GetActiveScene().name);
         Assert.False(GameSession.IsCalibrationMode);
     }
@@ -405,7 +426,7 @@ public class SongSelectKeyboardPlayTests
         SceneManager.sceneLoaded += Observe;
         try
         {
-            yield return Press(Key.Enter);
+            yield return PressAndConfirm(Key.Enter);
             var manager = Object.FindFirstObjectByType<GamePlayManager>();
             Assert.NotNull(manager);
             double deadline = Time.realtimeSinceStartupAsDouble + 15;
@@ -501,6 +522,7 @@ public class SongSelectKeyboardPlayTests
             InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.Enter));
             yield return null; yield return null;
             InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+            yield return ConfirmStart(Send);
             var manager = Object.FindFirstObjectByType<GamePlayManager>();
             deadline = Time.realtimeSinceStartupAsDouble + 20;
             while ((manager == null || !manager.songPlayer.IsPlaying || manager.noteSpawner.AliveCount == 0)
@@ -581,6 +603,7 @@ public class SongSelectKeyboardPlayTests
             InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.Enter));
             yield return null; yield return null;
             InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+            yield return ConfirmStart(Send);
             var manager = Object.FindFirstObjectByType<GamePlayManager>();
             deadline = Time.realtimeSinceStartupAsDouble + 20;
             while ((manager == null || !manager.songPlayer.IsPlaying || manager.noteSpawner.AliveCount == 0)
@@ -634,6 +657,7 @@ public class SongSelectKeyboardPlayTests
             InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.Enter));
             yield return null; yield return null;
             InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+            yield return ConfirmStart(Send);
             var manager = Object.FindFirstObjectByType<GamePlayManager>();
             deadline = Time.realtimeSinceStartupAsDouble + 20;
             while ((manager == null || !manager.songPlayer.IsPlaying || manager.noteSpawner.AliveCount == 0)
@@ -723,6 +747,7 @@ public class SongSelectKeyboardPlayTests
             InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.Enter));
             yield return null; yield return null;
             InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+            yield return ConfirmStart(Send);
             var manager = Object.FindFirstObjectByType<GamePlayManager>();
             deadline = Time.realtimeSinceStartupAsDouble + 20;
             while ((manager == null || !manager.songPlayer.IsPlaying || manager.noteSpawner.AliveCount == 0)
@@ -803,6 +828,7 @@ public class SongSelectKeyboardPlayTests
         InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.Enter));
         yield return null; yield return null;
         InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+        yield return ConfirmStart();
         GamePlayManager manager = null;
         double deadline = Time.realtimeSinceStartupAsDouble + 20;
         while ((manager == null || !manager.songPlayer.IsPlaying) && Time.realtimeSinceStartupAsDouble < deadline)
@@ -865,6 +891,7 @@ public class SongSelectKeyboardPlayTests
             InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.Enter));
             yield return null; yield return null;
             InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+            yield return ConfirmStart();
             GamePlayManager manager = null;
             double deadline = Time.realtimeSinceStartupAsDouble + 20;
             while ((manager == null || !manager.songPlayer.IsPlaying || manager.songPlayer.SongTime < 1)

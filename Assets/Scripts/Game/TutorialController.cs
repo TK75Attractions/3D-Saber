@@ -78,6 +78,8 @@ public sealed class TutorialController : MonoBehaviour
     int stepIndex = -1, swingFrames;
     float hintUntil;
     bool started, cleanedUp;
+    // 用意ができた時刻(範囲合わせの始まりの記録 range-start の wait に使う。2026-10-30 夜、改善案⑥)。
+    double initializedAt;
 
     // 譜面の時計(曲時計から判定のずらし分を引いたもの)。NoteData.time と同じ基準。
     double Now => song.SongTime - totalOffset;
@@ -135,6 +137,17 @@ public sealed class TutorialController : MonoBehaviour
         station = InputPoint.Instance != null ? InputPoint.Instance.StationLabel : "";
         bool phone = PhoneInputActive != null && PhoneInputActive();
         steps = TutorialProgram.Build(rangeOnly ? TutorialProgram.RangeOnlyFlow(phone) : TutorialProgram.FlowFor(phone), true);
+        initializedAt = Time.realtimeSinceStartupAsDouble;
+    }
+
+    // 範囲合わせの始まりを events.log に1行(改善案⑥): 用意ができてから待った秒と、始めた時点で座標が届いている剣の数(赤・青、1秒以内)。
+    void RecordRangeStart()
+    {
+        var input = InputPoint.Instance;
+        int sabers = input == null ? 0 : (input.IsRecentlyActive() ? 1 : 0) + (input.IsRecentlyActive2() ? 1 : 0);
+        double wait = System.Math.Max(0, Time.realtimeSinceStartupAsDouble - initializedAt);
+        PhoneSaberEventLog.Record(station, "SYSTEM", "range-start",
+            "wait=" + wait.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) + " sabers=" + sabers + (RangeOnly ? " only=1" : ""));
     }
 
     // テストの SetUpFixture は自動起動を止める。そのときは指示を送らない(探索応答も開かないので届かない)。
@@ -254,6 +267,7 @@ public sealed class TutorialController : MonoBehaviour
         completedKinds.Clear();
         var step = Step;
         range = null; HasRangeCover = false; rangeCheered = false; AppliedRange = null;
+        if (step.Kind == TutorialStepKind.Range) RecordRangeStart();
         if (step.Kind == TutorialStepKind.Range && SendLearnArea != null)
         {
             // タイトルに戻ったら台の準備の範囲へ戻すので、変える前の位置補正を覚えておく(2026-10-24 ユーザー「B にして」)。

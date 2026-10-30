@@ -28,15 +28,17 @@ public class TutorialGuideTests
         Assert.Greater(step.PeriodSeconds, lastEnd + TutorialGuideMotion.RecoverSeconds);
     }
 
-    // 範囲を合わせる段のお手本: 両腕を下ろした姿勢から頭の上まで、2拍で1往復。
+    // 範囲を合わせる段のお手本: 両腕を腰から肩まで、2拍で1往復(2026-10-30 夜、頭の上まで振らない)。
     [Test]
     public void RangeSweepRaisesBothArmsOnTheBeat()
     {
         Assert.AreEqual(1.0, TutorialGuideMotion.RangeSweepSeconds, 1e-9);
-        Assert.AreEqual(0f, TutorialGuideMotion.RangeSweep(0), 1e-6);
-        Assert.AreEqual(1f, TutorialGuideMotion.RangeSweep(TutorialGuideMotion.RangeSweepSeconds / 2), 1e-6, "半周で頭の上");
-        Assert.AreEqual(0f, TutorialGuideMotion.RangeSweep(TutorialGuideMotion.RangeSweepSeconds * 3), 1e-6);
+        Assert.AreEqual(TutorialGuideMotion.RangeSweepLow, TutorialGuideMotion.RangeSweep(0), 1e-6, "腰");
+        Assert.AreEqual(TutorialGuideMotion.RangeSweepHigh, TutorialGuideMotion.RangeSweep(TutorialGuideMotion.RangeSweepSeconds / 2), 1e-6, "半周で肩");
+        Assert.AreEqual(TutorialGuideMotion.RangeSweepLow, TutorialGuideMotion.RangeSweep(TutorialGuideMotion.RangeSweepSeconds * 3), 1e-6);
         Assert.AreEqual(.5f, TutorialGuideMotion.RangeSweep(double.NaN));
+        for (double t = 0; t < 2; t += .01)
+            Assert.That(TutorialGuideMotion.RangeSweep(t), Is.InRange(TutorialGuideMotion.RangeSweepLow - 1e-6, TutorialGuideMotion.RangeSweepHigh + 1e-6), "頭の上(1)まで上げない");
         var go = new UnityEngine.GameObject("RangeGuide", typeof(UnityEngine.RectTransform));
         try
         {

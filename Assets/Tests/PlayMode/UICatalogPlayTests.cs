@@ -162,7 +162,8 @@ public class UICatalogPlayTests
         System.Func<float, float, Vector2> point = (x,y) => RectTransformUtility.WorldToScreenPoint(canvas.worldCamera,
             layout.TransformPoint(new Vector3(x - 960, 540 - y)));
         Canvas.ForceUpdateCanvases();
-        foreach (var p in new[] { point(960,700), point(960,743), point(1130,743) })
+        // 2026-10-30「④もすべてやる」: まん中の下の一行は y=710(大きくした難易度の当たりは y=740 から)。その帯に当たりが無いこと。
+        foreach (var p in new[] { point(960,700), point(960,725), point(1130,712) })
         {
             var hits = new List<UnityEngine.EventSystems.RaycastResult>();
             var es = UnityEngine.EventSystems.EventSystem.current;
@@ -174,7 +175,7 @@ public class UICatalogPlayTests
         aim.BeginArrival(); aim.TickAt(normal.ScreenRect().center,.1f);
         for (int i=0;i<30;i++) aim.TickAt(normal.ScreenRect().center,.1f);
         Assert.Zero(aim.ShotCount, "入場時の難易度ボタンも一度外すまで決定しない");
-        for (int i=0;i<2;i++) aim.TickAt(point(960,743),.1f);
+        for (int i=0;i<2;i++) aim.TickAt(point(960,725),.1f);
         for (int i=0;i<10;i++) aim.TickAt(normal.ScreenRect().center,.1f);
         Assert.AreEqual(1,aim.ShotCount);
         var status=Object.FindFirstObjectByType<MenuSaberStatus>(); Assert.NotNull(status);

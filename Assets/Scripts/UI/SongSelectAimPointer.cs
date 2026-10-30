@@ -208,7 +208,9 @@ public sealed class SongSelectAimPointer : MonoBehaviour
         if (coasting && !tracker.IsCharging(hovered.key)) SetHovered(default);
         WaitingOnStart = !fire && startDisc && tracker.WaitingInside;
         // 手ぶれ・持ち直し・的の横切りでは案内を止めず、同じ的を狙い続けたときに操作とみなす。
-        if (idleGuide != null && (fire || tracker.HeldSeconds >= SongSelectIdleState.AimActivitySeconds)) idleGuide.RegisterActivity();
+        // 2026-10-30 ユーザー「④もすべてやる」: スタッフ説明を閉じただけでは、選曲済み・自動開始の対象にしない。
+        if (!SongSelectStaffGuide.IsOpen && !SongSelectStaffGuide.ChangedThisFrame
+            && idleGuide != null && (fire || tracker.HeldSeconds >= SongSelectIdleState.AimActivitySeconds)) idleGuide.RegisterActivity();
         // 曲送りをため続けている間も、着いた曲の試聴は止めない(2026-10-30 ユーザー「次に移してる間に流していい」)。
         if (reticle != null)
         {

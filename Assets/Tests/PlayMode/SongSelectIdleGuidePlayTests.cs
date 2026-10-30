@@ -52,7 +52,10 @@ public class SongSelectIdleGuidePlayTests
         yield return null;
         AssertHoldHint(SongSelectSkin.HoldStartHint);
         for(int i=0;i<11;i++) aim.TickAt(point,.1f);
-        Assert.True(ScreenTransition.IsBusy); Assert.AreEqual(1,aim.ShotCount);
+        // 2026-10-30 から2秒で「この曲で はじめる？」を開き、そこで決めると始まる(③)。
+        Assert.True(SongSelectConfirm.IsOpen); Assert.AreEqual(1,aim.ShotCount);
+        SongSelectConfirm.Instance.Tick(.6); SongSelectConfirm.Instance.Confirm("test");
+        Assert.True(ScreenTransition.IsBusy);
         yield return ScreenTransitionPlayTests.WaitForTransition();
     }
     static void AssertHoldHint(string expected)
@@ -78,10 +81,14 @@ public class SongSelectIdleGuidePlayTests
         yield return null;
         Assert.True(guide.IsVisible, "入場直後の通常の更新で案内を表示する");
         guide.enabled = false;
-        guide.Tick(5.3f, true); Assert.False(guide.IsVisible, "一周したら一旦閉じる");
+        // 2026-10-30 ユーザー「④もすべてやる」: 通常更新の確認後は時計を戻し、3.5秒と10秒の境界を別々に確かめる。
+        var state = typeof(SongSelectIdleGuide).GetField("state", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(guide);
+        typeof(SongSelectIdleState).GetField("elapsed", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(state, 0d);
+        guide.Tick(3.49f, true); Assert.True(guide.IsVisible);
+        guide.Tick(.02f, true); Assert.False(guide.IsVisible, "3.5秒で一旦閉じる");
         Assert.False(guide.Completed, "案内を見ただけでは操作済みにしない");
-        guide.Tick(3, true); Assert.False(guide.IsVisible);
-        guide.Tick(2, true); Assert.True(guide.IsVisible, "未操作なら10秒後にもう一度案内する");
+        guide.Tick(6.48f, true); Assert.False(guide.IsVisible);
+        guide.Tick(.02f, true); Assert.True(guide.IsVisible, "未操作なら10秒後にもう一度案内する");
     }
     [UnityTest] public IEnumerator EntryAndIdleGuideDoNotBlockDiscsAndUseTheSameAnimation()
     {
@@ -232,7 +239,9 @@ public class SongSelectIdleGuidePlayTests
         for (int i=0;i<19;i++) aim.TickAt(point,.1f);
         Assert.False(ScreenTransition.IsBusy); Assert.Zero(aim.ShotCount);
         aim.TickAt(point,.1f);
-        Assert.True(ScreenTransition.IsBusy); Assert.AreEqual(1,aim.ShotCount);
+        Assert.True(SongSelectConfirm.IsOpen, "2秒で確認を開く(2026-10-30)"); Assert.AreEqual(1,aim.ShotCount);
+        SongSelectConfirm.Instance.Tick(.6); SongSelectConfirm.Instance.Confirm("test");
+        Assert.True(ScreenTransition.IsBusy);
         yield return ScreenTransitionPlayTests.WaitForTransition();
     }
 

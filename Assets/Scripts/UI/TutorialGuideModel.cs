@@ -91,10 +91,12 @@ public static class TutorialGuideMotion
         return found ? Stroke(relative, up) : .5f;
     }
 
-    // 範囲を合わせる段のお手本: 両腕を下から頭の上まで、2拍で1往復(練習の音源と同じ拍)。
+    // 範囲を合わせる段のお手本: 両腕を腰から肩まで、2拍で1往復(練習の音源と同じ拍)。
+    // 2026-10-30 夜(改善案⑤2): 前は 0〜1(下ろした姿勢から頭の上)。頭の上はカメラに見えないので、0.2〜0.8 に狭めた。
+    public const float RangeSweepLow = .2f, RangeSweepHigh = .8f;
     public const double RangeSweepSeconds = 2 * TutorialProgram.BeatSeconds;
     public static float RangeSweep(double chartTime) => double.IsNaN(chartTime) || double.IsInfinity(chartTime) ? .5f
-        : (float)(.5 - .5 * Math.Cos(2 * Math.PI * chartTime / RangeSweepSeconds));
+        : (float)(.5 - .3 * Math.Cos(2 * Math.PI * chartTime / RangeSweepSeconds));
 
     public static float Stroke(double relative, bool up)
     {

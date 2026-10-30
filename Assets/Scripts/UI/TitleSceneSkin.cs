@@ -78,6 +78,31 @@ public class TitleSceneSkin : MonoBehaviour
         BuildFlashOverlay(canvas);
         presentationMotion = canvas.gameObject.AddComponent<TitlePresentationMotion>();
         presentationMotion.Configure(canvas, titleContainer, startTargetGroup, startNote, scenery, flashImage);
+        // 受付の鍵(TitleReception)。運営モードではタイトルに入るたびに閉じ、開始ノーツを隠す。
+        TitleReception.EnterTitle(OperatorMode.IsOn);
+        ApplyReception();
+    }
+
+    // 開始ノーツと的が出ているか(受付が開いているか)。テストと運営の確認用。
+    public bool StartNoteShown => startNote != null ? startNote.gameObject.activeSelf : startTargetGroup != null && startTargetGroup.gameObject.activeSelf;
+
+    // スタッフのマウスの中ボタン(テストからも呼ぶ)。鍵を開け閉めし、運営の知らせと音で伝える。開始ノーツを切ったあとは受けない。
+    public void ToggleReception(string how)
+    {
+        if (transitioning || prompt != null || ScreenTransition.IsBusy) return;
+        TitleReception.Toggle(how);
+        ApplyReception();
+        OperatorNotice.Show(TitleReception.Locked ? TitleReception.ClosedNotice : TitleReception.OpenNotice, 3f);
+        MenuSfx.Difficulty(TitleReception.Locked ? 0 : 2);
+    }
+
+    // 鍵の間は開始ノーツと的を隠す(切れない・押せない)。開けたら出す。
+    void ApplyReception()
+    {
+        if (transitioning) return;
+        bool open = !TitleReception.Locked;
+        if (startNote != null) startNote.gameObject.SetActive(open);
+        if (startTargetGroup != null) startTargetGroup.gameObject.SetActive(open);
     }
 
     // 問いかけ(と問いかけへ向かう演出)の間は、Esc を2秒以内に2回でタイトルを読み直す(来場者の画面で共通。仕様面の点検 2)。
@@ -107,6 +132,12 @@ public class TitleSceneSkin : MonoBehaviour
             && escapeGate.PressAndNotify(Time.unscaledTimeAsDouble, EscapeTwiceGate.ToTitleNotice))
         {
             ReturnToStart();
+            return;
+        }
+        var mouse = Mouse.current;
+        if (!transitioning && prompt == null && mouse != null && mouse.middleButton.wasPressedThisFrame)
+        {
+            ToggleReception("middle-click");
             return;
         }
         var keys = Keyboard.current;
@@ -239,6 +270,8 @@ public class TitleSceneSkin : MonoBehaviour
     void HandlePlayPressed()
     {
         if (transitioning || ScreenTransition.IsBusy) return;
+        // 受付が閉じている間は Enter・Space・クリックでも始めない(開けるのはマウスの中ボタン)。
+        if (TitleReception.Locked) { OperatorNotice.Show(TitleReception.LockedNotice, 3f); return; }
         if (startNote != null) startNote.SlashProgrammatically();
         else if (titleCtl != null) HandleSlashed();
     }
@@ -286,7 +319,7 @@ public class TitleSceneSkin : MonoBehaviour
 
     void HandleSlashed()
     {
-        if (transitioning || ScreenTransition.IsBusy || titleCtl == null) return;
+        if (transitioning || ScreenTransition.IsBusy || titleCtl == null || TitleReception.Locked) return;
         // 3D の開始ノーツが無い環境(カメラ無し)は、従来どおり前進演出つきで選曲へ。
         if (startNote == null || presentationMotion == null || canvasRef == null)
         {

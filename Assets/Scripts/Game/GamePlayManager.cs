@@ -878,7 +878,7 @@ public class GamePlayManager : MonoBehaviour
         // このコマの同じ投影を使うように。一時停止中(剣の見失い・音の鳴らし直しを待つ間)も、止まった曲の時刻で作り直す(画面の比を追う)。
         if (reverseMode != null && songPlayer != null && songPlayer.IsScheduled) reverseMode.ApplyView(songPlayer.SongTime);
         PlayExcitement.TickFor(this, ready && !finished);
-        if (HandleEscape()) return;
+        if (HandleEscape() || HandleCountInCancel()) return;
         LockMouseFallbackOnceCameraSeen();
         TickTrackingWatch();
         // 最初の手の予告は曲の時計で出し入れする(止まっている間は隠す)。
@@ -1020,9 +1020,33 @@ public class GamePlayManager : MonoBehaviour
     bool SaberCuttingThrough(CuttableNote note) =>
         (cutJudge != null && cutJudge.IsCuttingThrough(note)) || (cutJudge2 != null && cutJudge2.IsCuttingThrough(note));
 
-    private void ReturnToTitle()
+    private void ReturnToTitle() => ReturnTo("Title");
+
+    // 3・2・1 の間にスタッフがマウスの中ボタンを押したら、同じ曲・難易度を選んだ状態で選曲へ戻す(曲の選び間違いの取り消し。
+    // 2026-10-30 ユーザー「③はすべて実装」)。途中離脱と同じく記録は残さない。練習・判定調整では使わない。
+    bool HandleCountInCancel()
     {
-        if (!ScreenTransition.Load("Title", ScreenTransition.Style.Back)) return;
+        var mouse = UnityEngine.InputSystem.Mouse.current;
+        return mouse != null && mouse.middleButton.wasPressedThisFrame && CancelCountInToSongSelect();
+    }
+
+    // 3・2・1 の間だけ選曲へ戻す(テストからも呼ぶ)。戻したら true。
+    public bool CancelCountInToSongSelect()
+    {
+        if (leaving || finished || ScreenTransition.IsBusy || inTutorial || inCalibration || GameSession.IsCalibrationMode) return false;
+        var countdown = Object.FindFirstObjectByType<GameStartCountdown>();
+        if (countdown == null || !countdown.IsRunning) return false;
+        ResultSelectionReturn.Remember(GameSession.SelectedSongId, GameSession.SelectedDifficulty);
+        PhoneSaberEventLog.Record(PhoneSaberStation.Read(), "SYSTEM", "countin-cancel",
+            "song=" + GameSession.SelectedSongId + " diff=" + GameSession.SelectedDifficulty);
+        OperatorNotice.Show("選曲に もどしました", 2f);
+        ReturnTo("SongSelect");
+        return true;
+    }
+
+    private void ReturnTo(string scene)
+    {
+        if (!ScreenTransition.Load(scene, ScreenTransition.Style.Back)) return;
         if (heatMode != null) heatMode.EndPlay();
         if (reverseMode != null) reverseMode.EndPlay();
         if (darkMode != null) darkMode.EndPlay();
