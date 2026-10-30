@@ -78,5 +78,23 @@ public static class SongAchievementStore
             return false;
         }
     }
+    // 記録から外す回(RankingRemovals)の分を数から引く(その回の点のランク・フルコンボ・AP)。その回が直近の回の一覧にあるときだけ
+    // (引いたら一覧から消すので、何度呼んでも同じ)。残りが無くなれば鍵ごと消す。PlayerPrefs へは書くだけ(ディスクへの保存は呼び出し側)。
+    public static bool RemoveRun(string ns, string song, string difficulty, string runId, int score, bool fullCombo, bool allPerfect)
+    {
+        if (string.IsNullOrEmpty(song) || string.IsNullOrEmpty(difficulty) || string.IsNullOrEmpty(runId)) return false;
+        var value = Load(ns, song, difficulty);
+        if (!value.recentRunIds.Remove(runId)) return false;
+        var rank = PlayRankHelper.FromScore(score);
+        if (rank >= PlayRank.S) value.s = Math.Max(0, value.s - 1);
+        if (rank == PlayRank.SPlus) value.sPlus = Math.Max(0, value.sPlus - 1);
+        if (fullCombo) value.fc = Math.Max(0, value.fc - 1);
+        if (allPerfect) value.ap = Math.Max(0, value.ap - 1);
+        if (value.lastRunId == runId) value.lastRunId = value.recentRunIds.Count > 0 ? value.recentRunIds[value.recentRunIds.Count - 1] : null;
+        string key = Key(ns, song, difficulty);
+        if (value.recentRunIds.Count == 0 && value.s == 0 && value.sPlus == 0 && value.fc == 0 && value.ap == 0) PlayerPrefs.DeleteKey(key);
+        else PlayerPrefs.SetString(key, JsonUtility.ToJson(value));
+        return true;
+    }
     static int Increment(int value) => value < int.MaxValue ? value + 1 : value;
 }

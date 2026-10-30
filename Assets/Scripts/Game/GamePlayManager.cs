@@ -1051,7 +1051,16 @@ public class GamePlayManager : MonoBehaviour
         bool calibrating = inCalibration || GameSession.IsCalibrationMode;
         if (!escapeGate.PressAndNotify(Time.unscaledTimeAsDouble, calibrating ? EscapeTwiceGate.ToTitleNotice : EscapeTwiceGate.AbortNotice))
             return false;
-        if (calibrating)
+        LeaveToTitle();
+        return true;
+    }
+
+    // この画面からタイトルへ出る。Esc の2回目と、どの画面でも効く右クリック3回(RightClickHome、2026-10-30)の共通の出口。
+    // 幕の間と、戻ると決めたあとは何もしない(false)。
+    public bool LeaveToTitle()
+    {
+        if (leaving || ScreenTransition.IsBusy) return false;
+        if (inCalibration || GameSession.IsCalibrationMode)
         {
             // 判定調整は下書きを捨て、再生を止めてからタイトルへ(選曲の残り時間・曲の引き継ぎも消える)。
             if (calibration != null) calibration.DiscardAndExitTo("Title"); else ExitCalibration("Title");

@@ -142,7 +142,8 @@ public static class AchievementStore
     // PlayerPrefs へはまだ書かない(RankingSync が WriteToPrefs でまとめて書き、PlayerPrefs.Save もまとめてする)。
     public static void Merge(string ns, string runId, IEnumerable<string> achIds, string station, long atUnixMs)
     {
-        if (achIds == null) return;
+        // 記録から外した回(RankingRemovals)の解除は数に入れない。
+        if (achIds == null || RankingRemovals.IsRemoved(runId)) return;
         EnsureLoaded();
         foreach (string achId in achIds)
         {
@@ -150,6 +151,35 @@ public static class AchievementStore
             if (!IsValid(entry) || ordinals.ContainsKey(EntryKey(entry.ns, runId, achId))) continue;
             if (Add(entry) && available) dirty = true;
         }
+    }
+
+    // 記録から外した回(RankingRemovals)の解除を除く(起動時に1回)。除いた件数を返す。番号(○人目)は、残った解除を足した順に数え直す。
+    // 保存した記録が読めないときは何もしない(上書きしない)。PlayerPrefs へは書くだけ(ディスクへの保存は呼び出し側)。
+    public static int RemoveRuns(Func<string, bool> removed)
+    {
+        EnsureLoaded();
+        if (!available || removed == null) return 0;
+        bool any = false;
+        foreach (string runKey in byRun.Keys)
+        {
+            int cut = runKey.IndexOf('\n');
+            if (cut >= 0 && removed(runKey.Substring(cut + 1))) { any = true; break; }
+        }
+        if (!any) return 0;
+        var kept = new List<Entry>(entryJson.Count);
+        int dropped = 0;
+        foreach (string json in entryJson)
+        {
+            var entry = JsonUtility.FromJson<Entry>(json);
+            if (removed(entry.run)) dropped++;
+            else kept.Add(entry);
+        }
+        Unload();
+        loaded = available = true;
+        foreach (var entry in kept) Add(entry);
+        dirty = true;
+        WriteToPrefs();
+        return dropped;
     }
 
     // まだ書いていない分を PlayerPrefs へ書く(ディスクへの保存 PlayerPrefs.Save は呼び出し側)。書けた・書く分が無いなら true。

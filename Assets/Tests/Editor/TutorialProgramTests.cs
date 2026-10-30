@@ -466,16 +466,16 @@ public class TutorialProgramTests
         var arrow = TutorialProgram.Get("arrowEasy");
         var longStep = TutorialProgram.Get("long");
         var hands = TutorialProgram.Get("hands");
-        // 2026-10-28: 残り回数が減るのは PERFECT だけ。切れても GREAT 以下は数えない。
+        // 2026-10-30: 残り回数が減るのは GREAT 以上(10/28〜10/30 は PERFECT だけ)。切れても GOOD 以下は数えない。
         Assert.IsTrue(TutorialProgram.CountsAsSuccess(tap, JudgmentTier.Perfect, true, 1, 1));
         Assert.IsTrue(TutorialProgram.CountsAsSuccess(tap, JudgmentTier.Perfect, false, 1, 1), "タップは向きを問わない");
-        Assert.IsFalse(TutorialProgram.CountsAsSuccess(tap, JudgmentTier.Great, true, 1, 1), "GREAT は数えない");
+        Assert.IsTrue(TutorialProgram.CountsAsSuccess(tap, JudgmentTier.Great, true, 1, 1), "GREAT も数える(2026-10-30 から)");
         Assert.IsFalse(TutorialProgram.CountsAsSuccess(tap, JudgmentTier.Good, true, 1, 1));
         Assert.IsFalse(TutorialProgram.CountsAsSuccess(tap, JudgmentTier.Bad, true, 1, 1));
         Assert.IsFalse(TutorialProgram.CountsAsSuccess(tap, JudgmentTier.Miss, true, 1, 0));
         Assert.IsFalse(TutorialProgram.CountsAsSuccess(arrow, JudgmentTier.Perfect, false, 1, 1), "矢印は向きが違えば数えない");
         Assert.IsTrue(TutorialProgram.CountsAsSuccess(arrow, JudgmentTier.Perfect, true, 1, 1));
-        Assert.IsFalse(TutorialProgram.CountsAsSuccess(arrow, JudgmentTier.Great, true, 1, 1));
+        Assert.IsTrue(TutorialProgram.CountsAsSuccess(arrow, JudgmentTier.Great, true, 1, 1));
         // 本編は 2026-10-20 から、ロングを1回でも残すと残りが MISS。練習も全部切ったら成功。
         Assert.IsFalse(TutorialProgram.CountsAsSuccess(longStep, JudgmentTier.Miss, true, 3, 2), "2/3 は残しがあるので数えない");
         Assert.IsFalse(TutorialProgram.CountsAsSuccess(longStep, JudgmentTier.Miss, true, 3, 1));
@@ -506,11 +506,11 @@ public class TutorialProgramTests
         Assert.AreNotEqual(pair[0].color, pair[1].color);
         Assert.AreEqual(30f, step.TimeoutSeconds, .001f, "型2周で次へ(今までどおり時間でも進む)");
         Assert.GreaterOrEqual(step.TimeoutSeconds, 2 * step.PeriodSeconds);
-        Assert.AreEqual("PERFECT であと 7 種類", TutorialProgram.RemainingText(step, 0, 0, false));
-        Assert.AreEqual("PERFECT であと 1 種類", TutorialProgram.RemainingText(step, 6, 0, false));
+        Assert.AreEqual("GREAT 以上であと 7 種類", TutorialProgram.RemainingText(step, 0, 0, false));
+        Assert.AreEqual("GREAT 以上であと 1 種類", TutorialProgram.RemainingText(step, 6, 0, false));
     }
 
-    // 判定の通知から種類の数へ。型の届く時刻で種類を引き、PERFECT だけ・種類ごとに1回・両手は組で数える。
+    // 判定の通知から種類の数へ。型の届く時刻で種類を引き、GREAT 以上だけ・種類ごとに1回・両手は組で数える。
     [Test]
     public void AllStep_CountsEachKindOnceOnlyOnPerfectAndPairsNeedBothHands()
     {
@@ -537,8 +537,8 @@ public class TutorialProgramTests
                 typeof(TutorialController).GetMethod("Judged", flags).Invoke(controller, new object[] { note, tier, Vector3.zero, Vector3.up * 8 });
             }
 
-            Judge(10, SaberHand.Right, JudgmentTier.Great);
-            Assert.AreEqual(0, controller.Successes, "GREAT は数えない");
+            Judge(10, SaberHand.Right, JudgmentTier.Good);
+            Assert.AreEqual(0, controller.Successes, "GOOD は数えない");
             Judge(10, SaberHand.Right, JudgmentTier.Perfect);
             Judge(22, SaberHand.Right, JudgmentTier.Perfect);
             Assert.AreEqual(1, controller.Successes, "赤を2周取っても1種類");
@@ -546,12 +546,12 @@ public class TutorialProgramTests
             Assert.AreEqual(1, controller.Successes, "両手の片方だけでは数えない");
             Judge(14, SaberHand.Right, JudgmentTier.Perfect);
             Assert.AreEqual(2, controller.Successes);
-            Judge(11, SaberHand.Left, JudgmentTier.Perfect);
+            Judge(11, SaberHand.Left, JudgmentTier.Great);
             Judge(12, SaberHand.Right, JudgmentTier.Perfect);
             Judge(16, SaberHand.Right, JudgmentTier.Perfect);
             Judge(17, SaberHand.Left, JudgmentTier.Good);
             Assert.AreEqual(5, controller.Successes, "下矢印は GOOD なので残る");
-            Assert.AreEqual("PERFECT であと 2 種類", TutorialProgram.RemainingText(step, controller.Successes, 0, false));
+            Assert.AreEqual("GREAT 以上であと 2 種類", TutorialProgram.RemainingText(step, controller.Successes, 0, false));
             Judge(17, SaberHand.Left, JudgmentTier.Perfect);
             Judge(19, SaberHand.Right, JudgmentTier.Perfect, 3);
             Assert.AreEqual(7, controller.Successes);
@@ -563,9 +563,9 @@ public class TutorialProgramTests
     [Test]
     public void RemainingText_SaysOnlyPerfectCounts()
     {
-        Assert.AreEqual("PERFECT であと 2 回", TutorialProgram.RemainingText(TutorialProgram.Get("tapRed"), 0, 0, false));
-        Assert.AreEqual("PERFECT であと 1 回", TutorialProgram.RemainingText(TutorialProgram.Get("gold"), 0, 0, false), "1回の段も出す");
-        Assert.AreEqual("PERFECT であと 1 組", TutorialProgram.RemainingText(TutorialProgram.Get("simul"), 0, 0, false));
+        Assert.AreEqual("GREAT 以上であと 2 回", TutorialProgram.RemainingText(TutorialProgram.Get("tapRed"), 0, 0, false));
+        Assert.AreEqual("GREAT 以上であと 1 回", TutorialProgram.RemainingText(TutorialProgram.Get("gold"), 0, 0, false), "1回の段も出す");
+        Assert.AreEqual("GREAT 以上であと 1 組", TutorialProgram.RemainingText(TutorialProgram.Get("simul"), 0, 0, false));
         Assert.AreEqual("あと 3 種類", TutorialProgram.RemainingText(TutorialProgram.Get("long"), 0, 0, false), "ロングは切り切れば PERFECT");
         Assert.AreEqual("", TutorialProgram.RemainingText(TutorialProgram.Get("tapRed"), 2, 0, true));
         StringAssert.Contains("早い", TutorialProgram.NotPerfectHint(-60));

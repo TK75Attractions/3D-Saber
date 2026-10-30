@@ -23,16 +23,16 @@ public class TutorialDirectionRequirementTests
                 .GetField("completedDirections", Private).GetValue(controller);
 
             Assert.AreEqual(goal, step.Goal);
-            Assert.AreEqual("PERFECT であと 2 方向", TutorialProgram.RemainingText(step, 0, controller.RemainingDirections, false));
+            Assert.AreEqual("GREAT 以上であと 2 方向", TutorialProgram.RemainingText(step, 0, controller.RemainingDirections, false));
             for (int i = 0; i < goal; i++) Judge(controller, root, CutDirection.Up, JudgmentTier.Perfect);
             Assert.AreEqual(goal, controller.Successes);
             Assert.AreEqual(1, controller.RemainingDirections);
             Assert.IsFalse(TutorialProgram.PracticeGoalReached(step, controller.Successes, completed));
-            Assert.AreEqual("PERFECT であと 1 方向", TutorialProgram.RemainingText(step, controller.Successes, controller.RemainingDirections, false));
+            Assert.AreEqual("GREAT 以上であと 1 方向", TutorialProgram.RemainingText(step, controller.Successes, controller.RemainingDirections, false));
 
             Judge(controller, root, CutDirection.Down, JudgmentTier.Miss);
             Judge(controller, root, CutDirection.Down, JudgmentTier.Good);
-            Assert.AreEqual(goal, controller.Successes, "GOOD は数えない(2026-10-28 から PERFECT だけ)");
+            Assert.AreEqual(goal, controller.Successes, "GOOD は数えない(2026-10-30 から GREAT 以上)");
             Assert.AreEqual(1, controller.RemainingDirections);
             Judge(controller, root, CutDirection.Down, JudgmentTier.Perfect);
             Assert.AreEqual(0, controller.RemainingDirections);
@@ -47,7 +47,7 @@ public class TutorialDirectionRequirementTests
         var step = TutorialProgram.Get("arrowNormal");
         var completed = new HashSet<CutDirection> { CutDirection.Up, CutDirection.Down };
         Assert.IsFalse(TutorialProgram.PracticeGoalReached(step, 2, completed));
-        Assert.AreEqual("PERFECT であと 1 回", TutorialProgram.RemainingText(step, 2, 0, false));
+        Assert.AreEqual("GREAT 以上であと 1 回", TutorialProgram.RemainingText(step, 2, 0, false));
         Assert.IsTrue(TutorialProgram.PracticeGoalReached(step, 3, completed));
         Assert.AreEqual("", TutorialProgram.RemainingText(step, 3, 0, true));
         completed.Clear();

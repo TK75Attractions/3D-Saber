@@ -231,7 +231,8 @@ public sealed class RankingSync : MonoBehaviour
         {
             var sync = Instance;
             if (sync == null || (sync.autoStarted && !AutoStartEnabled)) return Array.Empty<RankingPlay>();
-            return sync.LoggedPlays;
+            // 記録から外した回(RankingRemovals)は実績の条件に渡さない(はじめての人・一番乗りを、次の来場者が取れるように)。
+            return RankingRemovals.Without(sync.LoggedPlays);
         }
     }
 
@@ -241,7 +242,8 @@ public sealed class RankingSync : MonoBehaviour
     {
         if (autoStarted && !AutoStartEnabled) return;
         foreach (var play in log.Plays)
-            if ((play.ns ?? "") == ns && play.at >= sinceUnixMs && play.ach != null && play.ach.Contains(achId)) runs.Add(play.id);
+            if ((play.ns ?? "") == ns && play.at >= sinceUnixMs && play.ach != null && play.ach.Contains(achId) && !RankingRemovals.IsRemoved(play.id))
+                runs.Add(play.id);
     }
     // 届いている相手の数(60秒以内に届いた相手)と、そのうち双方向と分かった相手の数。
     public int PeerCount
@@ -434,6 +436,8 @@ public sealed class RankingSync : MonoBehaviour
             Put(reconcileApply, item, ApplyWhere.Reconcile);
         }
         if (settings.Backfill) BackfillLocalPlays();
+        // 起動の始めに、記録から外す回を表と実績から除いたとき(RankingRemovals)は、運営の記録に残す。
+        if (RankingRemovals.CleanedAtStartup > 0) LogEvent("ranking-removals", "cleaned=" + RankingRemovals.CleanedAtStartup);
         // 実績の記録はここで読んでおく(曲の演奏中に届いた1回で、初めて読むことにならないように)。照合で、ログの回の実績も数に戻す。
         _ = AchievementStore.Available;
         CheckNearFull();
@@ -875,6 +879,8 @@ public sealed class RankingSync : MonoBehaviour
         var order = new List<string>();
         foreach (var item in batch)
         {
+            // 記録から外した回(RankingRemovals)は、表へも実績の数へも足さない。ログには入れて(相手の台と要約を同じに保つ)、待ちから外す。
+            if (RankingRemovals.IsRemoved(item.Play.id)) { SkipRemoved(item); continue; }
             if (!groups.TryGetValue(item.Chart, out var group)) { groups.Add(item.Chart, group = new List<ApplyItem>()); order.Add(item.Chart); }
             group.Add(item);
         }
@@ -928,6 +934,21 @@ public sealed class RankingSync : MonoBehaviour
             LogEvent("ranking-sync-merge", "plays=" + added + " total=" + log.Count + " pending=" + pending.Count);
         }
         return added;
+    }
+
+    // 記録から外した回を、表へ足さずに待ちから外す。ログに無ければログにだけ入れる。別のキーの足し直し待ちからも消す
+    // (ログに今入れた回は、ログの保存に成功してから)。
+    void SkipRemoved(ApplyItem item)
+    {
+        item.Daily = item.High = false;
+        item.Where = ApplyWhere.None;
+        waiting.Remove(item.Play.id);
+        if (!log.Contains(item.Play.id) && log.Add(item.Play))
+        {
+            logDirty = true;
+            if (item.Persist) releasedPending.Add(item.Play);
+        }
+        else if (item.Persist) pendingStoreDirty = true;
     }
 
     // まとまり(同じ名前空間×曲×難易度)のうち、通算の表へ足す回を1回の読み書きで足す。結果は足さない回は null。

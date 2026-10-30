@@ -216,6 +216,18 @@ public static class HighScoreStore
         accuracy = float.IsNaN(entry.accuracy) || float.IsInfinity(entry.accuracy) ? 0 : Mathf.Clamp01(entry.accuracy)
     };
 
+    // 記録から外す回(RankingRemovals)を表から除く。除いたら true。表が読めないときは何もしない(上書きしない)。
+    // 残りが無くなれば鍵ごと消す。PlayerPrefs へは書くだけ(ディスクへの保存は呼び出し側)。
+    public static bool RemoveRun(string ns, string songId, string difficulty, string runId)
+    {
+        if (string.IsNullOrEmpty(runId) || !TryLoad(ns, songId, difficulty, out var table)) return false;
+        if (table.entries.RemoveAll(e => e.runId == runId) == 0) return false;
+        string key = Key(ns, songId, difficulty);
+        if (table.entries.Count == 0) PlayerPrefs.DeleteKey(key);
+        else PlayerPrefs.SetString(key, JsonUtility.ToJson(table));
+        return true;
+    }
+
     public static void Clear(string songId, string difficulty) => Clear(OperatorMode.Namespace, songId, difficulty);
 
     public static void Clear(string ns, string songId, string difficulty)

@@ -65,7 +65,7 @@ public sealed class TutorialController : MonoBehaviour
     readonly TutorialPairProgress pairs = new TutorialPairProgress();
     readonly HashSet<int> completedLongCounts = new HashSet<int>();
     readonly HashSet<CutDirection> completedDirections = new HashSet<CutDirection>();
-    // 「練習してみよう」: 型の種類を届く時刻(ミリ秒)で引き、PERFECT を取った種類を覚える。
+    // 「練習してみよう」: 型の種類を届く時刻(ミリ秒)で引き、GREAT 以上を取った種類を覚える。
     readonly Dictionary<long, string> kindByHit = new Dictionary<long, string>();
     readonly HashSet<string> completedKinds = new HashSet<string>();
     bool timedOutPractice;
@@ -391,7 +391,7 @@ public sealed class TutorialController : MonoBehaviour
         {
             if (step.Kinds.Length > 0)
             {
-                // 練習してみよう: 種類ごとに1回。両手は左右とも PERFECT の組がそろったときに数える。
+                // 練習してみよう: 種類ごとに1回。両手は左右とも GREAT 以上の組がそろったときに数える。
                 if (kindByHit.TryGetValue(HitKey(note.HitTime), out string kind)
                     && (kind != TutorialProgram.SimulKind || pairs.Register(note.HitTime, note.RequiredHand)))
                     completedKinds.Add(kind);
@@ -411,7 +411,7 @@ public sealed class TutorialController : MonoBehaviour
             return;
         }
         if (note.RequiredCutCount > 1) SetHint("数字がなくなるまで、同じ場所を切ろう");
-        // 切れたが PERFECT でなかった(数えない)。早い・遅いを知らせる。
+        // 切れたが GREAT 以上でなかった(GOOD・BAD、数えない)。早い・遅いを知らせる。
         else if (tier != JudgmentTier.Miss && score != null && score.LastErrorValid) SetHint(TutorialProgram.NotPerfectHint(score.LastErrorMs));
     }
 

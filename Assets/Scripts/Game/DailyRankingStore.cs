@@ -136,6 +136,19 @@ public static class DailyRankingStore
         return results;
     }
 
+    // 記録から外す回(RankingRemovals)を表から除く。除いたら true。表が無い・読めないときは何もしない(上書きしない)。
+    // 残りが無くなれば鍵ごと消す(数え始めた日も次の回から)。PlayerPrefs へは書くだけ(ディスクへの保存は呼び出し側)。
+    public static bool RemoveRun(string ns, string song, string difficulty, string runId)
+    {
+        string key = Key(ns, song, difficulty);
+        string json = PlayerPrefs.GetString(key, "");
+        if (string.IsNullOrEmpty(runId) || string.IsNullOrEmpty(json) || !TryRead(json, "", out var table)) return false;
+        if (table.entries.RemoveAll(e => e.runId == runId) == 0) return false;
+        if (table.entries.Count == 0) PlayerPrefs.DeleteKey(key);
+        else PlayerPrefs.SetString(key, JsonUtility.ToJson(table));
+        return true;
+    }
+
     public static bool TryRead(string json, string day, out Table table)
     {
         table = new Table { day = day };

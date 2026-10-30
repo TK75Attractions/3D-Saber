@@ -174,6 +174,8 @@ public class SongPlayer : MonoBehaviour
     void Awake()
     {
         EnsureSource();
+        // 曲の音を上乗せする(MusicBoost、2026-10-30)。本編の曲・チュートリアルの練習音源・判定調整のクリックはこの音源で鳴る。
+        MusicBoost.AttachTo(source);
     }
 
     private void EnsureSource()

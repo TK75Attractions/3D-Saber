@@ -83,6 +83,20 @@ public class TitleSceneSkin : MonoBehaviour
     // 問いかけ(と問いかけへ向かう演出)の間は、Esc を2秒以内に2回でタイトルを読み直す(来場者の画面で共通。仕様面の点検 2)。
     readonly EscapeTwiceGate escapeGate = new EscapeTwiceGate();
 
+    // 開始ノーツを切る前の、最初の状態か(問いかけも、問いかけ・選曲へ向かう演出も無い)。
+    public bool AtStart => prompt == null && !transitioning;
+
+    // タイトルを読み直して最初の状態へ戻す(問いかけの間の Esc 2回と、右クリック3回の RightClickHome)。
+    // 最初の状態のまま・幕の間は何もしない(false)。
+    public bool ReturnToStart()
+    {
+        if (AtStart || ScreenTransition.IsBusy) return false;
+        if (!ScreenTransition.Load(SceneManager.GetActiveScene().name, ScreenTransition.Style.Back)) return false;
+        if (prompt != null) prompt.Cancel();
+        MenuSfx.ToTitle();
+        return true;
+    }
+
     void Update()
     {
         visitorMode?.Tick(Time.unscaledDeltaTime, !transitioning);
@@ -92,11 +106,7 @@ public class TitleSceneSkin : MonoBehaviour
         if (prompt != null && InputManager.EscapeGetDown
             && escapeGate.PressAndNotify(Time.unscaledTimeAsDouble, EscapeTwiceGate.ToTitleNotice))
         {
-            if (ScreenTransition.Load(SceneManager.GetActiveScene().name, ScreenTransition.Style.Back))
-            {
-                prompt.Cancel();
-                MenuSfx.ToTitle();
-            }
+            ReturnToStart();
             return;
         }
         var keys = Keyboard.current;

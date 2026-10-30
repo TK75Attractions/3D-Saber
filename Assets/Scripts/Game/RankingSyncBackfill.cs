@@ -74,7 +74,8 @@ public static class RankingSyncBackfill
             {
                 var logged = find?.Invoke(entry.runId);
                 if (logged != null) { previous = Math.Max(previous, logged.at); continue; }
-                if ((waiting != null && waiting(entry.runId)) || !RankingSyncLog.IsValidId(entry.runId)) continue;
+                // 記録から外した回(RankingRemovals)は、この台の回としても作らない。
+                if ((waiting != null && waiting(entry.runId)) || !RankingSyncLog.IsValidId(entry.runId) || RankingRemovals.IsRemoved(entry.runId)) continue;
                 if (!byRun.TryGetValue(entry.runId, out var best) || best.score != entry.score)
                 {
                     best = null;

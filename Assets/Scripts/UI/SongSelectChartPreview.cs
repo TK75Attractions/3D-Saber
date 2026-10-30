@@ -111,6 +111,8 @@ public sealed class SongSelectChartPreview : MonoBehaviour
         source=audio; baseVolume=audio!=null?audio.volume:.7f;
         Muted=PlayerPrefs.GetInt(MutedKey,0)!=0;
         if(source!=null) source.mute=Muted;
+        // 試聴も本編と同じだけ上乗せする(MusicBoost、2026-10-30)。
+        MusicBoost.AttachTo(source);
     }
     public void SetMuted(bool muted)
     {
