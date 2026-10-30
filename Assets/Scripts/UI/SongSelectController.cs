@@ -276,12 +276,29 @@ public class SongSelectController : MonoBehaviour
     // 曲の並びはフォルダ名の日本語の名前順(仕様面の点検 8、2026-10-21)。PC の言語設定に任せると、
     // 英語の設定の PC では「揺籠」と「製作中」の順が入れ替わる(Unity で確かめた)。日本語に固定して、どの台でも同じ順にする。
     // 日本語の並べ方が使えない環境だけ、大文字小文字を区別しない文字コード順にする。
-    public static readonly System.Collections.Generic.IComparer<string> SongIdOrder = CreateSongIdOrder();
+    // ただし LeadingSongIds の曲はこの順で先頭に置く(2026-10-30 ユーザー「アンダルシアと2:23のジャケット位置を入れ替えて」。
+    // 入ったときのまん中はアンダルシア、2:23 AM はその右隣)。
+    public static readonly string[] LeadingSongIds = { "Andalusia", "2_23_AM" };
+    public static readonly System.Collections.Generic.IComparer<string> SongIdOrder = new LeadingSongOrder(LeadingSongIds, CreateSongIdOrder());
 
     static System.Collections.Generic.IComparer<string> CreateSongIdOrder()
     {
         try { return System.StringComparer.Create(System.Globalization.CultureInfo.GetCultureInfo("ja-JP"), false); }
         catch (System.Exception) { return System.StringComparer.OrdinalIgnoreCase; }
+    }
+
+    // 先頭に置く曲を決めた順に並べ、残りは名前順。
+    sealed class LeadingSongOrder : System.Collections.Generic.IComparer<string>
+    {
+        readonly string[] leading;
+        readonly System.Collections.Generic.IComparer<string> names;
+        public LeadingSongOrder(string[] leading, System.Collections.Generic.IComparer<string> names) { this.leading = leading; this.names = names; }
+        public int Compare(string a, string b)
+        {
+            int ia = System.Array.IndexOf(leading, a), ib = System.Array.IndexOf(leading, b);
+            if (ia < 0 && ib < 0) return names.Compare(a, b);
+            return (ia < 0 ? int.MaxValue : ia).CompareTo(ib < 0 ? int.MaxValue : ib);
+        }
     }
 
     // テストが作る仮の曲(__ChartLoadTest_ など)。テストが途中で落ちて残っても、ビルドした本番では並べない。

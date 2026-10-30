@@ -11,6 +11,9 @@ using UnityEngine;
 //   同期していない間の回)、実績の条件に渡す記録(KnownPlays)にも入れない(はじめての人・一番乗りを、次の来場者が取れるように)。
 // ・Editor とテストでは起動時の掃除をしない(本物の保存値に触れない)。表と実績へ足さない決まりは同じ。
 // 台A も、この版をビルドして起動すれば同じように消える(それまでは台A の表に残る)。
+// 2026-10-30 夕(v2.6): ユーザー「16:25以降のデータは運営したものではないので削除して」。運営モードで 10/30 16:25〜24:00(日本時間)に
+// 遊び終わった回も外す(同期のあとで台A 3回・台B 4回)。ID を並べず時刻で決める(このあと台A から届く同じ時間帯の回も表に入れない)。
+// 起動時の掃除は、同期の記録にある同じ時間帯の回を探して除く。時刻の決まりは本番のビルドだけ(Editor・テストの回は今の時刻で作るため)。
 public static class RankingRemovals
 {
     public sealed class Run
@@ -36,6 +39,15 @@ public static class RankingRemovals
     };
     static readonly HashSet<string> ids = BuildIds();
 
+    // 外す時間帯(UTC の Unix ミリ秒、終わりは含まない)。
+    public static readonly long WindowFromUnixMs = new DateTimeOffset(2026, 10, 30, 16, 25, 0, TimeSpan.FromHours(9)).ToUnixTimeMilliseconds();
+    public static readonly long WindowToUnixMs = new DateTimeOffset(2026, 10, 31, 0, 0, 0, TimeSpan.FromHours(9)).ToUnixTimeMilliseconds();
+    // 時間帯の決まりを使うか(テスト用。null なら本番のビルドだけ)。
+    public static bool? WindowEnabledForTest;
+    static bool WindowEnabled => WindowEnabledForTest ?? !Application.isEditor;
+    // 時間帯で外した回の ID(起動時の掃除と、届いた回で見つけたもの)。ID だけで引く所(実績の数・古い記録の足し直し)もこれで外す。
+    static readonly HashSet<string> windowIds = new HashSet<string>(StringComparer.Ordinal);
+
     public static IReadOnlyList<Run> Runs => runs;
     // この起動の始めに除いたものの数(表・曲ごとの達成・実績の解除の合計。RankingSync が運営の記録 events.log に書く)。
     public static int CleanedAtStartup { get; private set; }
@@ -48,7 +60,21 @@ public static class RankingRemovals
     }
 
     // 回の ID で引く(ID は回ごとに別の GUID)。
-    public static bool IsRemoved(string runId) => runId != null && ids.Contains(runId);
+    public static bool IsRemoved(string runId) => runId != null && (ids.Contains(runId) || windowIds.Contains(runId));
+
+    // 運営モードで、外す時間帯に遊び終わった回か。
+    public static bool InRemovedWindow(string ns, long atUnixMs) =>
+        WindowEnabled && (ns ?? "") == OperatorMode.FestivalNamespace && atUnixMs >= WindowFromUnixMs && atUnixMs < WindowToUnixMs;
+
+    // 1回の記録で引く(ID か時間帯)。時間帯で見つけた回は ID でも引けるように覚える。
+    public static bool IsRemoved(RankingPlay play)
+    {
+        if (play == null) return false;
+        if (IsRemoved(play.id)) return true;
+        if (!InRemovedWindow(play.ns, play.at)) return false;
+        if (play.id != null) windowIds.Add(play.id);
+        return true;
+    }
 
     // 記録から外した回を除いた一覧(外す回が無ければ、渡したまま)。
     public static IReadOnlyList<RankingPlay> Without(IReadOnlyList<RankingPlay> plays)
@@ -56,12 +82,28 @@ public static class RankingRemovals
         if (plays == null) return plays;
         bool any = false;
         foreach (var play in plays)
-            if (play != null && IsRemoved(play.id)) { any = true; break; }
+            if (IsRemoved(play)) { any = true; break; }
         if (!any) return plays;
         var kept = new List<RankingPlay>(plays.Count);
         foreach (var play in plays)
-            if (play == null || !IsRemoved(play.id)) kept.Add(play);
+            if (play == null || !IsRemoved(play)) kept.Add(play);
         return kept.AsReadOnly();
+    }
+
+    // 同期の記録(RankingSync.Log.v1)にある、外す時間帯の回(ID で並べた回は除く)。フルコンボ・AP はその回の実績から。
+    static List<Run> WindowRunsInLog()
+    {
+        var found = new List<Run>();
+        if (!WindowEnabled) return found;
+        var log = RankingSyncLog.FromJson(PlayerPrefs.GetString(RankingSyncLog.PreferenceKey, ""), out _);
+        foreach (var play in log.Plays)
+        {
+            if (ids.Contains(play.id) || !InRemovedWindow(play.ns, play.at)) continue;
+            windowIds.Add(play.id);
+            var ach = play.ach ?? new List<string>();
+            found.Add(new Run(play.ns, play.song, play.diff, play.id, play.score, ach.Contains("fc"), ach.Contains("ap")));
+        }
+        return found;
     }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
@@ -86,7 +128,9 @@ public static class RankingRemovals
     public static int Clean()
     {
         int cleaned = 0;
-        foreach (var run in runs)
+        var all = new List<Run>(runs);
+        all.AddRange(WindowRunsInLog());
+        foreach (var run in all)
         {
             if (DailyRankingStore.RemoveRun(run.Ns, run.Song, run.Difficulty, run.RunId)) cleaned++;
             if (HighScoreStore.RemoveRun(run.Ns, run.Song, run.Difficulty, run.RunId)) cleaned++;

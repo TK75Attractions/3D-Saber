@@ -242,7 +242,7 @@ public sealed class RankingSync : MonoBehaviour
     {
         if (autoStarted && !AutoStartEnabled) return;
         foreach (var play in log.Plays)
-            if ((play.ns ?? "") == ns && play.at >= sinceUnixMs && play.ach != null && play.ach.Contains(achId) && !RankingRemovals.IsRemoved(play.id))
+            if ((play.ns ?? "") == ns && play.at >= sinceUnixMs && play.ach != null && play.ach.Contains(achId) && !RankingRemovals.IsRemoved(play))
                 runs.Add(play.id);
     }
     // 届いている相手の数(60秒以内に届いた相手)と、そのうち双方向と分かった相手の数。
@@ -880,7 +880,7 @@ public sealed class RankingSync : MonoBehaviour
         foreach (var item in batch)
         {
             // 記録から外した回(RankingRemovals)は、表へも実績の数へも足さない。ログには入れて(相手の台と要約を同じに保つ)、待ちから外す。
-            if (RankingRemovals.IsRemoved(item.Play.id)) { SkipRemoved(item); continue; }
+            if (RankingRemovals.IsRemoved(item.Play)) { SkipRemoved(item); continue; }
             if (!groups.TryGetValue(item.Chart, out var group)) { groups.Add(item.Chart, group = new List<ApplyItem>()); order.Add(item.Chart); }
             group.Add(item);
         }

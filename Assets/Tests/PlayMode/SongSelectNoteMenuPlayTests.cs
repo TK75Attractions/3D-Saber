@@ -205,7 +205,7 @@ public class SongSelectNoteMenuPlayTests
         yield return SceneManager.LoadSceneAsync("SongSelect");
         yield return null; yield return null;
         skin=Object.FindFirstObjectByType<SongSelectSkin>();
-        Assert.That(skin.RemainingSeconds,Is.GreaterThan(98));
+        Assert.That(skin.RemainingSeconds,Is.GreaterThan(SongSelectCountdown.LimitSeconds-2),"戻ったら制限いっぱいから(2026-10-30 から 45 秒)");
     }
     [UnityTest] public IEnumerator RecordPanelShowsTheBestScoreOfTheSelectedChartInsideThePanel()
     {

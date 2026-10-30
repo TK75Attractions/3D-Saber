@@ -84,10 +84,12 @@ public class SongLockTests
             }
         }
         finally { System.Globalization.CultureInfo.CurrentCulture = old; }
-        var names = new System.Collections.Generic.List<string> { "揺籠", "logic", "製作中", "2_23_AM", "escapade", "ElDorado", "RushE" };
+        // 2026-10-30 ユーザー「アンダルシアと2:23のジャケット位置を入れ替えて」: 先頭はアンダルシア、次に 2:23 AM。
+        CollectionAssert.AreEqual(new[] { "Andalusia", "2_23_AM" }, expected.GetRange(0, 2), "入ったときのまん中はアンダルシア、右隣が 2:23 AM");
+        var names = new System.Collections.Generic.List<string> { "揺籠", "logic", "製作中", "2_23_AM", "escapade", "Andalusia", "ElDorado", "RushE" };
         names.Sort(SongSelectController.SongIdOrder);
-        CollectionAssert.AreEqual(new[] { "2_23_AM", "ElDorado", "escapade", "logic", "RushE", "製作中", "揺籠" }, names,
-            "今の台B と同じ順(最初は 2_23_AM、日本語は 製作中 → 揺籠)");
+        CollectionAssert.AreEqual(new[] { "Andalusia", "2_23_AM", "ElDorado", "escapade", "logic", "RushE", "製作中", "揺籠" }, names,
+            "今の台B と同じ順(最初は Andalusia → 2_23_AM、残りは名前順で 製作中 → 揺籠)");
     }
 
     [Test]

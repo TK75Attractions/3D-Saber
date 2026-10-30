@@ -504,10 +504,40 @@ public class TutorialProgramTests
         var pair = step.Pattern.Where(n => n.kind == "simul").ToArray();
         Assert.AreEqual(2, pair.Length); Assert.AreEqual(pair[0].dt, pair[1].dt, "両手は同じ時刻");
         Assert.AreNotEqual(pair[0].color, pair[1].color);
-        Assert.AreEqual(30f, step.TimeoutSeconds, .001f, "型2周で次へ(今までどおり時間でも進む)");
-        Assert.GreaterOrEqual(step.TimeoutSeconds, 2 * step.PeriodSeconds);
+        // 2026-10-30 ユーザー「練習は型1周で」: 型は1周だけ。30秒は、最初の型を待つ間を足しても1周の終わりより長い念のための上限。
+        Assert.AreEqual(1, step.Loops, "型1周で次へ");
+        Assert.AreEqual(10.0 + step.PeriodSeconds, TutorialProgram.PatternEndAt(step, 10.0), 1e-9);
+        double longestWait = TutorialProgram.ReadDelaySeconds + 1.0 + TutorialProgram.BarSeconds;
+        Assert.Greater(step.TimeoutSeconds, longestWait + step.PeriodSeconds);
+        Assert.AreEqual(double.PositiveInfinity, TutorialProgram.PatternEndAt(TutorialProgram.Get("tapRed"), 10.0), "ほかの段は合格するまで繰り返す");
         Assert.AreEqual("GREAT 以上であと 7 種類", TutorialProgram.RemainingText(step, 0, 0, false));
         Assert.AreEqual("GREAT 以上であと 1 種類", TutorialProgram.RemainingText(step, 6, 0, false));
+    }
+
+    // 先読みがどれだけ先まで届いても、「練習してみよう」の型は1回だけ足す(2026-10-30「練習は型1周で」)。
+    [Test]
+    public void AllStep_AddsThePatternOnlyOnce()
+    {
+        var root = new GameObject("TutorialAllOnce");
+        try
+        {
+            var flags = BindingFlags.Instance | BindingFlags.NonPublic;
+            var controller = root.AddComponent<TutorialController>();
+            var spawner = root.AddComponent<NoteSpawner>();
+            var step = TutorialProgram.Get("all");
+            var chart = new ChartData { bpm = TutorialProgram.Bpm, notes = new System.Collections.Generic.List<NoteData>() };
+            typeof(TutorialController).GetField("spawner", flags).SetValue(controller, spawner);
+            typeof(TutorialController).GetField("liveChart", flags).SetValue(controller, chart);
+            typeof(TutorialController).GetField("steps", flags).SetValue(controller, new[] { step });
+            typeof(TutorialController).GetMethod("BeginStep", flags).Invoke(controller, new object[] { 0, 0d });
+            double first = (double)typeof(TutorialController).GetField("firstPatternAt", flags).GetValue(controller);
+            var extend = typeof(TutorialController).GetMethod("ExtendPattern", flags);
+            extend.Invoke(controller, new object[] { first, step });
+            extend.Invoke(controller, new object[] { first + 5 * step.PeriodSeconds, step });
+            Assert.AreEqual(step.Pattern.Length, chart.notes.Count, "型は1周ぶんだけ");
+            Assert.IsTrue(chart.notes.All(n => n.TimeSeconds < first + step.PeriodSeconds));
+        }
+        finally { Object.DestroyImmediate(root); }
     }
 
     // 判定の通知から種類の数へ。型の届く時刻で種類を引き、GREAT 以上だけ・種類ごとに1回・両手は組で数える。

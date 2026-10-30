@@ -1,0 +1,737 @@
+[
+  {
+    "songId": "2_23_AM",
+    "source": "audio.mp3",
+    "rate": 44100,
+    "frames": 8646912,
+    "sourceLufs": -12.3,
+    "sourceLra": 5.4,
+    "v25Lufs": -9.0,
+    "v25TruePeakDbtp": 0.4,
+    "v25FlattenedSamples": 15826,
+    "v25MaxCutDb": 7.59,
+    "targetLufs": -8.7,
+    "outputLufs": -8.7,
+    "outputLra": 2.1,
+    "outputTruePeakDbtp": -1.1,
+    "outputSampleMax": 0.8719,
+    "ceilingDbtp": -1.5,
+    "makeupDb": 7.96,
+    "estimateLufs": -8.86,
+    "limitP50Db": 3.27,
+    "limitP95Db": 7.5,
+    "limitP99Db": 9.04,
+    "limitMaxDb": 9.73,
+    "attempts": 2,
+    "locallyLoweredSamples": 0,
+    "lags": [
+      {
+        "lag": 0,
+        "correlation": 0.982
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9659
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9583
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9779
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9693
+      }
+    ],
+    "oggBytes": 5467378
+  },
+  {
+    "songId": "Andalusia",
+    "source": "audio.ogg",
+    "rate": 44100,
+    "frames": 5750720,
+    "sourceLufs": -8.7,
+    "sourceLra": 2.2,
+    "v25Lufs": -8.1,
+    "v25TruePeakDbtp": 0.0,
+    "v25FlattenedSamples": 6233,
+    "v25MaxCutDb": 4.61,
+    "targetLufs": -7.9,
+    "outputLufs": -7.9,
+    "outputLra": 1.9,
+    "outputTruePeakDbtp": -1.0,
+    "outputSampleMax": 0.8866,
+    "ceilingDbtp": -1.5,
+    "makeupDb": 4.09,
+    "estimateLufs": -8.0,
+    "limitP50Db": 2.88,
+    "limitP95Db": 5.31,
+    "limitP99Db": 5.67,
+    "limitMaxDb": 6.43,
+    "attempts": 1,
+    "locallyLoweredSamples": 0,
+    "lags": [
+      {
+        "lag": 0,
+        "correlation": 0.9887
+      },
+      {
+        "lag": 0,
+        "correlation": 0.985
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9884
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9891
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9913
+      }
+    ],
+    "oggBytes": 3386823
+  },
+  {
+    "songId": "Aobasou",
+    "source": "audio.wav",
+    "rate": 48000,
+    "frames": 6665137,
+    "sourceLufs": -6.1,
+    "sourceLra": 2.4,
+    "v25Lufs": -6.0,
+    "v25TruePeakDbtp": 0.2,
+    "v25FlattenedSamples": 0,
+    "v25MaxCutDb": -0.0,
+    "targetLufs": -6.3,
+    "outputLufs": -6.3,
+    "outputLra": 2.0,
+    "outputTruePeakDbtp": -1.0,
+    "outputSampleMax": 0.8873,
+    "ceilingDbtp": -1.5,
+    "makeupDb": 1.29,
+    "estimateLufs": -6.38,
+    "limitP50Db": 1.3,
+    "limitP95Db": 2.02,
+    "limitP99Db": 2.32,
+    "limitMaxDb": 3.08,
+    "attempts": 6,
+    "locallyLoweredSamples": 3439,
+    "lags": [
+      {
+        "lag": 0,
+        "correlation": 0.9922
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9692
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9875
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9934
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9663
+      }
+    ],
+    "oggBytes": 4762933
+  },
+  {
+    "songId": "BenkyouRemaster",
+    "source": "audio.mp3",
+    "rate": 44100,
+    "frames": 6119424,
+    "sourceLufs": -12.3,
+    "sourceLra": 5.4,
+    "v25Lufs": -7.6,
+    "v25TruePeakDbtp": 1.9,
+    "v25FlattenedSamples": 11928,
+    "v25MaxCutDb": 8.6,
+    "targetLufs": -7.5,
+    "outputLufs": -7.5,
+    "outputLra": 5.3,
+    "outputTruePeakDbtp": -1.1,
+    "outputSampleMax": 0.8781,
+    "ceilingDbtp": -1.5,
+    "makeupDb": 9.94,
+    "estimateLufs": -7.6,
+    "limitP50Db": 4.19,
+    "limitP95Db": 7.19,
+    "limitP99Db": 9.11,
+    "limitMaxDb": 13.18,
+    "attempts": 2,
+    "locallyLoweredSamples": 36,
+    "lags": [
+      {
+        "lag": 0,
+        "correlation": 0.9803
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9699
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9872
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9806
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9984
+      }
+    ],
+    "oggBytes": 3760939
+  },
+  {
+    "songId": "ElDorado",
+    "source": "audio.mp3",
+    "rate": 44100,
+    "frames": 6353280,
+    "sourceLufs": -14.2,
+    "sourceLra": 3.9,
+    "v25Lufs": -8.5,
+    "v25TruePeakDbtp": 1.3,
+    "v25FlattenedSamples": 4616,
+    "v25MaxCutDb": 8.58,
+    "targetLufs": -8.1,
+    "outputLufs": -8.1,
+    "outputLra": 1.0,
+    "outputTruePeakDbtp": -1.1,
+    "outputSampleMax": 0.8828,
+    "ceilingDbtp": -1.5,
+    "makeupDb": 11.03,
+    "estimateLufs": -8.23,
+    "limitP50Db": 4.47,
+    "limitP95Db": 7.51,
+    "limitP99Db": 9.24,
+    "limitMaxDb": 11.93,
+    "attempts": 2,
+    "locallyLoweredSamples": 277,
+    "lags": [
+      {
+        "lag": 0,
+        "correlation": 0.971
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9721
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9932
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9729
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9774
+      }
+    ],
+    "oggBytes": 4209041
+  },
+  {
+    "songId": "ElDorado",
+    "source": "audio_g.mp3",
+    "rate": 48000,
+    "frames": 10715904,
+    "sourceLufs": -12.9,
+    "sourceLra": 6.0,
+    "v25Lufs": -8.7,
+    "v25TruePeakDbtp": 1.0,
+    "v25FlattenedSamples": 9226,
+    "v25MaxCutDb": 7.92,
+    "targetLufs": -8.3,
+    "outputLufs": -8.3,
+    "outputLra": 1.5,
+    "outputTruePeakDbtp": -1.1,
+    "outputSampleMax": 0.8823,
+    "ceilingDbtp": -1.5,
+    "makeupDb": 9.35,
+    "estimateLufs": -8.46,
+    "limitP50Db": 3.69,
+    "limitP95Db": 7.5,
+    "limitP99Db": 8.9,
+    "limitMaxDb": 10.82,
+    "attempts": 2,
+    "locallyLoweredSamples": 200,
+    "lags": [
+      {
+        "lag": 0,
+        "correlation": 0.9844
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9804
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9791
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9747
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9786
+      }
+    ],
+    "oggBytes": 6297718
+  },
+  {
+    "songId": "Epilogue",
+    "source": "audio.ogg",
+    "rate": 44100,
+    "frames": 7338624,
+    "sourceLufs": -15.3,
+    "sourceLra": 12.5,
+    "v25Lufs": -8.9,
+    "v25TruePeakDbtp": -0.9,
+    "v25FlattenedSamples": 20679,
+    "v25MaxCutDb": 8.91,
+    "targetLufs": -8.0,
+    "outputLufs": -8.0,
+    "outputLra": 3.6,
+    "outputTruePeakDbtp": -1.2,
+    "outputSampleMax": 0.8691,
+    "ceilingDbtp": -1.5,
+    "makeupDb": 11.77,
+    "estimateLufs": -8.12,
+    "limitP50Db": 2.2,
+    "limitP95Db": 7.03,
+    "limitP99Db": 8.22,
+    "limitMaxDb": 10.36,
+    "attempts": 2,
+    "locallyLoweredSamples": 0,
+    "lags": [
+      {
+        "lag": 0,
+        "correlation": 0.9938
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9889
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9954
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9938
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9968
+      }
+    ],
+    "oggBytes": 3355692
+  },
+  {
+    "songId": "escapade",
+    "source": "audio.mp3",
+    "rate": 48000,
+    "frames": 5277312,
+    "sourceLufs": -11.5,
+    "sourceLra": 8.7,
+    "v25Lufs": -9.1,
+    "v25TruePeakDbtp": 1.1,
+    "v25FlattenedSamples": 4084,
+    "v25MaxCutDb": 6.82,
+    "targetLufs": -8.8,
+    "outputLufs": -8.8,
+    "outputLra": 1.6,
+    "outputTruePeakDbtp": -1.2,
+    "outputSampleMax": 0.8704,
+    "ceilingDbtp": -1.5,
+    "makeupDb": 7.78,
+    "estimateLufs": -8.86,
+    "limitP50Db": 3.77,
+    "limitP95Db": 7.51,
+    "limitP99Db": 8.59,
+    "limitMaxDb": 10.0,
+    "attempts": 4,
+    "locallyLoweredSamples": 147,
+    "lags": [
+      {
+        "lag": 0,
+        "correlation": 0.9552
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9658
+      },
+      {
+        "lag": 0,
+        "correlation": 0.972
+      },
+      {
+        "lag": 0,
+        "correlation": 0.967
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9934
+      }
+    ],
+    "oggBytes": 3737588
+  },
+  {
+    "songId": "logic",
+    "source": "audio.mp3",
+    "rate": 44100,
+    "frames": 9118080,
+    "sourceLufs": -25.2,
+    "sourceLra": 8.0,
+    "v25Lufs": -8.6,
+    "v25TruePeakDbtp": 2.4,
+    "v25FlattenedSamples": 3736,
+    "v25MaxCutDb": 12.08,
+    "targetLufs": -8.1,
+    "outputLufs": -8.1,
+    "outputLra": 3.4,
+    "outputTruePeakDbtp": -1.0,
+    "outputSampleMax": 0.8864,
+    "ceilingDbtp": -1.5,
+    "makeupDb": 22.5,
+    "estimateLufs": -8.16,
+    "limitP50Db": 3.6,
+    "limitP95Db": 7.5,
+    "limitP99Db": 11.6,
+    "limitMaxDb": 18.38,
+    "attempts": 2,
+    "locallyLoweredSamples": 190,
+    "lags": [
+      {
+        "lag": 0,
+        "correlation": 0.9604
+      },
+      {
+        "lag": 0,
+        "correlation": 0.908
+      },
+      {
+        "lag": 0,
+        "correlation": 0.905
+      },
+      {
+        "lag": 0,
+        "correlation": 0.8263
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9691
+      }
+    ],
+    "oggBytes": 5186543
+  },
+  {
+    "songId": "ManicSonic",
+    "source": "audio.wav",
+    "rate": 48000,
+    "frames": 7173693,
+    "sourceLufs": -9.1,
+    "sourceLra": 3.3,
+    "v25Lufs": -8.1,
+    "v25TruePeakDbtp": 1.1,
+    "v25FlattenedSamples": 9454,
+    "v25MaxCutDb": 3.07,
+    "targetLufs": -8.0,
+    "outputLufs": -8.0,
+    "outputLra": 2.8,
+    "outputTruePeakDbtp": -1.1,
+    "outputSampleMax": 0.8721,
+    "ceilingDbtp": -1.5,
+    "makeupDb": 6.91,
+    "estimateLufs": -8.05,
+    "limitP50Db": 5.54,
+    "limitP95Db": 7.52,
+    "limitP99Db": 7.92,
+    "limitMaxDb": 9.21,
+    "attempts": 5,
+    "locallyLoweredSamples": 496,
+    "lags": [
+      {
+        "lag": 0,
+        "correlation": 0.9718
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9609
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9547
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9806
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9906
+      }
+    ],
+    "oggBytes": 4831107
+  },
+  {
+    "songId": "Morning",
+    "source": "audio.mp3",
+    "rate": 44100,
+    "frames": 7291008,
+    "sourceLufs": -10.7,
+    "sourceLra": 1.4,
+    "v25Lufs": -8.7,
+    "v25TruePeakDbtp": 0.1,
+    "v25FlattenedSamples": 12134,
+    "v25MaxCutDb": 5.91,
+    "targetLufs": -8.3,
+    "outputLufs": -8.3,
+    "outputLra": 0.9,
+    "outputTruePeakDbtp": -1.1,
+    "outputSampleMax": 0.8801,
+    "ceilingDbtp": -1.5,
+    "makeupDb": 7.21,
+    "estimateLufs": -8.48,
+    "limitP50Db": 4.11,
+    "limitP95Db": 7.5,
+    "limitP99Db": 8.57,
+    "limitMaxDb": 8.84,
+    "attempts": 2,
+    "locallyLoweredSamples": 0,
+    "lags": [
+      {
+        "lag": 0,
+        "correlation": 0.9874
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9831
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9829
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9861
+      },
+      {
+        "lag": 0,
+        "correlation": 0.98
+      }
+    ],
+    "oggBytes": 5479638
+  },
+  {
+    "songId": "Phobia PARTⅠ",
+    "source": "audio.mp3",
+    "rate": 44100,
+    "frames": 4893696,
+    "sourceLufs": -14.2,
+    "sourceLra": 3.3,
+    "v25Lufs": -8.4,
+    "v25TruePeakDbtp": 0.6,
+    "v25FlattenedSamples": 4191,
+    "v25MaxCutDb": 8.76,
+    "targetLufs": -8.0,
+    "outputLufs": -8.0,
+    "outputLra": 1.5,
+    "outputTruePeakDbtp": -1.1,
+    "outputSampleMax": 0.8791,
+    "ceilingDbtp": -1.5,
+    "makeupDb": 10.48,
+    "estimateLufs": -8.14,
+    "limitP50Db": 3.73,
+    "limitP95Db": 6.62,
+    "limitP99Db": 9.18,
+    "limitMaxDb": 11.39,
+    "attempts": 2,
+    "locallyLoweredSamples": 80,
+    "lags": [
+      {
+        "lag": 0,
+        "correlation": 0.9938
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9956
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9784
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9552
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9797
+      }
+    ],
+    "oggBytes": 3229413
+  },
+  {
+    "songId": "RushE",
+    "source": "audio.wav",
+    "rate": 44100,
+    "frames": 6360064,
+    "sourceLufs": -9.7,
+    "sourceLra": 12.4,
+    "v25Lufs": -7.9,
+    "v25TruePeakDbtp": -0.2,
+    "v25FlattenedSamples": 6754,
+    "v25MaxCutDb": 4.46,
+    "targetLufs": -7.9,
+    "outputLufs": -7.9,
+    "outputLra": 7.0,
+    "outputTruePeakDbtp": -1.1,
+    "outputSampleMax": 0.8837,
+    "ceilingDbtp": -1.5,
+    "makeupDb": 5.16,
+    "estimateLufs": -8.1,
+    "limitP50Db": 2.01,
+    "limitP95Db": 4.44,
+    "limitP99Db": 5.06,
+    "limitMaxDb": 6.74,
+    "attempts": 2,
+    "locallyLoweredSamples": 0,
+    "lags": [
+      {
+        "lag": 0,
+        "correlation": 0.9887
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9952
+      },
+      {
+        "lag": 0,
+        "correlation": 0.985
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9933
+      },
+      {
+        "lag": 0,
+        "correlation": 0.997
+      }
+    ],
+    "oggBytes": 4416102
+  },
+  {
+    "songId": "揺籠",
+    "source": "audio.mp3",
+    "rate": 44100,
+    "frames": 8125056,
+    "sourceLufs": -15.5,
+    "sourceLra": 7.5,
+    "v25Lufs": -8.6,
+    "v25TruePeakDbtp": -0.0,
+    "v25FlattenedSamples": 6862,
+    "v25MaxCutDb": 8.36,
+    "targetLufs": -8.1,
+    "outputLufs": -8.1,
+    "outputLra": 1.3,
+    "outputTruePeakDbtp": -1.2,
+    "outputSampleMax": 0.8746,
+    "ceilingDbtp": -1.5,
+    "makeupDb": 12.12,
+    "estimateLufs": -8.21,
+    "limitP50Db": 3.81,
+    "limitP95Db": 7.51,
+    "limitP99Db": 8.88,
+    "limitMaxDb": 10.97,
+    "attempts": 3,
+    "locallyLoweredSamples": 200,
+    "lags": [
+      {
+        "lag": 0,
+        "correlation": 0.9815
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9881
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9804
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9919
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9945
+      }
+    ],
+    "oggBytes": 5050512
+  },
+  {
+    "songId": "製作中",
+    "source": "audio.mp3",
+    "rate": 48000,
+    "frames": 8393472,
+    "sourceLufs": -7.5,
+    "sourceLra": 2.5,
+    "v25Lufs": -7.1,
+    "v25TruePeakDbtp": -0.4,
+    "v25FlattenedSamples": 5221,
+    "v25MaxCutDb": 3.21,
+    "targetLufs": -7.1,
+    "outputLufs": -7.1,
+    "outputLra": 1.4,
+    "outputTruePeakDbtp": -1.0,
+    "outputSampleMax": 0.8803,
+    "ceilingDbtp": -1.5,
+    "makeupDb": 2.35,
+    "estimateLufs": -7.3,
+    "limitP50Db": 1.77,
+    "limitP95Db": 3.24,
+    "limitP99Db": 3.7,
+    "limitMaxDb": 4.75,
+    "attempts": 3,
+    "locallyLoweredSamples": 971,
+    "lags": [
+      {
+        "lag": 0,
+        "correlation": 0.9851
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9868
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9848
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9951
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9937
+      }
+    ],
+    "oggBytes": 5247172
+  }
+]

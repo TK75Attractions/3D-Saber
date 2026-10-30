@@ -199,6 +199,8 @@ public sealed class TutorialController : MonoBehaviour
                     {
                         case TutorialStepKind.Practice:
                             if (TutorialProgram.PracticeGoalReached(step, Successes, completedDirections)) Complete(now, "ok");
+                            // 周の数が決まった段(練習してみよう=型1周)は、最後の周が終わったら合格しなくても次へ。
+                            else if (now >= TutorialProgram.PatternEndAt(step, firstPatternAt)) Complete(now, "timeout");
                             else if (elapsed >= (step.TimeoutSeconds > 0 ? step.TimeoutSeconds : PracticeTimeoutSeconds)) Complete(now, "timeout");
                             break;
                         case TutorialStepKind.Explain:
@@ -220,12 +222,13 @@ public sealed class TutorialController : MonoBehaviour
         if (Overlay != null) Overlay.Tick(frameSeconds);
     }
 
-    // 成功するまで同じ型を出し続ける。先読み分だけ譜面の末尾に足し、過去には足さない。
+    // 成功するまで同じ型を出し続ける(周の数が決まった段はその周まで)。先読み分だけ譜面の末尾に足し、過去には足さない。
     void ExtendPattern(double now, TutorialStep step)
     {
         double horizon = now + spawner.approachTime + .3;
+        double end = TutorialProgram.PatternEndAt(step, firstPatternAt) - 1e-6;
         int guard = 0;
-        while (nextPatternAt <= horizon && guard++ < 8)
+        while (nextPatternAt <= horizon && nextPatternAt < end && guard++ < 8)
         {
             foreach (var p in step.Pattern)
             {

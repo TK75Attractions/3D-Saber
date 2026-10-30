@@ -318,12 +318,14 @@ public class RushESecretTests
         string folder = Path.Combine(Application.streamingAssetsPath, "Songs", "ElDorado");
         Assert.AreEqual("_g", SongLoudness.VariantSuffix(folder, "G"));
         Assert.AreEqual("", SongLoudness.VariantSuffix(folder, "Hard"), "ほかの難易度は今までの音源");
-        var g = SongLoudness.CandidatesInFolder(folder, "G").First();
-        Assert.AreEqual("audio_g.mp3", Path.GetFileName(g.Path));
-        Assert.AreEqual(Mathf.Pow(10, -5.03f / 20), g.Gain, 1e-4f, "長い版は −12.97 LUFS なので −5.03 dB で、ほかの曲と同じ −18 LUFS");
+        // 2026-10-30 から、どの曲も前もって大きくした再生用の音源(master*.ogg、Tools/Audio/SongLoudness/build_master.py)を倍率 1 で鳴らす。
+        var g = SongLoudness.CandidatesInFolder(folder, "G").ToList();
+        Assert.AreEqual("master_g.ogg", Path.GetFileName(g[0].Path), "長い版は長い版の音源から作った再生用の音源");
+        Assert.AreEqual(1, g[0].Gain, 1e-6f);
+        Assert.AreEqual("audio_g.mp3", Path.GetFileName(g[1].Path), "読めなければ長い版の原音");
         var hard = SongLoudness.CandidatesInFolder(folder, "Hard").First();
-        Assert.AreEqual("audio.mp3", Path.GetFileName(hard.Path));
-        Assert.AreEqual(Mathf.Pow(10, -3.79f / 20), hard.Gain, 1e-4f);
+        Assert.AreEqual("master.ogg", Path.GetFileName(hard.Path));
+        Assert.AreEqual(1, hard.Gain, 1e-6f);
         Assert.AreEqual("loudness_g.json", SongLoudness.MetadataFileFor("audio_g.mp3"));
         Assert.AreEqual("loudness.json", SongLoudness.MetadataFileFor("audio.mp3"));
         var stage = StagePerformanceTimeline.Load("ElDorado", "G");

@@ -51,8 +51,10 @@ public class TutorialMusicTests
         double gain = 20 * Math.Log10(TutorialController.MusicVolume);
         double full = Loudness(samples, clip.channels, clip.frequency, 0) + gain;
         double small = Loudness(samples, clip.channels, clip.frequency, 150) + gain;
-        // 曲は loudness.json で全編 -18 LUFS にして鳴らす(Tools/Audio/SongLoudness)。練習の音も同じ大きさにする。
-        Assert.AreEqual(-18, full, .5, "曲と同じ大きさ");
+        // 2026-10-30 から曲は前もって大きくした master.ogg で鳴らす(Tools/Audio/SongLoudness/build_master.py)。練習の音は同じ道具で、
+        // 拍がはっきり聞こえる決まり(上の、立ち上がり > 余韻の2倍)の中で一番大きくした(v2.5 で +12 dB して出口で削って鳴っていたのと
+        // 同じ大きさ。削れはない)。
+        Assert.AreEqual(-11.6, full, .5, "v2.5 で鳴っていた大きさ");
         // 会場のノートPC・モニターのスピーカーは 150 Hz 未満がほぼ出ない。曲は低音を除いても 0.1〜2.1 dB しか下がらない。
         Assert.Less(full - small, 3, "低音に偏らず、小さいスピーカーでも曲並みに聞こえる");
     }
