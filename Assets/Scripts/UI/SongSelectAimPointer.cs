@@ -157,8 +157,6 @@ public sealed class SongSelectAimPointer : MonoBehaviour
                 reticle.gameObject.SetActive(true); Place(reticle.rectTransform, point);
                 reticle.Show(tracker.Progress01, tracker.NeedsRelease, 10, true);
             }
-            // 曲送りをためたまま止まっている間も、試聴を始めない。
-            if (hovered.disc != null && hovered.disc.RepeatWhileHeld && tracker.Progress01 > 0 && controller != null && controller.ChartPreview != null) controller.ChartPreview.HoldOff();
             UpdateChargeSound(false, default, dt);
             return;
         }
@@ -211,8 +209,7 @@ public sealed class SongSelectAimPointer : MonoBehaviour
         WaitingOnStart = !fire && startDisc && tracker.WaitingInside;
         // 手ぶれ・持ち直し・的の横切りでは案内を止めず、同じ的を狙い続けたときに操作とみなす。
         if (idleGuide != null && (fire || tracker.HeldSeconds >= SongSelectIdleState.AimActivitySeconds)) idleGuide.RegisterActivity();
-        // 曲送りをため続けている間は試聴を始めない。送るたびに鳴りかけて途切れるのを防ぐ。
-        if (repeat && tracker.Progress01 > 0 && controller != null && controller.ChartPreview != null) controller.ChartPreview.HoldOff();
+        // 曲送りをため続けている間も、着いた曲の試聴は止めない(2026-10-30 ユーザー「次に移してる間に流していい」)。
         if (reticle != null)
         {
             reticle.gameObject.SetActive(true); Place(reticle.rectTransform, point);

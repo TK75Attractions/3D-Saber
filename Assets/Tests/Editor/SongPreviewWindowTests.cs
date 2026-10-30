@@ -8,7 +8,7 @@ public class SongPreviewWindowTests
     [TestCase("Aobasou",109.714286,138.857052,120.000012)]
     [TestCase("BenkyouRemaster",6.024,138.762449,16.524000)]
     [TestCase("ElDorado",100.203,144.065306,110.426200)]
-    [TestCase("Epilogue",133.859,166.408707,143.379062)]
+    [TestCase("Epilogue",111.208,166.408707,120.642)]
     [TestCase("escapade",85.914737,109.944036,96.019996)]
     [TestCase("logic",144.153,206.759184,154.403000)]
     [TestCase("ManicSonic",81.166667,149.451938,91.833333)]

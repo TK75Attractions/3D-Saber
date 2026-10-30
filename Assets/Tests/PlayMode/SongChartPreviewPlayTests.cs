@@ -36,19 +36,20 @@ public class SongChartPreviewPlayTests
     }
 
     [UnityTest]
-    public IEnumerator LatestSelectionWaitsOneSecondAndDifficultyKeepsSyncedPreview()
+    public IEnumerator LatestSelectionWaitsBrieflyAndDifficultyKeepsSyncedPreview()
     {
         yield return Open(); controller.Select(Index("ElDorado"));
-        yield return new WaitForSecondsRealtime(.2f);
+        yield return new WaitForSecondsRealtime(.15f);
         controller.Select(Index("Epilogue")); controller.SetDifficulty(1);
-        yield return new WaitForSecondsRealtime(.75f);
+        yield return new WaitForSecondsRealtime(.1f);
         Assert.IsFalse(controller.previewSource.isPlaying); Assert.IsFalse(controller.ChartPreview.View.IsVisible);
         yield return AwaitPlaying();
         var preview=controller.ChartPreview;
         Assert.AreEqual("Epilogue",preview.SongId); Assert.AreEqual("Normal",preview.Difficulty);
-        Assert.GreaterOrEqual(preview.StartedAt-preview.SelectedAt,1);
-        Assert.That(preview.Window.Start,Is.EqualTo(133.859).Within(.001));
-        Assert.That(preview.Window.Start+preview.Window.Duration,Is.EqualTo(143.379062).Within(.001));
+        Assert.GreaterOrEqual(preview.StartedAt-preview.SelectedAt,SongSelectChartPreview.SelectionDelaySeconds);
+        // 校歌は全員で歌う斉唱の頭(PDF 第53小節)から(2026-10-30 ユーザー「筑駒の切り取る部分は本家で」→「ふだん歌う校歌の部分」)。
+        Assert.That(preview.Window.Start,Is.EqualTo(111.208).Within(.001));
+        Assert.That(preview.Window.Start+preview.Window.Duration,Is.EqualTo(120.642).Within(.001));
         Assert.That(controller.previewSource.time,Is.EqualTo(preview.SongTime).Within(.35));
         var world=preview.View.WorldRoot;
         Assert.IsFalse(world.GetComponentsInChildren<Collider>().Any(c=>c.enabled));
@@ -79,17 +80,15 @@ public class SongChartPreviewPlayTests
     }
 
     [UnityTest]
-    public IEnumerator HoldOffKeepsTheNextPreviewWaitingUntilAimingStops()
+    public IEnumerator PreviewStartsShortlyAfterTheSongIsChosen()
     {
+        // 2026-10-30 ユーザー「もっとすぐに流れていい」: 曲が決まってから 0.3 秒(前は 1 秒)待って鳴らす。
+        Assert.LessOrEqual(SongSelectChartPreview.SelectionDelaySeconds,.3);
         yield return Open(); controller.Select(Index("Morning"));
         var preview=controller.ChartPreview;
-        double until=Time.realtimeSinceStartupAsDouble+1.6;
-        while(Time.realtimeSinceStartupAsDouble<until) { preview.HoldOff(); Assert.IsFalse(preview.IsPlaying); yield return null; }
-        Assert.IsFalse(controller.previewSource.isPlaying);
-        double released=Time.realtimeSinceStartupAsDouble;
         yield return AwaitPlaying();
         Assert.AreEqual("Morning",preview.SongId);
-        Assert.GreaterOrEqual(preview.StartedAt-released,SongSelectChartPreview.SelectionDelaySeconds-.05,"ため終わってから1秒待って鳴らす");
+        Assert.GreaterOrEqual(preview.StartedAt-preview.SelectedAt,SongSelectChartPreview.SelectionDelaySeconds-.05,"速い曲送りでは音源を開かないよう、少し待ってから鳴らす");
     }
 
     [UnityTest]

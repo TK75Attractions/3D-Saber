@@ -67,22 +67,27 @@ public class SongSelectNoteMenuPlayTests
         Hold(point,9); Assert.AreEqual(1,aim.ShotCount,"次の曲も1秒ため直す");
         Hold(point,1); Assert.AreEqual(2,aim.ShotCount); Assert.AreEqual((start+2)%count,controller.SelectedIndex);
     }
-    [UnityTest] public IEnumerator HoldingThroughTheSlideKeepsSteppingWithoutStartingOrPreviewing()
+    [UnityTest] public IEnumerator HoldingThroughTheSlideKeepsSteppingAndPreviewsWithoutStarting()
     {
         int start=controller.SelectedIndex, count=controller.SongCount;
         Vector2 point=GameObject.Find("SongDisc_"+(start+1)%count).GetComponent<SongSelectDiscTarget>().ScreenRect().center;
         double until=Time.realtimeSinceStartupAsDouble+8;
         var shots=new System.Collections.Generic.List<double>();
+        bool previewed=false;
         while(aim.ShotCount<3 && Time.realtimeSinceStartupAsDouble<until)
         {
             int before=aim.ShotCount;
             aim.TickAt(point,Mathf.Min(Time.unscaledDeltaTime,.1f));
             if(aim.ShotCount>before) shots.Add(Time.realtimeSinceStartupAsDouble);
-            Assert.False(controller.ChartPreview!=null && controller.ChartPreview.IsPlaying,"連続送りの間は試聴を鳴らさない");
+            // 2026-10-30 ユーザー「次に移してる間に流していい」: 送って着いた曲は、次をためている間も試聴を始める。
+            var preview=controller.ChartPreview;
+            previewed|=aim.ShotCount>0 && preview!=null && preview.SongId==controller.SongIdAt(controller.SelectedIndex)
+                && (preview.IsPlaying || preview.State==SongSelectChartPreview.PreviewState.Loading);
             Assert.Zero(controller.startButton.GetComponent<SongSelectDiscTarget>().Progress,"滑っていく中央の盤でスタートをためない");
             yield return null;
         }
         Assert.AreEqual(3,aim.ShotCount); Assert.AreEqual((start+3)%count,controller.SelectedIndex);
+        Assert.True(previewed,"連続送りの間も、着いた曲の試聴を始める");
         for(int i=1;i<shots.Count;i++) Assert.GreaterOrEqual(shots[i]-shots[i-1],1.4,"盤が止まってから1秒ため直す");
         Assert.False(ScreenTransition.IsBusy,"滑ってきた中央の盤でスタートしない");
         Assert.AreEqual("SongSelect",SceneManager.GetActiveScene().name);

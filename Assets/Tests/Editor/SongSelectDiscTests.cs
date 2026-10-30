@@ -141,7 +141,12 @@ public class SongSelectDiscTests
         double start=StagePerformanceTimeline.Load(id).previewStartSeconds;
         var events=timeline.Events(start,start+10); Assert.Greater(events.Count,10); Assert.True(events.Any(e=>e.Downbeat));
         for(int i=1;i<events.Count;i++) Assert.Greater(events[i].Time,events[i-1].Time);
-        if(id=="Epilogue") Assert.Greater(events.Zip(events.Skip(1),(a,b)=>b.Time-a.Time).Max()-events.Zip(events.Skip(1),(a,b)=>b.Time-a.Time).Min(),.015);
+        // 校歌はテンポが変わる(92→127→120)。試聴の区間は 2026-10-30 から一定の速さの斉唱の頭なので、曲全体で拍の間隔の変化を見る。
+        if(id=="Epilogue")
+        {
+            var whole=timeline.Events(0,160);
+            Assert.Greater(whole.Zip(whole.Skip(1),(a,b)=>b.Time-a.Time).Max()-whole.Zip(whole.Skip(1),(a,b)=>b.Time-a.Time).Min(),.015);
+        }
     }
 }
 
