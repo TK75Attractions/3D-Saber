@@ -148,7 +148,8 @@ public sealed class PhoneSaberPerfLog : MonoBehaviour
             Math.Max(0, predictions - predictionsAtStart), Math.Max(0, suppressed - suppressedAtStart));
         if (input != null)
         {
-            detail += " prediction-red-lead-ms=" + input.PredictionLead(false) + " prediction-blue-lead-ms=" + input.PredictionLead(true) +
+            detail += " visual-extra-ms=" + input.VisualExtraMilliseconds +
+                " prediction-red-lead-ms=" + input.PredictionLead(false) + " prediction-blue-lead-ms=" + input.PredictionLead(true) +
                 " prediction-red-source=" + input.PredictionSource(false) + " prediction-blue-source=" + input.PredictionSource(true);
             detail += input.RedCoordinateTiming.Format("red") + input.BlueCoordinateTiming.Format("blue");
             var redAge = input.RedCoordinateTiming.Shown;

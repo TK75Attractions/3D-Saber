@@ -170,6 +170,7 @@ public class InputPoint : MonoBehaviour
 
     // 予測設定と履歴の世代は main thread 専用。受信・認識結果には触れない。
     public int PredictionHorizonMilliseconds { get; private set; }
+    public int VisualExtraMilliseconds { get; private set; }
     public int PredictionRevision { get; private set; }
     public bool PredictionAutomatic { get; private set; }
     // 自動の先回りの移動上限（world、台ごと）。SaberInputBridge が PredictAdaptive へ渡す。
@@ -180,13 +181,21 @@ public class InputPoint : MonoBehaviour
     public long PredictionSuppressedDraws { get; private set; }
     double nextPredictionRefresh;
     PhoneSaberAutomaticLeadPolicy redPrediction = new PhoneSaberAutomaticLeadPolicy(), bluePrediction = new PhoneSaberAutomaticLeadPolicy();
-    public int PredictionLead(bool blue) => PredictionAutomatic ? (blue ? bluePrediction : redPrediction).Lead : PredictionHorizonMilliseconds;
+    public int BasePredictionLead(bool blue) => PredictionAutomatic ? (blue ? bluePrediction : redPrediction).Lead : PredictionHorizonMilliseconds;
+    public int PredictionLead(bool blue) => PhoneSaberVisualLeadSettings.TotalLead(BasePredictionLead(blue), VisualExtraMilliseconds);
     public string PredictionSource(bool blue) => PredictionAutomatic ? (blue ? bluePrediction : redPrediction).Source : "manual";
 
     public void RecordPrediction(bool suppressed)
     {
         PredictionDraws++;
         if (suppressed) PredictionSuppressedDraws++;
+    }
+
+    public void SetVisualExtraMilliseconds(int milliseconds)
+    {
+        VisualExtraMilliseconds = PhoneSaberVisualLeadSettings.Clamp(milliseconds);
+        PhoneSaberVisualLeadSettings.Save(StationLabel, VisualExtraMilliseconds);
+        // 速度履歴はそのまま使い、判定時計もこのフレームから同量を差し引く。
     }
 
     public void SetPredictionAutomatic()
@@ -550,6 +559,7 @@ public class InputPoint : MonoBehaviour
             PredictionHorizonMilliseconds = PhoneSaberPredictionSettings.Load(phoneSaberStation);
             PredictionAutomatic = PhoneSaberPredictionSettings.LoadAutomatic(phoneSaberStation);
             PredictionReach = PhoneSaberPredictionSettings.LoadReach(phoneSaberStation);
+            VisualExtraMilliseconds = PhoneSaberVisualLeadSettings.Load(phoneSaberStation);
             if (PredictionAutomatic)
             {
                 redPrediction = new PhoneSaberAutomaticLeadPolicy(); bluePrediction = new PhoneSaberAutomaticLeadPolicy();

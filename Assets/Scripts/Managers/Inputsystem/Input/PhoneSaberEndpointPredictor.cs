@@ -7,6 +7,7 @@ public struct PhoneSaberEndpointPredictor
 {
     public const double MaximumGapSeconds = 0.1;
     public const double DecayStartSeconds = 1.0 / 30.0;
+    // 推定の先読みは従来の上限。画面だけの追加分は別枠で、合計は VisualLeadSettings の 200 ms まで。
     public const int MaximumHorizonMilliseconds = 120;
     public const int MaximumManualHorizonMilliseconds = 60;
     public const float AutomaticMaximumDisplacement = 2f;
@@ -75,7 +76,8 @@ public struct PhoneSaberEndpointPredictor
         FitAutomatic();
     }
 
-    public void Predict(double nowSeconds, int horizonMilliseconds, out Vector2 a, out Vector2 b)
+    public void Predict(double nowSeconds, int horizonMilliseconds, out Vector2 a, out Vector2 b,
+        int visualExtraMilliseconds = 0)
     {
         a = latestA; b = latestB;
         LastPredictionSuppressed = true;
@@ -86,7 +88,8 @@ public struct PhoneSaberEndpointPredictor
         if (age >= MaximumGapSeconds) return;
         double decay = age <= DecayStartSeconds ? 1 :
             (MaximumGapSeconds - age) / (MaximumGapSeconds - DecayStartSeconds);
-        float seconds = (float)(Math.Min(horizonMilliseconds, MaximumManualHorizonMilliseconds) * 0.001 * decay);
+        float seconds = (float)(PhoneSaberVisualLeadSettings.TotalLead(
+            Math.Min(horizonMilliseconds, MaximumManualHorizonMilliseconds), visualExtraMilliseconds) * 0.001 * decay);
         // 受信の古さを H に足さない。無音中に走り続けることを防ぐ。
         Vector2 deltaA = Displacement(velocityA, seconds), deltaB = Displacement(velocityB, seconds);
         LastPredictionSuppressed = deltaA.x == 0 && deltaA.y == 0 && deltaB.x == 0 && deltaB.y == 0;
@@ -94,10 +97,10 @@ public struct PhoneSaberEndpointPredictor
         b += deltaB;
     }
 
-    // F8「自動」専用。手動・OFF の演算と受信した端点は変更しない。
+    // F8「自動」専用。追加分 0 の演算と受信した端点は変更しない。
     // automaticLimit: 1回に動かせる距離（world、台ごと。PhoneSaberPredictionSettings.LoadReach）。範囲外は既定の 2。
     public void PredictAdaptive(double nowSeconds, int horizonMilliseconds, out Vector2 a, out Vector2 b,
-        float automaticLimit = AutomaticMaximumDisplacement)
+        float automaticLimit = AutomaticMaximumDisplacement, int visualExtraMilliseconds = 0)
     {
         a = latestA; b = latestB;
         LastPredictionSuppressed = true;
@@ -109,7 +112,8 @@ public struct PhoneSaberEndpointPredictor
         double decayStart = Math.Min(MaximumGapSeconds * .8, 1.5 * packetInterval);
         double fraction = Math.Max(0, (age - decayStart) / (MaximumGapSeconds - decayStart));
         double decay = 1 - fraction * fraction * (3 - 2 * fraction);
-        double seconds = (Math.Min(horizonMilliseconds, MaximumHorizonMilliseconds) * .001 +
+        double seconds = (PhoneSaberVisualLeadSettings.TotalLead(
+            Math.Min(horizonMilliseconds, MaximumHorizonMilliseconds), visualExtraMilliseconds) * .001 +
             Math.Min(age, packetInterval)) * decay;
         Vector2 delta = new Vector2(AutomaticAxis(automaticVelocity.x, automaticAcceleration.x, seconds),
             AutomaticAxis(automaticVelocity.y, automaticAcceleration.y, seconds));

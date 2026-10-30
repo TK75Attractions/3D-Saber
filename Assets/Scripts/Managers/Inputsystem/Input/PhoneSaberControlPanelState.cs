@@ -14,6 +14,7 @@ public static class PhoneSaberControlPanelActions
         { "prediction", new[] { "auto", "0", "20", "40", "60" } }, { "prediction-reach", new[] { "2", "3", "4", "5", "6" } },
         { "display-latency-adjust", new[] { "-10", "10" } }, { "display-latency-centre", new[] { "" } },
         { "display-latency-clear", new[] { "" } },
+        { "visual-lead-adjust", new[] { "-10", "10" } }, { "visual-lead-reset", new[] { "" } },
         { "display-sync", new[] { "0", "1" } }, { "frame-cap", new[] { "0", "1", "2" } },
         { "judge-mode", new[] { "0", "1" } }, { "judge-adjust", new[] { "-10", "10" } }, { "judge-centre", new[] { "" } },
         { "filter", new[] { "0", "1", "2", "3", "4" } }, { "stabilizer", new[] { "0", "1" } },

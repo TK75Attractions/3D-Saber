@@ -297,6 +297,14 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
             { "display-latency-adjust", v => PhoneSaberManualDisplayLatency.Adjust(CurrentStation, int.Parse(v, CultureInfo.InvariantCulture)) },
             { "display-latency-centre", _ => PhoneSaberManualDisplayLatency.Centre(CurrentStation) },
             { "display-latency-clear", _ => PhoneSaberManualDisplayLatency.Clear(CurrentStation) },
+            { "visual-lead-adjust", v => {
+                var input = InputPoint.Instance;
+                if (input == null || calibrationCorner >= 0) return;
+                input.SetVisualExtraMilliseconds(input.VisualExtraMilliseconds + int.Parse(v, CultureInfo.InvariantCulture));
+            } },
+            { "visual-lead-reset", _ => {
+                if (calibrationCorner < 0) InputPoint.Instance?.SetVisualExtraMilliseconds(0);
+            } },
             { "display-sync", v => PhoneSaberDisplaySync.SetMode(int.Parse(v, CultureInfo.InvariantCulture)) },
             { "frame-cap", v => PhoneSaberDisplaySync.SetFrameCapMode(int.Parse(v, CultureInfo.InvariantCulture)) },
             { "judge-mode", v => PhoneSaberJudgeLatency.Set(int.Parse(v, CultureInfo.InvariantCulture), PhoneSaberJudgeLatency.OffsetMs) },
@@ -508,6 +516,15 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
     void BuildDisplayLatency()
     {
         string station = CurrentStation;
+        var input = InputPoint.Instance;
+        int extra = input != null ? input.VisualExtraMilliseconds : PhoneSaberVisualLeadSettings.Load(station);
+        bool enabled = input != null && calibrationCorner < 0;
+        panel.Label($"画面の剣の先回り: 追加 {extra} ms（0〜80 ms・この台に保存）");
+        panel.Button("画面の剣の先回り −10", "visual-lead-adjust", "-10", enabled && extra > 0);
+        panel.Button("画面の剣の先回り +10", "visual-lead-adjust", "10", enabled && extra < PhoneSaberVisualLeadSettings.MaximumExtraMilliseconds);
+        panel.Button("0 に戻す", "visual-lead-reset", enabled: enabled && extra > 0);
+        panel.Label("判定は変わらず、画面の剣だけ先に出ます。振りに合って見えるまで +10 ずつ上げてください。\n" +
+            "予測OFF・自動の計測なしでは無効。合計最大200 ms。移動上限に届く振りでは頭打ちになります。");
         double? display = PhoneSaberPerfLog.DisplayMs(station, out string source);
         panel.Label($"画面の遅延: {(display.HasValue ? $"約{display.Value:0} ms" : "不明")}（{DisplaySourceLabel(source)}・この台とこの画面に保存）");
         panel.Button("画面の遅延 −10", "display-latency-adjust", "-10", display.HasValue);
