@@ -654,7 +654,8 @@ struct AutoClipAutoExposure: Equatable {
         ["enabled": enabled, "ceilingISO": ceilingISO, "initialISO": initialISO, "appliedISO": appliedISO ?? NSNull(),
          "lastChangeHostTime": lastChangeTime ?? NSNull(), "lastChangeReason": lastChangeReason ?? NSNull(),
          "lastChangeMetrics": lastChangeMetrics, "lastDecisionReason": lastDecisionReason ?? NSNull(),
-         "windowMetrics": windowMetrics, "minimumAutomaticISO": 100, "maximumAutomaticISO": 400]
+         "windowMetrics": windowMetrics, "minimumAutomaticISO": 100, "maximumAutomaticISO": 400,
+         "darkMaximumAutomaticISO": 640, "darkBladeBackground": 12]
     }
 }
 

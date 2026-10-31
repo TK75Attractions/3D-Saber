@@ -197,12 +197,15 @@ struct AutoExposureController {
     // 約10Hzの観測でも丸め/欠落を最大0.1秒だけ許し、短い断片だけで2.5秒窓を成立させない。
     static let minimumWindowSpan = 2.4, maximumSampleGap = 1.0
     static let minimumISO: Float = 100, maximumISO: Float = 400
+    // 10/31: 台Bの赤はISO400でもpeak中央233・高輝度率0.09（台Aの赤はISO100でも255・0.65）、背景中央4。
+    // 台Aは同じISO400で背景23〜28。刃が見えている窓の背景中央が12以下の暗い台だけ、刃が弱い/消える時に640まで増感する。
+    static let darkMaximumISO: Float = 640, darkBladeBackground = 12.0
     // 台Aの白壁/奥の照明を対象とし、同じ刃のhalo/重複候補から距離を取る。
     static let distantEndpointDiagonalFraction = 0.10, minimumDistantEndpointPixels = 24.0
     static let cooldown = 5.0, settling = 1.0, idleReset = 10.0
     // 刃が映らない時の中央値窓と明暗しきい値は従来値を維持する。
     static let backgroundWindow = 1.5, lowerThreshold = 46.0, raiseThreshold = 30.0
-    static let levels: [Float] = [400, 320, 250, 200, 160, 125, 100]
+    static let levels: [Float] = [640, 500, 400, 320, 250, 200, 160, 125, 100]
     // highValueの芯判定0.08付近とpeak/meanの芯判定242/190に余裕を持たせる。
     // emitterScore 0.55は通常のeligible下限0.42近くに限定する余裕。強い芯のある刃は増感しない。
     // 35%以上が弱い／12%以上が短い消失の時だけ増感。妨害5%以下を増感条件にする。
@@ -246,6 +249,7 @@ struct AutoExposureController {
     private struct Sample {
         let time: Double
         let weak: Bool, lost: Bool, distract: Bool, saturated: Bool
+        var background = 0
     }
     private struct Track { var lastSeen = -Double.infinity; var missing = 0 }
     private(set) var appliedISO: Float?
@@ -269,6 +273,7 @@ struct AutoExposureController {
         guard time.isFinite, (0...255).contains(background), ceilingISO.isFinite,
               minISO.isFinite, maxISO.isFinite, minISO > 0, maxISO >= minISO, ceilingISO > 0 else { return nil }
         let minimum = max(minISO, Self.minimumISO), maximum = min(maxISO, Self.maximumISO)
+        let darkMaximum = max(maximum, min(maxISO, Self.darkMaximumISO))
         guard minimum <= maximum else { return nil }
         if startISO != ceilingISO || floor != minimum || ceiling != maximum {
             self = Self()
@@ -329,7 +334,8 @@ struct AutoExposureController {
         if active {
             backgrounds = []; highSince = nil; lowSince = nil
             samples.removeAll { $0.time < time - Self.window }
-            samples.append(Sample(time: time, weak: weak, lost: lost, distract: distract, saturated: saturated))
+            samples.append(Sample(time: time, weak: weak, lost: lost, distract: distract, saturated: saturated,
+                                  background: background))
             filtered = Double(background)
             guard samples.count >= Self.minimumSamples,
                   time - samples[0].time >= Self.minimumWindowSpan else { return nil }
@@ -342,6 +348,10 @@ struct AutoExposureController {
             if needsLight && metrics.distract >= Self.distractorRate { reason = "conflict" }
             else if metrics.saturated >= Self.saturationRate { reason = "saturated" }
             else if metrics.distract >= Self.distractorRate { reason = "distractors" }
+            else if let current = appliedISO, current > maximum, Self.median(samples.map(\.background)) > Self.darkBladeBackground {
+                // 400超は暗い台専用。背景が明るくなったら（照明・服）400以下へ戻す。
+                reason = "background"
+            }
             else if needsLight && metrics.distract <= Self.quietDistractorRate {
                 reason = metrics.lost >= Self.lostRate ? "lost" : "blade-weak"
             }
@@ -367,9 +377,13 @@ struct AutoExposureController {
             return nil
         }
         let raise = ["blade-weak", "lost", "dark"].contains(reason)
-        var next = min(maximum, max(minimum, raise
-            ? (Self.levels.last { $0 > current } ?? maximum)
+        let darkBlade = raise && reason != "dark" && !samples.isEmpty
+            && Self.median(samples.map(\.background)) <= Self.darkBladeBackground
+        let limit = darkBlade ? darkMaximum : max(maximum, min(current, darkMaximum))
+        var next = min(limit, max(minimum, raise
+            ? (Self.levels.last { $0 > current } ?? limit)
             : (Self.levels.first { $0 < current } ?? minimum)))
+        if reason == "background" { next = min(next, maximum) }
         // 刃なしの暗背景は開始値までしか戻さない。増感の許可はblade-weak/lostだけ。
         if reason == "dark" { next = min(next, min(maxISO, max(minISO, ceilingISO))) }
         // 開始値64/80を尊重しつつ、明るすぎる時に下限100へ逆向きの増感をしない。
@@ -378,6 +392,12 @@ struct AutoExposureController {
         appliedISO = next; lastChange = change; lastDecision = change
         clearWindow(); tracks = []; discardUntil = time + Self.settling
         return change
+    }
+
+    static func median(_ values: [Int]) -> Double {
+        let sorted = values.sorted(), n = sorted.count
+        guard n > 0 else { return 0 }
+        return n.isMultiple(of: 2) ? Double(sorted[n / 2 - 1] + sorted[n / 2]) / 2 : Double(sorted[n / 2])
     }
 
     private mutating func clearWindow() {
