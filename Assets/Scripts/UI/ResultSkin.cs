@@ -120,7 +120,13 @@ public class ResultSkin : MonoBehaviour
         if (controller == null || ScreenTransition.IsBusy) return;
         // 来場者の出口を出さない回は、スタッフの Enter(演出のあと)でタイトルへ(来場者はキーを使わない)。
         // 演出を飛ばした同じ Enter では戻らない(飛ばすのは ResultReveal.LateUpdate で、この時刻はまだ出口の前)。
-        if (!VisitorExitShown && revealTime >= exitReadyAt && StaffEnterPressed(Keyboard.current)) { controller.ReturnToTitle(); return; }
+        if (!VisitorExitShown && revealTime >= exitReadyAt && StaffEnterPressed(Keyboard.current))
+        {
+            controller.ReturnToTitle();
+            // Esc 2回・右クリック3回と同じく、スタッフが戻したことを events.log に残す(幕が始まったときだけ。2026-11-01 全体見回り)。
+            if (ScreenTransition.IsBusy) StaffReturnLog.Record("enter");
+            return;
+        }
         if (!InputManager.EscapeGetDown) return;
         // 運営の Esc は残り曲数にかかわらずタイトルへ。中央ボタンの次曲への出口とは分ける。
         if (escapeGate.PressAndNotify(Time.unscaledTimeAsDouble, EscapeTwiceGate.ToTitleNotice)) controller.ReturnToTitle();

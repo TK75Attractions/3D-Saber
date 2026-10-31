@@ -17,6 +17,8 @@ public sealed class PhoneSaberClipRelay : IDisposable
     public const int ChunkBytes = 16 * 1024;
     public const int BytesPerSecond = 2 * 1024 * 1024;
     public const long MaximumBundleBytes = 512L * 1024 * 1024;
+    // 本体を送る前に、Mac がヘッダーだけで断る応答を待つ時間(Handle)。同じ LAN の Mac は数 ms で返す。
+    public const int EarlyReplyWaitMilliseconds = 300;
     const int HeaderLimit = 16 * 1024, ReplyLimit = 64 * 1024;
     const string HopHeader = "X-PhoneSaber-Relay";
     public static volatile bool AutoStartEnabled = true;
@@ -106,7 +108,7 @@ public sealed class PhoneSaberClipRelay : IDisposable
                 if (!server.Pending()) { Thread.Sleep(20); continue; }
                 var client = server.AcceptTcpClient();
                 lock (gate) { if (stopping) { client.Close(); break; } incoming = client; }
-                try { Configure(client); Handle(client.GetStream()); }
+                try { Configure(client); Handle(client); }
                 catch (Exception) { /* 接続単位の失敗で listener を止めない。 */ }
                 finally { lock (gate) { incoming?.Close(); incoming = null; outgoing?.Close(); outgoing = null; } }
             }
@@ -229,8 +231,9 @@ public sealed class PhoneSaberClipRelay : IDisposable
     static bool JsonField(string body, string key, string value)
         => Regex.IsMatch(body, "\"" + key + "\"\\s*:\\s*\"" + value + "\"");
 
-    void Handle(NetworkStream phone)
+    void Handle(TcpClient client)
     {
+        var phone = client.GetStream();
         long bytes = 0;
         int status = 503;
         bool post = false, replyStarted = false;
@@ -263,26 +266,37 @@ public sealed class PhoneSaberClipRelay : IDisposable
                     if (field.Key.Equals("Content-Type", StringComparison.OrdinalIgnoreCase) || field.Key.Equals("Content-Length", StringComparison.OrdinalIgnoreCase) ||
                         field.Key.StartsWith("X-PhoneSaber-", StringComparison.OrdinalIgnoreCase)) header.Append(field.Key).Append(": ").Append(field.Value).Append("\r\n");
                 header.Append("\r\n"); WriteAscii(upstream, header.ToString());
+                // Mac の応答は、本体の送信と並べて背景で読む(2026-11-01 全体見回り)。読む側は時間で切らず、待ちの上限は下の Wait。
+                mac.ReceiveTimeout = 0;
+                var reply = new ReplyReader(upstream);
+                // Mac はヘッダーだけで断ることがある(空きが足りない 507・413・415 など。本体は読まずに閉じる)。本体を先に送ると、
+                // Mac が読まずに閉じた本体のせいで接続がリセットされ、Windows ではまだ読んでいない応答が捨てられて、iPhone には 503 が
+                // 返っていた(10/30 から落ちていた PhoneSaberClipRelayTests.MacEarlyRejectionIsForwardedBeforePhoneFinishesBody)。
+                // 本体の前に少しだけ待ち、断られたらそのまま返す。iPhone への 100 Continue も、そのあとで返す。
+                bool earlyReply = reply.Wait(EarlyReplyWaitMilliseconds);
                 // 期待応答はheader転送後に返す。bundle全体のbufferingはしない。
-                if (request.Headers.TryGetValue("Expect", out var expect) && expect.Equals("100-continue", StringComparison.OrdinalIgnoreCase))
+                if (!earlyReply && request.Headers.TryGetValue("Expect", out var expect) && expect.Equals("100-continue", StringComparison.OrdinalIgnoreCase))
                     WriteAscii(phone, "HTTP/1.1 100 Continue\r\n\r\n");
                 var buffer = new byte[ChunkBytes];
-                while (bytes < request.Length && !stopping)
+                while (!earlyReply && bytes < request.Length && !stopping)
                 {
-                    // 507 / duplicate 等、Macが本体の途中で返した応答もそのまま返す。
-                    if (upstream.DataAvailable) break;
+                    // 507 等、Macが本体の途中で返した応答もそのまま返す。
+                    if (reply.Done) break;
                     int count = phone.Read(buffer, 0, (int)Math.Min(buffer.Length, request.Length - bytes));
                     if (count == 0) throw new IOException("incomplete upload");
                     try { upstream.Write(buffer, 0, count); bytes += count; }
-                    catch (IOException) { if (upstream.DataAvailable) break; throw; }
+                    catch (IOException) { if (reply.Wait(settings.IoTimeoutMilliseconds) && reply.Response != null) break; throw; }
                     // 1 chunkごとに必ず休み、長時間停滞後のburstも避ける。
                     Thread.Sleep((count * 1000 + BytesPerSecond - 1) / BytesPerSecond);
                 }
                 if (stopping) return;
-                var response = ReadResponse(upstream);
+                if (!reply.Wait(settings.IoTimeoutMilliseconds)) throw new IOException("reply timeout");
+                var response = reply.Response ?? throw new IOException("no reply", reply.Failure);
                 status = response.Status;
                 replyStarted = true;
                 SendResponse(phone, response);
+                // 本体を読み切る前に返したとき(Mac がヘッダーや途中で断った)は、残りの本体を少し読み捨ててから閉じる。
+                if (bytes < request.Length && !stopping) DrainAfterEarlyReply(client);
             }
         }
         catch (Exception)
@@ -328,6 +342,45 @@ public sealed class PhoneSaberClipRelay : IDisposable
         if (message.Headers.TryGetValue("Content-Length", out var length) &&
             !long.TryParse(length, NumberStyles.None, CultureInfo.InvariantCulture, out message.Length)) throw new IOException("invalid length");
         return message;
+    }
+
+    // 本体を読み切る前に応答したあと。こちらの送信を閉じ(FIN)、iPhone が送り続けている本体を DrainMilliseconds まで読み捨ててから閉じる。
+    // 読まずに閉じると接続のリセットになり、受け取る側(Windows)では、もう届いている応答まで捨てられることがある(2026-11-01 全体見回り)。
+    public const int DrainMilliseconds = 2000;
+    static void DrainAfterEarlyReply(TcpClient client)
+    {
+        try
+        {
+            client.Client.Shutdown(SocketShutdown.Send);
+            client.ReceiveTimeout = 500;
+            var stream = client.GetStream();
+            var buffer = new byte[ChunkBytes];
+            var clock = Stopwatch.StartNew();
+            while (clock.ElapsedMilliseconds < DrainMilliseconds && stream.Read(buffer, 0, buffer.Length) > 0) { }
+        }
+        catch (Exception) { /* 読み捨ての失敗は応答に影響しない。 */ }
+    }
+
+    // Mac の応答を、本体の送信と並べて背景で読む(Handle)。読み終えたか、読めずに終わったら Done。
+    // 待ちの合図は捨てない(Handle を抜けたあとで背景が終わっても、Set が失敗しないように)。
+    sealed class ReplyReader
+    {
+        readonly ManualResetEvent done = new ManualResetEvent(false);
+        public Message Response { get; private set; }
+        public Exception Failure { get; private set; }
+
+        public ReplyReader(Stream stream)
+        {
+            new Thread(() =>
+            {
+                try { Response = ReadResponse(stream); }
+                catch (Exception e) { Failure = e; }
+                finally { done.Set(); }
+            }) { IsBackground = true, Name = "PhoneSaber clip relay reply" }.Start();
+        }
+
+        public bool Done => done.WaitOne(0);
+        public bool Wait(int milliseconds) => done.WaitOne(milliseconds);
     }
 
     static Message ReadResponse(Stream stream)

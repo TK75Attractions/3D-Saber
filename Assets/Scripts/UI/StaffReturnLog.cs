@@ -4,7 +4,8 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 // スタッフがタイトルへ戻した記録(2026-10-30 夜、改善案⑥)。右クリック3回(RightClickHome)と、Esc・ハイフンの2回目
-// (EscapeTwiceGate)で events.log に staff-return を1行書く: 戻し方・場面・本編か練習か判定調整か・曲 ID・難易度・曲の秒。
+// (EscapeTwiceGate)、v2.10 からは次の曲が無い結果画面のスタッフの Enter(ResultSkin、how=enter)で
+// events.log に staff-return を1行書く: 戻し方・場面・本編か練習か判定調整か・曲 ID・難易度・曲の秒。
 // 10/30 は来場者の流れを場面の移りから推して数えた。あとから「いつ・どこで戻したか」を数えられるようにする。
 public static class StaffReturnLog
 {
