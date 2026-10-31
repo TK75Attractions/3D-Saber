@@ -438,10 +438,16 @@ public static class UISkinKit
         t.raycastTarget = false;
         t.enableWordWrapping = false;
         // プロジェクターモード: 灰色地でも文字が立つよう暗い縁取り(実行時のみ。EditMode ではマテリアル未初期化)
-        if (DisplaySettings.ProjectorMode && Application.isPlaying)
+        // 非表示の親の下で作ると TMP のマテリアルが未初期化で NullReference になり、曲選択の確認が止まる。
+        // そのときは縁取りを諦めて文字だけ出す。
+        if (DisplaySettings.ProjectorMode && Application.isPlaying && go.activeInHierarchy)
         {
-            t.outlineWidth = ProjectorMode.UiOutlineWidth;
-            t.outlineColor = ProjectorMode.UiOutlineColor;
+            try
+            {
+                t.outlineWidth = ProjectorMode.UiOutlineWidth;
+                t.outlineColor = ProjectorMode.UiOutlineColor;
+            }
+            catch (System.NullReferenceException) { }
         }
         return t;
     }
