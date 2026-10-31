@@ -10,6 +10,22 @@ import XCTest
 /// Auto clip (AutoClip.swift): pure trigger rules, rate limiting, suspend policy,
 /// PC commands, deferred upload and one synthetic clip written end to end.
 final class AutoClipTests: XCTestCase {
+    func testRedBoostDistractorAtFactorOneDoesNotLockCeiling() {
+        // 10/31 台B: 強調前から奥の照明が赤の候補になる。倍率1で上限1に固定すると以後ずっと上がらない。
+        let held = AutoExposureController.RedBoost.decision(factor: 1, ceiling: 2, medianPeak: 200, medianPurity: 0.8, distractRate: 0.5)
+        XCTAssertEqual(held.factor, 1); XCTAssertEqual(held.ceiling, 2); XCTAssertEqual(held.reason, "")
+        let raised = AutoExposureController.RedBoost.decision(factor: 1, ceiling: 2, medianPeak: 200, medianPurity: 0.8, distractRate: 0)
+        XCTAssertEqual(raised.factor, 1.15, accuracy: 0.001); XCTAssertEqual(raised.reason, "red-weak")
+        // 強調中に離れた赤が出たら下げて、その倍率を上限にする。
+        let back = AutoExposureController.RedBoost.decision(factor: 1.3225, ceiling: 2, medianPeak: 200, medianPurity: 0.8, distractRate: 0.3)
+        XCTAssertEqual(back.factor, 1.15, accuracy: 0.001); XCTAssertEqual(back.ceiling, 1.15, accuracy: 0.001)
+        let capped = AutoExposureController.RedBoost.decision(factor: 1.15, ceiling: 1.15, medianPeak: 200, medianPurity: 0.8, distractRate: 0)
+        XCTAssertEqual(capped.factor, 1.15, accuracy: 0.001)
+        // 台A（赤255）は何もしない。白飛びなら下げる。
+        XCTAssertEqual(AutoExposureController.RedBoost.decision(factor: 1, ceiling: 2, medianPeak: 255, medianPurity: 0.8, distractRate: 0).reason, "")
+        XCTAssertEqual(AutoExposureController.RedBoost.decision(factor: 1.15, ceiling: 2, medianPeak: 255, medianPurity: 0.3, distractRate: 0).reason, "red-washed")
+    }
+
     func testAutoISOReadsDimBladeWithoutChangingRecognition() throws {
         let width = 480, height = 640
         for color in [SaberColor.red, .blue] {

@@ -190,6 +190,30 @@ func disableCameraPostProcessing(_ camera: AVCaptureDevice) -> Bool {
 
 // カメラ専用の純粋な判定器。認識結果には値を戻さず、適用が成功したコピーだけを採用する。
 struct AutoExposureController {
+    /// 赤の自動強調の判断（CameraViewModel から使う。ホストテストのため actor の外に置く）。
+    enum RedBoost {
+        static let step: Float = 1.15, maximum: Float = 2.0
+        static let weakPeak = 235, brightPeak = 252, washedPurity = 0.45, distractRate = 0.20
+
+        /// 赤の自動強調の1回分の判断（テスト用に切り出し）。
+        /// 倍率1のときに離れた赤があっても、それは強調のせいではないので上限は付けない（上げないだけ）。
+        static func decision(factor: Float, ceiling: Float, medianPeak: Int, medianPurity: Double,
+                                     distractRate: Double) -> (factor: Float, ceiling: Float, reason: String) {
+            if distractRate >= Self.distractRate {
+                guard factor > 1.001 else { return (factor, ceiling, "") }
+                let next = max(1, factor / step)
+                return (next, next, "red-distract")
+            }
+            if medianPeak >= brightPeak && medianPurity < washedPurity {
+                return (max(1, factor / step), ceiling, "red-washed")
+            }
+            if medianPeak < weakPeak {
+                return (min(ceiling, factor * step), ceiling, "red-weak")
+            }
+            return (factor, ceiling, "")
+        }
+    }
+
     // 10/30は台B=160で見失いが台A=250の約10倍。一方、台Aでも遠方候補が赤3025/青1366回。
     // 1フレームの反射や振り抜きを追わず、2.5秒窓＋1秒の同一判定を要求する保守的な初期値。
     // 実機の証拠値分布は未計測なので、認識閾値を変えず露出だけを隣の1段へ動かす。
@@ -2561,9 +2585,8 @@ final class CameraViewModel: NSObject, ObservableObject {
     // 赤の自動強調: 赤の刃が暗い間だけホワイトバランスの赤の倍率を上げる。青と ISO と閾値は変えない。
     // 10/31 台B（iPhone 15 Pro Max）では青が255に届くのに赤はpeak 196〜222。台Aの赤は255で倍率は自動のまま。
     private static let redBoostKey = "PhoneSaber.redBoostAuto.v1"
-    static let redBoostStep: Float = 1.15, redBoostMaximum: Float = 2.0
+    static let redBoostStep = AutoExposureController.RedBoost.step, redBoostMaximum = AutoExposureController.RedBoost.maximum
     static let redBoostWindow = 2.5, redBoostCooldown = 3.0, redBoostMinimumSamples = 12
-    static let redBoostWeakPeak = 235, redBoostBrightPeak = 252, redBoostWashedPurity = 0.45, redBoostDistractRate = 0.20
     @Published private(set) var redBoostEnabled = NSClassFromString("XCTestCase") == nil
         && (UserDefaults.standard.object(forKey: CameraViewModel.redBoostKey) as? Bool ?? true)
     @Published private(set) var redBoostStatus = "赤の自動強調: 待機"
@@ -2573,12 +2596,17 @@ final class CameraViewModel: NSObject, ObservableObject {
     private var redBoostLastChange = -Double.infinity
     // 離れた赤が出た倍率より上には、その後上げない（10/31 夜: 1.x 倍で白い蛍光灯が赤の候補になった）。
     private var redBoostCeiling: Float = CameraViewModel.redBoostMaximum
+    private var redBoostCeilingTime = -Double.infinity
+    // 上限は一時的なもの。来場者の赤い服や奥の照明で一度止まっても、90秒たてばまた上げられる。
+    static let redBoostCeilingLifetime = 90.0
+
 
     func setRedBoostEnabled(_ enabled: Bool) {
         redBoostEnabled = enabled
         if NSClassFromString("XCTestCase") == nil { UserDefaults.standard.set(enabled, forKey: Self.redBoostKey) }
         redBoostFactor = 1
         redBoostCeiling = Self.redBoostMaximum
+        redBoostCeilingTime = -Double.infinity
         redBoostSamples.removeAll()
         if let camera = exposureBiasCamera { applyRedBoost(to: camera, reason: enabled ? "on" : "off") }
         redBoostStatus = enabled ? "赤の自動強調: 待機（赤が暗い時だけ上げる）" : "赤の自動強調: 切"
@@ -2593,21 +2621,16 @@ final class CameraViewModel: NSObject, ObservableObject {
         redBoostSamples.removeAll { time - $0.time > Self.redBoostWindow }
         guard time - redBoostLastChange >= Self.redBoostCooldown,
               redBoostSamples.count >= Self.redBoostMinimumSamples else { return }
+        if time - redBoostCeilingTime > Self.redBoostCeilingLifetime { redBoostCeiling = Self.redBoostMaximum }
         let peaks = redBoostSamples.map(\.peak).sorted()
         let medianPeak = peaks[peaks.count / 2]
         let purities = redBoostSamples.map(\.purity).sorted()
         let medianPurity = purities[purities.count / 2]
         let distractRate = Double(redBoostSamples.filter(\.distract).count) / Double(redBoostSamples.count)
-        var next = redBoostFactor
-        var reason = ""
-        if distractRate >= Self.redBoostDistractRate || (medianPeak >= Self.redBoostBrightPeak && medianPurity < Self.redBoostWashedPurity) {
-            next = max(1, redBoostFactor / Self.redBoostStep)
-            reason = distractRate >= Self.redBoostDistractRate ? "red-distract" : "red-washed"
-            if reason == "red-distract" { redBoostCeiling = next }
-        } else if medianPeak < Self.redBoostWeakPeak {
-            next = min(redBoostCeiling, redBoostFactor * Self.redBoostStep)
-            reason = "red-weak"
-        }
+        let step = AutoExposureController.RedBoost.decision(factor: redBoostFactor, ceiling: redBoostCeiling,
+                                         medianPeak: medianPeak, medianPurity: medianPurity, distractRate: distractRate)
+        if step.ceiling != redBoostCeiling { redBoostCeiling = step.ceiling; redBoostCeilingTime = time }
+        let next = step.factor, reason = step.reason
         guard abs(next - redBoostFactor) > 0.001 else { return }
         ConnectivityLog.shared.record("RED_BOOST", String(format: "factor=%.2f prev=%.2f reason=%@ peak=%d purity=%.2f distract=%.2f n=%d",
             next, redBoostFactor, reason, medianPeak, medianPurity, distractRate, redBoostSamples.count))
