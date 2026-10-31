@@ -243,7 +243,9 @@ public class VisitorPlaysPlayTests
 
         yield return OpenResult();
         Assert.AreEqual(2, VisitorPlays.CompletedSongs);
-        Assert.AreEqual("タイトルへ", ButtonText);
+        // 2曲目のあとは来場者の出口(タイトルへ)を出さず、スタッフが Enter などで戻す(2026-10-31 ユーザー「来場者が自分でタイトルへ戻れる的を消す」)。
+        Assert.False(next.gameObject.activeSelf);
+        Assert.IsNull(Object.FindFirstObjectByType<SaberUIPointer>(), "指す的が無いので照準も出さない");
         Assert.IsNull(GameObject.Find("NextSongNotice"));
         reveal.Tick(999);
         yield return Tap(Key.Enter);
@@ -374,7 +376,7 @@ public class VisitorPlaysPlayTests
         yield return SelectionReady();
         Assert.IsNull(GameObject.Find("VisitorProgress"));
         yield return OpenResult();
-        Assert.AreEqual("タイトルへ", ButtonText);
+        Assert.False(next.gameObject.activeSelf, "1曲モードの結果には来場者の出口を出さない");
         Assert.IsNull(GameObject.Find("NextSongNotice"));
     }
 

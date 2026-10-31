@@ -96,9 +96,10 @@ public class SaberUIPointer : MonoBehaviour
     // 判定調整・練習・結果画面では選曲と同じ照準を使う(結果画面は 2026-10-22 から)。光の点のポインターは照準を使わない画面用。
     private SongSelectAimGraphic aimReticle;
     private readonly SongSelectAimTracker aimTracker = new SongSelectAimTracker();
+    // 入力元(赤・マウス)の切り替え。選曲と同じく、赤を見失ってもマウスが使われるまでは、ためを保つ(SaberAimSource)。
+    private readonly SaberAimSource aimInput = new SaberAimSource();
     private Vector2 aimPosition, lastMouse;
-    private int aimSource;
-    private bool hasAimPosition, mouseNeedsMove;
+    private bool hasAimPosition;
     readonly SaberUIArrivalGuard arrival = new SaberUIArrivalGuard();
     public void BeginArrival() { arrival.Reset(); aimTracker.Cancel(); }
     public float AimProgress01 => aimTracker.Progress01;
@@ -153,31 +154,50 @@ public class SaberUIPointer : MonoBehaviour
         var input = InputPoint.Instance;
         var mouse = Mouse.current;
         Vector2 mousePoint = mouse != null ? mouse.position.ReadValue() : lastMouse;
-        // 選曲と同じく、認識が1秒途切れるまではマウスへ切り替えない。切り替えてもためを取り消すだけで、
-        // 入場扱い(戻った最初のフレームで下のボタンをロック)にはしない。
-        int source = input != null && input.IsRecentlyActive(SongSelectAimPointer.SaberActiveSeconds) ? 1 : mouse != null ? 2 : 0;
-        if (source != aimSource)
+        if (mouse != null) lastMouse = mousePoint;
+        // 選曲と同じく、認識が1秒途切れるまではマウスへ切り替えない。選曲と同じ入力座標で、ゲーム内のセーバーの可動域や表示位置は変えない。
+        bool saber = input != null && input.IsRecentlyActive(SongSelectAimPointer.SaberActiveSeconds);
+        Vector2 saberPoint = default;
+        if (saber)
         {
-            aimTracker.Cancel(); hasAimPosition = false;
-            // 追跡が途切れても、古いマウス位置で勝手に操作を始めない。
-            if (aimSource == 1 && source != 1) { mouseNeedsMove = true; lastMouse = mousePoint; }
-            if (source == 1) mouseNeedsMove = false;
-            aimSource = source;
+            saberPoint = Vector2.Scale(input.NormalizedPosition, new Vector2(Screen.width, Screen.height));
+            // 誤認識（会場の赤い物など）で照準が一瞬遠くへ飛ぶのを、最大2受信だけ無視する（PhoneSaberPointJumpGate）。
+            saberPoint = pointJumpGate.Apply(input.LastReceivedMonotonicTime, saberPoint, Screen.height * .25f);
         }
-        if (mouseNeedsMove && Vector2.Distance(lastMouse, mousePoint) > 3) mouseNeedsMove = false;
-        // 選曲と同じ入力座標。ゲーム内のセーバーの可動域や表示位置は変えない。
-        Vector2 point = source == 1 ? Vector2.Scale(input.NormalizedPosition, new Vector2(Screen.width, Screen.height)) : mousePoint;
-        // 誤認識（会場の赤い物など）で照準が一瞬遠くへ飛ぶのを、最大2受信だけ無視する（PhoneSaberPointJumpGate）。
-        if (source == 1) point = pointJumpGate.Apply(input.LastReceivedMonotonicTime, point, Screen.height * .25f);
         else pointJumpGate.Reset();
-        bool valid = PhoneSaberUIFocus.AllowsInput(source == 1, Application.isFocused, Application.isBatchMode)
-            && source != 0 && !mouseNeedsMove;
-        if (!hasAimPosition || source != 1) aimPosition = point;
-        else aimPosition = Vector2.Lerp(aimPosition, point, 1 - Mathf.Exp(-Time.unscaledDeltaTime / SongSelectAimPointer.SaberSmoothingSeconds));
-        hasAimPosition = valid;
-        TickAimAt(aimPosition, Time.unscaledDeltaTime, valid, source == 2 && mouse.leftButton.wasPressedThisFrame,
-            source != 1 || input.IsRecentlyActive(SongSelectAimPointer.SaberFreshSeconds));
+        StepAim(saber, saber && input.IsRecentlyActive(SongSelectAimPointer.SaberFreshSeconds), saberPoint,
+            mouse != null, mousePoint, mouse != null && mouse.leftButton.wasPressedThisFrame, Time.unscaledDeltaTime);
     }
+
+    // 実入力と検証で共通の入口(照準を使う画面だけ。座標は画面ピクセル)。入力元が切り替わっても入場扱い
+    // (戻った最初のフレームで下のボタンをロック)にはしない。赤を見失ってもマウスが使われるまでは、ためを止めて保ち、
+    // 赤が戻れば続きから(2026-10-31 ユーザー「照準が消えても、ため(ゲージ)を0にしない」)。
+    // マウスに持ち替えたあとは、置いたままのマウスの位置で勝手に操作を始めない(動かすかクリックするまで待つ)。
+    public void StepAim(bool saberActive, bool saberFresh, Vector2 saberPoint, bool mouseAvailable, Vector2 mousePoint,
+        bool mouseClicked, float dt)
+    {
+        if (aimReticle == null) return;
+        if (aimInput.Update(saberActive, mouseAvailable, mousePoint, mouseClicked)) aimTracker.Cancel();
+        if (aimInput.KindChanged) hasAimPosition = false;
+        if (aimInput.HoldingLostSaber)
+        {
+            // 見失っている間は、照準は今までどおり消すが、ためと狙っていたボタンはそのまま保つ(進めない)。画面が変わったら取り消す。
+            if (ScreenTransition.IsBusy) BeginArrival();
+            aimReticle.gameObject.SetActive(false);
+            return;
+        }
+        bool usingSaber = aimInput.Kind == SaberAimSource.Saber;
+        Vector2 point = usingSaber ? saberPoint : mousePoint;
+        bool valid = PhoneSaberUIFocus.AllowsInput(usingSaber, Application.isFocused, Application.isBatchMode)
+            && aimInput.Kind != SaberAimSource.None && !aimInput.MouseNeedsMove;
+        if (!hasAimPosition || !usingSaber) aimPosition = point;
+        else aimPosition = Vector2.Lerp(aimPosition, point, 1 - Mathf.Exp(-dt / SongSelectAimPointer.SaberSmoothingSeconds));
+        hasAimPosition = valid;
+        TickAimAt(aimPosition, dt, valid, aimInput.Kind == SaberAimSource.Mouse && mouseClicked, !usingSaber || saberFresh);
+    }
+
+    // 赤を見失って、ためを止めたまま待っているか(マウスが使われるか赤が戻るまで)。
+    public bool HoldingLostSaber => aimInput.HoldingLostSaber;
 
     // 実入力と実シーン試験で共通の入口。照準は常に表示し、試し切り中は下端のボタンだけ受け付ける。
     // fresh=false は座標が一時的に届いていない状態。選曲と同じく、ためも外れた猶予も止めたまま保ち、照準を薄くする。

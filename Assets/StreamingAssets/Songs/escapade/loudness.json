@@ -2,12 +2,12 @@
   "version": 1,
   "sourceFile": "audio.mp3",
   "sourceSha256": "f204714e47d8cb885d7aa899dd4098c1b79744c9f6acdc3f1e25039bff3c8ca8",
-  "targetLufs": -8.8,
+  "targetLufs": -7.5,
   "inputLufs": -11.57,
   "inputTruePeakDbtp": 0.49,
   "gainDb": 0,
   "playbackFile": "master.ogg",
-  "playbackSha256": "ee3a12969d6e2d59cb2e16fd51798342ed2b799f404878111742fa47ad058ba0",
-  "outputLufs": -8.8,
-  "outputTruePeakDbtp": -1.2
+  "playbackSha256": "2c61eba71e219e9a6a7a75516c9149d0f6758b8e1459241d52aeb7ce94fac9f7",
+  "outputLufs": -7.5,
+  "outputTruePeakDbtp": -1.0
 }

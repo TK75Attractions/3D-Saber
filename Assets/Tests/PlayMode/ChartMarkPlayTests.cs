@@ -87,8 +87,10 @@ public class ChartMarkPlayTests
         Assert.NotNull(reveal);
         reveal.enabled = false;
         reveal.Tick(999);
-        back = Object.FindFirstObjectByType<ResultController>().GetComponent<Canvas>().GetComponentInChildren<Button>();
+        // 1曲モードの結果は来場者の出口を隠す(2026-10-31)。隠した BACK も取っておき、出ていないことを確かめる。
+        back = Object.FindFirstObjectByType<ResultController>().GetComponent<Canvas>().GetComponentInChildren<Button>(true);
         Assert.NotNull(back);
+        Assert.False(back.gameObject.activeInHierarchy);
         Canvas.ForceUpdateCanvases();
     }
 
@@ -118,12 +120,12 @@ public class ChartMarkPlayTests
         if (Directory.Exists(folder)) Directory.Delete(folder, true);
     }
 
+    // 1曲モード(本番の既定)。来場者の出口は無く、スタッフの Enter でタイトルへ戻る。打っている間の Enter では戻らない。
     [UnityTest]
     public IEnumerator TypingKeepsTheResultScreenAndF5HandsTheExitBack()
     {
-        // 結果画面が「戻る」を選ぶまで(最大10コマ)待つ。
-        for (int i = 0; i < 10 && Selected != back.gameObject; i++) yield return null;
-        Assert.AreEqual(back.gameObject, Selected, "結果画面は「戻る」を選んで始まる");
+        yield return null;
+        Assert.IsNull(Selected, "1曲モードの結果は、来場者の出口を選ばない(出していない)");
         keyboard.MakeCurrent();
         var panel = ChartMarkCommentPanel.Open(ChartMarks.Current);
         Assert.NotNull(panel);
@@ -146,14 +148,14 @@ public class ChartMarkPlayTests
         yield return Tap(Key.F5);
         Assert.IsFalse(ChartMarkCommentPanel.IsOpen, "F5 で閉じる");
         Assert.IsFalse(InputManager.EscapeSuppressed);
-        Assert.AreEqual(back.gameObject, EventSystem.current.currentSelectedGameObject, "閉じたら「戻る」を選び直す");
+        Assert.IsFalse(back.gameObject.activeInHierarchy, "閉じても来場者の出口は隠したまま");
         var saved = JsonUtility.FromJson<ChartMarkFile>(File.ReadAllText(ChartMarks.CurrentPath));
         Assert.AreEqual("abc", saved.marks[0].comment);
         Assert.AreEqual("", saved.marks[1].comment);
 
         yield return Tap(Key.Enter);
         yield return WaitForTransition();
-        Assert.AreNotEqual("Result", SceneManager.GetActiveScene().name, "閉じたあとはいつもの Enter で進める");
+        Assert.AreEqual("Title", SceneManager.GetActiveScene().name, "閉じたあとはスタッフの Enter でタイトルへ");
     }
 
     [UnityTest]
@@ -182,7 +184,7 @@ public class ChartMarkPlayTests
         yield return Tap(Key.F5);
         Assert.IsFalse(ChartMarkCommentPanel.IsOpen, "F5 で閉じる(閉じた F5 で開き直さない)");
         Assert.IsFalse(PhoneSaberOperatorKeys.TextEntryActive);
-        Assert.AreEqual(back.gameObject, Selected, "閉じたら「戻る」を選ぶ");
+        Assert.IsNull(Selected, "1曲モードは来場者の出口が無いので、閉じても隠した BACK を選ばない");
         Assert.AreEqual("ab", JsonUtility.FromJson<ChartMarkFile>(File.ReadAllText(ChartMarks.CurrentPath)).marks[0].comment);
 
         yield return Tap(Key.F5);

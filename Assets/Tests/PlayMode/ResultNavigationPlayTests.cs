@@ -16,13 +16,16 @@ using UnityEngine.TestTools;
 using UnityEngine.UI;
 using Object = UnityEngine.Object;
 
-// 実際の結果画面で、演出中の誤操作とセーバー・キーボードでの帰還を確認する。
+// 実際の結果画面で、演出中の誤操作とキーボードでの帰還を確認する。
+// 2026-10-31 ユーザー「来場者が自分でタイトルへ戻れる的を消す」: 次の曲が無い回(この試験の1曲モード)は、シーンの BACK を隠し、
+// 照準も出さない。タイトルへ戻すのはスタッフ(Enter・Esc 2回・右クリック3回)。2曲モードの「次の曲へ」は VisitorPlaysPlayTests。
 public class ResultNavigationPlayTests
 {
     readonly Dictionary<FieldInfo, object> sessionValues = new Dictionary<FieldInfo, object>();
     string songId;
     InputPoint input;
     ResultReveal reveal;
+    ResultSkin skin;
     Button back;
     Keyboard keyboard;
     Mouse mouse;
@@ -75,10 +78,14 @@ public class ResultNavigationPlayTests
         Assert.NotNull(reveal);
         reveal.enabled = false;
         reveal.Tick(0);
-        back = Object.FindFirstObjectByType<ResultController>().GetComponent<Canvas>().GetComponentInChildren<Button>();
+        skin = Object.FindFirstObjectByType<ResultSkin>();
+        Assert.NotNull(skin);
+        back = Object.FindFirstObjectByType<ResultController>().GetComponent<Canvas>().GetComponentInChildren<Button>(true);
         Assert.NotNull(back);
         Canvas.ForceUpdateCanvases();
     }
+
+    float RevealElapsed => (float)typeof(ResultReveal).GetField("elapsed", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(reveal);
 
     [UnityTearDown]
     public IEnumerator TearDown()
@@ -103,9 +110,10 @@ public class ResultNavigationPlayTests
     }
 
     [UnityTest]
-    public IEnumerator HiddenBackCannotExitAndScoreIsSavedBeforeNavigation()
+    public IEnumerator VisitorExitIsHiddenAndScoreIsSavedBeforeNavigation()
     {
-        Assert.False(back.IsInteractable(), "登場前の透明なBACKで結果画面を閉じない");
+        Assert.False(skin.VisitorExitShown, "次の曲が無い回は来場者の出口を出さない");
+        Assert.False(back.gameObject.activeInHierarchy, "シーンの BACK(タイトルへ)は隠す");
         ExecuteEvents.Execute(back.gameObject, new PointerEventData(EventSystem.current), ExecuteEvents.pointerClickHandler);
         ExecuteEvents.Execute(back.gameObject, new BaseEventData(EventSystem.current), ExecuteEvents.submitHandler);
         yield return null;
@@ -114,55 +122,46 @@ public class ResultNavigationPlayTests
         Assert.AreEqual(1, table.entries.Count);
         Assert.AreEqual(12345, table.entries[0].score);
         reveal.Tick(999);
-        Assert.True(back.IsInteractable());
+        Assert.False(back.gameObject.activeInHierarchy, "演出のあとも出さない");
         ExecuteEvents.Execute(back.gameObject, new PointerEventData(EventSystem.current), ExecuteEvents.pointerClickHandler);
-        Assert.True(ScreenTransition.IsBusy);
+        yield return null;
+        Assert.False(ScreenTransition.IsBusy, "隠した BACK では戻らない");
+        yield return Tap(Key.Enter);
+        Assert.True(ScreenTransition.IsBusy, "スタッフの Enter でタイトルへ");
         yield return WaitForTransition();
         Assert.AreEqual("Title", SceneManager.GetActiveScene().name);
         Assert.AreEqual(1, HighScoreStore.Load(songId, "Normal").entries.Count, "戻る操作で二重に記録しない");
     }
 
+    // 2026-10-31 まではセーバーで下の「タイトルへ」にかざして戻れた(来場者の誤爆)。今は照準も出さず、かざしても戻らない。
     [UnityTest]
-    public IEnumerator SaberReachesBottomBackAndDwellReturnsToTitle()
+    public IEnumerator SaberCannotLeaveTheResultWhenThereIsNoNextSong()
     {
-        var pointer = Object.FindFirstObjectByType<SaberUIPointer>();
-        Assert.NotNull(pointer, "ゲーム終了後もセーバーで操作できること");
-        Assert.NotNull(pointer.AimReticle, "結果画面も選曲と同じ照準で指す(2026-10-22)");
+        Assert.IsNull(Object.FindFirstObjectByType<SaberUIPointer>(), "指す的が無い回は照準も出さない");
         Assert.IsNull(Object.FindFirstObjectByType<SaberInputBridge>(), "結果画面はゲームのセーバー本体を持たない");
         reveal.Tick(999);
         Canvas.ForceUpdateCanvases();
+        // 前の「タイトルへ」の位置(下の中央)にかざし続ける。
         Vector2 screen = RectTransformUtility.WorldToScreenPoint(null, back.transform.position);
         float x = (screen.x / Screen.width * 2 - 1) / input.sensitivity;
         float y = (screen.y / Screen.height * 2 - 1) / input.sensitivity;
         byte[] packet = Encoding.ASCII.GetBytes(x.ToString("R", CultureInfo.InvariantCulture) + "," + y.ToString("R", CultureInfo.InvariantCulture));
-        double deadline = Time.realtimeSinceStartupAsDouble + 3;
-        bool hovered = false;
         using (var sender = new UdpClient())
         {
-            // 入力停止後はカーソルを隠し、古い位置で操作を続けない。
-            byte[] center = Encoding.ASCII.GetBytes("0,0");
-            sender.Send(center, center.Length, new IPEndPoint(IPAddress.Loopback, input.port));
-            double receivedDeadline = Time.realtimeSinceStartupAsDouble + 2;
-            while (!input.IsRecentlyActive() && Time.realtimeSinceStartupAsDouble < receivedDeadline) yield return null;
-            Assert.True(input.IsRecentlyActive());
-            yield return new WaitForSecondsRealtime(SaberUIPointer.StaleSeconds + .2f);
-            Assert.IsNull(pointer.HoveredForTest);
-            foreach (var image in pointer.GetComponentsInChildren<Image>(true)) Assert.False(image.gameObject.activeSelf);
-            deadline = Time.realtimeSinceStartupAsDouble + 3;
-            while (SceneManager.GetActiveScene().name == "Result" && Time.realtimeSinceStartupAsDouble < deadline)
+            double deadline = Time.realtimeSinceStartupAsDouble + 3;
+            while (Time.realtimeSinceStartupAsDouble < deadline)
             {
                 sender.Send(packet, packet.Length, new IPEndPoint(IPAddress.Loopback, input.port));
-                if (pointer != null && pointer.HoveredForTest == back) hovered = true;
                 yield return null;
             }
         }
-        Assert.True(hovered, "画面下部まで届き、BACK上で滞留を始めること");
-        yield return WaitForTransition();
-        Assert.AreEqual("Title", SceneManager.GetActiveScene().name);
+        Assert.True(input.IsRecentlyActive(), "剣の座標は届いている");
+        Assert.False(ScreenTransition.IsBusy);
+        Assert.AreEqual("Result", SceneManager.GetActiveScene().name, "かざしてもタイトルへ戻らない");
     }
 
     [UnityTest]
-    public IEnumerator MouseSkipPreservesKeyboardBackSelection()
+    public IEnumerator MouseSkipThenStaffEnterReturnsToTitle()
     {
         typeof(ResultReveal).GetField("elapsed", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(reveal, 0f);
         reveal.enabled = true;
@@ -170,8 +169,8 @@ public class ResultNavigationPlayTests
         yield return null;
         yield return null;
         Assert.AreEqual("Result", SceneManager.GetActiveScene().name);
-        Assert.True(back.IsInteractable());
-        Assert.AreEqual(back.gameObject, EventSystem.current.currentSelectedGameObject);
+        Assert.GreaterOrEqual(RevealElapsed, 999f, "クリックで演出を飛ばす");
+        Assert.False(back.gameObject.activeInHierarchy);
         InputSystem.QueueStateEvent(mouse, new MouseState { position = new Vector2(15, 15) });
         yield return null;
         InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.Enter));
@@ -190,8 +189,8 @@ public class ResultNavigationPlayTests
         yield return null;
         yield return null;
         Assert.AreEqual("Result", SceneManager.GetActiveScene().name, "演出スキップと画面終了を同じEnterで実行しない");
-        Assert.True(back.IsInteractable());
-        Assert.AreEqual(back.gameObject, EventSystem.current.currentSelectedGameObject);
+        Assert.GreaterOrEqual(RevealElapsed, 999f, "1回目の Enter は演出を飛ばす");
+        Assert.False(back.gameObject.activeInHierarchy);
         InputSystem.QueueStateEvent(keyboard, new KeyboardState());
         yield return null;
         yield return null;
@@ -211,7 +210,7 @@ public class ResultNavigationPlayTests
         yield return Tap(Key.Escape);
         Assert.AreEqual("Result", SceneManager.GetActiveScene().name, "1回目では戻らない");
         Assert.NotNull(Object.FindFirstObjectByType<OperatorNotice>());
-        Assert.True(back.IsInteractable(), "1回目の Esc は今までどおり演出も飛ばす");
+        Assert.GreaterOrEqual(RevealElapsed, 999f, "1回目の Esc は今までどおり演出も飛ばす");
         yield return Tap(Key.Escape);
         yield return WaitForTransition();
         Assert.AreEqual("Title", SceneManager.GetActiveScene().name);
@@ -255,7 +254,7 @@ public class ResultNavigationPlayTests
     }
 
     [UnityTest]
-    public IEnumerator ResultOffersOneCenteredTitleButtonAndResetsTheNextPlayersSettings()
+    public IEnumerator ResultOffersNoVisitorExitAndStaffEnterResetsTheNextPlayersSettings()
     {
         GameSession.SelectedSongId = "Epilogue";
         GameSession.SelectedSongTitle = "校歌";
@@ -263,14 +262,14 @@ public class ResultNavigationPlayTests
         GameSession.JudgmentOffsetMs = 180;
         GameSession.NoteApproachTime = .5f;
         reveal.Tick(999);
-        Assert.AreEqual("タイトルへ", back.GetComponentInChildren<TMPro.TextMeshProUGUI>().text);
-        Assert.AreEqual(new Vector2(0f, -432f), back.GetComponent<RectTransform>().anchoredPosition);
+        Assert.False(back.gameObject.activeInHierarchy, "来場者がタイトルへ戻る的は出さない(2026-10-31)");
+        Assert.AreEqual(new Vector2(0f, -432f), back.GetComponent<RectTransform>().anchoredPosition, "2曲モードの「次の曲へ」と同じ位置のまま");
         Assert.IsNull(GameObject.Find("RetrySong"));
         Assert.IsNull(GameObject.Find("ReturnToSongSelect"));
         Assert.IsNull(GameObject.Find("SkipHint"));
         Assert.AreEqual(1, Object.FindFirstObjectByType<ResultController>().GetComponent<Canvas>().GetComponentsInChildren<Button>(true).Length,
-            "中央のタイトルへボタンだけを表示する");
-        ExecuteEvents.Execute(back.gameObject, new PointerEventData(EventSystem.current), ExecuteEvents.pointerClickHandler);
+            "ボタンはシーンの BACK だけ(この回は隠したまま)");
+        yield return Tap(Key.Enter);
         Assert.True(ScreenTransition.IsBusy);
 
         yield return WaitForTransition();

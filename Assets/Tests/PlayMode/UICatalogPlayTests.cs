@@ -130,22 +130,30 @@ public class UICatalogPlayTests
     }
     [UnityTest] public IEnumerator JapaneseResultTitleIsNotDuplicatedAndExitUsesLongDwell()
     {
-        // 曲名は選曲と同じ表示名(2026-10-29 から「校歌@音楽祭ver」。古い「校歌」のままだと名前が違うので2行目の和名が出ていた)。
-        GameSession.SelectedSongId="Epilogue";GameSession.SelectedSongTitle=SongSelectController.DisplaySongTitle("Epilogue");
-        GameSession.FinalScore=0;GameSession.FinalMaxCombo=0;GameSession.FinalComboBonus=0;
-        GameSession.FinalHit=GameSession.FinalMiss=GameSession.FinalPerfect=GameSession.FinalGreat=GameSession.FinalGood=GameSession.FinalBad=0;
-        GameSession.FinalDailyRanking=null;
-        yield return SceneManager.LoadSceneAsync("Result");
-        yield return new WaitForSecondsRealtime(.5f);
-        var pointer = Object.FindFirstObjectByType<SaberUIPointer>();
-        var guard = (SaberUIArrivalGuard)typeof(SaberUIPointer).GetField("arrival",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(pointer);
-        for (int i=0;i<7;i++) guard.Tick(.1f);
-        Assert.False(guard.Tick(.1f));
-        Object.FindFirstObjectByType<ResultReveal>().Tick(999);
-        Assert.True(guard.Tick(.1f)); Assert.True(guard.CaptureTarget, "出口の受付開始時にも初回対象を保護する");
-        Assert.IsNull(GameObject.Find("TitleJp"));
-        var dwell=Object.FindFirstObjectByType<SaberDwellTarget>();Assert.NotNull(dwell);Assert.AreEqual(1.5f,dwell.dwellSeconds);
-        Capture("result");
+        // 来場者の出口(次の曲へ)と照準を出すのは次の曲がある回だけ(2026-10-31 ユーザー「来場者が自分でタイトルへ戻れる的を消す」)。
+        // 出口の決まりは、2曲モードの1曲目の結果で見る。
+        VisitorPlays.SetSongsPerVisitorForTest(2); VisitorPlays.BeginVisitor();
+        try
+        {
+            // 曲名は選曲と同じ表示名(2026-10-29 から「校歌@音楽祭ver」。古い「校歌」のままだと名前が違うので2行目の和名が出ていた)。
+            GameSession.SelectedSongId="Epilogue";GameSession.SelectedSongTitle=SongSelectController.DisplaySongTitle("Epilogue");
+            GameSession.FinalScore=0;GameSession.FinalMaxCombo=0;GameSession.FinalComboBonus=0;
+            GameSession.FinalHit=GameSession.FinalMiss=GameSession.FinalPerfect=GameSession.FinalGreat=GameSession.FinalGood=GameSession.FinalBad=0;
+            GameSession.FinalDailyRanking=null;
+            yield return SceneManager.LoadSceneAsync("Result");
+            yield return new WaitForSecondsRealtime(.5f);
+            var pointer = Object.FindFirstObjectByType<SaberUIPointer>();
+            Assert.NotNull(pointer, "次の曲がある回は照準で「次の曲へ」を指す");
+            var guard = (SaberUIArrivalGuard)typeof(SaberUIPointer).GetField("arrival",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(pointer);
+            for (int i=0;i<7;i++) guard.Tick(.1f);
+            Assert.False(guard.Tick(.1f));
+            Object.FindFirstObjectByType<ResultReveal>().Tick(999);
+            Assert.True(guard.Tick(.1f)); Assert.True(guard.CaptureTarget, "出口の受付開始時にも初回対象を保護する");
+            Assert.IsNull(GameObject.Find("TitleJp"));
+            var dwell=Object.FindFirstObjectByType<SaberDwellTarget>();Assert.NotNull(dwell);Assert.AreEqual(1.5f,dwell.dwellSeconds);
+            Capture("result");
+        }
+        finally { VisitorPlays.BeginVisitor(); VisitorPlays.SetSongsPerVisitorForTest(1); }
     }
     [UnityTest] public IEnumerator SelectionHitAreasLeaveTheStartInstructionUntargeted()
     {

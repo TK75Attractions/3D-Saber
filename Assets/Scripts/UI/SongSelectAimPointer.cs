@@ -17,15 +17,18 @@ public sealed class SongSelectAimPointer : MonoBehaviour
     RectTransform overlay, upDock, downDock;
     SongSelectAimGraphic reticle, impact;
     Target hovered;
+    // 入力元(赤・マウス)の切り替え。赤を見失ってもマウスが使われるまでは、ためを保つ(SaberAimSource)。
+    readonly SaberAimSource source = new SaberAimSource();
     Vector2 smoothed, lastMouse;
-    int sourceKind;
-    bool hasPoint, mouseNeedsMove;
+    bool hasPoint;
     float shotAge = 10;
     public const float ArrivalGraceSeconds = SaberUIArrivalGuard.GraceSeconds;
     // 赤の認識が途切れても、この時間まではマウスへ切り替えない(SaberInputBridge・MenuSaberStatus と同じ1秒)。
     // 2026-10-21 ユーザー「カーソルあってるのにカウント始まんない」: 切り替えを入場扱いにしていたので、構えたまま見失って
     // 戻ると照準の下の的がロックされ、一度外すまで溜まらなかった(iPhone は見失うと3コマで送信を止める)。
-    // 今は切り替えてもためを取り消すだけで、ロックはしない。入場のロックは画面に入ったときだけ(BeginArrival)。
+    // 切り替えでロックはしない。入場のロックは画面に入ったときだけ(BeginArrival)。
+    // 2026-10-31 ユーザー「照準が消えても、ため(ゲージ)を0にしない」: 1秒を超えて見失っても、マウスが使われるまでは
+    // ためと的を止めたまま保ち、赤が戻れば続きからためる(SaberAimSource)。
     public const float SaberActiveSeconds = 1f;
     // ためを進めるのは新しい座標が届いている間だけ。止まった座標では進めず、外れた扱いにもしない(切り替えまで止めて保つ)。
     public const float SaberFreshSeconds = .2f;
@@ -102,32 +105,60 @@ public sealed class SongSelectAimPointer : MonoBehaviour
         var input = InputPoint.Instance;
         var mouse = Mouse.current;
         Vector2 mousePoint = mouse != null ? mouse.position.ReadValue() : lastMouse;
-        int kind = input != null && input.IsRecentlyActive(SaberActiveSeconds) ? 1 : mouse != null ? 2 : 0;
-        if (sourceKind != kind)
+        if (mouse != null) lastMouse = mousePoint;
+        bool saber = input != null && input.IsRecentlyActive(SaberActiveSeconds);
+        Vector2 saberPoint = default;
+        if (saber)
         {
-            SwitchSource(); hasPoint = false;
-            if (sourceKind == 1 && kind != 1) { mouseNeedsMove = true; lastMouse = mousePoint; }
-            if (kind == 1) mouseNeedsMove = false;
-            sourceKind = kind;
+            saberPoint = Vector2.Scale(input.NormalizedPosition, new Vector2(Screen.width, Screen.height));
+            // 誤認識（会場の赤い物など）で照準が一瞬遠くへ飛ぶのを、最大2受信だけ無視する（PhoneSaberPointJumpGate）。
+            saberPoint = pointJumpGate.Apply(input.LastReceivedMonotonicTime, saberPoint, Screen.height * .25f);
         }
-        if (mouseNeedsMove && Vector2.Distance(lastMouse, mousePoint) > 3) mouseNeedsMove = false;
-        Vector2 point = kind == 1 ? Vector2.Scale(input.NormalizedPosition, new Vector2(Screen.width, Screen.height)) : mousePoint;
-        // 誤認識（会場の赤い物など）で照準が一瞬遠くへ飛ぶのを、最大2受信だけ無視する（PhoneSaberPointJumpGate）。
-        if (kind == 1) point = pointJumpGate.Apply(input.LastReceivedMonotonicTime, point, Screen.height * .25f);
         else pointJumpGate.Reset();
-        bool valid = PhoneSaberUIFocus.AllowsInput(kind == 1, Application.isFocused, Application.isBatchMode)
-            && kind != 0 && !mouseNeedsMove && new Rect(0, 0, Screen.width, Screen.height).Contains(point);
+        StepInput(saber, saber && input.IsRecentlyActive(SaberFreshSeconds), saberPoint,
+            mouse != null, mousePoint, mouse != null && mouse.leftButton.wasPressedThisFrame, Time.unscaledDeltaTime);
+    }
+
+    // 実入力と検証で共通の入口(座標は画面ピクセル)。saberActive は赤が SaberActiveSeconds 以内に届いたか、
+    // saberFresh は SaberFreshSeconds 以内に届いたか。赤を見失ってもマウスが使われるまでは、ためと的を止めて保つ。
+    public void StepInput(bool saberActive, bool saberFresh, Vector2 saberPoint, bool mouseAvailable, Vector2 mousePoint,
+        bool mouseClicked, float dt)
+    {
+        if (source.Update(saberActive, mouseAvailable, mousePoint, mouseClicked)) SwitchSource();
+        if (source.KindChanged) hasPoint = false;
+        if (source.HoldingLostSaber) { HoldWhileLost(dt); return; }
+        int kind = source.Kind;
+        bool usingSaber = kind == SaberAimSource.Saber;
+        Vector2 point = usingSaber ? saberPoint : mousePoint;
+        bool valid = PhoneSaberUIFocus.AllowsInput(usingSaber, Application.isFocused, Application.isBatchMode)
+            && kind != SaberAimSource.None && !source.MouseNeedsMove && new Rect(0, 0, Screen.width, Screen.height).Contains(point);
         if (!hasPoint) smoothed = point;
-        else if (kind == 1) smoothed = Vector2.Lerp(smoothed, point, 1 - Mathf.Exp(-Time.unscaledDeltaTime / SaberSmoothingSeconds));
+        else if (usingSaber) smoothed = Vector2.Lerp(smoothed, point, 1 - Mathf.Exp(-dt / SaberSmoothingSeconds));
         else smoothed = point;
         hasPoint = valid;
         // 通常クリックをした直後に、そのまま照準が溜まって同じ操作を再実行しない。
-        if (valid && kind == 2 && mouse.leftButton.wasPressedThisFrame)
+        if (valid && kind == SaberAimSource.Mouse && mouseClicked)
         {
             Target clicked = Resolve(point);
             if (clicked.key != null) tracker.BlockUntilExit(Expand(clicked.area, Padding), clicked.disc != null && clicked.disc.Circle);
         }
-        TickAt(smoothed, Time.unscaledDeltaTime, valid, kind != 1 || input.IsRecentlyActive(SaberFreshSeconds));
+        TickAt(smoothed, dt, valid, !usingSaber || saberFresh);
+    }
+
+    // 赤を見失って、ためを止めたまま待っているか(マウスが使われるか赤が戻るまで)。
+    public bool HoldingLostSaber => source.HoldingLostSaber;
+
+    // 赤を見失っている間(1秒を超えて届かない。マウスはまだ使われていない)。照準は今までどおり消すが、
+    // ためと狙っていた的はそのまま保つ(進めない)。赤が戻って同じ的なら続きからたまる。画面が変わったら取り消す。
+    void HoldWhileLost(float dt)
+    {
+        shotAge += Mathf.Max(0, dt);
+        if (dt > 0) startHoldOff = Mathf.Max(0, startHoldOff - dt);
+        if (impact != null) impact.Show(0, false, shotAge);
+        if (ScreenTransition.IsBusy) BeginArrival();
+        WaitingOnStart = false;
+        if (reticle != null) reticle.gameObject.SetActive(false);
+        UpdateChargeSound(false, default, dt);
     }
 
     float Padding => 8 * (overlay != null ? overlay.GetComponent<Canvas>().scaleFactor : 1);

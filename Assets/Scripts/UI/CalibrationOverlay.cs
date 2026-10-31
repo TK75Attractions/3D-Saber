@@ -238,7 +238,10 @@ public sealed class CalibrationOverlay : MonoBehaviour
         bool expired=countdown.Tick(deltaSeconds,SongSelectSkin.VisitorInputLive());
         GameSession.CalibrationSelectionSeconds=countdown.Remaining; RefreshCountdown();
         if (!expired) return;
-        GameSession.CalibrationSelectionSeconds=10; ctl.DiscardAndExit();
+        // 時間を足さずに(0秒で)選曲へ戻す(2026-10-31 ユーザー「選曲の45秒の時計が、止まったり増えたりしないようにする」)。
+        // 前は10秒を足して戻していたので、判定調整との行き来で時間切れがいつまでも来なかった。
+        // 戻った選曲はすぐ時間切れの「この曲で はじめる？」(8秒で始める)を開く(判定調整に入ったのは操作なので)。
+        GameSession.CalibrationSelectionSeconds=0; ctl.DiscardAndExit();
     }
     void RefreshCountdown()
     {

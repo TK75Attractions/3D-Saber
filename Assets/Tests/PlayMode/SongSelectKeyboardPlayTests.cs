@@ -298,8 +298,10 @@ public class SongSelectKeyboardPlayTests
         Assert.AreEqual(2, controller.SelectedDifficultyIndex);
     }
 
+    // 2026-10-31 ユーザー「照準が消えても、ため(ゲージ)を0にしない」: 1秒を超えて見失っても、マウスが使われるまでは、ためを保つ
+    // (前はここで取り消していた)。置いたままのマウスの位置では発射しない。戻ったら続きから溜まり、1回だけ発射する。
     [UnityTest]
-    public IEnumerator TrackingLossCancelsAimAndDoesNotFireAtStaleMousePosition()
+    public IEnumerator TrackingLossKeepsTheChargeAndDoesNotFireAtStaleMousePosition()
     {
         var aim = Object.FindFirstObjectByType<SongSelectAimPointer>();
         yield return new WaitForSecondsRealtime(.6f);
@@ -326,18 +328,20 @@ public class SongSelectKeyboardPlayTests
         yield return Track(pixel, .5f);
         float before = aim.Progress01;
         Assert.Greater(before, .2f);
-        // 1秒を超えて途切れたら、ためは取り消す。マウスは動かすまで使わない(古い位置で発射しない)。
+        // 1秒を超えて途切れても、ためは保つ(進めない)。マウスは動かすまで使わない(古い位置で発射しない)。
         received.SetValue(input, -1000d);
         yield return new WaitForSecondsRealtime(1.4f);
-        Assert.Zero(aim.ShotCount); Assert.Zero(aim.Progress01);
+        Assert.Zero(aim.ShotCount);
+        Assert.True(aim.HoldingLostSaber, "見失って、マウスが使われるのを待っている");
+        Assert.AreEqual(before, aim.Progress01, .001f, "見失っている間もためを保つ");
         Assert.False(aim.Reticle.gameObject.activeSelf, "見失ったままなら照準を隠す");
         // 2026-10-21: 戻った位置が同じボタンでもロックしない(以前は一度外すまで溜まらず「カーソルが合っているのに始まらない」)。
-        // 古いためは続けず、0から溜め直す。
         yield return Track(pixel, .3f);
-        Assert.False(aim.NeedsRelease); Assert.Zero(aim.ShotCount);
-        Assert.Greater(aim.Progress01, 0f); Assert.Less(aim.Progress01, before + .25f, "古いためは続けない");
+        Assert.False(aim.NeedsRelease);
+        Assert.False(aim.HoldingLostSaber);
+        Assert.True(aim.ShotCount == 1 || aim.Progress01 > before, "戻ったら続きから溜まる(たまりきれば発射)");
         yield return Track(pixel, 1f);
-        Assert.AreEqual(1, aim.ShotCount); Assert.AreEqual(0, controller.SelectedDifficultyIndex);
+        Assert.AreEqual(1, aim.ShotCount, "続きから溜まって1回だけ発射する"); Assert.AreEqual(0, controller.SelectedDifficultyIndex);
     }
 
     // 1秒未満の途切れ(赤を見失った・通信の揺れ)では、ためを止めて保ち、戻ったら続きから溜める。ロックはしない。

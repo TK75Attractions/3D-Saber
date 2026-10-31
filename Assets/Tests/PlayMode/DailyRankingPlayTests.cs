@@ -168,6 +168,18 @@ public class DailyRankingPlayTests
 
     [UnityTest] public IEnumerator RevealSkipAndLowModeKeepRankReadableAndBackUsable()
     {
+        // 来場者の出口を出すのは次の曲がある回だけ(2026-10-31 ユーザー「来場者が自分でタイトルへ戻れる的を消す」)。
+        // 出口が順位の演出のあとに使えることは、2曲モードの1曲目(「次の曲へ」)で見る。
+        VisitorPlays.SetSongsPerVisitorForTest(2); VisitorPlays.BeginVisitor();
+        try
+        {
+            yield return RevealSkipAndLowModeKeepRankReadableAndBackUsableCore();
+        }
+        finally { VisitorPlays.BeginVisitor(); VisitorPlays.SetSongsPerVisitorForTest(1); }
+    }
+
+    IEnumerator RevealSkipAndLowModeKeepRankReadableAndBackUsableCore()
+    {
         Complete(18000);
         yield return SceneManager.LoadSceneAsync("Result");
         yield return null;
@@ -176,6 +188,7 @@ public class DailyRankingPlayTests
         var panel = GameObject.Find("DailyRanking");
         var rank = panel.transform.Find("Rank");
         var back = Object.FindFirstObjectByType<ResultController>().GetComponent<Canvas>().GetComponentInChildren<Button>();
+        Assert.NotNull(back, "次の曲がある回は来場者の出口(次の曲へ)がある");
         reveal.Tick(0);
         Assert.AreEqual(0, panel.GetComponent<CanvasGroup>().alpha);
         Assert.False(back.IsInteractable());

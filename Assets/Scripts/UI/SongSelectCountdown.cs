@@ -7,6 +7,8 @@ public sealed class SongSelectCountdown
     // 同じ日の夜、ユーザー「選曲45秒に」で 45 秒。
     public const double LimitSeconds = 45;
     public double Remaining { get; private set; } = LimitSeconds;
+    // 一度0になったら、作り直す(Reset)まで戻らない(2026-10-31 ユーザー「選曲の45秒の時計が、止まったり増えたりしないようにする」)。
+    public bool Expired => expired;
     bool expired;
     public void Reset(double remaining = LimitSeconds)
     {

@@ -107,17 +107,9 @@ public class ScreenTransitionPlayTests
             Assert.False(ScreenTransition.Load("Result"), "二重遷移を受け付けない");
             yield return WaitForTransition();
             AssertReady("SongSelect");
-            var back = GameObject.Find("BackToTitle").GetComponent<Button>();
-            if (concept % 2 == 0)
-            {
-                yield return new WaitForSecondsRealtime(.6f);
-                var action = back.GetComponent<SongSelectDiscTarget>();
-                Assert.AreEqual(2, action.HoldSeconds);
-                Assert.True(action.TryShoot());
-                double deadline = Time.realtimeSinceStartupAsDouble + 2;
-                while (!ScreenTransition.IsBusy && Time.realtimeSinceStartupAsDouble < deadline) yield return null;
-            }
-            else back.onClick.Invoke();
+            // 選曲の「タイトルへ」ボタンは 2026-10-31 に消した(来場者の誤爆)。スタッフの戻し(Esc 2回・右クリック3回)と同じ出口で戻る。
+            Assert.IsNull(GameObject.Find("BackToTitle"), "来場者がタイトルへ戻る的は無い");
+            Object.FindFirstObjectByType<SongSelectController>().ReturnToTitle();
             Assert.True(ScreenTransition.IsBusy);
             yield return new WaitForSecondsRealtime(.21f);
             Capture("select-back-" + concept);
@@ -202,8 +194,10 @@ public class ScreenTransitionPlayTests
         Capture("play-result");
         yield return WaitForTransition();
         AssertReady("Result");
-        Assert.NotNull(EventSystem.current.currentSelectedGameObject, "暗転後もキーボードの戻る先が選択される");
         var result = Object.FindFirstObjectByType<ResultController>();
+        // 次の曲がある回だけ来場者の出口(次の曲へ)を出し、暗転後もキーボードの戻る先として選ぶ。無い回は出口を出さない(2026-10-31)。
+        if (result.HasNextSong) Assert.NotNull(EventSystem.current.currentSelectedGameObject, "暗転後もキーボードの戻る先が選択される");
+        else Assert.False(Object.FindFirstObjectByType<ResultSkin>().VisitorExitShown, "次の曲が無い回は来場者の出口を出さない");
         string returnScene = result.titleSceneName;
         result.OnBackButton();
         Assert.True(ScreenTransition.IsBusy);

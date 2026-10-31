@@ -42,7 +42,7 @@ public class SongSelectSkin : MonoBehaviour
     SongSelectDiscGraphic visitorProgress;
     // 残り時間の音(盤5): 30秒で1回の知らせ、10秒から1秒ごとの刻み。鳴らすのは MenuSfx。
     int lastBeepSecond = -1, previousSecond = -1;
-    // ためている間の表示(盤2): 難易度の円は円周、判定調整・タイトルへのボタンは下の線が満ちる。
+    // ためている間の表示(盤2): 難易度の円は円周、判定調整などのボタンは下の線が満ちる。
     readonly SongSelectDiscGraphic[] difficultyCharges = new SongSelectDiscGraphic[3];
     readonly SongSelectDiscTarget[] difficultyTargets = new SongSelectDiscTarget[3];
     readonly List<(SongSelectDiscTarget target, RectTransform bar, float width)> buttonCharges = new List<(SongSelectDiscTarget, RectTransform, float)>();
@@ -525,17 +525,15 @@ public class SongSelectSkin : MonoBehaviour
         ? (table.entries[row].rank ?? "").Replace("+", "<color=#ff6e7a>+</color>") : "";
     void BuildActions()
     {
-        // 左上、見出しの下(2026-10-28 ユーザー「判定調整ボタンを左上に配置 小さくして」)。タイトルへと同じ高さ96の小さいボタン。
+        // 左上、見出しの下(2026-10-28 ユーザー「判定調整ボタンを左上に配置 小さくして」)。高さ96の小さいボタン。
         // 隣の盤(上端310)・2曲先の盤(上端495)より上、見出し(下端148)の下に収める。
         var cal = PanelAt("CalibrationButton", 210, 230, 300, 96, SongSelectVisuals.Edge, 2, 16);
         ButtonOn(cal.rectTransform, cal, 2, false).onClick.AddListener(() => { EnterCalibration(); if (ScreenTransition.IsBusy) ctl.StopPreview(); });
         AddChargeBar(cal, 300, 96);
         var t = Label(cal.transform, "CalibrationLabel", "", 34, new Vector2(0, -8), new Vector2(270, 70), UISkinKit.JapaneseFallbackFontAsset()); t.fontStyle = FontStyles.Bold;
         Ruby(t, "<ruby=はんてい>判定</ruby><ruby=ちょうせい>調整</ruby>");
-        var back = PanelAt("BackToTitle", 1220, 92, 340, 96, SongSelectVisuals.Edge, 2, 16);
-        ButtonOn(back.rectTransform, back, 2, false).onClick.AddListener(ctl.ReturnToTitle);
-        Label(back.transform, "Label", "タイトルへ", 36, Vector2.zero, new Vector2(300, 76), UISkinKit.JapaneseFallbackFontAsset());
-        AddChargeBar(back, 340, 96);
+        // 「タイトルへ」のボタンは置かない(2026-10-31 ユーザー「来場者が自分でタイトルへ戻れる的を消す」。曲を選ばずにタイトルへ戻る誤爆が
+        // 10/31 の台Bで6回あった)。タイトルへ戻すのはスタッフ(Esc・ハイフンの2回、右クリック3回)と、操作がないままの時間切れだけ。
     }
     // 時計のすぐ下の小さいボタン(2026-10-29 ユーザー「時計のすぐ下にさ、もっと高難易度の譜面をあそびたい方へ...の小さいボタンを用意して
     // (5秒長押し) 押すと、裏難易度へのヒントがでる仕組みにして(10秒かほかのボタン選択で自動で消える)」)。
@@ -737,21 +735,27 @@ public class SongSelectSkin : MonoBehaviour
 
     // 時間切れ(仕様面の点検 1)。選曲で操作した人は今の曲・難易度で始める。操作がなければ無人とみなして、曲を始めずにタイトルへ戻る。
     // 始められなかったとき(譜面が消えた・曲が無いなど)もタイトルへ戻り、時計が止まったままにならない。
-    // 運営が F9 で遅れを測っている間(PhoneSaberDisplaySync.Measuring)も進めない(測っている途中に曲が始まらないように。2026-10-30 全体の点検)。
-    // 「この曲で はじめる？」を開いている間も時計を止める。時間切れは確認を開き、8 秒後に始める(2026-10-30 ユーザー「③はすべて実装」)。
+    // 運営が F9 で遅れを測っている間(PhoneSaberDisplaySync.Measuring)とスタッフ用の説明の間(PauseClock)は進めない
+    // (測っている途中に曲が始まらないように。2026-10-30 全体の点検・④)。時間切れは確認を開き、8 秒後に始める(2026-10-30「③はすべて実装」)。
+    // 2026-10-31 ユーザー「選曲の45秒の時計が、止まったり増えたりしないようにする」: 「この曲で はじめる？」を開いている間も進め、
+    // 戻っても足さない。開いたまま0になったら、その確認を時間切れの確認(8秒で始める・えらびなおせない)に切り替える。
     public void TickCountdown(double deltaSeconds)
     {
         if (!built) return;
         if (!countdown.Tick(deltaSeconds, !PauseClock && !ScreenTransition.IsBusy && !ctl.RushESecret.Transitioning
-            && !PhoneSaberDisplaySync.Measuring && !SongSelectConfirm.IsOpen && VisitorInputLive())) return;
+            && !PhoneSaberDisplaySync.Measuring && VisitorInputLive())) return;
+        if (SongSelectConfirm.IsOpen) { confirm.BeginAutomaticStart(); return; }
         if (GameSession.SongSelectOperated && (confirm == null || !confirm.Open(true, "auto"))) ctl.StartGameAutomatically();
         if (!ctl.StartAccepted && !ScreenTransition.IsBusy && !SongSelectConfirm.IsOpen) ctl.ReturnToTitle();
     }
 
-    // 確認から選曲へ戻ったとき、すぐ時間切れにならないよう残りを最低この秒にする。
-    public void EnsureRemainingSeconds(double seconds)
+    // 時計が0になったあとか(作り直すまで戻らない)。
+    public bool CountdownExpired => countdown.Expired;
+
+    // 時間切れのあとの確認から、始められずに閉じたとき(譜面が消えた・曲が無いなど)。時計は足さず、時間切れで始められなかったときと同じくタイトルへ。
+    public void ConfirmClosedAfterTimeout()
     {
-        if (countdown.Remaining < seconds) countdown.Reset(seconds);
+        if (built && countdown.Expired && !ctl.StartAccepted && !ScreenTransition.IsBusy && !SongSelectConfirm.IsOpen) ctl.ReturnToTitle();
     }
     void AnimateDiscs()
     {

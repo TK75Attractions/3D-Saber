@@ -10,43 +10,51 @@
     "v25TruePeakDbtp": 0.4,
     "v25FlattenedSamples": 15826,
     "v25MaxCutDb": 7.59,
-    "targetLufs": -8.7,
-    "outputLufs": -8.7,
-    "outputLra": 2.4,
-    "outputTruePeakDbtp": -1.2,
-    "outputSampleMax": 0.8717,
+    "targetLufs": -7.0,
+    "outputLufs": -7.0,
+    "outputLra": 2.1,
+    "outputTruePeakDbtp": -1.0,
+    "outputSampleMax": 0.8844,
     "ceilingDbtp": -1.5,
-    "makeupDb": 7.95,
-    "estimateLufs": -8.79,
-    "limitP50Db": 3.33,
-    "limitP95Db": 7.5,
-    "limitP99Db": 9.09,
-    "limitMaxDb": 9.8,
-    "attempts": 1,
+    "makeupDb": 14.73,
+    "estimateLufs": -7.12,
+    "limitP50Db": 6.65,
+    "limitP95Db": 10.01,
+    "limitP99Db": 10.22,
+    "limitMaxDb": 10.67,
+    "attempts": 2,
     "locallyLoweredSamples": 0,
+    "louder": {
+      "target": -6.0,
+      "gr95Cap": 10.0,
+      "highpassHz": 130.0,
+      "softclipMarginDb": 8.0
+    },
+    "softclippedShare": 0.0216,
+    "speakerLufs": -7.28,
     "lags": [
-      {
-        "lag": 0,
-        "correlation": 0.9852
-      },
-      {
-        "lag": 0,
-        "correlation": 0.9686
-      },
       {
         "lag": 0,
         "correlation": 0.9817
       },
       {
         "lag": 0,
-        "correlation": 0.9782
+        "correlation": 0.9708
       },
       {
         "lag": 0,
-        "correlation": 0.9575
+        "correlation": 0.9791
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9789
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9685
       }
     ],
-    "oggBytes": 3011732
+    "oggBytes": 3390960
   },
   {
     "songId": "2_23_AM",
@@ -59,43 +67,51 @@
     "v25TruePeakDbtp": 0.4,
     "v25FlattenedSamples": 15826,
     "v25MaxCutDb": 7.59,
-    "targetLufs": -8.7,
-    "outputLufs": -8.7,
+    "targetLufs": -7.1,
+    "outputLufs": -7.1,
     "outputLra": 2.1,
     "outputTruePeakDbtp": -1.1,
-    "outputSampleMax": 0.8719,
+    "outputSampleMax": 0.8797,
     "ceilingDbtp": -1.5,
-    "makeupDb": 7.96,
-    "estimateLufs": -8.86,
-    "limitP50Db": 3.27,
-    "limitP95Db": 7.5,
-    "limitP99Db": 9.04,
-    "limitMaxDb": 9.73,
+    "makeupDb": 14.93,
+    "estimateLufs": -7.23,
+    "limitP50Db": 6.74,
+    "limitP95Db": 10.0,
+    "limitP99Db": 10.21,
+    "limitMaxDb": 10.66,
     "attempts": 2,
-    "locallyLoweredSamples": 0,
+    "locallyLoweredSamples": 150,
+    "louder": {
+      "target": -6.0,
+      "gr95Cap": 10.0,
+      "highpassHz": 130.0,
+      "softclipMarginDb": 8.0
+    },
+    "softclippedShare": 0.0227,
+    "speakerLufs": -7.39,
     "lags": [
       {
         "lag": 0,
-        "correlation": 0.982
+        "correlation": 0.9862
       },
       {
         "lag": 0,
-        "correlation": 0.9659
+        "correlation": 0.973
       },
       {
         "lag": 0,
-        "correlation": 0.9583
+        "correlation": 0.9537
       },
       {
         "lag": 0,
-        "correlation": 0.9779
+        "correlation": 0.979
       },
       {
         "lag": 0,
-        "correlation": 0.9693
+        "correlation": 0.9711
       }
     ],
-    "oggBytes": 5467378
+    "oggBytes": 6090104
   },
   {
     "songId": "Andalusia",
@@ -108,43 +124,51 @@
     "v25TruePeakDbtp": 0.0,
     "v25FlattenedSamples": 6233,
     "v25MaxCutDb": 4.61,
-    "targetLufs": -7.9,
-    "outputLufs": -7.9,
-    "outputLra": 1.9,
-    "outputTruePeakDbtp": -1.0,
-    "outputSampleMax": 0.8866,
+    "targetLufs": -6.8,
+    "outputLufs": -6.8,
+    "outputLra": 2.5,
+    "outputTruePeakDbtp": -1.2,
+    "outputSampleMax": 0.8704,
     "ceilingDbtp": -1.5,
-    "makeupDb": 4.09,
-    "estimateLufs": -8.0,
-    "limitP50Db": 2.88,
-    "limitP95Db": 5.31,
-    "limitP99Db": 5.67,
-    "limitMaxDb": 6.43,
-    "attempts": 1,
-    "locallyLoweredSamples": 0,
+    "makeupDb": 10.6,
+    "estimateLufs": -6.99,
+    "limitP50Db": 7.81,
+    "limitP95Db": 10.0,
+    "limitP99Db": 10.26,
+    "limitMaxDb": 11.03,
+    "attempts": 3,
+    "locallyLoweredSamples": 122,
+    "louder": {
+      "target": -6.0,
+      "gr95Cap": 10.0,
+      "highpassHz": 130.0,
+      "softclipMarginDb": 8.0
+    },
+    "softclippedShare": 0.0142,
+    "speakerLufs": -7.23,
     "lags": [
       {
         "lag": 0,
-        "correlation": 0.9887
+        "correlation": 0.9844
       },
       {
         "lag": 0,
-        "correlation": 0.985
+        "correlation": 0.9848
       },
       {
         "lag": 0,
-        "correlation": 0.9884
+        "correlation": 0.9899
       },
       {
         "lag": 0,
-        "correlation": 0.9891
+        "correlation": 0.9878
       },
       {
         "lag": 0,
-        "correlation": 0.9913
+        "correlation": 0.9899
       }
     ],
-    "oggBytes": 3386823
+    "oggBytes": 3590164
   },
   {
     "songId": "Aobasou",
@@ -206,43 +230,51 @@
     "v25TruePeakDbtp": 1.9,
     "v25FlattenedSamples": 11928,
     "v25MaxCutDb": 8.6,
-    "targetLufs": -7.5,
-    "outputLufs": -7.5,
-    "outputLra": 5.3,
-    "outputTruePeakDbtp": -1.1,
-    "outputSampleMax": 0.8781,
+    "targetLufs": -7.2,
+    "outputLufs": -7.2,
+    "outputLra": 4.3,
+    "outputTruePeakDbtp": -1.0,
+    "outputSampleMax": 0.889,
     "ceilingDbtp": -1.5,
-    "makeupDb": 9.94,
-    "estimateLufs": -7.6,
-    "limitP50Db": 4.19,
-    "limitP95Db": 7.19,
-    "limitP99Db": 9.11,
-    "limitMaxDb": 13.18,
-    "attempts": 2,
-    "locallyLoweredSamples": 36,
+    "makeupDb": 14.08,
+    "estimateLufs": -7.28,
+    "limitP50Db": 6.57,
+    "limitP95Db": 10.01,
+    "limitP99Db": 10.94,
+    "limitMaxDb": 12.19,
+    "attempts": 1,
+    "locallyLoweredSamples": 0,
+    "louder": {
+      "target": -6.0,
+      "gr95Cap": 10.0,
+      "highpassHz": 130.0,
+      "softclipMarginDb": 8.0
+    },
+    "softclippedShare": 0.0278,
+    "speakerLufs": -7.67,
     "lags": [
       {
         "lag": 0,
-        "correlation": 0.9803
+        "correlation": 0.9757
       },
       {
         "lag": 0,
-        "correlation": 0.9699
+        "correlation": 0.964
       },
       {
         "lag": 0,
-        "correlation": 0.9872
+        "correlation": 0.9873
       },
       {
         "lag": 0,
-        "correlation": 0.9806
+        "correlation": 0.9774
       },
       {
         "lag": 0,
-        "correlation": 0.9984
+        "correlation": 0.9957
       }
     ],
-    "oggBytes": 3760939
+    "oggBytes": 4360160
   },
   {
     "songId": "ElDorado",
@@ -255,28 +287,36 @@
     "v25TruePeakDbtp": 1.3,
     "v25FlattenedSamples": 4616,
     "v25MaxCutDb": 8.58,
-    "targetLufs": -8.1,
-    "outputLufs": -8.1,
-    "outputLra": 1.0,
-    "outputTruePeakDbtp": -1.1,
-    "outputSampleMax": 0.8828,
+    "targetLufs": -7.3,
+    "outputLufs": -7.3,
+    "outputLra": 1.3,
+    "outputTruePeakDbtp": -1.0,
+    "outputSampleMax": 0.8843,
     "ceilingDbtp": -1.5,
-    "makeupDb": 11.03,
-    "estimateLufs": -8.23,
-    "limitP50Db": 4.47,
-    "limitP95Db": 7.51,
-    "limitP99Db": 9.24,
-    "limitMaxDb": 11.93,
-    "attempts": 2,
-    "locallyLoweredSamples": 277,
+    "makeupDb": 15.47,
+    "estimateLufs": -7.49,
+    "limitP50Db": 8.05,
+    "limitP95Db": 10.0,
+    "limitP99Db": 10.41,
+    "limitMaxDb": 12.02,
+    "attempts": 3,
+    "locallyLoweredSamples": 409,
+    "louder": {
+      "target": -6.0,
+      "gr95Cap": 10.0,
+      "highpassHz": 130.0,
+      "softclipMarginDb": 8.0
+    },
+    "softclippedShare": 0.0083,
+    "speakerLufs": -7.63,
     "lags": [
       {
         "lag": 0,
-        "correlation": 0.971
+        "correlation": 0.9824
       },
       {
         "lag": 0,
-        "correlation": 0.9721
+        "correlation": 0.9871
       },
       {
         "lag": 0,
@@ -284,14 +324,14 @@
       },
       {
         "lag": 0,
-        "correlation": 0.9729
+        "correlation": 0.9811
       },
       {
         "lag": 0,
-        "correlation": 0.9774
+        "correlation": 0.9889
       }
     ],
-    "oggBytes": 4209041
+    "oggBytes": 5106430
   },
   {
     "songId": "ElDorado",
@@ -304,43 +344,51 @@
     "v25TruePeakDbtp": 1.0,
     "v25FlattenedSamples": 9226,
     "v25MaxCutDb": 7.92,
-    "targetLufs": -8.3,
-    "outputLufs": -8.3,
-    "outputLra": 1.5,
-    "outputTruePeakDbtp": -1.1,
-    "outputSampleMax": 0.8823,
+    "targetLufs": -7.3,
+    "outputLufs": -7.3,
+    "outputLra": 1.8,
+    "outputTruePeakDbtp": -1.0,
+    "outputSampleMax": 0.8877,
     "ceilingDbtp": -1.5,
-    "makeupDb": 9.35,
-    "estimateLufs": -8.46,
-    "limitP50Db": 3.69,
-    "limitP95Db": 7.5,
-    "limitP99Db": 8.9,
-    "limitMaxDb": 10.82,
+    "makeupDb": 14.09,
+    "estimateLufs": -7.4,
+    "limitP50Db": 7.17,
+    "limitP95Db": 10.0,
+    "limitP99Db": 10.15,
+    "limitMaxDb": 10.9,
     "attempts": 2,
-    "locallyLoweredSamples": 200,
+    "locallyLoweredSamples": 637,
+    "louder": {
+      "target": -6.0,
+      "gr95Cap": 10.0,
+      "highpassHz": 130.0,
+      "softclipMarginDb": 8.0
+    },
+    "softclippedShare": 0.0164,
+    "speakerLufs": -7.52,
     "lags": [
       {
         "lag": 0,
-        "correlation": 0.9844
+        "correlation": 0.9822
       },
       {
         "lag": 0,
-        "correlation": 0.9804
+        "correlation": 0.9641
       },
       {
         "lag": 0,
-        "correlation": 0.9791
+        "correlation": 0.9842
       },
       {
         "lag": 0,
-        "correlation": 0.9747
+        "correlation": 0.9903
       },
       {
         "lag": 0,
-        "correlation": 0.9786
+        "correlation": 0.9745
       }
     ],
-    "oggBytes": 6297718
+    "oggBytes": 7521303
   },
   {
     "songId": "Epilogue",
@@ -353,43 +401,51 @@
     "v25TruePeakDbtp": -0.9,
     "v25FlattenedSamples": 20679,
     "v25MaxCutDb": 8.91,
-    "targetLufs": -8.0,
-    "outputLufs": -8.0,
-    "outputLra": 3.6,
-    "outputTruePeakDbtp": -1.2,
-    "outputSampleMax": 0.8691,
+    "targetLufs": -6.9,
+    "outputLufs": -6.9,
+    "outputLra": 2.8,
+    "outputTruePeakDbtp": -1.1,
+    "outputSampleMax": 0.8785,
     "ceilingDbtp": -1.5,
-    "makeupDb": 11.77,
-    "estimateLufs": -8.12,
-    "limitP50Db": 2.2,
-    "limitP95Db": 7.03,
-    "limitP99Db": 8.22,
-    "limitMaxDb": 10.36,
+    "makeupDb": 17.22,
+    "estimateLufs": -7.06,
+    "limitP50Db": 6.45,
+    "limitP95Db": 10.0,
+    "limitP99Db": 10.17,
+    "limitMaxDb": 10.24,
     "attempts": 2,
     "locallyLoweredSamples": 0,
+    "louder": {
+      "target": -6.0,
+      "gr95Cap": 10.0,
+      "highpassHz": 130.0,
+      "softclipMarginDb": 8.0
+    },
+    "softclippedShare": 0.0348,
+    "speakerLufs": -7.24,
     "lags": [
       {
         "lag": 0,
-        "correlation": 0.9938
+        "correlation": 0.9941
       },
       {
         "lag": 0,
-        "correlation": 0.9889
+        "correlation": 0.9684
       },
       {
         "lag": 0,
-        "correlation": 0.9954
+        "correlation": 0.9953
       },
       {
         "lag": 0,
-        "correlation": 0.9938
+        "correlation": 0.9859
       },
       {
         "lag": 0,
-        "correlation": 0.9968
+        "correlation": 0.9792
       }
     ],
-    "oggBytes": 3355692
+    "oggBytes": 3700575
   },
   {
     "songId": "escapade",
@@ -402,43 +458,51 @@
     "v25TruePeakDbtp": 1.1,
     "v25FlattenedSamples": 4084,
     "v25MaxCutDb": 6.82,
-    "targetLufs": -8.8,
-    "outputLufs": -8.8,
-    "outputLra": 1.6,
-    "outputTruePeakDbtp": -1.2,
-    "outputSampleMax": 0.8704,
+    "targetLufs": -7.5,
+    "outputLufs": -7.5,
+    "outputLra": 1.7,
+    "outputTruePeakDbtp": -1.0,
+    "outputSampleMax": 0.8894,
     "ceilingDbtp": -1.5,
-    "makeupDb": 7.78,
-    "estimateLufs": -8.86,
-    "limitP50Db": 3.77,
-    "limitP95Db": 7.51,
-    "limitP99Db": 8.59,
-    "limitMaxDb": 10.0,
+    "makeupDb": 13.13,
+    "estimateLufs": -7.54,
+    "limitP50Db": 6.98,
+    "limitP95Db": 10.02,
+    "limitP99Db": 10.44,
+    "limitMaxDb": 11.92,
     "attempts": 4,
-    "locallyLoweredSamples": 147,
+    "locallyLoweredSamples": 533,
+    "louder": {
+      "target": -6.0,
+      "gr95Cap": 10.0,
+      "highpassHz": 130.0,
+      "softclipMarginDb": 8.0
+    },
+    "softclippedShare": 0.0099,
+    "speakerLufs": -7.72,
     "lags": [
       {
         "lag": 0,
-        "correlation": 0.9552
+        "correlation": 0.9652
       },
       {
         "lag": 0,
-        "correlation": 0.9658
+        "correlation": 0.9575
       },
       {
         "lag": 0,
-        "correlation": 0.972
+        "correlation": 0.9753
       },
       {
         "lag": 0,
-        "correlation": 0.967
+        "correlation": 0.9639
       },
       {
         "lag": 0,
-        "correlation": 0.9934
+        "correlation": 0.9817
       }
     ],
-    "oggBytes": 3737588
+    "oggBytes": 3755061
   },
   {
     "songId": "logic",
@@ -451,43 +515,51 @@
     "v25TruePeakDbtp": 2.4,
     "v25FlattenedSamples": 3736,
     "v25MaxCutDb": 12.08,
-    "targetLufs": -8.1,
-    "outputLufs": -8.1,
-    "outputLra": 3.4,
+    "targetLufs": -7.2,
+    "outputLufs": -7.2,
+    "outputLra": 2.8,
     "outputTruePeakDbtp": -1.0,
-    "outputSampleMax": 0.8864,
+    "outputSampleMax": 0.8819,
     "ceilingDbtp": -1.5,
-    "makeupDb": 22.5,
-    "estimateLufs": -8.16,
-    "limitP50Db": 3.6,
-    "limitP95Db": 7.5,
-    "limitP99Db": 11.6,
-    "limitMaxDb": 18.38,
-    "attempts": 2,
-    "locallyLoweredSamples": 190,
+    "makeupDb": 26.26,
+    "estimateLufs": -7.31,
+    "limitP50Db": 6.61,
+    "limitP95Db": 10.01,
+    "limitP99Db": 11.61,
+    "limitMaxDb": 12.56,
+    "attempts": 3,
+    "locallyLoweredSamples": 352,
+    "louder": {
+      "target": -6.0,
+      "gr95Cap": 10.0,
+      "highpassHz": 130.0,
+      "softclipMarginDb": 8.0
+    },
+    "softclippedShare": 0.0064,
+    "speakerLufs": -7.37,
     "lags": [
       {
         "lag": 0,
-        "correlation": 0.9604
+        "correlation": 0.9675
       },
       {
         "lag": 0,
-        "correlation": 0.908
+        "correlation": 0.9492
       },
       {
         "lag": 0,
-        "correlation": 0.905
+        "correlation": 0.9476
       },
       {
         "lag": 0,
-        "correlation": 0.8263
+        "correlation": 0.9024
       },
       {
         "lag": 0,
-        "correlation": 0.9691
+        "correlation": 0.9767
       }
     ],
-    "oggBytes": 5186543
+    "oggBytes": 6258268
   },
   {
     "songId": "ManicSonic",
@@ -500,43 +572,51 @@
     "v25TruePeakDbtp": 1.1,
     "v25FlattenedSamples": 9454,
     "v25MaxCutDb": 3.07,
-    "targetLufs": -8.0,
-    "outputLufs": -8.0,
-    "outputLra": 2.8,
+    "targetLufs": -7.6,
+    "outputLufs": -7.6,
+    "outputLra": 3.2,
     "outputTruePeakDbtp": -1.1,
-    "outputSampleMax": 0.8721,
+    "outputSampleMax": 0.8804,
     "ceilingDbtp": -1.5,
-    "makeupDb": 6.91,
-    "estimateLufs": -8.05,
-    "limitP50Db": 5.54,
-    "limitP95Db": 7.52,
-    "limitP99Db": 7.92,
-    "limitMaxDb": 9.21,
+    "makeupDb": 11.5,
+    "estimateLufs": -7.59,
+    "limitP50Db": 7.8,
+    "limitP95Db": 10.03,
+    "limitP99Db": 10.59,
+    "limitMaxDb": 11.63,
     "attempts": 5,
-    "locallyLoweredSamples": 496,
+    "locallyLoweredSamples": 633,
+    "louder": {
+      "target": -6.0,
+      "gr95Cap": 10.0,
+      "highpassHz": 130.0,
+      "softclipMarginDb": 8.0
+    },
+    "softclippedShare": 0.0133,
+    "speakerLufs": -8.05,
     "lags": [
       {
         "lag": 0,
-        "correlation": 0.9718
+        "correlation": 0.9728
       },
       {
         "lag": 0,
-        "correlation": 0.9609
+        "correlation": 0.9409
       },
       {
         "lag": 0,
-        "correlation": 0.9547
+        "correlation": 0.9613
       },
       {
         "lag": 0,
-        "correlation": 0.9806
+        "correlation": 0.9705
       },
       {
         "lag": 0,
-        "correlation": 0.9906
+        "correlation": 0.9773
       }
     ],
-    "oggBytes": 4831107
+    "oggBytes": 4898819
   },
   {
     "songId": "Morning",
@@ -549,43 +629,51 @@
     "v25TruePeakDbtp": 0.1,
     "v25FlattenedSamples": 12134,
     "v25MaxCutDb": 5.91,
-    "targetLufs": -8.3,
-    "outputLufs": -8.3,
-    "outputLra": 0.9,
+    "targetLufs": -7.4,
+    "outputLufs": -7.4,
+    "outputLra": 1.0,
     "outputTruePeakDbtp": -1.1,
-    "outputSampleMax": 0.8801,
+    "outputSampleMax": 0.8859,
     "ceilingDbtp": -1.5,
-    "makeupDb": 7.21,
-    "estimateLufs": -8.48,
-    "limitP50Db": 4.11,
-    "limitP95Db": 7.5,
-    "limitP99Db": 8.57,
-    "limitMaxDb": 8.84,
+    "makeupDb": 13.34,
+    "estimateLufs": -7.58,
+    "limitP50Db": 8.05,
+    "limitP95Db": 10.0,
+    "limitP99Db": 10.22,
+    "limitMaxDb": 10.8,
     "attempts": 2,
     "locallyLoweredSamples": 0,
+    "louder": {
+      "target": -6.0,
+      "gr95Cap": 10.0,
+      "highpassHz": 130.0,
+      "softclipMarginDb": 8.0
+    },
+    "softclippedShare": 0.0206,
+    "speakerLufs": -8.01,
     "lags": [
       {
         "lag": 0,
-        "correlation": 0.9874
+        "correlation": 0.989
       },
       {
         "lag": 0,
-        "correlation": 0.9831
+        "correlation": 0.987
       },
       {
         "lag": 0,
-        "correlation": 0.9829
+        "correlation": 0.9863
       },
       {
         "lag": 0,
-        "correlation": 0.9861
+        "correlation": 0.9878
       },
       {
         "lag": 0,
-        "correlation": 0.98
+        "correlation": 0.9678
       }
     ],
-    "oggBytes": 5479638
+    "oggBytes": 5659679
   },
   {
     "songId": "Phobia PARTⅠ",
@@ -598,43 +686,51 @@
     "v25TruePeakDbtp": 0.6,
     "v25FlattenedSamples": 4191,
     "v25MaxCutDb": 8.76,
-    "targetLufs": -8.0,
-    "outputLufs": -8.0,
-    "outputLra": 1.5,
-    "outputTruePeakDbtp": -1.1,
-    "outputSampleMax": 0.8791,
+    "targetLufs": -7.3,
+    "outputLufs": -7.3,
+    "outputLra": 1.3,
+    "outputTruePeakDbtp": -1.0,
+    "outputSampleMax": 0.8834,
     "ceilingDbtp": -1.5,
-    "makeupDb": 10.48,
-    "estimateLufs": -8.14,
-    "limitP50Db": 3.73,
-    "limitP95Db": 6.62,
-    "limitP99Db": 9.18,
-    "limitMaxDb": 11.39,
+    "makeupDb": 15.51,
+    "estimateLufs": -7.45,
+    "limitP50Db": 8.11,
+    "limitP95Db": 10.0,
+    "limitP99Db": 10.39,
+    "limitMaxDb": 11.35,
     "attempts": 2,
-    "locallyLoweredSamples": 80,
+    "locallyLoweredSamples": 242,
+    "louder": {
+      "target": -6.0,
+      "gr95Cap": 10.0,
+      "highpassHz": 130.0,
+      "softclipMarginDb": 8.0
+    },
+    "softclippedShare": 0.0115,
+    "speakerLufs": -7.53,
     "lags": [
       {
         "lag": 0,
-        "correlation": 0.9938
+        "correlation": 0.9939
       },
       {
         "lag": 0,
-        "correlation": 0.9956
+        "correlation": 0.9922
       },
       {
         "lag": 0,
-        "correlation": 0.9784
+        "correlation": 0.9831
       },
       {
         "lag": 0,
-        "correlation": 0.9552
+        "correlation": 0.9595
       },
       {
         "lag": 0,
-        "correlation": 0.9797
+        "correlation": 0.9904
       }
     ],
-    "oggBytes": 3229413
+    "oggBytes": 3390109
   },
   {
     "songId": "RushE",
@@ -647,43 +743,51 @@
     "v25TruePeakDbtp": -0.2,
     "v25FlattenedSamples": 6754,
     "v25MaxCutDb": 4.46,
-    "targetLufs": -7.9,
-    "outputLufs": -7.9,
-    "outputLra": 7.0,
+    "targetLufs": -7.2,
+    "outputLufs": -7.2,
+    "outputLra": 5.4,
     "outputTruePeakDbtp": -1.1,
-    "outputSampleMax": 0.8837,
+    "outputSampleMax": 0.8796,
     "ceilingDbtp": -1.5,
-    "makeupDb": 5.16,
-    "estimateLufs": -8.1,
-    "limitP50Db": 2.01,
-    "limitP95Db": 4.44,
-    "limitP99Db": 5.06,
-    "limitMaxDb": 6.74,
+    "makeupDb": 11.59,
+    "estimateLufs": -7.4,
+    "limitP50Db": 7.01,
+    "limitP95Db": 10.0,
+    "limitP99Db": 10.25,
+    "limitMaxDb": 10.68,
     "attempts": 2,
-    "locallyLoweredSamples": 0,
+    "locallyLoweredSamples": 294,
+    "louder": {
+      "target": -6.0,
+      "gr95Cap": 10.0,
+      "highpassHz": 130.0,
+      "softclipMarginDb": 8.0
+    },
+    "softclippedShare": 0.025,
+    "speakerLufs": -7.5,
     "lags": [
+      {
+        "lag": 0,
+        "correlation": 0.9782
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9852
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9567
+      },
       {
         "lag": 0,
         "correlation": 0.9887
       },
       {
         "lag": 0,
-        "correlation": 0.9952
-      },
-      {
-        "lag": 0,
-        "correlation": 0.985
-      },
-      {
-        "lag": 0,
-        "correlation": 0.9933
-      },
-      {
-        "lag": 0,
-        "correlation": 0.997
+        "correlation": 0.9961
       }
     ],
-    "oggBytes": 4416102
+    "oggBytes": 4544584
   },
   {
     "songId": "揺籠",
@@ -696,43 +800,51 @@
     "v25TruePeakDbtp": -0.0,
     "v25FlattenedSamples": 6862,
     "v25MaxCutDb": 8.36,
-    "targetLufs": -8.1,
-    "outputLufs": -8.1,
-    "outputLra": 1.3,
-    "outputTruePeakDbtp": -1.2,
-    "outputSampleMax": 0.8746,
+    "targetLufs": -7.2,
+    "outputLufs": -7.2,
+    "outputLra": 1.7,
+    "outputTruePeakDbtp": -1.1,
+    "outputSampleMax": 0.8856,
     "ceilingDbtp": -1.5,
-    "makeupDb": 12.12,
-    "estimateLufs": -8.21,
-    "limitP50Db": 3.81,
-    "limitP95Db": 7.51,
-    "limitP99Db": 8.88,
-    "limitMaxDb": 10.97,
-    "attempts": 3,
-    "locallyLoweredSamples": 200,
+    "makeupDb": 16.8,
+    "estimateLufs": -7.34,
+    "limitP50Db": 7.62,
+    "limitP95Db": 10.0,
+    "limitP99Db": 10.2,
+    "limitMaxDb": 10.88,
+    "attempts": 2,
+    "locallyLoweredSamples": 375,
+    "louder": {
+      "target": -6.0,
+      "gr95Cap": 10.0,
+      "highpassHz": 130.0,
+      "softclipMarginDb": 8.0
+    },
+    "softclippedShare": 0.0121,
+    "speakerLufs": -7.45,
     "lags": [
       {
         "lag": 0,
-        "correlation": 0.9815
+        "correlation": 0.9883
       },
       {
         "lag": 0,
-        "correlation": 0.9881
+        "correlation": 0.9856
       },
       {
         "lag": 0,
-        "correlation": 0.9804
+        "correlation": 0.984
       },
       {
         "lag": 0,
-        "correlation": 0.9919
+        "correlation": 0.9829
       },
       {
         "lag": 0,
-        "correlation": 0.9945
+        "correlation": 0.9914
       }
     ],
-    "oggBytes": 5050512
+    "oggBytes": 6068265
   },
   {
     "songId": "製作中",
@@ -745,42 +857,50 @@
     "v25TruePeakDbtp": -0.4,
     "v25FlattenedSamples": 5221,
     "v25MaxCutDb": 3.21,
-    "targetLufs": -7.1,
-    "outputLufs": -7.1,
-    "outputLra": 1.4,
+    "targetLufs": -6.6,
+    "outputLufs": -6.6,
+    "outputLra": 1.2,
     "outputTruePeakDbtp": -1.0,
-    "outputSampleMax": 0.8803,
+    "outputSampleMax": 0.8824,
     "ceilingDbtp": -1.5,
-    "makeupDb": 2.35,
-    "estimateLufs": -7.3,
-    "limitP50Db": 1.77,
-    "limitP95Db": 3.24,
-    "limitP99Db": 3.7,
-    "limitMaxDb": 4.75,
-    "attempts": 3,
-    "locallyLoweredSamples": 971,
+    "makeupDb": 9.72,
+    "estimateLufs": -6.75,
+    "limitP50Db": 8.32,
+    "limitP95Db": 10.01,
+    "limitP99Db": 10.44,
+    "limitMaxDb": 10.93,
+    "attempts": 2,
+    "locallyLoweredSamples": 912,
+    "louder": {
+      "target": -6.0,
+      "gr95Cap": 10.0,
+      "highpassHz": 130.0,
+      "softclipMarginDb": 8.0
+    },
+    "softclippedShare": 0.0049,
+    "speakerLufs": -6.89,
     "lags": [
       {
         "lag": 0,
-        "correlation": 0.9851
+        "correlation": 0.9812
       },
       {
         "lag": 0,
-        "correlation": 0.9868
+        "correlation": 0.9879
       },
       {
         "lag": 0,
-        "correlation": 0.9848
+        "correlation": 0.9829
       },
       {
         "lag": 0,
-        "correlation": 0.9951
+        "correlation": 0.9872
       },
       {
         "lag": 0,
-        "correlation": 0.9937
+        "correlation": 0.9934
       }
     ],
-    "oggBytes": 5247172
+    "oggBytes": 5433996
   }
 ]

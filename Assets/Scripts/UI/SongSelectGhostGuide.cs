@@ -82,8 +82,9 @@ public sealed class SongSelectGhostGuide : MonoBehaviour
                 || ctl.difficultyButtons[1] == null || !ctl.difficultyButtons[1].gameObject.activeInHierarchy
                 || !ctl.difficultyButtons[1].IsInteractable();
 
+        // 赤を見失って保っているだけのため(2026-10-31 から保つ)は、ためている最中に数えない(腕を下ろした人にもお手本を出す)。
         if (!state.ShouldShow(guide != null && guide.IsVisible, ConfirmationOpen, busy,
-            SongSelectStaffGuide.IsOpen, aim != null ? aim.Progress01 : 0))
+            SongSelectStaffGuide.IsOpen, aim != null && !aim.HoldingLostSaber ? aim.Progress01 : 0))
         {
             Hide(); return;
         }

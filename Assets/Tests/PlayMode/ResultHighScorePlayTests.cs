@@ -108,8 +108,13 @@ public class ResultHighScorePlayTests
         var reveal = Object.FindFirstObjectByType<ResultReveal>();
         reveal.enabled = false;
         reveal.Tick(999);
-        var back = Object.FindFirstObjectByType<ResultController>().GetComponent<Canvas>().GetComponentInChildren<Button>();
+        var back = Object.FindFirstObjectByType<ResultController>().GetComponent<Canvas>().GetComponentInChildren<Button>(true);
         Assert.NotNull(back);
-        Assert.True(back.IsInteractable(), "記録に問題があっても結果画面から戻れること");
+        // 1曲モードの結果は来場者の出口を隠し、スタッフが Enter・Esc 2回・右クリック3回で戻す(2026-10-31)。
+        // 記録に問題があっても、出口の用意(BACK の作り直し)まで画面を作り切ること。
+        var skin = Object.FindFirstObjectByType<ResultSkin>();
+        Assert.AreSame(back, skin.BackButton, "記録に問題があっても結果画面を作り切ること(スタッフの戻しが効く)");
+        Assert.False(skin.VisitorExitShown);
+        Assert.False(back.gameObject.activeInHierarchy);
     }
 }

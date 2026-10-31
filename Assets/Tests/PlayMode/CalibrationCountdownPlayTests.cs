@@ -202,7 +202,9 @@ public class CalibrationCountdownPlayTests
         Capture("calibration-confirmation");
     }
 
-    [UnityTest] public IEnumerator TimeoutStopsPracticeDiscardsDraftAndReturnsWithTenSecondsRemaining()
+    // 2026-10-31 ユーザー「選曲の45秒の時計が、止まったり増えたりしないようにする」: 前は10秒を足して戻していた(判定調整との行き来で
+    // 時間切れが来なかった)。今は0秒で戻り、すぐには始めず、時間切れの「この曲で はじめる？」(8秒で始める)を見せる。
+    [UnityTest] public IEnumerator TimeoutStopsPracticeDiscardsDraftAndReturnsWithoutExtraTime()
     {
         var controller=Object.FindFirstObjectByType<SongSelectController>();
         controller.Select(controller.SongCount-1);controller.SetDifficulty(2);
@@ -215,14 +217,18 @@ public class CalibrationCountdownPlayTests
         Assert.True(c.Overlay.transform.Find("TimeTab/TimeRemaining").gameObject.activeSelf);
         c.Overlay.TickCountdown(15);
         Assert.True(ScreenTransition.IsBusy);Assert.False(manager.songPlayer.IsPlaying);
-        Assert.AreEqual(10, GameSession.CalibrationSelectionSeconds);
+        Assert.AreEqual(0, GameSession.CalibrationSelectionSeconds, "時間を足さずに戻す");
         Assert.AreEqual(savedOffset,GameSession.JudgmentOffsetMs);Assert.AreEqual(savedSpeed,GameSession.NoteApproachTime);
         yield return ScreenTransitionPlayTests.WaitForTransition();yield return WaitForSelection();
         Assert.AreEqual("SongSelect",SceneManager.GetActiveScene().name);Assert.False(GameSession.IsCalibrationMode);
         AssertSelection(songId,2);
-        Assert.That(Object.FindFirstObjectByType<SongSelectSkin>().RemainingSeconds,Is.InRange(8d,10d));
-        yield return null;yield return null;
+        Assert.AreEqual(0,Object.FindFirstObjectByType<SongSelectSkin>().RemainingSeconds,1e-6,"0秒のまま(足さない)");
+        double until=Time.realtimeSinceStartupAsDouble+3;
+        while(!SongSelectConfirm.IsOpen&&Time.realtimeSinceStartupAsDouble<until)yield return null;
         Assert.AreEqual("SongSelect",SceneManager.GetActiveScene().name,"0秒を引き継いで即プレイ開始しない");
+        Assert.True(SongSelectConfirm.IsOpen,"時間切れの確認で、何が始まるかを見せる");
+        Assert.True(SongSelectConfirm.Instance.Automatic,"8秒で始める確認(えらびなおせない)");
+        Assert.False(Object.FindFirstObjectByType<SongSelectController>().StartAccepted);
     }
 
     [UnityTest] public IEnumerator TimeoutClosesUnsavedConfirmationWithoutSaving()

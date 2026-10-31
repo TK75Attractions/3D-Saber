@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.UI;
 using TMPro;
 
@@ -9,7 +10,7 @@ using TMPro;
 //   ・中央: RANK ワードマーク + 六角形ランクバッジ(クライマックス、Slam+衝撃波リング) + ACCURACY
 //   ・左  : SCORE(シアングラデ大数字) + MAX COMBO + HI-SCORE(+NEW RECORD!)
 //   ・右  : 判定内訳 5 行(罫線付き)
-//   ・下  : 判定分布バー + 次の曲へ(残りがある回) / タイトルへ
+//   ・下  : 判定分布バー + 次の曲へ(残りがある回だけ。次の曲が無い回は来場者の出口を出さず、スタッフが戻す)
 // 数字・判定ラベル・ランク文字は Chakra Petch Bold Italic、見出し系は Oxanium。
 // 背景(グラデ・中央グロー・パース床グリッド)もコードで生成し、画像アセットは使わない。
 public class ResultSkin : MonoBehaviour
@@ -45,8 +46,13 @@ public class ResultSkin : MonoBehaviour
 
     private ResultReveal reveal;
     private ResultController controller;
-    // 来場者の出口(次の曲へ / タイトルへ)。印の一言の欄を閉じたあと、選択をここへ戻す(ChartMarkCommentPanel)。
+    // シーンの BACK(来場者の出口「次の曲へ」)。印の一言の欄を閉じたあと、選択をここへ戻す(ChartMarkCommentPanel)。
+    // 次の曲が無い回(1曲モード・2曲モードの2曲目)は隠す(2026-10-31 ユーザー「来場者が自分でタイトルへ戻れる的を消す」。
+    // 10/31 の台Bでは 65 回のうち 47 回をスタッフが右クリック3回で戻していた)。そのときはスタッフの Enter・Esc 2回・右クリック3回でタイトルへ。
     public Button BackButton { get; private set; }
+    public bool VisitorExitShown { get; private set; }
+    // 出口(とスタッフの Enter)を受け付ける演出の時刻と、今の演出の時刻。
+    float exitReadyAt = float.PositiveInfinity, revealTime;
     // Esc は2秒以内に2回でタイトルへ(来場者の画面で共通。仕様面の点検 2)。1回目は今までどおり演出も飛ばす(ResultReveal)。
     private readonly EscapeTwiceGate escapeGate = new EscapeTwiceGate();
     // スコアのカウントアップと音(爽快感カタログ 山4)が書き換える数字。
@@ -90,11 +96,14 @@ public class ResultSkin : MonoBehaviour
         ResultSoundtrack.Build(root.transform, reveal, scoreValueText, GameSession.FinalScore, ScoreCountStart, RankLandingTime,
             Mathf.Max(3f, DailyRankingPresentation.CompletionTime(GameSession.FinalDailyRanking) + .2f));
         StyleBackButton(canvas);
+        // 結果の出口は演出後に現れる(出口を出さない回のスタッフの Enter も、この時刻から)。
+        exitReadyAt = DailyRankingPresentation.CompletionTime(GameSession.FinalDailyRanking) + .45f;
+        reveal.TimeChanged += time => revealTime = time;
+        // 来場者の出口が無い回は、照準も出さない(指す的が無い)。
+        if (!VisitorExitShown) return;
         // 選曲・判定調整と同じ照準で指す(小さな光の点は投影で見にくい。2026-10-22 ユーザーの依頼)。
         var pointer = SaberUIPointer.Build(useAimReticle: true);
-        // 結果の出口は演出後に現れる。隠れている間に入場猶予が消費されても、
-        // 受付開始時点で照準が重なっていれば、一度外すまで決定させない。
-        float exitReadyAt = DailyRankingPresentation.CompletionTime(GameSession.FinalDailyRanking) + .45f;
+        // 隠れている間に入場猶予が消費されても、受付開始時点で照準が重なっていれば、一度外すまで決定させない。
         bool exitAimStarted = false;
         reveal.TimeChanged += time =>
         {
@@ -108,10 +117,18 @@ public class ResultSkin : MonoBehaviour
 
     void Update()
     {
-        if (controller == null || ScreenTransition.IsBusy || !InputManager.EscapeGetDown) return;
+        if (controller == null || ScreenTransition.IsBusy) return;
+        // 来場者の出口を出さない回は、スタッフの Enter(演出のあと)でタイトルへ(来場者はキーを使わない)。
+        // 演出を飛ばした同じ Enter では戻らない(飛ばすのは ResultReveal.LateUpdate で、この時刻はまだ出口の前)。
+        if (!VisitorExitShown && revealTime >= exitReadyAt && StaffEnterPressed(Keyboard.current)) { controller.ReturnToTitle(); return; }
+        if (!InputManager.EscapeGetDown) return;
         // 運営の Esc は残り曲数にかかわらずタイトルへ。中央ボタンの次曲への出口とは分ける。
         if (escapeGate.PressAndNotify(Time.unscaledTimeAsDouble, EscapeTwiceGate.ToTitleNotice)) controller.ReturnToTitle();
     }
+
+    // 印の一言を打っている間と、運営のキー(Ctrl などを押しながら)は数えない。
+    static bool StaffEnterPressed(Keyboard kb) => kb != null && !ChartMarkCommentPanel.IsOpen && !PhoneSaberOperatorKeys.TextEntryActive
+        && !SongSelectController.OperatorChordHeld(kb) && (kb.enterKey.wasPressedThisFrame || kb.numpadEnterKey.wasPressedThisFrame);
 
     // ---- 純関数(テストから直接叩く) ----
 
@@ -655,7 +672,10 @@ public class ResultSkin : MonoBehaviour
                 var parts = UISkinKit.RestyleButton(btn, UISkinPalette.Cyan, 40f,
                     next ? "次の曲へ" : "タイトルへ");
                 if (parts.label != null) parts.label.characterSpacing = 0f;
-                if (next) BuildNextSongBadge(btn.transform);
+                // 次の曲が無い回は、来場者の出口(タイトルへ)を出さない。照準・クリック・Enter の選択の的にもしない。
+                if (!next) { btn.gameObject.SetActive(false); continue; }
+                VisitorExitShown = true;
+                BuildNextSongBadge(btn.transform);
                 Reveal(btn.gameObject, DailyRankingPresentation.CompletionTime(GameSession.FinalDailyRanking), 0.45f, FromBelow);
                 // 暗転中は入力を止めているため、無効化中のEventSystemにも戻る先を設定する。
                 var events = EventSystem.current ?? Object.FindFirstObjectByType<EventSystem>();
