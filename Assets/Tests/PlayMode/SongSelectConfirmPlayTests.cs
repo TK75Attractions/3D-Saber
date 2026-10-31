@@ -69,7 +69,9 @@ public class SongSelectConfirmPlayTests
         Assert.IsFalse(ctl.StartAccepted, "えらびなおすでは始めない");
         Assert.AreEqual(before, skin.RemainingSeconds, 1e-6, "えらびなおしても時間は足さない");
         skin.TickCountdown(skin.RemainingSeconds - 3);
-        Assert.IsTrue(confirm.Open("test")); confirm.Tick(.6); confirm.Back("test");
+        Assert.IsTrue(confirm.Open("test"));
+        Assert.AreEqual("あと 3秒で この曲が はじまるよ", confirm.FooterText, "時計が先に0になるので、もどるではなく始まると出す");
+        confirm.Tick(.6); confirm.Back("test");
         Assert.AreEqual(3, skin.RemainingSeconds, 1e-6, "残り3秒で戻っても3秒のまま(前は15秒に戻していた)");
         Assert.IsTrue(confirm.Open("test")); confirm.Tick(SongSelectConfirm.IdleCloseSeconds + .1);
         Assert.IsFalse(SongSelectConfirm.IsOpen, "10秒なにもしないと閉じる");

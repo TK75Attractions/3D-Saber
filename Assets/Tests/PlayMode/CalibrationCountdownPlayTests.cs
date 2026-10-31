@@ -215,6 +215,10 @@ public class CalibrationCountdownPlayTests
         c.Overlay.TickCountdown(c.Overlay.RemainingSeconds-15);
         Assert.AreEqual("15",c.Overlay.transform.Find("TimeTab/TimeRemaining").GetComponent<TextMeshProUGUI>().text);
         Assert.True(c.Overlay.transform.Find("TimeTab/TimeRemaining").gameObject.activeSelf);
+        // 行き先の案内は「そのまま始まる」(2026-11-01 全体の見回り。前は「保存せず曲選択へ」のままだった)。1行に収まる。
+        var notice=c.Overlay.transform.Find("TimeTab/TimerConsequence").GetComponent<TextMeshProUGUI>();
+        Assert.AreEqual("あと 15 秒で保存せず自動スタート",notice.text);
+        notice.ForceMeshUpdate();Assert.AreEqual(1,notice.textInfo.lineCount,"1行に収まる");Assert.False(notice.isTextTruncated);
         c.Overlay.TickCountdown(15);
         Assert.True(ScreenTransition.IsBusy);Assert.False(manager.songPlayer.IsPlaying);
         Assert.AreEqual(0, GameSession.CalibrationSelectionSeconds, "時間を足さずに戻す");

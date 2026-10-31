@@ -115,7 +115,7 @@ public sealed class CalibrationOverlay : MonoBehaviour
         play.gameObject.SetActive(false);
         BuildResults(); BuildSettings(); BuildExitDialog();
         timer = SongSelectSkin.BuildCountdownDisplay(transform);
-        timerNotice = Label(timer.transform.parent,"TimerConsequence","保存せず曲選択へ戻るまで",26,0,-79,430,44,Ink);
+        timerNotice = Label(timer.transform.parent,"TimerConsequence",TimerNotice(int.MaxValue),26,0,-79,430,44,Ink);
         countdown.Reset(GameSession.CalibrationSelectionSeconds ?? SongSelectCountdown.LimitSeconds);
         GameSession.CalibrationSelectionSeconds = countdown.Remaining;
         lastTick = Time.realtimeSinceStartupAsDouble; RefreshCountdown();
@@ -249,10 +249,14 @@ public sealed class CalibrationOverlay : MonoBehaviour
         SongSelectSkin.RefreshCountdownDisplay(timer, countdown.Remaining, ref displayedSecond);
         if (previous != displayedSecond && timerNotice != null)
         {
-            timerNotice.text = displayedSecond <= 20 ? "あと " + displayedSecond + " 秒で保存せず曲選択へ" : "保存せず曲選択へ戻るまで";
+            timerNotice.text = TimerNotice(displayedSecond);
             timerNotice.color = displayedSecond <= 20 ? Amber : Ink;
         }
     }
+    // 時間切れの行き先の案内。0秒で選曲へ戻ると、選んでいた曲がそのまま始まる(TickCountdown)ので「自動スタート」と書く
+    // (前は「保存せず曲選択へ」のままで、戻った先ですぐ曲が始まっていた。2026-11-01 全体の見回り)。純関数。
+    public static string TimerNotice(int second) => second <= 20
+        ? "あと " + second + " 秒で保存せず自動スタート" : "保存せず自動スタートまで";
     void RefreshFeedback()
     {
         feedback.text=ctl.IsLive?ctl.History.Hint:"";

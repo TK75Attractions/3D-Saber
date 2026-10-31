@@ -22,6 +22,11 @@ public sealed class SongSelectConfirm : MonoBehaviour
     public const string Hint = "右の「スタート！」に 1.5秒 かざす ／ 左で えらびなおし";
     public const string StaffHint = "スタッフ: クリック・Enter でも決められます(Esc で えらびなおし)";
     public static string Footer(int seconds) => seconds + "秒 なにもしないと 選曲に もどるよ";
+    // 選曲の時計は開いている間も進み、0 でその場で始まる。時計の残りがこの確認の残り以下なら、先に来る「はじまる」を出す
+    // (残り4秒で開くと「10秒 なにもしないと 選曲に もどるよ」のまま、4秒後に始まっていた。2026-11-01 全体の見回り)。
+    // clockSeconds は選曲の右上の数字と同じ切り上げで、0 以下は時計なしとして扱う。純関数。
+    public static string Footer(int idleSeconds, int clockSeconds) => clockSeconds > 0 && clockSeconds <= idleSeconds
+        ? "あと " + clockSeconds + "秒で この曲が はじまるよ" : Footer(idleSeconds);
 
     static SongSelectConfirm instance;
     public static SongSelectConfirm Instance => instance;
@@ -38,7 +43,9 @@ public sealed class SongSelectConfirm : MonoBehaviour
     bool open;
     // 開いてからの秒。
     double age;
-    int shownSeconds = -1;
+    int shownSeconds = -1, shownClock = -1;
+    // 選曲の時計の残り(右上の数字)。時計が無いときは -1。
+    int ClockSeconds => skin != null ? Mathf.CeilToInt((float)skin.RemainingSeconds) : -1;
     public double Age => age;
     public SongSelectDiscTarget StartTarget { get; private set; }
     public SongSelectDiscTarget BackTarget { get; private set; }
@@ -128,8 +135,8 @@ public sealed class SongSelectConfirm : MonoBehaviour
     {
         if (open || ctl == null || ScreenTransition.IsBusy || ctl.RushESecret.Transitioning || !ctl.CanStartSelected) return open;
         open = true; age = 0;
-        shownSeconds = (int)IdleCloseSeconds;
-        footer.text = Footer(shownSeconds);
+        shownSeconds = (int)IdleCloseSeconds; shownClock = ClockSeconds;
+        footer.text = Footer(shownSeconds, shownClock);
         SetBar(startBar, null); SetBar(backBar, null);
         Refresh();
         root.gameObject.SetActive(true);
@@ -225,8 +232,8 @@ public sealed class SongSelectConfirm : MonoBehaviour
         if (!open || ScreenTransition.IsBusy) return;
         if (!double.IsNaN(dt) && dt > 0 && dt < 30) age += dt;
         if (age >= InputDelaySeconds && StartTarget != null && !StartTarget.Button.interactable) SetInteractable(true);
-        int seconds = Mathf.Max(0, Mathf.CeilToInt((float)(IdleCloseSeconds - age)));
-        if (seconds != shownSeconds) { shownSeconds = seconds; footer.text = Footer(seconds); }
+        int seconds = Mathf.Max(0, Mathf.CeilToInt((float)(IdleCloseSeconds - age))), clock = ClockSeconds;
+        if (seconds != shownSeconds || clock != shownClock) { shownSeconds = seconds; shownClock = clock; footer.text = Footer(seconds, clock); }
         SetBar(startBar, StartTarget); SetBar(backBar, BackTarget);
         if (age >= IdleCloseSeconds) Back("timeout");
     }

@@ -37,6 +37,13 @@ public class TitleReceptionTests
     public void FooterSaysWhatHappensWhenNothingIsDone()
     {
         Assert.AreEqual("10秒 なにもしないと 選曲に もどるよ", SongSelectConfirm.Footer(10));
+        // 選曲の時計が先に0になるなら、もどるより先に始まるので「はじまる」を出す(2026-11-01 全体の見回り)。
+        Assert.AreEqual("あと 4秒で この曲が はじまるよ", SongSelectConfirm.Footer(10, 4));
+        Assert.AreEqual("あと 10秒で この曲が はじまるよ", SongSelectConfirm.Footer(10, 10));
+        Assert.AreEqual("10秒 なにもしないと 選曲に もどるよ", SongSelectConfirm.Footer(10, 30));
+        Assert.AreEqual("3秒 なにもしないと 選曲に もどるよ", SongSelectConfirm.Footer(3, 4), "確認が先に閉じるなら、もどる");
+        Assert.AreEqual("10秒 なにもしないと 選曲に もどるよ", SongSelectConfirm.Footer(10, 0));
+        Assert.AreEqual("10秒 なにもしないと 選曲に もどるよ", SongSelectConfirm.Footer(10, -1), "時計が無い");
         // 時間切れの確認(「あと 8 秒で はじまるよ」)は 2026-11-01 にやめた(時間切れは確認を開かずにそのまま始める)。
         Assert.AreEqual("まん中に 2秒 → かくにん", SongSelectSkin.StartHint(30, true));
         Assert.AreEqual("そのまま かざすと かくにん", SongSelectSkin.HoldStartHint);
