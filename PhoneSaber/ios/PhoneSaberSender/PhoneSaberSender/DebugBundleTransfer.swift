@@ -156,8 +156,22 @@ struct DebugBundleOutbox: Codable {
         return number
     }
 
-    mutating func finish(sessionID: String, now: Date, reason: String?, attempts: Int) {
+    // 10-31: 台BのWindowsとMacが13〜16時に切れ、6回の上限を使い切ったclipはつながっても送られなかった。
+    // 受信機に届かない失敗（接続不可・中継の503）は上限を使い切らず、2分ごとに試し続ける。
+    static let offlineRetrySeconds: TimeInterval = 120
+
+    mutating func finish(sessionID: String, now: Date, reason: String?, attempts: Int, receiverOffline: Bool = false) {
         guard let index = entries.firstIndex(where: { $0.sessionID == sessionID }) else { return }
+        if reason != nil && receiverOffline {
+            entries[index].attempts = min(entries[index].attempts + attempts, Self.maximumAttempts - 1)
+            entries[index].reason = reason
+            entries[index].state = .failed
+            entries[index].receivedAt = nil
+            let failures = max(0, entries[index].attempts - 1)
+            entries[index].nextAttemptAt = now.addingTimeInterval(min(Self.offlineRetrySeconds, 30 * pow(2, Double(failures))))
+            prune()
+            return
+        }
         entries[index].attempts += attempts
         entries[index].reason = reason
         entries[index].state = reason == nil ? .received : .failed
@@ -648,8 +662,16 @@ final class DebugBundleTransfer: NSObject {
         if phase != .uploading {
             print("[DebugTriageTransfer] attempt failed; local bundle preserved: \(error.localizedDescription)")
         }
-        recordOutcome(reason: error.localizedDescription)
+        recordOutcome(reason: error.localizedDescription, receiverOffline: Self.receiverOffline(error))
         finishCurrentBundle()
+    }
+
+    /// 受信機まで届かなかった失敗。送った内容の不備（400等）や受領確認の不一致は含めない。
+    static func receiverOffline(_ error: Error) -> Bool {
+        if case DebugBundleTransferError.httpStatus(let status) = error { return status == 503 }
+        guard let url = error as? URLError else { return false }
+        return [.cannotConnectToHost, .cannotFindHost, .dnsLookupFailed, .timedOut, .networkConnectionLost,
+                .notConnectedToInternet, .resourceUnavailable].contains(url.code)
     }
 
     private func stopDiscovery() {
@@ -660,11 +682,11 @@ final class DebugBundleTransfer: NSObject {
         discoveryTimeout = nil
     }
 
-    private func recordOutcome(reason: String?) {
+    private func recordOutcome(reason: String?, receiverOffline: Bool = false) {
         guard let id = activeSessionID else { return }
         // 録画による一時停止では手動送信の要求を消費しない。
         if reason == nil { manualIDs.remove(id) }
-        outbox.finish(sessionID: id, now: Date(), reason: reason, attempts: max(1, attempt))
+        outbox.finish(sessionID: id, now: Date(), reason: reason, attempts: max(1, attempt), receiverOffline: receiverOffline)
         persist()
     }
 
