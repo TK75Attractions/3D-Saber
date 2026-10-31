@@ -67,9 +67,11 @@ public sealed class RushESecret : MonoBehaviour
             }
             return;
         }
+        // 「この曲で はじめる？」とスタッフ用の説明を開いている間は、ジャケットが隠れているので切っても数えない
+        // (開いたまま裏で解除され、確認に出た難易度と違う裏譜面が始まっていた。2026-11-01 全体の見回り)。
         bool eligible = !ScreenTransition.IsBusy && !controller.RushESecret.Unlocked
             && controller.RushESecret.Current != null && controller.SongIdAt(controller.SelectedIndex) == controller.RushESecret.Current.SongId
-            && skin.DiscsSettled
+            && skin.DiscsSettled && !SongSelectConfirm.IsOpen && !SongSelectStaffGuide.IsOpen
             && SongSelectSkin.VisitorInputLive();
         Rect area = skin.SelectedDiscScreenRect;
         var input = InputPoint.Instance;

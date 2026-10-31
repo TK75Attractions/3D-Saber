@@ -96,6 +96,22 @@ public class SpecReview1021Tests
         StringAssert.Contains("はじまるよ", SongSelectSkin.StartHint(5, true));
         StringAssert.Contains("タイトルへ もどるよ", SongSelectSkin.StartHint(5, false));
         Assert.AreEqual(SongSelectSkin.StartHint(40, true), SongSelectSkin.StartHint(40, false), "10秒より前は同じ案内");
+        // 判定調整の時間切れも、戻った選曲でそのまま始まる(2026-11-01 全体の見回り)。
+        Assert.AreEqual("あと 15 秒で保存せず自動スタート", CalibrationOverlay.TimerNotice(15));
+        Assert.AreEqual("保存せず自動スタートまで", CalibrationOverlay.TimerNotice(30));
+    }
+
+    // スタッフの右クリック(3回でタイトルへ)は、Esc と同じく来場者の操作に数えない。2回で途切れても、無人の選曲は
+    // 時間切れでタイトルへ戻る(2026-11-01 全体の見回り。前は曲が始まっていた)。案内を閉じるのには数える。
+    [Test]
+    public void StaffRightClickIsNotAVisitorOperation()
+    {
+        Assert.IsFalse(SongSelectIdleGuide.MouseCountsAsInput(false, true, false, false, countStaffExit: false));
+        Assert.IsTrue(SongSelectIdleGuide.MouseCountsAsInput(false, true, false, false, countStaffExit: true));
+        Assert.IsTrue(SongSelectIdleGuide.MouseCountsAsInput(true, false, false, false, countStaffExit: false), "左クリックは操作");
+        Assert.IsTrue(SongSelectIdleGuide.MouseCountsAsInput(false, false, true, false, countStaffExit: false));
+        Assert.IsTrue(SongSelectIdleGuide.MouseCountsAsInput(false, false, false, true, countStaffExit: false));
+        Assert.IsFalse(SongSelectIdleGuide.MouseCountsAsInput(false, false, false, false, countStaffExit: true));
     }
 
     // ---- 4: 曲の途中で剣を見失ったとき ----

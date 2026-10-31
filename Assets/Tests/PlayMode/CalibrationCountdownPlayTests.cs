@@ -95,6 +95,24 @@ public class CalibrationCountdownPlayTests
         Assert.That(select.RemainingSeconds,Is.EqualTo(before-10).Within(.5),"測り終えたらまた進める");
     }
 
+    // 判定調整の時計も、F9 で測っている間は進めない(2026-11-01 全体の見回り。前は測っている間に下書きを捨てて曲が始まった)。
+    [UnityTest] public IEnumerator TheCalibrationClockWaitsWhileF9Measures()
+    {
+        yield return EnterCalibration();
+        var c=Object.FindFirstObjectByType<GamePlayManager>().Calibration;
+        double before=c.Overlay.RemainingSeconds;
+        try
+        {
+            PhoneSaberDisplaySync.Measuring=true;
+            c.Overlay.TickCountdown(before+30);
+            Assert.False(ScreenTransition.IsBusy,"時間切れにしない");
+            Assert.That(c.Overlay.RemainingSeconds,Is.EqualTo(before).Within(.5),"測っている間は進めない");
+        }
+        finally { PhoneSaberDisplaySync.Measuring=false; }
+        c.Overlay.TickCountdown(5);
+        Assert.That(c.Overlay.RemainingSeconds,Is.EqualTo(before-5).Within(.5),"測り終えたらまた進める");
+    }
+
     [UnityTest] public IEnumerator BackRestoresSelectedSongDifficultyAndPreview()
     {
         yield return SelectionRoundTrip(false);

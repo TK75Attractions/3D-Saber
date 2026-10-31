@@ -62,21 +62,21 @@ public sealed class SongSelectIdleGuide : MonoBehaviour
         // 2026-10-30 ユーザー「④もすべてやる」: 説明の開閉を来場者の操作に数えず、前景の説明・確認にはカードを重ねない。
         bool active = (Application.isFocused || Application.isBatchMode) && !ScreenTransition.IsBusy
             && !SongSelectStaffGuide.IsOpen && !SongSelectStaffGuide.ChangedThisFrame && !SongSelectGhostGuide.ConfirmationOpen;
-        // 選曲の時間切れで自動で始めるかは、来場者の操作があったかで決める(仕様面の点検 1)。退出の Esc は操作に数えない。
-        if (active && !GameSession.SongSelectOperated && HasButtonInput(countEscape: false)) GameSession.SongSelectOperated = true;
-        if (active && !state.Completed && HasButtonInput(countEscape: true)) { state.RegisterActivity(); Hide(); }
+        // 選曲の時間切れで自動で始めるかは、来場者の操作があったかで決める(仕様面の点検 1)。退出の Esc・右クリックは操作に数えない。
+        if (active && !GameSession.SongSelectOperated && HasButtonInput(countStaffExit: false)) GameSession.SongSelectOperated = true;
+        if (active && !state.Completed && HasButtonInput(countStaffExit: true)) { state.RegisterActivity(); Hide(); }
         Tick(Time.unscaledDeltaTime, active);
     }
 
-    static bool HasButtonInput(bool countEscape)
+    static bool HasButtonInput(bool countStaffExit)
     {
         // 運営のキー(F4 の投影切替・F8 など)では、来場者の操作として案内を閉じない。
         var keyboard = Keyboard.current;
-        if ((countEscape || !InputManager.BackKeyPressedThisFrame(keyboard))
+        if ((countStaffExit || !InputManager.BackKeyPressedThisFrame(keyboard))
             && PhoneSaberOperatorKeys.VisitorKeyPressedThisFrame(keyboard)) return true;
         var mouse = Mouse.current;
-        if (mouse != null && (mouse.leftButton.wasPressedThisFrame || mouse.rightButton.wasPressedThisFrame
-            || mouse.middleButton.wasPressedThisFrame || mouse.scroll.ReadValue().sqrMagnitude > .01f)) return true;
+        if (mouse != null && MouseCountsAsInput(mouse.leftButton.wasPressedThisFrame, mouse.rightButton.wasPressedThisFrame,
+            mouse.middleButton.wasPressedThisFrame, mouse.scroll.ReadValue().sqrMagnitude > .01f, countStaffExit)) return true;
         var pad = Gamepad.current;
         if (pad == null) return false;
         if (pad.leftStick.ReadValue().sqrMagnitude > .16f || pad.rightStick.ReadValue().sqrMagnitude > .16f) return true;
@@ -84,6 +84,11 @@ public sealed class SongSelectIdleGuide : MonoBehaviour
             if (control is ButtonControl button && button.wasPressedThisFrame) return true;
         return false;
     }
+
+    // マウスが操作に当たるか。右クリックはスタッフの「3回でタイトルへ」(RightClickHome)なので、Esc と同じく来場者の操作には数えない
+    // (2回までで途切れると、無人の選曲が時間切れでタイトルへ戻らず曲を始めていた。2026-11-01 全体の見回り)。案内を閉じるのには数える。純関数。
+    public static bool MouseCountsAsInput(bool left, bool right, bool middle, bool scrolled, bool countStaffExit)
+        => left || middle || scrolled || right && countStaffExit;
 
     // 照準・発射・曲や難易度の変更・RUSH E から。案内を閉じ、選曲の操作があったと覚える。
     public void RegisterActivity() { state.RegisterActivity(); GameSession.SongSelectOperated = true; Hide(); }

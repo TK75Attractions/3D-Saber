@@ -100,6 +100,80 @@ public class RushESecretPlayTests
         }
     }
 
+    // 「この曲で はじめる？」を開いている間は、隠れたジャケットを切っても数えない(2026-11-01 全体の見回り。前は確認に
+    // EASY と出たまま裏で E が解除され、そのまま決めると E が始まった)。閉じたあとは今までどおり数える。
+    [UnityTest]
+    public IEnumerator CutsBehindTheOpenConfirmDoNotCount()
+    {
+        if (!File.Exists(Path.Combine(Application.streamingAssetsPath, "Songs", "RushE", "audio.wav"))) Assert.Ignore("文化祭用ローカル音源が必要です。");
+        var originalSettings = InputSystem.settings;
+        var settings = Object.Instantiate(originalSettings);
+        InputSystem.settings = settings;
+        settings.backgroundBehavior = InputSettings.BackgroundBehavior.IgnoreFocus;
+#if UNITY_EDITOR
+        settings.editorInputBehaviorInPlayMode = InputSettings.EditorInputBehaviorInPlayMode.AllDeviceInputAlwaysGoesToGameView;
+#endif
+        var mouse = InputSystem.AddDevice<Mouse>();
+        SongSelectController ctl = null;
+        try
+        {
+            InputSystem.QueueStateEvent(mouse, new MouseState { position = Vector2.zero });
+            yield return SceneManager.LoadSceneAsync("SongSelect", LoadSceneMode.Single);
+            ctl = Object.FindFirstObjectByType<SongSelectController>();
+            var skin = Object.FindFirstObjectByType<SongSelectSkin>();
+            float deadline = Time.realtimeSinceStartup + 15;
+            while (!skin.IsReady && Time.realtimeSinceStartup < deadline) yield return null;
+            Assert.IsTrue(skin.IsReady);
+            ctl.Select(Enumerable.Range(0, ctl.SongCount).First(i => ctl.SongIdAt(i) == "RushE"));
+            ctl.SetDifficulty(0);
+            deadline = Time.realtimeSinceStartup + 5;
+            while ((ScreenTransition.IsBusy || !skin.DiscsSettled) && Time.realtimeSinceStartup < deadline) yield return null;
+            Assert.IsTrue(skin.DiscsSettled); Assert.IsFalse(ScreenTransition.IsBusy);
+            // 確認の的へのかざしと混ざらないように、照準は止める(切る判定は照準と別)。
+            Object.FindFirstObjectByType<SongSelectAimPointer>().enabled = false;
+            Canvas.ForceUpdateCanvases();
+            Rect area = skin.SelectedDiscScreenRect;
+            float radius = Mathf.Min(area.width, area.height) * .5f;
+            Vector2 left = area.center + Vector2.left * radius * 1.3f, right = area.center + Vector2.right * radius * 1.3f;
+            InputSystem.QueueStateEvent(mouse, new MouseState { position = left });
+            yield return null;
+            yield return new WaitForSecondsRealtime(.2f);
+            for (int cut = 0; cut < 9; cut++) yield return Sweep(mouse, cut % 2 == 0 ? left : right, cut % 2 == 0 ? right : left);
+            Assert.AreEqual(9, ctl.RushESecret.Hits); Assert.IsFalse(ctl.RushESecret.Unlocked);
+            var confirm = skin.Confirm;
+            Assert.IsTrue(confirm.Open("test"));
+            StringAssert.StartsWith("EASY", confirm.DifficultyText);
+            yield return Sweep(mouse, right, left);
+            Assert.AreEqual(9, ctl.RushESecret.Hits, "確認の裏のジャケットは切っても数えない");
+            Assert.IsFalse(ctl.RushESecret.Transitioning); Assert.IsFalse(ctl.RushESecret.Unlocked);
+            Assert.AreEqual("Easy", ctl.CurrentDifficultyName, "確認に出ている難易度のまま");
+            confirm.Tick(.6); confirm.Back("test");
+            Assert.IsFalse(SongSelectConfirm.IsOpen);
+            yield return Sweep(mouse, left, right);
+            Assert.AreEqual(10, ctl.RushESecret.Hits, "閉じたあとは今までどおり数える");
+            yield return new WaitForSecondsRealtime(RushESecretState.TransitionSeconds + .1f);
+            Assert.IsTrue(ctl.RushESecret.Unlocked); Assert.AreEqual("E", ctl.CurrentDifficultyName);
+        }
+        finally
+        {
+            if (ctl != null) ctl.StopPreview();
+            InputSystem.RemoveDevice(mouse);
+            InputSystem.settings = originalSettings;
+            Object.DestroyImmediate(settings);
+        }
+    }
+
+    // ボタンを押さずに、盤の外から外へマウスを1往路動かす(実際の Input System の更新で)。
+    static IEnumerator Sweep(Mouse mouse, Vector2 from, Vector2 to)
+    {
+        for (int step = 1; step <= 10; step++)
+        {
+            InputSystem.QueueStateEvent(mouse, new MouseState { position = Vector2.Lerp(from, to, step / 10f) });
+            yield return null;
+        }
+        yield return new WaitForSecondsRealtime(.15f);
+    }
+
     [UnityTest]
     public IEnumerator CameraCutsRevealEWithoutClicksOrHintsBeforeTheTenthCut()
     {
