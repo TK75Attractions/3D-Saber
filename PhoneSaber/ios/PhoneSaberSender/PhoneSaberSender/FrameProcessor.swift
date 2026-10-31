@@ -247,11 +247,17 @@ final class FrameProcessor: @unchecked Sendable {
                         zones: zones[color] ?? [], playArea: area) else { continue }
                 eligible += 1; competitors += 1
             }
+            // 赤の自動強調用: 認識対象かに関係なく、刃から離れた明るい光（白い蛍光灯が赤寄りに映る等）を数える。
+            var bright = 0
+            for index in candidates.indices where index != winner {
+                let candidate = candidates[index]
+                if candidate.peakValue >= 240, AutoClipCompetition.separated(blade, candidate), far(candidate) { bright += 1 }
+            }
             colors.append(.init(peakValue: blade.peakValue, highValueRatio: blade.highValueRatio,
                 meanValue: blade.meanValue, colorPurity: blade.meanColorPurity,
                 nearSaturationPresent: blade.observerEmitterInputs?.nearSaturationPresent ?? (blade.clippedWhiteRatio > 0),
                 emitterScore: blade.observerEmitterInputs?.emitterScore, selected: true,
-                distantEligible: eligible, competitors: competitors))
+                distantEligible: eligible, competitors: competitors, distantBright: bright))
         }
         return .init(colors: colors)
     }

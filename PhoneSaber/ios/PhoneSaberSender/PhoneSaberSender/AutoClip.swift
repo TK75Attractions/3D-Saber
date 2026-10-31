@@ -650,12 +650,15 @@ struct AutoClipAutoExposure: Equatable {
     var lastChangeMetrics: [String: Double] = [:]
     var lastDecisionReason: String?
     var windowMetrics: [String: Double] = [:]
+    // 赤の自動強調（ホワイトバランスの赤の倍率。1 は自動のまま）。
+    var redBoostEnabled = false, redBoostFactor = 1.0, redBoostCeiling = 2.0
     var jsonObject: [String: Any] {
         ["enabled": enabled, "ceilingISO": ceilingISO, "initialISO": initialISO, "appliedISO": appliedISO ?? NSNull(),
          "lastChangeHostTime": lastChangeTime ?? NSNull(), "lastChangeReason": lastChangeReason ?? NSNull(),
          "lastChangeMetrics": lastChangeMetrics, "lastDecisionReason": lastDecisionReason ?? NSNull(),
          "windowMetrics": windowMetrics, "minimumAutomaticISO": 100, "maximumAutomaticISO": 400,
-         "darkMaximumAutomaticISO": 640, "darkBladeBackground": 12]
+         "darkMaximumAutomaticISO": 640, "darkBladeBackground": 12,
+         "redBoost": ["enabled": redBoostEnabled, "factor": redBoostFactor, "ceiling": redBoostCeiling]]
     }
 }
 

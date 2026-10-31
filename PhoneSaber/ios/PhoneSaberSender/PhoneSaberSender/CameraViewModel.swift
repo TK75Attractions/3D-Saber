@@ -225,6 +225,7 @@ struct AutoExposureController {
         var missingFrames: Int? = nil
         var selected = false
         var distantEligible = 0, competitors = 0
+        var distantBright = 0
     }
     struct Frame {
         var colors: [Color] = []
@@ -348,7 +349,9 @@ struct AutoExposureController {
             if needsLight && metrics.distract >= Self.distractorRate { reason = "conflict" }
             else if metrics.saturated >= Self.saturationRate { reason = "saturated" }
             else if metrics.distract >= Self.distractorRate { reason = "distractors" }
-            else if let current = appliedISO, current > maximum, Self.median(samples.map(\.background)) > Self.darkBladeBackground {
+            else if let current = appliedISO, current > maximum,
+                    Self.median(samples.map(\.background)) * Double(maximum) / Double(current) > Self.darkBladeBackground {
+                // 背景は今の ISO で明るく映るので、400 相当に割り戻して比べる（10/31 夜 400↔640 の往復を止める）。
                 // 400超は暗い台専用。背景が明るくなったら（照明・服）400以下へ戻す。
                 reason = "background"
             }
@@ -378,7 +381,7 @@ struct AutoExposureController {
         }
         let raise = ["blade-weak", "lost", "dark"].contains(reason)
         let darkBlade = raise && reason != "dark" && !samples.isEmpty
-            && Self.median(samples.map(\.background)) <= Self.darkBladeBackground
+            && Self.median(samples.map(\.background)) * Double(maximum) / Double(max(current, 1)) <= Self.darkBladeBackground
         let limit = darkBlade ? darkMaximum : max(maximum, min(current, darkMaximum))
         var next = min(limit, max(minimum, raise
             ? (Self.levels.last { $0 > current } ?? limit)
@@ -1363,6 +1366,7 @@ final class CameraViewModel: NSObject, ObservableObject {
             Task { @MainActor [weak self] in
                 guard let self, generation == self.processor.currentGeneration,
                       revision == self.autoExposureRevision else { return }
+                self.observeRedBoost(time: time, frame: frame)
                 self.observeAutoExposure(time: time, background: background, frame: frame)
             }
         }
@@ -2107,7 +2111,9 @@ final class CameraViewModel: NSObject, ObservableObject {
                 lastChangeTime: autoExposureLastChange?.time, lastChangeReason: autoExposureLastChange?.reason,
                 lastChangeMetrics: autoExposureLastChange?.metrics.jsonObject ?? [:],
                 lastDecisionReason: autoExposureController.lastDecision?.reason,
-                windowMetrics: autoExposureController.lastDecision?.metrics.jsonObject ?? [:]),
+                windowMetrics: autoExposureController.lastDecision?.metrics.jsonObject ?? [:],
+                redBoostEnabled: redBoostEnabled, redBoostFactor: Double(redBoostFactor),
+                redBoostCeiling: Double(redBoostCeiling)),
             exposureDurationSeconds: running ? exposureBiasCamera.map { CMTimeGetSeconds($0.exposureDuration) } : nil,
             iso: running ? exposureBiasCamera.map { Double($0.iso) } : nil,
             appVersion: PhoneSaberIdentity.version, identity: phoneIdentity,
@@ -2552,6 +2558,101 @@ final class CameraViewModel: NSObject, ObservableObject {
         }
     }
 
+    // 赤の自動強調: 赤の刃が暗い間だけホワイトバランスの赤の倍率を上げる。青と ISO と閾値は変えない。
+    // 10/31 台B（iPhone 15 Pro Max）では青が255に届くのに赤はpeak 196〜222。台Aの赤は255で倍率は自動のまま。
+    private static let redBoostKey = "PhoneSaber.redBoostAuto.v1"
+    static let redBoostStep: Float = 1.15, redBoostMaximum: Float = 2.0
+    static let redBoostWindow = 2.5, redBoostCooldown = 3.0, redBoostMinimumSamples = 12
+    static let redBoostWeakPeak = 235, redBoostBrightPeak = 252, redBoostWashedPurity = 0.45, redBoostDistractRate = 0.20
+    @Published private(set) var redBoostEnabled = NSClassFromString("XCTestCase") == nil
+        && (UserDefaults.standard.object(forKey: CameraViewModel.redBoostKey) as? Bool ?? true)
+    @Published private(set) var redBoostStatus = "赤の自動強調: 待機"
+    private var redBoostBase: (camera: ObjectIdentifier, gains: AVCaptureDevice.WhiteBalanceGains)?
+    private var redBoostFactor: Float = 1
+    private var redBoostSamples: [(time: Double, peak: Int, purity: Double, distract: Bool)] = []
+    private var redBoostLastChange = -Double.infinity
+    // 離れた赤が出た倍率より上には、その後上げない（10/31 夜: 1.x 倍で白い蛍光灯が赤の候補になった）。
+    private var redBoostCeiling: Float = CameraViewModel.redBoostMaximum
+
+    func setRedBoostEnabled(_ enabled: Bool) {
+        redBoostEnabled = enabled
+        if NSClassFromString("XCTestCase") == nil { UserDefaults.standard.set(enabled, forKey: Self.redBoostKey) }
+        redBoostFactor = 1
+        redBoostCeiling = Self.redBoostMaximum
+        redBoostSamples.removeAll()
+        if let camera = exposureBiasCamera { applyRedBoost(to: camera, reason: enabled ? "on" : "off") }
+        redBoostStatus = enabled ? "赤の自動強調: 待機（赤が暗い時だけ上げる）" : "赤の自動強調: 切"
+    }
+
+    /// 処理フレームごと（約10Hz）に呼ぶ。赤の刃が選ばれているフレームだけを見る。
+    private func observeRedBoost(time: Double, frame: AutoExposureController.Frame) {
+        guard redBoostEnabled, running, let camera = exposureBiasCamera, let red = frame.colors.first else { return }
+        if red.selected {
+            redBoostSamples.append((time, red.peakValue, red.colorPurity, red.distantEligible > 0 || red.distantBright > 0))
+        }
+        redBoostSamples.removeAll { time - $0.time > Self.redBoostWindow }
+        guard time - redBoostLastChange >= Self.redBoostCooldown,
+              redBoostSamples.count >= Self.redBoostMinimumSamples else { return }
+        let peaks = redBoostSamples.map(\.peak).sorted()
+        let medianPeak = peaks[peaks.count / 2]
+        let purities = redBoostSamples.map(\.purity).sorted()
+        let medianPurity = purities[purities.count / 2]
+        let distractRate = Double(redBoostSamples.filter(\.distract).count) / Double(redBoostSamples.count)
+        var next = redBoostFactor
+        var reason = ""
+        if distractRate >= Self.redBoostDistractRate || (medianPeak >= Self.redBoostBrightPeak && medianPurity < Self.redBoostWashedPurity) {
+            next = max(1, redBoostFactor / Self.redBoostStep)
+            reason = distractRate >= Self.redBoostDistractRate ? "red-distract" : "red-washed"
+            if reason == "red-distract" { redBoostCeiling = next }
+        } else if medianPeak < Self.redBoostWeakPeak {
+            next = min(redBoostCeiling, redBoostFactor * Self.redBoostStep)
+            reason = "red-weak"
+        }
+        guard abs(next - redBoostFactor) > 0.001 else { return }
+        ConnectivityLog.shared.record("RED_BOOST", String(format: "factor=%.2f prev=%.2f reason=%@ peak=%d purity=%.2f distract=%.2f n=%d",
+            next, redBoostFactor, reason, medianPeak, medianPurity, distractRate, redBoostSamples.count))
+        redBoostFactor = next
+        redBoostLastChange = time
+        redBoostSamples.removeAll()
+        applyRedBoost(to: camera, reason: reason)
+        updateAutoClipEnvironment(thermal: DeviceThermalLevel(state: ProcessInfo.processInfo.thermalState).metadataValue)
+    }
+
+    private func applyRedBoost(to camera: AVCaptureDevice, reason: String) {
+        let id = ObjectIdentifier(camera)
+        do {
+            try camera.lockForConfiguration()
+            defer { camera.unlockForConfiguration() }
+            if redBoostEnabled && redBoostFactor > 1.001 {
+                guard camera.isLockingWhiteBalanceWithCustomDeviceGainsSupported else {
+                    redBoostStatus = "赤の自動強調: この iPhone では使えません"
+                    return
+                }
+                // 自動の値を基準に保存し、倍率が重ならないようにする。
+                let base = redBoostBase?.camera == id ? redBoostBase!.gains : camera.deviceWhiteBalanceGains
+                redBoostBase = (id, base)
+                let top = camera.maxWhiteBalanceGain
+                func clamp(_ v: Float) -> Float { min(max(v, 1), top) }
+                let gains = AVCaptureDevice.WhiteBalanceGains(redGain: clamp(base.redGain * redBoostFactor),
+                                                             greenGain: clamp(base.greenGain),
+                                                             blueGain: clamp(base.blueGain))
+                camera.setWhiteBalanceModeLocked(with: gains, completionHandler: nil)
+                redBoostStatus = String(format: "赤の自動強調: ×%.2f（赤 %.2f→%.2f）", redBoostFactor, base.redGain, gains.redGain)
+                ConnectivityLog.shared.record("RED_BOOST", String(format: "lock base=%.3f,%.3f,%.3f applied=%.3f,%.3f,%.3f reason=%@",
+                    base.redGain, base.greenGain, base.blueGain, gains.redGain, gains.greenGain, gains.blueGain, reason))
+            } else {
+                redBoostBase = nil
+                if camera.whiteBalanceMode == .locked, camera.isWhiteBalanceModeSupported(.continuousAutoWhiteBalance) {
+                    camera.whiteBalanceMode = .continuousAutoWhiteBalance
+                    ConnectivityLog.shared.record("RED_BOOST", "auto reason=\(reason)")
+                }
+                if redBoostEnabled { redBoostStatus = "赤の自動強調: 待機（倍率は自動のまま）" }
+            }
+        } catch {
+            redBoostStatus = "赤の自動強調: 適用できません（\(error.localizedDescription)）"
+        }
+    }
+
     private func applyIgnoreZones() {
         ignoreZoneRevision = UUID()
         ignoreInspectionSnapshot = nil
@@ -2993,6 +3094,7 @@ final class CameraViewModel: NSObject, ObservableObject {
         applyCameraExposureExperiment(to: camera)
         // 露出補正（既定 0 では触れない）。形式の再設定・熱による fps 変更はここを通るので毎回かけ直す。
         applyExposureBias(to: camera, reason: isRecovery ? "recovery" : "configure")
+        if redBoostEnabled { applyRedBoost(to: camera, reason: isRecovery ? "recovery" : "configure") }
         if shutter != 0, !applyShutter(shutter, to: camera) {
             // 対応しない形式・lock失敗は自動露出のまま明示して止める。
             fail(shutterStatus)

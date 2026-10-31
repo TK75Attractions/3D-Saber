@@ -509,6 +509,11 @@ struct ContentView: View {
                                 get: { model.trackLockEnabled },
                                 set: { model.setTrackLockEnabled($0) }
                             ))
+                            Toggle("赤が暗い時に自動で強める", isOn: Binding(
+                                get: { model.redBoostEnabled },
+                                set: { model.setRedBoostEnabled($0) }
+                            ))
+                            Text(model.redBoostStatus).font(.caption).foregroundStyle(.secondary)
                             Text("無視する赤・青の物: \(model.ignoreZoneSummary)")
                             Button("登録ゾーンを確認・個別解除") { showIgnoreInspection = true }
                             Text(model.ignoreLearning ? "学習中：剣を消して3秒待つ" : "剣を消して3秒待つ")
