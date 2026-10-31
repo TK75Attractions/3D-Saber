@@ -129,7 +129,7 @@ public class SongSelectSkin : MonoBehaviour
         SongSelectGhostGuide.Build(ctl, this, aim, guide, layout, discs.Select(d => d.target).Concat(difficultyTargets));
         SongSelectStaffGuide.Build(canvas, aim);
         confirm = SongSelectConfirm.Build(ctl, this, aim, layout);
-        ctl.OpenStartConfirm = how => confirm != null && confirm.Open(false, how);
+        ctl.OpenStartConfirm = how => confirm != null && confirm.Open(how);
         countdown.Reset(GameSession.CalibrationSelectionSeconds ?? SongSelectCountdown.LimitSeconds);
         GameSession.CalibrationSelectionSeconds = null;
         RefreshCountdownDisplay(timer, countdown.Remaining, ref displayedSecond);
@@ -362,7 +362,7 @@ public class SongSelectSkin : MonoBehaviour
             d.target.ShootOverride = () =>
             {
                 if (ScreenTransition.IsBusy || ctl.RushESecret.Transitioning) return false;
-                if (d.index == ctl.SelectedIndex) { if (confirm == null || !confirm.Open(false, "aim")) ctl.StartGame(); }
+                if (d.index == ctl.SelectedIndex) { if (confirm == null || !confirm.Open("aim")) ctl.StartGame(); }
                 else if (Mathf.Abs(d.offset) <= 2) StepTo(d);
                 return true;
             };
@@ -372,7 +372,7 @@ public class SongSelectSkin : MonoBehaviour
                 if (d.index == ctl.SelectedIndex)
                 {
                     if (RushESecretState.For(ctl.SongIdAt(d.index)) != null && !ctl.RushESecret.Unlocked) secretView.Click();
-                    else if (confirm == null || !confirm.Open(false, "click")) ctl.StartGame();
+                    else if (confirm == null || !confirm.Open("click")) ctl.StartGame();
                 }
                 else if (Mathf.Abs(d.offset) <= 2) StepTo(d);
             });
@@ -736,23 +736,27 @@ public class SongSelectSkin : MonoBehaviour
     // 時間切れ(仕様面の点検 1)。選曲で操作した人は今の曲・難易度で始める。操作がなければ無人とみなして、曲を始めずにタイトルへ戻る。
     // 始められなかったとき(譜面が消えた・曲が無いなど)もタイトルへ戻り、時計が止まったままにならない。
     // 運営が F9 で遅れを測っている間(PhoneSaberDisplaySync.Measuring)とスタッフ用の説明の間(PauseClock)は進めない
-    // (測っている途中に曲が始まらないように。2026-10-30 全体の点検・④)。時間切れは確認を開き、8 秒後に始める(2026-10-30「③はすべて実装」)。
-    // 2026-10-31 ユーザー「選曲の45秒の時計が、止まったり増えたりしないようにする」: 「この曲で はじめる？」を開いている間も進め、
-    // 戻っても足さない。開いたまま0になったら、その確認を時間切れの確認(8秒で始める・えらびなおせない)に切り替える。
+    // (測っている途中に曲が始まらないように。2026-10-30 全体の点検・④)。
+    // 2026-10-31 ユーザー「選曲の45秒の時計が、止まったり増えたりしないようにする」: 「この曲で はじめる？」を開いている間も進め、戻っても足さない。
+    // 2026-11-01 ユーザー「残り0秒になったらそのスタートしますか？のやつはどうせ取り消せないんだからその画面はさまずそのまま始めて」:
+    // 時間切れは確認を開かずにそのまま始め、開いていた確認もその場で決める(前は時間切れの確認を開き、えらびなおせないまま 8 秒待った)。
     public void TickCountdown(double deltaSeconds)
     {
         if (!built) return;
         if (!countdown.Tick(deltaSeconds, !PauseClock && !ScreenTransition.IsBusy && !ctl.RushESecret.Transitioning
             && !PhoneSaberDisplaySync.Measuring && VisitorInputLive())) return;
-        if (SongSelectConfirm.IsOpen) { confirm.BeginAutomaticStart(); return; }
-        if (GameSession.SongSelectOperated && (confirm == null || !confirm.Open(true, "auto"))) ctl.StartGameAutomatically();
+        if (SongSelectConfirm.IsOpen || GameSession.SongSelectOperated)
+        {
+            if (confirm != null) confirm.StartAtTimeout();
+            else ctl.StartGameAutomatically();
+        }
         if (!ctl.StartAccepted && !ScreenTransition.IsBusy && !SongSelectConfirm.IsOpen) ctl.ReturnToTitle();
     }
 
     // 時計が0になったあとか(作り直すまで戻らない)。
     public bool CountdownExpired => countdown.Expired;
 
-    // 時間切れのあとの確認から、始められずに閉じたとき(譜面が消えた・曲が無いなど)。時計は足さず、時間切れで始められなかったときと同じくタイトルへ。
+    // 確認から始められずに閉じたとき(譜面が消えた・曲が無いなど)。時計が0になったあとなら、時間切れで始められなかったときと同じくタイトルへ。
     public void ConfirmClosedAfterTimeout()
     {
         if (built && countdown.Expired && !ctl.StartAccepted && !ScreenTransition.IsBusy && !SongSelectConfirm.IsOpen) ctl.ReturnToTitle();

@@ -50,7 +50,7 @@ public class SongSelectConfirmPlayTests
     public IEnumerator OpeningShowsTheSongTheClockKeepsRunningAndGoingBackAddsNoTime()
     {
         Assert.IsFalse(SongSelectConfirm.IsOpen);
-        Assert.IsTrue(confirm.Open(false, "test"));
+        Assert.IsTrue(confirm.Open("test"));
         Assert.IsTrue(SongSelectConfirm.IsOpen);
         StringAssert.Contains("こうか", confirm.SongTitleMarkup);
         StringAssert.StartsWith("NORMAL", confirm.DifficultyText);
@@ -69,37 +69,29 @@ public class SongSelectConfirmPlayTests
         Assert.IsFalse(ctl.StartAccepted, "えらびなおすでは始めない");
         Assert.AreEqual(before, skin.RemainingSeconds, 1e-6, "えらびなおしても時間は足さない");
         skin.TickCountdown(skin.RemainingSeconds - 3);
-        Assert.IsTrue(confirm.Open(false, "test")); confirm.Tick(.6); confirm.Back("test");
+        Assert.IsTrue(confirm.Open("test")); confirm.Tick(.6); confirm.Back("test");
         Assert.AreEqual(3, skin.RemainingSeconds, 1e-6, "残り3秒で戻っても3秒のまま(前は15秒に戻していた)");
-        Assert.IsTrue(confirm.Open(false, "test")); confirm.Tick(SongSelectConfirm.IdleCloseSeconds + .1);
+        Assert.IsTrue(confirm.Open("test")); confirm.Tick(SongSelectConfirm.IdleCloseSeconds + .1);
         Assert.IsFalse(SongSelectConfirm.IsOpen, "10秒なにもしないと閉じる");
         Assert.AreEqual(3, skin.RemainingSeconds, 1e-6, "閉じても時間は足さない");
         yield return null;
     }
 
-    // 開いたまま0秒になったら、その確認を時間切れの確認にする(8秒で始める・えらびなおせない)。
+    // 開いたまま0秒になったら、その場で始める(2026-11-01 ユーザー「残り0秒になったらそのスタートしますか？のやつはどうせ取り消せないんだから
+    // その画面はさまずそのまま始めて」。前は時間切れの確認に切り替えて、えらびなおせないまま8秒待った)。
     [UnityTest]
-    public IEnumerator TimeRunningOutWhileOpenTurnsTheConfirmIntoTheAutomaticStart()
+    public IEnumerator TimeRunningOutWhileOpenStartsAtOnce()
     {
-        Assert.IsTrue(confirm.Open(false, "test"));
+        Assert.IsTrue(confirm.Open("test"));
         confirm.Tick(2);
         skin.TickCountdown(skin.RemainingSeconds + 1);
-        Assert.IsTrue(SongSelectConfirm.IsOpen, "開いたまま");
-        Assert.IsTrue(confirm.Automatic, "時間切れの確認になる");
         Assert.IsTrue(skin.CountdownExpired);
-        Assert.IsFalse(confirm.BackTarget.gameObject.activeSelf, "時間切れのあとは「えらびなおす」を出さない");
-        Assert.AreEqual(SongSelectConfirm.AutomaticHint, confirm.HintText);
-        Assert.AreEqual(SongSelectConfirm.AutomaticStaffHint, confirm.StaffHintText);
-        StringAssert.Contains("はじまるよ", confirm.FooterText);
-        confirm.Back("test");
-        Assert.IsTrue(SongSelectConfirm.IsOpen, "時間切れのあとは選び直せない");
-        confirm.Tick(SongSelectConfirm.AutoStartSeconds - .5);
-        Assert.IsFalse(ctl.StartAccepted, "切り替えてから8秒までは始めない");
-        Assert.AreEqual(0, skin.RemainingSeconds, 1e-6);
-        confirm.Tick(.6);
-        Assert.IsTrue(ctl.StartAccepted, "切り替えてから8秒で始める");
+        Assert.IsFalse(SongSelectConfirm.IsOpen, "確認は閉じる");
+        Assert.IsTrue(ctl.StartAccepted, "その場で始める");
+        Assert.IsFalse(ctl.StartWasManual, "時間切れで始めた回");
         yield return ScreenTransitionPlayTests.WaitForTransition();
         Assert.AreEqual("Game", SceneManager.GetActiveScene().name);
+        Assert.AreEqual("Epilogue", GameSession.SelectedSongId, "確認に出ていた曲");
     }
 
     // 2026-10-31 ユーザー「照準が消えても、ため(ゲージ)を0にしない」: 赤を1秒より長く見失っても、マウスが使われるまではためを保ち、
@@ -145,7 +137,7 @@ public class SongSelectConfirmPlayTests
     [UnityTest]
     public IEnumerator StartBeginsTheChartThatWasShown()
     {
-        Assert.IsTrue(confirm.Open(false, "test"));
+        Assert.IsTrue(confirm.Open("test"));
         confirm.Tick(.6);
         confirm.Confirm("test");
         Assert.IsTrue(ctl.StartAccepted);
@@ -158,7 +150,7 @@ public class SongSelectConfirmPlayTests
     [UnityTest]
     public IEnumerator DoingNothingClosesTheConfirmWithoutStarting()
     {
-        Assert.IsTrue(confirm.Open(false, "test"));
+        Assert.IsTrue(confirm.Open("test"));
         confirm.Tick(SongSelectConfirm.IdleCloseSeconds - .5);
         Assert.IsTrue(SongSelectConfirm.IsOpen);
         confirm.Tick(.6);
@@ -167,25 +159,21 @@ public class SongSelectConfirmPlayTests
         yield return null;
     }
 
+    // 2026-11-01: 時間切れは「この曲で はじめる？」を開かずに、そのまま始める(前は確認を開いて8秒で始めた)。
     [UnityTest]
-    public IEnumerator TimeoutOpensTheConfirmAndStartsAfterEightSeconds()
+    public IEnumerator TimeoutStartsAtOnceWithoutTheConfirm()
     {
         GameSession.SongSelectOperated = true;
         skin.TickCountdown(SongSelectCountdown.LimitSeconds + 1);
-        Assert.IsTrue(SongSelectConfirm.IsOpen, "時間切れでも、まず何が始まるかを見せる");
-        Assert.IsTrue(confirm.Automatic);
-        Assert.IsFalse(ScreenTransition.IsBusy);
-        Assert.IsFalse(confirm.BackTarget.gameObject.activeSelf, "時間切れのあとは「えらびなおす」を出さない");
-        confirm.Tick(.6);
-        confirm.Back("test"); confirm.Back("timeout");
-        Assert.IsTrue(SongSelectConfirm.IsOpen, "時間切れのあとは選び直せない(戻ると0秒のまま止まるため)");
+        Assert.IsFalse(SongSelectConfirm.IsOpen, "確認は開かない");
+        Assert.IsTrue(ctl.StartAccepted, "そのまま始める");
+        Assert.IsFalse(ctl.StartWasManual);
+        Assert.IsTrue(ScreenTransition.IsBusy);
         skin.TickCountdown(100);
         Assert.AreEqual(0, skin.RemainingSeconds, 1e-6, "時間は戻らない");
-        confirm.Tick(SongSelectConfirm.AutoStartSeconds - 1.1);
-        Assert.IsFalse(ctl.StartAccepted);
-        confirm.Tick(.6);
-        Assert.IsTrue(ctl.StartAccepted, "8秒で始める");
         yield return ScreenTransitionPlayTests.WaitForTransition();
+        Assert.AreEqual("Game", SceneManager.GetActiveScene().name);
+        Assert.AreEqual("Normal", GameSession.SelectedDifficulty);
     }
 
     [UnityTest]

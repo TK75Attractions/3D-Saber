@@ -200,9 +200,8 @@ public class SongSelectNoteMenuPlayTests
     [UnityTest] public IEnumerator TimeoutStartsSelectedDifficultyAndResetsOnReturn()
     {
         var skin=Object.FindFirstObjectByType<SongSelectSkin>(); controller.SetDifficulty(2);
-        // 2026-10-30 から時間切れは「この曲で はじめる？」を開き、8 秒で始める(③)。
-        skin.TickCountdown(101); Assert.True(SongSelectConfirm.IsOpen); Assert.True(SongSelectConfirm.Instance.Automatic);
-        SongSelectConfirm.Instance.Tick(SongSelectConfirm.AutoStartSeconds + .1); Assert.True(ScreenTransition.IsBusy);
+        // 2026-11-01 から時間切れは「この曲で はじめる？」を開かず、そのまま始める(前は確認を開き、8 秒で始めた)。
+        skin.TickCountdown(101); Assert.False(SongSelectConfirm.IsOpen); Assert.True(controller.StartAccepted); Assert.True(ScreenTransition.IsBusy);
         skin.TickCountdown(101);
         yield return ScreenTransitionPlayTests.WaitForTransition();
         Assert.AreEqual("Game",SceneManager.GetActiveScene().name); Assert.AreEqual("Hard",GameSession.SelectedDifficulty);

@@ -4,27 +4,24 @@ using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
-// 選曲の「この曲で はじめる？」(2026-10-30 ユーザー「③はすべて実装」)。中央の盤の2秒・クリック・Enter・Space と時間切れは、
+// 選曲の「この曲で はじめる？」(2026-10-30 ユーザー「③はすべて実装」)。中央の盤の2秒・クリック・Enter・Space は、
 // すぐ始めずにここを開く。右の「スタート！」に 1.5 秒(クリック・Enter・Space)で始め、左の「えらびなおす」に 1 秒(Esc・ハイフン)で選曲へ戻る。
 // 的は手の位置(まん中)から左右に離し、開いた直後の 0.5 秒は受けない(照準は SongSelectAimPointer.BeginArrival で一度はずしてから)。
-// 自分で開いたときは 10 秒なにもなければ選曲へ戻る(始めない)。時間切れで開いたときは 8 秒後に始める。
+// 10 秒なにもなければ選曲へ戻る(始めない)。
 // 2026-10-31 ユーザー「選曲の45秒の時計が、止まったり増えたりしないようにする」: 開いている間も選曲の時計は進み、戻っても足さない
 // (前は開いている間は止め、戻ると最低15秒にしていたので、開く・戻るをくり返すと時間切れが来なかった)。
-// 時間切れのあと(時間切れで開いた・開いたまま0になった)は「えらびなおす」を出さず、8 秒で始める。Esc は2回でタイトルへ(スタッフ)。
+// 時間切れではここを開かず、そのまま始める。開いたまま0になったら、その場で始める(2026-11-01 ユーザー「残り0秒になったらそのスタートしますか？の
+// やつはどうせ取り消せないんだからその画面はさまずそのまま始めて」。前は時間切れの確認を開き、えらびなおせないまま 8 秒待っていた)。
 public sealed class SongSelectConfirm : MonoBehaviour
 {
     public const float StartHoldSeconds = 1.5f, BackHoldSeconds = 1f;
-    public const double InputDelaySeconds = .5, IdleCloseSeconds = 10, AutoStartSeconds = 8;
+    public const double InputDelaySeconds = .5, IdleCloseSeconds = 10;
     // 1920×1080 の左上原点。的は 400×240(Kinect の目安 208px 以上)、内側の縁はまん中(960)から 280px。
     public static readonly Vector2 BackCenter = new Vector2(480, 600), StartCenter = new Vector2(1440, 600), TargetSize = new Vector2(400, 240);
     public const string Question = "この曲で はじめる？";
     public const string Hint = "右の「スタート！」に 1.5秒 かざす ／ 左で えらびなおし";
-    // 時間切れのあと。えらびなおせないので左の的は出さない。
-    public const string AutomaticHint = "時間切れ！ この曲で はじまるよ ／ 「スタート！」に かざすと すぐ";
     public const string StaffHint = "スタッフ: クリック・Enter でも決められます(Esc で えらびなおし)";
-    public const string AutomaticStaffHint = "スタッフ: クリック・Enter でも決められます(Esc 2回で タイトルへ)";
-    public static string Footer(bool automatic, int seconds) => automatic
-        ? "あと " + seconds + " 秒で はじまるよ" : seconds + "秒 なにもしないと 選曲に もどるよ";
+    public static string Footer(int seconds) => seconds + "秒 なにもしないと 選曲に もどるよ";
 
     static SongSelectConfirm instance;
     public static SongSelectConfirm Instance => instance;
@@ -38,13 +35,10 @@ public sealed class SongSelectConfirm : MonoBehaviour
     SongSelectRubyText songRuby;
     SongSelectDiscGraphic difficultyChip, jacket;
     RectTransform startBar, backBar;
-    bool open, automatic;
-    // 開いてからの秒(age)と、時間切れのあとに始める時刻(age の物差し)。時間切れで開いたときは 8、開いたまま0になったときはその時 + 8。
-    double age, autoStartAt;
+    bool open;
+    // 開いてからの秒。
+    double age;
     int shownSeconds = -1;
-    // 時間切れのあとの Esc(スタッフ)。2回でタイトルへ。
-    readonly EscapeTwiceGate escapeGate = new EscapeTwiceGate();
-    public bool Automatic => automatic;
     public double Age => age;
     public SongSelectDiscTarget StartTarget { get; private set; }
     public SongSelectDiscTarget BackTarget { get; private set; }
@@ -97,15 +91,6 @@ public sealed class SongSelectConfirm : MonoBehaviour
         staffHint = Label("StaffHint", StaffHint, 22, Position(1500, 1046), new Vector2(820, 36), new Color(.49f, .6f, .7f), false);
     }
 
-    // 自分で開いた確認と、時間切れのあとの確認(えらびなおせない)で、左の的と案内を切り替える。
-    void ShowMode()
-    {
-        if (BackTarget != null) BackTarget.gameObject.SetActive(!automatic);
-        if (hint != null) hint.text = automatic ? AutomaticHint : Hint;
-        if (staffHint != null) staffHint.text = automatic ? AutomaticStaffHint : StaffHint;
-        escapeGate.Reset();
-    }
-
     TextMeshProUGUI Label(string name, string text, float size, Vector2 position, Vector2 dimensions, Color color, bool bold)
     {
         var t = UISkinKit.MakeTMP(root, name, text, size, color, TextAlignmentOptions.Center, position, dimensions,
@@ -139,15 +124,14 @@ public sealed class SongSelectConfirm : MonoBehaviour
     }
 
     // 開く。始められないとき(画面遷移中・裏譜面の切り替え中・譜面が無い)は開かず false。
-    public bool Open(bool automaticStart, string how)
+    public bool Open(string how)
     {
         if (open || ctl == null || ScreenTransition.IsBusy || ctl.RushESecret.Transitioning || !ctl.CanStartSelected) return open;
-        open = true; automatic = automaticStart; age = 0; autoStartAt = AutoStartSeconds;
-        shownSeconds = (int)(automatic ? AutoStartSeconds : IdleCloseSeconds);
-        footer.text = Footer(automatic, shownSeconds);
+        open = true; age = 0;
+        shownSeconds = (int)IdleCloseSeconds;
+        footer.text = Footer(shownSeconds);
         SetBar(startBar, null); SetBar(backBar, null);
         Refresh();
-        ShowMode();
         root.gameObject.SetActive(true);
         root.SetAsLastSibling();
         SetInteractable(false);
@@ -155,44 +139,40 @@ public sealed class SongSelectConfirm : MonoBehaviour
         var events = EventSystem.current;
         if (events != null) events.SetSelectedGameObject(null);
         if (aim != null) aim.BeginArrival();
-        if (!automatic) MenuSfx.Fire();
+        MenuSfx.Fire();
         Record("open", how);
         return true;
     }
 
-    // 「スタート！」。曲を始める(始められなければ選曲へ戻す。時計は足さない。時間切れのあとならタイトルへ)。
+    // 「スタート！」。曲を始める(始められなければ選曲へ戻す。時計は足さない。時計が0になったあとならタイトルへ)。
     public void Confirm(string how)
     {
-        if (!open || age < InputDelaySeconds && how != "auto") return;
-        bool wasAutomatic = automatic;
+        if (!open || age < InputDelaySeconds) return;
         Close();
         Record("start", how);
-        ctl.StartConfirmed(wasAutomatic);
+        ctl.StartConfirmed(false);
         if (!ctl.StartAccepted && skin != null) skin.ConfirmClosedAfterTimeout();
     }
 
     // 「えらびなおす」(と、なにもしないで閉じたとき)。始めずに選曲へ戻す。残りの時間はそのまま(足さない)。
-    // 時間切れのあとは選び直せない(戻っても0秒のまま止まってしまうので受けない)。
     public void Back(string how)
     {
-        if (!open || automatic || age < InputDelaySeconds && how != "timeout") return;
+        if (!open || age < InputDelaySeconds && how != "timeout") return;
         Close();
         Record(how == "timeout" ? "timeout" : "back", how);
         MenuSfx.Difficulty(0);
         if (skin != null) skin.ConfirmClosedAfterTimeout();
     }
 
-    // 開いたまま選曲の時計が0になったとき(2026-10-31)。時間切れの確認に切り替え、今から 8 秒で始める。えらびなおせない。
-    public void BeginAutomaticStart()
+    // 選曲の時計が0になったとき(2026-11-01)。この確認は開かずに、今の曲・難易度でそのまま始める。開いていたら閉じてから始める。
+    // events.log には select-confirm start how=timeout の1行(auto=1、open=1 は確認が開いていた)。始められたら true。
+    public bool StartAtTimeout()
     {
-        if (!open || automatic) return;
-        automatic = true;
-        autoStartAt = age + AutoStartSeconds;
-        // 下の案内も同じコマで「あと 8 秒で はじまるよ」に変える(次の Tick を待たない)。
-        shownSeconds = (int)AutoStartSeconds;
-        footer.text = Footer(true, shownSeconds);
-        ShowMode();
-        Record("auto", "timeout");
+        bool wasOpen = open;
+        if (open) Close();
+        ctl.StartGameAutomatically();
+        Record(ctl.StartAccepted ? "start" : "failed", "timeout", true, wasOpen);
+        return ctl.StartAccepted;
     }
 
     void Close()
@@ -236,36 +216,19 @@ public sealed class SongSelectConfirm : MonoBehaviour
         var kb = Keyboard.current;
         if (kb == null || age < InputDelaySeconds || SongSelectController.OperatorChordHeld(kb)) return;
         if (kb.enterKey.wasPressedThisFrame || kb.numpadEnterKey.wasPressedThisFrame || kb.spaceKey.wasPressedThisFrame) Confirm("key");
-        else if (InputManager.BackKeyPressedThisFrame(kb))
-        {
-            // 時間切れのあとは選び直せないので、Esc・ハイフンは来場者の画面に共通の「2回でタイトルへ」(スタッフ)。
-            if (!automatic) Back("key");
-            else if (escapeGate.PressAndNotify(Time.unscaledTimeAsDouble, EscapeTwiceGate.ToTitleNotice)) ReturnToTitle();
-        }
+        else if (InputManager.BackKeyPressedThisFrame(kb)) Back("key");
     }
 
-    // スタッフが時間切れのあとの確認からタイトルへ戻す(Esc・ハイフンの2回目)。幕が始まったら確認を閉じる。
-    public void ReturnToTitle()
-    {
-        if (!open || ctl == null) return;
-        ctl.ReturnToTitle();
-        if (!ScreenTransition.IsBusy) return;
-        Close();
-        Record("title", "key");
-    }
-
-    // 時間を進める(実入力とテストの共通の入口)。0.5 秒たったら的を受け付け、自分で開いたら 10 秒で閉じ、時間切れなら 8 秒で始める。
+    // 時間を進める(実入力とテストの共通の入口)。0.5 秒たったら的を受け付け、10 秒で閉じる。
     public void Tick(double dt)
     {
         if (!open || ScreenTransition.IsBusy) return;
         if (!double.IsNaN(dt) && dt > 0 && dt < 30) age += dt;
         if (age >= InputDelaySeconds && StartTarget != null && !StartTarget.Button.interactable) SetInteractable(true);
-        double limit = automatic ? autoStartAt : IdleCloseSeconds;
-        int seconds = Mathf.Max(0, Mathf.CeilToInt((float)(limit - age)));
-        if (seconds != shownSeconds) { shownSeconds = seconds; footer.text = Footer(automatic, seconds); }
+        int seconds = Mathf.Max(0, Mathf.CeilToInt((float)(IdleCloseSeconds - age)));
+        if (seconds != shownSeconds) { shownSeconds = seconds; footer.text = Footer(seconds); }
         SetBar(startBar, StartTarget); SetBar(backBar, BackTarget);
-        if (age < limit) return;
-        if (automatic) Confirm("auto"); else Back("timeout");
+        if (age >= IdleCloseSeconds) Back("timeout");
     }
 
     static void SetBar(RectTransform bar, SongSelectDiscTarget target)
@@ -274,11 +237,13 @@ public sealed class SongSelectConfirm : MonoBehaviour
         bar.sizeDelta = new Vector2((TargetSize.x - 48) * (target != null ? Mathf.Clamp01(target.Progress) : 0), bar.sizeDelta.y);
     }
 
-    void Record(string kind, string how)
+    // auto=1 は時間切れで始めた回。open は時間切れのときだけ付け、確認が開いていたら 1。
+    void Record(string kind, string how, bool auto = false, bool? wasOpen = null)
     {
         string id = ctl != null ? ctl.SongIdAt(ctl.SelectedIndex) : "";
         PhoneSaberEventLog.Record(PhoneSaberStation.Read(), "SYSTEM", "select-confirm",
-            kind + " how=" + how + " song=" + id + " diff=" + (ctl != null ? ctl.CurrentDifficultyName : "") + " auto=" + (automatic ? 1 : 0));
+            kind + " how=" + how + " song=" + id + " diff=" + (ctl != null ? ctl.CurrentDifficultyName : "") + " auto=" + (auto ? 1 : 0)
+            + (wasOpen.HasValue ? " open=" + (wasOpen.Value ? 1 : 0) : ""));
     }
 
     void OnDisable() { open = false; }

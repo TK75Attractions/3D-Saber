@@ -36,11 +36,8 @@ public class TitleReceptionTests
     [Test]
     public void FooterSaysWhatHappensWhenNothingIsDone()
     {
-        Assert.AreEqual("あと 8 秒で はじまるよ", SongSelectConfirm.Footer(true, 8));
-        Assert.AreEqual("10秒 なにもしないと 選曲に もどるよ", SongSelectConfirm.Footer(false, 10));
-        StringAssert.Contains("時間切れ", SongSelectConfirm.AutomaticHint);
-        StringAssert.DoesNotContain("えらびなおし", SongSelectConfirm.AutomaticHint, "時間切れのあとは選び直せない");
-        StringAssert.Contains("タイトルへ", SongSelectConfirm.AutomaticStaffHint);
+        Assert.AreEqual("10秒 なにもしないと 選曲に もどるよ", SongSelectConfirm.Footer(10));
+        // 時間切れの確認(「あと 8 秒で はじまるよ」)は 2026-11-01 にやめた(時間切れは確認を開かずにそのまま始める)。
         Assert.AreEqual("まん中に 2秒 → かくにん", SongSelectSkin.StartHint(30, true));
         Assert.AreEqual("そのまま かざすと かくにん", SongSelectSkin.HoldStartHint);
     }

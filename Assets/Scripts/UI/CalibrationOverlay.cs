@@ -240,7 +240,7 @@ public sealed class CalibrationOverlay : MonoBehaviour
         if (!expired) return;
         // 時間を足さずに(0秒で)選曲へ戻す(2026-10-31 ユーザー「選曲の45秒の時計が、止まったり増えたりしないようにする」)。
         // 前は10秒を足して戻していたので、判定調整との行き来で時間切れがいつまでも来なかった。
-        // 戻った選曲はすぐ時間切れの「この曲で はじめる？」(8秒で始める)を開く(判定調整に入ったのは操作なので)。
+        // 戻った選曲は、すぐ選んでいた曲でそのまま始める(判定調整に入ったのは操作なので。2026-11-01 から確認は開かない)。
         GameSession.CalibrationSelectionSeconds=0; ctl.DiscardAndExit();
     }
     void RefreshCountdown()

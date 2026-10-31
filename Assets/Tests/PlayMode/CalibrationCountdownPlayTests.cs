@@ -203,7 +203,7 @@ public class CalibrationCountdownPlayTests
     }
 
     // 2026-10-31 ユーザー「選曲の45秒の時計が、止まったり増えたりしないようにする」: 前は10秒を足して戻していた(判定調整との行き来で
-    // 時間切れが来なかった)。今は0秒で戻り、すぐには始めず、時間切れの「この曲で はじめる？」(8秒で始める)を見せる。
+    // 時間切れが来なかった)。今は0秒で戻り、2026-11-01 から確認を開かずに、選んでいた曲でそのまま始める。
     [UnityTest] public IEnumerator TimeoutStopsPracticeDiscardsDraftAndReturnsWithoutExtraTime()
     {
         var controller=Object.FindFirstObjectByType<SongSelectController>();
@@ -223,12 +223,14 @@ public class CalibrationCountdownPlayTests
         Assert.AreEqual("SongSelect",SceneManager.GetActiveScene().name);Assert.False(GameSession.IsCalibrationMode);
         AssertSelection(songId,2);
         Assert.AreEqual(0,Object.FindFirstObjectByType<SongSelectSkin>().RemainingSeconds,1e-6,"0秒のまま(足さない)");
+        var select=Object.FindFirstObjectByType<SongSelectController>();
         double until=Time.realtimeSinceStartupAsDouble+3;
-        while(!SongSelectConfirm.IsOpen&&Time.realtimeSinceStartupAsDouble<until)yield return null;
-        Assert.AreEqual("SongSelect",SceneManager.GetActiveScene().name,"0秒を引き継いで即プレイ開始しない");
-        Assert.True(SongSelectConfirm.IsOpen,"時間切れの確認で、何が始まるかを見せる");
-        Assert.True(SongSelectConfirm.Instance.Automatic,"8秒で始める確認(えらびなおせない)");
-        Assert.False(Object.FindFirstObjectByType<SongSelectController>().StartAccepted);
+        while(!select.StartAccepted&&Time.realtimeSinceStartupAsDouble<until)yield return null;
+        Assert.True(select.StartAccepted,"時間切れなので、選んでいた曲でそのまま始める");
+        Assert.False(SongSelectConfirm.IsOpen,"確認は開かない(2026-11-01 から)");
+        yield return ScreenTransitionPlayTests.WaitForTransition();
+        Assert.AreEqual("Game",SceneManager.GetActiveScene().name);
+        Assert.AreEqual(songId,GameSession.SelectedSongId);
     }
 
     [UnityTest] public IEnumerator TimeoutClosesUnsavedConfirmationWithoutSaving()
