@@ -28,18 +28,21 @@ public class TutorialProgramTests
         Assert.IsTrue(GameSession.TutorialPending);
     }
 
+    // 定義のある段の全部(流れから外した段も、定義と部品の振る舞いは確かめる)。
+    static readonly string[] AllStepIds = { TutorialProgram.RangeStepId, "hands", "tapRed", "tapBlue", "tapMix", "gold", "simul",
+        "arrowEasy", "arrowNormal", "long", TutorialProgram.AllStepId, "ready" };
+
+    // 2026-10-31 夜 ユーザー「ノーツの種類とかの話はすべて事前に見せるので、範囲合わせの後、左右交互の練習だけさせてすぐ終わるようにして」。
     [Test]
-    public void CommonFlow_StartsWithHandsAndEndsWithReady()
+    public void CommonFlow_IsOnlyTheAlternatingPracticeThenReady()
     {
         var steps = TutorialProgram.Build(TutorialProgram.CommonFlow, true);
         Assert.AreEqual(TutorialProgram.CommonFlow.Length, steps.Length, "全部の id が定義されている");
-        Assert.AreEqual("hands", steps[0].Id);
-        Assert.AreEqual(TutorialStepKind.Explain, steps[0].Kind);
-        Assert.AreEqual("ready", steps[steps.Length - 1].Id);
-        Assert.AreEqual(TutorialStepKind.Ready, steps[steps.Length - 1].Kind);
-        CollectionAssert.AreEqual(
-            new[] { "hands", "tapRed", "tapBlue", "tapMix", "gold", "simul", "arrowEasy", "long", "all", "ready" },
-            steps.Select(s => s.Id));
+        CollectionAssert.AreEqual(new[] { "tapMix", "ready" }, steps.Select(s => s.Id));
+        Assert.AreEqual(TutorialStepKind.Practice, steps[0].Kind);
+        Assert.AreEqual(TutorialStepKind.Ready, steps[1].Kind);
+        Assert.IsFalse(steps.Any(s => s.Kind == TutorialStepKind.Explain), "持ち方の説明も流さない(事前に見せる)");
+        Assert.AreEqual(AllStepIds.Length, TutorialProgram.Build(AllStepIds, true).Length, "流さない段も定義は残す");
     }
 
     // 2026-10-24: スマホの座標を受けているときだけ、最初に振る範囲を合わせる。ほかの段の並びは変えない。
@@ -58,7 +61,7 @@ public class TutorialProgramTests
         StringAssert.Contains("振りやすい", steps[0].Title, "限界までではなく、振りやすい範囲で振る(2026-10-24)");
         StringAssert.DoesNotContain("いっぱい", steps[0].Title);
         StringAssert.DoesNotContain("遠く", TutorialProgram.RangeCheer);
-        Assert.AreEqual("hands", steps[1].Id);
+        Assert.AreEqual("tapMix", steps[1].Id, "範囲を合わせたら、すぐ左右交互の練習");
         Assert.AreEqual(TutorialProgram.RangeStepId, TutorialProgram.Build(flow, false)[0].Id, "持ち方の説明を省いても範囲は合わせる");
     }
 
@@ -379,18 +382,19 @@ public class TutorialProgramTests
     [Test]
     public void Build_WithoutHands_SkipsTheExplainStep()
     {
-        var steps = TutorialProgram.Build(TutorialProgram.CommonFlow, false);
+        var flow = new[] { "hands", "tapRed", "tapMix", "ready" };
+        var steps = TutorialProgram.Build(flow, false);
         Assert.IsFalse(steps.Any(s => s.Kind == TutorialStepKind.Explain));
         Assert.AreEqual("tapRed", steps[0].Id);
-        Assert.AreEqual(TutorialProgram.CommonFlow.Length - 1, steps.Length);
-        Assert.AreEqual(9, steps.Length);
+        Assert.AreEqual(flow.Length - 1, steps.Length);
+        Assert.AreEqual(flow.Length, TutorialProgram.Build(flow, true).Length);
     }
 
-    [TestCase(true, 4)]
-    [TestCase(false, 3)]
-    public void ReorderedSteps_KeepTheirGoalsDirectionsAndTimings(bool includeHands, int firstIndex)
+    // 2026-10-31 夜から流れに入れていない段も、定義は前のまま。
+    [Test]
+    public void UnusedPracticeSteps_KeepTheirGoalsDirectionsAndTimings()
     {
-        var steps = TutorialProgram.Build(TutorialProgram.CommonFlow, includeHands).Skip(firstIndex).Take(4).ToArray();
+        var steps = TutorialProgram.Build(new[] { "gold", "simul", "arrowEasy", "long" }, true);
         CollectionAssert.AreEqual(new[] { "gold", "simul", "arrowEasy", "long" }, steps.Select(s => s.Id));
         Assert.IsTrue(steps.All(s => s.Kind == TutorialStepKind.Practice));
         CollectionAssert.AreEqual(new[] { 1, 2, 2, 2 }, steps.Select(s => s.Goal));
@@ -413,7 +417,7 @@ public class TutorialProgramTests
     [Test]
     public void PracticeSteps_AreAchievableInOneLoopAndOrderedInTime()
     {
-        foreach (var step in TutorialProgram.Build(TutorialProgram.CommonFlow, true).Where(s => s.Kind == TutorialStepKind.Practice))
+        foreach (var step in TutorialProgram.Build(AllStepIds, true).Where(s => s.Kind == TutorialStepKind.Practice))
         {
             Assert.Greater(step.Pattern.Length, 0, step.Id);
             Assert.Greater(step.Goal, 0, step.Id);
@@ -428,7 +432,7 @@ public class TutorialProgramTests
     [Test]
     public void MirrorRule_BlueOnTheLeftRedOnTheRightInsideEasyRange()
     {
-        foreach (var step in TutorialProgram.Build(TutorialProgram.CommonFlow, true))
+        foreach (var step in TutorialProgram.Build(AllStepIds, true))
         foreach (var n in step.Pattern)
         {
             if (n.color == "red") Assert.Greater(n.x, 0f, step.Id + ": 赤は画面の右");
@@ -486,11 +490,11 @@ public class TutorialProgramTests
     }
 
     // 2026-10-28: 最後の「練習してみよう」に、今まで練習した7種類が1つずつ出る。種類ごとに1回 PERFECT で合格。
+    // 2026-10-31 夜から流れには入れていない(定義は残す)。
     [Test]
-    public void AllStep_ShowsEveryPracticedKindOnceBeforeReady()
+    public void AllStep_ShowsEveryPracticedKindOnce()
     {
-        var flow = TutorialProgram.CommonFlow;
-        Assert.AreEqual("all", flow[flow.Length - 2], "準備OKの直前");
+        CollectionAssert.DoesNotContain(TutorialProgram.CommonFlow, TutorialProgram.AllStepId, "流れには入れない");
         var step = TutorialProgram.Get("all");
         Assert.AreEqual(TutorialStepKind.Practice, step.Kind);
         StringAssert.Contains("練習してみよう", step.Title);
@@ -540,35 +544,38 @@ public class TutorialProgramTests
         finally { Object.DestroyImmediate(root); }
     }
 
-    // 2026-10-31 ユーザー「赤 青 ロングノーツ フリックノーツのとこは1回だけ流して」「左右交互に流れるやつだけ長めにとって他全部1周」。
+    // 2026-10-31 ユーザー「赤 青 ロングノーツ フリックノーツのとこは1回だけ流して」「左右交互に流れるやつだけ長めにとって他全部1周」、
+    // 同日夜「左右交互は5周流し」: 左右交互だけ最大5周、ほかの練習は最大1周。
     [Test]
-    public void LoopCounts_TwiceForTheAlternatingStepOnceForEveryOtherPractice()
+    public void LoopCounts_FiveForTheAlternatingStepOnceForEveryOtherPractice()
     {
-        var practices = TutorialProgram.Build(TutorialProgram.CommonFlow, true).Where(s => s.Kind == TutorialStepKind.Practice).ToArray();
+        var practices = TutorialProgram.Build(AllStepIds, true).Where(s => s.Kind == TutorialStepKind.Practice && s.Loops > 0).ToArray();
         CollectionAssert.AreEquivalent(new[] { "tapRed", "tapBlue", "tapMix", "gold", "simul", "arrowEasy", "long", TutorialProgram.AllStepId },
             practices.Select(s => s.Id));
         foreach (var step in practices)
-            Assert.AreEqual(step.Id == "tapMix" ? 2 : 1, step.Loops, step.Id + (step.Id == "tapMix" ? ": 左右交互だけ最大2周" : ": 最大1周"));
+            Assert.AreEqual(step.Id == "tapMix" ? 5 : 1, step.Loops, step.Id + (step.Id == "tapMix" ? ": 左右交互だけ最大5周" : ": 最大1周"));
         // ノーツが最も遅い(4秒)ときに最初の型を待つ間を足しても、制限時間の前に最後の周の判定が来なくて進む時刻が来る。
         double longestWait = TutorialProgram.ReadDelaySeconds + GameSession.NoteApproachTimeMax + TutorialProgram.BarSeconds;
-        foreach (var step in TutorialProgram.Build(TutorialProgram.CommonFlow, true).Where(s => s.Loops > 0))
+        foreach (var step in practices)
             Assert.Less(TutorialProgram.PatternEndAt(step, longestWait),
                 step.TimeoutSeconds > 0 ? step.TimeoutSeconds : TutorialProgram.DefaultStepTimeoutSeconds, step.Id);
     }
 
     // 同日「クリアしたらそのまま次いって、今のはあくまで最大」: 周の数は上限。合格したらすぐ次へ。
+    // 同日夜「5周流し、3れんぞくgreat以上まで終わらない」(5周で続かなければ終える): 左右交互は5周の20個の判定まで流す。
     [Test]
     public void PracticeOutcome_PassingMovesOnAtOnceAndTheLoopsAreTheMaximum()
     {
         var mix = TutorialProgram.Get("tapMix");
         float limit = mix.TimeoutSeconds;
         double end = TutorialProgram.PatternEndAt(mix, 10);
-        Assert.AreEqual(10 + 4 + 3 + TutorialProgram.PatternEndGraceSeconds, end, 1e-9, "2周目の最後のノーツのあと");
+        Assert.AreEqual(10 + 4 * 4 + 3 + TutorialProgram.PatternEndGraceSeconds, end, 1e-9, "5周目の最後のノーツのあと");
         Assert.AreEqual("ok", TutorialProgram.PracticeOutcome(mix, true, 3, 12, 10, 4, limit), "1周目で合格したらすぐ次へ");
         Assert.IsNull(TutorialProgram.PracticeOutcome(mix, false, 4, 14, 10, 6, limit), "合格するまで2周目も流す");
-        Assert.AreEqual("timeout", TutorialProgram.PracticeOutcome(mix, false, 8, 17.2, 10, 9.2, limit), "2周の8個の判定が出たら待たずに次へ");
-        Assert.IsNull(TutorialProgram.PracticeOutcome(mix, false, 7, end - .01, 10, 9, limit));
-        Assert.AreEqual("timeout", TutorialProgram.PracticeOutcome(mix, false, 7, end, 10, 9, limit), "判定が来なくても進む");
+        Assert.IsNull(TutorialProgram.PracticeOutcome(mix, false, 19, 28.9, 10, 20.9, limit), "5周目の最後の1個がまだ");
+        Assert.AreEqual("timeout", TutorialProgram.PracticeOutcome(mix, false, 20, 29.2, 10, 21.2, limit), "5周の20個の判定が出たら待たずに次へ");
+        Assert.IsNull(TutorialProgram.PracticeOutcome(mix, false, 19, end - .01, 10, 21, limit));
+        Assert.AreEqual("timeout", TutorialProgram.PracticeOutcome(mix, false, 19, end, 10, 21, limit), "判定が来なくても進む");
         Assert.AreEqual("timeout", TutorialProgram.PracticeOutcome(mix, false, 0, 10, 10, limit, limit), "制限時間");
 
         var red = TutorialProgram.Get("tapRed");
@@ -638,9 +645,59 @@ public class TutorialProgramTests
         finally { Object.DestroyImmediate(root); }
     }
 
+    // 2026-10-31 夜「3れんぞくgreat以上まで終わらない」: GREAT 以上が3回続いたら合格。GOOD 以下・見逃しで 0 から数え直す。
+    [Test]
+    public void AlternatingStep_PassesOnlyOnThreeGreatsInARow()
+    {
+        var root = new GameObject("TutorialMixStreak");
+        try
+        {
+            var flags = BindingFlags.Instance | BindingFlags.NonPublic;
+            var controller = root.AddComponent<TutorialController>();
+            var step = TutorialProgram.Get("tapMix");
+            Assert.IsTrue(step.Consecutive);
+            Assert.AreEqual(3, step.Goal);
+            typeof(TutorialController).GetField("steps", flags).SetValue(controller, new[] { step });
+            typeof(TutorialController).GetField("stepIndex", flags).SetValue(controller, 0);
+            int count = 0;
+            CuttableNote Note()
+            {
+                var go = new GameObject("Note");
+                go.transform.SetParent(root.transform);
+                var note = go.AddComponent<CuttableNote>();
+                note.HitTime = 10 + count++; note.RequiredHand = SaberHand.Right; note.RequiredCutCount = 1;
+                typeof(TutorialController).GetMethod("WatchNote", flags).Invoke(controller, new object[] { note });
+                return note;
+            }
+            void Judge(JudgmentTier tier) =>
+                typeof(TutorialController).GetMethod("Judged", flags).Invoke(controller, new object[] { Note(), tier, Vector3.zero, Vector3.up * 8 });
+            void Miss() => typeof(TutorialController).GetMethod("Missed", flags).Invoke(controller, new object[] { Note() });
+            bool Passed() => TutorialProgram.PracticeGoalReached(step, controller.Successes, new System.Collections.Generic.HashSet<CutDirection>());
+
+            Judge(JudgmentTier.Perfect); Judge(JudgmentTier.Great);
+            Assert.AreEqual(2, controller.Successes);
+            Judge(JudgmentTier.Good);
+            Assert.AreEqual(0, controller.Successes, "GOOD で数え直し");
+            Judge(JudgmentTier.Perfect); Judge(JudgmentTier.Perfect); Miss();
+            Assert.AreEqual(0, controller.Successes, "見逃しでも数え直し");
+            Judge(JudgmentTier.Great); Judge(JudgmentTier.Bad);
+            Assert.AreEqual(0, controller.Successes, "BAD でも数え直し");
+            Assert.IsFalse(Passed(), "GREAT 以上が合わせて5回でも、続いていなければ合格にしない");
+            Judge(JudgmentTier.Great); Judge(JudgmentTier.Perfect);
+            Assert.IsFalse(Passed());
+            Assert.AreEqual("GREAT 以上 3 連続まで あと 1 回", TutorialProgram.RemainingText(step, controller.Successes, 0, false));
+            Judge(JudgmentTier.Great);
+            Assert.AreEqual(3, controller.Successes);
+            Assert.IsTrue(Passed(), "3回続いたら合格");
+            Assert.AreEqual(11, (int)typeof(TutorialController).GetField("judgedNotes", flags).GetValue(controller), "判定はどれも周の数に入れる");
+        }
+        finally { Object.DestroyImmediate(root); }
+    }
+
     [Test]
     public void RemainingText_SaysOnlyPerfectCounts()
     {
+        Assert.AreEqual("GREAT 以上 3 連続まで あと 3 回", TutorialProgram.RemainingText(TutorialProgram.Get("tapMix"), 0, 0, false), "左右交互は続けて3回");
         Assert.AreEqual("GREAT 以上であと 2 回", TutorialProgram.RemainingText(TutorialProgram.Get("tapRed"), 0, 0, false));
         Assert.AreEqual("GREAT 以上であと 1 回", TutorialProgram.RemainingText(TutorialProgram.Get("gold"), 0, 0, false), "1回の段も出す");
         Assert.AreEqual("GREAT 以上であと 1 組", TutorialProgram.RemainingText(TutorialProgram.Get("simul"), 0, 0, false));
@@ -666,7 +723,7 @@ public class TutorialProgramTests
     public void EveryPracticeAndLongStrokeStaysOnThe120BpmGridAcrossLoops()
     {
         Assert.AreEqual(120, TutorialProgram.Bpm);
-        foreach (var id in TutorialProgram.CommonFlow.Concat(new[] { "arrowNormal" }))
+        foreach (var id in AllStepIds)
         {
             var step = TutorialProgram.Get(id);
             if (step.Kind != TutorialStepKind.Practice) continue;

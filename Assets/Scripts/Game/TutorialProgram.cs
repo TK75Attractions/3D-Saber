@@ -35,6 +35,7 @@ public sealed class TutorialStep
     public double PeriodSeconds;                      // 型を繰り返す間隔(秒)
     public int Loops;                                 // 型を出す周の数の上限。0 は成功か制限時間まで繰り返す
     public int Goal;                                  // 成功回数
+    public bool Consecutive;                          // 成功を続けて Goal 回(GREAT 未満・見逃しで 0 から数え直す)
     public bool NeedDirection;                        // 向きが合った切りだけを数える
     public CutDirection[] RequiredDirections = Array.Empty<CutDirection>();
     public bool Simultaneous;
@@ -74,14 +75,17 @@ public static class TutorialProgram
     public const string SimulKind = "simul";
     public static readonly string[] AllKinds = { "red", "blue", "gold", SimulKind, "up", "down", "long" };
     // 型を流す周の数の上限(2026-10-31 ユーザー「赤 青 ロングノーツ フリックノーツのとこは1回だけ流して」「クリアしたらそのまま次いって、
-    // 今のはあくまで最大」「左右交互に流れるやつだけ長めにとって他全部1周」)。左右交互だけ最大2周、ほかの練習は最大1周。
+    // 今のはあくまで最大」「左右交互に流れるやつだけ長めにとって他全部1周」)。左右交互以外の練習は最大1周。
     // 合格したらすぐ次へ。合格しないまま上限の周の判定が全部出たら、待たずに次へ(前は合格するまで、最大15秒くり返した)。
-    public const int OnceLoops = 1, TwiceLoops = 2;
+    public const int OnceLoops = 1;
+    // 左右交互は最大5周で、GREAT 以上を3回続けたら合格(2026-10-31 夜 ユーザー「左右交互は5周流し、3れんぞくgreat以上まで終わらない」。
+    // 5周で続かなかった人は、そこで曲選びへ進める(同日「5周で終える」を選んだ)。前は最大2周・GREAT 以上を合わせて3回)。
+    public const int MixLoops = 5, MixStreak = 3;
     // 練習してみようも1周(10/30「練習は型1周で」)。
     public const int AllPracticeLoops = OnceLoops;
     public const float AllPracticeTimeoutSeconds = 30f;   // 念のための上限。ふだんは合格か1周の判定で進む
-    // 左右交互の念のための上限。ノーツが最も遅い(4秒)ときでも、2周の判定が出るより長くする。
-    public const float MixPracticeTimeoutSeconds = 20f;
+    // 左右交互の念のための上限。ノーツが最も遅い(4秒)ときでも、5周の判定が出るより長くする。
+    public const float MixPracticeTimeoutSeconds = 40f;
     // 判定が来なくても次へ進むまでの、最後のノーツが終わって(ロングは長さの分を足して)からの秒。判定の遅い側の窓と入力の遅れより十分長い。
     public const double PatternEndGraceSeconds = 3.0;
 
@@ -104,7 +108,9 @@ public static class TutorialProgram
     }
 
     // 難易度を選ぶ前に挟まるので、Easy / Normal に共通の型。左右・斜めの矢印は曲の中で覚える。
-    public static readonly string[] CommonFlow = { "hands", "tapRed", "tapBlue", "tapMix", "gold", "simul", "arrowEasy", "long", AllStepId, "ready" };
+    // 2026-10-31 夜 ユーザー「ノーツの種類とかの話はすべて事前に見せるので、範囲合わせの後、左右交互の練習だけさせてすぐ終わるようにして」:
+    // 左右交互の練習と「準備OK!」だけ。持ち方・赤・青・金・両手・矢印・ロング・練習してみようの段は、定義だけ残して流さない。
+    public static readonly string[] CommonFlow = { "tapMix", "ready" };
 
     // 振る範囲を合わせる段(2026-10-24 ユーザー指示「チュートリアルの最初に、剣をふる範囲の設定」)。
     // 台の準備(F8)の「範囲を覚える」と同じ指示(learn-area=10)をスマホへ送る。限界まででなく、振りやすい範囲で振ってもらう
@@ -156,7 +162,7 @@ public static class TutorialProgram
                 Pattern = new[] { Tap(LeftX, BaseY, "blue", 0f), Tap(LeftX, BaseY, "blue", 2f) }, PeriodSeconds = LoopSeconds, Loops = OnceLoops, Goal = 2 };
             case "tapMix": return new TutorialStep { Id = id, Kind = TutorialStepKind.Practice, Title = "来た色と同じ手で切ろう", Sub = "赤は右、青は左",
                 Pattern = new[] { Tap(RightX, BaseY, "red", 0f), Tap(LeftX, BaseY, "blue", 1f), Tap(RightX, LowY, "red", 2f), Tap(LeftX, LowY, "blue", 3f) }, PeriodSeconds = LoopSeconds,
-                Loops = TwiceLoops, Goal = 3, TimeoutSeconds = MixPracticeTimeoutSeconds };
+                Loops = MixLoops, Goal = MixStreak, Consecutive = true, TimeoutSeconds = MixPracticeTimeoutSeconds };
             case "arrowEasy": return new TutorialStep { Id = id, Kind = TutorialStepKind.Practice, Title = "矢印の向きに振ろう", Sub = "上向きなら下から上へ",
                 Pattern = new[] { Arrow(RightX, BaseY, "red", "up", 0f), Arrow(LeftX, BaseY, "blue", "down", 2f) }, PeriodSeconds = LoopSeconds, Loops = OnceLoops, Goal = 2, NeedDirection = true,
                 RequiredDirections = new[] { CutDirection.Up, CutDirection.Down } };
@@ -234,6 +240,7 @@ public static class TutorialProgram
         if (step == null || step.Kind != TutorialStepKind.Practice || done) return "";
         if (directions > 0) return "GREAT 以上であと " + directions + " 方向";
         int left = Mathf.Max(0, step.Goal - successes);
+        if (step.Consecutive) return "GREAT 以上 " + step.Goal + " 連続まで あと " + left + " 回";
         if (step.Id == "long") return "あと " + left + " 種類";
         return "GREAT 以上であと " + (step.Kinds.Length > 0 ? left + " 種類"
             : step.Simultaneous ? ((left + 1) / 2) + " 組" : left + " 回");

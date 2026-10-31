@@ -52,7 +52,7 @@ public class TutorialRangePlayTests
     static PhoneSaberAcknowledgement Reply(string result, string detail) =>
         new PhoneSaberAcknowledgement(CommandId, "none", "ios", result, detail, "phone");
 
-    [UnityTest] public IEnumerator RangeStepCountsDownFromThePhoneAndHandsOverToTheGrip()
+    [UnityTest] public IEnumerator RangeStepCountsDownFromThePhoneAndHandsOverToThePractice()
     {
         var m = Object.FindFirstObjectByType<GamePlayManager>(); var t = m.Tutorial;
         Assert.NotNull(t);
@@ -97,10 +97,10 @@ public class TutorialRangePlayTests
         Assert.AreEqual("", t.Overlay.TimerText);
         Assert.AreEqual(TutorialProgram.RangeStepId, t.Records[0].Id); Assert.AreEqual("ok", t.Records[0].Reason);
         float deadline = Time.realtimeSinceStartup + (float)TutorialProgram.RangeEndSeconds + 2f;
-        while (Time.realtimeSinceStartup < deadline && t.Step.Id != "hands") yield return null;
-        Assert.AreEqual("hands", t.Step.Id, "結果を見せたら持ち方の説明へ");
-        Assert.IsTrue(t.Overlay.HandsVisible);
-        Assert.IsTrue(t.Overlay.SkipButton.gameObject.activeSelf, "持ち方の説明からは、やめるの的を戻す");
+        while (Time.realtimeSinceStartup < deadline && t.Step.Id != "tapMix") yield return null;
+        Assert.AreEqual("tapMix", t.Step.Id, "結果を見せたら、すぐ左右交互の練習へ(2026-10-31 夜から持ち方の説明は無し)");
+        Assert.IsFalse(t.Overlay.HandsVisible);
+        Assert.IsTrue(t.Overlay.SkipButton.gameObject.activeSelf, "練習からは、やめるの的を戻す");
         Assert.AreEqual(1, sent, "次の段では送らない");
     }
 
@@ -116,8 +116,8 @@ public class TutorialRangePlayTests
         Assert.AreEqual("noanswer", t.Records[0].Reason);
         Assert.IsFalse(t.HasRangeCover, "学習が始まらなければ範囲は数えない");
         deadline = Time.realtimeSinceStartup + (float)TutorialProgram.RangeEndSeconds + 2f;
-        while (Time.realtimeSinceStartup < deadline && t.Step.Id != "hands") yield return null;
-        Assert.AreEqual("hands", t.Step.Id);
+        while (Time.realtimeSinceStartup < deadline && t.Step.Id != "tapMix") yield return null;
+        Assert.AreEqual("tapMix", t.Step.Id);
     }
 
     // バッチ実行で音声機器が無く sample 位置が進まない環境でも、DSP 時計で進行を確かめられるようにする(TutorialFlowPlayTests と同じ)。

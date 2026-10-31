@@ -214,7 +214,7 @@ public sealed class TutorialController : MonoBehaviour
                     {
                         case TutorialStepKind.Practice:
                         {
-                            // 合格したらすぐ次へ。周の数が決まった段(左右交互=最大2周、ほかの練習=最大1周)は、
+                            // 合格したらすぐ次へ。周の数が決まった段(左右交互=最大5周、ほかの練習=最大1周)は、
                             // 合格しないまま最後の周の判定が全部出たら次へ。
                             string outcome = TutorialProgram.PracticeOutcome(step,
                                 TutorialProgram.PracticeGoalReached(step, Successes, completedDirections), judgedNotes, now, firstPatternAt, elapsed,
@@ -435,6 +435,8 @@ public sealed class TutorialController : MonoBehaviour
             else if (pairs.Register(note.HitTime, note.RequiredHand)) Successes += 2;
             return;
         }
+        // 続けて数える段(左右交互)は、GREAT 以上が途切れたら 0 から数え直す。
+        if (step.Consecutive) Successes = 0;
         if (note.RequiredCutCount > 1) SetHint("数字がなくなるまで、同じ場所を切ろう");
         // 切れたが GREAT 以上でなかった(GOOD・BAD、数えない)。早い・遅いを知らせる。
         else if (tier != JudgmentTier.Miss && score != null && score.LastErrorValid) SetHint(TutorialProgram.NotPerfectHint(score.LastErrorMs));
@@ -446,6 +448,7 @@ public sealed class TutorialController : MonoBehaviour
         if (step == null || step.Kind != TutorialStepKind.Practice || StepDone || IsFinished
             || !noteSteps.TryGetValue(note, out int owner) || owner != stepIndex) return;
         judgedNotes++;
+        if (step.Consecutive) Successes = 0;
         SetHint(note.RequiredCutCount > 1 ? "数字の回数だけ、同じ場所を切ろう"
             : TutorialProgram.MissHint(ColorName(note), note.RequiredDirection != CutDirection.None));
     }

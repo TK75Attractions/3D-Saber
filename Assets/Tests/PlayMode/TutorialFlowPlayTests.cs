@@ -5,7 +5,8 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 
-// Game シーンをチュートリアルで開き、説明 → 練習 → 選曲へ、の流れが本物の部品で通ることを確かめる。
+// Game シーンをチュートリアルで開き、練習 → 選曲へ、の流れが本物の部品で通ることを確かめる。
+// 2026-10-31 夜から、範囲合わせのあとは左右交互の練習だけ(持ち方の説明も流さない)。テストではスマホが無いので範囲の段も無い。
 public class TutorialFlowPlayTests
 {
     bool savedCalibration;
@@ -29,7 +30,7 @@ public class TutorialFlowPlayTests
         }
     }
 
-    [UnityTest] public IEnumerator OpensOnTheHandsStepWithMusicAndBottomOnlyPointer()
+    [UnityTest] public IEnumerator OpensOnTheAlternatingPracticeWithMusicAndBottomOnlyPointer()
     {
         var m = Object.FindFirstObjectByType<GamePlayManager>(); var t = m.Tutorial;
         Assert.NotNull(t, "GamePlayManager がチュートリアルを始める");
@@ -53,11 +54,10 @@ public class TutorialFlowPlayTests
         Assert.AreEqual(4f, m.songPlayer.Clip.length, .0001f);
         EnsureClockAdvances(m.songPlayer);
         t.Tick(.016f);
-        Assert.NotNull(t.Step); Assert.AreEqual("hands", t.Step.Id);
-        Assert.IsTrue(t.Overlay.HandsVisible, "持ち方の絵が出る");
-        StringAssert.Contains("右手", t.Overlay.TitleText);
-        Assert.AreEqual(0, m.noteSpawner.TotalNoteCount, "説明の間はノーツを出さない");
-        Assert.AreEqual(10, t.StepCount);
+        Assert.NotNull(t.Step); Assert.AreEqual("tapMix", t.Step.Id, "持ち方の説明なしで、すぐ左右交互");
+        Assert.IsFalse(t.Overlay.HandsVisible, "持ち方の絵は出さない");
+        StringAssert.Contains("同じ手", t.Overlay.TitleText);
+        Assert.AreEqual(2, t.StepCount, "左右交互と準備OKだけ");
         double beforeLoop = m.songPlayer.SongTime;
         yield return new WaitForSecondsRealtime(4.1f);
         Assert.Greater(m.songPlayer.SongTime, beforeLoop + 4, "音源が一周しても譜面時計は戻らない");
@@ -70,18 +70,15 @@ public class TutorialFlowPlayTests
         Assert.AreEqual(stopped,world.LastTickSeconds,"音を止めると背景も止まる");
     }
 
-    [UnityTest] public IEnumerator HandsStepTimesOutIntoPracticeAndSpawnsRedNotesOnTheRight()
+    [UnityTest] public IEnumerator AlternatingPracticeSpawnsRedOnTheRightOnTheDownbeat()
     {
         var m = Object.FindFirstObjectByType<GamePlayManager>(); var t = m.Tutorial;
         yield return new WaitForSecondsRealtime(.6f);
         EnsureClockAdvances(m.songPlayer);
-        float deadline = Time.realtimeSinceStartup + TutorialProgram.HandsTimeoutSeconds + 4f;
-        while (Time.realtimeSinceStartup < deadline && (t.Step == null || t.Step.Id != "tapRed")) yield return null;
-        Assert.NotNull(t.Step); Assert.AreEqual("tapRed", t.Step.Id, "振らなくても 6 秒で練習へ");
-        Assert.IsFalse(t.Overlay.HandsVisible);
-        Assert.AreEqual(1, t.Records.Count); Assert.AreEqual("hands", t.Records[0].Id); Assert.AreEqual("ok", t.Records[0].Reason);
-        deadline = Time.realtimeSinceStartup + 4f;
+        float deadline = Time.realtimeSinceStartup + 8f;
         while (Time.realtimeSinceStartup < deadline && m.noteSpawner.AliveCount == 0) yield return null;
+        Assert.NotNull(t.Step); Assert.AreEqual("tapMix", t.Step.Id);
+        Assert.AreEqual(0, t.Records.Count, "まだどの段も終わっていない");
         Assert.Greater(m.noteSpawner.AliveCount, 0, "型のノーツが流れる");
         var note = m.noteSpawner.LiveNotes[0];
         Assert.AreEqual(SaberHand.Right, note.RequiredHand, "最初の型は赤(右手)");
@@ -89,7 +86,7 @@ public class TutorialFlowPlayTests
         Assert.AreEqual(1, note.RequiredCutCount);
         double chartHit = note.HitTime - m.noteSpawner.TotalOffsetSeconds;
         Assert.AreEqual(System.Math.Round(chartHit / TutorialProgram.BarSeconds), chartHit / TutorialProgram.BarSeconds, .0001,
-            "説明が拍の途中で終わっても、判定調整を除いた最初のノーツは小節頭");
+            "判定調整を除いた最初のノーツは小節頭");
     }
 
     [UnityTest] public IEnumerator SkipFinishesAndLeavesForSongSelect()

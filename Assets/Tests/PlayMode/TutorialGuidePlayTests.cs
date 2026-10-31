@@ -62,10 +62,15 @@ public class TutorialGuidePlayTests
         Assert.AreEqual(left, guide.LeftFrame); Assert.AreEqual(right, guide.RightFrame);
     }
 
+    // 2026-10-31 夜から流れに入れていない段(ロング・赤・練習してみよう)も、部品の振る舞いは確かめる。段の並びを差し替えて使う。
+    void UseSteps(params string[] ids) => typeof(TutorialController).GetField("steps", Private).SetValue(tutorial, TutorialProgram.Build(ids, true));
+    void Begin(int index, double at) => typeof(TutorialController).GetMethod("BeginStep", Private).Invoke(tutorial, new object[] { index, at });
+    string LastReason() => tutorial.Records[tutorial.Records.Count - 1].Reason;
+
     [UnityTest] public IEnumerator PartialLongsAndDuplicateCountsCannotPassThePractice()
     {
-        int index = Array.IndexOf(TutorialProgram.CommonFlow, "long");
-        typeof(TutorialController).GetMethod("BeginStep", Private).Invoke(tutorial, new object[] { index, tutorial.DemonstrationTime });
+        UseSteps("long");
+        Begin(0, tutorial.DemonstrationTime);
         manager.scoreManager.songPlayer = null; // 同期試験では既存の無時計 Perfect 経路を使う。
         CutLong(2, 1);
         Assert.AreEqual(0, tutorial.Successes); Assert.False(tutorial.StepDone);
@@ -90,37 +95,57 @@ public class TutorialGuidePlayTests
         if (cuts < required) note.MarkMiss();
     }
 
-    // 2026-10-31「クリアしたらそのまま次いって、今のはあくまで最大」「左右交互に流れるやつだけ長めにとって他全部1周」。
-    // 合格したらすぐ次へ。合格しないまま最大の周(左右交互は2周、赤は1周)の判定が全部出たら、待たずに次へ。
+    // 2026-10-31「クリアしたらそのまま次いって、今のはあくまで最大」「左右交互に流れるやつだけ長めにとって他全部1周」、
+    // 同日夜「左右交互は5周流し、3れんぞくgreat以上まで終わらない」(5周で続かなければ終える)。
+    // 左右交互は GREAT 以上が3回続いたらすぐ次へ。途切れたら数え直し、5周の20個の判定が出たら待たずに次へ。赤は1周で次へ。
     [UnityTest] public IEnumerator LoopLimitedStepsMoveOnRightAfterTheLastJudgment()
     {
         manager.scoreManager.songPlayer = null; // 切った時刻は届く時刻ちょうど(PERFECT)にする
         int mix = Array.IndexOf(TutorialProgram.CommonFlow, "tapMix");
-        typeof(TutorialController).GetMethod("BeginStep", Private).Invoke(tutorial, new object[] { mix, tutorial.DemonstrationTime });
-        for (int i = 0; i < 3; i++) Tap(true);
+        Begin(mix, tutorial.DemonstrationTime);
+        Tap(true); Tap(true); Tap(false);
+        Assert.AreEqual(0, tutorial.Successes, "見逃したら数え直し");
+        Tap(true); Tap(true);
         tutorial.Tick(.016f);
-        Assert.True(tutorial.StepDone, "1周目で合格したらすぐ次へ"); Assert.AreEqual("ok", tutorial.Records[tutorial.Records.Count - 1].Reason);
+        Assert.False(tutorial.StepDone, "合わせて4回でも、続けて3回でなければ合格しない");
+        Tap(true);
+        tutorial.Tick(.016f);
+        Assert.True(tutorial.StepDone, "3回続いたらすぐ次へ"); Assert.AreEqual("ok", LastReason());
 
-        typeof(TutorialController).GetMethod("BeginStep", Private).Invoke(tutorial, new object[] { mix, tutorial.DemonstrationTime });
-        for (int i = 0; i < 2; i++) Tap(true);
-        for (int i = 2; i < 7; i++) Tap(false);
+        Begin(mix, tutorial.DemonstrationTime);
+        for (int i = 0; i < 19; i++) Tap(i % 3 != 2); // 2回ずつ続いては途切れる
         tutorial.Tick(.016f);
-        Assert.False(tutorial.StepDone, "2周目の最後の1個がまだ");
+        Assert.False(tutorial.StepDone, "5周目の最後の1個がまだ");
         Tap(false);
         tutorial.Tick(.016f);
-        Assert.True(tutorial.StepDone, "2周の8個の判定が出たら次へ");
-        Assert.AreEqual("timeout", tutorial.Records[tutorial.Records.Count - 1].Reason);
+        Assert.True(tutorial.StepDone, "5周の20個の判定が出たら次へ");
+        Assert.AreEqual("timeout", LastReason());
+        Assert.AreEqual("次に進むよ", tutorial.BannerTitle);
 
-        int red = Array.IndexOf(TutorialProgram.CommonFlow, "tapRed");
-        typeof(TutorialController).GetMethod("BeginStep", Private).Invoke(tutorial, new object[] { red, tutorial.DemonstrationTime });
+        UseSteps("tapRed");
+        Begin(0, tutorial.DemonstrationTime);
         Tap(true);
         tutorial.Tick(.016f);
         Assert.False(tutorial.StepDone);
         Tap(false);
         tutorial.Tick(.016f);
         Assert.True(tutorial.StepDone, "1周の判定が出たら、合格しなくても待たずに次へ");
-        Assert.AreEqual("timeout", tutorial.Records[tutorial.Records.Count - 1].Reason);
-        Assert.AreEqual("次に進むよ", tutorial.BannerTitle);
+        Assert.AreEqual("timeout", LastReason());
+        yield return null;
+    }
+
+    // 2026-10-31 夜からの流れ: 左右交互で合格しなくても、次は「曲を選びに行こう」(準備OKの段)で終わる。
+    [UnityTest] public IEnumerator TheAlternatingPracticeTimingOutEndsWithReady()
+    {
+        double now = tutorial.DemonstrationTime;
+        Begin(Array.IndexOf(TutorialProgram.CommonFlow, "tapMix"), now - TutorialProgram.MixPracticeTimeoutSeconds - .1);
+        tutorial.Tick(.016f);
+        Assert.True(tutorial.StepDone); Assert.AreEqual("timeout", LastReason());
+        typeof(TutorialController).GetField("stepEndAt", Private).SetValue(tutorial, now - .1);
+        tutorial.Tick(.016f);
+        Assert.AreEqual("ready", tutorial.Step.Id, "左右交互のあとはすぐ準備OK");
+        tutorial.Overlay.Tick(.016f);
+        Assert.AreEqual("曲を選びに行こう", tutorial.Overlay.TitleText);
         yield return null;
     }
 
@@ -137,30 +162,27 @@ public class TutorialGuidePlayTests
     [UnityTest] public IEnumerator TimingOutALongIsNotReportedAsSuccessOrReady()
     {
         double now = tutorial.DemonstrationTime;
-        int index = Array.IndexOf(TutorialProgram.CommonFlow, "long");
-        Assert.AreEqual(7, index);
-        typeof(TutorialController).GetMethod("BeginStep", Private).Invoke(tutorial,
-            new object[] { index, now - TutorialProgram.LongPracticeTimeoutSeconds - .1 });
+        UseSteps("long", TutorialProgram.AllStepId, "ready");
+        Begin(0, now - TutorialProgram.LongPracticeTimeoutSeconds - .1);
         Assert.AreEqual("long", tutorial.Step.Id);
         tutorial.Tick(.016f);
         Assert.True(tutorial.StepDone); Assert.AreEqual(0, tutorial.Successes);
-        Assert.AreEqual("timeout", tutorial.Records[tutorial.Records.Count - 1].Reason);
+        Assert.AreEqual("timeout", LastReason());
         Assert.AreNotEqual("OK!", tutorial.BannerTitle);
-        // 終了表示の待ちだけを省き、Tick の次段処理で「練習してみよう」へ進む(2026-10-28 から準備の前に入る)。
+        // 終了表示の待ちだけを省き、Tick の次段処理で「練習してみよう」へ進む。
         typeof(TutorialController).GetField("stepEndAt", Private).SetValue(tutorial, now - .1);
         tutorial.Tick(.016f);
-        Assert.AreEqual(8, tutorial.StepIndex); Assert.AreEqual("all", tutorial.Step.Id);
+        Assert.AreEqual(1, tutorial.StepIndex); Assert.AreEqual("all", tutorial.Step.Id);
         Assert.False(tutorial.StepDone);
         tutorial.Overlay.Tick(.016f);
         StringAssert.Contains("練習してみよう", tutorial.Overlay.TitleText);
         // 練習してみようも時間では次へ進み、準備へ。
-        typeof(TutorialController).GetMethod("BeginStep", Private).Invoke(tutorial,
-            new object[] { 8, now - TutorialProgram.AllPracticeTimeoutSeconds - .1 });
+        Begin(1, now - TutorialProgram.AllPracticeTimeoutSeconds - .1);
         tutorial.Tick(.016f);
-        Assert.True(tutorial.StepDone); Assert.AreEqual("timeout", tutorial.Records[tutorial.Records.Count - 1].Reason);
+        Assert.True(tutorial.StepDone); Assert.AreEqual("timeout", LastReason());
         typeof(TutorialController).GetField("stepEndAt", Private).SetValue(tutorial, now - .1);
         tutorial.Tick(.016f);
-        Assert.AreEqual(9, tutorial.StepIndex); Assert.AreEqual("ready", tutorial.Step.Id);
+        Assert.AreEqual(2, tutorial.StepIndex); Assert.AreEqual("ready", tutorial.Step.Id);
         Assert.False(tutorial.StepDone);
         tutorial.Overlay.Tick(.016f);
         Assert.AreEqual("曲を選びに行こう", tutorial.Overlay.TitleText);
