@@ -2615,6 +2615,8 @@ final class CameraViewModel: NSObject, ObservableObject {
     /// 処理フレームごと（約10Hz）に呼ぶ。赤の刃が選ばれているフレームだけを見る。
     private func observeRedBoost(time: Double, frame: AutoExposureController.Frame) {
         guard redBoostEnabled, running, let camera = exposureBiasCamera, let red = frame.colors.first else { return }
+        // 除外の学習中は剣が無く、背景が「暗い赤の刃」に見えて倍率が上がり得る。学習中の観測は捨てる。
+        if ignoreLearning { redBoostSamples.removeAll(); return }
         if red.selected {
             redBoostSamples.append((time, red.peakValue, red.colorPurity, red.distantEligible > 0 || red.distantBright > 0))
         }

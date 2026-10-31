@@ -251,7 +251,11 @@ final class FrameProcessor: @unchecked Sendable {
             var bright = 0
             for index in candidates.indices where index != winner {
                 let candidate = candidates[index]
-                if candidate.peakValue >= 240, AutoClipCompetition.separated(blade, candidate), far(candidate) { bright += 1 }
+                // 除外登録した照明は数えない（登録しても強調が止まったままになるため）。
+                guard candidate.peakValue >= 240, AutoClipCompetition.separated(blade, candidate), far(candidate),
+                      !(zones[color] ?? []).contains(where: { $0.ignores(candidate.endpoints, width: width, height: height) })
+                else { continue }
+                bright += 1
             }
             colors.append(.init(peakValue: blade.peakValue, highValueRatio: blade.highValueRatio,
                 meanValue: blade.meanValue, colorPurity: blade.meanColorPurity,
