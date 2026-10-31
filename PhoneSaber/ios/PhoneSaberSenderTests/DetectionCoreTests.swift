@@ -305,11 +305,12 @@ final class DetectionCoreTests: XCTestCase {
     func testFixedShutterPlanAutoExposureUpperLimit400AtTenHz() {
         let weak = AutoExposureController.Color(peakValue: 215, highValueRatio: 0.03, meanValue: 170,
             colorPurity: 0.8, emitterScore: 0.4, selected: true)
+        // 背景が明るい台（台AのISO400で23〜28）は従来どおり400で止まる。
         for hardwareMaximum in [Float(300), 640, 2000] {
             var controller = AutoExposureController()
             var changes: [AutoExposureController.Change] = []
             for i in 0...600 {
-                if let change = controller.observe(time: Double(i) / 10, background: 2, ceilingISO: 250,
+                if let change = controller.observe(time: Double(i) / 10, background: 20, ceilingISO: 250,
                     minISO: 32, maxISO: hardwareMaximum, frame: .init(colors: [weak])) { changes.append(change) }
                 XCTAssertLessThanOrEqual(controller.appliedISO ?? 250, 400)
             }
@@ -318,7 +319,51 @@ final class DetectionCoreTests: XCTestCase {
             XCTAssertGreaterThanOrEqual(changes.first?.time ?? 0, 4.4)
             XCTAssertLessThanOrEqual(changes.first?.time ?? 100, 4.6)
         }
-        XCTAssertEqual(AutoExposureController.levels.first, 400)
+        XCTAssertEqual(AutoExposureController.levels.first, 640)
+    }
+
+    func testFixedShutterPlanAutoExposureDarkStationRaisesTo640AndReturnsWhenBright() {
+        let weak = AutoExposureController.Color(peakValue: 215, highValueRatio: 0.03, meanValue: 170,
+            colorPurity: 0.8, emitterScore: 0.4, selected: true)
+        // 10/31の台B（背景中央2〜4）だけ、刃が弱い間は640まで上げる。端末の上限は超えない。
+        for hardwareMaximum in [Float(300), 500, 640, 2000] {
+            var controller = AutoExposureController()
+            for i in 0...900 {
+                _ = controller.observe(time: Double(i) / 10, background: 3, ceilingISO: 250,
+                    minISO: 32, maxISO: hardwareMaximum, frame: .init(colors: [weak]))
+                XCTAssertLessThanOrEqual(controller.appliedISO ?? 250, min(hardwareMaximum, 640))
+            }
+            XCTAssertEqual(controller.appliedISO, min(hardwareMaximum, 640))
+        }
+        // 640の途中で背景が明るくなったら（照明・服）400へ一度に戻し、400より上へ戻らない。
+        var controller = AutoExposureController()
+        var changes: [AutoExposureController.Change] = []
+        for i in 0...900 {
+            if let change = controller.observe(time: Double(i) / 10, background: 3, ceilingISO: 250,
+                minISO: 32, maxISO: 2000, frame: .init(colors: [weak])) { changes.append(change) }
+        }
+        XCTAssertEqual(controller.appliedISO, 640)
+        changes = []
+        for i in 901...1500 {
+            if let change = controller.observe(time: Double(i) / 10, background: 30, ceilingISO: 250,
+                minISO: 32, maxISO: 2000, frame: .init(colors: [weak])) { changes.append(change) }
+            if i > 960 { XCTAssertLessThanOrEqual(controller.appliedISO ?? 0, 400) }
+        }
+        XCTAssertEqual(changes.first?.reason, "background")
+        XCTAssertEqual(changes.first?.to, 400)
+        XCTAssertEqual(controller.appliedISO, 400)
+        // 刃が消えて10秒で運営の開始値へ戻る（400超を次の人へ持ち越さない）。
+        controller = AutoExposureController()
+        for i in 0...900 {
+            _ = controller.observe(time: Double(i) / 10, background: 3, ceilingISO: 250, minISO: 32, maxISO: 2000,
+                frame: .init(colors: [weak]))
+        }
+        XCTAssertEqual(controller.appliedISO, 640)
+        for i in 901...1020 {
+            _ = controller.observe(time: Double(i) / 10, background: 3, ceilingISO: 250, minISO: 32, maxISO: 2000,
+                frame: .init(colors: [.init()]))
+        }
+        XCTAssertEqual(controller.appliedISO, 250)
     }
 
     func testObserverEvidenceNeverChangesSelectedOrCandidateScores() throws {

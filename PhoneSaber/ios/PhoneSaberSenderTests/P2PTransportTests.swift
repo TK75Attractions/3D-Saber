@@ -76,6 +76,27 @@ final class DebugBundleOutboxTests: XCTestCase {
         XCTAssertEqual(legacy.beginUpload(sessionID: "legacy"), 6)
     }
 
+    func testReceiverOfflineKeepsRetryingEveryTwoMinutesUntilTheReceiverIsBack() {
+        var outbox = DebugBundleOutbox()
+        outbox.register(sessionID: "clip", bundlePath: "clip", now: now)
+        var time = now
+        // 10-31の台Bのように数時間つながらなくても、上限を使い切らずに2分ごとに試し続ける。
+        for _ in 0..<50 {
+            XCTAssertEqual(outbox.beginNext(now: time, recording: false, automatic: true)?.sessionID, "clip")
+            outbox.finish(sessionID: "clip", now: time, reason: "receiver returned HTTP 503", attempts: 1, receiverOffline: true)
+            XCTAssertTrue(outbox.latest?.canRetry == true)
+            let next = try! XCTUnwrap(outbox.nextAttemptDate(automatic: true))
+            XCTAssertLessThanOrEqual(next.timeIntervalSince(time), DebugBundleOutbox.offlineRetrySeconds)
+            time = next
+        }
+        // 受信機に届いた失敗（400等）は従来どおり上限で止まる。
+        outbox.finish(sessionID: "clip", now: time, reason: "receiver returned HTTP 400", attempts: 1)
+        XCTAssertFalse(outbox.latest?.canRetry == true)
+        XCTAssertTrue(DebugBundleTransfer.receiverOffline(URLError(.cannotConnectToHost)))
+        XCTAssertTrue(DebugBundleTransfer.receiverOffline(URLError(.timedOut)))
+        XCTAssertFalse(DebugBundleTransfer.receiverOffline(URLError(.badServerResponse)))
+    }
+
     func testAutoClipsWaitForIdleAndRecordingCompletion() {
         var outbox = DebugBundleOutbox()
         outbox.register(sessionID: "clip", bundlePath: "clip", now: now, deferDuringPlay: true)
