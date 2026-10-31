@@ -31,6 +31,8 @@ public partial class NoteSpawner
     Transform decoyIdleRoot;
     // 使い回しの飾りを作ったときの投影モード(大きさ・色が変わるので、切り替わったら作り直す)。
     bool decoyProjector;
+    // 投影モードがオンのときに作った飾り(見た目は作ったときに決まる)。切り替わる前に作った飾りは、片付いても使い回さない。
+    readonly HashSet<CuttableNote> projectorDecoys = new HashSet<CuttableNote>();
 
     // 飾りの金が出たとき(QuizMode が試験用紙の上へ上げる)。OnNoteSpawned は出さない。
     public event System.Action<CuttableNote> OnDecoySpawned;
@@ -65,13 +67,17 @@ public partial class NoteSpawner
                 if (decoy != null && QuizRules.Finite(decoy.ms) && QuizRules.Finite(decoy.x) && QuizRules.Finite(decoy.y))
                     decoySchedule.Add(decoy);
         decoySchedule.Sort((a, b) => a.ms.CompareTo(b.ms));
-        // 投影モードの大きさ・色は作ったときに決まるので、切り替わっていたら使い回しを作り直す。
-        if (decoyProjector != DisplaySettings.ProjectorMode)
-        {
-            DestroyIdleDecoys();
-            decoyProjector = DisplaySettings.ProjectorMode;
-        }
+        MatchIdleDecoysToProjectorMode();
         PrewarmDecoys();
+    }
+
+    // 投影モードの大きさ・色は作ったときに決まる(NoteVisuals.Initialize)ので、切り替わっていたら使い回しを捨てる。捨てたら true。
+    bool MatchIdleDecoysToProjectorMode()
+    {
+        if (decoyProjector == DisplaySettings.ProjectorMode) return false;
+        DestroyIdleDecoys();
+        decoyProjector = DisplaySettings.ProjectorMode;
+        return true;
     }
 
     // 飛んでいる飾りを消し、残りの飾りも出さない(QuizMode の終わり。曲の終わり・途中でやめたとき・譜面のやり直し)。
@@ -99,6 +105,10 @@ public partial class NoteSpawner
 
     void SpawnDueDecoys(double songTime)
     {
+        // 曲の途中で投影モード(F4)が切り替わったら、使い回しを今の見た目で作り直してから出す。本物は出すときの投影モードの
+        // 使い回し(NoteSpawner.Key)から借りるので、古い見た目のままの飾りで正解の柱が分かっていた(2026-10-30 全体の点検で見つけた不具合)。
+        // そのとき飛んでいた古い飾りは、片付くときに壊す(RecycleDecoy・RentDecoy の StaleDecoy)。
+        if (nextDecoy < decoySchedule.Count && MatchIdleDecoysToProjectorMode()) PrewarmDecoys();
         while (nextDecoy < decoySchedule.Count)
         {
             var data = decoySchedule[nextDecoy];
@@ -207,7 +217,19 @@ public partial class NoteSpawner
         if (note == null) note = go.AddComponent<CuttableNote>();
         note.IsDecoy = true;
         decoyKinds[note] = kind;
+        if (DisplaySettings.ProjectorMode) projectorDecoys.Add(note);
         return note;
+    }
+
+    // 今の投影モードと違うときに作った飾りか(F4 で切り替わる前の、古い見た目)。
+    bool StaleDecoy(CuttableNote decoy) => projectorDecoys.Contains(decoy) != DisplaySettings.ProjectorMode;
+
+    // 使い回さない飾りを壊す(色と向きの印と、作ったときの投影モードも忘れる)。
+    void DiscardDecoy(CuttableNote decoy)
+    {
+        decoyKinds.Remove(decoy);
+        projectorDecoys.Remove(decoy);
+        SafeDestroy(decoy.gameObject);
     }
 
     CuttableNote RentDecoy((string color, CutDirection direction) kind, GameObject prefab)
@@ -216,7 +238,9 @@ public partial class NoteSpawner
             while (stack.Count > 0)
             {
                 var cached = stack.Pop();
-                if (cached != null) return cached;
+                if (cached == null) continue;
+                if (StaleDecoy(cached)) { DiscardDecoy(cached); continue; }
+                return cached;
             }
         return CreateDecoy(kind, prefab);
     }
@@ -230,7 +254,7 @@ public partial class NoteSpawner
         decoyIdleRoot = root.transform;
     }
 
-    // 光の保護(OnRetired で外れる)と着地の枠を片付けて止め、使い回しへ戻す(使い回さないときは壊す)。
+    // 光の保護(OnRetired で外れる)と着地の枠を片付けて止め、使い回しへ戻す(使い回さないとき・投影モードが切り替わる前に作ったときは壊す)。
     // 親は noteRoot のまま(止めてあるので描かれない)。曲の終わり・シーンを閉じる途中(QuizMode.EndPlay)でも親を付け替えない。
     void RecycleDecoy(CuttableNote decoy)
     {
@@ -238,10 +262,9 @@ public partial class NoteSpawner
         decoy.Retire();
         if (!decoyKinds.TryGetValue(decoy, out var kind)) { SafeDestroy(decoy.gameObject); return; }
         if (!idleDecoys.TryGetValue(kind, out var stack)) idleDecoys[kind] = stack = new Stack<CuttableNote>();
-        if (!Pooling || stack.Count >= MaxIdleDecoys)
+        if (!Pooling || stack.Count >= MaxIdleDecoys || StaleDecoy(decoy))
         {
-            decoyKinds.Remove(decoy);
-            SafeDestroy(decoy.gameObject);
+            DiscardDecoy(decoy);
             return;
         }
         stack.Push(decoy);
@@ -293,8 +316,7 @@ public partial class NoteSpawner
             {
                 var decoy = stack.Pop();
                 if (decoy == null) continue;
-                decoyKinds.Remove(decoy);
-                SafeDestroy(decoy.gameObject);
+                DiscardDecoy(decoy);
             }
     }
 
@@ -305,6 +327,7 @@ public partial class NoteSpawner
         liveDecoys.Clear();
         DestroyIdleDecoys();
         decoyKinds.Clear();
+        projectorDecoys.Clear();
         if (decoyIdleRoot != null) SafeDestroy(decoyIdleRoot.gameObject);
         decoyIdleRoot = null;
     }

@@ -122,6 +122,8 @@ public class SongPlayer : MonoBehaviour
     // 実時間の進みと比べ、ずれた分だけ曲の 0 秒の DSP 時刻(と鳴らし直しの予約)をずらして、曲の時計を続ける。
     // ふだんの音の遅れ(作り直しの知らせが無いとき)には触れない。曲の音は AudioOutputRecovery が読み直して今の位置から鳴らす。
     static int audioResets;
+    // 作り直しの知らせの通算の数(カウントインの 3・2・1 も同じやり方で跳んだ分をずらす。GameStartCountdown)。
+    public static int AudioResetCount => audioResets;
     int seenAudioResets;
     double lastDspRead = double.NaN, lastRealRead;
     // 跳んだ分を直した回数と、最後に直した量(秒。テスト用)。

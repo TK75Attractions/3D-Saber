@@ -45,6 +45,34 @@ public class CountInCountdownTests
         Assert.AreEqual(expected, GameStartCountdown.CountSeconds(bpm), 1e-4);
     }
 
+    // 2026-10-30 全体の点検で見つけた不具合: 数えている途中で音の出力先がサンプルレートの違う機器へ変わると DSP の時計が跳び、
+    // 生の dspTime で動く 3・2・1 のゲートの色が残ったり、曲の途中で出直したりした。3・2・1 は消さず(10/24「曲止めないで上の表示だけにして」)、
+    // 曲の時計(SongPlayer.DspNow)と同じく、作り直しのあと最初の読みで跳んだ分だけ数える時刻をずらす。
+    [Test]
+    public void ADspJumpAfterAnAudioResetShiftsTheCountInLikeTheSongClock()
+    {
+        var countdown = NewCountdown();
+        countdown.Begin(120f, "Normal");
+        Assert.IsTrue(countdown.IsRunning);
+        double first = countdown.FirstBeatDspTime, start = countdown.StartCueDspTime, end = countdown.EndDspTime, song = countdown.SongStartDspTime;
+        int resets = SongPlayer.AudioResetCount;
+        // 作り直しの知らせが無いあいだは、DSP がどう進んでもずらさない(ふだんの音の遅れには触れない)。
+        countdown.FollowDspJump(100, 50, resets);
+        countdown.FollowDspJump(103, 50.1, resets);
+        Assert.AreEqual(first, countdown.FirstBeatDspTime, 1e-9);
+        // 作り直しのあと、実時間 0.1 秒の間に DSP が 7.9 秒後ろへ(44.1 kHz → 48 kHz)。4つの時刻を同じだけずらす。
+        countdown.FollowDspJump(95.1, 50.2, resets + 1);
+        double jump = (95.1 - 103) - (50.2 - 50.1);
+        Assert.AreEqual(first + jump, countdown.FirstBeatDspTime, 1e-9);
+        Assert.AreEqual(start + jump, countdown.StartCueDspTime, 1e-9);
+        Assert.AreEqual(end + jump, countdown.EndDspTime, 1e-9);
+        Assert.AreEqual(song + jump, countdown.SongStartDspTime, 1e-9);
+        // 同じ作り直しでは二度ずらさない。
+        countdown.FollowDspJump(96, 51.1, resets + 1);
+        Assert.AreEqual(first + jump, countdown.FirstBeatDspTime, 1e-9);
+        Assert.IsTrue(countdown.IsRunning, "3・2・1 は消さない");
+    }
+
     [Test]
     public void CountsNeverFlashMoreThanAboutTwiceASecond()
     {

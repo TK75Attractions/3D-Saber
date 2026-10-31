@@ -61,6 +61,9 @@ public class GameStartCountdown : MonoBehaviour
     private double endDspTime;
     private bool running;
     private bool built;
+    // 音の仕組みの作り直しで DSP の時計が跳んだ分をずらすための、前に読んだ時刻と、見た作り直しの数(FollowDspJump)。
+    private double lastDspRead = double.NaN, lastRealRead;
+    private int seenAudioResets;
 
     public bool IsRunning => running;
     public double StartCueDspTime => startCueDspTime;
@@ -98,6 +101,9 @@ public class GameStartCountdown : MonoBehaviour
         power = d == "easy" ? .55f : d == "hard" ? 1f : .8f;
         reduced = DisplaySettings.ReducedEffects;
         firstBeatDspTime = AudioSettings.dspTime + ScheduleLeadSeconds;
+        seenAudioResets = SongPlayer.AudioResetCount;
+        lastDspRead = AudioSettings.dspTime;
+        lastRealRead = Time.realtimeSinceStartupAsDouble;
         startCueDspTime = firstBeatDspTime + countSeconds * 3.0;
         endDspTime = startCueDspTime + System.Math.Max(StartHoldSeconds + StartExitSeconds,
             CountInGateCue.RestoreFrom + CountInGateCue.RestoreSeconds);
@@ -296,7 +302,27 @@ public class GameStartCountdown : MonoBehaviour
     private void Update()
     {
         if (!running) return;
-        Apply(AudioSettings.dspTime);
+        Apply(FollowDspJump(AudioSettings.dspTime, Time.realtimeSinceStartupAsDouble, SongPlayer.AudioResetCount));
+    }
+
+    // 音の出力先がサンプルレートの違う機器へ変わると、Unity が音の仕組みを作り直して DSP の時計が跳ぶ(SongPlayer.DspNow を参照)。
+    // 生の dspTime のままでは、後ろへ跳ぶとゲートの色が残り、曲の途中で 3・2・1 が出直していた(2026-10-30 全体の点検で見つけた不具合)。
+    // 出力先が変わっても 3・2・1 は消さない(10/24 ユーザー「曲止めないで上の表示だけにして」)ので、曲の時計と同じく、作り直しのあと
+    // 最初に読むときに前に読んだときからの DSP の進みを実時間の進みと比べ、ずれた分だけ数える時刻をずらして続ける。テストからは時刻を渡す。
+    public double FollowDspJump(double now, double real, int audioResets)
+    {
+        if (seenAudioResets != audioResets)
+        {
+            seenAudioResets = audioResets;
+            if (!double.IsNaN(lastDspRead))
+            {
+                double jump = (now - lastDspRead) - (real - lastRealRead);
+                firstBeatDspTime += jump; startCueDspTime += jump; endDspTime += jump; songStartDspTime += jump;
+            }
+        }
+        lastDspRead = now;
+        lastRealRead = real;
+        return now;
     }
 
     // 指定の DSP 時刻の見た目にする。テストからは時刻を直接渡して確かめる。

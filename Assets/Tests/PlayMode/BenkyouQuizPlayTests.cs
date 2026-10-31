@@ -289,6 +289,69 @@ public class BenkyouQuizPlayTests
         Assert.AreEqual(0, spawner.LiveDecoys.Count, "終わりに飾りを片付ける");
     }
 
+    // 2026-10-30 全体の点検で見つけた不具合: Q の途中で投影モード(F4)を切り替えると、本物は新しい見た目、使い回しの飾りは古い見た目のままで、
+    // 色の違いで正解の柱が分かった。飾りを出す前に投影モードを見て、使い回しを作り直す(2026-11-01)。
+    [UnityTest]
+    public IEnumerator DecoysFollowAProjectorModeSwitchInTheMiddleOfTheSong()
+    {
+        bool projector = DisplaySettings.ProjectorMode;
+        try
+        {
+            if (InputPoint.Instance != null)
+            {
+                Object.Destroy(InputPoint.Instance.gameObject);
+                yield return null;
+            }
+            GameSession.SelectedSongId = SongId;
+            GameSession.SelectedSongTitle = "勉強(Remaster)";
+            GameSession.SelectedDifficulty = "Q";
+            GameSession.IsCalibrationMode = false;
+            GameSession.TutorialPending = false;
+            GameSession.NoteApproachTime = 1f;
+            yield return SceneManager.LoadSceneAsync("Game", LoadSceneMode.Single);
+            manager = Object.FindFirstObjectByType<GamePlayManager>();
+            Assert.NotNull(manager);
+            double deadline = Time.realtimeSinceStartupAsDouble + 30;
+            while ((manager.songPlayer == null || !manager.songPlayer.IsScheduled || manager.noteSpawner == null
+                || manager.noteSpawner.CurrentChart == null || manager.QuizMode == null)
+                && Time.realtimeSinceStartupAsDouble < deadline)
+                yield return null;
+            Assert.NotNull(manager.QuizMode, "Q の譜面では QuizMode を作る");
+            foreach (var judge in Object.FindObjectsByType<SaberCutJudge>(FindObjectsSortMode.None)) judge.enabled = false;
+            manager.cameraImuJudgment = null;
+            manager.enabled = false;
+            manager.songPlayer.Stop();
+            var spawner = manager.noteSpawner;
+            spawner.JudgeLatencySeconds = 0;
+            var items = manager.QuizMode.Quiz.items;
+            var pillars = Enumerable.Range(0, items.Count).Where(i => items[i].kind == QuizRules.Rhythm && !items[i].hint).ToList();
+            Assert.GreaterOrEqual(pillars.Count, 2, "答えの柱の問題が2つ以上");
+            AssertDecoysLookLikeTheRealNote(spawner, items[pillars[0]].playMs, items[pillars[0]].endMs, "切り替える前");
+            DisplaySettings.SetProjectorModeForTest(!projector);
+            AssertDecoysLookLikeTheRealNote(spawner, items[pillars[1]].playMs, items[pillars[1]].endMs, "曲の途中で投影モードを切り替えたあと");
+        }
+        finally { DisplaySettings.SetProjectorModeForTest(projector); }
+    }
+
+    // 問題の最初の本物を出し、本物と、そのとき飛んでいる飾りが、今の投影モードの手の色(NoteVisuals.Initialize と同じ決め方)になっているか。
+    static void AssertDecoysLookLikeTheRealNote(NoteSpawner spawner, float playMs, float endMs, string when)
+    {
+        var source = spawner.CurrentChart.notes.First(n => n.time >= playMs - .5f && n.time < endMs - .5f);
+        var real = Spawn(spawner, spawner.EffectiveTime(source));
+        Color Expected(CuttableNote note)
+        {
+            var color = note.IsGold ? UISkinPalette.NoteGold : SaberHandHelper.HandColor(note.RequiredHand);
+            return DisplaySettings.ProjectorMode ? ProjectorMode.NoteColor(color) : color;
+        }
+        Assert.AreEqual(Expected(real), real.GetComponent<NoteVisuals>().baseColor, when + ": 本物の色");
+        Assert.Greater(spawner.LiveDecoys.Count, 0, when + ": ほかの柱からは飾り");
+        foreach (var decoy in spawner.LiveDecoys)
+        {
+            Assert.AreEqual(Expected(decoy), decoy.GetComponent<NoteVisuals>().baseColor, when + ": 飾りも今の投影モードの色");
+            Assert.AreEqual(real.transform.localScale, decoy.transform.localScale, when + ": 同じ大きさ");
+        }
+    }
+
     // 刃の無い点の剣(本編と同じ当たりの大きさ)。位置はテストが入れるので、毎コマの追従は止める。
     (SaberCutJudge judge, SaberTracker tracker) Rig(SaberCutJudge scene)
     {
