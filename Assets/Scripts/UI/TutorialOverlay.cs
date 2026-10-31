@@ -2,7 +2,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// チュートリアルの覆い。上部に 1 行の文、本編と同じ位置の判定文字、画面下の帯にスキップの的。
+// 練習(見出しは「試し切り」)の覆い。上部に 1 行の文、本編と同じ位置の判定文字、右下の角にスタッフだけが押す透明な的。
 // ノーツの近くには文字を出さない(本編の方針)。描画の更新は TutorialController.Tick からだけ。
 public sealed class TutorialOverlay : MonoBehaviour
 {
@@ -11,8 +11,13 @@ public sealed class TutorialOverlay : MonoBehaviour
     // 本編の GameHUDSkin と同じ: 画面中央から下へ 330px、64pt、0.6 秒で 70px 上がりながら消え、出た瞬間 1.3 倍。
     public const float JudgeY = -330f, JudgeFontSize = 64f, JudgeFlashSeconds = .6f, JudgeRise = 70f, JudgePunch = 1.3f;
 
-    public RectTransform Controls { get; private set; }
-    public Button SkipButton { get; private set; }
+    // 右上の見出し(2026-11-01 ユーザー「表記もチュートリアルじゃなくて」→「試し切り」。前は「れんしゅう」)。
+    public const string ChipText = "試し切り";
+    // スタッフだけが飛ばす透明な的(2026-11-01 ユーザー「右下にクリックでしか押せないボタン置いて押したら自然に飛ばす(客に気づかれないように)」)。
+    // 画面の右下の角に置く(角はマウスを押し当てれば見なくても届く)。練習には照準を作らないので剣では押せず、Enter でも押せない。
+    // 版の表示(GameVersionLabel、当たり判定なし)と重なる。大きさは 1920×1080 基準。
+    public static readonly Vector2 StaffSkipSize = new Vector2(280, 150);
+    public Button StaffSkipButton { get; private set; }
     public string TitleText => title != null ? title.text : "";
     public string JudgeText => judge != null && judge.gameObject.activeSelf ? judge.text : "";
     public bool HandsVisible => handsCard != null && handsCard.activeSelf;
@@ -90,21 +95,18 @@ public sealed class TutorialOverlay : MonoBehaviour
         return t;
     }
 
-    // 判定調整と同じ作りの照準の的(1 秒の滞留)。
-    Button Action(Transform p, string name, string text, float x, float y, float w, float h, UnityEngine.Events.UnityAction click)
+    // 右下の角の透明な的。見た目は何も描かず、マウスのクリックだけを受ける(押すと TutorialController.RequestStaffSkip)。
+    Button BuildStaffSkip()
     {
-        var rt = Rect(p, name, x, y, w, h);
+        var rt = Rect(transform, "StaffSkip", 0, 0, StaffSkipSize.x, StaffSkipSize.y);
+        rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(1, 0);
+        rt.anchoredPosition = Vector2.zero;
+        var face = rt.gameObject.AddComponent<Image>();
+        face.color = Color.clear; face.raycastTarget = true;
         var b = rt.gameObject.AddComponent<Button>();
-        var face = SongSelectVisuals.Panel(rt, "ActionSurface", Vector2.zero, Vector2.zero, PanelColor, Cyan, 8);
-        SongSelectVisuals.Stretch(face.rectTransform); face.raycastTarget = true;
         b.targetGraphic = face; b.transition = Selectable.Transition.None;
         b.navigation = new Navigation { mode = Navigation.Mode.None };
-        var label = Label(rt, "ActionLabel", text, 30, 0, 0, w - 24, h - 8, Ink);
-        label.enableAutoSizing = true; label.fontSizeMin = 24; label.fontSizeMax = 30; label.textWrappingMode = TextWrappingModes.NoWrap;
-        rt.gameObject.AddComponent<SongSelectActionStyle>().Initialize(b, face, label, false);
-        b.onClick.AddListener(click);
-        var dwell = rt.gameObject.AddComponent<SaberDwellTarget>();
-        dwell.dwellSeconds = 1.5f; dwell.progressColor = Cyan;
+        b.onClick.AddListener(() => { if (ctl != null) ctl.RequestStaffSkip(); });
         return b;
     }
 
@@ -126,7 +128,7 @@ public sealed class TutorialOverlay : MonoBehaviour
             new Color(.08f, .3f, .3f, .8f), Cyan, 8).gameObject;
         hint = Label(hintPanel.transform, "Hint", "", 26, 0, 0, 860, 48, Cyan);
         hintPanel.SetActive(false);
-        var chip = Label(transform, "Chip", "れんしゅう", 24, 790, 480, 260, 40, Cyan);
+        var chip = Label(transform, "Chip", ChipText, 24, 790, 480, 260, 40, Cyan);
         chip.font = UISkinKit.JapaneseFallbackFontAsset(); chip.fontStyle = FontStyles.Bold; chip.characterSpacing = 8f;
         timer = Label(transform, "Timer", "", 30, 0, 282, 600, 48, Ink);
         dots = Rect(transform, "Steps", -820, 446, 400, 20);
@@ -149,9 +151,8 @@ public sealed class TutorialOverlay : MonoBehaviour
         Guide.raycastTarget = false;
         Label(transform, "GuideCaption", "お手本", 28, 760, 232, 300, 44, Ink, true, true);
         Label(transform, "GuideHands", "青は左手　赤は右手", 22, 760, -204, 360, 40, Ink);
-        // 画面下の帯(本編の判定調整と同じ下 18%)。見えない枠だけ置き、照準の受付範囲にする。
-        Controls = Rect(transform, "Controls", 0, -414, 1840, 236);
-        SkipButton = Action(Controls, "Skip", "練習をやめて 曲をえらぶ", 575, -28, 650, 108, () => { if (ctl != null) ctl.Skip(); });
+        // 前の「練習をやめて 曲をえらぶ」(画面下の帯の照準の的)はやめた(2026-11-01、来場者は必ず通す)。
+        StaffSkipButton = BuildStaffSkip();
     }
 
     void Blade(Transform parent, string name, float x, Color color, float tilt, string caption)
@@ -170,8 +171,7 @@ public sealed class TutorialOverlay : MonoBehaviour
         EnsureDots(count); RefreshDots(index); shownStep = index;
         // 範囲だけの回(段が1つ)では、進み具合の点を出さない。
         if (dots != null) dots.gameObject.SetActive(count > 1);
-        // 範囲を合わせる間は画面の下まで振るので、やめるの的に剣が止まって押されないよう隠す(約10秒)。
-        if (SkipButton != null) SkipButton.gameObject.SetActive(step.Kind != TutorialStepKind.Range);
+        // スタッフの的は範囲合わせの間も受ける(押されたら、範囲を合わせ終えてから練習を飛ばす。剣では押せない)。
     }
 
     public void ShowBanner(string titleText, string subText)
@@ -185,7 +185,7 @@ public sealed class TutorialOverlay : MonoBehaviour
     {
         if (handsCard != null) handsCard.SetActive(false);
         if (hintPanel != null) hintPanel.SetActive(false);
-        if (SkipButton != null) SkipButton.gameObject.SetActive(false);
+        if (StaffSkipButton != null) StaffSkipButton.gameObject.SetActive(false);
     }
 
     void EnsureDots(int count)

@@ -63,7 +63,7 @@ public class TutorialRangePlayTests
         Assert.AreEqual(TutorialProgram.CommonFlow.Length + 1, t.StepCount);
         Assert.AreEqual(1, sent, "範囲を覚える指示を1回だけ送る");
         Assert.IsFalse(t.Overlay.HandsVisible);
-        Assert.IsFalse(t.Overlay.SkipButton.gameObject.activeSelf, "画面の下まで振るので、やめるの的は隠す");
+        Assert.IsTrue(t.Overlay.StaffSkipButton.gameObject.activeSelf, "スタッフの角の的は範囲合わせの間も受ける(剣では押せない。2026-11-01)");
         StringAssert.Contains("振りやすい", t.Overlay.TitleText, "限界までではなく振りやすい範囲で");
         Assert.AreEqual("あと 10 秒", t.Overlay.TimerText, "スマホが学習を始めるまでは10秒のまま");
         Assert.IsFalse(t.Overlay.RangeCoverVisible, "学習が始まるまでは枠を出さない");
@@ -100,7 +100,7 @@ public class TutorialRangePlayTests
         while (Time.realtimeSinceStartup < deadline && t.Step.Id != "tapMix") yield return null;
         Assert.AreEqual("tapMix", t.Step.Id, "結果を見せたら、すぐ左右交互の練習へ(2026-10-31 夜から持ち方の説明は無し)");
         Assert.IsFalse(t.Overlay.HandsVisible);
-        Assert.IsTrue(t.Overlay.SkipButton.gameObject.activeSelf, "練習からは、やめるの的を戻す");
+        Assert.IsTrue(t.Overlay.StaffSkipButton.gameObject.activeSelf, "練習の間もスタッフの的は受ける");
         Assert.AreEqual(1, sent, "次の段では送らない");
     }
 
@@ -118,6 +118,30 @@ public class TutorialRangePlayTests
         deadline = Time.realtimeSinceStartup + (float)TutorialProgram.RangeEndSeconds + 2f;
         while (Time.realtimeSinceStartup < deadline && t.Step.Id != "tapMix") yield return null;
         Assert.AreEqual("tapMix", t.Step.Id);
+    }
+
+    // 範囲合わせの間にスタッフが右下の角を押したら、範囲はその人のために合わせ終えてから、練習を「次に進むよ」で飛ばす(2026-11-01)。
+    [UnityTest] public IEnumerator StaffSkipDuringTheRangeKeepsTheRangeAndSkipsThePractice()
+    {
+        var m = Object.FindFirstObjectByType<GamePlayManager>(); var t = m.Tutorial;
+        yield return new WaitForSecondsRealtime(.6f);
+        EnsureClockAdvances(m.songPlayer);
+        t.Tick(.016f);
+        Assert.AreEqual(TutorialProgram.RangeStepId, t.Step.Id);
+        t.Overlay.StaffSkipButton.onClick.Invoke();
+        Assert.IsTrue(t.StaffSkipRequested);
+        replies.Add(Reply("learning", "10s"));
+        yield return null; yield return null;
+        Assert.AreEqual(TutorialProgram.RangeStepId, t.Step.Id, "範囲合わせは続ける");
+        replies.Clear(); replies.Add(Reply("learned", "samples300-area0.200000_0.100000_0.800000_0.900000"));
+        yield return null; yield return null;
+        Assert.IsTrue(t.StepDone); Assert.AreEqual("ok", t.Records[0].Reason, "範囲は飛ばさずに合わせ終える");
+        Assert.IsTrue(appliedLearned.HasValue);
+        float deadline = Time.realtimeSinceStartup + (float)TutorialProgram.RangeEndSeconds + 2f;
+        while (Time.realtimeSinceStartup < deadline && (t.Step.Id != "tapMix" || !t.StepDone)) yield return null;
+        Assert.AreEqual("tapMix", t.Step.Id); Assert.IsTrue(t.StepDone, "練習は始まってすぐ飛ばす");
+        Assert.AreEqual("skipped", t.Records[1].Reason);
+        Assert.AreEqual("次に進むよ", t.Overlay.TitleText, "周が終わったときと同じ見え方");
     }
 
     // バッチ実行で音声機器が無く sample 位置が進まない環境でも、DSP 時計で進行を確かめられるようにする(TutorialFlowPlayTests と同じ)。

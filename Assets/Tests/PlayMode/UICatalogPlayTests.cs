@@ -33,20 +33,15 @@ public class UICatalogPlayTests
         foreach (var pair in saved) pair.Key.SetValue(null, pair.Value);
         saved.Clear(); DisplaySettings.ResetReducedEffectsCacheForTest();
     }
-    [UnityTest] public IEnumerator TitlePromptAndTutorialHaveBothHandsAndOneInstruction()
+    // 2026-11-01 から、タイトルのあとは問いかけを挟まずに試し切り(練習)へ進む。
+    [UnityTest] public IEnumerator TitleAndTutorialHaveBothHandsAndOneInstruction()
     {
         yield return SceneManager.LoadSceneAsync("Title");
         yield return new WaitForSecondsRealtime(.5f);
         Assert.NotNull(GameObject.Find("TitleSaber")); Assert.NotNull(GameObject.Find("TitleSaberLeft"));
         Capture("title");
         Object.FindFirstObjectByType<TitleSceneSkin>().TryStartPresentation();
-        double deadline = Time.realtimeSinceStartupAsDouble + 8;
-        TitleTutorialPrompt prompt;
-        while (((prompt = Object.FindFirstObjectByType<TitleTutorialPrompt>()) == null || !prompt.CanAnswer) && Time.realtimeSinceStartupAsDouble < deadline) yield return null;
-        Assert.NotNull(prompt); Assert.True(prompt.CanAnswer);
-        Capture("title-prompt");
-        prompt.Choose(true, "catalog-test");
-        deadline = Time.realtimeSinceStartupAsDouble + 15;
+        double deadline = Time.realtimeSinceStartupAsDouble + 15;
         while ((SceneManager.GetActiveScene().name != "Game" || ScreenTransition.IsBusy) && Time.realtimeSinceStartupAsDouble < deadline) yield return null;
         yield return new WaitForSecondsRealtime(.5f);
         var tutorial = Object.FindFirstObjectByType<TutorialController>();

@@ -92,19 +92,19 @@ public class ScreenTransitionPlayTests
             Assert.NotNull(motion);
             Assert.Greater(motion.Departure, .1f);
             Capture("title-" + concept + "-departure");
-            // 現在のタイトルは、前進演出の後にチュートリアルの問いかけを挟む。
-            // 「いいえ」を選んでから共通遷移を検証し、旧仕様の即時遷移を前提にしない。
-            double promptDeadline = Time.realtimeSinceStartupAsDouble + 4;
-            TitleTutorialPrompt prompt = null;
-            while (Time.realtimeSinceStartupAsDouble < promptDeadline &&
-                ((prompt = Object.FindFirstObjectByType<TitleTutorialPrompt>()) == null || !prompt.IsOpen)) yield return null;
-            Assert.NotNull(prompt); Assert.True(prompt.IsOpen);
-            yield return new WaitForSecondsRealtime(TitleTutorialPrompt.InputDelaySeconds + .05f);
-            prompt.Choose(false, "transition-test");
-            while (!ScreenTransition.IsBusy && Time.realtimeSinceStartupAsDouble < promptDeadline) yield return null;
+            // 2026-11-01 から、前進演出のあと問いかけを挟まずに全員が試し切り(Game シーンの練習)へ進む。練習を終えて選曲へ。
+            double startDeadline = Time.realtimeSinceStartupAsDouble + 4;
+            while (!ScreenTransition.IsBusy && Time.realtimeSinceStartupAsDouble < startDeadline) yield return null;
             Assert.True(ScreenTransition.IsBusy);
+            Assert.IsNull(Object.FindFirstObjectByType<TitleTutorialPrompt>(), "問いかけは出さない");
             ctl.OnStartButton();
             Assert.False(ScreenTransition.Load("Result"), "二重遷移を受け付けない");
+            yield return WaitForTransition();
+            AssertReady("Game");
+            var manager = Object.FindFirstObjectByType<GamePlayManager>();
+            for (int i = 0; i < 120 && manager.Tutorial == null; i++) yield return null;
+            Assert.NotNull(manager.Tutorial, "Game シーンは練習で始まる");
+            manager.Tutorial.Skip();
             yield return WaitForTransition();
             AssertReady("SongSelect");
             // 選曲の「タイトルへ」ボタンは 2026-10-31 に消した(来場者の誤爆)。スタッフの戻し(Esc 2回・右クリック3回)と同じ出口で戻る。

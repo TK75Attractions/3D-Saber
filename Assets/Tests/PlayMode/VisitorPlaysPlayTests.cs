@@ -337,21 +337,19 @@ public class VisitorPlaysPlayTests
     }
 
     [UnityTest]
-    public IEnumerator ModeIsLockedAfterSlashingAndWhileThePromptIsOpen()
+    public IEnumerator ModeIsLockedAfterSlashingAndDuringTheCurtainToThePractice()
     {
         var skin = Object.FindFirstObjectByType<TitleSceneSkin>();
         Assert.True(skin.TryStartPresentation());
         yield return Tap(Key.Digit2);
         Assert.AreEqual(2, VisitorPlays.SongsPerVisitor);
+        // 2026-11-01 から問いかけは無く、切ったら試し切り(練習)への幕になる。幕の間も切り替えない。
         double until = Time.realtimeSinceStartupAsDouble + 5;
-        TitleTutorialPrompt prompt;
-        while (((prompt = Object.FindFirstObjectByType<TitleTutorialPrompt>()) == null || !prompt.CanAnswer)
-            && Time.realtimeSinceStartupAsDouble < until) yield return null;
-        Assert.NotNull(prompt);
-        Assert.True(prompt.CanAnswer);
+        while (!ScreenTransition.IsBusy && Time.realtimeSinceStartupAsDouble < until) yield return null;
+        Assert.True(ScreenTransition.IsBusy);
         yield return Tap(Key.Numpad2);
         Assert.AreEqual(2, VisitorPlays.SongsPerVisitor);
-        Assert.False(prompt.Answered);
+        Assert.IsNull(Object.FindFirstObjectByType<TitleTutorialPrompt>(), "問いかけは出さない");
     }
 
     [UnityTest]

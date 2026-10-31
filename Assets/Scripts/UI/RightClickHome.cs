@@ -6,7 +6,7 @@ using UnityEngine.SceneManagement;
 // どの画面からでも、右クリックを2秒以内に3回でタイトルへ戻る(スタッフ用、2026-10-30 ユーザー「どんな状況でも右クリック3回でホームに戻れるように」)。
 // 起動時に1つだけ作り、シーンをまたいで残す(消えていたらシーンを読むたびに作り直す)。テスト中は作らない(OperatorModeHotkey と同じ)。
 // 出口は各画面の Esc と同じ道: 本編・練習・判定調整・終わりの演出は GamePlayManager.LeaveToTitle、選曲は SongSelectController.ReturnToTitle、
-// 結果は ResultController.ReturnToTitle、タイトルの問いかけは TitleSceneSkin.ReturnToStart。出口が無い・断った画面はタイトルを読み直す。
+// 結果は ResultController.ReturnToTitle、タイトルは TitleSceneSkin.ReturnToStart。出口が無い・断った画面はタイトルを読み直す。
 // 幕(ScreenTransition)の間に3回目を押したら覚えておき、幕が明けた画面から出る。1回目・2回目は運営の知らせで残りの回数を出す。
 // 右ボタンを押さないかぎり何もしない(来場者の操作には右クリックを使っていない)。
 public sealed class RightClickHome : MonoBehaviour

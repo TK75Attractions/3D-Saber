@@ -1,10 +1,11 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// タイトルの問いかけで「はい」を選んだ人向けの練習。GamePlayManager の Update からだけ Tick する。
-// 譜面・判定・演出・効果音は本番と同じ部品をそのまま使い、文は上部に 1 行、スキップは画面下の帯の照準だけ。
+// タイトルで開始ノーツを切った全員の練習(画面の見出しは「試し切り」。2026-11-01 から問いかけなしで必ず通る)。
+// GamePlayManager の Update からだけ Tick する。譜面・判定・演出・効果音は本番と同じ部品をそのまま使い、文は上部に 1 行。
+// 来場者が飛ばす的は無く、スタッフだけが画面の右下の角をクリックして飛ばせる(RequestStaffSkip)。
 // 120 BPM の 2 小節ループ(SongPlayer の DSP 時計)で、音・判定・譜面の進行が同じ時計を見る。
-// 終わったら(スキップしても)選曲へ進む。得点・実績は残さない。
+// 終わったら(飛ばしても)選曲へ進む。得点・実績は残さない。
 public sealed class TutorialController : MonoBehaviour
 {
     public const string MusicResourcePath = "Audio/Tutorial_Loop120";
@@ -23,6 +24,8 @@ public sealed class TutorialController : MonoBehaviour
     public double DemonstrationTime => started && song != null ? Now : 0;
     public bool IsFinished { get; private set; }
     public string FinishReason { get; private set; }
+    // スタッフが右下の角をクリックしたか(RequestStaffSkip)。範囲合わせの間に押されたら、範囲を合わせ終えてから練習を飛ばす。
+    public bool StaffSkipRequested { get; private set; }
     public string Hint { get; private set; }
     public string BannerTitle { get; private set; } = "";
     public string BannerSub { get; private set; } = "";
@@ -59,7 +62,6 @@ public sealed class TutorialController : MonoBehaviour
     bool originalLoop;
     ChartData liveChart;
     TutorialStep[] steps;
-    SaberUIPointer pointer;
     readonly List<CuttableNote> watched = new List<CuttableNote>();
     readonly Dictionary<CuttableNote, int> noteSteps = new Dictionary<CuttableNote, int>();
     readonly TutorialPairProgress pairs = new TutorialPairProgress();
@@ -125,13 +127,7 @@ public sealed class TutorialController : MonoBehaviour
         StartCoroutine(StartMusicWhenVisible());
         Overlay = TutorialOverlay.Ensure();
         Overlay.Bind(this, score);
-        // スキップの的は画面下の帯だけで受け付け、通常の振りで押されないようにする(判定調整と同じ)。
-        pointer = SaberUIPointer.Build(useAimReticle: true);
-        pointer.BottomControlArea = Overlay.Controls;
-        pointer.RemapToFullScreen = true;
-        pointer.RespectRaycastBlockers = true;
-        pointer.BottomControlsOnly = true;
-        pointer.HideOutsideBottomControls = true;
+        // 剣で押す的が無いので、照準(SaberUIPointer)は作らない(前は「練習をやめて 曲をえらぶ」のために画面下の帯で受け付けていた)。
         // 範囲の枠は剣と同じカメラで画面に写す(PlayRecoveryView と同じ選び方)。
         bridges = UnityEngine.Object.FindObjectsByType<SaberInputBridge>(FindObjectsSortMode.None);
         RangeCamera = Camera.main;
@@ -214,6 +210,8 @@ public sealed class TutorialController : MonoBehaviour
                     {
                         case TutorialStepKind.Practice:
                         {
+                            // スタッフが飛ばしたら、合格しないまま周が終わったときと同じ見え方で次(準備OK)へ。
+                            if (StaffSkipRequested) { Complete(now, "skipped"); break; }
                             // 合格したらすぐ次へ。周の数が決まった段(左右交互=最大5周、ほかの練習=最大1周)は、
                             // 合格しないまま最後の周の判定が全部出たら次へ。
                             string outcome = TutorialProgram.PracticeOutcome(step,
@@ -223,6 +221,7 @@ public sealed class TutorialController : MonoBehaviour
                             break;
                         }
                         case TutorialStepKind.Explain:
+                            if (StaffSkipRequested) { Complete(now, "skipped"); break; }
                             swingFrames = AnySaberSwinging() ? swingFrames + 1 : 0;
                             if ((elapsed >= TutorialProgram.HandsMinimumSeconds && swingFrames >= 3) || elapsed >= step.TimeoutSeconds) Complete(now, "ok");
                             break;
@@ -294,7 +293,7 @@ public sealed class TutorialController : MonoBehaviour
         StepDone = true;
         var step = Step;
         stepEndAt = now + (step.Kind == TutorialStepKind.Range ? TutorialProgram.RangeEndSeconds
-            : reason == "timeout" ? TutorialProgram.TimeoutEndSeconds : TutorialProgram.StepEndSeconds);
+            : reason == "timeout" || reason == "skipped" ? TutorialProgram.TimeoutEndSeconds : TutorialProgram.StepEndSeconds);
         records.Add(new TutorialStepRecord
         {
             Id = step.Id, Seconds = now - stepStart, Reason = reason,
@@ -307,7 +306,8 @@ public sealed class TutorialController : MonoBehaviour
             TutorialRangeBaseline.Finish(station, reason == "ok");
             Debug.Log($"Tutorial: range {reason} id={range?.CommandId} station={station} widened={(AppliedRange.HasValue ? AppliedRange.Value.ToString("F3") : "-")}");
         }
-        else if (reason == "timeout") { timedOutPractice = true; BannerTitle = "次に進むよ"; BannerSub = "あとは曲の中で慣れよう"; }
+        // スタッフが飛ばしたとき(skipped)も来場者には同じ「次に進むよ」を出し、飛ばしたと分からないようにする。
+        else if (reason == "timeout" || reason == "skipped") { timedOutPractice = true; BannerTitle = "次に進むよ"; BannerSub = "あとは曲の中で慣れよう"; }
         else if (step.Kind == TutorialStepKind.Practice) { BannerTitle = "OK!"; BannerSub = ""; }
         DropUnspawnedNotes();
         if (Overlay != null) Overlay.ShowBanner(BannerTitle, BannerSub);
@@ -377,6 +377,16 @@ public sealed class TutorialController : MonoBehaviour
         else BeginStep(stepIndex + 1, now);
     }
 
+    // スタッフが画面の右下の角(透明な的、剣では押せない)をクリックしたとき(2026-11-01 ユーザー「右下にクリックでしか押せないボタン置いて
+    // 押したら自然に飛ばす(客に気づかれないように)」)。今の練習を「次に進むよ」で終え、準備OK から選曲へ、いつもの流れで進む。
+    // 範囲合わせの間に押されたら覚えておき、範囲はその人のために合わせ終えてから練習を飛ばす。記録は skipped(基本に忠実にならない)。
+    public void RequestStaffSkip()
+    {
+        if (IsFinished || StaffSkipRequested) return;
+        StaffSkipRequested = true;
+        Debug.Log($"Tutorial: staff skip requested step={(Step != null ? Step.Id : "-")}");
+    }
+
     public void Skip()
     {
         if (IsFinished) return;
@@ -395,7 +405,6 @@ public sealed class TutorialController : MonoBehaviour
         Debug.Log($"Tutorial: {reason} total={total:F1}s steps=[{summary}]");
         DropUnspawnedNotes();
         if (Overlay != null) Overlay.ShowFinished();
-        if (pointer != null) pointer.gameObject.SetActive(false);
         if (!GamePlayManager.ExitTutorial()) Debug.LogWarning("Tutorial: 選曲へ移れませんでした");
     }
 

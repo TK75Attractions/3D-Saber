@@ -26,9 +26,8 @@ public class TitleSceneSkin : MonoBehaviour
     private Image flashImage;
     private bool transitioning;
     private AudioClip slashChimeLow, slashChimeHigh;
-    // 開始ノーツを切った後の問いかけ。「はい」なら Game シーンの練習へ、「いいえ」なら選曲へ。
     private Canvas canvasRef;
-    private TitleTutorialPrompt prompt;
+    // 開始ノーツを切ったら、全員 Game シーンの試し切り(練習)へ(2026-11-01 から問いかけは出さない)。
     public const string TutorialSceneName = "Game";
 
     void Start()
@@ -98,7 +97,7 @@ public class TitleSceneSkin : MonoBehaviour
     // スタッフのマウスの中ボタン(テストからも呼ぶ)。鍵を開け閉めし、運営の知らせと音で伝える。開始ノーツを切ったあとは受けない。
     public void ToggleReception(string how)
     {
-        if (transitioning || prompt != null || ScreenTransition.IsBusy) return;
+        if (transitioning || ScreenTransition.IsBusy) return;
         TitleReception.Toggle(how);
         ApplyReception();
         OperatorNotice.Show(TitleReception.Locked ? TitleReception.ClosedNotice : TitleReception.OpenNotice, 3f);
@@ -115,19 +114,15 @@ public class TitleSceneSkin : MonoBehaviour
         if (receptionLock != null) receptionLock.SetActive(!open);
     }
 
-    // 問いかけ(と問いかけへ向かう演出)の間は、Esc を2秒以内に2回でタイトルを読み直す(来場者の画面で共通。仕様面の点検 2)。
-    readonly EscapeTwiceGate escapeGate = new EscapeTwiceGate();
+    // 開始ノーツを切る前の、最初の状態か(試し切り・選曲へ向かう演出が無い)。
+    public bool AtStart => !transitioning;
 
-    // 開始ノーツを切る前の、最初の状態か(問いかけも、問いかけ・選曲へ向かう演出も無い)。
-    public bool AtStart => prompt == null && !transitioning;
-
-    // タイトルを読み直して最初の状態へ戻す(問いかけの間の Esc 2回と、右クリック3回の RightClickHome)。
-    // 最初の状態のまま・幕の間は何もしない(false)。
+    // タイトルを読み直して最初の状態へ戻す(右クリック3回の RightClickHome)。最初の状態のまま・幕の間は何もしない(false)。
+    // 2026-11-01 に問いかけをやめたので、問いかけの間の Esc 2回はもう無い(切ったあとはすぐ幕になる)。
     public bool ReturnToStart()
     {
         if (AtStart || ScreenTransition.IsBusy) return false;
         if (!ScreenTransition.Load(SceneManager.GetActiveScene().name, ScreenTransition.Style.Back)) return false;
-        if (prompt != null) prompt.Cancel();
         MenuSfx.ToTitle();
         return true;
     }
@@ -138,20 +133,14 @@ public class TitleSceneSkin : MonoBehaviour
         startProximity?.Tick(canvasRef, Camera.main, InputPoint.Instance, titleBlades,
             !transitioning && !ScreenTransition.IsBusy, Time.unscaledDeltaTime);
         if (ScreenTransition.IsBusy) return;
-        if (prompt != null && InputManager.EscapeGetDown
-            && escapeGate.PressAndNotify(Time.unscaledTimeAsDouble, EscapeTwiceGate.ToTitleNotice))
-        {
-            ReturnToStart();
-            return;
-        }
         var mouse = Mouse.current;
-        if (!transitioning && prompt == null && mouse != null && mouse.middleButton.wasPressedThisFrame)
+        if (!transitioning && mouse != null && mouse.middleButton.wasPressedThisFrame)
         {
             ToggleReception("middle-click");
             return;
         }
         var keys = Keyboard.current;
-        if (!transitioning && prompt == null && keys != null
+        if (!transitioning && keys != null
             && !SongSelectController.OperatorChordHeld(keys)
             && (keys.digit2Key.wasPressedThisFrame || keys.numpad2Key.wasPressedThisFrame))
         {
@@ -389,22 +378,22 @@ public class TitleSceneSkin : MonoBehaviour
     void HandleSlashed()
     {
         if (transitioning || ScreenTransition.IsBusy || titleCtl == null || TitleReception.Locked) return;
-        // 3D の開始ノーツが無い環境(カメラ無し)は、従来どおり前進演出つきで選曲へ。
-        if (startNote == null || presentationMotion == null || canvasRef == null)
+        // 2026-11-01 ユーザー「チュートリアルやっぱり強制にする(はじめての方ははいの画面をなくす)」: 問いかけ(TitleTutorialPrompt)は出さず、
+        // 前進演出のまま全員を試し切り(範囲合わせ → 左右交互 → 準備OK)へ。マウスで遊ぶとき(範囲合わせなし)も同じ。
+        // 問いかけの部品は使わずに残してある(戻すときはここで TitleTutorialPrompt.Begin を呼ぶ)。
+        GameSession.TutorialPending = true;
+        GameSession.TutorialRangeOnly = false;
+        if (!ScreenTransition.Load(TutorialSceneName, ScreenTransition.Style.Forward,
+            progress => { if (presentationMotion != null) presentationMotion.SetDeparture(progress); },
+            TitlePresentationMotion.DepartureDuration))
         {
-            if (!ScreenTransition.Load(titleCtl.songSelectSceneName, ScreenTransition.Style.Forward,
-                progress => { if (presentationMotion != null) presentationMotion.SetDeparture(progress); },
-                TitlePresentationMotion.DepartureDuration)) return;
-            transitioning = true;
-            LockStartTarget();
-            PlaySlashChime();
+            // 読み込めないときはタイトルのまま(開始ノーツを切り直せる)。
+            GameSession.TutorialPending = false;
             return;
         }
-        // 幕の中で「チュートリアルをしますか？」と問いかけ、答えで行き先を分ける。
         transitioning = true;
         LockStartTarget();
         PlaySlashChime();
-        prompt = TitleTutorialPrompt.Begin(canvasRef, presentationMotion, HandlePromptAnswer);
     }
 
     void LockStartTarget()
@@ -412,29 +401,6 @@ public class TitleSceneSkin : MonoBehaviour
         if (startTargetGroup == null) return;
         startTargetGroup.interactable = false;
         startTargetGroup.blocksRaycasts = false;
-    }
-
-    void HandlePromptAnswer(bool tutorial)
-    {
-        if (titleCtl == null) return;
-        // 「いいえ」でも、スマホの座標を受けているときは振る範囲を合わせる段だけ通ってから選曲へ
-        // (2026-10-26 ユーザー「チュートリアルがなくても範囲検査は行うようにして」)。マウスで遊ぶときはそのまま選曲へ。
-        bool rangeOnly = !tutorial && TutorialController.PhoneInputActive != null && TutorialController.PhoneInputActive();
-        GameSession.TutorialPending = tutorial || rangeOnly;
-        GameSession.TutorialRangeOnly = rangeOnly;
-        string scene = tutorial || rangeOnly ? TutorialSceneName : titleCtl.songSelectSceneName;
-        if (ScreenTransition.Load(scene, ScreenTransition.Style.Forward)) return;
-        // 読み込めないときは問いかけを閉じ、タイトルを操作できる状態に戻す。
-        GameSession.TutorialPending = false;
-        GameSession.TutorialRangeOnly = false;
-        if (prompt != null) Destroy(prompt.gameObject);
-        prompt = null;
-        transitioning = false;
-        if (startTargetGroup != null)
-        {
-            startTargetGroup.interactable = true;
-            startTargetGroup.blocksRaycasts = true;
-        }
     }
 
     void PlaySlashChime()

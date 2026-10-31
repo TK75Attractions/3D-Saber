@@ -78,7 +78,8 @@ public class TitleReceptionPlayTests
         ScreenTransitionPlayTests.Capture("title-reception-locked"); // -transitionCapture <フォルダ> のときだけ撮る
         skin.TryStartPresentation(); // Enter・Space・的のクリックと同じ入口
         yield return null; yield return null;
-        Assert.IsNull(Object.FindFirstObjectByType<TitleTutorialPrompt>(), "鍵の間は Enter・クリックでも始まらない");
+        Assert.IsFalse(ScreenTransition.IsBusy, "鍵の間は Enter・クリックでも始まらない");
+        Assert.IsFalse(GameSession.TutorialPending);
         Assert.IsTrue(skin.AtStart);
 
         yield return MiddleClick();
@@ -93,11 +94,13 @@ public class TitleReceptionPlayTests
 
         Assert.IsTrue(skin.TryStartPresentation());
         float deadline = Time.realtimeSinceStartup + 4f;
-        TitleTutorialPrompt prompt = null;
-        while (Time.realtimeSinceStartup < deadline && (prompt = Object.FindFirstObjectByType<TitleTutorialPrompt>()) == null) yield return null;
-        Assert.NotNull(prompt, "開けたあとは今までどおり問いかけへ");
+        while (Time.realtimeSinceStartup < deadline && !ScreenTransition.IsBusy) yield return null;
+        Assert.IsTrue(ScreenTransition.IsBusy, "開けたあとは試し切り(練習)へ(2026-11-01 から問いかけは無い)");
+        Assert.IsTrue(GameSession.TutorialPending);
         yield return MiddleClick();
         Assert.IsFalse(TitleReception.Locked, "切ったあとは中ボタンで鍵を変えない");
+        yield return ScreenTransitionPlayTests.WaitForTransition();
+        Assert.AreEqual("Game", SceneManager.GetActiveScene().name);
     }
 
     [UnityTest]
