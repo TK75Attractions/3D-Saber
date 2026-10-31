@@ -9,7 +9,7 @@ public class SongStagePerformanceTests
 {
     [Serializable] private sealed class SourceInfo { public string audioSha256; public string timeOrigin; }
 
-    [TestCase("2_23_AM",2,196.075)] [TestCase("ElDorado",3,144.065306)] [TestCase("Epilogue",3,166.408707)]
+    [TestCase("2_23_AM",1,110.741769)] [TestCase("ElDorado",3,144.065306)] [TestCase("Epilogue",3,166.408707)]
     [TestCase("Morning",2,165.329)] [TestCase("揺籠",4,184.24163)]
     [TestCase("製作中",2,174.864)]
     [TestCase("Phobia PARTⅠ",2,110.968163)]

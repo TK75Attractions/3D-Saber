@@ -1523,1511 +1523,6 @@
       "directions": [
         "down"
       ],
-      "hand": "red",
-      "source": "normal",
-      "sourceIndex": 95,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 89,
-      "timesMs": [
-        66026.2
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "red",
-      "source": "normal",
-      "sourceIndex": 97,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0003,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 90,
-      "timesMs": [
-        66392.867
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 98,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": -299.9993,
-      "cell": [
-        66026.2,
-        66392.867,
-        66692.867
-      ],
-      "handRepair": false
-    },
-    {
-      "index": 91,
-      "timesMs": [
-        66692.867
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "red",
-      "source": "normal",
-      "sourceIndex": 99,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0007,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 92,
-      "timesMs": [
-        67359.533
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 100,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 93,
-      "timesMs": [
-        69359.533
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 102,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 94,
-      "timesMs": [
-        70026.2
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "red",
-      "source": "normal",
-      "sourceIndex": 103,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0003,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 95,
-      "timesMs": [
-        70692.867
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "red",
-      "source": "normal",
-      "sourceIndex": 105,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0007,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 96,
-      "timesMs": [
-        71059.533
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 106,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": -300.0,
-      "cell": [
-        70692.867,
-        71059.533,
-        71359.533
-      ],
-      "handRepair": false
-    },
-    {
-      "index": 97,
-      "timesMs": [
-        71359.533
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "red",
-      "source": "normal",
-      "sourceIndex": 107,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 98,
-      "timesMs": [
-        72026.2
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "red",
-      "source": "normal",
-      "sourceIndex": 109,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0003,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 99,
-      "timesMs": [
-        72692.867
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 110,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0007,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 100,
-      "timesMs": [
-        72692.867
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "red",
-      "source": "normal",
-      "sourceIndex": 111,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0007,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 101,
-      "timesMs": [
-        74692.867
-      ],
-      "directions": [
-        "up"
-      ],
-      "hand": "red",
-      "source": "normal",
-      "sourceIndex": 113,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0007,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 102,
-      "timesMs": [
-        75359.533
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 114,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 103,
-      "timesMs": [
-        75726.2
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "red",
-      "source": "normal",
-      "sourceIndex": 115,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": -299.9997,
-      "cell": [
-        75359.533,
-        75726.2,
-        76026.2
-      ],
-      "handRepair": false
-    },
-    {
-      "index": 104,
-      "timesMs": [
-        76026.2
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 116,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0003,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 105,
-      "timesMs": [
-        76692.867
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 118,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0007,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 106,
-      "timesMs": [
-        77359.533
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 120,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 107,
-      "timesMs": [
-        78026.2
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "red",
-      "source": "normal",
-      "sourceIndex": 121,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0003,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 108,
-      "timesMs": [
-        78692.867
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 122,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0007,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 109,
-      "timesMs": [
-        78692.867
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "red",
-      "source": "normal",
-      "sourceIndex": 123,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0007,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 110,
-      "timesMs": [
-        80026.2
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 124,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0003,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 111,
-      "timesMs": [
-        80692.867
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "red",
-      "source": "normal",
-      "sourceIndex": 125,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0007,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 112,
-      "timesMs": [
-        81359.533
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "red",
-      "source": "normal",
-      "sourceIndex": 127,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 113,
-      "timesMs": [
-        82026.2
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "red",
-      "source": "normal",
-      "sourceIndex": 129,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0003,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 114,
-      "timesMs": [
-        82392.867
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 130,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": -299.9993,
-      "cell": [
-        82026.2,
-        82392.867,
-        82692.867
-      ],
-      "handRepair": false
-    },
-    {
-      "index": 115,
-      "timesMs": [
-        82692.867
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "red",
-      "source": "normal",
-      "sourceIndex": 131,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0007,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 116,
-      "timesMs": [
-        83359.533
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 132,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 117,
-      "timesMs": [
-        83359.533
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "red",
-      "source": "normal",
-      "sourceIndex": 133,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 118,
-      "timesMs": [
-        84026.2
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 134,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0003,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 119,
-      "timesMs": [
-        84026.2
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "red",
-      "source": "normal",
-      "sourceIndex": 135,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0003,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 120,
-      "timesMs": [
-        85359.533
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 136,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 121,
-      "timesMs": [
-        86692.867
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 138,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0007,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 122,
-      "timesMs": [
-        88058.0
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "red",
-      "source": "normal",
-      "sourceIndex": 139,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 31.8003,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 123,
-      "timesMs": [
-        89385.0
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 140,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 25.467,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 124,
-      "timesMs": [
-        92026.2,
-        94026.2
-      ],
-      "directions": [
-        "down",
-        "up"
-      ],
-      "hand": "red",
-      "source": "normal",
-      "sourceIndex": 141,
-      "sourceLong": "normal:141",
-      "added": false,
-      "phaseErrorMs": 0.0003,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 125,
-      "timesMs": [
-        95359.533
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 142,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 126,
-      "timesMs": [
-        96692.867
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "red",
-      "source": "normal",
-      "sourceIndex": 143,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0007,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 127,
-      "timesMs": [
-        97359.533
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 144,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 128,
-      "timesMs": [
-        98692.867
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "red",
-      "source": "normal",
-      "sourceIndex": 145,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0007,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 129,
-      "timesMs": [
-        100026.2
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 146,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0003,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 130,
-      "timesMs": [
-        100692.867
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "red",
-      "source": "normal",
-      "sourceIndex": 147,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0007,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 131,
-      "timesMs": [
-        101359.533
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 148,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 132,
-      "timesMs": [
-        102026.2
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "red",
-      "source": "normal",
-      "sourceIndex": 149,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0003,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 133,
-      "timesMs": [
-        102692.867
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 150,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0007,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 134,
-      "timesMs": [
-        103359.533
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "red",
-      "source": "normal",
-      "sourceIndex": 151,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 135,
-      "timesMs": [
-        104026.2
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 152,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0003,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 136,
-      "timesMs": [
-        104692.867
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "red",
-      "source": "normal",
-      "sourceIndex": 153,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0007,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 137,
-      "timesMs": [
-        105359.533
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 154,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 138,
-      "timesMs": [
-        106026.2
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "red",
-      "source": "normal",
-      "sourceIndex": 155,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0003,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 139,
-      "timesMs": [
-        106692.867
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 156,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0007,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 140,
-      "timesMs": [
-        106692.867
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "red",
-      "source": "normal",
-      "sourceIndex": 157,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0007,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 141,
-      "timesMs": [
-        107359.533
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 158,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 142,
-      "timesMs": [
-        107359.533
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "red",
-      "source": "normal",
-      "sourceIndex": 159,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 143,
-      "timesMs": [
-        108026.2
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 160,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0003,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 144,
-      "timesMs": [
-        108026.2
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "red",
-      "source": "normal",
-      "sourceIndex": 161,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0003,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 145,
-      "timesMs": [
-        109359.533
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 163,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 146,
-      "timesMs": [
-        110026.2
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "red",
-      "source": "normal",
-      "sourceIndex": 164,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0003,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 147,
-      "timesMs": [
-        110692.867
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 165,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0007,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 148,
-      "timesMs": [
-        111359.533
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "easy",
-      "sourceIndex": 89,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 149,
-      "timesMs": [
-        112026.2
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 167,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0003,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 150,
-      "timesMs": [
-        113359.533
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 169,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 151,
-      "timesMs": [
-        114026.2
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "easy",
-      "sourceIndex": 91,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0003,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 152,
-      "timesMs": [
-        114392.867
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "red",
-      "source": "normal",
-      "sourceIndex": 170,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": -299.9993,
-      "cell": [
-        114026.2,
-        114392.867,
-        114692.867
-      ],
-      "handRepair": false
-    },
-    {
-      "index": 153,
-      "timesMs": [
-        114692.867
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 171,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0007,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 154,
-      "timesMs": [
-        115359.533
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "red",
-      "source": "normal",
-      "sourceIndex": 172,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 155,
-      "timesMs": [
-        116026.2
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 173,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0003,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 156,
-      "timesMs": [
-        116692.867
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "red",
-      "source": "normal",
-      "sourceIndex": 174,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0007,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 157,
-      "timesMs": [
-        117359.533
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 175,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 158,
-      "timesMs": [
-        117359.533
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "red",
-      "source": "normal",
-      "sourceIndex": 176,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 159,
-      "timesMs": [
-        118692.867
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 177,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0007,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 160,
-      "timesMs": [
-        118692.867
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "red",
-      "source": "normal",
-      "sourceIndex": 178,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0007,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 161,
-      "timesMs": [
-        119359.533
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "red",
-      "source": "normal",
-      "sourceIndex": 179,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 162,
-      "timesMs": [
-        120026.2
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 180,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0003,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 163,
-      "timesMs": [
-        120692.867
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "red",
-      "source": "easy",
-      "sourceIndex": 96,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0007,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 164,
-      "timesMs": [
-        121359.533
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 182,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 165,
-      "timesMs": [
-        122026.2
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "easy",
-      "sourceIndex": 97,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0003,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 166,
-      "timesMs": [
-        122692.867
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 184,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0007,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 167,
-      "timesMs": [
-        124026.2031
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "hard",
-      "sourceIndex": 272,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0034,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 168,
-      "timesMs": [
-        124392.867
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 186,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": -299.9993,
-      "cell": [
-        124026.2031,
-        124392.867,
-        124692.867
-      ],
-      "handRepair": false
-    },
-    {
-      "index": 169,
-      "timesMs": [
-        124692.867
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "red",
-      "source": "normal",
-      "sourceIndex": 187,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0007,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 170,
-      "timesMs": [
-        125359.533
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 188,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 171,
-      "timesMs": [
-        126026.2
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "red",
-      "source": "easy",
-      "sourceIndex": 100,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0003,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 172,
-      "timesMs": [
-        126692.867
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 190,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0007,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 173,
-      "timesMs": [
-        127359.533
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "red",
-      "source": "normal",
-      "sourceIndex": 191,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 174,
-      "timesMs": [
-        128026.2
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 192,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0003,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 175,
-      "timesMs": [
-        129359.533
-      ],
-      "directions": [
-        "down"
-      ],
       "hand": "blue",
       "source": "normal",
       "sourceIndex": 193,
@@ -3038,9 +1533,9 @@
       "handRepair": false
     },
     {
-      "index": 176,
+      "index": 89,
       "timesMs": [
-        129359.533
+        65359.533
       ],
       "directions": [
         "down"
@@ -3055,9 +1550,9 @@
       "handRepair": false
     },
     {
-      "index": 177,
+      "index": 90,
       "timesMs": [
-        130026.2
+        66026.2
       ],
       "directions": [
         "down"
@@ -3072,9 +1567,9 @@
       "handRepair": false
     },
     {
-      "index": 178,
+      "index": 91,
       "timesMs": [
-        130392.867
+        66392.867
       ],
       "directions": [
         "down"
@@ -3093,9 +1588,9 @@
       "handRepair": false
     },
     {
-      "index": 179,
+      "index": 92,
       "timesMs": [
-        130692.867
+        66692.867
       ],
       "directions": [
         "down"
@@ -3110,9 +1605,9 @@
       "handRepair": false
     },
     {
-      "index": 180,
+      "index": 93,
       "timesMs": [
-        131359.533
+        67359.533
       ],
       "directions": [
         "down"
@@ -3127,9 +1622,9 @@
       "handRepair": false
     },
     {
-      "index": 181,
+      "index": 94,
       "timesMs": [
-        132026.1997
+        68026.1997
       ],
       "directions": [
         "down"
@@ -3144,9 +1639,9 @@
       "handRepair": false
     },
     {
-      "index": 182,
+      "index": 95,
       "timesMs": [
-        132692.867
+        68692.867
       ],
       "directions": [
         "down"
@@ -3161,9 +1656,9 @@
       "handRepair": false
     },
     {
-      "index": 183,
+      "index": 96,
       "timesMs": [
-        133359.533
+        69359.533
       ],
       "directions": [
         "down"
@@ -3178,9 +1673,9 @@
       "handRepair": false
     },
     {
-      "index": 184,
+      "index": 97,
       "timesMs": [
-        133359.533
+        69359.533
       ],
       "directions": [
         "down"
@@ -3195,9 +1690,9 @@
       "handRepair": false
     },
     {
-      "index": 185,
+      "index": 98,
       "timesMs": [
-        134692.867
+        70692.867
       ],
       "directions": [
         "down"
@@ -3212,9 +1707,9 @@
       "handRepair": false
     },
     {
-      "index": 186,
+      "index": 99,
       "timesMs": [
-        135059.533
+        71059.533
       ],
       "directions": [
         "down"
@@ -3233,9 +1728,9 @@
       "handRepair": false
     },
     {
-      "index": 187,
+      "index": 100,
       "timesMs": [
-        135359.533
+        71359.533
       ],
       "directions": [
         "down"
@@ -3250,9 +1745,9 @@
       "handRepair": false
     },
     {
-      "index": 188,
+      "index": 101,
       "timesMs": [
-        136026.2
+        72026.2
       ],
       "directions": [
         "down"
@@ -3267,9 +1762,9 @@
       "handRepair": false
     },
     {
-      "index": 189,
+      "index": 102,
       "timesMs": [
-        136692.867
+        72692.867
       ],
       "directions": [
         "down"
@@ -3284,9 +1779,9 @@
       "handRepair": false
     },
     {
-      "index": 190,
+      "index": 103,
       "timesMs": [
-        136692.867
+        72692.867
       ],
       "directions": [
         "down"
@@ -3301,9 +1796,9 @@
       "handRepair": false
     },
     {
-      "index": 191,
+      "index": 104,
       "timesMs": [
-        137359.533
+        73359.533
       ],
       "directions": [
         "down"
@@ -3318,9 +1813,9 @@
       "handRepair": false
     },
     {
-      "index": 192,
+      "index": 105,
       "timesMs": [
-        138026.2
+        74026.2
       ],
       "directions": [
         "down"
@@ -3335,9 +1830,9 @@
       "handRepair": false
     },
     {
-      "index": 193,
+      "index": 106,
       "timesMs": [
-        138692.867
+        74692.867
       ],
       "directions": [
         "down"
@@ -3352,9 +1847,9 @@
       "handRepair": false
     },
     {
-      "index": 194,
+      "index": 107,
       "timesMs": [
-        139359.533
+        75359.533
       ],
       "directions": [
         "down"
@@ -3369,9 +1864,9 @@
       "handRepair": false
     },
     {
-      "index": 195,
+      "index": 108,
       "timesMs": [
-        140026.2
+        76026.2
       ],
       "directions": [
         "down"
@@ -3386,9 +1881,9 @@
       "handRepair": false
     },
     {
-      "index": 196,
+      "index": 109,
       "timesMs": [
-        140692.867
+        76692.867
       ],
       "directions": [
         "down"
@@ -3403,9 +1898,9 @@
       "handRepair": false
     },
     {
-      "index": 197,
+      "index": 110,
       "timesMs": [
-        141059.533
+        77059.533
       ],
       "directions": [
         "down"
@@ -3424,9 +1919,9 @@
       "handRepair": false
     },
     {
-      "index": 198,
+      "index": 111,
       "timesMs": [
-        141359.533
+        77359.533
       ],
       "directions": [
         "down"
@@ -3441,9 +1936,9 @@
       "handRepair": false
     },
     {
-      "index": 199,
+      "index": 112,
       "timesMs": [
-        142026.2
+        78026.2
       ],
       "directions": [
         "down"
@@ -3458,9 +1953,9 @@
       "handRepair": false
     },
     {
-      "index": 200,
+      "index": 113,
       "timesMs": [
-        142692.867
+        78692.867
       ],
       "directions": [
         "down"
@@ -3475,9 +1970,9 @@
       "handRepair": false
     },
     {
-      "index": 201,
+      "index": 114,
       "timesMs": [
-        142692.867
+        78692.867
       ],
       "directions": [
         "down"
@@ -3492,9 +1987,9 @@
       "handRepair": false
     },
     {
-      "index": 202,
+      "index": 115,
       "timesMs": [
-        144026.2
+        80026.2
       ],
       "directions": [
         "down"
@@ -3509,9 +2004,9 @@
       "handRepair": false
     },
     {
-      "index": 203,
+      "index": 116,
       "timesMs": [
-        144692.867
+        80692.867
       ],
       "directions": [
         "up"
@@ -3526,9 +2021,9 @@
       "handRepair": false
     },
     {
-      "index": 204,
+      "index": 117,
       "timesMs": [
-        145359.533
+        81359.533
       ],
       "directions": [
         "down"
@@ -3543,9 +2038,9 @@
       "handRepair": false
     },
     {
-      "index": 205,
+      "index": 118,
       "timesMs": [
-        146026.2
+        82026.2
       ],
       "directions": [
         "down"
@@ -3560,9 +2055,9 @@
       "handRepair": false
     },
     {
-      "index": 206,
+      "index": 119,
       "timesMs": [
-        146392.867
+        82392.867
       ],
       "directions": [
         "down"
@@ -3581,9 +2076,9 @@
       "handRepair": false
     },
     {
-      "index": 207,
+      "index": 120,
       "timesMs": [
-        146692.867
+        82692.867
       ],
       "directions": [
         "down"
@@ -3598,9 +2093,9 @@
       "handRepair": false
     },
     {
-      "index": 208,
+      "index": 121,
       "timesMs": [
-        147359.533
+        83359.533
       ],
       "directions": [
         "down"
@@ -3615,9 +2110,9 @@
       "handRepair": false
     },
     {
-      "index": 209,
+      "index": 122,
       "timesMs": [
-        147359.533
+        83359.533
       ],
       "directions": [
         "down"
@@ -3632,9 +2127,9 @@
       "handRepair": false
     },
     {
-      "index": 210,
+      "index": 123,
       "timesMs": [
-        148026.2
+        84026.2
       ],
       "directions": [
         "down"
@@ -3649,9 +2144,9 @@
       "handRepair": false
     },
     {
-      "index": 211,
+      "index": 124,
       "timesMs": [
-        148026.2
+        84026.2
       ],
       "directions": [
         "down"
@@ -3666,9 +2161,9 @@
       "handRepair": false
     },
     {
-      "index": 212,
+      "index": 125,
       "timesMs": [
-        149359.533
+        85359.533
       ],
       "directions": [
         "down"
@@ -3683,553 +2178,9 @@
       "handRepair": false
     },
     {
-      "index": 213,
+      "index": 126,
       "timesMs": [
-        150692.867
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 235,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0007,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 214,
-      "timesMs": [
-        150692.867
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "red",
-      "source": "normal",
-      "sourceIndex": 236,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0007,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 215,
-      "timesMs": [
-        151359.533
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "red",
-      "source": "normal",
-      "sourceIndex": 237,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 216,
-      "timesMs": [
-        152026.2
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 238,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0003,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 217,
-      "timesMs": [
-        152692.867
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "red",
-      "source": "normal",
-      "sourceIndex": 239,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0007,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 218,
-      "timesMs": [
-        153359.533
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 240,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 219,
-      "timesMs": [
-        154026.2
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "red",
-      "source": "normal",
-      "sourceIndex": 241,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0003,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 220,
-      "timesMs": [
-        155359.533
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "red",
-      "source": "normal",
-      "sourceIndex": 243,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 221,
-      "timesMs": [
-        156026.2
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 244,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0003,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 222,
-      "timesMs": [
-        156692.867
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "red",
-      "source": "normal",
-      "sourceIndex": 245,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0007,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 223,
-      "timesMs": [
-        157359.533
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 246,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 224,
-      "timesMs": [
-        158026.2
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "red",
-      "source": "normal",
-      "sourceIndex": 247,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0003,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 225,
-      "timesMs": [
-        158692.867
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 248,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0007,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 226,
-      "timesMs": [
-        159359.533
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "red",
-      "source": "normal",
-      "sourceIndex": 249,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 227,
-      "timesMs": [
-        160026.2
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 250,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0003,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 228,
-      "timesMs": [
-        160026.2
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "red",
-      "source": "normal",
-      "sourceIndex": 251,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0003,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 229,
-      "timesMs": [
-        161359.533
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 252,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 230,
-      "timesMs": [
-        161359.533
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "red",
-      "source": "normal",
-      "sourceIndex": 253,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 231,
-      "timesMs": [
-        162026.2
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 254,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0003,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 232,
-      "timesMs": [
-        162692.867
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "red",
-      "source": "normal",
-      "sourceIndex": 255,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0007,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 233,
-      "timesMs": [
-        163359.533
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 256,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 234,
-      "timesMs": [
-        164026.2
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "red",
-      "source": "normal",
-      "sourceIndex": 257,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0003,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 235,
-      "timesMs": [
-        164692.867
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 258,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0007,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 236,
-      "timesMs": [
-        166026.2
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 260,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0003,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 237,
-      "timesMs": [
-        166692.867
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "red",
-      "source": "normal",
-      "sourceIndex": 261,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0007,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 238,
-      "timesMs": [
-        167359.533
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 262,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 239,
-      "timesMs": [
-        168026.2
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "red",
-      "source": "normal",
-      "sourceIndex": 263,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0003,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 240,
-      "timesMs": [
-        168692.867
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 264,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0007,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 241,
-      "timesMs": [
-        169359.533
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "red",
-      "source": "normal",
-      "sourceIndex": 265,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 242,
-      "timesMs": [
-        170026.2
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 266,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0003,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 243,
-      "timesMs": [
-        170692.867
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "blue",
-      "source": "normal",
-      "sourceIndex": 267,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0007,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 244,
-      "timesMs": [
-        170692.867
-      ],
-      "directions": [
-        "down"
-      ],
-      "hand": "red",
-      "source": "normal",
-      "sourceIndex": 268,
-      "sourceLong": null,
-      "added": false,
-      "phaseErrorMs": 0.0007,
-      "cell": null,
-      "handRepair": false
-    },
-    {
-      "index": 245,
-      "timesMs": [
-        172026.2
+        86692.866667
       ],
       "directions": [
         "down"
@@ -4244,9 +2195,9 @@
       "handRepair": false
     },
     {
-      "index": 246,
+      "index": 127,
       "timesMs": [
-        172026.2
+        86692.866667
       ],
       "directions": [
         "down"
@@ -4261,9 +2212,9 @@
       "handRepair": false
     },
     {
-      "index": 247,
+      "index": 128,
       "timesMs": [
-        173359.533
+        88026.199667
       ],
       "directions": [
         "down"
@@ -4278,9 +2229,9 @@
       "handRepair": false
     },
     {
-      "index": 248,
+      "index": 129,
       "timesMs": [
-        174692.867
+        89359.533667
       ],
       "directions": [
         "down"
@@ -4295,9 +2246,9 @@
       "handRepair": false
     },
     {
-      "index": 249,
+      "index": 130,
       "timesMs": [
-        175359.533
+        90026.199667
       ],
       "directions": [
         "down"
@@ -4312,9 +2263,9 @@
       "handRepair": false
     },
     {
-      "index": 250,
+      "index": 131,
       "timesMs": [
-        176026.2
+        90692.866667
       ],
       "directions": [
         "down"
@@ -4329,9 +2280,9 @@
       "handRepair": false
     },
     {
-      "index": 251,
+      "index": 132,
       "timesMs": [
-        177359.533
+        92026.199667
       ],
       "directions": [
         "down"
@@ -4346,9 +2297,9 @@
       "handRepair": false
     },
     {
-      "index": 252,
+      "index": 133,
       "timesMs": [
-        178692.867
+        93359.533667
       ],
       "directions": [
         "down"
@@ -4363,9 +2314,9 @@
       "handRepair": false
     },
     {
-      "index": 253,
+      "index": 134,
       "timesMs": [
-        180026.2
+        94692.866667
       ],
       "directions": [
         "down"
@@ -4380,9 +2331,9 @@
       "handRepair": false
     },
     {
-      "index": 254,
+      "index": 135,
       "timesMs": [
-        180692.867
+        95359.533667
       ],
       "directions": [
         "down"
@@ -4397,9 +2348,9 @@
       "handRepair": false
     },
     {
-      "index": 255,
+      "index": 136,
       "timesMs": [
-        181359.533
+        96026.199667
       ],
       "directions": [
         "down"
@@ -4414,9 +2365,9 @@
       "handRepair": false
     },
     {
-      "index": 256,
+      "index": 137,
       "timesMs": [
-        181359.533
+        96026.199667
       ],
       "directions": [
         "down"
@@ -4431,9 +2382,9 @@
       "handRepair": false
     },
     {
-      "index": 257,
+      "index": 138,
       "timesMs": [
-        182692.867
+        97359.533667
       ],
       "directions": [
         "down"
@@ -4448,9 +2399,9 @@
       "handRepair": false
     },
     {
-      "index": 258,
+      "index": 139,
       "timesMs": [
-        182692.867
+        97359.533667
       ],
       "directions": [
         "down"
@@ -4465,9 +2416,9 @@
       "handRepair": false
     },
     {
-      "index": 259,
+      "index": 140,
       "timesMs": [
-        184026.2
+        98692.866667
       ],
       "directions": [
         "down"
@@ -4482,9 +2433,9 @@
       "handRepair": false
     },
     {
-      "index": 260,
+      "index": 141,
       "timesMs": [
-        185359.533
+        100026.199667
       ],
       "directions": [
         "down"
@@ -4499,9 +2450,9 @@
       "handRepair": false
     },
     {
-      "index": 261,
+      "index": 142,
       "timesMs": [
-        186026.2
+        100692.866667
       ],
       "directions": [
         "down"
@@ -4516,9 +2467,9 @@
       "handRepair": false
     },
     {
-      "index": 262,
+      "index": 143,
       "timesMs": [
-        186692.867
+        101359.533667
       ],
       "directions": [
         "down"
@@ -4533,9 +2484,9 @@
       "handRepair": false
     },
     {
-      "index": 263,
+      "index": 144,
       "timesMs": [
-        188026.2
+        102692.866667
       ],
       "directions": [
         "down"
@@ -4550,9 +2501,9 @@
       "handRepair": false
     },
     {
-      "index": 264,
+      "index": 145,
       "timesMs": [
-        189359.533
+        104026.199667
       ],
       "directions": [
         "down"
@@ -4567,9 +2518,9 @@
       "handRepair": false
     },
     {
-      "index": 265,
+      "index": 146,
       "timesMs": [
-        190692.867
+        105359.533667
       ],
       "directions": [
         "down"
@@ -4584,9 +2535,9 @@
       "handRepair": false
     },
     {
-      "index": 266,
+      "index": 147,
       "timesMs": [
-        191359.533
+        106026.199667
       ],
       "directions": [
         "down"
@@ -4601,9 +2552,9 @@
       "handRepair": false
     },
     {
-      "index": 267,
+      "index": 148,
       "timesMs": [
-        192026.2
+        106692.866667
       ],
       "directions": [
         "down"
@@ -4618,9 +2569,9 @@
       "handRepair": false
     },
     {
-      "index": 268,
+      "index": 149,
       "timesMs": [
-        192026.2
+        106692.866667
       ],
       "directions": [
         "down"

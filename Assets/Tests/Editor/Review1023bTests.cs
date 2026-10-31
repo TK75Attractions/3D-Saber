@@ -148,7 +148,7 @@ public class Review1023bTests
     [TestCase("logic", "normal", 210)]
     [TestCase("RushE", "normal", 182)]
     [TestCase("BenkyouRemaster", "normal", 155)]
-    [TestCase("2_23_AM", "hard", 449)]
+    [TestCase("2_23_AM", "hard", 232)]  // 2026-10-31 に 1:51 に縮めた(抜いた区間の 216 個と、つなぎ目の直前の青 1 個)
     [TestCase("logic", "hard", 424)]
     [TestCase("BenkyouRemaster", "hard", 335)]
     [TestCase("RushE", "hard", 418)]   // 10/28 ユーザーの区間ごとの選び(402)に、ユーザーが手で足した(15:15、「rushEは意図した変更です」)

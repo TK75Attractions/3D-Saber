@@ -461,12 +461,41 @@ public class TwoTwentyThreeDarkChartTests
         return ChartLoader.Parse(File.ReadAllText(path));
     }
 
+    static double Bar(int n) => 1359.532958984375 + n * 8000.0 / 3;
+
+    // Y の [from, to) 小節のノーツが、表の譜面の shiftBars 小節ずらした所に、同じ順・同じ中身で並ぶ(時刻と拍はずらした分だけ)。
+    static void AssertSameNotes(ChartData y, ChartData chart, int from, int to, int shiftBars)
+    {
+        double shift = shiftBars * 8000.0 / 3;
+        string where = from + "〜" + to + " 小節";
+        var expected = y.notes.Where(n => n.time >= Bar(from) - 1 && n.time < Bar(to) - 1).OrderBy(n => n.time).ToList();
+        var actual = chart.notes.Where(n => n.time >= Bar(from) + shift - 1 && n.time < Bar(to) + shift - 1).OrderBy(n => n.time).ToList();
+        Assert.IsNotEmpty(expected, where);
+        Assert.AreEqual(expected.Count, actual.Count, where + " の数");
+        for (int i = 0; i < expected.Count; i++)
+        {
+            Assert.AreEqual(expected[i].time + shift, actual[i].time, .05, where + " #" + i);
+            Assert.AreEqual(expected[i].beat + shiftBars * 4, actual[i].beat, .001, where + " #" + i);
+            var restored = JsonUtility.FromJson<NoteData>(JsonUtility.ToJson(actual[i]));
+            restored.time = expected[i].time;
+            restored.beat = expected[i].beat;
+            Assert.AreEqual(JsonUtility.ToJson(expected[i]), JsonUtility.ToJson(restored), where + " #" + i);
+        }
+    }
+
     [Test]
     public void NotesSwitchAtTheFirstChorusAndKeepTheirTiming()
     {
         var light = Read("y");
         Assert.AreEqual(10, light.displayLevel);
-        MixedSecretChartAssertions.Check("2_23_AM", light, "y", 65359.532958984375, 88, 322);
+        // Y = 元の Normal(24 小節より前)+ 元の Hard(24 小節から)。2026-10-31 に表の譜面だけ 1:51 に縮め
+        // (元の 24〜47・56〜63 小節を抜いた)、Y は長い版のまま(音源 audio_y.mp3・演出 stage_y.json)。
+        // 縮めた譜面に残った区間とは、ずらした時刻で同じノーツ(境目の 23 小節は Y が Normal から間引いているので比べない)。
+        Assert.AreEqual(88, light.notes.Count(n => n.time < Bar(24) - .05));
+        Assert.AreEqual(322, light.notes.Count(n => n.time >= Bar(24) - .05));
+        AssertSameNotes(light, Read("normal"), 0, 23, 0);
+        AssertSameNotes(light, Read("hard"), 48, 56, -24);
+        AssertSameNotes(light, Read("hard"), 64, 80, -32);
         Assert.AreEqual(142, light.notes.Count(n => n.IsDirection));
         Assert.AreEqual(20, light.notes.Count(n => n.IsLong));
         Assert.AreEqual(75, light.notes.Count(n => n.color == "gold"));

@@ -140,7 +140,7 @@ public class StageLaserShapeTests
     }
 
     // 曲ごとに書いた強さのまま分ける(0.95 以上が扇、0.65〜0.95 未満は平行)。最高潮の数は曲によって 0〜4 か所。
-    [TestCase("2_23_AM", new double[0], new[] { 65.333, 129.333 })]
+    [TestCase("2_23_AM", new double[0], new[] { 65.333 })]
     [TestCase("Andalusia", new[] { 86.358, 102.9 }, new[] { 52.37 })]
     [TestCase("Aobasou", new[] { 61.714286, 82.285714, 109.714286 }, new[] { 6.857143 })]
     [TestCase("BenkyouRemaster", new[] { 73.674, 91.674, 119.531143 }, new[] { 6.024 })]

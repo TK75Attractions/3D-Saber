@@ -1,7 +1,56 @@
 [
   {
     "songId": "2_23_AM",
-    "source": "audio.mp3",
+    "source": "audio.ogg",
+    "rate": 44100,
+    "frames": 4883712,
+    "sourceLufs": -12.1,
+    "sourceLra": 4.3,
+    "v25Lufs": -9.0,
+    "v25TruePeakDbtp": 0.4,
+    "v25FlattenedSamples": 15826,
+    "v25MaxCutDb": 7.59,
+    "targetLufs": -8.7,
+    "outputLufs": -8.7,
+    "outputLra": 2.4,
+    "outputTruePeakDbtp": -1.2,
+    "outputSampleMax": 0.8717,
+    "ceilingDbtp": -1.5,
+    "makeupDb": 7.95,
+    "estimateLufs": -8.79,
+    "limitP50Db": 3.33,
+    "limitP95Db": 7.5,
+    "limitP99Db": 9.09,
+    "limitMaxDb": 9.8,
+    "attempts": 1,
+    "locallyLoweredSamples": 0,
+    "lags": [
+      {
+        "lag": 0,
+        "correlation": 0.9852
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9686
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9817
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9782
+      },
+      {
+        "lag": 0,
+        "correlation": 0.9575
+      }
+    ],
+    "oggBytes": 3011732
+  },
+  {
+    "songId": "2_23_AM",
+    "source": "audio_y.mp3",
     "rate": 44100,
     "frames": 8646912,
     "sourceLufs": -12.3,

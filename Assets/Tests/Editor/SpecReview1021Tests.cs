@@ -247,7 +247,7 @@ public class SpecReview1021Tests
         Assert.AreEqual(120, range.End, "鳴らし始めより前の終わりは使わない");
     }
 
-    [TestCase("2_23_AM", 0, 194.45)]
+    [TestCase("2_23_AM", 0, 109.117)]
     [TestCase("Andalusia", 0, 122.8)]
     [TestCase("BenkyouRemaster", 0, 137.55)]
     [TestCase("Epilogue", 0, 164.45)]

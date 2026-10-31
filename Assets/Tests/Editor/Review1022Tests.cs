@@ -262,10 +262,8 @@ public class Review1022Tests
     }
 
     // ---- ず1〜13(ユーザーの指示): 下の譜面と Hard(RUSH E は E も)が同じ時刻で音の頭からずれていた13か所を、全部の譜面で音の頭へ ----
+    // 2:23 AM の 88〜90.7 秒の3か所(ブレイク)は、2026-10-31 に曲を 1:51 に縮めたとき抜いた区間に入っていた。
     [TestCase("2_23_AM", 6026.2, 6058.0, "normal,hard")]
-    [TestCase("2_23_AM", 88026.2, 88058.0, "easy,normal,hard")]
-    [TestCase("2_23_AM", 89359.53, 89385.0, "normal,hard")]
-    [TestCase("2_23_AM", 90692.87, 90732.0, "easy,hard")]
     [TestCase("BenkyouRemaster", 12774.0, 12736.0, "hard")]
     [TestCase("BenkyouRemaster", 12774.0, 12736.0, "easy,normal", false)]
     [TestCase("RushE", 15968.49, 16001.0, "normal,hard,e")]

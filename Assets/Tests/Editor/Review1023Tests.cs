@@ -50,24 +50,12 @@ public class Review1023Tests
     }
 
     // 既存18組の同期を維持する。62Aで追加した赤2個より後ろはindexを2つ繰り下げる。
-    [TestCase(155, 76011.25, 76026.203125, 112)]
-    [TestCase(163, 78674.9140625, 78692.8671875, 116)]
-    [TestCase(176, 82671.4375, 82692.8671875, 122)]
-    [TestCase(178, 84003.234375, 84026.203125, 124)]
-    [TestCase(183, 85370.4765625, 85359.53125, 126)]
-    [TestCase(198, 99345.7421875, 99359.53125, 147)]
-    [TestCase(211, 103369.8203125, 103359.53125, 153)]
-    [TestCase(262, 120049.6484375, 120026.203125, 178)]
-    [TestCase(265, 121349.0546875, 121359.53125, 180)]
-    [TestCase(277, 124703.921875, 124692.8671875, 185)]
-    [TestCase(285, 126705.9609375, 126692.8671875, 188)]
-    [TestCase(287, 127372.625, 127359.53125, 189)]
-    [TestCase(291, 128714.625, 128692.8671875, 191)]
-    [TestCase(400, 174049.15625, 174026.203125, 259)]
-    [TestCase(413, 179380.40625, 179359.53125, 267)]
-    [TestCase(427, 184716.453125, 184692.859375, 275)]
-    [TestCase(433, 187378.671875, 187359.53125, 279)]
-    [TestCase(435, 188679.890625, 188692.859375, 281)]
+    // 2026-10-31 に曲を 1:51 に縮め(元の 24〜47・56〜63 小節を抜いた)、残ったのはアウトロの5組。32 小節(85.333 秒)前へ寄った。
+    [TestCase(183, 88715.823, 88692.869792, 131)]
+    [TestCase(196, 94047.073, 94026.197917, 139)]
+    [TestCase(210, 99383.12, 99359.526042, 147)]
+    [TestCase(216, 102045.339, 102026.197917, 151)]
+    [TestCase(218, 103346.557, 103359.526042, 153)]
     public void AcceptedGoldChordsHaveOneTiming(
         int index, double from, double to, double beat)
     {
@@ -82,75 +70,33 @@ public class Review1023Tests
             .Any(n => At(chart, n, to)), "同じ時刻の相手を消していない");
     }
 
-    [TestCase(198, 199, 99359.53125, 1.79)]
-    [TestCase(211, 210, 103359.53125, -.60)]
-    [TestCase(216, 215, 104694.0234375, -.60)]
-    [TestCase(221, 220, 106031.2265625, -.60)]
-    public void GoldNotesAreVisibleBesideTheirPartners(
-        int index, int partnerIndex, double time, double x)
-    {
-        var chart = Load("2_23_AM", "hard");
-        var gold = chart.notes[index];
-        var partner = chart.notes[partnerIndex];
-        Assert.AreEqual("gold", gold.color);
-        Assert.True(At(chart, gold, time));
-        Assert.AreEqual(x, gold.x, .00001);
-        Assert.AreEqual(-.2142857015132904, gold.y, .00001,
-            "高さを変えない");
-        float distance = Vector2.Distance(
-            new Vector2(gold.x, gold.y),
-            new Vector2(partner.x, partner.y)) * chart.coordScale;
-        Assert.GreaterOrEqual(distance, SaberChartLint.OverlapDistance);
-        Assert.LessOrEqual(distance, 2 * SaberChartLint.HitRange);
-        Assert.LessOrEqual(Math.Abs(gold.time - partner.time),
-            NoteSpawner.SimultaneousEpsilonSeconds * 1000.0);
-    }
-
+    // 金を相手の横へ出した4組(元の 99〜106 秒、ビルドの区間)と、未確定の連続なぞり(元の 107.9 秒)は、
+    // 2026-10-31 に曲を 1:51 に縮めたとき抜いた区間と一緒に無くなった。
     [Test]
-    public void AcceptedChordsFitTenMillisecondsAndOnlyTwoReviewedGroupsRemain()
+    public void AcceptedChordsFitTenMilliseconds()
     {
         string json = File.ReadAllText(ChartPath("2_23_AM", "hard"));
         var document = JsonUtility.FromJson<SaberChartDocument>(json);
-        var issues = SaberChartLint.Check(document, "hard")
-            .Where(i => i.rule == "chord-offset").ToArray();
-
-        // 全件0を偽装しない。未確定の連続なぞりだけを明示して残す。
-        Assert.AreEqual(2, issues.Length);
-        CollectionAssert.AreEqual(new[] { 226, 227 }, issues[0].notes);
-        CollectionAssert.AreEqual(new[] { 228, 229 }, issues[1].notes);
+        Assert.AreEqual(0, SaberChartLint.Check(document, "hard").Count(i => i.rule == "chord-offset"));
         foreach (var group in SaberChartLint.GroupSimultaneous(document.notes))
         {
             if (group.Count < 2) continue;
-            double first = group[0].time;
-            if (Math.Abs(first - 107884.703125) < TimeToleranceMs ||
-                Math.Abs(first - 107929.421875) < TimeToleranceMs)
-                continue;
             Assert.LessOrEqual(group.Last().time - group.First().time,
                 NoteSpawner.SimultaneousEpsilonSeconds * 1000.0,
-                first + "ms");
+                group[0].time + "ms");
         }
     }
 
     [Test]
-    public void HardKeepsAllNotesAndTheDeferredSweep()
+    public void HardKeepsItsNotesInOrder()
     {
         var raw = JsonUtility.FromJson<ChartData>(
             File.ReadAllText(ChartPath("2_23_AM", "hard")));
-        Assert.AreEqual(449, raw.notes.Count, "62Aの赤2個を追加し、既存447個は残す");
+        // 449 個から、抜いた区間の 216 個と、1つ目のつなぎ目の直前の青 1 個(同じ手が 0.3 秒になる)を除いた。
+        Assert.AreEqual(232, raw.notes.Count);
         for (int i = 1; i < raw.notes.Count; i++)
             Assert.GreaterOrEqual(raw.notes[i].time, raw.notes[i - 1].time,
                 "ローダーの整列で保存順の不具合を隠さない");
-        double[] times = {
-            107884.703125, 107909.09375, 107929.421875,
-            107945.671875, 107966.0, 107974.125
-        };
-        for (int i = 0; i < times.Length; i++)
-        {
-            var note = raw.notes[226 + i];
-            Assert.AreEqual(times[i], note.time, TimeToleranceMs);
-            Assert.AreEqual("gold", note.color);
-            Assert.AreEqual(i % 2 == 0 ? "left" : "right", note.direction);
-        }
     }
 
     [Test]
